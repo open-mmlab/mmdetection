@@ -14,8 +14,13 @@ Collections:
         - FPN
         - ResNet
         - RoIAlign
-    Paper: https://arxiv.org/abs/1703.06870v3
+    Paper:
+      URL: https://arxiv.org/abs/1703.06870v3
+      Title: 'Mask R-CNN'
     README: configs/mask_rcnn/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/detectors/mask_rcnn.py#L6
+      Version: v2.0.0
 
 Models:
   - Name: mask_rcnn_r50_caffe_fpn_1x_coco

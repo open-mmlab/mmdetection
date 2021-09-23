@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -107,8 +108,13 @@ class BBoxHead(BaseModule):
     @auto_fp16()
     def forward(self, x):
         if self.with_avg_pool:
-            x = self.avg_pool(x)
-        x = x.view(x.size(0), -1)
+            if x.numel() > 0:
+                x = self.avg_pool(x)
+                x = x.view(x.size(0), -1)
+            else:
+                # avg_pool does not support empty tensor,
+                # so use torch.mean instead it
+                x = torch.mean(x, dim=(-1, -2))
         cls_score = self.fc_cls(x) if self.with_cls else None
         bbox_pred = self.fc_reg(x) if self.with_reg else None
         return cls_score, bbox_pred
@@ -357,7 +363,6 @@ class BBoxHead(BaseModule):
                 bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0])
 
         if rescale and bboxes.size(0) > 0:
-
             scale_factor = bboxes.new_tensor(scale_factor)
             bboxes = (bboxes.view(bboxes.size(0), -1, 4) / scale_factor).view(
                 bboxes.size()[0], -1)
@@ -455,9 +460,15 @@ class BBoxHead(BaseModule):
         """Regress the bbox for the predicted class. Used in Cascade R-CNN.
 
         Args:
-            rois (Tensor): shape (n, 4) or (n, 5)
-            label (Tensor): shape (n, )
-            bbox_pred (Tensor): shape (n, 4*(#class)) or (n, 4)
+            rois (Tensor): Rois from `rpn_head` or last stage
+                `bbox_head`, has shape (num_proposals, 4) or
+                (num_proposals, 5).
+            label (Tensor): Only used when `self.reg_class_agnostic`
+                is False, has shape (num_proposals, ).
+            bbox_pred (Tensor): Regression prediction of
+                current stage `bbox_head`. When `self.reg_class_agnostic`
+                is False, it has shape (n, num_classes * 4), otherwise
+                it has shape (n, 4).
             img_meta (dict): Image meta info.
 
         Returns:

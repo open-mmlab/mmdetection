@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
 from mmdet.core import build_assigner, build_sampler

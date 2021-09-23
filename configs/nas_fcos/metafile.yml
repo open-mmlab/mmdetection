@@ -10,8 +10,13 @@ Collections:
         - FPN
         - NAS-FCOS
         - ResNet
-    Paper: https://arxiv.org/abs/1906.04423
+    Paper:
+      URL: https://arxiv.org/abs/1906.04423
+      Title: 'NAS-FCOS: Fast Neural Architecture Search for Object Detection'
     README: configs/nas_fcos/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/detectors/nasfcos.py#L6
+      Version: v2.1.0
 
 Models:
   - Name: nas_fcos_nashead_r50_caffe_fpn_gn-head_4x4_1x_coco

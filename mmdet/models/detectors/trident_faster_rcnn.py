@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from ..builder import DETECTORS
 from .faster_rcnn import FasterRCNN
 
@@ -40,7 +41,8 @@ class TridentFasterRCNN(FasterRCNN):
             proposal_list = self.rpn_head.simple_test_rpn(x, trident_img_metas)
         else:
             proposal_list = proposals
-
+        # TODO： Fix trident_img_metas undefined errors
+        #  when proposals is specified
         return self.roi_head.simple_test(
             x, proposal_list, trident_img_metas, rescale=rescale)
 

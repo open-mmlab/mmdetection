@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 import os.path as osp
 import warnings
@@ -22,7 +23,8 @@ def pytorch2onnx(model,
                  verify=False,
                  test_img=None,
                  do_simplify=False,
-                 dynamic_export=None):
+                 dynamic_export=None,
+                 skip_postprocess=False):
 
     input_config = {
         'input_shape': input_shape,
@@ -32,6 +34,26 @@ def pytorch2onnx(model,
     # prepare input
     one_img, one_meta = preprocess_example_input(input_config)
     img_list, img_meta_list = [one_img], [[one_meta]]
+
+    if skip_postprocess:
+        warnings.warn('Not all models support export onnx without post '
+                      'process, especially two stage detectors!')
+        model.forward = model.forward_dummy
+        torch.onnx.export(
+            model,
+            one_img,
+            output_file,
+            input_names=['input'],
+            export_params=True,
+            keep_initializers_as_inputs=True,
+            do_constant_folding=True,
+            verbose=show,
+            opset_version=opset_version)
+
+        print(f'Successfully exported ONNX model without '
+              f'post process: {output_file}')
+        return
+
     # replace original forward function
     origin_forward = model.forward
     model.forward = partial(
@@ -49,8 +71,8 @@ def pytorch2onnx(model,
         dynamic_axes = {
             input_name: {
                 0: 'batch',
-                2: 'width',
-                3: 'height'
+                2: 'height',
+                3: 'width'
             },
             'dets': {
                 0: 'batch',
@@ -99,8 +121,16 @@ def pytorch2onnx(model,
         ), f'Requires to install onnx-simplify>={min_required_version}'
 
         input_dic = {'input': img_list[0].detach().cpu().numpy()}
-        onnxsim.simplify(
-            output_file, input_data=input_dic, custom_lib=ort_custom_op_path)
+        model_opt, check_ok = onnxsim.simplify(
+            output_file,
+            input_data=input_dic,
+            custom_lib=ort_custom_op_path,
+            dynamic_input_shape=dynamic_export)
+        if check_ok:
+            onnx.save(model_opt, output_file)
+            print(f'Successfully simplified ONNX model: {output_file}')
+        else:
+            warnings.warn('Failed to simplify ONNX model.')
     print(f'Successfully exported ONNX model: {output_file}')
 
     if verify:
@@ -252,6 +282,12 @@ def parse_args():
         '--dynamic-export',
         action='store_true',
         help='Whether to export onnx with dynamic axis.')
+    parser.add_argument(
+        '--skip-postprocess',
+        action='store_true',
+        help='Whether to export model without post process. Experimental '
+        'option. We do not guarantee the correctness of the exported '
+        'model.')
     args = parser.parse_args()
     return args
 
@@ -305,4 +341,5 @@ if __name__ == '__main__':
         verify=args.verify,
         test_img=args.test_img,
         do_simplify=args.simplify,
-        dynamic_export=args.dynamic_export)
+        dynamic_export=args.dynamic_export,
+        skip_postprocess=args.skip_postprocess)

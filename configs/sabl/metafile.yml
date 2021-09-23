@@ -10,8 +10,13 @@ Collections:
         - FPN
         - ResNet
         - SABL
-    Paper: https://arxiv.org/abs/1912.04260
+    Paper:
+      URL: https://arxiv.org/abs/1912.04260
+      Title: 'Side-Aware Boundary Localization for More Precise Object Detection'
     README: configs/sabl/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.4.0/mmdet/models/roi_heads/bbox_heads/sabl_head.py#L14
+      Version: v2.4.0
 
 Models:
   - Name: sabl_faster_rcnn_r50_fpn_1x_coco

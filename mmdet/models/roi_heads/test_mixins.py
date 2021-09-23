@@ -1,5 +1,6 @@
-import logging
+# Copyright (c) OpenMMLab. All rights reserved.
 import sys
+import warnings
 
 import numpy as np
 import torch
@@ -7,7 +8,6 @@ import torch
 from mmdet.core import (bbox2roi, bbox_mapping, merge_aug_bboxes,
                         merge_aug_masks, multiclass_nms)
 
-logger = logging.getLogger(__name__)
 if sys.version_info >= (3, 7):
     from mmdet.utils.contextmanagers import completed
 
@@ -233,7 +233,7 @@ class MaskTestMixin:
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
         if isinstance(scale_factors[0], float):
-            logger.warning(
+            warnings.warn(
                 'Scale factor in img_metas should be a '
                 'ndarray with shape (4,) '
                 'arrange as (factor_w, factor_h, factor_w, factor_h), '

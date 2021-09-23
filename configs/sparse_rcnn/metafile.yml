@@ -10,8 +10,13 @@ Collections:
         - FPN
         - ResNet
         - Sparse R-CNN
-    Paper: https://arxiv.org/abs/2011.12450
+    Paper:
+      URL: https://arxiv.org/abs/2011.12450
+      Title: 'Sparse R-CNN: End-to-End Object Detection with Learnable Proposals'
     README: configs/sparse_rcnn/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.9.0/mmdet/models/detectors/sparse_rcnn.py#L6
+      Version: v2.9.0
 
 Models:
   - Name: sparse_rcnn_r50_fpn_1x_coco

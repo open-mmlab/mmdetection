@@ -11,8 +11,13 @@ Collections:
         - RPN
         - ResNet
         - RoIAlign
-    Paper: https://arxiv.org/pdf/1904.06493
+    Paper:
+      URL: https://arxiv.org/pdf/1904.06493
+      Title: 'Rethinking Classification and Localization for Object Detection'
     README: configs/double_heads/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/roi_heads/double_roi_head.py#L6
+      Version: v2.0.0
 
 Models:
   - Name: dh_faster_rcnn_r50_fpn_1x_coco

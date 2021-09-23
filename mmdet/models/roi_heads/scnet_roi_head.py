@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -5,6 +6,7 @@ import torch.nn.functional as F
 from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, merge_aug_bboxes,
                         merge_aug_masks, multiclass_nms)
 from ..builder import HEADS, build_head, build_roi_extractor
+from ..utils.brick_wrappers import adaptive_avg_pool2d
 from .cascade_roi_head import CascadeRoIHead
 
 
@@ -106,7 +108,7 @@ class SCNetRoIHead(CascadeRoIHead):
             bbox_semantic_feat = self.semantic_roi_extractor([semantic_feat],
                                                              rois)
             if bbox_semantic_feat.shape[-2:] != bbox_feats.shape[-2:]:
-                bbox_semantic_feat = F.adaptive_avg_pool2d(
+                bbox_semantic_feat = adaptive_avg_pool2d(
                     bbox_semantic_feat, bbox_feats.shape[-2:])
             bbox_feats += bbox_semantic_feat
         if self.with_glbctx and glbctx_feat is not None:
@@ -213,26 +215,19 @@ class SCNetRoIHead(CascadeRoIHead):
         """
         Args:
             x (list[Tensor]): list of multi-level img features.
-
             img_metas (list[dict]): list of image info dict where each dict
                 has: 'img_shape', 'scale_factor', 'flip', and may also contain
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 For details on the values of these keys see
                 `mmdet/datasets/pipelines/formatting.py:Collect`.
-
             proposal_list (list[Tensors]): list of region proposals.
-
             gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
                 shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-
             gt_labels (list[Tensor]): class indices corresponding to each box
-
             gt_bboxes_ignore (None, list[Tensor]): specify which bounding
                 boxes can be ignored when computing the loss.
-
             gt_masks (None, Tensor) : true segmentation masks for each box
                 used if the architecture supports a segmentation task.
-
             gt_semantic_seg (None, list[Tensor]): semantic segmentation masks
                 used if the architecture supports semantic segmentation task.
 
@@ -317,7 +312,28 @@ class SCNetRoIHead(CascadeRoIHead):
         return losses
 
     def simple_test(self, x, proposal_list, img_metas, rescale=False):
-        """Test without augmentation."""
+        """Test without augmentation.
+
+        Args:
+            x (tuple[Tensor]): Features from upstream network. Each
+                has shape (batch_size, c, h, w).
+            proposal_list (list(Tensor)): Proposals from rpn head.
+                Each has shape (num_proposals, 5), last dimension
+                5 represent (x1, y1, x2, y2, score).
+            img_metas (list[dict]): Meta information of images.
+            rescale (bool): Whether to rescale the results to
+                the original image. Default: True.
+
+        Returns:
+            list[list[np.ndarray]] or list[tuple]: When no mask branch,
+            it is bbox results of each image and classes with type
+            `list[list[np.ndarray]]`. The outer list
+            corresponds to each image. The inner list
+            corresponds to each class. When the model has mask branch,
+            it contains bbox results and mask results.
+            The outer list corresponds to each image, and first element
+            of tuple is bbox results, second element is mask results.
+        """
         if self.with_semantic:
             _, semantic_feat = self.semantic_head(x)
         else:
@@ -379,7 +395,7 @@ class SCNetRoIHead(CascadeRoIHead):
                     if rois[j].shape[0] > 0:
                         bbox_label = cls_score[j][:, :-1].argmax(dim=1)
                         refine_rois = bbox_head.regress_by_class(
-                            rois[j], bbox_label[j], bbox_pred[j], img_metas[j])
+                            rois[j], bbox_label, bbox_pred[j], img_metas[j])
                         refine_rois_list.append(refine_rois)
                 rois = torch.cat(refine_rois_list)
 

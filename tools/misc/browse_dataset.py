@@ -1,5 +1,7 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 import os
+from collections import Sequence
 from pathlib import Path
 
 import mmcv
@@ -45,6 +47,12 @@ def parse_args():
 
 
 def retrieve_data_cfg(config_path, skip_type, cfg_options):
+
+    def skip_pipeline_steps(config):
+        config['pipeline'] = [
+            x for x in config.pipeline if x['type'] not in skip_type
+        ]
+
     cfg = Config.fromfile(config_path)
     if cfg_options is not None:
         cfg.merge_from_dict(cfg_options)
@@ -56,9 +64,11 @@ def retrieve_data_cfg(config_path, skip_type, cfg_options):
     while 'dataset' in train_data_cfg and train_data_cfg[
             'type'] != 'MultiImageMixDataset':
         train_data_cfg = train_data_cfg['dataset']
-    train_data_cfg['pipeline'] = [
-        x for x in train_data_cfg.pipeline if x['type'] not in skip_type
-    ]
+
+    if isinstance(train_data_cfg, Sequence):
+        [skip_pipeline_steps(c) for c in train_data_cfg]
+    else:
+        skip_pipeline_steps(train_data_cfg)
 
     return cfg
 

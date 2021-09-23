@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from .backbones import *  # noqa: F401,F403
 from .builder import (BACKBONES, DETECTORS, HEADS, LOSSES, NECKS,
                       ROI_EXTRACTORS, SHARED_HEADS, build_backbone,

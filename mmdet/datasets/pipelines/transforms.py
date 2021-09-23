@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import inspect
 import math
@@ -1964,16 +1965,20 @@ class Mosaic:
            image. Default to (640, 640).
         center_ratio_range (Sequence[float]): Center ratio range of mosaic
            output. Default to (0.5, 1.5).
+        min_bbox_size (int | float): The minimum pixel for filtering
+            invalid bboxes after the mosaic pipeline. Default to 0.
         pad_val (int): Pad value. Default to 114.
     """
 
     def __init__(self,
                  img_scale=(640, 640),
                  center_ratio_range=(0.5, 1.5),
+                 min_bbox_size=0,
                  pad_val=114):
         assert isinstance(img_scale, tuple)
         self.img_scale = img_scale
         self.center_ratio_range = center_ratio_range
+        self.min_bbox_size = min_bbox_size
         self.pad_val = pad_val
 
     def __call__(self, results):
@@ -2080,6 +2085,9 @@ class Mosaic:
                                              2 * self.img_scale[0])
             mosaic_labels = np.concatenate(mosaic_labels, 0)
 
+            mosaic_bboxes, mosaic_labels = \
+                self._filter_box_candidates(mosaic_bboxes, mosaic_labels)
+
         results['img'] = mosaic_img
         results['img_shape'] = mosaic_img.shape
         results['ori_shape'] = mosaic_img.shape
@@ -2131,7 +2139,7 @@ class Mosaic:
             x1, y1, x2, y2 = max(center_position_xy[0] - img_shape_wh[0], 0), \
                              center_position_xy[1], \
                              center_position_xy[0], \
-                             min(self.img_scale[1] * 2, center_position_xy[1] +
+                             min(self.img_scale[0] * 2, center_position_xy[1] +
                                  img_shape_wh[1])
             crop_coord = img_shape_wh[0] - (x2 - x1), 0, img_shape_wh[0], min(
                 y2 - y1, img_shape_wh[1])
@@ -2149,6 +2157,15 @@ class Mosaic:
 
         paste_coord = x1, y1, x2, y2
         return paste_coord, crop_coord
+
+    def _filter_box_candidates(self, bboxes, labels):
+        """Filter out bboxes too small after Mosaic."""
+        bbox_w = bboxes[:, 2] - bboxes[:, 0]
+        bbox_h = bboxes[:, 3] - bboxes[:, 1]
+        valid_inds = (bbox_w > self.min_bbox_size) & \
+                     (bbox_h > self.min_bbox_size)
+        valid_inds = np.nonzero(valid_inds)[0]
+        return bboxes[valid_inds], labels[valid_inds]
 
     def __repr__(self):
         repr_str = self.__class__.__name__
@@ -2456,7 +2473,7 @@ class RandomAffine:
         width = img.shape[1] + self.border[1] * 2
 
         # Center
-        center_matrix = np.eye(3)
+        center_matrix = np.eye(3, dtype=np.float32)
         center_matrix[0, 2] = -img.shape[1] / 2  # x translation (pixels)
         center_matrix[1, 2] = -img.shape[0] / 2  # y translation (pixels)
 
@@ -2561,21 +2578,24 @@ class RandomAffine:
     @staticmethod
     def _get_rotation_matrix(rotate_degrees):
         radian = math.radians(rotate_degrees)
-        rotation_matrix = np.array([[np.cos(radian), -np.sin(radian), 0.],
-                                    [np.sin(radian),
-                                     np.cos(radian), 0.], [0., 0., 1.]])
+        rotation_matrix = np.array(
+            [[np.cos(radian), -np.sin(radian), 0.],
+             [np.sin(radian), np.cos(radian), 0.], [0., 0., 1.]],
+            dtype=np.float32)
         return rotation_matrix
 
     @staticmethod
     def _get_scaling_matrix(scale_ratio):
-        scaling_matrix = np.array([[scale_ratio, 0., 0.],
-                                   [0., scale_ratio, 0.], [0., 0., 1.]])
+        scaling_matrix = np.array(
+            [[scale_ratio, 0., 0.], [0., scale_ratio, 0.], [0., 0., 1.]],
+            dtype=np.float32)
         return scaling_matrix
 
     @staticmethod
     def _get_share_matrix(scale_ratio):
-        scaling_matrix = np.array([[scale_ratio, 0., 0.],
-                                   [0., scale_ratio, 0.], [0., 0., 1.]])
+        scaling_matrix = np.array(
+            [[scale_ratio, 0., 0.], [0., scale_ratio, 0.], [0., 0., 1.]],
+            dtype=np.float32)
         return scaling_matrix
 
     @staticmethod
@@ -2583,10 +2603,12 @@ class RandomAffine:
         x_radian = math.radians(x_shear_degrees)
         y_radian = math.radians(y_shear_degrees)
         shear_matrix = np.array([[1, np.tan(x_radian), 0.],
-                                 [np.tan(y_radian), 1, 0.], [0., 0., 1.]])
+                                 [np.tan(y_radian), 1, 0.], [0., 0., 1.]],
+                                dtype=np.float32)
         return shear_matrix
 
     @staticmethod
     def _get_translation_matrix(x, y):
-        translation_matrix = np.array([[1, 0., x], [0., 1, y], [0., 0., 1.]])
+        translation_matrix = np.array([[1, 0., x], [0., 1, y], [0., 0., 1.]],
+                                      dtype=np.float32)
         return translation_matrix

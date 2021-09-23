@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from .dist_utils import (DistOptimizerHook, all_reduce_dict, allreduce_grads,
                          reduce_mean)
 from .misc import center_of_mass, flip_tensor, mask2ndarray, multi_apply, unmap

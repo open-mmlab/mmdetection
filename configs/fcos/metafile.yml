@@ -10,8 +10,13 @@ Collections:
         - FPN
         - Group Normalization
         - ResNet
-    Paper: https://arxiv.org/abs/1904.01355
+    Paper:
+      URL: https://arxiv.org/abs/1904.01355
+      Title: 'FCOS: Fully Convolutional One-Stage Object Detection'
     README: configs/fcos/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/detectors/fcos.py#L6
+      Version: v2.0.0
 
 Models:
   - Name: fcos_r50_caffe_fpn_gn-head_1x_coco
@@ -32,7 +37,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 36.6
-    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/fcos/fcos_r50_caffe_fpn_gn-head_1x_coco/fcos_r50_caffe_fpn_gn-head_1x_coco-821213aa.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_r50_caffe_fpn_gn-head_1x_coco/fcos_r50_caffe_fpn_gn-head_1x_coco-821213aa.pth
 
   - Name: fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_1x_coco
     In Collection: FCOS
@@ -45,7 +50,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 38.7
-    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/fcos/fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_1x_coco/fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_1x_coco-0a0d75a8.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_1x_coco/fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_1x_coco-0a0d75a8.pth
 
   - Name: fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_dcn_1x_coco
     In Collection: FCOS
@@ -58,7 +63,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 42.3
-    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/fcos/fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_dcn_1x_coco/fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_dcn_1x_coco-ae4d8b3d.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_dcn_1x_coco/fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_dcn_1x_coco-ae4d8b3d.pth
 
   - Name: fcos_r101_caffe_fpn_gn-head_1x_coco
     In Collection: FCOS
@@ -78,7 +83,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 39.1
-    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/fcos/fcos_r101_caffe_fpn_gn-head_1x_coco/fcos_r101_caffe_fpn_gn-head_1x_coco-0e37b982.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_r101_caffe_fpn_gn-head_1x_coco/fcos_r101_caffe_fpn_gn-head_1x_coco-0e37b982.pth
 
   - Name: fcos_r50_caffe_fpn_gn-head_mstrain_640-800_2x_coco
     In Collection: FCOS
@@ -98,7 +103,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 38.5
-    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/fcos/fcos_r50_caffe_fpn_gn-head_mstrain_640-800_2x_coco/fcos_r50_caffe_fpn_gn-head_mstrain_640-800_2x_coco-d92ceeea.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_r50_caffe_fpn_gn-head_mstrain_640-800_2x_coco/fcos_r50_caffe_fpn_gn-head_mstrain_640-800_2x_coco-d92ceeea.pth
 
   - Name: fcos_r101_caffe_fpn_gn-head_mstrain_640-800_2x_coco
     In Collection: FCOS
@@ -118,7 +123,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 40.8
-    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/fcos/fcos_r101_caffe_fpn_gn-head_mstrain_640-800_2x_coco/fcos_r101_caffe_fpn_gn-head_mstrain_640-800_2x_coco-511424d6.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_r101_caffe_fpn_gn-head_mstrain_640-800_2x_coco/fcos_r101_caffe_fpn_gn-head_mstrain_640-800_2x_coco-511424d6.pth
 
   - Name: fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_2x_coco
     In Collection: FCOS
@@ -138,4 +143,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 42.6
-    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_2x_coco/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_2x_coco-ede514a8.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_2x_coco/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_2x_coco-ede514a8.pth

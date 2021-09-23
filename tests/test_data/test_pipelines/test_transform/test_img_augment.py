@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import copy
 
 import mmcv
@@ -5,38 +6,8 @@ import numpy as np
 from mmcv.utils import build_from_cfg
 from numpy.testing import assert_array_equal
 
-from mmdet.core.mask import BitmapMasks, PolygonMasks
 from mmdet.datasets.builder import PIPELINES
-
-
-def construct_toy_data(poly2mask=True):
-    img = np.array([[1, 2, 3, 4], [5, 6, 7, 8]], dtype=np.uint8)
-    img = np.stack([img, img, img], axis=-1)
-    results = dict()
-    # image
-    results['img'] = img
-    results['img_shape'] = img.shape
-    results['img_fields'] = ['img']
-    # bboxes
-    results['bbox_fields'] = ['gt_bboxes', 'gt_bboxes_ignore']
-    results['gt_bboxes'] = np.array([[0., 0., 2., 1.]], dtype=np.float32)
-    results['gt_bboxes_ignore'] = np.array([[2., 0., 3., 1.]],
-                                           dtype=np.float32)
-    # labels
-    results['gt_labels'] = np.array([1], dtype=np.int64)
-    # masks
-    results['mask_fields'] = ['gt_masks']
-    if poly2mask:
-        gt_masks = np.array([[0, 1, 1, 0], [0, 1, 0, 0]],
-                            dtype=np.uint8)[None, :, :]
-        results['gt_masks'] = BitmapMasks(gt_masks, 2, 4)
-    else:
-        raw_masks = [[np.array([1, 0, 2, 0, 2, 1, 1, 1], dtype=np.float)]]
-        results['gt_masks'] = PolygonMasks(raw_masks, 2, 4)
-    # segmentations
-    results['seg_fields'] = ['gt_semantic_seg']
-    results['gt_semantic_seg'] = img[..., 0]
-    return results
+from .utils import construct_toy_data
 
 
 def test_adjust_color():

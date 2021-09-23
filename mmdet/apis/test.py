@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import os.path as osp
 import pickle
 import shutil
@@ -11,7 +12,6 @@ from mmcv.image import tensor2imgs
 from mmcv.runner import get_dist_info
 
 from mmdet.core import encode_mask_results
-from mmdet.core.results.results import Results
 
 
 def single_gpu_test(model,
@@ -56,30 +56,14 @@ def single_gpu_test(model,
                     out_file=out_file,
                     score_thr=show_score_thr)
 
-        # Currently only SOLO will run this branch, reorganize
-        # predictions into the the format agreed with the
-        # :func:`evaluate` of `obj:`dataset`
-        if isinstance(result[0], Results):
-            format_result = []
-            for item in result:
-                format_item = item.format_results()
-                if 'mask_results' in format_item:
-                    format_result.append((format_item['bbox_results'],
-                                          format_item['mask_results']))
-                else:
-                    format_result.append(format_item['bbox_results'])
-            result = format_result
-
         # encode mask results
-        elif isinstance(result[0], tuple):
+        if isinstance(result[0], tuple):
             result = [(bbox_results, encode_mask_results(mask_results))
                       for bbox_results, mask_results in result]
-
         results.extend(result)
 
         for _ in range(batch_size):
             prog_bar.update()
-
     return results
 
 
@@ -111,25 +95,9 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     time.sleep(2)  # This line can prevent deadlock problem in some cases.
     for i, data in enumerate(data_loader):
         with torch.no_grad():
-
             result = model(return_loss=False, rescale=True, **data)
-
-            # Currently only SOLO will run this branch, reorganize
-            # predictions into the the format agreed with the
-            # :func:`evaluate` of `obj:`dataset`
-            if isinstance(result[0], Results):
-                format_result = []
-                for item in result:
-                    format_item = item.format_results()
-                    if 'mask_results' in format_item:
-                        format_result.append((format_item['bbox_results'],
-                                              format_item['mask_results']))
-                    else:
-                        format_result.append(format_item['bbox_results'])
-                result = format_result
-
             # encode mask results
-            elif isinstance(result[0], tuple):
+            if isinstance(result[0], tuple):
                 result = [(bbox_results, encode_mask_results(mask_results))
                           for bbox_results, mask_results in result]
         results.extend(result)
