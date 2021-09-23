@@ -53,6 +53,7 @@ from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask,
 
 from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
 from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema
+from mmdet.integration.nncf.utils import is_nncf_enabled
 
 
 class ModelTemplate(unittest.TestCase):
@@ -330,6 +331,8 @@ class API(unittest.TestCase):
 
     @e2e_pytest_api
     def test_nncf_optimize_progress_tracking(self):
+        if not is_nncf_enabled:
+            pytest.skip("Required NNCF module.")
         template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
 
         # Prepare pretrained weights
@@ -574,32 +577,34 @@ class API(unittest.TestCase):
                 'Too big performance difference after POT optimization.')
 
         if model_template.entrypoints.nncf:
-            print('Run NNCF optimization.')
-            nncf_model = ModelEntity(
-                dataset,
-                detection_environment.get_model_configuration(),
-                optimization_type=ModelOptimizationType.NNCF,
-                optimization_methods=OptimizationMethod.QUANTIZATION,
-                optimization_objectives={},
-                precision=[ModelPrecision.INT8],
-                target_device=TargetDevice.CPU,
-                performance_improvement={},
-                model_size_reduction=1.,
-                model_status=ModelStatus.NOT_READY)
-            nncf_model.set_data('weights.pth', output_model.get_data("weights.pth"))
+            if is_nncf_enabled:
+                print('Run NNCF optimization.')
+                nncf_model = ModelEntity(
+                    dataset,
+                    detection_environment.get_model_configuration(),
+                    optimization_type=ModelOptimizationType.NNCF,
+                    optimization_methods=OptimizationMethod.QUANTIZATION,
+                    optimization_objectives={},
+                    precision=[ModelPrecision.INT8],
+                    target_device=TargetDevice.CPU,
+                    performance_improvement={},
+                    model_size_reduction=1.,
+                    model_status=ModelStatus.NOT_READY)
+                nncf_model.set_data('weights.pth', output_model.get_data("weights.pth"))
 
-            detection_environment.model = nncf_model
+                detection_environment.model = nncf_model
 
-            nncf_task = OTEDetectionNNCFTask(task_environment=detection_environment)
+                nncf_task = OTEDetectionNNCFTask(task_environment=detection_environment)
 
-            nncf_task.optimize(OptimizationType.NNCF, dataset, nncf_model, OptimizationParameters())
-            nncf_task.save_model(nncf_model)
-            nncf_performance = self.eval(nncf_task, nncf_model, val_dataset)
+                nncf_task.optimize(OptimizationType.NNCF, dataset, nncf_model, OptimizationParameters())
+                nncf_task.save_model(nncf_model)
+                nncf_performance = self.eval(nncf_task, nncf_model, val_dataset)
 
-            print(f'Performance of NNCF model: {nncf_performance.score.value:.4f}')
-            self.check_threshold(validation_performance, nncf_performance, nncf_perf_delta_tolerance,
-                'Too big performance difference after NNCF optimization.')
-
+                print(f'Performance of NNCF model: {nncf_performance.score.value:.4f}')
+                self.check_threshold(validation_performance, nncf_performance, nncf_perf_delta_tolerance,
+                    'Too big performance difference after NNCF optimization.')
+            else:
+                print('Skipped test of OTEDetectionNNCFTask. Required NNCF module.')
 
     @e2e_pytest_api
     def test_training_custom_mobilenet_atss(self):

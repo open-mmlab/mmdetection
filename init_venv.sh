@@ -43,6 +43,11 @@ fi
 # Create virtual environment
 $PYTHON_NAME -m venv ${venv_dir} --prompt="detection"
 
+if ! [ -e "${venv_dir}/bin/activate" ]; then
+  echo "The virtual environment was not created."
+  exit
+fi
+
 . ${venv_dir}/bin/activate
 
 # Get CUDA version.
@@ -131,6 +136,10 @@ pip install -e . -c ${CONSTRAINTS_FILE} || exit 1
 MMDETECTION_DIR=`realpath .`
 echo "export MMDETECTION_DIR=${MMDETECTION_DIR}" >> ${venv_dir}/bin/activate
 
+# Install NNCF
+pip install -r requirements/nncf_compression.txt -c ${CONSTRAINTS_FILE} || exit 1
+echo "Build NNCF extensions ..."
+python -c "import nncf"
 
 pip install -e $SC_SDK_REPO/src/ote_sdk -c ${CONSTRAINTS_FILE} || exit 1
 pip install -e $SC_SDK_REPO/src/sc_sdk -c ${CONSTRAINTS_FILE} || exit 1
