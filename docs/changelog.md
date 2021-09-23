@@ -7,7 +7,6 @@
 - Support [PVT](https://arxiv.org/abs/2102.12122) and [PVTv2](https://arxiv.org/abs/2106.13797)
 - Speedup YOLOv3 inference
 
-
 #### New Features
 
 - Support [PVT](https://arxiv.org/abs/2102.12122) and [PVTv2](https://arxiv.org/abs/2106.13797) (#5780)
@@ -18,7 +17,6 @@
 - Add script to test `torchserve` (#5936)
 - Support `onnxsim` with dynamic input shape (#6117)
 
-
 #### Bug Fixes
 
 - Fix the function naming errors in `model_wrappers` (#5975)
@@ -28,7 +26,6 @@
 - Fix bug in `aug_test` of `HTC` when the length of `det_bboxes` is 0 (#6088)
 - Fix empty proposal errors in the training of some two-stage models (#5941)
 - Fix `dynamic_axes` parameter error in `ONNX` dynamic shape export (#6104)
-
 
 #### Improvements
 
@@ -48,14 +45,11 @@
 - Use PyTorch sphinx theme (#6146)
 - Update the paper and code fields in the metafile (#6043)
 
-
 #### Contributors
 A total of 21 developers contributed to this release.
 Thanks @guigarfr, @www516717402, @gaotongxiao, @ypwhs, @MartaYang, @shinya7y, @justiceeem, @zhaojinjian0000, @VVsssssk, @aravind-anantha, @wangbo-zhao, @czczup, @whai362, @czczup, @marijnl, @AronLin, @BIGWangYuDong, @hhaAndroid, @jshilong, @RangiLyu, @ZwwWayne
 
-
 ### v2.16.0 (30/8/2021)
-
 
 #### Highlights
 
