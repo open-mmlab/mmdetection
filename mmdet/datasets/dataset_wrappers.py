@@ -368,8 +368,6 @@ class MultiImageMixDataset:
 
             if 'mix_results' in results:
                 results.pop('mix_results')
-            if self._dynamic_scale is not None:
-                results.pop('scale')
 
         return results
 
