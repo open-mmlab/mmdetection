@@ -11,7 +11,14 @@ from torch import distributed as dist
 @HOOKS.register_module()
 class SyncRandomSizeHook(Hook):
     """Change and synchronize the random image size across ranks, currently
-    used in YOLOX.
+    used in YOLOX. SyncRandomSizeHook is deprecated. Please use Resize pipeline
+    to achieve similar functions. Such as `dict(type='Resize', img_scale=[(448,
+    448), (832, 832)], multiscale_mode='range', keep_ratio=True)`.
+
+    Note: Due to the multi-process dataloader, its behavior is different
+    from YOLOX's official implementation, the official is to change the
+    size every fixed iteration interval and what we achieved is a fixed
+    epoch interval.
 
     Args:
         ratio_range (tuple[int]): Random ratio range. It will be multiplied
@@ -29,12 +36,12 @@ class SyncRandomSizeHook(Hook):
                  interval=1,
                  device='cuda'):
         warnings.warn('DeprecationWarning: SyncRandomSizeHook is deprecated. '
-                      'Please use Resize class to achieve similar functions. '
-                      'Due to the multi-process dataloader, its behavior is '
-                      'different from YOLOX\'s official implementation, '
-                      'the official is to change the size every fixed '
-                      'iteration interval and what we achieved is a fixed '
-                      'epoch interval.')
+                      'Please use Resize pipeline to achieve similar '
+                      'functions. Due to the multi-process dataloader, '
+                      'its behavior is different from YOLOX\'s official '
+                      'implementation, the official is to change the size '
+                      'every fixed iteration interval and what we achieved '
+                      'is a fixed epoch interval.')
         self.rank, world_size = get_dist_info()
         self.is_distributed = world_size > 1
         self.ratio_range = ratio_range
