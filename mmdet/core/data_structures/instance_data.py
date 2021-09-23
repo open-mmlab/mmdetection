@@ -11,7 +11,7 @@ class InstanceData(GeneralData):
     """Data structure for instance-level annnotations or predictions.
 
     Subclass of :class:`GeneralData`. All value in `data_fields`
-    should has the same length. This design refer to
+    should have the same length. This design refer to
     https://github.com/facebookresearch/detectron2/blob/master/detectron2/structures/instances.py # noqa E501
 
     Examples:
