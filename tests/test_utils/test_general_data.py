@@ -148,7 +148,10 @@ def test_general_data():
 
     # test meta values
     instance_data = GeneralData(meta_info, data=dict(bboxes=10))
-    assert 'dadfaff' in instance_data.meta_info_values()
+    # torch 1.3 eq() can not compare str and tensor
+    from mmdet import digit_version
+    if digit_version(torch.__version__) >= [1, 4]:
+        assert 'dadfaff' in instance_data.meta_info_values()
     assert len(instance_data.meta_info_values()) == len(meta_info)
 
     # test items
