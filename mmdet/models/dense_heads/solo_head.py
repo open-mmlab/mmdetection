@@ -5,8 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 
-from mmdet.core import mask_matrix_nms, multi_apply
-from mmdet.core.results.results import DetectionResults
+from mmdet.core import InstanceData, mask_matrix_nms, multi_apply
 from mmdet.core.utils import center_of_mass
 from mmdet.models.builder import HEADS, build_loss
 from .base_mask_head import BaseMaskHead
@@ -426,8 +425,8 @@ class SOLOHead(BaseMaskHead):
             img_metas (list[dict]): Meta information of all images.
 
         Returns:
-            list[:obj:`DetectionResults`]: Processed results of multiple
-            images.Each :obj:`DetectionResults` usually contains
+            list[:obj:`InstanceData`]: Processed results of multiple
+            images.Each :obj:`InstanceData` usually contains
             following keys.
 
                 - scores (Tensor): Classification scores, has shape
@@ -471,7 +470,7 @@ class SOLOHead(BaseMaskHead):
             cfg (dict): Config used in test phase.
 
         Returns:
-            :obj:`DetectionResults`: Processed results of single image.
+            :obj:`InstanceData`: Processed results of single image.
              it usually contains following keys.
 
                 - scores (Tensor): Classification scores, has shape
@@ -490,7 +489,7 @@ class SOLOHead(BaseMaskHead):
 
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_preds) == len(mask_preds)
-        results = DetectionResults(img_meta, num_classes=self.num_classes)
+        results = InstanceData(img_meta)
 
         featmap_size = mask_preds.size()[-2:]
 
@@ -874,8 +873,8 @@ class DecoupledSOLOHead(SOLOHead):
             img_metas (list[dict]): Meta information of all images.
 
         Returns:
-            list[:obj:`DetectionResults`]: Processed results of multiple
-            images.Each :obj:`DetectionResults` usually contains
+            list[:obj:`InstanceData`]: Processed results of multiple
+            images.Each :obj:`InstanceData` usually contains
             following keys.
 
                 - scores (Tensor): Classification scores, has shape
@@ -932,7 +931,7 @@ class DecoupledSOLOHead(SOLOHead):
             cfg (dict): Config used in test phase.
 
         Returns:
-            :obj:`DetectionResults`: Processed results of single image.
+            :obj:`InstanceData`: Processed results of single image.
              it usually contains following keys.
 
                 - scores (Tensor): Classification scores, has shape
@@ -951,7 +950,7 @@ class DecoupledSOLOHead(SOLOHead):
 
         cfg = self.test_cfg if cfg is None else cfg
 
-        results = DetectionResults(img_meta, num_classes=self.num_classes)
+        results = InstanceData(img_meta)
         img_shape = results.img_shape
         ori_shape = results.ori_shape
         h, w, _ = img_shape

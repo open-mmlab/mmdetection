@@ -2,6 +2,7 @@
 import copy
 import warnings
 
+import numpy as np
 import torch
 
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
@@ -142,15 +143,19 @@ class SingleStageInstanceSegmentor(BaseDetector):
                 Defaults to False.
 
         Returns:
-            list[:obj:`InstanceData`]: Processed results of multiple
-            images. Each :obj:`InstanceData` usually contains
-            following keys.
+            list(tuple): Format bbox and mask results of multiple
+            images. The outer list corresponds to each image.
+            Each tuple contains two type of results of single image:
 
-                - scores (Tensor): Classification scores, has shape
-                  (num_instance,)
-                - labels (Tensor): Has shape (num_instances,).
-                - masks (Tensor): Processed mask results, has
-                  shape (num_instances, h, w).
+                - bbox_results (list[np.ndarray]): BBox results of
+                  single image. The list corresponds to each class.
+                  each ndarray has shape (N, 5), N is the number of
+                  bboxes with this category, and last dimension
+                  5 arrange as (x1, y1, x2, y2, scores).
+                - mask_results (list[np.ndarray]): Mask results of
+                  single image. The list corresponds to each class.
+                  each ndarray has shape (N, img_h, img_w), N
+                  is the number of masks with this category.
         """
         feat = self.extract_feat(img)
         if self.bbox_head:
@@ -164,7 +169,77 @@ class SingleStageInstanceSegmentor(BaseDetector):
         results_list = self.mask_head.simple_test(
             feat, img_metas, rescale=rescale, det_results=results_list)
 
+        format_results_list = []
+        for results in results_list:
+            format_results_list.append(self.format_results(results))
+
         return results_list
+
+    def format_results(self, results):
+        """Format the model predictions.
+
+        Args:
+            results (:obj:`InstanceData`): Processed
+                results of single images. Usually contains
+                following keys.
+
+                    - scores (Tensor): Classification scores, has shape
+                      (num_instance,)
+                    - labels (Tensor): Has shape (num_instances,).
+                    - masks (Tensor): Processed mask results, has
+                      shape (num_instances, h, w).
+
+        Returns:
+            tuple: Format bbox and mask results. It contains two items:
+
+                - bbox_results (list[np.ndarray]): BBox results of
+                  single image. The list corresponds to each class.
+                  each ndarray has shape (N, 5), N is the number of
+                  bboxes with this category, and last dimension
+                  5 arrange as (x1, y1, x2, y2, scores).
+                - mask_results (list[np.ndarray]): Mask results of
+                  single image. The list corresponds to each class.
+                  each ndarray has shape (N, img_h, img_w), N
+                  is the number of masks with this category.
+        """
+        data_keys = results.keys()
+        assert 'scores' in data_keys
+        assert 'labels' in data_keys
+
+        assert 'masks' in data_keys, \
+            'results shoule contain ' \
+            'masks when format the results '
+        mask_results = [[] for _ in range(results.num_classes)]
+
+        num_masks = len(results)
+
+        if num_masks == 0:
+            bbox_results = [
+                np.zeros((0, 5), dtype=np.float32)
+                for _ in range(results.num_classes)
+            ]
+            return bbox_results, mask_results
+
+        labels = results.labels.detach().cpu().numpy()
+
+        if 'bboxes' not in results:
+            # creat dummy bbox results to store the scores
+            results.bboxes = results.scores.new_zeros(len(results), 4)
+
+        det_bboxes = torch.cat([results.bboxes, results.scores[:, None]],
+                               dim=-1)
+        det_bboxes = det_bboxes.detach().cpu().numpy()
+        bbox_results = [
+            det_bboxes[labels == i, :] for i in range(results.num_classes)
+        ]
+
+        masks = results.masks.detach().cpu().numpy()
+
+        for idx in range(num_masks):
+            mask = masks[idx]
+            mask_results[labels[idx]].append(mask)
+
+        return bbox_results, mask_results
 
     def aug_test(self, imgs, img_metas, rescale=False):
         raise NotImplementedError
