@@ -24,7 +24,8 @@ class GeneralData(NiceRepr):
           it are immutable once set,
           but the user can add new meta information with
           `set_meta` function, all information can be accessed
-          with methods `meta_keys`, `meta_values`, `meta_items`.
+          with methods `meta_info_keys`, `meta_info_values`,
+          `meta_info_items`.
 
         - `data_fields`: Annotations or model predictions are
           stored. The attributes can be accessed or modified by
@@ -149,7 +150,7 @@ class GeneralData(NiceRepr):
                 model predictions. Default: None.
         """
         new_results = self.__class__()
-        new_results.set_meta_info(dict(self.meta_items()))
+        new_results.set_meta_info(dict(self.meta_info_items()))
         if meta_info is not None:
             new_results.set_meta_info(meta_info)
         if data is not None:
@@ -163,7 +164,7 @@ class GeneralData(NiceRepr):
         """
         return [key for key in self._data_fields]
 
-    def meta_keys(self):
+    def meta_info_keys(self):
         """
         Returns:
             list: Contains all keys in meta_info_fields.
@@ -177,19 +178,19 @@ class GeneralData(NiceRepr):
         """
         return [getattr(self, k) for k in self.keys()]
 
-    def meta_values(self):
+    def meta_info_values(self):
         """
         Returns:
             list: Contains all values in data_fields.
         """
-        return [getattr(self, k) for k in self.meta_keys()]
+        return [getattr(self, k) for k in self.meta_info_keys()]
 
     def items(self):
         for k in self.keys():
             yield (k, getattr(self, k))
 
-    def meta_items(self):
-        for k in self.meta_keys():
+    def meta_info_items(self):
+        for k in self.meta_info_keys():
             yield (k, getattr(self, k))
 
     def __setattr__(self, name, val):
@@ -305,7 +306,7 @@ class GeneralData(NiceRepr):
 
     def __nice__(self):
         repr = '\n \n  META INFORMATION \n'
-        for k, v in self.meta_items():
+        for k, v in self.meta_info_items():
             repr += f'{k}: {v} \n'
         repr += '\n   DATA FIELDS \n'
         for k, v in self.items():

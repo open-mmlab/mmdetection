@@ -101,7 +101,7 @@ def test_results():
     # test new_results
     results = GeneralData(meta_info)
     new_results = results.new_results()
-    for k, v in results.meta_items():
+    for k, v in results.meta_info_items():
         assert k in new_results
         _equal(v, new_results[k])
 
@@ -112,7 +112,7 @@ def test_results():
     temp_meta['img_norm'] = np.random.random(3)
 
     new_results = results.new_results(meta_info=temp_meta, data=temp_data)
-    for k, v in new_results.meta_items():
+    for k, v in new_results.meta_info_items():
         if k in results:
             _equal(v, results[k])
         else:
@@ -134,11 +134,11 @@ def test_results():
 
     # test meta keys
     results = GeneralData(meta_info, data=dict(bboxes=10))
-    assert 'path' in results.meta_keys()
-    assert len(results.meta_keys()) == len(meta_info)
+    assert 'path' in results.meta_info_keys()
+    assert len(results.meta_info_keys()) == len(meta_info)
     results.set_meta_info(dict(workdir='fafaf'))
     assert 'workdir' in results
-    assert len(results.meta_keys()) == len(meta_info) + 1
+    assert len(results.meta_info_keys()) == len(meta_info) + 1
 
     # test values
     results = GeneralData(meta_info, data=dict(bboxes=10))
@@ -147,8 +147,8 @@ def test_results():
 
     # test meta values
     results = GeneralData(meta_info, data=dict(bboxes=10))
-    assert 'dadfaff' in results.meta_values()
-    assert len(results.meta_values()) == len(meta_info)
+    assert 'dadfaff' in results.meta_info_values()
+    assert len(results.meta_info_values()) == len(meta_info)
 
     # test items
     results = GeneralData(data=data)
@@ -156,9 +156,9 @@ def test_results():
         assert k in data
         assert _equal(v, data[k])
 
-    # test meta_items
+    # test meta_info_items
     results = GeneralData(meta_info=meta_info)
-    for k, v in results.meta_items():
+    for k, v in results.meta_info_items():
         assert k in meta_info
         assert _equal(v, meta_info[k])
 
@@ -193,7 +193,7 @@ def test_results():
         del new_results.img_size
     with pytest.raises(KeyError):
         del new_results.scale_factor
-    for k in new_results.meta_keys():
+    for k in new_results.meta_info_keys():
         with pytest.raises(AttributeError):
             new_results[k] = None
 
@@ -429,7 +429,7 @@ def test_instance_results():
 
     # test newresults
     new_results = results.new_results(meta_info=meta_info)
-    for k, v in new_results.meta_items():
+    for k, v in new_results.meta_info_items():
         if k in results:
             _equal(v, results[k])
         else:
