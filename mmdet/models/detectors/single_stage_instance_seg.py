@@ -173,7 +173,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
         for results in results_list:
             format_results_list.append(self.format_results(results))
 
-        return results_list
+        return format_results_list
 
     def format_results(self, results):
         """Format the model predictions.
@@ -209,14 +209,14 @@ class SingleStageInstanceSegmentor(BaseDetector):
         assert 'masks' in data_keys, \
             'results shoule contain ' \
             'masks when format the results '
-        mask_results = [[] for _ in range(results.num_classes)]
+        mask_results = [[] for _ in range(self.mask_head.num_classes)]
 
         num_masks = len(results)
 
         if num_masks == 0:
             bbox_results = [
                 np.zeros((0, 5), dtype=np.float32)
-                for _ in range(results.num_classes)
+                for _ in range(self.mask_head.num_classes)
             ]
             return bbox_results, mask_results
 
@@ -230,7 +230,8 @@ class SingleStageInstanceSegmentor(BaseDetector):
                                dim=-1)
         det_bboxes = det_bboxes.detach().cpu().numpy()
         bbox_results = [
-            det_bboxes[labels == i, :] for i in range(results.num_classes)
+            det_bboxes[labels == i, :]
+            for i in range(self.mask_head.num_classes)
         ]
 
         masks = results.masks.detach().cpu().numpy()
