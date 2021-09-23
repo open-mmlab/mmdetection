@@ -181,7 +181,7 @@ class GeneralData(NiceRepr):
     def meta_info_values(self):
         """
         Returns:
-            list: Contains all values in data_fields.
+            list: Contains all values in meta_info_fields.
         """
         return [getattr(self, k) for k in self.meta_info_keys()]
 
@@ -256,7 +256,7 @@ class GeneralData(NiceRepr):
 
     # Tensor-like methods
     def to(self, *args, **kwargs):
-        """Apply same name function to all tensors in results field."""
+        """Apply same name function to all tensors in data_fields."""
         new_results = self.new_results()
         for k, v in self.items():
             if hasattr(v, 'to'):
@@ -266,7 +266,7 @@ class GeneralData(NiceRepr):
 
     # Tensor-like methods
     def cpu(self):
-        """Apply same name function to all tensors in results field."""
+        """Apply same name function to all tensors in data_fields."""
         new_results = self.new_results()
         for k, v in self.items():
             if isinstance(v, torch.Tensor):
@@ -276,7 +276,7 @@ class GeneralData(NiceRepr):
 
     # Tensor-like methods
     def cuda(self):
-        """Apply same name function to all tensors in results field."""
+        """Apply same name function to all tensors in data_fields."""
         new_results = self.new_results()
         for k, v in self.items():
             if isinstance(v, torch.Tensor):
@@ -286,7 +286,7 @@ class GeneralData(NiceRepr):
 
     # Tensor-like methods
     def detach(self):
-        """Apply same name function to all tensors in results field."""
+        """Apply same name function to all tensors in data_fields."""
         new_results = self.new_results()
         for k, v in self.items():
             if isinstance(v, torch.Tensor):
@@ -296,7 +296,7 @@ class GeneralData(NiceRepr):
 
     # Tensor-like methods
     def numpy(self):
-        """Apply same name function to all tensors in results field."""
+        """Apply same name function to all tensors in data_fields."""
         new_results = self.new_results()
         for k, v in self.items():
             if isinstance(v, torch.Tensor):
