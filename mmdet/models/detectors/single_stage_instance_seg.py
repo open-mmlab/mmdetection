@@ -63,7 +63,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
     def forward_dummy(self, img):
         """Used for computing network flops.
 
-        See `mmdetection/tools/get_flops.py`
+        See `mmdetection/tools/analysis_tools/get_flops.py`
         """
         raise NotImplementedError(
             f'`forward_dummy` is not implemented in {self.__class__.__name__}')
