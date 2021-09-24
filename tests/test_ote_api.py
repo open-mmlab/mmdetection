@@ -11,7 +11,6 @@ from subprocess import run
 from typing import Optional
 
 import numpy as np
-import pytest
 import torch
 import yaml
 from bson import ObjectId
@@ -40,9 +39,6 @@ from sc_sdk.entities.dataset_item import DatasetItem
 from sc_sdk.entities.datasets import Dataset, NullDatasetStorage
 from sc_sdk.entities.image import Image
 from sc_sdk.entities.media_identifier import ImageIdentifier
-
-from subprocess import run
-from typing import Optional
 
 from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask,
                                            OTEDetectionConfig,
@@ -331,8 +327,8 @@ class API(unittest.TestCase):
 
     @e2e_pytest_api
     def test_nncf_optimize_progress_tracking(self):
-        if not is_nncf_enabled:
-            pytest.skip("Required NNCF module.")
+        if not is_nncf_enabled():
+            self.skipTest("Required NNCF module.")
         template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
 
         # Prepare pretrained weights
@@ -577,7 +573,7 @@ class API(unittest.TestCase):
                 'Too big performance difference after POT optimization.')
 
         if model_template.entrypoints.nncf:
-            if is_nncf_enabled:
+            if is_nncf_enabled():
                 print('Run NNCF optimization.')
                 nncf_model = ModelEntity(
                     dataset,
