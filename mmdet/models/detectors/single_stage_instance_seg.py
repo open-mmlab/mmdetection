@@ -313,25 +313,29 @@ class SingleStageInstanceSegmentor(BaseDetector):
             for i, bbox in enumerate(bbox_result)
         ]
         labels = np.concatenate(labels)
+        if len(labels) == 0:
+            bboxes = np.zeros([0, 5])
+            masks = np.zeros([0, 0, 0])
         # draw segmentation masks
-        masks = None
-        if mask_result is not None and len(labels) > 0:  # non empty
+        else:
             masks = mmcv.concat_list(mask_result)
+
             if isinstance(masks[0], torch.Tensor):
                 masks = torch.stack(masks, dim=0).detach().cpu().numpy()
             else:
                 masks = np.stack(masks, axis=0)
-        # dummy bboxes
-        if bboxes[:, :4].sum() == 0:
-            num_masks = len(bboxes)
-            x_any = masks.any(axis=1)
-            y_any = masks.any(axis=2)
-            for idx in range(num_masks):
-                x = np.where(x_any[idx, :])[0]
-                y = np.where(y_any[idx, :])[0]
-                if len(x) > 0 and len(y) > 0:
-                    bboxes[idx, :4] = np.array(
-                        [x[0], y[0], x[-1] + 1, y[-1] + 1], dtype=np.float32)
+            # dummy bboxes
+            if bboxes[:, :4].sum() == 0:
+                num_masks = len(bboxes)
+                x_any = masks.any(axis=1)
+                y_any = masks.any(axis=2)
+                for idx in range(num_masks):
+                    x = np.where(x_any[idx, :])[0]
+                    y = np.where(y_any[idx, :])[0]
+                    if len(x) > 0 and len(y) > 0:
+                        bboxes[idx, :4] = np.array(
+                            [x[0], y[0], x[-1] + 1, y[-1] + 1],
+                            dtype=np.float32)
         # if out_file specified, do not show image in window
         if out_file is not None:
             show = False
