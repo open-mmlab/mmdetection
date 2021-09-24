@@ -664,7 +664,8 @@ class YOLACTProtonet(BaseModule):
         return nn.Sequential(*protonets)
 
     def forward_dummy(self, x):
-        self.protonet(x)
+        prototypes = self.protonet(x)
+        return prototypes
 
     def forward(self, x, coeff_pred, bboxes, img_meta, sampling_results=None):
         """Forward feature from the upstream network to get prototypes and
