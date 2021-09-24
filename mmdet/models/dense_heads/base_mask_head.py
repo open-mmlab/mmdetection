@@ -29,26 +29,25 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
                       positive_infos=None,
                       **kwargs):
         """
-
         Args:
             x (list[Tensor] | tuple[Tensor]): Features from FPN.
-                Each has shape (B, C, H, W).
-            gt_labels (Tensor): Ground truth labels of each box,
-                shape (num_gts,).
-            gt_masks (None | Tensor) : Masks for each bbox, shape
+                Each has a shape (B, C, H, W).
+            gt_labels (list[Tensor]): Ground truth labels of all images.
+                each has a shape (num_gts,).
+            gt_masks (list[Tensor]) : Masks for each bbox, has a shape
                 (num_gts, h , w).
-            gt_bboxes (Tensor): Ground truth bboxes of the image,
-                shape (num_gts, 4).
-            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
-                ignored, shape (num_ignored_gts, 4).
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            positive_infos (:obj:`InstanceData`, optional): It contains the
-                information of positive samples. Only exist when do
-                the label assigning outside MaskHead, like `YOLACT`,
-                `CondInst`, etc. When do label assigning in
+            gt_bboxes (list[Tensor]): Ground truth bboxes of the image,
+                each item has a shape (num_gts, 4).
+            gt_bboxes_ignore (list[Tensor], None): Ground truth bboxes to be
+                ignored, each item has a shape (num_ignored_gts, 4).
+            positive_infos (list[:obj:`InstanceData`], optional): It contains
+                the information of positive samples. Only exist when
+                assigning the label outside MaskHead, like `YOLACT`,
+                `CondInst`, etc. When assigning the label in
                 MaskHead, it would be None, like SOLO. All values
-                in it should have shape (num_positive, *).
+                in it should have shape (num_positive_samples, *).
 
           Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -94,10 +93,10 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
                 results of each image after the post process. \
                 Each item usually contains following keys. \
 
-                - scores (Tensor): Classification scores, has shape
+                - scores (Tensor): Classification scores, has a shape
                   (num_instance,)
-                - labels (Tensor): Has shape (num_instances,).
-                - masks (Tensor): Processed mask results, has
+                - labels (Tensor): Has a shape (num_instances,).
+                - masks (Tensor): Processed mask results, has a
                   shape (num_instances, h, w).
         """
         if det_results is None:

@@ -85,12 +85,12 @@ class SingleStageInstanceSegmentor(BaseDetector):
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 For details on the values of these keys see
                 :class:`mmdet.datasets.pipelines.Collect`.
-            gt_bboxes (list[Tensor]): Each item are the truth boxes for each
-                image in [tl_x, tl_y, br_x, br_y] format.
+            gt_bboxes (list[Tensor]): Each item is the truth boxes
+                of each image in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (list[Tensor]): Class indices corresponding to each box
-            gt_bboxes_ignore (None | list[Tensor]): Specify which bounding
+            gt_bboxes_ignore (list[Tensor] | None): Specify which bounding
                 boxes can be ignored when computing the loss.
-            gt_masks (list[:obj:`BitmapMasks`]) : The segmentation
+            gt_masks (list[:obj:`BitmapMasks`] | None) : The segmentation
                 masks for each box.
 
         Returns:
@@ -108,7 +108,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
         if self.bbox_head:
             # bbox_head_preds is a tuple
             bbox_head_preds = self.bbox_head(x)
-            # positive_infos is a obj:`InstanceData`
+            # positive_infos is a list of obj:`InstanceData`
             # It contains the information about the positive samples
             # CondInst, YOLACT
             det_losses, positive_infos = self.bbox_head.loss(
@@ -153,12 +153,12 @@ class SingleStageInstanceSegmentor(BaseDetector):
 
                 - bbox_results (list[np.ndarray]): BBox results of
                   single image. The list corresponds to each class.
-                  each ndarray has shape (N, 5), N is the number of
+                  each ndarray has a shape (N, 5), N is the number of
                   bboxes with this category, and last dimension
                   5 arrange as (x1, y1, x2, y2, scores).
                 - mask_results (list[np.ndarray]): Mask results of
                   single image. The list corresponds to each class.
-                  each ndarray has shape (N, img_h, img_w), N
+                  each ndarray has a shape (N, img_h, img_w), N
                   is the number of masks with this category.
         """
         feat = self.extract_feat(img)
@@ -199,7 +199,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
 
                 - bbox_results (list[np.ndarray]): BBox results of
                   single image. The list corresponds to each class.
-                  each ndarray has shape (N, 5), N is the number of
+                  each ndarray has a shape (N, 5), N is the number of
                   bboxes with this category, and last dimension
                   5 arrange as (x1, y1, x2, y2, scores).
                 - mask_results (list[np.ndarray]): Mask results of
@@ -272,7 +272,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
 
                 - bbox_results (list[np.ndarray]): BBox results of
                   single image. The list corresponds to each class.
-                  each ndarray has shape (N, 5), N is the number of
+                  each ndarray has a shape (N, 5), N is the number of
                   bboxes with this category, and last dimension
                   5 arrange as (x1, y1, x2, y2, scores).
                 - mask_results (list[np.ndarray]): Mask results of
