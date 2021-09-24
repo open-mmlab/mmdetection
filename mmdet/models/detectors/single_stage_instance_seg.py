@@ -180,7 +180,8 @@ class SingleStageInstanceSegmentor(BaseDetector):
         return format_results_list
 
     def format_results(self, results):
-        """Format the model predictions according the interface with dataset.
+        """Format the model predictions according to the interface with
+        dataset.
 
         Args:
             results (:obj:`InstanceData`): Processed
