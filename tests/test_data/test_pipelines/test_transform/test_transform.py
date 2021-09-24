@@ -83,9 +83,9 @@ def test_resize():
         'img': img,
         'img_shape': img.shape,
         'ori_shape': img.shape,
-        'seg1': copy.deepcopy(img),
-        'seg2': copy.deepcopy(img),
-        'seg_fields': ['seg1', 'seg2']
+        'gt_semantic_seg': copy.deepcopy(img),
+        'gt_seg': copy.deepcopy(img),
+        'seg_fields': ['gt_semantic_seg', 'gt_seg']
     }
     transform = dict(
         type='Resize',
@@ -94,12 +94,11 @@ def test_resize():
         keep_ratio=False)
     resize_module = build_from_cfg(transform, PIPELINES)
     results_seg = resize_module(results_seg)
-    assert results_seg['seg1'].shape == results_seg['seg2'].shape
+    assert results_seg['gt_semantic_seg'].shape == results_seg['gt_seg'].shape
     assert results_seg['img_shape'] == (400, 640, 3)
     assert results_seg['img_shape'] != results_seg['ori_shape']
-    assert results_seg['seg1'].shape == results_seg['img_shape']
-    assert np.equal(results_seg['seg1'], results_seg['seg2']).all()
-    assert np.equal(results_seg['seg2'], results_seg['gt_semantic_seg']).all()
+    assert results_seg['gt_semantic_seg'].shape == results_seg['img_shape']
+    assert np.equal(results_seg['gt_semantic_seg'], results_seg['gt_seg']).all()
 
 
 def test_flip():
