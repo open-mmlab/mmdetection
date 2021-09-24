@@ -69,11 +69,11 @@ class ModelTemplate(unittest.TestCase):
 
     @e2e_pytest_api
     def test_reading_gen2_atss(self):
-        parse_model_template(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_mobilenetV2_SSD', 'template.yaml'))
+        parse_model_template(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_mobilenetV2_ATSS', 'template.yaml'))
 
     @e2e_pytest_api
     def test_reading_gen2_vfnet(self):
-        parse_model_template(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_mobilenetV2_SSD', 'template.yaml'))
+        parse_model_template(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_resnet50_VFNet', 'template.yaml'))
 
     # ------------------------------ Gen3 ------------------------------
 
@@ -483,10 +483,10 @@ class API(unittest.TestCase):
                 f'delta tolerance threshold: {delta_tolerance})'
             )
 
-    def end_to_end(self, template_dir, quality_score_threshold=0.5, reload_perf_delta_tolerance=0.0,
+    def end_to_end(self, template_dir, num_iters=5, quality_score_threshold=0.5, reload_perf_delta_tolerance=0.0,
         export_perf_delta_tolerance=0.0005, pot_perf_delta_tolerance=0.1, nncf_perf_delta_tolerance=0.1):
 
-        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=5)
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=num_iters)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 250)
 
         val_dataset = dataset.get_subset(Subset.VALIDATION)
@@ -625,22 +625,25 @@ class API(unittest.TestCase):
 
     @e2e_pytest_api
     def test_training_gen1_ssd(self):
-        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen1_mobilenet_v2-2s_ssd-256x256'))
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen1_mobilenet_v2-2s_ssd-256x256'),
+            num_iters=150)
 
     # ------------------------------ Gen2 ------------------------------
 
     @e2e_pytest_api
     def test_training_gen2_ssd(self):
-        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_mobilenetV2_SSD'))
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_mobilenetV2_SSD'),
+            num_iters=150)
 
     @e2e_pytest_api
     def test_training_gen2_atss(self):
-        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_mobilenetV2_ATSS'))
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_mobilenetV2_ATSS'),
+            num_iters=150)
 
     @e2e_pytest_api
     def test_training_gen2_vfnet(self):
-        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_mobilenetV2_VFNet'),
-            export_perf_delta_tolerance=0.01)
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_resnet50_VFNet'),
+            num_iters=150, export_perf_delta_tolerance=0.01)
 
     # ------------------------------ Gen3 ------------------------------
 
