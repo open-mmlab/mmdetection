@@ -8,8 +8,13 @@ Collections:
       Training Resources: 8x V100 GPUs
       Architecture:
         - Deformable Convolution
-    Paper: https://arxiv.org/abs/1811.11168
+    Paper:
+      URL: https://arxiv.org/abs/1811.11168
+      Title: 'Deformable ConvNets v2: More Deformable, Better Results'
     README: configs/dcn/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/ops/dcn/deform_conv.py#L15
+      Version: v2.0.0
 
 Models:
   - Name: faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco

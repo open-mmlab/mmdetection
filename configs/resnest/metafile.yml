@@ -8,8 +8,13 @@ Collections:
       Training Resources: 8x V100 GPUs
       Architecture:
         - ResNeSt
-    Paper: https://arxiv.org/abs/2004.08955
+    Paper:
+      URL: https://arxiv.org/abs/2004.08955
+      Title: 'ResNeSt: Split-Attention Networks'
     README: configs/renest/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.7.0/mmdet/models/backbones/resnest.py#L273
+      Version: v2.7.0
 
 Models:
   - Name: faster_rcnn_s50_fpn_syncbn-backbone+head_mstrain-range_1x_coco

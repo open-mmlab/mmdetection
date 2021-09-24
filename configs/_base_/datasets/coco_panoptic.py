@@ -56,4 +56,4 @@ data = dict(
         img_prefix=data_root + 'val2017/',
         seg_prefix=data_root + 'annotations/panoptic_val2017/',
         pipeline=test_pipeline))
-evaluation = dict(interval=1, metric=['pq'])
+evaluation = dict(interval=1, metric=['PQ'])

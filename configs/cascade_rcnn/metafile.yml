@@ -12,8 +12,13 @@ Collections:
         - RPN
         - ResNet
         - RoIAlign
-    Paper: http://dx.doi.org/10.1109/tpami.2019.2956516
+    Paper:
+      URL: http://dx.doi.org/10.1109/tpami.2019.2956516
+      Title: 'Cascade R-CNN: Delving into High Quality Object Detection'
     README: configs/cascade_rcnn/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/detectors/cascade_rcnn.py#L6
+      Version: v2.0.0
 
 Models:
   - Name: cascade_rcnn_r50_caffe_fpn_1x_coco

@@ -10,8 +10,13 @@ Collections:
         - FPN
         - ResNet
         - Varifocal Loss
-    Paper: https://arxiv.org/abs/2008.13367
+    Paper:
+      URL: https://arxiv.org/abs/2008.13367
+      Title: 'VarifocalNet: An IoU-aware Dense Object Detector'
     README: configs/vfnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.6.0/mmdet/models/detectors/vfnet.py#L6
+      Version: v2.6.0
 
 Models:
   - Name: vfnet_r50_fpn_1x_coco
@@ -24,7 +29,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 41.6
-    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/vfnet/vfnet_r50_fpn_1x_coco/vfnet_r50_fpn_1x_coco_20201027-38db6f58.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/vfnet/vfnet_r50_fpn_1x_coco/vfnet_r50_fpn_1x_coco_20201027-38db6f58.pth
 
   - Name: vfnet_r50_fpn_mstrain_2x_coco
     In Collection: VFNet
@@ -36,7 +41,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 44.8
-    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/vfnet/vfnet_r50_fpn_mstrain_2x_coco/vfnet_r50_fpn_mstrain_2x_coco_20201027-7cc75bd2.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/vfnet/vfnet_r50_fpn_mstrain_2x_coco/vfnet_r50_fpn_mstrain_2x_coco_20201027-7cc75bd2.pth
 
   - Name: vfnet_r50_fpn_mdconv_c3-c5_mstrain_2x_coco
     In Collection: VFNet
@@ -48,7 +53,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 48.0
-    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/vfnet/vfnet_r50_fpn_mdconv_c3-c5_mstrain_2x_coco/vfnet_r50_fpn_mdconv_c3-c5_mstrain_2x_coco_20201027pth-6879c318.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/vfnet/vfnet_r50_fpn_mdconv_c3-c5_mstrain_2x_coco/vfnet_r50_fpn_mdconv_c3-c5_mstrain_2x_coco_20201027pth-6879c318.pth
 
   - Name: vfnet_r101_fpn_1x_coco
     In Collection: VFNet
@@ -60,7 +65,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 43.6
-    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/vfnet/vfnet_r101_fpn_1x_coco/vfnet_r101_fpn_1x_coco_20201027pth-c831ece7.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/vfnet/vfnet_r101_fpn_1x_coco/vfnet_r101_fpn_1x_coco_20201027pth-c831ece7.pth
 
   - Name: vfnet_r101_fpn_mstrain_2x_coco
     In Collection: VFNet
@@ -72,7 +77,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 46.7
-    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/vfnet/vfnet_r101_fpn_mstrain_2x_coco/vfnet_r101_fpn_mstrain_2x_coco_20201027pth-4a5d53f1.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/vfnet/vfnet_r101_fpn_mstrain_2x_coco/vfnet_r101_fpn_mstrain_2x_coco_20201027pth-4a5d53f1.pth
 
   - Name: vfnet_r101_fpn_mdconv_c3-c5_mstrain_2x_coco
     In Collection: VFNet
@@ -84,7 +89,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 49.2
-    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/vfnet/vfnet_r101_fpn_mdconv_c3-c5_mstrain_2x_coco/vfnet_r101_fpn_mdconv_c3-c5_mstrain_2x_coco_20201027pth-7729adb5.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/vfnet/vfnet_r101_fpn_mdconv_c3-c5_mstrain_2x_coco/vfnet_r101_fpn_mdconv_c3-c5_mstrain_2x_coco_20201027pth-7729adb5.pth
 
   - Name: vfnet_x101_32x4d_fpn_mdconv_c3-c5_mstrain_2x_coco
     In Collection: VFNet
@@ -96,7 +101,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 50.0
-    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/vfnet/vfnet_x101_32x4d_fpn_mdconv_c3-c5_mstrain_2x_coco/vfnet_x101_32x4d_fpn_mdconv_c3-c5_mstrain_2x_coco_20201027pth-d300a6fc.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/vfnet/vfnet_x101_32x4d_fpn_mdconv_c3-c5_mstrain_2x_coco/vfnet_x101_32x4d_fpn_mdconv_c3-c5_mstrain_2x_coco_20201027pth-d300a6fc.pth
 
   - Name: vfnet_x101_64x4d_fpn_mdconv_c3-c5_mstrain_2x_coco
     In Collection: VFNet
@@ -108,4 +113,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 50.8
-    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/vfnet/vfnet_x101_64x4d_fpn_mdconv_c3-c5_mstrain_2x_coco/vfnet_x101_64x4d_fpn_mdconv_c3-c5_mstrain_2x_coco_20201027pth-b5f6da5e.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/vfnet/vfnet_x101_64x4d_fpn_mdconv_c3-c5_mstrain_2x_coco/vfnet_x101_64x4d_fpn_mdconv_c3-c5_mstrain_2x_coco_20201027pth-b5f6da5e.pth

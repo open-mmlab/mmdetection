@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import os.path as osp
 
@@ -9,6 +10,7 @@ from mmcv.utils import build_from_cfg
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.datasets.builder import PIPELINES
+from .utils import create_random_bboxes
 
 
 def test_resize():
@@ -77,6 +79,7 @@ def test_resize():
     results = resize_module(results)
     assert np.equal(results['img'], results['img2']).all()
     assert results['img_shape'] == (800, 1280, 3)
+    assert results['img'].dtype == results['img'].dtype == np.uint8
 
 
 def test_flip():
@@ -199,17 +202,10 @@ def test_random_crop():
     results['pad_shape'] = img.shape
     results['scale_factor'] = 1.0
 
-    def create_random_bboxes(num_bboxes, img_w, img_h):
-        bboxes_left_top = np.random.uniform(0, 0.5, size=(num_bboxes, 2))
-        bboxes_right_bottom = np.random.uniform(0.5, 1, size=(num_bboxes, 2))
-        bboxes = np.concatenate((bboxes_left_top, bboxes_right_bottom), 1)
-        bboxes = (bboxes * np.array([img_w, img_h, img_w, img_h])).astype(
-            np.int)
-        return bboxes
-
     h, w, _ = img.shape
     gt_bboxes = create_random_bboxes(8, w, h)
     gt_bboxes_ignore = create_random_bboxes(2, w, h)
+    results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
     results['gt_bboxes'] = gt_bboxes
     results['gt_bboxes_ignore'] = gt_bboxes_ignore
     transform = dict(type='RandomCrop', crop_size=(h - 20, w - 20))
@@ -218,6 +214,9 @@ def test_random_crop():
     assert results['img'].shape[:2] == (h - 20, w - 20)
     # All bboxes should be reserved after crop
     assert results['img_shape'][:2] == (h - 20, w - 20)
+    assert results['gt_labels'].shape[0] == results['gt_bboxes'].shape[0]
+    assert results['gt_labels'].dtype == np.int64
+    assert results['gt_bboxes'].dtype == np.float32
     assert results['gt_bboxes'].shape[0] == 8
     assert results['gt_bboxes_ignore'].shape[0] == 2
 
@@ -226,6 +225,8 @@ def test_random_crop():
 
     assert (area(results['gt_bboxes']) <= area(gt_bboxes)).all()
     assert (area(results['gt_bboxes_ignore']) <= area(gt_bboxes_ignore)).all()
+    assert results['gt_bboxes'].dtype == np.float32
+    assert results['gt_bboxes_ignore'].dtype == np.float32
 
     # test assertion for invalid crop_type
     with pytest.raises(ValueError):
@@ -268,6 +269,8 @@ def test_random_crop():
     h, w = results_transformed['img_shape'][:2]
     assert int(2 * 0.3 + 0.5) <= h <= int(2 * 1 + 0.5)
     assert int(4 * 0.7 + 0.5) <= w <= int(4 * 1 + 0.5)
+    assert results_transformed['gt_bboxes'].dtype == np.float32
+    assert results_transformed['gt_bboxes_ignore'].dtype == np.float32
 
     # test crop_type "relative"
     transform = dict(
@@ -279,6 +282,8 @@ def test_random_crop():
     results_transformed = transform_module(copy.deepcopy(results))
     h, w = results_transformed['img_shape'][:2]
     assert h == int(2 * 0.3 + 0.5) and w == int(4 * 0.7 + 0.5)
+    assert results_transformed['gt_bboxes'].dtype == np.float32
+    assert results_transformed['gt_bboxes_ignore'].dtype == np.float32
 
     # test crop_type "absolute"
     transform = dict(
@@ -290,6 +295,8 @@ def test_random_crop():
     results_transformed = transform_module(copy.deepcopy(results))
     h, w = results_transformed['img_shape'][:2]
     assert h == 1 and w == 2
+    assert results_transformed['gt_bboxes'].dtype == np.float32
+    assert results_transformed['gt_bboxes_ignore'].dtype == np.float32
 
     # test crop_type "absolute_range"
     transform = dict(
@@ -301,18 +308,11 @@ def test_random_crop():
     results_transformed = transform_module(copy.deepcopy(results))
     h, w = results_transformed['img_shape'][:2]
     assert 1 <= h <= 2 and 1 <= w <= 4
+    assert results_transformed['gt_bboxes'].dtype == np.float32
+    assert results_transformed['gt_bboxes_ignore'].dtype == np.float32
 
 
 def test_min_iou_random_crop():
-
-    def create_random_bboxes(num_bboxes, img_w, img_h):
-        bboxes_left_top = np.random.uniform(0, 0.5, size=(num_bboxes, 2))
-        bboxes_right_bottom = np.random.uniform(0.5, 1, size=(num_bboxes, 2))
-        bboxes = np.concatenate((bboxes_left_top, bboxes_right_bottom), 1)
-        bboxes = (bboxes * np.array([img_w, img_h, img_w, img_h])).astype(
-            np.int)
-        return bboxes
-
     results = dict()
     img = mmcv.imread(
         osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
@@ -327,6 +327,7 @@ def test_min_iou_random_crop():
     h, w, _ = img.shape
     gt_bboxes = create_random_bboxes(1, w, h)
     gt_bboxes_ignore = create_random_bboxes(1, w, h)
+    results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
     results['gt_bboxes'] = gt_bboxes
     results['gt_bboxes_ignore'] = gt_bboxes_ignore
     transform = dict(type='MinIoURandomCrop')
@@ -339,6 +340,11 @@ def test_min_iou_random_crop():
     with pytest.raises(AssertionError):
         crop_module(results_test)
     results = crop_module(results)
+    assert results['gt_labels'].shape[0] == results['gt_bboxes'].shape[0]
+    assert results['gt_labels'].dtype == np.int64
+    assert results['gt_bboxes'].dtype == np.float32
+    assert results['gt_bboxes_ignore'].dtype == np.float32
+
     patch = np.array([0, 0, results['img_shape'][1], results['img_shape'][0]])
     ious = bbox_overlaps(patch.reshape(-1, 4),
                          results['gt_bboxes']).reshape(-1)
@@ -402,6 +408,17 @@ def test_pad():
     results['img'] = img
     results = transform(results)
     assert results['img'].shape[0] == results['img'].shape[1]
+
+    # test the pad_val is converted to a dict
+    transform = dict(type='Pad', size_divisor=32, pad_val=0)
+    with pytest.deprecated_call():
+        transform = build_from_cfg(transform, PIPELINES)
+
+    assert isinstance(transform.pad_val, dict)
+    results = transform(results)
+    img_shape = results['img'].shape
+    assert img_shape[0] % 32 == 0
+    assert img_shape[1] % 32 == 0
 
 
 def test_normalize():
@@ -554,14 +571,6 @@ def test_random_center_crop_pad():
     results = load(results)
     test_results = copy.deepcopy(results)
 
-    def create_random_bboxes(num_bboxes, img_w, img_h):
-        bboxes_left_top = np.random.uniform(0, 0.5, size=(num_bboxes, 2))
-        bboxes_right_bottom = np.random.uniform(0.5, 1, size=(num_bboxes, 2))
-        bboxes = np.concatenate((bboxes_left_top, bboxes_right_bottom), 1)
-        bboxes = (bboxes * np.array([img_w, img_h, img_w, img_h])).astype(
-            np.int)
-        return bboxes
-
     h, w, _ = results['img_shape']
     gt_bboxes = create_random_bboxes(8, w, h)
     gt_bboxes_ignore = create_random_bboxes(2, w, h)
@@ -584,6 +593,8 @@ def test_random_center_crop_pad():
     assert train_results['pad_shape'][:2] == (h - 20, w - 20)
     assert train_results['gt_bboxes'].shape[0] == 8
     assert train_results['gt_bboxes_ignore'].shape[0] == 2
+    assert train_results['gt_bboxes'].dtype == np.float32
+    assert train_results['gt_bboxes_ignore'].dtype == np.float32
 
     test_transform = dict(
         type='RandomCenterCropPad',
@@ -781,18 +792,10 @@ def test_random_shift():
     # TODO: add img_fields test
     results['bbox_fields'] = ['gt_bboxes', 'gt_bboxes_ignore']
 
-    def create_random_bboxes(num_bboxes, img_w, img_h):
-        bboxes_left_top = np.random.uniform(0, 0.5, size=(num_bboxes, 2))
-        bboxes_right_bottom = np.random.uniform(0.5, 1, size=(num_bboxes, 2))
-        bboxes = np.concatenate((bboxes_left_top, bboxes_right_bottom), 1)
-        bboxes = (bboxes * np.array([img_w, img_h, img_w, img_h])).astype(
-            np.int)
-        return bboxes
-
     h, w, _ = img.shape
     gt_bboxes = create_random_bboxes(8, w, h)
     gt_bboxes_ignore = create_random_bboxes(2, w, h)
-    results['gt_labels'] = torch.ones(gt_bboxes.shape[0])
+    results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
     results['gt_bboxes'] = gt_bboxes
     results['gt_bboxes_ignore'] = gt_bboxes_ignore
     transform = dict(type='RandomShift', shift_ratio=1.0)
@@ -801,6 +804,9 @@ def test_random_shift():
 
     assert results['img'].shape[:2] == (h, w)
     assert results['gt_labels'].shape[0] == results['gt_bboxes'].shape[0]
+    assert results['gt_labels'].dtype == np.int64
+    assert results['gt_bboxes'].dtype == np.float32
+    assert results['gt_bboxes_ignore'].dtype == np.float32
 
 
 def test_random_affine():
@@ -824,18 +830,10 @@ def test_random_affine():
     results['img'] = img
     results['bbox_fields'] = ['gt_bboxes', 'gt_bboxes_ignore']
 
-    def create_random_bboxes(num_bboxes, img_w, img_h):
-        bboxes_left_top = np.random.uniform(0, 0.5, size=(num_bboxes, 2))
-        bboxes_right_bottom = np.random.uniform(0.5, 1, size=(num_bboxes, 2))
-        bboxes = np.concatenate((bboxes_left_top, bboxes_right_bottom), 1)
-        bboxes = (bboxes * np.array([img_w, img_h, img_w, img_h])).astype(
-            np.int)
-        return bboxes
-
     h, w, _ = img.shape
     gt_bboxes = create_random_bboxes(8, w, h)
     gt_bboxes_ignore = create_random_bboxes(2, w, h)
-    results['gt_labels'] = torch.ones(gt_bboxes.shape[0])
+    results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
     results['gt_bboxes'] = gt_bboxes
     results['gt_bboxes_ignore'] = gt_bboxes_ignore
     transform = dict(type='RandomAffine')
@@ -844,10 +842,13 @@ def test_random_affine():
 
     assert results['img'].shape[:2] == (h, w)
     assert results['gt_labels'].shape[0] == results['gt_bboxes'].shape[0]
+    assert results['gt_labels'].dtype == np.int64
+    assert results['gt_bboxes'].dtype == np.float32
+    assert results['gt_bboxes_ignore'].dtype == np.float32
 
     # test filter bbox
-    gt_bboxes = np.array([[0, 0, 1, 1], [0, 0, 3, 100]])
-    results['gt_labels'] = torch.ones(gt_bboxes.shape[0])
+    gt_bboxes = np.array([[0, 0, 1, 1], [0, 0, 3, 100]], dtype=np.float32)
+    results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
     results['gt_bboxes'] = gt_bboxes
     transform = dict(
         type='RandomAffine',
@@ -864,6 +865,10 @@ def test_random_affine():
 
     assert results['gt_bboxes'].shape[0] == 0
     assert results['gt_labels'].shape[0] == 0
+    assert results['gt_labels'].shape[0] == results['gt_bboxes'].shape[0]
+    assert results['gt_labels'].dtype == np.int64
+    assert results['gt_bboxes'].dtype == np.float32
+    assert results['gt_bboxes_ignore'].dtype == np.float32
 
 
 def test_mosaic():
@@ -879,18 +884,10 @@ def test_mosaic():
     # TODO: add img_fields test
     results['bbox_fields'] = ['gt_bboxes', 'gt_bboxes_ignore']
 
-    def create_random_bboxes(num_bboxes, img_w, img_h):
-        bboxes_left_top = np.random.uniform(0, 0.5, size=(num_bboxes, 2))
-        bboxes_right_bottom = np.random.uniform(0.5, 1, size=(num_bboxes, 2))
-        bboxes = np.concatenate((bboxes_left_top, bboxes_right_bottom), 1)
-        bboxes = (bboxes * np.array([img_w, img_h, img_w, img_h])).astype(
-            np.int)
-        return bboxes
-
     h, w, _ = img.shape
     gt_bboxes = create_random_bboxes(8, w, h)
     gt_bboxes_ignore = create_random_bboxes(2, w, h)
-    results['gt_labels'] = torch.ones(gt_bboxes.shape[0])
+    results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
     results['gt_bboxes'] = gt_bboxes
     results['gt_bboxes_ignore'] = gt_bboxes_ignore
     transform = dict(type='Mosaic', img_scale=(10, 12))
@@ -903,6 +900,10 @@ def test_mosaic():
     results['mix_results'] = [copy.deepcopy(results)] * 3
     results = mosaic_module(results)
     assert results['img'].shape[:2] == (20, 24)
+    assert results['gt_labels'].shape[0] == results['gt_bboxes'].shape[0]
+    assert results['gt_labels'].dtype == np.int64
+    assert results['gt_bboxes'].dtype == np.float32
+    assert results['gt_bboxes_ignore'].dtype == np.float32
 
 
 def test_mixup():
@@ -918,18 +919,10 @@ def test_mixup():
     # TODO: add img_fields test
     results['bbox_fields'] = ['gt_bboxes', 'gt_bboxes_ignore']
 
-    def create_random_bboxes(num_bboxes, img_w, img_h):
-        bboxes_left_top = np.random.uniform(0, 0.5, size=(num_bboxes, 2))
-        bboxes_right_bottom = np.random.uniform(0.5, 1, size=(num_bboxes, 2))
-        bboxes = np.concatenate((bboxes_left_top, bboxes_right_bottom), 1)
-        bboxes = (bboxes * np.array([img_w, img_h, img_w, img_h])).astype(
-            np.int)
-        return bboxes
-
     h, w, _ = img.shape
     gt_bboxes = create_random_bboxes(8, w, h)
     gt_bboxes_ignore = create_random_bboxes(2, w, h)
-    results['gt_labels'] = torch.ones(gt_bboxes.shape[0])
+    results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
     results['gt_bboxes'] = gt_bboxes
     results['gt_bboxes_ignore'] = gt_bboxes_ignore
     transform = dict(type='MixUp', img_scale=(10, 12))
@@ -946,3 +939,7 @@ def test_mixup():
     results['mix_results'] = [copy.deepcopy(results)]
     results = mixup_module(results)
     assert results['img'].shape[:2] == (288, 512)
+    assert results['gt_labels'].shape[0] == results['gt_bboxes'].shape[0]
+    assert results['gt_labels'].dtype == np.int64
+    assert results['gt_bboxes'].dtype == np.float32
+    assert results['gt_bboxes_ignore'].dtype == np.float32

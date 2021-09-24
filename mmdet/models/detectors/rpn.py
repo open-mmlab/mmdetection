@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import warnings
 
 import mmcv
@@ -151,4 +152,4 @@ class RPN(BaseDetector):
         Returns:
             np.ndarray: The image with bboxes drawn on it.
         """
-        mmcv.imshow_bboxes(data, result, top_k=top_k)
+        mmcv.imshow_bboxes(data, result, top_k=top_k, **kwargs)
