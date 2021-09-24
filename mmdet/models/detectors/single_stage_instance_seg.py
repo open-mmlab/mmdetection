@@ -1,309 +1,361 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import matplotlib.pyplot as plt
+import copy
+import warnings
+
 import mmcv
 import numpy as np
-import pycocotools.mask as mask_util
-from matplotlib.collections import PatchCollection
-from matplotlib.patches import Polygon
+import torch
 
-from ..utils import mask2ndarray
+from mmdet.core.visualization.image import imshow_det_bboxes
+from ..builder import DETECTORS, build_backbone, build_head, build_neck
+from .base import BaseDetector
 
-EPS = 1e-2
-
-
-def color_val_matplotlib(color):
-    """Convert various input in BGR order to normalized RGB matplotlib color
-    tuples,
-
-    Args:
-        color (:obj:`Color`/str/tuple/int/ndarray): Color inputs
-
-    Returns:
-        tuple[float]: A tuple of 3 normalized floats indicating RGB channels.
-    """
-    color = mmcv.color_val(color)
-    color = [color / 255 for color in color[::-1]]
-    return tuple(color)
+INF = 1e8
 
 
-def imshow_det_bboxes(img,
-                      bboxes,
-                      labels,
-                      segms=None,
-                      class_names=None,
-                      score_thr=0,
-                      bbox_color='green',
-                      text_color='green',
-                      mask_color=None,
-                      thickness=2,
-                      font_size=13,
-                      win_name='',
-                      show=True,
-                      wait_time=0,
-                      out_file=None):
-    """Draw bboxes and class labels (with scores) on an image.
+@DETECTORS.register_module()
+class SingleStageInstanceSegmentor(BaseDetector):
+    """Base class for single-stage instance segmentors."""
 
-    Args:
-        img (str or ndarray): The image to be displayed.
-        bboxes (ndarray): Bounding boxes (with scores), shaped (n, 4) or
-            (n, 5).
-        labels (ndarray): Labels of bboxes.
-        segms (ndarray or None): Masks, shaped (n,h,w) or None
-        class_names (list[str]): Names of each classes.
-        score_thr (float): Minimum score of bboxes to be shown.  Default: 0
-        bbox_color (str or tuple(int) or :obj:`Color`):Color of bbox lines.
-           The tuple of color should be in BGR order. Default: 'green'
-        text_color (str or tuple(int) or :obj:`Color`):Color of texts.
-           The tuple of color should be in BGR order. Default: 'green'
-        mask_color (str or tuple(int) or :obj:`Color`, optional):
-           Color of masks. The tuple of color should be in BGR order.
-           Default: None
-        thickness (int): Thickness of lines. Default: 2
-        font_size (int): Font size of texts. Default: 13
-        show (bool): Whether to show the image. Default: True
-        win_name (str): The window name. Default: ''
-        wait_time (float): Value of waitKey param. Default: 0.
-        out_file (str, optional): The filename to write the image.
-            Default: None
+    def __init__(self,
+                 backbone,
+                 neck=None,
+                 bbox_head=None,
+                 mask_head=None,
+                 train_cfg=None,
+                 test_cfg=None,
+                 pretrained=None,
+                 init_cfg=None):
 
-    Returns:
-        ndarray: The image with bboxes drawn on it.
-    """
-    assert bboxes.ndim == 2, \
-        f' bboxes ndim should be 2, but its ndim is {bboxes.ndim}.'
-    assert labels.ndim == 1, \
-        f' labels ndim should be 1, but its ndim is {labels.ndim}.'
-    assert bboxes.shape[0] == labels.shape[0], \
-        'bboxes.shape[0] and labels.shape[0] should have the same length.'
-    assert bboxes.shape[1] == 4 or bboxes.shape[1] == 5, \
-        f' bboxes.shape[1] should be 4 or 5, but its {bboxes.shape[1]}.'
-    img = mmcv.imread(img).astype(np.uint8)
+        if pretrained:
+            warnings.warn('DeprecationWarning: pretrained is deprecated, '
+                          'please use "init_cfg" instead')
+            backbone.pretrained = pretrained
+        super(SingleStageInstanceSegmentor, self).__init__(init_cfg=init_cfg)
+        self.backbone = build_backbone(backbone)
+        if neck is not None:
+            self.neck = build_neck(neck)
+        else:
+            self.neck = None
+        if bbox_head is not None:
+            bbox_head.update(train_cfg=copy.deepcopy(train_cfg))
+            bbox_head.update(test_cfg=copy.deepcopy(test_cfg))
+            self.bbox_head = build_head(bbox_head)
+        else:
+            self.bbox_head = None
 
-    if score_thr > 0:
-        assert bboxes.shape[1] == 5
-        scores = bboxes[:, -1]
-        inds = scores > score_thr
-        bboxes = bboxes[inds, :]
-        labels = labels[inds]
-        if segms is not None:
-            segms = segms[inds, ...]
+        assert mask_head, f'`mask_head` must ' \
+                          f'be implemented in {self.__class__.__name__}'
+        mask_head.update(train_cfg=copy.deepcopy(train_cfg))
+        mask_head.update(test_cfg=copy.deepcopy(test_cfg))
+        self.mask_head = build_head(mask_head)
 
-    mask_colors = []
-    if labels.shape[0] > 0:
-        if mask_color is None:
-            # Get random state before set seed, and restore random state later.
-            # Prevent loss of randomness.
-            # See: https://github.com/open-mmlab/mmdetection/issues/5844
-            state = np.random.get_state()
-            # random color
-            np.random.seed(42)
-            mask_colors = [
-                np.random.randint(0, 256, (1, 3), dtype=np.uint8)
-                for _ in range(max(labels) + 1)
+        self.train_cfg = train_cfg
+        self.test_cfg = test_cfg
+
+    def extract_feat(self, img):
+        """Directly extract features from the backbone and neck."""
+        x = self.backbone(img)
+        if self.with_neck:
+            x = self.neck(x)
+        return x
+
+    def forward_dummy(self, img):
+        """Used for computing network flops.
+
+        See `mmdetection/tools/get_flops.py`
+        """
+        raise NotImplementedError(
+            f'`forward_dummy` is not implemented in {self.__class__.__name__}')
+
+    def forward_train(self,
+                      img,
+                      img_metas,
+                      gt_bboxes,
+                      gt_labels,
+                      gt_bboxes_ignore=None,
+                      gt_masks=None,
+                      **kwargs):
+        """
+        Args:
+            img (Tensor): Input images of shape (B, C, H, W).
+                Typically these should be mean centered and std scaled.
+            img_metas (list[dict]): A List of image info dict where each dict
+                has: 'img_shape', 'scale_factor', 'flip', and may also contain
+                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
+                For details on the values of these keys see
+                :class:`mmdet.datasets.pipelines.Collect`.
+            gt_bboxes (list[Tensor]): Each item are the truth boxes for each
+                image in [tl_x, tl_y, br_x, br_y] format.
+            gt_labels (list[Tensor]): Class indices corresponding to each box
+            gt_bboxes_ignore (None | list[Tensor]): Specify which bounding
+                boxes can be ignored when computing the loss.
+            gt_masks (list[:obj:`BitmapMasks`]) : The segmentation
+                masks for each box.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
+
+        gt_masks = [
+            gt_mask.to_tensor(dtype=torch.bool, device=img.device)
+            for gt_mask in gt_masks
+        ]
+        x = self.extract_feat(img)
+        losses = dict()
+
+        # CondInst and YOLACT have bbox_head
+        if self.bbox_head:
+            # bbox_head_preds is a tuple
+            bbox_head_preds = self.bbox_head(x)
+            # positive_infos is a obj:`InstanceData`
+            # It contains the information about the positive samples
+            # CondInst, YOLACT
+            det_losses, positive_infos = self.bbox_head.loss(
+                *bbox_head_preds,
+                gt_bboxes=gt_bboxes,
+                gt_labels=gt_labels,
+                gt_masks=gt_masks,
+                img_metas=img_metas,
+                gt_bboxes_ignore=gt_bboxes_ignore)
+            losses.update(det_losses)
+        else:
+            positive_infos = None
+
+        # when no positive_infos add gt bbox
+        mask_loss = self.mask_head.forward_train(
+            x,
+            gt_labels,
+            gt_masks,
+            img_metas,
+            positive_infos=positive_infos,
+            gt_bboxes=gt_bboxes,
+            gt_bboxes_ignore=gt_bboxes_ignore)
+        # avoid loss override
+        assert not set(mask_loss.keys()) & set(losses.keys())
+
+        losses.update(mask_loss)
+        return losses
+
+    def simple_test(self, img, img_metas, rescale=False):
+        """Test function without test-time augmentation.
+
+        Args:
+            img (torch.Tensor): Images with shape (B, C, H, W).
+            img_metas (list[dict]): List of image information.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list(tuple): Formatted bbox and mask results of multiple \
+                images. The outer list corresponds to each image. \
+                Each tuple contains two type of results of single image:
+
+                - bbox_results (list[np.ndarray]): BBox results of
+                  single image. The list corresponds to each class.
+                  each ndarray has shape (N, 5), N is the number of
+                  bboxes with this category, and last dimension
+                  5 arrange as (x1, y1, x2, y2, scores).
+                - mask_results (list[np.ndarray]): Mask results of
+                  single image. The list corresponds to each class.
+                  each ndarray has shape (N, img_h, img_w), N
+                  is the number of masks with this category.
+        """
+        feat = self.extract_feat(img)
+        if self.bbox_head:
+            outs = self.bbox_head(feat)
+            # results_list is list[obj:`InstanceData`]
+            results_list = self.bbox_head.get_results(
+                *outs, img_metas=img_metas, cfg=self.test_cfg, rescale=rescale)
+        else:
+            results_list = None
+
+        results_list = self.mask_head.simple_test(
+            feat, img_metas, rescale=rescale, det_results=results_list)
+
+        format_results_list = []
+        for results in results_list:
+            format_results_list.append(self.format_results(results))
+
+        return format_results_list
+
+    def format_results(self, results):
+        """Format the model predictions according to the interface with
+        dataset.
+
+        Args:
+            results (:obj:`InstanceData`): Processed
+                results of single images. Usually contains
+                following keys.
+
+                - scores (Tensor): Classification scores, has shape
+                  (num_instance,)
+                - labels (Tensor): Has shape (num_instances,).
+                - masks (Tensor): Processed mask results, has
+                  shape (num_instances, h, w).
+
+        Returns:
+            tuple: Format bbox and mask results. It contains two items:
+
+                - bbox_results (list[np.ndarray]): BBox results of
+                  single image. The list corresponds to each class.
+                  each ndarray has shape (N, 5), N is the number of
+                  bboxes with this category, and last dimension
+                  5 arrange as (x1, y1, x2, y2, scores).
+                - mask_results (list[np.ndarray]): Mask results of
+                  single image. The list corresponds to each class.
+                  each ndarray has shape (N, img_h, img_w), N
+                  is the number of masks with this category.
+        """
+        data_keys = results.keys()
+        assert 'scores' in data_keys
+        assert 'labels' in data_keys
+
+        assert 'masks' in data_keys, \
+            'results should contain ' \
+            'masks when format the results '
+        mask_results = [[] for _ in range(self.mask_head.num_classes)]
+
+        num_masks = len(results)
+
+        if num_masks == 0:
+            bbox_results = [
+                np.zeros((0, 5), dtype=np.float32)
+                for _ in range(self.mask_head.num_classes)
             ]
-            np.random.set_state(state)
+            return bbox_results, mask_results
+
+        labels = results.labels.detach().cpu().numpy()
+
+        if 'bboxes' not in results:
+            # creat dummy bbox results to store the scores
+            results.bboxes = results.scores.new_zeros(len(results), 4)
+
+        det_bboxes = torch.cat([results.bboxes, results.scores[:, None]],
+                               dim=-1)
+        det_bboxes = det_bboxes.detach().cpu().numpy()
+        bbox_results = [
+            det_bboxes[labels == i, :]
+            for i in range(self.mask_head.num_classes)
+        ]
+
+        masks = results.masks.detach().cpu().numpy()
+
+        for idx in range(num_masks):
+            mask = masks[idx]
+            mask_results[labels[idx]].append(mask)
+
+        return bbox_results, mask_results
+
+    def aug_test(self, imgs, img_metas, rescale=False):
+        raise NotImplementedError
+
+    def show_result(self,
+                    img,
+                    result,
+                    score_thr=0.3,
+                    bbox_color=(72, 101, 241),
+                    text_color=(72, 101, 241),
+                    mask_color=None,
+                    thickness=2,
+                    font_size=13,
+                    win_name='',
+                    show=False,
+                    wait_time=0,
+                    out_file=None):
+        """Draw `result` over `img`.
+
+        Args:
+            img (str or Tensor): The image to be displayed.
+            result (tuple): Format bbox and mask results.
+                It contains two items:
+
+                - bbox_results (list[np.ndarray]): BBox results of
+                  single image. The list corresponds to each class.
+                  each ndarray has shape (N, 5), N is the number of
+                  bboxes with this category, and last dimension
+                  5 arrange as (x1, y1, x2, y2, scores).
+                - mask_results (list[np.ndarray]): Mask results of
+                  single image. The list corresponds to each class.
+                  each ndarray has shape (N, img_h, img_w), N
+                  is the number of masks with this category.
+
+            score_thr (float, optional): Minimum score of bboxes to be shown.
+                Default: 0.3.
+            bbox_color (str or tuple(int) or :obj:`Color`):Color of bbox lines.
+               The tuple of color should be in BGR order. Default: 'green'
+            text_color (str or tuple(int) or :obj:`Color`):Color of texts.
+               The tuple of color should be in BGR order. Default: 'green'
+            mask_color (None or str or tuple(int) or :obj:`Color`):
+               Color of masks. The tuple of color should be in BGR order.
+               Default: None
+            thickness (int): Thickness of lines. Default: 2
+            font_size (int): Font size of texts. Default: 13
+            win_name (str): The window name. Default: ''
+            wait_time (float): Value of waitKey param.
+                Default: 0.
+            show (bool): Whether to show the image.
+                Default: False.
+            out_file (str or None): The filename to write the image.
+                Default: None.
+
+        Returns:
+            img (Tensor): Only if not `show` or `out_file`
+        """
+
+        assert isinstance(result, tuple)
+        bbox_result, mask_result = result
+        bboxes = np.vstack(bbox_result)
+        img = mmcv.imread(img)
+        img = img.copy()
+        labels = [
+            np.full(bbox.shape[0], i, dtype=np.int32)
+            for i, bbox in enumerate(bbox_result)
+        ]
+        labels = np.concatenate(labels)
+        if len(labels) == 0:
+            bboxes = np.zeros([0, 5])
+            masks = np.zeros([0, 0, 0])
+        # draw segmentation masks
         else:
-            # specify  color
-            mask_colors = [
-                np.array(mmcv.color_val(mask_color)[::-1], dtype=np.uint8)
-            ] * (
-                max(labels) + 1)
+            masks = mmcv.concat_list(mask_result)
 
-    bbox_color = color_val_matplotlib(bbox_color)
-    text_color = color_val_matplotlib(text_color)
+            if isinstance(masks[0], torch.Tensor):
+                masks = torch.stack(masks, dim=0).detach().cpu().numpy()
+            else:
+                masks = np.stack(masks, axis=0)
+            # dummy bboxes
+            if bboxes[:, :4].sum() == 0:
+                num_masks = len(bboxes)
+                x_any = masks.any(axis=1)
+                y_any = masks.any(axis=2)
+                for idx in range(num_masks):
+                    x = np.where(x_any[idx, :])[0]
+                    y = np.where(y_any[idx, :])[0]
+                    if len(x) > 0 and len(y) > 0:
+                        bboxes[idx, :4] = np.array(
+                            [x[0], y[0], x[-1] + 1, y[-1] + 1],
+                            dtype=np.float32)
+        # if out_file specified, do not show image in window
+        if out_file is not None:
+            show = False
+        # draw bounding boxes
+        img = imshow_det_bboxes(
+            img,
+            bboxes,
+            labels,
+            masks,
+            class_names=self.CLASSES,
+            score_thr=score_thr,
+            bbox_color=bbox_color,
+            text_color=text_color,
+            mask_color=mask_color,
+            thickness=thickness,
+            font_size=font_size,
+            win_name=win_name,
+            show=show,
+            wait_time=wait_time,
+            out_file=out_file)
 
-    img = mmcv.bgr2rgb(img)
-    width, height = img.shape[1], img.shape[0]
-    img = np.ascontiguousarray(img)
-
-    fig = plt.figure(win_name, frameon=False)
-    plt.title(win_name)
-    canvas = fig.canvas
-    dpi = fig.get_dpi()
-    # add a small EPS to avoid precision lost due to matplotlib's truncation
-    # (https://github.com/matplotlib/matplotlib/issues/15363)
-    fig.set_size_inches((width + EPS) / dpi, (height + EPS) / dpi)
-
-    # remove white edges by set subplot margin
-    plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
-    ax = plt.gca()
-    ax.axis('off')
-
-    polygons = []
-    color = []
-    for i, (bbox, label) in enumerate(zip(bboxes, labels)):
-        bbox_int = bbox.astype(np.int32)
-        poly = [[bbox_int[0], bbox_int[1]], [bbox_int[0], bbox_int[3]],
-                [bbox_int[2], bbox_int[3]], [bbox_int[2], bbox_int[1]]]
-        np_poly = np.array(poly).reshape((4, 2))
-        polygons.append(Polygon(np_poly))
-        color.append(bbox_color)
-        label_text = class_names[
-            label] if class_names is not None else f'class {label}'
-        if len(bbox) > 4:
-            label_text += f'|{bbox[-1]:.02f}'
-        ax.text(
-            bbox_int[0],
-            bbox_int[1],
-            f'{label_text}',
-            bbox={
-                'facecolor': 'black',
-                'alpha': 0.8,
-                'pad': 0.7,
-                'edgecolor': 'none'
-            },
-            color=text_color,
-            fontsize=font_size,
-            verticalalignment='top',
-            horizontalalignment='left')
-        if segms is not None:
-            color_mask = mask_colors[labels[i]]
-            mask = segms[i].astype(bool)
-            img[mask] = img[mask] * 0.5 + color_mask * 0.5
-
-    plt.imshow(img)
-
-    p = PatchCollection(
-        polygons, facecolor='none', edgecolors=color, linewidths=thickness)
-    ax.add_collection(p)
-
-    stream, _ = canvas.print_to_buffer()
-    buffer = np.frombuffer(stream, dtype='uint8')
-    img_rgba = buffer.reshape(height, width, 4)
-    rgb, alpha = np.split(img_rgba, [3], axis=2)
-    img = rgb.astype('uint8')
-    img = mmcv.rgb2bgr(img)
-
-    if show:
-        # We do not use cv2 for display because in some cases, opencv will
-        # conflict with Qt, it will output a warning: Current thread
-        # is not the object's thread. You can refer to
-        # https://github.com/opencv/opencv-python/issues/46 for details
-        if wait_time == 0:
-            plt.show()
-        else:
-            plt.show(block=False)
-            plt.pause(wait_time)
-    if out_file is not None:
-        mmcv.imwrite(img, out_file)
-
-    plt.close()
-
-    return img
-
-
-def imshow_gt_det_bboxes(img,
-                         annotation,
-                         result,
-                         class_names=None,
-                         score_thr=0,
-                         gt_bbox_color=(255, 102, 61),
-                         gt_text_color=(255, 102, 61),
-                         gt_mask_color=(255, 102, 61),
-                         det_bbox_color=(72, 101, 241),
-                         det_text_color=(72, 101, 241),
-                         det_mask_color=(72, 101, 241),
-                         thickness=2,
-                         font_size=13,
-                         win_name='',
-                         show=True,
-                         wait_time=0,
-                         out_file=None):
-    """General visualization GT and result function.
-
-    Args:
-      img (str or ndarray): The image to be displayed.)
-      annotation (dict): Ground truth annotations where contain keys of
-          'gt_bboxes' and 'gt_labels' or 'gt_masks'
-      result (tuple[list] or list): The detection result, can be either
-          (bbox, segm) or just bbox.
-      class_names (list[str]): Names of each classes.
-      score_thr (float): Minimum score of bboxes to be shown.  Default: 0
-      gt_bbox_color (str or tuple(int) or :obj:`Color`):Color of bbox lines.
-           The tuple of color should be in BGR order. Default: (255, 102, 61)
-      gt_text_color (str or tuple(int) or :obj:`Color`):Color of texts.
-           The tuple of color should be in BGR order. Default: (255, 102, 61)
-      gt_mask_color (str or tuple(int) or :obj:`Color`, optional):
-           Color of masks. The tuple of color should be in BGR order.
-           Default: (255, 102, 61)
-      det_bbox_color (str or tuple(int) or :obj:`Color`):Color of bbox lines.
-           The tuple of color should be in BGR order. Default: (72, 101, 241)
-      det_text_color (str or tuple(int) or :obj:`Color`):Color of texts.
-           The tuple of color should be in BGR order. Default: (72, 101, 241)
-      det_mask_color (str or tuple(int) or :obj:`Color`, optional):
-           Color of masks. The tuple of color should be in BGR order.
-           Default: (72, 101, 241)
-      thickness (int): Thickness of lines. Default: 2
-      font_size (int): Font size of texts. Default: 13
-      win_name (str): The window name. Default: ''
-      show (bool): Whether to show the image. Default: True
-      wait_time (float): Value of waitKey param. Default: 0.
-      out_file (str, optional): The filename to write the image.
-         Default: None
-
-    Returns:
-        ndarray: The image with bboxes or masks drawn on it.
-    """
-    assert 'gt_bboxes' in annotation
-    assert 'gt_labels' in annotation
-    assert isinstance(
-        result,
-        (tuple, list)), f'Expected tuple or list, but get {type(result)}'
-
-    gt_masks = annotation.get('gt_masks', None)
-    if gt_masks is not None:
-        gt_masks = mask2ndarray(gt_masks)
-
-    img = mmcv.imread(img)
-
-    img = imshow_det_bboxes(
-        img,
-        annotation['gt_bboxes'],
-        annotation['gt_labels'],
-        gt_masks,
-        class_names=class_names,
-        bbox_color=gt_bbox_color,
-        text_color=gt_text_color,
-        mask_color=gt_mask_color,
-        thickness=thickness,
-        font_size=font_size,
-        win_name=win_name,
-        show=False)
-
-    if isinstance(result, tuple):
-        bbox_result, segm_result = result
-        if isinstance(segm_result, tuple):
-            segm_result = segm_result[0]  # ms rcnn
-    else:
-        bbox_result, segm_result = result, None
-
-    bboxes = np.vstack(bbox_result)
-    labels = [
-        np.full(bbox.shape[0], i, dtype=np.int32)
-        for i, bbox in enumerate(bbox_result)
-    ]
-    labels = np.concatenate(labels)
-
-    segms = None
-    if segm_result is not None and len(labels) > 0:  # non empty
-        segms = mmcv.concat_list(segm_result)
-        segms = mask_util.decode(segms)
-        segms = segms.transpose(2, 0, 1)
-
-    img = imshow_det_bboxes(
-        img,
-        bboxes,
-        labels,
-        segms=segms,
-        class_names=class_names,
-        score_thr=score_thr,
-        bbox_color=det_bbox_color,
-        text_color=det_text_color,
-        mask_color=det_mask_color,
-        thickness=thickness,
-        font_size=font_size,
-        win_name=win_name,
-        show=show,
-        wait_time=wait_time,
-        out_file=out_file)
-    return img
+        if not (show or out_file):
+            return img
