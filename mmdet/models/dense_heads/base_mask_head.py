@@ -16,7 +16,7 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
 
     @abstractmethod
     def get_results(self, **kwargs):
-        """Get precessed :obj:`DetectionResults` of multiple images."""
+        """Get precessed :obj:`InstanceData` of multiple images."""
         pass
 
     def forward_train(self,
@@ -43,7 +43,7 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
                 ignored, shape (num_ignored_gts, 4).
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            positive_infos (:obj:`DetectionResults`): Only exist
+            positive_infos (:obj:`InstanceData`): Only exist
                 when there is a `bbox_head` in `SingleStageInstanceSegmentor`
                 like `YOLACT`, `CondInst`, etc. It contains the
                 information of positive samples.
@@ -86,13 +86,20 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
             img_metas (list[dict]): List of image information.
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
-            det_results (list[obj:`DetectionResults`]): Detection
+            det_results (list[obj:`InstanceData`]): Detection
                 results of each image after the post process. Only exist
                 if there is a `bbox_head`, like `YOLACT`, `CondInst`, etc.
 
         Returns:
-            list[obj:`DetectionResults`]: Instance segmentation
-                results of each image after the post process.
+            list[obj:`InstanceData`]: Instance segmentation \
+                results of each image after the post process. \
+                Each item usually contains following keys. \
+
+                - scores (Tensor): Classification scores, has shape
+                  (num_instance,)
+                - labels (Tensor): Has shape (num_instances,).
+                - masks (Tensor): Processed mask results, has
+                  shape (num_instances, h, w).
         """
         if det_results is None:
             outs = self(feats)
@@ -104,16 +111,5 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
         return results_list
 
     def onnx_export(self, img, img_metas):
-        """Test function without test-time augmentation.
-
-        Args:
-            feats (tuple[torch.Tensor]): Multi-level features from the
-                upstream network, each is a 4D-tensor.
-            img_metas (list[dict]): List of image information.
-
-        Returns:
-            Tensor: The segmentation results of shape [N, num_bboxes,
-                image_height, image_width].
-        """
         raise NotImplementedError(f'{self.__class__.__name__} does '
                                   f'not support ONNX EXPORT')

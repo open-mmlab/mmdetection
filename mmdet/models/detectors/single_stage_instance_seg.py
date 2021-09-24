@@ -109,7 +109,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
         if self.bbox_head:
             # bbox_head_preds is a tuple
             bbox_head_preds = self.bbox_head(x)
-            # positive_infos is a obj:`DetectionResults`
+            # positive_infos is a obj:`InstanceData`
             # It contains the information about the positive samples
             # CondInst, YOLACT
             det_losses, positive_infos = self.bbox_head.loss(
@@ -147,20 +147,24 @@ class SingleStageInstanceSegmentor(BaseDetector):
                 Defaults to False.
 
         Returns:
-            list[:obj:`DetectionResults`]: Processed results of multiple
-            images. Each :obj:`DetectionResults` usually contains
-            following keys.
+            list(tuple): Format bbox and mask results of multiple \
+                images. The outer list corresponds to each image. \
+                Each tuple contains two type of results of single image:
 
-                - scores (Tensor): Classification scores, has shape
-                  (num_instance,)
-                - labels (Tensor): Has shape (num_instances,).
-                - masks (Tensor): Processed mask results, has
-                  shape (num_instances, h, w).
+                - bbox_results (list[np.ndarray]): BBox results of
+                  single image. The list corresponds to each class.
+                  each ndarray has shape (N, 5), N is the number of
+                  bboxes with this category, and last dimension
+                  5 arrange as (x1, y1, x2, y2, scores).
+                - mask_results (list[np.ndarray]): Mask results of
+                  single image. The list corresponds to each class.
+                  each ndarray has shape (N, img_h, img_w), N
+                  is the number of masks with this category.
         """
         feat = self.extract_feat(img)
         if self.bbox_head:
             outs = self.bbox_head(feat)
-            # results_list is list[obj:`DetectionResults`]
+            # results_list is list[obj:`InstanceData`]
             results_list = self.bbox_head.get_results(
                 *outs, img_metas=img_metas, cfg=self.test_cfg, rescale=rescale)
         else:
@@ -169,7 +173,78 @@ class SingleStageInstanceSegmentor(BaseDetector):
         results_list = self.mask_head.simple_test(
             feat, img_metas, rescale=rescale, det_results=results_list)
 
-        return results_list
+        format_results_list = []
+        for results in results_list:
+            format_results_list.append(self.format_results(results))
+
+        return format_results_list
+
+    def format_results(self, results):
+        """Format the model predictions.
+
+        Args:
+            results (:obj:`InstanceData`): Processed
+                results of single images. Usually contains
+                following keys.
+
+                - scores (Tensor): Classification scores, has shape
+                  (num_instance,)
+                - labels (Tensor): Has shape (num_instances,).
+                - masks (Tensor): Processed mask results, has
+                  shape (num_instances, h, w).
+
+        Returns:
+            tuple: Format bbox and mask results. It contains two items:
+
+                - bbox_results (list[np.ndarray]): BBox results of
+                  single image. The list corresponds to each class.
+                  each ndarray has shape (N, 5), N is the number of
+                  bboxes with this category, and last dimension
+                  5 arrange as (x1, y1, x2, y2, scores).
+                - mask_results (list[np.ndarray]): Mask results of
+                  single image. The list corresponds to each class.
+                  each ndarray has shape (N, img_h, img_w), N
+                  is the number of masks with this category.
+        """
+        data_keys = results.keys()
+        assert 'scores' in data_keys
+        assert 'labels' in data_keys
+
+        assert 'masks' in data_keys, \
+            'results should contain ' \
+            'masks when format the results '
+        mask_results = [[] for _ in range(self.mask_head.num_classes)]
+
+        num_masks = len(results)
+
+        if num_masks == 0:
+            bbox_results = [
+                np.zeros((0, 5), dtype=np.float32)
+                for _ in range(self.mask_head.num_classes)
+            ]
+            return bbox_results, mask_results
+
+        labels = results.labels.detach().cpu().numpy()
+
+        if 'bboxes' not in results:
+            # creat dummy bbox results to store the scores
+            results.bboxes = results.scores.new_zeros(len(results), 4)
+
+        det_bboxes = torch.cat([results.bboxes, results.scores[:, None]],
+                               dim=-1)
+        det_bboxes = det_bboxes.detach().cpu().numpy()
+        bbox_results = [
+            det_bboxes[labels == i, :]
+            for i in range(self.mask_head.num_classes)
+        ]
+
+        masks = results.masks.detach().cpu().numpy()
+
+        for idx in range(num_masks):
+            mask = masks[idx]
+            mask_results[labels[idx]].append(mask)
+
+        return bbox_results, mask_results
 
     def aug_test(self, imgs, img_metas, rescale=False):
         raise NotImplementedError
@@ -191,15 +266,18 @@ class SingleStageInstanceSegmentor(BaseDetector):
 
         Args:
             img (str or Tensor): The image to be displayed.
-            result (:obj:`DetectionResults): Processed results of single
-            image. Each :obj:`DetectionResults` usually contains
-            following keys.
+            result (tuple): Format bbox and mask results.
+                It contains two items:
 
-                - scores (Tensor): Classification scores, has shape
-                  (num_instance,)
-                - labels (Tensor): Has shape (num_instances,).
-                - masks (Tensor): Processed mask results, has
-                  shape (num_instances, h, w).
+                - bbox_results (list[np.ndarray]): BBox results of
+                  single image. The list corresponds to each class.
+                  each ndarray has shape (N, 5), N is the number of
+                  bboxes with this category, and last dimension
+                  5 arrange as (x1, y1, x2, y2, scores).
+                - mask_results (list[np.ndarray]): Mask results of
+                  single image. The list corresponds to each class.
+                  each ndarray has shape (N, img_h, img_w), N
+                  is the number of masks with this category.
 
             score_thr (float, optional): Minimum score of bboxes to be shown.
                 Default: 0.3.
@@ -223,38 +301,43 @@ class SingleStageInstanceSegmentor(BaseDetector):
         Returns:
             img (Tensor): Only if not `show` or `out_file`
         """
-        assert 'masks' in result
+
+        assert isinstance(result, tuple)
+        bbox_result, mask_result = result
+        bboxes = np.vstack(bbox_result)
         img = mmcv.imread(img)
         img = img.copy()
-
-        # creat dummy bboxes for masks
-        if 'bboxes' not in result:
-            masks = result.masks
-            w_masks = masks.any(1)
-            w = w_masks.sum(-1)
-            h_masks = masks.any(2)
-            h = h_masks.sum(-1)
-            cumsum_w = torch.cumsum(w_masks, dim=-1)
-            cumsum_w[cumsum_w == 0] = INF
-            cumsum_h = torch.cumsum(h_masks, dim=-1)
-            cumsum_h[cumsum_h == 0] = INF
-            x1 = cumsum_w.min(-1).indices
-            y1 = cumsum_h.min(-1).indices
-            bboxes = torch.stack([x1, y1, x1 + w, y1 + h], dim=-1)
-            result.bboxes = bboxes
-
-        result = result.numpy()
-        det_bboxes = np.concatenate([result.bboxes, result.scores[:, None]],
-                                    axis=-1)
-        masks = result.masks
-        labels = result.labels
+        labels = [
+            np.full(bbox.shape[0], i, dtype=np.int32)
+            for i, bbox in enumerate(bbox_result)
+        ]
+        labels = np.concatenate(labels)
+        # draw segmentation masks
+        masks = None
+        if mask_result is not None and len(labels) > 0:  # non empty
+            masks = mmcv.concat_list(mask_result)
+            if isinstance(masks[0], torch.Tensor):
+                masks = torch.stack(masks, dim=0).detach().cpu().numpy()
+            else:
+                masks = np.stack(masks, axis=0)
+        # dummy bboxes
+        if bboxes[:, :4].sum() == 0:
+            num_masks = len(bboxes)
+            x_any = masks.any(axis=1)
+            y_any = masks.any(axis=2)
+            for idx in range(num_masks):
+                x = np.where(x_any[idx, :])[0]
+                y = np.where(y_any[idx, :])[0]
+                if len(x) > 0 and len(y) > 0:
+                    bboxes[idx, :4] = np.array(
+                        [x[0], y[0], x[-1] + 1, y[-1] + 1], dtype=np.float32)
         # if out_file specified, do not show image in window
         if out_file is not None:
             show = False
         # draw bounding boxes
         img = imshow_det_bboxes(
             img,
-            det_bboxes,
+            bboxes,
             labels,
             masks,
             class_names=self.CLASSES,
