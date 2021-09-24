@@ -21,14 +21,15 @@ class BaseSemanticHead(BaseModule, metaclass=ABCMeta):
                  num_classes,
                  init_cfg=None,
                  loss_seg=dict(
-                     type='CrossEntropyLoss', ignore_index=-1,
+                     type='CrossEntropyLoss',
+                     ignore_index=255,
                      loss_weight=1.0)):
         super(BaseSemanticHead, self).__init__(init_cfg)
         self.loss_seg = build_loss(loss_seg)
         self.num_classes = num_classes
 
     @force_fp32(apply_to=('seg_preds', ))
-    def loss(self, seg_preds, gt_semantic_seg, label_bias=1):
+    def loss(self, seg_preds, gt_semantic_seg):
         """Get the loss of semantic head.
 
         Args:
@@ -44,8 +45,6 @@ class BaseSemanticHead(BaseModule, metaclass=ABCMeta):
         if seg_preds.shape[-2:] != gt_semantic_seg.shape[-2:]:
             seg_preds = interpolate_as(seg_preds, gt_semantic_seg)
         seg_preds = seg_preds.permute((0, 2, 3, 1))
-        # make the semantic label start from 0
-        gt_semantic_seg = gt_semantic_seg - label_bias
 
         loss_seg = self.loss_seg(
             seg_preds.reshape(-1, self.num_classes),  # => [NxHxW, C]
@@ -63,10 +62,10 @@ class BaseSemanticHead(BaseModule, metaclass=ABCMeta):
         """
         pass
 
-    def forward_train(self, x, gt_semantic_seg, label_bias=1):
+    def forward_train(self, x, gt_semantic_seg):
         output = self.forward(x)
         seg_preds = output['seg_preds']
-        return self.loss(seg_preds, gt_semantic_seg, label_bias)
+        return self.loss(seg_preds, gt_semantic_seg)
 
     def simple_test(self, x, img_metas, rescale=False):
         output = self.forward(x)

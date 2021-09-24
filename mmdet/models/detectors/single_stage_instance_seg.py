@@ -17,17 +17,15 @@ INF = 1e8
 class SingleStageInstanceSegmentor(BaseDetector):
     """Base class for single-stage instance segmentors."""
 
-    def __init__(
-        self,
-        backbone,
-        neck=None,
-        bbox_head=None,
-        mask_head=None,
-        train_cfg=None,
-        test_cfg=None,
-        init_cfg=None,
-        pretrained=None,
-    ):
+    def __init__(self,
+                 backbone,
+                 neck=None,
+                 bbox_head=None,
+                 mask_head=None,
+                 train_cfg=None,
+                 test_cfg=None,
+                 init_cfg=None,
+                 pretrained=None):
         if pretrained:
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')
@@ -123,11 +121,12 @@ class SingleStageInstanceSegmentor(BaseDetector):
         else:
             positive_infos = None
 
-        mask_head_inputs = (x, gt_labels, gt_masks, img_metas)
-
         # when no positive_infos add gt bbox
         mask_loss = self.mask_head.forward_train(
-            *mask_head_inputs,
+            x,
+            gt_labels,
+            gt_masks,
+            img_metas,
             positive_infos=positive_infos,
             gt_bboxes=gt_bboxes,
             gt_bboxes_ignore=gt_bboxes_ignore)
@@ -147,9 +146,9 @@ class SingleStageInstanceSegmentor(BaseDetector):
                 Defaults to False.
 
         Returns:
-            list(tuple): Format bbox and mask results of multiple
-            images. The outer list corresponds to each image.
-            Each tuple contains two type of results of single image:
+            list(tuple): Format bbox and mask results of multiple \
+                images. The outer list corresponds to each image. \
+                Each tuple contains two type of results of single image:
 
                 - bbox_results (list[np.ndarray]): BBox results of
                   single image. The list corresponds to each class.
@@ -187,11 +186,11 @@ class SingleStageInstanceSegmentor(BaseDetector):
                 results of single images. Usually contains
                 following keys.
 
-                    - scores (Tensor): Classification scores, has shape
-                      (num_instance,)
-                    - labels (Tensor): Has shape (num_instances,).
-                    - masks (Tensor): Processed mask results, has
-                      shape (num_instances, h, w).
+                - scores (Tensor): Classification scores, has shape
+                  (num_instance,)
+                - labels (Tensor): Has shape (num_instances,).
+                - masks (Tensor): Processed mask results, has
+                  shape (num_instances, h, w).
 
         Returns:
             tuple: Format bbox and mask results. It contains two items:
@@ -211,7 +210,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
         assert 'labels' in data_keys
 
         assert 'masks' in data_keys, \
-            'results shoule contain ' \
+            'results should contain ' \
             'masks when format the results '
         mask_results = [[] for _ in range(self.mask_head.num_classes)]
 
