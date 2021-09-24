@@ -26,7 +26,7 @@ from ote_sdk.configuration.elements import (ParameterGroup,
                                             ModelConfig)
 from ote_sdk.configuration.model_lifecycle import ModelLifecycle
 
-from .configuration_enums import POTQuantizationPreset
+from .configuration_enums import POTQuantizationPreset, NNCFCompressionPreset
 
 
 @attrs
@@ -132,6 +132,15 @@ class OTEDetectionConfig(ModelConfig):
         data_pipeline = string_attribute("ote_data_pipeline.py")
 
     @attrs
+    class __NNCFOptimization(ParameterGroup):
+        header = string_attribute("Optimization by NNCF")
+        description = header
+
+        preset = selectable(default_value=NNCFCompressionPreset.QUANTIZATION, header="Preset",
+                            description="NNCF preset that defines compression scheme",
+                            editable=True, visible_in_ui=True)
+
+    @attrs
     class __POTParameter(ParameterGroup):
         header = string_attribute("POT Parameters")
         description = header
@@ -146,9 +155,10 @@ class OTEDetectionConfig(ModelConfig):
 
         preset = selectable(default_value=POTQuantizationPreset.PERFORMANCE, header="Preset",
                             description="Quantization preset that defines quantization scheme",
-                            editable=False, visible_in_ui=False)
+                            editable=True, visible_in_ui=True)
 
     learning_parameters = add_parameter_group(__LearningParameters)
     algo_backend = add_parameter_group(__AlgoBackend)
     postprocessing = add_parameter_group(__Postprocessing)
+    nncf_optimization = add_parameter_group(__NNCFOptimization)
     pot_parameters = add_parameter_group(__POTParameter)

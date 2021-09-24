@@ -12,8 +12,9 @@ framework: OTEDetection v2.9.1
 
 # Task implementations.
 entrypoints:
-  base: mmdet.apis.ote.apis.detection.OTEDetectionTask
+  base: mmdet.apis.ote.apis.detection.OTEDetectionTrainingTask
   openvino: mmdet.apis.ote.apis.detection.OpenVINODetectionTask
+  nncf: mmdet.apis.ote.apis.detection.OTEDetectionNNCFTask
 
 # Hyperparameters.
 hyper_parameters:
@@ -26,6 +27,9 @@ hyper_parameters:
         default_value: 0.01
       learning_rate_warmup_iters:
         default_value: 200
+    nncf_optimization:
+      preset:
+        default_value: Quantization
 
 # Training resources.
 max_nodes: 1

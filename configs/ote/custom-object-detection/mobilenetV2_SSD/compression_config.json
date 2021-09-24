@@ -1,0 +1,38 @@
+{
+    "base": {
+        "find_unused_parameters": true,
+        "nncf_config": {
+            "input_info": {
+                "sample_size": [1, 3, 864, 864]
+            },
+            "compression": [],
+            "log_dir": "."
+        }
+    },
+    "nncf_quantization": {
+        "optimizer": {
+            "lr": 0.0005
+        },
+        "runner": {
+            "max_epochs": 0
+        },
+        "nncf_config": {
+            "compression": [
+                {
+                    "algorithm": "quantization",
+                    "initializer": {
+                        "range": {
+                            "num_init_samples": 300
+                        },
+                        "batchnorm_adaptation": {
+                            "num_bn_adaptation_samples": 300
+                        }
+                    }
+                }
+            ]
+        }
+    },
+	"order_of_parts": [
+		"nncf_quantization"
+    ]
+}

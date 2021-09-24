@@ -49,14 +49,14 @@ def add_logging_on_first_and_last_iter(runner):
         if isinstance(hook, LoggerHook):
             hook.every_n_inner_iters = every_n_inner_iters.__get__(hook)
 
-
 def train_detector(model,
                    dataset,
                    cfg,
                    distributed=False,
                    validate=False,
                    timestamp=None,
-                   meta=None):
+                   meta=None,
+                   compression_ctrl=None):
     logger = get_root_logger(cfg.log_level)
 
     # prepare data loaders
@@ -99,20 +99,8 @@ def train_detector(model,
 
     # nncf model wrapper
     nncf_enable_compression = bool(cfg.get('nncf_config'))
-    if nncf_enable_compression:
-        data_loader_for_init = build_dataloader(
-            dataset[0],
-            1,
-            cfg.data.workers_per_gpu,
-            # cfg.gpus will be ignored if distributed
-            len(cfg.gpu_ids),
-            dist=distributed,
-            seed=cfg.seed
-        )
-
-        compression_ctrl, model = wrap_nncf_model(model, cfg, data_loader_for_init, get_fake_input)
-    else:
-        compression_ctrl = None
+    if not compression_ctrl and nncf_enable_compression:
+        compression_ctrl, model = wrap_nncf_model(model, cfg, data_loaders[0], get_fake_input)
 
     if torch.cuda.is_available():
         if distributed:

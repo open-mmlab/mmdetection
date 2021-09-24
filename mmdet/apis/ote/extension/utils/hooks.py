@@ -129,7 +129,7 @@ class OTEProgressHook(Hook):
     def before_run(self, runner):
         total_epochs = runner.max_epochs if runner.max_epochs is not None else 1
         self.time_monitor.total_epochs = total_epochs
-        self.time_monitor.train_steps = runner.max_iters // total_epochs
+        self.time_monitor.train_steps = runner.max_iters // total_epochs if total_epochs else 1
         self.time_monitor.steps_per_epoch = self.time_monitor.train_steps + self.time_monitor.val_steps
         self.time_monitor.total_steps = max(math.ceil(self.time_monitor.steps_per_epoch * total_epochs), 1)
         self.time_monitor.current_step = 0

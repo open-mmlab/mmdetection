@@ -15,66 +15,65 @@
 import copy
 import io
 import logging
+import numpy as np
 import os
 import shutil
 import tempfile
+import torch
 import warnings
-from collections import defaultdict
 from typing import List, Optional, Tuple
 
-import numpy as np
-import torch
 from mmcv.parallel import MMDataParallel
 from mmcv.runner import load_checkpoint
 from mmcv.utils import Config
+
 from ote_sdk.configuration import cfg_helper
 from ote_sdk.configuration.helper.utils import ids_to_strings
-from ote_sdk.entities.annotation import Annotation
 from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.label import ScoredLabel
-from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo, MetricsGroup, Performance, ScoreMetric,
-                                      VisualizationInfo, VisualizationType)
-from ote_sdk.entities.model import ModelEntity, ModelFormat, ModelOptimizationType, ModelPrecision, ModelStatus
+from ote_sdk.entities.model import ModelStatus, ModelPrecision, ModelEntity, ModelFormat, ModelOptimizationType
 from ote_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
 from ote_sdk.entities.shapes.rectangle import Rectangle
-from ote_sdk.entities.subset import Subset
 from ote_sdk.entities.task_environment import TaskEnvironment
-from ote_sdk.entities.train_parameters import TrainParameters, default_progress_callback
+from ote_sdk.entities.train_parameters import default_progress_callback
 from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
-from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType, IExportTask
+from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType
+from ote_sdk.usecases.tasks.interfaces.export_interface import IExportTask
 from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
-from ote_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
 from ote_sdk.usecases.tasks.interfaces.unload_interface import IUnload
+from sc_sdk.entities.annotation import Annotation
 from sc_sdk.entities.datasets import Dataset
 
-from mmdet.apis import export_model, single_gpu_test, train_detector
-from mmdet.apis.ote.apis.detection.config_utils import (patch_config, prepare_for_testing, prepare_for_training,
-                                                        set_hyperparams)
+from mmdet.apis import export_model, single_gpu_test
+from mmdet.apis.ote.apis.detection.config_utils import patch_config
+from mmdet.apis.ote.apis.detection.config_utils import prepare_for_testing
+from mmdet.apis.ote.apis.detection.config_utils import set_hyperparams
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
-from mmdet.apis.ote.apis.detection.ote_utils import InferenceProgressCallback, TrainingProgressCallback
-from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
+from mmdet.apis.ote.apis.detection.ote_utils import InferenceProgressCallback
+
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 from mmdet.parallel import MMDataCPU
 
+
 logger = logging.getLogger(__name__)
 
 
-class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTask, IUnload):
+class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IUnload):
 
-    task_environment: TaskEnvironment
+    _task_environment: TaskEnvironment
 
     def __init__(self, task_environment: TaskEnvironment):
         """"
-        Task for training object detection models using OTEDetection.
-
+        Task for inference object detection models using OTEDetection.
         """
-        logger.info(f"Loading OTEDetectionTask.")
+        self._task_environment = task_environment
+
+        logger.info(f"Loading OTEDetectionInferenceTask.")
         self._scratch_space = tempfile.mkdtemp(prefix="ote-det-scratch-")
         logger.info(f"Scratch space created at {self._scratch_space}")
 
-        self._task_environment = task_environment
         self._hyperparams = hyperparams = task_environment.get_hyper_parameters(OTEDetectionConfig)
 
         self._model_name = hyperparams.algo_backend.model_name
@@ -83,8 +82,8 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         template_file_path = task_environment.model_template.model_template_path
 
         # Get and prepare mmdet config.
-        base_dir = os.path.abspath(os.path.dirname(template_file_path))
-        config_file_path = os.path.join(base_dir, hyperparams.algo_backend.model)
+        self._base_dir = os.path.abspath(os.path.dirname(template_file_path))
+        config_file_path = os.path.join(self._base_dir, hyperparams.algo_backend.model)
         self._config = Config.fromfile(config_file_path)
         patch_config(self._config, self._scratch_space, self._labels, random_seed=42)
         set_hyperparams(self._config, hyperparams)
@@ -120,6 +119,7 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
             logger.info(f"No trained model in project yet. Created new model with '{self._model_name}' "
                         f"architecture and general-purpose pretrained weights.")
         return model
+
 
     @staticmethod
     def _create_model(config: Config, from_scratch: bool = False):
@@ -266,132 +266,6 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
         output_result_set.performance = f_measure_metrics.get_performance()
 
 
-    def train(self, dataset: Dataset, output_model: ModelEntity, train_parameters: Optional[TrainParameters] = None):
-        """ Trains a model on a dataset """
-
-        set_hyperparams(self._config, self._hyperparams)
-
-        train_dataset = dataset.get_subset(Subset.TRAINING)
-        val_dataset = dataset.get_subset(Subset.VALIDATION)
-        config = self._config
-
-        # Create new model if training from scratch.
-        old_model = copy.deepcopy(self._model)
-
-        # Evaluate model performance before training.
-        _, initial_performance = self._infer_detector(self._model, config, val_dataset, True)
-
-        # Check for stop signal between pre-eval and training. If training is cancelled at this point,
-        # old_model should be restored.
-        if self._should_stop:
-            logger.info('Training cancelled.')
-            self._model = old_model
-            self._should_stop = False
-            self._is_training = False
-            self._training_work_dir = None
-            return
-
-        # Run training.
-        if train_parameters is not None:
-            update_progress_callback = train_parameters.update_progress
-        else:
-            update_progress_callback = default_progress_callback
-        time_monitor = TrainingProgressCallback(update_progress_callback)
-        learning_curves = defaultdict(OTELoggerHook.Curve)
-        training_config = prepare_for_training(config, train_dataset, val_dataset, time_monitor, learning_curves)
-        self._training_work_dir = training_config.work_dir
-        mm_train_dataset = build_dataset(training_config.data.train)
-        self._is_training = True
-        self._model.train()
-        train_detector(model=self._model, dataset=mm_train_dataset, cfg=training_config, validate=True)
-
-        # Check for stop signal when training has stopped. If should_stop is true, training was cancelled and no new
-        # model should be returned. Old train model is restored.
-        if self._should_stop:
-            logger.info('Training cancelled.')
-            self._model = old_model
-            self._should_stop = False
-            self._is_training = False
-            return
-
-        # Load the best weights and check if model has improved.
-        training_metrics = self._generate_training_metrics_group(learning_curves)
-        best_checkpoint_path = os.path.join(training_config.work_dir, 'latest.pth')
-        best_checkpoint = torch.load(best_checkpoint_path)
-        self._model.load_state_dict(best_checkpoint['state_dict'])
-
-        # Evaluate model performance after training.
-        _, final_performance = self._infer_detector(self._model, config, val_dataset, True)
-        improved = final_performance > initial_performance
-
-        # Return a new model if model has improved, or there is no model yet.
-        if improved or self._task_environment.model is None:
-            if improved:
-                logger.info("Training finished, and it has an improved model")
-            else:
-                logger.info("First training round, saving the model.")
-            # Add mAP metric and loss curves
-            performance = Performance(score=ScoreMetric(value=final_performance, name="mAP"),
-                                      dashboard_metrics=training_metrics)
-            logger.info('FINAL MODEL PERFORMANCE\n' + str(performance))
-            self.save_model(output_model)
-            output_model.performance = performance
-            output_model.model_status = ModelStatus.SUCCESS
-        else:
-            logger.info("Model performance has not improved while training. No new model has been saved.")
-            # Restore old training model if training from scratch and not improved
-            self._model = old_model
-
-        self._is_training = False
-
-
-    def save_model(self, output_model: ModelEntity):
-        buffer = io.BytesIO()
-        hyperparams = self._task_environment.get_hyper_parameters(OTEDetectionConfig)
-        hyperparams_str = ids_to_strings(cfg_helper.convert(hyperparams, dict, enum_to_str=True))
-        labels = {label.name: label.color.rgb_tuple for label in self._labels}
-        modelinfo = {'model': self._model.state_dict(), 'config': hyperparams_str, 'labels': labels, 'VERSION': 1}
-        torch.save(modelinfo, buffer)
-        output_model.set_data("weights.pth", buffer.getvalue())
-
-
-    def cancel_training(self):
-        """
-        Sends a cancel training signal to gracefully stop the optimizer. The signal consists of creating a
-        '.stop_training' file in the current work_dir. The runner checks for this file periodically.
-        The stopping mechanism allows stopping after each iteration, but validation will still be carried out. Stopping
-        will therefore take some time.
-        """
-        logger.info("Cancel training requested.")
-        self._should_stop = True
-        stop_training_filepath = os.path.join(self._training_work_dir, '.stop_training')
-        open(stop_training_filepath, 'a').close()
-
-
-    def _generate_training_metrics_group(self, learning_curves) -> Optional[List[MetricsGroup]]:
-        """
-        Parses the mmdetection logs to get metrics from the latest training run
-
-        :return output List[MetricsGroup]
-        """
-        output: List[MetricsGroup] = []
-
-        # Model architecture
-        architecture = InfoMetric(name='Model architecture', value=self._model_name)
-        visualization_info_architecture = VisualizationInfo(name="Model architecture",
-                                                            visualisation_type=VisualizationType.TEXT)
-        output.append(MetricsGroup(metrics=[architecture],
-                                   visualization_info=visualization_info_architecture))
-
-        # Learning curves
-        for key, curve in learning_curves.items():
-            metric_curve = CurveMetric(xs=curve.x, ys=curve.y, name=key)
-            visualization_info = LineChartInfo(name=key, x_axis_label="Epoch", y_axis_label=key)
-            output.append(MetricsGroup(metrics=[metric_curve], visualization_info=visualization_info))
-
-        return output
-
-
     def _get_confidence_threshold(self, is_evaluation: bool) -> float:
         """
         Retrieves the threshold for confidence from the configurable parameters. If
@@ -475,6 +349,16 @@ class OTEDetectionTask(ITrainingTask, IInferenceTask, IExportTask, IEvaluationTa
             except Exception as ex:
                 output_model.model_status = ModelStatus.FAILED
                 raise RuntimeError("Optimization was unsuccessful.") from ex
+
+
+    def save_model(self, output_model: ModelEntity):
+        buffer = io.BytesIO()
+        hyperparams = self._task_environment.get_hyper_parameters(OTEDetectionConfig)
+        hyperparams_str = ids_to_strings(cfg_helper.convert(hyperparams, dict, enum_to_str=True))
+        labels = {label.name: label.color.rgb_tuple for label in self._labels}
+        modelinfo = {'model': self._model.state_dict(), 'config': hyperparams_str, 'labels': labels, 'VERSION': 1}
+        torch.save(modelinfo, buffer)
+        output_model.set_data("weights.pth", buffer.getvalue())
 
 
     def _delete_scratch_space(self):

@@ -11,7 +11,6 @@ from subprocess import run
 from typing import Optional
 
 import numpy as np
-import pytest
 import torch
 import yaml
 from bson import ObjectId
@@ -41,9 +40,16 @@ from sc_sdk.entities.datasets import Dataset, NullDatasetStorage
 from sc_sdk.entities.image import Image
 from sc_sdk.entities.media_identifier import ImageIdentifier
 
-from mmdet.apis.ote.apis.detection import OpenVINODetectionTask, OTEDetectionConfig, OTEDetectionTask
+from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask,
+                                           OTEDetectionConfig,
+                                           OTEDetectionInferenceTask,
+                                           OTEDetectionTrainingTask,
+                                           OTEDetectionNNCFTask,
+                                           )
+
 from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
 from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema
+from mmdet.integration.nncf.utils import is_nncf_enabled
 
 
 class ModelTemplate(unittest.TestCase):
@@ -251,7 +257,7 @@ class API(unittest.TestCase):
         hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=500)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 250)
 
-        detection_task = OTEDetectionTask(task_environment=detection_environment)
+        detection_task = OTEDetectionTrainingTask(task_environment=detection_environment)
 
         executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='train_thread')
 
@@ -297,7 +303,7 @@ class API(unittest.TestCase):
         hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=5)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
 
-        task = OTEDetectionTask(task_environment=detection_environment)
+        task = OTEDetectionTrainingTask(task_environment=detection_environment)
         self.addCleanup(task._delete_scratch_space)
 
         print('Task initialized, model training starts.')
@@ -320,12 +326,64 @@ class API(unittest.TestCase):
         self.assertTrue(np.all(training_progress_curve[1:] >= training_progress_curve[:-1]))
 
     @e2e_pytest_api
-    def test_inference_progress_tracking(self):
+    def test_nncf_optimize_progress_tracking(self):
+        if not is_nncf_enabled():
+            self.skipTest("Required NNCF module.")
         template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
+
+        # Prepare pretrained weights
         hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=2)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
 
-        task = OTEDetectionTask(task_environment=detection_environment)
+        task = OTEDetectionTrainingTask(task_environment=detection_environment)
+        self.addCleanup(task._delete_scratch_space)
+
+        original_model = ModelEntity(
+            dataset,
+            detection_environment.get_model_configuration(),
+            model_status=ModelStatus.NOT_READY
+        )
+        task.train(dataset, original_model, TrainParameters)
+
+        # Create NNCFTask
+        detection_environment.model = original_model
+        nncf_task = OTEDetectionNNCFTask(task_environment=detection_environment)
+        self.addCleanup(nncf_task._delete_scratch_space)
+
+        # Rewrite some parameters to spend less time
+        nncf_task._config["runner"]["max_epochs"] = 10
+        nncf_init_cfg = nncf_task._config["nncf_config"]["compression"][0]["initializer"]
+        nncf_init_cfg["range"]["num_init_samples"] = 1
+        nncf_init_cfg["batchnorm_adaptation"]["num_bn_adaptation_samples"] = 1
+
+        print('Task initialized, model optimization starts.')
+        training_progress_curve = []
+
+        def progress_callback(progress: float, score: Optional[float] = None):
+            training_progress_curve.append(progress)
+
+        optimization_parameters = OptimizationParameters
+        optimization_parameters.update_progress = progress_callback
+        nncf_model = ModelEntity(
+            dataset,
+            detection_environment.get_model_configuration(),
+            model_status=ModelStatus.NOT_READY
+        )
+        optimization_parameters.update_progress = progress_callback
+
+        nncf_task.optimize(OptimizationType.NNCF, dataset, nncf_model, optimization_parameters)
+
+        self.assertGreater(len(training_progress_curve), 0)
+        training_progress_curve = np.asarray(training_progress_curve)
+        self.assertTrue(np.all(training_progress_curve[1:] >= training_progress_curve[:-1]))
+
+    @e2e_pytest_api
+    def test_inference_progress_tracking(self):
+        template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
+        detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
+
+        task = OTEDetectionTrainingTask(task_environment=detection_environment)
         self.addCleanup(task._delete_scratch_space)
 
         print('Task initialized, model inference starts.')
@@ -343,8 +401,45 @@ class API(unittest.TestCase):
         inference_progress_curve = np.asarray(inference_progress_curve)
         self.assertTrue(np.all(inference_progress_curve[1:] >= inference_progress_curve[:-1]))
 
+    @e2e_pytest_api
+    def test_inference_task(self):
+        template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
+
+        # Prepare pretrained weights
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=2)
+        detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
+        val_dataset = dataset.get_subset(Subset.VALIDATION)
+
+        train_task = OTEDetectionTrainingTask(task_environment=detection_environment)
+        self.addCleanup(train_task._delete_scratch_space)
+
+        trained_model = ModelEntity(
+            dataset,
+            detection_environment.get_model_configuration(),
+            model_status=ModelStatus.NOT_READY
+        )
+        train_task.train(dataset, trained_model, TrainParameters)
+        performance_after_train = self.eval(train_task, trained_model, val_dataset)
+
+        # Create InferenceTask
+        detection_environment.model = trained_model
+        inference_task = OTEDetectionInferenceTask(task_environment=detection_environment)
+        self.addCleanup(inference_task._delete_scratch_space)
+
+        performance_after_load = self.eval(inference_task, trained_model, val_dataset)
+
+        assert performance_after_train == performance_after_load
+
+        # Export
+        exported_model = ModelEntity(
+            dataset,
+            detection_environment.get_model_configuration(),
+            model_status=ModelStatus.NOT_READY,
+            _id=ObjectId())
+        inference_task.export(ExportType.OPENVINO, exported_model)
+
     @staticmethod
-    def eval(task: OTEDetectionTask, model: ModelEntity, dataset: Dataset) -> Performance:
+    def eval(task: OTEDetectionTrainingTask, model: ModelEntity, dataset: Dataset) -> Performance:
         start_time = time.time()
         result_dataset = task.infer(dataset.with_empty_annotations())
         end_time = time.time()
@@ -370,13 +465,13 @@ class API(unittest.TestCase):
             )
 
     def end_to_end(self, template_dir, quality_score_threshold=0.5, reload_perf_delta_tolerance=0.0,
-        export_perf_delta_tolerance=0.0005, pot_perf_delta_tolerance=0.1):
+        export_perf_delta_tolerance=0.0005, pot_perf_delta_tolerance=0.1, nncf_perf_delta_tolerance=0.1):
 
         hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=5)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 250)
 
         val_dataset = dataset.get_subset(Subset.VALIDATION)
-        task = OTEDetectionTask(task_environment=detection_environment)
+        task = OTEDetectionTrainingTask(task_environment=detection_environment)
         self.addCleanup(task._delete_scratch_space)
 
         print('Task initialized, model training starts.')
@@ -420,7 +515,7 @@ class API(unittest.TestCase):
         # Make the new model fail.
         new_model.model_status = ModelStatus.NOT_IMPROVED
         detection_environment.model = first_model
-        task = OTEDetectionTask(detection_environment)
+        task = OTEDetectionTrainingTask(detection_environment)
         self.assertEqual(task._task_environment.model.id, first_model.id)
 
         print('Reevaluating model.')
@@ -476,6 +571,36 @@ class API(unittest.TestCase):
             print(f'Performance of optimized model: {pot_performance.score.value:.4f}')
             self.check_threshold(validation_performance, pot_performance, pot_perf_delta_tolerance,
                 'Too big performance difference after POT optimization.')
+
+        if model_template.entrypoints.nncf:
+            if is_nncf_enabled():
+                print('Run NNCF optimization.')
+                nncf_model = ModelEntity(
+                    dataset,
+                    detection_environment.get_model_configuration(),
+                    optimization_type=ModelOptimizationType.NNCF,
+                    optimization_methods=OptimizationMethod.QUANTIZATION,
+                    optimization_objectives={},
+                    precision=[ModelPrecision.INT8],
+                    target_device=TargetDevice.CPU,
+                    performance_improvement={},
+                    model_size_reduction=1.,
+                    model_status=ModelStatus.NOT_READY)
+                nncf_model.set_data('weights.pth', output_model.get_data("weights.pth"))
+
+                detection_environment.model = nncf_model
+
+                nncf_task = OTEDetectionNNCFTask(task_environment=detection_environment)
+
+                nncf_task.optimize(OptimizationType.NNCF, dataset, nncf_model, OptimizationParameters())
+                nncf_task.save_model(nncf_model)
+                nncf_performance = self.eval(nncf_task, nncf_model, val_dataset)
+
+                print(f'Performance of NNCF model: {nncf_performance.score.value:.4f}')
+                self.check_threshold(validation_performance, nncf_performance, nncf_perf_delta_tolerance,
+                    'Too big performance difference after NNCF optimization.')
+            else:
+                print('Skipped test of OTEDetectionNNCFTask. Required NNCF module.')
 
     @e2e_pytest_api
     def test_training_custom_mobilenet_atss(self):

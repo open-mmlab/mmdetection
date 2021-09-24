@@ -145,9 +145,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         (see the methods `forward_export` and `forward_dummy`).
         """
         if kwargs.get('forward_export'):
-            logger = get_root_logger()
-            logger.info('Calling forward_export inside forward_test')
-            return self.forward_export(imgs, img_metas)
+            return self.forward_export(imgs)
 
         if kwargs.get('dummy_forward'):
             return self.forward_dummy(imgs[0])
@@ -213,59 +211,29 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         else:
             return self.forward_test(img, img_metas, **kwargs)
 
-    def forward_export(self, imgs, img_metas=None):
-        """
-        This function is called from the function `forward_test` in one of the cases:
-        * During export of the model
-        * During compression of the model by NNCF, for building graph of
-          the model using `dummy_forward` function. In these cases
-          * `forward_export_context` is used,
-          * `img_metas` is passed to the model using the field `self.img_metas`
-        * During compression of the model by NNCF, for initialization of
-          the model. In this case
-          * `forward_nncf_initialization_context` is used
-          * `img_metas` is passed to the model through parameter of this function.
-
-        See the methods `forward_export_context` and `forward_nncf_initialization_context` below.
-        """
-
-        if img_metas is None and self.img_metas is None:
-            raise RuntimeError("forward_export is called with zero img_metas.")
-
-        if img_metas is not None and self.img_metas is not None:
-            raise RuntimeError('forward_export is called with non-zero img_metas inside forward_export_context.')
-
+    def forward_export(self, imgs):
         from torch.onnx.operators import shape_as_tensor
-        if img_metas is None:
-            img_metas = self.img_metas
+        assert self.img_metas, 'Error: forward_export should be called inside forward_export_context'
 
         img_shape = shape_as_tensor(imgs[0])
         imgs_per_gpu = int(imgs[0].size(0))
         assert imgs_per_gpu == 1
-        assert len(img_metas[0]) == imgs_per_gpu, f'img_metas={img_metas}'
-        img_metas[0][0]['img_shape'] = img_shape[2:4]
+        assert len(self.img_metas[0]) == imgs_per_gpu, f'self.img_metas={self.img_metas}'
+        self.img_metas[0][0]['img_shape'] = img_shape[2:4]
 
-        retval = self.simple_test(imgs[0], img_metas[0], postprocess=False)
-        return retval
+        return self.simple_test(imgs[0], self.img_metas[0], postprocess=False)
 
     @contextmanager
     def forward_export_context(self, img_metas):
-        """
-        This context is used for export of the model to ONNX and call the model
-        inside NNCF to build the graph of the model.
-        It does the following changes:
-        * it makes the method  `forward` of the model to call the method `forward_export` of the model
-        * it passes `img_metas` to the model through a field of the model to avoid
-          passing it through parameters of the function `forward` (the latter is impossible in this case).
-        """
+        assert self.img_metas is None and self.forward_backup is None, 'Error: one forward context inside another forward context'
 
-        prev_img_metas = self.img_metas
         self.img_metas = img_metas
-        forward_backup = self.forward
+        self.forward_backup = self.forward
         self.forward = partial(self.forward, return_loss=False, forward_export=True, img_metas=None)
         yield
-        self.forward = forward_backup
-        self.img_metas = prev_img_metas
+        self.forward = self.forward_backup
+        self.forward_backup = None
+        self.img_metas = None
 
     @contextmanager
     def forward_dummy_context(self, img_metas):
@@ -278,27 +246,6 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         self.forward = self.forward_backup
         self.forward_backup = None
         self.img_metas = None
-
-    @contextmanager
-    def forward_nncf_initialization_context(self):
-        """
-        This context is used for calling the model inside NNCF to initialization compression algorithm
-        the NNCF using data from a dataset.
-        It makes the method  `forward` of the model call the method
-        `forward_export` of the model.
-        It is required to call the same forward function during NNCF initialization and building
-        of the internal NNCF graph representation via tracing.
-        But (in contrast with `forward_export_context`) the `img_metas` is passed to the model through the parameter
-        of the method `forward`.
-        """
-
-        prev_img_metas = self.img_metas
-        self.img_metas = None
-        forward_backup = self.forward
-        self.forward = partial(self.forward, return_loss=False, forward_export=True)
-        yield
-        self.forward = forward_backup
-        self.img_metas = prev_img_metas
 
     def _parse_losses(self, losses):
         """Parse the raw outputs (losses) of the network.

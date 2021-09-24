@@ -20,3 +20,11 @@ class POTQuantizationPreset(ConfigurableEnum):
     """
     PERFORMANCE = 'Performance'
     MIXED = 'Mixed'
+
+class NNCFCompressionPreset(ConfigurableEnum):
+    """
+    This Enum represents the quantization preset for NNCF optimization
+    """
+    PRUNING = 'Pruning'
+    QUANTIZATION = 'Quantization'
+    QUANTIZATION_PRUNING = 'Quantization and pruning'

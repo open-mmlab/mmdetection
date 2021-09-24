@@ -20,6 +20,15 @@ def get_nncf_metadata():
     return dict(nncf_enable_compression=True, nncf_version=get_nncf_version())
 
 
+def is_state_nncf(state):
+    """
+    The function uses metadata stored in a dict_state to check if the
+    checkpoint was the result of trainning of NNCF-compressed model.
+    See the function get_nncf_metadata above.
+    """
+    return bool(state.get('meta',{}).get('nncf_enable_compression', False))
+
+
 def is_checkpoint_nncf(path):
     """
     The function uses metadata stored in a checkpoint to check if the
@@ -28,9 +37,7 @@ def is_checkpoint_nncf(path):
     """
     try:
         checkpoint = torch.load(path, map_location='cpu')
-        meta = checkpoint.get('meta', {})
-        nncf_enable_compression = meta.get('nncf_enable_compression', False)
-        return bool(nncf_enable_compression)
+        return is_state_nncf(checkpoint)
     except FileNotFoundError:
         return False
 
@@ -77,11 +84,23 @@ def get_nncf_config_from_meta(path):
     return nncf_config_part
 
 
+def extract_model_and_compression_states(resuming_checkpoint):
+    """
+    The function return from checkpoint state_dict and compression_state.
+    """
+    if resuming_checkpoint is None:
+        return None, None
+    model_state_dict = resuming_checkpoint.get("model" if "model" in resuming_checkpoint else "state_dict")
+    compression_state = resuming_checkpoint.get("compression_state")
+    return model_state_dict, compression_state
+
+
 def wrap_nncf_model(model,
                     cfg,
                     data_loader_for_init=None,
                     get_fake_input_func=None,
-                    is_alt_ssd_export=False):
+                    is_alt_ssd_export=False,
+                    init_state_dict=None):
     """
     The function wraps mmdet model by NNCF
     Note that the parameter `get_fake_input_func` should be the function `get_fake_input`
@@ -93,6 +112,7 @@ def wrap_nncf_model(model,
     from nncf import NNCFConfig
     from nncf.torch import create_compressed_model
     from nncf.torch import register_default_init_args
+    from nncf.torch import load_state
     from nncf.torch.dynamic_graph.io_handling import nncf_model_input
     from nncf.torch.dynamic_graph.io_handling import wrap_nncf_model_outputs_with_objwalk
     from nncf.torch.dynamic_graph.trace_tensor import TracedTensor
@@ -103,13 +123,12 @@ def wrap_nncf_model(model,
             # redefined InitializingDataLoader because
             # of DataContainer format in mmdet
             kwargs = {k: v.data[0] for k, v in dataloader_output.items()}
-            kwargs['img'] = [kwargs['img']]
-            kwargs['img_metas'] = [kwargs['img_metas']]
             return (), kwargs
 
     pathlib.Path(cfg.work_dir).mkdir(parents=True, exist_ok=True)
     nncf_config = NNCFConfig(cfg.nncf_config)
     logger = get_root_logger(cfg.log_level)
+    resuming_state_dict = None
 
     if data_loader_for_init:
         wrapped_loader = MMInitializeDataLoader(data_loader_for_init)
@@ -129,7 +148,7 @@ def wrap_nncf_model(model,
     else:
         checkpoint_path = None
 
-    if not data_loader_for_init and not checkpoint_path:
+    if not data_loader_for_init and not checkpoint_path and not init_state_dict:
         raise RuntimeError('Either data_loader_for_init or NNCF pre-trained '
                            'model checkpoint should be set')
 
@@ -141,6 +160,9 @@ def wrap_nncf_model(model,
             'warnings on unexpected keys')
         compression_state = load_checkpoint(model, checkpoint_path)
         logger.info(f'Loaded NNCF checkpoint from {checkpoint_path}')
+    elif init_state_dict:
+        resuming_state_dict = init_state_dict.get("model")
+        compression_state = init_state_dict.get("compression_state")
     else:
         compression_state = None
 
@@ -182,8 +204,7 @@ def wrap_nncf_model(model,
             ctx = model.forward_dummy_context(img_metas)
             logger.debug(f"NNCF will NOT compress a postprocessing part of the model")
         with ctx:
-            wrap_nncf_model_outputs_with_objwalk(model(img))
-
+            model(img)
 
     def wrap_inputs(args, kwargs):
         # during dummy_forward
@@ -219,12 +240,14 @@ def wrap_nncf_model(model,
 
     if 'log_dir' in nncf_config:
         os.makedirs(nncf_config['log_dir'], exist_ok=True)
-    with model.forward_nncf_initialization_context():
-        compression_ctrl, model = create_compressed_model(model,
-                                                          nncf_config,
-                                                          dummy_forward_fn=dummy_forward,
-                                                          wrap_inputs_fn=wrap_inputs,
-                                                          compression_state=compression_state)
+
+    compression_ctrl, model = create_compressed_model(model,
+                                                      nncf_config,
+                                                      dummy_forward_fn=dummy_forward,
+                                                      wrap_inputs_fn=wrap_inputs,
+                                                      compression_state=compression_state)
+    if resuming_state_dict:
+        load_state(model, resuming_state_dict, is_resume=True)
     model.export = export_method.__get__(model)
 
     return compression_ctrl, model
