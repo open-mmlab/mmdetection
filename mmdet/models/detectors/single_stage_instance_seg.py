@@ -17,17 +17,15 @@ INF = 1e8
 class SingleStageInstanceSegmentor(BaseDetector):
     """Base class for single-stage instance segmentors."""
 
-    def __init__(
-        self,
-        backbone,
-        neck=None,
-        bbox_head=None,
-        mask_head=None,
-        train_cfg=None,
-        test_cfg=None,
-        init_cfg=None,
-        pretrained=None,
-    ):
+    def __init__(self,
+                 backbone,
+                 neck=None,
+                 bbox_head=None,
+                 mask_head=None,
+                 train_cfg=None,
+                 test_cfg=None,
+                 init_cfg=None,
+                 pretrained=None):
         if pretrained:
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')
@@ -123,11 +121,12 @@ class SingleStageInstanceSegmentor(BaseDetector):
         else:
             positive_infos = None
 
-        mask_head_inputs = (x, gt_labels, gt_masks, img_metas)
-
         # when no positive_infos add gt bbox
         mask_loss = self.mask_head.forward_train(
-            *mask_head_inputs,
+            x,
+            gt_labels,
+            gt_masks,
+            img_metas,
             positive_infos=positive_infos,
             gt_bboxes=gt_bboxes,
             gt_bboxes_ignore=gt_bboxes_ignore)
