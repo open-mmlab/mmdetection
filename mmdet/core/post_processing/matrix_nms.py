@@ -33,11 +33,11 @@ def mask_matrix_nms(masks,
     Returns:
         tuple(Tensor): Processed mask results.
 
-            - scores (Tensor): Updated scores.
-            - labels (Tensor): Remained labels.
-            - masks (Tensor): Remained masks.
+            - scores (Tensor): Updated scores, has shape (n,).
+            - labels (Tensor): Remained labels, has shape (n,).
+            - masks (Tensor): Remained masks, has shape (n, w, h).
             - keep_inds (Tensor): The indexs number of
-              the remaining mask in the input mask.
+              the remaining mask in the input mask, has shape (n,).
     """
     assert len(labels) == len(masks) == len(scores)
     if len(labels) == 0:

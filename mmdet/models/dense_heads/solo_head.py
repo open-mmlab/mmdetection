@@ -130,15 +130,23 @@ class SOLOHead(BaseMaskHead):
 
     def resize_feats(self, feats):
         """Downsample the first feat and upsample last feat in feats."""
-        return (F.interpolate(feats[0], scale_factor=0.5,
-                              mode='bilinear'), feats[1], feats[2], feats[3],
-                F.interpolate(
-                    feats[4], size=feats[3].shape[-2:], mode='bilinear'))
+        out = []
+        for i in range(len(feats)):
+            if i == 0:
+                out.append(
+                    F.interpolate(feats[0], scale_factor=0.5, mode='bilinear'))
+            elif i == len(feats) - 1:
+                out.append(
+                    F.interpolate(
+                        feats[i],
+                        size=feats[i - 1].shape[-2:],
+                        mode='bilinear'))
+            else:
+                out.append(feats[i])
+        return out
 
     def forward(self, feats):
-        assert len(feats) == self.num_levels == 5, \
-            f'SOLO head only support the input length is 5, ' \
-            f'but get {len(feats)}'
+        assert len(feats) == self.num_levels
         feats = self.resize_feats(feats)
         mlvl_mask_preds = []
         mlvl_cls_preds = []
@@ -638,9 +646,7 @@ class DecoupledSOLOHead(SOLOHead):
             self.feat_channels, self.cls_out_channels, 3, padding=1)
 
     def forward(self, feats):
-        assert len(feats) == self.num_levels == 5, \
-            f'Decoupled SOLO head only support the input ' \
-            f'length is 5, but get {len(feats)}'
+        assert len(feats) == self.num_levels
         feats = self.resize_feats(feats)
         mask_preds_x = []
         mask_preds_y = []
@@ -1084,7 +1090,7 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
             if self.with_dcn and i == self.stacked_convs - 1:
                 cfg_conv = dict(type=self.type_dcn)
             else:
-                cfg_conv = self.conv_cfg
+                cfg_conv = None
 
             chn = self.in_channels + 2 if i == 0 else self.feat_channels
             self.mask_convs.append(
@@ -1121,9 +1127,7 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
             self.feat_channels, self.cls_out_channels, 3, padding=1)
 
     def forward(self, feats):
-        assert len(feats) == self.num_levels == 5, \
-            f'Decoupled SOLO head only support the input ' \
-            f'length is 5, but get {len(feats)}'
+        assert len(feats) == self.num_levels
         feats = self.resize_feats(feats)
         mask_preds_x = []
         mask_preds_y = []
