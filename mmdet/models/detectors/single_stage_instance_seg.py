@@ -24,13 +24,14 @@ class SingleStageInstanceSegmentor(BaseDetector):
                  mask_head=None,
                  train_cfg=None,
                  test_cfg=None,
-                 init_cfg=None,
-                 pretrained=None):
+                 pretrained=None,
+                 init_cfg=None):
+
         if pretrained:
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')
             backbone.pretrained = pretrained
-        super(SingleStageInstanceSegmentor, self).__init__(init_cfg)
+        super(SingleStageInstanceSegmentor, self).__init__(init_cfg=init_cfg)
         self.backbone = build_backbone(backbone)
         if neck is not None:
             self.neck = build_neck(neck)
@@ -103,7 +104,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
         x = self.extract_feat(img)
         losses = dict()
 
-        # CondInst, YOLACT
+        # CondInst and YOLACT have bbox_head
         if self.bbox_head:
             # bbox_head_preds is a tuple
             bbox_head_preds = self.bbox_head(x)
@@ -146,7 +147,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
                 Defaults to False.
 
         Returns:
-            list(tuple): Format bbox and mask results of multiple \
+            list(tuple): Formatted bbox and mask results of multiple \
                 images. The outer list corresponds to each image. \
                 Each tuple contains two type of results of single image:
 
@@ -179,7 +180,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
         return format_results_list
 
     def format_results(self, results):
-        """Format the model predictions.
+        """Format the model predictions according the interface with dataset.
 
         Args:
             results (:obj:`InstanceData`): Processed
