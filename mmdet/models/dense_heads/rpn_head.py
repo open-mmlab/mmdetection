@@ -19,6 +19,7 @@ class RPNHead(AnchorHead):
     Args:
         in_channels (int): Number of channels in the input feature map.
         init_cfg (dict or list[dict], optional): Initialization config dict.
+        num_convs (int): Number of convolution layers in the head.
     """  # noqa: W605
 
     def __init__(self,
@@ -40,12 +41,7 @@ class RPNHead(AnchorHead):
                 else:
                     in_channels = self.feat_channels
                 rpn_convs.append(
-                    ConvModule(
-                        in_channels,
-                        self.feat_channels,
-                        3,
-                        padding=1,
-                        inplace=False))
+                    ConvModule(in_channels, self.feat_channels, 3, padding=1))
             self.rpn_conv = nn.Sequential(*rpn_convs)
         else:
             self.rpn_conv = nn.Conv2d(

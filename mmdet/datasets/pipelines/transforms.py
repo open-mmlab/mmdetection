@@ -715,6 +715,8 @@ class RandomCrop:
             in range [crop_size[0], min(w, crop_size[1])]. Default "absolute".
         allow_negative_crop (bool, optional): Whether to allow a crop that does
             not contain any bbox area. Default False.
+        recompute_bbox (bool, optional): Whether to re-compute the boxes based
+            on cropped instance masks. Default False.
         bbox_clip_border (bool, optional): Whether clip the objects outside
             the border of the image. Defaults to True.
 

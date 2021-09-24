@@ -24,13 +24,13 @@ model = dict(
             norm_cfg=head_norm_cfg),
         mask_head=dict(norm_cfg=head_norm_cfg)))
 
-file_client_args = dict(backend='disk')
-# file_client_args = dict(
-#     backend='petrel',
-#     path_mapping=dict({
-#         './data/': 's3://openmmlab/datasets/detection/',
-#         'data/': 's3://openmmlab/datasets/detection/'
-#     }))
+# file_client_args = dict(backend='disk')
+file_client_args = dict(
+    backend='petrel',
+    path_mapping=dict({
+        './data/': 's3://openmmlab/datasets/detection/',
+        'data/': 's3://openmmlab/datasets/detection/'
+    }))
 
 img_norm_cfg = dict(
     mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
