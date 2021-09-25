@@ -195,7 +195,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
                   shape (num_instances, h, w).
 
         Returns:
-            tuple: Format bbox and mask results. It contains two items:
+            tuple: Formated bbox and mask results.. It contains two items:
 
                 - bbox_results (list[np.ndarray]): BBox results of
                   single image. The list corresponds to each class.
