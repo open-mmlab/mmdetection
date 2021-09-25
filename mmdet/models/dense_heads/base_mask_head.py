@@ -29,28 +29,27 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
                       positive_infos=None,
                       **kwargs):
         """
-
         Args:
             x (list[Tensor] | tuple[Tensor]): Features from FPN.
-                Each has shape (B, C, H, W).
-            gt_labels (Tensor): Ground truth labels of each box,
-                shape (num_gts,).
-            gt_masks (None | Tensor) : Masks for each bbox, shape
+                Each has a shape (B, C, H, W).
+            gt_labels (list[Tensor]): Ground truth labels of all images.
+                each has a shape (num_gts,).
+            gt_masks (list[Tensor]) : Masks for each bbox, has a shape
                 (num_gts, h , w).
-            gt_bboxes (Tensor): Ground truth bboxes of the image,
-                shape (num_gts, 4).
-            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
-                ignored, shape (num_ignored_gts, 4).
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            positive_infos (:obj:`InstanceData`, optional): It contains the
-                information of positive samples. Only exist when do
-                the label assigning outside MaskHead, like `YOLACT`,
-                `CondInst`, etc. When do label assigning in
+            gt_bboxes (list[Tensor]): Ground truth bboxes of the image,
+                each item has a shape (num_gts, 4).
+            gt_bboxes_ignore (list[Tensor], None): Ground truth bboxes to be
+                ignored, each item has a shape (num_ignored_gts, 4).
+            positive_infos (list[:obj:`InstanceData`], optional): Information
+                of positive samples. Used when the label assignment is
+                done outside the MaskHead, e.g., in BboxHead in
+                YOLACT or CondInst, etc. When the label assignment is done in
                 MaskHead, it would be None, like SOLO. All values
-                in it should have shape (num_positive, *).
+                in it should have shape (num_positive_samples, *).
 
-          Returns:
+        Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
         if positive_infos is None:
@@ -75,7 +74,7 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
                     feats,
                     img_metas,
                     rescale=False,
-                    det_results=None,
+                    instances_list=None,
                     **kwargs):
         """Test function without test-time augmentation.
 
@@ -85,7 +84,7 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
             img_metas (list[dict]): List of image information.
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
-            det_results (list[obj:`InstanceData`], optional): Detection
+            instances_list (list[obj:`InstanceData`], optional): Detection
                 results of each image after the post process. Only exist
                 if there is a `bbox_head`, like `YOLACT`, `CondInst`, etc.
 
@@ -94,19 +93,22 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
                 results of each image after the post process. \
                 Each item usually contains following keys. \
 
-                - scores (Tensor): Classification scores, has shape
+                - scores (Tensor): Classification scores, has a shape
                   (num_instance,)
-                - labels (Tensor): Has shape (num_instances,).
-                - masks (Tensor): Processed mask results, has
+                - labels (Tensor): Has a shape (num_instances,).
+                - masks (Tensor): Processed mask results, has a
                   shape (num_instances, h, w).
         """
-        if det_results is None:
+        if instances_list is None:
             outs = self(feats)
         else:
-            outs = self(feats, det_results=det_results)
+            outs = self(feats, instances_list=instances_list)
         mask_inputs = outs + (img_metas, )
         results_list = self.get_results(
-            *mask_inputs, rescale=rescale, det_results=det_results, **kwargs)
+            *mask_inputs,
+            rescale=rescale,
+            instances_list=instances_list,
+            **kwargs)
         return results_list
 
     def onnx_export(self, img, img_metas):
