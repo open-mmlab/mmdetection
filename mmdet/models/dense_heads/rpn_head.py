@@ -40,7 +40,7 @@ class RPNHead(AnchorHead):
                     in_channels = self.in_channels
                 else:
                     in_channels = self.feat_channels
-                # use ``inplace=False``` to avoid error: one of the variables
+                # use ``inplace=False`` to avoid error: one of the variables
                 # needed for gradient computation has been modified by an
                 # inplace operation.
                 rpn_convs.append(
