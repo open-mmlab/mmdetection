@@ -539,7 +539,7 @@ class BitmapMasks(BaseInstanceMasks):
             y = np.where(y_any[idx, :])[0]
             if len(x) > 0 and len(y) > 0:
                 # use +1 for x_max and y_max so that the right and bottom
-                # boundary of instances masks are fully included by the box
+                # boundary of instance masks are fully included by the box
                 boxes[idx, :] = np.array([x[0], y[0], x[-1] + 1, y[-1] + 1],
                                          dtype=np.float32)
         return boxes

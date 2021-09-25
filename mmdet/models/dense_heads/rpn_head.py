@@ -19,7 +19,7 @@ class RPNHead(AnchorHead):
     Args:
         in_channels (int): Number of channels in the input feature map.
         init_cfg (dict or list[dict], optional): Initialization config dict.
-        num_convs (int): Number of convolution layers in the head.
+        num_convs (int): Number of convolution layers in the head. Default 1.
     """  # noqa: W605
 
     def __init__(self,
