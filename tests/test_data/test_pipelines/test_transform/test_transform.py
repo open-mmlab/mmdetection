@@ -409,6 +409,17 @@ def test_pad():
     results = transform(results)
     assert results['img'].shape[0] == results['img'].shape[1]
 
+    # test the pad_val is converted to a dict
+    transform = dict(type='Pad', size_divisor=32, pad_val=0)
+    with pytest.deprecated_call():
+        transform = build_from_cfg(transform, PIPELINES)
+
+    assert isinstance(transform.pad_val, dict)
+    results = transform(results)
+    img_shape = results['img'].shape
+    assert img_shape[0] % 32 == 0
+    assert img_shape[1] % 32 == 0
+
 
 def test_normalize():
     img_norm_cfg = dict(
