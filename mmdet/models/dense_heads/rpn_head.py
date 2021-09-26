@@ -4,6 +4,7 @@ import copy
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from mmcv.cnn import ConvModule
 from mmcv.ops import batched_nms
 from mmcv.runner import force_fp32
 
@@ -18,19 +19,41 @@ class RPNHead(AnchorHead):
     Args:
         in_channels (int): Number of channels in the input feature map.
         init_cfg (dict or list[dict], optional): Initialization config dict.
+        num_convs (int): Number of convolution layers in the head. Default 1.
     """  # noqa: W605
 
     def __init__(self,
                  in_channels,
                  init_cfg=dict(type='Normal', layer='Conv2d', std=0.01),
+                 num_convs=1,
                  **kwargs):
+        self.num_convs = num_convs
         super(RPNHead, self).__init__(
             1, in_channels, init_cfg=init_cfg, **kwargs)
 
     def _init_layers(self):
         """Initialize layers of the head."""
-        self.rpn_conv = nn.Conv2d(
-            self.in_channels, self.feat_channels, 3, padding=1)
+        if self.num_convs > 1:
+            rpn_convs = []
+            for i in range(self.num_convs):
+                if i == 0:
+                    in_channels = self.in_channels
+                else:
+                    in_channels = self.feat_channels
+                # use ``inplace=False`` to avoid error: one of the variables
+                # needed for gradient computation has been modified by an
+                # inplace operation.
+                rpn_convs.append(
+                    ConvModule(
+                        in_channels,
+                        self.feat_channels,
+                        3,
+                        padding=1,
+                        inplace=False))
+            self.rpn_conv = nn.Sequential(*rpn_convs)
+        else:
+            self.rpn_conv = nn.Conv2d(
+                self.in_channels, self.feat_channels, 3, padding=1)
         self.rpn_cls = nn.Conv2d(self.feat_channels,
                                  self.num_anchors * self.cls_out_channels, 1)
         self.rpn_reg = nn.Conv2d(self.feat_channels, self.num_anchors * 4, 1)

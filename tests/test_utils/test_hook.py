@@ -12,7 +12,7 @@ import torch.nn as nn
 from mmcv.runner import (CheckpointHook, IterTimerHook, PaviLoggerHook,
                          build_runner)
 from torch.nn.init import constant_
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 from mmdet.core.hook import ExpMomentumEMAHook, YOLOXLrUpdaterHook
 from mmdet.core.hook.sync_norm_hook import SyncNormHook
@@ -254,11 +254,30 @@ def test_sync_random_size_hook():
     # Only used to prevent program errors
     SyncRandomSizeHook()
 
-    loader = DataLoader(torch.ones((5, 2)))
+    class DemoDataset(Dataset):
+
+        def __getitem__(self, item):
+            return torch.ones(2)
+
+        def __len__(self):
+            return 5
+
+        def update_dynamic_scale(self, dynamic_scale):
+            pass
+
+    loader = DataLoader(DemoDataset())
     runner = _build_demo_runner()
-    runner.register_hook_from_cfg(dict(type='SyncRandomSizeHook'))
+    runner.register_hook_from_cfg(
+        dict(type='SyncRandomSizeHook', device='cpu'))
     runner.run([loader, loader], [('train', 1), ('val', 1)])
     shutil.rmtree(runner.work_dir)
+
+    if torch.cuda.is_available():
+        runner = _build_demo_runner()
+        runner.register_hook_from_cfg(
+            dict(type='SyncRandomSizeHook', device='cuda'))
+        runner.run([loader, loader], [('train', 1), ('val', 1)])
+        shutil.rmtree(runner.work_dir)
 
 
 @pytest.mark.parametrize('set_loss', [

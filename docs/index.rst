@@ -45,6 +45,7 @@ Welcome to MMDetection's documentation!
    switch_language.md
 
 .. toctree::
+   :maxdepth: 1
    :caption: API Reference
 
    api.rst
