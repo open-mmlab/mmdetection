@@ -727,6 +727,8 @@ class RandomCrop:
             in range [crop_size[0], min(w, crop_size[1])]. Default "absolute".
         allow_negative_crop (bool, optional): Whether to allow a crop that does
             not contain any bbox area. Default False.
+        recompute_bbox (bool, optional): Whether to re-compute the boxes based
+            on cropped instance masks. Default False.
         bbox_clip_border (bool, optional): Whether clip the objects outside
             the border of the image. Defaults to True.
 
@@ -745,6 +747,7 @@ class RandomCrop:
                  crop_size,
                  crop_type='absolute',
                  allow_negative_crop=False,
+                 recompute_bbox=False,
                  bbox_clip_border=True):
         if crop_type not in [
                 'relative_range', 'relative', 'absolute', 'absolute_range'
@@ -760,6 +763,7 @@ class RandomCrop:
         self.crop_type = crop_type
         self.allow_negative_crop = allow_negative_crop
         self.bbox_clip_border = bbox_clip_border
+        self.recompute_bbox = recompute_bbox
         # The key correspondence from bboxes to labels and masks.
         self.bbox2label = {
             'gt_bboxes': 'gt_labels',
@@ -828,6 +832,8 @@ class RandomCrop:
                 results[mask_key] = results[mask_key][
                     valid_inds.nonzero()[0]].crop(
                         np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
+                if self.recompute_bbox:
+                    results[key] = results[mask_key].get_bboxes()
 
         # crop semantic seg
         for key in results.get('seg_fields', []):
