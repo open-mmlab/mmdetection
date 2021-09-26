@@ -5,11 +5,15 @@
 #### Highlights
 
 - Support [PVT](https://arxiv.org/abs/2102.12122) and [PVTv2](https://arxiv.org/abs/2106.13797)
-- Speedup YOLOv3 inference
+- Support large scale jittering and New Mask R-CNN baselines
+- Speedup `YOLOv3` inference
+- Add a general data structrue for the results of models
 
 #### New Features
 
 - Support [PVT](https://arxiv.org/abs/2102.12122) and [PVTv2](https://arxiv.org/abs/2106.13797) (#5780)
+- Support large scale jittering and New Mask R-CNN baselines (#6132)
+- Add a general data structrue for the results of models (#5508)
 - Speedup `YOLOv3` inference (#5991)
 - Release Swin Transformer pre-trained models (#6100)
 - Support FP16 training in `YOLOX` (#5983)
@@ -26,6 +30,7 @@
 - Fix bug in `aug_test` of `HTC` when the length of `det_bboxes` is 0 (#6088)
 - Fix empty proposal errors in the training of some two-stage models (#5941)
 - Fix `dynamic_axes` parameter error in `ONNX` dynamic shape export (#6104)
+- Fix `dynamic_shape` bug of `SyncRandomSizeHook` (#6144)
 
 #### Improvements
 
@@ -42,8 +47,9 @@
 - Polish assertion error messages (#6017)
 - Remove `opencv-python-headless` dependency by `albumentations` (#5868)
 - Check dtype in transform unit tests (#5969)
-- Use PyTorch sphinx theme (#6146)
+- Replace the default theme of documentation with PyTorch Sphinx Theme (#6146)
 - Update the paper and code fields in the metafile (#6043)
+- Support segmentation map custom pad value in Pad transform (#6152)
 
 #### Contributors
 A total of 21 developers contributed to this release.
