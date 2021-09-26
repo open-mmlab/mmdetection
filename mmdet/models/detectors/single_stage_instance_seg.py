@@ -173,7 +173,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
             results_list = None
 
         results_list = self.mask_head.simple_test(
-            feat, img_metas, rescale=rescale, det_results=results_list)
+            feat, img_metas, rescale=rescale, instances_list=results_list)
 
         format_results_list = []
         for results in results_list:
