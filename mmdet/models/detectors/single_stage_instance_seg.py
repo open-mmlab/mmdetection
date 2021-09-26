@@ -71,10 +71,10 @@ class SingleStageInstanceSegmentor(BaseDetector):
     def forward_train(self,
                       img,
                       img_metas,
-                      gt_bboxes,
+                      gt_masks,
                       gt_labels,
+                      gt_bboxes=None,
                       gt_bboxes_ignore=None,
-                      gt_masks=None,
                       **kwargs):
         """
         Args:
@@ -85,13 +85,14 @@ class SingleStageInstanceSegmentor(BaseDetector):
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 For details on the values of these keys see
                 :class:`mmdet.datasets.pipelines.Collect`.
-            gt_bboxes (list[Tensor]): Each item is the truth boxes
-                of each image in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): Class indices corresponding to each box
-            gt_bboxes_ignore (list[Tensor] | None): Specify which bounding
-                boxes can be ignored when computing the loss.
             gt_masks (list[:obj:`BitmapMasks`] | None) : The segmentation
                 masks for each box.
+            gt_labels (list[Tensor]): Class indices corresponding to each box
+            gt_bboxes (list[Tensor]): Each item is the truth boxes
+                of each image in [tl_x, tl_y, br_x, br_y] format.
+                Default: None.
+            gt_bboxes_ignore (list[Tensor] | None): Specify which bounding
+                boxes can be ignored when computing the loss.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -117,12 +118,12 @@ class SingleStageInstanceSegmentor(BaseDetector):
                 gt_labels=gt_labels,
                 gt_masks=gt_masks,
                 img_metas=img_metas,
-                gt_bboxes_ignore=gt_bboxes_ignore)
+                gt_bboxes_ignore=gt_bboxes_ignore,
+                **kwargs)
             losses.update(det_losses)
         else:
             positive_infos = None
 
-        # when no positive_infos add gt bbox
         mask_loss = self.mask_head.forward_train(
             x,
             gt_labels,
@@ -130,7 +131,8 @@ class SingleStageInstanceSegmentor(BaseDetector):
             img_metas,
             positive_infos=positive_infos,
             gt_bboxes=gt_bboxes,
-            gt_bboxes_ignore=gt_bboxes_ignore)
+            gt_bboxes_ignore=gt_bboxes_ignore,
+            **kwargs)
         # avoid loss override
         assert not set(mask_loss.keys()) & set(losses.keys())
 

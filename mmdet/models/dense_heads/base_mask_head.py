@@ -5,7 +5,7 @@ from mmcv.runner import BaseModule
 
 
 class BaseMaskHead(BaseModule, metaclass=ABCMeta):
-    """Base class for heads used in One-Stage Instance Segmentation."""
+    """Base class for mask heads used in One-Stage Instance Segmentation."""
 
     def __init__(self, init_cfg):
         super(BaseMaskHead, self).__init__(init_cfg)
