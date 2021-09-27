@@ -51,4 +51,3 @@ model = dict(
 
 # optimizer
 optimizer = dict(type='SGD', lr=0.01)
-#load_from = '/home/PJLAB/zhangshilong/Desktop/Q4/solo_last/configs/solo/solo_r50_fpn_3x_coco.py'  # noqa

@@ -7,7 +7,7 @@ Collections:
         - Weight Decay
       Training Resources: 8x V100 GPUs
       Architecture:
-        - RPN
+        - FPN
         - Convolution
         - ResNet
     Paper: https://arxiv.org/abs/1912.04488
