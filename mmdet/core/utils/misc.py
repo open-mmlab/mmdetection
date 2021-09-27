@@ -105,3 +105,23 @@ def center_of_mass(mask, esp=1e-6):
     center_h = (mask * grid_h).sum() / normalizer
     center_w = (mask * grid_w).sum() / normalizer
     return center_h, center_w
+
+
+def generate_coordinate_feature(feat):
+    """Generate the coordinate feature.
+
+    Args:
+        feat (Tensor): The feature to be calculated, shape (N, C, W, H).
+
+    Returns:
+        coord_feat (Tensor): The coordinate feature, shape (N, 2, W, H)
+    """
+
+    x_range = torch.linspace(-1, 1, feat.shape[-1], device=feat.device)
+    y_range = torch.linspace(-1, 1, feat.shape[-2], device=feat.device)
+    y, x = torch.meshgrid(y_range, x_range)
+    y = y.expand([feat.shape[0], 1, -1, -1])
+    x = x.expand([feat.shape[0], 1, -1, -1])
+    coord_feat = torch.cat([x, y], 1)
+
+    return coord_feat

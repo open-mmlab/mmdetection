@@ -37,5 +37,6 @@ of SOLO. Please refer to the corresponding config files for details.
 |:---------:|:-------:|:--------:|:-------:|:--------:|:--------------:|:------:|:--------:|
 | R-50      | pytorch | Y        | 3x      | 2.2      |    31.2        | 32.9   |  [model](https://download.openmmlab.com/mmdetection/v2.0/solo/decoupled_solo_light_r50_fpn_3x_coco/decoupled_solo_light_r50_fpn_3x_coco_20210906_142703-e70e226f.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/solo/decoupled_solo_light_r50_fpn_3x_coco/decoupled_solo_light_r50_fpn_3x_coco_20210906_142703.log.json) |
 
-- Light-weight means light-weight head and smaller input size.
-Please refer to the corresponding config files for details.
+- Decoupled Light SOLO using decoupled structure similar to Decoupled
+SOLO head, with light-weight head and smaller input size, Please refer
+to the corresponding config files for details.

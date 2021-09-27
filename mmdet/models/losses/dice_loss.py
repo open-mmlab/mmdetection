@@ -12,8 +12,8 @@ def dice_loss(pred,
               reduction='mean',
               avg_factor=None):
     """Calculate dice loss, which is proposed in
-        `V-Net: Fully Convolutional Neural Networks for Volumetric
-         Medical Image Segmentation <https://arxiv.org/abs/1606.04797>`_.
+    `V-Net: Fully Convolutional Neural Networks for Volumetric
+    Medical Image Segmentation <https://arxiv.org/abs/1606.04797>`_.
 
     Args:
         pred (torch.Tensor): The prediction, has shape (n, *)
@@ -28,6 +28,7 @@ def dice_loss(pred,
         avg_factor (int, optional): Average factor that is used to average
             the loss. Defaults to None.
     """
+
     input = pred.contiguous().view(pred.size()[0], -1)
     target = target.contiguous().view(target.size()[0], -1).float()
 
@@ -48,7 +49,7 @@ class DiceLoss(nn.Module):
 
     def __init__(self,
                  use_sigmoid=True,
-                 has_acted=False,
+                 activate=False,
                  reduction='mean',
                  loss_weight=1.0,
                  eps=1e-3):
@@ -59,18 +60,21 @@ class DiceLoss(nn.Module):
         Args:
             use_sigmoid (bool, optional): Whether to the prediction is
                 used for sigmoid or softmax. Defaults to True.
+            activate (bool): Has been activated outside, this will disable
+                the inside sigmoid operation. Defaults to False.
             reduction (str, optional): The method used
                 to reduce the loss. Options are "none",
                 "mean" and "sum". Defaults to 'mean'.
             loss_weight (float, optional): Weight of loss. Defaults to 1.0.
             eps (float): Avoid dividing by zero. Defaults to 1e-3.
         """
+
         super(DiceLoss, self).__init__()
         self.use_sigmoid = use_sigmoid
         self.reduction = reduction
         self.loss_weight = loss_weight
         self.eps = eps
-        self.has_acted = has_acted
+        self.activate = activate
 
     def forward(self,
                 pred,
@@ -91,8 +95,6 @@ class DiceLoss(nn.Module):
             reduction_override (str, optional): The reduction method used to
                 override the original reduction method of the loss.
                 Options are "none", "mean" and "sum".
-            has_acted (bool): Has been activated outside, this will disable
-                the inside sigmoid operation. Defaults to False.
 
         Returns:
             torch.Tensor: The calculated loss
@@ -102,7 +104,7 @@ class DiceLoss(nn.Module):
         reduction = (
             reduction_override if reduction_override else self.reduction)
 
-        if not self.has_acted:
+        if not self.activate:
             if self.use_sigmoid:
                 pred = pred.sigmoid()
             else:

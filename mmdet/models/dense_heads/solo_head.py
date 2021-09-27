@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 
 from mmdet.core import InstanceData, mask_matrix_nms, multi_apply
-from mmdet.core.utils import center_of_mass
+from mmdet.core.utils import center_of_mass, generate_coordinate_feature
 from mmdet.models.builder import HEADS, build_loss
 from .base_mask_head import BaseMaskHead
 
@@ -155,14 +155,7 @@ class SOLOHead(BaseMaskHead):
             mask_feat = x
             cls_feat = x
             # generate and concat the coordinate
-            x_range = torch.linspace(
-                -1, 1, mask_feat.shape[-1], device=mask_feat.device)
-            y_range = torch.linspace(
-                -1, 1, mask_feat.shape[-2], device=mask_feat.device)
-            y, x = torch.meshgrid(y_range, x_range)
-            y = y.expand([mask_feat.shape[0], 1, -1, -1])
-            x = x.expand([mask_feat.shape[0], 1, -1, -1])
-            coord_feat = torch.cat([x, y], 1)
+            coord_feat = generate_coordinate_feature(mask_feat)
             mask_feat = torch.cat([mask_feat, coord_feat], 1)
 
             for mask_layer in (self.mask_convs):
@@ -656,15 +649,9 @@ class DecoupledSOLOHead(SOLOHead):
             mask_feat = x
             cls_feat = x
             # generate and concat the coordinate
-            x_range = torch.linspace(
-                -1, 1, mask_feat.shape[-1], device=mask_feat.device)
-            y_range = torch.linspace(
-                -1, 1, mask_feat.shape[-2], device=mask_feat.device)
-            y, x = torch.meshgrid(y_range, x_range)
-            y = y.expand([mask_feat.shape[0], 1, -1, -1])
-            x = x.expand([mask_feat.shape[0], 1, -1, -1])
-            mask_feat_x = torch.cat([mask_feat, x], 1)
-            mask_feat_y = torch.cat([mask_feat, y], 1)
+            coord_feat = generate_coordinate_feature(mask_feat)
+            mask_feat_x = torch.cat([mask_feat, coord_feat[:, 0, ...]], 1)
+            mask_feat_y = torch.cat([mask_feat, coord_feat[:, 0, ...]], 1)
 
             for mask_layer_x, mask_layer_y in \
                     zip(self.mask_convs_x, self.mask_convs_y):
@@ -1056,8 +1043,7 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
 
     def __init__(self,
                  *args,
-                 with_dcn=False,
-                 type_dcn=None,
+                 dcn_cfg=None,
                  init_cfg=[
                      dict(type='Normal', layer='Conv2d', std=0.01),
                      dict(
@@ -1077,8 +1063,8 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
                          override=dict(name='conv_cls'))
                  ],
                  **kwargs):
-        self.with_dcn = with_dcn
-        self.type_dcn = type_dcn
+        assert dcn_cfg is None or isinstance(dcn_cfg, dict)
+        self.dcn_cfg = dcn_cfg
         super(DecoupledSOLOLightHead, self).__init__(
             *args, init_cfg=init_cfg, **kwargs)
 
@@ -1087,10 +1073,11 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
         self.cls_convs = nn.ModuleList()
 
         for i in range(self.stacked_convs):
-            if self.with_dcn and i == self.stacked_convs - 1:
-                cfg_conv = dict(type=self.type_dcn)
+            if self.dcn_cfg is not None\
+                    and i == self.stacked_convs - 1:
+                conv_cfg = dict(type=self.dcn_cfg['type'])
             else:
-                cfg_conv = None
+                conv_cfg = None
 
             chn = self.in_channels + 2 if i == 0 else self.feat_channels
             self.mask_convs.append(
@@ -1100,7 +1087,7 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
                     3,
                     stride=1,
                     padding=1,
-                    conv_cfg=cfg_conv,
+                    conv_cfg=conv_cfg,
                     norm_cfg=self.norm_cfg,
                     bias=self.norm_cfg is None))
 
@@ -1112,7 +1099,7 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
                     3,
                     stride=1,
                     padding=1,
-                    conv_cfg=cfg_conv,
+                    conv_cfg=conv_cfg,
                     norm_cfg=self.norm_cfg,
                     bias=self.norm_cfg is None))
 
@@ -1137,14 +1124,7 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
             mask_feat = x
             cls_feat = x
             # generate and concat the coordinate
-            x_range = torch.linspace(
-                -1, 1, mask_feat.shape[-1], device=mask_feat.device)
-            y_range = torch.linspace(
-                -1, 1, mask_feat.shape[-2], device=mask_feat.device)
-            y, x = torch.meshgrid(y_range, x_range)
-            y = y.expand([mask_feat.shape[0], 1, -1, -1])
-            x = x.expand([mask_feat.shape[0], 1, -1, -1])
-            coord_feat = torch.cat([x, y], 1)
+            coord_feat = generate_coordinate_feature(mask_feat)
             mask_feat = torch.cat([mask_feat, coord_feat], 1)
 
             for mask_layer in self.mask_convs:
