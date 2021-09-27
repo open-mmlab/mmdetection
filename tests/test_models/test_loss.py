@@ -203,7 +203,7 @@ def test_dice_loss():
 
     # Test loss forward with has_acted=False and use_sigmoid=False
     with pytest.raises(NotImplementedError):
-        loss_class(use_sigmoid=False)(pred, target, has_acted=False)
+        loss_class(use_sigmoid=False, activate=False)(pred, target)
 
     # Test loss forward with weight.ndim != loss.ndim
     with pytest.raises(AssertionError):

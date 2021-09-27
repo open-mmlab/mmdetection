@@ -107,21 +107,22 @@ def center_of_mass(mask, esp=1e-6):
     return center_h, center_w
 
 
-def generate_coordinate_feature(feat):
-    """Generate the coordinate feature.
+def generate_coordinate(featmap_sizes, device='cuda'):
+    """Generate the coordinate.
 
     Args:
-        feat (Tensor): The feature to be calculated, shape (N, C, W, H).
-
+        featmap_sizes (tuple): The feature to be calculated,
+            of shape (N, C, W, H).
+        device (str): The device where the feature will be put on.
     Returns:
-        coord_feat (Tensor): The coordinate feature, shape (N, 2, W, H)
+        coord_feat (Tensor): The coordinate feature, of shape (N, 2, W, H).
     """
 
-    x_range = torch.linspace(-1, 1, feat.shape[-1], device=feat.device)
-    y_range = torch.linspace(-1, 1, feat.shape[-2], device=feat.device)
+    x_range = torch.linspace(-1, 1, featmap_sizes[-1], device=device)
+    y_range = torch.linspace(-1, 1, featmap_sizes[-2], device=device)
     y, x = torch.meshgrid(y_range, x_range)
-    y = y.expand([feat.shape[0], 1, -1, -1])
-    x = x.expand([feat.shape[0], 1, -1, -1])
+    y = y.expand([featmap_sizes[0], 1, -1, -1])
+    x = x.expand([featmap_sizes[0], 1, -1, -1])
     coord_feat = torch.cat([x, y], 1)
 
     return coord_feat

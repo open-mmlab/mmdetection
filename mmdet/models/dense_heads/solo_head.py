@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import mmcv
 import numpy as np
 import torch
@@ -6,7 +7,7 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 
 from mmdet.core import InstanceData, mask_matrix_nms, multi_apply
-from mmdet.core.utils import center_of_mass, generate_coordinate_feature
+from mmdet.core.utils import center_of_mass, generate_coordinate
 from mmdet.models.builder import HEADS, build_loss
 from .base_mask_head import BaseMaskHead
 
@@ -25,12 +26,12 @@ class SOLOHead(BaseMaskHead):
             Default: 4.
         strides (tuple): Downsample factor of each feature map.
         scale_ranges (tuple[tuple[int, int]]): Area range of multiple
-            level mask, in the format [(min1, max1), (min2, max2), ...].
+            level masks, in the format [(min1, max1), (min2, max2), ...].
             A range of (16, 64) means the area range between (16, 64).
         pos_scale (float): Constant scale factor to control the center region.
-        num_grids (list): Divided image into a uniform grids, each feature map
-            has a different grid value. The number of output channels is
-            grid ** 2. Default: [40, 36, 24, 16, 12].
+        num_grids (list[int]): Divided image into a uniform grids, each
+            feature map has a different grid value. The number of output
+            channels is grid ** 2. Default: [40, 36, 24, 16, 12].
         cls_down_index (int): The index of downsample operation in
             classification branch. Default: 0.
         loss_mask (dict): Config of mask loss.
@@ -155,7 +156,8 @@ class SOLOHead(BaseMaskHead):
             mask_feat = x
             cls_feat = x
             # generate and concat the coordinate
-            coord_feat = generate_coordinate_feature(mask_feat)
+            coord_feat = generate_coordinate(mask_feat.size(),
+                                             mask_feat.device)
             mask_feat = torch.cat([mask_feat, coord_feat], 1)
 
             for mask_layer in (self.mask_convs):
@@ -353,7 +355,7 @@ class SOLOHead(BaseMaskHead):
             pos_h_ranges = 0.5 * (hit_gt_bboxes[:, 3] -
                                   hit_gt_bboxes[:, 1]) * self.pos_scale
 
-            # mass center
+            # Make sure hit_gt_masks has a value
             valid_mask_flags = hit_gt_masks.sum(dim=-1).sum(dim=-1) > 0
             output_stride = stride / 2
 
@@ -398,6 +400,8 @@ class SOLOHead(BaseMaskHead):
                 labels[top:(down + 1), left:(right + 1)] = gt_label
                 # ins
                 gt_mask = np.uint8(gt_mask.cpu().numpy())
+                # Follow the original implementation, F.interpolate is
+                # different from cv2 and opencv
                 gt_mask = mmcv.imrescale(gt_mask, scale=1. / output_stride)
                 gt_mask = torch.from_numpy(gt_mask).to(device=device)
 
@@ -468,7 +472,8 @@ class SOLOHead(BaseMaskHead):
             mask_preds (Tensor): Mask prediction of all points in
                 single image, has shape (num_points, feat_h, feat_w).
             img_meta (dict): Meta information of corresponding image.
-            cfg (dict): Config used in test phase.
+            cfg (dict, optional): Config used in test phase.
+                Default: None.
 
         Returns:
             :obj:`InstanceData`: Processed results of single image.
@@ -649,7 +654,8 @@ class DecoupledSOLOHead(SOLOHead):
             mask_feat = x
             cls_feat = x
             # generate and concat the coordinate
-            coord_feat = generate_coordinate_feature(mask_feat)
+            coord_feat = generate_coordinate(mask_feat.size(),
+                                             mask_feat.device)
             mask_feat_x = torch.cat([mask_feat, coord_feat[:, 0:1, ...]], 1)
             mask_feat_y = torch.cat([mask_feat, coord_feat[:, 1:2, ...]], 1)
 
@@ -1124,7 +1130,8 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
             mask_feat = x
             cls_feat = x
             # generate and concat the coordinate
-            coord_feat = generate_coordinate_feature(mask_feat)
+            coord_feat = generate_coordinate(mask_feat.size(),
+                                             mask_feat.device)
             mask_feat = torch.cat([mask_feat, coord_feat], 1)
 
             for mask_layer in self.mask_convs:

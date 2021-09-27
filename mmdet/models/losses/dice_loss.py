@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 import torch.nn as nn
 
@@ -16,11 +17,11 @@ def dice_loss(pred,
     Medical Image Segmentation <https://arxiv.org/abs/1606.04797>`_.
 
     Args:
-        pred (torch.Tensor): The prediction, has shape (n, *)
+        pred (torch.Tensor): The prediction, has a shape (n, *)
         target (torch.Tensor): The learning label of the prediction,
             shape (n, *), same shape of pred.
         weight (torch.Tensor, optional): The weight of loss for each
-            prediction, has shape (n,). Defaults to None.
+            prediction, has a shape (n,). Defaults to None.
         eps (float): Avoid dividing by zero. Default: 1e-3.
         reduction (str, optional): The method used to reduce the loss into
             a scalar. Defaults to 'mean'.
@@ -85,11 +86,11 @@ class DiceLoss(nn.Module):
         """Forward function.
 
         Args:
-            pred (torch.Tensor): The prediction, has shape (n, *).
-            target (torch.Tensor): The learning label of the prediction,
+            pred (torch.Tensor): The prediction, has a shape (n, *).
+            target (torch.Tensor): The label of the prediction,
                 shape (n, *), same shape of pred.
             weight (torch.Tensor, optional): The weight of loss for each
-                prediction, has shape (n,). Defaults to None.
+                prediction, has a shape (n,). Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
                 the loss. Defaults to None.
             reduction_override (str, optional): The reduction method used to
