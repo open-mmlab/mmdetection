@@ -374,10 +374,6 @@ class OTETrainingImpl:
         data_collector.log_final_metric('evaluation_performance_exported/' + score_name, score_value)
         return self.evaluation_performance_exported
 
-# Note that each TestBunch describes a group of similar tests
-# If 'model_name' or 'dataset_name' are lists, cartesian product of tests will be run.
-TestBunch = namedtuple('TestBunch', ['model_name', 'dataset_name', 'num_training_iters', 'usecase'])
-
 # pytest magic
 def pytest_generate_tests(metafunc):
     if metafunc.cls is None:
@@ -395,8 +391,11 @@ class TestOTETraining:
     PERFORMANCE_RESULTS = None # it is required for e2e system
 
     DEFAULT_NUM_ITERS = 1
+
+    # Note that each test bunch describes a group of similar tests
+    # If 'model_name' or 'dataset_name' are lists, cartesian product of tests will be run.
     test_bunches = [
-#           TestBunch(
+#           dict(
 #               model_name=[
 #                   'face-detection-0200',
 #                   'face-detection-0202',
@@ -409,7 +408,7 @@ class TestOTETraining:
 #               num_training_iters=None,
 #               usecase='precommit',
 #           ),
-#           TestBunch(
+#           dict(
 #               model_name=[
 #                   'horizontal-text-detection-0001',
 #               ],
@@ -417,7 +416,7 @@ class TestOTETraining:
 #               num_training_iters=None,
 #               usecase='precommit',
 #           ),
-            TestBunch(
+            dict(
                 model_name=[
                    'mobilenetV2_ATSS',
                    'mobilenetV2_SSD',
@@ -427,7 +426,7 @@ class TestOTETraining:
                 num_training_iters=None,
                 usecase='precommit',
             ),
-#            TestBunch(
+#            dict(
 #                model_name=[
 #                    'person-detection-0200',
 #                    'person-detection-0201',
@@ -438,7 +437,7 @@ class TestOTETraining:
 #                num_training_iters=None,
 #                usecase='precommit',
 #            ),
-#            TestBunch(
+#            dict(
 #                model_name=[
 #                    'person-vehicle-bike-detection-2000',
 #                    'person-vehicle-bike-detection-2001',
@@ -450,7 +449,7 @@ class TestOTETraining:
 #                num_training_iters=None,
 #                usecase='precommit',
 #            ),
-#            TestBunch(
+#            dict(
 #                model_name=[
 #                    'vehicle-detection-0200',
 #                    'vehicle-detection-0201',
@@ -478,33 +477,37 @@ class TestOTETraining:
 
         The lists argvalues and ids will have the same length.
 
-        If the parameter `usecase` is set, it makes filtering by usecase field of TestBunch-s.
+        If the parameter `usecase` is set, it makes filtering by usecase field of test bunches.
         """
         test_bunches = cl.test_bunches
         DEFAULT_NUM_ITERS = cl.DEFAULT_NUM_ITERS
-        assert all(isinstance(el, TestBunch) for el in test_bunches)
+        assert all(isinstance(el, dict) for el in test_bunches)
 
         argnames = ('model_name', 'dataset_name', 'num_training_iters')
         argvalues = []
         ids = []
         for el in test_bunches:
-            if usecase is not None and el.usecase != usecase:
+            el_model_name = el.get('model_name')
+            el_dataset_name = el.get('dataset_name')
+            el_num_training_iters = el.get('num_training_iters')
+            el_usecase = el.get('usecase')
+            if usecase is not None and el_usecase != usecase:
                 continue
-            if isinstance(el.model_name, (list, tuple)):
-                model_names = el.model_name
+            if isinstance(el_model_name, (list, tuple)):
+                model_names = el_model_name
             else:
-                model_names = [el.model_name]
-            if isinstance(el.dataset_name, (list, tuple)):
-                dataset_names = el.dataset_name
+                model_names = [el_model_name]
+            if isinstance(el_dataset_name, (list, tuple)):
+                dataset_names = el_dataset_name
             else:
-                dataset_names = [el.dataset_name]
+                dataset_names = [el_dataset_name]
 
             model_dataset = list(itertools.product(model_names, dataset_names))
-            num_iters = el.num_training_iters if el.num_training_iters is not None else DEFAULT_NUM_ITERS
+            num_iters = el_num_training_iters if el_num_training_iters is not None else DEFAULT_NUM_ITERS
 
             for m, d in model_dataset:
                 argvalues.append((m, d, num_iters))
-                ids.append(f'model_name={m},dataset_name={d},num_iters={num_iters},usecase={el.usecase}')
+                ids.append(f'model_name={m},dataset_name={d},num_iters={num_iters},usecase={el_usecase}')
 
         return argnames, argvalues, ids
 
