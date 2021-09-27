@@ -38,7 +38,7 @@
 
 - Add citation files, add python 3.9 CI and fix version of doc dependencies (#6005, #6006)
 - Add filter rules of `Mosaic` transform (#5897)
-- Add size divisor in get flops to avoid some potential bug (#6076)
+- Add size divisor in get flops to avoid some potential bugs (#6076)
 - Add Chinese translation of `docs_zh-CN/tutorials/customize_dataset.md` (#5915)
 - Add Chinese translation of `conventions.md` (#5825)
 - Add description of the output of data pipeline (#5886)
