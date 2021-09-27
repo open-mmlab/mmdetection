@@ -650,8 +650,8 @@ class DecoupledSOLOHead(SOLOHead):
             cls_feat = x
             # generate and concat the coordinate
             coord_feat = generate_coordinate_feature(mask_feat)
-            mask_feat_x = torch.cat([mask_feat, coord_feat[:, 0, ...]], 1)
-            mask_feat_y = torch.cat([mask_feat, coord_feat[:, 0, ...]], 1)
+            mask_feat_x = torch.cat([mask_feat, coord_feat[:, 0:1, ...]], 1)
+            mask_feat_y = torch.cat([mask_feat, coord_feat[:, 1:2, ...]], 1)
 
             for mask_layer_x, mask_layer_y in \
                     zip(self.mask_convs_x, self.mask_convs_y):
