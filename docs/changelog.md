@@ -8,12 +8,14 @@
 - Support large scale jittering and New Mask R-CNN baselines
 - Speedup `YOLOv3` inference
 - Add a general data structrue for the results of models
+- Added a base class for one-stage instance segmentation
 
 #### New Features
 
 - Support [PVT](https://arxiv.org/abs/2102.12122) and [PVTv2](https://arxiv.org/abs/2106.13797) (#5780)
 - Support large scale jittering and New Mask R-CNN baselines (#6132)
 - Add a general data structrue for the results of models (#5508)
+- Added a base class for one-stage instance segmentation (#5904)
 - Speedup `YOLOv3` inference (#5991)
 - Release Swin Transformer pre-trained models (#6100)
 - Support FP16 training in `YOLOX` (#5983)
