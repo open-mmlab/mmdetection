@@ -98,7 +98,8 @@ def test_resize():
     assert results_seg['img_shape'] == (400, 640, 3)
     assert results_seg['img_shape'] != results_seg['ori_shape']
     assert results_seg['gt_semantic_seg'].shape == results_seg['img_shape']
-    assert np.equal(results_seg['gt_semantic_seg'], results_seg['gt_seg']).all()
+    assert np.equal(results_seg['gt_semantic_seg'],
+                    results_seg['gt_seg']).all()
 
 
 def test_flip():
