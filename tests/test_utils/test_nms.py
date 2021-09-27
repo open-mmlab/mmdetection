@@ -70,6 +70,6 @@ def test_nms_input_errors():
                         max_num=100,
                         kernel='gaussian',
                         sigma=2.0,
-                        update_thr=0.5)
+                        filter_thr=0.5)
     assert len(score) == 1
     assert score[0] == 1

@@ -550,7 +550,7 @@ class SOLOHead(BaseMaskHead):
             max_num=cfg.max_per_img,
             kernel=cfg.kernel,
             sigma=cfg.sigma,
-            update_thr=cfg.update_thr)
+            filter_thr=cfg.filter_thr)
         mask_preds = mask_preds[keep_inds]
         mask_preds = F.interpolate(
             mask_preds.unsqueeze(0), size=upsampled_size,
@@ -1027,7 +1027,7 @@ class DecoupledSOLOHead(SOLOHead):
             max_num=cfg.max_per_img,
             kernel=cfg.kernel,
             sigma=cfg.sigma,
-            update_thr=cfg.update_thr)
+            filter_thr=cfg.filter_thr)
         mask_preds = mask_preds[keep_inds]
         mask_preds = F.interpolate(
             mask_preds.unsqueeze(0), size=upsampled_size,
