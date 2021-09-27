@@ -4,7 +4,7 @@ import torch
 def mask_matrix_nms(masks,
                     labels,
                     scores,
-                    update_thr=-1,
+                    filter_thr=-1,
                     nms_pre=-1,
                     max_num=-1,
                     kernel='gaussian',
@@ -16,11 +16,11 @@ def mask_matrix_nms(masks,
         masks (Tensor): Has shape (num_instances, h, w)
         labels (Tensor): Labels of corresponding masks,
             has shape (num_instances,).
-        scores (Tensor): Mask scores in descending order,
+        scores (Tensor): Mask scores of corresponding masks,
             has shape (num_instances).
-        update_thr (float): Score threshold to filter the masks
+        filter_thr (float): Score threshold to filter the masks
             after matrix nms. Default: -1, which means do not
-            use update_thr.
+            use filter_thr.
         nms_pre (int): The max number of instances to do the matrix nms.
             Default: -1, which means do not use nms_pre.
         max_num (int, optional): If there are more than max_num masks after
@@ -97,8 +97,8 @@ def mask_matrix_nms(masks,
     # update the score.
     scores = scores * decay_coefficient
 
-    if update_thr > 0:
-        keep = scores >= update_thr
+    if filter_thr > 0:
+        keep = scores >= filter_thr
         keep_inds = keep_inds[keep]
         if not keep.any():
             return scores.new_zeros(0), labels.new_zeros(0), masks.new_zeros(

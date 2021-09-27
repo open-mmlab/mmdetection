@@ -86,10 +86,10 @@ def flip_tensor(src_tensor, flip_direction):
 
 
 def center_of_mass(mask, esp=1e-6):
-    """Calculate the center point of the mask.
+    """Calculate the centroid coordinates of the mask.
 
     Args:
-        mask (Tensor): The mask to be calculated, has shape (h, w).
+        mask (Tensor): The mask to be calculated, shape (h, w).
         esp (float): Avoid dividing by zero. Default: 1e-6.
 
     Returns:
