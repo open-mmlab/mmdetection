@@ -76,14 +76,14 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
 
         self._hyperparams = hyperparams = task_environment.get_hyper_parameters(OTEDetectionConfig)
 
-        self._model_name = hyperparams.algo_backend.model_name
+        self._model_name = task_environment.model_template.name
         self._labels = task_environment.get_labels(False)
 
         template_file_path = task_environment.model_template.model_template_path
 
         # Get and prepare mmdet config.
         self._base_dir = os.path.abspath(os.path.dirname(template_file_path))
-        config_file_path = os.path.join(self._base_dir, hyperparams.algo_backend.model)
+        config_file_path = os.path.join(self._base_dir, "model.py")
         self._config = Config.fromfile(config_file_path)
         patch_config(self._config, self._scratch_space, self._labels, random_seed=42)
         set_hyperparams(self._config, hyperparams)

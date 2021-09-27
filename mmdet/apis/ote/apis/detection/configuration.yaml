@@ -1,6 +1,5 @@
 description: Configuration for an object detection task
 header: Configuration for an object detection task
-id: ''
 learning_parameters:
   batch_size:
     affects_outcome_of: TRAINING
@@ -115,7 +114,6 @@ learning_parameters:
     warning: null
   type: PARAMETER_GROUP
   visible_in_ui: true
-model_storage_id: ''
 postprocessing:
   confidence_threshold:
     affects_outcome_of: INFERENCE
@@ -154,9 +152,8 @@ postprocessing:
     warning: null
   type: PARAMETER_GROUP
   visible_in_ui: true
-type: MODEL_CONFIG
+type: CONFIGURABLE_PARAMETERS
 visible_in_ui: true
-workspace_id: ''
 pot_parameters:
   description: POT Parameters
   header: POT Parameters
