@@ -416,7 +416,7 @@ class SOLOHead(BaseMaskHead):
             mlvl_pos_masks.append(pos_mask)
         return mlvl_pos_mask_targets, mlvl_labels, mlvl_pos_masks
 
-    def get_results(self, mlvl_mask_preds, mlvl_cls_preds, img_metas,
+    def get_results(self, mlvl_mask_preds, mlvl_cls_scores, img_metas,
                     **kwargs):
         """Get multi-image mask results.
 
@@ -424,7 +424,7 @@ class SOLOHead(BaseMaskHead):
             mlvl_mask_preds (list[Tensor]): Multi-level mask prediction.
                 Each element in the list has shape
                 (batch_size, num_grids**2 ,h ,w).
-            mlvl_cls_preds (list[Tensor]): Multi-level scores. Each element
+            mlvl_cls_scores (list[Tensor]): Multi-level scores. Each element
                 in the list has shape
                 (batch_size, num_classes, num_grids ,num_grids).
             img_metas (list[dict]): Meta information of all images.
@@ -440,14 +440,16 @@ class SOLOHead(BaseMaskHead):
                 - masks (Tensor): Processed mask results, has
                   shape (num_instances, h, w).
         """
-        mlvl_cls_preds = [item.permute(0, 2, 3, 1) for item in mlvl_cls_preds]
-        assert len(mlvl_mask_preds) == len(mlvl_cls_preds)
-        num_levels = len(mlvl_cls_preds)
+        mlvl_cls_scores = [
+            item.permute(0, 2, 3, 1) for item in mlvl_cls_scores
+        ]
+        assert len(mlvl_mask_preds) == len(mlvl_cls_scores)
+        num_levels = len(mlvl_cls_scores)
 
         results_list = []
         for img_id in range(len(img_metas)):
             cls_pred_list = [
-                mlvl_cls_preds[lvl][img_id].view(-1, self.cls_out_channels)
+                mlvl_cls_scores[lvl][img_id].view(-1, self.cls_out_channels)
                 for lvl in range(num_levels)
             ]
             mask_pred_list = [
@@ -463,11 +465,11 @@ class SOLOHead(BaseMaskHead):
 
         return results_list
 
-    def _get_results_single(self, cls_preds, mask_preds, img_meta, cfg=None):
+    def _get_results_single(self, cls_scores, mask_preds, img_meta, cfg=None):
         """Get processed mask related results of single image.
 
         Args:
-            cls_preds (Tensor): Classification score of all points
+            cls_scores (Tensor): Classification score of all points
                 in single image, has shape (num_points, num_classes).
             mask_preds (Tensor): Mask prediction of all points in
                 single image, has shape (num_points, feat_h, feat_w).
@@ -494,7 +496,7 @@ class SOLOHead(BaseMaskHead):
             return results
 
         cfg = self.test_cfg if cfg is None else cfg
-        assert len(cls_preds) == len(mask_preds)
+        assert len(cls_scores) == len(mask_preds)
         results = InstanceData(img_meta)
 
         featmap_size = mask_preds.size()[-2:]
@@ -505,8 +507,8 @@ class SOLOHead(BaseMaskHead):
         h, w, _ = img_shape
         upsampled_size = (featmap_size[0] * 4, featmap_size[1] * 4)
 
-        score_mask = (cls_preds > cfg.score_thr)
-        cls_scores = cls_preds[score_mask]
+        score_mask = (cls_scores > cfg.score_thr)
+        cls_scores = cls_scores[score_mask]
         if len(cls_scores) == 0:
             return empty_results(results, cls_scores)
 
@@ -853,7 +855,7 @@ class DecoupledSOLOHead(SOLOHead):
     def get_results(self,
                     mlvl_mask_preds_x,
                     mlvl_mask_preds_y,
-                    mlvl_cls_preds,
+                    mlvl_cls_scores,
                     img_metas,
                     rescale=None,
                     **kwargs):
@@ -866,7 +868,7 @@ class DecoupledSOLOHead(SOLOHead):
             mlvl_mask_preds_y (list[Tensor]): Multi-level mask prediction
                 from y branch. Each element in the list has shape
                 (batch_size, num_grids ,h ,w).
-            mlvl_cls_preds (list[Tensor]): Multi-level scores. Each element
+            mlvl_cls_scores (list[Tensor]): Multi-level scores. Each element
                 in the list has shape
                 (batch_size, num_classes ,num_grids ,num_grids).
             img_metas (list[dict]): Meta information of all images.
@@ -882,15 +884,17 @@ class DecoupledSOLOHead(SOLOHead):
                 - masks (Tensor): Processed mask results, has
                   shape (num_instances, h, w).
         """
-        mlvl_cls_preds = [item.permute(0, 2, 3, 1) for item in mlvl_cls_preds]
-        assert len(mlvl_mask_preds_x) == len(mlvl_cls_preds)
-        num_levels = len(mlvl_cls_preds)
+        mlvl_cls_scores = [
+            item.permute(0, 2, 3, 1) for item in mlvl_cls_scores
+        ]
+        assert len(mlvl_mask_preds_x) == len(mlvl_cls_scores)
+        num_levels = len(mlvl_cls_scores)
 
         results_list = []
         for img_id in range(len(img_metas)):
             cls_pred_list = [
-                mlvl_cls_preds[i][img_id].view(-1,
-                                               self.cls_out_channels).detach()
+                mlvl_cls_scores[i][img_id].view(
+                    -1, self.cls_out_channels).detach()
                 for i in range(num_levels)
             ]
             mask_pred_list_x = [
@@ -913,12 +917,12 @@ class DecoupledSOLOHead(SOLOHead):
             results_list.append(results)
         return results_list
 
-    def _get_results_single(self, cls_preds, mask_preds_x, mask_preds_y,
+    def _get_results_single(self, cls_scores, mask_preds_x, mask_preds_y,
                             img_meta, cfg):
         """Get processed mask related results of single image.
 
         Args:
-            cls_preds (Tensor): Classification score of all points
+            cls_scores (Tensor): Classification score of all points
                 in single image, has shape (num_points, num_classes).
             mask_preds_x (Tensor): Mask prediction of x branch of
                 all points in single image, has shape
@@ -940,11 +944,11 @@ class DecoupledSOLOHead(SOLOHead):
                   shape (num_instances, h, w).
         """
 
-        def empty_results(results, cls_preds):
+        def empty_results(results, cls_scores):
             """Generate a empty results."""
-            results.scores = cls_preds.new_ones(0)
-            results.masks = cls_preds.new_zeros(0, *results.ori_shape[:2])
-            results.labels = cls_preds.new_ones(0)
+            results.scores = cls_scores.new_ones(0)
+            results.masks = cls_scores.new_zeros(0, *results.ori_shape[:2])
+            results.labels = cls_scores.new_ones(0)
             return results
 
         cfg = self.test_cfg if cfg is None else cfg
@@ -956,8 +960,8 @@ class DecoupledSOLOHead(SOLOHead):
         featmap_size = mask_preds_x.size()[-2:]
         upsampled_size = (featmap_size[0] * 4, featmap_size[1] * 4)
 
-        score_mask = (cls_preds > cfg.score_thr)
-        cls_preds = cls_preds[score_mask]
+        score_mask = (cls_scores > cfg.score_thr)
+        cls_scores = cls_scores[score_mask]
         inds = score_mask.nonzero()
         lvl_interval = inds.new_tensor(self.num_grids).pow(2).cumsum(0)
         num_all_points = lvl_interval[-1]
@@ -999,22 +1003,22 @@ class DecoupledSOLOHead(SOLOHead):
         sum_masks = masks.sum((1, 2)).float()
         keep = sum_masks > strides
         if keep.sum() == 0:
-            return empty_results(results, cls_preds)
+            return empty_results(results, cls_scores)
 
         masks = masks[keep]
         mask_preds = mask_preds[keep]
         sum_masks = sum_masks[keep]
-        cls_preds = cls_preds[keep]
+        cls_scores = cls_scores[keep]
         cls_labels = cls_labels[keep]
 
         # maskness.
         mask_scores = (mask_preds * masks).sum((1, 2)) / sum_masks
-        cls_preds *= mask_scores
+        cls_scores *= mask_scores
 
         scores, labels, _, keep_inds = mask_matrix_nms(
             masks,
             cls_labels,
-            cls_preds,
+            cls_scores,
             mask_area=sum_masks,
             nms_pre=cfg.nms_pre,
             max_num=cfg.max_per_img,
