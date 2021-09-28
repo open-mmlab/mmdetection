@@ -1,6 +1,6 @@
 ## Changelog
 
-### v2.17.0 (27/9/2021)
+### v2.17.0 (28/9/2021)
 
 #### Highlights
 
@@ -18,7 +18,7 @@
 - Added a base class for one-stage instance segmentation (#5904)
 - Speedup `YOLOv3` inference (#5991)
 - Release Swin Transformer pre-trained models (#6100)
-- Support FP16 training in `YOLOX` (#5983)
+- Support mixed precision training in `YOLOX` (#5983)
 - Support VAL workflow in `YOLACT` (#5986)
 - Add script to test `torchserve` (#5936)
 - Support `onnxsim` with dynamic input shape (#6117)
@@ -26,23 +26,24 @@
 #### Bug Fixes
 
 - Fix the function naming errors in `model_wrappers` (#5975)
-- Fix regression loss bug when the input is empty tensor (#5976)
+- Fix regression loss bug when the input is an empty tensor (#5976)
 - Fix scores not contiguous error in `centernet_head` (#6016)
 - Fix missing parameters bug in `imshow_bboxes` (#6034)
 - Fix bug in `aug_test` of `HTC` when the length of `det_bboxes` is 0 (#6088)
 - Fix empty proposal errors in the training of some two-stage models (#5941)
 - Fix `dynamic_axes` parameter error in `ONNX` dynamic shape export (#6104)
 - Fix `dynamic_shape` bug of `SyncRandomSizeHook` (#6144)
+- Fix the Swin Transformer config link error in the configuration (#6172)
 
 #### Improvements
 
-- Add citation files, add python 3.9 CI and fix version of doc dependencies (#6005, #6006)
 - Add filter rules of `Mosaic` transform (#5897)
 - Add size divisor in get flops to avoid some potential bugs (#6076)
 - Add Chinese translation of `docs_zh-CN/tutorials/customize_dataset.md` (#5915)
 - Add Chinese translation of `conventions.md` (#5825)
 - Add description of the output of data pipeline (#5886)
 - Add dataset information in the README file for `PanopticFPN` (#5996)
+- Add `extra_repr` for `DropBlock` layer to get details in the model printing (#6140)
 - Fix CI out of memory and add PyTorch1.9 Python3.9 unit tests (#5862)
 - Fix download links error of some model (#6069)
 - Improve the generalization of XML dataset (#5943)
@@ -51,11 +52,12 @@
 - Check dtype in transform unit tests (#5969)
 - Replace the default theme of documentation with PyTorch Sphinx Theme (#6146)
 - Update the paper and code fields in the metafile (#6043)
-- Support segmentation map custom pad value in Pad transform (#6152)
+- Support to customize padding value of segmentation map (#6152)
+- Support to resizing multiple segmentation maps (#5747)
 
 #### Contributors
-A total of 21 developers contributed to this release.
-Thanks @guigarfr, @www516717402, @gaotongxiao, @ypwhs, @MartaYang, @shinya7y, @justiceeem, @zhaojinjian0000, @VVsssssk, @aravind-anantha, @wangbo-zhao, @czczup, @whai362, @czczup, @marijnl, @AronLin, @BIGWangYuDong, @hhaAndroid, @jshilong, @RangiLyu, @ZwwWayne
+A total of 24 developers contributed to this release.
+Thanks @morkovka1337, @HarborYuan, @guillaumefrd, @guigarfr, @www516717402, @gaotongxiao, @ypwhs, @MartaYang, @shinya7y, @justiceeem, @zhaojinjian0000, @VVsssssk, @aravind-anantha, @wangbo-zhao, @czczup, @whai362, @czczup, @marijnl, @AronLin, @BIGWangYuDong, @hhaAndroid, @jshilong, @RangiLyu, @ZwwWayne
 
 ### v2.16.0 (30/8/2021)
 
