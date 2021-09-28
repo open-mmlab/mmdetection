@@ -7,7 +7,7 @@
 - Support [PVT](https://arxiv.org/abs/2102.12122) and [PVTv2](https://arxiv.org/abs/2106.13797)
 - Support [SOLO](https://arxiv.org/abs/1912.04488)
 - Support large scale jittering and New Mask R-CNN baselines
-- Speedup `YOLOv3` inference
+- Speed up `YOLOv3` inference
 
 #### New Features
 
@@ -16,10 +16,10 @@
 - Support large scale jittering and New Mask R-CNN baselines (#6132)
 - Add a general data structrue for the results of models (#5508)
 - Added a base class for one-stage instance segmentation (#5904)
-- Speedup `YOLOv3` inference (#5991)
+- Speed up `YOLOv3` inference (#5991)
 - Release Swin Transformer pre-trained models (#6100)
 - Support mixed precision training in `YOLOX` (#5983)
-- Support VAL workflow in `YOLACT` (#5986)
+- Support `val` workflow in `YOLACT` (#5986)
 - Add script to test `torchserve` (#5936)
 - Support `onnxsim` with dynamic input shape (#6117)
 
@@ -37,7 +37,7 @@
 
 #### Improvements
 
-- Add filter rules of `Mosaic` transform (#5897)
+- Add filter rules in `Mosaic` transform (#5897)
 - Add size divisor in get flops to avoid some potential bugs (#6076)
 - Add Chinese translation of `docs_zh-CN/tutorials/customize_dataset.md` (#5915)
 - Add Chinese translation of `conventions.md` (#5825)
@@ -53,7 +53,7 @@
 - Replace the default theme of documentation with PyTorch Sphinx Theme (#6146)
 - Update the paper and code fields in the metafile (#6043)
 - Support to customize padding value of segmentation map (#6152)
-- Support to resizing multiple segmentation maps (#5747)
+- Support to resize multiple segmentation maps (#5747)
 
 #### Contributors
 A total of 24 developers contributed to this release.

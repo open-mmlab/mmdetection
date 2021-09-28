@@ -14,4 +14,5 @@ The modifications follow those in [Detectron2](https://github.com/facebookresear
 
 ## Notice
 
-Since the new Mask R-CNN baseline needs to rely on MMSyncBN in MMCV, so the minimum dependency on MMCV version is 1.3.14.
+When using large-scale jittering, there are sometimes empty proposals in the box and mask heads during training.
+This requires MMSyncBN that allows empty tensors. Therefore, please use mmcv-full>=1.3.14 to train models supported in this directory.
