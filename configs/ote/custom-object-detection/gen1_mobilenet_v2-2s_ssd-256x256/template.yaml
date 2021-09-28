@@ -4,25 +4,18 @@ task_type: DETECTION
 task_family: VISION
 instantiation: "CLASS"
 summary: Fast and lightweight object detector (based on MobileNet SSD).
+application:
+  ~
 
 # Algo backend.
-# Would be better to have something more precise and self-contained, e.g.:  docker image or path to Python venv activation script?
 framework: OTEDetection v2.9.1
 
-# # Should be revisited?
-# application:
-#   ~
-
-# # # Optional? requirements to the dataset. Should be revisited?
-# dataset_requirements:
-#   ~
-
-# Task implementation.
+# Task implementations.
 entrypoints:
-  base: mmdet.apis.ote.apis.detection.OTEDetectionTask
+  base: mmdet.apis.ote.apis.detection.OTEDetectionTrainingTask
   openvino: mmdet.apis.ote.apis.detection.OpenVINODetectionTask
 
-# Task and hyperparameters.
+# Hyperparameters.
 hyper_parameters:
   base_path: ../../../../mmdet/apis/ote/apis/detection/configuration.yaml
   parameter_overrides:
@@ -33,25 +26,6 @@ hyper_parameters:
         default_value: 0.05
       learning_rate_warmup_iters:
         default_value: 100
-
-# # Available model optimizations and their configuration.
-# optimization:
-#   output_format:
-#     onnx:
-#       default: true
-#     openvino:
-#       default: true
-#       input_format: BGR
-#       normalize_input: true
-#       precision: FP32
-#       pot: ~
-#   nncf:
-#     quantization:
-#       config: compression_config.json
-#       default: false
-#     sparsity:
-#       config: compression_config.json
-#       default: false
 
 # Training resources.
 max_nodes: 1
@@ -64,14 +38,3 @@ inference_targets:
   - CPU
   - GPU
   - VPU
-
-# # Some meta information, which may be used for model recommendation. In general, metrics are non-static, hence has to be updated.
-# metrics:
-#   - display_name: Size​
-#     key: size​
-#     unit: Mp​
-#     value: 1.99
-#   - display_name: Complexity​
-#     key: complexity​
-#     unit: GFLOPs​
-#     value: 0.86
