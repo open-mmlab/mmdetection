@@ -66,7 +66,6 @@ custom_hooks = [
         type='SyncRandomSizeHook',
         ratio_range=(10, 20),
         img_scale=img_scale,
-        interval=interval,
         priority=48),
     dict(
         type='SyncNormHook',

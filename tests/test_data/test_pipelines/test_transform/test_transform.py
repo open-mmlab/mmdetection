@@ -81,6 +81,28 @@ def test_resize():
     assert results['img_shape'] == (800, 1280, 3)
     assert results['img'].dtype == results['img'].dtype == np.uint8
 
+    results_seg = {
+        'img': img,
+        'img_shape': img.shape,
+        'ori_shape': img.shape,
+        'gt_semantic_seg': copy.deepcopy(img),
+        'gt_seg': copy.deepcopy(img),
+        'seg_fields': ['gt_semantic_seg', 'gt_seg']
+    }
+    transform = dict(
+        type='Resize',
+        img_scale=(640, 400),
+        multiscale_mode='value',
+        keep_ratio=False)
+    resize_module = build_from_cfg(transform, PIPELINES)
+    results_seg = resize_module(results_seg)
+    assert results_seg['gt_semantic_seg'].shape == results_seg['gt_seg'].shape
+    assert results_seg['img_shape'] == (400, 640, 3)
+    assert results_seg['img_shape'] != results_seg['ori_shape']
+    assert results_seg['gt_semantic_seg'].shape == results_seg['img_shape']
+    assert np.equal(results_seg['gt_semantic_seg'],
+                    results_seg['gt_seg']).all()
+
 
 def test_flip():
     # test assertion for invalid flip_ratio
@@ -408,6 +430,17 @@ def test_pad():
     results['img'] = img
     results = transform(results)
     assert results['img'].shape[0] == results['img'].shape[1]
+
+    # test the pad_val is converted to a dict
+    transform = dict(type='Pad', size_divisor=32, pad_val=0)
+    with pytest.deprecated_call():
+        transform = build_from_cfg(transform, PIPELINES)
+
+    assert isinstance(transform.pad_val, dict)
+    results = transform(results)
+    img_shape = results['img'].shape
+    assert img_shape[0] % 32 == 0
+    assert img_shape[1] % 32 == 0
 
 
 def test_normalize():
