@@ -8,8 +8,6 @@
 - Support [SOLO](https://arxiv.org/abs/1912.04488)
 - Support large scale jittering and New Mask R-CNN baselines
 - Speedup `YOLOv3` inference
-- Add a general data structrue for the results of models
-- Added a base class for one-stage instance segmentation
 
 #### New Features
 
