@@ -14,7 +14,9 @@ from .base_mask_head import BaseMaskHead
 
 @HEADS.register_module()
 class SOLOHead(BaseMaskHead):
-    """SOLO mask head used in  `<https://arxiv.org/abs/1912.04488>`_ .
+    """SOLO mask head used in `SOLO: Segmenting Objects by Locations.
+
+    <https://arxiv.org/abs/1912.04488>`_
 
     Args:
         num_classes (int): Number of categories excluding the background
@@ -566,7 +568,9 @@ class SOLOHead(BaseMaskHead):
 
 @HEADS.register_module()
 class DecoupledSOLOHead(SOLOHead):
-    """Decoupled SOLO mask head used in  `<https://arxiv.org/abs/1912.04488>`_.
+    """Decoupled SOLO mask head used in `SOLO: Segmenting Objects by Locations.
+
+    <https://arxiv.org/abs/1912.04488>`_
 
     Args:
         init_cfg (dict or list[dict], optional): Initialization config dict.
@@ -1037,8 +1041,8 @@ class DecoupledSOLOHead(SOLOHead):
 
 @HEADS.register_module()
 class DecoupledSOLOLightHead(DecoupledSOLOHead):
-    """Decoupled Light SOLO mask head used in
-    `<https://arxiv.org/abs/1912.04488>`_.
+    """Decoupled Light SOLO mask head used in `SOLO: Segmenting Objects by
+    Locations <https://arxiv.org/abs/1912.04488>`_
 
     Args:
         with_dcn (bool): Whether use dcn in mask_convs and cls_convs,

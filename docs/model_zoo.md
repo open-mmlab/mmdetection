@@ -230,6 +230,14 @@ Please refer to [CenterNet](https://github.com/open-mmlab/mmdetection/blob/maste
 
 Please refer to [YOLOX](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolox) for details.
 
+### PVT
+
+Please refer to [PVT](https://github.com/open-mmlab/mmdetection/blob/master/configs/pvt) for details.
+
+### SOLO
+
+Please refer to [SOLO](https://github.com/open-mmlab/mmdetection/blob/master/configs/solo) for details.
+
 ### Other datasets
 
 We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).
