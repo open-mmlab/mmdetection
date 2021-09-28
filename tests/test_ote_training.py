@@ -39,6 +39,7 @@ from e2e_test_system import e2e_pytest_performance, DataCollector
 
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 def DATASET_PARAMETERS_FIELDS():
     return ('annotations_train',
@@ -514,7 +515,8 @@ class TestOTETraining:
     @pytest.fixture(scope='class')
     def cached_from_prev_test_fx(self):
         """
-        This fixture is intended for storying the impl class OTETrainingImpl.
+        This fixture is intended for storying the impl class OTETrainingImpl and parameters
+        for which the class is created.
         This object should be persistent between tests while the tests use the same parameters
         -- see the method _clean_cache_if_parameters_changed below that is used to clean
         the impl if the parameters are changed.
@@ -571,53 +573,50 @@ class TestOTETraining:
             yield data_collector
         logger.info('data_collector is released')
 
-    @e2e_pytest_performance
-    def test_ote_01_training(self, dataset_name, model_name, num_training_iters,
-                             dataset_definitions_fx, template_paths_fx,
-                             cached_from_prev_test_fx,
-                             data_collector_fx):
+    @pytest.fixture
+    def impl_fx(self, request, dataset_definitions_fx, template_paths_fx,
+                cached_from_prev_test_fx):
+        cur_params = deepcopy(request.node.callspec.params)
+        dataset_name = cur_params['dataset_name']
+        model_name = cur_params['model_name']
+        num_training_iters = cur_params['num_training_iters']
         cache = cached_from_prev_test_fx
         impl = self._update_impl_in_cache(cache,
                                           dataset_name, model_name, num_training_iters,
                                           dataset_definitions_fx, template_paths_fx)
+        return impl
+
+    @e2e_pytest_performance
+    def test_ote_01_training(self, dataset_name, model_name, num_training_iters,
+                             impl_fx,
+                             data_collector_fx):
+        impl = impl_fx
 
         impl.run_ote_training_once(data_collector_fx)
 
     @e2e_pytest_performance
     def test_ote_02_evaluation(self, dataset_name, model_name, num_training_iters,
-                               dataset_definitions_fx, template_paths_fx,
-                               cached_from_prev_test_fx,
+                               impl_fx,
                                data_collector_fx):
-        cache = cached_from_prev_test_fx
-        impl = self._update_impl_in_cache(cache,
-                                          dataset_name, model_name, num_training_iters,
-                                          dataset_definitions_fx, template_paths_fx)
+        impl = impl_fx
 
         impl.run_ote_training_once(data_collector_fx)
         impl.run_ote_evaluation(data_collector_fx)
 
     @e2e_pytest_performance
     def test_ote_03_export(self, dataset_name, model_name, num_training_iters,
-                           dataset_definitions_fx, template_paths_fx,
-                           cached_from_prev_test_fx,
+                           impl_fx,
                            data_collector_fx):
-        cache = cached_from_prev_test_fx
-        impl = self._update_impl_in_cache(cache,
-                                          dataset_name, model_name, num_training_iters,
-                                          dataset_definitions_fx, template_paths_fx)
+        impl = impl_fx
 
         impl.run_ote_training_once(data_collector_fx)
         impl.run_ote_export_once(data_collector_fx)
 
     @e2e_pytest_performance
     def test_ote_04_evaluation_exported(self, dataset_name, model_name, num_training_iters,
-                                        dataset_definitions_fx, template_paths_fx,
-                                        cached_from_prev_test_fx,
+                                        impl_fx,
                                         data_collector_fx):
-        cache = cached_from_prev_test_fx
-        impl = self._update_impl_in_cache(cache,
-                                          dataset_name, model_name, num_training_iters,
-                                          dataset_definitions_fx, template_paths_fx)
+        impl = impl_fx
 
         impl.run_ote_training_once(data_collector_fx)
         impl.run_ote_export_once(data_collector_fx)
