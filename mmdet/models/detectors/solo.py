@@ -4,7 +4,8 @@ from .single_stage_instance_seg import SingleStageInstanceSegmentor
 
 @DETECTORS.register_module()
 class SOLO(SingleStageInstanceSegmentor):
-    """`SOLO: Segmenting Objects by Locations <https://arxiv.org/abs/1912.04488>`_
+    """`SOLO: Segmenting Objects by Locations
+    <https://arxiv.org/abs/1912.04488>`_
 
     """
 
