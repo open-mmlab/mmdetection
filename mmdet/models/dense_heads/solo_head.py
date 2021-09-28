@@ -109,8 +109,7 @@ class SOLOHead(BaseMaskHead):
                     3,
                     stride=1,
                     padding=1,
-                    norm_cfg=self.norm_cfg,
-                    bias=self.norm_cfg is None))
+                    norm_cfg=self.norm_cfg))
             chn = self.in_channels if i == 0 else self.feat_channels
             self.cls_convs.append(
                 ConvModule(
@@ -119,8 +118,7 @@ class SOLOHead(BaseMaskHead):
                     3,
                     stride=1,
                     padding=1,
-                    norm_cfg=self.norm_cfg,
-                    bias=self.norm_cfg is None))
+                    norm_cfg=self.norm_cfg))
         self.conv_mask_list = nn.ModuleList()
         for num_grid in self.num_grids:
             self.conv_mask_list.append(
@@ -612,8 +610,7 @@ class DecoupledSOLOHead(SOLOHead):
                     3,
                     stride=1,
                     padding=1,
-                    norm_cfg=self.norm_cfg,
-                    bias=self.norm_cfg is None))
+                    norm_cfg=self.norm_cfg))
             self.mask_convs_y.append(
                 ConvModule(
                     chn,
@@ -621,8 +618,7 @@ class DecoupledSOLOHead(SOLOHead):
                     3,
                     stride=1,
                     padding=1,
-                    norm_cfg=self.norm_cfg,
-                    bias=self.norm_cfg is None))
+                    norm_cfg=self.norm_cfg))
 
             chn = self.in_channels if i == 0 else self.feat_channels
             self.cls_convs.append(
@@ -632,8 +628,7 @@ class DecoupledSOLOHead(SOLOHead):
                     3,
                     stride=1,
                     padding=1,
-                    norm_cfg=self.norm_cfg,
-                    bias=self.norm_cfg is None))
+                    norm_cfg=self.norm_cfg))
 
         self.conv_mask_list_x = nn.ModuleList()
         self.conv_mask_list_y = nn.ModuleList()
@@ -1085,7 +1080,7 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
         for i in range(self.stacked_convs):
             if self.dcn_cfg is not None\
                     and i == self.stacked_convs - 1:
-                conv_cfg = dict(type=self.dcn_cfg['type'])
+                conv_cfg = self.dcn_cfg
             else:
                 conv_cfg = None
 
@@ -1098,8 +1093,7 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
                     stride=1,
                     padding=1,
                     conv_cfg=conv_cfg,
-                    norm_cfg=self.norm_cfg,
-                    bias=self.norm_cfg is None))
+                    norm_cfg=self.norm_cfg))
 
             chn = self.in_channels if i == 0 else self.feat_channels
             self.cls_convs.append(
@@ -1110,8 +1104,7 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
                     stride=1,
                     padding=1,
                     conv_cfg=conv_cfg,
-                    norm_cfg=self.norm_cfg,
-                    bias=self.norm_cfg is None))
+                    norm_cfg=self.norm_cfg))
 
         self.conv_mask_list_x = nn.ModuleList()
         self.conv_mask_list_y = nn.ModuleList()

@@ -30,8 +30,8 @@ def dice_loss(pred,
             the loss. Defaults to None.
     """
 
-    input = pred.contiguous().view(pred.size()[0], -1)
-    target = target.contiguous().view(target.size()[0], -1).float()
+    input = pred.reshape(pred.size()[0], -1)
+    target = target.reshape(target.size()[0], -1).float()
 
     a = torch.sum(input * target, 1)
     b = torch.sum(input * input, 1) + eps
@@ -50,7 +50,7 @@ class DiceLoss(nn.Module):
 
     def __init__(self,
                  use_sigmoid=True,
-                 activate=False,
+                 activate=True,
                  reduction='mean',
                  loss_weight=1.0,
                  eps=1e-3):
@@ -61,8 +61,9 @@ class DiceLoss(nn.Module):
         Args:
             use_sigmoid (bool, optional): Whether to the prediction is
                 used for sigmoid or softmax. Defaults to True.
-            activate (bool): Has been activated outside, this will disable
-                the inside sigmoid operation. Defaults to False.
+            activate (bool): Whether to activate the predictions inside,
+                this will disable the inside sigmoid operation.
+                Defaults to True.
             reduction (str, optional): The method used
                 to reduce the loss. Options are "none",
                 "mean" and "sum". Defaults to 'mean'.
@@ -105,7 +106,7 @@ class DiceLoss(nn.Module):
         reduction = (
             reduction_override if reduction_override else self.reduction)
 
-        if not self.activate:
+        if self.activate:
             if self.use_sigmoid:
                 pred = pred.sigmoid()
             else:

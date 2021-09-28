@@ -15,7 +15,8 @@ model = dict(
         num_grids=[40, 36, 24, 16, 12],
         cls_down_index=0,
         loss_mask=dict(
-            type='DiceLoss', use_sigmoid=True, activate=True, loss_weight=3.0),
+            type='DiceLoss', use_sigmoid=True, activate=False,
+            loss_weight=3.0),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
