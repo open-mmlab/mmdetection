@@ -14,4 +14,4 @@ The modifications follow those in [Detectron2](https://github.com/facebookresear
 
 ## Notice
 
-Since the new Mask R-CNN baseline needs to rely on MMSyncBN in MMCV, so the minimum dependency on MMCV version is 1.3.4.
+Since the new Mask R-CNN baseline needs to rely on MMSyncBN in MMCV, so the minimum dependency on MMCV version is 1.3.14.
