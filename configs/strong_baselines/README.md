@@ -11,3 +11,7 @@ The modifications follow those in [Detectron2](https://github.com/facebookresear
 |    R-50-FPN     | pytorch |   100e  |          |                |        |         |  [config](./mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_lsj_100e_coco.py) | [model]() &#124; [log]() |
 |    R-50-FPN     | caffe |   100e  |          |                |   44.7  |  40.4   |  [config](./mask_rcnn_r50_caffe_fpn_syncbn-all_rpn-2conv_lsj_100e_coco.py) | [model]() &#124; [log]() |
 |    R-50-FPN     | caffe |   400e  |          |                |        |         |  [config](./mask_rcnn_r50_caffe_fpn_syncbn-all_rpn-2conv_lsj_400e_coco.py) | [model]() &#124; [log]() |
+
+## Notice
+
+Since the new Mask R-CNN baseline needs to rely on MMSyncBN in MMCV, so the minimum dependency on MMCV version is 1.3.4.

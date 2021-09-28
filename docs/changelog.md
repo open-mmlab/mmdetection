@@ -5,6 +5,7 @@
 #### Highlights
 
 - Support [PVT](https://arxiv.org/abs/2102.12122) and [PVTv2](https://arxiv.org/abs/2106.13797)
+- Support [SOLO](https://arxiv.org/abs/1912.04488)
 - Support large scale jittering and New Mask R-CNN baselines
 - Speedup `YOLOv3` inference
 - Add a general data structrue for the results of models
@@ -13,6 +14,7 @@
 #### New Features
 
 - Support [PVT](https://arxiv.org/abs/2102.12122) and [PVTv2](https://arxiv.org/abs/2106.13797) (#5780)
+- Support [SOLO](https://arxiv.org/abs/1912.04488) (#5832)
 - Support large scale jittering and New Mask R-CNN baselines (#6132)
 - Add a general data structrue for the results of models (#5508)
 - Added a base class for one-stage instance segmentation (#5904)
