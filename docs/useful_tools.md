@@ -227,33 +227,53 @@ You should obtain a respose similar to:
 ```json
 [
   {
-    "dog": [
-      402.9117736816406,
-      124.19664001464844,
-      571.7910766601562,
-      292.6463623046875
+    "class_name": "dog",
+    "bbox": [
+      294.63409423828125,
+      203.99111938476562,
+      417.048583984375,
+      281.62744140625
     ],
-    "score": 0.9561963081359863
+    "score": 0.9987992644309998
   },
   {
-    "dog": [
-      293.90057373046875,
-      196.2908477783203,
-      417.4869079589844,
-      286.2522277832031
+    "class_name": "dog",
+    "bbox": [
+      404.26019287109375,
+      126.0080795288086,
+      574.5091552734375,
+      293.6662292480469
     ],
-    "score": 0.9179860353469849
+    "score": 0.9979367256164551
   },
   {
-    "dog": [
-      202.178466796875,
-      86.3709487915039,
-      311.9863586425781,
-      276.28411865234375
+    "class_name": "dog",
+    "bbox": [
+      197.2144775390625,
+      93.3067855834961,
+      307.8505554199219,
+      276.7560119628906
     ],
-    "score": 0.8933767080307007
+    "score": 0.993338406085968
   }
 ]
+```
+
+And you can use `test_torchserver.py` to compare result of torchserver and pytorch, and visualize them.
+
+```shell
+python tools/deployment/test_torchserver.py ${IMAGE_FILE} ${CONFIG_FILE} ${CHECKPOINT_FILE} ${MODEL_NAME}
+[--inference-addr ${INFERENCE_ADDR}] [--device ${DEVICE}] [--score-thr ${SCORE_THR}]
+```
+
+Example:
+
+```shell
+python tools/deployment/test_torchserver.py \
+demo/demo.jpg \
+configs/yolo/yolov3_d53_320_273e_coco.py \
+checkpoint/yolov3_d53_320_273e_coco-421362b6.pth \
+yolov3
 ```
 
 ## Model Complexity
