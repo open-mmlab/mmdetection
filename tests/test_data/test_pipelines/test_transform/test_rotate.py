@@ -96,7 +96,7 @@ def test_rotate():
     results_gt['gt_masks'] = PolygonMasks(gt_masks, 2, 4)
     check_result_same(results_gt, results_rotated)
 
-    # test counter-clockwise roatation with angle 90,
+    # test counter-clockwise rotation with angle 90,
     # and specify the ratation center
     img_fill_val = (104, 116, 124)
     transform = dict(
@@ -144,7 +144,7 @@ def test_rotate():
     results_rotated = rotate_module(copy.deepcopy(results))
     check_result_same(results_gt, results_rotated)
 
-    # test counter-clockwise roatation with angle 90,
+    # test counter-clockwise rotation with angle 90,
     # and specify the ratation center, PolygonMasks
     results = construct_toy_data(poly2mask=False)
     results_rotated = rotate_module(copy.deepcopy(results))

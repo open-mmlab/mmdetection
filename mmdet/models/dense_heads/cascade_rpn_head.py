@@ -101,9 +101,9 @@ class StageCascadeRPNHead(RPNHead):
         adapt_cfg (dict): adaptation config.
         bridged_feature (bool, optional): whether update rpn feature.
             Default: False.
-        with_cls (bool, optional): wheather use classification branch.
+        with_cls (bool, optional): whether use classification branch.
             Default: True.
-        sampling (bool, optional): wheather use sampling. Default: True.
+        sampling (bool, optional): whether use sampling. Default: True.
         init_cfg (dict or list[dict], optional): Initialization config dict.
             Default: None
     """
@@ -325,7 +325,7 @@ class StageCascadeRPNHead(RPNHead):
         return cls_reg_targets
 
     def anchor_offset(self, anchor_list, anchor_strides, featmap_sizes):
-        """ Get offest for deformable conv based on anchor shape
+        """ Get offset for deformable conv based on anchor shape
         NOTE: currently support deformable kernel_size=3 and dilation=1
 
         Args:

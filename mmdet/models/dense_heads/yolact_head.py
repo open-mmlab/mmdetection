@@ -300,7 +300,7 @@ class YOLACTHead(AnchorHead):
                    img_metas,
                    cfg=None,
                    rescale=False):
-        """"Similiar to func:``AnchorHead.get_bboxes``, but additionally
+        """"Similar to func:``AnchorHead.get_bboxes``, but additionally
         processes coeff_preds.
 
         Args:
@@ -369,9 +369,9 @@ class YOLACTHead(AnchorHead):
                            scale_factor,
                            cfg,
                            rescale=False):
-        """"Similiar to func:``AnchorHead._get_bboxes_single``, but
-        additionally processes coeff_preds_list and uses fast NMS instead of
-        traditional NMS.
+        """"Similar to func:``AnchorHead._get_bboxes_single``, but additionally
+        processes coeff_preds_list and uses fast NMS instead of traditional
+        NMS.
 
         Args:
             cls_score_list (list[Tensor]): Box scores for a single scale level

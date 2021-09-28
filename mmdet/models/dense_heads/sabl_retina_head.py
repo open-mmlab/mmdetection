@@ -600,11 +600,11 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
                 bbox_cls_pred.contiguous(),
                 bbox_reg_pred.contiguous()
             ]
-            bboxes, confids = self.bbox_coder.decode(
+            bboxes, confidences = self.bbox_coder.decode(
                 anchors.contiguous(), bbox_preds, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
-            mlvl_confids.append(confids)
+            mlvl_confids.append(confidences)
         mlvl_bboxes = torch.cat(mlvl_bboxes)
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)

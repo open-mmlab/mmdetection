@@ -204,7 +204,7 @@ def test_dataset_evaluation():
     assert eval_results['0_mAP'] == 1
     assert eval_results['1_mAP'] == 1
 
-    # build concat dataset through explict type
+    # build concat dataset through explicit type
     concat_cfg = dict(
         type='ConcatDataset',
         datasets=[custom_cfg, custom_cfg],
