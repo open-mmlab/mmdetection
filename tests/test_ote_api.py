@@ -40,13 +40,8 @@ from sc_sdk.entities.datasets import Dataset, NullDatasetStorage
 from sc_sdk.entities.image import Image
 from sc_sdk.entities.media_identifier import ImageIdentifier
 
-from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask,
-                                           OTEDetectionConfig,
-                                           OTEDetectionInferenceTask,
-                                           OTEDetectionTrainingTask,
-                                           OTEDetectionNNCFTask,
-                                           )
-
+from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask, OTEDetectionConfig, OTEDetectionInferenceTask,
+                                           OTEDetectionNNCFTask, OTEDetectionTrainingTask)
 from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
 from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema
 from mmdet.integration.nncf.utils import is_nncf_enabled
