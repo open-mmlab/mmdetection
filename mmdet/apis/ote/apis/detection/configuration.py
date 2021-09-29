@@ -17,20 +17,19 @@ from sys import maxsize
 
 from ote_sdk.configuration.elements import (ParameterGroup,
                                             add_parameter_group,
-                                            boolean_attribute,
                                             configurable_boolean,
                                             configurable_float,
                                             configurable_integer,
                                             selectable,
-                                            string_attribute,
-                                            ModelConfig)
+                                            string_attribute)
+from ote_sdk.configuration import ConfigurableParameters
 from ote_sdk.configuration.model_lifecycle import ModelLifecycle
 
 from .configuration_enums import POTQuantizationPreset, NNCFCompressionPreset
 
 
 @attrs
-class OTEDetectionConfig(ModelConfig):
+class OTEDetectionConfig(ConfigurableParameters):
     header = string_attribute("Configuration for an object detection task")
     description = header
 
@@ -121,17 +120,6 @@ class OTEDetectionConfig(ModelConfig):
         )
 
     @attrs
-    class __AlgoBackend(ParameterGroup):
-        header = string_attribute("Internal Algo Backend parameters")
-        description = header
-        visible_in_ui = boolean_attribute(False)
-
-        template = string_attribute("template.yaml")
-        model = string_attribute("model.py")
-        model_name = string_attribute("object detection model")
-        data_pipeline = string_attribute("ote_data_pipeline.py")
-
-    @attrs
     class __NNCFOptimization(ParameterGroup):
         header = string_attribute("Optimization by NNCF")
         description = header
@@ -158,7 +146,6 @@ class OTEDetectionConfig(ModelConfig):
                             editable=True, visible_in_ui=True)
 
     learning_parameters = add_parameter_group(__LearningParameters)
-    algo_backend = add_parameter_group(__AlgoBackend)
     postprocessing = add_parameter_group(__Postprocessing)
     nncf_optimization = add_parameter_group(__NNCFOptimization)
     pot_parameters = add_parameter_group(__POTParameter)

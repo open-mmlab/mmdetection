@@ -12,12 +12,10 @@ from typing import Optional
 
 import numpy as np
 import torch
-import yaml
 from bson import ObjectId
 from e2e_test_system import e2e_pytest_api
 from ote_sdk.configuration.helper import convert, create
 from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
-from ote_sdk.entities.id import ID
 from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.metrics import Performance
 from ote_sdk.entities.model import (ModelEntity, ModelFormat, ModelOptimizationType, ModelPrecision, ModelStatus,
@@ -87,12 +85,10 @@ class ModelTemplate(unittest.TestCase):
 
 @e2e_pytest_api
 def test_configuration_yaml():
-    configuration = OTEDetectionConfig(workspace_id=ID(), model_storage_id=ID())
+    configuration = OTEDetectionConfig()
     configuration_yaml_str = convert(configuration, str)
-    configuration_yaml_converted = yaml.safe_load(configuration_yaml_str)
-    with open(osp.join('mmdet', 'apis', 'ote', 'apis', 'detection', 'configuration.yaml')) as read_file:
-        configuration_yaml_loaded = yaml.safe_load(read_file)
-    del configuration_yaml_converted['algo_backend']
+    configuration_yaml_converted = create(configuration_yaml_str)
+    configuration_yaml_loaded = create(osp.join('mmdet', 'apis', 'ote', 'apis', 'detection', 'configuration.yaml'))
     assert configuration_yaml_converted == configuration_yaml_loaded
 
 @e2e_pytest_api

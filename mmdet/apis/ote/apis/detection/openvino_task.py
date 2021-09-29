@@ -224,22 +224,21 @@ class OpenVINODetectionTask(IInferenceTask, IEvaluationTask, IOptimizationTask):
                  output_model: ModelEntity,
                  optimization_parameters: Optional[OptimizationParameters]):
 
-        model_name = self.hparams.algo_backend.model_name.replace(' ', '_')
         if optimization_type is not OptimizationType.POT:
             raise ValueError("POT is the only supported optimization type for OpenVino models")
 
         data_loader = OTEOpenVinoDataLoader(dataset, self.inferencer)
 
         with tempfile.TemporaryDirectory() as tempdir:
-            xml_path = os.path.join(tempdir, model_name + ".xml")
-            bin_path = os.path.join(tempdir, model_name + ".bin")
+            xml_path = os.path.join(tempdir, "model.xml")
+            bin_path = os.path.join(tempdir, "model.bin")
             with open(xml_path, "wb") as f:
                 f.write(self.model.get_data("openvino.xml"))
             with open(bin_path, "wb") as f:
                 f.write(self.model.get_data("openvino.bin"))
 
             model_config = ADDict({
-                'model_name': model_name,
+                'model_name': 'openvino_model',
                 'model': xml_path,
                 'weights': bin_path
             })
@@ -278,10 +277,10 @@ class OpenVINODetectionTask(IInferenceTask, IEvaluationTask, IOptimizationTask):
         compress_model_weights(compressed_model)
 
         with tempfile.TemporaryDirectory() as tempdir:
-            save_model(compressed_model, tempdir, model_name=model_name)
-            with open(os.path.join(tempdir, model_name + ".xml"), "rb") as f:
+            save_model(compressed_model, tempdir, model_name="model")
+            with open(os.path.join(tempdir, "model.xml"), "rb") as f:
                 output_model.set_data("openvino.xml", f.read())
-            with open(os.path.join(tempdir, model_name + ".bin"), "rb") as f:
+            with open(os.path.join(tempdir, "model.bin"), "rb") as f:
                 output_model.set_data("openvino.bin", f.read())
         output_model.model_status = ModelStatus.SUCCESS
 
