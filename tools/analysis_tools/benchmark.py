@@ -72,6 +72,9 @@ def measure_inference_speed(cfg, checkpoint, max_iter, log_interval,
     data_loader = build_dataloader(
         dataset,
         samples_per_gpu=1,
+        # Because multiple processes will occupy additional CPU resources,
+        # FPS statistics will be more unstable when workers_per_gpu is not 0.
+        # It is reasonable to set workers_per_gpu to 0.
         workers_per_gpu=0,
         dist=True,
         shuffle=False)
