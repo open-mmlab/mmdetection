@@ -397,7 +397,7 @@ python -m torch.distributed.launch --nproc_per_node=1 --master_port=${PORT} tool
     --launcher pytorch
 ```
 
-Examples: Assume that you have already downloaded the `Faster R-CNN` model checkpoint to the directory `checkpoints/`.
+Examples: Assuming that you have already downloaded the `Faster R-CNN` model checkpoint to the directory `checkpoints/`.
 
 ```shell
 python -m torch.distributed.launch --nproc_per_node=1 --master_port=29500 tools/analysis_tools/benchmark.py \
