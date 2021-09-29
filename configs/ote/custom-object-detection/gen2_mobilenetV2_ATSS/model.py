@@ -81,7 +81,7 @@ import os
 TT_API_OTHER_TESTS = os.environ.get('TT_API_OTHER_TESTS', '').lower() == 'true'
 TT_PERFORMANCE_TESTS = os.environ.get('TT_PERFORMANCE_TESTS', '').lower() == 'true'
 if TT_API_OTHER_TESTS or TT_PERFORMANCE_TESTS:
-    load_from = '/usr/src/app/external/mmdetection/ote_data/MODELS/mobilenetV2_ATSS/coco_snapshot.pth'
+    load_from = '/mnt/ote_data/MODELS/mobilenetV2_ATSS/coco_snapshot.pth'
     print(f'set load_from={load_from}', flush=True)
 else:
     load_from = None
