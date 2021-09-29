@@ -1,0 +1,38 @@
+# Description.
+name: Custom Object Detection Gen3 SSD
+task_type: DETECTION
+task_family: VISION
+instantiation: "CLASS"
+summary: SSD with MobileNetV2 backbone.
+application:
+  ~
+
+# Algo backend.
+framework: OTEDetection v2.9.1
+
+# Task implementations.
+entrypoints:
+  base: mmdet.apis.ote.apis.detection.OTEDetectionTrainingTask
+  openvino: mmdet.apis.ote.apis.detection.OpenVINODetectionTask
+  nncf: mmdet.apis.ote.apis.detection.OTEDetectionNNCFTask
+
+# Hyperparameters.
+hyper_parameters:
+  base_path: ../../../../mmdet/apis/ote/apis/detection/configuration.yaml
+  parameter_overrides:
+    learning_parameters:
+      batch_size:
+        default_value: 10
+      learning_rate:
+        default_value: 0.01
+      learning_rate_warmup_iters:
+        default_value: 200
+    nncf_optimization:
+      preset:
+        default_value: Quantization
+
+# Training resources.
+max_nodes: 1
+training_targets:
+  - GPU
+  - CPU
