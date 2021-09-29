@@ -561,6 +561,11 @@ class TestOTETraining:
     def _update_impl_in_cache(cl, cache,
                               test_parameters,
                               dataset_definitions, template_paths):
+        """
+        If the main parameters of the test differs w.r.t. the previous thest,
+        the cache will be cleared and new instance of OTETrainingImpl will be created.
+        Otherwise the previous instance of OTETrainingImpl will be re-used
+        """
         logger.info(f'test_parameters = {pformat(test_parameters)}')
         logger.info(f'cl.TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR = {pformat(cl.TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR)}')
         if dataset_definitions is None:
@@ -588,6 +593,30 @@ class TestOTETraining:
         return cache['_impl_']
 
     @pytest.fixture
+    def impl_fx(self, request, dataset_definitions_fx, template_paths_fx,
+                cached_from_prev_test_fx):
+        """
+        This fixture returns the impl class OTETrainingImpl that should be used for the current test.
+        Note that the cache from the fixture cached_from_prev_test_fx allows to store the instance of the class
+        between the tests.
+        If the main parameters used for this test are the same as the main parameters used for the previous test,
+        the instance of the implementation class will be kept and re-used. It is helpful for tests that can
+        re-use the result of operations (model training, model optimizatrion, etc) made for the previous tests,
+        if these operations are time-consuming.
+        If the main parameters used for this test differs w.r.t. the previous test, a new instance of TestOTETraining
+        class will be created.
+        """
+        cur_request_parameters = deepcopy(request.node.callspec.params)
+        if 'test_parameters' not in cur_request_parameters:
+            raise RuntimeError(f'Test {request.node.name} should be parametrized by parameter "test_parameters"')
+
+        test_parameters = cur_request_parameters['test_parameters']
+        impl = self._update_impl_in_cache(cached_from_prev_test_fx,
+                                          test_parameters,
+                                          dataset_definitions_fx, template_paths_fx)
+        return impl
+
+    @pytest.fixture
     def data_collector_fx(self, request):
         setup = deepcopy(request.node.callspec.params)
         setup["environment_name"] = os.environ.get("TT_ENVIRONMENT_NAME", "no-env")
@@ -603,19 +632,6 @@ class TestOTETraining:
             logger.info('data_collector is created')
             yield data_collector
         logger.info('data_collector is released')
-
-    @pytest.fixture
-    def impl_fx(self, request, dataset_definitions_fx, template_paths_fx,
-                cached_from_prev_test_fx):
-        cur_request_parameters = deepcopy(request.node.callspec.params)
-        if 'test_parameters' not in cur_request_parameters:
-            raise RuntimeError(f'Test {request.node.name} should be parametrized by parameter "test_parameters"')
-
-        test_parameters = cur_request_parameters['test_parameters']
-        impl = self._update_impl_in_cache(cached_from_prev_test_fx,
-                                          test_parameters,
-                                          dataset_definitions_fx, template_paths_fx)
-        return impl
 
     @e2e_pytest_performance
     def test_ote_01_training(self,
