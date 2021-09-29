@@ -6,6 +6,7 @@ import os.path as osp
 import mmcv
 from mmcv import Config, DictAction
 from mmcv.runner import init_dist
+from terminaltables import GithubFlavoredMarkdownTable
 from tools.analysis_tools.benchmark import repeat_measure_inference_speed
 
 
@@ -23,7 +24,7 @@ def parse_args():
         '--repeat-num',
         type=int,
         default=1,
-        help='num of repeat measure inference speed')
+        help='number of repeat times of measurement for averaging the results')
     parser.add_argument(
         '--out', type=str, help='output path of gathered fps to be stored')
     parser.add_argument(
@@ -58,11 +59,7 @@ def parse_args():
 
 
 def format_dict_to_markdown(result_dict):
-    out_strs = [
-        '| model | fps | times_pre_image(ms) |\n',
-        '| ----- | ---- | ----- | \n'
-    ]
-
+    table_data = []
     is_multiple_results = False
     for cfg_name, value in result_dict.items():
         name = cfg_name.replace('configs/', '')
@@ -75,18 +72,23 @@ def format_dict_to_markdown(result_dict):
             fps_str = ','.join([str(s) for s in fps])
             ms_times_pre_image_str = ','.join(
                 [str(s) for s in ms_times_pre_image])
-            out_strs.append(f'| {name} | {fps_str} | {mean_fps} |'
-                            f'{ms_times_pre_image_str} | '
-                            f'{mean_times_pre_image}| \n')
+            table_data.append([
+                name, fps_str, mean_fps, ms_times_pre_image_str,
+                mean_times_pre_image
+            ])
         else:
-            out_strs.append(f'| {name} | {fps} | {ms_times_pre_image} | \n')
+            table_data.append([name, fps, ms_times_pre_image])
 
     if is_multiple_results:
-        out_strs[0] = '| model | fps | mean_fps |times_pre_image(ms) ' \
-                      '| mean_times_pre_image(ms) | \n'
-        out_strs[1] = '|----|----|----|----|----| \n'
+        table_data.insert(0, [
+            'model', 'fps', 'mean_fps', 'times_pre_image(ms)',
+            'mean_times_pre_image(ms)'
+        ])
 
-    print(''.join(out_strs), flush=True)
+    else:
+        table_data.insert(0, ['model', 'fps', 'times_pre_image(ms)'])
+    table = GithubFlavoredMarkdownTable(table_data)
+    print(table.table, flush=True)
 
 
 if __name__ == '__main__':
