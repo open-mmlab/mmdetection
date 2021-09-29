@@ -57,10 +57,14 @@ v1.x 的历史版本支持 PyTorch 1.1 到 1.4，但是我们强烈建议用户�
 - [x] ResNet (CVPR'2016)
 - [x] ResNeXt (CVPR'2017)
 - [x] VGG (ICLR'2015)
+- [x] MobileNetV2 (CVPR'2018)
 - [x] HRNet (CVPR'2019)
 - [x] RegNet (CVPR'2020)
 - [x] Res2Net (TPAMI'2020)
 - [x] ResNeSt (ArXiv'2020)
+- [X] Swin (CVPR'2021)
+- [x] PVT (ICCV'2021)
+- [x] PVTv2 (ArXiv'2021)
 
 已支持的算法：
 
@@ -117,6 +121,7 @@ v1.x 的历史版本支持 PyTorch 1.1 到 1.4，但是我们强烈建议用户�
 - [x] [Seasaw Loss (CVPR'2021)](configs/seesaw_loss/README.md)
 - [x] [CenterNet (CVPR'2019)](configs/centernet/README.md)
 - [x] [YOLOX (ArXiv'2021)](configs/yolox/README.md)
+- [x] [SOLO (ECCV'2020)](configs/solo/README.md)
 
 我们在[基于 MMDetection 的项目](./docs/projects.md)中列举了一些其他的支持的算法。
 
