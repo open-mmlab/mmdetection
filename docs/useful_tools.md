@@ -394,7 +394,7 @@ python -m torch.distributed.launch --nproc_per_node=1 --master_port=${PORT} tool
     [--repeat-num ${REPEAT_NUM}] \
     [--max-iter ${MAX_ITER}] \
     [--log-interval ${LOG_INTERVAL}] \
-	--launcher pytorch
+    --launcher pytorch
 ```
 
 Examples: Assume that you have already downloaded the `Faster R-CNN` model checkpoint to the directory `checkpoints/`.
