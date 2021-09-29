@@ -3,40 +3,28 @@ import itertools
 import logging
 import os
 import os.path as osp
-import pytest
-import yaml
-
 from collections import namedtuple, OrderedDict
 from copy import deepcopy
 from pprint import pformat
-from typing import Union, Optional
+from typing import Optional, Union
 
+import pytest
+import yaml
+from e2e_test_system import DataCollector, e2e_pytest_performance
 from ote_sdk.configuration.helper import create
 from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.metrics import Performance, ScoreMetric
-from ote_sdk.entities.model import (
-    ModelEntity,
-    ModelPrecision,
-    ModelStatus,
-    ModelOptimizationType,
-    OptimizationMethod,
-)
-from ote_sdk.entities.model_template import parse_model_template, TargetDevice
-from ote_sdk.entities.optimization_parameters import OptimizationParameters
+from ote_sdk.entities.model import ModelEntity, ModelStatus
+from ote_sdk.entities.model_template import parse_model_template
 from ote_sdk.entities.resultset import ResultSetEntity
 from ote_sdk.entities.subset import Subset
-from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType
-from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
 from ote_sdk.entities.task_environment import TaskEnvironment
-
-from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
-from mmdet.apis.ote.apis.detection.ote_utils import (generate_label_schema,
-                                                     get_task_class)
-from mmdet.apis.ote.extension.datasets.mmdataset import MMDatasetAdapter
+from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType
 from sc_sdk.entities.dataset_storage import NullDatasetStorage
 
-from e2e_test_system import e2e_pytest_performance, DataCollector
-
+from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
+from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema, get_task_class
+from mmdet.apis.ote.extension.datasets.mmdataset import MMDatasetAdapter
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -427,9 +415,19 @@ class TestOTETraining:
 #           ),
             dict(
                 model_name=[
-                   'mobilenetV2_ATSS',
-                   'mobilenetV2_SSD',
-                   'resnet50_VFNet'
+                   'gen1_mobilenet_v2-2s_ssd-256x256',
+                   'gen2_mobilenetV2_SSD',
+                   'gen2_mobilenetV2_ATSS',
+                   'gen2_resnet50_VFNet',
+                ],
+                dataset_name='dataset1_tiled_shortened_500_A',
+                usecase='precommit',
+            ),
+            dict(
+                model_name=[
+                   'gen3_mobilenetV2_SSD',
+                   'gen3_mobilenetV2_ATSS',
+                   'gen3_resnet50_VFNet',
                 ],
                 dataset_name='dataset1_tiled_shortened_500_A',
                 usecase='precommit',

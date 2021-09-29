@@ -1,5 +1,5 @@
 # Description.
-name: Custom Object Detection ATSS
+name: Custom Object Detection Gen3 ATSS
 task_type: DETECTION
 task_family: VISION
 instantiation: "CLASS"
