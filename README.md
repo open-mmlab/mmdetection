@@ -62,10 +62,14 @@ Supported backbones:
 - [x] ResNet (CVPR'2016)
 - [x] ResNeXt (CVPR'2017)
 - [x] VGG (ICLR'2015)
+- [x] MobileNetV2 (CVPR'2018)
 - [x] HRNet (CVPR'2019)
 - [x] RegNet (CVPR'2020)
 - [x] Res2Net (TPAMI'2020)
 - [x] ResNeSt (ArXiv'2020)
+- [X] Swin (CVPR'2021)
+- [x] PVT (ICCV'2021)
+- [x] PVTv2 (ArXiv'2021)
 
 Supported methods:
 
@@ -122,6 +126,7 @@ Supported methods:
 - [x] [Seasaw Loss (CVPR'2021)](configs/seesaw_loss/README.md)
 - [x] [CenterNet (CVPR'2019)](configs/centernet/README.md)
 - [x] [YOLOX (ArXiv'2021)](configs/yolox/README.md)
+- [x] [SOLO (ECCV'2020)](configs/solo/README.md)
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
