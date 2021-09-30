@@ -15,19 +15,17 @@
 import copy
 import glob
 import logging
-import math
 import os
 import tempfile
 from collections import defaultdict
 from typing import List, Optional
 
 from mmcv import Config, ConfigDict
+from ote_sdk.entities.datasets import DatasetEntity
 from ote_sdk.entities.label import LabelEntity
 from ote_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
-from sc_sdk.entities.datasets import Dataset
 
 from .configuration import OTEDetectionConfig
-
 
 logger = logging.getLogger(__name__)
 
@@ -108,14 +106,14 @@ def set_hyperparams(config: Config, hyperparams: OTEDetectionConfig):
         config.runner.max_iters = total_iterations
 
 
-def prepare_for_testing(config: Config, dataset: Dataset) -> Config:
+def prepare_for_testing(config: Config, dataset: DatasetEntity) -> Config:
     config = copy.deepcopy(config)
     # FIXME. Should working directories be modified here?
     config.data.test.ote_dataset = dataset
     return config
 
 
-def prepare_for_training(config: Config, train_dataset: Dataset, val_dataset: Dataset,
+def prepare_for_training(config: Config, train_dataset: DatasetEntity, val_dataset: DatasetEntity,
                          time_monitor: TimeMonitorCallback, learning_curves: defaultdict) -> Config:
     config = copy.deepcopy(config)
     prepare_work_dir(config)

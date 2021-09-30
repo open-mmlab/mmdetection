@@ -16,30 +16,23 @@ import argparse
 import logging
 import os.path as osp
 import sys
+
 from ote_sdk.configuration.helper import create
+from ote_sdk.entities.datasets import DatasetEntity
 from ote_sdk.entities.inference_parameters import InferenceParameters
-from ote_sdk.entities.model import (
-    ModelEntity,
-    ModelPrecision,
-    ModelStatus,
-    ModelOptimizationType,
-    OptimizationMethod,
-)
-from ote_sdk.entities.model_template import parse_model_template, TargetDevice
+from ote_sdk.entities.label_schema import LabelSchemaEntity
+from ote_sdk.entities.model import ModelEntity, ModelOptimizationType, ModelPrecision, ModelStatus, OptimizationMethod
+from ote_sdk.entities.model_template import TargetDevice, parse_model_template
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
 from ote_sdk.entities.resultset import ResultSetEntity
 from ote_sdk.entities.subset import Subset
+from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType
 from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
-from ote_sdk.entities.task_environment import TaskEnvironment
 
 from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
-from mmdet.apis.ote.apis.detection.ote_utils import (generate_label_schema,
-                                                     get_task_class)
-from mmdet.apis.ote.extension.datasets.mmdataset import MMDatasetAdapter
-
-from sc_sdk.entities.dataset_storage import NullDatasetStorage
-
+from mmdet.apis.ote.apis.detection.ote_utils import get_task_class
+from mmdet.apis.ote.extension.datasets.data_utils import load_dataset_items_coco_format
 
 logger = logging.getLogger(__name__)
 
@@ -54,18 +47,27 @@ def parse_args():
 
 def main(args):
     logger.info('Initialize dataset')
-    dataset = MMDatasetAdapter(
-        train_ann_file=osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'),
-        train_data_root=osp.join(args.data_dir, 'coco/val2017/'),
-        val_ann_file=osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'),
-        val_data_root=osp.join(args.data_dir, 'coco/val2017/'),
-        test_ann_file=osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'),
-        test_data_root=osp.join(args.data_dir, 'coco/val2017/'),
-        dataset_storage=NullDatasetStorage)
+    labels_list = []
+    print(osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'))
+    print(osp.join(args.data_dir, 'coco/val2017/'))
+    items = load_dataset_items_coco_format(
+        ann_file_path=osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'),
+        data_root_dir=osp.join(args.data_dir, 'coco/val2017/'),
+        subset=Subset.TRAINING,
+        labels_list=labels_list)
+    items.extend(load_dataset_items_coco_format(
+        ann_file_path=osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'),
+        data_root_dir=osp.join(args.data_dir, 'coco/val2017/'),
+        subset=Subset.VALIDATION,
+        labels_list=labels_list))
+    items.extend(load_dataset_items_coco_format(
+        ann_file_path=osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'),
+        data_root_dir=osp.join(args.data_dir, 'coco/val2017/'),
+        subset=Subset.TESTING,
+        labels_list=labels_list))
+    dataset = DatasetEntity(items=items)
 
-    labels_schema = generate_label_schema(dataset.get_labels())
-    labels_list = labels_schema.get_labels(False)
-    dataset.set_project_labels(labels_list)
+    labels_schema = LabelSchemaEntity.from_labels(labels_list)
 
     logger.info(f'Train dataset: {len(dataset.get_subset(Subset.TRAINING))} items')
     logger.info(f'Validation dataset: {len(dataset.get_subset(Subset.VALIDATION))} items')

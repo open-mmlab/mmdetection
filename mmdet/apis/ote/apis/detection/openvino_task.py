@@ -15,18 +15,21 @@
 import logging
 import os
 import tempfile
-
-from addict import Dict as ADDict
-from typing import Any, Dict, Tuple, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import cv2
 import numpy as np
-
-from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
-from ote_sdk.entities.id import ID
+from addict import Dict as ADDict
+from compression.api import DataLoader
+from compression.engines.ie_engine import IEEngine
+from compression.graph import load_model, save_model
+from compression.graph.model_utils import compress_model_weights, get_nodes_by_type
+from compression.pipeline.initializer import create_pipeline
+from ote_sdk.entities.annotation import Annotation, AnnotationSceneEntity, AnnotationSceneKind
+from ote_sdk.entities.datasets import DatasetEntity
 from ote_sdk.entities.inference_parameters import InferenceParameters
-from ote_sdk.entities.label import ScoredLabel, LabelEntity
-from ote_sdk.entities.model import ModelStatus, ModelEntity
+from ote_sdk.entities.label import LabelEntity, ScoredLabel
+from ote_sdk.entities.model import ModelEntity, ModelStatus
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
 from ote_sdk.entities.resultset import ResultSetEntity
 from ote_sdk.entities.shapes.rectangle import Rectangle
@@ -35,23 +38,9 @@ from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from ote_sdk.usecases.exportable_code.inference import BaseOpenVINOInferencer
 from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
 from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
-from ote_sdk.usecases.tasks.interfaces.optimization_interface import (
-    IOptimizationTask,
-    OptimizationType,
-)
-from sc_sdk.entities.annotation import AnnotationScene
-from sc_sdk.entities.datasets import Dataset
-
-from sc_sdk.entities.media_identifier import ImageIdentifier
-
-from compression.api import DataLoader
-from compression.engines.ie_engine import IEEngine
-from compression.graph import load_model, save_model
-from compression.graph.model_utils import compress_model_weights, get_nodes_by_type
-from compression.pipeline.initializer import create_pipeline
+from ote_sdk.usecases.tasks.interfaces.optimization_interface import IOptimizationTask, OptimizationType
 
 from .configuration import OTEDetectionConfig
-
 
 logger = logging.getLogger(__name__)
 
@@ -140,7 +129,7 @@ class OpenVINODetectionInferencer(BaseOpenVINOInferencer):
         dict_inputs = {self.input_blob_name: resized_image}
         return dict_inputs, meta
 
-    def post_process(self, prediction: Dict[str, np.ndarray], metadata: Dict[str, Any]) -> AnnotationScene:
+    def post_process(self, prediction: Dict[str, np.ndarray], metadata: Dict[str, Any]) -> AnnotationSceneEntity:
         detections = extract_detections(prediction, self.net, (self.w, self.h))
         scores = detections['boxes'][:, 4]
         boxes = detections['boxes'][:, :4]
@@ -167,11 +156,8 @@ class OpenVINODetectionInferencer(BaseOpenVINOInferencer):
                 Rectangle(x1=boxes[i, 0], y1=boxes[i, 1], x2=boxes[i, 2], y2=boxes[i, 3]),
                 labels=assigned_label))
 
-        media_identifier = ImageIdentifier(image_id=ID())
-
-        return AnnotationScene(
+        return AnnotationSceneEntity(
             kind=AnnotationSceneKind.PREDICTION,
-            media_identifier=media_identifier,
             annotations=annotations)
 
     def forward(self, inputs: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
@@ -179,7 +165,7 @@ class OpenVINODetectionInferencer(BaseOpenVINOInferencer):
 
 
 class OTEOpenVinoDataLoader(DataLoader):
-    def __init__(self, dataset: Dataset, inferencer: BaseOpenVINOInferencer):
+    def __init__(self, dataset: DatasetEntity, inferencer: BaseOpenVINOInferencer):
         self.dataset = dataset
         self.inferencer = inferencer
 
@@ -207,7 +193,7 @@ class OpenVINODetectionTask(IInferenceTask, IEvaluationTask, IOptimizationTask):
                                            self.model.get_data("openvino.xml"),
                                            self.model.get_data("openvino.bin"))
 
-    def infer(self, dataset: Dataset, inference_parameters: Optional[InferenceParameters] = None) -> Dataset:
+    def infer(self, dataset: DatasetEntity, inference_parameters: Optional[InferenceParameters] = None) -> DatasetEntity:
         from tqdm import tqdm
         for dataset_item in tqdm(dataset):
             dataset_item.annotation_scene = self.inferencer.predict(dataset_item.numpy)
@@ -220,7 +206,7 @@ class OpenVINODetectionTask(IInferenceTask, IEvaluationTask, IOptimizationTask):
 
     def optimize(self,
                  optimization_type: OptimizationType,
-                 dataset: Dataset,
+                 dataset: DatasetEntity,
                  output_model: ModelEntity,
                  optimization_parameters: Optional[OptimizationParameters]):
 

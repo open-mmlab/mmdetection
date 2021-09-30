@@ -16,35 +16,24 @@ import copy
 import logging
 import os
 from collections import defaultdict
-from typing import Optional, List
+from typing import List, Optional
 
 import torch
-
-from ote_sdk.entities.metrics import (
-    Performance,
-    ScoreMetric,
-    CurveMetric,
-    InfoMetric,
-    LineChartInfo,
-    MetricsGroup,
-    VisualizationInfo,
-    VisualizationType,
-)
+from ote_sdk.entities.datasets import DatasetEntity
+from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo, MetricsGroup, Performance, ScoreMetric,
+                                      VisualizationInfo, VisualizationType)
 from ote_sdk.entities.model import ModelEntity, ModelStatus
 from ote_sdk.entities.subset import Subset
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.entities.train_parameters import TrainParameters, default_progress_callback
 from ote_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
-from sc_sdk.entities.datasets import Dataset
 
 from mmdet.apis import train_detector
 from mmdet.apis.ote.apis.detection.config_utils import prepare_for_training, set_hyperparams
-from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback
 from mmdet.apis.ote.apis.detection.inference_task import OTEDetectionInferenceTask
+from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
-
 from mmdet.datasets import build_dataset
-
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +71,7 @@ class OTEDetectionTrainingTask(OTEDetectionInferenceTask, ITrainingTask):
         return output
 
 
-    def train(self, dataset: Dataset, output_model: ModelEntity, train_parameters: Optional[TrainParameters] = None):
+    def train(self, dataset: DatasetEntity, output_model: ModelEntity, train_parameters: Optional[TrainParameters] = None):
         """ Trains a model on a dataset """
 
         set_hyperparams(self._config, self._hyperparams)

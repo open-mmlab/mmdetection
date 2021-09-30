@@ -1,3 +1,17 @@
+# Copyright (C) 2021 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions
+# and limitations under the License.
+
 import glob
 import itertools
 import logging
@@ -12,7 +26,9 @@ import pytest
 import yaml
 from e2e_test_system import DataCollector, e2e_pytest_performance
 from ote_sdk.configuration.helper import create
+from ote_sdk.entities.datasets import DatasetEntity
 from ote_sdk.entities.inference_parameters import InferenceParameters
+from ote_sdk.entities.label_schema import LabelSchemaEntity
 from ote_sdk.entities.metrics import Performance, ScoreMetric
 from ote_sdk.entities.model import ModelEntity, ModelStatus
 from ote_sdk.entities.model_template import parse_model_template
@@ -20,11 +36,10 @@ from ote_sdk.entities.resultset import ResultSetEntity
 from ote_sdk.entities.subset import Subset
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType
-from sc_sdk.entities.dataset_storage import NullDatasetStorage
 
 from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
-from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema, get_task_class
-from mmdet.apis.ote.extension.datasets.mmdataset import MMDatasetAdapter
+from mmdet.apis.ote.apis.detection.ote_utils import get_task_class
+from mmdet.apis.ote.extension.datasets.data_utils import load_dataset_items_coco_format
 
 logger = logging.getLogger(__name__)
 
@@ -182,18 +197,26 @@ class OTETrainingImpl:
         logger.debug(f'Using for train annotation file {self.dataset_params.annotations_train}')
         logger.debug(f'Using for val annotation file {self.dataset_params.annotations_val}')
 
-        self.dataset = MMDatasetAdapter(
-            train_ann_file=self.dataset_params.annotations_train,
-            train_data_root=self.dataset_params.images_train_dir,
-            val_ann_file=self.dataset_params.annotations_val,
-            val_data_root=self.dataset_params.images_val_dir,
-            test_ann_file=self.dataset_params.annotations_test,
-            test_data_root=self.dataset_params.images_test_dir,
-            dataset_storage=NullDatasetStorage)
+        labels_list = []
+        items = load_dataset_items_coco_format(
+            ann_file_path=self.dataset_params.annotations_train,
+            data_root_dir=self.dataset_params.images_train_dir,
+            subset=Subset.TRAINING,
+            labels_list=labels_list)
+        items.extend(load_dataset_items_coco_format(
+            ann_file_path=self.dataset_params.annotations_val,
+            data_root_dir=self.dataset_params.images_val_dir,
+            subset=Subset.VALIDATION,
+            labels_list=labels_list))
+        items.extend(load_dataset_items_coco_format(
+            ann_file_path=self.dataset_params.annotations_test,
+            data_root_dir=self.dataset_params.images_test_dir,
+            subset=Subset.TESTING,
+            labels_list=labels_list))
+        self.dataset = DatasetEntity(items=items)
 
-        self.labels_schema = generate_label_schema(self.dataset.get_labels())
-        labels_list = self.labels_schema.get_labels(False)
-        self.dataset.set_project_labels(labels_list)
+        self.labels_schema = LabelSchemaEntity.from_labels(labels_list)
+
         print(f'train dataset: {len(self.dataset.get_subset(Subset.TRAINING))} items')
         print(f'validation dataset: {len(self.dataset.get_subset(Subset.VALIDATION))} items')
 
