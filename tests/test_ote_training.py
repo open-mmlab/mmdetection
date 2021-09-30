@@ -388,7 +388,18 @@ class TestOTETraining:
             ('batch_size', 'batch'),
             ('usecase', 'usecase'),
     ])
-    TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR = ('model_name', 'dataset_name', 'num_training_iters')
+
+    # This tuple TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR describes test bunches'
+    # fields that are important for creating OTETrainingImpl instance.
+    #
+    # It is supposed that if for the next test these parameters are the same as
+    # for the previous one, the result of operations in OTETrainingImpl should
+    # be kept and re-used.
+    # See the fixture impl_fx and the method _update_impl_in_cache below.
+    TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR = ('model_name',
+                                              'dataset_name',
+                                              'num_training_iters',
+                                              'batch_size')
 
     # Note that each test bunch describes a group of similar tests
     # If 'model_name' or 'dataset_name' are lists, cartesian product of tests will be run.
@@ -565,8 +576,6 @@ class TestOTETraining:
         the cache will be cleared and new instance of OTETrainingImpl will be created.
         Otherwise the previous instance of OTETrainingImpl will be re-used
         """
-        logger.info(f'test_parameters = {pformat(test_parameters)}')
-        logger.info(f'cls.TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR = {pformat(cls.TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR)}')
         if dataset_definitions is None:
             pytest.skip('The parameter "--dataset-definitions" is not set')
         params_defining_cache = {k: test_parameters[k] for k in cls.TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR}
