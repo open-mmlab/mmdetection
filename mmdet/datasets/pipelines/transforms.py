@@ -2022,8 +2022,8 @@ class Mosaic:
             list: indexes.
         """
 
-        indices = [random.randint(0, len(dataset)) for _ in range(3)]
-        return indices
+        indexes = [random.randint(0, len(dataset)) for _ in range(3)]
+        return indexes
 
     def _mosaic_transform(self, results):
         """Mosaic transform function.
