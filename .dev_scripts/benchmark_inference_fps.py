@@ -58,7 +58,7 @@ def parse_args():
     return args
 
 
-def format_dict_to_markdown(result_dict):
+def results2markdown(result_dict):
     table_data = []
     is_multiple_results = False
     for cfg_name, value in result_dict.items():
@@ -166,4 +166,4 @@ if __name__ == '__main__':
         mmcv.mkdir_or_exist(args.out)
         mmcv.dump(result_dict, osp.join(args.out, 'batch_inference_fps.json'))
 
-    format_dict_to_markdown(result_dict)
+    results2markdown(result_dict)
