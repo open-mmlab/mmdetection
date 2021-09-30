@@ -466,20 +466,20 @@ class TestOTETraining:
 
 
     @classmethod
-    def _fill_test_parameters_default_values(cl, test_parameters):
-        test_parameters['num_training_iters'] = test_parameters.get('num_training_iters', cl.DEFAULT_NUM_ITERS)
-        test_parameters['batch_size'] = test_parameters.get('batch_size', cl.DEFAULT_BATCH_SIZE)
+    def _fill_test_parameters_default_values(cls, test_parameters):
+        test_parameters['num_training_iters'] = test_parameters.get('num_training_iters', cls.DEFAULT_NUM_ITERS)
+        test_parameters['batch_size'] = test_parameters.get('batch_size', cls.DEFAULT_BATCH_SIZE)
 
     @classmethod
-    def _generate_test_id(cl, test_parameters):
+    def _generate_test_id(cls, test_parameters):
         id_parts = (
                 f'{short_par_name}={test_parameters[par_name]}'
-                for par_name, short_par_name in cl.SHORT_TEST_PARAMETERS_NAMES_FOR_GENERATING_ID.items()
+                for par_name, short_par_name in cls.SHORT_TEST_PARAMETERS_NAMES_FOR_GENERATING_ID.items()
         )
         return ','.join(id_parts)
 
     @classmethod
-    def get_list_of_tests(cl, usecase: Optional[str] = None):
+    def get_list_of_tests(cls, usecase: Optional[str] = None):
         """
         The functions generates the lists of values for the tests from the field test_bunches of the class.
 
@@ -497,7 +497,7 @@ class TestOTETraining:
 
         If the parameter `usecase` is set, it makes filtering by usecase field of test bunches.
         """
-        test_bunches = cl.test_bunches
+        test_bunches = cls.test_bunches
         assert all(isinstance(el, dict) for el in test_bunches)
 
         argnames = ('test_parameters',)
@@ -524,9 +524,9 @@ class TestOTETraining:
                 test_parameters = deepcopy(el)
                 test_parameters['model_name'] = m
                 test_parameters['dataset_name'] = d
-                cl._fill_test_parameters_default_values(test_parameters)
+                cls._fill_test_parameters_default_values(test_parameters)
                 argvalues.append((test_parameters,))
-                ids.append(cl._generate_test_id(test_parameters))
+                ids.append(cls._generate_test_id(test_parameters))
 
         return argnames, argvalues, ids
 
@@ -557,7 +557,7 @@ class TestOTETraining:
         logger.info('TestOTETraining: parameters were changed -- cache is cleaned')
 
     @classmethod
-    def _update_impl_in_cache(cl, cache,
+    def _update_impl_in_cache(cls, cache,
                               test_parameters,
                               dataset_definitions, template_paths):
         """
@@ -566,15 +566,15 @@ class TestOTETraining:
         Otherwise the previous instance of OTETrainingImpl will be re-used
         """
         logger.info(f'test_parameters = {pformat(test_parameters)}')
-        logger.info(f'cl.TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR = {pformat(cl.TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR)}')
+        logger.info(f'cls.TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR = {pformat(cls.TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR)}')
         if dataset_definitions is None:
             pytest.skip('The parameter "--dataset-definitions" is not set')
-        params_defining_cache = {k: test_parameters[k] for k in cl.TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR}
+        params_defining_cache = {k: test_parameters[k] for k in cls.TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR}
 
         assert '_impl_' not in params_defining_cache, \
                 'ERROR: parameters defining test behavior should not contain special key "_impl_"'
 
-        cl._clean_cache_if_parameters_changed(cache, params_defining_cache)
+        cls._clean_cache_if_parameters_changed(cache, params_defining_cache)
 
         if '_impl_' not in cache:
             logger.info('TestOTETraining: creating OTETrainingImpl')
