@@ -147,7 +147,6 @@ def convert_hyperparams_to_dict(hyperparams):
 class OTETrainingImpl:
     def __init__(self, dataset_params: DatasetParameters, template_file_path: str,
                  num_training_iters: int, batch_size: int):
-        logger.info(f'::: DEBUG::: dataset_params={dataset_params},\n template_file_path={template_file_path},\n num_training_iters={num_training_iters},\n batch_size={batch_size}')
         self.dataset_params = dataset_params
         self.template_file_path = template_file_path
         self.num_training_iters = num_training_iters
@@ -468,9 +467,8 @@ class TestOTETraining:
 
     @classmethod
     def _fill_test_parameters_default_values(cl, test_parameters):
-        test_parameters['num_training_iters'] = int(test_parameters.get('num_training_iters',
-                                                                        cl.DEFAULT_NUM_ITERS))
-        test_parameters['batch_size'] = int(test_parameters.get('batch_size', cl.DEFAULT_BATCH_SIZE))
+        test_parameters['num_training_iters'] = test_parameters.get('num_training_iters', cl.DEFAULT_NUM_ITERS)
+        test_parameters['batch_size'] = test_parameters.get('batch_size', cl.DEFAULT_BATCH_SIZE)
 
     @classmethod
     def _generate_test_id(cl, test_parameters):
@@ -486,11 +484,14 @@ class TestOTETraining:
         The functions generates the lists of values for the tests from the field test_bunches of the class.
 
         The function returns two lists
-        * argnames -- 3-element tuple with names of the test parameters:
-          ('model_name', 'dataset_name', 'num_training_iters')
-        * argvalues -- list of 3-element tuples (model_name, dataset_name, num_training_iters)
-          -- the parameters for the tests
+        * argnames -- a tuple with names of the test parameters, at the moment it is
+                      a one-element tuple with the parameter name "test_parameters"
+        * argvalues -- list of tuples, each tuple has the same len as argname tuple,
+                       at the moment it is a one-element tuple with the dict `test_parameters`
+                       that stores the parameters of the test
         * ids -- list of strings with ids corresponding the parameters of the tests
+                 each id is a string generated from the corresponding test_parameters
+                 value -- see the functions _generate_test_id
 
         The lists argvalues and ids will have the same length.
 
@@ -560,7 +561,7 @@ class TestOTETraining:
                               test_parameters,
                               dataset_definitions, template_paths):
         """
-        If the main parameters of the test differs w.r.t. the previous thest,
+        If the main parameters of the test differs w.r.t. the previous test,
         the cache will be cleared and new instance of OTETrainingImpl will be created.
         Otherwise the previous instance of OTETrainingImpl will be re-used
         """
@@ -580,8 +581,8 @@ class TestOTETraining:
 
             model_name = test_parameters['model_name']
             dataset_name = test_parameters['dataset_name']
-            num_training_iters = int(test_parameters.get('num_training_iters', cl.DEFAULT_NUM_ITERS))
-            batch_size = int(test_parameters.get('batch_size', cl.DEFAULT_BATCH_SIZE))
+            num_training_iters = int(test_parameters['num_training_iters'])
+            batch_size = int(test_parameters['batch_size'])
 
             dataset_params = _get_dataset_params_from_dataset_definitions(dataset_definitions, dataset_name)
             template_path = _make_path_be_abs(template_paths[model_name], template_paths[ROOT_PATH_KEY])
@@ -599,7 +600,7 @@ class TestOTETraining:
         between the tests.
         If the main parameters used for this test are the same as the main parameters used for the previous test,
         the instance of the implementation class will be kept and re-used. It is helpful for tests that can
-        re-use the result of operations (model training, model optimizatrion, etc) made for the previous tests,
+        re-use the result of operations (model training, model optimization, etc) made for the previous tests,
         if these operations are time-consuming.
         If the main parameters used for this test differs w.r.t. the previous test, a new instance of TestOTETraining
         class will be created.
