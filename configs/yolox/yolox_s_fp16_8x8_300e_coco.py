@@ -140,3 +140,6 @@ custom_hooks = [
 checkpoint_config = dict(interval=interval)
 evaluation = dict(interval=interval, metric='bbox')
 log_config = dict(interval=50)
+
+# you need to set mode='dynamic' if you are using pytorch<=1.5.0
+fp16 = dict(loss_scale=dict(init_scale=512))

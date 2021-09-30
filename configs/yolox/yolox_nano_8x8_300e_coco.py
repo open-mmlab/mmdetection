@@ -1,4 +1,4 @@
-_base_ = './yolox_tiny_8x8_300e_coco.py'
+_base_ = './yolox_tiny_fp16_8x8_300e_coco.py'
 
 # model settings
 model = dict(
@@ -9,3 +9,5 @@ model = dict(
         num_csp_blocks=1,
         use_depthwise=True),
     bbox_head=dict(in_channels=64, feat_channels=64, use_depthwise=True))
+
+fp16 = None

@@ -1,4 +1,4 @@
-_base_ = './yolox_s_8x8_300e_coco.py'
+_base_ = './yolox_s_fp16_8x8_300e_coco.py'
 
 # model settings
 model = dict(
