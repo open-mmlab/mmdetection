@@ -694,14 +694,15 @@ class SwinTransformer(BaseModule):
                 _state_dict = ckpt['model']
             else:
                 _state_dict = ckpt
-            if self.convert_weights:
-                # supported loading weight from original repo,
-                _state_dict = swin_converter(_state_dict)
 
             state_dict = OrderedDict()
             for k, v in _state_dict.items():
                 if k.startswith('backbone.'):
                     state_dict[k[9:]] = v
+
+            if self.convert_weights:
+                # supported loading weight from original repo,
+                state_dict = swin_converter(state_dict)
 
             # strip prefix of state_dict
             if list(state_dict.keys())[0].startswith('module.'):
