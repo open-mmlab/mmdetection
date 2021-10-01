@@ -3,7 +3,7 @@ import itertools
 import logging
 import os
 import os.path as osp
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 from copy import deepcopy
 from pprint import pformat
 from typing import Optional, Union
@@ -145,10 +145,11 @@ def convert_hyperparams_to_dict(hyperparams):
 
 class OTETrainingImpl:
     def __init__(self, dataset_params: DatasetParameters, template_file_path: str,
-                 num_training_iters: int):
+                 num_training_iters: int, batch_size: int):
         self.dataset_params = dataset_params
         self.template_file_path = template_file_path
         self.num_training_iters = num_training_iters
+        self.batch_size = batch_size
 
         self.template = None
         self.environment = None
@@ -214,8 +215,7 @@ class OTETrainingImpl:
         else:
             num_checkpoints = 30
 
-        #### TODO: fixed parameter, delete this
-        params.learning_parameters.batch_size = 2
+        params.learning_parameters.batch_size = self.batch_size
 
         params.learning_parameters.num_checkpoints = num_checkpoints
 
@@ -362,10 +362,6 @@ class OTETrainingImpl:
         data_collector.log_final_metric('evaluation_performance_exported/' + score_name, score_value)
         return self.evaluation_performance_exported
 
-# Note that each TestBunch describes a group of similar tests
-# If 'model_name' or 'dataset_name' are lists, cartesian product of tests will be run.
-TestBunch = namedtuple('TestBunch', ['model_name', 'dataset_name', 'num_training_iters', 'usecase'])
-
 # pytest magic
 def pytest_generate_tests(metafunc):
     if metafunc.cls is None:
@@ -383,8 +379,31 @@ class TestOTETraining:
     PERFORMANCE_RESULTS = None # it is required for e2e system
 
     DEFAULT_NUM_ITERS = 1
+    DEFAULT_BATCH_SIZE = 2
+    SHORT_TEST_PARAMETERS_NAMES_FOR_GENERATING_ID = OrderedDict([
+            ('model_name', 'model'),
+            ('dataset_name', 'dataset'),
+            ('num_training_iters', 'num_iters'),
+            ('batch_size', 'batch'),
+            ('usecase', 'usecase'),
+    ])
+
+    # This tuple TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR describes test bunches'
+    # fields that are important for creating OTETrainingImpl instance.
+    #
+    # It is supposed that if for the next test these parameters are the same as
+    # for the previous one, the result of operations in OTETrainingImpl should
+    # be kept and re-used.
+    # See the fixture impl_fx and the method _update_impl_in_cache below.
+    TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR = ('model_name',
+                                              'dataset_name',
+                                              'num_training_iters',
+                                              'batch_size')
+
+    # Note that each test bunch describes a group of similar tests
+    # If 'model_name' or 'dataset_name' are lists, cartesian product of tests will be run.
     test_bunches = [
-#           TestBunch(
+#           dict(
 #               model_name=[
 #                   'face-detection-0200',
 #                   'face-detection-0202',
@@ -394,18 +413,16 @@ class TestOTETraining:
 #                   'face-detection-0207',
 #               ],
 #               dataset_name='airport_faces',
-#               num_training_iters=None,
 #               usecase='precommit',
 #           ),
-#           TestBunch(
+#           dict(
 #               model_name=[
 #                   'horizontal-text-detection-0001',
 #               ],
 #               dataset_name='horizontal_text_detection',
-#               num_training_iters=None,
 #               usecase='precommit',
 #           ),
-            TestBunch(
+            dict(
                 model_name=[
                    'gen1_mobilenet_v2-2s_ssd-256x256',
                    'gen2_mobilenetV2_SSD',
@@ -413,20 +430,18 @@ class TestOTETraining:
                    'gen2_resnet50_VFNet',
                 ],
                 dataset_name='dataset1_tiled_shortened_500_A',
-                num_training_iters=None,
                 usecase='precommit',
             ),
-            TestBunch(
+            dict(
                 model_name=[
                    'gen3_mobilenetV2_SSD',
                    'gen3_mobilenetV2_ATSS',
                    'gen3_resnet50_VFNet',
                 ],
                 dataset_name='dataset1_tiled_shortened_500_A',
-                num_training_iters=None,
                 usecase='precommit',
             ),
-#            TestBunch(
+#            dict(
 #                model_name=[
 #                    'person-detection-0200',
 #                    'person-detection-0201',
@@ -434,10 +449,9 @@ class TestOTETraining:
 #                    'person-detection-0203'
 #                ],
 #                dataset_name='airport_person',
-#                num_training_iters=None,
 #                usecase='precommit',
 #            ),
-#            TestBunch(
+#            dict(
 #                model_name=[
 #                    'person-vehicle-bike-detection-2000',
 #                    'person-vehicle-bike-detection-2001',
@@ -446,10 +460,9 @@ class TestOTETraining:
 #                    'person-vehicle-bike-detection-2004'
 #                ],
 #                dataset_name='airport_example',
-#                num_training_iters=None,
 #                usecase='precommit',
 #            ),
-#            TestBunch(
+#            dict(
 #                model_name=[
 #                    'vehicle-detection-0200',
 #                    'vehicle-detection-0201',
@@ -457,60 +470,81 @@ class TestOTETraining:
 #                    'vehicle-detection-0203',
 #                ],
 #                dataset_name='vehicle_detection',
-#                num_training_iters=None,
 #                usecase='precommit',
 #            ),
     ]
 
 
     @classmethod
-    def get_list_of_tests(cl, usecase: Optional[str] = None):
+    def _fill_test_parameters_default_values(cls, test_parameters):
+        test_parameters['num_training_iters'] = test_parameters.get('num_training_iters', cls.DEFAULT_NUM_ITERS)
+        test_parameters['batch_size'] = test_parameters.get('batch_size', cls.DEFAULT_BATCH_SIZE)
+
+    @classmethod
+    def _generate_test_id(cls, test_parameters):
+        id_parts = (
+                f'{short_par_name}={test_parameters[par_name]}'
+                for par_name, short_par_name in cls.SHORT_TEST_PARAMETERS_NAMES_FOR_GENERATING_ID.items()
+        )
+        return ','.join(id_parts)
+
+    @classmethod
+    def get_list_of_tests(cls, usecase: Optional[str] = None):
         """
         The functions generates the lists of values for the tests from the field test_bunches of the class.
 
         The function returns two lists
-        * argnames -- 3-element tuple with names of the test parameters:
-          ('model_name', 'dataset_name', 'num_training_iters')
-        * argvalues -- list of 3-element tuples (model_name, dataset_name, num_training_iters)
-          -- the parameters for the tests
+        * argnames -- a tuple with names of the test parameters, at the moment it is
+                      a one-element tuple with the parameter name "test_parameters"
+        * argvalues -- list of tuples, each tuple has the same len as argname tuple,
+                       at the moment it is a one-element tuple with the dict `test_parameters`
+                       that stores the parameters of the test
         * ids -- list of strings with ids corresponding the parameters of the tests
+                 each id is a string generated from the corresponding test_parameters
+                 value -- see the functions _generate_test_id
 
         The lists argvalues and ids will have the same length.
 
-        If the parameter `usecase` is set, it makes filtering by usecase field of TestBunch-s.
+        If the parameter `usecase` is set, it makes filtering by usecase field of test bunches.
         """
-        test_bunches = cl.test_bunches
-        DEFAULT_NUM_ITERS = cl.DEFAULT_NUM_ITERS
-        assert all(isinstance(el, TestBunch) for el in test_bunches)
+        test_bunches = cls.test_bunches
+        assert all(isinstance(el, dict) for el in test_bunches)
 
-        argnames = ('model_name', 'dataset_name', 'num_training_iters')
+        argnames = ('test_parameters',)
         argvalues = []
         ids = []
         for el in test_bunches:
-            if usecase is not None and el.usecase != usecase:
+            el_model_name = el.get('model_name')
+            el_dataset_name = el.get('dataset_name')
+            el_usecase = el.get('usecase')
+            if usecase is not None and el_usecase != usecase:
                 continue
-            if isinstance(el.model_name, (list, tuple)):
-                model_names = el.model_name
+            if isinstance(el_model_name, (list, tuple)):
+                model_names = el_model_name
             else:
-                model_names = [el.model_name]
-            if isinstance(el.dataset_name, (list, tuple)):
-                dataset_names = el.dataset_name
+                model_names = [el_model_name]
+            if isinstance(el_dataset_name, (list, tuple)):
+                dataset_names = el_dataset_name
             else:
-                dataset_names = [el.dataset_name]
+                dataset_names = [el_dataset_name]
 
-            model_dataset = list(itertools.product(model_names, dataset_names))
-            num_iters = el.num_training_iters if el.num_training_iters is not None else DEFAULT_NUM_ITERS
+            model_dataset_pairs = list(itertools.product(model_names, dataset_names))
 
-            for m, d in model_dataset:
-                argvalues.append((m, d, num_iters))
-                ids.append(f'model_name={m},dataset_name={d},num_iters={num_iters},usecase={el.usecase}')
+            for m, d in model_dataset_pairs:
+                test_parameters = deepcopy(el)
+                test_parameters['model_name'] = m
+                test_parameters['dataset_name'] = d
+                cls._fill_test_parameters_default_values(test_parameters)
+                argvalues.append((test_parameters,))
+                ids.append(cls._generate_test_id(test_parameters))
 
         return argnames, argvalues, ids
 
     @pytest.fixture(scope='class')
     def cached_from_prev_test_fx(self):
         """
-        This fixture is intended for storying the impl class OTETrainingImpl.
+        This fixture is intended for storying the impl class OTETrainingImpl and parameters
+        for which the class is created.
         This object should be persistent between tests while the tests use the same parameters
         -- see the method _clean_cache_if_parameters_changed below that is used to clean
         the impl if the parameters are changed.
@@ -518,9 +552,9 @@ class TestOTETraining:
         return dict()
 
     @staticmethod
-    def _clean_cache_if_parameters_changed(cache, **kwargs):
+    def _clean_cache_if_parameters_changed(cache, params_defining_cache):
         is_ok = True
-        for k, v in kwargs.items():
+        for k, v in params_defining_cache.items():
             is_ok = is_ok and (cache.get(k) == v)
         if is_ok:
             logger.info('TestOTETraining: parameters were not changed -- cache is kept')
@@ -528,27 +562,66 @@ class TestOTETraining:
 
         for k in list(cache.keys()):
             del cache[k]
-        for k, v in kwargs.items():
+        for k, v in params_defining_cache.items():
             cache[k] = v
         logger.info('TestOTETraining: parameters were changed -- cache is cleaned')
 
-    @staticmethod
-    def _update_impl_in_cache(cache,
-                              dataset_name, model_name, num_training_iters,
+    @classmethod
+    def _update_impl_in_cache(cls, cache,
+                              test_parameters,
                               dataset_definitions, template_paths):
-        # TODO(lbeynens): make this a fixture with conditional ops inside
+        """
+        If the main parameters of the test differs w.r.t. the previous test,
+        the cache will be cleared and new instance of OTETrainingImpl will be created.
+        Otherwise the previous instance of OTETrainingImpl will be re-used
+        """
         if dataset_definitions is None:
             pytest.skip('The parameter "--dataset-definitions" is not set')
-        TestOTETraining._clean_cache_if_parameters_changed(cache,
-                                                           dataset_name=dataset_name,
-                                                           model_name=model_name)
-        if 'impl' not in cache:
+        params_defining_cache = {k: test_parameters[k] for k in cls.TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR}
+
+        assert '_impl_' not in params_defining_cache, \
+                'ERROR: parameters defining test behavior should not contain special key "_impl_"'
+
+        cls._clean_cache_if_parameters_changed(cache, params_defining_cache)
+
+        if '_impl_' not in cache:
             logger.info('TestOTETraining: creating OTETrainingImpl')
+
+            model_name = test_parameters['model_name']
+            dataset_name = test_parameters['dataset_name']
+            num_training_iters = int(test_parameters['num_training_iters'])
+            batch_size = int(test_parameters['batch_size'])
+
             dataset_params = _get_dataset_params_from_dataset_definitions(dataset_definitions, dataset_name)
             template_path = _make_path_be_abs(template_paths[model_name], template_paths[ROOT_PATH_KEY])
-            cache['impl'] = OTETrainingImpl(dataset_params, template_path, num_training_iters)
 
-        return cache['impl']
+            cache['_impl_'] = OTETrainingImpl(dataset_params, template_path, num_training_iters, batch_size)
+
+        return cache['_impl_']
+
+    @pytest.fixture
+    def impl_fx(self, request, dataset_definitions_fx, template_paths_fx,
+                cached_from_prev_test_fx):
+        """
+        This fixture returns the impl class OTETrainingImpl that should be used for the current test.
+        Note that the cache from the fixture cached_from_prev_test_fx allows to store the instance of the class
+        between the tests.
+        If the main parameters used for this test are the same as the main parameters used for the previous test,
+        the instance of the implementation class will be kept and re-used. It is helpful for tests that can
+        re-use the result of operations (model training, model optimization, etc) made for the previous tests,
+        if these operations are time-consuming.
+        If the main parameters used for this test differs w.r.t. the previous test, a new instance of TestOTETraining
+        class will be created.
+        """
+        cur_request_parameters = deepcopy(request.node.callspec.params)
+        if 'test_parameters' not in cur_request_parameters:
+            raise RuntimeError(f'Test {request.node.name} should be parametrized by parameter "test_parameters"')
+
+        test_parameters = cur_request_parameters['test_parameters']
+        impl = self._update_impl_in_cache(cached_from_prev_test_fx,
+                                          test_parameters,
+                                          dataset_definitions_fx, template_paths_fx)
+        return impl
 
     @pytest.fixture
     def data_collector_fx(self, request):
@@ -568,54 +641,29 @@ class TestOTETraining:
         logger.info('data_collector is released')
 
     @e2e_pytest_performance
-    def test_ote_01_training(self, dataset_name, model_name, num_training_iters,
-                             dataset_definitions_fx, template_paths_fx,
-                             cached_from_prev_test_fx,
-                             data_collector_fx):
-        cache = cached_from_prev_test_fx
-        impl = self._update_impl_in_cache(cache,
-                                          dataset_name, model_name, num_training_iters,
-                                          dataset_definitions_fx, template_paths_fx)
-
-        impl.run_ote_training_once(data_collector_fx)
+    def test_ote_01_training(self,
+                             test_parameters, # is required for impl_fx magic
+                             impl_fx, data_collector_fx):
+        impl_fx.run_ote_training_once(data_collector_fx)
 
     @e2e_pytest_performance
-    def test_ote_02_evaluation(self, dataset_name, model_name, num_training_iters,
-                               dataset_definitions_fx, template_paths_fx,
-                               cached_from_prev_test_fx,
-                               data_collector_fx):
-        cache = cached_from_prev_test_fx
-        impl = self._update_impl_in_cache(cache,
-                                          dataset_name, model_name, num_training_iters,
-                                          dataset_definitions_fx, template_paths_fx)
-
-        impl.run_ote_training_once(data_collector_fx)
-        impl.run_ote_evaluation(data_collector_fx)
+    def test_ote_02_evaluation(self,
+                               test_parameters, # is required for impl_fx magic
+                               impl_fx, data_collector_fx):
+        impl_fx.run_ote_training_once(data_collector_fx)
+        impl_fx.run_ote_evaluation(data_collector_fx)
 
     @e2e_pytest_performance
-    def test_ote_03_export(self, dataset_name, model_name, num_training_iters,
-                           dataset_definitions_fx, template_paths_fx,
-                           cached_from_prev_test_fx,
-                           data_collector_fx):
-        cache = cached_from_prev_test_fx
-        impl = self._update_impl_in_cache(cache,
-                                          dataset_name, model_name, num_training_iters,
-                                          dataset_definitions_fx, template_paths_fx)
-
-        impl.run_ote_training_once(data_collector_fx)
-        impl.run_ote_export_once(data_collector_fx)
+    def test_ote_03_export(self,
+                           test_parameters, # is required for impl_fx magic
+                           impl_fx, data_collector_fx):
+        impl_fx.run_ote_training_once(data_collector_fx)
+        impl_fx.run_ote_export_once(data_collector_fx)
 
     @e2e_pytest_performance
-    def test_ote_04_evaluation_exported(self, dataset_name, model_name, num_training_iters,
-                                        dataset_definitions_fx, template_paths_fx,
-                                        cached_from_prev_test_fx,
-                                        data_collector_fx):
-        cache = cached_from_prev_test_fx
-        impl = self._update_impl_in_cache(cache,
-                                          dataset_name, model_name, num_training_iters,
-                                          dataset_definitions_fx, template_paths_fx)
-
-        impl.run_ote_training_once(data_collector_fx)
-        impl.run_ote_export_once(data_collector_fx)
-        impl.run_ote_evaluation_exported(data_collector_fx)
-
+    def test_ote_04_evaluation_exported(self,
+                                        test_parameters, # is required for impl_fx magic
+                                        impl_fx, data_collector_fx):
+        impl_fx.run_ote_training_once(data_collector_fx)
+        impl_fx.run_ote_export_once(data_collector_fx)
+        impl_fx.run_ote_evaluation_exported(data_collector_fx)
