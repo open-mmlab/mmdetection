@@ -14,12 +14,21 @@ from e2e_test_system import DataCollector, e2e_pytest_performance
 from ote_sdk.configuration.helper import create
 from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.metrics import Performance, ScoreMetric
-from ote_sdk.entities.model import ModelEntity, ModelStatus
-from ote_sdk.entities.model_template import parse_model_template
+from ote_sdk.entities.model import (
+    ModelEntity,
+    ModelPrecision,
+    ModelStatus,
+    ModelOptimizationType,
+    OptimizationMethod,
+)
+from ote_sdk.entities.model_template import parse_model_template, TargetDevice
+from ote_sdk.entities.optimization_parameters import OptimizationParameters
 from ote_sdk.entities.resultset import ResultSetEntity
 from ote_sdk.entities.subset import Subset
-from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType
+from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
+from ote_sdk.entities.task_environment import TaskEnvironment
+
 from sc_sdk.entities.dataset_storage import NullDatasetStorage
 
 from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
@@ -156,16 +165,18 @@ class OTETrainingImpl:
         self.environment = None
         self.task = None
         self.output_model = None
-        self.evaluation_performance = None
         self.environment_for_export = None
         self.exported_model = None
         self.openvino_task = None
-        self.evaluation_performance_exported = None
 
         self.was_training_run = False
         self.stored_exception_training = None
         self.was_export_run = False
         self.stored_exception_export = None
+        self.was_optimization_pot_run = False
+        self.stored_exception_pot = None
+        self.was_nncf_optimization_run = False
+        self.stored_exception_nncf = None
 
         self.copy_hyperparams = None
 
@@ -276,29 +287,26 @@ class OTETrainingImpl:
             raise RuntimeError('Training was not successful for the OTETrainingImpl instance')
         logger.debug('Get predictions on the validation set')
         validation_dataset = self.dataset.get_subset(subset)
-        self.predicted_validation_dataset = self.task.infer(
+        predicted_validation_dataset = self.task.infer(
             validation_dataset.with_empty_annotations(),
             InferenceParameters(is_evaluation=True))
-        self.resultset = ResultSetEntity(
+        resultset = ResultSetEntity(
             model=self.output_model,
             ground_truth_dataset=validation_dataset,
-            prediction_dataset=self.predicted_validation_dataset,
+            prediction_dataset=predicted_validation_dataset,
         )
         logger.debug('Estimate quality on validation set')
-        self.task.evaluate(self.resultset)
-        self.evaluation_performance = self.resultset.performance
-        logger.info(f'performance={self.evaluation_performance}')
-        score_name, score_value = performance_to_score_name_value(self.evaluation_performance)
+        self.task.evaluate(resultset)
+        evaluation_performance = resultset.performance
+        logger.info(f'performance={evaluation_performance}')
+        score_name, score_value = performance_to_score_name_value(evaluation_performance)
         data_collector.log_final_metric('evaluation_performance/' + score_name, score_value)
-        return self.evaluation_performance
+        return evaluation_performance
 
     def _run_ote_export(self, data_collector):
         logger.debug('Copy environment for evaluation exported model')
 
-        # Warning: Note that this code does not make copy of self.environment -- it works only if
-        # the task operations use the environment in read-only mode.
-        # At the moment this is true, but if it is changed in the future, side effects may cause errors.
-        self.environment_for_export = self.environment
+        self.environment_for_export = deepcopy(self.environment)
 
         logger.debug('Create exported model')
         self.exported_model = ModelEntity(
@@ -329,6 +337,13 @@ class OTETrainingImpl:
                 self.was_export_run = True
                 raise e
 
+    def _create_openvino_task(self, environment):
+        logger.debug('Create OpenVINO Task')
+        openvino_task_impl_path = self.model_template.entrypoints.openvino
+        openvino_task_cls = get_task_class(openvino_task_impl_path)
+        openvino_task = openvino_task_cls(environment)
+        return openvino_task
+
     def run_ote_evaluation_exported(self, data_collector, subset=Subset.VALIDATION):
         if not self.was_training_run:
             raise RuntimeError('Training was not run for the OTETrainingImpl instance')
@@ -339,29 +354,107 @@ class OTETrainingImpl:
         if self.stored_exception_export:
             raise RuntimeError('Export was not successful for the OTETrainingImpl instance')
 
-        logger.debug('Create OpenVINO Task')
-        openvino_task_impl_path = self.model_template.entrypoints.openvino
-        openvino_task_cls = get_task_class(openvino_task_impl_path)
-        self.openvino_task = openvino_task_cls(self.environment_for_export)
+        self.openvino_task = self._create_openvino_task(self.environment_for_export)
 
         logger.debug('Get predictions on the validation set')
         validation_dataset = self.dataset.get_subset(subset)
-        self.predicted_validation_dataset_exp = self.openvino_task.infer(
+        predicted_validation_dataset_exp = self.openvino_task.infer(
             validation_dataset.with_empty_annotations(),
             InferenceParameters(is_evaluation=True))
-        self.resultset_exp = ResultSetEntity(
+        resultset_exp = ResultSetEntity(
             model=self.exported_model,
             ground_truth_dataset=validation_dataset,
-            prediction_dataset=self.predicted_validation_dataset_exp,
+            prediction_dataset=predicted_validation_dataset_exp,
         )
         logger.debug('Estimate quality on validation set')
-        self.openvino_task.evaluate(self.resultset_exp)
-        self.evaluation_performance_exported = self.resultset_exp.performance
+        self.openvino_task.evaluate(resultset_exp)
+        evaluation_performance_exported = resultset_exp.performance
 
-        logger.info(f'performance exported={self.evaluation_performance_exported}')
-        score_name, score_value = performance_to_score_name_value(self.evaluation_performance_exported)
+        logger.info(f'performance exported={evaluation_performance_exported}')
+        score_name, score_value = performance_to_score_name_value(evaluation_performance_exported)
         data_collector.log_final_metric('evaluation_performance_exported/' + score_name, score_value)
-        return self.evaluation_performance_exported
+        return evaluation_performance_exported
+
+    def _run_ote_optimization_pot(self, data_collector):
+        self.environment_for_pot = deepcopy(self.environment_for_export)
+        self.openvino_task_pot = self._create_openvino_task(self.environment_for_pot)
+
+        logger.debug('Create exported model')
+        self.optimized_model_pot = ModelEntity(
+            self.dataset,
+            self.environment_for_pot.get_model_configuration(),
+            optimization_type=ModelOptimizationType.POT,
+            optimization_methods=OptimizationMethod.QUANTIZATION,
+            optimization_objectives={},
+            precision=[ModelPrecision.INT8],
+            target_device=TargetDevice.CPU,
+            performance_improvement={},
+            model_size_reduction=1.,
+            model_status=ModelStatus.NOT_READY)
+        logger.info('Run POT optimization')
+        self.openvino_task_pot.optimize(
+            OptimizationType.POT,
+            self.dataset.get_subset(Subset.TRAINING),
+            self.optimized_model_pot,
+            OptimizationParameters())
+
+    def run_ote_optimization_pot_once(self, data_collector):
+        if not self.was_training_run:
+            raise RuntimeError('Training was not run for the OTETrainingImpl instance')
+        if self.stored_exception_training:
+            raise RuntimeError('Training was not successful for the OTETrainingImpl instance')
+        if not self.was_export_run:
+            raise RuntimeError('Export was not run for the OTETrainingImpl instance')
+        if self.stored_exception_export:
+            raise RuntimeError('Export was not successful for the OTETrainingImpl instance')
+        if self.was_optimization_pot_run and self.stored_exception_pot:
+            logger.warning('In function run_ote_optimization_pot_once: found that previous call of the function '
+                           'caused exception -- re-raising it')
+            raise self.stored_exception_pot
+
+        if not self.was_optimization_pot_run:
+            try:
+                self._run_ote_optimization_pot(data_collector)
+                self.was_optimization_pot_run = True
+            except Exception as e:
+                self.stored_exception_pot = e
+                self.was_optimization_pot_run = True
+                raise e
+
+    def run_ote_evaluation_pot(self, data_collector, subset=Subset.VALIDATION):
+        if not self.was_training_run:
+            raise RuntimeError('Training was not run for the OTETrainingImpl instance')
+        if self.stored_exception_training:
+            raise RuntimeError('Training was not successful for the OTETrainingImpl instance')
+        if not self.was_export_run:
+            raise RuntimeError('Export was not run for the OTETrainingImpl instance')
+        if self.stored_exception_export:
+            raise RuntimeError('Export was not successful for the OTETrainingImpl instance')
+        if not self.was_optimization_pot_run:
+            raise RuntimeError('POT optimization was not run for the OTETrainingImpl instance')
+        if self.stored_exception_pot:
+            raise RuntimeError('POT optimization was not successful for the OTETrainingImpl instance')
+
+        assert self.openvino_task_pot, 'Error: cannot find POT task'
+
+        logger.debug('Get predictions for POT on the validation set')
+        validation_dataset_pot = self.dataset.get_subset(subset)
+        predicted_validation_dataset_pot = self.openvino_task_pot.infer(
+            validation_dataset_pot.with_empty_annotations(),
+            InferenceParameters(is_evaluation=True))
+        resultset_pot = ResultSetEntity(
+            model=self.optimized_model_pot,
+            ground_truth_dataset=validation_dataset_pot,
+            prediction_dataset=predicted_validation_dataset_pot,
+        )
+        logger.debug('Estimate quality on validation set')
+        self.openvino_task_pot.evaluate(resultset_pot)
+        evaluation_performance_pot = resultset_pot.performance
+
+        logger.info(f'performance exported={evaluation_performance_pot}')
+        score_name, score_value = performance_to_score_name_value(evaluation_performance_pot)
+        data_collector.log_final_metric('evaluation_performance_pot/' + score_name, score_value)
+        return evaluation_performance_pot
 
 # pytest magic
 def pytest_generate_tests(metafunc):
@@ -668,3 +761,22 @@ class TestOTETraining:
         impl_fx.run_ote_training_once(data_collector_fx)
         impl_fx.run_ote_export_once(data_collector_fx)
         impl_fx.run_ote_evaluation_exported(data_collector_fx)
+
+    @e2e_pytest_performance
+    def test_ote_05_optimize_pot(self,
+                                 test_parameters, # is required for impl_fx magic
+                                 impl_fx, data_collector_fx):
+        # TODO: check that this test does all what is required
+        impl_fx.run_ote_training_once(data_collector_fx)
+        impl_fx.run_ote_export_once(data_collector_fx)
+        impl_fx.run_ote_optimization_pot_once(data_collector_fx)
+
+    @e2e_pytest_performance
+    def test_ote_06_evaluation_optimized_pot(self,
+                                             test_parameters, # is required for impl_fx magic
+                                             impl_fx, data_collector_fx):
+        # TODO: check that this test does all what is required
+        impl_fx.run_ote_training_once(data_collector_fx)
+        impl_fx.run_ote_export_once(data_collector_fx)
+        impl_fx.run_ote_optimization_pot_once(data_collector_fx)
+        impl_fx.run_ote_evaluation_pot(data_collector_fx)
