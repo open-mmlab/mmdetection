@@ -27,7 +27,6 @@ from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema, get_t
 from mmdet.apis.ote.extension.datasets.mmdataset import MMDatasetAdapter
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 def DATASET_PARAMETERS_FIELDS():
     return ('annotations_train',
