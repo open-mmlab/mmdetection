@@ -434,6 +434,15 @@ class CocoDataset(CustomDataset):
         allowed_metrics = ['bbox', 'segm', 'proposal', 'proposal_fast', 'f1']
         for metric in metrics:
             if metric not in allowed_metrics:
+                params = dict(
+                    results=results,
+                    metric=metric,
+                    logger=logger,
+                    proposal_nums=proposal_nums
+                )
+                if iou_thrs is not None:
+                    params['iou_thrs'] = iou_thrs
+                return super().evaluate(**params)
                 raise KeyError(f'metric {metric} is not supported')
         if iou_thrs is None:
             iou_thrs = np.linspace(
