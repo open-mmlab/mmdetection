@@ -3,19 +3,14 @@ import os.path as osp
 from typing import List, Optional
 
 import numpy as np
-from pycocotools.coco import COCO
-
-from ote_sdk.entities.annotation import (
-    Annotation,
-    AnnotationSceneEntity,
-    AnnotationSceneKind,
-)
+from ote_sdk.entities.annotation import Annotation, AnnotationSceneEntity, AnnotationSceneKind
 from ote_sdk.entities.dataset_item import DatasetItemEntity
 from ote_sdk.entities.image import Image
 from ote_sdk.entities.label import LabelEntity
-from ote_sdk.entities.label import ScoredLabel
+from ote_sdk.entities.scored_label import ScoredLabel
 from ote_sdk.entities.shapes.rectangle import Rectangle
 from ote_sdk.entities.subset import Subset
+from pycocotools.coco import COCO
 
 
 def get_classes_from_annotation(path):

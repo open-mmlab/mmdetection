@@ -28,10 +28,11 @@ from compression.pipeline.initializer import create_pipeline
 from ote_sdk.entities.annotation import Annotation, AnnotationSceneEntity, AnnotationSceneKind
 from ote_sdk.entities.datasets import DatasetEntity
 from ote_sdk.entities.inference_parameters import InferenceParameters
-from ote_sdk.entities.label import LabelEntity, ScoredLabel
+from ote_sdk.entities.label import LabelEntity
 from ote_sdk.entities.model import ModelEntity, ModelStatus
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
 from ote_sdk.entities.resultset import ResultSetEntity
+from ote_sdk.entities.scored_label import ScoredLabel
 from ote_sdk.entities.shapes.rectangle import Rectangle
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper

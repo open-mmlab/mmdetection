@@ -14,19 +14,15 @@
 
 import colorsys
 import importlib
-import numpy as np
-import os
 import random
-import subprocess
-import tempfile
-import yaml
-from typing import Optional
 
-from ote_sdk.entities.label import Color, LabelEntity
+import numpy as np
+import yaml
+from ote_sdk.entities.color import Color
+from ote_sdk.entities.label import LabelEntity
 from ote_sdk.entities.label_schema import LabelGroup, LabelGroupType, LabelSchemaEntity
 from ote_sdk.entities.train_parameters import UpdateProgressCallback
-from ote_sdk.usecases.reporting.time_monitor_callback import \
-    TimeMonitorCallback
+from ote_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
 
 
 class ColorPalette:
