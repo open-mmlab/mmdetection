@@ -97,8 +97,12 @@ model = dict(
                 class_agnostic=False,
                 norm_cfg=dict(type='BN'),
                 upsample_cfg=dict(type='deconv', scale_factor=2),
-                loss_mask=dict(type='DiceLoss', loss_weight=8.0))
-            for _ in range(num_stages)
+                loss_mask=dict(
+                    type='DiceLoss',
+                    loss_weight=8.0,
+                    use_sigmoid=True,
+                    activate=False,
+                    eps=1e-5)) for _ in range(num_stages)
         ]),
     # training and testing settings
     train_cfg=dict(
