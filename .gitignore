@@ -116,6 +116,7 @@ data
 docs/modelzoo_statistics.md
 mmdet/.mim
 work_dirs/
+lvis-api/
 
 # Pytorch
 *.pth
