@@ -2630,3 +2630,392 @@ class RandomAffine:
         translation_matrix = np.array([[1, 0., x], [0., 1, y], [0., 0., 1.]],
                                       dtype=np.float32)
         return translation_matrix
+
+
+@PIPELINES.register_module()
+class SimpleCopyPaste:
+    def __init__(self,
+                 label_selection=True,
+                 scale=(0.1, 2),
+                 max_paste_objects=5,
+                 p=0.5,
+                 occluded_area_thresh=100,
+                 box_iou_thresh=0.01,
+                 max_iters=1,
+                 ):
+        self.max_paste_objects = max_paste_objects
+        self.p = p
+        self.label_selection = label_selection
+        self.resize_scale = scale
+        self.occluded_area_thresh = occluded_area_thresh
+        self.box_iou_thresh = box_iou_thresh
+        self.max_iters = max_iters
+
+    def get_indexes(self, dataset):
+        """Call function to collect indexes.
+
+        Args:
+            dataset (:obj:`MultiImageMixDataset`): The dataset.
+
+        Returns:
+            list: indexes.
+        """
+        return random.randint(0, len(dataset))
+
+    def get_random_idx(self, arr):
+        if arr.shape[0] <= self.max_paste_objects:
+            return np.random.randint(0, arr.shape[0], size=arr.shape[0])
+        return np.random.randint(0, arr.shape[0], size=self.max_paste_objects)
+
+    def random_flip_img_mask_boxes(self, img, masks, boxes):
+        if np.random.random() < self.p:
+            img = img[:, ::-1, :]
+            masks = masks[:, :, ::-1]
+
+            H, W, _ = img.shape
+            bbox = boxes.copy() # remove this
+            x_max = W - bbox[:, 0]
+            x_min = W - bbox[:, 2]
+            bbox[:, 0] = x_min
+            bbox[:, 2] = x_max
+            return img, masks, bbox
+
+        return img, masks, boxes
+
+    def rescale_box(self, reshaped_img_shape, img_shape, box):
+        scale = np.divide(reshaped_img_shape, img_shape)
+        new_top_left_corner = np.multiply(box[:,:2], scale)
+        new_bottom_right_corner = np.multiply(box[:,2:], scale)
+        return np.hstack((new_top_left_corner, new_bottom_right_corner))
+
+    def rescale(self, w, h, arr):
+        arr = cv2.resize(arr, (w, h), interpolation=cv2.INTER_LINEAR)
+        return arr
+
+    def get_rescale_ratio(self, n_values):
+        ratio = []
+        for x in range(n_values):
+            ratio.append(np.random.uniform(self.resize_scale[0], self.resize_scale[1]))
+        return ratio
+
+    def get_updated_masks(self, parent_mask, child_mask):
+        assert parent_mask.shape == child_mask.shape, "Cannot paste two arrays of different size"
+        return np.where(parent_mask, 0, child_mask)
+
+    def get_box_from_mask(self, mask):
+        """Convert mask Y to a bounding box, assumes 0 as background nonzero object"""
+        Y_vals, X_vals = np.nonzero(mask)   # gives in a Xi , Yi co-ord system in the cols and rows
+        if len(Y_vals) == 0:
+            return np.zeros(4, dtype=np.float32)
+        y1 = np.min(Y_vals)
+        x1 = np.min(X_vals)
+        y2 = np.max(Y_vals)
+        x2 = np.max(X_vals)
+        return np.array([x1, y1, x2, y2], dtype=np.float32)
+
+    def is_box_occluded(self, box1, box2, box_iou_threshold): # calculates the distance between masks
+        if self.iou(box1, box2) >= box_iou_threshold:
+            return True
+        return False
+
+    def iou(self, gt, det):
+        gt_dict = {}
+        det_dict = {}
+
+        gt_dict["x0"] = gt[0]
+        gt_dict["y0"] = gt[1]
+        gt_dict["x1"] = gt[2]
+        gt_dict["y1"] = gt[3]
+
+        det_dict["x0"] = det[0]
+        det_dict["y0"] = det[1]
+        det_dict["x1"] = det[2]
+        det_dict["y1"] = det[3]
+
+        comp = CompareRectangles(gt=gt_dict, det=det_dict)
+
+        area_intersect = comp.tp_pixels
+        if area_intersect == 0:
+            return 0.0
+
+        # Use IoU for toleratedOtherClasses and same class
+        area_union = comp.tp_pixels + comp.fp_pixels + comp.fn_pixels
+
+        iou = area_intersect / float(area_union)
+
+        assert 0 <= iou <= 1
+        return iou
+
+
+    def get_box_area(self, box):
+        return (box[3] - box[1]) * (box[2] - box[0])
+
+    def clip_box(self, bbox, x1y1wh):
+        x_, y_, w_, h_ = x1y1wh
+        bbox = np.copy(bbox)
+        bbox_x1 = np.max((np.min((bbox[:, 0], np.tile(x_+w_ -1 , bbox.shape[0])), axis=0), np.tile(x_, bbox.shape[0])), axis=0) - np.tile(x_, bbox.shape[0])
+        bbox_y1 = np.max((np.min((bbox[:, 1], np.tile(y_+h_ -1, bbox.shape[0])), axis=0), np.tile(y_, bbox.shape[0])), axis=0) - np.tile(y_, bbox.shape[0])
+        bbox_x2 = np.max((np.min((bbox[:, 2], np.tile(x_+w_ -1, bbox.shape[0])), axis=0), np.tile(x_, bbox.shape[0])), axis=0) - np.tile(x_, bbox.shape[0])
+        bbox_y2 = np.max((np.min((bbox[:, 3], np.tile(y_+h_ -1, bbox.shape[0])), axis=0), np.tile(y_, bbox.shape[0])), axis=0) - np.tile(y_, bbox.shape[0])
+        return np.transpose(np.vstack((bbox_x1, bbox_y1, bbox_x2, bbox_y2)))
+
+    def dest_jitter(self, img_dest, masks_dest, boxes_dest, labels_dest):
+
+        # destination jitter
+        dest_img_rescale_ratio = self.get_rescale_ratio(1)[0]
+        h, w, _ = img_dest.shape
+
+        # rescale
+        h_new, w_new = int(h * dest_img_rescale_ratio), int(w * dest_img_rescale_ratio)
+        img_dest_rescaled = self.rescale(w_new, h_new, img_dest)
+
+        # mask rescale
+        masks_dest_rescaled, boxes_dest_rescaled = [], []
+        for mask, box in zip(masks_dest, boxes_dest):
+            masks_dest_rescaled.append(self.rescale(w_new, h_new, mask.astype(np.uint8)))
+            boxes_dest_rescaled.append(self.rescale_box((w_new, h_new), (w,h), np.array([box]))[0])
+
+        # get random points for crop / pad
+        x, y = int(np.random.uniform(0, abs(w_new - w))), int(np.random.uniform(0, abs(h_new - h)))
+
+        final_dest_img, final_dest_masks, final_dest_boxes, final_dest_labels = None, [], [], []
+
+        if dest_img_rescale_ratio <= 1.0:
+            img_dest_rescaled_pad = np.ones((h, w, 3), dtype=np.uint8) * 168
+            img_dest_rescaled_pad[y:y+h_new, x:x+w_new, :] = img_dest_rescaled
+            final_dest_img = img_dest_rescaled_pad
+        else:  # crop
+            img_crop = img_dest_rescaled[y:y+h, x:x+w, :]
+            final_dest_img = img_crop
+
+        for mask, box, label in zip(masks_dest_rescaled, boxes_dest_rescaled, labels_dest):
+            # crop the masks and the boxes
+            if dest_img_rescale_ratio <= 1.0:  # padding
+                mask_pad = np.zeros((h, w), dtype=np.uint8)
+                mask_pad[y:y+h_new, x:x+w_new] = mask
+                final_dest_masks.append(mask_pad)
+                box[0] += x
+                box[1] += y
+                box[2] += x
+                box[3] += y
+                final_dest_boxes.append(box)
+                final_dest_labels.append(label)
+            else:  # crop
+                mask_crop = mask[y:y+h, x:x+w]
+                box = self.clip_box(np.array([box]), (x, y, w, h))[0]
+                if np.sum(mask_crop) >= 30:
+                    final_dest_masks.append(mask_crop)
+                    final_dest_boxes.append(box)
+                    final_dest_labels.append(label)
+
+        if not len(final_dest_masks):
+            print("No dest masks after jitter")
+        return final_dest_img, final_dest_boxes, final_dest_masks, final_dest_labels
+
+    def add_box_mask_label_2_dict(self, box, mask, label, dct, idx, cutout, channel_mask_3):
+        dct[idx] = {"box":box, "mask":mask, "label":label, "is_valid":True, 'pastable_cutout':cutout, '3_channel_mask': channel_mask_3}
+        return dct
+
+    def get_bitmapmasks(self, final_mask_list):
+        from mmdet.core import BitmapMasks
+        masks_ndarray = np.array(final_mask_list)
+        return BitmapMasks(masks_ndarray, masks_ndarray.shape[1], masks_ndarray.shape[2])
+
+    def __call__(self, results):
+        # if True:
+        #     return results
+        results_cpy = copy.deepcopy(results)
+        results_cpy2 = results_cpy['mix_results'][0]
+        # results_cpy2 = copy.deepcopy(results)
+
+        # get these images and thier masks
+        img_src = cv2.imread(results_cpy['img_prefix'] + results_cpy['img_info']['filename'])
+        masks_src = results_cpy.get('gt_masks').masks
+        labels_src = results_cpy.get('gt_labels')
+        boxes_src = results_cpy.get('gt_bboxes')
+
+        img_dest = cv2.imread(results_cpy2['img_prefix'] + results_cpy2['img_info']['filename'])
+        masks_dest = results_cpy2.get('gt_masks').masks
+        labels_dest = results_cpy2.get('gt_labels')
+        boxes_dest = results_cpy2.get('gt_bboxes')
+
+        if (not len(masks_src)) and (not len(masks_dest)):
+            print("No masks any")
+            rand_indx = np.random.randint(0, 2, size=1)
+            all_results = [results_cpy, results_cpy2]
+            return all_results[rand_indx[0]]
+        if not len(masks_dest):
+            print("No masks dest")
+            return results_cpy
+        if not len(masks_src):
+            print("No masks src")
+            return results_cpy2
+
+        # get a fixed number of random items
+        selected_idxs = self.get_random_idx(masks_src)
+        selected_masks_src = np.array(list(map(masks_src.__getitem__, selected_idxs)))
+        selected_boxes_src = np.array(list(map(boxes_src.__getitem__, selected_idxs)))
+        selected_labels_src = np.array(list(map(labels_src.__getitem__, selected_idxs)))
+
+        img_src_flipped, selected_masks_src_flipped, selected_boxes_src_flipped = \
+            self.random_flip_img_mask_boxes(img_src, selected_masks_src, selected_boxes_src)
+
+        rescaled_dest_img, rescaled_dest_boxes, rescaled_dest_masks, rescaled_dest_labels = self.dest_jitter(img_dest, masks_dest, boxes_dest, labels_dest)
+
+        rescaled_src_imgs, rescaled_src_boxes, rescaled_src_masks, rescaled_src_labels = self.src_jitter(img_src_flipped,
+                                                                                                         selected_masks_src_flipped,
+                                                                                                         selected_boxes_src_flipped,
+                                                                                                         selected_labels_src)
+
+        if (not len(rescaled_src_masks)) and (not len(rescaled_dest_masks)):
+            rand_indx = np.random.randint(0, 2, size=1)
+            all_results = [results_cpy, results_cpy2]
+            print("No masks after rescale any")
+            return all_results[rand_indx[0]]
+        if not len(rescaled_dest_masks):
+            print("No masks after rescale dest")
+            return results_cpy
+        if not len(rescaled_src_masks):
+            print("No masks after rescale src")
+            return results_cpy2
+
+        #CHECK for empty lists
+        pastable_src_imgs, pastable_src_boxes, pastable_src_masks = [], [], []
+
+        # get the pastable items
+        for src_img, src_box, src_mask in zip(rescaled_src_imgs, rescaled_src_boxes, rescaled_src_masks):
+            h, w, _ = rescaled_dest_img.shape
+            h_src, w_src, _ = src_img.shape
+            pastable_src_boxes.append(self.rescale_box((w,h), (w_src, h_src), np.array([src_box]))[0])
+            pastable_src_imgs.append(self.rescale(w, h, src_img))
+            pastable_src_masks.append(self.rescale(w, h, src_mask))
+
+        collated_pastable_src_mask = np.where(np.any(pastable_src_masks, axis=0), 1, 0)
+
+        final_dest_masks, final_dest_boxes, final_dest_labels = [], [], []
+
+        # heuristics check
+        for dest_mask, dest_box, dest_label in zip(rescaled_dest_masks, rescaled_dest_boxes, rescaled_dest_labels):
+            updated_dest_mask = self.get_updated_masks(collated_pastable_src_mask, dest_mask)
+
+            updated_dest_box = self.get_box_from_mask(updated_dest_mask)
+            if self.is_box_occluded(updated_dest_box, dest_box, self.box_iou_thresh):
+                if np.sum(updated_dest_mask) <= self.occluded_area_thresh:
+                    continue
+            if ((updated_dest_box[2]-updated_dest_box[0])<=10) or ((updated_dest_box[3]-updated_dest_box[1])<=10):
+                continue
+            if np.sum(updated_dest_mask) >= self.occluded_area_thresh:
+                final_dest_boxes.append(updated_dest_box)
+                final_dest_masks.append(updated_dest_mask)
+                final_dest_labels.append(dest_label)
+
+        dict_index = 0
+        final_src_data = {}
+
+        for src_mask, src_img, src_box, src_label in zip(
+                pastable_src_masks, pastable_src_imgs, pastable_src_boxes, rescaled_src_labels):
+            src_mask_3channel = np.tile(src_mask[:,:,None],(1,1,3)) * 255
+            final_pastable_mask_cutout = cv2.bitwise_and(src_img, src_mask_3channel)
+
+            if np.sum(src_mask) >= self.occluded_area_thresh:
+                self.add_box_mask_label_2_dict(
+                    src_box, src_mask, src_label, final_src_data, dict_index, final_pastable_mask_cutout, src_mask_3channel)
+                dict_index += 1
+
+                for idx in final_src_data.keys():
+                    if idx == dict_index - 1:
+                        continue
+                    if final_src_data[idx]['is_valid']:
+                        priority_mask = src_mask
+                        priority_box = src_box
+                        old_mask = final_src_data[idx]["mask"]
+                        old_box = final_src_data[idx]["box"]
+                        if self.is_box_occluded(priority_box, old_box, self.box_iou_thresh):
+                            if np.sum(self.get_updated_masks(priority_mask, old_mask)) < self.occluded_area_thresh:
+                                final_src_data[idx]["is_valid"] = False
+
+        for vals in final_src_data.values():
+            if vals['is_valid'] and np.sum(vals['mask']) > 100: # added a size check
+                if ((vals['box'][2]-vals['box'][0])<=10) or ((vals['box'][3]-vals['box'][1])<=10):
+                    continue
+                src_mask_3channel = vals['3_channel_mask']
+                final_pastable_mask_cutout = vals['pastable_cutout']
+                rescaled_dest_img = cv2.subtract(rescaled_dest_img, src_mask_3channel)
+                rescaled_dest_img = cv2.add(rescaled_dest_img, final_pastable_mask_cutout)
+                final_dest_boxes.append(vals['box'])
+                final_dest_masks.append(vals['mask'])
+                final_dest_labels.append(vals['label'])
+
+        if not len(final_dest_masks):
+            rand_indx = np.random.randint(0, 2, size=1)
+            all_results = [results_cpy, results_cpy2]
+            print("No masks after final")
+            return all_results[rand_indx[0]]
+
+        if not (np.all(np.isfinite(final_dest_masks)) and np.all(np.isfinite(final_dest_boxes))):
+            rand_indx = np.random.randint(0, 2, size=1)
+            all_results = [results_cpy, results_cpy2]
+            print("infinite values for masks after rescale")
+            return all_results[rand_indx[0]]
+
+        final_dest_masks_ = self.get_bitmapmasks(final_dest_masks)
+
+        results['img'] = rescaled_dest_img
+        results['img_shape'] = rescaled_dest_img.shape
+        results['ori_shape'] = rescaled_dest_img.shape
+        results['gt_masks'] = final_dest_masks_
+        results['gt_bboxes'] = np.array(final_dest_boxes, dtype=np.float32)
+        results['gt_labels'] = np.array(final_dest_labels)
+
+        # heuristics check
+        for m in final_dest_masks_.masks:
+            if np.sum(m) <= 10:
+                rand_indx = np.random.randint(0, 2, size=1)
+                all_results = [results_cpy, results_cpy2]
+                print("very small masks")
+                return all_results[rand_indx[0]]
+
+        # same number should be there
+        if not len(final_dest_labels) == len(final_dest_boxes) == final_dest_masks_.masks.shape[0]:
+            rand_indx = np.random.randint(0, 2, size=1)
+            all_results = [results_cpy, results_cpy2]
+            print("size mismatch in the end")
+            return all_results[rand_indx[0]]
+
+        # boxes
+        height, width, _ = rescaled_dest_img.shape
+
+        for box in final_dest_boxes:
+            if not all(x >= 0 for x in box):
+                rand_indx = np.random.randint(0, 2, size=1)
+                all_results = [results_cpy, results_cpy2]
+                print("negative boxes in the end")
+                return all_results[rand_indx[0]]
+            if any(x > width for x in box[0::2]):
+                rand_indx = np.random.randint(0, 2, size=1)
+                all_results = [results_cpy, results_cpy2]
+                print("box x out of bounds in the end")
+                return all_results[rand_indx[0]]
+            if any(x > height for x in box[1::2]):
+                rand_indx = np.random.randint(0, 2, size=1)
+                all_results = [results_cpy, results_cpy2]
+                print("box y out of bounds in the end")
+                return all_results[rand_indx[0]]
+            if box[0]>=box[2]:
+                rand_indx = np.random.randint(0, 2, size=1)
+                all_results = [results_cpy, results_cpy2]
+                print("box x1 > x2")
+                print(box)
+                return all_results[rand_indx[0]]
+            if box[1]>=box[3]:
+                rand_indx = np.random.randint(0, 2, size=1)
+                all_results = [results_cpy, results_cpy2]
+                print("box y1 > y2")
+                print(box)
+                return all_results[rand_indx[0]]
+
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        return repr_str
