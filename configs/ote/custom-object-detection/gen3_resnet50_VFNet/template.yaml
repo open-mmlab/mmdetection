@@ -1,5 +1,5 @@
 # Description.
-name: Custom Object Detection VFNet
+name: Custom Object Detection Gen3 VFNet
 task_type: DETECTION
 task_family: VISION
 instantiation: "CLASS"

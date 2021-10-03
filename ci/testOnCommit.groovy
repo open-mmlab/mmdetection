@@ -19,7 +19,7 @@ pipeline {
                 env
                 """
                 echo shortCommit
-                build job: "ote/util-common/ote-test-on-commit", parameters: [[$class: 'StringParameterValue', name: 'OTECOMMIT', value: shortCommit]]
+                build job: "ote/util-common/ote-test-on-commit", parameters: [[$class: 'StringParameterValue', name: 'GIT_BACKEND_COMMIT', value: shortCommit]]
             }
         }
     }

@@ -12,12 +12,10 @@ from typing import Optional
 
 import numpy as np
 import torch
-import yaml
 from bson import ObjectId
 from e2e_test_system import e2e_pytest_api
 from ote_sdk.configuration.helper import convert, create
 from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
-from ote_sdk.entities.id import ID
 from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.metrics import Performance
 from ote_sdk.entities.model import (ModelEntity, ModelFormat, ModelOptimizationType, ModelPrecision, ModelStatus,
@@ -40,47 +38,62 @@ from sc_sdk.entities.datasets import Dataset, NullDatasetStorage
 from sc_sdk.entities.image import Image
 from sc_sdk.entities.media_identifier import ImageIdentifier
 
-from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask,
-                                           OTEDetectionConfig,
-                                           OTEDetectionInferenceTask,
-                                           OTEDetectionTrainingTask,
-                                           OTEDetectionNNCFTask,
-                                           )
-
+from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask, OTEDetectionConfig, OTEDetectionInferenceTask,
+                                           OTEDetectionNNCFTask, OTEDetectionTrainingTask)
 from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
 from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema
 from mmdet.integration.nncf.utils import is_nncf_enabled
 
+DEFAULT_TEMPLATE_DIR = osp.join('configs', 'ote', 'custom-object-detection', 'gen3_mobilenetV2_ATSS')
 
 class ModelTemplate(unittest.TestCase):
 
-    @e2e_pytest_api
-    def test_reading_mnv2_ssd(self):
-        parse_model_template(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_SSD', 'template.yaml'))
+    # ------------------------------ Gen1 ------------------------------
 
     @e2e_pytest_api
-    def test_reading_mnv2_atss(self):
-        parse_model_template(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS', 'template.yaml'))
+    def test_reading_gen1_ssd(self):
+        parse_model_template(osp.join('configs', 'ote', 'custom-object-detection', 'gen1_mobilenet_v2-2s_ssd-256x256', 'template.yaml'))
+
+    # ------------------------------ Gen2 ------------------------------
 
     @e2e_pytest_api
-    def test_reading_resnet50_vfnet(self):
-        parse_model_template(osp.join('configs', 'ote', 'custom-object-detection', 'resnet50_VFNet', 'template.yaml'))
+    def test_reading_gen2_ssd(self):
+        parse_model_template(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_mobilenetV2_SSD', 'template.yaml'))
+
+    @e2e_pytest_api
+    def test_reading_gen2_atss(self):
+        parse_model_template(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_mobilenetV2_ATSS', 'template.yaml'))
+
+    @e2e_pytest_api
+    def test_reading_gen2_vfnet(self):
+        parse_model_template(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_resnet50_VFNet', 'template.yaml'))
+
+    # ------------------------------ Gen3 ------------------------------
+
+    @e2e_pytest_api
+    def test_reading_gen3_ssd(self):
+        parse_model_template(osp.join('configs', 'ote', 'custom-object-detection', 'gen3_mobilenetV2_SSD', 'template.yaml'))
+
+    @e2e_pytest_api
+    def test_reading_gen3_atss(self):
+        parse_model_template(osp.join('configs', 'ote', 'custom-object-detection', 'gen3_mobilenetV2_ATSS', 'template.yaml'))
+
+    @e2e_pytest_api
+    def test_reading_gen3_vfnet(self):
+        parse_model_template(osp.join('configs', 'ote', 'custom-object-detection', 'gen3_resnet50_VFNet', 'template.yaml'))
 
 
 @e2e_pytest_api
 def test_configuration_yaml():
-    configuration = OTEDetectionConfig(workspace_id=ID(), model_storage_id=ID())
+    configuration = OTEDetectionConfig()
     configuration_yaml_str = convert(configuration, str)
-    configuration_yaml_converted = yaml.safe_load(configuration_yaml_str)
-    with open(osp.join('mmdet', 'apis', 'ote', 'apis', 'detection', 'configuration.yaml')) as read_file:
-        configuration_yaml_loaded = yaml.safe_load(read_file)
-    del configuration_yaml_converted['algo_backend']
+    configuration_yaml_converted = create(configuration_yaml_str)
+    configuration_yaml_loaded = create(osp.join('mmdet', 'apis', 'ote', 'apis', 'detection', 'configuration.yaml'))
     assert configuration_yaml_converted == configuration_yaml_loaded
 
 @e2e_pytest_api
 def test_set_values_as_default():
-    template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
-    template_file = osp.join(template_dir, 'template.yaml')
+    template_file = osp.join(DEFAULT_TEMPLATE_DIR, 'template.yaml')
     model_template = parse_model_template(template_file)
 
     hyper_parameters = model_template.hyper_parameters.data
@@ -102,7 +115,7 @@ class Sample(unittest.TestCase):
     root_dir = '/tmp'
     coco_dir = osp.join(root_dir, 'data/coco')
     snapshots_dir = osp.join(root_dir, 'snapshots')
-    template = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS', 'template.yaml')
+    template = osp.join(DEFAULT_TEMPLATE_DIR, 'template.yaml')
 
     custom_operations = ['ExperimentalDetectronROIFeatureExtractor',
                          'PriorBox', 'PriorBoxClustered', 'DetectionOutput',
@@ -253,9 +266,8 @@ class API(unittest.TestCase):
 
         This test should be finished in under one minute on a workstation.
         """
-        template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
-        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=500)
-        detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 250)
+        hyper_parameters, model_template = self.setup_configurable_parameters(DEFAULT_TEMPLATE_DIR, num_iters=500)
+        detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 64)
 
         detection_task = OTEDetectionTrainingTask(task_environment=detection_environment)
 
@@ -285,7 +297,7 @@ class API(unittest.TestCase):
         # stopping process has to happen in less than 35 seconds
         train_future.result()
         self.assertEqual(training_progress_curve[-1], 100)
-        self.assertLess(time.time() - start_time, 35, 'Expected to stop within 35 seconds.')
+        self.assertLess(time.time() - start_time, 100, 'Expected to stop within 100 seconds.')
 
         # Test stopping immediately (as soon as training is started).
         start_time = time.time()
@@ -299,8 +311,7 @@ class API(unittest.TestCase):
 
     @e2e_pytest_api
     def test_training_progress_tracking(self):
-        template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
-        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=5)
+        hyper_parameters, model_template = self.setup_configurable_parameters(DEFAULT_TEMPLATE_DIR, num_iters=5)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
 
         task = OTEDetectionTrainingTask(task_environment=detection_environment)
@@ -329,10 +340,9 @@ class API(unittest.TestCase):
     def test_nncf_optimize_progress_tracking(self):
         if not is_nncf_enabled():
             self.skipTest("Required NNCF module.")
-        template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
 
         # Prepare pretrained weights
-        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=2)
+        hyper_parameters, model_template = self.setup_configurable_parameters(DEFAULT_TEMPLATE_DIR, num_iters=2)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
 
         task = OTEDetectionTrainingTask(task_environment=detection_environment)
@@ -379,8 +389,7 @@ class API(unittest.TestCase):
 
     @e2e_pytest_api
     def test_inference_progress_tracking(self):
-        template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
-        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=10)
+        hyper_parameters, model_template = self.setup_configurable_parameters(DEFAULT_TEMPLATE_DIR, num_iters=10)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
 
         task = OTEDetectionTrainingTask(task_environment=detection_environment)
@@ -403,10 +412,8 @@ class API(unittest.TestCase):
 
     @e2e_pytest_api
     def test_inference_task(self):
-        template_dir = osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS')
-
         # Prepare pretrained weights
-        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=2)
+        hyper_parameters, model_template = self.setup_configurable_parameters(DEFAULT_TEMPLATE_DIR, num_iters=2)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 50)
         val_dataset = dataset.get_subset(Subset.VALIDATION)
 
@@ -464,10 +471,10 @@ class API(unittest.TestCase):
                 f'delta tolerance threshold: {delta_tolerance})'
             )
 
-    def end_to_end(self, template_dir, quality_score_threshold=0.5, reload_perf_delta_tolerance=0.0,
+    def end_to_end(self, template_dir, num_iters=5, quality_score_threshold=0.5, reload_perf_delta_tolerance=0.0,
         export_perf_delta_tolerance=0.0005, pot_perf_delta_tolerance=0.1, nncf_perf_delta_tolerance=0.1):
 
-        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=5)
+        hyper_parameters, model_template = self.setup_configurable_parameters(template_dir, num_iters=num_iters)
         detection_environment, dataset = self.init_environment(hyper_parameters, model_template, 250)
 
         val_dataset = dataset.get_subset(Subset.VALIDATION)
@@ -602,15 +609,41 @@ class API(unittest.TestCase):
             else:
                 print('Skipped test of OTEDetectionNNCFTask. Required NNCF module.')
 
-    @e2e_pytest_api
-    def test_training_custom_mobilenet_atss(self):
-        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_ATSS'))
+    # ------------------------------ Gen1 ------------------------------
 
     @e2e_pytest_api
-    def test_training_custom_mobilenet_ssd(self):
-        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'mobilenetV2_SSD'))
+    def test_training_gen1_ssd(self):
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen1_mobilenet_v2-2s_ssd-256x256'),
+            num_iters=150)
+
+    # ------------------------------ Gen2 ------------------------------
 
     @e2e_pytest_api
-    def test_training_custom_resnet_vfnet(self):
-        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'resnet50_VFNet'),
-                        export_perf_delta_tolerance=0.01)
+    def test_training_gen2_ssd(self):
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_mobilenetV2_SSD'),
+            num_iters=150)
+
+    @e2e_pytest_api
+    def test_training_gen2_atss(self):
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_mobilenetV2_ATSS'),
+            num_iters=150)
+
+    @e2e_pytest_api
+    def test_training_gen2_vfnet(self):
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_resnet50_VFNet'),
+            num_iters=150, export_perf_delta_tolerance=0.01)
+
+    # ------------------------------ Gen3 ------------------------------
+
+    @e2e_pytest_api
+    def test_training_gen3_ssd(self):
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen3_mobilenetV2_SSD'))
+
+    @e2e_pytest_api
+    def test_training_gen3_atss(self):
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen3_mobilenetV2_ATSS'))
+
+    @e2e_pytest_api
+    def test_training_gen3_vfnet(self):
+        self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen3_resnet50_VFNet'),
+            export_perf_delta_tolerance=0.01)

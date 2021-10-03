@@ -30,9 +30,9 @@ from mmcv.utils import Config
 from ote_sdk.configuration import cfg_helper
 from ote_sdk.configuration.helper.utils import ids_to_strings
 from ote_sdk.entities.inference_parameters import InferenceParameters
-from ote_sdk.entities.label import ScoredLabel
 from ote_sdk.entities.model import ModelStatus, ModelPrecision, ModelEntity, ModelFormat, ModelOptimizationType
 from ote_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
+from ote_sdk.entities.scored_label import ScoredLabel
 from ote_sdk.entities.shapes.rectangle import Rectangle
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.entities.train_parameters import default_progress_callback
@@ -76,14 +76,14 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
 
         self._hyperparams = hyperparams = task_environment.get_hyper_parameters(OTEDetectionConfig)
 
-        self._model_name = hyperparams.algo_backend.model_name
+        self._model_name = task_environment.model_template.name
         self._labels = task_environment.get_labels(False)
 
         template_file_path = task_environment.model_template.model_template_path
 
         # Get and prepare mmdet config.
         self._base_dir = os.path.abspath(os.path.dirname(template_file_path))
-        config_file_path = os.path.join(self._base_dir, hyperparams.algo_backend.model)
+        config_file_path = os.path.join(self._base_dir, "model.py")
         self._config = Config.fromfile(config_file_path)
         patch_config(self._config, self._scratch_space, self._labels, random_seed=42)
         set_hyperparams(self._config, hyperparams)

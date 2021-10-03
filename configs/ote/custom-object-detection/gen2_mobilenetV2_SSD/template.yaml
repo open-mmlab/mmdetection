@@ -1,9 +1,9 @@
 # Description.
-name: Custom Object Detection SSD
+name: Custom Object Detection Gen2 SSD
 task_type: DETECTION
 task_family: VISION
-instantiation: "CLASS"
-summary: SSD with MobileNetV2 backbone.
+instantiation: CLASS
+summary: Custom Object Detection Model S Gen 2
 application:
   ~
 
@@ -14,7 +14,6 @@ framework: OTEDetection v2.9.1
 entrypoints:
   base: mmdet.apis.ote.apis.detection.OTEDetectionTrainingTask
   openvino: mmdet.apis.ote.apis.detection.OpenVINODetectionTask
-  nncf: mmdet.apis.ote.apis.detection.OTEDetectionNNCFTask
 
 # Hyperparameters.
 hyper_parameters:
@@ -26,15 +25,16 @@ hyper_parameters:
       learning_rate:
         default_value: 0.01
       learning_rate_warmup_iters:
-        default_value: 200
-    nncf_optimization:
-      preset:
-        default_value: Quantization
-      max_accuracy_degradation:
-        default_value: 1.0
+        default_value: 1200
 
 # Training resources.
 max_nodes: 1
 training_targets:
   - GPU
   - CPU
+
+# Inference options. Defined by OpenVINO capabilities, not Algo Backend or Platform.
+inference_targets:
+  - CPU
+  - GPU
+  - VPU
