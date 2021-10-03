@@ -114,7 +114,7 @@ elif [[ $CUDA_VERSION_CODE == "102" ]]; then
   echo torch==${TORCH_VERSION} >> ${CONSTRAINTS_FILE}
   echo torchvision==${TORCHVISION_VERSION} >> ${CONSTRAINTS_FILE}
 else
-  pip install torch==${TORCH_VERSION}+cu${CUDA_VERSION_CODE} torchvision==${TORCHVISION_VERSION}+cu${CUDA_VERSION_CODE} -f https://download.pytorch.org/whl/torch_stable.html \
+  pip install torch==${TORCH_VERSION}+cu${CUDA_VERSION_CODE} torchvision==${TORCHVISION_VERSION}+cu${CUDA_VERSION_CODE} -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html \
           -c ${CONSTRAINTS_FILE} || exit 1
   echo torch==${TORCH_VERSION}+cu${CUDA_VERSION_CODE} >> ${CONSTRAINTS_FILE}
   echo torchvision==${TORCHVISION_VERSION}+cu${CUDA_VERSION_CODE} >> ${CONSTRAINTS_FILE}
