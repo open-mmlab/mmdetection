@@ -457,7 +457,7 @@ class EvalPlusBeforeRunHook(EvalHook):
         self.evaluate(runner, results)
 
 
-class DistEvalPlusBeforeRunHook(DistEvalHook):
+class DistEvalPlusBeforeRunHook(EvalPlusBeforeRunHook, DistEvalHook):
     """Distributed evaluation hook, adds evaluation before training.
     """
 

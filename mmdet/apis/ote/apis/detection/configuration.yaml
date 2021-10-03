@@ -209,10 +209,26 @@ nncf_optimization:
     enum_name: NNCFCompressionPreset
     header: Preset
     options:
-      PRUNING: Pruning
       QUANTIZATION: Quantization
       QUANTIZATION_PRUNING: Quantization and pruning
     type: SELECTABLE
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: Quantization
+    visible_in_ui: True
+    warning: null
+  max_accuracy_degradation:
+    affects_outcome_of: NONE
+    default_value: 1.0
+    description: The maximal allowed accuracy metric drop in percent relative to the original model
+    editable: True
+    header: Maximum accuracy degradation
+    max_value: 10.0
+    min_value: 0.01
+    type: FLOAT
     ui_rules:
       action: DISABLE_EDITING
       operator: AND

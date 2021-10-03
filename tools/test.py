@@ -198,7 +198,13 @@ def main():
         cfg.resume_from = None
         if torch.cuda.is_available():
             model = model.cuda()
-        _, model = wrap_nncf_model(model, cfg, None, get_fake_input)
+        _, model = wrap_nncf_model(model, cfg,
+                                   val_dataloader=None,
+                                   distributed=distributed,
+                                   dataloader_for_init=None,
+                                   get_fake_input_func=get_fake_input,
+                                   is_accuracy_aware=False,
+                                   is_alt_ssd_export=False)
         checkpoint = torch.load(args.checkpoint, map_location=None)
     else:
         fp16_cfg = cfg.get('fp16', None)

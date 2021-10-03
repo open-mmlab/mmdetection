@@ -30,6 +30,8 @@ hyper_parameters:
     nncf_optimization:
       preset:
         default_value: Quantization
+      max_accuracy_degradation:
+        default_value: 1.0
 
 # Training resources.
 max_nodes: 1

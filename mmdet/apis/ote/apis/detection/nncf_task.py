@@ -29,23 +29,25 @@ from ote_sdk.entities.subset import Subset
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.usecases.tasks.interfaces.optimization_interface import IOptimizationTask
 from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
+from ote_sdk.entities.train_parameters import default_progress_callback
 
 from sc_sdk.entities.datasets import Dataset
 
 from mmdet.apis import train_detector
+from mmdet.apis.fake_input import get_fake_input
 from mmdet.apis.ote.apis.detection.config_utils import prepare_for_training
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
 from mmdet.apis.ote.apis.detection.configuration_enums import NNCFCompressionPreset
-
-from mmdet.apis.fake_input import get_fake_input
 from mmdet.apis.ote.apis.detection.inference_task import OTEDetectionInferenceTask
-from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
 from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback
-from mmdet.datasets import build_dataset
+from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
 from mmdet.datasets import build_dataloader
+from mmdet.datasets import build_dataset
+from mmdet.apis.train import build_val_dataloader
 from mmdet.integration.nncf import check_nncf_is_enabled
 from mmdet.integration.nncf import is_state_nncf
 from mmdet.integration.nncf import wrap_nncf_model
+from mmdet.integration.nncf import is_accuracy_aware_training_set
 from mmdet.integration.nncf.config import compose_nncf_config
 
 
@@ -54,8 +56,7 @@ logger = logging.getLogger(__name__)
 
 COMPRESSION_MAP = {
     NNCFCompressionPreset.QUANTIZATION: "nncf_quantization",
-    NNCFCompressionPreset.PRUNING: "nncf_pruning",
-    NNCFCompressionPreset.QUANTIZATION_PRUNING: "nncf_pruning_quantization"
+    NNCFCompressionPreset.QUANTIZATION_PRUNING: "nncf_quantization_pruning"
 }
 
 
@@ -65,6 +66,8 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
         """"
         Task for compressing object detection models using NNCF.
         """
+        self._val_dataloader = None
+        self._compression_ctrl = None
         check_nncf_is_enabled()
         super().__init__(task_environment)
 
@@ -78,6 +81,18 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
         optimization_type = COMPRESSION_MAP[self._hyperparams.nncf_optimization.preset]
 
         optimization_config = compose_nncf_config(common_nncf_config, [optimization_type])
+
+        max_acc_drop = self._hyperparams.nncf_optimization.max_accuracy_degradation
+        if "accuracy_aware_training" in optimization_config["nncf_config"]:
+            # Update maximal_relative_accuracy_degradation
+            (optimization_config["nncf_config"]["accuracy_aware_training"]
+                                ["params"]["maximal_relative_accuracy_degradation"]) = max_acc_drop
+            # Force evaluation interval
+            self._config.evaluation.interval = 1
+        else:
+            logger.error("NNCF config has no accuracy_aware_training parameters")
+            exit(1)
+
         self._config.update(optimization_config)
 
         compression_ctrl = None
@@ -124,12 +139,19 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
             len(config.gpu_ids),
             dist=False,
             seed=config.seed)
+        is_acc_aware_training_set = is_accuracy_aware_training_set(config.get("nncf_config"))
+
+        if is_acc_aware_training_set:
+            self._val_dataloader = build_val_dataloader(config, False)
 
         self._compression_ctrl, self._model = wrap_nncf_model(
             self._model,
             config,
-            init_dataloader,
-            get_fake_input)
+            val_dataloader=self._val_dataloader,
+            dataloader_for_init=init_dataloader,
+            get_fake_input_func=get_fake_input,
+            is_accuracy_aware=is_acc_aware_training_set)
+
 
     def optimize(
         self,
@@ -143,6 +165,7 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
 
         train_dataset = dataset.get_subset(Subset.TRAINING)
         val_dataset = dataset.get_subset(Subset.VALIDATION)
+
         config = self._config
 
         if optimization_parameters is not None:
@@ -170,6 +193,7 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
                        dataset=mm_train_dataset,
                        cfg=training_config,
                        validate=True,
+                       val_dataloader=self._val_dataloader,
                        compression_ctrl=self._compression_ctrl)
 
         # Check for stop signal when training has stopped. If should_stop is true, training was cancelled

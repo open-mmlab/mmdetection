@@ -140,6 +140,15 @@ class OTEDetectionConfig(ModelConfig):
                             description="NNCF preset that defines compression scheme",
                             editable=True, visible_in_ui=True)
 
+        max_accuracy_degradation = configurable_float(
+            default_value=1.0,
+            min_value=0.01,
+            max_value=10.0,
+            header="Maximum accuracy degradation",
+            description="The maximal allowed accuracy metric drop in percent relative to the original model",
+            affects_outcome_of=ModelLifecycle.TRAINING
+        )
+
     @attrs
     class __POTParameter(ParameterGroup):
         header = string_attribute("POT Parameters")
