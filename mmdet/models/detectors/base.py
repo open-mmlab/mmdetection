@@ -227,6 +227,10 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
     def forward_export_context(self, img_metas):
         assert self.img_metas is None and self.forward_backup is None, 'Error: one forward context inside another forward context'
 
+        from nncf.torch.nncf_network import NNCFNetwork
+        if isinstance(self, NNCFNetwork):
+            self.get_nncf_wrapped_model().img_metas = img_metas
+            self.get_nncf_wrapped_model().forward_backup = self.forward
         self.img_metas = img_metas
         self.forward_backup = self.forward
         self.forward = partial(self.forward, return_loss=False, forward_export=True, img_metas=None)
@@ -234,6 +238,9 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         self.forward = self.forward_backup
         self.forward_backup = None
         self.img_metas = None
+        if isinstance(self, NNCFNetwork):
+            self.get_nncf_wrapped_model().img_metas = None
+            self.get_nncf_wrapped_model().forward_backup = None
 
     @contextmanager
     def forward_dummy_context(self, img_metas):

@@ -91,7 +91,6 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
             self._config.evaluation.interval = 1
         else:
             logger.error("NNCF config has no accuracy_aware_training parameters")
-            exit(1)
 
         self._config.update(optimization_config)
 
