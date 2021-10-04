@@ -15,22 +15,23 @@
 import copy
 import io
 import logging
-import numpy as np
 import os
 import shutil
 import tempfile
-import torch
 import warnings
 from typing import List, Optional, Tuple
 
+import numpy as np
+import torch
 from mmcv.parallel import MMDataParallel
 from mmcv.runner import load_checkpoint
 from mmcv.utils import Config
-
 from ote_sdk.configuration import cfg_helper
 from ote_sdk.configuration.helper.utils import ids_to_strings
+from ote_sdk.entities.annotation import Annotation
+from ote_sdk.entities.datasets import DatasetEntity
 from ote_sdk.entities.inference_parameters import InferenceParameters
-from ote_sdk.entities.model import ModelStatus, ModelPrecision, ModelEntity, ModelFormat, ModelOptimizationType
+from ote_sdk.entities.model import ModelEntity, ModelFormat, ModelOptimizationType, ModelPrecision, ModelStatus
 from ote_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
 from ote_sdk.entities.scored_label import ScoredLabel
 from ote_sdk.entities.shapes.rectangle import Rectangle
@@ -38,24 +39,17 @@ from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.entities.train_parameters import default_progress_callback
 from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
-from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType
-from ote_sdk.usecases.tasks.interfaces.export_interface import IExportTask
+from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType, IExportTask
 from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
 from ote_sdk.usecases.tasks.interfaces.unload_interface import IUnload
-from sc_sdk.entities.annotation import Annotation
-from sc_sdk.entities.datasets import Dataset
 
 from mmdet.apis import export_model, single_gpu_test
-from mmdet.apis.ote.apis.detection.config_utils import patch_config
-from mmdet.apis.ote.apis.detection.config_utils import prepare_for_testing
-from mmdet.apis.ote.apis.detection.config_utils import set_hyperparams
+from mmdet.apis.ote.apis.detection.config_utils import patch_config, prepare_for_testing, set_hyperparams
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
 from mmdet.apis.ote.apis.detection.ote_utils import InferenceProgressCallback
-
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 from mmdet.parallel import MMDataCPU
-
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +143,7 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
         return model
 
 
-    def infer(self, dataset: Dataset, inference_parameters: Optional[InferenceParameters] = None) -> Dataset:
+    def infer(self, dataset: DatasetEntity, inference_parameters: Optional[InferenceParameters] = None) -> DatasetEntity:
         """ Analyzes a dataset using the latest inference model. """
         set_hyperparams(self._config, self._hyperparams)
 
@@ -210,7 +204,7 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
 
 
     @staticmethod
-    def _infer_detector(model: torch.nn.Module, config: Config, dataset: Dataset,
+    def _infer_detector(model: torch.nn.Module, config: Config, dataset: DatasetEntity,
                         eval: Optional[bool] = False, metric_name: Optional[str] = 'mAP') -> Tuple[List, float]:
         model.eval()
         test_config = prepare_for_testing(config, dataset)
