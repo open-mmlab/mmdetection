@@ -28,8 +28,8 @@ hyper_parameters:
       learning_rate_warmup_iters:
         default_value: 200
     nncf_optimization:
-      preset:
-        default_value: Quantization
+      enable_pruning:
+        default_value: false
       max_accuracy_degradation:
         default_value: 1.0
 

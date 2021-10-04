@@ -37,7 +37,6 @@ from mmdet.apis import train_detector
 from mmdet.apis.fake_input import get_fake_input
 from mmdet.apis.ote.apis.detection.config_utils import prepare_for_training
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
-from mmdet.apis.ote.apis.detection.configuration_enums import NNCFCompressionPreset
 from mmdet.apis.ote.apis.detection.inference_task import OTEDetectionInferenceTask
 from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
@@ -52,12 +51,6 @@ from mmdet.integration.nncf.config import compose_nncf_config
 
 
 logger = logging.getLogger(__name__)
-
-
-COMPRESSION_MAP = {
-    NNCFCompressionPreset.QUANTIZATION: "nncf_quantization",
-    NNCFCompressionPreset.QUANTIZATION_PRUNING: "nncf_quantization_pruning"
-}
 
 
 class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
@@ -78,7 +71,9 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
         with open(nncf_config_path) as nncf_config_file:
             common_nncf_config = json.load(nncf_config_file)
 
-        optimization_type = COMPRESSION_MAP[self._hyperparams.nncf_optimization.preset]
+        optimization_type = "nncf_quantization"
+        if self._hyperparams.nncf_optimization.enable_pruning:
+            optimization_type = "nncf_quantization_pruning"
 
         optimization_config = compose_nncf_config(common_nncf_config, [optimization_type])
 
