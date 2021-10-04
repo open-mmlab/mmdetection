@@ -21,9 +21,9 @@ from collections import defaultdict
 from typing import List, Optional
 
 from mmcv import Config, ConfigDict
+from ote_sdk.entities.datasets import DatasetEntity
 from ote_sdk.entities.label import LabelEntity
 from ote_sdk.usecases.reporting.time_monitor_callback import TimeMonitorCallback
-from sc_sdk.entities.datasets import Dataset
 
 from .configuration import OTEDetectionConfig
 
@@ -106,14 +106,14 @@ def set_hyperparams(config: Config, hyperparams: OTEDetectionConfig):
         config.runner.max_iters = total_iterations
 
 
-def prepare_for_testing(config: Config, dataset: Dataset) -> Config:
+def prepare_for_testing(config: Config, dataset: DatasetEntity) -> Config:
     config = copy.deepcopy(config)
     # FIXME. Should working directories be modified here?
     config.data.test.ote_dataset = dataset
     return config
 
 
-def prepare_for_training(config: Config, train_dataset: Dataset, val_dataset: Dataset,
+def prepare_for_training(config: Config, train_dataset: DatasetEntity, val_dataset: DatasetEntity,
                          time_monitor: TimeMonitorCallback, learning_curves: defaultdict) -> Config:
     config = copy.deepcopy(config)
     prepare_work_dir(config)
@@ -206,6 +206,19 @@ def set_data_classes(config: Config, label_names: List[str]):
 
 
 def patch_datasets(config: Config):
+
+    def patch_color_conversion(pipeline):
+        # Default data format for OTE is RGB, while mmdet uses BGR, so negate the color conversion flag.
+        for pipeline_step in pipeline:
+            if pipeline_step.type == 'Normalize':
+                to_rgb = False
+                if 'to_rgb' in pipeline_step:
+                    to_rgb = pipeline_step.to_rgb
+                to_rgb = not bool(to_rgb)
+                pipeline_step.to_rgb = to_rgb
+            elif pipeline_step.type == 'MultiScaleFlipAug':
+                patch_color_conversion(pipeline_step.transforms)
+
     assert 'data' in config
     for subset in ('train', 'val', 'test'):
         cfg = config.data[subset]
@@ -218,8 +231,9 @@ def patch_datasets(config: Config):
         for pipeline_step in cfg.pipeline:
             if pipeline_step.type == 'LoadImageFromFile':
                 pipeline_step.type = 'LoadImageFromOTEDataset'
-            elif pipeline_step.type == 'LoadAnnotations':
+            if pipeline_step.type == 'LoadAnnotations':
                 pipeline_step.type = 'LoadAnnotationFromOTEDataset'
+        patch_color_conversion(cfg.pipeline)
 
 
 def remove_from_config(config, key: str):

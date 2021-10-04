@@ -16,22 +16,21 @@ import io
 import json
 import logging
 import os
-import torch
 from collections import defaultdict
 from typing import Optional
 
+import torch
 from ote_sdk.configuration import cfg_helper
 from ote_sdk.configuration.helper.utils import ids_to_strings
-from ote_sdk.entities.model import ModelEntity
-from ote_sdk.entities.model import ModelStatus
+from ote_sdk.entities.datasets import DatasetEntity
+from ote_sdk.entities.inference_parameters import default_progress_callback
+from ote_sdk.entities.model import ModelEntity, ModelStatus
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
 from ote_sdk.entities.subset import Subset
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.usecases.tasks.interfaces.optimization_interface import IOptimizationTask
 from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
 from ote_sdk.entities.train_parameters import default_progress_callback
-
-from sc_sdk.entities.datasets import Dataset
 
 from mmdet.apis import train_detector
 from mmdet.apis.fake_input import get_fake_input
@@ -40,15 +39,13 @@ from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
 from mmdet.apis.ote.apis.detection.inference_task import OTEDetectionInferenceTask
 from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
-from mmdet.datasets import build_dataloader
-from mmdet.datasets import build_dataset
 from mmdet.apis.train import build_val_dataloader
+from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.integration.nncf import check_nncf_is_enabled
 from mmdet.integration.nncf import is_state_nncf
 from mmdet.integration.nncf import wrap_nncf_model
 from mmdet.integration.nncf import is_accuracy_aware_training_set
 from mmdet.integration.nncf.config import compose_nncf_config
-
 
 logger = logging.getLogger(__name__)
 
@@ -150,7 +147,7 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
     def optimize(
         self,
         optimization_type: OptimizationType,
-        dataset: Dataset,
+        dataset: DatasetEntity,
         output_model: ModelEntity,
         optimization_parameters: Optional[OptimizationParameters],
     ):
