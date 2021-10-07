@@ -201,9 +201,9 @@ nncf_optimization:
   enable_pruning:
     affects_outcome_of: INFERENCE
     default_value: false
-    description: Enable pruning compression algorithm
+    description: Enable filter pruning algorithm
     editable: true
-    header: Enable pruning compression algorithm
+    header: Enable filter pruning algorithm
     type: BOOLEAN
     ui_rules:
       action: DISABLE_EDITING
@@ -213,12 +213,12 @@ nncf_optimization:
     value: false
     visible_in_ui: true
     warning: null
-  max_accuracy_degradation:
+  maximal_relative_accuracy_degradation:
     affects_outcome_of: NONE
     default_value: 1.0
     description: The maximal allowed accuracy metric drop in percent relative to the original model
     editable: True
-    header: Maximum accuracy degradation
+    header: Maximum releative accuracy degradation
     max_value: 10.0
     min_value: 0.01
     type: FLOAT

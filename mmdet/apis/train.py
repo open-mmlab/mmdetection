@@ -23,6 +23,7 @@ from mmdet.utils import get_root_logger
 from mmdet.utils import prepare_mmdet_model_for_execution
 from .fake_input import get_fake_input
 
+
 def set_random_seed(seed, deterministic=False):
     """Set random seed.
 
@@ -51,6 +52,7 @@ def add_logging_on_first_and_last_iter(runner):
     for hook in runner.hooks:
         if isinstance(hook, LoggerHook):
             hook.every_n_inner_iters = every_n_inner_iters.__get__(hook)
+
 
 def build_val_dataloader(cfg, distributed):
     # Support batch_size > 1 in validation

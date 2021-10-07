@@ -16,7 +16,6 @@ from .utils import (
     no_nncf_trace,
 )
 
-
 __all__ = [
     'AccuracyAwareRunner',
     'CheckpointHookBeforeTraining',

@@ -126,16 +126,16 @@ class OTEDetectionConfig(ConfigurableParameters):
 
         enable_pruning = configurable_boolean(
             default_value=False,
-            header="Enable pruning compression algorithm",
-            description="Enable pruning compression algorithm",
+            header="Enable filter pruning algorithm",
+            description="Enable filter pruning algorithm",
             affects_outcome_of=ModelLifecycle.TRAINING
         )
 
-        max_accuracy_degradation = configurable_float(
+        maximal_relative_accuracy_degradation = configurable_float(
             default_value=1.0,
             min_value=0.01,
             max_value=10.0,
-            header="Maximum accuracy degradation",
+            header="Maximum relative accuracy degradation",
             description="The maximal allowed accuracy metric drop in percent relative to the original model",
             affects_outcome_of=ModelLifecycle.TRAINING
         )
