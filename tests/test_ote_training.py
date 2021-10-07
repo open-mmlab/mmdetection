@@ -696,7 +696,108 @@ class OTETestExportEvaluationAction(BaseOTETestAction):
         results = {}
         return results
 
+class OTETestPotAction(BaseOTETestAction):
+    _name = 'pot'
+
+    def __init__(self, pot_subset=Subset.TRAINING):
+        self.pot_subset = pot_subset
+
+    def _run_ote_pot(self, data_collector,
+                     model_template, dataset,
+                     environment_for_export):
+        logger.debug('Get predictions on the validation set for exported model')
+        self.environment_for_pot = deepcopy(environment_for_export)
+        self.openvino_task_pot = create_openvino_task(model_template, environment_for_export)
+
+        self.optimized_model_pot = ModelEntity(
+            dataset,
+            self.environment_for_pot.get_model_configuration(),
+            optimization_type=ModelOptimizationType.POT,
+            optimization_methods=OptimizationMethod.QUANTIZATION,
+            optimization_objectives={},
+            precision=[ModelPrecision.INT8],
+            target_device=TargetDevice.CPU,
+            performance_improvement={},
+            model_size_reduction=1.,
+            model_status=ModelStatus.NOT_READY)
+        logger.info('Run POT optimization')
+        self.openvino_task_pot.optimize(
+            OptimizationType.POT,
+            dataset.get_subset(self.pot_subset),
+            self.optimized_model_pot,
+            OptimizationParameters())
+
+    def __call__(self, data_collector: DataCollector,
+                 results_prev_stages: Optional[OrderedDict]=None):
+        self._check_result_prev_stages(results_prev_stages, ['export'])
+
+        kwargs = {
+                'model_template': results_prev_stages['training']['model_template'],
+                'dataset': results_prev_stages['training']['dataset'],
+                'environment_for_export': results_prev_stages['export']['environment'],
+        }
+
+        self._run_ote_pot(data_collector, **kwargs)
+        results = {
+                'openvino_task_pot': self.openvino_task_pot,
+                'optimized_model_pot': self.optimized_model_pot,
+        }
+        return results
+
+class OTETestPotEvaluationAction(BaseOTETestAction):
+    _name = 'pot_evaluation'
+
+    def __init__(self, subset=Subset.VALIDATION):
+        self.subset = subset
+
+    def _run_ote_pot_evaluation(self, data_collector,
+                                dataset,
+                                openvino_task_pot,
+                                optimized_model_pot,
+                                ):
+        logger.debug('Get predictions for POT on the validation set')
+        validation_dataset_pot = dataset.get_subset(self.subset)
+        predicted_validation_dataset_pot = openvino_task_pot.infer(
+            validation_dataset_pot.with_empty_annotations(),
+            InferenceParameters(is_evaluation=True))
+        resultset_pot = ResultSetEntity(
+            model=optimized_model_pot,
+            ground_truth_dataset=validation_dataset_pot,
+            prediction_dataset=predicted_validation_dataset_pot,
+        )
+        logger.debug('Estimate quality on validation set')
+        openvino_task_pot.evaluate(resultset_pot)
+        evaluation_performance_pot = resultset_pot.performance
+
+        logger.info(f'performance exported={evaluation_performance_pot}')
+        score_name, score_value = performance_to_score_name_value(evaluation_performance_pot)
+        data_collector.log_final_metric('evaluation_performance_pot/' + score_name, score_value)
+
+    def __call__(self, data_collector: DataCollector,
+                 results_prev_stages: Optional[OrderedDict]=None):
+        self._check_result_prev_stages(results_prev_stages, ['training', 'pot'])
+
+        kwargs = {
+                'dataset': results_prev_stages['training']['dataset'],
+                'openvino_task_pot': results_prev_stages['pot']['openvino_task_pot'],
+                'optimized_model_pot': results_prev_stages['pot']['optimized_model_pot'],
+        }
+
+        self._run_ote_pot_evaluation(data_collector, **kwargs)
+        results = {}
+        return results
+
 class OTETestStage:
+    """
+    OTETestStage -- auxiliary class that
+    1. Allows to set up dependency between test stages: before the main action of a test stage is run, all the actions
+       for the stages that are pointed in 'depends' list are called beforehand;
+    2. Runs for each test stage its action only once: the main action is run inside try-except clause, and
+       2.1. if the action is executed without exceptions, a flag
+            `was_processed` is set, and the next time the stage is called no action is executed;
+       2.2. if the action raises an exception, the exception is stored, the flag `was_processed` is set, and the next
+            time the stage is called the exception is re-raised.
+    """
     def __init__(self, action: BaseOTETestAction,
                  depends_stages: Optional[list]=None):
         self.was_processed = False
@@ -758,7 +859,9 @@ class OTETestStage:
             raise e
 
 class OTETrainingImpl2:
-    TEST_STAGES = ('training', 'training_evaluation', 'export', 'export_evaluation')
+    TEST_STAGES = ('training', 'training_evaluation',
+                   'export', 'export_evaluation',
+                   'pot', 'pot_evaluation')
 
     def __init__(self, dataset_params: DatasetParameters, template_file_path: str,
                  num_training_iters: int, batch_size: int):
@@ -776,12 +879,17 @@ class OTETrainingImpl2:
         export_stage = OTETestStage(action=OTETestExportAction(),
                                     depends_stages=[training_stage])
         export_evaluation_stage = OTETestStage(action=OTETestExportEvaluationAction(),
-                                               depends_stages=[training_stage,
-                                                               export_stage])
-        self._stages = OrderedDict([('training', training_stage),
-                                    ('training_evaluation', training_evaluation_stage),
-                                    ('export', export_stage),
-                                    ('export_evaluation', export_evaluation_stage)])
+                                               depends_stages=[export_stage])
+        pot_stage = OTETestStage(action=OTETestPotAction(),
+                                 depends_stages=[export_stage])
+        pot_evaluation_stage = OTETestStage(action=OTETestPotEvaluationAction(),
+                                            depends_stages=[pot_stage])
+
+        list_all_stages = [training_stage, training_evaluation_stage,
+                           export_stage, export_evaluation_stage,
+                           pot_stage, pot_evaluation_stage]
+
+        self._stages = OrderedDict((stage.name, stage) for stage in list_all_stages)
         assert list(self._stages.keys()) == list(self.TEST_STAGES)
 
         # test results should be kept between stages
@@ -1116,7 +1224,6 @@ class TestOTETraining:
                                  test_parameters, # is required for impl_fx magic
                                  impl_fx, data_collector_fx):
         # TODO: check that this test does all what is required
-        pytest.skip('Temporary')
         impl_fx.run_pot(data_collector_fx)
 
     @e2e_pytest_performance
@@ -1124,5 +1231,4 @@ class TestOTETraining:
                                              test_parameters, # is required for impl_fx magic
                                              impl_fx, data_collector_fx):
         # TODO: check that this test does all what is required
-        pytest.skip('Temporary')
         impl_fx.run_pot_evaluation(data_collector_fx)
