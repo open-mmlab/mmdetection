@@ -36,7 +36,7 @@ class AccuracyAwareRunner(EpochBasedRunner):
                             'are not used in NNCF-based accuracy-aware training')
         # taking only the first data loader for NNCF training
         self.train_data_loader = data_loaders[0]
-        # Maximum possible number of iterations
+        # Maximum possible number of iterations, needs for progress tracking
         self._max_iters = self._max_epochs * len(self.train_data_loader)
 
         self.call_hook('before_run')

@@ -14,10 +14,6 @@
         "optimizer": {
             "lr": 0.0005
         },
-        "runner": {
-            "max_epochs": 20,
-            "type": "AccuracyAwareRunner"
-        },
         "nncf_config": {
             "compression": [
                 {

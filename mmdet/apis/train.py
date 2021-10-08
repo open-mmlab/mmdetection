@@ -152,15 +152,12 @@ def train_detector(model,
             assert cfg.total_epochs == cfg.runner.max_epochs
 
     if nncf_is_acc_aware_training_set:
-        assert nncf_enable_compression
-        cfg.runner['target_metric_name'] = nncf_config['target_metric_name']
-
-        if cfg.runner.type != 'AccuracyAwareRunner':
-            raise RuntimeError('Accuracy-aware training parameters were specified '
-                               'in the compression config, but the runner type '
-                               'specified in the config differs from "AccuracyAwareRunner". '
-                               'Please specify runner.type="AccuracyAwareRunner" in the config'
-                               'to run the accuracy-aware training loop')
+        # Prepare runner for Accuracy Aware
+        cfg.runner = {
+            'type': 'AccuracyAwareRunner',
+            'target_metric_name': nncf_config['target_metric_name'],
+            'max_epochs': nncf_config["accuracy_aware_training"]["params"]["maximal_total_epochs"]
+        }
 
     runner = build_runner(
         cfg.runner,
@@ -199,6 +196,11 @@ def train_detector(model,
         eval_cfg['by_epoch'] = cfg.runner['type'] != 'IterBasedRunner'
         eval_hook = DistEvalHook if distributed else EvalHook
         if nncf_enable_compression:
+            # disable saving best snapshot, work's incorrectly for NNCF,
+            # best metric can be reached on not target compression rate.
+            eval_cfg.pop('save_best')
+            # enable evaluation after initialization compressed model,
+            # target accuracy can be reached without fine-tuning model
             eval_hook = DistEvalPlusBeforeRunHook if distributed else EvalPlusBeforeRunHook
         runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
 
