@@ -1,6 +1,6 @@
 <div align="center">
   <img src="resources/mmdet-logo.png" width="600"/>
-</div>
+
 
 [![PyPI](https://img.shields.io/pypi/v/mmdet)](https://pypi.org/project/mmdet)
 [![docs](https://img.shields.io/badge/docs-latest-blue)](https://mmdetection.readthedocs.io/en/latest/)
@@ -9,7 +9,18 @@
 [![license](https://img.shields.io/github/license/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/blob/master/LICENSE)
 [![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 
-Documentation: https://mmdetection.readthedocs.io/
+
+  <img src="resources/title.jpg" height="200"/>
+
+
+[📘Documentation](https://mmdetection.readthedocs.io/) |
+[🛠️Installation](docs/get_started.md) |
+[👀Model Zoo](docs/model_zoo.md) |
+[🆕Update News](docs/changelog.md) |
+[🚀Ongoing Projects]([docs/changelog.md](https://github.com/open-mmlab/mmdetection/projects)) |
+[🤔Reproting Issues](https://github.com/open-mmlab/mmdetection/issues/new/choose)
+
+</div>
 
 ## Introduction
 
@@ -21,9 +32,8 @@ a part of the [OpenMMLab](https://openmmlab.com/) project.
 The master branch works with **PyTorch 1.3+**.
 The old v1.x branch works with PyTorch 1.1 to 1.4, but v2.0 is strongly recommended for faster speed, higher performance, better design and more friendly usage.
 
-![demo image](resources/coco_test_12510.jpg)
-
-### Major features
+<details open>
+<summary>Major features</summary>
 
 - **Modular Design**
 
@@ -40,6 +50,8 @@ The old v1.x branch works with PyTorch 1.1 to 1.4, but v2.0 is strongly recommen
 - **State of the art**
 
   The toolbox stems from the codebase developed by the *MMDet* team, who won [COCO Detection Challenge](http://cocodataset.org/#detection-leaderboard) in 2018, and we keep pushing it forward.
+</details>
+
 
 Apart from MMDetection, we also released a library [mmcv](https://github.com/open-mmlab/mmcv) for computer vision research, which is heavily depended on by this toolbox.
 
@@ -49,8 +61,14 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-v2.17.0 was released in 28/09/2021.
+**2.17.0** was released in 28/09/2021:
+- Support PVT and PVTv2.
+- Support SOLO.
+- Support large scale jittering and New Mask R-CNN baselines.
+- Speed up YOLOv3 inference.
+
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
+
 A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](docs/compatibility.md).
 
 ## Benchmark and model zoo
