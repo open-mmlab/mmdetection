@@ -452,6 +452,7 @@ class EvalPlusBeforeRunHook(EvalHook):
     """
 
     def before_run(self, runner):
+        super().before_run(runner)
         from mmdet.apis import single_gpu_test
         results = single_gpu_test(runner.model, self.dataloader, show=False)
         self.evaluate(runner, results)
