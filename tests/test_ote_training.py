@@ -36,7 +36,7 @@ from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema, get_t
 from mmdet.apis.ote.extension.datasets.mmdataset import MMDatasetAdapter
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG) #TODO(lbeynens): REMOVE BEFORE MERGE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 def DATASET_PARAMETERS_FIELDS():
     return ('annotations_train',
@@ -514,9 +514,9 @@ class OTETestStage:
 
     def check_is_ok(self):
         if not self.was_processed:
-            raise RuntimeError(f'Stage {self.name} was not run yet for this instance of OTETrainingImpl')
+            raise RuntimeError(f'Stage {self.name} was not run yet for this instance of OTEIntegrationTestCase')
         if self.was_ok():
-            logger.debug(f'The stage {self.name} was already processed SUCCESSFULLY')
+            logger.info(f'The stage {self.name} was already processed SUCCESSFULLY')
             return
 
         logger.warning(f'In stage {self.name}: found that previous call of the stage '
@@ -524,7 +524,7 @@ class OTETestStage:
         raise self.stored_exception
 
     def run_once(self, data_collector: DataCollector, test_results_storage: OrderedDict):
-        logger.debug(f'Begin stage {self.name}')
+        logger.info(f'Begin stage {self.name}')
         assert isinstance(test_results_storage, OrderedDict)
         logger.debug(f'For stage "{self.name}": test_results_storage.keys = {list(test_results_storage.keys())}')
 
@@ -541,24 +541,28 @@ class OTETestStage:
             raise RuntimeError(f'Error: For stage "{self.name}": another OTETestStage with name {self.name} has been run already')
 
         try:
-            logger.debug(f'For stage "{self.name}": Before running main action')
+            logger.info(f'For stage "{self.name}": Before running main action')
             result_to_store = self.action(data_collector=data_collector,
                                           results_prev_stages=test_results_storage)
-            logger.debug(f'For stage "{self.name}": After running main action')
+            logger.info(f'For stage "{self.name}": After running main action')
             self.was_processed = True
             test_results_storage[self.name] = result_to_store
             logger.debug(f'For stage "{self.name}": after addition test_results_storage.keys = '
                          f'{list(test_results_storage.keys())}')
         except Exception as e:
-            logger.debug(f'For stage "{self.name}": After running action for stage {self.name} -- CAUGHT EXCEPTION:\n{e}')
+            logger.info(f'For stage "{self.name}": After running action for stage {self.name} -- CAUGHT EXCEPTION:\n{e}')
             self.stored_exception = e
             self.was_processed = True
             raise e
 
-class OTETrainingImpl:
-    TEST_STAGES = ('training', 'training_evaluation',
+class OTEIntegrationTestCase:
+    _TEST_STAGES = ('training', 'training_evaluation',
                    'export', 'export_evaluation',
                    'pot', 'pot_evaluation')
+
+    @classmethod
+    def get_list_of_test_stages(cls):
+        return cls._TEST_STAGES
 
     def __init__(self, dataset_params: DatasetParameters, template_file_path: str,
                  num_training_iters: int, batch_size: int):
@@ -587,38 +591,20 @@ class OTETrainingImpl:
                            pot_stage, pot_evaluation_stage]
 
         self._stages = OrderedDict((stage.name, stage) for stage in list_all_stages)
-        assert list(self._stages.keys()) == list(self.TEST_STAGES)
+        assert list(self._stages.keys()) == list(self._TEST_STAGES)
 
         # test results should be kept between stages
         self.test_results_storage = OrderedDict()
 
-    def _run_stage(self, stage_name, data_collector):
-        assert stage_name in self.TEST_STAGES, f'Wrong stage_name {stage_name}'
+    def run_stage(self, stage_name, data_collector):
+        assert stage_name in self._TEST_STAGES, f'Wrong stage_name {stage_name}'
         self._stages[stage_name].run_once(data_collector, self.test_results_storage)
-
-    def run_training(self, data_collector):
-        self._run_stage('training', data_collector)
-
-    def run_training_evaluation(self, data_collector):
-        self._run_stage('training_evaluation', data_collector)
-
-    def run_export(self, data_collector):
-        self._run_stage('export', data_collector)
-
-    def run_export_evaluation(self, data_collector):
-        self._run_stage('export_evaluation', data_collector)
-
-    def run_pot(self, data_collector):
-        self._run_stage('pot', data_collector)
-
-    def run_pot_evaluation(self, data_collector):
-        self._run_stage('pot_evaluation', data_collector)
 
 # pytest magic
 def pytest_generate_tests(metafunc):
     if metafunc.cls is None:
         return
-    if not issubclass(metafunc.cls, TestOTETraining):
+    if not issubclass(metafunc.cls, TestOTEIntegration):
         return
 
     # It allows to filter by usecase
@@ -627,12 +613,17 @@ def pytest_generate_tests(metafunc):
     argnames, argvalues, ids = metafunc.cls.get_list_of_tests(usecase)
     metafunc.parametrize(argnames, argvalues, ids=ids, scope='class')
 
-class TestOTETraining:
+class TestOTEIntegration:
+    """
+    The main class of running test in this file.
+    It is responsible for all pytest magic.
+    """
     PERFORMANCE_RESULTS = None # it is required for e2e system
 
     DEFAULT_NUM_ITERS = 1
     DEFAULT_BATCH_SIZE = 2
     SHORT_TEST_PARAMETERS_NAMES_FOR_GENERATING_ID = OrderedDict([
+            ('test_stage', 'ACTION'),
             ('model_name', 'model'),
             ('dataset_name', 'dataset'),
             ('num_training_iters', 'num_iters'),
@@ -641,12 +632,12 @@ class TestOTETraining:
     ])
 
     # This tuple TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR describes test bunches'
-    # fields that are important for creating OTETrainingImpl instance.
+    # fields that are important for creating OTEIntegrationTestCase instance.
     #
     # It is supposed that if for the next test these parameters are the same as
-    # for the previous one, the result of operations in OTETrainingImpl should
+    # for the previous one, the result of operations in OTEIntegrationTestCase should
     # be kept and re-used.
-    # See the fixture impl_fx and the method _update_impl_in_cache below.
+    # See the fixture test_case_fx and the method _update_test_case_in_cache below.
     TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR = ('model_name',
                                               'dataset_name',
                                               'num_training_iters',
@@ -726,6 +717,9 @@ class TestOTETraining:
 #            ),
     ]
 
+    @staticmethod
+    def _get_list_of_test_stages():
+        return OTEIntegrationTestCase.get_list_of_test_stages()
 
     @classmethod
     def _fill_test_parameters_default_values(cls, test_parameters):
@@ -783,23 +777,25 @@ class TestOTETraining:
             model_dataset_pairs = list(itertools.product(model_names, dataset_names))
 
             for m, d in model_dataset_pairs:
-                test_parameters = deepcopy(el)
-                test_parameters['model_name'] = m
-                test_parameters['dataset_name'] = d
-                cls._fill_test_parameters_default_values(test_parameters)
-                argvalues.append((test_parameters,))
-                ids.append(cls._generate_test_id(test_parameters))
+                for test_stage in cls._get_list_of_test_stages():
+                    test_parameters = deepcopy(el)
+                    test_parameters['test_stage'] = test_stage
+                    test_parameters['model_name'] = m
+                    test_parameters['dataset_name'] = d
+                    cls._fill_test_parameters_default_values(test_parameters)
+                    argvalues.append((test_parameters,))
+                    ids.append(cls._generate_test_id(test_parameters))
 
         return argnames, argvalues, ids
 
     @pytest.fixture(scope='class')
     def cached_from_prev_test_fx(self):
         """
-        This fixture is intended for storying the impl class OTETrainingImpl and parameters
+        This fixture is intended for storying the test case class OTEIntegrationTestCase and parameters
         for which the class is created.
         This object should be persistent between tests while the tests use the same parameters
         -- see the method _clean_cache_if_parameters_changed below that is used to clean
-        the impl if the parameters are changed.
+        the test case if the parameters are changed.
         """
         return dict()
 
@@ -809,35 +805,35 @@ class TestOTETraining:
         for k, v in params_defining_cache.items():
             is_ok = is_ok and (cache.get(k) == v)
         if is_ok:
-            logger.info('TestOTETraining: parameters were not changed -- cache is kept')
+            logger.info('TestOTEIntegration: parameters were not changed -- cache is kept')
             return
 
         for k in list(cache.keys()):
             del cache[k]
         for k, v in params_defining_cache.items():
             cache[k] = v
-        logger.info('TestOTETraining: parameters were changed -- cache is cleaned')
+        logger.info('TestOTEIntegration: parameters were changed -- cache is cleaned')
 
     @classmethod
-    def _update_impl_in_cache(cls, cache,
-                              test_parameters,
-                              dataset_definitions, template_paths):
+    def _update_test_case_in_cache(cls, cache,
+                                   test_parameters,
+                                   dataset_definitions, template_paths):
         """
         If the main parameters of the test differs w.r.t. the previous test,
-        the cache will be cleared and new instance of OTETrainingImpl will be created.
-        Otherwise the previous instance of OTETrainingImpl will be re-used
+        the cache will be cleared and new instance of OTEIntegrationTestCase will be created.
+        Otherwise the previous instance of OTEIntegrationTestCase will be re-used
         """
         if dataset_definitions is None:
             pytest.skip('The parameter "--dataset-definitions" is not set')
         params_defining_cache = {k: test_parameters[k] for k in cls.TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR}
 
-        assert '_impl_' not in params_defining_cache, \
-                'ERROR: parameters defining test behavior should not contain special key "_impl_"'
+        assert '_test_case_' not in params_defining_cache, \
+                'ERROR: parameters defining test behavior should not contain special key "_test_case_"'
 
         cls._clean_cache_if_parameters_changed(cache, params_defining_cache)
 
-        if '_impl_' not in cache:
-            logger.info('TestOTETraining: creating OTETrainingImpl')
+        if '_test_case_' not in cache:
+            logger.info('TestOTEIntegration: creating OTEIntegrationTestCase')
 
             model_name = test_parameters['model_name']
             dataset_name = test_parameters['dataset_name']
@@ -847,33 +843,33 @@ class TestOTETraining:
             dataset_params = _get_dataset_params_from_dataset_definitions(dataset_definitions, dataset_name)
             template_path = _make_path_be_abs(template_paths[model_name], template_paths[ROOT_PATH_KEY])
 
-            cache['_impl_'] = OTETrainingImpl(dataset_params, template_path, num_training_iters, batch_size)
+            cache['_test_case_'] = OTEIntegrationTestCase(dataset_params, template_path, num_training_iters, batch_size)
 
-        return cache['_impl_']
+        return cache['_test_case_']
 
     @pytest.fixture
-    def impl_fx(self, request, dataset_definitions_fx, template_paths_fx,
+    def test_case_fx(self, request, dataset_definitions_fx, template_paths_fx,
                 cached_from_prev_test_fx):
         """
-        This fixture returns the impl class OTETrainingImpl that should be used for the current test.
+        This fixture returns the test case class OTEIntegrationTestCase that should be used for the current test.
         Note that the cache from the fixture cached_from_prev_test_fx allows to store the instance of the class
         between the tests.
         If the main parameters used for this test are the same as the main parameters used for the previous test,
-        the instance of the implementation class will be kept and re-used. It is helpful for tests that can
+        the instance of the test case class will be kept and re-used. It is helpful for tests that can
         re-use the result of operations (model training, model optimization, etc) made for the previous tests,
         if these operations are time-consuming.
-        If the main parameters used for this test differs w.r.t. the previous test, a new instance of TestOTETraining
-        class will be created.
+        If the main parameters used for this test differs w.r.t. the previous test, a new instance of
+        TestOTEIntegration class will be created.
         """
         cur_request_parameters = deepcopy(request.node.callspec.params)
         if 'test_parameters' not in cur_request_parameters:
             raise RuntimeError(f'Test {request.node.name} should be parametrized by parameter "test_parameters"')
 
         test_parameters = cur_request_parameters['test_parameters']
-        impl = self._update_impl_in_cache(cached_from_prev_test_fx,
-                                          test_parameters,
-                                          dataset_definitions_fx, template_paths_fx)
-        return impl
+        test_case = self._update_test_case_in_cache(cached_from_prev_test_fx,
+                                                    test_parameters,
+                                                    dataset_definitions_fx, template_paths_fx)
+        return test_case
 
     @pytest.fixture
     def data_collector_fx(self, request):
@@ -885,7 +881,7 @@ class TestOTETraining:
         setup["subject"] = "custom-object-detection"
         setup["project"] = "ote"
         logger.info(f'creating DataCollector: setup=\n{pformat(setup, width=140)}')
-        data_collector = DataCollector(name='TestOTETraining',
+        data_collector = DataCollector(name='TestOTEIntegration',
                                        setup=setup)
         with data_collector:
             logger.info('data_collector is created')
@@ -893,39 +889,7 @@ class TestOTETraining:
         logger.info('data_collector is released')
 
     @e2e_pytest_performance
-    def test_ote_01_training(self,
-                             test_parameters, # is required for impl_fx magic
-                             impl_fx, data_collector_fx):
-        impl_fx.run_training(data_collector_fx)
-
-    @e2e_pytest_performance
-    def test_ote_02_evaluation(self,
-                               test_parameters, # is required for impl_fx magic
-                               impl_fx, data_collector_fx):
-        impl_fx.run_training_evaluation(data_collector_fx)
-
-    @e2e_pytest_performance
-    def test_ote_03_export(self,
-                           test_parameters, # is required for impl_fx magic
-                           impl_fx, data_collector_fx):
-        impl_fx.run_export(data_collector_fx)
-
-    @e2e_pytest_performance
-    def test_ote_04_evaluation_exported(self,
-                                        test_parameters, # is required for impl_fx magic
-                                        impl_fx, data_collector_fx):
-        impl_fx.run_export_evaluation(data_collector_fx)
-
-    @e2e_pytest_performance
-    def test_ote_05_optimize_pot(self,
-                                 test_parameters, # is required for impl_fx magic
-                                 impl_fx, data_collector_fx):
-        # TODO: check that this test does all what is required
-        impl_fx.run_pot(data_collector_fx)
-
-    @e2e_pytest_performance
-    def test_ote_06_evaluation_optimized_pot(self,
-                                             test_parameters, # is required for impl_fx magic
-                                             impl_fx, data_collector_fx):
-        # TODO: check that this test does all what is required
-        impl_fx.run_pot_evaluation(data_collector_fx)
+    def test(self,
+             test_parameters,
+             test_case_fx, data_collector_fx):
+        test_case_fx.run_stage(test_parameters['test_stage'], data_collector_fx)
