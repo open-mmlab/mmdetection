@@ -17,7 +17,7 @@
 [🛠️Installation](docs/get_started.md) |
 [👀Model Zoo](docs/model_zoo.md) |
 [🆕Update News](docs/changelog.md) |
-[🚀Ongoing Projects]([docs/changelog.md](https://github.com/open-mmlab/mmdetection/projects)) |
+[🚀Ongoing Projects](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔Reproting Issues](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
 </div>
