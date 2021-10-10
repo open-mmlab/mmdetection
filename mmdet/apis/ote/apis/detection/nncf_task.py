@@ -61,6 +61,16 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
         check_nncf_is_enabled()
         super().__init__(task_environment)
 
+    @staticmethod
+    def _select_optimization_type(quantization: bool, pruning: bool):
+        if quantization and pruning:
+            return "nncf_quantization_pruning"
+        if quantization and not pruning:
+            return "nncf_quantization"
+        if not quantization and pruning:
+            return "nncf_pruning"
+        raise RuntimeError('Not selected optimization algorithm')
+
     def _load_model(self, model: ModelEntity):
         # NNCF parts
         nncf_config_path = os.path.join(self._base_dir, "compression_config.json")
@@ -68,9 +78,10 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
         with open(nncf_config_path) as nncf_config_file:
             common_nncf_config = json.load(nncf_config_file)
 
-        optimization_type = "nncf_quantization"
-        if self._hyperparams.nncf_optimization.enable_pruning:
-            optimization_type = "nncf_quantization_pruning"
+        optimization_type = self._select_optimization_type(
+            quantization=self._hyperparams.nncf_optimization.enable_quantization,
+            pruning=self._hyperparams.nncf_optimization.enable_pruning
+        )
 
         optimization_config = compose_nncf_config(common_nncf_config, [optimization_type])
 

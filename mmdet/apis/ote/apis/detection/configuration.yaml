@@ -198,6 +198,21 @@ pot_parameters:
 nncf_optimization:
   description: Optimization by NNCF
   header: Optimization by NNCF
+  enable_quantization:
+    affects_outcome_of: INFERENCE
+    default_value: True
+    description: Enable quantization algorithm
+    editable: false
+    header: Enable quantization algorithm
+    type: BOOLEAN
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: true
+    visible_in_ui: false
+    warning: null
   enable_pruning:
     affects_outcome_of: INFERENCE
     default_value: false
