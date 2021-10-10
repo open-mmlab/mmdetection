@@ -32,7 +32,7 @@ hyper_parameters:
         default_value: true
       enable_pruning:
         default_value: false
-      maximal_absolute_accuracy_degradation:
+      maximal_accuracy_degradation:
         default_value: 0.01
 
 # Training resources.

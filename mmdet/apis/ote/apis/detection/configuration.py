@@ -138,7 +138,7 @@ class OTEDetectionConfig(ConfigurableParameters):
             affects_outcome_of=ModelLifecycle.TRAINING
         )
 
-        maximal_absolute_accuracy_degradation = configurable_float(
+        maximal_accuracy_degradation = configurable_float(
             default_value=1.0,
             min_value=0.01,
             max_value=10.0,

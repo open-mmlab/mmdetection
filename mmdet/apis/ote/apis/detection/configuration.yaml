@@ -228,7 +228,7 @@ nncf_optimization:
     value: false
     visible_in_ui: true
     warning: null
-  maximal_absolute_accuracy_degradation:
+  maximal_accuracy_degradation:
     affects_outcome_of: NONE
     default_value: 1.0
     description: The maximal allowed accuracy metric drop in absolute values
