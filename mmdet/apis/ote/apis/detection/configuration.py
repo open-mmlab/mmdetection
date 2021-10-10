@@ -131,12 +131,12 @@ class OTEDetectionConfig(ConfigurableParameters):
             affects_outcome_of=ModelLifecycle.TRAINING
         )
 
-        maximal_relative_accuracy_degradation = configurable_float(
+        maximal_absolute_accuracy_degradation = configurable_float(
             default_value=1.0,
             min_value=0.01,
             max_value=10.0,
-            header="Maximum relative accuracy degradation",
-            description="The maximal allowed accuracy metric drop in percent relative to the original model",
+            header="Maximum accuracy degradation",
+            description="The maximal allowed accuracy metric drop",
             affects_outcome_of=ModelLifecycle.TRAINING
         )
 

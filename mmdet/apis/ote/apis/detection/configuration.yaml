@@ -213,14 +213,14 @@ nncf_optimization:
     value: false
     visible_in_ui: true
     warning: null
-  maximal_relative_accuracy_degradation:
+  maximal_absolute_accuracy_degradation:
     affects_outcome_of: NONE
     default_value: 1.0
-    description: The maximal allowed accuracy metric drop in percent relative to the original model
+    description: The maximal allowed accuracy metric drop in absolute values
     editable: True
-    header: Maximum releative accuracy degradation
-    max_value: 10.0
-    min_value: 0.01
+    header: Maximum accuracy degradation
+    max_value: 100.0
+    min_value: 0.0
     type: FLOAT
     ui_rules:
       action: DISABLE_EDITING

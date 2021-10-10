@@ -74,11 +74,11 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
 
         optimization_config = compose_nncf_config(common_nncf_config, [optimization_type])
 
-        max_acc_drop = self._hyperparams.nncf_optimization.maximal_relative_accuracy_degradation
+        max_acc_drop = self._hyperparams.nncf_optimization.maximal_absolute_accuracy_degradation
         if "accuracy_aware_training" in optimization_config["nncf_config"]:
-            # Update maximal_relative_accuracy_degradation
+            # Update maximal_absolute_accuracy_degradation
             (optimization_config["nncf_config"]["accuracy_aware_training"]
-                                ["params"]["maximal_relative_accuracy_degradation"]) = max_acc_drop
+                                ["params"]["maximal_absolute_accuracy_degradation"]) = max_acc_drop
             # Force evaluation interval
             self._config.evaluation.interval = 1
         else:

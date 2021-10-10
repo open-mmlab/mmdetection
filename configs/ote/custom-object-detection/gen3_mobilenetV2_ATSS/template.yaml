@@ -30,8 +30,8 @@ hyper_parameters:
     nncf_optimization:
       enable_pruning:
         default_value: false
-      maximal_relative_accuracy_degradation:
-        default_value: 1.0
+      maximal_absolute_accuracy_degradation:
+        default_value: 0.01
 
 # Training resources.
 max_nodes: 1
