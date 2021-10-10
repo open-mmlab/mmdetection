@@ -489,10 +489,10 @@ class OTETestStage:
     OTETestStage -- auxiliary class that
     1. Allows to set up dependency between test stages: before the main action of a test stage is run, all the actions
        for the stages that are pointed in 'depends' list are called beforehand;
-    2. Runs for each test stage its action only once: the main action is run inside try-except clause, and
-       2.1. if the action is executed without exceptions, a flag
-            `was_processed` is set, and the next time the stage is called no action is executed;
-       2.2. if the action raises an exception, the exception is stored, the flag `was_processed` is set, and the next
+    2. Runs for each test stage its main action only once: the main action is run inside try-except clause, and
+       2.1. if the action was executed without exceptions, a flag `was_processed` is set, the results of the action
+            are kept, and the next time the stage is called no action is executed;
+       2.2. if the action raised an exception, the exception is stored, the flag `was_processed` is set, and the next
             time the stage is called the exception is re-raised.
     """
     def __init__(self, action: BaseOTETestAction,
@@ -524,7 +524,7 @@ class OTETestStage:
         raise self.stored_exception
 
     def run_once(self, data_collector: DataCollector, test_results_storage: OrderedDict):
-        logger.info(f'Begin stage {self.name}')
+        logger.info(f'Begin stage "{self.name}"')
         assert isinstance(test_results_storage, OrderedDict)
         logger.debug(f'For stage "{self.name}": test_results_storage.keys = {list(test_results_storage.keys())}')
 
@@ -535,6 +535,7 @@ class OTETestStage:
 
         if self.was_processed:
             self.check_is_ok()
+            logger.info(f'End stage "{self.name}"')
             return
 
         if self.name in test_results_storage:
@@ -554,6 +555,8 @@ class OTETestStage:
             self.stored_exception = e
             self.was_processed = True
             raise e
+        finally:
+            logger.info(f'End stage "{self.name}"')
 
 class OTEIntegrationTestCase:
     _TEST_STAGES = ('training', 'training_evaluation',
