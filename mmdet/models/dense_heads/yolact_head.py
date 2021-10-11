@@ -663,6 +663,10 @@ class YOLACTProtonet(BaseModule):
             protonets = protonets[:-1]
         return nn.Sequential(*protonets)
 
+    def forward_dummy(self, x):
+        prototypes = self.protonet(x)
+        return prototypes
+
     def forward(self, x, coeff_pred, bboxes, img_meta, sampling_results=None):
         """Forward feature from the upstream network to get prototypes and
         linearly combine the prototypes, using masks coefficients, into
