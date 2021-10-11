@@ -34,6 +34,7 @@ from sc_sdk.entities.dataset_storage import NullDatasetStorage
 from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
 from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema, get_task_class
 from mmdet.apis.ote.extension.datasets.mmdataset import MMDatasetAdapter
+from mmdet.integration.nncf.utils import is_nncf_enabled
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG) #TODO(lbeynens): REMOVE BEFORE MERGE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -397,7 +398,7 @@ class OTETestPotAction(BaseOTETestAction):
     def _run_ote_pot(self, data_collector,
                      model_template, dataset,
                      environment_for_export):
-        logger.debug('Get predictions on the validation set for exported model')
+        logger.debug('Creating environment and task for POT optimization')
         self.environment_for_pot = deepcopy(environment_for_export)
         self.openvino_task_pot = create_openvino_task(model_template, environment_for_export)
 
@@ -418,6 +419,7 @@ class OTETestPotAction(BaseOTETestAction):
             dataset.get_subset(self.pot_subset),
             self.optimized_model_pot,
             OptimizationParameters())
+        logger.info('POT optimization is finished')
 
     def __call__(self, data_collector: DataCollector,
                  results_prev_stages: Optional[OrderedDict]=None):
@@ -445,8 +447,7 @@ class OTETestPotEvaluationAction(BaseOTETestAction):
     def _run_ote_pot_evaluation(self, data_collector,
                                 dataset,
                                 openvino_task_pot,
-                                optimized_model_pot,
-                                ):
+                                optimized_model_pot):
         logger.info('Begin evaluation of pot model')
         validation_dataset_pot = dataset.get_subset(self.subset)
         score_name, score_value = run_evaluation(validation_dataset_pot, openvino_task_pot, optimized_model_pot)
@@ -466,6 +467,104 @@ class OTETestPotEvaluationAction(BaseOTETestAction):
         self._run_ote_pot_evaluation(data_collector, **kwargs)
         results = {}
         return results
+
+class OTETestNNCFAction(BaseOTETestAction):
+    _name = 'nncf'
+
+    def __init__(self, pot_subset=Subset.TRAINING):
+        self.pot_subset = pot_subset
+
+    def _run_ote_nncf(self, data_collector,
+                      model_template, dataset, trained_model,
+                      environment):
+        logger.debug('Get predictions on the validation set for exported model')
+        self.environment_for_nncf = deepcopy(environment)
+
+        logger.info('Create NNCF Task')
+        nncf_task_class_impl_path = model_template.entrypoints.nncf
+        if not nncf_task_class_impl_path:
+            pytest.skip('NNCF is not enabled for this template')
+
+        if not is_nncf_enabled():
+            pytest.skip('NNCF is not installed')
+
+        logger.info('Creating NNCF task and structures')
+        self.nncf_model = ModelEntity(
+            dataset,
+            self.environment_for_nncf.get_model_configuration(),
+            optimization_type=ModelOptimizationType.NNCF,
+            optimization_methods=OptimizationMethod.QUANTIZATION,
+            optimization_objectives={},
+            precision=[ModelPrecision.INT8],
+            target_device=TargetDevice.CPU,
+            performance_improvement={},
+            model_size_reduction=1.,
+            model_status=ModelStatus.NOT_READY)
+        self.nncf_model.set_data('weights.pth', trained_model.get_data('weights.pth'))
+
+        self.environment_for_nncf.model = self.nncf_model
+
+        nncf_task_cls = get_task_class(nncf_task_class_impl_path)
+        self.nncf_task = nncf_task_cls(task_environment=self.environment_for_nncf)
+
+        logger.info('Run NNCF optimization')
+        self.nncf_task.optimize(OptimizationType.NNCF,
+                                dataset, # TODO(lbeynens 4 adokucha): full dataset or subset here?
+                                self.nncf_model,
+                                OptimizationParameters())
+        logger.info('NNCF saving the model')
+        self.nncf_task.save_model(self.nncf_model) # TODO(lbeynens 4 adokucha): is it really required?
+        logger.info('NNCF optimization is finished')
+
+
+    def __call__(self, data_collector: DataCollector,
+                 results_prev_stages: Optional[OrderedDict]=None):
+        self._check_result_prev_stages(results_prev_stages, ['training'])
+
+        kwargs = {
+                'model_template': results_prev_stages['training']['model_template'],
+                'dataset': results_prev_stages['training']['dataset'],
+                'trained_model': results_prev_stages['training']['output_model'],
+                'environment': results_prev_stages['training']['environment'],
+        }
+
+        self._run_ote_nncf(data_collector, **kwargs)
+        results = {
+                'nncf_task': self.nncf_task,
+                'nncf_model': self.nncf_model,
+        }
+        return results
+
+class OTETestNNCFEvaluationAction(BaseOTETestAction):
+    _name = 'nncf_evaluation'
+
+    def __init__(self, subset=Subset.VALIDATION):
+        self.subset = subset
+
+    def _run_ote_nncf_evaluation(self, data_collector,
+                                dataset,
+                                nncf_task,
+                                nncf_model):
+        logger.info('Begin evaluation of nncf model')
+        validation_dataset = dataset.get_subset(self.subset)
+        score_name, score_value = run_evaluation(validation_dataset, nncf_task, nncf_model)
+        data_collector.log_final_metric('evaluation_performance_nncf/' + score_name, score_value)
+        logger.info('End evaluation of nncf model')
+
+    def __call__(self, data_collector: DataCollector,
+                 results_prev_stages: Optional[OrderedDict]=None):
+        self._check_result_prev_stages(results_prev_stages, ['training', 'nncf'])
+
+        kwargs = {
+                'dataset': results_prev_stages['training']['dataset'],
+                'nncf_task': results_prev_stages['nncf']['nncf_task'],
+                'nncf_model': results_prev_stages['nncf']['nncf_model'],
+        }
+
+        self._run_ote_nncf_evaluation(data_collector, **kwargs)
+        results = {}
+        return results
+
 
 class OTETestStage:
     """
@@ -545,7 +644,8 @@ class OTETestStage:
 class OTEIntegrationTestCase:
     _TEST_STAGES = ('training', 'training_evaluation',
                    'export', 'export_evaluation',
-                   'pot', 'pot_evaluation')
+                   'pot', 'pot_evaluation',
+                   'nncf', 'nncf_evaluation')
 
     @classmethod
     def get_list_of_test_stages(cls):
@@ -572,10 +672,15 @@ class OTEIntegrationTestCase:
                                  depends_stages=[export_stage])
         pot_evaluation_stage = OTETestStage(action=OTETestPotEvaluationAction(),
                                             depends_stages=[pot_stage])
+        nncf_stage = OTETestStage(action=OTETestNNCFAction(),
+                                  depends_stages=[training_stage])
+        nncf_evaluation_stage = OTETestStage(action=OTETestNNCFEvaluationAction(),
+                                             depends_stages=[nncf_stage])
 
         list_all_stages = [training_stage, training_evaluation_stage,
                            export_stage, export_evaluation_stage,
-                           pot_stage, pot_evaluation_stage]
+                           pot_stage, pot_evaluation_stage,
+                           nncf_stage, nncf_evaluation_stage]
 
         self._stages = OrderedDict((stage.name, stage) for stage in list_all_stages)
         assert list(self._stages.keys()) == list(self._TEST_STAGES)
