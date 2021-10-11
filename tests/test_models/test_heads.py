@@ -1,7 +1,7 @@
 import mmcv
 import numpy as np
-import pytest
 import torch
+import pytest
 
 from mmdet.core import bbox2roi, build_assigner, build_sampler
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
@@ -807,8 +807,8 @@ def _demodata_refine_boxes(n_roi, n_img, rng=0):
     """Create random test data for the
     ``mmdet.models.bbox_heads.bbox_head.BBoxHead.refine_boxes`` method."""
     import numpy as np
-
-    from mmdet.core.bbox.demodata import ensure_rng, random_boxes
+    from mmdet.core.bbox.demodata import random_boxes
+    from mmdet.core.bbox.demodata import ensure_rng
     try:
         import kwarray
     except ImportError:
@@ -868,7 +868,6 @@ def test_mask_head_loss():
 
     # create dummy mask
     import numpy as np
-
     from mmdet.core import BitmapMasks
     dummy_mask = np.random.randint(0, 2, (1, 160, 240), dtype=np.uint8)
     gt_masks = [BitmapMasks(dummy_mask, 160, 240)]

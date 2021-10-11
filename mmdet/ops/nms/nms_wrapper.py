@@ -1,31 +1,26 @@
 import numpy as np
 import sys
 import torch
+
 from mmcv.utils import deprecated_api_warning
-
-from mmdet.integration.nncf.utils import is_in_nncf_tracing, no_nncf_trace
-
+from mmdet.integration.nncf.utils import no_nncf_trace
+from mmdet.integration.nncf.utils import is_in_nncf_tracing
 
 class NMSop(torch.autograd.Function):
-
     @staticmethod
-    def forward(ctx, bboxes, scores, iou_threshold, score_threshold, max_num,
-                offset):
+    def forward(ctx, bboxes, scores, iou_threshold, score_threshold, max_num, offset):
         with no_nncf_trace():
             valid_mask = scores > score_threshold
         bboxes, scores = bboxes[valid_mask], scores[valid_mask]
         from mmcv.ops.nms import NMSop
-        inds = NMSop.forward(ctx, bboxes, scores, iou_threshold, offset,
-                             score_threshold, max_num)
+        inds = NMSop.forward(ctx, bboxes, scores, iou_threshold, offset, score_threshold, max_num)
         inds = inds[:max_num]
         return inds
 
     @staticmethod
-    def symbolic(g, bboxes, scores, iou_threshold, score_threshold, max_num,
-                 offset):
+    def symbolic(g, bboxes, scores, iou_threshold, score_threshold, max_num, offset):
         from mmdet.utils.deployment.symbolic import nms_symbolic_with_score_thr
-        return nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold,
-                                           score_threshold, max_num, offset)
+        return nms_symbolic_with_score_thr(g, bboxes, scores, iou_threshold, score_threshold, max_num, offset)
 
 
 @deprecated_api_warning({'iou_thr': 'iou_threshold'})
@@ -100,8 +95,7 @@ def nms(boxes, scores, iou_threshold, score_thr=0.0, max_num=-1, offset=0):
     else:
         if max_num < 0:
             max_num = boxes.shape[0]
-        inds = NMSop.apply(boxes, scores, iou_threshold, score_thr, max_num,
-                           offset)
+        inds = NMSop.apply(boxes, scores, iou_threshold, score_thr, max_num, offset)
     dets = torch.cat((boxes[inds], scores[inds].reshape(-1, 1)), dim=1)
     if is_numpy:
         dets = dets.cpu().numpy()
@@ -164,8 +158,7 @@ def batched_nms(boxes, scores, idxs, nms_cfg, class_agnostic=False):
 
     split_thr = nms_cfg_.pop('split_thr', 10000)
     # Won't split to multiple nms nodes when exporting to onnx
-    if boxes_for_nms.shape[0] < split_thr or (torch.onnx.is_in_onnx_export()
-                                              or is_in_nncf_tracing):
+    if boxes_for_nms.shape[0] < split_thr or (torch.onnx.is_in_onnx_export() or is_in_nncf_tracing):
         dets, keep = nms_op(boxes_for_nms, scores, **nms_cfg_)
         boxes = boxes[keep]
         scores = dets[:, 4]
