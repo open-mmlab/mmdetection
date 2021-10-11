@@ -200,6 +200,8 @@ class Shear:
                 border_value=self.img_fill_val,
                 interpolation=interpolation)
             results[key] = img_sheared.astype(img.dtype)
+        if results['img_shape'] != results[results.get('img_fields', ['img'])[0]].shape:
+            print(f"_shear_img: img_shape ({results['img_shape']}) and img.shape ({results[results.get('img_fields', ['img'])[0]].shape}) disagree")
 
     def _shear_bboxes(self, results, magnitude):
         """Shear the bboxes."""
@@ -627,6 +629,9 @@ class Translate:
             img = results[key].copy()
             results[key] = mmcv.imtranslate(
                 img, offset, direction, self.img_fill_val).astype(img.dtype)
+        if results['img_shape'] != results[results.get('img_fields', ['img'])[0]].shape:
+            print(f"_translate_img: img_shape ({results['img_shape']}) and img.shape ({results[results.get('img_fields', ['img'])[0]].shape}) disagree")
+
 
     def _translate_bboxes(self, results, offset):
         """Shift bboxes horizontally or vertically, according to offset."""
