@@ -10,7 +10,7 @@
 [![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 
 
-  <img src="resources/title.jpg" height="200"/>
+  <img src="resources/title.jpg"/>
 
 
 [📘Documentation](https://mmdetection.readthedocs.io/) |
