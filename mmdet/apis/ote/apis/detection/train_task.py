@@ -24,7 +24,6 @@ from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo, Me
                                       VisualizationInfo, VisualizationType)
 from ote_sdk.entities.model import ModelEntity, ModelStatus
 from ote_sdk.entities.subset import Subset
-from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.entities.train_parameters import TrainParameters, default_progress_callback
 from ote_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
 
@@ -91,10 +90,9 @@ class OTEDetectionTrainingTask(OTEDetectionInferenceTask, ITrainingTask):
             return
 
         # Run training.
+        update_progress_callback = default_progress_callback
         if train_parameters is not None:
             update_progress_callback = train_parameters.update_progress
-        else:
-            update_progress_callback = default_progress_callback
         time_monitor = TrainingProgressCallback(update_progress_callback)
         learning_curves = defaultdict(OTELoggerHook.Curve)
         training_config = prepare_for_training(config, train_dataset, val_dataset, time_monitor, learning_curves)
