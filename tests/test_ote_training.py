@@ -269,6 +269,23 @@ class OTETestTrainingAction(BaseOTETestAction):
         }
         return results
 
+def run_evaluation(dataset, task, model):
+    logger.debug('Evaluation: Get predictions on the dataset')
+    predicted_dataset = task.infer(
+        dataset.with_empty_annotations(),
+        InferenceParameters(is_evaluation=True))
+    resultset = ResultSetEntity(
+        model=model,
+        ground_truth_dataset=dataset,
+        prediction_dataset=predicted_dataset,
+    )
+    logger.debug('Evaluation: Estimate quality on dataset')
+    task.evaluate(resultset)
+    evaluation_performance = resultset.performance
+    logger.info(f'Evaluation: performance={evaluation_performance}')
+    score_name, score_value = performance_to_score_name_value(evaluation_performance)
+    return score_name, score_value
+
 class OTETestTrainingEvaluationAction(BaseOTETestAction):
     _name = 'training_evaluation'
 
@@ -277,22 +294,11 @@ class OTETestTrainingEvaluationAction(BaseOTETestAction):
 
     def _run_ote_evaluation(self, data_collector,
                             dataset, task, trained_model):
-        logger.debug('Get predictions on the validation set')
+        logger.info('Begin evaluation of trained model')
         validation_dataset = dataset.get_subset(self.subset)
-        predicted_validation_dataset = task.infer(
-            validation_dataset.with_empty_annotations(),
-            InferenceParameters(is_evaluation=True))
-        resultset = ResultSetEntity(
-            model=trained_model,
-            ground_truth_dataset=validation_dataset,
-            prediction_dataset=predicted_validation_dataset,
-        )
-        logger.debug('Estimate quality on validation set')
-        task.evaluate(resultset)
-        evaluation_performance = resultset.performance
-        logger.info(f'performance={evaluation_performance}')
-        score_name, score_value = performance_to_score_name_value(evaluation_performance)
+        score_name, score_value = run_evaluation(validation_dataset, task, trained_model)
         data_collector.log_final_metric('evaluation_performance/' + score_name, score_value)
+        logger.info('End evaluation of trained model')
 
     def __call__(self, data_collector: DataCollector,
                  results_prev_stages: Optional[OrderedDict]=None):
@@ -360,23 +366,12 @@ class OTETestExportEvaluationAction(BaseOTETestAction):
     def _run_ote_export_evaluation(self, data_collector,
                                    model_template, dataset,
                                    environment_for_export, exported_model):
-        logger.debug('Get predictions on the validation set for exported model')
+        logger.info('Begin evaluation of exported model')
         self.openvino_task = create_openvino_task(model_template, environment_for_export)
         validation_dataset = dataset.get_subset(self.subset)
-        predicted_validation_dataset = self.openvino_task.infer(
-            validation_dataset.with_empty_annotations(),
-            InferenceParameters(is_evaluation=True))
-        resultset = ResultSetEntity(
-            model=exported_model,
-            ground_truth_dataset=validation_dataset,
-            prediction_dataset=predicted_validation_dataset,
-        )
-        logger.debug('Estimate quality on validation set')
-        self.openvino_task.evaluate(resultset)
-        evaluation_performance = resultset.performance
-        logger.info(f'performance exported={evaluation_performance}')
-        score_name, score_value = performance_to_score_name_value(evaluation_performance)
+        score_name, score_value = run_evaluation(validation_dataset, self.openvino_task, exported_model)
         data_collector.log_final_metric('evaluation_performance_exported/' + score_name, score_value)
+        logger.info('End evaluation of exported model')
 
     def __call__(self, data_collector: DataCollector,
                  results_prev_stages: Optional[OrderedDict]=None):
@@ -452,23 +447,11 @@ class OTETestPotEvaluationAction(BaseOTETestAction):
                                 openvino_task_pot,
                                 optimized_model_pot,
                                 ):
-        logger.debug('Get predictions for POT on the validation set')
+        logger.info('Begin evaluation of pot model')
         validation_dataset_pot = dataset.get_subset(self.subset)
-        predicted_validation_dataset_pot = openvino_task_pot.infer(
-            validation_dataset_pot.with_empty_annotations(),
-            InferenceParameters(is_evaluation=True))
-        resultset_pot = ResultSetEntity(
-            model=optimized_model_pot,
-            ground_truth_dataset=validation_dataset_pot,
-            prediction_dataset=predicted_validation_dataset_pot,
-        )
-        logger.debug('Estimate quality on validation set')
-        openvino_task_pot.evaluate(resultset_pot)
-        evaluation_performance_pot = resultset_pot.performance
-
-        logger.info(f'performance exported={evaluation_performance_pot}')
-        score_name, score_value = performance_to_score_name_value(evaluation_performance_pot)
+        score_name, score_value = run_evaluation(validation_dataset_pot, openvino_task_pot, optimized_model_pot)
         data_collector.log_final_metric('evaluation_performance_pot/' + score_name, score_value)
+        logger.info('End evaluation of pot model')
 
     def __call__(self, data_collector: DataCollector,
                  results_prev_stages: Optional[OrderedDict]=None):
@@ -526,12 +509,12 @@ class OTETestStage:
     def run_once(self, data_collector: DataCollector, test_results_storage: OrderedDict):
         logger.info(f'Begin stage "{self.name}"')
         assert isinstance(test_results_storage, OrderedDict)
-        logger.debug(f'For stage "{self.name}": test_results_storage.keys = {list(test_results_storage.keys())}')
+        logger.debug(f'For test stage "{self.name}": test_results_storage.keys = {list(test_results_storage.keys())}')
 
         for dep_stage in self.depends_stages:
-            logger.debug(f'For stage "{self.name}": Before running dep. stage "{dep_stage.name}"')
+            logger.debug(f'For test stage "{self.name}": Before running dep. stage "{dep_stage.name}"')
             dep_stage.run_once(data_collector, test_results_storage)
-            logger.debug(f'For stage "{self.name}": After running dep. stage "{dep_stage.name}"')
+            logger.debug(f'For test stage "{self.name}": After running dep. stage "{dep_stage.name}"')
 
         if self.was_processed:
             self.check_is_ok()
@@ -539,19 +522,20 @@ class OTETestStage:
             return
 
         if self.name in test_results_storage:
-            raise RuntimeError(f'Error: For stage "{self.name}": another OTETestStage with name {self.name} has been run already')
+            raise RuntimeError(f'Error: For test stage "{self.name}": '
+                               f'another OTETestStage with name {self.name} has been run already')
 
         try:
-            logger.info(f'For stage "{self.name}": Before running main action')
+            logger.info(f'For test stage "{self.name}": Before running main action')
             result_to_store = self.action(data_collector=data_collector,
                                           results_prev_stages=test_results_storage)
-            logger.info(f'For stage "{self.name}": After running main action')
+            logger.info(f'For test stage "{self.name}": After running main action')
             self.was_processed = True
             test_results_storage[self.name] = result_to_store
-            logger.debug(f'For stage "{self.name}": after addition test_results_storage.keys = '
+            logger.debug(f'For test stage "{self.name}": after addition test_results_storage.keys = '
                          f'{list(test_results_storage.keys())}')
         except Exception as e:
-            logger.info(f'For stage "{self.name}": After running action for stage {self.name} -- CAUGHT EXCEPTION:\n{e}')
+            logger.info(f'For test stage "{self.name}": After running action for stage {self.name} -- CAUGHT EXCEPTION:\n{e}')
             self.stored_exception = e
             self.was_processed = True
             raise e
