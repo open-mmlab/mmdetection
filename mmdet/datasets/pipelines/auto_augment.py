@@ -422,9 +422,9 @@ class Rotate:
                 img, angle, center, scale, border_value=self.img_fill_val)
             results[key] = img_rotated.astype(img.dtype)
         # debug
-        if results['img_shape'] != results.get('img_fields', ['img'])[0].shape:
-            print(f"BUG: img_shape ({results['img_shape']}) and img.shape ({results.get('img_fields', ['img'])[0].shape}) disagree")
-            results['img_shape'] = results.get('img_fields', ['img'])[0].shape
+        if results['img_shape'] != results[results.get('img_fields', ['img'])[0]].shape:
+            print(f"BUG: img_shape ({results['img_shape']}) and img.shape ({results[results.get('img_fields', ['img'])[0]].shape}) disagree")
+            results['img_shape'] = results[results.get('img_fields', ['img'])[0]].shape
 
     def _rotate_bboxes(self, results, rotate_matrix):
         """Rotate the bboxes."""
