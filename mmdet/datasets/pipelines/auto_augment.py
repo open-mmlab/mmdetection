@@ -200,8 +200,7 @@ class Shear:
                 border_value=self.img_fill_val,
                 interpolation=interpolation)
             results[key] = img_sheared.astype(img.dtype)
-        if results['img_shape'] != results[results.get('img_fields', ['img'])[0]].shape:
-            print(f"_shear_img: img_shape ({results['img_shape']}) and img.shape ({results[results.get('img_fields', ['img'])[0]].shape}) disagree")
+            results['img_shape'] = results[key].shape
 
     def _shear_bboxes(self, results, magnitude):
         """Shear the bboxes."""
@@ -423,12 +422,7 @@ class Rotate:
             img_rotated = mmcv.imrotate(
                 img, angle, center, scale, border_value=self.img_fill_val)
             results[key] = img_rotated.astype(img.dtype)
-        # Issue: image gets larger but results['img_shape'] is not updated!
-        #if results['img_shape'] != results[results.get('img_fields', ['img'])[0]].shape:
-        #    print(f"BUG: img_shape ({results['img_shape']}) and img.shape ({results[results.get('img_fields', ['img'])[0]].shape}) disagree")
-        #results['img_shape'] = results[results.get('img_fields', ['img'])[0]].shape
-        # Simpler solution in transforms.Resize._resize_img:
-            results['img_shape'] = img_rotated.shape
+            results['img_shape'] = results[key].shape
 
     def _rotate_bboxes(self, results, rotate_matrix):
         """Rotate the bboxes."""
@@ -629,8 +623,7 @@ class Translate:
             img = results[key].copy()
             results[key] = mmcv.imtranslate(
                 img, offset, direction, self.img_fill_val).astype(img.dtype)
-        if results['img_shape'] != results[results.get('img_fields', ['img'])[0]].shape:
-            print(f"_translate_img: img_shape ({results['img_shape']}) and img.shape ({results[results.get('img_fields', ['img'])[0]].shape}) disagree")
+            results['img_shape'] = results[key].shape
 
 
     def _translate_bboxes(self, results, offset):
