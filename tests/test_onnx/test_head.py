@@ -235,9 +235,9 @@ def test_yolov3_head_get_bboxes():
     yolo_head_data = 'yolov3_head_get_bboxes.pkl'
     pred_maps = mmcv.load(osp.join(data_path, yolo_head_data))
 
-    yolo_model.get_bboxes = partial(
-        yolo_model.get_bboxes, img_metas=img_metas, with_nms=False)
-    ort_validate(yolo_model.get_bboxes, pred_maps)
+    yolo_model.onnx_export = partial(
+        yolo_model.onnx_export, img_metas=img_metas, with_nms=False)
+    ort_validate(yolo_model.onnx_export, pred_maps)
 
 
 def fcos_config():

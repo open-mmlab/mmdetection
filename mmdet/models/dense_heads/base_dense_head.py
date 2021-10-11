@@ -77,23 +77,23 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
         for img_id in range(len(img_metas)):
             img_meta = img_metas[img_id]
-            mlvl_cls_score = select_single_mlvl(cls_scores, img_id)
-            mlvl_bbox_pred = select_single_mlvl(bbox_preds, img_id)
+            cls_score_list = select_single_mlvl(cls_scores, img_id)
+            bbox_pred_list = select_single_mlvl(bbox_preds, img_id)
             if with_score_factors:
-                mlvl_score_factor = select_single_mlvl(score_factors, img_id)
+                score_factor_list = select_single_mlvl(score_factors, img_id)
             else:
-                mlvl_score_factor = [None for _ in range(num_levels)]
+                score_factor_list = [None for _ in range(num_levels)]
 
-            results = self._get_bboxes_single(mlvl_cls_score, mlvl_bbox_pred,
-                                              mlvl_score_factor, img_meta, cfg,
+            results = self._get_bboxes_single(cls_score_list, bbox_pred_list,
+                                              score_factor_list, img_meta, cfg,
                                               rescale, with_nms, **kwargs)
             result_list.append(results)
         return result_list
 
     def _get_bboxes_single(self,
-                           mlvl_cls_score,
-                           mlvl_bbox_pred,
-                           mlvl_score_factor,
+                           cls_score_list,
+                           bbox_pred_list,
+                           score_factor_list,
                            img_meta,
                            cfg,
                            rescale=False,
@@ -102,13 +102,13 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         """Transform outputs of a single image into bbox predictions.
 
         Args:
-            mlvl_cls_score (list[Tensor]): Box scores from all scale
+            cls_score_list (list[Tensor]): Box scores from all scale
                 levels of a single image, each item has shape
                 (num_priors * num_classes, H, W).
-            mlvl_bbox_pred (list[Tensor]): Box energies / deltas from
+            bbox_pred_list (list[Tensor]): Box energies / deltas from
                 all scale levels of a single image, each item has shape
                 (num_priors * 4, H, W).
-            mlvl_score_factor (list[Tensor]): Score factor from all scale
+            score_factor_list (list[Tensor]): Score factor from all scale
                 levels of a single image, each item has shape
                 (num_priors * 1, H, W).
             img_meta (dict): Image meta info.
@@ -133,7 +133,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 - det_labels (Tensor): Predicted labels of the corresponding \
                     box with shape [num_bbox].
         """
-        if mlvl_score_factor[0] is None:
+        if score_factor_list[0] is None:
             # e.g. Retina, FreeAnchor, etc.
             with_score_factors = False
         else:
@@ -151,20 +151,20 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         else:
             mlvl_score_factors = None
         for level_idx, (cls_score, bbox_pred, score_factor) in enumerate(
-                zip(mlvl_cls_score, mlvl_bbox_pred, mlvl_score_factor)):
+                zip(cls_score_list, bbox_pred_list, score_factor_list)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             featmap_size_hw = cls_score.shape[-2:]
             cls_score = cls_score.permute(1, 2,
                                           0).reshape(-1, self.cls_out_channels)
             if self.use_sigmoid_cls:
                 scores = cls_score.sigmoid()
-                nms_pre_score = scores
+                scores_ = scores
             else:
                 scores = cls_score.softmax(-1)
                 # remind that we set FG labels to [0, num_class-1]
                 # since mmdet v2.0
                 # BG cat_id: num_class
-                nms_pre_score = scores[:, :-1]
+                scores_ = scores[:, :-1]
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             if with_score_factors:
                 score_factor = score_factor.permute(1, 2,
@@ -173,10 +173,10 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             if 0 < nms_pre < scores.shape[0]:
                 # Get maximum scores for foreground classes.
                 if with_score_factors:
-                    max_scores, _ = (nms_pre_score *
+                    max_scores, _ = (scores_ *
                                      score_factor[:, None]).max(dim=1)
                 else:
-                    max_scores, _ = nms_pre_score.max(dim=1)
+                    max_scores, _ = scores_.max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
 
                 priors = self.prior_generator.sparse_priors(
@@ -188,10 +188,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                     score_factor = score_factor[topk_inds]
             else:
                 priors = self.prior_generator.single_level_grid_priors(
-                    featmap_size_hw,
-                    level_idx,
-                    dtype=scores.dtype,
-                    device=scores.device)
+                    featmap_size_hw, level_idx, scores.device)
 
             bboxes = self.bbox_coder.decode(
                 priors, bbox_pred, max_shape=img_shape)

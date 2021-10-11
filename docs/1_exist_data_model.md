@@ -211,6 +211,22 @@ mmdetection
 │   │   ├── stuffthingmaps
 ```
 
+Panoptic segmentation models like PanopticFPN require additional [COCO Panoptic](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip) datasets, you can download and unzip then move to the coco annotation folder. The directory should be like this.
+
+```text
+mmdetection
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── panoptic_train2017.json
+│   │   │   ├── panoptic_train2017
+│   │   │   ├── panoptic_val2017.json
+│   │   │   ├── panoptic_val2017
+│   │   ├── train2017
+│   │   ├── val2017
+│   │   ├── test2017
+```
+
 The [cityscapes](https://www.cityscapes-dataset.com/) annotations need to be converted into the coco format using `tools/dataset_converters/cityscapes.py`:
 
 ```shell
@@ -267,7 +283,7 @@ Optional arguments:
 
 ### Examples
 
-Assume that you have already downloaded the checkpoints to the directory `checkpoints/`.
+Assuming that you have already downloaded the checkpoints to the directory `checkpoints/`.
 
 1. Test Faster R-CNN and visualize the results. Press any key for the next image.
    Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn).

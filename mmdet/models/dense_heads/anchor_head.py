@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
+
 import torch
 import torch.nn as nn
 from mmcv.runner import force_fp32
@@ -94,7 +96,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         self.prior_generator = build_prior_generator(anchor_generator)
         # usually the numbers of anchors for each level are the same
         # except SSD detectors
-        self.num_anchors = self.prior_generator.num_base_anchors[0]
+        self.num_anchors = self.prior_generator.num_base_priors[0]
         self._init_layers()
 
     @property
