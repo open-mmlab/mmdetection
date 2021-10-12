@@ -36,11 +36,28 @@ def bbox_mapping(bboxes,
                  img_shape,
                  scale_factor,
                  flip,
-                 flip_direction='horizontal'):
+                 tile_offset,
+                 flip_direction='horizontal'
+                 ):
     """Map bboxes from the original image scale to testing scale."""
     new_bboxes = bboxes * bboxes.new_tensor(scale_factor)
     if flip:
         new_bboxes = bbox_flip(new_bboxes, img_shape, flip_direction)
+    # add by hui ############################################
+    assert tile_offset is None or (isinstance(tile_offset, (tuple, list)) and len(tile_offset) == 2), \
+        "tile_offset must be None or (dx, dy) or [dx, dy]"
+    if tile_offset is not None:
+        dx, dy = tile_offset
+        new_bboxes[:, [0, 2]] -= dx
+        new_bboxes[:, [1, 3]] -= dy
+
+        h, w, c = img_shape
+        new_bboxes[:, [0, 2]] = new_bboxes[:, [0, 2]].clamp(0, w - 1)
+        new_bboxes[:, [1, 3]] = new_bboxes[:, [1, 3]].clamp(0, h - 1)
+        W, H = new_bboxes[:, 2] - new_bboxes[:, 0], new_bboxes[:, 3] - new_bboxes[:, 1]
+        keep = (W >= 2) & (H >= 2)
+        new_bboxes = new_bboxes[keep]
+    # #################################################################
     return new_bboxes
 
 
@@ -48,11 +65,20 @@ def bbox_mapping_back(bboxes,
                       img_shape,
                       scale_factor,
                       flip,
+                      tile_offset: [tuple, list, None],
                       flip_direction='horizontal'):
     """Map bboxes from testing scale to original image scale."""
     new_bboxes = bbox_flip(bboxes, img_shape,
                            flip_direction) if flip else bboxes
     new_bboxes = new_bboxes.view(-1, 4) / new_bboxes.new_tensor(scale_factor)
+    # add by hui ############################################
+    assert tile_offset is None or (isinstance(tile_offset, (tuple, list)) and len(tile_offset) == 2), \
+        "tile_offset must be None or (dx, dy) or [dx, dy]"
+    if tile_offset is not None:
+        dx, dy = tile_offset
+        new_bboxes[:, [0, 2]] += dx
+        new_bboxes[:, [1, 3]] += dy
+    # #################################################################
     return new_bboxes.view(bboxes.shape)
 
 

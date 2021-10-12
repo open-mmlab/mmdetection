@@ -188,10 +188,87 @@ class TwoStageDetector(BaseDetector):
         If rescale is False, then returned bboxes and masks will fit the scale
         of imgs[0].
         """
+        # original:
+        # x = self.extract_feats(imgs)
+        # proposal_list = self.rpn_head.aug_test_rpn(x, img_metas)
+        # return self.roi_head.aug_test(
+        #     x, proposal_list, img_metas, rescale=rescale)
+
+        # modified by hui #####################################
+        if self.test_cfg.rcnn.get('do_tile_as_aug', False):
+            x = self.extract_feats(imgs)
+            proposal_list = self.rpn_head.aug_test_rpn(x, img_metas)
+            return self.roi_head.aug_test(
+                x, proposal_list, img_metas, rescale=rescale)
+        else:
+            return self.tile_aug_test(imgs, img_metas, rescale)
+        ##########################################################################
+
+    #  add by hui ######################################################################
+    def tile_aug_test(self, imgs, img_metas, rescale=False):
+        """Test with augmentations for each tile seperatelly.
+
+        If rescale is False, then returned bboxes and masks will fit the scale
+        of imgs[0].
+        """
         x = self.extract_feats(imgs)
-        proposal_list = self.rpn_head.aug_test_rpn(x, img_metas)
-        return self.roi_head.aug_test(
-            x, proposal_list, img_metas, rescale=rescale)
+
+        assert len(x) == len(img_metas)
+        assert not self.roi_head.with_mask
+        tile2img_metas = {}
+        tile2feats = {}
+        for feat, img_meta in zip(x, img_metas):
+            assert len(img_meta) == 1
+            tile_off = img_meta[0].pop('tile_offset')  # must pop here, attention.
+            if tile_off in tile2img_metas:
+                tile2img_metas[tile_off].append(img_meta)
+                tile2feats[tile_off].append(feat)
+            else:
+                tile2img_metas[tile_off] = [img_meta]
+                tile2feats[tile_off] = [feat]
+
+        # forward and merge all result on each tile
+        all_tile_bboxes = []
+        all_tile_labels = []
+        num_classes = 0
+        for tile_off, img_metas in tile2img_metas.items():
+            x = tile2feats[tile_off]
+            proposal_list = self.rpn_head.aug_test_rpn(x, img_metas)
+            bboxes = self.roi_head.aug_test(x, proposal_list, img_metas, rescale=rescale)[0]
+
+            device = x[0][0].device
+            dx, dy = tile_off
+            labels = []
+            num_classes = max(num_classes, len(bboxes))
+            for cls in range(len(bboxes)):
+                bboxes[cls][:, [0, 2]] += dx
+                bboxes[cls][:, [1, 3]] += dy
+                label = torch.zeros((len(bboxes[cls]),), dtype=torch.long, device=device) + cls
+                labels.append(label)
+            all_tile_bboxes.extend(bboxes)
+            all_tile_labels.extend(labels)
+        import numpy as np
+        all_tile_bboxes = np.concatenate(all_tile_bboxes, axis=0)
+        all_tile_bboxes = torch.from_numpy(all_tile_bboxes).to(device)
+        all_tile_labels = torch.cat(all_tile_labels, dim=0)
+
+        # performance NMS
+        if len(all_tile_bboxes) > 0:
+            from mmcv.ops.nms import batched_nms
+            dets, keep = batched_nms(all_tile_bboxes[:, :4], all_tile_bboxes[:, 4].contiguous(),
+                                     all_tile_labels, self.test_cfg.rcnn.nms)
+            max_num = self.test_cfg.rcnn.max_per_img
+            if max_num > 0:
+                dets = dets[:max_num]
+                keep = keep[:max_num]
+            det_bboxes, det_labels = dets, all_tile_labels[keep]
+        else:
+            det_bboxes, det_labels = torch.zeros((0, 5)), torch.zeros((0,))
+
+        from mmdet.core import bbox2result
+        bbox_results = bbox2result(det_bboxes, det_labels, num_classes)
+        return [bbox_results]
+    ##################################################################
 
     def onnx_export(self, img, img_metas):
 

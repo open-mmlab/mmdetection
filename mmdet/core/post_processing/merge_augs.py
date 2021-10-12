@@ -67,7 +67,8 @@ def merge_aug_proposals(aug_proposals, img_metas, cfg):
         _proposals = proposals.clone()
         _proposals[:, :4] = bbox_mapping_back(_proposals[:, :4], img_shape,
                                               scale_factor, flip,
-                                              flip_direction)
+                                              flip_direction,
+                                              img_info.get('tile_offset', None)) # add by hui
         recovered_proposals.append(_proposals)
     aug_proposals = torch.cat(recovered_proposals, dim=0)
     merged_proposals, _ = nms(aug_proposals[:, :4].contiguous(),
@@ -100,7 +101,8 @@ def merge_aug_bboxes(aug_bboxes, aug_scores, img_metas, rcnn_test_cfg):
         flip = img_info[0]['flip']
         flip_direction = img_info[0]['flip_direction']
         bboxes = bbox_mapping_back(bboxes, img_shape, scale_factor, flip,
-                                   flip_direction)
+                                   flip_direction,
+                                   img_info[0].get('tile_offset', None)) # add by hui
         recovered_bboxes.append(bboxes)
     bboxes = torch.stack(recovered_bboxes).mean(dim=0)
     if aug_scores is None:

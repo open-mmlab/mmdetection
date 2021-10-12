@@ -74,7 +74,8 @@ class Resize:
                  keep_ratio=True,
                  bbox_clip_border=True,
                  backend='cv2',
-                 override=False):
+                 override=False,
+                 scale_factor=None):  # add by hui
         if img_scale is None:
             self.img_scale = None
         else:
@@ -99,6 +100,11 @@ class Resize:
         self.override = override
         self.bbox_clip_border = bbox_clip_border
 
+        # add by hui ####################################################
+        self.scale_factor = scale_factor
+        assert img_scale is None or scale_factor is None, \
+            "img_scale and scale_factor cannot be both set."
+        # ###############################################################
     @staticmethod
     def random_select(img_scales):
         """Randomly select an img_scale from given candidates.
@@ -283,6 +289,14 @@ class Resize:
             dict: Resized results, 'img_shape', 'pad_shape', 'scale_factor', \
                 'keep_ratio' keys are added into result dict.
         """
+        # add by hui ##############################################################
+        if self.scale_factor is not None:
+            assert 'scale_factor' not in results, 'scale_factor have been specified in results'
+            if len(self.scale_factor) == 1:
+                results['scale_factor'] = self.scale_factor[0]
+            else:
+                results['scale_factor'] = self.random_select(self.img_scale)
+        # ##########################################################################
 
         if 'scale' not in results:
             if 'scale_factor' in results:

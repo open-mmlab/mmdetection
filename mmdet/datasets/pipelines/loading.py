@@ -66,6 +66,13 @@ class LoadImageFromFile:
         img = mmcv.imfrombytes(img_bytes, flag=self.color_type)
         if self.to_float32:
             img = img.astype(np.float32)
+        # add by hui ####################################################
+        if 'corner' in results['img_info']:
+            l, u, r, b = results['img_info']['corner']
+            img = img[u:b, l:r]
+            assert img.shape[0] * img.shape[1] > 0
+            results['corner'] = results['img_info']['corner']
+        # ###############################################################
 
         results['filename'] = filename
         results['ori_filename'] = results['img_info']['filename']
