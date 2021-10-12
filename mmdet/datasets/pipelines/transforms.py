@@ -2022,7 +2022,7 @@ class Mosaic:
             list: indexes.
         """
 
-        indexs = [random.randint(0, len(dataset)) for _ in range(3)]
+        indexs = [random.randint(0, len(dataset) - 1) for _ in range(3)]
         return indexs
 
     def _mosaic_transform(self, results):
@@ -2284,7 +2284,7 @@ class MixUp:
         """
 
         for i in range(self.max_iters):
-            index = random.randint(0, len(dataset))
+            index = random.randint(0, len(dataset) - 1)
             gt_bboxes_i = dataset.get_ann_info(index)['bboxes']
             if len(gt_bboxes_i) != 0:
                 break
