@@ -625,7 +625,6 @@ class Translate:
                 img, offset, direction, self.img_fill_val).astype(img.dtype)
             results['img_shape'] = results[key].shape
 
-
     def _translate_bboxes(self, results, offset):
         """Shift bboxes horizontally or vertically, according to offset."""
         h, w, c = results['img_shape']
