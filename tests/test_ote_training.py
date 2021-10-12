@@ -252,7 +252,7 @@ class OTETestTrainingAction(BaseOTETestAction):
 
         score_name, score_value = self._get_training_performance_as_score_name_value()
         logger.info(f'performance={self.output_model.performance}')
-        data_collector.log_final_metric('training_performance/' + score_name, score_value)
+        data_collector.log_final_metric('training_accuracy/' + score_name, score_value)
 
         hyperparams_dict = convert_hyperparams_to_dict(self.copy_hyperparams)
         for k, v in hyperparams_dict.items():
@@ -298,7 +298,7 @@ class OTETestTrainingEvaluationAction(BaseOTETestAction):
         logger.info('Begin evaluation of trained model')
         validation_dataset = dataset.get_subset(self.subset)
         score_name, score_value = run_evaluation(validation_dataset, task, trained_model)
-        data_collector.log_final_metric('evaluation_performance/' + score_name, score_value)
+        data_collector.log_final_metric('evaluation_accuracy/' + score_name, score_value)
         logger.info('End evaluation of trained model')
 
     def __call__(self, data_collector: DataCollector,
@@ -371,7 +371,7 @@ class OTETestExportEvaluationAction(BaseOTETestAction):
         self.openvino_task = create_openvino_task(model_template, environment_for_export)
         validation_dataset = dataset.get_subset(self.subset)
         score_name, score_value = run_evaluation(validation_dataset, self.openvino_task, exported_model)
-        data_collector.log_final_metric('evaluation_performance_exported/' + score_name, score_value)
+        data_collector.log_final_metric('evaluation_accuracy_exported/' + score_name, score_value)
         logger.info('End evaluation of exported model')
 
     def __call__(self, data_collector: DataCollector,
@@ -451,7 +451,7 @@ class OTETestPotEvaluationAction(BaseOTETestAction):
         logger.info('Begin evaluation of pot model')
         validation_dataset_pot = dataset.get_subset(self.subset)
         score_name, score_value = run_evaluation(validation_dataset_pot, openvino_task_pot, optimized_model_pot)
-        data_collector.log_final_metric('evaluation_performance_pot/' + score_name, score_value)
+        data_collector.log_final_metric('evaluation_accuracy_pot/' + score_name, score_value)
         logger.info('End evaluation of pot model')
 
     def __call__(self, data_collector: DataCollector,
@@ -548,7 +548,7 @@ class OTETestNNCFEvaluationAction(BaseOTETestAction):
         logger.info('Begin evaluation of nncf model')
         validation_dataset = dataset.get_subset(self.subset)
         score_name, score_value = run_evaluation(validation_dataset, nncf_task, nncf_model)
-        data_collector.log_final_metric('evaluation_performance_nncf/' + score_name, score_value)
+        data_collector.log_final_metric('evaluation_accuracy_nncf/' + score_name, score_value)
         logger.info('End evaluation of nncf model')
 
     def __call__(self, data_collector: DataCollector,
