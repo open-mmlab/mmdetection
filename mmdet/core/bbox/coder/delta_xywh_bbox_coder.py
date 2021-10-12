@@ -88,9 +88,18 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
         assert pred_bboxes.size(0) == bboxes.size(0)
         if pred_bboxes.ndim == 3:
             assert pred_bboxes.size(1) == bboxes.size(1)
-        decoded_bboxes = delta2bbox(bboxes, pred_bboxes, self.means, self.stds,
-                                    max_shape, wh_ratio_clip, self.clip_border,
-                                    self.add_ctr_clamp, self.ctr_clamp)
+        if pred_bboxes.ndim == 2 and not torch.onnx.is_in_onnx_export():
+            # single image decode
+            decoded_bboxes = delta2bbox(bboxes, pred_bboxes, self.means,
+                                        self.stds, max_shape, wh_ratio_clip,
+                                        self.clip_border, self.add_ctr_clamp,
+                                        self.ctr_clamp)
+        else:
+            decoded_bboxes = onnx_delta2bbox(bboxes, pred_bboxes, self.means,
+                                             self.stds, max_shape,
+                                             wh_ratio_clip, self.clip_border,
+                                             self.add_ctr_clamp,
+                                             self.ctr_clamp)
 
         return decoded_bboxes
 
@@ -151,6 +160,116 @@ def delta2bbox(rois,
                clip_border=True,
                add_ctr_clamp=False,
                ctr_clamp=32):
+    """Apply deltas to shift/scale base boxes.
+
+    Typically the rois are anchor or proposed bounding boxes and the deltas are
+    network outputs used to shift/scale those boxes.
+    This is the inverse function of :func:`bbox2delta`.
+
+    Args:
+        rois (Tensor): Boxes to be transformed. Has shape (N, 4) or (B, N, 4)
+        deltas (Tensor): Encoded offsets with respect to each roi.
+            Has shape (B, N, num_classes * 4) or (B, N, 4) or
+            (N, num_classes * 4) or (N, 4). Note N = num_anchors * W * H
+            when rois is a grid of anchors.Offset encoding follows [1]_.
+        means (Sequence[float]): Denormalizing means for delta coordinates
+        stds (Sequence[float]): Denormalizing standard deviation for delta
+            coordinates
+        max_shape (Sequence[int] or torch.Tensor or Sequence[
+            Sequence[int]],optional): Maximum bounds for boxes, specifies
+            (H, W, C) or (H, W). If rois shape is (B, N, 4), then
+            the max_shape should be a Sequence[Sequence[int]]
+            and the length of max_shape should also be B.
+        wh_ratio_clip (float): Maximum aspect ratio for boxes.
+        clip_border (bool, optional): Whether clip the objects outside the
+            border of the image. Defaults to True.
+        add_ctr_clamp (bool): Whether to add center clamp, when added, the
+            predicted box is clamped is its center is too far away from
+            the original anchor's center. Only used by YOLOF. Default False.
+        ctr_clamp (int): the maximum pixel shift to clamp. Only used by YOLOF.
+            Default 32.
+
+    Returns:
+        Tensor: Boxes with shape (B, N, num_classes * 4) or (B, N, 4) or
+           (N, num_classes * 4) or (N, 4), where 4 represent
+           tl_x, tl_y, br_x, br_y.
+
+    References:
+        .. [1] https://arxiv.org/abs/1311.2524
+
+    Example:
+        >>> rois = torch.Tensor([[ 0.,  0.,  1.,  1.],
+        >>>                      [ 0.,  0.,  1.,  1.],
+        >>>                      [ 0.,  0.,  1.,  1.],
+        >>>                      [ 5.,  5.,  5.,  5.]])
+        >>> deltas = torch.Tensor([[  0.,   0.,   0.,   0.],
+        >>>                        [  1.,   1.,   1.,   1.],
+        >>>                        [  0.,   0.,   2.,  -1.],
+        >>>                        [ 0.7, -1.9, -0.5,  0.3]])
+        >>> delta2bbox(rois, deltas, max_shape=(32, 32, 3))
+        tensor([[0.0000, 0.0000, 1.0000, 1.0000],
+                [0.1409, 0.1409, 2.8591, 2.8591],
+                [0.0000, 0.3161, 4.1945, 0.6839],
+                [5.0000, 5.0000, 5.0000, 5.0000]])
+    """
+    means = deltas.new_tensor(means).view(1, -1).repeat(1, deltas.size(1) // 4)
+    stds = deltas.new_tensor(stds).view(1, -1).repeat(1, deltas.size(1) // 4)
+    denorm_deltas = deltas * stds + means
+    dx = denorm_deltas[:, 0::4]
+    dy = denorm_deltas[:, 1::4]
+    dw = denorm_deltas[:, 2::4]
+    dh = denorm_deltas[:, 3::4]
+
+    # Compute width/height of each roi
+    px = ((rois[:, 0] + rois[:, 2]) * 0.5).unsqueeze(1).expand_as(dx)
+    py = ((rois[:, 1] + rois[:, 3]) * 0.5).unsqueeze(1).expand_as(dy)
+    pw = (rois[:, 2] - rois[:, 0]).unsqueeze(1).expand_as(dw)
+    ph = (rois[:, 3] - rois[:, 1]).unsqueeze(1).expand_as(dh)
+
+    dx_width = pw * dx
+    dy_height = ph * dy
+
+    max_ratio = np.abs(np.log(wh_ratio_clip))
+
+    if add_ctr_clamp:
+        dx_width = torch.clamp(dx_width, max=ctr_clamp, min=-ctr_clamp)
+        dy_height = torch.clamp(dy_height, max=ctr_clamp, min=-ctr_clamp)
+        dw = torch.clamp(dw, max=max_ratio)
+        dh = torch.clamp(dh, max=max_ratio)
+    else:
+        dw = dw.clamp(min=-max_ratio, max=max_ratio)
+        dh = dh.clamp(min=-max_ratio, max=max_ratio)
+
+    # Use exp(network energy) to enlarge/shrink each roi
+    gw = pw * dw.exp()
+    gh = ph * dh.exp()
+    # Use network energy to shift the center of each roi
+    gx = px + dx_width
+    gy = py + dy_height
+    # Convert center-xy/width/height to top-left, bottom-right
+    x1 = gx - gw * 0.5
+    y1 = gy - gh * 0.5
+    x2 = gx + gw * 0.5
+    y2 = gy + gh * 0.5
+    if clip_border and max_shape is not None:
+        x1 = x1.clamp(min=0, max=max_shape[1])
+        y1 = y1.clamp(min=0, max=max_shape[0])
+        x2 = x2.clamp(min=0, max=max_shape[1])
+        y2 = y2.clamp(min=0, max=max_shape[0])
+    bboxes = torch.stack([x1, y1, x2, y2], dim=-1)
+    return bboxes
+
+
+@mmcv.jit(coderize=True)
+def onnx_delta2bbox(rois,
+                    deltas,
+                    means=(0., 0., 0., 0.),
+                    stds=(1., 1., 1., 1.),
+                    max_shape=None,
+                    wh_ratio_clip=16 / 1000,
+                    clip_border=True,
+                    add_ctr_clamp=False,
+                    ctr_clamp=32):
     """Apply deltas to shift/scale base boxes.
 
     Typically the rois are anchor or proposed bounding boxes and the deltas are

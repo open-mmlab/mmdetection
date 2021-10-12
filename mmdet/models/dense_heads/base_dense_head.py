@@ -2,9 +2,9 @@
 from abc import ABCMeta, abstractmethod
 
 import torch
+from mmcv.ops import batched_nms
 from mmcv.runner import BaseModule, force_fp32
 
-from mmdet.core import multiclass_nms
 from mmdet.core.utils import select_single_mlvl
 
 
@@ -146,63 +146,71 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
         mlvl_bboxes = []
         mlvl_scores = []
+        mlvl_classes_idxs = []
         if with_score_factors:
             mlvl_score_factors = []
         else:
             mlvl_score_factors = None
         for level_idx, (cls_score, bbox_pred, score_factor) in enumerate(
                 zip(cls_score_list, bbox_pred_list, score_factor_list)):
+
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             featmap_size_hw = cls_score.shape[-2:]
-            cls_score = cls_score.permute(1, 2,
-                                          0).reshape(-1, self.cls_out_channels)
-            if self.use_sigmoid_cls:
-                scores = cls_score.sigmoid()
-                scores_ = scores
-            else:
-                scores = cls_score.softmax(-1)
-                # remind that we set FG labels to [0, num_class-1]
-                # since mmdet v2.0
-                # BG cat_id: num_class
-                scores_ = scores[:, :-1]
+
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             if with_score_factors:
                 score_factor = score_factor.permute(1, 2,
                                                     0).reshape(-1).sigmoid()
-
-            if 0 < nms_pre < scores.shape[0]:
-                # Get maximum scores for foreground classes.
-                if with_score_factors:
-                    max_scores, _ = (scores_ *
-                                     score_factor[:, None]).max(dim=1)
-                else:
-                    max_scores, _ = scores_.max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
-
-                priors = self.prior_generator.sparse_priors(
-                    topk_inds, featmap_size_hw, level_idx, scores.dtype,
-                    scores.device)
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
-                if with_score_factors:
-                    score_factor = score_factor[topk_inds]
+            cls_score = cls_score.permute(1, 2,
+                                          0).reshape(-1, self.cls_out_channels)
+            if self.use_sigmoid_cls:
+                scores = cls_score.sigmoid().flatten()
             else:
-                priors = self.prior_generator.single_level_grid_priors(
-                    featmap_size_hw, level_idx, scores.device)
+                # remind that we set FG labels to [0, num_class-1]
+                # since mmdet v2.0
+                # BG cat_id: num_class
+                scores = cls_score.softmax(-1)[:, :-1].flatten()
+
+            keep_idxs = scores > cfg.score_thr
+            scores = scores[keep_idxs]
+            topk_idxs = keep_idxs.nonzero(as_tuple=True)[0]
+
+            # 2. Keep top k top scoring boxes only
+            num_topk = min(nms_pre, topk_idxs.size(0))
+            # torch.sort is actually faster than .topk (at least on GPUs)
+            scores, idxs = scores.sort(descending=True)
+            scores = scores[:num_topk]
+            topk_inds = topk_idxs[idxs[:num_topk]]
+
+            anchor_idxs = topk_inds // self.num_classes
+            classes_idxs = topk_inds % self.num_classes
+
+            bbox_pred = bbox_pred[anchor_idxs]
+
+            if with_score_factors:
+                score_factor = score_factor[anchor_idxs]
+
+            priors = self.prior_generator.sparse_priors(
+                anchor_idxs, featmap_size_hw, level_idx, bbox_pred.dtype,
+                bbox_pred.device)
 
             bboxes = self.bbox_coder.decode(
                 priors, bbox_pred, max_shape=img_shape)
+
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
+            mlvl_classes_idxs.append(classes_idxs)
             if with_score_factors:
                 mlvl_score_factors.append(score_factor)
 
-        return self._bbox_post_process(mlvl_scores, mlvl_bboxes,
-                                       img_meta['scale_factor'], cfg, rescale,
-                                       with_nms, mlvl_score_factors, **kwargs)
+        return self._bbox_post_process(mlvl_scores, mlvl_classes_idxs,
+                                       mlvl_bboxes, img_meta['scale_factor'],
+                                       cfg, rescale, with_nms,
+                                       mlvl_score_factors, **kwargs)
 
     def _bbox_post_process(self,
                            mlvl_scores,
+                           mlvl_classes_idxs,
                            mlvl_bboxes,
                            scale_factor,
                            cfg,
@@ -218,7 +226,10 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         Args:
             mlvl_scores (list[Tensor]): Box scores from all scale
                 levels of a single image, each item has shape
-                (num, num_class).
+                (num,).
+           mlvl_classes_idxs (list[Tensor]): Box class idx from all scale
+                levels of a single image, each item has shape
+                (num,).
             mlvl_bboxes (list[Tensor]): Decoded bboxes from all scale
                 levels of a single image, each item has shape (num, 4).
             scale_factor (ndarray, optional): Scale factor of the image arange
@@ -247,37 +258,26 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 - det_labels (Tensor): Predicted labels of the corresponding \
                     box with shape [num_bbox].
         """
-        assert len(mlvl_scores) == len(mlvl_bboxes)
+        assert len(mlvl_scores) == len(mlvl_bboxes) == len(mlvl_classes_idxs)
 
         mlvl_bboxes = torch.cat(mlvl_bboxes)
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
+        mlvl_classes_idxs = torch.cat(mlvl_classes_idxs)
 
         if mlvl_score_factors is not None:
             mlvl_score_factors = torch.cat(mlvl_score_factors)
-
-        if self.use_sigmoid_cls:
-            # Add a dummy background class to the backend when using sigmoid
-            # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
-            # BG cat_id: num_class
-            padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-            mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
+            mlvl_scores = mlvl_scores * mlvl_score_factors
 
         if with_nms:
-            det_bboxes, det_labels = multiclass_nms(
-                mlvl_bboxes,
-                mlvl_scores,
-                cfg.score_thr,
-                cfg.nms,
-                cfg.max_per_img,
-                score_factors=mlvl_score_factors)
+            det_bboxes, keep = batched_nms(mlvl_bboxes, mlvl_scores,
+                                           mlvl_classes_idxs, cfg.nms)
+            det_bboxes = det_bboxes[:cfg.max_per_img]
+            det_labels = mlvl_classes_idxs[keep][:cfg.max_per_img]
             return det_bboxes, det_labels
         else:
-            if mlvl_score_factors is not None:
-                return mlvl_bboxes, mlvl_scores, mlvl_score_factors
-            else:
-                return mlvl_bboxes, mlvl_scores
+            return mlvl_bboxes, mlvl_scores, mlvl_classes_idxs
 
     def forward_train(self,
                       x,
