@@ -283,7 +283,7 @@ Optional arguments:
 
 ### Examples
 
-Assume that you have already downloaded the checkpoints to the directory `checkpoints/`.
+Assuming that you have already downloaded the checkpoints to the directory `checkpoints/`.
 
 1. Test Faster R-CNN and visualize the results. Press any key for the next image.
    Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn).

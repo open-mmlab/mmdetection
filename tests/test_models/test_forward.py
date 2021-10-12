@@ -541,6 +541,9 @@ def test_yolact_forward():
         return_loss=True)
     assert isinstance(losses, dict)
 
+    # Test forward dummy for get_flops
+    detector.forward_dummy(imgs)
+
     # Test forward test
     detector.eval()
     with torch.no_grad():
