@@ -15,47 +15,40 @@
 import copy
 import io
 import logging
-import numpy as np
 import os
 import shutil
 import tempfile
-import torch
 import warnings
 from typing import List, Optional, Tuple
 
+import numpy as np
+import torch
 from mmcv.parallel import MMDataParallel
 from mmcv.runner import load_checkpoint
 from mmcv.utils import Config
-
 from ote_sdk.configuration import cfg_helper
 from ote_sdk.configuration.helper.utils import ids_to_strings
-from ote_sdk.entities.inference_parameters import InferenceParameters
-from ote_sdk.entities.model import ModelStatus, ModelPrecision, ModelEntity, ModelFormat, ModelOptimizationType
+from ote_sdk.entities.annotation import Annotation
+from ote_sdk.entities.datasets import DatasetEntity
+from ote_sdk.entities.inference_parameters import InferenceParameters, default_progress_callback
+from ote_sdk.entities.model import ModelEntity, ModelFormat, ModelOptimizationType, ModelPrecision, ModelStatus
 from ote_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
 from ote_sdk.entities.scored_label import ScoredLabel
 from ote_sdk.entities.shapes.rectangle import Rectangle
 from ote_sdk.entities.task_environment import TaskEnvironment
-from ote_sdk.entities.train_parameters import default_progress_callback
 from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
-from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType
-from ote_sdk.usecases.tasks.interfaces.export_interface import IExportTask
+from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType, IExportTask
 from ote_sdk.usecases.tasks.interfaces.inference_interface import IInferenceTask
 from ote_sdk.usecases.tasks.interfaces.unload_interface import IUnload
-from sc_sdk.entities.annotation import Annotation
-from sc_sdk.entities.datasets import Dataset
 
 from mmdet.apis import export_model, single_gpu_test
-from mmdet.apis.ote.apis.detection.config_utils import patch_config
-from mmdet.apis.ote.apis.detection.config_utils import prepare_for_testing
-from mmdet.apis.ote.apis.detection.config_utils import set_hyperparams
+from mmdet.apis.ote.apis.detection.config_utils import patch_config, prepare_for_testing, set_hyperparams
 from mmdet.apis.ote.apis.detection.configuration import OTEDetectionConfig
 from mmdet.apis.ote.apis.detection.ote_utils import InferenceProgressCallback
-
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 from mmdet.parallel import MMDataCPU
-
 
 logger = logging.getLogger(__name__)
 
@@ -74,8 +67,6 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
         self._scratch_space = tempfile.mkdtemp(prefix="ote-det-scratch-")
         logger.info(f"Scratch space created at {self._scratch_space}")
 
-        self._hyperparams = hyperparams = task_environment.get_hyper_parameters(OTEDetectionConfig)
-
         self._model_name = task_environment.model_template.name
         self._labels = task_environment.get_labels(False)
 
@@ -86,7 +77,7 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
         config_file_path = os.path.join(self._base_dir, "model.py")
         self._config = Config.fromfile(config_file_path)
         patch_config(self._config, self._scratch_space, self._labels, random_seed=42)
-        set_hyperparams(self._config, hyperparams)
+        set_hyperparams(self._config, self._hyperparams)
 
         # Create and initialize PyTorch model.
         self._model = self._load_model(task_environment.model)
@@ -95,6 +86,11 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
         self._training_work_dir = None
         self._is_training = False
         self._should_stop = False
+
+
+    @property
+    def _hyperparams(self):
+        return self._task_environment.get_hyper_parameters(OTEDetectionConfig)
 
 
     def _load_model(self, model: ModelEntity):
@@ -149,7 +145,7 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
         return model
 
 
-    def infer(self, dataset: Dataset, inference_parameters: Optional[InferenceParameters] = None) -> Dataset:
+    def infer(self, dataset: DatasetEntity, inference_parameters: Optional[InferenceParameters] = None) -> DatasetEntity:
         """ Analyzes a dataset using the latest inference model. """
         set_hyperparams(self._config, self._hyperparams)
 
@@ -210,7 +206,7 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
 
 
     @staticmethod
-    def _infer_detector(model: torch.nn.Module, config: Config, dataset: Dataset,
+    def _infer_detector(model: torch.nn.Module, config: Config, dataset: DatasetEntity,
                         eval: Optional[bool] = False, metric_name: Optional[str] = 'mAP') -> Tuple[List, float]:
         model.eval()
         test_config = prepare_for_testing(config, dataset)
@@ -240,9 +236,8 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
                  output_result_set: ResultSetEntity,
                  evaluation_metric: Optional[str] = None):
         """ Computes performance on a resultset """
-        params = self._hyperparams
 
-        result_based_confidence_threshold = params.postprocessing.result_based_confidence_threshold
+        result_based_confidence_threshold = self._hyperparams.postprocessing.result_based_confidence_threshold
 
         logger.info('Computing F-measure' + (' with auto threshold adjustment' if result_based_confidence_threshold else ''))
         f_measure_metrics = MetricsHelper.compute_f_measure(output_result_set,
@@ -256,11 +251,9 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
                 best_confidence_threshold = f_measure_metrics.best_confidence_threshold.value
                 if best_confidence_threshold is not None:
                     logger.info(f"Setting confidence_threshold to " f"{best_confidence_threshold} based on results")
-                    # params.postprocessing.confidence_threshold = best_confidence_threshold
                 else:
                     raise ValueError(f"Cannot compute metrics: Invalid confidence threshold!")
 
-            # self._task_environment.set_configurable_parameters(params)
         logger.info(f"F-measure after evaluation: {f_measure_metrics.f_measure.value}")
 
         output_result_set.performance = f_measure_metrics.get_performance()
@@ -353,8 +346,7 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
 
     def save_model(self, output_model: ModelEntity):
         buffer = io.BytesIO()
-        hyperparams = self._task_environment.get_hyper_parameters(OTEDetectionConfig)
-        hyperparams_str = ids_to_strings(cfg_helper.convert(hyperparams, dict, enum_to_str=True))
+        hyperparams_str = ids_to_strings(cfg_helper.convert(self._hyperparams, dict, enum_to_str=True))
         labels = {label.name: label.color.rgb_tuple for label in self._labels}
         modelinfo = {'model': self._model.state_dict(), 'config': hyperparams_str, 'labels': labels, 'VERSION': 1}
         torch.save(modelinfo, buffer)

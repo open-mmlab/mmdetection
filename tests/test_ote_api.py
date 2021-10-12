@@ -1,3 +1,17 @@
+# Copyright (C) 2021 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions
+# and limitations under the License.
+
 import io
 import json
 import os
@@ -15,7 +29,10 @@ import torch
 from bson import ObjectId
 from e2e_test_system import e2e_pytest_api
 from ote_sdk.configuration.helper import convert, create
-from ote_sdk.entities.annotation import Annotation, AnnotationSceneKind
+from ote_sdk.entities.annotation import Annotation, AnnotationSceneEntity, AnnotationSceneKind
+from ote_sdk.entities.dataset_item import DatasetItemEntity
+from ote_sdk.entities.datasets import DatasetEntity
+from ote_sdk.entities.image import Image
 from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.metrics import Performance
 from ote_sdk.entities.model import (ModelEntity, ModelFormat, ModelOptimizationType, ModelPrecision, ModelStatus,
@@ -32,11 +49,6 @@ from ote_sdk.entities.train_parameters import TrainParameters
 from ote_sdk.tests.test_helpers import generate_random_annotated_image
 from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType, IExportTask
 from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
-from sc_sdk.entities.annotation import AnnotationScene
-from sc_sdk.entities.dataset_item import DatasetItem
-from sc_sdk.entities.datasets import Dataset, NullDatasetStorage
-from sc_sdk.entities.image import Image
-from sc_sdk.entities.media_identifier import ImageIdentifier
 
 from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask, OTEDetectionConfig, OTEDetectionInferenceTask,
                                            OTEDetectionNNCFTask, OTEDetectionTrainingTask)
@@ -216,13 +228,11 @@ class API(unittest.TestCase):
                 box_shapes.append(Annotation(Rectangle(x1=box[0], y1=box[1], x2=box[2], y2=box[3]),
                                              labels=shape_labels))
 
-            image = Image(name=f'image_{i}', numpy=image_numpy, dataset_storage=NullDatasetStorage())
-            image_identifier = ImageIdentifier(image.id)
-            annotation = AnnotationScene(
+            image = Image(data=image_numpy)
+            annotation = AnnotationSceneEntity(
                 kind=AnnotationSceneKind.ANNOTATION,
-                media_identifier=image_identifier,
                 annotations=box_shapes)
-            items.append(DatasetItem(media=image, annotation_scene=annotation))
+            items.append(DatasetItemEntity(media=image, annotation_scene=annotation))
         warnings.resetwarnings()
 
         rng = random.Random()
@@ -237,7 +247,7 @@ class API(unittest.TestCase):
                 subset = Subset.TRAINING
             items[i].subset = subset
 
-        dataset = Dataset(NullDatasetStorage(), items)
+        dataset = DatasetEntity(items)
         return environment, dataset
 
     def setup_configurable_parameters(self, template_dir, num_iters=10):
@@ -446,7 +456,7 @@ class API(unittest.TestCase):
         inference_task.export(ExportType.OPENVINO, exported_model)
 
     @staticmethod
-    def eval(task: OTEDetectionTrainingTask, model: ModelEntity, dataset: Dataset) -> Performance:
+    def eval(task: OTEDetectionTrainingTask, model: ModelEntity, dataset: DatasetEntity) -> Performance:
         start_time = time.time()
         result_dataset = task.infer(dataset.with_empty_annotations())
         end_time = time.time()

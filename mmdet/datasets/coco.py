@@ -432,9 +432,26 @@ class CocoDataset(CustomDataset):
 
         metrics = metric if isinstance(metric, list) else [metric]
         allowed_metrics = ['bbox', 'segm', 'proposal', 'proposal_fast', 'f1']
-        for metric in metrics:
-            if metric not in allowed_metrics:
-                raise KeyError(f'metric {metric} is not supported')
+        invalid_metrics = tuple(metric for metric in metrics if metric not in allowed_metrics)
+        valid_metrics = tuple(metric for metric in metrics if metric in allowed_metrics)
+        eval_results = OrderedDict()
+
+        if invalid_metrics:
+            params = dict(
+                results=results,
+                logger=logger,
+                proposal_nums=proposal_nums
+            )
+            if iou_thrs is not None:
+                params['iou_thrs'] = iou_thrs
+            print_log(f'Metrics {invalid_metrics} are not supported by {self.__class__.__name__}.evaluate. '
+                'Falling back to the parent class implementation.')
+            for metric in invalid_metrics:
+                params['metric'] = metric
+                eval_results.update(super().evaluate(**params))
+
+        metrics = valid_metrics
+
         if iou_thrs is None:
             iou_thrs = np.linspace(
                 .5, 0.95, int(np.round((0.95 - .5) / .05)) + 1, endpoint=True)
@@ -444,7 +461,6 @@ class CocoDataset(CustomDataset):
 
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
 
-        eval_results = OrderedDict()
         cocoGt = self.coco
         for metric in metrics:
             cocoGt = copy.deepcopy(self.coco)

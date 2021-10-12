@@ -16,47 +16,28 @@ import copy
 import logging
 import os
 from collections import defaultdict
-from typing import Optional, List
+from typing import List, Optional
 
 import torch
-
-from ote_sdk.entities.metrics import (
-    Performance,
-    ScoreMetric,
-    CurveMetric,
-    InfoMetric,
-    LineChartInfo,
-    MetricsGroup,
-    VisualizationInfo,
-    VisualizationType,
-)
+from ote_sdk.entities.datasets import DatasetEntity
+from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo, MetricsGroup, Performance, ScoreMetric,
+                                      VisualizationInfo, VisualizationType)
 from ote_sdk.entities.model import ModelEntity, ModelStatus
 from ote_sdk.entities.subset import Subset
-from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.entities.train_parameters import TrainParameters, default_progress_callback
 from ote_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
-from sc_sdk.entities.datasets import Dataset
 
 from mmdet.apis import train_detector
 from mmdet.apis.ote.apis.detection.config_utils import prepare_for_training, set_hyperparams
-from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback
 from mmdet.apis.ote.apis.detection.inference_task import OTEDetectionInferenceTask
+from mmdet.apis.ote.apis.detection.ote_utils import TrainingProgressCallback
 from mmdet.apis.ote.extension.utils.hooks import OTELoggerHook
-
 from mmdet.datasets import build_dataset
-
 
 logger = logging.getLogger(__name__)
 
 
 class OTEDetectionTrainingTask(OTEDetectionInferenceTask, ITrainingTask):
-
-    def __init__(self, task_environment: TaskEnvironment):
-        """"
-        Task for training object detection models using OTEDetection.
-        """
-        super().__init__(task_environment)
-
 
     def _generate_training_metrics_group(self, learning_curves) -> Optional[List[MetricsGroup]]:
         """
@@ -82,7 +63,7 @@ class OTEDetectionTrainingTask(OTEDetectionInferenceTask, ITrainingTask):
         return output
 
 
-    def train(self, dataset: Dataset, output_model: ModelEntity, train_parameters: Optional[TrainParameters] = None):
+    def train(self, dataset: DatasetEntity, output_model: ModelEntity, train_parameters: Optional[TrainParameters] = None):
         """ Trains a model on a dataset """
 
         set_hyperparams(self._config, self._hyperparams)
@@ -96,6 +77,7 @@ class OTEDetectionTrainingTask(OTEDetectionInferenceTask, ITrainingTask):
 
         # Evaluate model performance before training.
         _, initial_performance = self._infer_detector(self._model, config, val_dataset, True)
+        logger.info(f'initial_performance = {initial_performance}')
 
         # Check for stop signal between pre-eval and training. If training is cancelled at this point,
         # old_model should be restored.
@@ -108,10 +90,9 @@ class OTEDetectionTrainingTask(OTEDetectionInferenceTask, ITrainingTask):
             return
 
         # Run training.
+        update_progress_callback = default_progress_callback
         if train_parameters is not None:
             update_progress_callback = train_parameters.update_progress
-        else:
-            update_progress_callback = default_progress_callback
         time_monitor = TrainingProgressCallback(update_progress_callback)
         learning_curves = defaultdict(OTELoggerHook.Curve)
         training_config = prepare_for_training(config, train_dataset, val_dataset, time_monitor, learning_curves)
