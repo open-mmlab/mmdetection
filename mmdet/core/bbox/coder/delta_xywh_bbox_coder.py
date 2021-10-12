@@ -256,7 +256,7 @@ def delta2bbox(rois,
         y1 = y1.clamp(min=0, max=max_shape[0])
         x2 = x2.clamp(min=0, max=max_shape[1])
         y2 = y2.clamp(min=0, max=max_shape[0])
-    bboxes = torch.stack([x1, y1, x2, y2], dim=-1)
+    bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view(deltas.size())
     return bboxes
 
 
