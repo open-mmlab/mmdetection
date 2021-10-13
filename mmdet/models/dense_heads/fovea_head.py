@@ -315,34 +315,45 @@ class FoveaHead(AnchorFreeHead):
 
         det_bboxes = []
         det_scores = []
+        det_classes_idxs = []
         for level_idx, (cls_score, bbox_pred, stride, base_len) in enumerate(
                 zip(cls_score_list, bbox_pred_list, self.strides,
                     self.base_edge_list)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             featmap_size_hw = cls_score.shape[-2:]
-            scores = cls_score.permute(1, 2, 0).reshape(
-                -1, self.cls_out_channels).sigmoid()
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-            if 0 < nms_pre < scores.shape[0]:
-                max_scores, _ = scores.max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
-                priors = self.prior_generator.sparse_priors(
-                    topk_inds, featmap_size_hw, level_idx, scores.dtype,
-                    scores.device)
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
-            else:
-                priors = self.prior_generator.single_level_grid_priors(
-                    featmap_size_hw, level_idx, scores.device)
+
+            scores = cls_score.permute(1, 2, 0).reshape(
+                -1, self.cls_out_channels).sigmoid().flatten()
+            keep_idxs = scores > cfg.score_thr
+            scores = scores[keep_idxs]
+            topk_idxs = keep_idxs.nonzero(as_tuple=True)[0]
+
+            # 2. Keep top k top scoring boxes only
+            num_topk = min(nms_pre, topk_idxs.size(0))
+            # torch.sort is actually faster than .topk (at least on GPUs)
+            scores, idxs = scores.sort(descending=True)
+            scores = scores[:num_topk]
+            topk_inds = topk_idxs[idxs[:num_topk]]
+
+            anchor_idxs = topk_inds // self.num_classes
+            classes_idxs = topk_inds % self.num_classes
+
+            bbox_pred = bbox_pred[anchor_idxs]
+
+            priors = self.prior_generator.sparse_priors(
+                anchor_idxs, featmap_size_hw, level_idx, bbox_pred.dtype,
+                bbox_pred.device)
 
             bboxes = self._bbox_decode(priors, bbox_pred, base_len, img_shape)
 
             det_bboxes.append(bboxes)
             det_scores.append(scores)
+            det_classes_idxs.append(classes_idxs)
 
-        return self._bbox_post_process(det_scores, det_bboxes,
-                                       img_meta['scale_factor'], cfg, rescale,
-                                       with_nms)
+        return self._bbox_post_process(det_scores, det_classes_idxs,
+                                       det_bboxes, img_meta['scale_factor'],
+                                       cfg, rescale, with_nms)
 
     def _bbox_decode(self, priors, bbox_pred, base_len, max_shape):
         bbox_pred = bbox_pred.exp()

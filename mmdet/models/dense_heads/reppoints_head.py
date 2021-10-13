@@ -705,36 +705,39 @@ class RepPointsHead(AnchorFreeHead):
 
         mlvl_bboxes = []
         mlvl_scores = []
+        mlvl_classes_idxs = []
         for level_idx, (cls_score, bbox_pred) in enumerate(
                 zip(cls_score_list, bbox_pred_list)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             featmap_size_hw = cls_score.shape[-2:]
+            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
+
             cls_score = cls_score.permute(1, 2,
                                           0).reshape(-1, self.cls_out_channels)
             if self.use_sigmoid_cls:
-                scores = cls_score.sigmoid()
+                scores = cls_score.sigmoid().flatten()
             else:
-                scores = cls_score.softmax(-1)
-            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
+                scores = cls_score.softmax(-1).flatten()
 
-            if 0 < nms_pre < scores.shape[0]:
-                if self.use_sigmoid_cls:
-                    max_scores, _ = scores.max(dim=1)
-                else:
-                    # remind that we set FG labels to [0, num_class-1]
-                    # since mmdet v2.0
-                    # BG cat_id: num_class
-                    max_scores, _ = scores[:, :-1].max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
+            keep_idxs = scores > cfg.score_thr
+            scores = scores[keep_idxs]
+            topk_idxs = keep_idxs.nonzero(as_tuple=True)[0]
 
-                points = self.prior_generator.sparse_priors(
-                    topk_inds, featmap_size_hw, level_idx, scores.dtype,
-                    scores.device)
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
-            else:
-                points = self.prior_generator.single_level_grid_priors(
-                    featmap_size_hw, level_idx, scores.device)
+            # 2. Keep top k top scoring boxes only
+            num_topk = min(nms_pre, topk_idxs.size(0))
+            # torch.sort is actually faster than .topk (at least on GPUs)
+            scores, idxs = scores.sort(descending=True)
+            scores = scores[:num_topk]
+            topk_inds = topk_idxs[idxs[:num_topk]]
+
+            anchor_idxs = topk_inds // self.num_classes
+            classes_idxs = topk_inds % self.num_classes
+
+            bbox_pred = bbox_pred[anchor_idxs]
+
+            points = self.prior_generator.sparse_priors(
+                anchor_idxs, featmap_size_hw, level_idx, bbox_pred.dtype,
+                bbox_pred.device)
 
             bboxes = self._bbox_decode(points, bbox_pred,
                                        self.point_strides[level_idx],
@@ -742,9 +745,11 @@ class RepPointsHead(AnchorFreeHead):
 
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
+            mlvl_classes_idxs.append(classes_idxs)
 
         return self._bbox_post_process(
             mlvl_scores,
+            mlvl_classes_idxs,
             mlvl_bboxes,
             img_meta['scale_factor'],
             cfg,

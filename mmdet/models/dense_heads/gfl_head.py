@@ -424,6 +424,7 @@ class GFLHead(AnchorHead):
 
         mlvl_bboxes = []
         mlvl_scores = []
+        mlvl_classes_idxs = []
         for level_idx, (cls_score, bbox_pred, stride) in enumerate(
                 zip(cls_score_list, bbox_pred_list,
                     self.prior_generator.strides)):
@@ -431,30 +432,40 @@ class GFLHead(AnchorHead):
             assert stride[0] == stride[1]
             featmap_size_hw = cls_score.shape[-2:]
 
-            scores = cls_score.permute(1, 2, 0).reshape(
-                -1, self.cls_out_channels).sigmoid()
             bbox_pred = bbox_pred.permute(1, 2, 0)
             bbox_pred = self.integral(bbox_pred) * stride[0]
 
-            if 0 < nms_pre < scores.shape[0]:
-                max_scores, _ = scores.max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
-                anchors = self.prior_generator.sparse_priors(
-                    topk_inds, featmap_size_hw, level_idx, scores.dtype,
-                    scores.device)
-            else:
-                anchors = self.prior_generator.single_level_grid_priors(
-                    featmap_size_hw, level_idx, scores.device)
+            scores = cls_score.permute(1, 2, 0).reshape(
+                -1, self.cls_out_channels).sigmoid().flatten()
+            keep_idxs = scores > cfg.score_thr
+            scores = scores[keep_idxs]
+            topk_idxs = keep_idxs.nonzero(as_tuple=True)[0]
+
+            # 2. Keep top k top scoring boxes only
+            num_topk = min(nms_pre, topk_idxs.size(0))
+            # torch.sort is actually faster than .topk (at least on GPUs)
+            scores, idxs = scores.sort(descending=True)
+            scores = scores[:num_topk]
+            topk_inds = topk_idxs[idxs[:num_topk]]
+
+            anchor_idxs = topk_inds // self.num_classes
+            classes_idxs = topk_inds % self.num_classes
+
+            bbox_pred = bbox_pred[anchor_idxs]
+
+            priors = self.prior_generator.sparse_priors(
+                anchor_idxs, featmap_size_hw, level_idx, bbox_pred.dtype,
+                bbox_pred.device)
 
             bboxes = self.bbox_coder.decode(
-                self.anchor_center(anchors), bbox_pred, max_shape=img_shape)
+                self.anchor_center(priors), bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
+            mlvl_classes_idxs.append(classes_idxs)
 
         return self._bbox_post_process(
             mlvl_scores,
+            mlvl_classes_idxs,
             mlvl_bboxes,
             img_meta['scale_factor'],
             cfg,

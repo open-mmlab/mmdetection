@@ -1,9 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import numpy as np
 import torch
+from mmcv.ops import batched_nms
 from mmcv.runner import force_fp32
 
-from mmdet.core import multi_apply, multiclass_nms
+from mmdet.core import multi_apply
 from mmdet.core.bbox.iou_calculators import bbox_overlaps
 from mmdet.models import HEADS
 from mmdet.models.dense_heads import ATSSHead
@@ -519,6 +520,7 @@ class PAAHead(ATSSHead):
 
     def _bbox_post_process(self,
                            mlvl_scores,
+                           mlvl_classes_idxs,
                            mlvl_bboxes,
                            scale_factor,
                            cfg,
@@ -563,35 +565,33 @@ class PAAHead(ATSSHead):
                 - det_labels (Tensor): Predicted labels of the corresponding \
                     box with shape [num_bbox].
         """
+        assert len(mlvl_scores) == len(mlvl_bboxes) == len(mlvl_classes_idxs)
         mlvl_bboxes = torch.cat(mlvl_bboxes)
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-        mlvl_scores = torch.cat(mlvl_scores)
-        # Add a dummy background class to the backend when using sigmoid
-        # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
-        # BG cat_id: num_class
-        padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-        mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
 
+        mlvl_scores = torch.cat(mlvl_scores)
         mlvl_iou_preds = torch.cat(mlvl_score_factors)
-        mlvl_nms_scores = (mlvl_scores * mlvl_iou_preds[:, None]).sqrt()
-        det_bboxes, det_labels = multiclass_nms(
-            mlvl_bboxes,
-            mlvl_nms_scores,
-            cfg.score_thr,
-            cfg.nms,
-            cfg.max_per_img,
-            score_factors=None)
+        mlvl_nms_scores = (mlvl_scores * mlvl_iou_preds).sqrt()
+
+        mlvl_classes_idxs = torch.cat(mlvl_classes_idxs)
+
+        det_bboxes, keep = batched_nms(mlvl_bboxes, mlvl_scores,
+                                       mlvl_classes_idxs, cfg.nms)
+        det_bboxes = det_bboxes[:cfg.max_per_img]
+        det_labels = mlvl_classes_idxs[keep][:cfg.max_per_img]
+
         if self.with_score_voting and len(det_bboxes) > 0:
             det_bboxes, det_labels = self.score_voting(det_bboxes, det_labels,
                                                        mlvl_bboxes,
+                                                       mlvl_classes_idxs,
                                                        mlvl_nms_scores,
                                                        cfg.score_thr)
 
         return det_bboxes, det_labels
 
     def score_voting(self, det_bboxes, det_labels, mlvl_bboxes,
-                     mlvl_nms_scores, score_thr):
+                     mlvl_classes_idxs, mlvl_nms_scores, score_thr):
         """Implementation of score voting method works on each remaining boxes
         after NMS procedure.
 
@@ -603,6 +603,8 @@ class PAAHead(ATSSHead):
                 (k, 1),Labels are 0-based.
             mlvl_bboxes (Tensor): All boxes before the NMS procedure,
                 with shape (num_anchors,4).
+            mlvl_classes_idxs (Tensor): All class indexes before the NMS
+                 procedure, with shape (num_anchors,).
             mlvl_nms_scores (Tensor): The scores of all boxes which is used
                 in the NMS procedure, with shape (num_anchors, num_class)
             score_thr (float): The score threshold of bboxes.
@@ -617,15 +619,15 @@ class PAAHead(ATSSHead):
                     after voting, with shape (num_anchors,).
         """
         candidate_mask = mlvl_nms_scores > score_thr
-        candidate_mask_nonzeros = candidate_mask.nonzero(as_tuple=False)
-        candidate_inds = candidate_mask_nonzeros[:, 0]
-        candidate_labels = candidate_mask_nonzeros[:, 1]
+        candidate_inds = candidate_mask.nonzero(as_tuple=True)[0]
         candidate_bboxes = mlvl_bboxes[candidate_inds]
-        candidate_scores = mlvl_nms_scores[candidate_mask]
+        candidate_scores = mlvl_nms_scores[candidate_inds]
+        candidate_classes_idxs = mlvl_classes_idxs[candidate_inds]
+
         det_bboxes_voted = []
         det_labels_voted = []
         for cls in range(self.cls_out_channels):
-            candidate_cls_mask = candidate_labels == cls
+            candidate_cls_mask = candidate_classes_idxs == cls
             if not candidate_cls_mask.any():
                 continue
             candidate_cls_scores = candidate_scores[candidate_cls_mask]
