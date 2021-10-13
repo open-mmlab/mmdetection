@@ -93,7 +93,7 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
             # Force evaluation interval
             self._config.evaluation.interval = 1
         else:
-            logger.error("NNCF config has no accuracy_aware_training parameters")
+            logger.info("NNCF config has no accuracy_aware_training parameters")
 
         self._config.update(optimization_config)
 
