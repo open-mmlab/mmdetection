@@ -1,10 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import numpy as np
 import torch
-from mmcv.ops import batched_nms
 from mmcv.runner import force_fp32
 
-from mmdet.core import multi_apply
+from mmdet.core import multi_apply, multiclass_nms
 from mmdet.core.bbox.iou_calculators import bbox_overlaps
 from mmdet.models import HEADS
 from mmdet.models.dense_heads import ATSSHead
@@ -535,9 +534,93 @@ class PAAHead(ATSSHead):
                                                 score_factors, img_metas, cfg,
                                                 rescale, with_nms, **kwargs)
 
+    def _get_bboxes_single(self,
+                           cls_score_list,
+                           bbox_pred_list,
+                           score_factor_list,
+                           img_meta,
+                           cfg,
+                           rescale=False,
+                           with_nms=True,
+                           **kwargs):
+        """Transform outputs of a single image into bbox predictions.
+
+        Args:
+            cls_score_list (list[Tensor]): Box scores from all scale
+                levels of a single image, each item has shape
+                (num_priors * num_classes, H, W).
+            bbox_pred_list (list[Tensor]): Box energies / deltas from
+                all scale levels of a single image, each item has shape
+                (num_priors * 4, H, W).
+            score_factor_list (list[Tensor]): Score factor from all scale
+                levels of a single image, each item has shape
+                (num_priors * 1, H, W).
+            img_meta (dict): Image meta info.
+            cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
+
+        Returns:
+            tuple[Tensor]: Results of detected bboxes and labels. If with_nms
+                is False and mlvl_score_factor is None, return mlvl_bboxes and
+                mlvl_scores, else return mlvl_bboxes, mlvl_scores and
+                mlvl_score_factor. Usually with_nms is False is used for aug
+                test. If with_nms is True, then return the following format
+
+                - det_bboxes (Tensor): Predicted bboxes with shape \
+                    [num_bbox, 5], where the first 4 columns are bounding box \
+                    positions (tl_x, tl_y, br_x, br_y) and the 5-th column \
+                    are scores between 0 and 1.
+                - det_labels (Tensor): Predicted labels of the corresponding \
+                    box with shape [num_bbox].
+        """
+        cfg = self.test_cfg if cfg is None else cfg
+        img_shape = img_meta['img_shape']
+        nms_pre = cfg.get('nms_pre', -1)
+
+        mlvl_bboxes = []
+        mlvl_scores = []
+        mlvl_score_factors = []
+        for level_idx, (cls_score, bbox_pred, score_factor) in enumerate(
+                zip(cls_score_list, bbox_pred_list, score_factor_list)):
+            assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
+            featmap_size_hw = cls_score.shape[-2:]
+
+            scores = cls_score.permute(1, 2,
+                                       0).reshape(-1, self.cls_out_channels).sigmoid()
+            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
+            score_factor = score_factor.permute(1, 2,
+                                                0).reshape(-1).sigmoid()
+
+            if 0 < nms_pre < scores.shape[0]:
+                # Get maximum scores for foreground classes.
+                max_scores, _ = (scores * score_factor[..., None]).sqrt().max(-1)
+                _, topk_inds = max_scores.topk(nms_pre)
+                priors = self.prior_generator.sparse_priors(
+                    topk_inds, featmap_size_hw, level_idx, scores.dtype,
+                    scores.device)
+                bbox_pred = bbox_pred[topk_inds, :]
+                scores = scores[topk_inds, :]
+                score_factor = score_factor[topk_inds]
+            else:
+                priors = self.prior_generator.single_level_grid_priors(
+                    featmap_size_hw, level_idx, scores.device)
+
+            bboxes = self.bbox_coder.decode(
+                priors, bbox_pred, max_shape=img_shape)
+            mlvl_bboxes.append(bboxes)
+            mlvl_scores.append(scores)
+            mlvl_score_factors.append(score_factor)
+
+        return self._bbox_post_process(mlvl_scores, mlvl_bboxes,
+                                       img_meta['scale_factor'], cfg, rescale,
+                                       with_nms, mlvl_score_factors, **kwargs)
+
     def _bbox_post_process(self,
                            mlvl_scores,
-                           mlvl_classes_idxs,
                            mlvl_bboxes,
                            scale_factor,
                            cfg,
@@ -582,37 +665,35 @@ class PAAHead(ATSSHead):
                 - det_labels (Tensor): Predicted labels of the corresponding \
                     box with shape [num_bbox].
         """
-        assert len(mlvl_scores) == len(mlvl_bboxes) == len(mlvl_classes_idxs)
         mlvl_bboxes = torch.cat(mlvl_bboxes)
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-
         mlvl_scores = torch.cat(mlvl_scores)
+        # Add a dummy background class to the backend when using sigmoid
+        # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
+        # BG cat_id: num_class
+        padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
+        mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
+
         mlvl_iou_preds = torch.cat(mlvl_score_factors)
-        mlvl_nms_scores = (mlvl_scores * mlvl_iou_preds).sqrt()
-
-        mlvl_classes_idxs = torch.cat(mlvl_classes_idxs)
-
-        if mlvl_bboxes.numel() == 0:
-            det_bboxes = torch.cat([mlvl_bboxes, mlvl_scores[:, None]], -1)
-            return det_bboxes, mlvl_classes_idxs
-
-        det_bboxes, keep = batched_nms(mlvl_bboxes, mlvl_scores,
-                                       mlvl_classes_idxs, cfg.nms)
-        det_bboxes = det_bboxes[:cfg.max_per_img]
-        det_labels = mlvl_classes_idxs[keep][:cfg.max_per_img]
-
+        mlvl_nms_scores = (mlvl_scores * mlvl_iou_preds[:, None]).sqrt()
+        det_bboxes, det_labels = multiclass_nms(
+            mlvl_bboxes,
+            mlvl_nms_scores,
+            cfg.score_thr,
+            cfg.nms,
+            cfg.max_per_img,
+            score_factors=None)
         if self.with_score_voting and len(det_bboxes) > 0:
             det_bboxes, det_labels = self.score_voting(det_bboxes, det_labels,
                                                        mlvl_bboxes,
-                                                       mlvl_classes_idxs,
                                                        mlvl_nms_scores,
                                                        cfg.score_thr)
 
         return det_bboxes, det_labels
 
     def score_voting(self, det_bboxes, det_labels, mlvl_bboxes,
-                     mlvl_classes_idxs, mlvl_nms_scores, score_thr):
+                      mlvl_nms_scores, score_thr):
         """Implementation of score voting method works on each remaining boxes
         after NMS procedure.
 
@@ -624,8 +705,6 @@ class PAAHead(ATSSHead):
                 (k, 1),Labels are 0-based.
             mlvl_bboxes (Tensor): All boxes before the NMS procedure,
                 with shape (num_anchors,4).
-            mlvl_classes_idxs (Tensor): All class indexes before the NMS
-                 procedure, with shape (num_anchors,).
             mlvl_nms_scores (Tensor): The scores of all boxes which is used
                 in the NMS procedure, with shape (num_anchors, num_class)
             score_thr (float): The score threshold of bboxes.
@@ -640,15 +719,15 @@ class PAAHead(ATSSHead):
                     after voting, with shape (num_anchors,).
         """
         candidate_mask = mlvl_nms_scores > score_thr
-        candidate_inds = candidate_mask.nonzero(as_tuple=True)[0]
+        candidate_mask_nonzeros = candidate_mask.nonzero(as_tuple=False)
+        candidate_inds = candidate_mask_nonzeros[:, 0]
+        candidate_labels = candidate_mask_nonzeros[:, 1]
         candidate_bboxes = mlvl_bboxes[candidate_inds]
-        candidate_scores = mlvl_nms_scores[candidate_inds]
-        candidate_classes_idxs = mlvl_classes_idxs[candidate_inds]
-
+        candidate_scores = mlvl_nms_scores[candidate_mask]
         det_bboxes_voted = []
         det_labels_voted = []
         for cls in range(self.cls_out_channels):
-            candidate_cls_mask = candidate_classes_idxs == cls
+            candidate_cls_mask = candidate_labels == cls
             if not candidate_cls_mask.any():
                 continue
             candidate_cls_scores = candidate_scores[candidate_cls_mask]

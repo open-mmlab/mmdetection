@@ -164,8 +164,8 @@ class MlvlPointGenerator:
         if not with_stride:
             shifts = torch.stack([shift_xx, shift_yy], dim=-1)
         else:
-            stride_w = shift_xx.new_full(shift_xx.shape[0], stride_w).to(dtype)
-            stride_h = shift_xx.new_full(shift_yy.shape[0], stride_h).to(dtype)
+            stride_w = shift_xx.new_full((len(shift_xx),), stride_w).to(dtype)
+            stride_h = shift_xx.new_full((len(shift_yy),), stride_h).to(dtype)
             shifts = torch.stack([shift_xx, shift_yy, stride_w, stride_h],
                                  dim=-1)
         all_points = shifts.to(device)
