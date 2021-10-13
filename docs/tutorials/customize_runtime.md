@@ -276,7 +276,7 @@ custom_hooks = [dict(type='NumClassCheckHook')]
 
 ### Modify default runtime hooks
 
-There are some common hooks that are not registerd through `custom_hooks`, they are
+There are some common hooks that are not registered through `custom_hooks`, they are
 
 - log_config
 - checkpoint_config

@@ -37,7 +37,7 @@ def test_resize():
             multiscale_mode='2333')
         build_from_cfg(transform, PIPELINES)
 
-    # test assertion if both scale and scale_factor are setted
+    # test assertion if both scale and scale_factor are set
     with pytest.raises(AssertionError):
         results = dict(
             img_prefix=osp.join(osp.dirname(__file__), '../../../data'),

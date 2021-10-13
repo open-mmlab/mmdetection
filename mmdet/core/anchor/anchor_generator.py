@@ -362,7 +362,7 @@ class AnchorGenerator:
             'Please use ``single_level_grid_priors`` ')
 
         # keep featmap_size as Tensor instead of int, so that we
-        # can covert to ONNX correctly
+        # can convert to ONNX correctly
         feat_h, feat_w = featmap_size
         shift_x = torch.arange(0, feat_w, device=device) * stride[0]
         shift_y = torch.arange(0, feat_h, device=device) * stride[1]
@@ -630,7 +630,7 @@ class LegacyAnchorGenerator(AnchorGenerator):
             relative to the feature grid center in multiple feature levels.
             By default it is set to be None and not used. It a list of float
             is given, this list will be used to shift the centers of anchors.
-        center_offset (float): The offset of center in propotion to anchors'
+        center_offset (float): The offset of center in proportion to anchors'
             width and height. By default it is 0.5 in V2.0 but it should be 0.5
             in v1.x models.
 

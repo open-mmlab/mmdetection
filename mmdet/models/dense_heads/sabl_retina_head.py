@@ -568,7 +568,7 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
         cfg = self.test_cfg if cfg is None else cfg
         mlvl_bboxes = []
         mlvl_scores = []
-        mlvl_confids = []
+        mlvl_confidences = []
         assert len(cls_scores) == len(bbox_cls_preds) == len(
             bbox_reg_preds) == len(mlvl_anchors)
         for cls_score, bbox_cls_pred, bbox_reg_pred, anchors in zip(
@@ -600,16 +600,16 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
                 bbox_cls_pred.contiguous(),
                 bbox_reg_pred.contiguous()
             ]
-            bboxes, confids = self.bbox_coder.decode(
+            bboxes, confidences = self.bbox_coder.decode(
                 anchors.contiguous(), bbox_preds, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
-            mlvl_confids.append(confids)
+            mlvl_confidences.append(confidences)
         mlvl_bboxes = torch.cat(mlvl_bboxes)
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
-        mlvl_confids = torch.cat(mlvl_confids)
+        mlvl_confidences = torch.cat(mlvl_confidences)
         if self.use_sigmoid_cls:
             padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
             mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
@@ -619,5 +619,5 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
             cfg.score_thr,
             cfg.nms,
             cfg.max_per_img,
-            score_factors=mlvl_confids)
+            score_factors=mlvl_confidences)
         return det_bboxes, det_labels

@@ -25,11 +25,11 @@ def dummy_raw_polygon_masks(size):
     Return:
         list[list[ndarray]]: dummy mask
     """
-    num_obj, heigt, width = size
+    num_obj, height, width = size
     polygons = []
     for _ in range(num_obj):
         num_points = np.random.randint(5) * 2 + 6
-        polygons.append([np.random.uniform(0, min(heigt, width), num_points)])
+        polygons.append([np.random.uniform(0, min(height, width), num_points)])
     return polygons
 
 

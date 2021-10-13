@@ -385,7 +385,7 @@ In v2.12.0 MMDetection inevitably brings some BC-breakings, including the MMCV d
 - Update documentations (#4642, #4650, #4620, #4630)
 - Remove redundant code calling `import_modules_from_strings` (#4601)
 - Clean deprecated FP16 API (#4571)
-- Check whether `CLASSES` is correctly initialized in the intialization of `XMLDataset` (#4555)
+- Check whether `CLASSES` is correctly initialized in the initialization of `XMLDataset` (#4555)
 - Support batch inference in the inference API (#4462, #4526)
 - Clean deprecated warning and fix 'meta' error (#4695)
 
@@ -579,7 +579,7 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 - Fix the bug of training ATSS when there is no ground truth boxes (#3702)
 - Fix the bug of using Focal Loss when there is `num_pos` is 0 (#3702)
 - Fix the label index mapping in dataset browser (#3708)
-- Fix Mask R-CNN training stuck problem when ther is no positive rois (#3713)
+- Fix Mask R-CNN training stuck problem when their is no positive rois (#3713)
 - Fix the bug of `self.rpn_head.test_cfg` in `RPNTestMixin` by using `self.rpn_head` in rpn head (#3808)
 - Fix deprecated `Conv2d` from mmcv.ops (#3791)
 - Fix device bug in RepPoints (#3836)
@@ -594,7 +594,7 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 
 - Change to use `mmcv.utils.collect_env` for collecting environment information to avoid duplicate codes (#3779)
 - Update checkpoint file names to v2.0 models in documentation (#3795)
-- Update tutorials for changing runtime settings (#3778), modifing loss (#3777)
+- Update tutorials for changing runtime settings (#3778), modifying loss (#3777)
 - Improve the function of `simple_test_bboxes` in SABL (#3853)
 - Convert mask to bool before using it as img's index for robustness and speedup (#3870)
 - Improve documentation of modules and dataset customization (#3821)

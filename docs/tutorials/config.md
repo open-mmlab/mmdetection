@@ -297,7 +297,7 @@ test_pipeline = [
                 std=[58.395, 57.12, 57.375],
                 to_rgb=True),
             dict(
-                type='Pad',  # Padding config to pad images divisable by 32.
+                type='Pad',  # Padding config to pad images divisible by 32.
                 size_divisor=32),
             dict(
                 type='ImageToTensor',  # convert image to tensor
@@ -387,7 +387,7 @@ evaluation = dict(  # The config to build the evaluation hook, refer to https://
     metric=['bbox', 'segm'])  # Metrics used during evaluation
 optimizer = dict(  # Config used to build optimizer, support all the optimizers in PyTorch whose arguments are also the same as those in PyTorch
     type='SGD',  # Type of optimizers, refer to https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/optimizer/default_constructor.py#L13 for more details
-    lr=0.02,  # Learning rate of optimizers, see detail usages of the parameters in the documentaion of PyTorch
+    lr=0.02,  # Learning rate of optimizers, see detail usages of the parameters in the documentation of PyTorch
     momentum=0.9,  # Momentum
     weight_decay=0.0001)  # Weight decay of SGD
 optimizer_config = dict(  # Config used to build the optimizer hook, refer to https://github.com/open-mmlab/mmcv/blob/master/mmcv/runner/hooks/optimizer.py#L8 for implementation details.
