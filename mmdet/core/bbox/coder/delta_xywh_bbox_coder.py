@@ -212,51 +212,42 @@ def delta2bbox(rois,
                 [0.0000, 0.3161, 4.1945, 0.6839],
                 [5.0000, 5.0000, 5.0000, 5.0000]])
     """
-    means = deltas.new_tensor(means).view(1, -1).repeat(1, deltas.size(1) // 4)
-    stds = deltas.new_tensor(stds).view(1, -1).repeat(1, deltas.size(1) // 4)
+    num_bboxes, num_classes = deltas.size(0), deltas.size(1) // 4
+    if num_bboxes == 0:
+        return deltas
+
+    deltas = deltas.reshape(-1, 4)
+
+    means = deltas.new_tensor(means).view(1, -1)
+    stds = deltas.new_tensor(stds).view(1, -1)
     denorm_deltas = deltas * stds + means
-    dx = denorm_deltas[:, 0::4]
-    dy = denorm_deltas[:, 1::4]
-    dw = denorm_deltas[:, 2::4]
-    dh = denorm_deltas[:, 3::4]
+
+    dxy = denorm_deltas[:, 0:2]
+    dwh = denorm_deltas[:, 2:]
 
     # Compute width/height of each roi
-    px = ((rois[:, 0] + rois[:, 2]) * 0.5).unsqueeze(1).expand_as(dx)
-    py = ((rois[:, 1] + rois[:, 3]) * 0.5).unsqueeze(1).expand_as(dy)
-    pw = (rois[:, 2] - rois[:, 0]).unsqueeze(1).expand_as(dw)
-    ph = (rois[:, 3] - rois[:, 1]).unsqueeze(1).expand_as(dh)
+    rois_ = rois.repeat(1, num_classes).reshape(-1, 4)
+    pxy = ((rois_[:, 0:2] + rois_[:, 2:]) * 0.5)
+    pwh = (rois_[:, 2:] - rois_[:, 0:2])
 
-    dx_width = pw * dx
-    dy_height = ph * dy
+    dxy_wh = pwh * dxy
 
     max_ratio = np.abs(np.log(wh_ratio_clip))
-
     if add_ctr_clamp:
-        dx_width = torch.clamp(dx_width, max=ctr_clamp, min=-ctr_clamp)
-        dy_height = torch.clamp(dy_height, max=ctr_clamp, min=-ctr_clamp)
-        dw = torch.clamp(dw, max=max_ratio)
-        dh = torch.clamp(dh, max=max_ratio)
+        dxy_wh = torch.clamp(dxy_wh, max=ctr_clamp, min=-ctr_clamp)
+        dwh = torch.clamp(dwh, max=max_ratio)
     else:
-        dw = dw.clamp(min=-max_ratio, max=max_ratio)
-        dh = dh.clamp(min=-max_ratio, max=max_ratio)
+        dwh = dwh.clamp(min=-max_ratio, max=max_ratio)
 
-    # Use exp(network energy) to enlarge/shrink each roi
-    gw = pw * dw.exp()
-    gh = ph * dh.exp()
-    # Use network energy to shift the center of each roi
-    gx = px + dx_width
-    gy = py + dy_height
-    # Convert center-xy/width/height to top-left, bottom-right
-    x1 = gx - gw * 0.5
-    y1 = gy - gh * 0.5
-    x2 = gx + gw * 0.5
-    y2 = gy + gh * 0.5
+    gxy = pxy + dxy_wh
+    gwh = pwh * dwh.exp()
+    x1y1 = gxy - (gwh * 0.5)
+    x2y2 = gxy + (gwh * 0.5)
+    bboxes = torch.cat([x1y1, x2y2], dim=-1)
     if clip_border and max_shape is not None:
-        x1 = x1.clamp(min=0, max=max_shape[1])
-        y1 = y1.clamp(min=0, max=max_shape[0])
-        x2 = x2.clamp(min=0, max=max_shape[1])
-        y2 = y2.clamp(min=0, max=max_shape[0])
-    bboxes = torch.stack([x1, y1, x2, y2], dim=-1).view(deltas.size())
+        bboxes[..., 0::2].clamp_(min=0, max=max_shape[1])
+        bboxes[..., 1::2].clamp_(min=0, max=max_shape[0])
+    bboxes = bboxes.reshape(num_bboxes, -1)
     return bboxes
 
 
