@@ -32,6 +32,7 @@ from ote_sdk.entities.label_schema import LabelSchemaEntity
 from ote_sdk.entities.metrics import Performance, ScoreMetric
 from ote_sdk.entities.model import (
     ModelEntity,
+    ModelFormat,
     ModelPrecision,
     ModelStatus,
     ModelOptimizationType,
@@ -271,6 +272,7 @@ class OTETestTrainingAction(BaseOTETestAction):
         self.copy_hyperparams = deepcopy(self.task._hyperparams)
 
         self.task.train(self.dataset, self.output_model)
+        assert self.output_model.model_status == ModelStatus.SUCCESS, 'Training was failed'
 
         score_name, score_value = self._get_training_performance_as_score_name_value()
         logger.info(f'performance={self.output_model.performance}')
@@ -353,6 +355,9 @@ class OTETestExportAction(BaseOTETestAction):
             model_status=ModelStatus.NOT_READY)
         logger.debug('Run export')
         task.export(ExportType.OPENVINO, self.exported_model)
+        assert self.exported_model.model_status == ModelStatus.SUCCESS, 'Export to OpenVINO was not successful'
+        assert self.exported_model.model_format == ModelFormat.OPENVINO, 'Wrong model format after export'
+        assert self.exported_model.optimization_type == ModelOptimizationType.MO, 'Wrong optimization type'
         logger.debug('Set exported model into environment for export')
         self.environment_for_export.model = self.exported_model
 
@@ -441,6 +446,9 @@ class OTETestPotAction(BaseOTETestAction):
             dataset.get_subset(self.pot_subset),
             self.optimized_model_pot,
             OptimizationParameters())
+        assert self.optimized_model_pot.model_status == ModelStatus.SUCCESS, 'POT optimization was not successful'
+        assert self.optimized_model_pot.model_format == ModelFormat.OPENVINO, 'Wrong model format after pot'
+        assert self.optimized_model_pot.optimization_type == ModelOptimizationType.POT, 'Wrong optimization type'
         logger.info('POT optimization is finished')
 
     def __call__(self, data_collector: DataCollector,
@@ -531,11 +539,11 @@ class OTETestNNCFAction(BaseOTETestAction):
 
         logger.info('Run NNCF optimization')
         self.nncf_task.optimize(OptimizationType.NNCF,
-                                dataset, # TODO(lbeynens 4 adokucha): full dataset or subset here?
+                                dataset,
                                 self.nncf_model,
                                 OptimizationParameters())
-        logger.info('NNCF saving the model')
-        self.nncf_task.save_model(self.nncf_model) # TODO(lbeynens 4 adokucha): is it really required?
+        assert self.nncf_model.model_status == ModelStatus.SUCCESS, 'NNCF optimization was not successful'
+        assert self.nncf_model.optimization_type == ModelOptimizationType.NNCF, 'Wrong optimization type'
         logger.info('NNCF optimization is finished')
 
 
