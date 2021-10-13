@@ -196,10 +196,10 @@ def train_detector(model,
         eval_cfg['by_epoch'] = cfg.runner['type'] != 'IterBasedRunner'
         eval_hook = DistEvalHook if distributed else EvalHook
         if nncf_enable_compression:
-            # disable saving best snapshot, work's incorrectly for NNCF,
+            # disable saving best snapshot, because it works incorrectly for NNCF,
             # best metric can be reached on not target compression rate.
             eval_cfg.pop('save_best')
-            # enable evaluation after initialization compressed model,
+            # enable evaluation after initialization of compressed model,
             # target accuracy can be reached without fine-tuning model
             eval_hook = DistEvalPlusBeforeRunHook if distributed else EvalPlusBeforeRunHook
         runner.register_hook(eval_hook(val_dataloader, **eval_cfg))
