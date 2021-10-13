@@ -548,29 +548,28 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            proposals = self.get_bboxes_single(cls_score_list,
-                                               bbox_cls_pred_list,
-                                               bbox_reg_pred_list,
-                                               mlvl_anchors[img_id], img_shape,
-                                               scale_factor, cfg, rescale)
+            proposals = self._get_bboxes_single(
+                cls_score_list, bbox_cls_pred_list, bbox_reg_pred_list,
+                mlvl_anchors[img_id], img_shape, scale_factor, cfg, rescale)
             result_list.append(proposals)
         return result_list
 
-    def get_bboxes_single(self,
-                          cls_scores,
-                          bbox_cls_preds,
-                          bbox_reg_preds,
-                          mlvl_anchors,
-                          img_shape,
-                          scale_factor,
-                          cfg,
-                          rescale=False):
+    def _get_bboxes_single(self,
+                           cls_scores,
+                           bbox_cls_preds,
+                           bbox_reg_preds,
+                           mlvl_anchors,
+                           img_shape,
+                           scale_factor,
+                           cfg,
+                           rescale=False):
         cfg = self.test_cfg if cfg is None else cfg
         nms_pre = cfg.get('nms_pre', -1)
 
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_confids = []
+        mlvl_classes_idxs = []
         assert len(cls_scores) == len(bbox_cls_preds) == len(
             bbox_reg_preds) == len(mlvl_anchors)
         for cls_score, bbox_cls_pred, bbox_reg_pred, anchors in zip(
@@ -580,32 +579,43 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
             cls_score = cls_score.permute(1, 2,
                                           0).reshape(-1, self.cls_out_channels)
             if self.use_sigmoid_cls:
-                scores = cls_score.sigmoid()
+                scores = cls_score.sigmoid().flatten()
             else:
-                scores = cls_score.softmax(-1)
+                scores = cls_score.softmax(-1).flatten()
             bbox_cls_pred = bbox_cls_pred.permute(1, 2, 0).reshape(
                 -1, self.side_num * 4)
             bbox_reg_pred = bbox_reg_pred.permute(1, 2, 0).reshape(
                 -1, self.side_num * 4)
 
-            if 0 < nms_pre < scores.shape[0]:
-                if self.use_sigmoid_cls:
-                    max_scores, _ = scores.max(dim=1)
-                else:
-                    max_scores, _ = scores[:, :-1].max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
-                anchors = anchors[topk_inds, :]
-                bbox_cls_pred = bbox_cls_pred[topk_inds, :]
-                bbox_reg_pred = bbox_reg_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
+            keep_idxs = scores > cfg.score_thr
+            scores = scores[keep_idxs]
+            topk_idxs = keep_idxs.nonzero(as_tuple=True)[0]
+
+            # 2. Keep top k top scoring boxes only
+            num_topk = min(nms_pre, topk_idxs.size(0))
+            # torch.sort is actually faster than .topk (at least on GPUs)
+            scores, idxs = scores.sort(descending=True)
+            scores = scores[:num_topk]
+            topk_inds = topk_idxs[idxs[:num_topk]]
+
+            anchor_idxs = topk_inds // self.num_classes
+            classes_idxs = topk_inds % self.num_classes
+
+            anchors = anchors[anchor_idxs]
+            bbox_cls_pred = bbox_cls_pred[anchor_idxs]
+            bbox_reg_pred = bbox_reg_pred[anchor_idxs]
+
             bbox_preds = [
                 bbox_cls_pred.contiguous(),
                 bbox_reg_pred.contiguous()
             ]
             bboxes, confids = self.bbox_coder.decode(
                 anchors.contiguous(), bbox_preds, max_shape=img_shape)
+
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_confids.append(confids)
-        return self._bbox_post_process(mlvl_scores, mlvl_bboxes, scale_factor,
-                                       cfg, rescale, True, mlvl_confids)
+            mlvl_classes_idxs.append(classes_idxs)
+        return self._bbox_post_process(mlvl_scores, mlvl_classes_idxs,
+                                       mlvl_bboxes, scale_factor, cfg, rescale,
+                                       True, mlvl_confids)

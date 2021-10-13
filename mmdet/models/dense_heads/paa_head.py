@@ -518,6 +518,23 @@ class PAAHead(ATSSHead):
             label_channels=1,
             unmap_outputs=True)
 
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
+    def get_bboxes(self,
+                   cls_scores,
+                   bbox_preds,
+                   score_factors=None,
+                   img_metas=None,
+                   cfg=None,
+                   rescale=False,
+                   with_nms=True,
+                   **kwargs):
+        assert with_nms, 'PAA only supports "with_nms=True" now and it ' \
+                         'means PAAHead does not support ' \
+                         'test-time augmentation'
+        return super(ATSSHead, self).get_bboxes(cls_scores, bbox_preds,
+                                                score_factors, img_metas, cfg,
+                                                rescale, with_nms, **kwargs)
+
     def _bbox_post_process(self,
                            mlvl_scores,
                            mlvl_classes_idxs,
