@@ -133,6 +133,7 @@ def distance2bbox(points, distance, max_shape=None):
     Returns:
         Tensor: Boxes with shape (N, 4) or (B, N, 4)
     """
+
     x1 = points[..., 0] - distance[..., 0]
     y1 = points[..., 1] - distance[..., 1]
     x2 = points[..., 0] + distance[..., 2]
