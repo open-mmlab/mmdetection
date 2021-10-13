@@ -4,7 +4,8 @@ from inspect import signature
 
 import torch
 
-from mmdet.core import bbox_mapping_back, merge_aug_proposals, multiclass_nms
+from mmdet.core import bbox_mapping_back, merge_aug_proposals
+from mmcv.ops import batched_nms
 
 if sys.version_info >= (3, 7):
     from mmdet.utils.contextmanagers import completed
@@ -70,7 +71,7 @@ class BBoxTestMixin(object):
 
         aug_bboxes = []
         aug_scores = []
-        aug_factors = []  # score_factors for NMS
+        aug_classes_idxs = []
         for x, img_meta in zip(feats, img_metas):
             # only one image in the batch
             outs = self.forward(x)
@@ -82,22 +83,18 @@ class BBoxTestMixin(object):
                 with_nms=False)[0]
             aug_bboxes.append(bbox_outputs[0])
             aug_scores.append(bbox_outputs[1])
-            # bbox_outputs of some detectors (e.g., ATSS, FCOS, YOLOv3)
-            # contains additional element to adjust scores before NMS
             if len(bbox_outputs) >= 3:
-                aug_factors.append(bbox_outputs[2])
+                aug_classes_idxs.append(bbox_outputs[2])
 
         # after merging, bboxes will be rescaled to the original image size
         merged_bboxes, merged_scores = self.merge_aug_bboxes(
             aug_bboxes, aug_scores, img_metas)
-        merged_factors = torch.cat(aug_factors, dim=0) if aug_factors else None
-        det_bboxes, det_labels = multiclass_nms(
-            merged_bboxes,
-            merged_scores,
-            self.test_cfg.score_thr,
-            self.test_cfg.nms,
-            self.test_cfg.max_per_img,
-            score_factors=merged_factors)
+        merged_classes_idxs = torch.cat(aug_classes_idxs, dim=0) if aug_classes_idxs else None
+
+        det_bboxes, keep = batched_nms(merged_bboxes, merged_scores,
+                                       merged_classes_idxs, self.test_cfg.nms)
+        det_bboxes = det_bboxes[:self.test_cfg.max_per_img]
+        det_labels = merged_classes_idxs[keep][:self.test_cfg.max_per_img]
 
         if rescale:
             _det_bboxes = det_bboxes
