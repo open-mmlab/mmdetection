@@ -576,6 +576,10 @@ class PAAHead(ATSSHead):
 
         mlvl_classes_idxs = torch.cat(mlvl_classes_idxs)
 
+        if mlvl_bboxes.numel() == 0:
+            det_bboxes = torch.cat([mlvl_bboxes, mlvl_scores[:, None]], -1)
+            return det_bboxes, mlvl_classes_idxs
+
         det_bboxes, keep = batched_nms(mlvl_bboxes, mlvl_scores,
                                        mlvl_classes_idxs, cfg.nms)
         det_bboxes = det_bboxes[:cfg.max_per_img]

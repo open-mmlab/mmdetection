@@ -3,9 +3,9 @@ import sys
 from inspect import signature
 
 import torch
+from mmcv.ops import batched_nms
 
 from mmdet.core import bbox_mapping_back, merge_aug_proposals
-from mmcv.ops import batched_nms
 
 if sys.version_info >= (3, 7):
     from mmdet.utils.contextmanagers import completed
@@ -89,7 +89,12 @@ class BBoxTestMixin(object):
         # after merging, bboxes will be rescaled to the original image size
         merged_bboxes, merged_scores = self.merge_aug_bboxes(
             aug_bboxes, aug_scores, img_metas)
-        merged_classes_idxs = torch.cat(aug_classes_idxs, dim=0) if aug_classes_idxs else None
+        merged_classes_idxs = torch.cat(
+            aug_classes_idxs, dim=0) if aug_classes_idxs else None
+
+        if merged_bboxes.numel() == 0:
+            det_bboxes = torch.cat([merged_bboxes, merged_scores[:, None]], -1)
+            return det_bboxes, merged_classes_idxs
 
         det_bboxes, keep = batched_nms(merged_bboxes, merged_scores,
                                        merged_classes_idxs, self.test_cfg.nms)
