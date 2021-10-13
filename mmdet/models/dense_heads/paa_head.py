@@ -589,15 +589,15 @@ class PAAHead(ATSSHead):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             featmap_size_hw = cls_score.shape[-2:]
 
-            scores = cls_score.permute(1, 2,
-                                       0).reshape(-1, self.cls_out_channels).sigmoid()
+            scores = cls_score.permute(1, 2, 0).reshape(
+                -1, self.cls_out_channels).sigmoid()
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-            score_factor = score_factor.permute(1, 2,
-                                                0).reshape(-1).sigmoid()
+            score_factor = score_factor.permute(1, 2, 0).reshape(-1).sigmoid()
 
             if 0 < nms_pre < scores.shape[0]:
                 # Get maximum scores for foreground classes.
-                max_scores, _ = (scores * score_factor[..., None]).sqrt().max(-1)
+                max_scores, _ = (scores *
+                                 score_factor[..., None]).sqrt().max(-1)
                 _, topk_inds = max_scores.topk(nms_pre)
                 priors = self.prior_generator.sparse_priors(
                     topk_inds, featmap_size_hw, level_idx, scores.dtype,
@@ -693,7 +693,7 @@ class PAAHead(ATSSHead):
         return det_bboxes, det_labels
 
     def score_voting(self, det_bboxes, det_labels, mlvl_bboxes,
-                      mlvl_nms_scores, score_thr):
+                     mlvl_nms_scores, score_thr):
         """Implementation of score voting method works on each remaining boxes
         after NMS procedure.
 
