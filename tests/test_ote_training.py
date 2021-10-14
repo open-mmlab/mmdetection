@@ -339,27 +339,37 @@ class OTETestTrainingEvaluationAction(BaseOTETestAction):
         results = {}
         return results
 
+def run_export(environment, dataset, task, action_name):
+    logger.debug(f'For action "{action_name}": Copy environment for evaluation exported model')
+
+    environment_for_export = deepcopy(environment)
+
+    logger.debug(f'For action "{action_name}": Create exported model')
+    exported_model = ModelEntity(
+        dataset,
+        environment_for_export.get_model_configuration(),
+        model_status=ModelStatus.NOT_READY)
+    logger.debug('Run export')
+    task.export(ExportType.OPENVINO, exported_model)
+
+    assert exported_model.model_status == ModelStatus.SUCCESS, \
+            f'In action "{action_name}": Export to OpenVINO was not successful'
+    assert exported_model.model_format == ModelFormat.OPENVINO, \
+            f'In action "{action_name}": Wrong model format after export'
+    assert exported_model.optimization_type == ModelOptimizationType.MO, \
+            f'In action "{action_name}": Wrong optimization type'
+
+    logger.debug(f'For action "{action_name}": Set exported model into environment for export')
+    environment_for_export.model = exported_model
+    return environment_for_export, exported_model
+
 class OTETestExportAction(BaseOTETestAction):
     _name = 'export'
 
     def _run_ote_export(self, data_collector,
                         environment, dataset, task):
-        logger.debug('Copy environment for evaluation exported model')
-
-        self.environment_for_export = deepcopy(environment)
-
-        logger.debug('Create exported model')
-        self.exported_model = ModelEntity(
-            dataset,
-            self.environment_for_export.get_model_configuration(),
-            model_status=ModelStatus.NOT_READY)
-        logger.debug('Run export')
-        task.export(ExportType.OPENVINO, self.exported_model)
-        assert self.exported_model.model_status == ModelStatus.SUCCESS, 'Export to OpenVINO was not successful'
-        assert self.exported_model.model_format == ModelFormat.OPENVINO, 'Wrong model format after export'
-        assert self.exported_model.optimization_type == ModelOptimizationType.MO, 'Wrong optimization type'
-        logger.debug('Set exported model into environment for export')
-        self.environment_for_export.model = self.exported_model
+        self.environment_for_export, self.exported_model = \
+                run_export(environment, dataset, task, action_name=self.get_name())
 
     def __call__(self, data_collector: DataCollector,
                  results_prev_stages: Optional[OrderedDict]=None):
@@ -562,6 +572,7 @@ class OTETestNNCFAction(BaseOTETestAction):
         results = {
                 'nncf_task': self.nncf_task,
                 'nncf_model': self.nncf_model,
+                'nncf_environment': self.environment_for_nncf,
         }
         return results
 
@@ -595,6 +606,66 @@ class OTETestNNCFEvaluationAction(BaseOTETestAction):
         results = {}
         return results
 
+class OTETestNNCFExportAction(BaseOTETestAction):
+    _name = 'nncf_export'
+
+    def __init__(self, subset=Subset.VALIDATION):
+        self.subset = subset
+
+    def _run_ote_nncf_export(self, data_collector,
+                             nncf_environment, dataset, nncf_task):
+        logger.info('Begin export of nncf model')
+        self.environment_nncf_export, self.nncf_exported_model = \
+                run_export(nncf_environment, dataset, nncf_task, action_name=self.get_name())
+        logger.info('End export of nncf model')
+
+    def __call__(self, data_collector: DataCollector,
+                 results_prev_stages: Optional[OrderedDict]=None):
+        self._check_result_prev_stages(results_prev_stages, ['training', 'nncf'])
+
+        kwargs = {
+                'nncf_environment': results_prev_stages['nncf']['nncf_environment'],
+                'dataset': results_prev_stages['training']['dataset'],
+                'nncf_task': results_prev_stages['nncf']['nncf_task'],
+        }
+
+        self._run_ote_nncf_export(data_collector, **kwargs)
+        results = {
+                'environment': self.environment_nncf_export,
+                'exported_model': self.nncf_exported_model,
+        }
+        return results
+
+class OTETestNNCFExportEvaluationAction(BaseOTETestAction):
+    _name = 'nncf_export_evaluation'
+
+    def __init__(self, subset=Subset.VALIDATION):
+        self.subset = subset
+
+    def _run_ote_nncf_export_evaluation(self, data_collector,
+                                        model_template, dataset,
+                                        nncf_environment_for_export, nncf_exported_model):
+        logger.info('Begin evaluation of NNCF exported model')
+        self.openvino_task = create_openvino_task(model_template, nncf_environment_for_export)
+        validation_dataset = dataset.get_subset(self.subset)
+        score_name, score_value = run_evaluation(validation_dataset, self.openvino_task, nncf_exported_model)
+        data_collector.log_final_metric('evaluation_accuracy_nncf_exported/' + score_name, score_value)
+        logger.info('End evaluation of NNCF exported model')
+
+    def __call__(self, data_collector: DataCollector,
+                 results_prev_stages: Optional[OrderedDict]=None):
+        self._check_result_prev_stages(results_prev_stages, ['training', 'nncf_export'])
+
+        kwargs = {
+                'model_template': results_prev_stages['training']['model_template'],
+                'dataset': results_prev_stages['training']['dataset'],
+                'nncf_environment_for_export': results_prev_stages['nncf_export']['environment'],
+                'nncf_exported_model': results_prev_stages['nncf_export']['exported_model'],
+        }
+
+        self._run_ote_nncf_export_evaluation(data_collector, **kwargs)
+        results = {}
+        return results
 
 class OTETestStage:
     """
@@ -675,7 +746,8 @@ class OTEIntegrationTestCase:
     _TEST_STAGES = ('training', 'training_evaluation',
                    'export', 'export_evaluation',
                    'pot', 'pot_evaluation',
-                   'nncf', 'nncf_evaluation')
+                   'nncf', 'nncf_evaluation',
+                   'nncf_export', 'nncf_export_evaluation')
 
     @classmethod
     def get_list_of_test_stages(cls):
@@ -706,11 +778,16 @@ class OTEIntegrationTestCase:
                                   depends_stages=[training_stage])
         nncf_evaluation_stage = OTETestStage(action=OTETestNNCFEvaluationAction(),
                                              depends_stages=[nncf_stage])
+        nncf_export_stage = OTETestStage(action=OTETestNNCFExportAction(),
+                                         depends_stages=[nncf_stage])
+        nncf_export_evaluation_stage = OTETestStage(action=OTETestNNCFExportEvaluationAction(),
+                                                    depends_stages=[nncf_export_stage])
 
         list_all_stages = [training_stage, training_evaluation_stage,
                            export_stage, export_evaluation_stage,
                            pot_stage, pot_evaluation_stage,
-                           nncf_stage, nncf_evaluation_stage]
+                           nncf_stage, nncf_evaluation_stage,
+                           nncf_export_stage, nncf_export_evaluation_stage]
 
         self._stages = OrderedDict((stage.name, stage) for stage in list_all_stages)
         assert list(self._stages.keys()) == list(self._TEST_STAGES)
