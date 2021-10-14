@@ -30,7 +30,6 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 主分支代码目前支持 PyTorch 1.3 以上的版本。
 
-v1.x 的历史版本支持 PyTorch 1.1 到 1.4，但是我们强烈建议用户使用新的 2.x 的版本，新的版本速度更快，性能更高，有更优雅的代码设计，对用户使用也更加友好。
 
 <details open>
 <summary>主要特性</summary>

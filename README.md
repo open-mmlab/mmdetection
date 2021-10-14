@@ -18,7 +18,7 @@
 [👀Model Zoo](docs/model_zoo.md) |
 [🆕Update News](docs/changelog.md) |
 [🚀Ongoing Projects](https://github.com/open-mmlab/mmdetection/projects) |
-[🤔Reproting Issues](https://github.com/open-mmlab/mmdetection/issues/new/choose)
+[🤔Reporting Issues](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
 </div>
 
@@ -30,7 +30,6 @@ MMDetection is an open source object detection toolbox based on PyTorch. It is
 a part of the [OpenMMLab](https://openmmlab.com/) project.
 
 The master branch works with **PyTorch 1.3+**.
-The old v1.x branch works with PyTorch 1.1 to 1.4, but v2.0 is strongly recommended for faster speed, higher performance, better design and more friendly usage.
 
 <details open>
 <summary>Major features</summary>
