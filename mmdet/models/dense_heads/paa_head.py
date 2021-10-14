@@ -607,7 +607,7 @@ class PAAHead(ATSSHead):
                 score_factor = score_factor[topk_inds]
             else:
                 priors = self.prior_generator.single_level_grid_priors(
-                    featmap_size_hw, level_idx, scores.device)
+                    featmap_size_hw, level_idx, scores.dtype, scores.device)
 
             bboxes = self.bbox_coder.decode(
                 priors, bbox_pred, max_shape=img_shape)
