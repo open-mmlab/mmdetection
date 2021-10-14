@@ -23,7 +23,6 @@ import torch
 from ote_sdk.configuration import cfg_helper
 from ote_sdk.configuration.helper.utils import ids_to_strings
 from ote_sdk.entities.datasets import DatasetEntity
-from ote_sdk.entities.inference_parameters import default_progress_callback
 from ote_sdk.entities.model import ModelEntity, ModelStatus
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
 from ote_sdk.entities.subset import Subset

@@ -16,6 +16,8 @@ class AccuracyAwareRunner(EpochBasedRunner):
     used by the EpochBasedRunner since the training is controlled by NNCF's
     AdaptiveCompressionTrainingLoop that does the scheduling of the compression-aware
     training loop using the parameters specified in the "accuracy_aware_training".
+    Parameter "max_epochs" is not used to limit training time, but used for
+    tracking training progress.
     """
 
     def __init__(self, *args, target_metric_name, **kwargs):
