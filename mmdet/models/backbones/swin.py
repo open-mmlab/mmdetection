@@ -700,8 +700,11 @@ class SwinTransformer(BaseModule):
 
             state_dict = OrderedDict()
             for k, v in _state_dict.items():
+                # support trained weight from object detection
                 if k.startswith('backbone.'):
                     state_dict[k[9:]] = v
+                else:
+                    state_dict[k] = v
 
             # strip prefix of state_dict
             if list(state_dict.keys())[0].startswith('module.'):
