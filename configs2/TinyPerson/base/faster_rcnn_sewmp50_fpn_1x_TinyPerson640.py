@@ -2,33 +2,35 @@ _base_ = [
     # '../../_base_/datasets/TinyPerson/TinyPerson_detection_640x640.py',
     '../../../configs/_base_/models/faster_rcnn_r50_fpn.py',
     '../../_base_/datasets/TinyPerson/TinyPerson_detection_640x512.py',
-    '../../../configs/_base_/schedules/schedule_1x.py', '../../../configs/_base_/default_runtime.py'
+    '../../../configs/_base_/schedules/schedule_2x.py', '../../../configs/_base_/default_runtime.py'
 ]
 optimizer = dict(type='SGD', lr=0.04, momentum=0.9, weight_decay=0.0001)  # 8GPU
 model = dict(
     type='FasterRCNN',
-    pretrained='http://data.lip6.fr/cadene/pretrainedmodels/se_resnet50-ce0d4300.pth',
+    # pretrained='/home/group5/lzj/TOV_mmdetection_cache/work_dir/TinyPerson/Base/Pretrained/se_resnet50-ce0d4300.pth',
     # backbone=dict(
-    #     type='ResNet',
-    #     depth=50,
-    #     num_stages=4,
-    #     out_indices=(0, 1, 2, 3),
-    #     frozen_stages=1,
-    #     norm_cfg=dict(type='BN', requires_grad=False),  # requires_grad=True
-    #     norm_eval=True,
-    #     style='pytorch'),
+    #     type='SENet',
+    #     block='SEResNetBottleneck',
+    #     layers=[3, 4, 6, 3],
+    #     groups=1,
+    #     reduction=16,
+    #     dropout_p=None,
+    #     inplanes=64, input_3x3=False,
+    #     downsample_kernel_size=1, downsample_padding=0
+    #     # num_classes=num_classes # 这里作为backbone没有最后的线性层，所以不指定num_classes也一样
+    # ),
     backbone=dict(
-            type='SENet',
-            block='SEResNetBottleneck',
-            layers=[3, 4, 6, 3],
-            groups=1,
-            reduction=16,
-            dropout_p=None,
-            inplanes=64,
-            input_3x3=False,
-            downsample_kernel_size=1,
-            downsample_padding=0,
-            frozen_stages=1
+        type='SEResNet',
+        depth=50,
+        num_stages=4,
+        out_indices=(0, 1, 2, 3),
+        frozen_stages=1,
+        norm_cfg=dict(type='BN', requires_grad=False),  # requires_grad=True
+        norm_eval=True,
+        style='pytorch'
+        ,
+        init_cfg=dict(type='Pretrained',
+                      checkpoint='/home/group5/lzj/TOV_mmdetection_cache/work_dir/TinyPerson/Base/Pretrained/se_resnet50-ce0d4300_modified.pth')
         ),
     neck=dict(
         type='FPN',
