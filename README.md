@@ -13,10 +13,10 @@
   <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
 
-[📘Documentation](https://mmdetection.readthedocs.io/) |
-[🛠️Installation](docs/get_started.md) |
-[👀Model Zoo](docs/model_zoo.md) |
-[🆕Update News](docs/changelog.md) |
+[📘Documentation](https://mmdetection.readthedocs.io/en/v2.17.0/) |
+[🛠️Installation](https://mmdetection.readthedocs.io/en/v2.17.0/get_started.html) |
+[👀Model Zoo](https://mmdetection.readthedocs.io/zh_CN/v2.17.0/model_zoo.html) |
+[🆕Update News](https://mmdetection.readthedocs.io/en/v2.17.0/changelog.html) |
 [🚀Ongoing Projects](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔Reporting Issues](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
