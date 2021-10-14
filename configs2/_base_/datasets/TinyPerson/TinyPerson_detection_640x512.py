@@ -33,8 +33,10 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=1,
-    workers_per_gpu=1,
+    # samples_per_gpu=1,
+    # workers_per_gpu=1,
+    samples_per_gpu=8,
+    workers_per_gpu=2,
     train=dict(
             type=dataset_type,
             # ann_file=data_root + 'erase_with_uncertain_dataset/annotations/corner/task/tiny_set_train_sw640_sh512_all.json',

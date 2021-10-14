@@ -7,7 +7,7 @@ _base_ = [
 optimizer = dict(type='SGD', lr=0.04, momentum=0.9, weight_decay=0.0001)  # 8GPU
 model = dict(
     type='FasterRCNN',
-    pretrained='torchvision://resnet50',
+    # pretrained='torchvision://resnet50',
     backbone=dict(
         type='ResNet',
         depth=50,

@@ -36,8 +36,9 @@ def bbox_mapping(bboxes,
                  img_shape,
                  scale_factor,
                  flip,
-                 tile_offset,
-                 flip_direction='horizontal'
+                 # flip_direction='horizontal'
+                 flip_direction,
+                 tile_offset
                  ):
     """Map bboxes from the original image scale to testing scale."""
     new_bboxes = bboxes * bboxes.new_tensor(scale_factor)
@@ -65,13 +66,19 @@ def bbox_mapping_back(bboxes,
                       img_shape,
                       scale_factor,
                       flip,
-                      tile_offset: [tuple, list, None],
-                      flip_direction='horizontal'):
+                      # flip_direction='horizontal',
+                      flip_direction,
+                      tile_offset: [tuple, list, None]):
     """Map bboxes from testing scale to original image scale."""
     new_bboxes = bbox_flip(bboxes, img_shape,
                            flip_direction) if flip else bboxes
     new_bboxes = new_bboxes.view(-1, 4) / new_bboxes.new_tensor(scale_factor)
     # add by hui ############################################
+    # print("tile_offset is None:",tile_offset is None)
+    # print("tile_offset is tuple:",isinstance(tile_offset,tuple))
+    # print("tile_offset is list:", isinstance(tile_offset, list))
+    # print("length of tile_offset",len(tile_offset))
+    # print("The content is:",tile_offset)
     assert tile_offset is None or (isinstance(tile_offset, (tuple, list)) and len(tile_offset) == 2), \
         "tile_offset must be None or (dx, dy) or [dx, dy]"
     if tile_offset is not None:

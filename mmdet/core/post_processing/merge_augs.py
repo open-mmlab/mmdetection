@@ -65,10 +65,10 @@ def merge_aug_proposals(aug_proposals, img_metas, cfg):
         flip = img_info['flip']
         flip_direction = img_info['flip_direction']
         _proposals = proposals.clone()
+        print()
         _proposals[:, :4] = bbox_mapping_back(_proposals[:, :4], img_shape,
                                               scale_factor, flip,
-                                              flip_direction,
-                                              img_info.get('tile_offset', None)) # add by hui
+                                              flip_direction,img_info.get('tile_offset', None)) # add by hui
         recovered_proposals.append(_proposals)
     aug_proposals = torch.cat(recovered_proposals, dim=0)
     merged_proposals, _ = nms(aug_proposals[:, :4].contiguous(),
