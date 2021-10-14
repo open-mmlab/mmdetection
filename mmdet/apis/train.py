@@ -155,8 +155,7 @@ def train_detector(model,
         # Prepare runner for Accuracy Aware
         cfg.runner = {
             'type': 'AccuracyAwareRunner',
-            'target_metric_name': nncf_config['target_metric_name'],
-            'max_epochs': nncf_config["accuracy_aware_training"]["params"]["maximal_total_epochs"]
+            'target_metric_name': nncf_config['target_metric_name']
         }
 
     runner = build_runner(
