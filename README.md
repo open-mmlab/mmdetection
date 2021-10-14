@@ -10,7 +10,7 @@
 [![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 
 
-  <img src="resources/title.jpg"/>
+  <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
 
 [📘Documentation](https://mmdetection.readthedocs.io/) |
@@ -62,20 +62,21 @@ This project is released under the [Apache 2.0 license](LICENSE).
 ## Changelog
 
 **2.17.0** was released in 28/09/2021:
-- Support PVT and PVTv2.
-- Support SOLO.
+- Support PVT, PVTv2 and SOLO.
 - Support large scale jittering and New Mask R-CNN baselines.
 - Speed up YOLOv3 inference.
 
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 
-A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](docs/compatibility.md).
+For compatibility changes between different versions of MMDetection, please refer to [compatibility.md](docs/compatibility.md).
 
 ## Benchmark and model zoo
 
 Results and models are available in the [model zoo](docs/model_zoo.md).
 
-Supported backbones:
+
+<details open>
+<summary>Supported backbones:</summary>
 
 - [x] ResNet (CVPR'2016)
 - [x] ResNeXt (CVPR'2017)
@@ -88,8 +89,10 @@ Supported backbones:
 - [X] Swin (CVPR'2021)
 - [x] PVT (ICCV'2021)
 - [x] PVTv2 (ArXiv'2021)
+</details>
 
-Supported methods:
+<details open>
+<summary>Supported methods:</summary>
 
 - [x] [RPN (NeurIPS'2015)](configs/rpn)
 - [x] [Fast R-CNN (ICCV'2015)](configs/fast_rcnn)
@@ -145,6 +148,7 @@ Supported methods:
 - [x] [CenterNet (CVPR'2019)](configs/centernet/README.md)
 - [x] [YOLOX (ArXiv'2021)](configs/yolox/README.md)
 - [x] [SOLO (ECCV'2020)](configs/solo/README.md)
+</details>
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
 
@@ -162,7 +166,7 @@ Please refer to [FAQ](docs/faq.md) for frequently asked questions.
 
 ## Contributing
 
-We appreciate all contributions to improve MMDetection. Please refer to [CONTRIBUTING.md](.github/CONTRIBUTING.md) for the contributing guideline.
+We appreciate all contributions to improve MMDetection. Ongoing projects can be found in out [GitHub Projects](https://github.com/open-mmlab/mmdetection/projects). Welcome community users to participate in these projects. Please refer to [CONTRIBUTING.md](.github/CONTRIBUTING.md) for the contributing guideline.
 
 ## Acknowledgement
 
