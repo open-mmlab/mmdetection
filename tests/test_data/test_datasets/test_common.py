@@ -105,8 +105,10 @@ def _create_dummy_results():
 @pytest.mark.parametrize('config_path',
                          ['./configs/_base_/datasets/voc0712.py'])
 def test_dataset_init(config_path):
+    use_symlink = False
     if not os.path.exists('./data'):
         os.symlink('./tests/data', './data')
+        use_symlink = True
     data_config = mmcv.Config.fromfile(config_path)
     if 'data' not in data_config:
         return
@@ -115,7 +117,8 @@ def test_dataset_init(config_path):
         dataset_config = copy.deepcopy(data_config.data.get(stage_name))
         dataset = build_dataset(dataset_config)
         dataset[0]
-    os.unlink('./data')
+    if use_symlink:
+        os.unlink('./data')
 
 
 def test_dataset_evaluation():
