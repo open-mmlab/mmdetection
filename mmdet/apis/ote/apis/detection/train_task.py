@@ -90,10 +90,9 @@ class OTEDetectionTrainingTask(OTEDetectionInferenceTask, ITrainingTask):
             return
 
         # Run training.
+        update_progress_callback = default_progress_callback
         if train_parameters is not None:
             update_progress_callback = train_parameters.update_progress
-        else:
-            update_progress_callback = default_progress_callback
         time_monitor = TrainingProgressCallback(update_progress_callback)
         learning_curves = defaultdict(OTELoggerHook.Curve)
         training_config = prepare_for_training(config, train_dataset, val_dataset, time_monitor, learning_curves)

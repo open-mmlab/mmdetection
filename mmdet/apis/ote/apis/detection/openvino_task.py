@@ -27,7 +27,7 @@ from compression.graph.model_utils import compress_model_weights, get_nodes_by_t
 from compression.pipeline.initializer import create_pipeline
 from ote_sdk.entities.annotation import Annotation, AnnotationSceneEntity, AnnotationSceneKind
 from ote_sdk.entities.datasets import DatasetEntity
-from ote_sdk.entities.inference_parameters import InferenceParameters
+from ote_sdk.entities.inference_parameters import InferenceParameters, default_progress_callback
 from ote_sdk.entities.label import LabelEntity
 from ote_sdk.entities.model import (
     ModelStatus,
@@ -189,9 +189,12 @@ class OTEOpenVinoDataLoader(DataLoader):
 class OpenVINODetectionTask(IInferenceTask, IEvaluationTask, IOptimizationTask):
     def __init__(self, task_environment: TaskEnvironment):
         self.task_environment = task_environment
-        self.hparams = self.task_environment.get_hyper_parameters(OTEDetectionConfig)
         self.model = self.task_environment.model
         self.inferencer = self.load_inferencer()
+
+    @property
+    def hparams(self):
+        return self.task_environment.get_hyper_parameters(OTEDetectionConfig)
 
     def load_inferencer(self) -> OpenVINODetectionInferencer:
         labels = self.task_environment.label_schema.get_labels(include_empty=False)
@@ -201,9 +204,13 @@ class OpenVINODetectionTask(IInferenceTask, IEvaluationTask, IOptimizationTask):
                                            self.model.get_data("openvino.bin"))
 
     def infer(self, dataset: DatasetEntity, inference_parameters: Optional[InferenceParameters] = None) -> DatasetEntity:
-        from tqdm import tqdm
-        for dataset_item in tqdm(dataset):
+        update_progress_callback = default_progress_callback
+        if inference_parameters is not None:
+            update_progress_callback = inference_parameters.update_progress
+        dataset_size = len(dataset)
+        for i, dataset_item in enumerate(dataset, 1):
             dataset_item.annotation_scene = self.inferencer.predict(dataset_item.numpy)
+            update_progress_callback(int(i / dataset_size * 100))
         return dataset
 
     def evaluate(self,
