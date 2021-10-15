@@ -127,11 +127,11 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 test. If with_nms is True, then return the following format
 
                 - det_bboxes (Tensor): Predicted bboxes with shape \
-                    [num_bbox, 5], where the first 4 columns are bounding box \
-                    positions (tl_x, tl_y, br_x, br_y) and the 5-th column \
-                    are scores between 0 and 1.
+                    [num_bboxes, 5], where the first 4 columns are bounding \
+                    box positions (tl_x, tl_y, br_x, br_y) and the 5-th \
+                    column are scores between 0 and 1.
                 - det_labels (Tensor): Predicted labels of the corresponding \
-                    box with shape [num_bbox].
+                    box with shape [num_bboxes].
         """
         if score_factor_list[0] is None:
             # e.g. Retina, FreeAnchor, etc.
@@ -146,7 +146,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
         mlvl_bboxes = []
         mlvl_scores = []
-        mlvl_classes_idxs = []
+        mlvl_labels = []
         if with_score_factors:
             mlvl_score_factors = []
         else:
@@ -183,7 +183,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             topk_inds = topk_idxs[idxs[:num_topk]]
 
             anchor_idxs = topk_inds // self.num_classes
-            classes_idxs = topk_inds % self.num_classes
+            labels = topk_inds % self.num_classes
 
             bbox_pred = bbox_pred[anchor_idxs]
 
@@ -199,18 +199,17 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
-            mlvl_classes_idxs.append(classes_idxs)
+            mlvl_labels.append(labels)
             if with_score_factors:
                 mlvl_score_factors.append(score_factor)
 
-        return self._bbox_post_process(mlvl_scores, mlvl_classes_idxs,
-                                       mlvl_bboxes, img_meta['scale_factor'],
-                                       cfg, rescale, with_nms,
-                                       mlvl_score_factors, **kwargs)
+        return self._bbox_post_process(mlvl_scores, mlvl_labels, mlvl_bboxes,
+                                       img_meta['scale_factor'], cfg, rescale,
+                                       with_nms, mlvl_score_factors, **kwargs)
 
     def _bbox_post_process(self,
                            mlvl_scores,
-                           mlvl_classes_idxs,
+                           mlvl_labels,
                            mlvl_bboxes,
                            scale_factor,
                            cfg,
@@ -226,12 +225,12 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         Args:
             mlvl_scores (list[Tensor]): Box scores from all scale
                 levels of a single image, each item has shape
-                (num,).
-           mlvl_classes_idxs (list[Tensor]): Box class idx from all scale
+                (num_bboxes, ).
+           mlvl_labels (list[Tensor]): Box class label from all scale
                 levels of a single image, each item has shape
-                (num,).
+                (num_bboxes, ).
             mlvl_bboxes (list[Tensor]): Decoded bboxes from all scale
-                levels of a single image, each item has shape (num, 4).
+                levels of a single image, each item has shape (num_bboxes, 4).
             scale_factor (ndarray, optional): Scale factor of the image arange
                 as (w_scale, h_scale, w_scale, h_scale).
             cfg (mmcv.Config): Test / postprocessing configuration,
@@ -242,7 +241,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 Default: True.
             mlvl_score_factors (list[Tensor], optional): Score factor from
                 all scale levels of a single image, each item has shape
-                (num, ). Default: None.
+                (num_bboxes, ). Default: None.
 
         Returns:
             tuple[Tensor]: Results of detected bboxes and labels. If with_nms
@@ -252,19 +251,19 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 test. If with_nms is True, then return the following format
 
                 - det_bboxes (Tensor): Predicted bboxes with shape \
-                    [num_bbox, 5], where the first 4 columns are bounding box \
-                    positions (tl_x, tl_y, br_x, br_y) and the 5-th column \
-                    are scores between 0 and 1.
+                    [num_bboxes, 5], where the first 4 columns are bounding \
+                    box positions (tl_x, tl_y, br_x, br_y) and the 5-th \
+                    column are scores between 0 and 1.
                 - det_labels (Tensor): Predicted labels of the corresponding \
-                    box with shape [num_bbox].
+                    box with shape [num_bboxes].
         """
-        assert len(mlvl_scores) == len(mlvl_bboxes) == len(mlvl_classes_idxs)
+        assert len(mlvl_scores) == len(mlvl_bboxes) == len(mlvl_labels)
 
         mlvl_bboxes = torch.cat(mlvl_bboxes)
         if rescale:
             mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
         mlvl_scores = torch.cat(mlvl_scores)
-        mlvl_classes_idxs = torch.cat(mlvl_classes_idxs)
+        mlvl_labels = torch.cat(mlvl_labels)
 
         if mlvl_score_factors is not None:
             mlvl_score_factors = torch.cat(mlvl_score_factors)
@@ -273,15 +272,15 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         if with_nms:
             if mlvl_bboxes.numel() == 0:
                 det_bboxes = torch.cat([mlvl_bboxes, mlvl_scores[:, None]], -1)
-                return det_bboxes, mlvl_classes_idxs
+                return det_bboxes, mlvl_labels
 
-            det_bboxes, keep = batched_nms(mlvl_bboxes, mlvl_scores,
-                                           mlvl_classes_idxs, cfg.nms)
+            det_bboxes, keep_idxs = batched_nms(mlvl_bboxes, mlvl_scores,
+                                                mlvl_labels, cfg.nms)
             det_bboxes = det_bboxes[:cfg.max_per_img]
-            det_labels = mlvl_classes_idxs[keep][:cfg.max_per_img]
+            det_labels = mlvl_labels[keep_idxs][:cfg.max_per_img]
             return det_bboxes, det_labels
         else:
-            return mlvl_bboxes, mlvl_scores, mlvl_classes_idxs
+            return mlvl_bboxes, mlvl_scores, mlvl_labels
 
     def forward_train(self,
                       x,

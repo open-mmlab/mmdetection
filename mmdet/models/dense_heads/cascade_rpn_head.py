@@ -663,7 +663,7 @@ class StageCascadeRPNHead(RPNHead):
                 f'which will be deprecated.'
 
         if proposals.numel() > 0:
-            dets, keep = batched_nms(proposals, scores, ids, cfg.nms)
+            dets, _ = batched_nms(proposals, scores, ids, cfg.nms)
         else:
             return proposals.new_zeros(0, 5)
 

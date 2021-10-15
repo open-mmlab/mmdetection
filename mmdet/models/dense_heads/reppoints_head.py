@@ -692,11 +692,11 @@ class RepPointsHead(AnchorFreeHead):
                 test. If with_nms is True, then return the following format
 
                 - det_bboxes (Tensor): Predicted bboxes with shape \
-                    [num_bbox, 5], where the first 4 columns are bounding box \
-                    positions (tl_x, tl_y, br_x, br_y) and the 5-th column \
-                    are scores between 0 and 1.
+                    [num_bboxes, 5], where the first 4 columns are bounding \
+                    box positions (tl_x, tl_y, br_x, br_y) and the 5-th \
+                    column are scores between 0 and 1.
                 - det_labels (Tensor): Predicted labels of the corresponding \
-                    box with shape [num_bbox].
+                    box with shape [num_bboxes].
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_score_list) == len(bbox_pred_list)
@@ -705,7 +705,7 @@ class RepPointsHead(AnchorFreeHead):
 
         mlvl_bboxes = []
         mlvl_scores = []
-        mlvl_classes_idxs = []
+        mlvl_labels = []
         for level_idx, (cls_score, bbox_pred) in enumerate(
                 zip(cls_score_list, bbox_pred_list)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
@@ -731,7 +731,7 @@ class RepPointsHead(AnchorFreeHead):
             topk_inds = topk_idxs[idxs[:num_topk]]
 
             anchor_idxs = topk_inds // self.num_classes
-            classes_idxs = topk_inds % self.num_classes
+            labels = topk_inds % self.num_classes
 
             bbox_pred = bbox_pred[anchor_idxs]
 
@@ -745,11 +745,11 @@ class RepPointsHead(AnchorFreeHead):
 
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
-            mlvl_classes_idxs.append(classes_idxs)
+            mlvl_labels.append(labels)
 
         return self._bbox_post_process(
             mlvl_scores,
-            mlvl_classes_idxs,
+            mlvl_labels,
             mlvl_bboxes,
             img_meta['scale_factor'],
             cfg,

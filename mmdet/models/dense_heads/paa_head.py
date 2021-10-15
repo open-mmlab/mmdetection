@@ -571,11 +571,11 @@ class PAAHead(ATSSHead):
                 test. If with_nms is True, then return the following format
 
                 - det_bboxes (Tensor): Predicted bboxes with shape \
-                    [num_bbox, 5], where the first 4 columns are bounding box \
-                    positions (tl_x, tl_y, br_x, br_y) and the 5-th column \
-                    are scores between 0 and 1.
+                    [num_bboxes, 5], where the first 4 columns are bounding \
+                    box positions (tl_x, tl_y, br_x, br_y) and the 5-th \
+                    column are scores between 0 and 1.
                 - det_labels (Tensor): Predicted labels of the corresponding \
-                    box with shape [num_bbox].
+                    box with shape [num_bboxes].
         """
         cfg = self.test_cfg if cfg is None else cfg
         img_shape = img_meta['img_shape']
@@ -636,9 +636,9 @@ class PAAHead(ATSSHead):
         Args:
             mlvl_scores (list[Tensor]): Box scores from all scale
                 levels of a single image, each item has shape
-                (num, num_class).
+                (num_bboxes, num_class).
             mlvl_bboxes (list[Tensor]): Decoded bboxes from all scale
-                levels of a single image, each item has shape (num, 4).
+                levels of a single image, each item has shape (num_bboxes, 4).
             scale_factor (ndarray, optional): Scale factor of the image arange
                 as (w_scale, h_scale, w_scale, h_scale).
             cfg (mmcv.Config): Test / postprocessing configuration,
@@ -649,7 +649,7 @@ class PAAHead(ATSSHead):
                 Default: True.
             mlvl_score_factors (list[Tensor], optional): Score factor from
                 all scale levels of a single image, each item has shape
-                (num, ). Default: None.
+                (num_bboxes, ). Default: None.
 
         Returns:
             tuple[Tensor]: Results of detected bboxes and labels. If with_nms
@@ -659,11 +659,11 @@ class PAAHead(ATSSHead):
                 test. If with_nms is True, then return the following format
 
                 - det_bboxes (Tensor): Predicted bboxes with shape \
-                    [num_bbox, 5], where the first 4 columns are bounding box \
-                    positions (tl_x, tl_y, br_x, br_y) and the 5-th column \
-                    are scores between 0 and 1.
+                    [num_bboxes, 5], where the first 4 columns are bounding \
+                    box positions (tl_x, tl_y, br_x, br_y) and the 5-th \
+                    column are scores between 0 and 1.
                 - det_labels (Tensor): Predicted labels of the corresponding \
-                    box with shape [num_bbox].
+                    box with shape [num_bboxes].
         """
         mlvl_bboxes = torch.cat(mlvl_bboxes)
         if rescale:

@@ -569,7 +569,7 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_confids = []
-        mlvl_classes_idxs = []
+        mlvl_labels = []
         assert len(cls_scores) == len(bbox_cls_preds) == len(
             bbox_reg_preds) == len(mlvl_anchors)
         for cls_score, bbox_cls_pred, bbox_reg_pred, anchors in zip(
@@ -599,7 +599,7 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
             topk_inds = topk_idxs[idxs[:num_topk]]
 
             anchor_idxs = topk_inds // self.num_classes
-            classes_idxs = topk_inds % self.num_classes
+            labels = topk_inds % self.num_classes
 
             anchors = anchors[anchor_idxs]
             bbox_cls_pred = bbox_cls_pred[anchor_idxs]
@@ -615,7 +615,7 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_confids.append(confids)
-            mlvl_classes_idxs.append(classes_idxs)
-        return self._bbox_post_process(mlvl_scores, mlvl_classes_idxs,
-                                       mlvl_bboxes, scale_factor, cfg, rescale,
-                                       True, mlvl_confids)
+            mlvl_labels.append(labels)
+        return self._bbox_post_process(mlvl_scores, mlvl_labels, mlvl_bboxes,
+                                       scale_factor, cfg, rescale, True,
+                                       mlvl_confids)

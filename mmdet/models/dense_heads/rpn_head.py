@@ -195,14 +195,14 @@ class RPNHead(AnchorHead):
         Args:
             mlvl_scores (list[Tensor]): Box scores from all scale
                 levels of a single image, each item has shape
-                (num, num_class).
+                (num_bboxes, num_class).
             mlvl_bboxes (list[Tensor]): Decoded bboxes from all scale
-                levels of a single image, each item has shape (num, 4).
+                levels of a single image, each item has shape (num_bboxes, 4).
             mlvl_valid_anchors (list[Tensor]): Box reference from all scale
                 levels of a single image, each item has shape
-                (num, 4).
+                (num_bboxes, 4).
             level_ids (list[Tensor]): Indexes from all scale levels of a
-                single image, each item has shape (num, ).
+                single image, each item has shape (num_bboxes, ).
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             img_shape (tuple(int)): Shape of current image.
@@ -229,7 +229,7 @@ class RPNHead(AnchorHead):
                 ids = ids[valid_mask]
 
         if proposals.numel() > 0:
-            dets, keep = batched_nms(proposals, scores, ids, cfg.nms)
+            dets, _ = batched_nms(proposals, scores, ids, cfg.nms)
         else:
             return proposals.new_zeros(0, 5)
 

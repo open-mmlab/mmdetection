@@ -170,15 +170,18 @@ def delta2bbox(rois,
         rois (Tensor): Boxes to be transformed. Has shape (N, 4).
         deltas (Tensor): Encoded offsets with respect to each roi.
             Has shape (N, num_classes * 4) or (N, 4). Note
-            N = num_anchors * W * H, when rois is a grid of
+            N = num_base_anchors * W * H, when rois is a grid of
             anchors. Offset encoding follows [1]_.
-        means (Sequence[float]): Denormalizing means for delta coordinates
+        means (Sequence[float]): Denormalizing means for delta coordinates.
+            Default (0., 0., 0., 0.).
         stds (Sequence[float]): Denormalizing standard deviation for delta
-            coordinates
-        max_shape (tuple[int, int]): Maximum bounds for boxes. specifies (H, W)
-        wh_ratio_clip (float): Maximum aspect ratio for boxes.
+            coordinates. Default (1., 1., 1., 1.).
+        max_shape (tuple[int, int]): Maximum bounds for boxes. specifies
+           (H, W). Default None.
+        wh_ratio_clip (float): Maximum aspect ratio for boxes. Default
+            16 / 1000.
         clip_border (bool, optional): Whether clip the objects outside the
-            border of the image. Defaults to True.
+            border of the image. Defaults True.
         add_ctr_clamp (bool): Whether to add center clamp, when added, the
             predicted box is clamped is its center is too far away from
             the original anchor's center. Only used by YOLOF. Default False.
@@ -217,13 +220,13 @@ def delta2bbox(rois,
     stds = deltas.new_tensor(stds).view(1, -1)
     denorm_deltas = deltas * stds + means
 
-    dxy = denorm_deltas[:, 0:2]
+    dxy = denorm_deltas[:, :2]
     dwh = denorm_deltas[:, 2:]
 
     # Compute width/height of each roi
     rois_ = rois.repeat(1, num_classes).reshape(-1, 4)
-    pxy = ((rois_[:, 0:2] + rois_[:, 2:]) * 0.5)
-    pwh = (rois_[:, 2:] - rois_[:, 0:2])
+    pxy = ((rois_[:, :2] + rois_[:, 2:]) * 0.5)
+    pwh = (rois_[:, 2:] - rois_[:, :2])
 
     dxy_wh = pwh * dxy
 
@@ -268,17 +271,19 @@ def onnx_delta2bbox(rois,
             Has shape (B, N, num_classes * 4) or (B, N, 4) or
             (N, num_classes * 4) or (N, 4). Note N = num_anchors * W * H
             when rois is a grid of anchors.Offset encoding follows [1]_.
-        means (Sequence[float]): Denormalizing means for delta coordinates
+        means (Sequence[float]): Denormalizing means for delta coordinates.
+            Default (0., 0., 0., 0.).
         stds (Sequence[float]): Denormalizing standard deviation for delta
-            coordinates
+            coordinates. Default (1., 1., 1., 1.).
         max_shape (Sequence[int] or torch.Tensor or Sequence[
             Sequence[int]],optional): Maximum bounds for boxes, specifies
             (H, W, C) or (H, W). If rois shape is (B, N, 4), then
             the max_shape should be a Sequence[Sequence[int]]
-            and the length of max_shape should also be B.
+            and the length of max_shape should also be B. Default None.
         wh_ratio_clip (float): Maximum aspect ratio for boxes.
+            Default 16 / 1000.
         clip_border (bool, optional): Whether clip the objects outside the
-            border of the image. Defaults to True.
+            border of the image. Defaults True.
         add_ctr_clamp (bool): Whether to add center clamp, when added, the
             predicted box is clamped is its center is too far away from
             the original anchor's center. Only used by YOLOF. Default False.
