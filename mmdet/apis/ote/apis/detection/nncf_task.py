@@ -63,6 +63,7 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
         """
         self._val_dataloader = None
         self._compression_ctrl = None
+        self._nncf_preset = "nncf_quantization"
         check_nncf_is_enabled()
         super().__init__(task_environment)
 
