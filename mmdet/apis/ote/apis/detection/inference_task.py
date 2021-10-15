@@ -82,6 +82,10 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
         patch_config(self._config, self._scratch_space, self._labels, random_seed=42)
         set_hyperparams(self._config, hyperparams)
 
+        # Set default model attributes.
+        self._optimization_methods = []
+        self._precision = [ModelPrecision.FP32]
+
         # Create and initialize PyTorch model.
         self._model = self._load_model(task_environment.model)
 
@@ -89,7 +93,6 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
         self._training_work_dir = None
         self._is_training = False
         self._should_stop = False
-
 
     def _load_model(self, model: ModelEntity):
         if model is not None:
@@ -316,7 +319,6 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
                export_type: ExportType,
                output_model: ModelEntity):
         assert export_type == ExportType.OPENVINO
-        optimized_model_precision = ModelPrecision.FP32
         output_model.model_format = ModelFormat.OPENVINO
         output_model.optimization_type = ModelOptimizationType.MO
         with tempfile.TemporaryDirectory() as tempdir:
@@ -330,15 +332,15 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
                     model = self._model.cuda(self._config.gpu_ids[0])
                 else:
                     model = self._model.cpu()
-                export_model(model, self._config, tempdir,
-                             target='openvino', precision=optimized_model_precision.name)
+                export_model(model, self._config, tempdir, target='openvino')
                 bin_file = [f for f in os.listdir(tempdir) if f.endswith('.bin')][0]
                 xml_file = [f for f in os.listdir(tempdir) if f.endswith('.xml')][0]
                 with open(os.path.join(tempdir, bin_file), "rb") as f:
                     output_model.set_data("openvino.bin", f.read())
                 with open(os.path.join(tempdir, xml_file), "rb") as f:
                     output_model.set_data("openvino.xml", f.read())
-                output_model.precision = [optimized_model_precision]
+                output_model.precision = self._precision
+                output_model.optimization_methods = self._optimization_methods
                 output_model.model_status = ModelStatus.SUCCESS
             except Exception as ex:
                 output_model.model_status = ModelStatus.FAILED

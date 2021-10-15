@@ -23,7 +23,13 @@ import torch
 from ote_sdk.configuration import cfg_helper
 from ote_sdk.configuration.helper.utils import ids_to_strings
 from ote_sdk.entities.datasets import DatasetEntity
-from ote_sdk.entities.model import ModelEntity, ModelStatus
+from ote_sdk.entities.model import (
+    ModelStatus,
+    ModelEntity,
+    ModelFormat,
+    OptimizationMethod,
+    ModelPrecision,
+)
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
 from ote_sdk.entities.subset import Subset
 from ote_sdk.entities.task_environment import TaskEnvironment
@@ -60,14 +66,24 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
         check_nncf_is_enabled()
         super().__init__(task_environment)
 
-    @staticmethod
-    def _select_optimization_type(quantization: bool, pruning: bool):
+    def _set_attributes_by_hyperparams(self):
+        quantization = self._hyperparams.nncf_optimization.enable_quantization
+        pruning = self._hyperparams.nncf_optimization.enable_pruning
         if quantization and pruning:
-            return "nncf_quantization_pruning"
+            self._nncf_preset = "nncf_quantization_pruning"
+            self._optimization_methods = [OptimizationMethod.QUANTIZATION, OptimizationMethod.FILTER_PRUNING]
+            self._precision = [ModelPrecision.INT8]
+            return
         if quantization and not pruning:
-            return "nncf_quantization"
+            self._nncf_preset = "nncf_quantization"
+            self._optimization_methods = [OptimizationMethod.QUANTIZATION]
+            self._precision = [ModelPrecision.INT8]
+            return
         if not quantization and pruning:
-            return "nncf_pruning"
+            self._nncf_preset = "nncf_pruning"
+            self._optimization_methods = [OptimizationMethod.FILTER_PRUNING]
+            self._precision = [ModelPrecision.FP32]
+            return
         raise RuntimeError('Not selected optimization algorithm')
 
     def _load_model(self, model: ModelEntity):
@@ -77,12 +93,9 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
         with open(nncf_config_path) as nncf_config_file:
             common_nncf_config = json.load(nncf_config_file)
 
-        optimization_type = self._select_optimization_type(
-            quantization=self._hyperparams.nncf_optimization.enable_quantization,
-            pruning=self._hyperparams.nncf_optimization.enable_pruning
-        )
+        self._set_attributes_by_hyperparams()
 
-        optimization_config = compose_nncf_config(common_nncf_config, [optimization_type])
+        optimization_config = compose_nncf_config(common_nncf_config, [self._nncf_preset])
 
         max_acc_drop = self._hyperparams.nncf_optimization.maximal_accuracy_degradation
         if "accuracy_aware_training" in optimization_config["nncf_config"]:
@@ -153,7 +166,6 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
             get_fake_input_func=get_fake_input,
             is_accuracy_aware=is_acc_aware_training_set)
 
-
     def optimize(
         self,
         optimization_type: OptimizationType,
@@ -207,6 +219,11 @@ class OTEDetectionNNCFTask(OTEDetectionInferenceTask, IOptimizationTask):
         self.save_model(output_model)
 
         output_model.model_status = ModelStatus.SUCCESS
+        output_model.model_format = ModelFormat.OPENVINO
+        output_model.optimization_type = OptimizationType.NNCF
+        output_model.optimization_methods = self._optimization_methods
+        output_model.precision = self._precision
+
         self._is_training = False
 
     def save_model(self, output_model: ModelEntity):

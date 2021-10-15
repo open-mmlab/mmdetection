@@ -22,9 +22,8 @@ import torch
 from ote_sdk.entities.datasets import DatasetEntity
 from ote_sdk.entities.metrics import (CurveMetric, InfoMetric, LineChartInfo, MetricsGroup, Performance, ScoreMetric,
                                       VisualizationInfo, VisualizationType)
-from ote_sdk.entities.model import ModelEntity, ModelStatus
+from ote_sdk.entities.model import ModelEntity, ModelStatus, ModelPrecision
 from ote_sdk.entities.subset import Subset
-from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.entities.train_parameters import TrainParameters, default_progress_callback
 from ote_sdk.usecases.tasks.interfaces.training_interface import ITrainingTask
 
@@ -135,6 +134,7 @@ class OTEDetectionTrainingTask(OTEDetectionInferenceTask, ITrainingTask):
             logger.info('FINAL MODEL PERFORMANCE\n' + str(performance))
             self.save_model(output_model)
             output_model.performance = performance
+            output_model.precision = [ModelPrecision.FP32]
             output_model.model_status = ModelStatus.SUCCESS
         else:
             logger.info("Model performance has not improved while training. No new model has been saved.")
