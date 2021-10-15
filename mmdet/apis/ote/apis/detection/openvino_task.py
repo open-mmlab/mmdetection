@@ -29,7 +29,13 @@ from ote_sdk.entities.annotation import Annotation, AnnotationSceneEntity, Annot
 from ote_sdk.entities.datasets import DatasetEntity
 from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.label import LabelEntity
-from ote_sdk.entities.model import ModelEntity, ModelStatus
+from ote_sdk.entities.model import (
+    ModelStatus,
+    ModelEntity,
+    ModelFormat,
+    OptimizationMethod,
+    ModelPrecision,
+)
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
 from ote_sdk.entities.resultset import ResultSetEntity
 from ote_sdk.entities.scored_label import ScoredLabel
@@ -269,7 +275,13 @@ class OpenVINODetectionTask(IInferenceTask, IEvaluationTask, IOptimizationTask):
                 output_model.set_data("openvino.xml", f.read())
             with open(os.path.join(tempdir, "model.bin"), "rb") as f:
                 output_model.set_data("openvino.bin", f.read())
+
+        # set model attributes for quantized model
         output_model.model_status = ModelStatus.SUCCESS
+        output_model.model_format = ModelFormat.OPENVINO
+        output_model.optimization_type = OptimizationType.POT
+        output_model.optimization_methods = [OptimizationMethod.QUANTIZATION]
+        output_model.precision = [ModelPrecision.INT8]
 
         self.model = output_model
         self.inferencer = self.load_inferencer()
