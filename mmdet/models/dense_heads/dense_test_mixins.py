@@ -71,7 +71,7 @@ class BBoxTestMixin(object):
 
         aug_bboxes = []
         aug_scores = []
-        aug_classes_idxs = []
+        aug_labels = []
         for x, img_meta in zip(feats, img_metas):
             # only one image in the batch
             outs = self.forward(x)
@@ -84,22 +84,21 @@ class BBoxTestMixin(object):
             aug_bboxes.append(bbox_outputs[0])
             aug_scores.append(bbox_outputs[1])
             if len(bbox_outputs) >= 3:
-                aug_classes_idxs.append(bbox_outputs[2])
+                aug_labels.append(bbox_outputs[2])
 
         # after merging, bboxes will be rescaled to the original image size
         merged_bboxes, merged_scores = self.merge_aug_bboxes(
             aug_bboxes, aug_scores, img_metas)
-        merged_classes_idxs = torch.cat(
-            aug_classes_idxs, dim=0) if aug_classes_idxs else None
+        merged_labels = torch.cat(aug_labels, dim=0) if aug_labels else None
 
         if merged_bboxes.numel() == 0:
             det_bboxes = torch.cat([merged_bboxes, merged_scores[:, None]], -1)
-            return det_bboxes, merged_classes_idxs
+            return det_bboxes, merged_labels
 
-        det_bboxes, keep = batched_nms(merged_bboxes, merged_scores,
-                                       merged_classes_idxs, self.test_cfg.nms)
+        det_bboxes, keep_idx = batched_nms(merged_bboxes, merged_scores,
+                                           merged_labels, self.test_cfg.nms)
         det_bboxes = det_bboxes[:self.test_cfg.max_per_img]
-        det_labels = merged_classes_idxs[keep][:self.test_cfg.max_per_img]
+        det_labels = merged_labels[keep_idx][:self.test_cfg.max_per_img]
 
         if rescale:
             _det_bboxes = det_bboxes
