@@ -57,6 +57,42 @@ def test_cascade_onnx_export():
             dynamic_axes=dynamic_axes)
 
 
+def test_cascade_onnx_export_normalize_in_graph():
+
+    config_path = './configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py'
+    cfg = mmcv.Config.fromfile(config_path)
+    model = build_detector(cfg.model, test_cfg=cfg.get('test_cfg'))
+    with torch.no_grad():
+        model.forward = partial(
+            model.forward, img_metas=[[cfg['img_norm_cfg']]])
+
+        dynamic_axes = {
+            'input_img': {
+                0: 'batch',
+                2: 'width',
+                3: 'height'
+            },
+            'dets': {
+                0: 'batch',
+                1: 'num_dets',
+            },
+            'labels': {
+                0: 'batch',
+                1: 'num_dets',
+            },
+        }
+        torch.onnx.export(
+            model, [torch.rand(1, 3, 400, 500)],
+            'tmp.onnx',
+            output_names=['dets', 'labels'],
+            input_names=['input_img'],
+            keep_initializers_as_inputs=True,
+            do_constant_folding=True,
+            verbose=False,
+            opset_version=11,
+            dynamic_axes=dynamic_axes)
+
+
 def test_faster_onnx_export():
 
     config_path = './configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
