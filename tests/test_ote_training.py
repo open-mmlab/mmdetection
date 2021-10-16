@@ -511,9 +511,6 @@ class OTETestPotEvaluationAction(BaseOTETestAction):
 class OTETestNNCFAction(BaseOTETestAction):
     _name = 'nncf'
 
-    def __init__(self, pot_subset=Subset.TRAINING):
-        self.pot_subset = pot_subset
-
     def _run_ote_nncf(self, data_collector,
                       model_template, dataset, trained_model,
                       environment):
