@@ -64,7 +64,15 @@ def test_cascade_onnx_export_normalize_in_graph():
     model = build_detector(cfg.model, test_cfg=cfg.get('test_cfg'))
     with torch.no_grad():
         model.forward = partial(
-            model.forward, img_metas=[[cfg['img_norm_cfg']]])
+            model.forward,
+            img_metas=[[{
+                'img_norm_cfg': {
+                    'mean':
+                    np.array(cfg['img_norm_cfg']['mean'], dtype=np.float32),
+                    'std':
+                    np.array(cfg['img_norm_cfg']['std'], dtype=np.float32),
+                }
+            }]])
 
         dynamic_axes = {
             'input_img': {
