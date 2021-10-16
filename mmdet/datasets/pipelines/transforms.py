@@ -2536,7 +2536,7 @@ class RandomAffine:
             num_bboxes = len(bboxes)
             if num_bboxes:
                 # homogeneous coordinates
-                xs = bboxes[:, [0, 2, 2, 0]].reshape(num_bboxes * 4)
+                xs = bboxes[:, [0, 0, 2, 2]].reshape(num_bboxes * 4)
                 ys = bboxes[:, [1, 3, 3, 1]].reshape(num_bboxes * 4)
                 ones = np.ones_like(xs)
                 points = np.vstack([xs, ys, ones])
