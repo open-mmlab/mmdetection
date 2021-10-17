@@ -17,6 +17,7 @@ import itertools
 import logging
 import os
 import os.path as osp
+from abc import ABC, abstractmethod
 from collections import namedtuple, OrderedDict
 from copy import deepcopy
 from pprint import pformat
@@ -169,19 +170,20 @@ def convert_hyperparams_to_dict(hyperparams):
         return d
     return _convert(hyperparams)
 
-class BaseOTETestAction:
+class BaseOTETestAction(ABC):
     _name = None
 
-    @classmethod
-    def get_name(cls):
-        return cls._name
+    @property
+    def name(self):
+        return type(self)._name
 
     def _check_result_prev_stages(self, results_prev_stages, list_required_stages):
         for stage_name in list_required_stages:
             if not results_prev_stages or stage_name not in results_prev_stages:
-                raise RuntimeError(f'The action {self.get_name()} requires results of the stage {stage_name}, '
+                raise RuntimeError(f'The action {self.name} requires results of the stage {stage_name}, '
                                    f'but they are absent')
 
+    @abstractmethod
     def __call__(self, data_collector: DataCollector,
                  results_prev_stages: Optional[OrderedDict]=None):
         raise NotImplementedError('The main action method is not implemented')
@@ -369,7 +371,7 @@ class OTETestExportAction(BaseOTETestAction):
     def _run_ote_export(self, data_collector,
                         environment, dataset, task):
         self.environment_for_export, self.exported_model = \
-                run_export(environment, dataset, task, action_name=self.get_name())
+                run_export(environment, dataset, task, action_name=self.name)
 
     def __call__(self, data_collector: DataCollector,
                  results_prev_stages: Optional[OrderedDict]=None):
@@ -613,7 +615,7 @@ class OTETestNNCFExportAction(BaseOTETestAction):
                              nncf_environment, dataset, nncf_task):
         logger.info('Begin export of nncf model')
         self.environment_nncf_export, self.nncf_exported_model = \
-                run_export(nncf_environment, dataset, nncf_task, action_name=self.get_name())
+                run_export(nncf_environment, dataset, nncf_task, action_name=self.name)
         logger.info('End export of nncf model')
 
     def __call__(self, data_collector: DataCollector,
@@ -687,7 +689,7 @@ class OTETestStage:
 
     @property
     def name(self):
-        return self.action.get_name()
+        return self.action.name
 
     def was_ok(self):
         return self.was_processed and (self.stored_exception is None)
