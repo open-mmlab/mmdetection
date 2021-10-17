@@ -65,7 +65,7 @@ optimizer_config = dict()
 lr_config = dict(
     policy='ReduceLROnPlateau',
     metric='mAP',
-    patience=3,
+    patience=5,
     iteration_patience=600,
     interval=1,
     min_lr=0.000008,
@@ -88,5 +88,5 @@ load_from = 'https://storage.openvinotoolkit.org/repositories/openvino_training_
 resume_from = None
 workflow = [('train', 1)]
 custom_hooks = [
-    dict(type='EarlyStoppingHook', patience=5, iteration_patience=1000, metric='mAP', interval=1, priority=75)
+    dict(type='EarlyStoppingHook', patience=8, iteration_patience=1000, metric='mAP', interval=1, priority=75)
 ]
