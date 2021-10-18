@@ -30,13 +30,12 @@ from ote_sdk.configuration import cfg_helper
 from ote_sdk.configuration.helper.utils import ids_to_strings
 from ote_sdk.entities.annotation import Annotation
 from ote_sdk.entities.datasets import DatasetEntity
-from ote_sdk.entities.inference_parameters import InferenceParameters
+from ote_sdk.entities.inference_parameters import InferenceParameters, default_progress_callback
 from ote_sdk.entities.model import ModelEntity, ModelFormat, ModelOptimizationType, ModelPrecision, ModelStatus
 from ote_sdk.entities.resultset import ResultSetEntity, ResultsetPurpose
 from ote_sdk.entities.scored_label import ScoredLabel
 from ote_sdk.entities.shapes.rectangle import Rectangle
 from ote_sdk.entities.task_environment import TaskEnvironment
-from ote_sdk.entities.train_parameters import default_progress_callback
 from ote_sdk.usecases.evaluation.metrics_helper import MetricsHelper
 from ote_sdk.usecases.tasks.interfaces.evaluate_interface import IEvaluationTask
 from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType, IExportTask
@@ -68,8 +67,6 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
         self._scratch_space = tempfile.mkdtemp(prefix="ote-det-scratch-")
         logger.info(f"Scratch space created at {self._scratch_space}")
 
-        self._hyperparams = hyperparams = task_environment.get_hyper_parameters(OTEDetectionConfig)
-
         self._model_name = task_environment.model_template.name
         self._labels = task_environment.get_labels(False)
 
@@ -80,7 +77,11 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
         config_file_path = os.path.join(self._base_dir, "model.py")
         self._config = Config.fromfile(config_file_path)
         patch_config(self._config, self._scratch_space, self._labels, random_seed=42)
-        set_hyperparams(self._config, hyperparams)
+        set_hyperparams(self._config, self._hyperparams)
+
+        # Set default model attributes.
+        self._optimization_methods = []
+        self._precision = [ModelPrecision.FP32]
 
         # Create and initialize PyTorch model.
         self._model = self._load_model(task_environment.model)
@@ -90,6 +91,9 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
         self._is_training = False
         self._should_stop = False
 
+    @property
+    def _hyperparams(self):
+        return self._task_environment.get_hyper_parameters(OTEDetectionConfig)
 
     def _load_model(self, model: ModelEntity):
         if model is not None:
@@ -234,9 +238,8 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
                  output_result_set: ResultSetEntity,
                  evaluation_metric: Optional[str] = None):
         """ Computes performance on a resultset """
-        params = self._hyperparams
 
-        result_based_confidence_threshold = params.postprocessing.result_based_confidence_threshold
+        result_based_confidence_threshold = self._hyperparams.postprocessing.result_based_confidence_threshold
 
         logger.info('Computing F-measure' + (' with auto threshold adjustment' if result_based_confidence_threshold else ''))
         f_measure_metrics = MetricsHelper.compute_f_measure(output_result_set,
@@ -250,11 +253,9 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
                 best_confidence_threshold = f_measure_metrics.best_confidence_threshold.value
                 if best_confidence_threshold is not None:
                     logger.info(f"Setting confidence_threshold to " f"{best_confidence_threshold} based on results")
-                    # params.postprocessing.confidence_threshold = best_confidence_threshold
                 else:
                     raise ValueError(f"Cannot compute metrics: Invalid confidence threshold!")
 
-            # self._task_environment.set_configurable_parameters(params)
         logger.info(f"F-measure after evaluation: {f_measure_metrics.f_measure.value}")
 
         output_result_set.performance = f_measure_metrics.get_performance()
@@ -316,7 +317,6 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
                export_type: ExportType,
                output_model: ModelEntity):
         assert export_type == ExportType.OPENVINO
-        optimized_model_precision = ModelPrecision.FP32
         output_model.model_format = ModelFormat.OPENVINO
         output_model.optimization_type = ModelOptimizationType.MO
         with tempfile.TemporaryDirectory() as tempdir:
@@ -330,15 +330,15 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
                     model = self._model.cuda(self._config.gpu_ids[0])
                 else:
                     model = self._model.cpu()
-                export_model(model, self._config, tempdir,
-                             target='openvino', precision=optimized_model_precision.name)
+                export_model(model, self._config, tempdir, target='openvino')
                 bin_file = [f for f in os.listdir(tempdir) if f.endswith('.bin')][0]
                 xml_file = [f for f in os.listdir(tempdir) if f.endswith('.xml')][0]
                 with open(os.path.join(tempdir, bin_file), "rb") as f:
                     output_model.set_data("openvino.bin", f.read())
                 with open(os.path.join(tempdir, xml_file), "rb") as f:
                     output_model.set_data("openvino.xml", f.read())
-                output_model.precision = [optimized_model_precision]
+                output_model.precision = self._precision
+                output_model.optimization_methods = self._optimization_methods
                 output_model.model_status = ModelStatus.SUCCESS
             except Exception as ex:
                 output_model.model_status = ModelStatus.FAILED
@@ -347,8 +347,7 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
 
     def save_model(self, output_model: ModelEntity):
         buffer = io.BytesIO()
-        hyperparams = self._task_environment.get_hyper_parameters(OTEDetectionConfig)
-        hyperparams_str = ids_to_strings(cfg_helper.convert(hyperparams, dict, enum_to_str=True))
+        hyperparams_str = ids_to_strings(cfg_helper.convert(self._hyperparams, dict, enum_to_str=True))
         labels = {label.name: label.color.rgb_tuple for label in self._labels}
         modelinfo = {'model': self._model.state_dict(), 'config': hyperparams_str, 'labels': labels, 'VERSION': 1}
         torch.save(modelinfo, buffer)
