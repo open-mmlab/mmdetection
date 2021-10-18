@@ -168,7 +168,7 @@ def delta2bbox(rois,
 
     Args:
         rois (Tensor): Boxes to be transformed. Has shape (N, 4).
-        deltas (Tensor): Encoded offsets with respect to each roi.
+        deltas (Tensor): Encoded offsets relative to each roi.
             Has shape (N, num_classes * 4) or (N, 4). Note
             N = num_base_anchors * W * H, when rois is a grid of
             anchors. Offset encoding follows [1]_.
@@ -181,10 +181,11 @@ def delta2bbox(rois,
         wh_ratio_clip (float): Maximum aspect ratio for boxes. Default
             16 / 1000.
         clip_border (bool, optional): Whether clip the objects outside the
-            border of the image. Defaults True.
-        add_ctr_clamp (bool): Whether to add center clamp, when added, the
-            predicted box is clamped is its center is too far away from
-            the original anchor's center. Only used by YOLOF. Default False.
+            border of the image. Default True.
+        add_ctr_clamp (bool): Whether to add center clamp. The center point
+            of the predicted bounding box will be clamped so that it will
+            not be far from the center of the anchor when set to True.
+            Only used by YOLOF. Default False.
         ctr_clamp (int): the maximum pixel shift to clamp. Only used by YOLOF.
             Default 32.
 
@@ -283,7 +284,7 @@ def onnx_delta2bbox(rois,
         wh_ratio_clip (float): Maximum aspect ratio for boxes.
             Default 16 / 1000.
         clip_border (bool, optional): Whether clip the objects outside the
-            border of the image. Defaults True.
+            border of the image. Default True.
         add_ctr_clamp (bool): Whether to add center clamp, when added, the
             predicted box is clamped is its center is too far away from
             the original anchor's center. Only used by YOLOF. Default False.

@@ -171,9 +171,9 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 # BG cat_id: num_class
                 scores = cls_score.softmax(-1)[:, :-1].flatten()
 
-            keep_idxs = scores > cfg.score_thr
-            scores = scores[keep_idxs]
-            topk_idxs = keep_idxs.nonzero(as_tuple=True)[0]
+            valid_masks = scores > cfg.score_thr
+            scores = scores[valid_masks]
+            topk_idxs = valid_masks.nonzero(as_tuple=True)[0]
 
             # 2. Keep top k top scoring boxes only
             num_topk = min(nms_pre, topk_idxs.size(0))

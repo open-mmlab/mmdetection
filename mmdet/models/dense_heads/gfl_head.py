@@ -437,9 +437,9 @@ class GFLHead(AnchorHead):
 
             scores = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels).sigmoid().flatten()
-            keep_idxs = scores > cfg.score_thr
-            scores = scores[keep_idxs]
-            topk_idxs = keep_idxs.nonzero(as_tuple=True)[0]
+            valid_mask = scores > cfg.score_thr
+            scores = scores[valid_mask]
+            topk_idxs = valid_mask.nonzero(as_tuple=True)[0]
 
             # 2. Keep top k top scoring boxes only
             num_topk = min(nms_pre, topk_idxs.size(0))
