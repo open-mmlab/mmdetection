@@ -2,6 +2,7 @@
     "base": {
         "find_unused_parameters": true,
         "nncf_config": {
+            "target_metric_name": "mAP",
             "input_info": {
                 "sample_size": [1, 3, 1333, 800]
             },
@@ -12,9 +13,6 @@
     "nncf_quantization": {
         "optimizer": {
             "lr": 0.0005
-        },
-        "runner": {
-            "max_epochs": 0
         },
         "nncf_config": {
             "compression": [
@@ -29,7 +27,14 @@
                         }
                     }
                 }
-            ]
+            ],
+            "accuracy_aware_training": {
+                "mode": "early_exit",
+                "params": {
+                    "maximal_absolute_accuracy_degradation": 0.01,
+                    "maximal_total_epochs": 20
+                }
+            }
         }
     },
 	"order_of_parts": [

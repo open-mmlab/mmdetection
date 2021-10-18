@@ -198,24 +198,51 @@ pot_parameters:
 nncf_optimization:
   description: Optimization by NNCF
   header: Optimization by NNCF
-  preset:
-    affects_outcome_of: NONE
-    default_value: Quantization
-    description: NNCF preset that defines compression scheme
-    editable: True
-    enum_name: NNCFCompressionPreset
-    header: Preset
-    options:
-      PRUNING: Pruning
-      QUANTIZATION: Quantization
-      QUANTIZATION_PRUNING: Quantization and pruning
-    type: SELECTABLE
+  enable_quantization:
+    affects_outcome_of: INFERENCE
+    default_value: True
+    description: Enable quantization algorithm
+    editable: false
+    header: Enable quantization algorithm
+    type: BOOLEAN
     ui_rules:
       action: DISABLE_EDITING
       operator: AND
       rules: []
       type: UI_RULES
-    value: Quantization
+    value: true
+    visible_in_ui: false
+    warning: null
+  enable_pruning:
+    affects_outcome_of: INFERENCE
+    default_value: false
+    description: Enable filter pruning algorithm
+    editable: true
+    header: Enable filter pruning algorithm
+    type: BOOLEAN
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: false
+    visible_in_ui: true
+    warning: null
+  maximal_accuracy_degradation:
+    affects_outcome_of: NONE
+    default_value: 1.0
+    description: The maximal allowed accuracy metric drop in absolute values
+    editable: True
+    header: Maximum accuracy degradation
+    max_value: 100.0
+    min_value: 0.0
+    type: FLOAT
+    ui_rules:
+      action: DISABLE_EDITING
+      operator: AND
+      rules: []
+      type: UI_RULES
+    value: 1.0
     visible_in_ui: True
     warning: null
   type: PARAMETER_GROUP

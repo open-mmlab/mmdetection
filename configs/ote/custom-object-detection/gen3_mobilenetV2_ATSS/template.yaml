@@ -30,8 +30,12 @@ hyper_parameters:
       num_iters:
         default_value: 300
     nncf_optimization:
-      preset:
-        default_value: Quantization
+      enable_quantization:
+        default_value: true
+      enable_pruning:
+        default_value: false
+      maximal_accuracy_degradation:
+        default_value: 0.01
 
 # Training resources.
 max_nodes: 1
