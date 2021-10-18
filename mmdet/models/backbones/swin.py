@@ -700,6 +700,18 @@ class SwinTransformer(BaseModule):
                 if k.startswith('backbone.'):
                     state_dict[k[9:]] = v
 
+            # check if without "backbone." prefix at all
+            # Please check the following issue.
+            # https://github.com/open-mmlab/mmdetection/pull/6205#issuecomment-945094259
+            # A : set convert_weights = True
+            #     backbone. prefix will be stripped and put into state_dict
+            # B : set convert_weights = True
+            #     no backbone. prefix, and the following "if" is activated
+            # C : set convert_weights = False ; similar to A
+            # D : set convert_weights = False ; similar to B
+            if len(state_dict) == 0:
+                state_dict = _state_dict
+
             if self.convert_weights:
                 # supported loading weight from original repo,
                 state_dict = swin_converter(state_dict)
