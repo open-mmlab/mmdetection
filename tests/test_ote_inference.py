@@ -20,11 +20,12 @@ import os.path as osp
 import torch
 import unittest
 from e2e_test_system import e2e_pytest_api
-from mmcv.parallel import scatter
+from mmcv.parallel import MMDataParallel
 from subprocess import run
 
-from mmdet.apis import init_detector
+from mmdet.apis import init_detector, single_gpu_test
 from mmdet.datasets import build_dataloader, build_dataset
+from mmdet.parallel import MMDataCPU
 
 MODEL_CONFIGS = [
     'configs/ote/custom-object-detection/gen3_resnet50_VFNet/model.py',
@@ -116,19 +117,13 @@ class TestInference(unittest.TestCase):
             dist=False,
             shuffle=False)
 
-        results = []
-        prog_bar = mmcv.ProgressBar(len(dataset))
-        for data in data_loader:
-            # just get the actual data from DataContainer
-            data['img_metas'] = data['img_metas'][0].data
-            data['img'] = [data['img'][0].data]
-            if next(model.parameters()).is_cuda:
-                # scatter to specified GPU
-                data = scatter(data, [device])[0]
-            with torch.no_grad():
-                result = model(return_loss=False, rescale=True, **data)
-            batch_size = len(result)
-            results.extend(result)
-            for _ in range(batch_size):
-                prog_bar.update()
+        if 'cuda' in device and torch.cuda.is_available():
+            device_id = int(device.split(':')[-1])
+            model = MMDataParallel(
+                model.cuda(device_id), device_ids=[device_id])
+        else:
+            model = MMDataCPU(model)
+            model.to(device)
+
+        results = single_gpu_test(model, data_loader)
         dataset.evaluate(results)

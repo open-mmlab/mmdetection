@@ -17,8 +17,7 @@ import cv2
 import mmcv
 import numpy as np
 import sys
-import torch
-from mmcv.parallel import DataContainer, collate
+from mmcv.parallel import collate
 
 from mmdet.apis.inference import LoadImage
 from mmdet.core import encode_mask_results
@@ -145,10 +144,12 @@ def main(args):
     if backend == 'openvino':
         extra_args = {}
         if cfg.model.type == 'MaskTextSpotter':
-            from mmdet.utils.deployment.openvino_backend import MaskTextSpotterOpenVINO as Model
+            from mmdet.utils.deployment.openvino_backend import \
+                MaskTextSpotterOpenVINO as Model
             extra_args['text_recognition_thr'] = cfg['model'].get('roi_head', {}).get('text_thr', 0.0)
         else:
-            from mmdet.utils.deployment.openvino_backend import Detector as Model
+            from mmdet.utils.deployment.openvino_backend import \
+                Detector as Model
 
         model = Model(args.model,
                       cfg=cfg,
