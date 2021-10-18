@@ -67,7 +67,12 @@ def main(args):
         check_nncf_is_enabled()
         cfg.load_from = args.checkpoint
         cfg.resume_from = None
-        compression_ctrl, model = wrap_nncf_model(model, cfg, None, get_fake_input,
+        compression_ctrl, model = wrap_nncf_model(model, cfg,
+                                                  distributed=False,
+                                                  val_dataloader=None,
+                                                  dataloader_for_init=None,
+                                                  get_fake_input_func=get_fake_input,
+                                                  is_accuracy_aware=False,
                                                   is_alt_ssd_export=is_alt_ssd_export)
         compression_ctrl.prepare_for_export()
 

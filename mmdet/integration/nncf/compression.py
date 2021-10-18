@@ -5,7 +5,7 @@ import tempfile
 import mmcv
 import torch
 
-from mmdet.utils import get_root_logger
+from mmdet.utils import get_root_logger, prepare_mmdet_model_for_execution
 from .utils import (check_nncf_is_enabled, get_nncf_version, is_nncf_enabled,
                     load_checkpoint, no_nncf_trace)
 
@@ -97,10 +97,13 @@ def extract_model_and_compression_states(resuming_checkpoint):
 
 def wrap_nncf_model(model,
                     cfg,
-                    data_loader_for_init=None,
+                    distributed=False,
+                    val_dataloader=None,
+                    dataloader_for_init=None,
                     get_fake_input_func=None,
-                    is_alt_ssd_export=False,
-                    init_state_dict=None):
+                    init_state_dict=None,
+                    is_accuracy_aware=False,
+                    is_alt_ssd_export=False):
     """
     The function wraps mmdet model by NNCF
     Note that the parameter `get_fake_input_func` should be the function `get_fake_input`
@@ -120,7 +123,7 @@ def wrap_nncf_model(model,
 
     class MMInitializeDataLoader(PTInitializingDataLoader):
         def get_inputs(self, dataloader_output):
-            # redefined InitializingDataLoader because
+            # redefined PTInitializingDataLoader because
             # of DataContainer format in mmdet
             kwargs = {k: v.data[0] for k, v in dataloader_output.items()}
             return (), kwargs
@@ -130,9 +133,59 @@ def wrap_nncf_model(model,
     logger = get_root_logger(cfg.log_level)
     resuming_state_dict = None
 
-    if data_loader_for_init:
-        wrapped_loader = MMInitializeDataLoader(data_loader_for_init)
-        nncf_config = register_default_init_args(nncf_config, wrapped_loader, device=next(model.parameters()).device)
+    def model_eval_fn(model):
+        """
+        Runs evaluation of the model on the validation set and
+        returns the target metric value.
+        Used to evaluate the original model before compression
+        if NNCF-based accuracy-aware training is used.
+        """
+        if val_dataloader is None:
+            raise RuntimeError('Cannot perform model evaluation on the validation '
+                               'dataset since the validation data loader was not passed '
+                               'to wrap_nncf_model')
+        from mmdet.apis import single_gpu_test, multi_gpu_test
+        from functools import partial
+
+        metric_name = nncf_config.get('target_metric_name')
+        forward_backup = model.forward
+        model_forward = type(model).forward
+        model.forward = model_forward.__get__(model)
+        model.forward = partial(model.forward, return_loss=False)
+        prepared_model = prepare_mmdet_model_for_execution(model, cfg, distributed)
+
+        logger.info(f'Calculating an original model accuracy')
+
+        if distributed:
+            dist_eval_res = [None]
+            results = multi_gpu_test(prepared_model, val_dataloader, gpu_collect=True)
+            if torch.distributed.get_rank() == 0:
+                eval_res = val_dataloader.dataset.evaluate(results)
+                if metric_name not in eval_res:
+                    raise RuntimeError(f'Cannot find {metric_name} metric in '
+                                       'the evaluation result dict')
+                dist_eval_res[0] = eval_res
+
+            torch.distributed.broadcast_object_list(dist_eval_res, src=0)
+            model.forward = forward_backup
+            return dist_eval_res[0][metric_name]
+        else:
+            results = single_gpu_test(prepared_model, val_dataloader, show=False)
+            eval_res = val_dataloader.dataset.evaluate(results)
+
+            if metric_name not in eval_res:
+                raise RuntimeError(f'Cannot find {metric_name} metric in '
+                                   f'the evaluation result dict {eval_res.keys()}')
+
+            model.forward = forward_backup
+            return eval_res[metric_name]
+
+    if dataloader_for_init:
+        wrapped_loader = MMInitializeDataLoader(dataloader_for_init)
+        eval_fn = model_eval_fn if is_accuracy_aware else None
+        nncf_config = register_default_init_args(nncf_config, wrapped_loader,
+                                                 model_eval_fn=eval_fn,
+                                                 device=next(model.parameters()).device)
 
     if cfg.get('resume_from'):
         checkpoint_path = cfg.get('resume_from')
@@ -148,8 +201,8 @@ def wrap_nncf_model(model,
     else:
         checkpoint_path = None
 
-    if not data_loader_for_init and not checkpoint_path and not init_state_dict:
-        raise RuntimeError('Either data_loader_for_init or NNCF pre-trained '
+    if not dataloader_for_init and not checkpoint_path and not init_state_dict:
+        raise RuntimeError('Either dataloader_for_init or NNCF pre-trained '
                            'model checkpoint should be set')
 
     if checkpoint_path:
