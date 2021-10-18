@@ -55,6 +55,19 @@ from mmdet.integration.nncf.utils import is_nncf_enabled
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG) #TODO(lbeynens): REMOVE BEFORE MERGE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+
+# This string constant will be used as a special constant for a config field
+# value to point that the field should be filled in tests' code by some default
+# value specific for this field.
+def DEFAULT_FIELD_VALUE_FOR_USING_IN_TEST():
+    return 'DEFAULT_FIELD_VALUE_FOR_USING_IN_TEST'
+
+# This string constant will be used as a special constant for a config field value to point
+# that the field should NOT be changed in tests -- its value should be taken
+# from the template file or the config file of the model.
+def KEEP_FIELD_VALUE_FROM_CONFIG():
+    return 'KEEP_FIELD_VALUE_FROM_CONFIG'
+
 def DATASET_PARAMETERS_FIELDS():
     return ('annotations_train',
             'images_train_dir',
@@ -249,15 +262,24 @@ class OTETestTrainingAction(BaseOTETestAction):
         logger.debug('Setup environment')
         params = create(hyper_parameters)
         logger.debug('Set hyperparameters')
-        params.learning_parameters.num_iters = self.num_training_iters
-        if self.num_training_iters < 20:
+        if self.num_training_iters != KEEP_FIELD_VALUE_FROM_CONFIG():
+            params.learning_parameters.num_iters = int(self.num_training_iters)
+            logger.debug(f'Set params.learning_parameters.num_iters={params.learning_parameters.num_iters}')
+        else:
+            logger.debug(f'Keep params.learning_parameters.num_iters={params.learning_parameters.num_iters}')
+
+        if params.learning_parameters.num_iters < 20:
             num_checkpoints = 2
-        elif self.num_training_iters < 1000:
+        elif params.learning_parameters.num_iters < 1000:
             num_checkpoints = 10
         else:
             num_checkpoints = 30
 
-        params.learning_parameters.batch_size = self.batch_size
+        if self.batch_size != KEEP_FIELD_VALUE_FROM_CONFIG():
+            params.learning_parameters.batch_size = int(self.batch_size)
+            logger.debug(f'Set params.learning_parameters.batch_size={params.learning_parameters.batch_size}')
+        else:
+            logger.debug(f'Keep params.learning_parameters.batch_size={params.learning_parameters.batch_size}')
 
         params.learning_parameters.num_checkpoints = num_checkpoints
 
@@ -818,8 +840,6 @@ class TestOTEIntegration:
     """
     PERFORMANCE_RESULTS = None # it is required for e2e system
 
-    DEFAULT_NUM_ITERS = 1
-    DEFAULT_BATCH_SIZE = 2
     SHORT_TEST_PARAMETERS_NAMES_FOR_GENERATING_ID = OrderedDict([
             ('test_stage', 'ACTION'),
             ('model_name', 'model'),
@@ -841,28 +861,22 @@ class TestOTEIntegration:
                                               'num_training_iters',
                                               'batch_size')
 
+    DEFAULT_NUM_ITERS = 1
+    DEFAULT_BATCH_SIZE = 2
+
     # Note that each test bunch describes a group of similar tests
     # If 'model_name' or 'dataset_name' are lists, cartesian product of tests will be run.
+    # Each item may contain the following fields:
+    #    * model_name
+    #    * dataset_name
+    #    * usecase
+    #    * num_training_iters -- either integer value, or DEFAULT_FIELD_VALUE_FOR_USING_IN_TEST,
+    #                            or KEEP_FIELD_VALUE_FROM_CONFIG;
+    #                            if None or absent, then DEFAULT_FIELD_VALUE_FOR_USING_IN_TEST is used
+    #    * batch_size -- either integer value, or DEFAULT_FIELD_VALUE_FOR_USING_IN_TEST,
+    #                    or KEEP_FIELD_VALUE_FROM_CONFIG;
+    #                    if None or absent, then DEFAULT_FIELD_VALUE_FOR_USING_IN_TEST is used
     test_bunches = [
-#           dict(
-#               model_name=[
-#                   'face-detection-0200',
-#                   'face-detection-0202',
-#                   'face-detection-0204',
-#                   'face-detection-0205',
-#                   'face-detection-0206',
-#                   'face-detection-0207',
-#               ],
-#               dataset_name='airport_faces',
-#               usecase='precommit',
-#           ),
-#           dict(
-#               model_name=[
-#                   'horizontal-text-detection-0001',
-#               ],
-#               dataset_name='horizontal_text_detection',
-#               usecase='precommit',
-#           ),
             dict(
                 model_name=[
                    'gen1_mobilenet_v2-2s_ssd-256x256',
@@ -882,37 +896,15 @@ class TestOTEIntegration:
                 dataset_name='dataset1_tiled_shortened_500_A',
                 usecase='precommit',
             ),
-#            dict(
-#                model_name=[
-#                    'person-detection-0200',
-#                    'person-detection-0201',
-#                    'person-detection-0202',
-#                    'person-detection-0203'
-#                ],
-#                dataset_name='airport_person',
-#                usecase='precommit',
-#            ),
-#            dict(
-#                model_name=[
-#                    'person-vehicle-bike-detection-2000',
-#                    'person-vehicle-bike-detection-2001',
-#                    'person-vehicle-bike-detection-2002',
-#                    'person-vehicle-bike-detection-2003',
-#                    'person-vehicle-bike-detection-2004'
-#                ],
-#                dataset_name='airport_example',
-#                usecase='precommit',
-#            ),
-#            dict(
-#                model_name=[
-#                    'vehicle-detection-0200',
-#                    'vehicle-detection-0201',
-#                    'vehicle-detection-0202',
-#                    'vehicle-detection-0203',
-#                ],
-#                dataset_name='vehicle_detection',
-#                usecase='precommit',
-#            ),
+            dict(
+                model_name=[
+                   'gen3_mobilenetV2_ATSS',
+                ],
+                dataset_name='bbcd',
+                num_training_iters=KEEP_FIELD_VALUE_FROM_CONFIG(),
+                batch_size=KEEP_FIELD_VALUE_FROM_CONFIG(),
+                usecase='reallife',
+            ),
     ]
 
     @staticmethod
@@ -921,8 +913,13 @@ class TestOTEIntegration:
 
     @classmethod
     def _fill_test_parameters_default_values(cls, test_parameters):
-        test_parameters['num_training_iters'] = test_parameters.get('num_training_iters', cls.DEFAULT_NUM_ITERS)
-        test_parameters['batch_size'] = test_parameters.get('batch_size', cls.DEFAULT_BATCH_SIZE)
+        def __set_default_if_required(key, default_val):
+            val = test_parameters.get(key)
+            if val is None or val == DEFAULT_FIELD_VALUE_FOR_USING_IN_TEST():
+                test_parameters[key] = default_val
+
+        __set_default_if_required('num_training_iters', cls.DEFAULT_NUM_ITERS)
+        __set_default_if_required('batch_size',  cls.DEFAULT_BATCH_SIZE)
 
     @classmethod
     def _generate_test_id(cls, test_parameters):
@@ -1035,8 +1032,8 @@ class TestOTEIntegration:
 
             model_name = test_parameters['model_name']
             dataset_name = test_parameters['dataset_name']
-            num_training_iters = int(test_parameters['num_training_iters'])
-            batch_size = int(test_parameters['batch_size'])
+            num_training_iters = test_parameters['num_training_iters']
+            batch_size = test_parameters['batch_size']
 
             dataset_params = _get_dataset_params_from_dataset_definitions(dataset_definitions, dataset_name)
             template_path = _make_path_be_abs(template_paths[model_name], template_paths[ROOT_PATH_KEY])
