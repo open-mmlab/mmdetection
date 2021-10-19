@@ -125,7 +125,7 @@ class CSPDarknet(BaseModule):
     """CSP-Darknet backbone used in YOLOv5 and YOLOX.
 
     Args:
-        arch (str): Architechture of CSP-Darknet, from {P5, P6}.
+        arch (str): Architecture of CSP-Darknet, from {P5, P6}.
             Default: P5.
         deepen_factor (float): Depth multiplier, multiply number of
             channels in each layer by this amount. Default: 1.0.

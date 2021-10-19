@@ -34,7 +34,7 @@ def onnx2tensorrt(onnx_file,
     min_shape = input_config['min_shape']
     opt_shape = input_config['opt_shape']
     fp16_mode = False
-    # create trt engine and wraper
+    # create trt engine and wrapper
     opt_shape_dict = {'input': [min_shape, opt_shape, max_shape]}
     max_workspace_size = get_GiB(workspace_size)
     trt_engine = onnx2trt(

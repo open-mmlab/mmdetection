@@ -266,7 +266,7 @@ bash tools/dist_test.sh \
 - `--show-dir`: 如果指明，检测结果将会被绘制在图像上并保存到指定目录。它只适用于单 GPU 的测试，是用于调试和可视化的。即使你的环境中没有 GUI，这个选项也可使用。
 - `--show-score-thr`: 如果指明，得分低于此阈值的检测结果将会被移除。
 - `--cfg-options`:  如果指明，这里的键值对将会被合并到配置文件中。
-- `--eval-options`: 如果指明，这里的键值对将会作为字典参数被传入 `dataset.evalutation()` 函数中，仅在测试阶段使用。
+- `--eval-options`: 如果指明，这里的键值对将会作为字典参数被传入 `dataset.evaluation()` 函数中，仅在测试阶段使用。
 
 ### 样例
 

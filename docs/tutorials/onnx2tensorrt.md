@@ -7,7 +7,7 @@
     - [Prerequisite](#prerequisite)
     - [Usage](#usage)
   - [How to evaluate the exported models](#how-to-evaluate-the-exported-models)
-  - [List of supported models convertable to TensorRT](#list-of-supported-models-convertable-to-tensorrt)
+  - [List of supported models convertible to TensorRT](#list-of-supported-models-convertible-to-tensorrt)
   - [Reminders](#reminders)
   - [FAQs](#faqs)
 
@@ -73,9 +73,9 @@ Please refer to following links for more information.
 - [how-to-evaluate-the-exported-models](pytorch2onnx.md#how-to-evaluate-the-exported-models)
 - [results-and-models](pytorch2onnx.md#results-and-models)
 
-## List of supported models convertable to TensorRT
+## List of supported models convertible to TensorRT
 
-The table below lists the models that are guaranteed to be convertable to TensorRT.
+The table below lists the models that are guaranteed to be convertible to TensorRT.
 
 |    Model     |                        Config                        | Dynamic Shape | Batch Inference | Note  |
 | :----------: | :--------------------------------------------------: | :-----------: | :-------------: | :---: |
