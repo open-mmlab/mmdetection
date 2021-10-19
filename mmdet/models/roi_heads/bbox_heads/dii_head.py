@@ -189,11 +189,12 @@ class DIIHead(BBoxHead):
         for reg_layer in self.reg_fcs:
             reg_feat = reg_layer(reg_feat)
 
-        cls_score = self.fc_cls(cls_feat).view(N, num_proposals, -1)
-        bbox_delta = self.fc_reg(reg_feat).view(N, num_proposals, -1)
+        cls_score = self.fc_cls(cls_feat).view(N, num_proposals,
+                                               self.num_classes)
+        bbox_delta = self.fc_reg(reg_feat).view(N, num_proposals, 4)
 
-        return cls_score, bbox_delta, obj_feat.view(N, num_proposals,
-                                                    -1), attn_feats
+        return cls_score, bbox_delta, obj_feat.view(
+            N, num_proposals, self.in_channels), attn_feats
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
     def loss(self,
