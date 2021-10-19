@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
+
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule
@@ -128,10 +130,6 @@ class FoveaHead(AnchorFreeHead):
         cls_score = self.conv_cls(cls_feat)
         return cls_score, bbox_pred
 
-    def _get_points_single(self, *args, **kwargs):
-        y, x = super()._get_points_single(*args, **kwargs)
-        return y + 0.5, x + 0.5
-
     def loss(self,
              cls_scores,
              bbox_preds,
@@ -142,8 +140,9 @@ class FoveaHead(AnchorFreeHead):
         assert len(cls_scores) == len(bbox_preds)
 
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
-                                 bbox_preds[0].device)
+        points = self.prior_generator.grid_priors(featmap_sizes,
+                                                  bbox_preds[0].dtype,
+                                                  bbox_preds[0].device)
         num_imgs = cls_scores[0].size(0)
         flatten_cls_scores = [
             cls_score.permute(0, 2, 3, 1).reshape(-1, self.cls_out_channels)
@@ -216,9 +215,11 @@ class FoveaHead(AnchorFreeHead):
         bbox_target_list = []
         # for each pyramid, find the cls and box target
         for base_len, (lower_bound, upper_bound), stride, featmap_size, \
-            (y, x) in zip(self.base_edge_list, self.scale_ranges,
+            points in zip(self.base_edge_list, self.scale_ranges,
                           self.strides, featmap_size_list, point_list):
             # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
+            points = points.view(*featmap_size, 2)
+            x, y = points[..., 0], points[..., 1]
             labels = gt_labels_raw.new_zeros(featmap_size) + self.num_classes
             bbox_targets = gt_bboxes_raw.new(featmap_size[0], featmap_size[1],
                                              4) + 1
@@ -253,13 +254,13 @@ class FoveaHead(AnchorFreeHead):
                         gt_bboxes_raw[hit_indices, :]):
                 labels[py1:py2 + 1, px1:px2 + 1] = label
                 bbox_targets[py1:py2 + 1, px1:px2 + 1, 0] = \
-                    (stride * x[py1:py2 + 1, px1:px2 + 1] - gt_x1) / base_len
+                    (x[py1:py2 + 1, px1:px2 + 1] - gt_x1) / base_len
                 bbox_targets[py1:py2 + 1, px1:px2 + 1, 1] = \
-                    (stride * y[py1:py2 + 1, px1:px2 + 1] - gt_y1) / base_len
+                    (y[py1:py2 + 1, px1:px2 + 1] - gt_y1) / base_len
                 bbox_targets[py1:py2 + 1, px1:px2 + 1, 2] = \
-                    (gt_x2 - stride * x[py1:py2 + 1, px1:px2 + 1]) / base_len
+                    (gt_x2 - x[py1:py2 + 1, px1:px2 + 1]) / base_len
                 bbox_targets[py1:py2 + 1, px1:px2 + 1, 3] = \
-                    (gt_y2 - stride * y[py1:py2 + 1, px1:px2 + 1]) / base_len
+                    (gt_y2 - y[py1:py2 + 1, px1:px2 + 1]) / base_len
             bbox_targets = bbox_targets.clamp(min=1. / 16, max=16.)
             label_list.append(labels)
             bbox_target_list.append(torch.log(bbox_targets))
@@ -359,3 +360,13 @@ class FoveaHead(AnchorFreeHead):
             clamp(min=0, max=max_shape[0] - 1)
         decoded_bboxes = torch.stack([x1, y1, x2, y2], -1)
         return decoded_bboxes
+
+    def _get_points_single(self, *args, **kwargs):
+
+        warnings.warn(
+            '`_get_points_single` in `FoveaHead` will be '
+            'deprecated soon, we support a multi level point generator now'
+            'you can get points of single level '
+            'with `self.prior_generator.single_level_grid_priors` ')
+        y, x = super()._get_points_single(*args, **kwargs)
+        return y + 0.5, x + 0.5
