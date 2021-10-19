@@ -444,13 +444,6 @@ class OTETestPotAction(BaseOTETestAction):
         self.optimized_model_pot = ModelEntity(
             dataset,
             self.environment_for_pot.get_model_configuration(),
-            optimization_type=ModelOptimizationType.POT,
-            optimization_methods=OptimizationMethod.QUANTIZATION,
-            optimization_objectives={},
-            precision=[ModelPrecision.INT8],
-            target_device=TargetDevice.CPU,
-            performance_improvement={},
-            model_size_reduction=1.,
             model_status=ModelStatus.NOT_READY)
         logger.info('Run POT optimization')
         self.openvino_task_pot.optimize(
@@ -460,7 +453,7 @@ class OTETestPotAction(BaseOTETestAction):
             OptimizationParameters())
         assert self.optimized_model_pot.model_status == ModelStatus.SUCCESS, 'POT optimization was not successful'
         assert self.optimized_model_pot.model_format == ModelFormat.OPENVINO, 'Wrong model format after pot'
-        assert self.optimized_model_pot.optimization_type == ModelOptimizationType.POT, 'Wrong optimization type'
+        assert self.optimized_model_pot.optimization_type == OptimizationType.POT, 'Wrong optimization type'
         logger.info('POT optimization is finished')
 
     def __call__(self, data_collector: DataCollector,
@@ -531,13 +524,6 @@ class OTETestNNCFAction(BaseOTETestAction):
         self.nncf_model = ModelEntity(
             dataset,
             self.environment_for_nncf.get_model_configuration(),
-            optimization_type=ModelOptimizationType.NNCF,
-            optimization_methods=OptimizationMethod.QUANTIZATION,
-            optimization_objectives={},
-            precision=[ModelPrecision.INT8],
-            target_device=TargetDevice.CPU,
-            performance_improvement={},
-            model_size_reduction=1.,
             model_status=ModelStatus.NOT_READY)
         self.nncf_model.set_data('weights.pth', trained_model.get_data('weights.pth'))
 
@@ -552,7 +538,7 @@ class OTETestNNCFAction(BaseOTETestAction):
                                 self.nncf_model,
                                 OptimizationParameters())
         assert self.nncf_model.model_status == ModelStatus.SUCCESS, 'NNCF optimization was not successful'
-        assert self.nncf_model.optimization_type == ModelOptimizationType.NNCF, 'Wrong optimization type'
+        assert self.nncf_model.optimization_type == OptimizationType.NNCF, 'Wrong optimization type'
         logger.info('NNCF optimization is finished')
 
 
