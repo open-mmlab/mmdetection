@@ -237,7 +237,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         featmap_sizes = [pred_map.shape[-2:] for pred_map in pred_maps]
 
         mlvl_anchors = self.prior_generator.grid_priors(
-            featmap_sizes, pred_maps[0].device)
+            featmap_sizes, device=pred_maps[0].device)
         flatten_preds = []
         flatten_strides = []
         for pred, stride in zip(pred_maps, self.featmap_strides):
@@ -321,7 +321,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             pred_maps[i].shape[-2:] for i in range(self.num_levels)
         ]
         multi_level_anchors = self.prior_generator.grid_priors(
-            featmap_sizes, device)
+            featmap_sizes, device=device)
         anchor_list = [multi_level_anchors for _ in range(num_imgs)]
 
         responsible_flag_list = []

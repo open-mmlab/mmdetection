@@ -734,7 +734,7 @@ class RepPointsHead(AnchorFreeHead):
                 scores = scores[topk_inds, :]
             else:
                 points = self.prior_generator.single_level_grid_priors(
-                    featmap_size_hw, level_idx, scores.device)
+                    featmap_size_hw, level_idx, scores.dtype, scores.device)
 
             bboxes = self._bbox_decode(points, bbox_pred,
                                        self.point_strides[level_idx],

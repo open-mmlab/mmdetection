@@ -446,7 +446,7 @@ class GFLHead(AnchorHead):
                     scores.device)
             else:
                 anchors = self.prior_generator.single_level_grid_priors(
-                    featmap_size_hw, level_idx, scores.device)
+                    featmap_size_hw, level_idx, scores.dtype, scores.device)
 
             bboxes = self.bbox_coder.decode(
                 self.anchor_center(anchors), bbox_pred, max_shape=img_shape)
