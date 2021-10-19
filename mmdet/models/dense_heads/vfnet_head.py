@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -7,7 +9,7 @@ from mmcv.ops import DeformConv2d
 from mmcv.runner import force_fp32
 
 from mmdet.core import (MlvlPointGenerator, bbox2distance, bbox_overlaps,
-                        build_anchor_generator, build_assigner, build_sampler,
+                        build_assigner, build_prior_generator, build_sampler,
                         distance2bbox, multi_apply, reduce_mean)
 from ..builder import HEADS, build_loss
 from .atss_head import ATSSHead
@@ -149,19 +151,40 @@ class VFNetHead(ATSSHead, FCOSHead):
         self.use_atss = use_atss
         self.reg_decoded_bbox = reg_decoded_bbox
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
-        self.prior_generator = build_anchor_generator(anchor_generator)
+
         self.anchor_center_offset = anchor_generator['center_offset']
-        self.num_anchors = self.prior_generator.num_base_anchors[0]
+
+        # usually the numbers of anchors for each level are the same
+        # except SSD detectors, so it is a int in most densehead and
+        # it will be a list of int in SSDHead
+        self.num_base_priors = self.prior_generator.num_base_priors[0]
         self.sampling = False
         if self.train_cfg:
             self.assigner = build_assigner(self.train_cfg.assigner)
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
+        # only be used in `get_atss_targets` when `use_atss` is True
+        self.atss_prior_generator = build_prior_generator(anchor_generator)
 
-        # in order to unify the get_bbox logic. Not needed during training.
-        self.test_prior_generator = MlvlPointGenerator(
+        self.fcos_prior_generator = MlvlPointGenerator(
             anchor_generator['strides'],
             self.anchor_center_offset if self.use_atss else 0.5)
+
+        # In order to reuse the `get_bboxes` in `BaseDenseHead.
+        # Only be used in testing phase.
+        self.prior_generator = self.fcos_prior_generator
+
+    @property
+    def num_anchors(self):
+        warnings.warn('DeprecationWarning: `num_anchors` is deprecated, '
+                      'please use "num_base_priors" instead')
+        return self.atss_prior_generator.num_base_priors[0]
+
+    @property
+    def anchor_generator(self):
+        warnings.warn('DeprecationWarning: anchor_generator is deprecated, '
+                      'please use "atss_prior_generator" instead')
+        return self.prior_generator
 
     def _init_layers(self):
         """Initialize layers of the head."""
@@ -279,8 +302,6 @@ class VFNetHead(ATSSHead, FCOSHead):
         if self.training:
             return cls_score, bbox_pred, bbox_pred_refine
         else:
-            # TODO： Find a better way
-            self.prior_generator = self.test_prior_generator
             return cls_score, bbox_pred_refine
 
     def star_dcn_offset(self, bbox_pred, gradient_mul, stride):
@@ -359,8 +380,8 @@ class VFNetHead(ATSSHead, FCOSHead):
         """
         assert len(cls_scores) == len(bbox_preds) == len(bbox_preds_refine)
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        all_level_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
-                                           bbox_preds[0].device)
+        all_level_points = self.fcos_prior_generator.grid_priors(
+            featmap_sizes, bbox_preds[0].dtype, bbox_preds[0].device)
         labels, label_weights, bbox_targets, bbox_weights = self.get_targets(
             cls_scores, all_level_points, gt_bboxes, gt_labels, img_metas,
             gt_bboxes_ignore)
@@ -472,29 +493,6 @@ class VFNetHead(ATSSHead, FCOSHead):
             loss_bbox=loss_bbox,
             loss_bbox_rf=loss_bbox_refine)
 
-    def _get_points_single(self,
-                           featmap_size,
-                           stride,
-                           dtype,
-                           device,
-                           flatten=False):
-        """Get points according to feature map sizes."""
-        h, w = featmap_size
-        x_range = torch.arange(
-            0, w * stride, stride, dtype=dtype, device=device)
-        y_range = torch.arange(
-            0, h * stride, stride, dtype=dtype, device=device)
-        y, x = torch.meshgrid(y_range, x_range)
-        # to be compatible with anchor points in ATSS
-        if self.use_atss:
-            points = torch.stack(
-                (x.reshape(-1), y.reshape(-1)), dim=-1) + \
-                     stride * self.anchor_center_offset
-        else:
-            points = torch.stack(
-                (x.reshape(-1), y.reshape(-1)), dim=-1) + stride // 2
-        return points
-
     def get_targets(self, cls_scores, mlvl_points, gt_bboxes, gt_labels,
                     img_metas, gt_bboxes_ignore):
         """A wrapper for computing ATSS and FCOS targets for points in multiple
@@ -563,6 +561,36 @@ class VFNetHead(ATSSHead, FCOSHead):
         bbox_weights = None
         return labels, label_weights, bbox_targets, bbox_weights
 
+    def get_anchors(self, featmap_sizes, img_metas, device='cuda'):
+        """Get anchors according to feature map sizes.
+
+        Args:
+            featmap_sizes (list[tuple]): Multi-level feature map sizes.
+            img_metas (list[dict]): Image meta info.
+            device (torch.device | str): Device for returned tensors
+
+        Returns:
+            tuple:
+                anchor_list (list[Tensor]): Anchors of each image.
+                valid_flag_list (list[Tensor]): Valid flags of each image.
+        """
+        num_imgs = len(img_metas)
+
+        # since feature map sizes of all images are the same, we only compute
+        # anchors for one time
+        multi_level_anchors = self.atss_prior_generator.grid_priors(
+            featmap_sizes, device=device)
+        anchor_list = [multi_level_anchors for _ in range(num_imgs)]
+
+        # for each image, we compute valid flags of multi level anchors
+        valid_flag_list = []
+        for img_id, img_meta in enumerate(img_metas):
+            multi_level_flags = self.atss_prior_generator.valid_flags(
+                featmap_sizes, img_meta['pad_shape'], device=device)
+            valid_flag_list.append(multi_level_flags)
+
+        return anchor_list, valid_flag_list
+
     def get_atss_targets(self,
                          cls_scores,
                          mlvl_points,
@@ -595,9 +623,13 @@ class VFNetHead(ATSSHead, FCOSHead):
                 bbox_weights (Tensor): Bbox weights of all levels.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == self.prior_generator.num_levels
+        assert len(
+            featmap_sizes
+        ) == self.atss_prior_generator.num_levels == \
+            self.fcos_prior_generator.num_levels
 
         device = cls_scores[0].device
+
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_metas, device=device)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
@@ -668,3 +700,33 @@ class VFNetHead(ATSSHead, FCOSHead):
         """Override the method in the parent class to avoid changing para's
         name."""
         pass
+
+    def _get_points_single(self,
+                           featmap_size,
+                           stride,
+                           dtype,
+                           device,
+                           flatten=False):
+        """Get points according to feature map sizes."""
+
+        warnings.warn(
+            '`_get_points_single` in `VFNetHead` will be '
+            'deprecated soon, we support a multi level point generator now'
+            'you can get points of single level '
+            'with `self.fcos_prior_generator.single_level_grid_priors` ')
+
+        h, w = featmap_size
+        x_range = torch.arange(
+            0, w * stride, stride, dtype=dtype, device=device)
+        y_range = torch.arange(
+            0, h * stride, stride, dtype=dtype, device=device)
+        y, x = torch.meshgrid(y_range, x_range)
+        # to be compatible with anchor points in ATSS
+        if self.use_atss:
+            points = torch.stack(
+                (x.reshape(-1), y.reshape(-1)), dim=-1) + \
+                     stride * self.anchor_center_offset
+        else:
+            points = torch.stack(
+                (x.reshape(-1), y.reshape(-1)), dim=-1) + stride // 2
+        return points

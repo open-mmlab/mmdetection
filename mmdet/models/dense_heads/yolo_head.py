@@ -114,6 +114,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         self.loss_conf = build_loss(loss_conf)
         self.loss_xy = build_loss(loss_xy)
         self.loss_wh = build_loss(loss_wh)
+
         # usually the numbers of anchors for each level are the same
         # except SSD detectors
         self.num_base_priors = self.prior_generator.num_base_priors[0]

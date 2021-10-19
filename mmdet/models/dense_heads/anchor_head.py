@@ -96,7 +96,8 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         self.prior_generator = build_prior_generator(anchor_generator)
 
         # usually the numbers of anchors for each level are the same
-        # except SSD detectors
+        # except SSD detectors, so it is a int in most densehead and
+        # it will be a list of int in SSDHead
         self.num_base_priors = self.prior_generator.num_base_priors[0]
         self._init_layers()
 
