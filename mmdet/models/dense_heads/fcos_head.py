@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -193,8 +195,8 @@ class FCOSHead(AnchorFreeHead):
         """
         assert len(cls_scores) == len(bbox_preds) == len(centernesses)
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        all_level_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
-                                           bbox_preds[0].device)
+        all_level_points = self.prior_generator.grid_priors(
+            featmap_sizes, bbox_preds[0].dtype, bbox_preds[0].device)
         labels, bbox_targets = self.get_targets(all_level_points, gt_bboxes,
                                                 gt_labels)
 
@@ -260,18 +262,6 @@ class FCOSHead(AnchorFreeHead):
             loss_cls=loss_cls,
             loss_bbox=loss_bbox,
             loss_centerness=loss_centerness)
-
-    def _get_points_single(self,
-                           featmap_size,
-                           stride,
-                           dtype,
-                           device,
-                           flatten=False):
-        """Get points according to feature map sizes."""
-        y, x = super()._get_points_single(featmap_size, stride, dtype, device)
-        points = torch.stack((x.reshape(-1) * stride, y.reshape(-1) * stride),
-                             dim=-1) + stride // 2
-        return points
 
     def get_targets(self, points, gt_bboxes_list, gt_labels_list):
         """Compute regression, classification and centerness targets for points
@@ -438,3 +428,21 @@ class FCOSHead(AnchorFreeHead):
                 left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) * (
                     top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0])
         return torch.sqrt(centerness_targets)
+
+    def _get_points_single(self,
+                           featmap_size,
+                           stride,
+                           dtype,
+                           device,
+                           flatten=False):
+        """Get points according to feature map sizes."""
+        warnings.warn(
+            '`_get_points_single` in `FCOSHead` will be '
+            'deprecated soon, we support a multi level point generator now'
+            'you can get points of single level '
+            'with `self.prior_generator.single_level_grid_priors` ')
+
+        y, x = super()._get_points_single(featmap_size, stride, dtype, device)
+        points = torch.stack((x.reshape(-1) * stride, y.reshape(-1) * stride),
+                             dim=-1) + stride // 2
+        return points

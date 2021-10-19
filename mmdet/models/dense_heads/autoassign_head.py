@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -174,22 +176,6 @@ class AutoAssignHead(FCOSHead):
         normal_init(self.conv_cls, std=0.01, bias=bias_cls)
         normal_init(self.conv_reg, std=0.01, bias=4.0)
 
-    def _get_points_single(self,
-                           featmap_size,
-                           stride,
-                           dtype,
-                           device,
-                           flatten=False):
-        """Almost the same as the implementation in fcos, we remove half stride
-        offset to align with the original implementation."""
-
-        y, x = super(FCOSHead,
-                     self)._get_points_single(featmap_size, stride, dtype,
-                                              device)
-        points = torch.stack((x.reshape(-1) * stride, y.reshape(-1) * stride),
-                             dim=-1)
-        return points
-
     def forward_single(self, x, scale, stride):
         """Forward features of a single scale level.
 
@@ -349,8 +335,8 @@ class AutoAssignHead(FCOSHead):
         assert len(cls_scores) == len(bbox_preds) == len(objectnesses)
         all_num_gt = sum([len(item) for item in gt_bboxes])
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        all_level_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
-                                           bbox_preds[0].device)
+        all_level_points = self.prior_generator.grid_priors(
+            featmap_sizes, bbox_preds[0].dtype, bbox_preds[0].device)
         inside_gt_bbox_mask_list, bbox_targets_list = self.get_targets(
             all_level_points, gt_bboxes)
 
@@ -364,7 +350,6 @@ class AutoAssignHead(FCOSHead):
             center_prior_weight_list.append(center_prior_weight)
             temp_inside_gt_bbox_mask_list.append(inside_gt_bbox_mask)
         inside_gt_bbox_mask_list = temp_inside_gt_bbox_mask_list
-
         mlvl_points = torch.cat(all_level_points, dim=0)
         bbox_preds = levels_to_images(bbox_preds)
         cls_scores = levels_to_images(cls_scores)
@@ -511,3 +496,23 @@ class AutoAssignHead(FCOSHead):
                                                          dtype=torch.bool)
 
         return inside_gt_bbox_mask, bbox_targets
+
+    def _get_points_single(self,
+                           featmap_size,
+                           stride,
+                           dtype,
+                           device,
+                           flatten=False):
+        """Almost the same as the implementation in fcos, we remove half stride
+        offset to align with the original implementation."""
+        warnings.warn(
+            '`_get_points_single` in `AutoAssignHead` will be '
+            'deprecated soon, we support a multi level point generator now'
+            'you can get points of single level '
+            'with `self.prior_generator.single_level_grid_priors` ')
+        y, x = super(FCOSHead,
+                     self)._get_points_single(featmap_size, stride, dtype,
+                                              device)
+        points = torch.stack((x.reshape(-1) * stride, y.reshape(-1) * stride),
+                             dim=-1)
+        return points
