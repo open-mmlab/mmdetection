@@ -12,6 +12,7 @@ from .cascade_roi_head import CascadeRoIHead
 class SparseRoIHead(CascadeRoIHead):
     r"""The RoIHead for `Sparse R-CNN: End-to-End Object Detection with
     Learnable Proposals <https://arxiv.org/abs/2011.12450>`_
+    and `Instances as Queries <http://arxiv.org/abs/2105.01928>`_
 
     Args:
         num_stages (int): Number of stage whole iterative process.
@@ -20,7 +21,9 @@ class SparseRoIHead(CascadeRoIHead):
             weight of each stage. By default all stages have
             the same weight 1.
         bbox_roi_extractor (dict): Config of box roi extractor.
+        mask_roi_extractor (dict): Config of mask roi extractor.
         bbox_head (dict): Config of box head.
+        mask_head (dict): Config of mask head.
         train_cfg (dict, optional): Configuration information in train stage.
             Defaults to None.
         test_cfg (dict, optional): Configuration information in test stage.
@@ -80,7 +83,7 @@ class SparseRoIHead(CascadeRoIHead):
         if train_cfg is not None:
             for stage in range(num_stages):
                 assert isinstance(self.bbox_sampler[stage], PseudoSampler), \
-                    'Sparse R-CNN only support `PseudoSampler`'
+                    'Sparse R-CNN and QueryInst only support `PseudoSampler`'
 
     def _bbox_forward(self, stage, x, rois, object_feats, img_metas):
         """Box head forward function used in both training and testing. Returns
@@ -146,6 +149,7 @@ class SparseRoIHead(CascadeRoIHead):
         return bbox_results
 
     def _mask_forward(self, stage, x, rois, attn_feats):
+        """Mask head forward function used in both training and testing."""
         mask_roi_extractor = self.mask_roi_extractor[stage]
         mask_head = self.mask_head[stage]
         mask_feats = mask_roi_extractor(x[:mask_roi_extractor.num_inputs],
@@ -158,7 +162,8 @@ class SparseRoIHead(CascadeRoIHead):
 
     def _mask_forward_train(self, stage, x, attn_feats, sampling_results,
                             gt_masks, rcnn_train_cfg):
-
+        """Run forward function and calculate loss for mask head in
+        training."""
         pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
         attn_feats = torch.cat([
             feats[res.pos_inds]
@@ -292,12 +297,14 @@ class SparseRoIHead(CascadeRoIHead):
                 space. Defaults to False.
 
         Returns:
-            bbox_results (list[tuple[np.ndarray]]): \
-                [[cls1_det, cls2_det, ...], ...]. \
-                The outer list indicates images, and the inner \
-                list indicates per-class detected bboxes. The \
-                np.ndarray has shape (num_det, 5) and the last \
-                dimension 5 represents (x1, y1, x2, y2, score).
+            list[list[np.ndarray]] or list[tuple]: When no mask branch,
+            it is bbox results of each image and classes with type
+            `list[list[np.ndarray]]`. The outer list
+            corresponds to each image. The inner list
+            corresponds to each class. When the model has mask branch,
+            it contains bbox results and mask results.
+            The outer list corresponds to each image, and first element
+            of tuple is bbox results, second element is mask results.
         """
         assert self.with_bbox, 'Bbox head must be implemented.'
         # Decode initial proposals
@@ -398,7 +405,8 @@ class SparseRoIHead(CascadeRoIHead):
         return results
 
     def aug_test(self, features, proposal_list, img_metas, rescale=False):
-        raise NotImplementedError('Sparse R-CNN does not support `aug_test`')
+        raise NotImplementedError(
+            'Sparse R-CNN and QueryInst does not support `aug_test`')
 
     def forward_dummy(self, x, proposal_boxes, proposal_features, img_metas):
         """Dummy forward function when do the flops computing."""
@@ -411,7 +419,13 @@ class SparseRoIHead(CascadeRoIHead):
                 bbox_results = self._bbox_forward(stage, x, rois, object_feats,
                                                   img_metas)
 
-                all_stage_bbox_results.append(bbox_results)
+                all_stage_bbox_results.append((bbox_results, ))
                 proposal_list = bbox_results['detach_proposal_list']
                 object_feats = bbox_results['object_feats']
+
+                if self.with_mask:
+                    rois = bbox2roi(proposal_list)
+                    mask_results = self._mask_forward(
+                        stage, x, rois, bbox_results['attn_feats'])
+                    all_stage_bbox_results[-1] += (mask_results, )
         return all_stage_bbox_results
