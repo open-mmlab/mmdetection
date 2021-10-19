@@ -61,6 +61,14 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
         """"
         Task for inference object detection models using OTEDetection.
         """
+        from mmdet.utils.collect_env import collect_env
+        print('ENVIRONMENT:')
+        for name, val in collect_env().items():
+            print(f'{name}: {val}')
+
+        from subprocess import run
+        print('pip list:')
+        run('pip list', shell=True, check=True)
         self._task_environment = task_environment
 
         logger.info(f"Loading OTEDetectionInferenceTask.")
