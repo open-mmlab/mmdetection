@@ -10,8 +10,8 @@ from mmcv.cnn import (ConvModule, bias_init_with_prob, constant_init, is_norm,
                       normal_init)
 from mmcv.runner import force_fp32
 
-from mmdet.core import (build_anchor_generator, build_assigner,
-                        build_bbox_coder, build_sampler, images_to_levels,
+from mmdet.core import (build_assigner, build_bbox_coder,
+                        build_prior_generator, build_sampler, images_to_levels,
                         multi_apply, multiclass_nms)
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
@@ -107,7 +107,8 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         self.act_cfg = act_cfg
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
-        self.anchor_generator = build_anchor_generator(anchor_generator)
+
+        self.prior_generator = build_prior_generator(anchor_generator)
 
         self.loss_cls = build_loss(loss_cls)
         self.loss_conf = build_loss(loss_conf)
@@ -115,10 +116,22 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         self.loss_wh = build_loss(loss_wh)
         # usually the numbers of anchors for each level are the same
         # except SSD detectors
-        self.num_anchors = self.anchor_generator.num_base_anchors[0]
+        self.num_base_priors = self.prior_generator.num_base_priors[0]
         assert len(
-            self.anchor_generator.num_base_anchors) == len(featmap_strides)
+            self.prior_generator.num_base_priors) == len(featmap_strides)
         self._init_layers()
+
+    @property
+    def anchor_generator(self):
+        warnings.warn('DeprecationWarning: `anchor_generator` is deprecated, '
+                      'please use "prior_generator" instead')
+        return self.prior_generator
+
+    @property
+    def num_anchors(self):
+        warnings.warn('DeprecationWarning: `num_anchors` is deprecated, '
+                      'please use "num_base_priors" instead')
+        return self.prior_generator.num_base_priors[0]
 
     @property
     def num_levels(self):
@@ -144,7 +157,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                 norm_cfg=self.norm_cfg,
                 act_cfg=self.act_cfg)
             conv_pred = nn.Conv2d(self.out_channels[i],
-                                  self.num_anchors * self.num_attrib, 1)
+                                  self.num_base_priors * self.num_attrib, 1)
 
             self.convs_bridge.append(conv_bridge)
             self.convs_pred.append(conv_pred)
@@ -158,7 +171,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
 
         # Use prior in model initialization to improve stability
         for conv_pred, stride in zip(self.convs_pred, self.featmap_strides):
-            bias = conv_pred.bias.reshape(self.num_anchors, -1)
+            bias = conv_pred.bias.reshape(self.num_base_priors, -1)
             # init objectness with prior of 8 objects per feature map
             # refer to https://github.com/ultralytics/yolov3
             nn.init.constant_(bias.data[:, 4],
@@ -223,7 +236,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         num_imgs = len(img_metas)
         featmap_sizes = [pred_map.shape[-2:] for pred_map in pred_maps]
 
-        mlvl_anchors = self.anchor_generator.grid_anchors(
+        mlvl_anchors = self.prior_generator.grid_priors(
             featmap_sizes, pred_maps[0].device)
         flatten_preds = []
         flatten_strides = []
@@ -307,15 +320,16 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         featmap_sizes = [
             pred_maps[i].shape[-2:] for i in range(self.num_levels)
         ]
-        multi_level_anchors = self.anchor_generator.grid_anchors(
+        multi_level_anchors = self.prior_generator.grid_priors(
             featmap_sizes, device)
         anchor_list = [multi_level_anchors for _ in range(num_imgs)]
 
         responsible_flag_list = []
         for img_id in range(len(img_metas)):
             responsible_flag_list.append(
-                self.anchor_generator.responsible_flags(
-                    featmap_sizes, gt_bboxes[img_id], device))
+                self.prior_generator.responsible_flags(featmap_sizes,
+                                                       gt_bboxes[img_id],
+                                                       device))
 
         target_maps_list, neg_maps_list = self.get_targets(
             anchor_list, responsible_flag_list, gt_bboxes, gt_labels)
@@ -503,7 +517,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         featmap_sizes = [
             pred_maps_list[i].shape[-2:] for i in range(self.num_levels)
         ]
-        multi_lvl_anchors = self.anchor_generator.grid_anchors(
+        multi_lvl_anchors = self.prior_generator.grid_priors(
             featmap_sizes, device)
         # convert to tensor to keep tracing
         nms_pre_tensor = torch.tensor(
