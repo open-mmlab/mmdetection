@@ -16,8 +16,8 @@ class PanopticFPNHead(BaseSemanticHead):
 
     In this head, the number of output channels is ``num_stuff_classes
     + 1``, including all stuff classes and one thing class. The stuff
-    classes will be reset from ``0`` to ``num_stuff_classes - 1``,
-    the thing classes will merged to ``num_stuff_classes``.
+    classes will be reset from ``0`` to ``num_stuff_classes - 1``, the
+    thing classes will be merged to ``num_stuff_classes``-th channel.
 
     Arg:
         num_things_classes (int): Number of thing classes. Default: 80.
@@ -109,8 +109,8 @@ class PanopticFPNHead(BaseSemanticHead):
         """Merge thing classes to one class.
 
         In PanopticFPN, the background labels will be reset from `0` to
-        `self.num_stuff_classes-1`, the foreground labels will merged to
-        `self.num_stuff_classes`.
+        `self.num_stuff_classes-1`, the foreground labels will be merged to
+        `self.num_stuff_classes`-th channel.
         """
         gt_semantic_seg = gt_semantic_seg.int()
         fg_mask = gt_semantic_seg < self.num_things_classes
