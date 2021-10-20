@@ -9,7 +9,6 @@ from mmdet.models.losses import (BalancedL1Loss, CrossEntropyLoss, DiceLoss,
                                  KnowledgeDistillationKLDivLoss, L1Loss,
                                  MSELoss, QualityFocalLoss, SeesawLoss,
                                  SmoothL1Loss, VarifocalLoss)
-from mmdet.models.losses.dice_loss import DiceLoss
 from mmdet.models.losses.ghm_loss import GHMC, GHMR
 from mmdet.models.losses.iou_loss import (BoundedIoULoss, CIoULoss, DIoULoss,
                                           GIoULoss, IoULoss)
@@ -47,7 +46,7 @@ def test_loss_with_reduction_override(loss_class):
 
 @pytest.mark.parametrize('loss_class', [
     IoULoss, BoundedIoULoss, GIoULoss, DIoULoss, CIoULoss, MSELoss, L1Loss,
-    SmoothL1Loss, BalancedL1Loss, DiceLoss
+    SmoothL1Loss, BalancedL1Loss
 ])
 @pytest.mark.parametrize('input_shape', [(10, 4), (0, 4)])
 def test_regression_losses(loss_class, input_shape):
