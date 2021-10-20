@@ -14,11 +14,17 @@ from .base_semantic_head import BaseSemanticHead
 class PanopticFPNHead(BaseSemanticHead):
     """PanopticFPNHead used in Panoptic FPN.
 
+    In this head, the number of output channels is `num_stuff_classes
+    + 1`, including all stuff classes and one thing class. The stuff
+    classes will be reset from `0` to `num_stuff_classes - 1`,
+    the thing classes will merged to `num_stuff_classes`.
+
     Arg:
-        num_classes (int): Number of classes, including all stuff
-            classes and one thing class. Default: 54.
         num_things_classes (int): Number of thing classes. Default: 80.
         num_stuff_classes (int): Number of stuff classes. Default: 53.
+        num_classes (int): Number of classes, including all stuff
+            classes and one thing class. Deprecated, please set
+            `num_stuff_classes + 1` directly.
         in_channels (int): Number of channels in the input feature
             map.
         inner_channels (int): Number of channels in inner features.
@@ -42,9 +48,9 @@ class PanopticFPNHead(BaseSemanticHead):
     """
 
     def __init__(self,
-                 num_classes=54,
                  num_things_classes=80,
                  num_stuff_classes=53,
+                 num_classes=None,
                  in_channels=256,
                  inner_channels=128,
                  start_level=0,
@@ -57,7 +63,15 @@ class PanopticFPNHead(BaseSemanticHead):
                  loss_seg=dict(
                      type='CrossEntropyLoss', ignore_index=-1,
                      loss_weight=1.0)):
-        super(PanopticFPNHead, self).__init__(num_classes, init_cfg, loss_seg)
+        if num_classes is not None:
+            warnings.warn(
+                '`num_classes` is deprecated now, please set '
+                '`num_stuff_classes` directly, the `num_classes` will be ',
+                'set to `num_stuff_classes + 1', DeprecationWarning)
+            # num_classes = num_stuff_classes + 1 for PanopticFPN.
+            assert num_classes == num_stuff_classes + 1
+        super(PanopticFPNHead, self).__init__(num_stuff_classes + 1, init_cfg,
+                                              loss_seg)
         self.num_things_classes = num_things_classes
         self.num_stuff_classes = num_stuff_classes
         if fg_range is not None and bg_range is not None:
@@ -70,8 +84,6 @@ class PanopticFPNHead(BaseSemanticHead):
                 f'please use `num_things_classes`={self.num_things_classes} '
                 f'and `num_stuff_classes`={self.num_stuff_classes} instead.',
                 DeprecationWarning)
-        # num_classes = num_stuff + 1 for PanopticFPN.
-        assert num_classes == num_stuff_classes + 1
 
         # Used feature layers are [start_level, end_level)
         self.start_level = start_level
