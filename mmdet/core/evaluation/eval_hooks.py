@@ -8,6 +8,9 @@ from mmcv.utils import is_seq_of
 from torch.nn.modules.batchnorm import _BatchNorm
 from torch.utils.data import DataLoader
 
+from pprint import pprint, pformat
+import traceback
+
 
 class EvalHook(Hook):
     """Non-Distributed evaluation hook.
@@ -75,6 +78,25 @@ class EvalHook(Hook):
                  greater_keys=None,
                  less_keys=None,
                  **eval_kwargs):
+        if True:
+            print(':::: DEBUG: EvalHook: BEGIN')
+            print('PARAMS=')
+            pprint([
+                f'dataloader={dataloader}\n',
+                f'start={start}\n',
+                f'interval={interval}\n',
+                f'by_epoch={by_epoch}\n',
+                f'save_best={save_best}\n',
+                f'rule={rule}\n',
+                f'test_fn={test_fn}\n',
+                f'greater_keys={greater_keys}\n',
+                f'less_keys={less_keys}\n',
+                f'eval_kwargs={pformat(eval_kwargs)}\n',
+                ])
+            print('', flush=True)
+            traceback.print_stack()
+            print(':::: DEBUG: EvalHook: END', flush=True)
+
         if not isinstance(dataloader, DataLoader):
             raise TypeError(f'dataloader must be a pytorch DataLoader, '
                             f'but got {type(dataloader)}')
@@ -215,6 +237,10 @@ class EvalHook(Hook):
         """perform evaluation and save ckpt."""
         if not self._should_evaluate(runner):
             return
+        if True:
+            print(':::: DEBUG: EvalHook._do_evaluate', flush=True)
+            traceback.print_stack()
+            print(':::: DEBUG: EvalHook._do_evaluate')
 
         from mmdet.apis import single_gpu_test
         results = single_gpu_test(runner.model, self.dataloader, show=False)
@@ -300,6 +326,8 @@ class EvalHook(Hook):
             results, logger=runner.logger, **self.eval_kwargs)
         for name, val in eval_res.items():
             runner.log_buffer.output[name] = val
+            if True:
+                print(f':::: DEBUG: EvalHook: {name}={val}', flush=True)
             # TODO: Log is cleared in Logger.after_train_iter before ReduceOnPlateau could get the metric
             setattr(runner, name, val)
         runner.log_buffer.ready = True
