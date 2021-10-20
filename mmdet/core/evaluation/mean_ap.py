@@ -90,9 +90,9 @@ def tpfp_imagenet(det_bboxes,
     assert gt_bboxes_group_of is None and \
            ioa_thr is None and \
            use_group_of is False, \
-        '`gt_bboxes_group_of` and `ioa_thr` should be None and ' \
-        '`use_group_of` should be False. ' \
-        'Only used in `tpfp_openimage`'
+           '`gt_bboxes_group_of` and `ioa_thr` should be None and ' \
+           '`use_group_of` should be False. ' \
+           'Only used in `tpfp_openimage`'
 
     if not use_legacy_coordinate:
         extra_length = 0.
@@ -182,10 +182,7 @@ def tpfp_openimage(det_bboxes,
                    ioa_thr=0.5,
                    area_ranges=None,
                    use_group_of=True):
-    '''
-    This is the original one, before add into tpfp_default
-
-    '''
+    """This is the original one, before add into tpfp_default."""
     # an indicator of ignored gts
     gt_ignore_inds = np.concatenate(
         (np.zeros(gt_bboxes.shape[0], dtype=np.bool),
@@ -210,7 +207,7 @@ def tpfp_openimage(det_bboxes,
                 fp[...] = 1
             else:
                 det_areas = (det_bboxes[:, 2] - det_bboxes[:, 0]) * (
-                        det_bboxes[:, 3] - det_bboxes[:, 1])
+                    det_bboxes[:, 3] - det_bboxes[:, 1])
                 for i, (min_area, max_area) in enumerate(area_ranges):
                     fp[i, (det_areas >= min_area) & (det_areas < max_area)] = 1
             return tp, fp, det_bboxes
@@ -231,9 +228,9 @@ def tpfp_openimage(det_bboxes,
                     gt_area_ignore = np.zeros_like(gt_ignore_inds, dtype=bool)
                 else:
                     gt_areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (
-                            gt_bboxes[:, 3] - gt_bboxes[:, 1])
+                        gt_bboxes[:, 3] - gt_bboxes[:, 1])
                     gt_area_ignore = (gt_areas < min_area) | (
-                            gt_areas >= max_area)
+                        gt_areas >= max_area)
                 for i in sort_inds:
                     if ious_max[i] >= iou_thr:
                         matched_gt = ious_argmax[i]
@@ -273,9 +270,9 @@ def tpfp_openimage(det_bboxes,
                     gt_area_ignore = np.zeros_like(gt_ignore_inds, dtype=bool)
                 else:
                     gt_areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (
-                            gt_bboxes[:, 3] - gt_bboxes[:, 1])
+                        gt_bboxes[:, 3] - gt_bboxes[:, 1])
                     gt_area_ignore = (gt_areas < min_area) | (
-                            gt_areas >= max_area)
+                        gt_areas >= max_area)
                 for i in sort_inds:
                     matched_gt = ioas_argmax[i]
                     if not box_is_covered[i]:
@@ -323,6 +320,7 @@ def tpfp_default(det_bboxes,
             of shape (k, 4). Default: None
         iou_thr (float): IoU threshold to be considered as matched.
             Default: 0.5.
+        ioa_thr
         area_ranges (list[tuple] | None): Range of bbox areas to be
             evaluated, in the format [(min1, max1), (min2, max2), ...].
             Default: None.
@@ -339,9 +337,9 @@ def tpfp_default(det_bboxes,
     assert gt_bboxes_group_of is None and \
            ioa_thr is None and \
            use_group_of is False, \
-        '`gt_bboxes_group_of` and `ioa_thr` should be None and ' \
-        '`use_group_of` should be False. ' \
-        'Only used in `tpfp_openimage`'
+           '`gt_bboxes_group_of` and `ioa_thr` should be None and ' \
+           '`use_group_of` should be False. ' \
+           'Only used in `tpfp_openimage`'
 
     if not use_legacy_coordinate:
         extra_length = 0.
@@ -403,8 +401,9 @@ def tpfp_default(det_bboxes,
             if min_area is None:
                 gt_area_ignore = np.zeros_like(gt_ignore_inds, dtype=bool)
             else:
-                gt_areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0] + extra_length) * (
-                    gt_bboxes[:, 3] - gt_bboxes[:, 1] + extra_length)
+                gt_areas = (
+                    gt_bboxes[:, 2] - gt_bboxes[:, 0] + extra_length) * (
+                        gt_bboxes[:, 3] - gt_bboxes[:, 1] + extra_length)
                 gt_area_ignore = (gt_areas < min_area) | (gt_areas >= max_area)
             for i in sort_inds:
                 if ious_max[i] >= iou_thr:
@@ -446,9 +445,8 @@ def tpfp_default(det_bboxes,
                 gt_area_ignore = np.zeros_like(gt_ignore_inds, dtype=bool)
             else:
                 gt_areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (
-                        gt_bboxes[:, 3] - gt_bboxes[:, 1])
-                gt_area_ignore = (gt_areas < min_area) | (
-                        gt_areas >= max_area)
+                    gt_bboxes[:, 3] - gt_bboxes[:, 1])
+                gt_area_ignore = (gt_areas < min_area) | (gt_areas >= max_area)
             for i in sort_inds:
                 matched_gt = ioas_argmax[i]
                 if not box_is_covered[i]:
@@ -502,7 +500,7 @@ def get_cls_results(det_results, annotations, class_id):
         else:
             cls_gts_ignore.append(np.empty((0, 4), dtype=np.float32))
         if ann.get('is_group_of', None) is not None:
-                is_group_ofs.append(ann['is_group_of'][gt_inds])
+            is_group_ofs.append(ann['is_group_of'][gt_inds])
 
     return cls_dets, cls_gts, cls_gts_ignore, is_group_ofs
 
@@ -589,8 +587,8 @@ def eval_map(det_results,
         tpfp = pool.starmap(
             tpfp_fn,
             zip(cls_dets, cls_gts, cls_gts_ignore, is_group_ofs,
-                [iou_thr for _ in range(num_imgs)],
-                [ioa_thr for _ in range(num_imgs)],
+                [iou_thr
+                 for _ in range(num_imgs)], [ioa_thr for _ in range(num_imgs)],
                 [area_ranges for _ in range(num_imgs)],
                 [use_legacy_coordinate for _ in range(num_imgs)],
                 [use_group_of for _ in range(num_imgs)]))
