@@ -144,10 +144,12 @@ def main(args):
     if backend == 'openvino':
         extra_args = {}
         if cfg.model.type == 'MaskTextSpotter':
-            from mmdet.utils.deployment.openvino_backend import MaskTextSpotterOpenVINO as Model
+            from mmdet.utils.deployment.openvino_backend import \
+                MaskTextSpotterOpenVINO as Model
             extra_args['text_recognition_thr'] = cfg['model'].get('roi_head', {}).get('text_thr', 0.0)
         else:
-            from mmdet.utils.deployment.openvino_backend import Detector as Model
+            from mmdet.utils.deployment.openvino_backend import \
+                Detector as Model
 
         model = Model(args.model,
                       cfg=cfg,
@@ -160,7 +162,7 @@ def main(args):
     results = []
     prog_bar = mmcv.ProgressBar(len(dataset))
     for i, data in enumerate(data_loader):
-        im_data = data['img'][0].cpu().numpy()
+        im_data = data['img'][0].data[0].cpu().numpy()
         try:
             result = model(im_data)
             result = postprocess(
@@ -192,9 +194,7 @@ def main(args):
 
             model.show(display_image, result, score_thr=args.score_thr, wait_time=wait_key)
 
-        batch_size = data['img'][0].size(0)
-        for _ in range(batch_size):
-            prog_bar.update()
+        prog_bar.update()
 
     if args.out:
         print(f'\nwriting results to {args.out}')
