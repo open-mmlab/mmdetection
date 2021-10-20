@@ -102,7 +102,7 @@ class PanopticFPNHead(BaseSemanticHead):
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
                 ))
-        self.conv_logits = nn.Conv2d(inner_channels, num_classes, 1)
+        self.conv_logits = nn.Conv2d(inner_channels, self.num_classes, 1)
 
     def _set_things_to_void(self, gt_semantic_seg):
         """Merge thing classes to one class.
