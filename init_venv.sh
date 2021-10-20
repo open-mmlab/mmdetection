@@ -80,20 +80,9 @@ else
   # Remove dots from CUDA version string, if any.
   CUDA_VERSION_CODE=$(echo ${CUDA_VERSION} | sed -e "s/\.//" -e "s/\(...\).*/\1/")
   echo "Using CUDA_VERSION ${CUDA_VERSION}"
-  if [[ "${CUDA_VERSION_CODE}" != "111" && "${CUDA_VERSION_CODE}" != "102" ]] ; then
-    echo "CUDA version must be either 10.2 or 11.1"
+  if [[ "${CUDA_VERSION_CODE}" != "111" ]] ; then
+    echo "CUDA version must be 11.1"
     exit 1
-  fi
-  if [[ "${CUDA_VERSION_CODE}" == "102" ]] ; then
-    if [[ "${TORCH_VERSION}" != "1.8.2" ]] && [[ "${TORCH_VERSION}" != "1.9.0" ]]; then
-      echo "if CUDA version is 10.2, then PyTorch must be either 1.8.2 or 1.9.0"
-      exit 1
-    fi
-  elif [[ "${CUDA_VERSION_CODE}" == "111" ]] ; then
-    if [[ "${TORCH_VERSION}" != "1.9.0" ]] && [[ "${TORCH_VERSION}" != "1.8.2" ]]; then
-      echo "if CUDA version is 11.1, then PyTorch must be 1.9.0 or"
-      exit 1
-    fi
   fi
 fi
 
@@ -109,11 +98,6 @@ if [[ -z $CUDA_VERSION_CODE ]]; then
           -c ${CONSTRAINTS_FILE} || exit 1
   echo torch==${TORCH_VERSION}+cpu >> ${CONSTRAINTS_FILE}
   echo torchvision==${TORCHVISION_VERSION}+cpu >> ${CONSTRAINTS_FILE}
-elif [[ $CUDA_VERSION_CODE == "102" ]]; then
-  pip install torch==${TORCH_VERSION}+cu${CUDA_VERSION_CODE} torchvision==${TORCHVISION_VERSION}+cu${CUDA_VERSION_CODE} -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html \
-          -c ${CONSTRAINTS_FILE} || exit 1
-  echo torch==${TORCH_VERSION} >> ${CONSTRAINTS_FILE}
-  echo torchvision==${TORCHVISION_VERSION} >> ${CONSTRAINTS_FILE}
 else
   pip install torch==${TORCH_VERSION}+cu${CUDA_VERSION_CODE} torchvision==${TORCHVISION_VERSION}+cu${CUDA_VERSION_CODE} -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html \
           -c ${CONSTRAINTS_FILE} || exit 1
@@ -121,11 +105,7 @@ else
   echo torchvision==${TORCHVISION_VERSION}+cu${CUDA_VERSION_CODE} >> ${CONSTRAINTS_FILE}
 fi
 
-if [[ -z $CUDA_VERSION_CODE ]]; then
-  pip install --no-cache-dir mmcv-full==${MMCV_VERSION} -f https://download.openmmlab.com/mmcv/dist/cpu/torch${TORCH_VERSION}/index.html -c ${CONSTRAINTS_FILE} || exit 1
-else
-  pip install --no-cache-dir mmcv-full==${MMCV_VERSION} -f https://download.openmmlab.com/mmcv/dist/cu${CUDA_VERSION_CODE}/torch${TORCH_VERSION}/index.html -c ${CONSTRAINTS_FILE} || exit 1
-fi
+pip install --no-cache-dir mmcv-full==${MMCV_VERSION}
 
 # Install other requirements.
 # Install mmpycocotools and Polygon3 from source to make sure it is compatible with installed numpy version.
@@ -143,11 +123,6 @@ echo "Build NNCF extensions ..."
 python -c "import nncf"
 
 pip install -e $SC_SDK_REPO/src/ote_sdk -c ${CONSTRAINTS_FILE} || exit 1
-pip install -e $SC_SDK_REPO/src/sc_sdk -c ${CONSTRAINTS_FILE} || exit 1
-pip install -e $SC_SDK_REPO/src/common/users_handler -c ${CONSTRAINTS_FILE} || exit 1
-if [[ -z ${SKIP_SC_SDK_ADDITIONAL_PACKAGES} ]]; then
-  pip install `find $SC_SDK_REPO/.cache -name *.whl` || exit 1
-fi
 
 deactivate
 
