@@ -14,31 +14,33 @@ from .base_semantic_head import BaseSemanticHead
 class PanopticFPNHead(BaseSemanticHead):
     """PanopticFPNHead used in Panoptic FPN.
 
-    In this head, the number of output channels is `num_stuff_classes
-    + 1`, including all stuff classes and one thing class. The stuff
-    classes will be reset from `0` to `num_stuff_classes - 1`,
-    the thing classes will merged to `num_stuff_classes`.
+    In this head, the number of output channels is ``num_stuff_classes
+    + 1``, including all stuff classes and one thing class. The stuff
+    classes will be reset from ``0`` to ``num_stuff_classes - 1``,
+    the thing classes will merged to ``num_stuff_classes``.
 
     Arg:
         num_things_classes (int): Number of thing classes. Default: 80.
         num_stuff_classes (int): Number of stuff classes. Default: 53.
         num_classes (int): Number of classes, including all stuff
-            classes and one thing class. Deprecated, please set
-            `num_stuff_classes + 1` directly.
+            classes and one thing class. This argument is deprecated,
+            please use ``num_things_classes`` and ``num_stuff_classes``.
+            The module will automatically infer the num_classes by
+            ``num_stuff_classes + 1``.
         in_channels (int): Number of channels in the input feature
             map.
         inner_channels (int): Number of channels in inner features.
         start_level (int): The start level of the input features
             used in PanopticFPN.
         end_level (int): The end level of the used features, the
-            `end_level`-th layer will not be used.
+            ``end_level``-th layer will not be used.
         fg_range (tuple): Range of the foreground classes. It starts
-            from `0` to `num_things_classes-1`. Deprecated, please use
-             `num_things_classes` directly.
+            from ``0`` to ``num_things_classes-1``. Deprecated, please use
+             ``num_things_classes`` directly.
         bg_range (tuple): Range of the background classes. It starts
-            from `num_things_classes` to `num_things_classes +
-            num_stuff_classes - 1`. Deprecated, please use
-            `num_stuff_classes` and `num_things_classes` directly.
+            from ``num_things_classes`` to ``num_things_classes +
+            num_stuff_classes - 1``. Deprecated, please use
+            ``num_stuff_classes`` and ``num_things_classes`` directly.
         conv_cfg (dict): Dictionary to construct and config
             conv layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
@@ -66,8 +68,8 @@ class PanopticFPNHead(BaseSemanticHead):
         if num_classes is not None:
             warnings.warn(
                 '`num_classes` is deprecated now, please set '
-                '`num_stuff_classes` directly, the `num_classes` will be ',
-                'set to `num_stuff_classes + 1', DeprecationWarning)
+                '`num_stuff_classes` directly, the `num_classes` will be '
+                'set to `num_stuff_classes + 1`')
             # num_classes = num_stuff_classes + 1 for PanopticFPN.
             assert num_classes == num_stuff_classes + 1
         super(PanopticFPNHead, self).__init__(num_stuff_classes + 1, init_cfg,
@@ -82,8 +84,7 @@ class PanopticFPNHead(BaseSemanticHead):
             warnings.warn(
                 '`fg_range` and `bg_range` are deprecated now, '
                 f'please use `num_things_classes`={self.num_things_classes} '
-                f'and `num_stuff_classes`={self.num_stuff_classes} instead.',
-                DeprecationWarning)
+                f'and `num_stuff_classes`={self.num_stuff_classes} instead.')
 
         # Used feature layers are [start_level, end_level)
         self.start_level = start_level
