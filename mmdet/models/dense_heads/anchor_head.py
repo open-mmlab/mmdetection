@@ -104,7 +104,8 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
     @property
     def num_anchors(self):
         warnings.warn('DeprecationWarning: `num_anchors` is deprecated, '
-                      'please use "num_base_priors" instead')
+                      'for consistency or also use '
+                      '`num_base_priors` instead')
         return self.prior_generator.num_base_priors[0]
 
     @property

@@ -114,6 +114,10 @@ class SSDHead(AnchorHead):
 
     @property
     def num_anchors(self):
+        """
+        Returns:
+            list[int]: Number of base_anchors on each point of each level.
+        """
         warnings.warn('DeprecationWarning: `num_anchors` is deprecated, '
                       'please use "num_base_priors" instead')
         return self.num_base_priors

@@ -154,10 +154,8 @@ class VFNetHead(ATSSHead, FCOSHead):
 
         self.anchor_center_offset = anchor_generator['center_offset']
 
-        # usually the numbers of anchors for each level are the same
-        # except SSD detectors, so it is a int in most densehead and
-        # it will be a list of int in SSDHead
         self.num_base_priors = self.prior_generator.num_base_priors[0]
+
         self.sampling = False
         if self.train_cfg:
             self.assigner = build_assigner(self.train_cfg.assigner)
@@ -176,9 +174,13 @@ class VFNetHead(ATSSHead, FCOSHead):
 
     @property
     def num_anchors(self):
+        """
+        Returns:
+            int: Number of anchors on each point of feature map.
+        """
         warnings.warn('DeprecationWarning: `num_anchors` is deprecated, '
                       'please use "num_base_priors" instead')
-        return self.atss_prior_generator.num_base_priors[0]
+        return self.num_base_priors
 
     @property
     def anchor_generator(self):

@@ -115,8 +115,6 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         self.loss_xy = build_loss(loss_xy)
         self.loss_wh = build_loss(loss_wh)
 
-        # usually the numbers of anchors for each level are the same
-        # except SSD detectors
         self.num_base_priors = self.prior_generator.num_base_priors[0]
         assert len(
             self.prior_generator.num_base_priors) == len(featmap_strides)
@@ -124,12 +122,17 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
 
     @property
     def anchor_generator(self):
+
         warnings.warn('DeprecationWarning: `anchor_generator` is deprecated, '
                       'please use "prior_generator" instead')
         return self.prior_generator
 
     @property
     def num_anchors(self):
+        """
+        Returns:
+            int: Number of anchors on each point of feature map.
+        """
         warnings.warn('DeprecationWarning: `num_anchors` is deprecated, '
                       'please use "num_base_priors" instead')
         return self.prior_generator.num_base_priors[0]
