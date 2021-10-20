@@ -522,7 +522,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             pred_maps_list[i].shape[-2:] for i in range(self.num_levels)
         ]
         multi_lvl_anchors = self.prior_generator.grid_priors(
-            featmap_sizes, device)
+            featmap_sizes, device=device)
         # convert to tensor to keep tracing
         nms_pre_tensor = torch.tensor(
             cfg.get('nms_pre', -1), device=device, dtype=torch.long)
