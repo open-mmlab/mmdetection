@@ -6,6 +6,7 @@ from mmcv.ops import DeformConv2d
 from mmcv.runner import BaseModule
 
 from mmdet.core import multi_apply
+from mmdet.core.utils import filter_scores_and_topk
 from ..builder import HEADS
 from .anchor_free_head import AnchorFreeHead
 
@@ -324,22 +325,13 @@ class FoveaHead(AnchorFreeHead):
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
 
             scores = cls_score.permute(1, 2, 0).reshape(
-                -1, self.cls_out_channels).sigmoid().flatten()
-            valid_mask = scores > cfg.score_thr
-            scores = scores[valid_mask]
-            topk_idxs = valid_mask.nonzero(as_tuple=True)[0]
+                -1, self.cls_out_channels).sigmoid()
 
-            # 2. Keep top k top scoring boxes only
-            num_topk = min(nms_pre, topk_idxs.size(0))
-            # torch.sort is actually faster than .topk (at least on GPUs)
-            scores, idxs = scores.sort(descending=True)
-            scores = scores[:num_topk]
-            topk_inds = topk_idxs[idxs[:num_topk]]
+            results = filter_scores_and_topk(scores, cfg.score_thr, nms_pre,
+                                             dict(bbox_pred=bbox_pred))
+            scores, labels, anchor_idxs, filter_results = results
 
-            anchor_idxs = topk_inds // self.num_classes
-            labels = topk_inds % self.num_classes
-
-            bbox_pred = bbox_pred[anchor_idxs]
+            bbox_pred = filter_results['bbox_pred']
 
             priors = self.prior_generator.sparse_priors(
                 anchor_idxs, featmap_size_hw, level_idx, bbox_pred.dtype,

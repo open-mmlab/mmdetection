@@ -5,7 +5,7 @@ import torch
 from mmcv.ops import batched_nms
 from mmcv.runner import BaseModule, force_fp32
 
-from mmdet.core.utils import select_single_mlvl
+from mmdet.core.utils import filter_scores_and_topk, select_single_mlvl
 
 
 class BaseDenseHead(BaseModule, metaclass=ABCMeta):
@@ -164,28 +164,18 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             cls_score = cls_score.permute(1, 2,
                                           0).reshape(-1, self.cls_out_channels)
             if self.use_sigmoid_cls:
-                scores = cls_score.sigmoid().flatten()
+                scores = cls_score.sigmoid()
             else:
                 # remind that we set FG labels to [0, num_class-1]
                 # since mmdet v2.0
                 # BG cat_id: num_class
-                scores = cls_score.softmax(-1)[:, :-1].flatten()
+                scores = cls_score.softmax(-1)[:, :-1]
 
-            valid_masks = scores > cfg.score_thr
-            scores = scores[valid_masks]
-            topk_idxs = valid_masks.nonzero(as_tuple=True)[0]
+            results = filter_scores_and_topk(scores, cfg.score_thr, nms_pre,
+                                             dict(bbox_pred=bbox_pred))
+            scores, labels, anchor_idxs, filter_results = results
 
-            # 2. Keep top k top scoring boxes only
-            num_topk = min(nms_pre, topk_idxs.size(0))
-            # torch.sort is actually faster than .topk (at least on GPUs)
-            scores, idxs = scores.sort(descending=True)
-            scores = scores[:num_topk]
-            topk_inds = topk_idxs[idxs[:num_topk]]
-
-            anchor_idxs = topk_inds // self.num_classes
-            labels = topk_inds % self.num_classes
-
-            bbox_pred = bbox_pred[anchor_idxs]
+            bbox_pred = filter_results['bbox_pred']
 
             if with_score_factors:
                 score_factor = score_factor[anchor_idxs]

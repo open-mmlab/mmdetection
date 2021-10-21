@@ -552,7 +552,7 @@ class PAAHead(ATSSHead):
             bbox_pred_list (list[Tensor]): Box energies / deltas from
                 all scale levels of a single image, each item has shape
                 (num_priors * 4, H, W).
-            score_factor_list (list[Tensor]): Score factor from all scale
+            score_factor_list (list[Tensor]): Score factors from all scale
                 levels of a single image, each item has shape
                 (num_priors * 1, H, W).
             img_meta (dict): Image meta info.

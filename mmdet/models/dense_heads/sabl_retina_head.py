@@ -8,6 +8,7 @@ from mmcv.runner import force_fp32
 from mmdet.core import (build_anchor_generator, build_assigner,
                         build_bbox_coder, build_sampler, images_to_levels,
                         multi_apply, unmap)
+from mmdet.core.utils import filter_scores_and_topk
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -579,31 +580,25 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
             cls_score = cls_score.permute(1, 2,
                                           0).reshape(-1, self.cls_out_channels)
             if self.use_sigmoid_cls:
-                scores = cls_score.sigmoid().flatten()
+                scores = cls_score.sigmoid()
             else:
-                scores = cls_score.softmax(-1).flatten()
+                scores = cls_score.softmax(-1)[:, :-1]
             bbox_cls_pred = bbox_cls_pred.permute(1, 2, 0).reshape(
                 -1, self.side_num * 4)
             bbox_reg_pred = bbox_reg_pred.permute(1, 2, 0).reshape(
                 -1, self.side_num * 4)
 
-            valid_mask = scores > cfg.score_thr
-            scores = scores[valid_mask]
-            topk_idxs = valid_mask.nonzero(as_tuple=True)[0]
+            results = filter_scores_and_topk(
+                scores, cfg.score_thr, nms_pre,
+                dict(
+                    anchors=anchors,
+                    bbox_cls_pred=bbox_cls_pred,
+                    bbox_reg_pred=bbox_reg_pred))
+            scores, labels, _, filter_results = results
 
-            # 2. Keep top k top scoring boxes only
-            num_topk = min(nms_pre, topk_idxs.size(0))
-            # torch.sort is actually faster than .topk (at least on GPUs)
-            scores, idxs = scores.sort(descending=True)
-            scores = scores[:num_topk]
-            topk_inds = topk_idxs[idxs[:num_topk]]
-
-            anchor_idxs = topk_inds // self.num_classes
-            labels = topk_inds % self.num_classes
-
-            anchors = anchors[anchor_idxs]
-            bbox_cls_pred = bbox_cls_pred[anchor_idxs]
-            bbox_reg_pred = bbox_reg_pred[anchor_idxs]
+            anchors = filter_results['anchors']
+            bbox_cls_pred = filter_results['bbox_cls_pred']
+            bbox_reg_pred = filter_results['bbox_reg_pred']
 
             bbox_preds = [
                 bbox_cls_pred.contiguous(),

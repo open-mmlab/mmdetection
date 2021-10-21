@@ -8,6 +8,7 @@ from mmcv.runner import force_fp32
 from mmdet.core import (anchor_inside_flags, bbox2distance, bbox_overlaps,
                         build_assigner, build_sampler, distance2bbox,
                         images_to_levels, multi_apply, reduce_mean, unmap)
+from mmdet.core.utils import filter_scores_and_topk
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
@@ -436,22 +437,13 @@ class GFLHead(AnchorHead):
             bbox_pred = self.integral(bbox_pred) * stride[0]
 
             scores = cls_score.permute(1, 2, 0).reshape(
-                -1, self.cls_out_channels).sigmoid().flatten()
-            valid_mask = scores > cfg.score_thr
-            scores = scores[valid_mask]
-            topk_idxs = valid_mask.nonzero(as_tuple=True)[0]
+                -1, self.cls_out_channels).sigmoid()
 
-            # 2. Keep top k top scoring boxes only
-            num_topk = min(nms_pre, topk_idxs.size(0))
-            # torch.sort is actually faster than .topk (at least on GPUs)
-            scores, idxs = scores.sort(descending=True)
-            scores = scores[:num_topk]
-            topk_inds = topk_idxs[idxs[:num_topk]]
+            results = filter_scores_and_topk(scores, cfg.score_thr, nms_pre,
+                                             dict(bbox_pred=bbox_pred))
+            scores, labels, anchor_idxs, filter_results = results
 
-            anchor_idxs = topk_inds // self.num_classes
-            labels = topk_inds % self.num_classes
-
-            bbox_pred = bbox_pred[anchor_idxs]
+            bbox_pred = filter_results['bbox_pred']
 
             priors = self.prior_generator.sparse_priors(
                 anchor_idxs, featmap_size_hw, level_idx, bbox_pred.dtype,

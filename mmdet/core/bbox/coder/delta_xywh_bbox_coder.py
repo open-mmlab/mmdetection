@@ -88,18 +88,19 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
         assert pred_bboxes.size(0) == bboxes.size(0)
         if pred_bboxes.ndim == 3:
             assert pred_bboxes.size(1) == bboxes.size(1)
-        if pred_bboxes.ndim == 2 and not torch.onnx.is_in_onnx_export():
-            # single image decode
-            decoded_bboxes = delta2bbox(bboxes, pred_bboxes, self.means,
-                                        self.stds, max_shape, wh_ratio_clip,
-                                        self.clip_border, self.add_ctr_clamp,
-                                        self.ctr_clamp)
-        else:
+
+        if torch.onnx.is_in_onnx_export():
             decoded_bboxes = onnx_delta2bbox(bboxes, pred_bboxes, self.means,
                                              self.stds, max_shape,
                                              wh_ratio_clip, self.clip_border,
                                              self.add_ctr_clamp,
                                              self.ctr_clamp)
+        else:
+            # single image decode
+            decoded_bboxes = delta2bbox(bboxes, pred_bboxes, self.means,
+                                        self.stds, max_shape, wh_ratio_clip,
+                                        self.clip_border, self.add_ctr_clamp,
+                                        self.ctr_clamp)
 
         return decoded_bboxes
 
@@ -176,15 +177,15 @@ def delta2bbox(rois,
             Default (0., 0., 0., 0.).
         stds (Sequence[float]): Denormalizing standard deviation for delta
             coordinates. Default (1., 1., 1., 1.).
-        max_shape (tuple[int, int]): Maximum bounds for boxes. specifies
+        max_shape (tuple[int, int]): Maximum bounds for boxes, specifies
            (H, W). Default None.
         wh_ratio_clip (float): Maximum aspect ratio for boxes. Default
             16 / 1000.
         clip_border (bool, optional): Whether clip the objects outside the
             border of the image. Default True.
-        add_ctr_clamp (bool): Whether to add center clamp. The center point
-            of the predicted bounding box will be clamped so that it will
-            not be far from the center of the anchor when set to True.
+        add_ctr_clamp (bool): Whether to add center clamp. When set to True,
+            the center of the prediction bounding box will be clamped to
+            avoid being too far away from the center of the anchor.
             Only used by YOLOF. Default False.
         ctr_clamp (int): the maximum pixel shift to clamp. Only used by YOLOF.
             Default 32.

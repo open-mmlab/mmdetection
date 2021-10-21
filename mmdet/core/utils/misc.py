@@ -94,13 +94,13 @@ def select_single_mlvl(mlvl_tensors, batch_id, detach=True):
     Cascade Mask R-CNN.
 
     Args:
-        mlvl_tensors (list[Tensor]):Batch tensor for all scale levels,
+        mlvl_tensors (list[Tensor]): Batch tensor for all scale levels,
            each is a 4D-tensor.
         batch_id (int): batch index.
         detach (bool): Whether detach gradient. Default True.
 
     Returns:
-        list[Tensor]: multi-scale single image tensor.
+        list[Tensor]: Multi-scale single image tensor.
     """
     assert isinstance(mlvl_tensors, (list, tuple))
     num_levels = len(mlvl_tensors)
@@ -114,6 +114,46 @@ def select_single_mlvl(mlvl_tensors, batch_id, detach=True):
             mlvl_tensors[i][batch_id] for i in range(num_levels)
         ]
     return mlvl_tensor_list
+
+
+def filter_scores_and_topk(scores, score_thr, topk, results=None):
+    """Filter results using score threshold and topk candidates.
+
+    Args:
+        scores (Tensor): The scores, shape (num_bboxes, K).
+        score_thr (float): The score filter threshold.
+        topk (int): The number of topk candidates.
+        results (dict, Optional): The dictionary object to
+           which the filtering rule is to be applied. The shape
+           of each item is (num_bboxes, N).
+
+    Returns:
+        scores (Tensor): The scores after being filtered,
+            shape (num_bboxes_filtered, ).
+        labels (Tensor): The class labels, shape
+            (num_bboxes_filtered, ).
+        anchor_idxs (Tensor): The anchor indexes, shape
+            (num_bboxes_filtered, ).
+        selected (dict, Optional): The filtered dictionary object.
+            The shape of each item is (num_bboxes_filtered, N).
+    """
+    valid_mask = scores > score_thr
+    scores = scores[valid_mask]
+    topk_idxs = torch.nonzero(valid_mask)
+
+    num_topk = min(topk, topk_idxs.size(0))
+    # torch.sort is actually faster than .topk (at least on GPUs)
+    scores, idxs = scores.sort(descending=True)
+    scores = scores[:num_topk]
+    topk_idxs = topk_idxs[idxs[:num_topk]]
+    anchor_idxs, labels = topk_idxs.unbind(dim=1)
+
+    selected = None
+    if results is not None and isinstance(results, dict):
+        selected = dict()
+        for k, v in results.items():
+            selected[k] = v[anchor_idxs]
+    return scores, labels, anchor_idxs, selected
 
 
 def center_of_mass(mask, esp=1e-6):
