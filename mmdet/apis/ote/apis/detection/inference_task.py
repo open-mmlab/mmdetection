@@ -19,6 +19,7 @@ import os
 import shutil
 import tempfile
 import warnings
+from subprocess import run
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -49,6 +50,7 @@ from mmdet.apis.ote.apis.detection.ote_utils import InferenceProgressCallback
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
 from mmdet.parallel import MMDataCPU
+from mmdet.utils.collect_env import collect_env
 
 logger = logging.getLogger(__name__)
 
@@ -61,14 +63,13 @@ class OTEDetectionInferenceTask(IInferenceTask, IExportTask, IEvaluationTask, IU
         """"
         Task for inference object detection models using OTEDetection.
         """
-        from mmdet.utils.collect_env import collect_env
+
         print('ENVIRONMENT:')
         for name, val in collect_env().items():
             print(f'{name}: {val}')
-
-        from subprocess import run
         print('pip list:')
         run('pip list', shell=True, check=True)
+
         self._task_environment = task_environment
 
         logger.info(f"Loading OTEDetectionInferenceTask.")
