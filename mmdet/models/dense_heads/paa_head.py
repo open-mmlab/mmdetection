@@ -538,6 +538,7 @@ class PAAHead(ATSSHead):
                            cls_score_list,
                            bbox_pred_list,
                            score_factor_list,
+                           mlvl_priors,
                            img_meta,
                            cfg,
                            rescale=False,
@@ -555,6 +556,9 @@ class PAAHead(ATSSHead):
             score_factor_list (list[Tensor]): Score factors from all scale
                 levels of a single image, each item has shape
                 (num_priors * 1, H, W).
+            mlvl_priors (list[Tensor]): Each element in the list is
+                the priors of single level in feature pyramid, has shape
+                (num_priors, 4).
             img_meta (dict): Image meta info.
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
@@ -584,10 +588,10 @@ class PAAHead(ATSSHead):
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_score_factors = []
-        for level_idx, (cls_score, bbox_pred, score_factor) in enumerate(
-                zip(cls_score_list, bbox_pred_list, score_factor_list)):
+        for level_idx, (cls_score, bbox_pred, score_factor, priors) in \
+                enumerate(zip(cls_score_list, bbox_pred_list,
+                              score_factor_list, mlvl_priors)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-            featmap_size_hw = cls_score.shape[-2:]
 
             scores = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels).sigmoid()
@@ -595,19 +599,13 @@ class PAAHead(ATSSHead):
             score_factor = score_factor.permute(1, 2, 0).reshape(-1).sigmoid()
 
             if 0 < nms_pre < scores.shape[0]:
-                # Get maximum scores for foreground classes.
                 max_scores, _ = (scores *
-                                 score_factor[..., None]).sqrt().max(-1)
+                                 score_factor[:, None]).sqrt().max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
-                priors = self.prior_generator.sparse_priors(
-                    topk_inds, featmap_size_hw, level_idx, scores.dtype,
-                    scores.device)
+                priors = priors[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
                 score_factor = score_factor[topk_inds]
-            else:
-                priors = self.prior_generator.single_level_grid_priors(
-                    featmap_size_hw, level_idx, scores.dtype, scores.device)
 
             bboxes = self.bbox_coder.decode(
                 priors, bbox_pred, max_shape=img_shape)

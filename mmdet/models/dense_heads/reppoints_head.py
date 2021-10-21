@@ -660,6 +660,7 @@ class RepPointsHead(AnchorFreeHead):
                            cls_score_list,
                            bbox_pred_list,
                            score_factor_list,
+                           mlvl_priors,
                            img_meta,
                            cfg,
                            rescale=False,
@@ -677,6 +678,9 @@ class RepPointsHead(AnchorFreeHead):
             score_factor_list (list[Tensor]): Score factor from all scale
                 levels of a single image. RepPoints head does not need
                 this value.
+            mlvl_priors (list[Tensor]): Each element in the list is
+                the priors of single level in feature pyramid, has shape
+                (num_priors, 4).
             img_meta (dict): Image meta info.
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
@@ -707,10 +711,9 @@ class RepPointsHead(AnchorFreeHead):
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_labels = []
-        for level_idx, (cls_score, bbox_pred) in enumerate(
-                zip(cls_score_list, bbox_pred_list)):
+        for level_idx, (cls_score, bbox_pred, priors) in enumerate(
+                zip(cls_score_list, bbox_pred_list, mlvl_priors)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-            featmap_size_hw = cls_score.shape[-2:]
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
 
             cls_score = cls_score.permute(1, 2,
@@ -720,17 +723,15 @@ class RepPointsHead(AnchorFreeHead):
             else:
                 scores = cls_score.softmax(-1)[:, :-1]
 
-            results = filter_scores_and_topk(scores, cfg.score_thr, nms_pre,
-                                             dict(bbox_pred=bbox_pred))
-            scores, labels, anchor_idxs, filter_results = results
+            results = filter_scores_and_topk(
+                scores, cfg.score_thr, nms_pre,
+                dict(bbox_pred=bbox_pred, priors=priors))
+            scores, labels, _, filter_results = results
 
             bbox_pred = filter_results['bbox_pred']
+            priors = filter_results['priors']
 
-            points = self.prior_generator.sparse_priors(
-                anchor_idxs, featmap_size_hw, level_idx, bbox_pred.dtype,
-                bbox_pred.device)
-
-            bboxes = self._bbox_decode(points, bbox_pred,
+            bboxes = self._bbox_decode(priors, bbox_pred,
                                        self.point_strides[level_idx],
                                        img_shape)
 

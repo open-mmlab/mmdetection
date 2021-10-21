@@ -73,6 +73,10 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
         num_levels = len(cls_scores)
 
+        featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
+        mlvl_priors = self.prior_generator.grid_priors(
+            featmap_sizes, device=cls_scores[0].device)
+
         result_list = []
 
         for img_id in range(len(img_metas)):
@@ -85,8 +89,9 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 score_factor_list = [None for _ in range(num_levels)]
 
             results = self._get_bboxes_single(cls_score_list, bbox_pred_list,
-                                              score_factor_list, img_meta, cfg,
-                                              rescale, with_nms, **kwargs)
+                                              score_factor_list, mlvl_priors,
+                                              img_meta, cfg, rescale, with_nms,
+                                              **kwargs)
             result_list.append(results)
         return result_list
 
@@ -94,6 +99,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                            cls_score_list,
                            bbox_pred_list,
                            score_factor_list,
+                           mlvl_priors,
                            img_meta,
                            cfg,
                            rescale=False,
@@ -111,6 +117,9 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             score_factor_list (list[Tensor]): Score factor from all scale
                 levels of a single image, each item has shape
                 (num_priors * 1, H, W).
+            mlvl_priors (list[Tensor]): Each element in the list is
+                the priors of single level in feature pyramid, has shape
+                (num_priors, 4).
             img_meta (dict): Image meta info.
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
@@ -151,11 +160,11 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             mlvl_score_factors = []
         else:
             mlvl_score_factors = None
-        for level_idx, (cls_score, bbox_pred, score_factor) in enumerate(
-                zip(cls_score_list, bbox_pred_list, score_factor_list)):
+        for level_idx, (cls_score, bbox_pred, score_factor, priors) in \
+                enumerate(zip(cls_score_list, bbox_pred_list,
+                              score_factor_list, mlvl_priors)):
 
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-            featmap_size_hw = cls_score.shape[-2:]
 
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             if with_score_factors:
@@ -171,18 +180,16 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 # BG cat_id: num_class
                 scores = cls_score.softmax(-1)[:, :-1]
 
-            results = filter_scores_and_topk(scores, cfg.score_thr, nms_pre,
-                                             dict(bbox_pred=bbox_pred))
-            scores, labels, anchor_idxs, filter_results = results
+            results = filter_scores_and_topk(
+                scores, cfg.score_thr, nms_pre,
+                dict(bbox_pred=bbox_pred, priors=priors))
+            scores, labels, keep_idxs, filter_results = results
 
             bbox_pred = filter_results['bbox_pred']
+            priors = filter_results['priors']
 
             if with_score_factors:
-                score_factor = score_factor[anchor_idxs]
-
-            priors = self.prior_generator.sparse_priors(
-                anchor_idxs, featmap_size_hw, level_idx, bbox_pred.dtype,
-                bbox_pred.device)
+                score_factor = score_factor[keep_idxs]
 
             bboxes = self.bbox_coder.decode(
                 priors, bbox_pred, max_shape=img_shape)

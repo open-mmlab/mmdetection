@@ -381,6 +381,7 @@ class GFLHead(AnchorHead):
                            cls_score_list,
                            bbox_pred_list,
                            score_factor_list,
+                           mlvl_priors,
                            img_meta,
                            cfg,
                            rescale=False,
@@ -397,6 +398,9 @@ class GFLHead(AnchorHead):
                 (num_priors * 4, H, W).
             score_factor_list (list[Tensor]): Score factor from all scale
                 levels of a single image. GFL head does not need this value.
+            mlvl_priors (list[Tensor]): Each element in the list is
+                the priors of single level in feature pyramid, has shape
+                (num_priors, 4).
             img_meta (dict): Image meta info.
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
@@ -426,12 +430,11 @@ class GFLHead(AnchorHead):
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_labels = []
-        for level_idx, (cls_score, bbox_pred, stride) in enumerate(
+        for level_idx, (cls_score, bbox_pred, stride, priors) in enumerate(
                 zip(cls_score_list, bbox_pred_list,
-                    self.prior_generator.strides)):
+                    self.prior_generator.strides, mlvl_priors)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             assert stride[0] == stride[1]
-            featmap_size_hw = cls_score.shape[-2:]
 
             bbox_pred = bbox_pred.permute(1, 2, 0)
             bbox_pred = self.integral(bbox_pred) * stride[0]
@@ -439,15 +442,13 @@ class GFLHead(AnchorHead):
             scores = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels).sigmoid()
 
-            results = filter_scores_and_topk(scores, cfg.score_thr, nms_pre,
-                                             dict(bbox_pred=bbox_pred))
-            scores, labels, anchor_idxs, filter_results = results
+            results = filter_scores_and_topk(
+                scores, cfg.score_thr, nms_pre,
+                dict(bbox_pred=bbox_pred, priors=priors))
+            scores, labels, _, filter_results = results
 
             bbox_pred = filter_results['bbox_pred']
-
-            priors = self.prior_generator.sparse_priors(
-                anchor_idxs, featmap_size_hw, level_idx, bbox_pred.dtype,
-                bbox_pred.device)
+            priors = filter_results['priors']
 
             bboxes = self.bbox_coder.decode(
                 self.anchor_center(priors), bbox_pred, max_shape=img_shape)

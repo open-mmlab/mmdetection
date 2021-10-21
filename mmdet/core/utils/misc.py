@@ -128,32 +128,35 @@ def filter_scores_and_topk(scores, score_thr, topk, results=None):
            of each item is (num_bboxes, N).
 
     Returns:
-        scores (Tensor): The scores after being filtered,
-            shape (num_bboxes_filtered, ).
-        labels (Tensor): The class labels, shape
-            (num_bboxes_filtered, ).
-        anchor_idxs (Tensor): The anchor indexes, shape
-            (num_bboxes_filtered, ).
-        selected (dict, Optional): The filtered dictionary object.
-            The shape of each item is (num_bboxes_filtered, N).
+        tuple: Filtered results
+
+            - scores (Tensor): The scores after being filtered, \
+                shape (num_bboxes_filtered, ).
+            - labels (Tensor): The class labels, shape \
+                (num_bboxes_filtered, ).
+            - anchor_idxs (Tensor): The anchor indexes, shape \
+                (num_bboxes_filtered, ).
+            - selected (dict, Optional): The filtered dictionary \
+                object. The shape of each item is \
+                (num_bboxes_filtered, N).
     """
     valid_mask = scores > score_thr
     scores = scores[valid_mask]
-    topk_idxs = torch.nonzero(valid_mask)
+    valid_idxs = torch.nonzero(valid_mask)
 
-    num_topk = min(topk, topk_idxs.size(0))
+    num_topk = min(topk, valid_idxs.size(0))
     # torch.sort is actually faster than .topk (at least on GPUs)
     scores, idxs = scores.sort(descending=True)
     scores = scores[:num_topk]
-    topk_idxs = topk_idxs[idxs[:num_topk]]
-    anchor_idxs, labels = topk_idxs.unbind(dim=1)
+    topk_idxs = valid_idxs[idxs[:num_topk]]
+    keep_idxs, labels = topk_idxs.unbind(dim=1)
 
-    selected = None
+    filtered_results = None
     if results is not None and isinstance(results, dict):
-        selected = dict()
+        filtered_results = dict()
         for k, v in results.items():
-            selected[k] = v[anchor_idxs]
-    return scores, labels, anchor_idxs, selected
+            filtered_results[k] = v[keep_idxs]
+    return scores, labels, keep_idxs, filtered_results
 
 
 def center_of_mass(mask, esp=1e-6):

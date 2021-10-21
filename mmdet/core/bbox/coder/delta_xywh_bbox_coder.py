@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
+
 import mmcv
 import numpy as np
 import torch
@@ -89,18 +91,25 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
         if pred_bboxes.ndim == 3:
             assert pred_bboxes.size(1) == bboxes.size(1)
 
-        if torch.onnx.is_in_onnx_export():
-            decoded_bboxes = onnx_delta2bbox(bboxes, pred_bboxes, self.means,
-                                             self.stds, max_shape,
-                                             wh_ratio_clip, self.clip_border,
-                                             self.add_ctr_clamp,
-                                             self.ctr_clamp)
-        else:
+        if pred_bboxes.ndim == 2 and not torch.onnx.is_in_onnx_export():
             # single image decode
             decoded_bboxes = delta2bbox(bboxes, pred_bboxes, self.means,
                                         self.stds, max_shape, wh_ratio_clip,
                                         self.clip_border, self.add_ctr_clamp,
                                         self.ctr_clamp)
+        else:
+            if pred_bboxes.ndim == 3 and not torch.onnx.is_in_onnx_export():
+                warnings.warn(
+                    'DeprecationWarning: onnx_delta2bbox is deprecated '
+                    'in the case of batch decoding and non-ONNX, '
+                    'please use “delta2bbox” instead. In order to improve '
+                    'the decoding speed, the batch function will no '
+                    'longer be supported. ')
+            decoded_bboxes = onnx_delta2bbox(bboxes, pred_bboxes, self.means,
+                                             self.stds, max_shape,
+                                             wh_ratio_clip, self.clip_border,
+                                             self.add_ctr_clamp,
+                                             self.ctr_clamp)
 
         return decoded_bboxes
 
