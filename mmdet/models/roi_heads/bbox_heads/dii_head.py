@@ -189,8 +189,9 @@ class DIIHead(BBoxHead):
         for reg_layer in self.reg_fcs:
             reg_feat = reg_layer(reg_feat)
 
-        cls_score = self.fc_cls(cls_feat).view(N, num_proposals,
-                                               self.num_classes)
+        cls_score = self.fc_cls(cls_feat).view(
+            N, num_proposals, self.num_classes
+            if self.loss_cls.use_sigmoid else self.num_classes + 1)
         bbox_delta = self.fc_reg(reg_feat).view(N, num_proposals, 4)
 
         return cls_score, bbox_delta, obj_feat.view(

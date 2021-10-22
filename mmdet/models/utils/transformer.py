@@ -1071,7 +1071,7 @@ class DynamicConv(BaseModule):
         input_feat_shape (int): The shape of input feature.
             Defaults to 7.
         with_proj (bool): Project two-dimentional feature to
-            one-dimentional feature. Default to False.
+            one-dimentional feature. Default to True.
         act_cfg (dict): The activation config for DynamicConv.
         norm_cfg (dict): Config dict for normalization layer. Default
             layer normalization.

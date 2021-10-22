@@ -11,6 +11,32 @@ from .fcn_mask_head import FCNMaskHead
 
 @HEADS.register_module()
 class DynamicMaskHead(FCNMaskHead):
+    r"""Dynamic Mask Head for
+    `Instances as Queries <http://arxiv.org/abs/2105.01928>`_
+
+    Args:
+        num_convs (int): Number of convolution layer.
+            Defaults to 4.
+        roi_feat_size (int): The output size of RoI extractor,
+            Defaults to 14.
+        in_channels (int): Input feature channels.
+            Defaults to 256.
+        conv_kernel_size (int): Kernel size of convolution layers.
+            Defaults to 3.
+        conv_out_channels (int): Output channels of convolution layers.
+            Defaults to 256.
+        num_classes (int): Number of classes.
+            Defaults to 80
+        class_agnostic (int): Whether generate class agnostic prediction.
+            Defaults to False.
+        dropout (float): Probability of drop the channel.
+            Defaults to 0.0
+        upsample_cfg (dict): The config for upsample layer.
+        conv_cfg (dict): The convolution layer config.
+        norm_cfg (dict): The norm layer config.
+        dynamic_conv_cfg (dict): The dynamic convolution layer config.
+        loss_mask (dict): The config for mask loss.
+    """
 
     def __init__(self,
                  num_convs=4,

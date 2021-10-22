@@ -301,8 +301,8 @@ class SparseRoIHead(CascadeRoIHead):
             it is bbox results of each image and classes with type
             `list[list[np.ndarray]]`. The outer list
             corresponds to each image. The inner list
-            corresponds to each class. When the model has mask branch,
-            it contains bbox results and mask results.
+            corresponds to each class. When the model has a mask branch,
+            it is a list[tuple] that contains bbox results and mask results.
             The outer list corresponds to each image, and first element
             of tuple is bbox results, second element is mask results.
         """
@@ -312,9 +312,6 @@ class SparseRoIHead(CascadeRoIHead):
         proposal_list = [proposal_boxes[i] for i in range(num_imgs)]
         ori_shapes = tuple(meta['ori_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
-        # "ms" in variable names means multi-stage
-        ms_bbox_result = {}
-        ms_segm_result = {}
 
         object_feats = proposal_features
         if all([proposal.shape[0] == 0 for proposal in proposal_list]):
@@ -368,7 +365,6 @@ class SparseRoIHead(CascadeRoIHead):
             bbox2result(det_bboxes[i], det_labels[i], num_classes)
             for i in range(num_imgs)
         ]
-        ms_bbox_result['ensemble'] = bbox_results
 
         if self.with_mask:
             if rescale and not isinstance(scale_factors[0], float):
@@ -394,13 +390,10 @@ class SparseRoIHead(CascadeRoIHead):
                     rescale)
                 segm_results.append(segm_result)
 
-            ms_segm_result['ensemble'] = segm_results
-
         if self.with_mask:
-            results = list(
-                zip(ms_bbox_result['ensemble'], ms_segm_result['ensemble']))
+            results = list(zip(bbox_results, segm_results))
         else:
-            results = ms_bbox_result['ensemble']
+            results = bbox_results
 
         return results
 

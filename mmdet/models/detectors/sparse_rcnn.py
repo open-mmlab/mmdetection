@@ -6,8 +6,7 @@ from .two_stage import TwoStageDetector
 @DETECTORS.register_module()
 class SparseRCNN(TwoStageDetector):
     r"""Implementation of `Sparse R-CNN: End-to-End Object Detection with
-    Learnable Proposals <https://arxiv.org/abs/2011.12450>`_
-    and `Instances as Queries <http://arxiv.org/abs/2105.01928>`_"""
+    Learnable Proposals <https://arxiv.org/abs/2011.12450>`_"""
 
     def __init__(self, *args, **kwargs):
         super(SparseRCNN, self).__init__(*args, **kwargs)
