@@ -2,12 +2,10 @@ _base_ = [
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
-# model
 teacher_ckpt = 'http://download.openmmlab.com/mmdetection/v2.0/paa/paa_r101_fpn_1x_coco/paa_r101_fpn_1x_coco_20200821-0a1825a4.pth'  # noqa
 model = dict(
     type='LAD',
     # student
-    pretrained='torchvision://resnet50',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -16,7 +14,8 @@ model = dict(
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
-        style='pytorch'),
+        style='pytorch',
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],
@@ -106,7 +105,6 @@ model = dict(
             neg_iou_thr=0.1,
             min_pos_iou=0,
             ignore_iof_thr=-1),
-        reassigner=dict(type='PAAAssigner', topk=9),
         allowed_border=-1,
         pos_weight=-1,
         debug=False),
@@ -117,5 +115,6 @@ model = dict(
         score_voting=True,
         nms=dict(type='nms', iou_threshold=0.6),
         max_per_img=100))
-# optimizer
+data = dict(samples_per_gpu=8, workers_per_gpu=4)
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+fp16 = dict(loss_scale=512.)
