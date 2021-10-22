@@ -164,7 +164,7 @@ def plot_confusion_matrix(confusion_matrix,
     """
     num_classes = len(labels)
     fig, ax = plt.subplots(
-        figsize=(0.5 * num_classes, 0.5 * num_classes * 0.8), dpi=300)
+        figsize=(0.5 * num_classes, 0.5 * num_classes * 0.8), dpi=180)
     cmap = plt.get_cmap(color_theme)
     im = ax.imshow(confusion_matrix, cmap=cmap)
     plt.colorbar(mappable=im, ax=ax)
