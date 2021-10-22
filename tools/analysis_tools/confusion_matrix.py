@@ -32,6 +32,17 @@ def parse_args():
         default=0,
         help='score threshold to filter detection bboxes')
     parser.add_argument(
+        '--tp-iou-thr',
+        type=float,
+        default=0.5,
+        help='IoU threshold to be considered as matched')
+    parser.add_argument(
+        '--nms-iou-thr',
+        type=float,
+        default=None,
+        help='nms IoU threshold, only applied when users want to change the'
+        'nms IoU threshold.')
+    parser.add_argument(
         '--cfg-options',
         nargs='+',
         action=DictAction,
@@ -57,9 +68,9 @@ def calculate_confusion_matrix(dataset,
         results (list[ndarray]): A list of detection results in each image.
         score_thr (float|optional): Score threshold to filter bboxes.
             Default: 0.
-        nms_iou_thr (float|optional): nms IOU threshold, the detection results
+        nms_iou_thr (float|optional): nms IoU threshold, the detection results
             have done nms in the detector, only applied when users want to
-            change the nms iou threshold. Default: None.
+            change the nms IoU threshold. Default: None.
         tp_iou_thr (float|optional): IoU threshold to be considered as matched.
             Default: 0.5.
     """
@@ -100,13 +111,13 @@ def analyze_per_img_dets(confusion_matrix,
         gt_labels (ndarray): Ground truth labels, has shape (num_gt).
         result (ndarray): Detection results, has shape
             (num_classes, num_bboxes, 5).
-        score_thr (float|optional): Score threshold to filter bboxes.
+        score_thr (float): Score threshold to filter bboxes.
             Default: 0.
-        tp_iou_thr (float|optional): IoU threshold to be considered as matched.
+        tp_iou_thr (float): IoU threshold to be considered as matched.
             Default: 0.5.
-        nms_iou_thr (float|optional): nms IOU threshold, the detection results
+        nms_iou_thr (float|optional): nms IoU threshold, the detection results
             have done nms in the detector, only applied when users want to
-            change the nms iou threshold. Default: None.
+            change the nms IoU threshold. Default: None.
     """
     true_positives = np.zeros_like(gt_labels)
     for det_label, det_bboxes in enumerate(result):
@@ -226,7 +237,8 @@ def main():
             ds_cfg.test_mode = True
     dataset = build_dataset(cfg.data.test)
 
-    normalized_confusion_matrix = calculate_confusion_matrix(dataset, outputs)
+    normalized_confusion_matrix = calculate_confusion_matrix(
+        dataset, outputs, args.score_thr, args.nms_iou_thr, args.tp_iou_thr)
     plot_confusion_matrix(
         normalized_confusion_matrix,
         dataset.CLASSES + ('background', ),
