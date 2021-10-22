@@ -89,12 +89,13 @@ fi
 CONSTRAINTS_FILE=$(tempfile)
 cat constraints.txt >> ${CONSTRAINTS_FILE}
 
-pip install --upgrade pip || exit 1
+# Newer versions of pip have troubles with NNCF installation from the repo commit.
+pip install pip==21.2.1 || exit 1
 pip install wheel -c ${CONSTRAINTS_FILE} || exit 1
 pip install --upgrade setuptools -c ${CONSTRAINTS_FILE} || exit 1
 
 if [[ -z $CUDA_VERSION_CODE ]]; then
-  pip install torch==${TORCH_VERSION}+cpu torchvision==${TORCHVISION_VERSION}+cpu -f https://download.pytorch.org/whl/torch_stable.html \
+  pip install torch==${TORCH_VERSION}+cpu torchvision==${TORCHVISION_VERSION}+cpu -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html \
           -c ${CONSTRAINTS_FILE} || exit 1
   echo torch==${TORCH_VERSION}+cpu >> ${CONSTRAINTS_FILE}
   echo torchvision==${TORCHVISION_VERSION}+cpu >> ${CONSTRAINTS_FILE}
@@ -105,7 +106,7 @@ else
   echo torchvision==${TORCHVISION_VERSION}+cu${CUDA_VERSION_CODE} >> ${CONSTRAINTS_FILE}
 fi
 
-pip install --no-cache-dir mmcv-full==${MMCV_VERSION}
+pip install --no-cache-dir mmcv-full==${MMCV_VERSION} -c ${CONSTRAINTS_FILE} || exit 1
 
 # Install other requirements.
 # Install mmpycocotools and Polygon3 from source to make sure it is compatible with installed numpy version.
