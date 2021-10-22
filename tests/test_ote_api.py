@@ -104,61 +104,12 @@ def test_configuration_yaml():
 
 
 class Sample(unittest.TestCase):
-    root_dir = '/tmp'
-    coco_dir = osp.join(root_dir, 'data/coco')
-    snapshots_dir = osp.join(root_dir, 'snapshots')
     template = osp.join(DEFAULT_TEMPLATE_DIR, 'template.yaml')
-
-    custom_operations = ['ExperimentalDetectronROIFeatureExtractor',
-                         'PriorBox', 'PriorBoxClustered', 'DetectionOutput',
-                         'DeformableConv2D']
-
-    @staticmethod
-    def shorten_annotation(src_path, dst_path, num_images):
-        with open(src_path) as read_file:
-            content = json.load(read_file)
-            selected_indexes = sorted([item['id'] for item in content['images']])
-            selected_indexes = selected_indexes[:num_images]
-            content['images'] = [item for item in content['images'] if
-                                 item['id'] in selected_indexes]
-            content['annotations'] = [item for item in content['annotations'] if
-                                      item['image_id'] in selected_indexes]
-            content['licenses'] = [item for item in content['licenses'] if
-                                   item['id'] in selected_indexes]
-
-        with open(dst_path, 'w') as write_file:
-            json.dump(content, write_file)
-
-    @classmethod
-    def setUpClass(cls):
-        cls.test_on_full = False
-        os.makedirs(cls.coco_dir, exist_ok=True)
-        if not osp.exists(osp.join(cls.coco_dir, 'val2017.zip')):
-            run(f'wget --no-verbose http://images.cocodataset.org/zips/val2017.zip -P {cls.coco_dir}',
-            check=True, shell=True)
-        if not osp.exists(osp.join(cls.coco_dir, 'val2017')):
-            run(f'unzip {osp.join(cls.coco_dir, "val2017.zip")} -d {cls.coco_dir}', check=True, shell=True)
-        if not osp.exists(osp.join(cls.coco_dir, "annotations_trainval2017.zip")):
-            run(f'wget --no-verbose http://images.cocodataset.org/annotations/annotations_trainval2017.zip -P {cls.coco_dir}',
-            check=True, shell=True)
-        if not osp.exists(osp.join(cls.coco_dir, 'annotations/instances_val2017.json')):
-            run(f'unzip -o {osp.join(cls.coco_dir, "annotations_trainval2017.zip")} -d {cls.coco_dir}',
-            check=True, shell=True)
-
-        if cls.test_on_full:
-            cls.shorten_to = 5000
-        else:
-            cls.shorten_to = 100
-
-        cls.shorten_annotation(osp.join(cls.coco_dir, 'annotations/instances_val2017.json'),
-                               osp.join(cls.coco_dir, 'annotations/instances_val2017.json'),
-                               cls.shorten_to)
 
     @e2e_pytest_api
     def test_sample_on_cpu(self):
         output = run('export CUDA_VISIBLE_DEVICES=;'
                      'python mmdet/apis/ote/sample/sample.py '
-                     f'--data-dir {self.coco_dir}/.. '
                      f'--export {self.template}',
                      shell=True, check=True)
         assert output.returncode == 0
@@ -166,7 +117,6 @@ class Sample(unittest.TestCase):
     @e2e_pytest_api
     def test_sample_on_gpu(self):
         output = run('python mmdet/apis/ote/sample/sample.py '
-                     f'--data-dir {self.coco_dir}/.. '
                      f'--export {self.template}',
                      shell=True, check=True)
         assert output.returncode == 0
