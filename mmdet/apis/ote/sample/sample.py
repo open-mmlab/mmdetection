@@ -30,7 +30,6 @@ from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType
 from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
 
-from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
 from mmdet.apis.ote.apis.detection.ote_utils import get_task_class
 from mmdet.apis.ote.extension.datasets.data_utils import load_dataset_items_coco_format
 
@@ -75,13 +74,13 @@ def main(args):
     logger.info('Load model template')
     model_template = parse_model_template(args.template_file_path)
 
-    hyper_parameters = model_template.hyper_parameters.data
-    set_values_as_default(hyper_parameters)
+    logger.info('Set hyperparameters')
+    params = create(model_template.hyper_parameters.data)
+    params.learning_parameters.num_iters = 10
+    params.learning_parameters.learning_rate_warmup_iters = 1
+    params.learning_parameters.batch_size = 2
 
     logger.info('Setup environment')
-    params = create(hyper_parameters)
-    logger.info('Set hyperparameters')
-    params.learning_parameters.num_iters = 1
     environment = TaskEnvironment(model=None, hyper_parameters=params, label_schema=labels_schema, model_template=model_template)
 
     logger.info('Create base Task')

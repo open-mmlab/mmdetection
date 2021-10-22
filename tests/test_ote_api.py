@@ -52,7 +52,6 @@ from ote_sdk.usecases.tasks.interfaces.optimization_interface import Optimizatio
 
 from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask, OTEDetectionConfig, OTEDetectionInferenceTask,
                                            OTEDetectionNNCFTask, OTEDetectionTrainingTask)
-from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
 from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema
 from mmdet.integration.nncf.utils import is_nncf_enabled
 
@@ -103,25 +102,6 @@ def test_configuration_yaml():
     configuration_yaml_loaded = create(osp.join('mmdet', 'apis', 'ote', 'apis', 'detection', 'configuration.yaml'))
     assert configuration_yaml_converted == configuration_yaml_loaded
 
-@e2e_pytest_api
-def test_set_values_as_default():
-    template_file = osp.join(DEFAULT_TEMPLATE_DIR, 'template.yaml')
-    model_template = parse_model_template(template_file)
-
-    hyper_parameters = model_template.hyper_parameters.data
-    # value that comes from template.yaml
-    default_value = hyper_parameters['learning_parameters']['batch_size']['default_value']
-    # value that comes from OTEDetectionConfig
-    value = hyper_parameters['learning_parameters']['batch_size']['value']
-    assert value == 5
-    assert default_value == 8
-
-    # after this call value must be equal to default_value
-    set_values_as_default(hyper_parameters)
-    value = hyper_parameters['learning_parameters']['batch_size']['value']
-    assert default_value == value
-    hyper_parameters = create(hyper_parameters)
-    assert default_value == hyper_parameters.learning_parameters.batch_size
 
 class Sample(unittest.TestCase):
     root_dir = '/tmp'
@@ -251,10 +231,7 @@ class API(unittest.TestCase):
 
     def setup_configurable_parameters(self, template_dir, num_iters=10):
         model_template = parse_model_template(osp.join(template_dir, 'template.yaml'))
-
-        hyper_parameters = model_template.hyper_parameters.data
-        set_values_as_default(hyper_parameters)
-        hyper_parameters = create(hyper_parameters)
+        hyper_parameters = create(model_template.hyper_parameters.data)
         hyper_parameters.learning_parameters.num_iters = num_iters
         hyper_parameters.learning_parameters.num_checkpoints = 1
         hyper_parameters.postprocessing.result_based_confidence_threshold = False
