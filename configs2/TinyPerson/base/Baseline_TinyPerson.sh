@@ -9,11 +9,6 @@ export GPU=2 && LR=0.01 && CUDA_VISIBLE_DEVICES=0,1 PORT=10000 tools/dist_train.
   --work-dir ../TOV_mmdetection_cache/work_dir/TinyPerson/Base/faster_rcnn_r50_fpn_1x_TinyPerson640/old640x512_lr${LR}_1x_${GPU}g/ \
   --cfg-options optimizer.lr=${LR}
 
-# add by lzj exp1.3: Faster-FPN, 4 TESLA T4
-export GPU=1 && LR=0.08 && CUDA_VISIBLE_DEVICES=0 PORT=10000 tools/dist_train.sh configs2/TinyPerson/base/faster_rcnn_r50_fpn_1x_TinyPerson640.py $GPU \
-  --work-dir ../TOV_mmdetection_cache/work_dir/TinyPerson/Base/faster_rcnn_r50_fpn_1x_TinyPerson640/old640x512_lr${LR}_1x_${GPU}g/ \
-  --cfg-options optimizer.lr=${LR}
-
 # exp2.1: adap RetinaNet
 export GPU=1 && LR=0.005 && CONFIG="retinanet_r50_fpns4_1x_TinyPerson640" && CUDA_VISIBLE_DEVICES=0 PORT=10001 \
   tools/dist_train.sh configs2/TinyPerson/base/${CONFIG}.py $GPU \

@@ -8,7 +8,7 @@ from mmcv.runner import BaseModule
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from ..builder import BACKBONES
-from ..utils import ResLayer
+from ..utils import ResLayer,CBAM,ChannelGate,SpatialGate
 
 
 class BasicBlock(BaseModule):
@@ -301,9 +301,10 @@ class Bottleneck(BaseModule):
 
         return out
 
+
 class SEModuleWithMaxPooling(nn.Module):
 
-    def __init__(self, channels, reduction):
+    def __init__(self, channels, reduction=16):
         super(SEModuleWithMaxPooling, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.max_pool = nn.AdaptiveMaxPool2d(1)
@@ -328,6 +329,59 @@ class SEModuleWithMaxPooling(nn.Module):
 
         x = self.sigmoid(x + y)
         return module_input * x
+
+class SEModule(nn.Module):
+
+    def __init__(self, channels, reduction=16):
+        super(SEModule, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc1 = nn.Conv2d(channels, channels // reduction, kernel_size=1,
+                             padding=0)
+        self.relu = nn.ReLU(inplace=True)
+        self.fc2 = nn.Conv2d(channels // reduction, channels, kernel_size=1,
+                             padding=0)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        module_input = x
+        x = self.avg_pool(x)
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.fc2(x)
+
+        x = self.sigmoid(x)
+        return module_input * x
+
+
+class SESpatialModule(nn.Module):
+
+    def __init__(self, kernel_size=7):
+        super(SESpatialModule, self).__init__()
+
+        self.conv1 = nn.Conv2d(2, 1, kernel_size, padding=kernel_size // 2, bias=False)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        avg_out = torch.mean(x, dim=1, keepdim=True)
+        max_out, _ = torch.max(x, dim=1, keepdim=True)
+        x = torch.cat([avg_out, max_out], dim=1)
+        x = self.conv1(x)
+        return self.sigmoid(x)
+
+
+class SECBAMModule(nn.Module):
+
+    def __init__(self,channels, kernel_size=7, reduction=16):
+        super(SECBAMModule, self).__init__()
+
+        self.channel_attention = SEModuleWithMaxPooling(channels=channels,reduction=reduction)
+        self.spatial_attention = SESpatialModule(kernel_size=kernel_size)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        x = self.channel_attention(x)
+        x = self.spatial_attention(x)
+        return self.sigmoid(x)
 
 class SEBottleneck(BaseModule):
     expansion = 4
@@ -370,7 +424,7 @@ class SEBottleneck(BaseModule):
         self.with_dcn = dcn is not None
         self.plugins = plugins
         self.with_plugins = plugins is not None
-        self.se_module = SEModuleWithMaxPooling(planes * 4, reduction=16)
+        self.se_module = SEModule(planes * 4, reduction=16)
 
         if self.with_plugins:
             # collect plugins for conv1/conv2/conv3
@@ -500,7 +554,428 @@ class SEBottleneck(BaseModule):
         """Forward function."""
 
         def _inner_forward(x):
-            with torch.autograd.set_detect_anomaly(True):
+
+            identity = x
+
+            out = self.conv1(x)
+            out = self.norm1(out)
+            out = self.relu(out)
+
+            if self.with_plugins:
+                out = self.forward_plugin(out, self.after_conv1_plugin_names)
+
+            out = self.conv2(out)
+            out = self.norm2(out)
+            out = self.relu(out)
+
+            if self.with_plugins:
+                out = self.forward_plugin(out, self.after_conv2_plugin_names)
+
+            out = self.conv3(out)
+            out = self.norm3(out)
+
+            if self.with_plugins:
+                out = self.forward_plugin(out, self.after_conv3_plugin_names)
+
+            if self.downsample is not None:
+                identity = self.downsample(x)
+
+            # out += identity
+            out = self.se_module(out) + identity
+
+            return out
+
+        if self.with_cp and x.requires_grad:
+            out = cp.checkpoint(_inner_forward, x)
+        else:
+            out = _inner_forward(x)
+
+        out = self.relu(out)
+
+        return out
+
+class SEMPBottleneck(BaseModule):
+    expansion = 4
+
+    def __init__(self,
+                 inplanes,
+                 planes,
+                 stride=1,
+                 dilation=1,
+                 downsample=None,
+                 style='pytorch',
+                 with_cp=False,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN'),
+                 dcn=None,
+                 plugins=None,
+                 init_cfg=None):
+        """Bottleneck block for ResNet.
+
+        If style is "pytorch", the stride-two layer is the 3x3 conv layer, if
+        it is "caffe", the stride-two layer is the first 1x1 conv layer.
+        """
+        super(SEMPBottleneck, self).__init__(init_cfg)
+        assert style in ['pytorch', 'caffe']
+        assert dcn is None or isinstance(dcn, dict)
+        assert plugins is None or isinstance(plugins, list)
+        if plugins is not None:
+            allowed_position = ['after_conv1', 'after_conv2', 'after_conv3']
+            assert all(p['position'] in allowed_position for p in plugins)
+
+        self.inplanes = inplanes
+        self.planes = planes
+        self.stride = stride
+        self.dilation = dilation
+        self.style = style
+        self.with_cp = with_cp
+        self.conv_cfg = conv_cfg
+        self.norm_cfg = norm_cfg
+        self.dcn = dcn
+        self.with_dcn = dcn is not None
+        self.plugins = plugins
+        self.with_plugins = plugins is not None
+        # self.se_module = SEModuleWithMaxPooling(planes * 4, reduction=16)
+        self.cbam = CBAM(gate_channels=planes * 4, reduction_ratio=16,no_spatial=True)
+
+        if self.with_plugins:
+            # collect plugins for conv1/conv2/conv3
+            self.after_conv1_plugins = [
+                plugin['cfg'] for plugin in plugins
+                if plugin['position'] == 'after_conv1'
+            ]
+            self.after_conv2_plugins = [
+                plugin['cfg'] for plugin in plugins
+                if plugin['position'] == 'after_conv2'
+            ]
+            self.after_conv3_plugins = [
+                plugin['cfg'] for plugin in plugins
+                if plugin['position'] == 'after_conv3'
+            ]
+
+        if self.style == 'pytorch':
+            self.conv1_stride = 1
+            self.conv2_stride = stride
+        else:
+            self.conv1_stride = stride
+            self.conv2_stride = 1
+
+        self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
+        self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
+        self.norm3_name, norm3 = build_norm_layer(
+            norm_cfg, planes * self.expansion, postfix=3)
+
+        self.conv1 = build_conv_layer(
+            conv_cfg,
+            inplanes,
+            planes,
+            kernel_size=1,
+            stride=self.conv1_stride,
+            bias=False)
+        self.add_module(self.norm1_name, norm1)
+        fallback_on_stride = False
+        if self.with_dcn:
+            fallback_on_stride = dcn.pop('fallback_on_stride', False)
+        if not self.with_dcn or fallback_on_stride:
+            self.conv2 = build_conv_layer(
+                conv_cfg,
+                planes,
+                planes,
+                kernel_size=3,
+                stride=self.conv2_stride,
+                padding=dilation,
+                dilation=dilation,
+                bias=False)
+        else:
+            assert self.conv_cfg is None, 'conv_cfg must be None for DCN'
+            self.conv2 = build_conv_layer(
+                dcn,
+                planes,
+                planes,
+                kernel_size=3,
+                stride=self.conv2_stride,
+                padding=dilation,
+                dilation=dilation,
+                bias=False)
+
+        self.add_module(self.norm2_name, norm2)
+        self.conv3 = build_conv_layer(
+            conv_cfg,
+            planes,
+            planes * self.expansion,
+            kernel_size=1,
+            bias=False)
+        self.add_module(self.norm3_name, norm3)
+
+        self.relu = nn.ReLU(inplace=True)
+        self.downsample = downsample
+
+        if self.with_plugins:
+            self.after_conv1_plugin_names = self.make_block_plugins(
+                planes, self.after_conv1_plugins)
+            self.after_conv2_plugin_names = self.make_block_plugins(
+                planes, self.after_conv2_plugins)
+            self.after_conv3_plugin_names = self.make_block_plugins(
+                planes * self.expansion, self.after_conv3_plugins)
+
+    def make_block_plugins(self, in_channels, plugins):
+        """make plugins for block.
+
+        Args:
+            in_channels (int): Input channels of plugin.
+            plugins (list[dict]): List of plugins cfg to build.
+
+        Returns:
+            list[str]: List of the names of plugin.
+        """
+        assert isinstance(plugins, list)
+        plugin_names = []
+        for plugin in plugins:
+            plugin = plugin.copy()
+            name, layer = build_plugin_layer(
+                plugin,
+                in_channels=in_channels,
+                postfix=plugin.pop('postfix', ''))
+            assert not hasattr(self, name), f'duplicate plugin {name}'
+            self.add_module(name, layer)
+            plugin_names.append(name)
+        return plugin_names
+
+    def forward_plugin(self, x, plugin_names):
+        out = x
+        for name in plugin_names:
+            out = getattr(self, name)(x)
+        return out
+
+    @property
+    def norm1(self):
+        """nn.Module: normalization layer after the first convolution layer"""
+        return getattr(self, self.norm1_name)
+
+    @property
+    def norm2(self):
+        """nn.Module: normalization layer after the second convolution layer"""
+        return getattr(self, self.norm2_name)
+
+    @property
+    def norm3(self):
+        """nn.Module: normalization layer after the third convolution layer"""
+        return getattr(self, self.norm3_name)
+
+    def forward(self, x):
+        """Forward function."""
+        def _inner_forward(x):
+            identity = x
+
+            out = self.conv1(x)
+            out = self.norm1(out)
+            out = self.relu(out)
+
+            if self.with_plugins:
+                out = self.forward_plugin(out, self.after_conv1_plugin_names)
+
+            out = self.conv2(out)
+            out = self.norm2(out)
+            out = self.relu(out)
+
+            if self.with_plugins:
+                out = self.forward_plugin(out, self.after_conv2_plugin_names)
+
+            out = self.conv3(out)
+            out = self.norm3(out)
+
+            if self.with_plugins:
+                out = self.forward_plugin(out, self.after_conv3_plugin_names)
+
+            if self.downsample is not None:
+                identity = self.downsample(x)
+
+            out = self.cbam(out) + identity
+
+            return out
+
+        if self.with_cp and x.requires_grad:
+            out = cp.checkpoint(_inner_forward, x)
+        else:
+            out = _inner_forward(x)
+        out = self.relu(out)
+
+        return out
+
+
+class SESPBottleneck(BaseModule):
+    expansion = 4
+
+    def __init__(self,
+                 inplanes,
+                 planes,
+                 stride=1,
+                 dilation=1,
+                 downsample=None,
+                 style='pytorch',
+                 with_cp=False,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN'),
+                 dcn=None,
+                 plugins=None,
+                 init_cfg=None):
+        """Bottleneck block for ResNet.
+
+        If style is "pytorch", the stride-two layer is the 3x3 conv layer, if
+        it is "caffe", the stride-two layer is the first 1x1 conv layer.
+        """
+        super(SESPBottleneck, self).__init__(init_cfg)
+        assert style in ['pytorch', 'caffe']
+        assert dcn is None or isinstance(dcn, dict)
+        assert plugins is None or isinstance(plugins, list)
+        if plugins is not None:
+            allowed_position = ['after_conv1', 'after_conv2', 'after_conv3']
+            assert all(p['position'] in allowed_position for p in plugins)
+
+        self.inplanes = inplanes
+        self.planes = planes
+        self.stride = stride
+        self.dilation = dilation
+        self.style = style
+        self.with_cp = with_cp
+        self.conv_cfg = conv_cfg
+        self.norm_cfg = norm_cfg
+        self.dcn = dcn
+        self.with_dcn = dcn is not None
+        self.plugins = plugins
+        self.with_plugins = plugins is not None
+        # self.se_module = SESpatialModule(kernel_size=7)
+        self.cbam = SpatialGate()
+
+        if self.with_plugins:
+            # collect plugins for conv1/conv2/conv3
+            self.after_conv1_plugins = [
+                plugin['cfg'] for plugin in plugins
+                if plugin['position'] == 'after_conv1'
+            ]
+            self.after_conv2_plugins = [
+                plugin['cfg'] for plugin in plugins
+                if plugin['position'] == 'after_conv2'
+            ]
+            self.after_conv3_plugins = [
+                plugin['cfg'] for plugin in plugins
+                if plugin['position'] == 'after_conv3'
+            ]
+
+        if self.style == 'pytorch':
+            self.conv1_stride = 1
+            self.conv2_stride = stride
+        else:
+            self.conv1_stride = stride
+            self.conv2_stride = 1
+
+        self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
+        self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
+        self.norm3_name, norm3 = build_norm_layer(
+            norm_cfg, planes * self.expansion, postfix=3)
+
+        self.conv1 = build_conv_layer(
+            conv_cfg,
+            inplanes,
+            planes,
+            kernel_size=1,
+            stride=self.conv1_stride,
+            bias=False)
+        self.add_module(self.norm1_name, norm1)
+        fallback_on_stride = False
+        if self.with_dcn:
+            fallback_on_stride = dcn.pop('fallback_on_stride', False)
+        if not self.with_dcn or fallback_on_stride:
+            self.conv2 = build_conv_layer(
+                conv_cfg,
+                planes,
+                planes,
+                kernel_size=3,
+                stride=self.conv2_stride,
+                padding=dilation,
+                dilation=dilation,
+                bias=False)
+        else:
+            assert self.conv_cfg is None, 'conv_cfg must be None for DCN'
+            self.conv2 = build_conv_layer(
+                dcn,
+                planes,
+                planes,
+                kernel_size=3,
+                stride=self.conv2_stride,
+                padding=dilation,
+                dilation=dilation,
+                bias=False)
+
+        self.add_module(self.norm2_name, norm2)
+        self.conv3 = build_conv_layer(
+            conv_cfg,
+            planes,
+            planes * self.expansion,
+            kernel_size=1,
+            bias=False)
+        self.add_module(self.norm3_name, norm3)
+
+        self.relu = nn.ReLU(inplace=True)
+        self.downsample = downsample
+
+        if self.with_plugins:
+            self.after_conv1_plugin_names = self.make_block_plugins(
+                planes, self.after_conv1_plugins)
+            self.after_conv2_plugin_names = self.make_block_plugins(
+                planes, self.after_conv2_plugins)
+            self.after_conv3_plugin_names = self.make_block_plugins(
+                planes * self.expansion, self.after_conv3_plugins)
+
+    def make_block_plugins(self, in_channels, plugins):
+        """make plugins for block.
+
+        Args:
+            in_channels (int): Input channels of plugin.
+            plugins (list[dict]): List of plugins cfg to build.
+
+        Returns:
+            list[str]: List of the names of plugin.
+        """
+        assert isinstance(plugins, list)
+        plugin_names = []
+        for plugin in plugins:
+            plugin = plugin.copy()
+            name, layer = build_plugin_layer(
+                plugin,
+                in_channels=in_channels,
+                postfix=plugin.pop('postfix', ''))
+            assert not hasattr(self, name), f'duplicate plugin {name}'
+            self.add_module(name, layer)
+            plugin_names.append(name)
+        return plugin_names
+
+    def forward_plugin(self, x, plugin_names):
+        out = x
+        for name in plugin_names:
+            out = getattr(self, name)(x)
+        return out
+
+    @property
+    def norm1(self):
+        """nn.Module: normalization layer after the first convolution layer"""
+        return getattr(self, self.norm1_name)
+
+    @property
+    def norm2(self):
+        """nn.Module: normalization layer after the second convolution layer"""
+        return getattr(self, self.norm2_name)
+
+    @property
+    def norm3(self):
+        """nn.Module: normalization layer after the third convolution layer"""
+        return getattr(self, self.norm3_name)
+
+    def forward(self, x):
+        """Forward function."""
+
+        def _inner_forward(x):
+
                 identity = x
 
                 out = self.conv1(x)
@@ -527,7 +1002,8 @@ class SEBottleneck(BaseModule):
                     identity = self.downsample(x)
 
                 # out += identity
-                out = self.se_module(out)+identity
+                # out = self.se_module(out) + identity
+                out = self.cbam(out)+identity
 
                 return out
 
@@ -535,6 +1011,220 @@ class SEBottleneck(BaseModule):
             out = cp.checkpoint(_inner_forward, x)
         else:
             out = _inner_forward(x)
+
+        out = self.relu(out)
+
+        return out
+
+
+class SECBAMBottleneck(BaseModule):
+    expansion = 4
+
+    def __init__(self,
+                 inplanes,
+                 planes,
+                 stride=1,
+                 dilation=1,
+                 downsample=None,
+                 style='pytorch',
+                 with_cp=False,
+                 conv_cfg=None,
+                 norm_cfg=dict(type='BN'),
+                 dcn=None,
+                 plugins=None,
+                 init_cfg=None):
+        """Bottleneck block for ResNet.
+
+        If style is "pytorch", the stride-two layer is the 3x3 conv layer, if
+        it is "caffe", the stride-two layer is the first 1x1 conv layer.
+        """
+        super(SECBAMBottleneck, self).__init__(init_cfg)
+        assert style in ['pytorch', 'caffe']
+        assert dcn is None or isinstance(dcn, dict)
+        assert plugins is None or isinstance(plugins, list)
+        if plugins is not None:
+            allowed_position = ['after_conv1', 'after_conv2', 'after_conv3']
+            assert all(p['position'] in allowed_position for p in plugins)
+
+        self.inplanes = inplanes
+        self.planes = planes
+        self.stride = stride
+        self.dilation = dilation
+        self.style = style
+        self.with_cp = with_cp
+        self.conv_cfg = conv_cfg
+        self.norm_cfg = norm_cfg
+        self.dcn = dcn
+        self.with_dcn = dcn is not None
+        self.plugins = plugins
+        self.with_plugins = plugins is not None
+        # self.se_module = SECBAMModule(channels=planes * self.expansion, kernel_size=7, reduction=16)
+        self.cbam = CBAM(gate_channels=planes * self.expansion)
+
+        if self.with_plugins:
+            # collect plugins for conv1/conv2/conv3
+            self.after_conv1_plugins = [
+                plugin['cfg'] for plugin in plugins
+                if plugin['position'] == 'after_conv1'
+            ]
+            self.after_conv2_plugins = [
+                plugin['cfg'] for plugin in plugins
+                if plugin['position'] == 'after_conv2'
+            ]
+            self.after_conv3_plugins = [
+                plugin['cfg'] for plugin in plugins
+                if plugin['position'] == 'after_conv3'
+            ]
+
+        if self.style == 'pytorch':
+            self.conv1_stride = 1
+            self.conv2_stride = stride
+        else:
+            self.conv1_stride = stride
+            self.conv2_stride = 1
+
+        self.norm1_name, norm1 = build_norm_layer(norm_cfg, planes, postfix=1)
+        self.norm2_name, norm2 = build_norm_layer(norm_cfg, planes, postfix=2)
+        self.norm3_name, norm3 = build_norm_layer(
+            norm_cfg, planes * self.expansion, postfix=3)
+
+        self.conv1 = build_conv_layer(
+            conv_cfg,
+            inplanes,
+            planes,
+            kernel_size=1,
+            stride=self.conv1_stride,
+            bias=False)
+        self.add_module(self.norm1_name, norm1)
+        fallback_on_stride = False
+        if self.with_dcn:
+            fallback_on_stride = dcn.pop('fallback_on_stride', False)
+        if not self.with_dcn or fallback_on_stride:
+            self.conv2 = build_conv_layer(
+                conv_cfg,
+                planes,
+                planes,
+                kernel_size=3,
+                stride=self.conv2_stride,
+                padding=dilation,
+                dilation=dilation,
+                bias=False)
+        else:
+            assert self.conv_cfg is None, 'conv_cfg must be None for DCN'
+            self.conv2 = build_conv_layer(
+                dcn,
+                planes,
+                planes,
+                kernel_size=3,
+                stride=self.conv2_stride,
+                padding=dilation,
+                dilation=dilation,
+                bias=False)
+
+        self.add_module(self.norm2_name, norm2)
+        self.conv3 = build_conv_layer(
+            conv_cfg,
+            planes,
+            planes * self.expansion,
+            kernel_size=1,
+            bias=False)
+        self.add_module(self.norm3_name, norm3)
+
+        self.relu = nn.ReLU(inplace=True)
+        self.downsample = downsample
+
+        if self.with_plugins:
+            self.after_conv1_plugin_names = self.make_block_plugins(
+                planes, self.after_conv1_plugins)
+            self.after_conv2_plugin_names = self.make_block_plugins(
+                planes, self.after_conv2_plugins)
+            self.after_conv3_plugin_names = self.make_block_plugins(
+                planes * self.expansion, self.after_conv3_plugins)
+
+    def make_block_plugins(self, in_channels, plugins):
+        """make plugins for block.
+
+        Args:
+            in_channels (int): Input channels of plugin.
+            plugins (list[dict]): List of plugins cfg to build.
+
+        Returns:
+            list[str]: List of the names of plugin.
+        """
+        assert isinstance(plugins, list)
+        plugin_names = []
+        for plugin in plugins:
+            plugin = plugin.copy()
+            name, layer = build_plugin_layer(
+                plugin,
+                in_channels=in_channels,
+                postfix=plugin.pop('postfix', ''))
+            assert not hasattr(self, name), f'duplicate plugin {name}'
+            self.add_module(name, layer)
+            plugin_names.append(name)
+        return plugin_names
+
+    def forward_plugin(self, x, plugin_names):
+        out = x
+        for name in plugin_names:
+            out = getattr(self, name)(x)
+        return out
+
+    @property
+    def norm1(self):
+        """nn.Module: normalization layer after the first convolution layer"""
+        return getattr(self, self.norm1_name)
+
+    @property
+    def norm2(self):
+        """nn.Module: normalization layer after the second convolution layer"""
+        return getattr(self, self.norm2_name)
+
+    @property
+    def norm3(self):
+        """nn.Module: normalization layer after the third convolution layer"""
+        return getattr(self, self.norm3_name)
+
+    def forward(self, x):
+        """Forward function."""
+
+        def _inner_forward(x):
+            identity = x
+
+            out = self.conv1(x)
+            out = self.norm1(out)
+            out = self.relu(out)
+
+            if self.with_plugins:
+                out = self.forward_plugin(out, self.after_conv1_plugin_names)
+
+            out = self.conv2(out)
+            out = self.norm2(out)
+            out = self.relu(out)
+
+            if self.with_plugins:
+                out = self.forward_plugin(out, self.after_conv2_plugin_names)
+
+            out = self.conv3(out)
+            out = self.norm3(out)
+
+            if self.with_plugins:
+                out = self.forward_plugin(out, self.after_conv3_plugin_names)
+
+            if self.downsample is not None:
+                identity = self.downsample(x)
+
+            # out += identity
+            # out = self.se_module(out) + identity
+            out = self.cbam(out) + identity
+
+            return out
+
+        # if self.with_cp and x.requires_grad:
+        #     out = cp.checkpoint(_inner_forward, x)
+        # else:
+        #     out = _inner_forward(x)
+        out = _inner_forward(x)
 
         out = self.relu(out)
 
@@ -609,7 +1299,10 @@ class SEResNet(BaseModule):
         34: (BasicBlock, (3, 4, 6, 3)),
         50: (SEBottleneck, (3, 4, 6, 3)),
         101: (SEBottleneck, (3, 4, 23, 3)),
-        152: (SEBottleneck, (3, 8, 36, 3))
+        152: (SEBottleneck, (3, 8, 36, 3)),
+        '50_maxpooling':(SEMPBottleneck, (3, 4, 6, 3)),
+        '50_spatial': (SESPBottleneck, (3, 4, 6, 3)),
+        '50_CBAM': (SECBAMBottleneck, (3, 4, 6, 3))
     }
 
     def __init__(self,
@@ -711,7 +1404,7 @@ class SEResNet(BaseModule):
                 stage_plugins = self.make_stage_plugins(plugins, i)
             else:
                 stage_plugins = None
-            planes = base_channels * 2**i
+            planes = base_channels * 2 ** i
             res_layer = self.make_res_layer(
                 block=self.block,
                 inplanes=self.inplanes,
@@ -727,6 +1420,12 @@ class SEResNet(BaseModule):
                 dcn=dcn,
                 plugins=stage_plugins,
                 init_cfg=block_init_cfg)
+            # res_layer = self.make_res_layer(
+            #     block=self.block,
+            #     planes=planes,
+            #     blocks=num_blocks,
+            #     stride=stride
+            #     )
             self.inplanes = planes * self.block.expansion
             layer_name = f'layer{i + 1}'
             self.add_module(layer_name, res_layer)
@@ -734,8 +1433,8 @@ class SEResNet(BaseModule):
 
         self._freeze_stages()
 
-        self.feat_dim = self.block.expansion * base_channels * 2**(
-            len(self.stage_blocks) - 1)
+        self.feat_dim = self.block.expansion * base_channels * 2 ** (
+                len(self.stage_blocks) - 1)
 
     def make_stage_plugins(self, plugins, stage_idx):
         """Make plugins for ResNet ``stage_idx`` th stage.
@@ -799,9 +1498,28 @@ class SEResNet(BaseModule):
 
         return stage_plugins
 
+    # modify by lzj 替换掉原本的make_layer，原本的会导致注意力模块被放在最前面
     def make_res_layer(self, **kwargs):
         """Pack all blocks in a stage into a ``ResLayer``."""
         return ResLayer(**kwargs)
+    # def make_res_layer(self, block, planes, blocks, stride=1, att_type=None):
+    #     downsample = None
+    #     if stride != 1 or self.inplanes != planes * block.expansion:
+    #         downsample = nn.Sequential(
+    #             nn.Conv2d(self.inplanes, planes * block.expansion,
+    #                       kernel_size=1, stride=stride, bias=False),
+    #             nn.BatchNorm2d(planes * block.expansion),
+    #         )
+    #
+    #     layers = []
+    #     # layers.append(block(self.inplanes, planes, stride, downsample, use_cbam=att_type=='CBAM'))
+    #     layers.append(block(self.inplanes, planes, stride, downsample=downsample))
+    #     self.inplanes = planes * block.expansion
+    #     for i in range(1, blocks):
+    #         # layers.append(block(self.inplanes, planes, use_cbam=att_type=='CBAM'))
+    #         layers.append(block(self.inplanes, planes))
+    #
+    #     return nn.Sequential(*layers)
 
     @property
     def norm1(self):

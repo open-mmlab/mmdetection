@@ -34,9 +34,9 @@ test_pipeline = [
 ]
 data = dict(
     # samples_per_gpu=1,
-    # workers_per_gpu=1,
-    samples_per_gpu=8,
-    workers_per_gpu=2,
+    workers_per_gpu=1,
+    samples_per_gpu=16,
+    # workers_per_gpu=2,
     train=dict(
             type=dataset_type,
             # ann_file=data_root + 'erase_with_uncertain_dataset/annotations/corner/task/tiny_set_train_sw640_sh512_all.json',
@@ -69,10 +69,12 @@ check = dict(stop_while_nan=True)  # add by hui
 # evaluation = dict(interval=4, metric='bbox')
 
 # tiny bbox eval with IOD
+
 evaluation = dict(
     interval=3, metric='bbox',
     iou_thrs=[0.25, 0.5, 0.75],  # set None mean use 0.5:1.0::0.05
     proposal_nums=[1000],
+    save_best = 'bbox_mAP',
     cocofmt_kwargs=dict(
         ignore_uncertain=True,
         use_ignore_attr=True,
