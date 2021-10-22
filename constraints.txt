@@ -23,7 +23,7 @@ fast_ctc_decode==0.3.0
 flake8==4.0.1
 flatbuffers==1.12
 future==0.18.2
-google-auth==2.3.0
+google-auth==1.35.0
 google-auth-oauthlib==0.4.6
 grpcio==1.32.0
 humanfriendly==10.0
