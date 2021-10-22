@@ -45,7 +45,24 @@ def parse_args():
     return args
 
 
-def calculate_confusion_matrix(dataset, results):
+def calculate_confusion_matrix(dataset,
+                               results,
+                               score_thr=0,
+                               nms_iou_thr=None,
+                               tp_iou_thr=0.5):
+    """Calculate the confusion matrix.
+
+    Args:
+        dataset (Dataset): Test or val dataset.
+        results (list[ndarray]): A list of detection results in each image.
+        score_thr (float|optional): Score threshold to filter bboxes.
+            Default: 0.
+        nms_iou_thr (float|optional): nms IOU threshold, the detection results
+            have done nms in the detector, only applied when users want to
+            change the nms iou threshold. Default: None.
+        tp_iou_thr (float|optional): IoU threshold to be considered as matched.
+            Default: 0.5.
+    """
     num_classes = len(dataset.CLASSES)
     confusion_matrix = np.zeros(shape=[num_classes + 1, num_classes + 1])
     assert len(dataset) == len(results)
@@ -59,7 +76,7 @@ def calculate_confusion_matrix(dataset, results):
         gt_bboxes = ann['bboxes']
         labels = ann['labels']
         analyze_per_img_dets(confusion_matrix, gt_bboxes, labels, res_bboxes,
-                             0.5)
+                             score_thr, tp_iou_thr, nms_iou_thr)
         prog_bar.update()
     per_label_sums = confusion_matrix.sum(axis=1)[:, np.newaxis]
     normalized_matrix = \
@@ -72,7 +89,7 @@ def analyze_per_img_dets(confusion_matrix,
                          gt_labels,
                          result,
                          score_thr=0,
-                         iou_thr=0.5,
+                         tp_iou_thr=0.5,
                          nms_iou_thr=None):
     """Analyze detection results on each image.
 
@@ -85,7 +102,7 @@ def analyze_per_img_dets(confusion_matrix,
             (num_classes, num_bboxes, 5).
         score_thr (float|optional): Score threshold to filter bboxes.
             Default: 0.
-        iou_thr (float|optional): IoU threshold to be considered as matched.
+        tp_iou_thr (float|optional): IoU threshold to be considered as matched.
             Default: 0.5.
         nms_iou_thr (float|optional): nms IOU threshold, the detection results
             have done nms in the detector, only applied when users want to
@@ -105,7 +122,7 @@ def analyze_per_img_dets(confusion_matrix,
             det_match = 0
             if score >= score_thr:
                 for j, gt_label in enumerate(gt_labels):
-                    if ious[i, j] >= iou_thr:
+                    if ious[i, j] >= tp_iou_thr:
                         det_match += 1
                         if gt_label == det_label:
                             true_positives[j] += 1  # TP
