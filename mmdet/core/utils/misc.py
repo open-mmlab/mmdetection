@@ -136,8 +136,8 @@ def filter_scores_and_topk(scores, score_thr, topk, results=None):
                 (num_bboxes_filtered, ).
             - anchor_idxs (Tensor): The anchor indexes, shape \
                 (num_bboxes_filtered, ).
-            - selected (dict, Optional): The filtered dictionary \
-                object. The shape of each item is \
+            - filtered_results (dict, Optional): The filtered \
+                results. The shape of each item is \
                 (num_bboxes_filtered, N).
     """
     valid_mask = scores > score_thr

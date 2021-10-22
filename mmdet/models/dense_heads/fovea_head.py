@@ -289,7 +289,7 @@ class FoveaHead(AnchorFreeHead):
             score_factor_list (list[Tensor]): Score factor from all scale
                 levels of a single image. Fovea head does not need this value.
             mlvl_priors (list[Tensor]): Each element in the list is
-                the priors of single level in feature pyramid, has shape
+                the priors of a single level in feature pyramid, has shape
                 (num_priors, 4).
             img_meta (dict): Image meta info.
             cfg (mmcv.Config): Test / postprocessing configuration,

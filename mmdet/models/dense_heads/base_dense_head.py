@@ -118,7 +118,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 levels of a single image, each item has shape
                 (num_priors * 1, H, W).
             mlvl_priors (list[Tensor]): Each element in the list is
-                the priors of single level in feature pyramid, has shape
+                the priors of a single level in feature pyramid, has shape
                 (num_priors, 4).
             img_meta (dict): Image meta info.
             cfg (mmcv.Config): Test / postprocessing configuration,
@@ -223,7 +223,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             mlvl_scores (list[Tensor]): Box scores from all scale
                 levels of a single image, each item has shape
                 (num_bboxes, ).
-           mlvl_labels (list[Tensor]): Box class label from all scale
+           mlvl_labels (list[Tensor]): Box class labels from all scale
                 levels of a single image, each item has shape
                 (num_bboxes, ).
             mlvl_bboxes (list[Tensor]): Decoded bboxes from all scale
