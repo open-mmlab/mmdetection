@@ -15,6 +15,7 @@
 import copy
 import glob
 import logging
+import math
 import os
 import tempfile
 from collections import defaultdict
@@ -106,6 +107,33 @@ def set_hyperparams(config: Config, hyperparams: OTEDetectionConfig):
         config.runner.max_iters = total_iterations
 
 
+def patch_adaptive_repeat_dataset(config: Config, num_samples: int, 
+    decay: float = -0.002, factor: float = 30):
+    """ Patch the repeat times and training epochs adatively
+
+    Frequent dataloading inits and evaluation slow down training when the
+    sample size is small. Adjusting epoch and dataset repetition based on
+    empirical exponential decay improves the training time by applying high
+    repeat value to small sample size dataset and low repeat value to large
+    sample.
+
+    :param config: mmcv config
+    :param num_samples: number of training samples
+    :param decay: decaying rate
+    :param factor: base repeat factor
+    """
+    if config.data.train.type == 'RepeatDataset' and getattr(
+      config.data.train, 'adaptive_repeat_times', False):
+        if is_epoch_based_runner(config.runner):
+            cur_epoch = config.runner.max_epochs
+            new_repeat = max(round(math.exp(decay * num_samples) * factor), 1)
+            new_epoch = math.ceil(cur_epoch / new_repeat)
+            if new_epoch == 1:
+                return
+            config.runner.max_epochs = new_epoch
+            config.data.train.times = new_repeat
+
+
 def prepare_for_testing(config: Config, dataset: DatasetEntity) -> Config:
     config = copy.deepcopy(config)
     # FIXME. Should working directories be modified here?
@@ -122,6 +150,7 @@ def prepare_for_training(config: Config, train_dataset: DatasetEntity, val_datas
         config.data.train.ote_dataset = train_dataset
     else:
         config.data.train.dataset.ote_dataset = train_dataset
+    patch_adaptive_repeat_dataset(config, len(train_dataset))
     config.custom_hooks.append({'type': 'OTEProgressHook', 'time_monitor': time_monitor, 'verbose': True})
     config.log_config.hooks.append({'type': 'OTELoggerHook', 'curves': learning_curves})
     return config
