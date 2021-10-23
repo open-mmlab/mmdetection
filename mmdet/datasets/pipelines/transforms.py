@@ -2638,11 +2638,11 @@ class SimpleCopyPaste:
     def __init__(self,
                  scale=(0.1, 2),
                  max_paste_objects=5,
-                 p=0.5,
+                 prob=0.5,
                  occluded_area_thresh=300,
                  box_occlusion_thresh=10):
         self.max_paste_objects = max_paste_objects
-        self.p = p
+        self.prob = prob
         self.resize_scale = scale
         self.occluded_area_thresh = occluded_area_thresh
         self.box_occlusion_thresh = box_occlusion_thresh
@@ -2658,10 +2658,9 @@ class SimpleCopyPaste:
         """
         return random.randint(0, len(dataset))
 
-    def get_random_idx(self, arr):
-        if arr.shape[0] <= self.max_paste_objects:
-            return np.random.randint(0, arr.shape[0], size=arr.shape[0])
-        return np.random.randint(0, arr.shape[0], size=self.max_paste_objects)
+    def random_bbox_indexes(self, arr):
+        return np.random.randint(
+            0, arr.shape[0], size=min(arr.shape[0], self.max_paste_objects))
 
     def rescale_boxes(self, bboxes, rescale_ratio, img_shape=None, clip=False):
         if isinstance(rescale_ratio, float):
@@ -2712,7 +2711,7 @@ class SimpleCopyPaste:
         h_new, w_new = int(h * img_rescale_ratio), int(w * img_rescale_ratio)
 
         img_rescaled = mmcv.imrescale(
-            img, img_rescale_ratio, return_scale=False, backend='cv2')
+            img, img_rescale_ratio, return_scale=False)
 
         # there is a bug in mmcv rescale function.
         # assert h_new, w_new, 3 == img_rescaled.shape
@@ -2785,19 +2784,20 @@ class SimpleCopyPaste:
         results_cpy = copy.deepcopy(results)
         results_cpy2 = results_cpy['mix_results'][0]
 
-        img_src = cv2.imread(results_cpy['img_prefix'] +
-                             results_cpy['img_info']['filename'])
+        img_src = results_cpy['img']
         masks_src = results_cpy.get('gt_masks')
         labels_src = results_cpy.get('gt_labels')
         boxes_src = results_cpy.get('gt_bboxes')
 
-        img_dest = cv2.imread(results_cpy2['img_prefix'] +
-                              results_cpy2['img_info']['filename'])
+        img_dest = results_cpy2['img']
         masks_dest = results_cpy2.get('gt_masks')
         labels_dest = results_cpy2.get('gt_labels')
         boxes_dest = results_cpy2.get('gt_bboxes')
 
-        selected_idxs = self.get_random_idx(boxes_src)
+        if (not len(masks_dest)) or (not len(masks_src)):
+            return results
+
+        selected_idxs = self.random_bbox_indexes(boxes_src)
         selected_masks_src = self.get_bitmapmasks(
             np.squeeze(
                 np.array(list(map(masks_src.__getitem__, selected_idxs))),
@@ -2807,7 +2807,7 @@ class SimpleCopyPaste:
         selected_labels_src = np.array(
             list(map(labels_src.__getitem__, selected_idxs)))
 
-        if np.random.random() < self.p:
+        if np.random.random() < self.prob:
             img_src = mmcv.imflip(img_src, direction='horizontal')
             selected_masks_src = selected_masks_src.flip('horizontal')
             selected_boxes_src = self.bbox_flip(selected_boxes_src,
@@ -2830,13 +2830,15 @@ class SimpleCopyPaste:
                                             selected_boxes_src,
                                             selected_labels_src)
 
+        if (not len(rescaled_masks_dest)) or (not len(rescaled_masks_src)):
+            return results
+
         dest_h, dest_w, _ = rescaled_img_dest.shape
         src_h, src_w, _ = rescaled_img_src.shape
 
         pastable_img_src = mmcv.imresize(
-            rescaled_img_src, (dest_w, dest_h),
-            return_scale=False,
-            backend='cv2')
+            rescaled_img_src, (dest_w, dest_h), return_scale=False)
+
         pastable_masks_src = rescaled_masks_src.resize((dest_h, dest_w))
         pastable_boxes_src = self.rescale_boxes(
             rescaled_boxes_src, (dest_h / src_h, dest_w / src_w))
@@ -2878,6 +2880,9 @@ class SimpleCopyPaste:
             final_dest_masks.append(src_mask)
             final_dest_labels.append(src_label)
 
+        if not final_dest_masks:
+            return results
+
         final_dest_masks_ = self.get_bitmapmasks(final_dest_masks)
 
         results['img'] = rescaled_img_dest
@@ -2891,4 +2896,9 @@ class SimpleCopyPaste:
 
     def __repr__(self):
         repr_str = self.__class__.__name__
+        repr_str += f'(max_paste_objects={self.max_paste_objects}, '
+        repr_str += f'prob={self.prob}, '
+        repr_str += f'resize_scale={self.resize_scale}, '
+        repr_str += f'occluded_area_thresh={self.occluded_area_thresh}, '
+        repr_str += f'box_occlusion_thresh={self.box_occlusion_thresh}, '
         return repr_str
