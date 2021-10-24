@@ -3,6 +3,7 @@ import argparse
 import copy
 import os
 import os.path as osp
+import random
 import time
 import warnings
 
@@ -152,6 +153,26 @@ def main():
         logger.info(f'Set random seed to {args.seed}, '
                     f'deterministic: {args.deterministic}')
         set_random_seed(args.seed, deterministic=args.deterministic)
+    else:
+        if distributed:
+            rank, world_size = get_dist_info()
+            if rank == 0:
+                random_num = torch.tensor(
+                    round(random.uniform(0, 2**30)),
+                    dtype=torch.int32,
+                    device='cuda')
+            else:
+                random_num = torch.tensor(0, dtype=torch.int32, device='cuda')
+            torch.distributed.broadcast(random_num, src=0)
+            random_num = random_num.item()
+        else:
+            random_num = round(random.uniform(0, 2**30))
+
+        logger.info(f'Set random seed to {random_num}, '
+                    f'deterministic: {args.deterministic}')
+        set_random_seed(random_num, deterministic=args.deterministic)
+
+    assert 0
     cfg.seed = args.seed
     meta['seed'] = args.seed
     meta['exp_name'] = osp.basename(args.config)
