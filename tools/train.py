@@ -154,6 +154,8 @@ def main():
                     f'deterministic: {args.deterministic}')
         set_random_seed(args.seed, deterministic=args.deterministic)
     else:
+        # When the seed is not set, unknown behavior may occur.
+        # Please refer to https://github.com/open-mmlab/mmdetection/issues/6339
         if distributed:
             rank, world_size = get_dist_info()
             if rank == 0:
@@ -172,7 +174,6 @@ def main():
                     f'deterministic: {args.deterministic}')
         set_random_seed(random_num, deterministic=args.deterministic)
 
-    assert 0
     cfg.seed = args.seed
     meta['seed'] = args.seed
     meta['exp_name'] = osp.basename(args.config)
