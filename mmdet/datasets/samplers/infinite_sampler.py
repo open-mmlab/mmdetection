@@ -6,19 +6,22 @@ from mmcv.runner import get_dist_info
 from torch.utils.data.sampler import Sampler
 
 
-class DistributedInfiniteGroupBatchSampler(Sampler):
-    """Similar to `BatchSampler` warping a `DistributedGroupSampler. It is
-    designed for `IterationBased` runner and yields a mini-batch indices each
-    time, all indices in a batch should be in the same group.
+class InfiniteGroupBatchSampler(Sampler):
+    """Similar to `BatchSampler` warping a `GroupSampler. It is designed for
+    `IterationBased` runner and yields a mini-batch indices each time, all
+    indices in a batch should be in the same group.
 
     The implementation logic is referred to
     https://github.com/facebookresearch/detectron2/blob/main/detectron2/data/samplers/grouped_batch_sampler.py
 
     Args:
         dataset (object): The dataset.
-        samples_per_gpu (int): Number of training samples on each GPU, i.e.,
-            batch size of each GPU.
-        num_replicas (int, optional): Number of processes participating in
+        batch_size (int): When model is :obj:`DistributedDataParallel`,
+            it is the number of training samples on each GPU.
+            When model is :obj:`DataParallel`, it is
+            `num_gpus * samples_per_gpu`.
+            Default : 1.
+        world_size (int, optional): Number of processes participating in
             distributed training. Default: None.
         rank (int, optional): Rank of current process. Default: None.
         seed (int): Random seed. Default: 0.
@@ -30,20 +33,20 @@ class DistributedInfiniteGroupBatchSampler(Sampler):
 
     def __init__(self,
                  dataset,
-                 samples_per_gpu=1,
-                 num_replicas=None,
+                 batch_size=1,
+                 world_size=None,
                  rank=None,
                  seed=0,
                  shuffle=True):
-        _rank, _num_replicas = get_dist_info()
-        if num_replicas is None:
-            num_replicas = _num_replicas
+        _rank, _world_size = get_dist_info()
+        if world_size is None:
+            world_size = _world_size
         if rank is None:
             rank = _rank
         self.rank = rank
-        self.num_replicas = num_replicas
+        self.world_size = world_size
         self.dataset = dataset
-        self.samples_per_gpu = samples_per_gpu
+        self.batch_size = batch_size
         self.seed = seed if seed is not None else 0
         self.shuffle = shuffle
 
@@ -70,7 +73,7 @@ class DistributedInfiniteGroupBatchSampler(Sampler):
     def _indices_of_rank(self):
         """Slice the infinite indices by rank."""
         yield from itertools.islice(self._infinite_indices(), self.rank, None,
-                                    self.num_replicas)
+                                    self.world_size)
 
     def __iter__(self):
         # once batch size is reached, yield the indices
@@ -78,7 +81,7 @@ class DistributedInfiniteGroupBatchSampler(Sampler):
             flag = self.flag[idx]
             group_buffer = self.buffer_per_group[flag]
             group_buffer.append(idx)
-            if len(group_buffer) == self.samples_per_gpu:
+            if len(group_buffer) == self.batch_size:
                 yield group_buffer[:]
                 del group_buffer[:]
 
@@ -91,7 +94,7 @@ class DistributedInfiniteGroupBatchSampler(Sampler):
         raise NotImplementedError
 
 
-class DistributedInfiniteBatchSampler(Sampler):
+class InfiniteBatchSampler(Sampler):
     """Similar to `BatchSampler` warping a `DistributedSampler. It is designed
     for `IterationBased` runner and yields a mini-batch indices each time.
 
@@ -100,9 +103,12 @@ class DistributedInfiniteBatchSampler(Sampler):
 
     Args:
         dataset (object): The dataset.
-        samples_per_gpu (int): Number of training samples on each GPU, i.e.,
-            batch size of each GPU.
-        num_replicas (int, optional): Number of processes participating in
+        batch_size (int): When model is :obj:`DistributedDataParallel`,
+            it is the number of training samples on each GPU,
+            When model is :obj:`DataParallel`, it is
+            `num_gpus * samples_per_gpu`.
+            Default : 1.
+        world_size (int, optional): Number of processes participating in
             distributed training. Default: None.
         rank (int, optional): Rank of current process. Default: None.
         seed (int): Random seed. Default: 0.
@@ -111,20 +117,20 @@ class DistributedInfiniteBatchSampler(Sampler):
 
     def __init__(self,
                  dataset,
-                 samples_per_gpu=1,
-                 num_replicas=None,
+                 batch_size=1,
+                 world_size=None,
                  rank=None,
                  seed=0,
                  shuffle=True):
-        _rank, _num_replicas = get_dist_info()
-        if num_replicas is None:
-            num_replicas = _num_replicas
+        _rank, _world_size = get_dist_info()
+        if world_size is None:
+            world_size = _world_size
         if rank is None:
             rank = _rank
         self.rank = rank
-        self.num_replicas = num_replicas
+        self.world_size = world_size
         self.dataset = dataset
-        self.samples_per_gpu = samples_per_gpu
+        self.batch_size = batch_size
         self.seed = seed if seed is not None else 0
         self.shuffle = shuffle
         self.size = len(dataset)
@@ -144,14 +150,14 @@ class DistributedInfiniteBatchSampler(Sampler):
     def _indices_of_rank(self):
         """Slice the infinite indices by rank."""
         yield from itertools.islice(self._infinite_indices(), self.rank, None,
-                                    self.num_replicas)
+                                    self.world_size)
 
     def __iter__(self):
         # once batch size is reached, yield the indices
         batch_buffer = []
         for idx in self.indices:
             batch_buffer.append(idx)
-            if len(batch_buffer) == self.samples_per_gpu:
+            if len(batch_buffer) == self.batch_size:
                 yield batch_buffer
                 batch_buffer = []
 

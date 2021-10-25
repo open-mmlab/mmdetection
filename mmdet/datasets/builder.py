@@ -10,10 +10,9 @@ from mmcv.runner import get_dist_info
 from mmcv.utils import Registry, build_from_cfg
 from torch.utils.data import DataLoader
 
-from .samplers import (DistributedGroupSampler,
-                       DistributedInfiniteBatchSampler,
-                       DistributedInfiniteGroupBatchSampler,
-                       DistributedSampler, GroupSampler)
+from .samplers import (DistributedGroupSampler, DistributedSampler,
+                       GroupSampler, InfiniteBatchSampler,
+                       InfiniteGroupBatchSampler)
 
 if platform.system() != 'Windows':
     # https://github.com/pytorch/pytorch/issues/973
@@ -115,6 +114,14 @@ def build_dataloader(dataset,
     """
     rank, world_size = get_dist_info()
 
+    if dist:
+        batch_size = samples_per_gpu
+        num_workers = workers_per_gpu
+    else:
+        # For DataParallel
+        batch_size = num_gpus * samples_per_gpu
+        num_workers = num_gpus * workers_per_gpu
+
     if runner_type == 'EpochBasedRunner':
         if dist:
             # DistributedGroupSampler will definitely shuffle the data to
@@ -128,55 +135,45 @@ def build_dataloader(dataset,
         else:
             sampler = GroupSampler(dataset,
                                    samples_per_gpu) if shuffle else None
+        batch_sampler = None
+
     elif runner_type == 'IterBasedRunner':
         # this is a batch sampler, which can yield
         # a mini-batch indices each time.
+        # it can be used in both `DataParallel` and
+        # `DistributedDataParallel`
         if shuffle:
-            sampler = DistributedInfiniteGroupBatchSampler(
-                dataset, samples_per_gpu, world_size, rank, seed=seed)
+            batch_sampler = InfiniteGroupBatchSampler(
+                dataset, batch_size, world_size, rank, seed=seed)
         else:
-            sampler = DistributedInfiniteBatchSampler(
+            batch_sampler = InfiniteBatchSampler(
                 dataset,
-                samples_per_gpu,
+                batch_size,
                 world_size,
                 rank,
                 seed=seed,
                 shuffle=False)
+        batch_size = 1
+        sampler = None
     else:
         raise NotImplementedError(
             f'Only support `EpochBasedRunner` '
             f'and `IterBasedRunner` now, but got {runner_type}')
 
-    if dist:
-        batch_size = samples_per_gpu
-        num_workers = workers_per_gpu
-    else:
-        batch_size = num_gpus * samples_per_gpu
-        num_workers = num_gpus * workers_per_gpu
-
     init_fn = partial(
         worker_init_fn, num_workers=num_workers, rank=rank,
         seed=seed) if seed is not None else None
 
-    if runner_type == 'EpochBasedRunner':
-        data_loader = DataLoader(
-            dataset,
-            batch_size=batch_size,
-            sampler=sampler,
-            num_workers=num_workers,
-            collate_fn=partial(collate, samples_per_gpu=samples_per_gpu),
-            pin_memory=False,
-            worker_init_fn=init_fn,
-            **kwargs)
-    else:
-        data_loader = DataLoader(
-            dataset,
-            batch_sampler=sampler,
-            num_workers=num_workers,
-            collate_fn=partial(collate, samples_per_gpu=samples_per_gpu),
-            pin_memory=False,
-            worker_init_fn=init_fn,
-            **kwargs)
+    data_loader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        sampler=sampler,
+        num_workers=num_workers,
+        batch_sampler=batch_sampler,
+        collate_fn=partial(collate, samples_per_gpu=samples_per_gpu),
+        pin_memory=False,
+        worker_init_fn=init_fn,
+        **kwargs)
 
     return data_loader
 
