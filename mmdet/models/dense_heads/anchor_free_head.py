@@ -285,12 +285,15 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                            dtype,
                            device,
                            flatten=False):
-        """Get points of a single scale level."""
+        """Get points of a single scale level.
+
+        This function will be deprecated soon.
+        """
 
         warnings.warn(
             '`_get_points_single` in `AnchorFreeHead` will be '
             'deprecated soon, we support a multi level point generator now'
-            'you can get points of single level '
+            'you can get points of a single level feature map '
             'with `self.prior_generator.single_level_grid_priors` ')
 
         h, w = featmap_size

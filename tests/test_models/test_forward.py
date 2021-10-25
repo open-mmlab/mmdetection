@@ -427,6 +427,7 @@ def test_single_stage_forward_cpu(cfg_file):
     assert isinstance(losses, dict)
 
     # Test forward test
+    detector.eval()
     with torch.no_grad():
         img_list = [g[None, :] for g in imgs]
         batch_results = []

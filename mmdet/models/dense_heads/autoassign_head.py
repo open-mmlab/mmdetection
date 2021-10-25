@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from mmcv.cnn import bias_init_with_prob, normal_init
 from mmcv.runner import force_fp32
 
-from mmdet.core import distance2bbox, multi_apply
+from mmdet.core import multi_apply
 from mmdet.core.anchor.point_generator import MlvlPointGenerator
 from mmdet.core.bbox import bbox_overlaps
 from mmdet.models import HEADS
@@ -367,9 +367,10 @@ class AutoAssignHead(FCOSHead):
             gt_bboxe = gt_bboxe.reshape(-1, 4)
             expand_bbox_pred = bbox_pred[:, None, :].expand(
                 num_points, temp_num_gt, 4).reshape(-1, 4)
-            decoded_bbox_preds = distance2bbox(expand_mlvl_points,
-                                               expand_bbox_pred)
-            decoded_target_preds = distance2bbox(expand_mlvl_points, gt_bboxe)
+            decoded_bbox_preds = self.bbox_coder.decode(
+                expand_mlvl_points, expand_bbox_pred)
+            decoded_target_preds = self.bbox_coder.decode(
+                expand_mlvl_points, gt_bboxe)
             with torch.no_grad():
                 ious = bbox_overlaps(
                     decoded_bbox_preds, decoded_target_preds, is_aligned=True)
@@ -504,11 +505,14 @@ class AutoAssignHead(FCOSHead):
                            device,
                            flatten=False):
         """Almost the same as the implementation in fcos, we remove half stride
-        offset to align with the original implementation."""
+        offset to align with the original implementation.
+
+        This function will be deprecated soon.
+        """
         warnings.warn(
             '`_get_points_single` in `AutoAssignHead` will be '
             'deprecated soon, we support a multi level point generator now'
-            'you can get points of single level '
+            'you can get points of a single level feature map '
             'with `self.prior_generator.single_level_grid_priors` ')
         y, x = super(FCOSHead,
                      self)._get_points_single(featmap_size, stride, dtype,

@@ -11,6 +11,7 @@ from mmcv.runner import BaseModule, ModuleList
 
 from mmdet.core import (RegionAssigner, build_assigner, build_sampler,
                         images_to_levels, multi_apply)
+from mmdet.core.utils import select_single_mlvl
 from ..builder import HEADS, build_head
 from .base_dense_head import BaseDenseHead
 from .rpn_head import RPNHead
@@ -530,16 +531,11 @@ class StageCascadeRPNHead(RPNHead):
                 5-th column is a score between 0 and 1.
         """
         assert len(cls_scores) == len(bbox_preds)
-        num_levels = len(cls_scores)
 
         result_list = []
         for img_id in range(len(img_metas)):
-            cls_score_list = [
-                cls_scores[i][img_id].detach() for i in range(num_levels)
-            ]
-            bbox_pred_list = [
-                bbox_preds[i][img_id].detach() for i in range(num_levels)
-            ]
+            cls_score_list = select_single_mlvl(cls_scores, img_id)
+            bbox_pred_list = select_single_mlvl(bbox_preds, img_id)
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
             proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
@@ -667,7 +663,7 @@ class StageCascadeRPNHead(RPNHead):
                 f'which will be deprecated.'
 
         if proposals.numel() > 0:
-            dets, keep = batched_nms(proposals, scores, ids, cfg.nms)
+            dets, _ = batched_nms(proposals, scores, ids, cfg.nms)
         else:
             return proposals.new_zeros(0, 5)
 

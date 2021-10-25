@@ -435,11 +435,14 @@ class FCOSHead(AnchorFreeHead):
                            dtype,
                            device,
                            flatten=False):
-        """Get points according to feature map sizes."""
+        """Get points according to feature map size.
+
+        This function will be deprecated soon.
+        """
         warnings.warn(
             '`_get_points_single` in `FCOSHead` will be '
             'deprecated soon, we support a multi level point generator now'
-            'you can get points of single level '
+            'you can get points of a single level feature map '
             'with `self.prior_generator.single_level_grid_priors` ')
 
         y, x = super()._get_points_single(featmap_size, stride, dtype, device)

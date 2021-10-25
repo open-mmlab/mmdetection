@@ -8,9 +8,9 @@ from mmcv.cnn import ConvModule, Scale
 from mmcv.ops import DeformConv2d
 from mmcv.runner import force_fp32
 
-from mmdet.core import (MlvlPointGenerator, bbox2distance, bbox_overlaps,
-                        build_assigner, build_prior_generator, build_sampler,
-                        distance2bbox, multi_apply, reduce_mean)
+from mmdet.core import (MlvlPointGenerator, bbox_overlaps, build_assigner,
+                        build_prior_generator, build_sampler, multi_apply,
+                        reduce_mean)
 from ..builder import HEADS, build_loss
 from .atss_head import ATSSHead
 from .fcos_head import FCOSHead
@@ -434,8 +434,10 @@ class VFNetHead(ATSSHead, FCOSHead):
         pos_bbox_targets = flatten_bbox_targets[pos_inds]
         pos_points = flatten_points[pos_inds]
 
-        pos_decoded_bbox_preds = distance2bbox(pos_points, pos_bbox_preds)
-        pos_decoded_target_preds = distance2bbox(pos_points, pos_bbox_targets)
+        pos_decoded_bbox_preds = self.bbox_coder.decode(
+            pos_points, pos_bbox_preds)
+        pos_decoded_target_preds = self.bbox_coder.decode(
+            pos_points, pos_bbox_targets)
         iou_targets_ini = bbox_overlaps(
             pos_decoded_bbox_preds,
             pos_decoded_target_preds.detach(),
@@ -445,7 +447,7 @@ class VFNetHead(ATSSHead, FCOSHead):
             bbox_weights_ini.sum()).clamp_(min=1).item()
 
         pos_decoded_bbox_preds_refine = \
-            distance2bbox(pos_points, pos_bbox_preds_refine)
+            self.bbox_coder.decode(pos_points, pos_bbox_preds_refine)
         iou_targets_rf = bbox_overlaps(
             pos_decoded_bbox_preds_refine,
             pos_decoded_target_preds.detach(),
@@ -692,7 +694,8 @@ class VFNetHead(ATSSHead, FCOSHead):
         mlvl_points = [points.repeat(num_imgs, 1) for points in mlvl_points]
         bbox_targets = []
         for i in range(num_levels):
-            bbox_target = bbox2distance(mlvl_points[i], decoded_bboxes[i])
+            bbox_target = self.bbox_coder.encode(mlvl_points[i],
+                                                 decoded_bboxes[i])
             bbox_targets.append(bbox_target)
 
         return bbox_targets
@@ -709,12 +712,15 @@ class VFNetHead(ATSSHead, FCOSHead):
                            dtype,
                            device,
                            flatten=False):
-        """Get points according to feature map sizes."""
+        """Get points according to feature map size.
+
+        This function will be deprecated soon.
+        """
 
         warnings.warn(
             '`_get_points_single` in `VFNetHead` will be '
             'deprecated soon, we support a multi level point generator now'
-            'you can get points of single level '
+            'you can get points of a single level feature map'
             'with `self.fcos_prior_generator.single_level_grid_priors` ')
 
         h, w = featmap_size

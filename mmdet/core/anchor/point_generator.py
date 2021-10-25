@@ -164,6 +164,7 @@ class MlvlPointGenerator:
         if not with_stride:
             shifts = torch.stack([shift_xx, shift_yy], dim=-1)
         else:
+            # use `shape[0]` instead of `len(shift_xx)` for ONNX export
             stride_w = shift_xx.new_full((shift_xx.shape[0], ),
                                          stride_w).to(dtype)
             stride_h = shift_xx.new_full((shift_yy.shape[0], ),
