@@ -677,14 +677,11 @@ class OTETestStage:
     def name(self):
         return self.action.name
 
-    def was_ok(self):
-        return self.was_processed and (self.stored_exception is None)
-
-    def check_is_ok(self):
-        if not self.was_processed:
-            raise RuntimeError(f'Stage {self.name} was not run yet for this instance of OTEIntegrationTestCase')
-        if self.was_ok():
-            logger.info(f'The stage {self.name} was already processed SUCCESSFULLY')
+    def _reraise_stage_exception_if_was_failed(self):
+        assert self.was_processed, \
+                'The method _reraise_stage_exception_if_was_failed should be used only for stages that were processed'
+        if self.stored_exception is None:
+            # nothing to do here
             return
 
         logger.warning(f'In stage {self.name}: found that previous call of the stage '
@@ -702,7 +699,9 @@ class OTETestStage:
             logger.debug(f'For test stage "{self.name}": After running dep. stage "{dep_stage.name}"')
 
         if self.was_processed:
-            self.check_is_ok()
+            self._reraise_stage_exception_if_was_failed()
+            # if we are here, then the stage was processed without exceptions
+            logger.info(f'The stage {self.name} was already processed SUCCESSFULLY')
             logger.info(f'End stage "{self.name}"')
             return
 
