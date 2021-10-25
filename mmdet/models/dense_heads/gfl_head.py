@@ -5,9 +5,9 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule, Scale
 from mmcv.runner import force_fp32
 
-from mmdet.core import (anchor_inside_flags, bbox2distance, bbox_overlaps,
-                        build_assigner, build_sampler, distance2bbox,
-                        images_to_levels, multi_apply, reduce_mean, unmap)
+from mmdet.core import (anchor_inside_flags, bbox_overlaps, build_assigner,
+                        build_sampler, images_to_levels, multi_apply,
+                        reduce_mean, unmap)
 from mmdet.core.utils import filter_scores_and_topk
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
@@ -265,17 +265,17 @@ class GFLHead(AnchorHead):
             weight_targets = cls_score.detach().sigmoid()
             weight_targets = weight_targets.max(dim=1)[0][pos_inds]
             pos_bbox_pred_corners = self.integral(pos_bbox_pred)
-            pos_decode_bbox_pred = distance2bbox(pos_anchor_centers,
-                                                 pos_bbox_pred_corners)
+            pos_decode_bbox_pred = self.bbox_coder.decode(
+                pos_anchor_centers, pos_bbox_pred_corners)
             pos_decode_bbox_targets = pos_bbox_targets / stride[0]
             score[pos_inds] = bbox_overlaps(
                 pos_decode_bbox_pred.detach(),
                 pos_decode_bbox_targets,
                 is_aligned=True)
             pred_corners = pos_bbox_pred.reshape(-1, self.reg_max + 1)
-            target_corners = bbox2distance(pos_anchor_centers,
-                                           pos_decode_bbox_targets,
-                                           self.reg_max).reshape(-1)
+            target_corners = self.bbox_coder.encode(pos_anchor_centers,
+                                                    pos_decode_bbox_targets,
+                                                    self.reg_max).reshape(-1)
 
             # regression loss
             loss_bbox = self.loss_bbox(
