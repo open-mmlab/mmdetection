@@ -1,12 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
+
 import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmcv.runner import force_fp32
 
-from mmdet.core import (build_anchor_generator, build_assigner,
-                        build_bbox_coder, build_sampler, images_to_levels,
+from mmdet.core import (build_assigner, build_bbox_coder,
+                        build_prior_generator, build_sampler, images_to_levels,
                         multi_apply, unmap)
 from mmdet.core.utils import filter_scores_and_topk
 from ..builder import HEADS, build_loss
@@ -107,15 +109,16 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
         assert (approx_anchor_generator['strides'] ==
                 square_anchor_generator['strides'])
 
-        self.approx_anchor_generator = build_anchor_generator(
+        self.approx_anchor_generator = build_prior_generator(
             approx_anchor_generator)
-        self.square_anchor_generator = build_anchor_generator(
+        self.square_anchor_generator = build_prior_generator(
             square_anchor_generator)
         self.approxs_per_octave = (
-            self.approx_anchor_generator.num_base_anchors[0])
+            self.approx_anchor_generator.num_base_priors[0])
 
         # one anchor per location
-        self.num_anchors = 1
+        self.num_base_priors = self.square_anchor_generator.num_base_priors[0]
+
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
@@ -150,6 +153,12 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
 
         self.fp16_enabled = False
         self._init_layers()
+
+    @property
+    def num_anchors(self):
+        warnings.warn('DeprecationWarning: `num_anchors` is deprecated, '
+                      'please use "num_base_priors" instead')
+        return self.square_anchor_generator.num_base_priors[0]
 
     def _init_layers(self):
         self.relu = nn.ReLU(inplace=True)
@@ -213,7 +222,7 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
 
         # since feature map sizes of all images are the same, we only compute
         # squares for one time
-        multi_level_squares = self.square_anchor_generator.grid_anchors(
+        multi_level_squares = self.square_anchor_generator.grid_priors(
             featmap_sizes, device=device)
         squares_list = [multi_level_squares for _ in range(num_imgs)]
 
@@ -589,9 +598,9 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
                 -1, self.side_num * 4)
 
             # After https://github.com/open-mmlab/mmdetection/pull/6268/,
-            # this operation keeps fewer bboxes under the same `nms_pre`,
-            # there is no difference in performance for most models, if you
-            # find a slight drop in performance, You can set a larger
+            # this operation keeps fewer bboxes under the same `nms_pre`.
+            # There is no difference in performance for most models. If you
+            # find a slight drop in performance, you can set a larger
             # `nms_pre` than before.
             results = filter_scores_and_topk(
                 scores, cfg.score_thr, nms_pre,
@@ -599,11 +608,11 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
                     anchors=anchors,
                     bbox_cls_pred=bbox_cls_pred,
                     bbox_reg_pred=bbox_reg_pred))
-            scores, labels, _, filter_results = results
+            scores, labels, _, filtered_results = results
 
-            anchors = filter_results['anchors']
-            bbox_cls_pred = filter_results['bbox_cls_pred']
-            bbox_reg_pred = filter_results['bbox_reg_pred']
+            anchors = filtered_results['anchors']
+            bbox_cls_pred = filtered_results['bbox_cls_pred']
+            bbox_reg_pred = filtered_results['bbox_reg_pred']
 
             bbox_preds = [
                 bbox_cls_pred.contiguous(),
