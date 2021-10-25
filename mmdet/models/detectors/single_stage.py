@@ -138,7 +138,7 @@ class SingleStageDetector(BaseDetector):
         ]
         return bbox_results
 
-    def onnx_export(self, img, img_metas):
+    def onnx_export(self, img, img_metas, with_nms=True):
         """Test function without test time augmentation.
 
         Args:
@@ -165,6 +165,7 @@ class SingleStageDetector(BaseDetector):
             # add dummy score_factor
             outs = (*outs, None)
         # TODO Can we change to `get_bboxes` when `onnx_export` fail
-        det_bboxes, det_labels = self.bbox_head.onnx_export(*outs, img_metas)
+        det_bboxes, det_labels = self.bbox_head.onnx_export(
+            *outs, img_metas, with_nms=with_nms)
 
         return det_bboxes, det_labels
