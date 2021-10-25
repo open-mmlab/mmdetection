@@ -723,6 +723,11 @@ class RepPointsHead(AnchorFreeHead):
             else:
                 scores = cls_score.softmax(-1)[:, :-1]
 
+            # After https://github.com/open-mmlab/mmdetection/pull/6268/,
+            # this operation keeps fewer bboxes under the same `nms_pre`,
+            # there is no difference in performance for most models, if you
+            # find a slight drop in performance, You can set a larger
+            # `nms_pre` than before.
             results = filter_scores_and_topk(
                 scores, cfg.score_thr, nms_pre,
                 dict(bbox_pred=bbox_pred, priors=priors))

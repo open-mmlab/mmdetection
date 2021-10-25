@@ -180,6 +180,11 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 # BG cat_id: num_class
                 scores = cls_score.softmax(-1)[:, :-1]
 
+            # After https://github.com/open-mmlab/mmdetection/pull/6268/,
+            # this operation keeps fewer bboxes under the same `nms_pre`,
+            # there is no difference in performance for most models, if you
+            # find a slight drop in performance, You can set a larger
+            # `nms_pre` than before.
             results = filter_scores_and_topk(
                 scores, cfg.score_thr, nms_pre,
                 dict(bbox_pred=bbox_pred, priors=priors))
@@ -263,6 +268,8 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         mlvl_labels = torch.cat(mlvl_labels)
 
         if mlvl_score_factors is not None:
+            # TODO： Add sqrt operation in order to be consistent with
+            #  the paper.
             mlvl_score_factors = torch.cat(mlvl_score_factors)
             mlvl_scores = mlvl_scores * mlvl_score_factors
 

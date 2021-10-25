@@ -67,6 +67,15 @@ def test_autoassign_head_loss():
     results = levels_to_images(mlvl_tensor)
     assert len(results) == n
     assert results[0].size() == (h * w * 5, c)
+
+    self = AutoAssignHead(
+        num_classes=4,
+        in_channels=1,
+        train_cfg=train_cfg,
+        loss_cls=dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+        loss_bbox=dict(type='GIoULoss', loss_weight=1.3),
+        strides=(4, ))
     cls_scores = [torch.ones(2, 4, 5, 5)]
     bbox_preds = [torch.ones(2, 4, 5, 5)]
     iou_preds = [torch.ones(2, 1, 5, 5)]
