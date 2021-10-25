@@ -680,7 +680,7 @@ class RepPointsHead(AnchorFreeHead):
                 this value.
             mlvl_priors (list[Tensor]): Each element in the list is
                 the priors of a single level in feature pyramid, has shape
-                (num_priors, 4).
+                (num_priors, 2).
             img_meta (dict): Image meta info.
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
@@ -724,17 +724,17 @@ class RepPointsHead(AnchorFreeHead):
                 scores = cls_score.softmax(-1)[:, :-1]
 
             # After https://github.com/open-mmlab/mmdetection/pull/6268/,
-            # this operation keeps fewer bboxes under the same `nms_pre`,
-            # there is no difference in performance for most models, if you
-            # find a slight drop in performance, You can set a larger
+            # this operation keeps fewer bboxes under the same `nms_pre`.
+            # There is no difference in performance for most models. If you
+            # find a slight drop in performance, you can set a larger
             # `nms_pre` than before.
             results = filter_scores_and_topk(
                 scores, cfg.score_thr, nms_pre,
                 dict(bbox_pred=bbox_pred, priors=priors))
-            scores, labels, _, filter_results = results
+            scores, labels, _, filtered_results = results
 
-            bbox_pred = filter_results['bbox_pred']
-            priors = filter_results['priors']
+            bbox_pred = filtered_results['bbox_pred']
+            priors = filtered_results['priors']
 
             bboxes = self._bbox_decode(priors, bbox_pred,
                                        self.point_strides[level_idx],

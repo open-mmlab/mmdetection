@@ -505,11 +505,14 @@ class AutoAssignHead(FCOSHead):
                            device,
                            flatten=False):
         """Almost the same as the implementation in fcos, we remove half stride
-        offset to align with the original implementation."""
+        offset to align with the original implementation.
+
+        This function will be deprecated soon.
+        """
         warnings.warn(
             '`_get_points_single` in `AutoAssignHead` will be '
             'deprecated soon, we support a multi level point generator now'
-            'you can get points of single level '
+            'you can get points of a single level feature map '
             'with `self.prior_generator.single_level_grid_priors` ')
         y, x = super(FCOSHead,
                      self)._get_points_single(featmap_size, stride, dtype,

@@ -598,9 +598,9 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
                 -1, self.side_num * 4)
 
             # After https://github.com/open-mmlab/mmdetection/pull/6268/,
-            # this operation keeps fewer bboxes under the same `nms_pre`,
-            # there is no difference in performance for most models, if you
-            # find a slight drop in performance, You can set a larger
+            # this operation keeps fewer bboxes under the same `nms_pre`.
+            # There is no difference in performance for most models. If you
+            # find a slight drop in performance, you can set a larger
             # `nms_pre` than before.
             results = filter_scores_and_topk(
                 scores, cfg.score_thr, nms_pre,
@@ -608,11 +608,11 @@ class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
                     anchors=anchors,
                     bbox_cls_pred=bbox_cls_pred,
                     bbox_reg_pred=bbox_reg_pred))
-            scores, labels, _, filter_results = results
+            scores, labels, _, filtered_results = results
 
-            anchors = filter_results['anchors']
-            bbox_cls_pred = filter_results['bbox_cls_pred']
-            bbox_reg_pred = filter_results['bbox_reg_pred']
+            anchors = filtered_results['anchors']
+            bbox_cls_pred = filtered_results['bbox_cls_pred']
+            bbox_reg_pred = filtered_results['bbox_reg_pred']
 
             bbox_preds = [
                 bbox_cls_pred.contiguous(),

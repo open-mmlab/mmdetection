@@ -291,7 +291,7 @@ class FoveaHead(AnchorFreeHead):
                 levels of a single image. Fovea head does not need this value.
             mlvl_priors (list[Tensor]): Each element in the list is
                 the priors of a single level in feature pyramid, has shape
-                (num_priors, 4).
+                (num_priors, 2).
             img_meta (dict): Image meta info.
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
@@ -332,17 +332,17 @@ class FoveaHead(AnchorFreeHead):
                 -1, self.cls_out_channels).sigmoid()
 
             # After https://github.com/open-mmlab/mmdetection/pull/6268/,
-            # this operation keeps fewer bboxes under the same `nms_pre`,
-            # there is no difference in performance for most models, if you
-            # find a slight drop in performance, You can set a larger
+            # this operation keeps fewer bboxes under the same `nms_pre`.
+            # There is no difference in performance for most models. If you
+            # find a slight drop in performance, you can set a larger
             # `nms_pre` than before.
             results = filter_scores_and_topk(
                 scores, cfg.score_thr, nms_pre,
                 dict(bbox_pred=bbox_pred, priors=priors))
-            scores, labels, _, filter_results = results
+            scores, labels, _, filtered_results = results
 
-            bbox_pred = filter_results['bbox_pred']
-            priors = filter_results['priors']
+            bbox_pred = filtered_results['bbox_pred']
+            priors = filtered_results['priors']
 
             bboxes = self._bbox_decode(priors, bbox_pred, base_len, img_shape)
 
@@ -371,11 +371,14 @@ class FoveaHead(AnchorFreeHead):
         return decoded_bboxes
 
     def _get_points_single(self, *args, **kwargs):
+        """Get points according to feature map size.
 
+        This function will be deprecated soon.
+        """
         warnings.warn(
             '`_get_points_single` in `FoveaHead` will be '
             'deprecated soon, we support a multi level point generator now'
-            'you can get points of single level '
+            'you can get points of a single level feature map '
             'with `self.prior_generator.single_level_grid_priors` ')
         y, x = super()._get_points_single(*args, **kwargs)
         return y + 0.5, x + 0.5

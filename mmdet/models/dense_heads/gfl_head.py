@@ -443,17 +443,17 @@ class GFLHead(AnchorHead):
                 -1, self.cls_out_channels).sigmoid()
 
             # After https://github.com/open-mmlab/mmdetection/pull/6268/,
-            # this operation keeps fewer bboxes under the same `nms_pre`,
-            # there is no difference in performance for most models, if you
-            # find a slight drop in performance, You can set a larger
+            # this operation keeps fewer bboxes under the same `nms_pre`.
+            # There is no difference in performance for most models. If you
+            # find a slight drop in performance, you can set a larger
             # `nms_pre` than before.
             results = filter_scores_and_topk(
                 scores, cfg.score_thr, nms_pre,
                 dict(bbox_pred=bbox_pred, priors=priors))
-            scores, labels, _, filter_results = results
+            scores, labels, _, filtered_results = results
 
-            bbox_pred = filter_results['bbox_pred']
-            priors = filter_results['priors']
+            bbox_pred = filtered_results['bbox_pred']
+            priors = filtered_results['priors']
 
             bboxes = self.bbox_coder.decode(
                 self.anchor_center(priors), bbox_pred, max_shape=img_shape)
