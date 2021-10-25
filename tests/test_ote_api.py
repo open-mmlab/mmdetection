@@ -13,8 +13,6 @@
 # and limitations under the License.
 
 import io
-import json
-import os
 import os.path as osp
 import random
 import time
@@ -25,6 +23,7 @@ from subprocess import run
 from typing import Optional
 
 import numpy as np
+import pytest
 import torch
 from bson import ObjectId
 from e2e_test_system import e2e_pytest_api
@@ -549,6 +548,7 @@ class API(unittest.TestCase):
 
     @e2e_pytest_api
     def test_training_gen1_ssd(self):
+        pytest.skip('Gen1 models are not relevant anymore')
         self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen1_mobilenet_v2-2s_ssd-256x256'),
             num_iters=150)
 
@@ -556,16 +556,19 @@ class API(unittest.TestCase):
 
     @e2e_pytest_api
     def test_training_gen2_ssd(self):
+        pytest.skip('Gen2 models are not relevant anymore')
         self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_mobilenetV2_SSD'),
             num_iters=150)
 
     @e2e_pytest_api
     def test_training_gen2_atss(self):
+        pytest.skip('Gen2 models are not relevant anymore')
         self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_mobilenetV2_ATSS'),
             num_iters=150)
 
     @e2e_pytest_api
     def test_training_gen2_vfnet(self):
+        pytest.skip('Gen2 models are not relevant anymore')
         self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_resnet50_VFNet'),
             num_iters=150, export_perf_delta_tolerance=0.01)
 
