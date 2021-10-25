@@ -260,7 +260,6 @@ def delta2bbox(rois,
     return bboxes
 
 
-@mmcv.jit(coderize=True)
 def onnx_delta2bbox(rois,
                     deltas,
                     means=(0., 0., 0., 0.),

@@ -123,7 +123,7 @@ def filter_scores_and_topk(scores, score_thr, topk, results=None):
         scores (Tensor): The scores, shape (num_bboxes, K).
         score_thr (float): The score filter threshold.
         topk (int): The number of topk candidates.
-        results (dict, Optional): The dictionary object to
+        results (dict or list or Tensor, Optional): The results to
            which the filtering rule is to be applied. The shape
            of each item is (num_bboxes, N).
 
@@ -136,8 +136,8 @@ def filter_scores_and_topk(scores, score_thr, topk, results=None):
                 (num_bboxes_filtered, ).
             - anchor_idxs (Tensor): The anchor indexes, shape \
                 (num_bboxes_filtered, ).
-            - filtered_results (dict, Optional): The filtered \
-                results. The shape of each item is \
+            - filtered_results (dict or list or Tensor, Optional): \
+                The filtered results. The shape of each item is \
                 (num_bboxes_filtered, N).
     """
     valid_mask = scores > score_thr
@@ -152,10 +152,16 @@ def filter_scores_and_topk(scores, score_thr, topk, results=None):
     keep_idxs, labels = topk_idxs.unbind(dim=1)
 
     filtered_results = None
-    if results is not None and isinstance(results, dict):
-        filtered_results = dict()
-        for k, v in results.items():
-            filtered_results[k] = v[keep_idxs]
+    if results is not None:
+        if isinstance(results, dict):
+            filtered_results = {k: v[keep_idxs] for k, v in results.items()}
+        elif isinstance(results, list):
+            filtered_results = [result[keep_idxs] for result in results]
+        elif isinstance(results, torch.Tensor):
+            filtered_results = results[keep_idxs]
+        else:
+            raise NotImplementedError(f'Only supports dict or list or Tensor, '
+                                      f'but get {type(results)}.')
     return scores, labels, keep_idxs, filtered_results
 
 
