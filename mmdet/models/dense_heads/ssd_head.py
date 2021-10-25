@@ -90,9 +90,9 @@ class SSDHead(AnchorHead):
         self.cls_out_channels = num_classes + 1  # add background class
         self.prior_generator = build_prior_generator(anchor_generator)
 
-        # usually the numbers of anchors for each level are the same
-        # except SSD detectors, so it is a int in most DenseHead and
-        # it will be a list of int in SSDHead
+        # Usually the numbers of anchors for each level are the same
+        # except SSD detectors. So it is an int in the most dense
+        # heads but a list of int in SSDHead
         self.num_base_priors = self.prior_generator.num_base_priors
 
         self._init_layers()
