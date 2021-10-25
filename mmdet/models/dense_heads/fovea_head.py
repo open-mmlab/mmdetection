@@ -141,9 +141,10 @@ class FoveaHead(AnchorFreeHead):
         assert len(cls_scores) == len(bbox_preds)
 
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        points = self.prior_generator.grid_priors(featmap_sizes,
-                                                  bbox_preds[0].dtype,
-                                                  bbox_preds[0].device)
+        points = self.prior_generator.grid_priors(
+            featmap_sizes,
+            dtype=bbox_preds[0].dtype,
+            device=bbox_preds[0].device)
         num_imgs = cls_scores[0].size(0)
         flatten_cls_scores = [
             cls_score.permute(0, 2, 3, 1).reshape(-1, self.cls_out_channels)

@@ -352,7 +352,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         featmap_sizes = [cls_score.shape[2:] for cls_score in cls_scores]
         mlvl_priors = self.prior_generator.grid_priors(
             featmap_sizes,
-            dtype=[0].dtype,
+            dtype=cls_scores[0].dtype,
             device=cls_scores[0].device,
             with_stride=True)
 
