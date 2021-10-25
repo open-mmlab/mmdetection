@@ -10,7 +10,10 @@ from mmcv.runner import get_dist_info
 from mmcv.utils import Registry, build_from_cfg
 from torch.utils.data import DataLoader
 
-from .samplers import DistributedGroupSampler, DistributedSampler, GroupSampler
+from .samplers import (DistributedGroupSampler,
+                       DistributedInfiniteBatchSampler,
+                       DistributedInfiniteGroupBatchSampler,
+                       DistributedSampler, GroupSampler)
 
 if platform.system() != 'Windows':
     # https://github.com/pytorch/pytorch/issues/973
@@ -87,6 +90,7 @@ def build_dataloader(dataset,
                      dist=True,
                      shuffle=True,
                      seed=None,
+                     runner_type='EpochBasedRunner',
                      **kwargs):
     """Build PyTorch DataLoader.
 
@@ -103,25 +107,50 @@ def build_dataloader(dataset,
         dist (bool): Distributed training/test or not. Default: True.
         shuffle (bool): Whether to shuffle the data at every epoch.
             Default: True.
+        runner_type (str): Type of runner. Default: `EpochBasedRunner`
         kwargs: any keyword argument to be used to initialize DataLoader
 
     Returns:
         DataLoader: A PyTorch dataloader.
     """
     rank, world_size = get_dist_info()
-    if dist:
-        # DistributedGroupSampler will definitely shuffle the data to satisfy
-        # that images on each GPU are in the same group
+
+    if runner_type == 'EpochBasedRunner':
+        if dist:
+            # DistributedGroupSampler will definitely shuffle the data to
+            # satisfy that images on each GPU are in the same group
+            if shuffle:
+                sampler = DistributedGroupSampler(
+                    dataset, samples_per_gpu, world_size, rank, seed=seed)
+            else:
+                sampler = DistributedSampler(
+                    dataset, world_size, rank, shuffle=False, seed=seed)
+        else:
+            sampler = GroupSampler(dataset,
+                                   samples_per_gpu) if shuffle else None
+    elif runner_type == 'IterBasedRunner':
+        # this is a batch sampler, which can yield
+        # a mini-batch indices each time.
         if shuffle:
-            sampler = DistributedGroupSampler(
+            sampler = DistributedInfiniteGroupBatchSampler(
                 dataset, samples_per_gpu, world_size, rank, seed=seed)
         else:
-            sampler = DistributedSampler(
-                dataset, world_size, rank, shuffle=False, seed=seed)
+            sampler = DistributedInfiniteBatchSampler(
+                dataset,
+                samples_per_gpu,
+                world_size,
+                rank,
+                seed=seed,
+                shuffle=False)
+    else:
+        raise NotImplementedError(
+            f'Only support `EpochBasedRunner` '
+            f'and `IterBasedRunner` now, but got {runner_type}')
+
+    if dist:
         batch_size = samples_per_gpu
         num_workers = workers_per_gpu
     else:
-        sampler = GroupSampler(dataset, samples_per_gpu) if shuffle else None
         batch_size = num_gpus * samples_per_gpu
         num_workers = num_gpus * workers_per_gpu
 
@@ -129,15 +158,25 @@ def build_dataloader(dataset,
         worker_init_fn, num_workers=num_workers, rank=rank,
         seed=seed) if seed is not None else None
 
-    data_loader = DataLoader(
-        dataset,
-        batch_size=batch_size,
-        sampler=sampler,
-        num_workers=num_workers,
-        collate_fn=partial(collate, samples_per_gpu=samples_per_gpu),
-        pin_memory=False,
-        worker_init_fn=init_fn,
-        **kwargs)
+    if runner_type == 'EpochBasedRunner':
+        data_loader = DataLoader(
+            dataset,
+            batch_size=batch_size,
+            sampler=sampler,
+            num_workers=num_workers,
+            collate_fn=partial(collate, samples_per_gpu=samples_per_gpu),
+            pin_memory=False,
+            worker_init_fn=init_fn,
+            **kwargs)
+    else:
+        data_loader = DataLoader(
+            dataset,
+            batch_sampler=sampler,
+            num_workers=num_workers,
+            collate_fn=partial(collate, samples_per_gpu=samples_per_gpu),
+            pin_memory=False,
+            worker_init_fn=init_fn,
+            **kwargs)
 
     return data_loader
 
