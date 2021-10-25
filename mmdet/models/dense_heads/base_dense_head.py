@@ -75,7 +75,9 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
         featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
         mlvl_priors = self.prior_generator.grid_priors(
-            featmap_sizes, device=cls_scores[0].device)
+            featmap_sizes,
+            dtype=cls_scores[0].device,
+            device=cls_scores[0].device)
 
         result_list = []
 
@@ -381,9 +383,10 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         num_levels = len(cls_scores)
 
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        mlvl_priors = self.prior_generator.grid_priors(featmap_sizes,
-                                                       bbox_preds[0].dtype,
-                                                       bbox_preds[0].device)
+        mlvl_priors = self.prior_generator.grid_priors(
+            featmap_sizes,
+            dtype=bbox_preds[0].dtype,
+            device=bbox_preds[0].device)
 
         mlvl_cls_scores = [cls_scores[i].detach() for i in range(num_levels)]
         mlvl_bbox_preds = [bbox_preds[i].detach() for i in range(num_levels)]

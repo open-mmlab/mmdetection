@@ -336,7 +336,9 @@ class AutoAssignHead(FCOSHead):
         all_num_gt = sum([len(item) for item in gt_bboxes])
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         all_level_points = self.prior_generator.grid_priors(
-            featmap_sizes, bbox_preds[0].dtype, bbox_preds[0].device)
+            featmap_sizes,
+            dtype=bbox_preds[0].dtype,
+            device=bbox_preds[0].device)
         inside_gt_bbox_mask_list, bbox_targets_list = self.get_targets(
             all_level_points, gt_bboxes)
 
