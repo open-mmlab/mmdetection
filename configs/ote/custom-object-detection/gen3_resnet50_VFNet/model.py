@@ -7,7 +7,7 @@ model = dict(
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
         norm_eval=True,
         style='pytorch'),
     neck=dict(
@@ -56,14 +56,14 @@ optimizer_config = dict(grad_clip=None)
 lr_config = dict(
     policy='ReduceLROnPlateau',
     metric='mAP',
-    patience=3,
-    iteration_patience=600,
+    patience=10,
+    iteration_patience=300,
     interval=1,
     min_lr=1e-06,
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=0.3333333333333333)
-checkpoint_config = dict(interval=10)
+checkpoint_config = dict(interval=100)
 log_config = dict(
     interval=50,
     hooks=[dict(type='TextLoggerHook'),
@@ -78,9 +78,9 @@ workflow = [('train', 1)]
 custom_hooks = [
     dict(
         type='EarlyStoppingHook',
-        patience=5,
+        patience=15,
         metric='mAP',
         interval=1,
         priority=75,
-        iteration_patience=1000)
+        iteration_patience=500)
 ]

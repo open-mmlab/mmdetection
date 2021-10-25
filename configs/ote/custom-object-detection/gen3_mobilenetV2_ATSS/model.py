@@ -52,7 +52,7 @@ model = dict(
         nms_pre=1000,
         min_bbox_size=0,
         score_thr=0.05,
-        nms=dict(type='nms', iou_threshold=0.5),
+        nms=dict(type='nms', iou_threshold=0.6),
         max_per_img=100))
 
 evaluation = dict(interval=1, metric='mAP', save_best='mAP')
@@ -65,7 +65,7 @@ optimizer_config = dict()
 lr_config = dict(
     policy='ReduceLROnPlateau',
     metric='mAP',
-    patience=3,
+    patience=5,
     iteration_patience=600,
     interval=1,
     min_lr=0.000008,
@@ -88,5 +88,5 @@ load_from = 'https://storage.openvinotoolkit.org/repositories/openvino_training_
 resume_from = None
 workflow = [('train', 1)]
 custom_hooks = [
-    dict(type='EarlyStoppingHook', patience=5, iteration_patience=1000, metric='mAP', interval=1, priority=75)
+    dict(type='EarlyStoppingHook', patience=8, iteration_patience=1000, metric='mAP', interval=1, priority=75)
 ]
