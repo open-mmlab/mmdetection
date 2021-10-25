@@ -1,4 +1,36 @@
-## Changelog
+## Changelog\
+
+### v2.18.0 (27/10/2021)
+
+#### New Features
+
+-
+
+#### Bug Fixes
+
+- Remove sampling hardcode. (#6317)
+- Fix RandomAffine bbox coordinate recorrection (#6293)
+- Fix init bug of final cls/reg layer in convfc head (#6279)
+- Fix img_shape broken in auto_augment (#6259)
+- Fix kwargs parameter missing error in two_stage (#6256)
+
+#### Improvements
+
+- Unify the interface of stuff head and panoptic head (#6308)
+- Polish readme (#6243)
+- Add code-spell pre-commit hook and fix a typo (#6306)
+- Fix typo (#6245, #6190)
+- Fix sampler unit test. (#6284)
+- Implementation of YOLACT forward_dummy to enable get_flops (#6079)
+- Fix link error in the config documentation (#6252)
+- Adjust the order to beautify the document (#6195)
+
+#### Contributors
+
+A total of 13 developers contributed to this release.
+Thanks @DapangpangX, @yellowdolphin, @cclauss, @kennymckormick, @pingguokiller, @collinzrj, @AndreaPi,
+@AronLin, @BIGWangYuDong, @hhaAndroid, @jshilong, @RangiLyu, @ZwwWayne
+
 
 ### v2.17.0 (28/9/2021)
 
