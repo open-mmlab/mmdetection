@@ -42,14 +42,14 @@ class AnchorGenerator:
     Examples:
         >>> from mmdet.core import AnchorGenerator
         >>> self = AnchorGenerator([16], [1.], [1.], [9])
-        >>> all_anchors = self.grid_anchors([(2, 2)], device='cpu')
+        >>> all_anchors = self.grid_priors([(2, 2)], device='cpu')
         >>> print(all_anchors)
         [tensor([[-4.5000, -4.5000,  4.5000,  4.5000],
                 [11.5000, -4.5000, 20.5000,  4.5000],
                 [-4.5000, 11.5000,  4.5000, 20.5000],
                 [11.5000, 11.5000, 20.5000, 20.5000]])]
         >>> self = AnchorGenerator([16, 32], [1.], [1.], [9, 18])
-        >>> all_anchors = self.grid_anchors([(2, 2), (1, 1)], device='cpu')
+        >>> all_anchors = self.grid_priors([(2, 2), (1, 1)], device='cpu')
         >>> print(all_anchors)
         [tensor([[-4.5000, -4.5000,  4.5000,  4.5000],
                 [11.5000, -4.5000, 20.5000,  4.5000],

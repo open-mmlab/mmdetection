@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
 from abc import abstractmethod
 
 import torch
@@ -88,7 +89,13 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
         self.bbox_coder = build_bbox_coder(bbox_coder)
+
         self.prior_generator = MlvlPointGenerator(strides)
+
+        # In order to keep a more general interface and be consistent with
+        # anchor_head. We can think of point like one anchor
+        self.num_base_priors = self.prior_generator.num_base_priors[0]
+
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.conv_cfg = conv_cfg
@@ -278,7 +285,17 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                            dtype,
                            device,
                            flatten=False):
-        """Get points of a single scale level."""
+        """Get points of a single scale level.
+
+        This function will be deprecated soon.
+        """
+
+        warnings.warn(
+            '`_get_points_single` in `AnchorFreeHead` will be '
+            'deprecated soon, we support a multi level point generator now'
+            'you can get points of a single level feature map '
+            'with `self.prior_generator.single_level_grid_priors` ')
+
         h, w = featmap_size
         # First create Range with the default dtype, than convert to
         # target `dtype` for onnx exporting.
@@ -301,6 +318,12 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         Returns:
             tuple: points of each image.
         """
+        warnings.warn(
+            '`get_points` in `AnchorFreeHead` will be '
+            'deprecated soon, we support a multi level point generator now'
+            'you can get points of all levels '
+            'with `self.prior_generator.grid_priors` ')
+
         mlvl_points = []
         for i in range(len(featmap_sizes)):
             mlvl_points.append(

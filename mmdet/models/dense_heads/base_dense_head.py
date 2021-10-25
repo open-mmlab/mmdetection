@@ -75,7 +75,9 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
         featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
         mlvl_priors = self.prior_generator.grid_priors(
-            featmap_sizes, device=cls_scores[0].device)
+            featmap_sizes,
+            dtype=cls_scores[0].device,
+            device=cls_scores[0].device)
 
         result_list = []
 
@@ -118,7 +120,10 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 levels of a single image, each item has shape
                 (num_priors * 1, H, W).
             mlvl_priors (list[Tensor]): Each element in the list is
-                the priors of a single level in feature pyramid, has shape
+                the priors of a single level in feature pyramid. In all
+                anchor-based methods, it has shape (num_priors, 4). In
+                all anchor-free methods, it has shape (num_priors, 2)
+                when `with_stride=True`, otherwise it still has shape
                 (num_priors, 4).
             img_meta (dict): Image meta info.
             cfg (mmcv.Config): Test / postprocessing configuration,
@@ -181,17 +186,17 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 scores = cls_score.softmax(-1)[:, :-1]
 
             # After https://github.com/open-mmlab/mmdetection/pull/6268/,
-            # this operation keeps fewer bboxes under the same `nms_pre`,
-            # there is no difference in performance for most models, if you
-            # find a slight drop in performance, You can set a larger
+            # this operation keeps fewer bboxes under the same `nms_pre`.
+            # There is no difference in performance for most models. If you
+            # find a slight drop in performance, you can set a larger
             # `nms_pre` than before.
             results = filter_scores_and_topk(
                 scores, cfg.score_thr, nms_pre,
                 dict(bbox_pred=bbox_pred, priors=priors))
-            scores, labels, keep_idxs, filter_results = results
+            scores, labels, keep_idxs, filtered_results = results
 
-            bbox_pred = filter_results['bbox_pred']
-            priors = filter_results['priors']
+            bbox_pred = filtered_results['bbox_pred']
+            priors = filtered_results['priors']
 
             if with_score_factors:
                 score_factor = score_factor[keep_idxs]
@@ -380,9 +385,10 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         num_levels = len(cls_scores)
 
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        mlvl_priors = self.prior_generator.grid_priors(featmap_sizes,
-                                                       bbox_preds[0].dtype,
-                                                       bbox_preds[0].device)
+        mlvl_priors = self.prior_generator.grid_priors(
+            featmap_sizes,
+            dtype=bbox_preds[0].dtype,
+            device=bbox_preds[0].device)
 
         mlvl_cls_scores = [cls_scores[i].detach() for i in range(num_levels)]
         mlvl_bbox_preds = [bbox_preds[i].detach() for i in range(num_levels)]

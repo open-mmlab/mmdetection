@@ -94,10 +94,19 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         self.fp16_enabled = False
 
         self.prior_generator = build_prior_generator(anchor_generator)
-        # usually the numbers of anchors for each level are the same
-        # except SSD detectors
-        self.num_anchors = self.prior_generator.num_base_priors[0]
+
+        # Usually the numbers of anchors for each level are the same
+        # except SSD detectors. So it is an int in the most dense
+        # heads but a list of int in SSDHead
+        self.num_base_priors = self.prior_generator.num_base_priors[0]
         self._init_layers()
+
+    @property
+    def num_anchors(self):
+        warnings.warn('DeprecationWarning: `num_anchors` is deprecated, '
+                      'for consistency or also use '
+                      '`num_base_priors` instead')
+        return self.prior_generator.num_base_priors[0]
 
     @property
     def anchor_generator(self):
@@ -108,8 +117,10 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
     def _init_layers(self):
         """Initialize layers of the head."""
         self.conv_cls = nn.Conv2d(self.in_channels,
-                                  self.num_anchors * self.cls_out_channels, 1)
-        self.conv_reg = nn.Conv2d(self.in_channels, self.num_anchors * 4, 1)
+                                  self.num_base_priors * self.cls_out_channels,
+                                  1)
+        self.conv_reg = nn.Conv2d(self.in_channels, self.num_base_priors * 4,
+                                  1)
 
     def forward_single(self, x):
         """Forward feature of a single scale level.
@@ -120,9 +131,9 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         Returns:
             tuple:
                 cls_score (Tensor): Cls scores for a single scale level \
-                    the channels number is num_anchors * num_classes.
+                    the channels number is num_base_priors * num_classes.
                 bbox_pred (Tensor): Box energies / deltas for a single scale \
-                    level, the channels number is num_anchors * 4.
+                    level, the channels number is num_base_priors * 4.
         """
         cls_score = self.conv_cls(x)
         bbox_pred = self.conv_reg(x)
@@ -140,10 +151,10 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
                 - cls_scores (list[Tensor]): Classification scores for all \
                     scale levels, each is a 4D-tensor, the channels number \
-                    is num_anchors * num_classes.
+                    is num_base_priors * num_classes.
                 - bbox_preds (list[Tensor]): Box energies / deltas for all \
                     scale levels, each is a 4D-tensor, the channels number \
-                    is num_anchors * 4.
+                    is num_base_priors * 4.
         """
         return multi_apply(self.forward_single, feats)
 
@@ -164,8 +175,8 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         # since feature map sizes of all images are the same, we only compute
         # anchors for one time
-        multi_level_anchors = self.prior_generator.grid_anchors(
-            featmap_sizes, device)
+        multi_level_anchors = self.prior_generator.grid_priors(
+            featmap_sizes, device=device)
         anchor_list = [multi_level_anchors for _ in range(num_imgs)]
 
         # for each image, we compute valid flags of multi level anchors

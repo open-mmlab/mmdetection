@@ -103,14 +103,14 @@ class YOLACTHead(AnchorHead):
                     norm_cfg=self.norm_cfg))
         self.conv_cls = nn.Conv2d(
             self.feat_channels,
-            self.num_anchors * self.cls_out_channels,
+            self.num_base_priors * self.cls_out_channels,
             3,
             padding=1)
         self.conv_reg = nn.Conv2d(
-            self.feat_channels, self.num_anchors * 4, 3, padding=1)
+            self.feat_channels, self.num_base_priors * 4, 3, padding=1)
         self.conv_coeff = nn.Conv2d(
             self.feat_channels,
-            self.num_anchors * self.num_protos,
+            self.num_base_priors * self.num_protos,
             3,
             padding=1)
 
@@ -334,7 +334,7 @@ class YOLACTHead(AnchorHead):
 
         device = cls_scores[0].device
         featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
-        mlvl_anchors = self.prior_generator.grid_anchors(
+        mlvl_anchors = self.prior_generator.grid_priors(
             featmap_sizes, device=device)
 
         det_bboxes = []
