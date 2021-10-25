@@ -54,8 +54,10 @@ class RPNHead(AnchorHead):
             self.rpn_conv = nn.Conv2d(
                 self.in_channels, self.feat_channels, 3, padding=1)
         self.rpn_cls = nn.Conv2d(self.feat_channels,
-                                 self.num_anchors * self.cls_out_channels, 1)
-        self.rpn_reg = nn.Conv2d(self.feat_channels, self.num_anchors * 4, 1)
+                                 self.num_base_priors * self.cls_out_channels,
+                                 1)
+        self.rpn_reg = nn.Conv2d(self.feat_channels, self.num_base_priors * 4,
+                                 1)
 
     def forward_single(self, x):
         """Forward feature map of a single scale level."""
