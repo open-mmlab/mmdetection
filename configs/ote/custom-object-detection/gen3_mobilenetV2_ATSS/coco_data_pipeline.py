@@ -38,6 +38,7 @@ data = dict(
     workers_per_gpu=4,
     train=dict(
         type='RepeatDataset',
+        adaptive_repeat_times=True,
         times=1,
         dataset=dict(
             type=dataset_type,
