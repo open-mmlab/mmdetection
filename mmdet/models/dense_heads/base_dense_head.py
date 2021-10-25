@@ -122,7 +122,9 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             mlvl_priors (list[Tensor]): Each element in the list is
                 the priors of a single level in feature pyramid. In all
                 anchor-based methods, it has shape (num_priors, 4). In
-                all anchor-free methods, it has shape (num_priors, 2).
+                all anchor-free methods, it has shape (num_priors, 2)
+                when `with_stride=True`, otherwise it still has shape
+                (num_priors, 4).
             img_meta (dict): Image meta info.
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
