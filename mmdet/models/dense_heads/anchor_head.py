@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
+
 import torch
 import torch.nn as nn
 from mmcv.runner import force_fp32
@@ -63,10 +65,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         self.num_classes = num_classes
         self.feat_channels = feat_channels
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
-        # TODO better way to determine whether sample or not
-        self.sampling = loss_cls['type'] not in [
-            'FocalLoss', 'GHMC', 'QualityFocalLoss'
-        ]
         if self.use_sigmoid_cls:
             self.cls_out_channels = num_classes
         else:
@@ -83,10 +81,24 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         self.test_cfg = test_cfg
         if self.train_cfg:
             self.assigner = build_assigner(self.train_cfg.assigner)
-            # use PseudoSampler when sampling is False
-            if self.sampling and hasattr(self.train_cfg, 'sampler'):
+            if hasattr(self.train_cfg,
+                       'sampler') and self.train_cfg.sampler.type.split(
+                           '.')[-1] != 'PseudoSampler':
+                self.sampling = True
                 sampler_cfg = self.train_cfg.sampler
+                # avoid BC-breaking
+                if loss_cls['type'] in [
+                        'FocalLoss', 'GHMC', 'QualityFocalLoss'
+                ]:
+                    warnings.warn(
+                        'DeprecationWarning: Determining whether to sampling'
+                        'by loss type is deprecated, please delete sampler in'
+                        'your config when using `FocalLoss`, `GHMC`, '
+                        '`QualityFocalLoss` or other FocalLoss variant.')
+                    self.sampling = False
+                    sampler_cfg = dict(type='PseudoSampler')
             else:
+                self.sampling = False
                 sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
         self.fp16_enabled = False
