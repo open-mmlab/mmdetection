@@ -135,7 +135,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         """
         warnings.warn('DeprecationWarning: `num_anchors` is deprecated, '
                       'please use "num_base_priors" instead')
-        return self.prior_generator.num_base_priors[0]
+        return self.num_base_priors
 
     @property
     def num_levels(self):

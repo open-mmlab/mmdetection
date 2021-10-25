@@ -152,6 +152,7 @@ def test_rpn_forward():
 @pytest.mark.parametrize(
     'cfg_file',
     [
+        'reppoints/reppoints_moment_r50_fpn_1x_coco.py',
         'retinanet/retinanet_r50_fpn_1x_coco.py',
         'guided_anchoring/ga_retinanet_r50_fpn_1x_coco.py',
         'ghm/retinanet_ghm_r50_fpn_1x_coco.py',
@@ -159,7 +160,6 @@ def test_rpn_forward():
         'foveabox/fovea_align_r50_fpn_gn-head_4x4_2x_coco.py',
         # 'free_anchor/retinanet_free_anchor_r50_fpn_1x_coco.py',
         # 'atss/atss_r50_fpn_1x_coco.py',  # not ready for topk
-        'reppoints/reppoints_moment_r50_fpn_1x_coco.py',
         'yolo/yolov3_mobilenetv2_320_300e_coco.py',
         'yolox/yolox_tiny_8x8_300e_coco.py'
     ])
