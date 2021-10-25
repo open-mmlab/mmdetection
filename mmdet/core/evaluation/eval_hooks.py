@@ -452,12 +452,13 @@ class EvalPlusBeforeRunHook(EvalHook):
     """
 
     def before_run(self, runner):
+        super().before_run(runner)
         from mmdet.apis import single_gpu_test
         results = single_gpu_test(runner.model, self.dataloader, show=False)
         self.evaluate(runner, results)
 
 
-class DistEvalPlusBeforeRunHook(DistEvalHook):
+class DistEvalPlusBeforeRunHook(EvalPlusBeforeRunHook, DistEvalHook):
     """Distributed evaluation hook, adds evaluation before training.
     """
 

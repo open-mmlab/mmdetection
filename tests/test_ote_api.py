@@ -185,8 +185,7 @@ class Sample(unittest.TestCase):
 
     @e2e_pytest_api
     def test_sample_on_gpu(self):
-        output = run('export CUDA_VISIBLE_DEVICES=0;'
-                     'python mmdet/apis/ote/sample/sample.py '
+        output = run('python mmdet/apis/ote/sample/sample.py '
                      f'--data-dir {self.coco_dir}/.. '
                      f'--export {self.template}',
                      shell=True, check=True)

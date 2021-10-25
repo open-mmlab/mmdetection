@@ -82,3 +82,10 @@ def is_in_nncf_tracing():
     if ctx is None:
         return False
     return ctx.is_tracing
+
+def is_accuracy_aware_training_set(nncf_config):
+    if not is_nncf_enabled():
+        return False
+    from nncf.config.utils import is_accuracy_aware_training
+    is_acc_aware_training_set = is_accuracy_aware_training(nncf_config)
+    return is_acc_aware_training_set
