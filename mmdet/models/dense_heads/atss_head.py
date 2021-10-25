@@ -1,14 +1,18 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+import math
 from mmcv.cnn import ConvModule, Scale
 from mmcv.runner import force_fp32
 
 from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
                         images_to_levels, multi_apply, multiclass_nms,
-                        reduce_mean, unmap)
+                        reduce_mean, unmap, bbox2distance, distance2bbox)
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
+
+
 
 
 @HEADS.register_module()
@@ -26,6 +30,7 @@ class ATSSHead(AnchorHead):
                  num_classes,
                  in_channels,
                  stacked_convs=4,
+                 regression_type='bbox',
                  conv_cfg=None,
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
                  loss_centerness=dict(
@@ -42,11 +47,24 @@ class ATSSHead(AnchorHead):
                          std=0.01,
                          bias_prob=0.01)),
                  **kwargs):
+        assert regression_type in ('bbox', 'point'), \
+            'regression_type only support either bbox or point'
+        if regression_type == 'point':
+            override = init_cfg.get('override', [])
+            if isinstance(override, dict):
+                override = [override]
+            override.append(dict(type='Normal', name='atss_reg', std=0.01, bias=4))
+            init_cfg['override'] = override
+        self.regression_type = regression_type
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         super(ATSSHead, self).__init__(
             num_classes, in_channels, init_cfg=init_cfg, **kwargs)
+
+        if regression_type == 'point':
+            assert self.num_anchors == 1, 'regressing from points only support num_anchors==1'
+        self.anchor_strides = [stride[0] for stride in self.anchor_generator.strides]
 
         self.sampling = False
         if self.train_cfg:
@@ -109,9 +127,9 @@ class ATSSHead(AnchorHead):
                     levels, each is a 4D-tensor, the channels number is
                     num_anchors * 4.
         """
-        return multi_apply(self.forward_single, feats, self.scales)
+        return multi_apply(self.forward_single, feats, self.scales, self.anchor_strides)
 
-    def forward_single(self, x, scale):
+    def forward_single(self, x, scale, stride):
         """Forward feature of a single scale level.
 
         Args:
@@ -137,11 +155,20 @@ class ATSSHead(AnchorHead):
         cls_score = self.atss_cls(cls_feat)
         # we just follow atss, not apply exp in bbox_pred
         bbox_pred = scale(self.atss_reg(reg_feat)).float()
+        if self.regression_type == 'point':
+            bbox_pred = F.relu(bbox_pred)
+            if not self.training:
+                # will normalize target when training
+                ratio = self.anchor_generator.ratios.item()
+                h_norm = stride * math.sqrt(ratio)
+                w_norm = stride / math.sqrt(ratio)
+                bbox_pred[:, [0, 2]] *= w_norm
+                bbox_pred[:, [1, 3]] *= h_norm
         centerness = self.atss_centerness(reg_feat)
         return cls_score, bbox_pred, centerness
 
     def loss_single(self, anchors, cls_score, bbox_pred, centerness, labels,
-                    label_weights, bbox_targets, num_total_samples):
+                    label_weights, bbox_targets, stride, num_total_samples):
         """Compute loss of a single scale level.
 
         Args:
@@ -190,10 +217,23 @@ class ATSSHead(AnchorHead):
 
             centerness_targets = self.centerness_target(
                 pos_anchors, pos_bbox_targets)
-            pos_decode_bbox_pred = self.bbox_coder.decode(
-                pos_anchors, pos_bbox_pred)
             pos_decode_bbox_targets = self.bbox_coder.decode(
                 pos_anchors, pos_bbox_targets)
+
+            if self.regression_type == 'point':
+                pos_anchors_ctr = torch.stack([
+                    (pos_anchors[..., 0] + pos_anchors[..., 2])/2,
+                    (pos_anchors[..., 1] + pos_anchors[..., 3])/2], dim=-1)
+                # according to the official impl, width and hight are normed differently if ratio!=1
+                ratio = self.anchor_generator.ratios.item()
+                h_norm = stride * math.sqrt(ratio)
+                w_norm = stride / math.sqrt(ratio)
+                pos_bbox_pred[:, [0, 2]] *= w_norm
+                pos_bbox_pred[:, [1, 3]] *= h_norm
+                pos_decode_bbox_pred = distance2bbox(pos_anchors_ctr, pos_bbox_pred)
+            else:
+                pos_decode_bbox_pred = self.bbox_coder.decode(
+                    pos_anchors, pos_bbox_pred)
 
             # regression loss
             loss_bbox = self.loss_bbox(
@@ -281,6 +321,7 @@ class ATSSHead(AnchorHead):
                 labels_list,
                 label_weights_list,
                 bbox_targets_list,
+                self.anchor_strides,
                 num_total_samples=num_total_samples)
 
         bbox_avg_factor = sum(bbox_avg_factor)
@@ -448,9 +489,15 @@ class ATSSHead(AnchorHead):
                 centerness = centerness[batch_inds, topk_inds]
             else:
                 anchors = anchors.expand_as(bbox_pred)
+            if self.regression_type == 'point':
+                anchors_ctr = torch.stack([
+                    (anchors[..., 0] + anchors[..., 2])/2,
+                    (anchors[..., 1] + anchors[..., 3])/2], dim=-1)
+                bboxes = distance2bbox(anchors_ctr, bbox_pred, max_shape=img_shapes)
+            else:
+                bboxes = self.bbox_coder.decode(
+                    anchors, bbox_pred, max_shape=img_shapes)
 
-            bboxes = self.bbox_coder.decode(
-                anchors, bbox_pred, max_shape=img_shapes)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_centerness.append(centerness)
