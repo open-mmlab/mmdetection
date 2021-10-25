@@ -115,29 +115,18 @@ def build_dataloader(dataset,
     rank, world_size = get_dist_info()
 
     if dist:
+        # When model is :obj:`DistributedDataParallel`,
+        # `batch_size` of :obj:`dataloader` is the
+        # number of training samples on each GPU.
         batch_size = samples_per_gpu
         num_workers = workers_per_gpu
     else:
-        # For DataParallel
+        # When model is obj:`DataParallel`
+        # the batch size is samples on all the GPUS
         batch_size = num_gpus * samples_per_gpu
         num_workers = num_gpus * workers_per_gpu
 
-    if runner_type == 'EpochBasedRunner':
-        if dist:
-            # DistributedGroupSampler will definitely shuffle the data to
-            # satisfy that images on each GPU are in the same group
-            if shuffle:
-                sampler = DistributedGroupSampler(
-                    dataset, samples_per_gpu, world_size, rank, seed=seed)
-            else:
-                sampler = DistributedSampler(
-                    dataset, world_size, rank, shuffle=False, seed=seed)
-        else:
-            sampler = GroupSampler(dataset,
-                                   samples_per_gpu) if shuffle else None
-        batch_sampler = None
-
-    elif runner_type == 'IterBasedRunner':
+    if runner_type == 'IterBasedRunner':
         # this is a batch sampler, which can yield
         # a mini-batch indices each time.
         # it can be used in both `DataParallel` and
@@ -156,9 +145,19 @@ def build_dataloader(dataset,
         batch_size = 1
         sampler = None
     else:
-        raise NotImplementedError(
-            f'Only support `EpochBasedRunner` '
-            f'and `IterBasedRunner` now, but got {runner_type}')
+        if dist:
+            # DistributedGroupSampler will definitely shuffle the data to
+            # satisfy that images on each GPU are in the same group
+            if shuffle:
+                sampler = DistributedGroupSampler(
+                    dataset, samples_per_gpu, world_size, rank, seed=seed)
+            else:
+                sampler = DistributedSampler(
+                    dataset, world_size, rank, shuffle=False, seed=seed)
+        else:
+            sampler = GroupSampler(dataset,
+                                   samples_per_gpu) if shuffle else None
+        batch_sampler = None
 
     init_fn = partial(
         worker_init_fn, num_workers=num_workers, rank=rank,
