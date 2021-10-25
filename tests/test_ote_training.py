@@ -21,7 +21,7 @@ from abc import ABC, abstractmethod
 from collections import namedtuple, OrderedDict
 from copy import deepcopy
 from pprint import pformat
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import pytest
 import yaml
