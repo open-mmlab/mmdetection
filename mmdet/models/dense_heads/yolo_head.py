@@ -521,7 +521,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         featmap_sizes = [
             pred_maps_list[i].shape[-2:] for i in range(self.num_levels)
         ]
-        multi_lvl_anchors = self.prior_generator.grid_priors(
+        mlvl_anchors = self.prior_generator.grid_priors(
             featmap_sizes, device=device)
         # convert to tensor to keep tracing
         nms_pre_tensor = torch.tensor(
@@ -546,7 +546,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             pred_map_rest = pred_map[..., 2:]
             pred_map = torch.cat([pred_map_conf, pred_map_rest], dim=-1)
             pred_map_boxes = pred_map[..., :4]
-            multi_lvl_anchor = multi_lvl_anchors[i]
+            multi_lvl_anchor = mlvl_anchors[i]
             multi_lvl_anchor = multi_lvl_anchor.expand_as(pred_map_boxes)
             bbox_pred = self.bbox_coder.decode(multi_lvl_anchor,
                                                pred_map_boxes, stride)
