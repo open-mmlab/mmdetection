@@ -361,18 +361,18 @@ class AutoAssignHead(FCOSHead):
         ious_list = []
         num_points = len(mlvl_points)
 
-        for bbox_pred, gt_bboxe, inside_gt_bbox_mask in zip(
+        for bbox_pred, encoded_targets, inside_gt_bbox_mask in zip(
                 bbox_preds, bbox_targets_list, inside_gt_bbox_mask_list):
-            temp_num_gt = gt_bboxe.size(1)
+            temp_num_gt = encoded_targets.size(1)
             expand_mlvl_points = mlvl_points[:, None, :].expand(
                 num_points, temp_num_gt, 2).reshape(-1, 2)
-            gt_bboxe = gt_bboxe.reshape(-1, 4)
+            encoded_targets = encoded_targets.reshape(-1, 4)
             expand_bbox_pred = bbox_pred[:, None, :].expand(
                 num_points, temp_num_gt, 4).reshape(-1, 4)
             decoded_bbox_preds = self.bbox_coder.decode(
                 expand_mlvl_points, expand_bbox_pred)
             decoded_target_preds = self.bbox_coder.decode(
-                expand_mlvl_points, gt_bboxe)
+                expand_mlvl_points, encoded_targets)
             with torch.no_grad():
                 ious = bbox_overlaps(
                     decoded_bbox_preds, decoded_target_preds, is_aligned=True)
