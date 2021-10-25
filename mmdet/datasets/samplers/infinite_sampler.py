@@ -8,8 +8,8 @@ from torch.utils.data.sampler import Sampler
 
 class InfiniteGroupBatchSampler(Sampler):
     """Similar to `BatchSampler` warping a `GroupSampler. It is designed for
-    `IterationBased` runner and yields a mini-batch indices each time, all
-    indices in a batch should be in the same group.
+    iteration-based runners like `IterBasedRunner` and yields a mini-batch
+    indices each time, all indices in a batch should be in the same group.
 
     The implementation logic is referred to
     https://github.com/facebookresearch/detectron2/blob/main/detectron2/data/samplers/grouped_batch_sampler.py
@@ -96,7 +96,8 @@ class InfiniteGroupBatchSampler(Sampler):
 
 class InfiniteBatchSampler(Sampler):
     """Similar to `BatchSampler` warping a `DistributedSampler. It is designed
-    for `IterationBased` runner and yields a mini-batch indices each time.
+    iteration-based runners like `IterBasedRunner` and yields a mini-batch
+    indices each time.
 
     The implementation logic is referred to
     https://github.com/facebookresearch/detectron2/blob/main/detectron2/data/samplers/grouped_batch_sampler.py
