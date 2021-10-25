@@ -8,6 +8,7 @@ from mmcv.runner import force_fp32
 from mmdet.core import (anchor_inside_flags, bbox2distance, bbox_overlaps,
                         build_assigner, build_sampler, distance2bbox,
                         images_to_levels, multi_apply, reduce_mean, unmap)
+from mmdet.core.utils import filter_scores_and_topk
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
@@ -380,6 +381,7 @@ class GFLHead(AnchorHead):
                            cls_score_list,
                            bbox_pred_list,
                            score_factor_list,
+                           mlvl_priors,
                            img_meta,
                            cfg,
                            rescale=False,
@@ -396,6 +398,9 @@ class GFLHead(AnchorHead):
                 (num_priors * 4, H, W).
             score_factor_list (list[Tensor]): Score factor from all scale
                 levels of a single image. GFL head does not need this value.
+            mlvl_priors (list[Tensor]): Each element in the list is
+                the priors of a single level in feature pyramid, has shape
+                (num_priors, 4).
             img_meta (dict): Image meta info.
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
@@ -412,11 +417,11 @@ class GFLHead(AnchorHead):
                 test. If with_nms is True, then return the following format
 
                 - det_bboxes (Tensor): Predicted bboxes with shape \
-                    [num_bbox, 5], where the first 4 columns are bounding box \
-                    positions (tl_x, tl_y, br_x, br_y) and the 5-th column \
-                    are scores between 0 and 1.
+                    [num_bboxes, 5], where the first 4 columns are bounding \
+                    box positions (tl_x, tl_y, br_x, br_y) and the 5-th \
+                    column are scores between 0 and 1.
                 - det_labels (Tensor): Predicted labels of the corresponding \
-                    box with shape [num_bbox].
+                    box with shape [num_bboxes].
         """
         cfg = self.test_cfg if cfg is None else cfg
         img_shape = img_meta['img_shape']
@@ -424,37 +429,41 @@ class GFLHead(AnchorHead):
 
         mlvl_bboxes = []
         mlvl_scores = []
-        for level_idx, (cls_score, bbox_pred, stride) in enumerate(
+        mlvl_labels = []
+        for level_idx, (cls_score, bbox_pred, stride, priors) in enumerate(
                 zip(cls_score_list, bbox_pred_list,
-                    self.prior_generator.strides)):
+                    self.prior_generator.strides, mlvl_priors)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
             assert stride[0] == stride[1]
-            featmap_size_hw = cls_score.shape[-2:]
 
-            scores = cls_score.permute(1, 2, 0).reshape(
-                -1, self.cls_out_channels).sigmoid()
             bbox_pred = bbox_pred.permute(1, 2, 0)
             bbox_pred = self.integral(bbox_pred) * stride[0]
 
-            if 0 < nms_pre < scores.shape[0]:
-                max_scores, _ = scores.max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
-                anchors = self.prior_generator.sparse_priors(
-                    topk_inds, featmap_size_hw, level_idx, scores.dtype,
-                    scores.device)
-            else:
-                anchors = self.prior_generator.single_level_grid_priors(
-                    featmap_size_hw, level_idx, scores.dtype, scores.device)
+            scores = cls_score.permute(1, 2, 0).reshape(
+                -1, self.cls_out_channels).sigmoid()
+
+            # After https://github.com/open-mmlab/mmdetection/pull/6268/,
+            # this operation keeps fewer bboxes under the same `nms_pre`,
+            # there is no difference in performance for most models, if you
+            # find a slight drop in performance, You can set a larger
+            # `nms_pre` than before.
+            results = filter_scores_and_topk(
+                scores, cfg.score_thr, nms_pre,
+                dict(bbox_pred=bbox_pred, priors=priors))
+            scores, labels, _, filter_results = results
+
+            bbox_pred = filter_results['bbox_pred']
+            priors = filter_results['priors']
 
             bboxes = self.bbox_coder.decode(
-                self.anchor_center(anchors), bbox_pred, max_shape=img_shape)
+                self.anchor_center(priors), bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
+            mlvl_labels.append(labels)
 
         return self._bbox_post_process(
             mlvl_scores,
+            mlvl_labels,
             mlvl_bboxes,
             img_meta['scale_factor'],
             cfg,
