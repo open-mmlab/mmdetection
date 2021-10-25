@@ -102,6 +102,7 @@ class RPNHead(AnchorHead):
                            cls_score_list,
                            bbox_pred_list,
                            score_factor_list,
+                           mlvl_anchors,
                            img_meta,
                            cfg,
                            rescale=False,
@@ -118,6 +119,8 @@ class RPNHead(AnchorHead):
                 shape (num_anchors * 4, H, W).
             score_factor_list (list[Tensor]): Score factor from all scale
                 levels of a single image. RPN head does not need this value.
+            mlvl_anchors (list[Tensor]): Anchors of all scale level
+                each item has shape (num_anchors, 4).
             img_meta (dict): Image meta info.
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
@@ -144,7 +147,6 @@ class RPNHead(AnchorHead):
         nms_pre = cfg.get('nms_pre', -1)
         for level_idx in range(len(cls_score_list)):
             rpn_cls_score = cls_score_list[level_idx]
-            featmap_size_hw = rpn_cls_score.shape[-2:]
             rpn_bbox_pred = bbox_pred_list[level_idx]
             assert rpn_cls_score.size()[-2:] == rpn_bbox_pred.size()[-2:]
             rpn_cls_score = rpn_cls_score.permute(1, 2, 0)
@@ -160,6 +162,7 @@ class RPNHead(AnchorHead):
                 scores = rpn_cls_score.softmax(dim=1)[:, 0]
             rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1, 4)
 
+            anchors = mlvl_anchors[level_idx]
             if 0 < nms_pre < scores.shape[0]:
                 # sort is faster than topk
                 # _, topk_inds = scores.topk(cfg.nms_pre)
@@ -167,12 +170,8 @@ class RPNHead(AnchorHead):
                 topk_inds = rank_inds[:nms_pre]
                 scores = ranked_scores[:nms_pre]
                 rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]
-                anchors = self.prior_generator.sparse_priors(
-                    topk_inds, featmap_size_hw, level_idx, scores.dtype,
-                    scores.device)
-            else:
-                anchors = self.prior_generator.single_level_grid_priors(
-                    featmap_size_hw, level_idx, scores.device)
+                anchors = anchors[topk_inds, :]
+
             mlvl_scores.append(scores)
             mlvl_bbox_preds.append(rpn_bbox_pred)
             mlvl_valid_anchors.append(anchors)
@@ -195,14 +194,13 @@ class RPNHead(AnchorHead):
         Args:
             mlvl_scores (list[Tensor]): Box scores from all scale
                 levels of a single image, each item has shape
-                (num, num_class).
+                (num_bboxes, num_class).
             mlvl_bboxes (list[Tensor]): Decoded bboxes from all scale
-                levels of a single image, each item has shape (num, 4).
-            mlvl_valid_anchors (list[Tensor]): Box reference from all scale
-                levels of a single image, each item has shape
-                (num, 4).
+                levels of a single image, each item has shape (num_bboxes, 4).
+            mlvl_valid_anchors (list[Tensor]): Anchors of all scale level
+                each item has shape (num_bboxes, 4).
             level_ids (list[Tensor]): Indexes from all scale levels of a
-                single image, each item has shape (num, ).
+                single image, each item has shape (num_bboxes, ).
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             img_shape (tuple(int)): Shape of current image.
@@ -229,7 +227,7 @@ class RPNHead(AnchorHead):
                 ids = ids[valid_mask]
 
         if proposals.numel() > 0:
-            dets, keep = batched_nms(proposals, scores, ids, cfg.nms)
+            dets, _ = batched_nms(proposals, scores, ids, cfg.nms)
         else:
             return proposals.new_zeros(0, 5)
 
