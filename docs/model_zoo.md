@@ -238,6 +238,10 @@ Please refer to [PVT](https://github.com/open-mmlab/mmdetection/blob/master/conf
 
 Please refer to [SOLO](https://github.com/open-mmlab/mmdetection/blob/master/configs/solo) for details.
 
+### QueryInst
+
+Please refer to [QueryInst](https://github.com/open-mmlab/mmdetection/blob/master/configs/queryinst) for details.
+
 ### Other datasets
 
 We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).
