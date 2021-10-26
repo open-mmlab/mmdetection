@@ -53,7 +53,6 @@ from mmdet.apis.ote.extension.datasets.data_utils import load_dataset_items_coco
 from mmdet.integration.nncf.utils import is_nncf_enabled
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG) #TODO(lbeynens): REMOVE BEFORE MERGE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 def DATASET_PARAMETERS_FIELDS():
     return ('annotations_train',
