@@ -68,6 +68,6 @@ class AccuracyAwareRunner(EpochBasedRunner):
         """
         # Get metric from runner's attributes that set in EvalHook.evaluate() function
         metric = getattr(self, self.target_metric_name, None)
-        if not metric:
+        if metric is None:
             raise RuntimeError(f'Could not find the {self.target_metric_name} key')
         return metric

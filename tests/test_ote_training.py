@@ -17,10 +17,11 @@ import itertools
 import logging
 import os
 import os.path as osp
+from abc import ABC, abstractmethod
 from collections import namedtuple, OrderedDict
 from copy import deepcopy
 from pprint import pformat
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import pytest
 import yaml
@@ -30,15 +31,25 @@ from ote_sdk.entities.datasets import DatasetEntity
 from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.label_schema import LabelSchemaEntity
 from ote_sdk.entities.metrics import Performance, ScoreMetric
-from ote_sdk.entities.model import ModelEntity, ModelStatus
-from ote_sdk.entities.model_template import parse_model_template
+from ote_sdk.entities.model import (
+    ModelEntity,
+    ModelFormat,
+    ModelPrecision,
+    ModelStatus,
+    ModelOptimizationType,
+    OptimizationMethod,
+)
+from ote_sdk.entities.model_template import parse_model_template, TargetDevice
+from ote_sdk.entities.optimization_parameters import OptimizationParameters
 from ote_sdk.entities.resultset import ResultSetEntity
 from ote_sdk.entities.subset import Subset
 from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType
+from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
 
 from mmdet.apis.ote.apis.detection.ote_utils import get_task_class
 from mmdet.apis.ote.extension.datasets.data_utils import load_dataset_items_coco_format
+from mmdet.integration.nncf.utils import is_nncf_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -157,30 +168,31 @@ def convert_hyperparams_to_dict(hyperparams):
         return d
     return _convert(hyperparams)
 
-class OTETrainingImpl:
-    def __init__(self, dataset_params: DatasetParameters, template_file_path: str,
-                 num_training_iters: int, batch_size: int):
+class BaseOTETestAction(ABC):
+    _name = None
+
+    @property
+    def name(self):
+        return type(self)._name
+
+    def _check_result_prev_stages(self, results_prev_stages, list_required_stages):
+        for stage_name in list_required_stages:
+            if not results_prev_stages or stage_name not in results_prev_stages:
+                raise RuntimeError(f'The action {self.name} requires results of the stage {stage_name}, '
+                                   f'but they are absent')
+
+    @abstractmethod
+    def __call__(self, data_collector: DataCollector,
+                 results_prev_stages: Optional[OrderedDict]=None):
+        raise NotImplementedError('The main action method is not implemented')
+
+class OTETestTrainingAction(BaseOTETestAction):
+    _name = 'training'
+    def __init__(self, dataset_params, template_file_path, num_training_iters, batch_size):
         self.dataset_params = dataset_params
         self.template_file_path = template_file_path
         self.num_training_iters = num_training_iters
         self.batch_size = batch_size
-
-        self.template = None
-        self.environment = None
-        self.task = None
-        self.output_model = None
-        self.evaluation_performance = None
-        self.environment_for_export = None
-        self.exported_model = None
-        self.openvino_task = None
-        self.evaluation_performance_exported = None
-
-        self.was_training_run = False
-        self.stored_exception_training = None
-        self.was_export_run = False
-        self.stored_exception_export = None
-
-        self.copy_hyperparams = None
 
     @staticmethod
     def _create_environment_and_task(params, labels_schema, model_template):
@@ -192,7 +204,13 @@ class OTETrainingImpl:
         task = task_cls(task_environment=environment)
         return environment, task
 
-    def _run_ote_training(self):
+    def _get_training_performance_as_score_name_value(self):
+        training_performance = getattr(self.output_model, 'performance', None)
+        if training_performance is None:
+            raise RuntimeError('Cannot get training performance')
+        return performance_to_score_name_value(training_performance)
+
+    def _run_ote_training(self, data_collector):
         logger.debug(f'self.template_file_path = {self.template_file_path}')
         logger.debug(f'Using for train annotation file {self.dataset_params.annotations_train}')
         logger.debug(f'Using for val annotation file {self.dataset_params.annotations_val}')
@@ -251,141 +269,520 @@ class OTETrainingImpl:
         self.copy_hyperparams = deepcopy(self.task._hyperparams)
 
         self.task.train(self.dataset, self.output_model)
+        assert self.output_model.model_status == ModelStatus.SUCCESS, 'Training was failed'
 
-        # To check that the training performance is valid
-        # and may be converted to score name and value
-        self.get_training_performance_as_score_name_value()
+        score_name, score_value = self._get_training_performance_as_score_name_value()
         logger.info(f'performance={self.output_model.performance}')
-
-    def get_training_performance_as_score_name_value(self):
-        training_performance = getattr(self.output_model, 'performance', None)
-        if training_performance is None:
-            raise RuntimeError('Cannot get training performance')
-        return performance_to_score_name_value(training_performance)
-
-    def run_ote_training_once(self, data_collector):
-        if self.was_training_run and self.stored_exception_training:
-            logger.warning('In function run_ote_training_once: found that previous call of the function '
-                           'caused exception -- re-raising it')
-            raise self.stored_exception_training
-
-        if not self.was_training_run:
-            try:
-                self._run_ote_training()
-                self.was_training_run = True
-            except Exception as e:
-                self.stored_exception_training = e
-                self.was_training_run = True
-                raise e
-
-        score_name, score_value = self.get_training_performance_as_score_name_value()
-        data_collector.log_final_metric('training_performance/' + score_name, score_value)
+        data_collector.log_final_metric('training_accuracy/' + score_name, score_value)
 
         hyperparams_dict = convert_hyperparams_to_dict(self.copy_hyperparams)
         for k, v in hyperparams_dict.items():
             data_collector.update_metadata(k, v)
 
-        return score_name, score_value
+    def __call__(self, data_collector: DataCollector,
+                 results_prev_stages: Optional[OrderedDict]=None):
+        self._run_ote_training(data_collector)
+        results = {
+                'model_template': self.model_template,
+                'task': self.task,
+                'dataset': self.dataset,
+                'environment': self.environment,
+                'output_model': self.output_model,
+        }
+        return results
 
-    def run_ote_evaluation(self, data_collector, subset=Subset.VALIDATION):
-        if not self.was_training_run:
-            raise RuntimeError('Training was not run for the OTETrainingImpl instance')
-        if self.stored_exception_training:
-            raise RuntimeError('Training was not successful for the OTETrainingImpl instance')
-        logger.debug('Get predictions on the validation set')
-        validation_dataset = self.dataset.get_subset(subset)
-        self.predicted_validation_dataset = self.task.infer(
-            validation_dataset.with_empty_annotations(),
-            InferenceParameters(is_evaluation=True))
-        self.resultset = ResultSetEntity(
-            model=self.output_model,
-            ground_truth_dataset=validation_dataset,
-            prediction_dataset=self.predicted_validation_dataset,
-        )
-        logger.debug('Estimate quality on validation set')
-        self.task.evaluate(self.resultset)
-        self.evaluation_performance = self.resultset.performance
-        logger.info(f'performance={self.evaluation_performance}')
-        score_name, score_value = performance_to_score_name_value(self.evaluation_performance)
-        data_collector.log_final_metric('evaluation_performance/' + score_name, score_value)
-        return self.evaluation_performance
+def run_evaluation(dataset, task, model):
+    logger.debug('Evaluation: Get predictions on the dataset')
+    predicted_dataset = task.infer(
+        dataset.with_empty_annotations(),
+        InferenceParameters(is_evaluation=True))
+    resultset = ResultSetEntity(
+        model=model,
+        ground_truth_dataset=dataset,
+        prediction_dataset=predicted_dataset,
+    )
+    logger.debug('Evaluation: Estimate quality on dataset')
+    task.evaluate(resultset)
+    evaluation_performance = resultset.performance
+    logger.info(f'Evaluation: performance={evaluation_performance}')
+    score_name, score_value = performance_to_score_name_value(evaluation_performance)
+    return score_name, score_value
 
-    def _run_ote_export(self, data_collector):
-        logger.debug('Copy environment for evaluation exported model')
+class OTETestTrainingEvaluationAction(BaseOTETestAction):
+    _name = 'training_evaluation'
 
-        # Warning: Note that this code does not make copy of self.environment -- it works only if
-        # the task operations use the environment in read-only mode.
-        # At the moment this is true, but if it is changed in the future, side effects may cause errors.
-        self.environment_for_export = self.environment
+    def __init__(self, subset=Subset.VALIDATION):
+        self.subset = subset
 
-        logger.debug('Create exported model')
-        self.exported_model = ModelEntity(
-            self.dataset,
-            self.environment_for_export.get_model_configuration(),
+    def _run_ote_evaluation(self, data_collector,
+                            dataset, task, trained_model):
+        logger.info('Begin evaluation of trained model')
+        validation_dataset = dataset.get_subset(self.subset)
+        score_name, score_value = run_evaluation(validation_dataset, task, trained_model)
+        data_collector.log_final_metric('evaluation_accuracy/' + score_name, score_value)
+        logger.info('End evaluation of trained model')
+
+    def __call__(self, data_collector: DataCollector,
+                 results_prev_stages: Optional[OrderedDict]=None):
+        self._check_result_prev_stages(results_prev_stages, ['training'])
+
+        kwargs = {
+                'dataset': results_prev_stages['training']['dataset'],
+                'task': results_prev_stages['training']['task'],
+                'trained_model': results_prev_stages['training']['output_model'],
+        }
+
+        self._run_ote_evaluation(data_collector, **kwargs)
+        results = {}
+        return results
+
+def run_export(environment, dataset, task, action_name):
+    logger.debug(f'For action "{action_name}": Copy environment for evaluation exported model')
+
+    environment_for_export = deepcopy(environment)
+
+    logger.debug(f'For action "{action_name}": Create exported model')
+    exported_model = ModelEntity(
+        dataset,
+        environment_for_export.get_model_configuration(),
+        model_status=ModelStatus.NOT_READY)
+    logger.debug('Run export')
+    task.export(ExportType.OPENVINO, exported_model)
+
+    assert exported_model.model_status == ModelStatus.SUCCESS, \
+            f'In action "{action_name}": Export to OpenVINO was not successful'
+    assert exported_model.model_format == ModelFormat.OPENVINO, \
+            f'In action "{action_name}": Wrong model format after export'
+    assert exported_model.optimization_type == ModelOptimizationType.MO, \
+            f'In action "{action_name}": Wrong optimization type'
+
+    logger.debug(f'For action "{action_name}": Set exported model into environment for export')
+    environment_for_export.model = exported_model
+    return environment_for_export, exported_model
+
+class OTETestExportAction(BaseOTETestAction):
+    _name = 'export'
+
+    def _run_ote_export(self, data_collector,
+                        environment, dataset, task):
+        self.environment_for_export, self.exported_model = \
+                run_export(environment, dataset, task, action_name=self.name)
+
+    def __call__(self, data_collector: DataCollector,
+                 results_prev_stages: Optional[OrderedDict]=None):
+        self._check_result_prev_stages(results_prev_stages, ['training'])
+
+        kwargs = {
+                'environment': results_prev_stages['training']['environment'],
+                'dataset': results_prev_stages['training']['dataset'],
+                'task': results_prev_stages['training']['task'],
+        }
+
+        self._run_ote_export(data_collector, **kwargs)
+        results = {
+                'environment': self.environment_for_export,
+                'exported_model': self.exported_model,
+        }
+        return results
+
+def create_openvino_task(model_template, environment):
+    logger.debug('Create OpenVINO Task')
+    openvino_task_impl_path = model_template.entrypoints.openvino
+    openvino_task_cls = get_task_class(openvino_task_impl_path)
+    openvino_task = openvino_task_cls(environment)
+    return openvino_task
+
+class OTETestExportEvaluationAction(BaseOTETestAction):
+    _name = 'export_evaluation'
+
+    def __init__(self, subset=Subset.VALIDATION):
+        self.subset = subset
+
+    def _run_ote_export_evaluation(self, data_collector,
+                                   model_template, dataset,
+                                   environment_for_export, exported_model):
+        logger.info('Begin evaluation of exported model')
+        self.openvino_task = create_openvino_task(model_template, environment_for_export)
+        validation_dataset = dataset.get_subset(self.subset)
+        score_name, score_value = run_evaluation(validation_dataset, self.openvino_task, exported_model)
+        data_collector.log_final_metric('evaluation_accuracy_exported/' + score_name, score_value)
+        logger.info('End evaluation of exported model')
+
+    def __call__(self, data_collector: DataCollector,
+                 results_prev_stages: Optional[OrderedDict]=None):
+        self._check_result_prev_stages(results_prev_stages, ['training', 'export'])
+
+        kwargs = {
+                'model_template': results_prev_stages['training']['model_template'],
+                'dataset': results_prev_stages['training']['dataset'],
+                'environment_for_export': results_prev_stages['export']['environment'],
+                'exported_model': results_prev_stages['export']['exported_model'],
+        }
+
+        self._run_ote_export_evaluation(data_collector, **kwargs)
+        results = {}
+        return results
+
+class OTETestPotAction(BaseOTETestAction):
+    _name = 'pot'
+
+    def __init__(self, pot_subset=Subset.TRAINING):
+        self.pot_subset = pot_subset
+
+    def _run_ote_pot(self, data_collector,
+                     model_template, dataset,
+                     environment_for_export):
+        logger.debug('Creating environment and task for POT optimization')
+        self.environment_for_pot = deepcopy(environment_for_export)
+        self.openvino_task_pot = create_openvino_task(model_template, environment_for_export)
+
+        self.optimized_model_pot = ModelEntity(
+            dataset,
+            self.environment_for_pot.get_model_configuration(),
             model_status=ModelStatus.NOT_READY)
-        logger.debug('Run export')
-        self.task.export(ExportType.OPENVINO, self.exported_model)
-        logger.debug('Set exported model into environment for export')
-        self.environment_for_export.model = self.exported_model
+        logger.info('Run POT optimization')
+        self.openvino_task_pot.optimize(
+            OptimizationType.POT,
+            dataset.get_subset(self.pot_subset),
+            self.optimized_model_pot,
+            OptimizationParameters())
+        assert self.optimized_model_pot.model_status == ModelStatus.SUCCESS, 'POT optimization was not successful'
+        assert self.optimized_model_pot.model_format == ModelFormat.OPENVINO, 'Wrong model format after pot'
+        assert self.optimized_model_pot.optimization_type == OptimizationType.POT, 'Wrong optimization type'
+        logger.info('POT optimization is finished')
 
-    def run_ote_export_once(self, data_collector):
-        if not self.was_training_run:
-            raise RuntimeError('Training was not run for the OTETrainingImpl instance')
-        if self.stored_exception_training:
-            raise RuntimeError('Training was not successful for the OTETrainingImpl instance')
-        if self.was_export_run and self.stored_exception_export:
-            logger.warning('In function run_ote_export_once: found that previous call of the function '
-                           'caused exception -- re-raising it')
-            raise self.stored_exception_export
+    def __call__(self, data_collector: DataCollector,
+                 results_prev_stages: Optional[OrderedDict]=None):
+        self._check_result_prev_stages(results_prev_stages, ['export'])
 
-        if not self.was_export_run:
-            try:
-                self._run_ote_export(data_collector)
-                self.was_export_run = True
-            except Exception as e:
-                self.stored_exception_export = e
-                self.was_export_run = True
-                raise e
+        kwargs = {
+                'model_template': results_prev_stages['training']['model_template'],
+                'dataset': results_prev_stages['training']['dataset'],
+                'environment_for_export': results_prev_stages['export']['environment'],
+        }
 
-    def run_ote_evaluation_exported(self, data_collector, subset=Subset.VALIDATION):
-        if not self.was_training_run:
-            raise RuntimeError('Training was not run for the OTETrainingImpl instance')
-        if self.stored_exception_training:
-            raise RuntimeError('Training was not successful for the OTETrainingImpl instance')
-        if not self.was_export_run:
-            raise RuntimeError('Export was not run for the OTETrainingImpl instance')
-        if self.stored_exception_export:
-            raise RuntimeError('Export was not successful for the OTETrainingImpl instance')
+        self._run_ote_pot(data_collector, **kwargs)
+        results = {
+                'openvino_task_pot': self.openvino_task_pot,
+                'optimized_model_pot': self.optimized_model_pot,
+        }
+        return results
 
-        logger.debug('Create OpenVINO Task')
-        openvino_task_impl_path = self.model_template.entrypoints.openvino
-        openvino_task_cls = get_task_class(openvino_task_impl_path)
-        self.openvino_task = openvino_task_cls(self.environment_for_export)
+class OTETestPotEvaluationAction(BaseOTETestAction):
+    _name = 'pot_evaluation'
 
-        logger.debug('Get predictions on the validation set')
-        validation_dataset = self.dataset.get_subset(subset)
-        self.predicted_validation_dataset_exp = self.openvino_task.infer(
-            validation_dataset.with_empty_annotations(),
-            InferenceParameters(is_evaluation=True))
-        self.resultset_exp = ResultSetEntity(
-            model=self.exported_model,
-            ground_truth_dataset=validation_dataset,
-            prediction_dataset=self.predicted_validation_dataset_exp,
-        )
-        logger.debug('Estimate quality on validation set')
-        self.openvino_task.evaluate(self.resultset_exp)
-        self.evaluation_performance_exported = self.resultset_exp.performance
+    def __init__(self, subset=Subset.VALIDATION):
+        self.subset = subset
 
-        logger.info(f'performance exported={self.evaluation_performance_exported}')
-        score_name, score_value = performance_to_score_name_value(self.evaluation_performance_exported)
-        data_collector.log_final_metric('evaluation_performance_exported/' + score_name, score_value)
-        return self.evaluation_performance_exported
+    def _run_ote_pot_evaluation(self, data_collector,
+                                dataset,
+                                openvino_task_pot,
+                                optimized_model_pot):
+        logger.info('Begin evaluation of pot model')
+        validation_dataset_pot = dataset.get_subset(self.subset)
+        score_name, score_value = run_evaluation(validation_dataset_pot, openvino_task_pot, optimized_model_pot)
+        data_collector.log_final_metric('evaluation_accuracy_pot/' + score_name, score_value)
+        logger.info('End evaluation of pot model')
+
+    def __call__(self, data_collector: DataCollector,
+                 results_prev_stages: Optional[OrderedDict]=None):
+        self._check_result_prev_stages(results_prev_stages, ['training', 'pot'])
+
+        kwargs = {
+                'dataset': results_prev_stages['training']['dataset'],
+                'openvino_task_pot': results_prev_stages['pot']['openvino_task_pot'],
+                'optimized_model_pot': results_prev_stages['pot']['optimized_model_pot'],
+        }
+
+        self._run_ote_pot_evaluation(data_collector, **kwargs)
+        results = {}
+        return results
+
+class OTETestNNCFAction(BaseOTETestAction):
+    _name = 'nncf'
+
+    def _run_ote_nncf(self, data_collector,
+                      model_template, dataset, trained_model,
+                      environment):
+        logger.debug('Get predictions on the validation set for exported model')
+        self.environment_for_nncf = deepcopy(environment)
+
+        logger.info('Create NNCF Task')
+        nncf_task_class_impl_path = model_template.entrypoints.nncf
+        if not nncf_task_class_impl_path:
+            pytest.skip('NNCF is not enabled for this template')
+
+        if not is_nncf_enabled():
+            pytest.skip('NNCF is not installed')
+
+        logger.info('Creating NNCF task and structures')
+        self.nncf_model = ModelEntity(
+            dataset,
+            self.environment_for_nncf.get_model_configuration(),
+            model_status=ModelStatus.NOT_READY)
+        self.nncf_model.set_data('weights.pth', trained_model.get_data('weights.pth'))
+
+        self.environment_for_nncf.model = self.nncf_model
+
+        nncf_task_cls = get_task_class(nncf_task_class_impl_path)
+        self.nncf_task = nncf_task_cls(task_environment=self.environment_for_nncf)
+
+        logger.info('Run NNCF optimization')
+        self.nncf_task.optimize(OptimizationType.NNCF,
+                                dataset,
+                                self.nncf_model,
+                                OptimizationParameters())
+        assert self.nncf_model.model_status == ModelStatus.SUCCESS, 'NNCF optimization was not successful'
+        assert self.nncf_model.optimization_type == OptimizationType.NNCF, 'Wrong optimization type'
+        logger.info('NNCF optimization is finished')
+
+
+    def __call__(self, data_collector: DataCollector,
+                 results_prev_stages: Optional[OrderedDict]=None):
+        self._check_result_prev_stages(results_prev_stages, ['training'])
+
+        kwargs = {
+                'model_template': results_prev_stages['training']['model_template'],
+                'dataset': results_prev_stages['training']['dataset'],
+                'trained_model': results_prev_stages['training']['output_model'],
+                'environment': results_prev_stages['training']['environment'],
+        }
+
+        self._run_ote_nncf(data_collector, **kwargs)
+        results = {
+                'nncf_task': self.nncf_task,
+                'nncf_model': self.nncf_model,
+                'nncf_environment': self.environment_for_nncf,
+        }
+        return results
+
+class OTETestNNCFEvaluationAction(BaseOTETestAction):
+    _name = 'nncf_evaluation'
+
+    def __init__(self, subset=Subset.VALIDATION):
+        self.subset = subset
+
+    def _run_ote_nncf_evaluation(self, data_collector,
+                                dataset,
+                                nncf_task,
+                                nncf_model):
+        logger.info('Begin evaluation of nncf model')
+        validation_dataset = dataset.get_subset(self.subset)
+        score_name, score_value = run_evaluation(validation_dataset, nncf_task, nncf_model)
+        data_collector.log_final_metric('evaluation_accuracy_nncf/' + score_name, score_value)
+        logger.info('End evaluation of nncf model')
+
+    def __call__(self, data_collector: DataCollector,
+                 results_prev_stages: Optional[OrderedDict]=None):
+        self._check_result_prev_stages(results_prev_stages, ['training', 'nncf'])
+
+        kwargs = {
+                'dataset': results_prev_stages['training']['dataset'],
+                'nncf_task': results_prev_stages['nncf']['nncf_task'],
+                'nncf_model': results_prev_stages['nncf']['nncf_model'],
+        }
+
+        self._run_ote_nncf_evaluation(data_collector, **kwargs)
+        results = {}
+        return results
+
+class OTETestNNCFExportAction(BaseOTETestAction):
+    _name = 'nncf_export'
+
+    def __init__(self, subset=Subset.VALIDATION):
+        self.subset = subset
+
+    def _run_ote_nncf_export(self, data_collector,
+                             nncf_environment, dataset, nncf_task):
+        logger.info('Begin export of nncf model')
+        self.environment_nncf_export, self.nncf_exported_model = \
+                run_export(nncf_environment, dataset, nncf_task, action_name=self.name)
+        logger.info('End export of nncf model')
+
+    def __call__(self, data_collector: DataCollector,
+                 results_prev_stages: Optional[OrderedDict]=None):
+        self._check_result_prev_stages(results_prev_stages, ['training', 'nncf'])
+
+        kwargs = {
+                'nncf_environment': results_prev_stages['nncf']['nncf_environment'],
+                'dataset': results_prev_stages['training']['dataset'],
+                'nncf_task': results_prev_stages['nncf']['nncf_task'],
+        }
+
+        self._run_ote_nncf_export(data_collector, **kwargs)
+        results = {
+                'environment': self.environment_nncf_export,
+                'exported_model': self.nncf_exported_model,
+        }
+        return results
+
+class OTETestNNCFExportEvaluationAction(BaseOTETestAction):
+    _name = 'nncf_export_evaluation'
+
+    def __init__(self, subset=Subset.VALIDATION):
+        self.subset = subset
+
+    def _run_ote_nncf_export_evaluation(self, data_collector,
+                                        model_template, dataset,
+                                        nncf_environment_for_export, nncf_exported_model):
+        logger.info('Begin evaluation of NNCF exported model')
+        self.openvino_task = create_openvino_task(model_template, nncf_environment_for_export)
+        validation_dataset = dataset.get_subset(self.subset)
+        score_name, score_value = run_evaluation(validation_dataset, self.openvino_task, nncf_exported_model)
+        data_collector.log_final_metric('evaluation_accuracy_nncf_exported/' + score_name, score_value)
+        logger.info('End evaluation of NNCF exported model')
+
+    def __call__(self, data_collector: DataCollector,
+                 results_prev_stages: Optional[OrderedDict]=None):
+        self._check_result_prev_stages(results_prev_stages, ['training', 'nncf_export'])
+
+        kwargs = {
+                'model_template': results_prev_stages['training']['model_template'],
+                'dataset': results_prev_stages['training']['dataset'],
+                'nncf_environment_for_export': results_prev_stages['nncf_export']['environment'],
+                'nncf_exported_model': results_prev_stages['nncf_export']['exported_model'],
+        }
+
+        self._run_ote_nncf_export_evaluation(data_collector, **kwargs)
+        results = {}
+        return results
+
+class OTETestStage:
+    """
+    OTETestStage -- auxiliary class that
+    1. Allows to set up dependency between test stages: before the main action of a test stage is run, all the actions
+       for the stages that are pointed in 'depends' list are called beforehand;
+    2. Runs for each test stage its main action only once: the main action is run inside try-except clause, and
+       2.1. if the action was executed without exceptions, a flag `was_processed` is set, the results of the action
+            are kept, and the next time the stage is called no action is executed;
+       2.2. if the action raised an exception, the exception is stored, the flag `was_processed` is set, and the next
+            time the stage is called the exception is re-raised.
+    """
+    def __init__(self, action: BaseOTETestAction,
+                 depends_stages: Optional[List['OTETestStage']]=None):
+        self.was_processed = False
+        self.stored_exception = None
+        self.action = action
+        self.depends_stages = depends_stages if depends_stages else []
+        assert isinstance(self.depends_stages, list)
+        assert all(isinstance(stage, OTETestStage) for stage in self.depends_stages)
+        assert isinstance(self.action, BaseOTETestAction)
+
+    @property
+    def name(self):
+        return self.action.name
+
+    def _reraise_stage_exception_if_was_failed(self):
+        assert self.was_processed, \
+                'The method _reraise_stage_exception_if_was_failed should be used only for stages that were processed'
+        if self.stored_exception is None:
+            # nothing to do here
+            return
+
+        logger.warning(f'In stage {self.name}: found that previous call of the stage '
+                       'caused exception -- re-raising it')
+        raise self.stored_exception
+
+    def run_once(self, data_collector: DataCollector, test_results_storage: OrderedDict):
+        logger.info(f'Begin stage "{self.name}"')
+        assert isinstance(test_results_storage, OrderedDict)
+        logger.debug(f'For test stage "{self.name}": test_results_storage.keys = {list(test_results_storage.keys())}')
+
+        for dep_stage in self.depends_stages:
+            logger.debug(f'For test stage "{self.name}": Before running dep. stage "{dep_stage.name}"')
+            dep_stage.run_once(data_collector, test_results_storage)
+            logger.debug(f'For test stage "{self.name}": After running dep. stage "{dep_stage.name}"')
+
+        if self.was_processed:
+            self._reraise_stage_exception_if_was_failed()
+            # if we are here, then the stage was processed without exceptions
+            logger.info(f'The stage {self.name} was already processed SUCCESSFULLY')
+            logger.info(f'End stage "{self.name}"')
+            return
+
+        if self.name in test_results_storage:
+            raise RuntimeError(f'Error: For test stage "{self.name}": '
+                               f'another OTETestStage with name {self.name} has been run already')
+
+        try:
+            logger.info(f'For test stage "{self.name}": Before running main action')
+            result_to_store = self.action(data_collector=data_collector,
+                                          results_prev_stages=test_results_storage)
+            logger.info(f'For test stage "{self.name}": After running main action')
+            self.was_processed = True
+            test_results_storage[self.name] = result_to_store
+            logger.debug(f'For test stage "{self.name}": after addition test_results_storage.keys = '
+                         f'{list(test_results_storage.keys())}')
+        except Exception as e:
+            logger.info(f'For test stage "{self.name}": After running action for stage {self.name} -- CAUGHT EXCEPTION:\n{e}')
+            self.stored_exception = e
+            self.was_processed = True
+            raise e
+        finally:
+            logger.info(f'End stage "{self.name}"')
+
+class OTEIntegrationTestCase:
+    _TEST_STAGES = ('training', 'training_evaluation',
+                   'export', 'export_evaluation',
+                   'pot', 'pot_evaluation',
+                   'nncf', 'nncf_evaluation',
+                   'nncf_export', 'nncf_export_evaluation')
+
+    @classmethod
+    def get_list_of_test_stages(cls):
+        return cls._TEST_STAGES
+
+    def __init__(self, dataset_params: DatasetParameters, template_file_path: str,
+                 num_training_iters: int, batch_size: int):
+        self.dataset_params = dataset_params
+        self.template_file_path = template_file_path
+        self.num_training_iters = num_training_iters
+        self.batch_size = batch_size
+
+        training_stage = OTETestStage(action=OTETestTrainingAction(self.dataset_params,
+                                                                   self.template_file_path,
+                                                                   self.num_training_iters,
+                                                                   self.batch_size))
+        training_evaluation_stage = OTETestStage(action=OTETestTrainingEvaluationAction(),
+                                                 depends_stages=[training_stage])
+        export_stage = OTETestStage(action=OTETestExportAction(),
+                                    depends_stages=[training_stage])
+        export_evaluation_stage = OTETestStage(action=OTETestExportEvaluationAction(),
+                                               depends_stages=[export_stage])
+        pot_stage = OTETestStage(action=OTETestPotAction(),
+                                 depends_stages=[export_stage])
+        pot_evaluation_stage = OTETestStage(action=OTETestPotEvaluationAction(),
+                                            depends_stages=[pot_stage])
+        nncf_stage = OTETestStage(action=OTETestNNCFAction(),
+                                  depends_stages=[training_stage])
+        nncf_evaluation_stage = OTETestStage(action=OTETestNNCFEvaluationAction(),
+                                             depends_stages=[nncf_stage])
+        nncf_export_stage = OTETestStage(action=OTETestNNCFExportAction(),
+                                         depends_stages=[nncf_stage])
+        nncf_export_evaluation_stage = OTETestStage(action=OTETestNNCFExportEvaluationAction(),
+                                                    depends_stages=[nncf_export_stage])
+
+        list_all_stages = [training_stage, training_evaluation_stage,
+                           export_stage, export_evaluation_stage,
+                           pot_stage, pot_evaluation_stage,
+                           nncf_stage, nncf_evaluation_stage,
+                           nncf_export_stage, nncf_export_evaluation_stage]
+
+        self._stages = OrderedDict((stage.name, stage) for stage in list_all_stages)
+        assert list(self._stages.keys()) == list(self._TEST_STAGES)
+
+        # test results should be kept between stages
+        self.test_results_storage = OrderedDict()
+
+    def run_stage(self, stage_name, data_collector):
+        assert stage_name in self._TEST_STAGES, f'Wrong stage_name {stage_name}'
+        self._stages[stage_name].run_once(data_collector, self.test_results_storage)
 
 # pytest magic
 def pytest_generate_tests(metafunc):
     if metafunc.cls is None:
         return
-    if not issubclass(metafunc.cls, TestOTETraining):
+    if not issubclass(metafunc.cls, TestOTEIntegration):
         return
 
     # It allows to filter by usecase
@@ -394,12 +791,17 @@ def pytest_generate_tests(metafunc):
     argnames, argvalues, ids = metafunc.cls.get_list_of_tests(usecase)
     metafunc.parametrize(argnames, argvalues, ids=ids, scope='class')
 
-class TestOTETraining:
+class TestOTEIntegration:
+    """
+    The main class of running test in this file.
+    It is responsible for all pytest magic.
+    """
     PERFORMANCE_RESULTS = None # it is required for e2e system
 
     DEFAULT_NUM_ITERS = 1
     DEFAULT_BATCH_SIZE = 2
     SHORT_TEST_PARAMETERS_NAMES_FOR_GENERATING_ID = OrderedDict([
+            ('test_stage', 'ACTION'),
             ('model_name', 'model'),
             ('dataset_name', 'dataset'),
             ('num_training_iters', 'num_iters'),
@@ -408,12 +810,12 @@ class TestOTETraining:
     ])
 
     # This tuple TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR describes test bunches'
-    # fields that are important for creating OTETrainingImpl instance.
+    # fields that are important for creating OTEIntegrationTestCase instance.
     #
     # It is supposed that if for the next test these parameters are the same as
-    # for the previous one, the result of operations in OTETrainingImpl should
+    # for the previous one, the result of operations in OTEIntegrationTestCase should
     # be kept and re-used.
-    # See the fixture impl_fx and the method _update_impl_in_cache below.
+    # See the fixture test_case_fx and the method _update_test_case_in_cache below.
     TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR = ('model_name',
                                               'dataset_name',
                                               'num_training_iters',
@@ -493,6 +895,9 @@ class TestOTETraining:
 #            ),
     ]
 
+    @staticmethod
+    def _get_list_of_test_stages():
+        return OTEIntegrationTestCase.get_list_of_test_stages()
 
     @classmethod
     def _fill_test_parameters_default_values(cls, test_parameters):
@@ -550,23 +955,25 @@ class TestOTETraining:
             model_dataset_pairs = list(itertools.product(model_names, dataset_names))
 
             for m, d in model_dataset_pairs:
-                test_parameters = deepcopy(el)
-                test_parameters['model_name'] = m
-                test_parameters['dataset_name'] = d
-                cls._fill_test_parameters_default_values(test_parameters)
-                argvalues.append((test_parameters,))
-                ids.append(cls._generate_test_id(test_parameters))
+                for test_stage in cls._get_list_of_test_stages():
+                    test_parameters = deepcopy(el)
+                    test_parameters['test_stage'] = test_stage
+                    test_parameters['model_name'] = m
+                    test_parameters['dataset_name'] = d
+                    cls._fill_test_parameters_default_values(test_parameters)
+                    argvalues.append((test_parameters,))
+                    ids.append(cls._generate_test_id(test_parameters))
 
         return argnames, argvalues, ids
 
     @pytest.fixture(scope='class')
     def cached_from_prev_test_fx(self):
         """
-        This fixture is intended for storying the impl class OTETrainingImpl and parameters
+        This fixture is intended for storying the test case class OTEIntegrationTestCase and parameters
         for which the class is created.
         This object should be persistent between tests while the tests use the same parameters
         -- see the method _clean_cache_if_parameters_changed below that is used to clean
-        the impl if the parameters are changed.
+        the test case if the parameters are changed.
         """
         return dict()
 
@@ -576,35 +983,35 @@ class TestOTETraining:
         for k, v in params_defining_cache.items():
             is_ok = is_ok and (cache.get(k) == v)
         if is_ok:
-            logger.info('TestOTETraining: parameters were not changed -- cache is kept')
+            logger.info('TestOTEIntegration: parameters were not changed -- cache is kept')
             return
 
         for k in list(cache.keys()):
             del cache[k]
         for k, v in params_defining_cache.items():
             cache[k] = v
-        logger.info('TestOTETraining: parameters were changed -- cache is cleaned')
+        logger.info('TestOTEIntegration: parameters were changed -- cache is cleaned')
 
     @classmethod
-    def _update_impl_in_cache(cls, cache,
-                              test_parameters,
-                              dataset_definitions, template_paths):
+    def _update_test_case_in_cache(cls, cache,
+                                   test_parameters,
+                                   dataset_definitions, template_paths):
         """
         If the main parameters of the test differs w.r.t. the previous test,
-        the cache will be cleared and new instance of OTETrainingImpl will be created.
-        Otherwise the previous instance of OTETrainingImpl will be re-used
+        the cache will be cleared and new instance of OTEIntegrationTestCase will be created.
+        Otherwise the previous instance of OTEIntegrationTestCase will be re-used
         """
         if dataset_definitions is None:
             pytest.skip('The parameter "--dataset-definitions" is not set')
         params_defining_cache = {k: test_parameters[k] for k in cls.TEST_PARAMETERS_DEFINING_IMPL_BEHAVIOR}
 
-        assert '_impl_' not in params_defining_cache, \
-                'ERROR: parameters defining test behavior should not contain special key "_impl_"'
+        assert '_test_case_' not in params_defining_cache, \
+                'ERROR: parameters defining test behavior should not contain special key "_test_case_"'
 
         cls._clean_cache_if_parameters_changed(cache, params_defining_cache)
 
-        if '_impl_' not in cache:
-            logger.info('TestOTETraining: creating OTETrainingImpl')
+        if '_test_case_' not in cache:
+            logger.info('TestOTEIntegration: creating OTEIntegrationTestCase')
 
             model_name = test_parameters['model_name']
             dataset_name = test_parameters['dataset_name']
@@ -614,33 +1021,33 @@ class TestOTETraining:
             dataset_params = _get_dataset_params_from_dataset_definitions(dataset_definitions, dataset_name)
             template_path = _make_path_be_abs(template_paths[model_name], template_paths[ROOT_PATH_KEY])
 
-            cache['_impl_'] = OTETrainingImpl(dataset_params, template_path, num_training_iters, batch_size)
+            cache['_test_case_'] = OTEIntegrationTestCase(dataset_params, template_path, num_training_iters, batch_size)
 
-        return cache['_impl_']
+        return cache['_test_case_']
 
     @pytest.fixture
-    def impl_fx(self, request, dataset_definitions_fx, template_paths_fx,
+    def test_case_fx(self, request, dataset_definitions_fx, template_paths_fx,
                 cached_from_prev_test_fx):
         """
-        This fixture returns the impl class OTETrainingImpl that should be used for the current test.
+        This fixture returns the test case class OTEIntegrationTestCase that should be used for the current test.
         Note that the cache from the fixture cached_from_prev_test_fx allows to store the instance of the class
         between the tests.
         If the main parameters used for this test are the same as the main parameters used for the previous test,
-        the instance of the implementation class will be kept and re-used. It is helpful for tests that can
+        the instance of the test case class will be kept and re-used. It is helpful for tests that can
         re-use the result of operations (model training, model optimization, etc) made for the previous tests,
         if these operations are time-consuming.
-        If the main parameters used for this test differs w.r.t. the previous test, a new instance of TestOTETraining
-        class will be created.
+        If the main parameters used for this test differs w.r.t. the previous test, a new instance of
+        TestOTEIntegration class will be created.
         """
         cur_request_parameters = deepcopy(request.node.callspec.params)
         if 'test_parameters' not in cur_request_parameters:
             raise RuntimeError(f'Test {request.node.name} should be parametrized by parameter "test_parameters"')
 
         test_parameters = cur_request_parameters['test_parameters']
-        impl = self._update_impl_in_cache(cached_from_prev_test_fx,
-                                          test_parameters,
-                                          dataset_definitions_fx, template_paths_fx)
-        return impl
+        test_case = self._update_test_case_in_cache(cached_from_prev_test_fx,
+                                                    test_parameters,
+                                                    dataset_definitions_fx, template_paths_fx)
+        return test_case
 
     @pytest.fixture
     def data_collector_fx(self, request):
@@ -652,7 +1059,7 @@ class TestOTETraining:
         setup["subject"] = "custom-object-detection"
         setup["project"] = "ote"
         logger.info(f'creating DataCollector: setup=\n{pformat(setup, width=140)}')
-        data_collector = DataCollector(name='TestOTETraining',
+        data_collector = DataCollector(name='TestOTEIntegration',
                                        setup=setup)
         with data_collector:
             logger.info('data_collector is created')
@@ -660,29 +1067,7 @@ class TestOTETraining:
         logger.info('data_collector is released')
 
     @e2e_pytest_performance
-    def test_ote_01_training(self,
-                             test_parameters, # is required for impl_fx magic
-                             impl_fx, data_collector_fx):
-        impl_fx.run_ote_training_once(data_collector_fx)
-
-    @e2e_pytest_performance
-    def test_ote_02_evaluation(self,
-                               test_parameters, # is required for impl_fx magic
-                               impl_fx, data_collector_fx):
-        impl_fx.run_ote_training_once(data_collector_fx)
-        impl_fx.run_ote_evaluation(data_collector_fx)
-
-    @e2e_pytest_performance
-    def test_ote_03_export(self,
-                           test_parameters, # is required for impl_fx magic
-                           impl_fx, data_collector_fx):
-        impl_fx.run_ote_training_once(data_collector_fx)
-        impl_fx.run_ote_export_once(data_collector_fx)
-
-    @e2e_pytest_performance
-    def test_ote_04_evaluation_exported(self,
-                                        test_parameters, # is required for impl_fx magic
-                                        impl_fx, data_collector_fx):
-        impl_fx.run_ote_training_once(data_collector_fx)
-        impl_fx.run_ote_export_once(data_collector_fx)
-        impl_fx.run_ote_evaluation_exported(data_collector_fx)
+    def test(self,
+             test_parameters,
+             test_case_fx, data_collector_fx):
+        test_case_fx.run_stage(test_parameters['test_stage'], data_collector_fx)
