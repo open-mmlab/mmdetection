@@ -147,6 +147,7 @@ Results and models are available in the [model zoo](docs/model_zoo.md).
 - [x] [CenterNet (CVPR'2019)](configs/centernet/README.md)
 - [x] [YOLOX (ArXiv'2021)](configs/yolox/README.md)
 - [x] [SOLO (ECCV'2020)](configs/solo/README.md)
+- [x] [QueryInst (ICCV'2021)](configs/queryinst/README.md)
 </details>
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
