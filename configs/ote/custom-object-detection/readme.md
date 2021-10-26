@@ -8,5 +8,5 @@ but rather provide pre-trained checkpoints for further fine-tuning on a target d
 | Model Name | Complexity (GFLOPs) | Size (Mp) | AP @ [IoU=0.50:0.95] (%) | GPU_NUM |
 | --- | --- | --- | --- | --- |
 | [mobilenetV2_SSD](./mobilenetV2_SSD/template.yaml) | 4.86 | 1.99 | 0.9 | 2 |
-| [mobilenetV2_ATSS](./mobilenetV2_ATSS/template.yaml) | 10.43 | 2.37 | 32.4 | 1 |
+| [mobilenetV2_ATSS](./mobilenetV2_ATSS/template.yaml) | 10.43 | 2.37 | 32.5 | 1 |
 | [resnet50_VFNet](./resnet50_VFNet/template.yaml) | 202.04 | 32.67 | 40.2 | 4 |
