@@ -161,7 +161,7 @@ jobs:
   #         fail_ci_if_error: false
 
   build_cuda102:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-18.04
     container:
       image: pytorch/pytorch:1.9.0-cuda10.2-cudnn7-devel
 
@@ -181,8 +181,11 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      # - name: Install python-dev
-      #   run: apt-get update && apt-get install -y python${{matrix.python-version}}-dev
+      - name: Add python3.9 source
+        run: sudo add-apt-repository ppa:deadsnakes/ppa
+        if: ${{matrix.python-version == '3.9'}}
+      - name: Install python-dev
+        run: apt-get update && apt-get install -y python${{matrix.python-version}}-dev
       - name: Install system dependencies
         run: |
           apt-get update && apt-get install -y ffmpeg libsm6 libxext6 git ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6
