@@ -68,9 +68,17 @@ def DEFAULT_FIELD_VALUE_FOR_USING_IN_TEST():
 def KEEP_CONFIG_FIELD_VALUE():
     return 'KEEP_CONFIG_FIELD_VALUE'
 
+# This string constant may be used as a special constant for the value of the fixture
+# current_test_expected_metrics_fx -- it will show that the corresponding test should be
+# failed, since the corresponding record is absent in the file pointed by the
+# command line parameter `--expected-metrics-file`.
 def ABSENT_EXPECTED_VALIDATION_METRICS():
     return 'ABSENT_EXPECTED_VALIDATION_METRICS'
 
+# This string constant may be used as a special constant for the value of the fixture
+# current_test_expected_metrics_fx -- it shows that the corresponding validation
+# of the test result should be skipped (and it should not be an error).
+# E.g. this constant is used if the test parameter `usecase` is not `reallife`.
 def SKIP_VALIDATION():
     return 'SKIP_VALIDATION'
 
@@ -135,11 +143,24 @@ def template_paths_fx(request):
 @pytest.fixture
 def expected_metrics_all_tests_fx(request):
     """
-    Return dataset definitions read from a YAML file passed as the parameter --dataset-definitions.
-    Note that the dataset definitions should store the following structure:
-    {
-        ...
-    }
+    Return expected metrics for reallife tests read from a YAML file passed as the parameter --expected-metrics-file.
+    Note that the structure of expected metrics should be a dict that maps tests to the expected metric numbers.
+    The keys of the dict are the parameters' part of the test id-s -- see the function
+    TestOTEIntegration._generate_test_id.
+    The value for each key is a structure that stores a requirement on some metric.
+    The requirement can be either a target value (probably, with max size of quality drop)
+    or the reference to another stage of the same model (also probably with max size of quality drop).
+    E.g.
+    ```
+    'ACTION-training_evaluation,model-gen3_mobilenetV2_ATSS,dataset-bbcd,num_iters-KEEP_CONFIG_FIELD_VALUE,batch-KEEP_CONFIG_FIELD_VALUE,usecase-reallife':
+        'metrics.accuracy.f-measure':
+            'target_value': 0.81
+            'max_drop': 0.005
+    'ACTION-export_evaluation,model-gen3_mobilenetV2_ATSS,dataset-bbcd,num_iters-KEEP_CONFIG_FIELD_VALUE,batch-KEEP_CONFIG_FIELD_VALUE,usecase-reallife':
+        'metrics.accuracy.f-measure':
+            'base': 'training_evaluation.metrics.accuracy.f-measure'
+            'max_drop': 0.01
+    ```
     """
     path = request.config.getoption('--expected-metrics-file')
     if path is None:
@@ -154,6 +175,9 @@ def expected_metrics_all_tests_fx(request):
 
 @pytest.fixture
 def current_test_parameters_fx(request):
+    """
+    This fixture returns the test parameter `test_parameters`.
+    """
     cur_test_params = deepcopy(request.node.callspec.params)
     assert 'test_parameters' in cur_test_params, \
             f'The test {request.node.name} should be parametrized by parameter "test_parameters"'
@@ -161,6 +185,10 @@ def current_test_parameters_fx(request):
 
 @pytest.fixture
 def current_test_parameters_string_fx(request):
+    """
+    This fixture returns the part of the test id between square brackets
+    (i.e. the part of id that corresponds to the test parameters)
+    """
     node_name = request.node.name
     assert '[' in node_name, f'Wrong format of node name {node_name}'
     assert node_name.endswith(']'), f'Wrong format of node name {node_name}'
@@ -170,6 +198,25 @@ def current_test_parameters_string_fx(request):
 @pytest.fixture
 def current_test_expected_metrics_fx(expected_metrics_all_tests_fx, current_test_parameters_string_fx,
                                      current_test_parameters_fx):
+    """
+    This fixture returns the expected metrics for the current test.
+    It may be
+    * either a dict with the structure that stores the requirements on
+      metrics on the current test, e.g.
+      ```
+      {
+        'metrics.accuracy.f-measure': {
+                'target_value': 0.81,
+                'max_drop': 0.005
+            }
+      }
+      ```
+    * or a string with the special value `ABSENT_EXPECTED_VALIDATION_METRICS`
+      if the structure that stores the requirements on metrics 3for the current
+      test is absent -- in this case the test is failed
+    * or a string with the special value `SKIP_VALIDATION`
+      if the test validation should be skipped
+    """
     if 'reallife' != current_test_parameters_fx['usecase']:
         return SKIP_VALIDATION()
     if expected_metrics_all_tests_fx is None:
