@@ -14,15 +14,15 @@
 
 import argparse
 import logging
-import os.path as osp
 import sys
 
+import numpy as np
 from ote_sdk.configuration.helper import create
 from ote_sdk.entities.datasets import DatasetEntity
 from ote_sdk.entities.inference_parameters import InferenceParameters
 from ote_sdk.entities.label_schema import LabelSchemaEntity
-from ote_sdk.entities.model import ModelEntity, ModelOptimizationType, ModelPrecision, ModelStatus, OptimizationMethod
-from ote_sdk.entities.model_template import TargetDevice, parse_model_template
+from ote_sdk.entities.model import ModelEntity, ModelStatus
+from ote_sdk.entities.model_template import parse_model_template
 from ote_sdk.entities.optimization_parameters import OptimizationParameters
 from ote_sdk.entities.resultset import ResultSetEntity
 from ote_sdk.entities.subset import Subset
@@ -30,9 +30,7 @@ from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType
 from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
 
-from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
 from mmdet.apis.ote.apis.detection.ote_utils import get_task_class
-from mmdet.apis.ote.extension.datasets.data_utils import load_dataset_items_coco_format
 
 logger = logging.getLogger(__name__)
 
@@ -40,33 +38,72 @@ logger = logging.getLogger(__name__)
 def parse_args():
     parser = argparse.ArgumentParser(description='Sample showcasing the new API')
     parser.add_argument('template_file_path', help='path to template file')
-    parser.add_argument('--data-dir', default='data')
     parser.add_argument('--export', action='store_true')
     return parser.parse_args()
 
 
+def load_test_dataset():
+    from ote_sdk.entities.annotation import Annotation, AnnotationSceneEntity, AnnotationSceneKind
+    from ote_sdk.entities.dataset_item import DatasetItemEntity
+    from ote_sdk.entities.image import Image
+    from ote_sdk.entities.label import LabelEntity
+    from ote_sdk.entities.scored_label import ScoredLabel
+    from ote_sdk.entities.shapes.rectangle import Rectangle
+    from ote_sdk.entities.subset import Subset
+
+    def gen_image(resolution, x1, y1, x2, y2):
+        w, h = resolution
+        image = np.full([h, w, 3], fill_value=255, dtype=np.uint8)
+        image[int(y1 * h):int(y2 * h), int(x1 * w):int(x2 * w), :] = np.array([0, 128, 128], dtype=np.uint8)[None, None, :]
+        return (image, Rectangle(x1=x1, y1=y1, x2=x2, y2=y2))
+
+    images = [
+        gen_image((640, 480), 0.0, 0.0, 0.5, 0.5),
+        gen_image((640, 480), 0.5, 0.0, 1.0, 0.5),
+        gen_image((640, 480), 0.0, 0.5, 0.5, 1.0),
+        gen_image((640, 480), 0.5, 0.5, 1.0, 1.0),
+    ]
+    labels = [
+        LabelEntity(name='rect', domain="detection", id=0)
+    ]
+
+    def get_image(i, subset):
+        image, bbox = images[i]
+        return DatasetItemEntity(
+            media=Image(data=image),
+            annotation_scene=AnnotationSceneEntity(
+                annotations=[Annotation(bbox, labels=[ScoredLabel(label=labels[0])])],
+                kind=AnnotationSceneKind.ANNOTATION
+            ),
+            subset=subset,
+        )
+
+    items = [
+        get_image(0, Subset.TRAINING),
+        get_image(1, Subset.TRAINING),
+        get_image(2, Subset.TRAINING),
+        get_image(3, Subset.TRAINING),
+        get_image(0, Subset.TRAINING),
+        get_image(1, Subset.TRAINING),
+        get_image(2, Subset.TRAINING),
+        get_image(3, Subset.TRAINING),
+        get_image(0, Subset.TRAINING),
+        get_image(1, Subset.TRAINING),
+        get_image(0, Subset.VALIDATION),
+        get_image(1, Subset.VALIDATION),
+        get_image(2, Subset.VALIDATION),
+        get_image(3, Subset.VALIDATION),
+        get_image(0, Subset.TESTING),
+        get_image(1, Subset.TESTING),
+        get_image(2, Subset.TESTING),
+        get_image(3, Subset.TESTING),
+    ]
+    return DatasetEntity(items), labels
+
+
 def main(args):
     logger.info('Initialize dataset')
-    labels_list = []
-    print(osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'))
-    print(osp.join(args.data_dir, 'coco/val2017/'))
-    items = load_dataset_items_coco_format(
-        ann_file_path=osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'),
-        data_root_dir=osp.join(args.data_dir, 'coco/val2017/'),
-        subset=Subset.TRAINING,
-        labels_list=labels_list)
-    items.extend(load_dataset_items_coco_format(
-        ann_file_path=osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'),
-        data_root_dir=osp.join(args.data_dir, 'coco/val2017/'),
-        subset=Subset.VALIDATION,
-        labels_list=labels_list))
-    items.extend(load_dataset_items_coco_format(
-        ann_file_path=osp.join(args.data_dir, 'coco/annotations/instances_val2017.json'),
-        data_root_dir=osp.join(args.data_dir, 'coco/val2017/'),
-        subset=Subset.TESTING,
-        labels_list=labels_list))
-    dataset = DatasetEntity(items=items)
-
+    dataset, labels_list = load_test_dataset()
     labels_schema = LabelSchemaEntity.from_labels(labels_list)
 
     logger.info(f'Train dataset: {len(dataset.get_subset(Subset.TRAINING))} items')
@@ -75,13 +112,13 @@ def main(args):
     logger.info('Load model template')
     model_template = parse_model_template(args.template_file_path)
 
-    hyper_parameters = model_template.hyper_parameters.data
-    set_values_as_default(hyper_parameters)
+    logger.info('Set hyperparameters')
+    params = create(model_template.hyper_parameters.data)
+    params.learning_parameters.num_iters = 5
+    params.learning_parameters.learning_rate_warmup_iters = 1
+    params.learning_parameters.batch_size = 2
 
     logger.info('Setup environment')
-    params = create(hyper_parameters)
-    logger.info('Set hyperparameters')
-    params.learning_parameters.num_iters = 1
     environment = TaskEnvironment(model=None, hyper_parameters=params, label_schema=labels_schema, model_template=model_template)
 
     logger.info('Create base Task')
@@ -134,20 +171,13 @@ def main(args):
             prediction_dataset=predicted_validation_dataset,
         )
         logger.info('Estimate quality on validation set')
-        performance = openvino_task.evaluate(resultset)
-        logger.info(str(performance))
+        openvino_task.evaluate(resultset)
+        logger.info(str(resultset.performance))
 
         logger.info('Run POT optimization')
         optimized_model = ModelEntity(
             dataset,
             environment.get_model_configuration(),
-            optimization_type=ModelOptimizationType.POT,
-            optimization_methods=OptimizationMethod.QUANTIZATION,
-            optimization_objectives={},
-            precision=[ModelPrecision.INT8],
-            target_device=TargetDevice.CPU,
-            performance_improvement={},
-            model_size_reduction=1.,
             model_status=ModelStatus.NOT_READY)
         openvino_task.optimize(
             OptimizationType.POT,
@@ -165,8 +195,8 @@ def main(args):
             prediction_dataset=predicted_validation_dataset,
         )
         logger.info('Performance of optimized model:')
-        performance = openvino_task.evaluate(resultset)
-        logger.info(str(performance))
+        openvino_task.evaluate(resultset)
+        logger.info(str(resultset.performance))
 
 if __name__ == '__main__':
     sys.exit(main(parse_args()) or 0)

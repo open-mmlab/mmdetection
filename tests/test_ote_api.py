@@ -13,8 +13,6 @@
 # and limitations under the License.
 
 import io
-import json
-import os
 import os.path as osp
 import random
 import time
@@ -25,6 +23,7 @@ from subprocess import run
 from typing import Optional
 
 import numpy as np
+import pytest
 import torch
 from bson import ObjectId
 from e2e_test_system import e2e_pytest_api
@@ -52,7 +51,6 @@ from ote_sdk.usecases.tasks.interfaces.optimization_interface import Optimizatio
 
 from mmdet.apis.ote.apis.detection import (OpenVINODetectionTask, OTEDetectionConfig, OTEDetectionInferenceTask,
                                            OTEDetectionNNCFTask, OTEDetectionTrainingTask)
-from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
 from mmdet.apis.ote.apis.detection.ote_utils import generate_label_schema
 from mmdet.integration.nncf.utils import is_nncf_enabled
 
@@ -103,82 +101,14 @@ def test_configuration_yaml():
     configuration_yaml_loaded = create(osp.join('mmdet', 'apis', 'ote', 'apis', 'detection', 'configuration.yaml'))
     assert configuration_yaml_converted == configuration_yaml_loaded
 
-@e2e_pytest_api
-def test_set_values_as_default():
-    template_file = osp.join(DEFAULT_TEMPLATE_DIR, 'template.yaml')
-    model_template = parse_model_template(template_file)
-
-    hyper_parameters = model_template.hyper_parameters.data
-    # value that comes from template.yaml
-    default_value = hyper_parameters['learning_parameters']['batch_size']['default_value']
-    # value that comes from OTEDetectionConfig
-    value = hyper_parameters['learning_parameters']['batch_size']['value']
-    assert value == 5
-    assert default_value == 8
-
-    # after this call value must be equal to default_value
-    set_values_as_default(hyper_parameters)
-    value = hyper_parameters['learning_parameters']['batch_size']['value']
-    assert default_value == value
-    hyper_parameters = create(hyper_parameters)
-    assert default_value == hyper_parameters.learning_parameters.batch_size
 
 class Sample(unittest.TestCase):
-    root_dir = '/tmp'
-    coco_dir = osp.join(root_dir, 'data/coco')
-    snapshots_dir = osp.join(root_dir, 'snapshots')
     template = osp.join(DEFAULT_TEMPLATE_DIR, 'template.yaml')
-
-    custom_operations = ['ExperimentalDetectronROIFeatureExtractor',
-                         'PriorBox', 'PriorBoxClustered', 'DetectionOutput',
-                         'DeformableConv2D']
-
-    @staticmethod
-    def shorten_annotation(src_path, dst_path, num_images):
-        with open(src_path) as read_file:
-            content = json.load(read_file)
-            selected_indexes = sorted([item['id'] for item in content['images']])
-            selected_indexes = selected_indexes[:num_images]
-            content['images'] = [item for item in content['images'] if
-                                 item['id'] in selected_indexes]
-            content['annotations'] = [item for item in content['annotations'] if
-                                      item['image_id'] in selected_indexes]
-            content['licenses'] = [item for item in content['licenses'] if
-                                   item['id'] in selected_indexes]
-
-        with open(dst_path, 'w') as write_file:
-            json.dump(content, write_file)
-
-    @classmethod
-    def setUpClass(cls):
-        cls.test_on_full = False
-        os.makedirs(cls.coco_dir, exist_ok=True)
-        if not osp.exists(osp.join(cls.coco_dir, 'val2017.zip')):
-            run(f'wget --no-verbose http://images.cocodataset.org/zips/val2017.zip -P {cls.coco_dir}',
-            check=True, shell=True)
-        if not osp.exists(osp.join(cls.coco_dir, 'val2017')):
-            run(f'unzip {osp.join(cls.coco_dir, "val2017.zip")} -d {cls.coco_dir}', check=True, shell=True)
-        if not osp.exists(osp.join(cls.coco_dir, "annotations_trainval2017.zip")):
-            run(f'wget --no-verbose http://images.cocodataset.org/annotations/annotations_trainval2017.zip -P {cls.coco_dir}',
-            check=True, shell=True)
-        if not osp.exists(osp.join(cls.coco_dir, 'annotations/instances_val2017.json')):
-            run(f'unzip -o {osp.join(cls.coco_dir, "annotations_trainval2017.zip")} -d {cls.coco_dir}',
-            check=True, shell=True)
-
-        if cls.test_on_full:
-            cls.shorten_to = 5000
-        else:
-            cls.shorten_to = 100
-
-        cls.shorten_annotation(osp.join(cls.coco_dir, 'annotations/instances_val2017.json'),
-                               osp.join(cls.coco_dir, 'annotations/instances_val2017.json'),
-                               cls.shorten_to)
 
     @e2e_pytest_api
     def test_sample_on_cpu(self):
         output = run('export CUDA_VISIBLE_DEVICES=;'
                      'python mmdet/apis/ote/sample/sample.py '
-                     f'--data-dir {self.coco_dir}/.. '
                      f'--export {self.template}',
                      shell=True, check=True)
         assert output.returncode == 0
@@ -186,7 +116,6 @@ class Sample(unittest.TestCase):
     @e2e_pytest_api
     def test_sample_on_gpu(self):
         output = run('python mmdet/apis/ote/sample/sample.py '
-                     f'--data-dir {self.coco_dir}/.. '
                      f'--export {self.template}',
                      shell=True, check=True)
         assert output.returncode == 0
@@ -251,10 +180,7 @@ class API(unittest.TestCase):
 
     def setup_configurable_parameters(self, template_dir, num_iters=10):
         model_template = parse_model_template(osp.join(template_dir, 'template.yaml'))
-
-        hyper_parameters = model_template.hyper_parameters.data
-        set_values_as_default(hyper_parameters)
-        hyper_parameters = create(hyper_parameters)
+        hyper_parameters = create(model_template.hyper_parameters.data)
         hyper_parameters.learning_parameters.num_iters = num_iters
         hyper_parameters.learning_parameters.num_checkpoints = 1
         hyper_parameters.postprocessing.result_based_confidence_threshold = False
@@ -622,6 +548,7 @@ class API(unittest.TestCase):
 
     @e2e_pytest_api
     def test_training_gen1_ssd(self):
+        pytest.skip('Gen1 models are not relevant anymore')
         self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen1_mobilenet_v2-2s_ssd-256x256'),
             num_iters=150)
 
@@ -629,16 +556,19 @@ class API(unittest.TestCase):
 
     @e2e_pytest_api
     def test_training_gen2_ssd(self):
+        pytest.skip('Gen2 models are not relevant anymore')
         self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_mobilenetV2_SSD'),
             num_iters=150)
 
     @e2e_pytest_api
     def test_training_gen2_atss(self):
+        pytest.skip('Gen2 models are not relevant anymore')
         self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_mobilenetV2_ATSS'),
             num_iters=150)
 
     @e2e_pytest_api
     def test_training_gen2_vfnet(self):
+        pytest.skip('Gen2 models are not relevant anymore')
         self.end_to_end(osp.join('configs', 'ote', 'custom-object-detection', 'gen2_resnet50_VFNet'),
             num_iters=150, export_perf_delta_tolerance=0.01)
 
