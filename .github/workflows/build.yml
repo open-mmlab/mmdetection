@@ -182,7 +182,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Add python3.9 source
-        run: sudo add-apt-repository ppa:deadsnakes/ppa
+        run: add-apt-repository ppa:deadsnakes/ppa
         if: ${{matrix.python-version == '3.9'}}
       - name: Install python-dev
         run: apt-get update && apt-get install -y python${{matrix.python-version}}-dev
