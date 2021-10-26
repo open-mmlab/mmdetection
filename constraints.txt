@@ -124,4 +124,4 @@ xdoctest==0.15.10
 yamlloader==1.1.0
 yapf==0.31.0
 
-importlib-metadata<4.3
+importlib-metadata==4.2.0
