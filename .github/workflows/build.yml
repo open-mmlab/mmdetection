@@ -181,11 +181,15 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+      # Add ppa source repo for python3.9.
       - name: Add python3.9 source
         run: |
           apt-get update && apt-get install -y software-properties-common
           add-apt-repository -y ppa:deadsnakes/ppa
         if: ${{matrix.python-version == '3.9'}}
+      # Install python-dev for some packages which require libpython3.Xm.
+      # Github's setup-python cannot install python3.9-dev, have to use apt install.
+      # Set DEBIAN_FRONTEND=noninteractive to avoid some interactive.
       - name: Install python-dev
         run: apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python${{matrix.python-version}}-dev
       - name: Install system dependencies
