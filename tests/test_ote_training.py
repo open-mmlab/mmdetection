@@ -663,7 +663,7 @@ class OTETestStage:
             time the stage is called the exception is re-raised.
     """
     def __init__(self, action: BaseOTETestAction,
-                 depends_stages: Optional[List[OTETestStage]]=None):
+                 depends_stages: Optional[List['OTETestStage']]=None):
         self.was_processed = False
         self.stored_exception = None
         self.action = action
