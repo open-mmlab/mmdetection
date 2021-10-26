@@ -124,7 +124,7 @@ def tpfp_imagenet(det_bboxes,
                     det_bboxes[:, 3] - det_bboxes[:, 1] + extra_length)
             for i, (min_area, max_area) in enumerate(area_ranges):
                 fp[i, (det_areas >= min_area) & (det_areas < max_area)] = 1
-        return tp, fp
+        return tp, fp, det_bboxes
     ious = bbox_overlaps(
         det_bboxes, gt_bboxes - 1, use_legacy_coordinate=use_legacy_coordinate)
     gt_w = gt_bboxes[:, 2] - gt_bboxes[:, 0] + extra_length
@@ -334,13 +334,6 @@ def tpfp_default(det_bboxes,
             each array is (num_scales, m).
     """
 
-    assert gt_bboxes_group_of is None and \
-           ioa_thr is None and \
-           use_group_of is False, \
-           '`gt_bboxes_group_of` and `ioa_thr` should be None and ' \
-           '`use_group_of` should be False. ' \
-           'Only used in `tpfp_openimage`'
-
     if not use_legacy_coordinate:
         extra_length = 0.
     else:
@@ -499,8 +492,8 @@ def get_cls_results(det_results, annotations, class_id):
             cls_gts_ignore.append(ann['bboxes_ignore'][ignore_inds, :])
         else:
             cls_gts_ignore.append(np.empty((0, 4), dtype=np.float32))
-        if ann.get('is_group_of', None) is not None:
-            is_group_ofs.append(ann['is_group_of'][gt_inds])
+        if ann.get('gt_is_group_ofs', None) is not None:
+            is_group_ofs.append(ann['gt_is_group_ofs'][gt_inds])
 
     return cls_dets, cls_gts, cls_gts_ignore, is_group_ofs
 
@@ -509,7 +502,7 @@ def eval_map(det_results,
              annotations,
              scale_ranges=None,
              iou_thr=0.5,
-             ioa_thr=0.5,
+             ioa_thr=None,
              dataset=None,
              logger=None,
              tpfp_fn=None,

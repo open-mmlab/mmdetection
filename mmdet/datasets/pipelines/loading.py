@@ -266,6 +266,11 @@ class LoadAnnotations:
             results['gt_bboxes_ignore'] = gt_bboxes_ignore.copy()
             results['bbox_fields'].append('gt_bboxes_ignore')
         results['bbox_fields'].append('gt_bboxes')
+
+        gt_is_group_ofs = ann_info.get('gt_is_group_ofs', None)
+        if gt_is_group_ofs is not None:
+            results['gt_is_group_ofs'] = gt_is_group_ofs.copy()
+
         return results
 
     def _load_labels(self, results):

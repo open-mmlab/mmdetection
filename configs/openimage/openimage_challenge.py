@@ -48,6 +48,7 @@ data = dict(
         'challenge2019/challenge-2019-train-detection-bbox.txt',
         img_prefix=data_root,
         label_csv_path=data_root + 'challenge2019/cls-label-description.csv',
+        class_label_tree_path=data_root + 'challenge2019/class_label_tree.np',
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
@@ -55,6 +56,7 @@ data = dict(
         'challenge2019/challenge-2019-validation-detection-bbox.txt',
         img_prefix=data_root,
         label_csv_path=data_root + 'challenge2019/cls-label-description.csv',
+        class_label_tree_path=data_root + 'challenge2019/class_label_tree.np',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
@@ -62,5 +64,6 @@ data = dict(
         'challenge2019/challenge-2019-validation-detection-bbox.txt',
         img_prefix=data_root,
         label_csv_path=data_root + 'challenge2019/cls-label-description.csv',
+        class_label_tree_path=data_root + 'challenge2019/class_label_tree.np',
         pipeline=test_pipeline))
-evaluation = dict(interval=1, metric='bbox')
+evaluation = dict(interval=1, metric='mAP')
