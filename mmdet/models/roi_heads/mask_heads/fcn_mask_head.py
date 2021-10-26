@@ -119,7 +119,7 @@ class FCNMaskHead(BaseModule):
                 continue
             elif isinstance(m, CARAFEPack):
                 m.init_weights()
-            else:
+            elif hasattr(m, 'weight') and hasattr(m, 'bias'):
                 nn.init.kaiming_normal_(
                     m.weight, mode='fan_out', nonlinearity='relu')
                 nn.init.constant_(m.bias, 0)
