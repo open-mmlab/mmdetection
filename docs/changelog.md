@@ -3,6 +3,7 @@
 ### v2.18.0 (27/10/2021)
 
 #### Highlights
+
 - Support [QueryInst](http://arxiv.org/abs/2105.01928) (#6050)
 - Refactor dense_head to decouple onnx export from get_bboxes and speed up inference time (#5317, #6003, #6369, #6268, #6315)
 
