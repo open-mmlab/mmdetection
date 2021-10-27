@@ -45,7 +45,7 @@ lxml==4.6.3
 Markdown==3.3.4
 matplotlib==3.4.3
 mccabe==0.6.1
-mmcv-full==1.3.14
+mmcv-full==1.3.0
 mmlvis==10.5.3
 mmpycocotools==12.0.3
 natsort==7.1.1
@@ -96,7 +96,7 @@ requests==2.25.1
 requests-oauthlib==1.3.0
 rsa==4.7.2
 scikit-image==0.17.2
-scikit-learn==0.24.2
+scikit-learn==0.24.1
 scipy==1.5.4
 sentencepiece==0.1.96
 Shapely==1.7.1

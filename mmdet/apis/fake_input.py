@@ -30,5 +30,5 @@ def get_fake_input(cfg, orig_img_shape=(128, 128, 3), device='cuda'):
     if device == torch.device('cpu'):
         data = scatter_cpu(collate([data], samples_per_gpu=1))[0]
     else:
-        data = scatter(collate([data], samples_per_gpu=1), [device.index])[0]
+        data = scatter(collate([data], samples_per_gpu=1), [device])[0]
     return data
