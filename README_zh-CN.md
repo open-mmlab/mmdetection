@@ -60,9 +60,9 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 ## 更新日志
 
 最新的 **2.18.0** 版本已经在2021.10.27发布:
+- 支持 [QueryInst](http://arxiv.org/abs/2105.01928)。
 - 支持 infinite sampler 加速 iter based runner 训练。
 - 修复 ConvFC 检测头的权重初始化。
-- 修复随机仿射变换的坐标错误。
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/changelog.md)。
 

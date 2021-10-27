@@ -61,9 +61,9 @@ This project is released under the [Apache 2.0 license](LICENSE).
 ## Changelog
 
 **2.18.0** was released in 27/10/2021:
+- Support [QueryInst](http://arxiv.org/abs/2105.01928).
 - Support infinite sampler to accelerate training when using iter based runner.
 - Fix ConvFC head weight initialization.
-- Fix random affine bbox coordinate.
 
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 
