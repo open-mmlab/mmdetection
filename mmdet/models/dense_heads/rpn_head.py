@@ -240,12 +240,14 @@ class RPNHead(AnchorHead):
                 proposals = proposals[valid_mask]
                 scores = scores[valid_mask]
                 ids = ids[valid_mask]
+        if 'max_per_img' in cfg:
+            cfg.nms.max_num = cfg.max_per_img
         if proposals.numel() > 0:
             dets, keep = batched_nms(proposals, scores, ids, cfg.nms)
         else:
             return proposals.new_zeros(0, 5)
 
-        return dets[:cfg.max_per_img]
+        return dets
 
     def onnx_export(self, x, img_metas):
         """Test without augmentation.

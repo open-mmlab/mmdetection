@@ -657,6 +657,8 @@ class StageCascadeRPNHead(RPNHead):
                     'Please delete max_num which will be deprecated.'
             else:
                 cfg.max_per_img = cfg.max_num
+        if 'max_per_img' in cfg:
+            cfg.nms.max_num = cfg.max_per_img
         if 'nms_thr' in cfg:
             assert cfg.nms.iou_threshold == cfg.nms_thr, f'You set' \
                 f' iou_threshold in nms and ' \
@@ -666,7 +668,7 @@ class StageCascadeRPNHead(RPNHead):
                 f'which will be deprecated.'
 
         dets, keep = batched_nms(proposals, scores, ids, cfg.nms)
-        return dets[:cfg.max_per_img]
+        return dets
 
 
 @HEADS.register_module()
