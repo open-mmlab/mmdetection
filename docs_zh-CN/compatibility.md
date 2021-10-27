@@ -2,7 +2,7 @@
 
 ## MMDetection 2.18.0
 
-### DIIHead compatibility
+### DIIHead 兼容性
 
 为了支持 QueryInst，在 DIIHead 的返回元组中加入了 attn_feats。
 
