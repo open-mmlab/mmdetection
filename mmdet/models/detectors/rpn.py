@@ -152,4 +152,11 @@ class RPN(BaseDetector):
         Returns:
             np.ndarray: The image with bboxes drawn on it.
         """
+        if kwargs is not None:
+            if 'score_thr' in kwargs:
+                kwargs.pop('score_thr')
+            if 'text_color' in kwargs:
+                kwargs.pop('text_color')
+            if 'bbox_color' in kwargs:
+                kwargs['colors'] = kwargs.pop('bbox_color')
         mmcv.imshow_bboxes(data, result, top_k=top_k, **kwargs)
