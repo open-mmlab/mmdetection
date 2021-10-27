@@ -188,8 +188,8 @@ jobs:
           add-apt-repository -y ppa:deadsnakes/ppa
         if: ${{matrix.python-version == '3.9'}}
       # Install python-dev for some packages which require libpython3.Xm.
-      # Github's setup-python cannot install python3.9-dev, have to use apt install.
-      # Set DEBIAN_FRONTEND=noninteractive to avoid some interactive.
+      # Github's setup-python cannot install python3.9-dev, so we have to use apt install.
+      # Set DEBIAN_FRONTEND=noninteractive to avoid some interactions.
       - name: Install python-dev
         run: apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python${{matrix.python-version}}-dev
       - name: Install system dependencies
