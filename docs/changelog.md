@@ -5,7 +5,7 @@
 #### Highlights
 
 - Support [QueryInst](http://arxiv.org/abs/2105.01928) (#6050)
-- Refactor dense_head to decouple onnx export from get_bboxes and speed up inference time (#5317, #6003, #6369, #6268, #6315)
+- Refactor dense heads to decouple onnx export logics from `get_bboxes` and speed up inference (#5317, #6003, #6369, #6268, #6315)
 
 #### New Features
 
@@ -31,17 +31,16 @@
 - Add code-spell pre-commit hook and fix a typo (#6306)
 - Fix typo (#6245, #6190)
 - Fix sampler unit test (#6284)
-- Implementation of YOLACT forward_dummy to enable get_flops (#6079)
+- Fix `forward_dummy` of YOLACT to enable `get_flops` (#6079)
 - Fix link error in the config documentation (#6252)
 - Adjust the order to beautify the document (#6195)
 
 #### Refactors
 
 - Refactor one-stage get_bboxes logic (#5317)
-- Refactor exporting One-Stage model to ONNX (#6003)
-- Fix onnx unitest (#6369)
+- Refactor ONNX export of One-Stage models (#6003, #6369)
 - Refactor dense_head and speedup (#6268)
-- Training of densehead (#6315)
+- Migrate to use prior_generator in training of dense heads (#6315)
 
 #### Contributors
 
