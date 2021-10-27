@@ -4,6 +4,7 @@
 
 #### Highlights
 - Support [QueryInst](http://arxiv.org/abs/2105.01928) (#6050)
+- Refactor dense_head to decouple onnx export from get_bboxes and speed up inference time (#5317, #6003, #6369, #6268, #6315)
 
 #### New Features
 
@@ -12,6 +13,8 @@
 
 #### Bug Fixes
 
+- Fix init_weight in fcn_mask_head (#6378)
+- Fix type error in imshow_bboxes of RPN (#6386)
 - Fix broken colab link in MMDetection Tutorial (#6382)
 - Make sure the device and dtype of scale_factor are the same as bboxes (#6374)
 - Remove sampling hardcode (#6317)
@@ -31,10 +34,18 @@
 - Fix link error in the config documentation (#6252)
 - Adjust the order to beautify the document (#6195)
 
+#### Refactors
+
+- Refactor one-stage get_bboxes logic (#5317)
+- Refactor exporting One-Stage model to ONNX (#6003)
+- Fix onnx unitest (#6369)
+- Refactor dense_head and speedup (#6268)
+- Training of densehead (#6315)
+
 #### Contributors
 
-A total of 17 developers contributed to this release.
-Thanks @onnkeat, @st9007a, @vealocia, @yhcao6, @DapangpangX, @yellowdolphin, @cclauss, @kennymckormick,
+A total of 18 developers contributed to this release.
+Thanks @Boyden, @onnkeat, @st9007a, @vealocia, @yhcao6, @DapangpangX, @yellowdolphin, @cclauss, @kennymckormick,
 @pingguokiller, @collinzrj, @AndreaPi, @AronLin, @BIGWangYuDong, @hhaAndroid, @jshilong, @RangiLyu, @ZwwWayne
 
 

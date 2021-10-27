@@ -62,8 +62,8 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 **2.18.0** was released in 27/10/2021:
 - Support [QueryInst](http://arxiv.org/abs/2105.01928).
+- Refactor dense_head to decouple onnx export from get_bboxes and speed up inference time.
 - Support infinite sampler to accelerate training when using iter based runner.
-- Fix ConvFC head weight initialization.
 
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 
