@@ -33,7 +33,7 @@
 
 #### Contributors
 
-A total of 13 developers contributed to this release.
+A total of 17 developers contributed to this release.
 Thanks @onnkeat, @st9007a, @vealocia, @yhcao6, @DapangpangX, @yellowdolphin, @cclauss, @kennymckormick,
 @pingguokiller, @collinzrj, @AndreaPi, @AronLin, @BIGWangYuDong, @hhaAndroid, @jshilong, @RangiLyu, @ZwwWayne
 
