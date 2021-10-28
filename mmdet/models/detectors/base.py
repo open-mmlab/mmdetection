@@ -7,6 +7,7 @@ import numpy as np
 import torch
 import torch.distributed as dist
 from mmcv.runner import BaseModule, auto_fp16
+import torch.nn.functional as F
 
 from mmdet.core.visualization import imshow_det_bboxes
 
@@ -14,9 +15,15 @@ from mmdet.core.visualization import imshow_det_bboxes
 class BaseDetector(BaseModule, metaclass=ABCMeta):
     """Base class for detectors."""
 
-    def __init__(self, init_cfg=None):
+    def __init__(self, img_norm_cfg, init_cfg=None):
         super(BaseDetector, self).__init__(init_cfg)
         self.fp16_enabled = False
+        self.register_buffer("mean", torch.tensor(img_norm_cfg['mean']).view(-1, 1, 1), False)
+        self.register_buffer("std", torch.tensor(img_norm_cfg['std']).view(-1, 1, 1), False)
+
+    @property
+    def device(self):
+        return self.mean.device
 
     @property
     def with_neck(self):
@@ -60,7 +67,8 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         assert isinstance(imgs, list)
         return [self.extract_feat(img) for img in imgs]
 
-    def forward_train(self, imgs, img_metas, **kwargs):
+    @auto_fp16(apply_to=('imgs',))
+    def forward_train(self, imgs, img_metas, data_samples, **kwargs):
         """
         Args:
             img (list[Tensor]): List of tensors of shape (1, C, H, W).
@@ -109,6 +117,8 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         else:
             raise NotImplementedError
 
+    # TODO:  auto_fp16 supports context embedding
+    @auto_fp16(apply_to=('imgs',))
     def forward_test(self, imgs, img_metas, **kwargs):
         """
         Args:
@@ -153,25 +163,94 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
             assert 'proposals' not in kwargs
             return self.aug_test(imgs, img_metas, **kwargs)
 
-    @auto_fp16(apply_to=('img', ))
-    def forward(self, img, img_metas, return_loss=True, **kwargs):
-        """Calls either :func:`forward_train` or :func:`forward_test` depending
-        on whether ``return_loss`` is ``True``.
-
-        Note this setting will change the expected inputs. When
-        ``return_loss=True``, img and img_meta are single-nested (i.e. Tensor
-        and List[dict]), and when ``resturn_loss=False``, img and img_meta
-        should be double nested (i.e.  List[Tensor], List[List[dict]]), with
-        the outer list indicating test time augmentations.
+    def forward(self, data, optimizer=None, return_loss=True, **kwargs):
+        """The iteration step during training.
+        This method defines an iteration step during training, except for the
+        back propagation and optimizer updating, which are done in an optimizer
+        hook. Note that in some complicated cases or models, the whole process
+        including back propagation and optimizer updating is also defined in
+        this method, such as GAN.
+        Args:
+            data (dict): The output of dataloader.
+            optimizer (:obj:`torch.optim.Optimizer` | dict): The optimizer of
+                runner is passed to ``train_step()``. This argument is unused
+                and reserved.
+        Returns:
+            dict: It should contain at least 3 keys: ``loss``, ``log_vars``, \
+                ``num_samples``.
+                - ``loss`` is a tensor for back propagation, which can be a
+                  weighted sum of multiple losses.
+                - ``log_vars`` contains all the variables to be sent to the
+                  logger.
+                - ``num_samples`` indicates the batch size (when the model is
+                  DDP, it means the batch size on each GPU), which is used for
+                  averaging the logs.
         """
         if torch.onnx.is_in_onnx_export():
+            img, img_metas = self._preprocss_test_data(data)
             assert len(img_metas) == 1
             return self.onnx_export(img[0], img_metas[0])
 
         if return_loss:
-            return self.forward_train(img, img_metas, **kwargs)
+            img, img_metas, data_samples = self._preprocss_train_data(data)
+            data_samples = [data_sampl.to(self.device) for data_sampl in data_samples]
+            losses = self.forward_train(img, img_metas, data_samples, **kwargs)
+            loss, log_vars = self._parse_losses(losses)
+
+            outputs = dict(
+                loss=loss, log_vars=log_vars, num_samples=len(img_metas))
+
+            return outputs
         else:
+            img, img_metas = self._preprocss_test_data(data)
             return self.forward_test(img, img_metas, **kwargs)
+
+    def _preprocss_train_data(self, datas):
+        images = []
+        img_metas = []
+        data_samples = []
+        for data in datas:
+            images.append(data['img'])
+            img_metas.append(data['img_metas'])
+            if 'data_sample' in data:
+                data_samples.append(data['data_sample'])
+
+        images = [img.to(self.device) for img in images]
+        images = [(x - self.mean) / self.std for x in images]
+        img = self._to_batch_imgs(images)
+        return img, img_metas, data_samples
+
+    def _preprocss_test_data(self, datas):
+        # TODO: refine.
+        if len(datas[0]) > 1:
+            # bs=1 ms-aug
+            images = datas[0]['img']
+            img_metas = datas[0]['img_metas']
+            img_metas = [[img_meta] for img_meta in img_metas]
+            images = [img.to(self.device) for img in images]
+            images = [(x - self.mean) / self.std for x in images]
+            img = [img[None] for img in images]
+        else:
+            images = [data['img'][0].to(self.device) for data in datas]
+            images = [img.to(self.device) for img in images]
+            images = [(x - self.mean) / self.std for x in images]
+            img = [self._to_batch_imgs(images)]
+            img_metas = [[data['img_metas'][0] for data in datas]]
+
+        return img, img_metas
+
+    def _to_batch_imgs(self, imgs, padding_value=0):
+        image_sizes = [(im.shape[-2], im.shape[-1]) for im in imgs]
+        max_size = np.stack(image_sizes).max(0)
+        padded_samples = []
+        for img in imgs:
+            padding_size = [0, max_size[-1] - img.shape[-1], 0, max_size[-2] - img.shape[-2]]
+            if sum(padding_size) == 0:
+                padded_samples.append(img)
+            else:
+                padded_samples.append(F.pad(img, padding_size, value=padding_value))
+
+        return torch.stack(padded_samples, dim=0)
 
     def _parse_losses(self, losses):
         """Parse the raw outputs (losses) of the network.
@@ -207,56 +286,6 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
             log_vars[loss_name] = loss_value.item()
 
         return loss, log_vars
-
-    def train_step(self, data, optimizer):
-        """The iteration step during training.
-
-        This method defines an iteration step during training, except for the
-        back propagation and optimizer updating, which are done in an optimizer
-        hook. Note that in some complicated cases or models, the whole process
-        including back propagation and optimizer updating is also defined in
-        this method, such as GAN.
-
-        Args:
-            data (dict): The output of dataloader.
-            optimizer (:obj:`torch.optim.Optimizer` | dict): The optimizer of
-                runner is passed to ``train_step()``. This argument is unused
-                and reserved.
-
-        Returns:
-            dict: It should contain at least 3 keys: ``loss``, ``log_vars``, \
-                ``num_samples``.
-
-                - ``loss`` is a tensor for back propagation, which can be a
-                  weighted sum of multiple losses.
-                - ``log_vars`` contains all the variables to be sent to the
-                  logger.
-                - ``num_samples`` indicates the batch size (when the model is
-                  DDP, it means the batch size on each GPU), which is used for
-                  averaging the logs.
-        """
-        losses = self(**data)
-        loss, log_vars = self._parse_losses(losses)
-
-        outputs = dict(
-            loss=loss, log_vars=log_vars, num_samples=len(data['img_metas']))
-
-        return outputs
-
-    def val_step(self, data, optimizer=None):
-        """The iteration step during validation.
-
-        This method shares the same signature as :func:`train_step`, but used
-        during val epochs. Note that the evaluation after training epochs is
-        not implemented with this method, but an evaluation hook.
-        """
-        losses = self(**data)
-        loss, log_vars = self._parse_losses(losses)
-
-        outputs = dict(
-            loss=loss, log_vars=log_vars, num_samples=len(data['img_metas']))
-
-        return outputs
 
     def show_result(self,
                     img,

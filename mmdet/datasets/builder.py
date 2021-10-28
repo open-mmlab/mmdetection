@@ -169,7 +169,7 @@ def build_dataloader(dataset,
         sampler=sampler,
         num_workers=num_workers,
         batch_sampler=batch_sampler,
-        collate_fn=partial(collate, samples_per_gpu=samples_per_gpu),
+        collate_fn=lambda batch: batch,
         pin_memory=False,
         worker_init_fn=init_fn,
         **kwargs)

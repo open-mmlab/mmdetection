@@ -5,6 +5,7 @@ import mmcv
 import numpy as np
 import torch
 from mmcv.parallel import DataContainer as DC
+from mmdet.core.data_structures import GeneralData, InstanceData
 
 from ..builder import PIPELINES
 
@@ -188,6 +189,10 @@ class DefaultFormatBundle:
     - gt_semantic_seg: (1)unsqueeze dim-0 (2)to tensor, \
                        (3)to DataContainer (stack=True)
     """
+    mapping_table = {'proposals': 'proposals',
+                     'gt_bboxes': 'bboxes',
+                     'gt_labels': 'labels',
+                     'gt_masks': 'masks'}
 
     def __call__(self, results):
         """Call function to transform and format common fields in results.
@@ -207,16 +212,27 @@ class DefaultFormatBundle:
             if len(img.shape) < 3:
                 img = np.expand_dims(img, -1)
             img = np.ascontiguousarray(img.transpose(2, 0, 1))
-            results['img'] = DC(to_tensor(img), stack=True)
-        for key in ['proposals', 'gt_bboxes', 'gt_bboxes_ignore', 'gt_labels']:
+            results['img'] = to_tensor(img)
+
+        data_sample = GeneralData()
+        instance_data = InstanceData()
+        for key in self.mapping_table.keys():
             if key not in results:
                 continue
-            results[key] = DC(to_tensor(results[key]))
-        if 'gt_masks' in results:
-            results['gt_masks'] = DC(results['gt_masks'], cpu_only=True)
+            instance_data[self.mapping_table[key]] = to_tensor(results[key])
+
+        data_sample.gt_instances = instance_data
+
+        if 'gt_bboxes_ignore' in results:
+            ignore_instance_data = InstanceData()
+            ignore_instance_data.bboxes = to_tensor(results['gt_bboxes_ignore'])
+            data_sample.instances_ignore = ignore_instance_data
+
         if 'gt_semantic_seg' in results:
-            results['gt_semantic_seg'] = DC(
-                to_tensor(results['gt_semantic_seg'][None, ...]), stack=True)
+            data_sample.gt_sem_seg = to_tensor(results['gt_semantic_seg'][None, ...])
+
+        results['data_sample'] = data_sample
+
         return results
 
     def _add_default_meta_keys(self, results):
@@ -314,7 +330,7 @@ class Collect:
         img_meta = {}
         for key in self.meta_keys:
             img_meta[key] = results[key]
-        data['img_metas'] = DC(img_meta, cpu_only=True)
+        data['img_metas'] = img_meta
         for key in self.keys:
             data[key] = results[key]
         return data

@@ -294,9 +294,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
     def forward_train(self,
                       x,
                       img_metas,
-                      gt_bboxes,
-                      gt_labels=None,
-                      gt_bboxes_ignore=None,
+                      data_samples=None,
                       proposal_cfg=None,
                       **kwargs):
         """
@@ -304,12 +302,6 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             x (list[Tensor]): Features from FPN.
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            gt_bboxes (Tensor): Ground truth bboxes of the image,
-                shape (num_gts, 4).
-            gt_labels (Tensor): Ground truth labels of each box,
-                shape (num_gts,).
-            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
-                ignored, shape (num_ignored_gts, 4).
             proposal_cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used
 
@@ -319,6 +311,11 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 proposal_list (list[Tensor]): Proposals of each image.
         """
         outs = self(x)
+
+        gt_labels = [data_sample.gt_instances.labels for data_sample in data_samples]
+        gt_bboxes = [data_sample.gt_instances.bboxes for data_sample in data_samples]
+        gt_bboxes_ignore = [data_sample.instances_ignore.bboxes for data_sample in data_samples]
+
         if gt_labels is None:
             loss_inputs = outs + (gt_bboxes, img_metas)
         else:
@@ -464,18 +461,18 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
                 batch_inds = torch.arange(
                     batch_size, device=bbox_pred.device).view(
-                        -1, 1).expand_as(topk_inds).long()
+                    -1, 1).expand_as(topk_inds).long()
                 # Avoid onnx2tensorrt issue in https://github.com/NVIDIA/TensorRT/issues/1134 # noqa: E501
                 transformed_inds = bbox_pred.shape[1] * batch_inds + topk_inds
                 priors = priors.reshape(
                     -1, priors.size(-1))[transformed_inds, :].reshape(
-                        batch_size, -1, priors.size(-1))
+                    batch_size, -1, priors.size(-1))
                 bbox_pred = bbox_pred.reshape(-1,
                                               4)[transformed_inds, :].reshape(
-                                                  batch_size, -1, 4)
+                    batch_size, -1, 4)
                 scores = scores.reshape(
                     -1, self.cls_out_channels)[transformed_inds, :].reshape(
-                        batch_size, -1, self.cls_out_channels)
+                    batch_size, -1, self.cls_out_channels)
                 if with_score_factors:
                     score_factors = score_factors.reshape(
                         -1, 1)[transformed_inds].reshape(batch_size, -1)
