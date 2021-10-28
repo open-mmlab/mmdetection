@@ -107,4 +107,4 @@ Cascade Mask R-CNN | R-50-FPN  | pytorch | 1x| 41.2   | 20.7         | 50.2  | 3
 RetinaNet    | R-50-FPN  | pytorch | 1x      | 35.6   | 17.8         | 50.1  | -             | -             | -      |
 Hybrid Task Cascade | X-101-64x4d-FPN-DCN | pytorch | 1x | 50.6 | 32.7 | 64.7 | 43.8         | 28.1          | 64.0   |
 
-由于对于图像损坏变换的随机应用，测试结果可能略有不同。
+由于对图像的损坏变换存在随机性，测试结果可能略有不同。
