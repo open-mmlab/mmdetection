@@ -1,5 +1,54 @@
 ## Changelog
 
+### v2.18.0 (27/10/2021)
+
+#### Highlights
+
+- Support [QueryInst](http://arxiv.org/abs/2105.01928) (#6050)
+- Refactor dense heads to decouple onnx export logics from `get_bboxes` and speed up inference (#5317, #6003, #6369, #6268, #6315)
+
+#### New Features
+
+- Support [QueryInst](http://arxiv.org/abs/2105.01928) (#6050)
+- Support infinite sampler (#5996)
+
+#### Bug Fixes
+
+- Fix init_weight in fcn_mask_head (#6378)
+- Fix type error in imshow_bboxes of RPN (#6386)
+- Fix broken colab link in MMDetection Tutorial (#6382)
+- Make sure the device and dtype of scale_factor are the same as bboxes (#6374)
+- Remove sampling hardcode (#6317)
+- Fix RandomAffine bbox coordinate recorrection (#6293)
+- Fix init bug of final cls/reg layer in convfc head (#6279)
+- Fix img_shape broken in auto_augment (#6259)
+- Fix kwargs parameter missing error in two_stage (#6256)
+
+#### Improvements
+
+- Unify the interface of stuff head and panoptic head (#6308)
+- Polish readme (#6243)
+- Add code-spell pre-commit hook and fix a typo (#6306)
+- Fix typo (#6245, #6190)
+- Fix sampler unit test (#6284)
+- Fix `forward_dummy` of YOLACT to enable `get_flops` (#6079)
+- Fix link error in the config documentation (#6252)
+- Adjust the order to beautify the document (#6195)
+
+#### Refactors
+
+- Refactor one-stage get_bboxes logic (#5317)
+- Refactor ONNX export of One-Stage models (#6003, #6369)
+- Refactor dense_head and speedup (#6268)
+- Migrate to use prior_generator in training of dense heads (#6315)
+
+#### Contributors
+
+A total of 18 developers contributed to this release.
+Thanks @Boyden, @onnkeat, @st9007a, @vealocia, @yhcao6, @DapangpangX, @yellowdolphin, @cclauss, @kennymckormick,
+@pingguokiller, @collinzrj, @AndreaPi, @AronLin, @BIGWangYuDong, @hhaAndroid, @jshilong, @RangiLyu, @ZwwWayne
+
+
 ### v2.17.0 (28/9/2021)
 
 #### Highlights

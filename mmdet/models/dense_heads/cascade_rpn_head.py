@@ -11,6 +11,7 @@ from mmcv.runner import BaseModule, ModuleList
 
 from mmdet.core import (RegionAssigner, build_assigner, build_sampler,
                         images_to_levels, multi_apply)
+from mmdet.core.utils import select_single_mlvl
 from ..builder import HEADS, build_head
 from .base_dense_head import BaseDenseHead
 from .rpn_head import RPNHead
@@ -508,18 +509,33 @@ class StageCascadeRPNHead(RPNHead):
                    img_metas,
                    cfg,
                    rescale=False):
-        """Get proposal predict."""
+        """Get proposal predict.
+
+        Args:
+            anchor_list (list[list]): Multi level anchors of each image.
+            cls_scores (list[Tensor]): Classification scores for all
+                scale levels, each is a 4D-tensor, has shape
+                (batch_size, num_priors * num_classes, H, W).
+            bbox_preds (list[Tensor]): Box energies / deltas for all
+                scale levels, each is a 4D-tensor, has shape
+                (batch_size, num_priors * 4, H, W).
+            img_metas (list[dict], Optional): Image meta info. Default None.
+            cfg (mmcv.Config, Optional): Test / postprocessing configuration,
+                if None, test_cfg would be used.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+
+        Returns:
+            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
+                5-th column is a score between 0 and 1.
+        """
         assert len(cls_scores) == len(bbox_preds)
-        num_levels = len(cls_scores)
 
         result_list = []
         for img_id in range(len(img_metas)):
-            cls_score_list = [
-                cls_scores[i][img_id].detach() for i in range(num_levels)
-            ]
-            bbox_pred_list = [
-                bbox_preds[i][img_id].detach() for i in range(num_levels)
-            ]
+            cls_score_list = select_single_mlvl(cls_scores, img_id)
+            bbox_pred_list = select_single_mlvl(bbox_preds, img_id)
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
             proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
@@ -528,23 +544,6 @@ class StageCascadeRPNHead(RPNHead):
             result_list.append(proposals)
         return result_list
 
-    def refine_bboxes(self, anchor_list, bbox_preds, img_metas):
-        """Refine bboxes through stages."""
-        num_levels = len(bbox_preds)
-        new_anchor_list = []
-        for img_id in range(len(img_metas)):
-            mlvl_anchors = []
-            for i in range(num_levels):
-                bbox_pred = bbox_preds[i][img_id].detach()
-                bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-                img_shape = img_metas[img_id]['img_shape']
-                bboxes = self.bbox_coder.decode(anchor_list[img_id][i],
-                                                bbox_pred, img_shape)
-                mlvl_anchors.append(bboxes)
-            new_anchor_list.append(mlvl_anchors)
-        return new_anchor_list
-
-    # TODO: temporary plan
     def _get_bboxes_single(self,
                            cls_scores,
                            bbox_preds,
@@ -553,15 +552,18 @@ class StageCascadeRPNHead(RPNHead):
                            scale_factor,
                            cfg,
                            rescale=False):
-        """Transform outputs for a single batch item into bbox predictions.
+        """Transform outputs of a single image into bbox predictions.
 
         Args:
-            cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (num_anchors * num_classes, H, W).
-            bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (num_anchors * 4, H, W).
-            mlvl_anchors (list[Tensor]): Box reference for each scale level
-                with shape (num_total_anchors, 4).
+            cls_scores (list[Tensor]): Box scores from all scale
+                levels of a single image, each item has shape
+                (num_anchors * num_classes, H, W).
+            bbox_preds (list[Tensor]): Box energies / deltas from
+                all scale levels of a single image, each item has
+                shape (num_anchors * 4, H, W).
+            mlvl_anchors (list[Tensor]): Box reference from all scale
+                levels of a single image, each item has shape
+                (num_total_anchors, 4).
             img_shape (tuple[int]): Shape of the input image,
                 (height, width, 3).
             scale_factor (ndarray): Scale factor of the image arange as
@@ -569,12 +571,12 @@ class StageCascadeRPNHead(RPNHead):
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
+                Default False.
 
         Returns:
-            Tensor: Labeled boxes have the shape of (n,5), where the
-                first 4 columns are bounding box positions
-                (tl_x, tl_y, br_x, br_y) and the 5-th column is a score
-                between 0 and 1.
+            Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
+                5-th column is a score between 0 and 1.
         """
         cfg = self.test_cfg if cfg is None else cfg
         cfg = copy.deepcopy(cfg)
@@ -584,6 +586,7 @@ class StageCascadeRPNHead(RPNHead):
         mlvl_scores = []
         mlvl_bbox_preds = []
         mlvl_valid_anchors = []
+        nms_pre = cfg.get('nms_pre', -1)
         for idx in range(len(cls_scores)):
             rpn_cls_score = cls_scores[idx]
             rpn_bbox_pred = bbox_preds[idx]
@@ -601,18 +604,13 @@ class StageCascadeRPNHead(RPNHead):
                 scores = rpn_cls_score.softmax(dim=1)[:, 0]
             rpn_bbox_pred = rpn_bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             anchors = mlvl_anchors[idx]
-            if cfg.nms_pre > 0 and scores.shape[0] > cfg.nms_pre:
+
+            if 0 < nms_pre < scores.shape[0]:
                 # sort is faster than topk
                 # _, topk_inds = scores.topk(cfg.nms_pre)
-                if torch.onnx.is_in_onnx_export():
-                    # sort op will be converted to TopK in onnx
-                    # and k<=3480 in TensorRT
-                    _, topk_inds = scores.topk(cfg.nms_pre)
-                    scores = scores[topk_inds]
-                else:
-                    ranked_scores, rank_inds = scores.sort(descending=True)
-                    topk_inds = rank_inds[:cfg.nms_pre]
-                    scores = ranked_scores[:cfg.nms_pre]
+                ranked_scores, rank_inds = scores.sort(descending=True)
+                topk_inds = rank_inds[:nms_pre]
+                scores = ranked_scores[:nms_pre]
                 rpn_bbox_pred = rpn_bbox_pred[topk_inds, :]
                 anchors = anchors[topk_inds, :]
             mlvl_scores.append(scores)
@@ -628,8 +626,7 @@ class StageCascadeRPNHead(RPNHead):
             anchors, rpn_bbox_pred, max_shape=img_shape)
         ids = torch.cat(level_ids)
 
-        # Skip nonzero op while exporting to ONNX
-        if cfg.min_bbox_size >= 0 and (not torch.onnx.is_in_onnx_export()):
+        if cfg.min_bbox_size >= 0:
             w = proposals[:, 2] - proposals[:, 0]
             h = proposals[:, 3] - proposals[:, 1]
             valid_mask = (w > cfg.min_bbox_size) & (h > cfg.min_bbox_size)
@@ -665,8 +662,28 @@ class StageCascadeRPNHead(RPNHead):
                 f' respectively. Please delete the nms_thr ' \
                 f'which will be deprecated.'
 
-        dets, keep = batched_nms(proposals, scores, ids, cfg.nms)
+        if proposals.numel() > 0:
+            dets, _ = batched_nms(proposals, scores, ids, cfg.nms)
+        else:
+            return proposals.new_zeros(0, 5)
+
         return dets[:cfg.max_per_img]
+
+    def refine_bboxes(self, anchor_list, bbox_preds, img_metas):
+        """Refine bboxes through stages."""
+        num_levels = len(bbox_preds)
+        new_anchor_list = []
+        for img_id in range(len(img_metas)):
+            mlvl_anchors = []
+            for i in range(num_levels):
+                bbox_pred = bbox_preds[i][img_id].detach()
+                bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
+                img_shape = img_metas[img_id]['img_shape']
+                bboxes = self.bbox_coder.decode(anchor_list[img_id][i],
+                                                bbox_pred, img_shape)
+                mlvl_anchors.append(bboxes)
+            new_anchor_list.append(mlvl_anchors)
+        return new_anchor_list
 
 
 @HEADS.register_module()

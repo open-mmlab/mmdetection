@@ -252,7 +252,10 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         num_imgs = len(img_metas)
         featmap_sizes = [cls_score.shape[2:] for cls_score in cls_scores]
         mlvl_priors = self.prior_generator.grid_priors(
-            featmap_sizes, cls_scores[0].device, with_stride=True)
+            featmap_sizes,
+            dtype=cls_scores[0].dtype,
+            device=cls_scores[0].device,
+            with_stride=True)
 
         # flatten cls_scores, bbox_preds and objectness
         flatten_cls_scores = [
@@ -348,7 +351,10 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         num_imgs = len(img_metas)
         featmap_sizes = [cls_score.shape[2:] for cls_score in cls_scores]
         mlvl_priors = self.prior_generator.grid_priors(
-            featmap_sizes, cls_scores[0].device, with_stride=True)
+            featmap_sizes,
+            dtype=cls_scores[0].dtype,
+            device=cls_scores[0].device,
+            with_stride=True)
 
         flatten_cls_preds = [
             cls_pred.permute(0, 2, 3, 1).reshape(num_imgs, -1,

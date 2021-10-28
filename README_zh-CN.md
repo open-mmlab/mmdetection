@@ -13,10 +13,10 @@
   <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
 
-[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/v2.17.0/) |
-[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/v2.17.0/get_started.html) |
-[👀模型库](https://mmdetection.readthedocs.io/zh_CN/v2.17.0/model_zoo.html) |
-[🆕更新日志](https://mmdetection.readthedocs.io/en/v2.17.0/changelog.html) |
+[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/v2.18.0/) |
+[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/v2.18.0/get_started.html) |
+[👀模型库](https://mmdetection.readthedocs.io/zh_CN/v2.18.0/model_zoo.html) |
+[🆕更新日志](https://mmdetection.readthedocs.io/en/v2.18.0/changelog.html) |
 [🚀进行中的项目](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔报告问题](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
@@ -59,10 +59,10 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 更新日志
 
-最新的 **2.17.0** 版本已经在2021.09.28发布:
-- 支持了 PVT, PVTv2 and SOLO。
-- 支持了 large scale jittering 并且增加了新的 Mask R-CNN 基线模型。
-- 提升 YOLOv3 的推理速度。
+最新的 **2.18.0** 版本已经在2021.10.27发布:
+- 支持 [QueryInst](http://arxiv.org/abs/2105.01928)。
+- 重构 dense_head 以将 onnx 导出与 get_bboxes 解耦并加快推理时间。
+- 支持 infinite sampler 加速 iter based runner 训练。
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/changelog.md)。
 
@@ -145,6 +145,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 - [x] [CenterNet (CVPR'2019)](configs/centernet/README.md)
 - [x] [YOLOX (ArXiv'2021)](configs/yolox/README.md)
 - [x] [SOLO (ECCV'2020)](configs/solo/README.md)
+- [x] [QueryInst (ICCV'2021)](configs/queryinst/README.md)
 </details>
 
 我们在[基于 MMDetection 的项目](./docs/projects.md)中列举了一些其他的支持的算法。

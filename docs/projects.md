@@ -55,3 +55,4 @@ Methods already supported and maintained by MMDetection are not listed.
 - Focal Transformer: Focal Self-attention for Local-Global Interactions in Vision Transformers, NeurIPS2021[[paper]](https://arxiv.org/abs/2107.00641)[[github]](https://github.com/microsoft/Focal-Transformer)
 - End-to-End Semi-Supervised Object Detection with Soft Teacher, ICCV2021[[paper]](https://arxiv.org/abs/2106.09018)[[github]](https://github.com/microsoft/SoftTeacher)
 - CBNetV2: A Novel Composite Backbone Network Architecture for Object Detection [[paper]](http://arxiv.org/abs/2107.00420)[[github]](https://github.com/VDIGPKU/CBNetV2)
+- Instances as Queries, ICCV2021 [[paper]](https://openaccess.thecvf.com/content/ICCV2021/papers/Fang_Instances_As_Queries_ICCV_2021_paper.pdf)[[github]](https://github.com/hustvl/QueryInst)

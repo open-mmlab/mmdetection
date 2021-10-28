@@ -42,14 +42,14 @@ class AnchorGenerator:
     Examples:
         >>> from mmdet.core import AnchorGenerator
         >>> self = AnchorGenerator([16], [1.], [1.], [9])
-        >>> all_anchors = self.grid_anchors([(2, 2)], device='cpu')
+        >>> all_anchors = self.grid_priors([(2, 2)], device='cpu')
         >>> print(all_anchors)
         [tensor([[-4.5000, -4.5000,  4.5000,  4.5000],
                 [11.5000, -4.5000, 20.5000,  4.5000],
                 [-4.5000, 11.5000,  4.5000, 20.5000],
                 [11.5000, 11.5000, 20.5000, 20.5000]])]
         >>> self = AnchorGenerator([16, 32], [1.], [1.], [9, 18])
-        >>> all_anchors = self.grid_anchors([(2, 2), (1, 1)], device='cpu')
+        >>> all_anchors = self.grid_priors([(2, 2), (1, 1)], device='cpu')
         >>> print(all_anchors)
         [tensor([[-4.5000, -4.5000,  4.5000,  4.5000],
                 [11.5000, -4.5000, 20.5000,  4.5000],
@@ -213,12 +213,14 @@ class AnchorGenerator:
         else:
             return yy, xx
 
-    def grid_priors(self, featmap_sizes, device='cuda'):
+    def grid_priors(self, featmap_sizes, dtype=torch.float32, device='cuda'):
         """Generate grid anchors in multiple feature levels.
 
         Args:
             featmap_sizes (list[tuple]): List of feature map sizes in
                 multiple feature levels.
+            dtype (:obj:`torch.dtype`): Dtype of priors.
+                Default: torch.float32.
             device (str): The device where the anchors will be put on.
 
         Return:
@@ -232,11 +234,15 @@ class AnchorGenerator:
         multi_level_anchors = []
         for i in range(self.num_levels):
             anchors = self.single_level_grid_priors(
-                featmap_sizes[i], level_idx=i, device=device)
+                featmap_sizes[i], level_idx=i, dtype=dtype, device=device)
             multi_level_anchors.append(anchors)
         return multi_level_anchors
 
-    def single_level_grid_priors(self, featmap_size, level_idx, device='cuda'):
+    def single_level_grid_priors(self,
+                                 featmap_size,
+                                 level_idx,
+                                 dtype=torch.float32,
+                                 device='cuda'):
         """Generate grid anchors of a single level.
 
         Note:
@@ -245,6 +251,8 @@ class AnchorGenerator:
         Args:
             featmap_size (tuple[int]): Size of the feature maps.
             level_idx (int): The index of corresponding feature map level.
+            dtype (obj:`torch.dtype`): Date type of points.Defaults to
+                ``torch.float32``.
             device (str, optional): The device the tensor will be put on.
                 Defaults to 'cuda'.
 
@@ -252,15 +260,16 @@ class AnchorGenerator:
             torch.Tensor: Anchors in the overall feature maps.
         """
 
-        base_anchors = self.base_anchors[level_idx].to(device)
+        base_anchors = self.base_anchors[level_idx].to(device).to(dtype)
         feat_h, feat_w = featmap_size
         stride_w, stride_h = self.strides[level_idx]
-        shift_x = torch.arange(0, feat_w, device=device) * stride_w
-        shift_y = torch.arange(0, feat_h, device=device) * stride_h
+        # First create Range with the default dtype, than convert to
+        # target `dtype` for onnx exporting.
+        shift_x = torch.arange(0, feat_w, device=device).to(dtype) * stride_w
+        shift_y = torch.arange(0, feat_h, device=device).to(dtype) * stride_h
 
         shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
         shifts = torch.stack([shift_xx, shift_yy, shift_xx, shift_yy], dim=-1)
-        shifts = shifts.type_as(base_anchors)
         # first feat_w elements correspond to the first row of shifts
         # add A anchors (1, A, 4) to K shifts (K, 1, 4) to get
         # shifted anchors (K, A, 4), reshape to (K*A, 4)

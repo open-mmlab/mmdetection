@@ -88,19 +88,19 @@ class YOLOFHead(AnchorHead):
         self.bbox_subnet = nn.Sequential(*bbox_subnet)
         self.cls_score = nn.Conv2d(
             self.in_channels,
-            self.num_anchors * self.num_classes,
+            self.num_base_priors * self.num_classes,
             kernel_size=3,
             stride=1,
             padding=1)
         self.bbox_pred = nn.Conv2d(
             self.in_channels,
-            self.num_anchors * 4,
+            self.num_base_priors * 4,
             kernel_size=3,
             stride=1,
             padding=1)
         self.object_pred = nn.Conv2d(
             self.in_channels,
-            self.num_anchors,
+            self.num_base_priors,
             kernel_size=3,
             stride=1,
             padding=1)
@@ -160,7 +160,7 @@ class YOLOFHead(AnchorHead):
             dict[str, Tensor]: A dictionary of loss components.
         """
         assert len(cls_scores) == 1
-        assert self.anchor_generator.num_levels == 1
+        assert self.prior_generator.num_levels == 1
 
         device = cls_scores[0].device
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
