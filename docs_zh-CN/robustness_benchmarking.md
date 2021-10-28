@@ -24,7 +24,7 @@
 
 要将结果提交到基准测试，请访问[基准测试主页](https://github.com/bethgelab/robust-detection-benchmark)
 
-基准是仿照[imagenet-c 基准测试](https://github.com/hendrycks/robustness)，由Dan Hendrycks和Thomas Dietterich在[Benchmarking Neural Network Robustness to Common Corruptions and Perturbations](https://arxiv.org/abs/1903.12261)(ICLR 2019)中发表。
+基准是仿照[imagenet-c 基准测试](https://github.com/hendrycks/robustness)，由 Dan Hendrycks 和 Thomas Dietterich 在[Benchmarking Neural Network Robustness to Common Corruptions and Perturbations](https://arxiv.org/abs/1903.12261)(ICLR 2019)中发表。
 
 图像损坏变换功能包含在此库中，但可以使用以下方法单独安装：
 
@@ -32,9 +32,9 @@
 pip install imagecorruptions
 ```
 
-与imagenet-c相比，必须进行一些更改以处理任意大小的图像和灰度图像。
-我们还修改了“运动模糊”和“雪”损坏，以解除对于linux特定库的依赖，
-否则必须单独安装这些库。有关详细信息，请参阅[imagecorruptions](https://github.com/bethgelab/imagecorruptions)。
+与 imagenet-c 相比，必须进行一些更改以处理任意大小的图像和灰度图像。
+我们还修改了“运动模糊”和“雪”损坏，以解除对于 linux 特定库的依赖，
+否则必须单独安装这些库。有关详细信息，请参阅 [imagecorruptions](https://github.com/bethgelab/imagecorruptions)。
 
 ## 使用预训练模型进行推理
 
@@ -42,8 +42,8 @@ pip install imagecorruptions
 
 ### 在数据集上测试
 
-- [x] 单张GPU测试
-- [ ] 多张GPU测试
+- [x] 单张 GPU 测试
+- [ ] 多张 GPU 测试
 - [ ] 可视化检测结果
 
 您可以使用以下命令在基准测试中使用15种损坏变换来测试模型性能。
@@ -77,7 +77,7 @@ python tools/analysis_tools/test_robustness.py ${CONFIG_FILE} ${CHECKPOINT_FILE}
 ```
 
 最后，我们也可以选择施加在图像上的损坏变换的严重程度。
-严重程度从1到5逐级增强，0表示不对图像施加损坏变换，即原始图像数据。
+严重程度从 1 到 5 逐级增强，0 表示不对图像施加损坏变换，即原始图像数据。
 
 ```shell
 # severity 1
@@ -89,7 +89,7 @@ python tools/analysis_tools/test_robustness.py ${CONFIG_FILE} ${CHECKPOINT_FILE}
 
 ## 模型测试结果
 
-下表是各模型在COCO 2017val上的测试结果。
+下表是各模型在 COCO 2017 val 上的测试结果。
 
 Model  | Backbone  | Style   | Lr schd | box AP clean | box AP corr. | box % | mask AP clean | mask AP corr. | mask % |
 :-----:|:---------:|:-------:|:-------:|:------------:|:------------:|:-----:|:-------------:|:-------------:|:------:|
