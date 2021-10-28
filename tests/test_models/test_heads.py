@@ -1,7 +1,6 @@
 import mmcv
 import numpy as np
 import torch
-import pytest
 
 from mmdet.core import bbox2roi, build_assigner, build_sampler
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
@@ -190,11 +189,8 @@ def test_fcos_head_loss():
     assert onegt_box_loss.item() > 0, 'box loss should be non-zero'
 
 
-@pytest.mark.parametrize('device', ['cuda', 'cpu'])
-def test_vfnet_head_loss(device):
+def test_vfnet_head_loss():
     """Tests vfnet head loss when truth is empty and non-empty."""
-    if not torch.cuda.is_available() and device == 'cuda':
-        pytest.skip('Skip test as it requires GPU')
     s = 256
     img_metas = [{
         'img_shape': (s, s, 3),
@@ -213,44 +209,42 @@ def test_vfnet_head_loss(device):
         in_channels=1,
         train_cfg=train_cfg,
         loss_cls=dict(type='VarifocalLoss', use_sigmoid=True, loss_weight=1.0))
-
-    if device == 'cuda':
+    if torch.cuda.is_available():
         self.cuda()
+        feat = [
+            torch.rand(1, 1, s // feat_size, s // feat_size).cuda()
+            for feat_size in [4, 8, 16, 32, 64]
+        ]
+        cls_scores, bbox_preds, bbox_preds_refine = self.forward(feat)
+        # Test that empty ground truth encourages the network to predict
+        # background
+        gt_bboxes = [torch.empty((0, 4)).cuda()]
+        gt_labels = [torch.LongTensor([]).cuda()]
+        gt_bboxes_ignore = None
+        empty_gt_losses = self.loss(cls_scores, bbox_preds, bbox_preds_refine,
+                                    gt_bboxes, gt_labels, img_metas,
+                                    gt_bboxes_ignore)
+        # When there is no truth, the cls loss should be nonzero but there
+        # should be no box loss.
+        empty_cls_loss = empty_gt_losses['loss_cls']
+        empty_box_loss = empty_gt_losses['loss_bbox']
+        assert empty_cls_loss.item() > 0, 'cls loss should be non-zero'
+        assert empty_box_loss.item() == 0, (
+            'there should be no box loss when there are no true boxes')
 
-    feat = [
-        torch.rand(1, 1, s // feat_size, s // feat_size, device=device)
-        for feat_size in [4, 8, 16, 32, 64]
-    ]
-    cls_scores, bbox_preds, bbox_preds_refine = self.forward(feat)
-    # Test that empty ground truth encourages the network to predict
-    # background
-    gt_bboxes = [torch.empty((0, 4), device=device)]
-    gt_labels = [torch.empty([], device=device)]
-    gt_bboxes_ignore = None
-    empty_gt_losses = self.loss(cls_scores, bbox_preds, bbox_preds_refine,
-                                gt_bboxes, gt_labels, img_metas,
-                                gt_bboxes_ignore)
-    # When there is no truth, the cls loss should be nonzero but there
-    # should be no box loss.
-    empty_cls_loss = empty_gt_losses['loss_cls']
-    empty_box_loss = empty_gt_losses['loss_bbox']
-    assert empty_cls_loss.item() > 0, 'cls loss should be non-zero'
-    assert empty_box_loss.item() == 0, (
-        'there should be no box loss when there are no true boxes')
-
-    # When truth is non-empty then both cls and box loss should be nonzero
-    # for random inputs
-    gt_bboxes = [
-        torch.tensor([[23.6667, 23.8757, 238.6326, 151.8874]], device=device),
-    ]
-    gt_labels = [torch.tensor([2], device=device)]
-    one_gt_losses = self.loss(cls_scores, bbox_preds, bbox_preds_refine,
-                              gt_bboxes, gt_labels, img_metas,
-                              gt_bboxes_ignore)
-    onegt_cls_loss = one_gt_losses['loss_cls']
-    onegt_box_loss = one_gt_losses['loss_bbox']
-    assert onegt_cls_loss.item() > 0, 'cls loss should be non-zero'
-    assert onegt_box_loss.item() > 0, 'box loss should be non-zero'
+        # When truth is non-empty then both cls and box loss should be nonzero
+        # for random inputs
+        gt_bboxes = [
+            torch.Tensor([[23.6667, 23.8757, 238.6326, 151.8874]]).cuda(),
+        ]
+        gt_labels = [torch.LongTensor([2]).cuda()]
+        one_gt_losses = self.loss(cls_scores, bbox_preds, bbox_preds_refine,
+                                  gt_bboxes, gt_labels, img_metas,
+                                  gt_bboxes_ignore)
+        onegt_cls_loss = one_gt_losses['loss_cls']
+        onegt_box_loss = one_gt_losses['loss_bbox']
+        assert onegt_cls_loss.item() > 0, 'cls loss should be non-zero'
+        assert onegt_box_loss.item() > 0, 'box loss should be non-zero'
 
 
 def test_anchor_head_loss():

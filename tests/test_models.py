@@ -304,12 +304,6 @@ class PublicModelsTestCase(unittest.TestCase):
               'retinanet_effd0_bifpn_1x_coco/epoch_300.pth'
         self.run_pytorch_test(origin_config, self.download_if_not_yet(url))
 
-    def test_pytorch_vfnet_r50_fpn_1x_coco(self):
-        origin_config = 'configs/vfnet/vfnet_r50_fpn_1x_coco.py'
-        url = 'https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/vfnet/vfnet_r50_fpn_1x_coco/' \
-              'vfnet_r50_fpn_1x_coco_20201027-38db6f58.pth'
-        self.run_pytorch_test(origin_config, self.download_if_not_yet(url))
-
     # Export
 
     def test_openvino_atss__atss_r50_fpn_1x_coco(self):
@@ -408,13 +402,6 @@ class PublicModelsTestCase(unittest.TestCase):
         url = 'https://storage.openvinotoolkit.org/repositories/mmdetection/models/efficientdet/' \
               'retinanet_effd0_bifpn_1x_coco/epoch_300.pth'
         self.run_openvino_export_test(origin_config, self.download_if_not_yet(url))
-
-    def test_openvino_vfnet_r50_fpn_1x_coco(self):
-        origin_config = 'configs/vfnet/vfnet_r50_fpn_1x_coco.py'
-        url = 'https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/vfnet/vfnet_r50_fpn_1x_coco/' \
-              'vfnet_r50_fpn_1x_coco_20201027-38db6f58.pth'
-        self.run_openvino_export_test(origin_config,
-                                      self.download_if_not_yet(url))
 
     def test_onnx_atss__atss_r50_fpn_1x_coco(self):
         origin_config = 'configs/atss/atss_r50_fpn_1x_coco.py'

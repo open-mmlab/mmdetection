@@ -137,6 +137,7 @@ class OTEDetectionTrainingTask(OTEDetectionInferenceTask, ITrainingTask):
             output_model.model_status = ModelStatus.SUCCESS
         else:
             logger.info("Model performance has not improved while training. No new model has been saved.")
+            output_model.model_status = ModelStatus.NOT_IMPROVED
             # Restore old training model if training from scratch and not improved
             self._model = old_model
 

@@ -47,7 +47,6 @@ from ote_sdk.entities.task_environment import TaskEnvironment
 from ote_sdk.usecases.tasks.interfaces.export_interface import ExportType
 from ote_sdk.usecases.tasks.interfaces.optimization_interface import OptimizationType
 
-from mmdet.apis.ote.apis.detection.config_utils import set_values_as_default
 from mmdet.apis.ote.apis.detection.ote_utils import get_task_class
 from mmdet.apis.ote.extension.datasets.data_utils import load_dataset_items_coco_format
 from mmdet.integration.nncf.utils import is_nncf_enabled
@@ -362,12 +361,8 @@ class OTETestTrainingAction(BaseOTETestAction):
         logger.debug('Load model template')
         self.model_template = parse_model_template(self.template_file_path)
 
-        hyper_parameters = self.model_template.hyper_parameters.data
-        set_values_as_default(hyper_parameters)
-
-        logger.debug('Setup environment')
-        params = create(hyper_parameters)
         logger.debug('Set hyperparameters')
+        params = create(self.model_template.hyper_parameters.data)
         if self.num_training_iters != KEEP_CONFIG_FIELD_VALUE():
             params.learning_parameters.num_iters = int(self.num_training_iters)
             logger.debug(f'Set params.learning_parameters.num_iters={params.learning_parameters.num_iters}')
@@ -389,6 +384,7 @@ class OTETestTrainingAction(BaseOTETestAction):
 
         params.learning_parameters.num_checkpoints = num_checkpoints
 
+        logger.debug('Setup environment')
         self.environment, self.task = self._create_environment_and_task(params,
                                                                         self.labels_schema,
                                                                         self.model_template)

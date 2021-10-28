@@ -15,8 +15,7 @@
 
 from .config_utils import (config_from_string, config_to_string, patch_config,
                            prepare_for_testing, prepare_for_training,
-                           save_config_to_file, set_hyperparams,
-                           set_values_as_default)
+                           save_config_to_file, set_hyperparams)
 from .configuration import OTEDetectionConfig
 from .inference_task import OTEDetectionInferenceTask
 from .nncf_task import OTEDetectionNNCFTask
@@ -40,5 +39,4 @@ __all__ = [
     prepare_for_training,
     save_config_to_file,
     set_hyperparams,
-    set_values_as_default,
     ]
