@@ -70,7 +70,7 @@ python tools/analysis_tools/test_robustness.py ${CONFIG_FILE} ${CHECKPOINT_FILE}
 python tools/analysis_tools/test_robustness.py ${CONFIG_FILE} ${CHECKPOINT_FILE} [--out ${RESULT_FILE}] [--eval ${EVAL_METRICS}] --corruptions digital
 ```
 
-或者一组自定义的损坏变换，例如：
+或者使用一组自定义的损坏变换，例如：
 
 ```shell
 # gaussian noise, zoom blur and snow
