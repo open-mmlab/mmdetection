@@ -37,7 +37,7 @@ pip install imagecorruptions
 我们还修改了“运动模糊”和“雪”损坏，以解除对于linux特定库的依赖，
 否则必须单独安装这些库。 有关详细信息，请参阅[imagecorruptions](https://github.com/bethgelab/imagecorruptions)。
 
-## 使用预训练模型进行推断
+## 使用预训练模型进行推理
 
 我们提供了一个测试脚本来评估模型在基准测试中提供的各种损坏变换组合下的性能。
 
