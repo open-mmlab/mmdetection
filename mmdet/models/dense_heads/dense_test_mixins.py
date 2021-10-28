@@ -93,7 +93,7 @@ class BBoxTestMixin(object):
 
         if merged_bboxes.numel() == 0:
             det_bboxes = torch.cat([merged_bboxes, merged_scores[:, None]], -1)
-            return det_bboxes, merged_labels
+            return [(det_bboxes, merged_labels), ]
 
         det_bboxes, keep_idxs = batched_nms(merged_bboxes, merged_scores,
                                             merged_labels, self.test_cfg.nms)
