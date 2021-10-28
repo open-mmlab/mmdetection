@@ -99,6 +99,7 @@ class SingleStageDetector(BaseDetector):
                 corresponds to each class.
         """
         feat = self.extract_feat(img)
+
         results_list = self.bbox_head.simple_test(
             feat, img_metas, rescale=rescale)
         bbox_results = [
