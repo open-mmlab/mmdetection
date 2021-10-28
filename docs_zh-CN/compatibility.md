@@ -1,5 +1,11 @@
 # MMDetection v2.x 兼容性说明
 
+## MMDetection 2.18.0
+
+### DIIHead 兼容性
+
+为了支持 QueryInst，在 DIIHead 的返回元组中加入了 attn_feats。
+
 ## MMDetection v2.14.0
 
 ### MMCV 版本
