@@ -24,7 +24,7 @@
 
 要将结果提交到基准测试，请访问[基准测试主页](https://github.com/bethgelab/robust-detection-benchmark)
 
-基准是仿照[imagenet-c 基准测试](https://github.com/hendrycks/robustness)，由 Dan Hendrycks 和 Thomas Dietterich 在[Benchmarking Neural Network Robustness to Common Corruptions and Perturbations](https://arxiv.org/abs/1903.12261)(ICLR 2019)中发表。
+基准是仿照 [imagenet-c 基准测试](https://github.com/hendrycks/robustness)，由 Dan Hendrycks 和 Thomas Dietterich 在[Benchmarking Neural Network Robustness to Common Corruptions and Perturbations](https://arxiv.org/abs/1903.12261)(ICLR 2019)中发表。
 
 图像损坏变换功能包含在此库中，但可以使用以下方法单独安装：
 
@@ -46,7 +46,7 @@ pip install imagecorruptions
 - [ ] 多张 GPU 测试
 - [ ] 可视化检测结果
 
-您可以使用以下命令在基准测试中使用15种损坏变换来测试模型性能。
+您可以使用以下命令在基准测试中使用 15 种损坏变换来测试模型性能。
 
 ```shell
 # single-gpu testing
@@ -89,7 +89,7 @@ python tools/analysis_tools/test_robustness.py ${CONFIG_FILE} ${CHECKPOINT_FILE}
 
 ## 模型测试结果
 
-下表是各模型在 COCO 2017 val 上的测试结果。
+下表是各模型在 COCO 2017val 上的测试结果。
 
 Model  | Backbone  | Style   | Lr schd | box AP clean | box AP corr. | box % | mask AP clean | mask AP corr. | mask % |
 :-----:|:---------:|:-------:|:-------:|:------------:|:------------:|:-----:|:-------------:|:-------------:|:------:|
