@@ -3,7 +3,7 @@
 ## 介绍
 
 我们提供了在 [Benchmarking Robustness in Object Detection: Autonomous Driving when Winter is Coming](https://arxiv.org/abs/1907.07484) 中定义的图像损坏基准上测试目标检测和实例分割模型的工具。
-此页面提供了如何使用该基准的基本教程。
+此页面提供了如何使用该基准测试的基本教程。
 
 ```latex
 @article{michaelis2019winter,
