@@ -20,12 +20,11 @@
 
 ![image corruption example](../resources/corruptions_sev_3.png)
 
-## 关于基准
+## 关于基准测试
 
-要将结果提交到基准，请访问[基准主页](https://github.com/bethgelab/robust-detection-benchmark)
+要将结果提交到基准测试，请访问[基准测试主页](https://github.com/bethgelab/robust-detection-benchmark)
 
-基准是仿照 [imagenet-c 基准](https://github.com/hendrycks/robustness)， 由
-Dan Hendrycks 和 Thomas Dietterich 在 [Benchmarking Neural Network Robustness to Common Corruptions and Perturbations](https://arxiv.org/abs/1903.12261) (ICLR 2019) 中发表。
+基准是仿照[imagenet-c 基准测试](https://github.com/hendrycks/robustness)，由Dan Hendrycks和Thomas Dietterich在[Benchmarking Neural Network Robustness to Common Corruptions and Perturbations](https://arxiv.org/abs/1903.12261)(ICLR 2019)中发表。
 
 图像损坏变换功能包含在此库中，但可以使用以下方法单独安装：
 
@@ -33,7 +32,7 @@ Dan Hendrycks 和 Thomas Dietterich 在 [Benchmarking Neural Network Robustness 
 pip install imagecorruptions
 ```
 
-与 imagenet-c 相比，必须进行一些更改以处理任意大小的图像和灰度图像。
+与imagenet-c相比，必须进行一些更改以处理任意大小的图像和灰度图像。
 我们还修改了“运动模糊”和“雪”损坏，以解除对于linux特定库的依赖，
 否则必须单独安装这些库。 有关详细信息，请参阅[imagecorruptions](https://github.com/bethgelab/imagecorruptions)。
 
@@ -43,9 +42,9 @@ pip install imagecorruptions
 
 ### 在数据集上测试
 
-- [x] 单张GPU测试
-- [ ] 多张GPU测试
-- [ ] 可视化检测结果
+- 单张GPU测试
+- 多张GPU测试
+- 可视化检测结果
 
 您可以使用以下命令在基准测试中使用15种损坏变换来测试模型性能。
 
