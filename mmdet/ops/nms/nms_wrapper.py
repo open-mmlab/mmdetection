@@ -13,7 +13,7 @@ class NMSop(torch.autograd.Function):
             valid_mask = scores > score_threshold
         bboxes, scores = bboxes[valid_mask], scores[valid_mask]
         from mmcv.ops.nms import NMSop
-        inds = NMSop.forward(ctx, bboxes, scores, iou_threshold, offset, score_threshold, max_num)
+        inds = NMSop.forward(ctx, bboxes, scores, iou_threshold, offset)
         inds = inds[:max_num]
         return inds
 
