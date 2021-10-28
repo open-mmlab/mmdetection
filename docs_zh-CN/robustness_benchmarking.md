@@ -34,7 +34,7 @@ pip install imagecorruptions
 
 与imagenet-c相比，必须进行一些更改以处理任意大小的图像和灰度图像。
 我们还修改了“运动模糊”和“雪”损坏，以解除对于linux特定库的依赖，
-否则必须单独安装这些库。 有关详细信息，请参阅[imagecorruptions](https://github.com/bethgelab/imagecorruptions)。
+否则必须单独安装这些库。有关详细信息，请参阅[imagecorruptions](https://github.com/bethgelab/imagecorruptions)。
 
 ## 使用预训练模型进行推理
 
