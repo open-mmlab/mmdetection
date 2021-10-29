@@ -56,11 +56,7 @@ class SingleStageDetector(BaseDetector):
         outs = self.bbox_head(x)
         return outs
 
-    def forward_train(self,
-                      img,
-                      img_metas,
-                      data_samples,
-                      **kwargs):
+    def forward_train(self, img, img_metas, data_samples, **kwargs):
         """
         Args:
             img (Tensor): Input images of shape (N, C, H, W).
@@ -74,9 +70,11 @@ class SingleStageDetector(BaseDetector):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        super(SingleStageDetector, self).forward_train(img, img_metas, data_samples)
+        super(SingleStageDetector, self).forward_train(img, img_metas,
+                                                       data_samples)
         x = self.extract_feat(img)
-        losses = self.bbox_head.forward_train(x, img_metas, data_samples, **kwargs)
+        losses = self.bbox_head.forward_train(x, img_metas, data_samples,
+                                              **kwargs)
         return losses
 
     def simple_test(self, img, img_metas, rescale=False):

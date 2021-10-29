@@ -5,8 +5,8 @@ import mmcv
 import numpy as np
 import torch
 from mmcv.parallel import DataContainer as DC
-from mmdet.core.data_structures import GeneralData, InstanceData
 
+from mmdet.core.data_structures import GeneralData, InstanceData
 from ..builder import PIPELINES
 
 
@@ -180,19 +180,21 @@ class DefaultFormatBundle:
     "proposals", "gt_bboxes", "gt_labels", "gt_masks" and "gt_semantic_seg".
     These fields are formatted as follows.
 
-    - img: (1)transpose, (2)to tensor, (3)to DataContainer (stack=True)
-    - proposals: (1)to tensor, (2)to DataContainer
-    - gt_bboxes: (1)to tensor, (2)to DataContainer
-    - gt_bboxes_ignore: (1)to tensor, (2)to DataContainer
-    - gt_labels: (1)to tensor, (2)to DataContainer
-    - gt_masks: (1)to tensor, (2)to DataContainer (cpu_only=True)
+    - img: (1)transpose, (2)to tensor
+    - proposals: (1)to tensor, (2)to InstanceData
+    - gt_bboxes: (1)to tensor, (2)to InstanceData
+    - gt_bboxes_ignore: (1)to tensor, (2)to InstanceData
+    - gt_labels: (1)to tensor, (2)to InstanceData
+    - gt_masks: (1)to tensor, (2)to InstanceData
     - gt_semantic_seg: (1)unsqueeze dim-0 (2)to tensor, \
-                       (3)to DataContainer (stack=True)
+                       (3)to InstanceData
     """
-    mapping_table = {'proposals': 'proposals',
-                     'gt_bboxes': 'bboxes',
-                     'gt_labels': 'labels',
-                     'gt_masks': 'masks'}
+    mapping_table = {
+        'proposals': 'proposals',
+        'gt_bboxes': 'bboxes',
+        'gt_labels': 'labels',
+        'gt_masks': 'masks'
+    }
 
     def __call__(self, results):
         """Call function to transform and format common fields in results.
@@ -220,16 +222,17 @@ class DefaultFormatBundle:
             if key not in results:
                 continue
             instance_data[self.mapping_table[key]] = to_tensor(results[key])
-
         data_sample.gt_instances = instance_data
 
         if 'gt_bboxes_ignore' in results:
             ignore_instance_data = InstanceData()
-            ignore_instance_data.bboxes = to_tensor(results['gt_bboxes_ignore'])
+            ignore_instance_data.bboxes = to_tensor(
+                results['gt_bboxes_ignore'])
             data_sample.instances_ignore = ignore_instance_data
 
         if 'gt_semantic_seg' in results:
-            data_sample.gt_sem_seg = to_tensor(results['gt_semantic_seg'][None, ...])
+            data_sample.gt_sem_seg = to_tensor(results['gt_semantic_seg'][None,
+                                                                          ...])
 
         results['data_sample'] = data_sample
 
@@ -251,13 +254,6 @@ class DefaultFormatBundle:
         img = results['img']
         results.setdefault('pad_shape', img.shape)
         results.setdefault('scale_factor', 1.0)
-        num_channels = 1 if len(img.shape) < 3 else img.shape[2]
-        results.setdefault(
-            'img_norm_cfg',
-            dict(
-                mean=np.zeros(num_channels, dtype=np.float32),
-                std=np.ones(num_channels, dtype=np.float32),
-                to_rgb=False))
         return results
 
     def __repr__(self):
@@ -289,26 +285,19 @@ class Collect:
 
         - "pad_shape": image shape after padding
 
-        - "img_norm_cfg": a dict of normalization information:
-
-            - mean - per channel mean subtraction
-            - std - per channel std divisor
-            - to_rgb - bool indicating if bgr was converted to rgb
-
     Args:
         keys (Sequence[str]): Keys of results to be collected in ``data``.
         meta_keys (Sequence[str], optional): Meta keys to be converted to
             ``mmcv.DataContainer`` and collected in ``data[img_metas]``.
             Default: ``('filename', 'ori_filename', 'ori_shape', 'img_shape',
-            'pad_shape', 'scale_factor', 'flip', 'flip_direction',
-            'img_norm_cfg')``
+            'pad_shape', 'scale_factor', 'flip', 'flip_direction')``
     """
 
     def __init__(self,
                  keys,
                  meta_keys=('filename', 'ori_filename', 'ori_shape',
                             'img_shape', 'pad_shape', 'scale_factor', 'flip',
-                            'flip_direction', 'img_norm_cfg')):
+                            'flip_direction')):
         self.keys = keys
         self.meta_keys = meta_keys
 

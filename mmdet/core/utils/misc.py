@@ -3,6 +3,7 @@ from functools import partial
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 from six.moves import map, zip
 
 from ..mask.structures import BitmapMasks, PolygonMasks
@@ -206,3 +207,25 @@ def generate_coordinate(featmap_sizes, device='cuda'):
     coord_feat = torch.cat([x, y], 1)
 
     return coord_feat
+
+
+def padding_to_max_shape(tensors, padding_value=0):
+    assert isinstance(tensors, list)
+    if len(tensors) == 1:
+        return tensors[0][None]
+
+    tensor_sizes = [(tensor.shape[-2], tensor.shape[-1]) for tensor in tensors]
+    max_size = np.stack(tensor_sizes).max(0)
+    padded_samples = []
+    for tensor in tensors:
+        padding_size = [
+            0, max_size[-1] - tensor.shape[-1], 0,
+            max_size[-2] - tensor.shape[-2]
+        ]
+        if sum(padding_size) == 0:
+            padded_samples.append(tensor)
+        else:
+            padded_samples.append(
+                F.pad(tensor, padding_size, value=padding_value))
+
+    return torch.stack(padded_samples, dim=0)

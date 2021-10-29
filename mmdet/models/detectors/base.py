@@ -7,8 +7,8 @@ import numpy as np
 import torch
 import torch.distributed as dist
 from mmcv.runner import BaseModule, auto_fp16
-import torch.nn.functional as F
 
+from mmdet.core.utils import padding_to_max_shape
 from mmdet.core.visualization import imshow_det_bboxes
 
 
@@ -18,8 +18,13 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
     def __init__(self, img_norm_cfg, init_cfg=None):
         super(BaseDetector, self).__init__(init_cfg)
         self.fp16_enabled = False
-        self.register_buffer("mean", torch.tensor(img_norm_cfg['mean']).view(-1, 1, 1), False)
-        self.register_buffer("std", torch.tensor(img_norm_cfg['std']).view(-1, 1, 1), False)
+        self.to_rgb = img_norm_cfg['to_rgb']
+        self.register_buffer('mean',
+                             torch.tensor(img_norm_cfg['mean']).view(-1, 1, 1),
+                             False)
+        self.register_buffer('std',
+                             torch.tensor(img_norm_cfg['std']).view(-1, 1, 1),
+                             False)
 
     @property
     def device(self):
@@ -67,7 +72,7 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         assert isinstance(imgs, list)
         return [self.extract_feat(img) for img in imgs]
 
-    @auto_fp16(apply_to=('imgs',))
+    @auto_fp16(apply_to=('imgs', ))
     def forward_train(self, imgs, img_metas, data_samples, **kwargs):
         """
         Args:
@@ -118,7 +123,7 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
             raise NotImplementedError
 
     # TODO:  auto_fp16 supports context embedding
-    @auto_fp16(apply_to=('imgs',))
+    @auto_fp16(apply_to=('imgs', ))
     def forward_test(self, imgs, img_metas, **kwargs):
         """
         Args:
@@ -186,14 +191,16 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
                   DDP, it means the batch size on each GPU), which is used for
                   averaging the logs.
         """
+        img, img_metas, data_samples = self._preprocss_data(data)
+
         if torch.onnx.is_in_onnx_export():
-            img, img_metas = self._preprocss_test_data(data)
             assert len(img_metas) == 1
             return self.onnx_export(img[0], img_metas[0])
 
         if return_loss:
-            img, img_metas, data_samples = self._preprocss_train_data(data)
-            data_samples = [data_sampl.to(self.device) for data_sampl in data_samples]
+            data_samples = [
+                data_sample.to(self.device) for data_sample in data_samples
+            ]
             losses = self.forward_train(img, img_metas, data_samples, **kwargs)
             loss, log_vars = self._parse_losses(losses)
 
@@ -202,55 +209,38 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
 
             return outputs
         else:
-            img, img_metas = self._preprocss_test_data(data)
             return self.forward_test(img, img_metas, **kwargs)
 
-    def _preprocss_train_data(self, datas):
-        images = []
-        img_metas = []
-        data_samples = []
-        for data in datas:
-            images.append(data['img'])
-            img_metas.append(data['img_metas'])
-            if 'data_sample' in data:
-                data_samples.append(data['data_sample'])
-
-        images = [img.to(self.device) for img in images]
-        images = [(x - self.mean) / self.std for x in images]
-        img = self._to_batch_imgs(images)
-        return img, img_metas, data_samples
-
-    def _preprocss_test_data(self, datas):
-        # TODO: refine.
-        if len(datas[0]) > 1:
-            # bs=1 ms-aug
-            images = datas[0]['img']
-            img_metas = datas[0]['img_metas']
-            img_metas = [[img_meta] for img_meta in img_metas]
+    def _preprocss_data(self, datas):
+        data_samples = None
+        images = [data['img'] for data in datas]
+        img_metas = [data['img_metas'] for data in datas]
+        if 'data_sample' in datas[0]:
+            model_state = 'training'
+            data_samples = [data['data_sample'] for data in datas]
             images = [img.to(self.device) for img in images]
-            images = [(x - self.mean) / self.std for x in images]
-            img = [img[None] for img in images]
         else:
-            images = [data['img'][0].to(self.device) for data in datas]
-            images = [img.to(self.device) for img in images]
-            images = [(x - self.mean) / self.std for x in images]
-            img = [self._to_batch_imgs(images)]
-            img_metas = [[data['img_metas'][0] for data in datas]]
-
-        return img, img_metas
-
-    def _to_batch_imgs(self, imgs, padding_value=0):
-        image_sizes = [(im.shape[-2], im.shape[-1]) for im in imgs]
-        max_size = np.stack(image_sizes).max(0)
-        padded_samples = []
-        for img in imgs:
-            padding_size = [0, max_size[-1] - img.shape[-1], 0, max_size[-2] - img.shape[-2]]
-            if sum(padding_size) == 0:
-                padded_samples.append(img)
+            if len(images[0]) > 1:
+                model_state = 'testing_with_msaug'
+                images = [image.to(self.device) for image in images[0]]
+                img_metas = [[img_meta] for img_meta in img_metas[0]]
             else:
-                padded_samples.append(F.pad(img, padding_size, value=padding_value))
+                model_state = 'testing_no_msaug'
+                images = [image[0].to(self.device) for image in images]
+                img_metas = [[img_meta[0] for img_meta in img_metas]]
 
-        return torch.stack(padded_samples, dim=0)
+        if self.to_rgb and images[0].size(0) == 3:
+            images = [image[[2, 1, 0], ...] for image in images]
+        images = [(x - self.mean) / self.std for x in images]
+
+        if model_state == 'training':
+            img = padding_to_max_shape(images)
+        elif model_state == 'testing_no_msaug':
+            img = [padding_to_max_shape(images)]
+        else:
+            img = [padding_to_max_shape([img]) for img in images]
+
+        return img, img_metas, data_samples
 
     def _parse_losses(self, losses):
         """Parse the raw outputs (losses) of the network.
