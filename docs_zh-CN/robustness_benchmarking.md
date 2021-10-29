@@ -24,7 +24,7 @@
 
 要将结果提交到基准测试，请访问[基准测试主页](https://github.com/bethgelab/robust-detection-benchmark)
 
-基准是仿照 [imagenet-c 基准测试](https://github.com/hendrycks/robustness)，由 Dan Hendrycks 和 Thomas Dietterich 在[Benchmarking Neural Network Robustness to Common Corruptions and Perturbations](https://arxiv.org/abs/1903.12261)(ICLR 2019)中发表。
+基准测试是仿照 [imagenet-c 基准测试](https://github.com/hendrycks/robustness)，由 Dan Hendrycks 和 Thomas Dietterich 在[Benchmarking Neural Network Robustness to Common Corruptions and Perturbations](https://arxiv.org/abs/1903.12261)(ICLR 2019)中发表。
 
 图像损坏变换功能包含在此库中，但可以使用以下方法单独安装：
 
@@ -32,7 +32,7 @@
 pip install imagecorruptions
 ```
 
-与 imagenet-c 相比，必须进行一些更改以处理任意大小的图像和灰度图像。
+与 imagenet-c 相比，我们必须进行一些更改以处理任意大小的图像和灰度图像。
 我们还修改了“运动模糊”和“雪”损坏，以解除对于 linux 特定库的依赖，
 否则必须单独安装这些库。有关详细信息，请参阅 [imagecorruptions](https://github.com/bethgelab/imagecorruptions)。
 
