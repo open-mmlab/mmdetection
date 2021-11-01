@@ -199,7 +199,7 @@ def current_test_expected_metrics_fx(expected_metrics_all_tests_fx, current_test
     """
     This fixture returns the expected metrics for the current test.
     It may be
-    * either a dict with the structure that stores the requirements on
+    * or a dict with the structure that stores the requirements on
       metrics on the current test, e.g.
       ```
       {
@@ -369,20 +369,11 @@ class OTETestTrainingAction(BaseOTETestAction):
         else:
             logger.debug(f'Keep params.learning_parameters.num_iters={params.learning_parameters.num_iters}')
 
-        if params.learning_parameters.num_iters < 20:
-            num_checkpoints = 2
-        elif params.learning_parameters.num_iters < 1000:
-            num_checkpoints = 10
-        else:
-            num_checkpoints = 30
-
         if self.batch_size != KEEP_CONFIG_FIELD_VALUE():
             params.learning_parameters.batch_size = int(self.batch_size)
             logger.debug(f'Set params.learning_parameters.batch_size={params.learning_parameters.batch_size}')
         else:
             logger.debug(f'Keep params.learning_parameters.batch_size={params.learning_parameters.batch_size}')
-
-        params.learning_parameters.num_checkpoints = num_checkpoints
 
         logger.debug('Setup environment')
         self.environment, self.task = self._create_environment_and_task(params,
