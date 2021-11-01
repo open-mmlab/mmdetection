@@ -869,7 +869,7 @@ def validate_test_metrics(current_result, test_results_storage, current_test_exp
     logger.info(f'Validation: end, result={is_passed}')
     if not is_passed:
         fail_reasons = '\n'.join(fail_reasons)
-        pytest.fail(f'Validation is failed:\n{fail_reasons}')
+        pytest.fail(f'Validation failed:\n{fail_reasons}')
 
 class OTETestStage:
     """
