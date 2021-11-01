@@ -69,7 +69,7 @@ class ConcatDataset(_ConcatDataset):
         return self.datasets[dataset_idx].get_cat_ids(sample_idx)
 
     def get_ann_info(self, idx):
-        """Get category ids of concatenated dataset by index.
+        """Get annotation of concatenated dataset by index.
 
         Args:
             idx (int): Index of data.
@@ -188,7 +188,7 @@ class RepeatDataset:
         return self.dataset.get_cat_ids(idx % self._ori_len)
 
     def get_ann_info(self, idx):
-        """Get category ids of repeat dataset by index.
+        """Get annotation of repeat dataset by index.
 
         Args:
             idx (int): Index of data.
@@ -313,7 +313,19 @@ class ClassBalancedDataset:
     def __getitem__(self, idx):
         ori_index = self.repeat_indices[idx]
         return self.dataset[ori_index]
+    
+    def get_ann_info(self, idx):
+        """Get annotation of dataset by index.
 
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            dict: Annotation info of specified index.
+        """
+        ori_index = self.repeat_indices[idx]
+        return self.dataset.get_ann_info(ori_index)
+    
     def __len__(self):
         """Length after repetition."""
         return len(self.repeat_indices)
