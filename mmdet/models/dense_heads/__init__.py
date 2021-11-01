@@ -47,5 +47,5 @@ __all__ = [
     'CascadeRPNHead', 'EmbeddingRPNHead', 'LDHead', 'CascadeRPNHead',
     'AutoAssignHead', 'DETRHead', 'YOLOFHead', 'DeformableDETRHead',
     'SOLOHead', 'DecoupledSOLOHead', 'CenterNetHead', 'YOLOXHead',
-    'DecoupledSOLOLightHead'
+    'DecoupledSOLOLightHead', 'GFocalHead'
 ]
