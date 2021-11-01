@@ -23,6 +23,7 @@ from .paa import PAA
 from .panoptic_fpn import PanopticFPN
 from .panoptic_two_stage_segmentor import TwoStagePanopticSegmentor
 from .point_rend import PointRend
+from .queryinst import QueryInst
 from .reppoints_detector import RepPointsDetector
 from .retinanet import RetinaNet
 from .rpn import RPN
@@ -46,5 +47,5 @@ __all__ = [
     'NASFCOS', 'PointRend', 'GFL', 'CornerNet', 'PAA', 'YOLOV3', 'YOLACT',
     'VFNet', 'DETR', 'TridentFasterRCNN', 'SparseRCNN', 'SCNet', 'SOLO',
     'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet', 'YOLOX',
-    'TwoStagePanopticSegmentor', 'PanopticFPN'
+    'TwoStagePanopticSegmentor', 'PanopticFPN', 'QueryInst'
 ]

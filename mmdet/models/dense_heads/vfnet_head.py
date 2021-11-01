@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -6,9 +8,9 @@ from mmcv.cnn import ConvModule, Scale
 from mmcv.ops import DeformConv2d
 from mmcv.runner import force_fp32
 
-from mmdet.core import (bbox2distance, bbox_overlaps, build_anchor_generator,
-                        build_assigner, build_sampler, distance2bbox,
-                        multi_apply, multiclass_nms, reduce_mean)
+from mmdet.core import (MlvlPointGenerator, bbox_overlaps, build_assigner,
+                        build_prior_generator, build_sampler, multi_apply,
+                        reduce_mean)
 from ..builder import HEADS, build_loss
 from .atss_head import ATSSHead
 from .fcos_head import FCOSHead
@@ -91,6 +93,7 @@ class VFNetHead(ATSSHead, FCOSHead):
                  loss_bbox_refine=dict(type='GIoULoss', loss_weight=2.0),
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
                  use_atss=True,
+                 reg_decoded_bbox=True,
                  anchor_generator=dict(
                      type='AnchorGenerator',
                      ratios=[1.0],
@@ -146,15 +149,44 @@ class VFNetHead(ATSSHead, FCOSHead):
 
         # for getting ATSS targets
         self.use_atss = use_atss
+        self.reg_decoded_bbox = reg_decoded_bbox
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
-        self.anchor_generator = build_anchor_generator(anchor_generator)
+
         self.anchor_center_offset = anchor_generator['center_offset']
-        self.num_anchors = self.anchor_generator.num_base_anchors[0]
+
+        self.num_base_priors = self.prior_generator.num_base_priors[0]
+
         self.sampling = False
         if self.train_cfg:
             self.assigner = build_assigner(self.train_cfg.assigner)
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
+        # only be used in `get_atss_targets` when `use_atss` is True
+        self.atss_prior_generator = build_prior_generator(anchor_generator)
+
+        self.fcos_prior_generator = MlvlPointGenerator(
+            anchor_generator['strides'],
+            self.anchor_center_offset if self.use_atss else 0.5)
+
+        # In order to reuse the `get_bboxes` in `BaseDenseHead.
+        # Only be used in testing phase.
+        self.prior_generator = self.fcos_prior_generator
+
+    @property
+    def num_anchors(self):
+        """
+        Returns:
+            int: Number of anchors on each point of feature map.
+        """
+        warnings.warn('DeprecationWarning: `num_anchors` is deprecated, '
+                      'please use "num_base_priors" instead')
+        return self.num_base_priors
+
+    @property
+    def anchor_generator(self):
+        warnings.warn('DeprecationWarning: anchor_generator is deprecated, '
+                      'please use "atss_prior_generator" instead')
+        return self.prior_generator
 
     def _init_layers(self):
         """Initialize layers of the head."""
@@ -269,7 +301,10 @@ class VFNetHead(ATSSHead, FCOSHead):
         cls_feat = self.relu(self.vfnet_cls_dconv(cls_feat, dcn_offset))
         cls_score = self.vfnet_cls(cls_feat)
 
-        return cls_score, bbox_pred, bbox_pred_refine
+        if self.training:
+            return cls_score, bbox_pred, bbox_pred_refine
+        else:
+            return cls_score, bbox_pred_refine
 
     def star_dcn_offset(self, bbox_pred, gradient_mul, stride):
         """Compute the star deformable conv offsets.
@@ -347,8 +382,8 @@ class VFNetHead(ATSSHead, FCOSHead):
         """
         assert len(cls_scores) == len(bbox_preds) == len(bbox_preds_refine)
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        all_level_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
-                                           bbox_preds[0].device)
+        all_level_points = self.fcos_prior_generator.grid_priors(
+            featmap_sizes, bbox_preds[0].dtype, bbox_preds[0].device)
         labels, label_weights, bbox_targets, bbox_weights = self.get_targets(
             cls_scores, all_level_points, gt_bboxes, gt_labels, img_metas,
             gt_bboxes_ignore)
@@ -399,8 +434,10 @@ class VFNetHead(ATSSHead, FCOSHead):
         pos_bbox_targets = flatten_bbox_targets[pos_inds]
         pos_points = flatten_points[pos_inds]
 
-        pos_decoded_bbox_preds = distance2bbox(pos_points, pos_bbox_preds)
-        pos_decoded_target_preds = distance2bbox(pos_points, pos_bbox_targets)
+        pos_decoded_bbox_preds = self.bbox_coder.decode(
+            pos_points, pos_bbox_preds)
+        pos_decoded_target_preds = self.bbox_coder.decode(
+            pos_points, pos_bbox_targets)
         iou_targets_ini = bbox_overlaps(
             pos_decoded_bbox_preds,
             pos_decoded_target_preds.detach(),
@@ -410,7 +447,7 @@ class VFNetHead(ATSSHead, FCOSHead):
             bbox_weights_ini.sum()).clamp_(min=1).item()
 
         pos_decoded_bbox_preds_refine = \
-            distance2bbox(pos_points, pos_bbox_preds_refine)
+            self.bbox_coder.decode(pos_points, pos_bbox_preds_refine)
         iou_targets_rf = bbox_overlaps(
             pos_decoded_bbox_preds_refine,
             pos_decoded_target_preds.detach(),
@@ -459,163 +496,6 @@ class VFNetHead(ATSSHead, FCOSHead):
             loss_cls=loss_cls,
             loss_bbox=loss_bbox,
             loss_bbox_rf=loss_bbox_refine)
-
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'bbox_preds_refine'))
-    def get_bboxes(self,
-                   cls_scores,
-                   bbox_preds,
-                   bbox_preds_refine,
-                   img_metas,
-                   cfg=None,
-                   rescale=None,
-                   with_nms=True):
-        """Transform network outputs for a batch into bbox predictions.
-
-        Args:
-            cls_scores (list[Tensor]): Box iou-aware scores for each scale
-                level with shape (N, num_points * num_classes, H, W).
-            bbox_preds (list[Tensor]): Box offsets for each scale
-                level with shape (N, num_points * 4, H, W).
-            bbox_preds_refine (list[Tensor]): Refined Box offsets for
-                each scale level with shape (N, num_points * 4, H, W).
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used. Default: None.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before returning boxes.
-                Default: True.
-
-        Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class label of
-                the corresponding box.
-        """
-        assert len(cls_scores) == len(bbox_preds) == len(bbox_preds_refine)
-        num_levels = len(cls_scores)
-
-        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        mlvl_points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
-                                      bbox_preds[0].device)
-        result_list = []
-        for img_id in range(len(img_metas)):
-            cls_score_list = [
-                cls_scores[i][img_id].detach() for i in range(num_levels)
-            ]
-            bbox_pred_list = [
-                bbox_preds_refine[i][img_id].detach()
-                for i in range(num_levels)
-            ]
-            img_shape = img_metas[img_id]['img_shape']
-            scale_factor = img_metas[img_id]['scale_factor']
-            det_bboxes = self._get_bboxes_single(cls_score_list,
-                                                 bbox_pred_list, mlvl_points,
-                                                 img_shape, scale_factor, cfg,
-                                                 rescale, with_nms)
-            result_list.append(det_bboxes)
-        return result_list
-
-    def _get_bboxes_single(self,
-                           cls_scores,
-                           bbox_preds,
-                           mlvl_points,
-                           img_shape,
-                           scale_factor,
-                           cfg,
-                           rescale=False,
-                           with_nms=True):
-        """Transform outputs for a single batch item into bbox predictions.
-
-        Args:
-            cls_scores (list[Tensor]): Box iou-aware scores for a single scale
-                level with shape (num_points * num_classes, H, W).
-            bbox_preds (list[Tensor]): Box offsets for a single scale
-                level with shape (num_points * 4, H, W).
-            mlvl_points (list[Tensor]): Box reference for a single scale level
-                with shape (num_total_points, 4).
-            img_shape (tuple[int]): Shape of the input image,
-                (height, width, 3).
-            scale_factor (ndarray): Scale factor of the image arrange as
-                (w_scale, h_scale, w_scale, h_scale).
-            cfg (mmcv.Config | None): Test / postprocessing configuration,
-                if None, test_cfg would be used.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before returning boxes.
-                Default: True.
-
-        Returns:
-            tuple(Tensor):
-                det_bboxes (Tensor): BBox predictions in shape (n, 5), where
-                    the first 4 columns are bounding box positions
-                    (tl_x, tl_y, br_x, br_y) and the 5-th column is a score
-                    between 0 and 1.
-                det_labels (Tensor): A (n,) tensor where each item is the
-                    predicted class label of the corresponding box.
-        """
-        cfg = self.test_cfg if cfg is None else cfg
-        assert len(cls_scores) == len(bbox_preds) == len(mlvl_points)
-        mlvl_bboxes = []
-        mlvl_scores = []
-        for cls_score, bbox_pred, points in zip(cls_scores, bbox_preds,
-                                                mlvl_points):
-            assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-            scores = cls_score.permute(1, 2, 0).reshape(
-                -1, self.cls_out_channels).contiguous().sigmoid()
-            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4).contiguous()
-
-            nms_pre = cfg.get('nms_pre', -1)
-            if 0 < nms_pre < scores.shape[0]:
-                max_scores, _ = scores.max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
-                points = points[topk_inds, :]
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
-            bboxes = distance2bbox(points, bbox_pred, max_shape=img_shape)
-            mlvl_bboxes.append(bboxes)
-            mlvl_scores.append(scores)
-        mlvl_bboxes = torch.cat(mlvl_bboxes)
-        if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-        mlvl_scores = torch.cat(mlvl_scores)
-        padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-        # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
-        # BG cat_id: num_class
-        mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-        if with_nms:
-            det_bboxes, det_labels = multiclass_nms(mlvl_bboxes, mlvl_scores,
-                                                    cfg.score_thr, cfg.nms,
-                                                    cfg.max_per_img)
-            return det_bboxes, det_labels
-        else:
-            return mlvl_bboxes, mlvl_scores
-
-    def _get_points_single(self,
-                           featmap_size,
-                           stride,
-                           dtype,
-                           device,
-                           flatten=False):
-        """Get points according to feature map sizes."""
-        h, w = featmap_size
-        x_range = torch.arange(
-            0, w * stride, stride, dtype=dtype, device=device)
-        y_range = torch.arange(
-            0, h * stride, stride, dtype=dtype, device=device)
-        y, x = torch.meshgrid(y_range, x_range)
-        # to be compatible with anchor points in ATSS
-        if self.use_atss:
-            points = torch.stack(
-                (x.reshape(-1), y.reshape(-1)), dim=-1) + \
-                     stride * self.anchor_center_offset
-        else:
-            points = torch.stack(
-                (x.reshape(-1), y.reshape(-1)), dim=-1) + stride // 2
-        return points
 
     def get_targets(self, cls_scores, mlvl_points, gt_bboxes, gt_labels,
                     img_metas, gt_bboxes_ignore):
@@ -685,6 +565,36 @@ class VFNetHead(ATSSHead, FCOSHead):
         bbox_weights = None
         return labels, label_weights, bbox_targets, bbox_weights
 
+    def get_anchors(self, featmap_sizes, img_metas, device='cuda'):
+        """Get anchors according to feature map sizes.
+
+        Args:
+            featmap_sizes (list[tuple]): Multi-level feature map sizes.
+            img_metas (list[dict]): Image meta info.
+            device (torch.device | str): Device for returned tensors
+
+        Returns:
+            tuple:
+                anchor_list (list[Tensor]): Anchors of each image.
+                valid_flag_list (list[Tensor]): Valid flags of each image.
+        """
+        num_imgs = len(img_metas)
+
+        # since feature map sizes of all images are the same, we only compute
+        # anchors for one time
+        multi_level_anchors = self.atss_prior_generator.grid_priors(
+            featmap_sizes, device=device)
+        anchor_list = [multi_level_anchors for _ in range(num_imgs)]
+
+        # for each image, we compute valid flags of multi level anchors
+        valid_flag_list = []
+        for img_id, img_meta in enumerate(img_metas):
+            multi_level_flags = self.atss_prior_generator.valid_flags(
+                featmap_sizes, img_meta['pad_shape'], device=device)
+            valid_flag_list.append(multi_level_flags)
+
+        return anchor_list, valid_flag_list
+
     def get_atss_targets(self,
                          cls_scores,
                          mlvl_points,
@@ -717,9 +627,13 @@ class VFNetHead(ATSSHead, FCOSHead):
                 bbox_weights (Tensor): Bbox weights of all levels.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == self.anchor_generator.num_levels
+        assert len(
+            featmap_sizes
+        ) == self.atss_prior_generator.num_levels == \
+            self.fcos_prior_generator.num_levels
 
         device = cls_scores[0].device
+
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_metas, device=device)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
@@ -780,7 +694,8 @@ class VFNetHead(ATSSHead, FCOSHead):
         mlvl_points = [points.repeat(num_imgs, 1) for points in mlvl_points]
         bbox_targets = []
         for i in range(num_levels):
-            bbox_target = bbox2distance(mlvl_points[i], decoded_bboxes[i])
+            bbox_target = self.bbox_coder.encode(mlvl_points[i],
+                                                 decoded_bboxes[i])
             bbox_targets.append(bbox_target)
 
         return bbox_targets
@@ -790,3 +705,36 @@ class VFNetHead(ATSSHead, FCOSHead):
         """Override the method in the parent class to avoid changing para's
         name."""
         pass
+
+    def _get_points_single(self,
+                           featmap_size,
+                           stride,
+                           dtype,
+                           device,
+                           flatten=False):
+        """Get points according to feature map size.
+
+        This function will be deprecated soon.
+        """
+
+        warnings.warn(
+            '`_get_points_single` in `VFNetHead` will be '
+            'deprecated soon, we support a multi level point generator now'
+            'you can get points of a single level feature map'
+            'with `self.fcos_prior_generator.single_level_grid_priors` ')
+
+        h, w = featmap_size
+        x_range = torch.arange(
+            0, w * stride, stride, dtype=dtype, device=device)
+        y_range = torch.arange(
+            0, h * stride, stride, dtype=dtype, device=device)
+        y, x = torch.meshgrid(y_range, x_range)
+        # to be compatible with anchor points in ATSS
+        if self.use_atss:
+            points = torch.stack(
+                (x.reshape(-1), y.reshape(-1)), dim=-1) + \
+                     stride * self.anchor_center_offset
+        else:
+            points = torch.stack(
+                (x.reshape(-1), y.reshape(-1)), dim=-1) + stride // 2
+        return points

@@ -1,11 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
+
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmcv.ops import DeformConv2d
 from mmcv.runner import BaseModule
 
-from mmdet.core import multi_apply, multiclass_nms
+from mmdet.core import multi_apply
+from mmdet.core.utils import filter_scores_and_topk
 from ..builder import HEADS
 from .anchor_free_head import AnchorFreeHead
 
@@ -128,10 +131,6 @@ class FoveaHead(AnchorFreeHead):
         cls_score = self.conv_cls(cls_feat)
         return cls_score, bbox_pred
 
-    def _get_points_single(self, *args, **kwargs):
-        y, x = super()._get_points_single(*args, **kwargs)
-        return y + 0.5, x + 0.5
-
     def loss(self,
              cls_scores,
              bbox_preds,
@@ -142,8 +141,10 @@ class FoveaHead(AnchorFreeHead):
         assert len(cls_scores) == len(bbox_preds)
 
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        points = self.get_points(featmap_sizes, bbox_preds[0].dtype,
-                                 bbox_preds[0].device)
+        points = self.prior_generator.grid_priors(
+            featmap_sizes,
+            dtype=bbox_preds[0].dtype,
+            device=bbox_preds[0].device)
         num_imgs = cls_scores[0].size(0)
         flatten_cls_scores = [
             cls_score.permute(0, 2, 3, 1).reshape(-1, self.cls_out_channels)
@@ -216,9 +217,11 @@ class FoveaHead(AnchorFreeHead):
         bbox_target_list = []
         # for each pyramid, find the cls and box target
         for base_len, (lower_bound, upper_bound), stride, featmap_size, \
-            (y, x) in zip(self.base_edge_list, self.scale_ranges,
+            points in zip(self.base_edge_list, self.scale_ranges,
                           self.strides, featmap_size_list, point_list):
             # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
+            points = points.view(*featmap_size, 2)
+            x, y = points[..., 0], points[..., 1]
             labels = gt_labels_raw.new_zeros(featmap_size) + self.num_classes
             bbox_targets = gt_bboxes_raw.new(featmap_size[0], featmap_size[1],
                                              4) + 1
@@ -253,97 +256,130 @@ class FoveaHead(AnchorFreeHead):
                         gt_bboxes_raw[hit_indices, :]):
                 labels[py1:py2 + 1, px1:px2 + 1] = label
                 bbox_targets[py1:py2 + 1, px1:px2 + 1, 0] = \
-                    (stride * x[py1:py2 + 1, px1:px2 + 1] - gt_x1) / base_len
+                    (x[py1:py2 + 1, px1:px2 + 1] - gt_x1) / base_len
                 bbox_targets[py1:py2 + 1, px1:px2 + 1, 1] = \
-                    (stride * y[py1:py2 + 1, px1:px2 + 1] - gt_y1) / base_len
+                    (y[py1:py2 + 1, px1:px2 + 1] - gt_y1) / base_len
                 bbox_targets[py1:py2 + 1, px1:px2 + 1, 2] = \
-                    (gt_x2 - stride * x[py1:py2 + 1, px1:px2 + 1]) / base_len
+                    (gt_x2 - x[py1:py2 + 1, px1:px2 + 1]) / base_len
                 bbox_targets[py1:py2 + 1, px1:px2 + 1, 3] = \
-                    (gt_y2 - stride * y[py1:py2 + 1, px1:px2 + 1]) / base_len
+                    (gt_y2 - y[py1:py2 + 1, px1:px2 + 1]) / base_len
             bbox_targets = bbox_targets.clamp(min=1. / 16, max=16.)
             label_list.append(labels)
             bbox_target_list.append(torch.log(bbox_targets))
         return label_list, bbox_target_list
 
-    def get_bboxes(self,
-                   cls_scores,
-                   bbox_preds,
-                   img_metas,
-                   cfg=None,
-                   rescale=None):
-        assert len(cls_scores) == len(bbox_preds)
-        num_levels = len(cls_scores)
-        featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        points = self.get_points(
-            featmap_sizes,
-            bbox_preds[0].dtype,
-            bbox_preds[0].device,
-            flatten=True)
-        result_list = []
-        for img_id in range(len(img_metas)):
-            cls_score_list = [
-                cls_scores[i][img_id].detach() for i in range(num_levels)
-            ]
-            bbox_pred_list = [
-                bbox_preds[i][img_id].detach() for i in range(num_levels)
-            ]
-            img_shape = img_metas[img_id]['img_shape']
-            scale_factor = img_metas[img_id]['scale_factor']
-            det_bboxes = self._get_bboxes_single(cls_score_list,
-                                                 bbox_pred_list, featmap_sizes,
-                                                 points, img_shape,
-                                                 scale_factor, cfg, rescale)
-            result_list.append(det_bboxes)
-        return result_list
-
+    # Same as base_dense_head/_get_bboxes_single except self._bbox_decode
     def _get_bboxes_single(self,
-                           cls_scores,
-                           bbox_preds,
-                           featmap_sizes,
-                           point_list,
-                           img_shape,
-                           scale_factor,
+                           cls_score_list,
+                           bbox_pred_list,
+                           score_factor_list,
+                           mlvl_priors,
+                           img_meta,
                            cfg,
-                           rescale=False):
+                           rescale=False,
+                           with_nms=True,
+                           **kwargs):
+        """Transform outputs of a single image into bbox predictions.
+
+        Args:
+            cls_score_list (list[Tensor]): Box scores from all scale
+                levels of a single image, each item has shape
+                (num_priors * num_classes, H, W).
+            bbox_pred_list (list[Tensor]): Box energies / deltas from
+                all scale levels of a single image, each item has shape
+                (num_priors * 4, H, W).
+            score_factor_list (list[Tensor]): Score factor from all scale
+                levels of a single image. Fovea head does not need this value.
+            mlvl_priors (list[Tensor]): Each element in the list is
+                the priors of a single level in feature pyramid, has shape
+                (num_priors, 2).
+            img_meta (dict): Image meta info.
+            cfg (mmcv.Config): Test / postprocessing configuration,
+                if None, test_cfg would be used.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
+
+        Returns:
+            tuple[Tensor]: Results of detected bboxes and labels. If with_nms
+                is False and mlvl_score_factor is None, return mlvl_bboxes and
+                mlvl_scores, else return mlvl_bboxes, mlvl_scores and
+                mlvl_score_factor. Usually with_nms is False is used for aug
+                test. If with_nms is True, then return the following format
+
+                - det_bboxes (Tensor): Predicted bboxes with shape \
+                    [num_bboxes, 5], where the first 4 columns are bounding \
+                    box positions (tl_x, tl_y, br_x, br_y) and the 5-th \
+                    column are scores between 0 and 1.
+                - det_labels (Tensor): Predicted labels of the corresponding \
+                    box with shape [num_bboxes].
+        """
         cfg = self.test_cfg if cfg is None else cfg
-        assert len(cls_scores) == len(bbox_preds) == len(point_list)
-        det_bboxes = []
-        det_scores = []
-        for cls_score, bbox_pred, featmap_size, stride, base_len, (y, x) \
-                in zip(cls_scores, bbox_preds, featmap_sizes, self.strides,
-                       self.base_edge_list, point_list):
+        assert len(cls_score_list) == len(bbox_pred_list)
+        img_shape = img_meta['img_shape']
+        nms_pre = cfg.get('nms_pre', -1)
+
+        mlvl_bboxes = []
+        mlvl_scores = []
+        mlvl_labels = []
+        for level_idx, (cls_score, bbox_pred, stride, base_len, priors) in \
+                enumerate(zip(cls_score_list, bbox_pred_list, self.strides,
+                              self.base_edge_list, mlvl_priors)):
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
+            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
+
             scores = cls_score.permute(1, 2, 0).reshape(
                 -1, self.cls_out_channels).sigmoid()
-            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4).exp()
-            nms_pre = cfg.get('nms_pre', -1)
-            if (nms_pre > 0) and (scores.shape[0] > nms_pre):
-                max_scores, _ = scores.max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
-                y = y[topk_inds]
-                x = x[topk_inds]
-            x1 = (stride * x - base_len * bbox_pred[:, 0]). \
-                clamp(min=0, max=img_shape[1] - 1)
-            y1 = (stride * y - base_len * bbox_pred[:, 1]). \
-                clamp(min=0, max=img_shape[0] - 1)
-            x2 = (stride * x + base_len * bbox_pred[:, 2]). \
-                clamp(min=0, max=img_shape[1] - 1)
-            y2 = (stride * y + base_len * bbox_pred[:, 3]). \
-                clamp(min=0, max=img_shape[0] - 1)
-            bboxes = torch.stack([x1, y1, x2, y2], -1)
-            det_bboxes.append(bboxes)
-            det_scores.append(scores)
-        det_bboxes = torch.cat(det_bboxes)
-        if rescale:
-            det_bboxes /= det_bboxes.new_tensor(scale_factor)
-        det_scores = torch.cat(det_scores)
-        padding = det_scores.new_zeros(det_scores.shape[0], 1)
-        # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
-        # BG cat_id: num_class
-        det_scores = torch.cat([det_scores, padding], dim=1)
-        det_bboxes, det_labels = multiclass_nms(det_bboxes, det_scores,
-                                                cfg.score_thr, cfg.nms,
-                                                cfg.max_per_img)
-        return det_bboxes, det_labels
+
+            # After https://github.com/open-mmlab/mmdetection/pull/6268/,
+            # this operation keeps fewer bboxes under the same `nms_pre`.
+            # There is no difference in performance for most models. If you
+            # find a slight drop in performance, you can set a larger
+            # `nms_pre` than before.
+            results = filter_scores_and_topk(
+                scores, cfg.score_thr, nms_pre,
+                dict(bbox_pred=bbox_pred, priors=priors))
+            scores, labels, _, filtered_results = results
+
+            bbox_pred = filtered_results['bbox_pred']
+            priors = filtered_results['priors']
+
+            bboxes = self._bbox_decode(priors, bbox_pred, base_len, img_shape)
+
+            mlvl_bboxes.append(bboxes)
+            mlvl_scores.append(scores)
+            mlvl_labels.append(labels)
+
+        return self._bbox_post_process(mlvl_scores, mlvl_labels, mlvl_bboxes,
+                                       img_meta['scale_factor'], cfg, rescale,
+                                       with_nms)
+
+    def _bbox_decode(self, priors, bbox_pred, base_len, max_shape):
+        bbox_pred = bbox_pred.exp()
+
+        y = priors[:, 1]
+        x = priors[:, 0]
+        x1 = (x - base_len * bbox_pred[:, 0]). \
+            clamp(min=0, max=max_shape[1] - 1)
+        y1 = (y - base_len * bbox_pred[:, 1]). \
+            clamp(min=0, max=max_shape[0] - 1)
+        x2 = (x + base_len * bbox_pred[:, 2]). \
+            clamp(min=0, max=max_shape[1] - 1)
+        y2 = (y + base_len * bbox_pred[:, 3]). \
+            clamp(min=0, max=max_shape[0] - 1)
+        decoded_bboxes = torch.stack([x1, y1, x2, y2], -1)
+        return decoded_bboxes
+
+    def _get_points_single(self, *args, **kwargs):
+        """Get points according to feature map size.
+
+        This function will be deprecated soon.
+        """
+        warnings.warn(
+            '`_get_points_single` in `FoveaHead` will be '
+            'deprecated soon, we support a multi level point generator now'
+            'you can get points of a single level feature map '
+            'with `self.prior_generator.single_level_grid_priors` ')
+        y, x = super()._get_points_single(*args, **kwargs)
+        return y + 0.5, x + 0.5

@@ -7,6 +7,7 @@ from mmcv.cnn import ConvModule
 from mmcv.runner import BaseModule, ModuleList, force_fp32
 
 from mmdet.core import build_sampler, fast_nms, images_to_levels, multi_apply
+from mmdet.core.utils import select_single_mlvl
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
@@ -102,14 +103,14 @@ class YOLACTHead(AnchorHead):
                     norm_cfg=self.norm_cfg))
         self.conv_cls = nn.Conv2d(
             self.feat_channels,
-            self.num_anchors * self.cls_out_channels,
+            self.num_base_priors * self.cls_out_channels,
             3,
             padding=1)
         self.conv_reg = nn.Conv2d(
-            self.feat_channels, self.num_anchors * 4, 3, padding=1)
+            self.feat_channels, self.num_base_priors * 4, 3, padding=1)
         self.conv_coeff = nn.Conv2d(
             self.feat_channels,
-            self.num_anchors * self.num_protos,
+            self.num_base_priors * self.num_protos,
             3,
             padding=1)
 
@@ -169,7 +170,7 @@ class YOLACTHead(AnchorHead):
                 List[:obj:``SamplingResult``]: Sampler results for each image.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == self.anchor_generator.num_levels
+        assert len(featmap_sizes) == self.prior_generator.num_levels
 
         device = cls_scores[0].device
 
@@ -333,22 +334,16 @@ class YOLACTHead(AnchorHead):
 
         device = cls_scores[0].device
         featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
-        mlvl_anchors = self.anchor_generator.grid_anchors(
+        mlvl_anchors = self.prior_generator.grid_priors(
             featmap_sizes, device=device)
 
         det_bboxes = []
         det_labels = []
         det_coeffs = []
         for img_id in range(len(img_metas)):
-            cls_score_list = [
-                cls_scores[i][img_id].detach() for i in range(num_levels)
-            ]
-            bbox_pred_list = [
-                bbox_preds[i][img_id].detach() for i in range(num_levels)
-            ]
-            coeff_pred_list = [
-                coeff_preds[i][img_id].detach() for i in range(num_levels)
-            ]
+            cls_score_list = select_single_mlvl(cls_scores, img_id)
+            bbox_pred_list = select_single_mlvl(bbox_preds, img_id)
+            coeff_pred_list = select_single_mlvl(coeff_preds, img_id)
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
             bbox_res = self._get_bboxes_single(cls_score_list, bbox_pred_list,
@@ -402,6 +397,7 @@ class YOLACTHead(AnchorHead):
         """
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_score_list) == len(bbox_pred_list) == len(mlvl_anchors)
+        nms_pre = cfg.get('nms_pre', -1)
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_coeffs = []
@@ -418,8 +414,8 @@ class YOLACTHead(AnchorHead):
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             coeff_pred = coeff_pred.permute(1, 2,
                                             0).reshape(-1, self.num_protos)
-            nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and scores.shape[0] > nms_pre:
+
+            if 0 < nms_pre < scores.shape[0]:
                 # Get maximum scores for foreground classes.
                 if self.use_sigmoid_cls:
                     max_scores, _ = scores.max(dim=1)
