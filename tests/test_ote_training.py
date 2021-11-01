@@ -210,7 +210,7 @@ def current_test_expected_metrics_fx(expected_metrics_all_tests_fx, current_test
       }
       ```
     * or a string with the special value `ABSENT_EXPECTED_VALIDATION_METRICS`
-      if the structure that stores the requirements on metrics 3for the current
+      if the structure that stores the requirements on metrics for the current
       test is absent -- in this case the test is failed
     * or a string with the special value `SKIP_VALIDATION`
       if the test validation should be skipped
