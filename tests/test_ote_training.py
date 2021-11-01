@@ -888,6 +888,7 @@ class OTETestStage:
         self.stored_exception = None
         self.action = action
         self.depends_stages = depends_stages if depends_stages else []
+        self.stage_results = None
         assert isinstance(self.depends_stages, list)
         assert all(isinstance(stage, OTETestStage) for stage in self.depends_stages)
         assert isinstance(self.action, BaseOTETestAction)
@@ -907,6 +908,15 @@ class OTETestStage:
                        'caused exception -- re-raising it')
         raise self.stored_exception
 
+    def _run_validation(self, test_results_storage, current_test_expected_metrics):
+        if not self.action.with_validation:
+            return
+        if current_test_expected_metrics == SKIP_VALIDATION():
+            logger.debug('The current_test_expected_metrics points that the validation should be skipped')
+            return
+
+        validate_test_metrics(self.stage_results, test_results_storage, current_test_expected_metrics)
+
     def run_once(self, data_collector: DataCollector, test_results_storage: OrderedDict,
                  current_test_expected_metrics: Union[dict, str]):
         logger.info(f'Begin stage "{self.name}"')
@@ -914,6 +924,11 @@ class OTETestStage:
         logger.debug(f'For test stage "{self.name}": test_results_storage.keys = {list(test_results_storage.keys())}')
 
         for dep_stage in self.depends_stages:
+            # Processing all dependency stages of the current test.
+            # Note that
+            # * the stages may run their own dependency stages -- they will compose so called "dependency chain"
+            # * the dependency stages are run with `current_test_expected_metrics = SKIP_VALIDATION()`
+            #   to avoid validation of stages that are run from the dependency chain.
             logger.debug(f'For test stage "{self.name}": Before running dep. stage "{dep_stage.name}"')
             dep_stage.run_once(data_collector, test_results_storage, current_test_expected_metrics=SKIP_VALIDATION())
             logger.debug(f'For test stage "{self.name}": After running dep. stage "{dep_stage.name}"')
@@ -922,6 +937,12 @@ class OTETestStage:
             self._reraise_stage_exception_if_was_failed()
             # if we are here, then the stage was processed without exceptions
             logger.info(f'The stage {self.name} was already processed SUCCESSFULLY')
+
+            # Run validation here for the rare case if this test now is being run *not* from a dependency chain
+            # (i.e. the test is run with `current_test_expected_metrics != SKIP_VALIDATION()`),
+            # but the test already has been run from some dependency chain earlier.
+            self._run_validation(test_results_storage, current_test_expected_metrics)
+
             logger.info(f'End stage "{self.name}"')
             return
 
@@ -931,11 +952,11 @@ class OTETestStage:
 
         try:
             logger.info(f'For test stage "{self.name}": Before running main action')
-            result_to_store = self.action(data_collector=data_collector,
-                                          results_prev_stages=test_results_storage)
+            self.stage_results = self.action(data_collector=data_collector,
+                                             results_prev_stages=test_results_storage)
             logger.info(f'For test stage "{self.name}": After running main action')
             self.was_processed = True
-            test_results_storage[self.name] = result_to_store
+            test_results_storage[self.name] = self.stage_results
             logger.debug(f'For test stage "{self.name}": after addition test_results_storage.keys = '
                          f'{list(test_results_storage.keys())}')
         except Exception as e:
@@ -945,13 +966,10 @@ class OTETestStage:
             self.was_processed = True
             raise e
 
-        # This step is made outside the central try...except clause, since if the test was successful, but
+        # The validation step is made outside the central try...except clause, since if the test was successful, but
         # the quality numbers were lower than expected, the result of the stage still may be re-used
         # in other stages.
-        if self.action.with_validation and current_test_expected_metrics != SKIP_VALIDATION():
-            validate_test_metrics(result_to_store, test_results_storage, current_test_expected_metrics)
-        elif self.action.with_validation:
-            logger.debug('The current_test_expected_metrics points that the validation should be skipped')
+        self._run_validation(test_results_storage, current_test_expected_metrics)
         logger.info(f'End stage "{self.name}"')
 
 class OTEIntegrationTestCase:
