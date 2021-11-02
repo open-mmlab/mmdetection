@@ -385,7 +385,7 @@ class DETRHead(AnchorFreeHead):
         loss_cls = self.loss_cls(
             cls_scores, labels, label_weights, avg_factor=cls_avg_factor)
 
-        # Compute the average number of gt boxes accross all gpus, for
+        # Compute the average number of gt boxes across all gpus, for
         # normalization purposes
         num_total_pos = loss_cls.new_tensor([num_total_pos])
         num_total_pos = torch.clamp(reduce_mean(num_total_pos), min=1).item()

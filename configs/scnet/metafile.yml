@@ -10,8 +10,13 @@ Collections:
         - FPN
         - ResNet
         - SCNet
-    Paper: https://arxiv.org/abs/2012.10150
+    Paper:
+      URL: https://arxiv.org/abs/2012.10150
+      Title: 'SCNet: Training Inference Sample Consistency for Instance Segmentation'
     README: configs/scnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.9.0/mmdet/models/detectors/scnet.py#L6
+      Version: v2.9.0
 
 Models:
   - Name: scnet_r50_fpn_1x_coco
@@ -36,7 +41,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 39.2
-    Weights: https://drive.google.com/file/d/1K5_8-P0EC43WZFtoO3q9_JE-df8pEc7J/view?usp=sharing
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/scnet/scnet_r50_fpn_1x_coco/scnet_r50_fpn_1x_coco-c3f09857.pth
 
   - Name: scnet_r50_fpn_20e_coco
     In Collection: SCNet
@@ -60,7 +65,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 40.0
-    Weights: https://drive.google.com/file/d/15VGLCt5-IO5TbzB4Kw6ZyoF6QH0Q511A/view?usp=sharing
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/scnet/scnet_r50_fpn_20e_coco/scnet_r50_fpn_20e_coco-a569f645.pth
 
   - Name: scnet_r101_fpn_20e_coco
     In Collection: SCNet
@@ -84,7 +89,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 40.9
-    Weights: https://drive.google.com/file/d/1aeCGHsOBdfIqVBnBPp0JUE_RSIau3583/view?usp=sharing
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/scnet/scnet_r101_fpn_20e_coco/scnet_r101_fpn_20e_coco-294e312c.pth
 
   - Name: scnet_x101_64x4d_fpn_20e_coco
     In Collection: SCNet
@@ -108,4 +113,4 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 42.3
-    Weights: https://drive.google.com/file/d/1YjgutUKz4TTPpqSWGKUTkZJ8_X-kyCfY/view?usp=sharing
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/scnet/scnet_x101_64x4d_fpn_20e_coco/scnet_x101_64x4d_fpn_20e_coco-fb09dec9.pth

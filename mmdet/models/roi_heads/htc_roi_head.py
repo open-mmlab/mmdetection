@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, merge_aug_bboxes,
                         merge_aug_masks, multiclass_nms)
 from ..builder import HEADS, build_head, build_roi_extractor
+from ..utils.brick_wrappers import adaptive_avg_pool2d
 from .cascade_roi_head import CascadeRoIHead
 
 
@@ -164,7 +165,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
             bbox_semantic_feat = self.semantic_roi_extractor([semantic_feat],
                                                              rois)
             if bbox_semantic_feat.shape[-2:] != bbox_feats.shape[-2:]:
-                bbox_semantic_feat = F.adaptive_avg_pool2d(
+                bbox_semantic_feat = adaptive_avg_pool2d(
                     bbox_semantic_feat, bbox_feats.shape[-2:])
             bbox_feats += bbox_semantic_feat
         cls_score, bbox_pred = bbox_head(bbox_feats)
@@ -574,9 +575,8 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
 
         if self.with_mask:
             if det_bboxes.shape[0] == 0:
-                segm_result = [[[]
-                                for _ in range(self.mask_head[-1].num_classes)]
-                               ]
+                segm_result = [[]
+                               for _ in range(self.mask_head[-1].num_classes)]
             else:
                 aug_masks = []
                 aug_img_metas = []

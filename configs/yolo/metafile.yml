@@ -8,8 +8,13 @@ Collections:
       Training Resources: 8x V100 GPUs
       Architecture:
         - DarkNet
-    Paper: https://arxiv.org/abs/1804.02767
+    Paper:
+      URL: https://arxiv.org/abs/1804.02767
+      Title: 'YOLOv3: An Incremental Improvement'
     README: configs/yolo/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.4.0/mmdet/models/detectors/yolo.py#L8
+      Version: v2.4.0
 
 Models:
   - Name: yolov3_d53_320_273e_coco

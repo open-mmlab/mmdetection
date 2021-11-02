@@ -11,7 +11,9 @@ Compatible MMDetection and MMCV versions are shown as below. Please install the 
 
 | MMDetection version |    MMCV version     |
 |:-------------------:|:-------------------:|
-| master              | mmcv-full>=1.3.8, <1.4.0 |
+| master              | mmcv-full>=1.3.14, <1.4.0 |
+| 2.18.0              | mmcv-full>=1.3.14, <1.4.0 |
+| 2.17.0              | mmcv-full>=1.3.14, <1.4.0 |
 | 2.16.0              | mmcv-full>=1.3.8, <1.4.0 |
 | 2.15.1              | mmcv-full>=1.3.8, <1.4.0 |
 | 2.15.0              | mmcv-full>=1.3.8, <1.4.0 |
@@ -70,7 +72,7 @@ If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
     conda install pytorch=1.3.1 cudatoolkit=9.2 torchvision=0.4.2 -c pytorch
     ```
 
-    If you build PyTorch from source instead of installing the prebuilt pacakge,
+    If you build PyTorch from source instead of installing the prebuilt package,
     you can use more CUDA versions such as 9.0.
 
 ### Install MMDetection
@@ -118,7 +120,7 @@ Or you can still install MMDetection manually:
     pip install -v -e .  # or "python setup.py develop"
     ```
 
-3. Install extra dependencies for Instaboost, Panoptic Segmentation, or LVIS dataset
+3. Install extra dependencies for Instaboost, Panoptic Segmentation, LVIS dataset, or Albumentations.
 
     ```shell
     # for instaboost
@@ -127,6 +129,8 @@ Or you can still install MMDetection manually:
     pip install git+https://github.com/cocodataset/panopticapi.git
     # for LVIS dataset
     pip install git+https://github.com/lvis-dataset/lvis-api.git
+    # for albumentations
+    pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
     ```
 
 **Note:**
@@ -139,6 +143,10 @@ you can install it before installing MMCV.
 
 c. Some dependencies are optional. Simply running `pip install -v -e .` will
  only install the minimum runtime requirements. To use optional dependencies like `albumentations` and `imagecorruptions` either install them manually with `pip install -r requirements/optional.txt` or specify desired extras when calling `pip` (e.g. `pip install -v -e .[optional]`). Valid keys for the extras field are: `all`, `tests`, `build`, and `optional`.
+
+d. If you would like to use `albumentations`, we suggest using
+`pip install albumentations>=0.3.2 --no-binary imgaug,albumentations`. If you simply use
+`pip install albumentations>=0.3.2`, it will install `opencv-python-headless` simultaneously (even though you have already installed `opencv-python`). We should not allow `opencv-python` and `opencv-python-headless` installed at the same time, because it might cause unexpected issues. Please refer to [official documentation](https://albumentations.ai/docs/getting_started/installation/#note-on-opencv-dependencies) for more details.
 
 ### Install without GPU support
 

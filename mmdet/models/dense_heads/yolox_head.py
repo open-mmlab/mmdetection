@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from mmcv.cnn import (ConvModule, DepthwiseSeparableConvModule,
                       bias_init_with_prob)
 from mmcv.ops.nms import batched_nms
+from mmcv.runner import force_fp32
 
 from mmdet.core import (MlvlPointGenerator, bbox_xyxy_to_cxcywh,
                         build_assigner, build_sampler, multi_apply)
@@ -122,6 +123,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
 
+        self.fp16_enabled = False
         self._init_layers()
 
     def _init_layers(self):
@@ -250,7 +252,10 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         num_imgs = len(img_metas)
         featmap_sizes = [cls_score.shape[2:] for cls_score in cls_scores]
         mlvl_priors = self.prior_generator.grid_priors(
-            featmap_sizes, cls_scores[0].device, with_stride=True)
+            featmap_sizes,
+            dtype=cls_scores[0].dtype,
+            device=cls_scores[0].device,
+            with_stride=True)
 
         # flatten cls_scores, bbox_preds and objectness
         flatten_cls_scores = [
@@ -315,6 +320,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
             dets, keep = batched_nms(bboxes, scores, labels, cfg.nms)
             return dets, labels[keep]
 
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'objectnesses'))
     def loss(self,
              cls_scores,
              bbox_preds,
@@ -345,7 +351,10 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
         num_imgs = len(img_metas)
         featmap_sizes = [cls_score.shape[2:] for cls_score in cls_scores]
         mlvl_priors = self.prior_generator.grid_priors(
-            featmap_sizes, cls_scores[0].device, with_stride=True)
+            featmap_sizes,
+            dtype=cls_scores[0].dtype,
+            device=cls_scores[0].device,
+            with_stride=True)
 
         flatten_cls_preds = [
             cls_pred.permute(0, 2, 3, 1).reshape(num_imgs, -1,

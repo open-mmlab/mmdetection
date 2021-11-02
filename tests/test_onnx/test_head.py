@@ -140,12 +140,12 @@ def test_retina_head_forward():
     feats = [
         torch.rand(1, retina_model.in_channels, s // (2**(i + 2)),
                    s // (2**(i + 2)))  # [32, 16, 8, 4, 2]
-        for i in range(len(retina_model.anchor_generator.strides))
+        for i in range(len(retina_model.prior_generator.strides))
     ]
     ort_validate(retina_model.forward, feats)
 
 
-def test_retinanet_head_get_bboxes():
+def test_retinanet_head_onnx_export():
     """Test RetinaNet Head _get_bboxes() in torch and onnxruntime env."""
     retina_model = retinanet_config()
     s = 128
@@ -168,9 +168,9 @@ def test_retinanet_head_get_bboxes():
     cls_score = feats[:5]
     bboxes = feats[5:]
 
-    retina_model.get_bboxes = partial(
-        retina_model.get_bboxes, img_metas=img_metas, with_nms=False)
-    ort_validate(retina_model.get_bboxes, (cls_score, bboxes))
+    retina_model.onnx_export = partial(
+        retina_model.onnx_export, img_metas=img_metas, with_nms=False)
+    ort_validate(retina_model.onnx_export, (cls_score, bboxes))
 
 
 def yolo_config():
@@ -217,7 +217,7 @@ def test_yolov3_head_forward():
     ort_validate(yolo_model.forward, feats)
 
 
-def test_yolov3_head_get_bboxes():
+def test_yolov3_head_onnx_export():
     """Test yolov3 head get_bboxes() in torch and ort env."""
     yolo_model = yolo_config()
     s = 128
@@ -235,9 +235,9 @@ def test_yolov3_head_get_bboxes():
     yolo_head_data = 'yolov3_head_get_bboxes.pkl'
     pred_maps = mmcv.load(osp.join(data_path, yolo_head_data))
 
-    yolo_model.get_bboxes = partial(
-        yolo_model.get_bboxes, img_metas=img_metas, with_nms=False)
-    ort_validate(yolo_model.get_bboxes, pred_maps)
+    yolo_model.onnx_export = partial(
+        yolo_model.onnx_export, img_metas=img_metas, with_nms=False)
+    ort_validate(yolo_model.onnx_export, pred_maps)
 
 
 def fcos_config():
@@ -279,7 +279,7 @@ def test_fcos_head_forward():
     ort_validate(fcos_model.forward, feats)
 
 
-def test_fcos_head_get_bboxes():
+def test_fcos_head_onnx_export():
     """Test fcos head get_bboxes() in ort."""
     fcos_model = fcos_config()
     s = 128
@@ -303,9 +303,9 @@ def test_fcos_head_get_bboxes():
         for feat_size in [4, 8, 16, 32, 64]
     ]
 
-    fcos_model.get_bboxes = partial(
-        fcos_model.get_bboxes, img_metas=img_metas, with_nms=False)
-    ort_validate(fcos_model.get_bboxes, (cls_scores, bboxes, centerness))
+    fcos_model.onnx_export = partial(
+        fcos_model.onnx_export, img_metas=img_metas, with_nms=False)
+    ort_validate(fcos_model.onnx_export, (cls_scores, bboxes, centerness))
 
 
 def fsaf_config():
@@ -351,7 +351,7 @@ def test_fsaf_head_forward():
     ort_validate(fsaf_model.forward, feats)
 
 
-def test_fsaf_head_get_bboxes():
+def test_fsaf_head_onnx_export():
     """Test RetinaNet Head get_bboxes in torch and onnxruntime env."""
     fsaf_model = fsaf_config()
     s = 256
@@ -374,9 +374,9 @@ def test_fsaf_head_get_bboxes():
     cls_score = feats[:5]
     bboxes = feats[5:]
 
-    fsaf_model.get_bboxes = partial(
-        fsaf_model.get_bboxes, img_metas=img_metas, with_nms=False)
-    ort_validate(fsaf_model.get_bboxes, (cls_score, bboxes))
+    fsaf_model.onnx_export = partial(
+        fsaf_model.onnx_export, img_metas=img_metas, with_nms=False)
+    ort_validate(fsaf_model.onnx_export, (cls_score, bboxes))
 
 
 def ssd_config():
@@ -425,7 +425,7 @@ def test_ssd_head_forward():
     ort_validate(ssd_model.forward, feats)
 
 
-def test_ssd_head_get_bboxes():
+def test_ssd_head_onnx_export():
     """Test SSD Head get_bboxes in torch and onnxruntime env."""
     ssd_model = ssd_config()
     s = 300
@@ -448,6 +448,6 @@ def test_ssd_head_get_bboxes():
     cls_score = feats[:6]
     bboxes = feats[6:]
 
-    ssd_model.get_bboxes = partial(
-        ssd_model.get_bboxes, img_metas=img_metas, with_nms=False)
-    ort_validate(ssd_model.get_bboxes, (cls_score, bboxes))
+    ssd_model.onnx_export = partial(
+        ssd_model.onnx_export, img_metas=img_metas, with_nms=False)
+    ort_validate(ssd_model.onnx_export, (cls_score, bboxes))

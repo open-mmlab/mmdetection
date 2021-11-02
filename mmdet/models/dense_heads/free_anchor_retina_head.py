@@ -77,7 +77,7 @@ class FreeAnchorRetinaHead(RetinaHead):
             dict[str, Tensor]: A dictionary of loss components.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == len(self.anchor_generator.base_anchors)
+        assert len(featmap_sizes) == self.prior_generator.num_levels
 
         anchor_list, _ = self.get_anchors(featmap_sizes, img_metas)
         anchors = [torch.cat(anchor) for anchor in anchor_list]

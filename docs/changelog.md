@@ -1,5 +1,113 @@
 ## Changelog
 
+### v2.18.0 (27/10/2021)
+
+#### Highlights
+
+- Support [QueryInst](http://arxiv.org/abs/2105.01928) (#6050)
+- Refactor dense heads to decouple onnx export logics from `get_bboxes` and speed up inference (#5317, #6003, #6369, #6268, #6315)
+
+#### New Features
+
+- Support [QueryInst](http://arxiv.org/abs/2105.01928) (#6050)
+- Support infinite sampler (#5996)
+
+#### Bug Fixes
+
+- Fix init_weight in fcn_mask_head (#6378)
+- Fix type error in imshow_bboxes of RPN (#6386)
+- Fix broken colab link in MMDetection Tutorial (#6382)
+- Make sure the device and dtype of scale_factor are the same as bboxes (#6374)
+- Remove sampling hardcode (#6317)
+- Fix RandomAffine bbox coordinate recorrection (#6293)
+- Fix init bug of final cls/reg layer in convfc head (#6279)
+- Fix img_shape broken in auto_augment (#6259)
+- Fix kwargs parameter missing error in two_stage (#6256)
+
+#### Improvements
+
+- Unify the interface of stuff head and panoptic head (#6308)
+- Polish readme (#6243)
+- Add code-spell pre-commit hook and fix a typo (#6306)
+- Fix typo (#6245, #6190)
+- Fix sampler unit test (#6284)
+- Fix `forward_dummy` of YOLACT to enable `get_flops` (#6079)
+- Fix link error in the config documentation (#6252)
+- Adjust the order to beautify the document (#6195)
+
+#### Refactors
+
+- Refactor one-stage get_bboxes logic (#5317)
+- Refactor ONNX export of One-Stage models (#6003, #6369)
+- Refactor dense_head and speedup (#6268)
+- Migrate to use prior_generator in training of dense heads (#6315)
+
+#### Contributors
+
+A total of 18 developers contributed to this release.
+Thanks @Boyden, @onnkeat, @st9007a, @vealocia, @yhcao6, @DapangpangX, @yellowdolphin, @cclauss, @kennymckormick,
+@pingguokiller, @collinzrj, @AndreaPi, @AronLin, @BIGWangYuDong, @hhaAndroid, @jshilong, @RangiLyu, @ZwwWayne
+
+
+### v2.17.0 (28/9/2021)
+
+#### Highlights
+
+- Support [PVT](https://arxiv.org/abs/2102.12122) and [PVTv2](https://arxiv.org/abs/2106.13797)
+- Support [SOLO](https://arxiv.org/abs/1912.04488)
+- Support large scale jittering and New Mask R-CNN baselines
+- Speed up `YOLOv3` inference
+
+#### New Features
+
+- Support [PVT](https://arxiv.org/abs/2102.12122) and [PVTv2](https://arxiv.org/abs/2106.13797) (#5780)
+- Support [SOLO](https://arxiv.org/abs/1912.04488) (#5832)
+- Support large scale jittering and New Mask R-CNN baselines (#6132)
+- Add a general data structrue for the results of models (#5508)
+- Added a base class for one-stage instance segmentation (#5904)
+- Speed up `YOLOv3` inference (#5991)
+- Release Swin Transformer pre-trained models (#6100)
+- Support mixed precision training in `YOLOX` (#5983)
+- Support `val` workflow in `YOLACT` (#5986)
+- Add script to test `torchserve` (#5936)
+- Support `onnxsim` with dynamic input shape (#6117)
+
+#### Bug Fixes
+
+- Fix the function naming errors in `model_wrappers` (#5975)
+- Fix regression loss bug when the input is an empty tensor (#5976)
+- Fix scores not contiguous error in `centernet_head` (#6016)
+- Fix missing parameters bug in `imshow_bboxes` (#6034)
+- Fix bug in `aug_test` of `HTC` when the length of `det_bboxes` is 0 (#6088)
+- Fix empty proposal errors in the training of some two-stage models (#5941)
+- Fix `dynamic_axes` parameter error in `ONNX` dynamic shape export (#6104)
+- Fix `dynamic_shape` bug of `SyncRandomSizeHook` (#6144)
+- Fix the Swin Transformer config link error in the configuration (#6172)
+
+#### Improvements
+
+- Add filter rules in `Mosaic` transform (#5897)
+- Add size divisor in get flops to avoid some potential bugs (#6076)
+- Add Chinese translation of `docs_zh-CN/tutorials/customize_dataset.md` (#5915)
+- Add Chinese translation of `conventions.md` (#5825)
+- Add description of the output of data pipeline (#5886)
+- Add dataset information in the README file for `PanopticFPN` (#5996)
+- Add `extra_repr` for `DropBlock` layer to get details in the model printing (#6140)
+- Fix CI out of memory and add PyTorch1.9 Python3.9 unit tests (#5862)
+- Fix download links error of some model (#6069)
+- Improve the generalization of XML dataset (#5943)
+- Polish assertion error messages (#6017)
+- Remove `opencv-python-headless` dependency by `albumentations` (#5868)
+- Check dtype in transform unit tests (#5969)
+- Replace the default theme of documentation with PyTorch Sphinx Theme (#6146)
+- Update the paper and code fields in the metafile (#6043)
+- Support to customize padding value of segmentation map (#6152)
+- Support to resize multiple segmentation maps (#5747)
+
+#### Contributors
+A total of 24 developers contributed to this release.
+Thanks @morkovka1337, @HarborYuan, @guillaumefrd, @guigarfr, @www516717402, @gaotongxiao, @ypwhs, @MartaYang, @shinya7y, @justiceeem, @zhaojinjian0000, @VVsssssk, @aravind-anantha, @wangbo-zhao, @czczup, @whai362, @czczup, @marijnl, @AronLin, @BIGWangYuDong, @hhaAndroid, @jshilong, @RangiLyu, @ZwwWayne
+
 ### v2.16.0 (30/8/2021)
 
 #### Highlights
@@ -326,7 +434,7 @@ In v2.12.0 MMDetection inevitably brings some BC-breakings, including the MMCV d
 - Update documentations (#4642, #4650, #4620, #4630)
 - Remove redundant code calling `import_modules_from_strings` (#4601)
 - Clean deprecated FP16 API (#4571)
-- Check whether `CLASSES` is correctly initialized in the intialization of `XMLDataset` (#4555)
+- Check whether `CLASSES` is correctly initialized in the initialization of `XMLDataset` (#4555)
 - Support batch inference in the inference API (#4462, #4526)
 - Clean deprecated warning and fix 'meta' error (#4695)
 
@@ -520,7 +628,7 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 - Fix the bug of training ATSS when there is no ground truth boxes (#3702)
 - Fix the bug of using Focal Loss when there is `num_pos` is 0 (#3702)
 - Fix the label index mapping in dataset browser (#3708)
-- Fix Mask R-CNN training stuck problem when ther is no positive rois (#3713)
+- Fix Mask R-CNN training stuck problem when their is no positive rois (#3713)
 - Fix the bug of `self.rpn_head.test_cfg` in `RPNTestMixin` by using `self.rpn_head` in rpn head (#3808)
 - Fix deprecated `Conv2d` from mmcv.ops (#3791)
 - Fix device bug in RepPoints (#3836)
@@ -535,7 +643,7 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 
 - Change to use `mmcv.utils.collect_env` for collecting environment information to avoid duplicate codes (#3779)
 - Update checkpoint file names to v2.0 models in documentation (#3795)
-- Update tutorials for changing runtime settings (#3778), modifing loss (#3777)
+- Update tutorials for changing runtime settings (#3778), modifying loss (#3777)
 - Improve the function of `simple_test_bboxes` in SABL (#3853)
 - Convert mask to bool before using it as img's index for robustness and speedup (#3870)
 - Improve documentation of modules and dataset customization (#3821)

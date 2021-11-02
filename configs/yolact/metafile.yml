@@ -9,8 +9,13 @@ Collections:
       Architecture:
         - FPN
         - ResNet
-    Paper: https://arxiv.org/abs/1904.02689
+    Paper:
+      URL: https://arxiv.org/abs/1904.02689
+      Title: 'YOLACT: Real-time Instance Segmentation'
     README: configs/yolact/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.5.0/mmdet/models/detectors/yolact.py#L9
+      Version: v2.5.0
 
 Models:
   - Name: yolact_r50_1x8_coco
@@ -31,7 +36,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 29.0
-    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/yolact/yolact_r50_1x8_coco_20200908-f38d58df.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/yolact/yolact_r50_1x8_coco/yolact_r50_1x8_coco_20200908-f38d58df.pth
 
   - Name: yolact_r50_8x8_coco
     In Collection: YOLACT
@@ -50,7 +55,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 28.4
-    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/yolact/yolact_r50_8x8_coco_20200908-ca34f5db.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/yolact/yolact_r50_8x8_coco/yolact_r50_8x8_coco_20200908-ca34f5db.pth
 
   - Name: yolact_r101_1x8_coco
     In Collection: YOLACT
@@ -70,4 +75,4 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 30.4
-    Weights: https://openmmlab.oss-cn-hangzhou.aliyuncs.com/mmdetection/v2.0/yolact/yolact_r101_1x8_coco_20200908-4cbe9101.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/yolact/yolact_r101_1x8_coco/yolact_r101_1x8_coco_20200908-4cbe9101.pth

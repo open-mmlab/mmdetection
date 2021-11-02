@@ -222,38 +222,58 @@ curl -O curl -O https://raw.githubusercontent.com/pytorch/serve/master/docs/imag
 curl http://127.0.0.1:8080/predictions/${MODEL_NAME} -T 3dogs.jpg
 ```
 
-You should obtain a respose similar to:
+You should obtain a response similar to:
 
 ```json
 [
   {
-    "dog": [
-      402.9117736816406,
-      124.19664001464844,
-      571.7910766601562,
-      292.6463623046875
+    "class_name": "dog",
+    "bbox": [
+      294.63409423828125,
+      203.99111938476562,
+      417.048583984375,
+      281.62744140625
     ],
-    "score": 0.9561963081359863
+    "score": 0.9987992644309998
   },
   {
-    "dog": [
-      293.90057373046875,
-      196.2908477783203,
-      417.4869079589844,
-      286.2522277832031
+    "class_name": "dog",
+    "bbox": [
+      404.26019287109375,
+      126.0080795288086,
+      574.5091552734375,
+      293.6662292480469
     ],
-    "score": 0.9179860353469849
+    "score": 0.9979367256164551
   },
   {
-    "dog": [
-      202.178466796875,
-      86.3709487915039,
-      311.9863586425781,
-      276.28411865234375
+    "class_name": "dog",
+    "bbox": [
+      197.2144775390625,
+      93.3067855834961,
+      307.8505554199219,
+      276.7560119628906
     ],
-    "score": 0.8933767080307007
+    "score": 0.993338406085968
   }
 ]
+```
+
+And you can use `test_torchserver.py` to compare result of torchserver and pytorch, and visualize them.
+
+```shell
+python tools/deployment/test_torchserver.py ${IMAGE_FILE} ${CONFIG_FILE} ${CHECKPOINT_FILE} ${MODEL_NAME}
+[--inference-addr ${INFERENCE_ADDR}] [--device ${DEVICE}] [--score-thr ${SCORE_THR}]
+```
+
+Example:
+
+```shell
+python tools/deployment/test_torchserver.py \
+demo/demo.jpg \
+configs/yolo/yolov3_d53_320_273e_coco.py \
+checkpoint/yolov3_d53_320_273e_coco-421362b6.pth \
+yolov3
 ```
 
 ## Model Complexity
@@ -357,9 +377,34 @@ python tools/dataset_converters/cityscapes.py ${CITYSCAPES_PATH} [-h] [--img-dir
 python tools/dataset_converters/pascal_voc.py ${DEVKIT_PATH} [-h] [-o ${OUT_DIR}]
 ```
 
-## Robust Detection Benchmark
+## Benchmark
+
+### Robust Detection Benchmark
 
 `tools/analysis_tools/test_robustness.py` and`tools/analysis_tools/robustness_eval.py`  helps users to evaluate model robustness. The core idea comes from [Benchmarking Robustness in Object Detection: Autonomous Driving when Winter is Coming](https://arxiv.org/abs/1907.07484). For more information how to evaluate models on corrupted images and results for a set of standard models please refer to [robustness_benchmarking.md](robustness_benchmarking.md).
+
+### FPS Benchmark
+
+`tools/analysis_tools/benchmark.py` helps users to calculate FPS. The FPS value includes model forward and post-processing. In order to get a more accurate value, currently only supports single GPU distributed startup mode.
+
+```shell
+python -m torch.distributed.launch --nproc_per_node=1 --master_port=${PORT} tools/analysis_tools/benchmark.py \
+    ${CONFIG} \
+    ${CHECKPOINT} \
+    [--repeat-num ${REPEAT_NUM}] \
+    [--max-iter ${MAX_ITER}] \
+    [--log-interval ${LOG_INTERVAL}] \
+    --launcher pytorch
+```
+
+Examples: Assuming that you have already downloaded the `Faster R-CNN` model checkpoint to the directory `checkpoints/`.
+
+```shell
+python -m torch.distributed.launch --nproc_per_node=1 --master_port=29500 tools/analysis_tools/benchmark.py \
+       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+       --launcher pytorch
+```
 
 ## Miscellaneous
 

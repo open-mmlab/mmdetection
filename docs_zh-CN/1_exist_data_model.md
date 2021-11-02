@@ -189,7 +189,7 @@ mmdetection
 │   │   ├── VOC2012
 ```
 
-有些模型需要额外的 COCO-stuff 数据集，比如 HTC，DetectoRS 和 SCNet，你可以下载并解压它们到 `coco` 文件夹下。文件夹会是如下结构：
+有些模型需要额外的 [COCO-stuff](http://calvin.inf.ed.ac.uk/wp-content/uploads/data/cocostuffdataset/stuffthingmaps_trainval2017.zip) 数据集，比如 HTC，DetectoRS 和 SCNet，你可以下载并解压它们到 `coco` 文件夹下。文件夹会是如下结构：
 
 ```plain
 mmdetection
@@ -200,6 +200,22 @@ mmdetection
 │   │   ├── val2017
 │   │   ├── test2017
 │   │   ├── stuffthingmaps
+```
+
+PanopticFPN 等全景分割模型需要额外的 [COCO Panoptic](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip) 数据集，你可以下载并解压它们到 `coco/annotations` 文件夹下。文件夹会是如下结构：
+
+```text
+mmdetection
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── panoptic_train2017.json
+│   │   │   ├── panoptic_train2017
+│   │   │   ├── panoptic_val2017.json
+│   │   │   ├── panoptic_val2017
+│   │   ├── train2017
+│   │   ├── val2017
+│   │   ├── test2017
 ```
 
 Cityscape 数据集的标注格式需要转换，以与 COCO 数据集标注格式保持一致，使用 `tools/dataset_converters/cityscapes.py` 来完成转换：
@@ -250,7 +266,7 @@ bash tools/dist_test.sh \
 - `--show-dir`: 如果指明，检测结果将会被绘制在图像上并保存到指定目录。它只适用于单 GPU 的测试，是用于调试和可视化的。即使你的环境中没有 GUI，这个选项也可使用。
 - `--show-score-thr`: 如果指明，得分低于此阈值的检测结果将会被移除。
 - `--cfg-options`:  如果指明，这里的键值对将会被合并到配置文件中。
-- `--eval-options`: 如果指明，这里的键值对将会作为字典参数被传入 `dataset.evalutation()` 函数中，仅在测试阶段使用。
+- `--eval-options`: 如果指明，这里的键值对将会作为字典参数被传入 `dataset.evaluation()` 函数中，仅在测试阶段使用。
 
 ### 样例
 

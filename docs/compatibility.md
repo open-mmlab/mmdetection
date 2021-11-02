@@ -1,5 +1,11 @@
 # Compatibility of MMDetection 2.x
 
+## MMDetection 2.18.0
+
+### DIIHead compatibility
+
+In order to support QueryInst, attn_feats is added into the returned tuple of DIIHead.
+
 ## MMDetection 2.14.0
 
 ### MMCV Version

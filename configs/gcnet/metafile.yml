@@ -12,8 +12,13 @@ Collections:
         - RPN
         - ResNet
         - ResNeXt
-    Paper: https://arxiv.org/abs/1904.11492
+    Paper:
+      URL: https://arxiv.org/abs/1904.11492
+      Title: 'GCNet: Non-local Networks Meet Squeeze-Excitation Networks and Beyond'
     README: configs/gcnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/ops/context_block.py#L13
+      Version: v2.0.0
 
 Models:
   - Name: mask_rcnn_r50_fpn_r16_gcb_c3-c5_1x_coco

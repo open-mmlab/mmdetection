@@ -38,6 +38,7 @@ Import:
   - configs/nas_fpn/metafile.yml
   - configs/paa/metafile.yml
   - configs/pafpn/metafile.yml
+  - configs/pvt/metafile.yml
   - configs/pisa/metafile.yml
   - configs/point_rend/metafile.yml
   - configs/regnet/metafile.yml
@@ -49,6 +50,7 @@ Import:
   - configs/scnet/metafile.yml
   - configs/scratch/metafile.yml
   - configs/sparse_rcnn/metafile.yml
+  - configs/solo/metafile.yml
   - configs/ssd/metafile.yml
   - configs/tridentnet/metafile.yml
   - configs/vfnet/metafile.yml
@@ -56,3 +58,5 @@ Import:
   - configs/yolo/metafile.yml
   - configs/yolof/metafile.yml
   - configs/yolox/metafile.yml
+  - configs/swin/metafile.yml
+  - configs/strong_baselines/metafile.yml

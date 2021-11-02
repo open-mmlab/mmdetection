@@ -25,11 +25,11 @@ def dummy_raw_polygon_masks(size):
     Return:
         list[list[ndarray]]: dummy mask
     """
-    num_obj, heigt, width = size
+    num_obj, height, width = size
     polygons = []
     for _ in range(num_obj):
         num_points = np.random.randint(5) * 2 + 6
-        polygons.append([np.random.uniform(0, min(heigt, width), num_points)])
+        polygons.append([np.random.uniform(0, min(height, width), num_points)])
     return polygons
 
 
@@ -128,6 +128,35 @@ def test_bitmap_mask_resize():
     truth = np.array([[[1, 1, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 0, 0, 0, 0],
                        [0, 0, 0, 0, 1, 1, 0, 0], [0, 0, 0, 0, 0, 0, 1, 1]]])
     assert (resized_masks.masks == truth).all()
+
+
+def test_bitmap_mask_get_bboxes():
+    # resize with empty bitmap masks
+    raw_masks = dummy_raw_bitmap_masks((0, 28, 28))
+    bitmap_masks = BitmapMasks(raw_masks, 28, 28)
+    bboxes = bitmap_masks.get_bboxes()
+    assert len(bboxes) == 0
+
+    # resize with bitmap masks contain 1 instances
+    raw_masks = np.array([[[0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 1, 1, 0, 0, 0, 0],
+                           [0, 0, 1, 1, 0, 0, 0, 0], [0, 0, 1, 1, 1, 0, 0, 0],
+                           [0, 0, 1, 1, 1, 1, 0, 0], [0, 0, 1, 0, 0, 0, 0, 0],
+                           [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0,
+                                                      0]]])
+    bitmap_masks = BitmapMasks(raw_masks, 8, 8)
+    bboxes = bitmap_masks.get_bboxes()
+    assert len(bboxes) == 1
+    truth = np.array([[1, 1, 6, 6]])
+    assert (bboxes == truth).all()
+
+    # resize to non-square
+    raw_masks = np.array([[[1, 1, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 0, 0, 0, 0],
+                           [0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0,
+                                                      0]]])
+    bitmap_masks = BitmapMasks(raw_masks, 4, 8)
+    bboxes = bitmap_masks.get_bboxes()
+    truth = np.array([[0, 0, 6, 3]])
+    assert (bboxes == truth).all()
 
 
 def test_bitmap_mask_flip():
@@ -387,6 +416,7 @@ def test_polygon_mask_resize():
     assert resized_masks.height == 56
     assert resized_masks.width == 72
     assert resized_masks.to_ndarray().shape == (0, 56, 72)
+    assert len(resized_masks.get_bboxes()) == 0
 
     # resize with polygon masks contain 1 instance 1 part
     raw_masks1 = [[np.array([1, 1, 3, 1, 4, 3, 2, 4, 1, 3], dtype=np.float)]]
@@ -404,6 +434,9 @@ def test_polygon_mask_resize():
          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
         np.uint8)
     assert (resized_masks1.to_ndarray() == truth1).all()
+    bboxes = resized_masks1.get_bboxes()
+    bbox_truth = np.array([[2, 2, 8, 8]])
+    assert (bboxes == bbox_truth).all()
 
     # resize with polygon masks contain 1 instance 2 part
     raw_masks2 = [[

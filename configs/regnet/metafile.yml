@@ -8,8 +8,13 @@ Collections:
       Training Resources: 8x V100 GPUs
       Architecture:
         - RegNet
-    Paper: https://arxiv.org/abs/2003.13678
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
     README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
 Models:
   - Name: mask_rcnn_regnetx-3.2GF_fpn_1x_coco

@@ -18,7 +18,7 @@ This page provides basic tutorials how to use the benchmark.
 }
 ```
 
-![image corruption example](../../resources/corruptions_sev_3.png)
+![image corruption example](../resources/corruptions_sev_3.png)
 
 ## About the benchmark
 
@@ -34,7 +34,7 @@ pip install imagecorruptions
 ```
 
 Compared to imagenet-c a few changes had to be made to handle images of arbitrary size and greyscale images.
-We also modfied the 'motion blur' and 'snow' corruptions to remove dependency from a linux specific library,
+We also modified the 'motion blur' and 'snow' corruptions to remove dependency from a linux specific library,
 which would have to be installed separately otherwise. For details please refer to the [imagecorruptions repository](https://github.com/bethgelab/imagecorruptions).
 
 ## Inference with pretrained models

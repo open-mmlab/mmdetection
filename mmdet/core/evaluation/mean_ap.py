@@ -323,7 +323,7 @@ def eval_map(det_results,
         iou_thr (float): IoU threshold to be considered as matched.
             Default: 0.5.
         dataset (list[str] | str | None): Dataset name or dataset classes,
-            there are minor differences in metrics for different datsets, e.g.
+            there are minor differences in metrics for different datasets, e.g.
             "voc07", "imagenet_det", etc. Default: None.
         logger (logging.Logger | str | None): The way to print the mAP
             summary. See `mmcv.utils.print_log()` for details. Default: None.

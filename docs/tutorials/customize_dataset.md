@@ -45,7 +45,7 @@ The annotation json files in COCO format has the following necessary keys:
 
 There are three necessary keys in the json file:
 
-- `images`: contains a list of images with their informations like `file_name`, `height`, `width`, and `id`.
+- `images`: contains a list of images with their information like `file_name`, `height`, `width`, and `id`.
 - `annotations`: contains the list of instance annotations.
 - `categories`: contains the list of categories names and their ID.
 
@@ -54,7 +54,7 @@ After the data pre-processing, there are two steps for users to train the custom
 1. Modify the config file for using the customized dataset.
 2. Check the annotations of the customized dataset.
 
-Here we give an example to show the above two steps, which uses a customized dataset of 5 classes with COCO format to train an existing Cascade MaskRCNN R50 FPN detector.
+Here we give an example to show the above two steps, which uses a customized dataset of 5 classes with COCO format to train an existing Cascade Mask R-CNN R50-FPN detector.
 
 #### 1. Modify the config file for using the customized dataset
 
@@ -157,7 +157,7 @@ We use this way to support CityScapes dataset. The script is in [cityscapes.py](
 **Note**
 
 1. For instance segmentation datasets, **MMDetection only supports evaluating mask AP of dataset in COCO format for now**.
-2. It is recommanded to convert the data offline before training, thus you can still use `CocoDataset` and only need to modify the path of annotations and the training classes.
+2. It is recommended to convert the data offline before training, thus you can still use `CocoDataset` and only need to modify the path of annotations and the training classes.
 
 ### Reorganize new data format to middle format
 
@@ -485,3 +485,58 @@ data = dict(
 - Since the middle format only has box labels and does not contain the class names, when using `CustomDataset`, users cannot filter out the empty GT images through configs but only do this offline.
 - Please remember to modify the `num_classes` in the head when specifying `classes` in dataset. We implemented [NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/utils.py) to check whether the numbers are consistent since v2.9.0(after PR#4508).
 - The features for setting dataset classes and dataset filtering will be refactored to be more user-friendly in the future (depends on the progress).
+
+## COCO Panoptic Dataset
+
+Now we support COCO Panoptic Dataset, the format of panoptic annotations is different from COCO format.
+Both the foreground and the background will exist in the annotation file.
+The annotation json files in COCO Panoptic format has the following necessary keys:
+
+```python
+'images': [
+    {
+        'file_name': '000000001268.jpg',
+        'height': 427,
+        'width': 640,
+        'id': 1268
+    },
+    ...
+]
+
+'annotations': [
+    {
+        'filename': '000000001268.jpg',
+        'image_id': 1268,
+        'segments_info': [
+            {
+                'id':8345037,  # One-to-one correspondence with the id in the annotation map.
+                'category_id': 51,
+                'iscrowd': 0,
+                'bbox': (x1, y1, w, h),  # The bbox of the background is the outer rectangle of its mask.
+                'area': 24315
+            },
+            ...
+        ]
+    },
+    ...
+]
+
+'categories': [  # including both foreground categories and background categories
+    {'id': 0, 'name': 'person'},
+    ...
+ ]
+```
+
+Moreover, the `seg_prefix` must be set to the path of the panoptic annotation images.
+
+```python
+data = dict(
+    type='CocoPanopticDataset',
+    train=dict(
+        seg_prefix = 'path/to/your/train/panoptic/image_annotation_data'
+    ),
+    val=dict(
+        seg_prefix = 'path/to/your/train/panoptic/image_annotation_data'
+    )
+)
+```

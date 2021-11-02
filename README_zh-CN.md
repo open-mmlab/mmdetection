@@ -1,10 +1,26 @@
 <div align="center">
   <img src="resources/mmdet-logo.png" width="600"/>
+
+
+[![PyPI](https://img.shields.io/pypi/v/mmdet)](https://pypi.org/project/mmdet)
+[![docs](https://img.shields.io/badge/docs-latest-blue)](https://mmdetection.readthedocs.io/en/latest/)
+[![badge](https://github.com/open-mmlab/mmdetection/workflows/build/badge.svg)](https://github.com/open-mmlab/mmdetection/actions)
+[![codecov](https://codecov.io/gh/open-mmlab/mmdetection/branch/master/graph/badge.svg)](https://codecov.io/gh/open-mmlab/mmdetection)
+[![license](https://img.shields.io/github/license/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/blob/master/LICENSE)
+[![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
+
+
+  <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
+
+
+[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/v2.18.0/) |
+[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/v2.18.0/get_started.html) |
+[👀模型库](https://mmdetection.readthedocs.io/zh_CN/v2.18.0/model_zoo.html) |
+[🆕更新日志](https://mmdetection.readthedocs.io/en/v2.18.0/changelog.html) |
+[🚀进行中的项目](https://github.com/open-mmlab/mmdetection/projects) |
+[🤔报告问题](https://github.com/open-mmlab/mmdetection/issues/new/choose)
+
 </div>
-
-**新闻**: 我们在 [ArXiv](https://arxiv.org/abs/1906.07155) 上公开了技术报告。
-
-文档: https://mmdetection.readthedocs.io/
 
 ## 简介
 
@@ -14,11 +30,9 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 主分支代码目前支持 PyTorch 1.3 以上的版本。
 
-v1.x 的历史版本支持 PyTorch 1.1 到 1.4，但是我们强烈建议用户使用新的 2.x 的版本，新的版本速度更快，性能更高，有更优雅的代码设计，对用户使用也更加友好。
 
-![demo image](resources/coco_test_12510.jpg)
-
-### 主要特性
+<details open>
+<summary>主要特性</summary>
 
 - **模块化设计**
 
@@ -35,6 +49,7 @@ v1.x 的历史版本支持 PyTorch 1.1 到 1.4，但是我们强烈建议用户�
 - **性能高**
 
   MMDetection 这个算法库源自于 COCO 2018 目标检测竞赛的冠军团队 *MMDet* 团队开发的代码，我们在之后持续进行了改进和提升。
+</details>
 
 除了 MMDetection 之外，我们还开源了计算机视觉基础库 [MMCV](https://github.com/open-mmlab/mmcv)，MMCV 是 MMDetection 的主要依赖。
 
@@ -44,25 +59,37 @@ v1.x 的历史版本支持 PyTorch 1.1 到 1.4，但是我们强烈建议用户�
 
 ## 更新日志
 
-最新的月度版本 v2.16.0 在 2021.08.11 发布，新版本支持了 YOLOX。
+最新的 **2.18.0** 版本已经在2021.10.27发布:
+- 支持 [QueryInst](http://arxiv.org/abs/2105.01928)。
+- 重构 dense_head 以将 onnx 导出与 get_bboxes 解耦并加快推理时间。
+- 支持 infinite sampler 加速 iter based runner 训练。
+
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/changelog.md)。
-在[兼容性说明文档](docs_zh-CN/compatibility.md)中我们提供了 1.x 和 2.0 版本的详细比较。
+
+如果想了解 MMDetection 不同版本之间的兼容性, 请参考[兼容性说明文档](docs/compatibility.md)。
 
 ## 基准测试和模型库
 
 测试结果和模型可以在[模型库](docs/model_zoo.md)中找到。
 
-已支持的骨干网络：
+<details open>
+<summary>已支持的骨干网络：</summary>
 
 - [x] ResNet (CVPR'2016)
 - [x] ResNeXt (CVPR'2017)
 - [x] VGG (ICLR'2015)
+- [x] MobileNetV2 (CVPR'2018)
 - [x] HRNet (CVPR'2019)
 - [x] RegNet (CVPR'2020)
 - [x] Res2Net (TPAMI'2020)
 - [x] ResNeSt (ArXiv'2020)
+- [X] Swin (CVPR'2021)
+- [x] PVT (ICCV'2021)
+- [x] PVTv2 (ArXiv'2021)
+</details>
 
-已支持的算法：
+<details open>
+<summary>已支持的算法：</summary>
 
 - [x] [RPN (NeurIPS'2015)](configs/rpn)
 - [x] [Fast R-CNN (ICCV'2015)](configs/fast_rcnn)
@@ -117,6 +144,9 @@ v1.x 的历史版本支持 PyTorch 1.1 到 1.4，但是我们强烈建议用户�
 - [x] [Seasaw Loss (CVPR'2021)](configs/seesaw_loss/README.md)
 - [x] [CenterNet (CVPR'2019)](configs/centernet/README.md)
 - [x] [YOLOX (ArXiv'2021)](configs/yolox/README.md)
+- [x] [SOLO (ECCV'2020)](configs/solo/README.md)
+- [x] [QueryInst (ICCV'2021)](configs/queryinst/README.md)
+</details>
 
 我们在[基于 MMDetection 的项目](./docs/projects.md)中列举了一些其他的支持的算法。
 
@@ -135,7 +165,7 @@ v1.x 的历史版本支持 PyTorch 1.1 到 1.4，但是我们强烈建议用户�
 
 ## 贡献指南
 
-我们感谢所有的贡献者为改进和提升 MMDetection 所作出的努力。请参考[贡献指南](.github/CONTRIBUTING.md)来了解参与项目贡献的相关指引。
+我们感谢所有的贡献者为改进和提升 MMDetection 所作出的努力。我们将正在进行中的项目添加进了[GitHub Projects](https://github.com/open-mmlab/mmdetection/projects)页面，非常欢迎社区用户能参与进这些项目中来。请参考[贡献指南](.github/CONTRIBUTING.md)来了解参与项目贡献的相关指引。
 
 ## 致谢
 
@@ -179,7 +209,7 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 扫描下方的二维码可关注 OpenMMLab 团队的 [知乎官方账号](https://www.zhihu.com/people/openmmlab)，加入 OpenMMLab 团队的 [官方交流 QQ 群](https://jq.qq.com/?_wv=1027&k=aCvMxdr3)
 
 <div align="center">
-<img src="/resources/zhihu_qrcode.jpg" height="400" />  <img src="/resources/qq_group_qrcode.jpg" height="400" />
+<img src="resources/zhihu_qrcode.jpg" height="400" />  <img src="resources/qq_group_qrcode.jpg" height="400" />
 </div>
 
 我们会在 OpenMMLab 社区为大家

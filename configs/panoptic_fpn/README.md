@@ -18,6 +18,28 @@ The base method for panoptic segmentation task.
 }
 ```
 
+## Dataset
+
+PanopticFPN requires COCO and [COCO-panoptic](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip) dataset for training and evaluation. You need to download and extract it in the COCO dataset path.
+The directory should be like this.
+
+```none
+mmdetection
+├── mmdet
+├── tools
+├── configs
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   │   ├── panoptic_train2017.json
+│   │   │   ├── panoptic_train2017
+│   │   │   ├── panoptic_val2017.json
+│   │   │   ├── panoptic_val2017
+│   │   ├── train2017
+│   │   ├── val2017
+│   │   ├── test2017
+```
+
 ## Results and Models
 
 | Backbone      | style      | Lr schd | Mem (GB) | Inf time (fps) | PQ   |  SQ  |  RQ  | PQ_th | SQ_th | RQ_th | PQ_st | SQ_st | RQ_st | Config | Download |

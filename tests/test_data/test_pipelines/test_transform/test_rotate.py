@@ -7,60 +7,7 @@ from mmcv.utils import build_from_cfg
 
 from mmdet.core.mask import BitmapMasks, PolygonMasks
 from mmdet.datasets.builder import PIPELINES
-
-
-def construct_toy_data(poly2mask=True):
-    img = np.array([[1, 2, 3, 4], [5, 6, 7, 8]], dtype=np.uint8)
-    img = np.stack([img, img, img], axis=-1)
-    results = dict()
-    # image
-    results['img'] = img
-    results['img_shape'] = img.shape
-    results['img_fields'] = ['img']
-    # bboxes
-    results['bbox_fields'] = ['gt_bboxes', 'gt_bboxes_ignore']
-    results['gt_bboxes'] = np.array([[0., 0., 2., 1.]], dtype=np.float32)
-    results['gt_bboxes_ignore'] = np.array([[2., 0., 3., 1.]],
-                                           dtype=np.float32)
-    # labels
-    results['gt_labels'] = np.array([1], dtype=np.int64)
-    # masks
-    results['mask_fields'] = ['gt_masks']
-    if poly2mask:
-        gt_masks = np.array([[0, 1, 1, 0], [0, 1, 0, 0]],
-                            dtype=np.uint8)[None, :, :]
-        results['gt_masks'] = BitmapMasks(gt_masks, 2, 4)
-    else:
-        raw_masks = [[np.array([0, 0, 2, 0, 2, 1, 0, 1], dtype=np.float)]]
-        results['gt_masks'] = PolygonMasks(raw_masks, 2, 4)
-    # segmentations
-    results['seg_fields'] = ['gt_semantic_seg']
-    results['gt_semantic_seg'] = img[..., 0]
-    return results
-
-
-def _check_fields(results, results_rotated, keys):
-    for key in keys:
-        if isinstance(results[key], (BitmapMasks, PolygonMasks)):
-            assert np.equal(results[key].to_ndarray(),
-                            results_rotated[key].to_ndarray()).all()
-        else:
-            assert np.equal(results[key], results_rotated[key]).all()
-
-
-def check_rotate(results, results_rotated):
-    # check image
-    _check_fields(results, results_rotated, results.get('img_fields', ['img']))
-    # check bboxes
-    _check_fields(results, results_rotated, results.get('bbox_fields', []))
-    # check masks
-    _check_fields(results, results_rotated, results.get('mask_fields', []))
-    # check segmentations
-    _check_fields(results, results_rotated, results.get('seg_fields', []))
-    # _check gt_labels
-    if 'gt_labels' in results:
-        assert np.equal(results['gt_labels'],
-                        results_rotated['gt_labels']).all()
+from .utils import check_result_same, construct_toy_data
 
 
 def test_rotate():
@@ -105,14 +52,14 @@ def test_rotate():
     )
     rotate_module = build_from_cfg(transform, PIPELINES)
     results_wo_rotate = rotate_module(copy.deepcopy(results))
-    check_rotate(results, results_wo_rotate)
+    check_result_same(results, results_wo_rotate)
 
     # test case when no rotate aug (prob<=0)
     transform = dict(
         type='Rotate', level=10, prob=0., img_fill_val=img_fill_val, scale=0.6)
     rotate_module = build_from_cfg(transform, PIPELINES)
     results_wo_rotate = rotate_module(copy.deepcopy(results))
-    check_rotate(results, results_wo_rotate)
+    check_result_same(results, results_wo_rotate)
 
     # test clockwise rotation with angle 90
     results = construct_toy_data()
@@ -140,16 +87,16 @@ def test_rotate():
     results_gt['gt_semantic_seg'] = np.array(
         [[255, 6, 2, 255], [255, 7, 3,
                             255]]).astype(results['gt_semantic_seg'].dtype)
-    check_rotate(results_gt, results_rotated)
+    check_result_same(results_gt, results_rotated)
 
     # test clockwise rotation with angle 90, PolygonMasks
     results = construct_toy_data(poly2mask=False)
     results_rotated = rotate_module(copy.deepcopy(results))
     gt_masks = [[np.array([2, 0, 2, 1, 1, 1, 1, 0], dtype=np.float)]]
     results_gt['gt_masks'] = PolygonMasks(gt_masks, 2, 4)
-    check_rotate(results_gt, results_rotated)
+    check_result_same(results_gt, results_rotated)
 
-    # test counter-clockwise roatation with angle 90,
+    # test counter-clockwise rotation with angle 90,
     # and specify the ratation center
     img_fill_val = (104, 116, 124)
     transform = dict(
@@ -183,7 +130,7 @@ def test_rotate():
     gt_seg = (np.ones((h, w)) * 255).astype(results['gt_semantic_seg'].dtype)
     gt_seg[0, 0], gt_seg[0, 1] = 1, 5
     results_gt['gt_semantic_seg'] = gt_seg
-    check_rotate(results_gt, results_rotated)
+    check_result_same(results_gt, results_rotated)
 
     transform = dict(
         type='Rotate',
@@ -195,15 +142,15 @@ def test_rotate():
         prob=1.)
     rotate_module = build_from_cfg(transform, PIPELINES)
     results_rotated = rotate_module(copy.deepcopy(results))
-    check_rotate(results_gt, results_rotated)
+    check_result_same(results_gt, results_rotated)
 
-    # test counter-clockwise roatation with angle 90,
+    # test counter-clockwise rotation with angle 90,
     # and specify the ratation center, PolygonMasks
     results = construct_toy_data(poly2mask=False)
     results_rotated = rotate_module(copy.deepcopy(results))
     gt_masks = [[np.array([0, 0, 0, 0, 1, 0, 1, 0], dtype=np.float)]]
     results_gt['gt_masks'] = PolygonMasks(gt_masks, 2, 4)
-    check_rotate(results_gt, results_rotated)
+    check_result_same(results_gt, results_rotated)
 
     # test AutoAugment equipped with Rotate
     policies = [[dict(type='Rotate', level=10, prob=1.)]]
