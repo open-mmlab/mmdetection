@@ -7,7 +7,7 @@ from functools import partial
 import numpy as np
 from mmcv.parallel import collate
 from mmcv.runner import get_dist_info
-from mmcv.utils import Registry, build_from_cfg
+from mmcv.utils import TORCH_VERSION, Registry, build_from_cfg, digit_version
 from torch.utils.data import DataLoader
 
 from .samplers import (DistributedGroupSampler, DistributedSampler,
@@ -90,6 +90,8 @@ def build_dataloader(dataset,
                      shuffle=True,
                      seed=None,
                      runner_type='EpochBasedRunner',
+                     pin_memory=False,
+                     persistent_workers=False,
                      **kwargs):
     """Build PyTorch DataLoader.
 
@@ -106,7 +108,15 @@ def build_dataloader(dataset,
         dist (bool): Distributed training/test or not. Default: True.
         shuffle (bool): Whether to shuffle the data at every epoch.
             Default: True.
+        seed (int, Optional): Seed to be used. Default: None.
         runner_type (str): Type of runner. Default: `EpochBasedRunner`
+        pin_memory (bool): Whether to use pin_memory in DataLoader.
+            Default: False.
+        persistent_workers (bool): If True, the data loader will not shutdown
+            the worker processes after a dataset has been consumed once.
+            This allows to maintain the workers Dataset instances alive.
+            The argument also has effect in PyTorch>=1.7.0.
+            Default: False.
         kwargs: any keyword argument to be used to initialize DataLoader
 
     Returns:
@@ -163,6 +173,10 @@ def build_dataloader(dataset,
         worker_init_fn, num_workers=num_workers, rank=rank,
         seed=seed) if seed is not None else None
 
+    if (TORCH_VERSION != 'parrots'
+            and digit_version(TORCH_VERSION) >= digit_version('1.7.0')):
+        kwargs['persistent_workers'] = persistent_workers
+
     data_loader = DataLoader(
         dataset,
         batch_size=batch_size,
@@ -170,7 +184,7 @@ def build_dataloader(dataset,
         num_workers=num_workers,
         batch_sampler=batch_sampler,
         collate_fn=partial(collate, samples_per_gpu=samples_per_gpu),
-        pin_memory=False,
+        pin_memory=pin_memory,
         worker_init_fn=init_fn,
         **kwargs)
 
