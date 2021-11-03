@@ -1115,6 +1115,17 @@ class TestOTEIntegration:
                 batch_size=KEEP_CONFIG_FIELD_VALUE(),
                 usecase='reallife',
             ),
+            dict(
+                model_name=[
+                    'gen3_mobilenetV2_SSD',
+                    'gen3_mobilenetV2_ATSS',
+                    'gen3_resnet50_VFNet',
+                ],
+                dataset_name='fish',
+                num_training_iters=KEEP_CONFIG_FIELD_VALUE(),
+                batch_size=KEEP_CONFIG_FIELD_VALUE(),
+                usecase='reallife',
+            ),
     ]
 
     @staticmethod
