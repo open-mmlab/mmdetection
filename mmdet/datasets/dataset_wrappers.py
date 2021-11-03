@@ -313,7 +313,7 @@ class ClassBalancedDataset:
     def __getitem__(self, idx):
         ori_index = self.repeat_indices[idx]
         return self.dataset[ori_index]
-    
+
     def get_ann_info(self, idx):
         """Get annotation of dataset by index.
 
@@ -325,7 +325,7 @@ class ClassBalancedDataset:
         """
         ori_index = self.repeat_indices[idx]
         return self.dataset.get_ann_info(ori_index)
-    
+
     def __len__(self):
         """Length after repetition."""
         return len(self.repeat_indices)
