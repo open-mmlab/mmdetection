@@ -106,6 +106,11 @@ optimizer = dict(
     paramwise_cfg=dict(norm_decay_mult=0., bias_decay_mult=0.))
 optimizer_config = dict(grad_clip=None)
 
+max_epochs = 300
+num_last_epochs = 15
+resume_from = None
+interval = 10
+
 # learning policy
 lr_config = dict(
     _delete_=True,
@@ -115,22 +120,23 @@ lr_config = dict(
     warmup_by_epoch=True,
     warmup_ratio=1,
     warmup_iters=5,  # 5 epoch
-    num_last_epochs=15,
+    num_last_epochs=num_last_epochs,
     min_lr_ratio=0.05)
-runner = dict(type='EpochBasedRunner', max_epochs=300)
 
-resume_from = None
-interval = 10
+runner = dict(type='EpochBasedRunner', max_epochs=max_epochs)
 
 custom_hooks = [
-    dict(type='YOLOXModeSwitchHook', num_last_epochs=15, priority=48),
+    dict(type='YOLOXModeSwitchHook', num_last_epochs=num_last_epochs, priority=48),
     dict(
         type='SyncNormHook',
-        num_last_epochs=15,
+        num_last_epochs=num_last_epochs,
         interval=interval,
         priority=48),
     dict(type='ExpMomentumEMAHook', resume_from=resume_from, priority=49)
 ]
 checkpoint_config = dict(interval=interval)
-evaluation = dict(interval=interval, metric='bbox')
+evaluation = dict(save_best='auto',
+                  interval=interval,
+                  dynamic_intervals=[(max_epochs - num_last_epochs, 1)],
+                  metric='bbox')
 log_config = dict(interval=50)
