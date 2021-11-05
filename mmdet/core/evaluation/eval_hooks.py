@@ -1,50 +1,46 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import os.path as osp
 import bisect
+import os.path as osp
 
+import mmcv
 import torch.distributed as dist
 from mmcv.runner import EvalHook as BaseEvalHook
 from torch.nn.modules.batchnorm import _BatchNorm
 
 
 class EvalHook(BaseEvalHook):
+
     def __init__(self, *args, dynamic_intervals=None, **kwargs):
         super(EvalHook, self).__init__(*args, **kwargs)
 
         self.dynamic_intervals = dynamic_intervals
         if dynamic_intervals is not None:
-            assert isinstance(dynamic_intervals, list)
+            assert mmcv.is_list_of(dynamic_intervals, tuple)
+
             self.dynamic_steps = [0]
+            self.dynamic_steps.extend([
+                dynamic_interval[0] for dynamic_interval in dynamic_intervals
+            ])
             self.dynamic_values = [self.interval]
-            for dynamic_interval in dynamic_intervals:
-                assert isinstance(dynamic_interval, tuple)
-                self.dynamic_steps.append(dynamic_interval[0])
-                self.dynamic_values.append(dynamic_interval[1])
+            self.dynamic_values.extend([
+                dynamic_interval[1] for dynamic_interval in dynamic_intervals
+            ])
+
+    def _decide_interval(self, runner):
+        if self.dynamic_intervals:
+            progress = runner.epoch if self.by_epoch else runner.iter
+            step = bisect.bisect(self.dynamic_steps, (progress + 1))
+            # Dynamically modify the evaluation interval
+            self.interval = self.dynamic_values[step - 1]
 
     def before_train_epoch(self, runner):
         """Evaluate the model only at the start of training by epoch."""
-        if self.dynamic_intervals and self.by_epoch:
-            step = bisect.bisect(self.dynamic_steps, (runner.epoch + 1))
-            # Dynamically modify the evaluation interval
-            self.interval = self.dynamic_values[step-1]
-
-        if not (self.by_epoch and self.initial_flag):
-            return
-        if self.start is not None and runner.epoch >= self.start:
-            self.after_train_epoch(runner)
-        self.initial_flag = False
+        self._decide_interval(runner)
+        super().before_train_epoch(runner)
 
     def before_train_iter(self, runner):
-        if self.dynamic_intervals and not self.by_epoch:
-            step = bisect.bisect(self.dynamic_steps, (runner.iter + 1))
-            self.interval = self.dynamic_values[step-1]
-
-        """Evaluate the model only at the start of training by iteration."""
-        if self.by_epoch or not self.initial_flag:
-            return
-        if self.start is not None and runner.iter >= self.start:
-            self.after_train_iter(runner)
-        self.initial_flag = False
+        self._decide_interval(runner)
+        super().before_train_iter(runner)
 
     def _do_evaluate(self, runner):
         """perform evaluation and save ckpt."""

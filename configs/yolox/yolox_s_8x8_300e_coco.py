@@ -38,7 +38,7 @@ train_pipeline = [
         pad_val=114.0),
     dict(type='YOLOXHSVRandomAug'),
     dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Resize', keep_ratio=True),
+    dict(type='Resize', img_scale=img_scale, keep_ratio=True),
     dict(
         type='Pad',
         pad_to_square=True,
@@ -83,6 +83,7 @@ test_pipeline = [
 data = dict(
     samples_per_gpu=8,
     workers_per_gpu=4,
+    persistent_workers=True,
     train=train_dataset,
     val=dict(
         type=dataset_type,
@@ -126,7 +127,10 @@ lr_config = dict(
 runner = dict(type='EpochBasedRunner', max_epochs=max_epochs)
 
 custom_hooks = [
-    dict(type='YOLOXModeSwitchHook', num_last_epochs=num_last_epochs, priority=48),
+    dict(
+        type='YOLOXModeSwitchHook',
+        num_last_epochs=num_last_epochs,
+        priority=48),
     dict(
         type='SyncNormHook',
         num_last_epochs=num_last_epochs,
@@ -135,8 +139,9 @@ custom_hooks = [
     dict(type='ExpMomentumEMAHook', resume_from=resume_from, priority=49)
 ]
 checkpoint_config = dict(interval=interval)
-evaluation = dict(save_best='auto',
-                  interval=interval,
-                  dynamic_intervals=[(max_epochs - num_last_epochs, 1)],
-                  metric='bbox')
+evaluation = dict(
+    save_best='auto',
+    interval=interval,
+    dynamic_intervals=[(max_epochs - num_last_epochs, 1)],
+    metric='bbox')
 log_config = dict(interval=50)

@@ -38,13 +38,7 @@ class YOLOXModeSwitchHook(Hook):
             if hasattr(train_loader, 'persistent_workers'
                        ) and train_loader.persistent_workers is True:
                 self.reset_persistent_workers = True
-                train_loader.persistent_workers = False
+                train_loader._DataLoader__initialized = False
+                train_loader._iterator = None
             runner.logger.info('Add additional L1 loss now!')
             model.bbox_head.use_l1 = True
-
-    def after_train_epoch(self, runner):
-        train_loader = runner.data_loader
-        if hasattr(train_loader,
-                   'persistent_workers') and self.reset_persistent_workers:
-            if train_loader.persistent_workers is False:
-                train_loader.persistent_workers = True

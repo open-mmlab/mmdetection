@@ -22,10 +22,10 @@ class YOLOX(SingleStageDetector):
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None,
-                 init_cfg=None,
                  input_size=(640, 640),
                  random_size_range=(15, 25),
-                 random_size_interval=10):
+                 random_size_interval=10,
+                 init_cfg=None):
         super(YOLOX, self).__init__(backbone, neck, bbox_head, train_cfg,
                                     test_cfg, pretrained, init_cfg)
         self.rank, self.world_size = get_dist_info()
@@ -33,7 +33,7 @@ class YOLOX(SingleStageDetector):
         self.input_size = input_size
         self.random_size_range = random_size_range
         self.random_size_interval = random_size_interval
-        self.progress_in_iter = 0
+        self._progress_in_iter = 0
 
     def forward_train(self,
                       img,
@@ -65,9 +65,9 @@ class YOLOX(SingleStageDetector):
                                                   gt_labels, gt_bboxes_ignore)
 
         # random resizing
-        if (self.progress_in_iter + 1) % self.random_size_interval == 0:
+        if (self._progress_in_iter + 1) % self.random_size_interval == 0:
             self.input_size = self.random_resize()
-        self.progress_in_iter += 1
+        self._progress_in_iter += 1
 
         return losses
 
