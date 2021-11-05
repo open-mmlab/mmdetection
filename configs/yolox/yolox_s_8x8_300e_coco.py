@@ -51,7 +51,7 @@ train_pipeline = [
         type='Pad',
         pad_to_square=True,
         pad_val=dict(img=(114.0, 114.0, 114.0))),
-    dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1)),
+    dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1), always_keep=True),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
 ]
@@ -89,8 +89,8 @@ test_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=8,
-    workers_per_gpu=4,
+    samples_per_gpu=2,
+    workers_per_gpu=2,
     persistent_workers=True,
     train=train_dataset,
     val=dict(

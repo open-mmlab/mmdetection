@@ -550,9 +550,10 @@ class FilterAnnotations:
             boxes.
     """
 
-    def __init__(self, min_gt_bbox_wh):
+    def __init__(self, min_gt_bbox_wh, always_keep=False):
         # TODO: add more filter options
         self.min_gt_bbox_wh = min_gt_bbox_wh
+        self.always_keep = always_keep
 
     def __call__(self, results):
         assert 'gt_bboxes' in results
@@ -563,7 +564,10 @@ class FilterAnnotations:
         h = gt_bboxes[:, 3] - gt_bboxes[:, 1]
         keep = (w > self.min_gt_bbox_wh[0]) & (h > self.min_gt_bbox_wh[1])
         if not keep.any():
-            return None
+            if self.always_keep:
+                return results
+            else:
+                return None
         else:
             keys = ('gt_bboxes', 'gt_labels', 'gt_masks', 'gt_semantic_seg')
             for key in keys:
