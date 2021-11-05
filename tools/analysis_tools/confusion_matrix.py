@@ -173,7 +173,7 @@ def plot_confusion_matrix(confusion_matrix,
 
     title_font = {'weight': 'bold', 'size': 12}
     ax.set_title(title, fontdict=title_font)
-    label_font = {'size': 7}
+    label_font = {'size': 10}
     plt.ylabel('Ground Truth Label', fontdict=label_font)
     plt.xlabel('Prediction Label', fontdict=label_font)
 
@@ -207,7 +207,7 @@ def plot_confusion_matrix(confusion_matrix,
             ax.text(
                 j,
                 i,
-                '%0.1f' % confusion_matrix[i, j],
+                '{}%'.format(int(confusion_matrix[i, j])),
                 ha='center',
                 va='center',
                 color='w',
