@@ -17,7 +17,7 @@ class BaseEMAHook(Hook):
         momentum (float): The momentum used for updating ema parameter.
             Ema's parameter are updated with the formula:
            `ema_param = (1-momentum) * ema_param + momentum * cur_param`.
-            Defaults to 0.0002.
+            Defaults to 0.0001.
         skip_buffers (bool): Whether to skip the model buffers, such as
             batchnorm running stats (running_mean, running_var), it does not
             perform the ema operation. Default to False.
@@ -30,7 +30,7 @@ class BaseEMAHook(Hook):
     """
 
     def __init__(self,
-                 momentum=0.0002,
+                 momentum=0.0001,
                  interval=1,
                  skip_buffers=False,
                  resume_from=None,
