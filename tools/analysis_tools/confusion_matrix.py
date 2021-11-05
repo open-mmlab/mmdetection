@@ -29,7 +29,7 @@ def parse_args():
     parser.add_argument(
         '--score-thr',
         type=float,
-        default=0,
+        default=0.3,
         help='score threshold to filter detection bboxes')
     parser.add_argument(
         '--tp-iou-thr',
@@ -89,10 +89,7 @@ def calculate_confusion_matrix(dataset,
         analyze_per_img_dets(confusion_matrix, gt_bboxes, labels, res_bboxes,
                              score_thr, tp_iou_thr, nms_iou_thr)
         prog_bar.update()
-    per_label_sums = confusion_matrix.sum(axis=1)[:, np.newaxis]
-    normalized_matrix = \
-        confusion_matrix.astype('float') / per_label_sums * 100
-    return normalized_matrix
+    return confusion_matrix
 
 
 def analyze_per_img_dets(confusion_matrix,
@@ -162,6 +159,11 @@ def plot_confusion_matrix(confusion_matrix,
         title (str): Title of the plot. Default: `Normalized Confusion Matrix`.
         color_theme (str): Theme of the matrix color map. Default: `plasma`.
     """
+    # normalize the confusion matrix
+    per_label_sums = confusion_matrix.sum(axis=1)[:, np.newaxis]
+    confusion_matrix = \
+        confusion_matrix.astype(np.float32) / per_label_sums * 100
+
     num_classes = len(labels)
     fig, ax = plt.subplots(
         figsize=(0.5 * num_classes, 0.5 * num_classes * 0.8), dpi=180)
@@ -199,7 +201,7 @@ def plot_confusion_matrix(confusion_matrix,
     plt.setp(
         ax.get_xticklabels(), rotation=45, ha='left', rotation_mode='anchor')
 
-    # draw text
+    # draw confution matrix value
     for i in range(num_classes):
         for j in range(num_classes):
             ax.text(
@@ -228,7 +230,14 @@ def main():
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
 
-    outputs = mmcv.load(args.prediction_path)
+    results = mmcv.load(args.prediction_path)
+    assert isinstance(results, list)
+    if isinstance(results[0], list):
+        pass
+    elif isinstance(results[0], tuple):
+        results = [result[0] for result in results]
+    else:
+        raise TypeError('invalid type of prediction results')
 
     if isinstance(cfg.data.test, dict):
         cfg.data.test.test_mode = True
@@ -237,10 +246,12 @@ def main():
             ds_cfg.test_mode = True
     dataset = build_dataset(cfg.data.test)
 
-    normalized_confusion_matrix = calculate_confusion_matrix(
-        dataset, outputs, args.score_thr, args.nms_iou_thr, args.tp_iou_thr)
+    confusion_matrix = calculate_confusion_matrix(dataset, results,
+                                                  args.score_thr,
+                                                  args.nms_iou_thr,
+                                                  args.tp_iou_thr)
     plot_confusion_matrix(
-        normalized_confusion_matrix,
+        confusion_matrix,
         dataset.CLASSES + ('background', ),
         save_dir=args.save_dir,
         show=args.show)
