@@ -3,7 +3,6 @@ import bisect
 import collections
 import copy
 import math
-import warnings
 from collections import defaultdict
 
 import numpy as np
@@ -312,8 +311,10 @@ class MultiImageMixDataset:
                  pipeline,
                  dynamic_scale=None,
                  skip_type_keys=None):
-        warnings.warn('dynamic_scale is deprecated. will be removed '
-                      'in future releases')
+        if dynamic_scale is not None:
+            raise RuntimeError(
+                'dynamic_scale is deprecated. The function has '
+                'been implemented in mmdet/models/detectors/yolox.py')
         assert isinstance(pipeline, collections.abc.Sequence)
         if skip_type_keys is not None:
             assert all([

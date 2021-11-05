@@ -1,11 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import random
+
+import torch
+import torch.distributed as dist
+import torch.nn.functional as F
+from mmcv.runner import get_dist_info
+
 from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
-from mmcv.runner import get_dist_info
-import torch.nn.functional as F
-import torch
-import random
-import torch.distributed as dist
 
 
 @DETECTORS.register_module()
@@ -74,8 +76,10 @@ class YOLOX(SingleStageDetector):
         scale_x = self.input_size[1] / self._default_input_size[1]
         if scale_x != 1 or scale_y != 1:
             img = F.interpolate(
-                img, size=self.input_size, mode="bilinear", align_corners=False
-            )
+                img,
+                size=self.input_size,
+                mode='bilinear',
+                align_corners=False)
             for gt_bbox in gt_bboxes:
                 gt_bbox[..., 0::2] = gt_bbox[..., 0::2] * scale_x
                 gt_bbox[..., 1::2] = gt_bbox[..., 1::2] * scale_y

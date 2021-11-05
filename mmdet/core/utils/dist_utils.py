@@ -115,7 +115,8 @@ def all_reduce_dict(py_dict, op='sum', group=None, to_float=True):
     Returns:
         OrderedDict: reduced python dict object.
     """
-    warnings.warn('group` is deprecated. Currently only supports NCCL backend.')
+    warnings.warn(
+        'group` is deprecated. Currently only supports NCCL backend.')
     _, world_size = get_dist_info()
     if world_size == 1:
         return py_dict
