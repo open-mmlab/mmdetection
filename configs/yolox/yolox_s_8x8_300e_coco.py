@@ -5,9 +5,6 @@ img_scale = (640, 640)
 # model settings
 model = dict(
     type='YOLOX',
-    input_size=img_scale,
-    random_size_range=(15, 25),
-    random_size_interval=10,
     backbone=dict(type='CSPDarknet', deepen_factor=0.33, widen_factor=0.5),
     neck=dict(
         type='YOLOXPAFPN',
@@ -46,10 +43,14 @@ train_pipeline = [
         pad_val=114.0),
     dict(type='YOLOXHSVRandomAug'),
     dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Resize', img_scale=img_scale, keep_ratio=True),
+    dict(
+        type='Resize',
+        img_scale=[(15 * 32, 15 * 32), (25 * 32, 25 * 32)],
+        multiscale_mode='range',
+        keep_ratio=True),
     dict(
         type='Pad',
-        pad_to_square=True,
+        size_divisor=32,
         pad_val=dict(img=(114.0, 114.0, 114.0))),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1), always_keep=True),
     dict(type='DefaultFormatBundle'),
