@@ -21,7 +21,7 @@ from abc import ABC, abstractmethod
 from collections import namedtuple, OrderedDict
 from copy import deepcopy
 from pprint import pformat
-from typing import List, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 import pytest
 import yaml
@@ -54,31 +54,21 @@ from mmdet.integration.nncf.utils import is_nncf_enabled
 logger = logging.getLogger(__name__)
 
 
-# This string constant will be used as a special constant for a config field
-# value to point that the field should be filled in tests' code by some default
-# value specific for this field.
 def DEFAULT_FIELD_VALUE_FOR_USING_IN_TEST():
+    """
+    This string constant will be used as a special constant for a config field
+    value to point that the field should be filled in tests' code by some default
+    value specific for this field.
+    """
     return 'DEFAULT_FIELD_VALUE_FOR_USING_IN_TEST'
 
-# This string constant will be used as a special constant for a config field value to point
-# that the field should NOT be changed in tests -- its value should be taken
-# from the template file or the config file of the model.
 def KEEP_CONFIG_FIELD_VALUE():
+    """
+    This string constant will be used as a special constant for a config field value to point
+    that the field should NOT be changed in tests -- its value should be taken
+    from the template file or the config file of the model.
+    """
     return 'KEEP_CONFIG_FIELD_VALUE'
-
-# This string constant may be used as a special constant for the value of the fixture
-# current_test_expected_metrics_fx -- it will show that the corresponding test should be
-# failed, since the corresponding record is absent in the file pointed by the
-# command line parameter `--expected-metrics-file`.
-def ABSENT_EXPECTED_VALIDATION_METRICS():
-    return 'ABSENT_EXPECTED_VALIDATION_METRICS'
-
-# This string constant may be used as a special constant for the value of the fixture
-# current_test_expected_metrics_fx -- it shows that the corresponding validation
-# of the test result should be skipped (and it should not be an error).
-# E.g. this constant is used if the test parameter `usecase` is not `reallife`.
-def SKIP_VALIDATION():
-    return 'SKIP_VALIDATION'
 
 def DATASET_PARAMETERS_FIELDS():
     return ('annotations_train',
@@ -164,7 +154,7 @@ def expected_metrics_all_tests_fx(request):
     if path is None:
         logger.warning(f'The command line parameter "--expected-metrics-file" is not set'
                        f'whereas it is required to compare with target metrics'
-                       f' -- ALL THE COMPARISON WITH TARGET METRICS IN TESTS WILL BE TURNED OFF')
+                       f' -- ALL THE COMPARISON WITH TARGET METRICS IN TESTS WILL BE FAILED')
         return None
     with open(path) as f:
         expected_metrics_all_tests = yaml.safe_load(f)
@@ -194,37 +184,51 @@ def current_test_parameters_string_fx(request):
     return node_name[index+1:-1]
 
 @pytest.fixture
-def current_test_expected_metrics_fx(expected_metrics_all_tests_fx, current_test_parameters_string_fx,
-                                     current_test_parameters_fx):
+def cur_test_expected_metrics_callback_fx(expected_metrics_all_tests_fx, current_test_parameters_string_fx,
+                                          current_test_parameters_fx) -> Union[None, Callable[[],Dict]]:
     """
-    This fixture returns the expected metrics for the current test.
-    It may be
-    * or a dict with the structure that stores the requirements on
-      metrics on the current test, e.g.
+    This fixture returns
+    * either a callback -- a function without parameters that returns
+      expected metrics for the current test,
+    * or None if the test validation should be skipped.
+
+    The expected metrics for a test is a dict with the structure that stores the
+    requirements on metrics on the current test, e.g.
+    ```
+    {
+      'metrics.accuracy.f-measure': {
+              'target_value': 0.81,
+              'max_drop': 0.005
+          }
+    }
       ```
-      {
-        'metrics.accuracy.f-measure': {
-                'target_value': 0.81,
-                'max_drop': 0.005
-            }
-      }
-      ```
-    * or a string with the special value `ABSENT_EXPECTED_VALIDATION_METRICS`
-      if the structure that stores the requirements on metrics for the current
-      test is absent -- in this case the test is failed
-    * or a string with the special value `SKIP_VALIDATION`
-      if the test validation should be skipped
+
+    Note that the fixture returns a callback instead of returning the expected metrics
+    themselves, to avoid attempts to read expected metrics for the
+    stages that do not make validation at all -- now the callback is called
+    if and only if validation is made for the stage.
+    (E.g. the stage 'export' does not make validation, but the stage 'export_evaluation' does.)
+
+    Also note that if the callback is called, but the expected metrics for the current test
+    are not found in the structure with expected metrics for all tests, then the callback
+    raises exception to fail the test.
     """
     if 'reallife' != current_test_parameters_fx['usecase']:
-        return SKIP_VALIDATION()
-    if expected_metrics_all_tests_fx is None:
-        logger.error(f'The dict with expected metrics cannot be read -- most probably it will cause test fail')
-        return ABSENT_EXPECTED_VALIDATION_METRICS()
-    if current_test_parameters_string_fx not in expected_metrics_all_tests_fx:
-        logger.error(f'The parameters id string {current_test_parameters_string_fx} is not inside '
-                     f'the dict with expected metrics -- most probably it will cause test fail')
-        return ABSENT_EXPECTED_VALIDATION_METRICS()
-    return expected_metrics_all_tests_fx[current_test_parameters_string_fx]
+        return None
+
+    # make a copy to avoid later changes in the structs
+    expected_metrics_all_tests = deepcopy(expected_metrics_all_tests_fx)
+    current_test_parameters_string = deepcopy(current_test_parameters_string_fx)
+
+    def _get_expected_metrics_callback():
+        if expected_metrics_all_tests is None:
+            raise RuntimeError(f'The dict with expected metrics cannot be read, although it is required '
+                               f'for validation in the test "{current_test_parameters_string}"')
+        if current_test_parameters_string not in expected_metrics_all_tests:
+            raise RuntimeError(f'The parameters id string {current_test_parameters_string} is not inside '
+                               f'the dict with expected metrics -- cannot make validation, so test is failed')
+        return expected_metrics_all_tests[current_test_parameters_string]
+    return _get_expected_metrics_callback
 
 def _make_path_be_abs(some_val, root_path):
     assert isinstance(some_val, (str, dict)), f'Wrong type of value: {some_val}, type={type(some_val)}'
@@ -825,19 +829,13 @@ def _check_mutual_exclusive_required_keys(struct, keys):
     num_occurences = sum(int(k in struct) for k in keys)
     assert num_occurences == 1, f'Wrong num occurences {num_occurences} of keys {keys} in the dict {struct}'
 
-def validate_test_metrics(current_result, test_results_storage, current_test_expected_metrics):
-    if current_test_expected_metrics == SKIP_VALIDATION():
-        logger.info(f'current_test_expected_metrics is SKIP_VALIDATION, validation of test results is skipped')
-        return
-    if current_test_expected_metrics == ABSENT_EXPECTED_VALIDATION_METRICS():
-        raise RuntimeError(f'Validation should be run, but expected metrics for the current test are absent')
-
-    assert isinstance(current_test_expected_metrics, dict), \
-            f'Wrong current test expected metric: {current_test_expected_metrics}'
+def validate_test_metrics(current_result: Dict, test_results_storage: Dict, cur_test_expected_metrics: Dict):
+    assert isinstance(cur_test_expected_metrics, dict), \
+            f'Wrong current test expected metric: {cur_test_expected_metrics}'
     is_passed = True
     fail_reasons = []
     logger.info('Validation: begin')
-    for k, v in current_test_expected_metrics.items():
+    for k, v in cur_test_expected_metrics.items():
         cur_res_addr = k
         cur_metric_requirements = v
         logger.info(f'Validation of test results: begin check {cur_res_addr}')
@@ -850,7 +848,7 @@ def validate_test_metrics(current_result, test_results_storage, current_test_exp
             target_value = get_value_from_dict_by_dot_separated_address(test_results_storage, base_metric_address)
             target_value = float(target_value)
         else:
-            raise RuntimeError(f'Wrong expected metrics {current_test_expected_metrics}')
+            raise RuntimeError(f'Wrong expected metrics {cur_test_expected_metrics}')
 
         if 'max_drop' in cur_metric_requirements:
             target_value = target_value - float(cur_metric_requirements['max_drop'])
@@ -908,17 +906,21 @@ class OTETestStage:
                        'caused exception -- re-raising it')
         raise self.stored_exception
 
-    def _run_validation(self, test_results_storage, current_test_expected_metrics):
+    def _run_validation(self, test_results_storage: Dict,
+                        cur_test_expected_metrics_callback: Union[None, Callable[[],Dict]]):
         if not self.action.with_validation:
             return
-        if current_test_expected_metrics == SKIP_VALIDATION():
-            logger.debug('The current_test_expected_metrics points that the validation should be skipped')
+        if cur_test_expected_metrics_callback is None:
+            logger.debug('The cur_test_expected_metrics_callback points that the validation should be skipped')
             return
 
-        validate_test_metrics(self.stage_results, test_results_storage, current_test_expected_metrics)
+        # calling the callback to receive expected metrics for the current test
+        cur_test_expected_metrics = cur_test_expected_metrics_callback()
+
+        validate_test_metrics(self.stage_results, test_results_storage, cur_test_expected_metrics)
 
     def run_once(self, data_collector: DataCollector, test_results_storage: OrderedDict,
-                 current_test_expected_metrics: Union[dict, str]):
+                 cur_test_expected_metrics_callback: Union[None, Callable[[],Dict]]):
         logger.info(f'Begin stage "{self.name}"')
         assert isinstance(test_results_storage, OrderedDict)
         logger.debug(f'For test stage "{self.name}": test_results_storage.keys = {list(test_results_storage.keys())}')
@@ -927,10 +929,10 @@ class OTETestStage:
             # Processing all dependency stages of the current test.
             # Note that
             # * the stages may run their own dependency stages -- they will compose so called "dependency chain"
-            # * the dependency stages are run with `current_test_expected_metrics = SKIP_VALIDATION()`
+            # * the dependency stages are run with `cur_test_expected_metrics_callback = None`
             #   to avoid validation of stages that are run from the dependency chain.
             logger.debug(f'For test stage "{self.name}": Before running dep. stage "{dep_stage.name}"')
-            dep_stage.run_once(data_collector, test_results_storage, current_test_expected_metrics=SKIP_VALIDATION())
+            dep_stage.run_once(data_collector, test_results_storage, cur_test_expected_metrics_callback=None)
             logger.debug(f'For test stage "{self.name}": After running dep. stage "{dep_stage.name}"')
 
         if self.was_processed:
@@ -939,9 +941,9 @@ class OTETestStage:
             logger.info(f'The stage {self.name} was already processed SUCCESSFULLY')
 
             # Run validation here for the rare case if this test now is being run *not* from a dependency chain
-            # (i.e. the test is run with `current_test_expected_metrics != SKIP_VALIDATION()`),
+            # (i.e. the test is run with `cur_test_expected_metrics_callback != None`),
             # but the test already has been run from some dependency chain earlier.
-            self._run_validation(test_results_storage, current_test_expected_metrics)
+            self._run_validation(test_results_storage, cur_test_expected_metrics_callback)
 
             logger.info(f'End stage "{self.name}"')
             return
@@ -969,7 +971,7 @@ class OTETestStage:
         # The validation step is made outside the central try...except clause, since if the test was successful, but
         # the quality numbers were lower than expected, the result of the stage still may be re-used
         # in other stages.
-        self._run_validation(test_results_storage, current_test_expected_metrics)
+        self._run_validation(test_results_storage, cur_test_expected_metrics_callback)
         logger.info(f'End stage "{self.name}"')
 
 class OTEIntegrationTestCase:
@@ -1025,10 +1027,11 @@ class OTEIntegrationTestCase:
         # test results should be kept between stages
         self.test_results_storage = OrderedDict()
 
-    def run_stage(self, stage_name, data_collector, current_test_expected_metrics):
+    def run_stage(self, stage_name: str, data_collector: DataCollector,
+                  cur_test_expected_metrics_callback: Union[None, Callable[[],Dict]]):
         assert stage_name in self._TEST_STAGES, f'Wrong stage_name {stage_name}'
         self._stages[stage_name].run_once(data_collector, self.test_results_storage,
-                                          current_test_expected_metrics)
+                                          cur_test_expected_metrics_callback)
 
 # pytest magic
 def pytest_generate_tests(metafunc):
@@ -1272,7 +1275,7 @@ class TestOTEIntegration:
         return test_case
 
     @pytest.fixture
-    def data_collector_fx(self, request):
+    def data_collector_fx(self, request) -> DataCollector:
         setup = deepcopy(request.node.callspec.params)
         setup["environment_name"] = os.environ.get("TT_ENVIRONMENT_NAME", "no-env")
         setup["test_type"] = os.environ.get("TT_TEST_TYPE", "no-test-type")
@@ -1292,6 +1295,6 @@ class TestOTEIntegration:
     def test(self,
              test_parameters,
              test_case_fx, data_collector_fx,
-             current_test_expected_metrics_fx):
+             cur_test_expected_metrics_callback_fx):
         test_case_fx.run_stage(test_parameters['test_stage'], data_collector_fx,
-                               current_test_expected_metrics_fx)
+                               cur_test_expected_metrics_callback_fx)
