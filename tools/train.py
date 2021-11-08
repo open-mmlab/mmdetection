@@ -3,7 +3,6 @@ import argparse
 import copy
 import os
 import os.path as osp
-import random
 import time
 import warnings
 
@@ -14,7 +13,7 @@ from mmcv.runner import get_dist_info, init_dist
 from mmcv.utils import get_git_hash
 
 from mmdet import __version__
-from mmdet.apis import set_random_seed, train_detector
+from mmdet.apis import set_random_seed, train_detector, try_get_seed
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
 from mmdet.utils import collect_env, get_root_logger
@@ -149,33 +148,12 @@ def main():
     logger.info(f'Config:\n{cfg.pretty_text}')
 
     # set random seeds
-    if args.seed is not None:
-        logger.info(f'Set random seed to {args.seed}, '
-                    f'deterministic: {args.deterministic}')
-        set_random_seed(args.seed, deterministic=args.deterministic)
-    else:
-        # When the seed is not set, unknown behavior may occur.
-        # Please refer to https://github.com/open-mmlab/mmdetection/issues/6339
-        if distributed:
-            rank, world_size = get_dist_info()
-            if rank == 0:
-                random_num = torch.tensor(
-                    round(random.uniform(0, 2**30)),
-                    dtype=torch.int32,
-                    device='cuda')
-            else:
-                random_num = torch.tensor(0, dtype=torch.int32, device='cuda')
-            torch.distributed.broadcast(random_num, src=0)
-            random_num = random_num.item()
-        else:
-            random_num = round(random.uniform(0, 2**30))
-
-        logger.info(f'Set random seed to {random_num}, '
-                    f'deterministic: {args.deterministic}')
-        set_random_seed(random_num, deterministic=args.deterministic)
-
-    cfg.seed = args.seed
-    meta['seed'] = args.seed
+    seed = try_get_seed(args.seed)
+    logger.info(f'Set random seed to {seed}, '
+                f'deterministic: {args.deterministic}')
+    set_random_seed(seed, deterministic=args.deterministic)
+    cfg.seed = seed
+    meta['seed'] = seed
     meta['exp_name'] = osp.basename(args.config)
 
     model = build_detector(
