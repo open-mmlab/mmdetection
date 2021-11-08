@@ -2,6 +2,7 @@
 import copy
 import platform
 import random
+import warnings
 from functools import partial
 
 import numpy as np
@@ -176,6 +177,9 @@ def build_dataloader(dataset,
     if (TORCH_VERSION != 'parrots'
             and digit_version(TORCH_VERSION) >= digit_version('1.7.0')):
         kwargs['persistent_workers'] = persistent_workers
+    elif persistent_workers is True:
+        warnings.warn('persistent_workers is invalid because your pytorch '
+                      'version is lower than 1.7.0')
 
     data_loader = DataLoader(
         dataset,
