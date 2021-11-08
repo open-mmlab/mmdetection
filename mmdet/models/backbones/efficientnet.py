@@ -1,13 +1,36 @@
 import torch.nn as nn
+import torch
 from mmcv.cnn import (build_conv_layer, build_norm_layer, constant_init,
                       kaiming_init)
 from mmcv.runner import load_checkpoint
+import torch.utils.checkpoint as cp
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmdet.utils import get_root_logger
 from ..builder import BACKBONES
 from ..utils.activations import Swish
 from ..utils.se_block import SE
+
+
+def drop_path(x, drop_prob: float = 0., training: bool = False):
+    """Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks).
+
+    This is the same as the DropConnect impl I created for EfficientNet, etc networks, however,
+    the original name is misleading as 'Drop Connect' is a different form of dropout in a separate paper...
+    See discussion: https://github.com/tensorflow/tpu/issues/494#issuecomment-532968956 ... I've opted for
+    changing the layer and argument names to 'drop path' rather than mix DropConnect as a layer name and use
+    'survival rate' as the argument.
+
+    """
+    if drop_prob == 0. or not training:
+        return x
+    with torch.no_grad():
+        keep_prob = 1 - drop_prob
+        shape = (x.shape[0],) + (1,) * (x.ndim - 1)  # work with diff dim tensors, not just 2D ConvNets
+        random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
+        random_tensor = torch.floor(random_tensor)  # binarize
+    output = x / keep_prob * random_tensor
+    return output
 
 
 class MBConv(nn.Module):
@@ -35,9 +58,13 @@ class MBConv(nn.Module):
                  kernel,
                  se_ratio=0.25,
                  conv_cfg=None,
-                 norm_cfg=dict(type='BN', requires_grad=True)):
+                 norm_cfg=dict(type='BN', requires_grad=True),
+                 with_cp=False,
+                 dropout=0.0):
         super().__init__()
         self.exp = None
+        self.with_cp = with_cp
+        self.dropout = dropout
         exp_width = int(input_width * exp_ratio)
         if exp_width != input_width:
             self.exp = build_conv_layer(
@@ -76,7 +103,8 @@ class MBConv(nn.Module):
             1,
             stride=1,
             padding=0,
-            bias=False)
+            bias=False,
+        )
         self.lin_proj_bn_name, lin_proj_bn = build_norm_layer(
             norm_cfg, output_width, postfix='lin_proj')
         self.add_module(self.lin_proj_bn_name, lin_proj_bn)
@@ -96,14 +124,25 @@ class MBConv(nn.Module):
         return getattr(self, self.lin_proj_bn_name)
 
     def forward(self, x):
-        f_x = x
-        if self.exp:
-            f_x = self.exp_swish(self.exp_bn(self.exp(f_x)))
-        f_x = self.dwise_swish(self.dwise_bn(self.dwise(f_x)))
-        f_x = self.se(f_x)
-        f_x = self.lin_proj_bn(self.lin_proj(f_x))
-        if self.has_skip:
-            f_x = x + f_x
+        def _inner_forward(x):
+            f_x = x
+            if self.exp:
+                f_x = self.exp_swish(self.exp_bn(self.exp(f_x)))
+            f_x = self.dwise_swish(self.dwise_bn(self.dwise(f_x)))
+            f_x = self.se(f_x)
+            f_x = self.lin_proj_bn(self.lin_proj(f_x))
+            if self.has_skip:
+                if self.dropout > 0:
+                    f_x = drop_path(f_x, self.dropout, True)
+                f_x = x + f_x
+
+            return f_x
+
+        if self.with_cp and x.requires_grad:
+            f_x = cp.checkpoint(_inner_forward, x)
+        else:
+            f_x = _inner_forward(x)
+
         return f_x
 
 
@@ -136,7 +175,10 @@ class EfficientLayer(nn.Sequential):
                  kernel,
                  se_ratio=0.25,
                  conv_cfg=None,
-                 norm_cfg=dict(type='BN', requires_grad=True)):
+                 norm_cfg=dict(type='BN', requires_grad=True),
+                 with_cp=False,
+                 dropout=0.0
+                 ):
         layers = []
         for d in range(depth):
             block_stride = stride if d == 0 else 1
@@ -148,7 +190,9 @@ class EfficientLayer(nn.Sequential):
                     stride=block_stride,
                     exp_ratio=exp_ratio,
                     kernel=kernel,
-                    se_ratio=se_ratio))
+                    se_ratio=se_ratio,
+                    with_cp=with_cp,
+                    dropout=dropout))
             super().__init__(*layers)
 
 
@@ -190,6 +234,8 @@ class EfficientNet(nn.Module):
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
             Default: True
+        with_cp (bool): Use checkpoint or not. Using checkpoint will save some
+            memory while slowing down the training speed.
 
     Example:
         >>> from mmdet.models import EfficientNet
@@ -216,7 +262,7 @@ class EfficientNet(nn.Module):
     def __init__(self,
                  scale,
                  in_channels=3,
-                 base_channels=32,
+                 base_channels=40,
                  strides=(1, 2, 2, 2, 1, 2, 1),
                  exp_ratios=(1, 6, 6, 6, 6, 6, 6),
                  kernels=(3, 3, 5, 3, 5, 5, 3),
@@ -225,16 +271,19 @@ class EfficientNet(nn.Module):
                  frozen_stages=-1,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
-                 norm_eval=True):
+                 norm_eval=True,
+                 with_cp=False,
+                 dropout=0.0
+                 ):
         super().__init__()
         self.out_indices = out_indices
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-
+        self.with_cp = with_cp
         self.stage_depths, self.stage_widths = self.arch_settings[scale]
-
+        self.dropout = dropout
+        # self.dropout = nn.Dropout(dropout)
         self._make_stem_layer(3, base_channels)
-
         self.efficient_layers = []
         previous_width = base_channels
         for i, (d, w) in enumerate(zip(self.stage_depths, self.stage_widths)):
@@ -247,7 +296,10 @@ class EfficientNet(nn.Module):
                 kernel=kernels[i],
                 se_ratio=se_ratio,
                 conv_cfg=conv_cfg,
-                norm_cfg=norm_cfg)
+                norm_cfg=norm_cfg,
+                with_cp=with_cp,
+                dropout=dropout
+            )
             layer_name = f'layer{i + 1}'
             self.add_module(layer_name, efficient_layer)
             self.efficient_layers.append(layer_name)

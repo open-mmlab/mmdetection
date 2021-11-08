@@ -5,21 +5,21 @@ _base_ = [
 ]
 norm_cfg = dict(type='SyncBN', requires_grad=True, eps=1e-3, momentum=0.01)
 model = dict(
-    pretrained='open-mmlab://efficientnet_b0',
+    pretrained='/mnt/lustre/jiangyitong1/mmdetection/checkpoints/converted_b3.pyth',
     backbone=dict(
-        _delete_=True, type='EfficientNet', norm_cfg=norm_cfg, scale=0, frozen_stages=1, with_cp=True),
+        _delete_=True, type='EfficientNet', norm_cfg=norm_cfg, scale=3, frozen_stages=1, with_cp=True, dropout=0.3),
     neck=dict(
         type='FPN',
-        in_channels=[40, 112, 320],
+        in_channels=[48, 136, 384],
         start_level=0,
-        out_channels=64,
+        out_channels=160,
         num_outs=5),
     test_cfg=dict(
         nms=dict(type='soft_nms', iou_threshold=0.5, method='gaussian')),
     bbox_head=dict(
         type='RetinaSepBNHead',
         num_ins=5,
-        in_channels=64,
+        in_channels=160,
         loss_cls=dict(
             gamma=1.5,
         ),
@@ -38,10 +38,10 @@ train_pipeline = [
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(
         type='Resize',
-        img_scale=(512, 512),
+        img_scale=(896, 896),
         keep_ratio=True,
         ratio_range=(0.1, 2.0)),
-    dict(type='RandomCrop', crop_size=(512, 512), allow_negative_crop=True),
+    dict(type='RandomCrop', crop_size=(896, 896), allow_negative_crop=True),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),
@@ -51,7 +51,7 @@ test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(512, 512),
+        img_scale=(896, 896),
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
@@ -63,7 +63,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=8,
+    samples_per_gpu=4,
     workers_per_gpu=3,
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
