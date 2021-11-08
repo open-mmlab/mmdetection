@@ -17,11 +17,11 @@ from mmdet.datasets import (build_dataloader, build_dataset,
 from mmdet.utils import get_root_logger
 
 
-def try_get_seed(seed=None, device='cuda'):
-    """Try to get the seed.
+def init_random_seed(seed=None, device='cuda'):
+    """Initialize random seed.
 
     If the seed is not set, the seed will be automatically randomized,
-    and then broadcast to all processes.
+    and then broadcast to all processes to prevent some potential bugs.
 
     Args:
         seed (int, Optional): The seed. Default to None.
@@ -34,8 +34,9 @@ def try_get_seed(seed=None, device='cuda'):
     if seed is not None:
         return seed
 
-    # When the seed is not set, unknown behavior may occur.
-    # Please refer to https://github.com/open-mmlab/mmdetection/issues/6339
+    # Make sure all ranks share the same random seed to prevent
+    # some potential bugs. Please refer to
+    # https://github.com/open-mmlab/mmdetection/issues/6339
     rank, world_size = get_dist_info()
     seed = np.random.randint(2**31)
     if world_size == 1:
