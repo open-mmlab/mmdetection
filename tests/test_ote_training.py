@@ -211,7 +211,7 @@ def cur_test_expected_metrics_callback_fx(expected_metrics_all_tests_fx, current
 
     Also note that if the callback is called, but the expected metrics for the current test
     are not found in the structure with expected metrics for all tests, then the callback
-    raises exception to fail the test.
+    raises exception ValueError to fail the test.
     """
     if 'reallife' != current_test_parameters_fx['usecase']:
         return None
@@ -222,12 +222,16 @@ def cur_test_expected_metrics_callback_fx(expected_metrics_all_tests_fx, current
 
     def _get_expected_metrics_callback():
         if expected_metrics_all_tests is None:
-            raise RuntimeError(f'The dict with expected metrics cannot be read, although it is required '
-                               f'for validation in the test "{current_test_parameters_string}"')
+            raise ValueError(f'The dict with expected metrics cannot be read, although it is required '
+                             f'for validation in the test "{current_test_parameters_string}"')
         if current_test_parameters_string not in expected_metrics_all_tests:
-            raise RuntimeError(f'The parameters id string {current_test_parameters_string} is not inside '
-                               f'the dict with expected metrics -- cannot make validation, so test is failed')
-        return expected_metrics_all_tests[current_test_parameters_string]
+            raise ValueError(f'The parameters id string {current_test_parameters_string} is not inside '
+                             f'the dict with expected metrics -- cannot make validation, so test is failed')
+        expected_metrics = expected_metrics_all_tests[current_test_parameters_string]
+        if not isinstance(expected_metrics, dict):
+            raise ValueError(f'The expected metric for parameters id string {current_test_parameters_string} '
+                             f'should be a dict, whereas it is: {pformat(expected_metrics)}')
+        return expected_metrics
     return _get_expected_metrics_callback
 
 def _make_path_be_abs(some_val, root_path):
@@ -817,30 +821,66 @@ def get_value_from_dict_by_dot_separated_address(struct, address):
         if not addr:
             return cur_struct
         assert isinstance(cur_struct, dict)
-        assert addr[0] in cur_struct, \
-                f'Cannot find address {address} in struct {struct}: {addr} is absent in {cur_struct}'
+        if addr[0] not in cur_struct:
+            raise ValueError(f'Cannot find address {address} in struct {struct}: {addr} is absent in {cur_struct}')
         return _get(cur_struct[addr[0]], addr[1:])
 
-    return _get(struct, address.split('.'))
+    assert isinstance(address, str), f'The parameter address should be string, address={address}'
+    try:
+        res = _get(struct, address.split('.'))
+    except ValueError as e:
+        raise ValueError(f'Cannot find address {address} in the struct {pformat(struct)}') from e
+    return res
 
-def _check_mutual_exclusive_required_keys(struct, keys):
-    assert isinstance(struct, dict)
-    assert any(k in struct for k in keys), f'All of the keys {keys} are absent in the struct {struct}'
-    num_occurences = sum(int(k in struct) for k in keys)
-    assert num_occurences == 1, f'Wrong num occurences {num_occurences} of keys {keys} in the dict {struct}'
+class Validator:
+    def __init__(self, cur_test_expected_metrics_callback: Union[None, Callable[[],Dict]]):
+        self.cur_test_expected_metrics_callback = cur_test_expected_metrics_callback
 
-def validate_test_metrics(current_result: Dict, test_results_storage: Dict, cur_test_expected_metrics: Dict):
-    assert isinstance(cur_test_expected_metrics, dict), \
-            f'Wrong current test expected metric: {cur_test_expected_metrics}'
-    is_passed = True
-    fail_reasons = []
-    logger.info('Validation: begin')
-    for k, v in cur_test_expected_metrics.items():
-        cur_res_addr = k
-        cur_metric_requirements = v
-        logger.info(f'Validation of test results: begin check {cur_res_addr}')
-        current_metric = get_value_from_dict_by_dot_separated_address(current_result, cur_res_addr)
-        _check_mutual_exclusive_required_keys(cur_metric_requirements, ['target_value', 'base'])
+    @staticmethod
+    def _get_min_max_value_from_expected_metrics(cur_metric_requirements: Dict,
+                                                 test_results_storage: Dict):
+        """
+        The method gets requirement for some metric and convert it to the triplet
+        (target_value, min_value, max_value).
+        Note that the target_value may be pointed either by key 'target_value' (in this case it is float),
+        or by the key 'base', in this case it is a dot-separated address to another value in the
+        storage of previous stages' results `test_results_storage`.
+
+        Note that the range for the metric values may be pointed by key 'max_diff',
+        in this case the range will be [target_value - max_diff, target_value + max_diff]
+        (inclusively).
+
+        But also the range may be pointed by keys 'max_diff_if_less_threshold' and
+        'max_diff_if_greater_threshold', in this case the range is
+        [target_value - max_diff_if_less_threshold, target_value + max_diff_if_greater_threshold]
+        (also inclusively). This allows to point non-simmetric ranges w.r.t. the target_value.
+
+        Also note that if one of 'max_diff_if_less_threshold' and 'max_diff_if_greater_threshold'
+        is absent, it is set to `+infinity`, so the range will be bounded from one side
+        (but not both of them, this will be an error)
+        """
+        keys = set(cur_metric_requirements.keys())
+        if 'target_value' not in keys and 'base' not in keys:
+            raise ValueError(f'Wrong cur_metric_requirements: either "target_value" or "base" '
+                             f' should be pointed in the structure, whereas '
+                             f'cur_metric_requirements={pformat(cur_metric_requirements)}')
+        if 'target_value' in keys and 'base' in keys:
+            raise ValueError(f'Wrong cur_metric_requirements: either "target_value" or "base" '
+                             f' should be pointed in the structure, but not both, whereas '
+                             f'cur_metric_requirements={pformat(cur_metric_requirements)}')
+        if ('max_diff' not in keys) and ('max_diff_if_less_threshold' not in keys) \
+                and ('max_diff_if_greater_threshold' not in keys):
+            raise ValueError(f'Wrong cur_metric_requirements: either "max_diff" or one/two of '
+                             f'"max_diff_if_less_threshold" and "max_diff_if_greater_threshold" should be '
+                             f'pointed in the structure, whereas '
+                             f'cur_metric_requirements={pformat(cur_metric_requirements)}')
+
+        if ('max_diff' in keys) and ('max_diff_if_less_threshold' in keys or 'max_diff_if_greater_threshold' in keys):
+            raise ValueError(f'Wrong cur_metric_requirements: either "max_diff" or one/two of '
+                             f'"max_diff_if_less_threshold" and "max_diff_if_greater_threshold" should be '
+                             f'pointed in the structure, but not both, whereas '
+                             f'cur_metric_requirements={pformat(cur_metric_requirements)}')
+
         if 'target_value' in cur_metric_requirements:
             target_value = float(cur_metric_requirements['target_value'])
         elif 'base' in cur_metric_requirements:
@@ -848,26 +888,126 @@ def validate_test_metrics(current_result: Dict, test_results_storage: Dict, cur_
             target_value = get_value_from_dict_by_dot_separated_address(test_results_storage, base_metric_address)
             target_value = float(target_value)
         else:
-            raise RuntimeError(f'Wrong expected metrics {cur_test_expected_metrics}')
+            raise RuntimeError(f'ERROR: Wrong parsing of metric requirements {cur_metric_requirements}')
 
-        if 'max_drop' in cur_metric_requirements:
-            target_value = target_value - float(cur_metric_requirements['max_drop'])
+        if 'max_diff' in cur_metric_requirements:
+            max_diff = cur_metric_requirements['max_diff']
+            max_diff = float(max_diff)
+            if not max_diff >= 0:
+                raise ValueError(f'Wrong max_diff {max_diff}')
+            return (target_value, target_value - max_diff, target_value + max_diff)
 
-        if current_metric >= target_value:
-            logger.info(f'Validation: passed: The metric {cur_res_addr} is greater or equal than the target value {target_value} '
-                        f'({current_metric} vs {target_value})')
+        max_diff_if_less_threshold = cur_metric_requirements.get('max_diff_if_less_threshold')
+        max_diff_if_greater_threshold = cur_metric_requirements.get('max_diff_if_greater_threshold')
+        if max_diff_if_less_threshold is None and max_diff_if_greater_threshold is None:
+            raise ValueError(f'Wrong cur_metric_requirements: all of max_diff, max_diff_if_less_threshold, and '
+                             f'max_diff_if_greater_threshold are None, '
+                             f'cur_metric_requirements={pformat(cur_metric_requirements)}')
+
+        max_value = target_value + max_diff_if_greater_threshold if max_diff_if_greater_threshold else None
+        min_value = target_value - max_diff_if_less_threshold if max_diff_if_less_threshold else None
+        return (target_value, min_value, max_value)
+
+    @staticmethod
+    def _compare(current_metric: float, cur_res_addr: str,
+                 target_value: float, min_value: Union[float, None], max_value: Union[float, None]):
+        if min_value is not None and max_value is not None:
+            assert min_value <= target_value <= max_value
+
+            if min_value <= current_metric <= max_value:
+                logger.info(f'Validation: passed: The metric {cur_res_addr} is in the acceptable range '
+                            f'near the target value {target_value}: '
+                            f'{current_metric} is in [{min_value}, {max_value}]')
+                is_passed = True
+                cur_fail_reason = None
+            else:
+                cur_fail_reason = (f'Validation: failed: The metric {cur_res_addr} is NOT in the acceptable range '
+                                   f'near the target value {target_value}: '
+                                   f'{current_metric} is NOT in [{min_value}, {max_value}]')
+                logger.error(cur_fail_reason)
+                is_passed = False
+            return is_passed, cur_fail_reason
+
+        assert (min_value is not None) or (max_value is not None)
+        if min_value is not None:
+            cmp_op = lambda x: x >= min_value
+            cmp_str_true = 'greater or equal'
+            cmp_op_str_true = '>='
+            cmp_op_str_false = '<'
+            threshold = min_value
         else:
-            cur_fail_reason = (f'Validation: failed: The metric {cur_res_addr} is less than the target value {target_value} '
-                               f'({current_metric} vs {target_value})')
+            cmp_op = lambda x: x <= max_value
+            cmp_str_true = 'less or equal'
+            cmp_op_str_true = '<='
+            cmp_op_str_false = '>'
+            threshold = max_value
+        acceptable_error = abs(threshold - target_value)
+        if cmp_op(current_metric):
+            logger.info(f'Validation: passed: The metric {cur_res_addr} is {cmp_str_true} '
+                        f'the target value {target_value} with acceptable error {acceptable_error}: '
+                        f'{current_metric} {cmp_op_str_true} {threshold}')
+            is_passed = True
+            cur_fail_reason = None
+        else:
+            cur_fail_reason = (f'Validation: failed: The metric {cur_res_addr} is NOT {cmp_str_true} '
+                               f'the target value {target_value} with acceptable error {acceptable_error}: '
+                               f'{current_metric} {cmp_op_str_false} {threshold}')
             logger.error(cur_fail_reason)
-            fail_reasons.append(cur_fail_reason)
             is_passed = False
-        logger.info(f'Validation of test results: end check {cur_res_addr}')
+        return is_passed, cur_fail_reason
 
-    logger.info(f'Validation: end, result={is_passed}')
-    if not is_passed:
-        fail_reasons = '\n'.join(fail_reasons)
-        pytest.fail(f'Validation failed:\n{fail_reasons}')
+    def validate(self, current_result: Dict, test_results_storage: Dict):
+        """
+        The method validates results of the current test.
+        :param current_result -- dict with result of the current test
+        :param test_results_storage -- dict with results of previous tests
+                                       of this test case
+                                       (e.g. the same training parameters)
+
+        The function returns nothing, but may raise exceptions to fail the test.
+        If the structure stored expected metrics is wrong, the function raises ValueError.
+        """
+        if self.cur_test_expected_metrics_callback is None:
+            # most probably, it is not a reallife test
+            logger.debug(f'Validation: skipped, since there should not be expected metrics for this test')
+            return
+
+        logger.info('Validation: begin')
+
+        # calling the callback to receive expected metrics for the current test
+        cur_test_expected_metrics = self.cur_test_expected_metrics_callback()
+
+        assert isinstance(cur_test_expected_metrics, dict), \
+                f'Wrong current test expected metric: {cur_test_expected_metrics}'
+        logger.debug(f'Validation: received cur_test_expected_metrics={pformat(cur_test_expected_metrics)}')
+        is_passed = True
+        fail_reasons = []
+        for k, v in cur_test_expected_metrics.items():
+            cur_res_addr = k
+            cur_metric_requirements = v
+            logger.info(f'Validation: begin check {cur_res_addr}')
+            current_metric = get_value_from_dict_by_dot_separated_address(current_result, cur_res_addr)
+            current_metric = float(current_metric)
+            logger.debug(f'current_metric = {current_metric}')
+            try:
+                target_value, min_value, max_value = \
+                        self._get_min_max_value_from_expected_metrics(cur_metric_requirements,
+                                                                      test_results_storage)
+            except ValueError as e:
+                raise ValueError(f'Error when parsing expected metrics for the metric {cur_res_addr}') from e
+
+            cur_is_passed, cur_fail_reason = self._compare(current_metric, cur_res_addr,
+                                                           target_value, min_value, max_value)
+            if not cur_is_passed:
+                is_passed = False
+                fail_reasons.append(cur_fail_reason)
+
+            logger.info(f'Validation: end check {cur_res_addr}')
+
+        logger.info(f'Validation: end, result={is_passed}')
+        if not is_passed:
+            fail_reasons = '\n'.join(fail_reasons)
+            pytest.fail(f'Validation failed:\n{fail_reasons}')
 
 class OTETestStage:
     """
@@ -907,20 +1047,17 @@ class OTETestStage:
         raise self.stored_exception
 
     def _run_validation(self, test_results_storage: Dict,
-                        cur_test_expected_metrics_callback: Union[None, Callable[[],Dict]]):
+                        validator: Union[Validator, None]):
         if not self.action.with_validation:
             return
-        if cur_test_expected_metrics_callback is None:
-            logger.debug('The cur_test_expected_metrics_callback points that the validation should be skipped')
+        if validator is None:
+            logger.debug('The validator is None -- the validation should be skipped')
             return
 
-        # calling the callback to receive expected metrics for the current test
-        cur_test_expected_metrics = cur_test_expected_metrics_callback()
-
-        validate_test_metrics(self.stage_results, test_results_storage, cur_test_expected_metrics)
+        validator.validate(self.stage_results, test_results_storage)
 
     def run_once(self, data_collector: DataCollector, test_results_storage: OrderedDict,
-                 cur_test_expected_metrics_callback: Union[None, Callable[[],Dict]]):
+                 validator: Union[Validator, None]):
         logger.info(f'Begin stage "{self.name}"')
         assert isinstance(test_results_storage, OrderedDict)
         logger.debug(f'For test stage "{self.name}": test_results_storage.keys = {list(test_results_storage.keys())}')
@@ -929,10 +1066,10 @@ class OTETestStage:
             # Processing all dependency stages of the current test.
             # Note that
             # * the stages may run their own dependency stages -- they will compose so called "dependency chain"
-            # * the dependency stages are run with `cur_test_expected_metrics_callback = None`
+            # * the dependency stages are run with `validator = None`
             #   to avoid validation of stages that are run from the dependency chain.
             logger.debug(f'For test stage "{self.name}": Before running dep. stage "{dep_stage.name}"')
-            dep_stage.run_once(data_collector, test_results_storage, cur_test_expected_metrics_callback=None)
+            dep_stage.run_once(data_collector, test_results_storage, validator=None)
             logger.debug(f'For test stage "{self.name}": After running dep. stage "{dep_stage.name}"')
 
         if self.was_processed:
@@ -941,9 +1078,9 @@ class OTETestStage:
             logger.info(f'The stage {self.name} was already processed SUCCESSFULLY')
 
             # Run validation here for the rare case if this test now is being run *not* from a dependency chain
-            # (i.e. the test is run with `cur_test_expected_metrics_callback != None`),
+            # (i.e. the test is run with `validator != None`),
             # but the test already has been run from some dependency chain earlier.
-            self._run_validation(test_results_storage, cur_test_expected_metrics_callback)
+            self._run_validation(test_results_storage, validator)
 
             logger.info(f'End stage "{self.name}"')
             return
@@ -971,7 +1108,7 @@ class OTETestStage:
         # The validation step is made outside the central try...except clause, since if the test was successful, but
         # the quality numbers were lower than expected, the result of the stage still may be re-used
         # in other stages.
-        self._run_validation(test_results_storage, cur_test_expected_metrics_callback)
+        self._run_validation(test_results_storage, validator)
         logger.info(f'End stage "{self.name}"')
 
 class OTEIntegrationTestCase:
@@ -1028,10 +1165,10 @@ class OTEIntegrationTestCase:
         self.test_results_storage = OrderedDict()
 
     def run_stage(self, stage_name: str, data_collector: DataCollector,
-                  cur_test_expected_metrics_callback: Union[None, Callable[[],Dict]]):
+                  validator: Validator):
         assert stage_name in self._TEST_STAGES, f'Wrong stage_name {stage_name}'
         self._stages[stage_name].run_once(data_collector, self.test_results_storage,
-                                          cur_test_expected_metrics_callback)
+                                          validator)
 
 # pytest magic
 def pytest_generate_tests(metafunc):
@@ -1296,5 +1433,6 @@ class TestOTEIntegration:
              test_parameters,
              test_case_fx, data_collector_fx,
              cur_test_expected_metrics_callback_fx):
+        validator = Validator(cur_test_expected_metrics_callback_fx)
         test_case_fx.run_stage(test_parameters['test_stage'], data_collector_fx,
-                               cur_test_expected_metrics_callback_fx)
+                               validator)
