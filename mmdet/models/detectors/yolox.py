@@ -1,11 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import random
-
-import torch
-import torch.distributed as dist
-import torch.nn.functional as F
-from mmcv.runner import get_dist_info
-
 from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
 

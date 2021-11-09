@@ -313,8 +313,8 @@ class MultiImageMixDataset:
                  skip_type_keys=None):
         if dynamic_scale is not None:
             raise RuntimeError(
-                'dynamic_scale is deprecated. The function has '
-                'been implemented in mmdet/models/detectors/yolox.py')
+                'dynamic_scale is deprecated. Please use Resize pipeline '
+                'to achieve similar functions')
         assert isinstance(pipeline, collections.abc.Sequence)
         if skip_type_keys is not None:
             assert all([

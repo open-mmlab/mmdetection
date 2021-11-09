@@ -22,13 +22,7 @@ model = dict(
 data_root = 'data/coco/'
 dataset_type = 'CocoDataset'
 
-# file_client_args = dict(backend='disk')
-file_client_args = dict(
-    backend='petrel',
-    path_mapping=dict({
-        '.data/coco/': 's3://openmmlab/datasets/detection/coco/',
-        'data/coco/': 's3://openmmlab/datasets/detection/coco/'
-    }))
+file_client_args = dict(backend='disk')
 
 train_pipeline = [
     dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
@@ -48,10 +42,7 @@ train_pipeline = [
         img_scale=[(15 * 32, 15 * 32), (25 * 32, 25 * 32)],
         multiscale_mode='range',
         keep_ratio=True),
-    dict(
-        type='Pad',
-        size_divisor=32,
-        pad_val=dict(img=(114.0, 114.0, 114.0))),
+    dict(type='Pad', size_divisor=32, pad_val=dict(img=(114.0, 114.0, 114.0))),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1), always_keep=True),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
@@ -145,11 +136,19 @@ custom_hooks = [
         num_last_epochs=num_last_epochs,
         interval=interval,
         priority=48),
-    dict(type='ExpMomentumEMAHook', resume_from=resume_from, priority=49)
+    dict(
+        type='ExpMomentumEMAHook',
+        resume_from=resume_from,
+        momentum=0.0001,
+        priority=49)
 ]
 checkpoint_config = dict(interval=interval)
 evaluation = dict(
     save_best='auto',
+    # The evaluation interval is 'interval' when running epoch is
+    # less than ‘max_epochs - num_last_epochs’.
+    # The evaluation interval is 1 when running epoch is greater than
+    # or equal to ‘max_epochs - num_last_epochs’.
     interval=interval,
     dynamic_intervals=[(max_epochs - num_last_epochs, 1)],
     metric='bbox')

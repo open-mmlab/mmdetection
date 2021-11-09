@@ -4,8 +4,21 @@ import os.path as osp
 
 import mmcv
 import torch.distributed as dist
+from mmcv.runner import DistEvalHook as BaseDistEvalHook
 from mmcv.runner import EvalHook as BaseEvalHook
 from torch.nn.modules.batchnorm import _BatchNorm
+
+
+def _calc_dynamic_intervals(start_interval, dynamic_intervals):
+    assert mmcv.is_list_of(dynamic_intervals, tuple)
+
+    dynamic_milestones = [0]
+    dynamic_milestones.extend(
+        [dynamic_interval[0] for dynamic_interval in dynamic_intervals])
+    dynamic_intervals = [start_interval]
+    dynamic_intervals.extend(
+        [dynamic_interval[1] for dynamic_interval in dynamic_intervals])
+    return dynamic_milestones, dynamic_intervals
 
 
 class EvalHook(BaseEvalHook):
@@ -13,25 +26,17 @@ class EvalHook(BaseEvalHook):
     def __init__(self, *args, dynamic_intervals=None, **kwargs):
         super(EvalHook, self).__init__(*args, **kwargs)
 
-        self.dynamic_intervals = dynamic_intervals
-        if dynamic_intervals is not None:
-            assert mmcv.is_list_of(dynamic_intervals, tuple)
-
-            self.dynamic_steps = [0]
-            self.dynamic_steps.extend([
-                dynamic_interval[0] for dynamic_interval in dynamic_intervals
-            ])
-            self.dynamic_values = [self.interval]
-            self.dynamic_values.extend([
-                dynamic_interval[1] for dynamic_interval in dynamic_intervals
-            ])
+        self.use_dynamic_intervals = dynamic_intervals is not None
+        if self.use_dynamic_intervals:
+            self.dynamic_milestones, self.dynamic_intervals = \
+                _calc_dynamic_intervals(self.interval, dynamic_intervals)
 
     def _decide_interval(self, runner):
-        if self.dynamic_intervals:
+        if self.use_dynamic_intervals:
             progress = runner.epoch if self.by_epoch else runner.iter
-            step = bisect.bisect(self.dynamic_steps, (progress + 1))
+            step = bisect.bisect(self.dynamic_milestones, (progress + 1))
             # Dynamically modify the evaluation interval
-            self.interval = self.dynamic_values[step - 1]
+            self.interval = self.dynamic_intervals[step - 1]
 
     def before_train_epoch(self, runner):
         """Evaluate the model only at the start of training by epoch."""
@@ -55,48 +60,34 @@ class EvalHook(BaseEvalHook):
             self._save_ckpt(runner, key_score)
 
 
-class DistEvalHook(EvalHook):
+# Note: Considering that MMCV's EvalHook updated its interface in V1.3.16,
+# in order to avoid strong version dependency, we did not directly
+# inherit EvalHook but BaseDistEvalHook.
+class DistEvalHook(BaseDistEvalHook):
 
-    def __init__(self,
-                 dataloader,
-                 start=None,
-                 interval=1,
-                 by_epoch=True,
-                 save_best=None,
-                 rule=None,
-                 test_fn=None,
-                 greater_keys=None,
-                 less_keys=None,
-                 broadcast_bn_buffer=True,
-                 tmpdir=None,
-                 gpu_collect=False,
-                 out_dir=None,
-                 file_client_args=None,
-                 dynamic_intervals=None,
-                 **eval_kwargs):
+    def __init__(self, *args, dynamic_intervals=None, **kwargs):
+        super(DistEvalHook, self).__init__(*args, **kwargs)
 
-        if test_fn is None:
-            from mmcv.engine import multi_gpu_test
-            test_fn = multi_gpu_test
+        self.use_dynamic_intervals = dynamic_intervals is not None
+        if self.use_dynamic_intervals:
+            self.dynamic_milestones, self.dynamic_intervals = \
+                _calc_dynamic_intervals(self.interval, dynamic_intervals)
 
-        super().__init__(
-            dataloader,
-            start=start,
-            interval=interval,
-            by_epoch=by_epoch,
-            save_best=save_best,
-            rule=rule,
-            test_fn=test_fn,
-            greater_keys=greater_keys,
-            less_keys=less_keys,
-            out_dir=out_dir,
-            file_client_args=file_client_args,
-            dynamic_intervals=dynamic_intervals,
-            **eval_kwargs)
+    def _decide_interval(self, runner):
+        if self.use_dynamic_intervals:
+            progress = runner.epoch if self.by_epoch else runner.iter
+            step = bisect.bisect(self.dynamic_milestones, (progress + 1))
+            # Dynamically modify the evaluation interval
+            self.interval = self.dynamic_intervals[step - 1]
 
-        self.broadcast_bn_buffer = broadcast_bn_buffer
-        self.tmpdir = tmpdir
-        self.gpu_collect = gpu_collect
+    def before_train_epoch(self, runner):
+        """Evaluate the model only at the start of training by epoch."""
+        self._decide_interval(runner)
+        super().before_train_epoch(runner)
+
+    def before_train_iter(self, runner):
+        self._decide_interval(runner)
+        super().before_train_iter(runner)
 
     def _do_evaluate(self, runner):
         """perform evaluation and save ckpt."""
