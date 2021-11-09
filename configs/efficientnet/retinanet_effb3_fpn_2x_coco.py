@@ -5,7 +5,7 @@ _base_ = [
 ]
 norm_cfg = dict(type='SyncBN', requires_grad=True, eps=1e-3, momentum=0.01)
 model = dict(
-    pretrained='/mnt/lustre/jiangyitong1/mmdetection/checkpoints/converted_b3.pyth',
+    pretrained='open-mmlab://efficientnet_b3',
     backbone=dict(
         _delete_=True, type='EfficientNet', norm_cfg=norm_cfg, scale=3, frozen_stages=1, with_cp=True, dropout=0.3),
     neck=dict(
