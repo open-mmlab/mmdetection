@@ -63,7 +63,8 @@ class CustomDataset(Dataset):
                  seg_prefix=None,
                  proposal_file=None,
                  test_mode=False,
-                 filter_empty_gt=True):
+                 filter_empty_gt=True,
+                 file_client_args=dict(backend='disk')):
         self.ann_file = ann_file
         self.data_root = data_root
         self.img_prefix = img_prefix
@@ -72,24 +73,31 @@ class CustomDataset(Dataset):
         self.test_mode = test_mode
         self.filter_empty_gt = filter_empty_gt
         self.CLASSES = self.get_classes(classes)
+        self.file_client = mmcv.FileClient(**file_client_args)
 
         # join paths if data_root is specified
         if self.data_root is not None:
             if not osp.isabs(self.ann_file):
-                self.ann_file = osp.join(self.data_root, self.ann_file)
+                self.ann_file = self.file_client.join_path(
+                    self.data_root, self.ann_file)
             if not (self.img_prefix is None or osp.isabs(self.img_prefix)):
-                self.img_prefix = osp.join(self.data_root, self.img_prefix)
+                self.img_prefix = self.file_client.join_path(
+                    self.data_root, self.img_prefix)
             if not (self.seg_prefix is None or osp.isabs(self.seg_prefix)):
-                self.seg_prefix = osp.join(self.data_root, self.seg_prefix)
+                self.seg_prefix = self.file_client.join_path(
+                    self.data_root, self.seg_prefix)
             if not (self.proposal_file is None
                     or osp.isabs(self.proposal_file)):
-                self.proposal_file = osp.join(self.data_root,
-                                              self.proposal_file)
+                self.proposal_file = self.file_client.join_path(
+                    self.data_root, self.proposal_file)
         # load annotations (and proposals)
-        self.data_infos = self.load_annotations(self.ann_file)
+        with self.file_client.get_local_path(self.ann_file) as local_path:
+            self.data_infos = self.load_annotations(local_path)
 
         if self.proposal_file is not None:
-            self.proposals = self.load_proposals(self.proposal_file)
+            with self.file_client.get_local_path(
+                    self.proposal_file) as local_path:
+                self.proposals = self.load_proposals(local_path)
         else:
             self.proposals = None
 
