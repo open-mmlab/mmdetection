@@ -91,7 +91,6 @@ def build_dataloader(dataset,
                      shuffle=True,
                      seed=None,
                      runner_type='EpochBasedRunner',
-                     pin_memory=False,
                      persistent_workers=False,
                      **kwargs):
     """Build PyTorch DataLoader.
@@ -111,8 +110,6 @@ def build_dataloader(dataset,
             Default: True.
         seed (int, Optional): Seed to be used. Default: None.
         runner_type (str): Type of runner. Default: `EpochBasedRunner`
-        pin_memory (bool): Whether to use pin_memory in DataLoader.
-            Default: False.
         persistent_workers (bool): If True, the data loader will not shutdown
             the worker processes after a dataset has been consumed once.
             This allows to maintain the workers `Dataset` instances alive.
@@ -187,7 +184,7 @@ def build_dataloader(dataset,
         num_workers=num_workers,
         batch_sampler=batch_sampler,
         collate_fn=partial(collate, samples_per_gpu=samples_per_gpu),
-        pin_memory=pin_memory,
+        pin_memory=False,
         worker_init_fn=init_fn,
         **kwargs)
 

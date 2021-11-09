@@ -72,7 +72,6 @@ def train_detector(model,
             dist=distributed,
             seed=cfg.seed,
             runner_type=runner_type,
-            pin_memory=cfg.data.get('pin_memory', False),
             persistent_workers=cfg.data.get('persistent_workers', False))
         for ds in dataset
     ]
