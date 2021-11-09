@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
+from torch.nn.modules.batchnorm import _BatchNorm
+
 from mmcv.cnn import (build_conv_layer, build_norm_layer, constant_init,
                       kaiming_init)
 from mmcv.runner import load_checkpoint
-from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmdet.utils import get_root_logger
 from ..builder import BACKBONES
@@ -13,22 +14,22 @@ from ..utils.se_block import SE
 
 
 def drop_path(x, drop_prob: float = 0., training: bool = False):
-    """Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks).
+    """Drop paths
 
-    This is the same as the DropConnect impl I created for EfficientNet, etc networks, however,
-    the original name is misleading as 'Drop Connect' is a different form of dropout in a separate paper...
-    See discussion: https://github.com/tensorflow/tpu/issues/494#issuecomment-532968956 ... I've opted for
-    changing the layer and argument names to 'drop path' rather than mix DropConnect as a layer name and use
-    'survival rate' as the argument.
-
+    Args:
+        x (int): Feature map input.
+        drop_prob (float): Drop path rate.
+            Default: 0.0
+        training (bool): Whether the layer is in train mode.
+            Default: False
     """
     if drop_prob == 0. or not training:
         return x
     with torch.no_grad():
         keep_prob = 1 - drop_prob
-        shape = (x.shape[0],) + (1,) * (x.ndim - 1)  # work with diff dim tensors, not just 2D ConvNets
+        shape = (x.shape[0],) + (1,) * (x.ndim - 1)
         random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
-        random_tensor = torch.floor(random_tensor)  # binarize
+        random_tensor = torch.floor(random_tensor)
     output = x / keep_prob * random_tensor
     return output
 
@@ -48,6 +49,10 @@ class MBConv(nn.Module):
             Default: None
         norm_cfg (dict): dictionary to construct and config norm layer.
             Default: dict(type='BN', requires_grad=True)
+        with_cp (bool): Use checkpoint or not. Using checkpoint will save some
+            memory while slowing down the training speed.
+        dropout (float): Drop-path rate.
+            Default: 0.0
     """
 
     def __init__(self,
@@ -282,7 +287,6 @@ class EfficientNet(nn.Module):
         self.with_cp = with_cp
         self.stage_depths, self.stage_widths = self.arch_settings[scale]
         self.dropout = dropout
-        # self.dropout = nn.Dropout(dropout)
         self._make_stem_layer(3, base_channels)
         self.efficient_layers = []
         previous_width = base_channels
