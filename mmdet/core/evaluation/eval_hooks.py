@@ -9,15 +9,15 @@ from mmcv.runner import EvalHook as BaseEvalHook
 from torch.nn.modules.batchnorm import _BatchNorm
 
 
-def _calc_dynamic_intervals(start_interval, dynamic_intervals):
-    assert mmcv.is_list_of(dynamic_intervals, tuple)
+def _calc_dynamic_intervals(start_interval, dynamic_interval_list):
+    assert mmcv.is_list_of(dynamic_interval_list, tuple)
 
     dynamic_milestones = [0]
     dynamic_milestones.extend(
-        [dynamic_interval[0] for dynamic_interval in dynamic_intervals])
+        [dynamic_interval[0] for dynamic_interval in dynamic_interval_list])
     dynamic_intervals = [start_interval]
     dynamic_intervals.extend(
-        [dynamic_interval[1] for dynamic_interval in dynamic_intervals])
+        [dynamic_interval[1] for dynamic_interval in dynamic_interval_list])
     return dynamic_milestones, dynamic_intervals
 
 
