@@ -166,7 +166,11 @@ def add_mim_extension():
 
             if mode == 'symlink':
                 src_relpath = osp.relpath(src_path, osp.dirname(tar_path))
-                os.symlink(src_relpath, tar_path)
+                try:
+                    os.symlink(src_relpath, tar_path)
+                except OSError:
+                    # Symlink fails with WinError on Windows
+                    shutil.copytree(src_relpath, tar_path)
             elif mode == 'copy':
                 if osp.isfile(src_path):
                     shutil.copyfile(src_path, tar_path)
