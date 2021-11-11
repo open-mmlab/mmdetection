@@ -21,7 +21,7 @@
                 'max_drop': 0.01
 'ACTION-training_evaluation,model-gen3_mobilenetV2_ATSS,dataset-fish,num_iters-KEEP_CONFIG_FIELD_VALUE,batch-KEEP_CONFIG_FIELD_VALUE,usecase-reallife':
         'metrics.accuracy.f-measure':
-                'target_value': 0.887
+                'target_value': 0.884
                 'max_drop': 0.005
 'ACTION-export_evaluation,model-gen3_mobilenetV2_ATSS,dataset-fish,num_iters-KEEP_CONFIG_FIELD_VALUE,batch-KEEP_CONFIG_FIELD_VALUE,usecase-reallife':
         'metrics.accuracy.f-measure':
@@ -41,7 +41,7 @@
                 'max_drop': 0.01
 'ACTION-training_evaluation,model-gen3_mobilenetV2_SSD,dataset-fish,num_iters-KEEP_CONFIG_FIELD_VALUE,batch-KEEP_CONFIG_FIELD_VALUE,usecase-reallife':
         'metrics.accuracy.f-measure':
-                'target_value': 0.887
+                'target_value': 0.884
                 'max_drop': 0.005
 'ACTION-export_evaluation,model-gen3_mobilenetV2_SSD,dataset-fish,num_iters-KEEP_CONFIG_FIELD_VALUE,batch-KEEP_CONFIG_FIELD_VALUE,usecase-reallife':
         'metrics.accuracy.f-measure':
@@ -61,7 +61,7 @@
                 'max_drop': 0.01
 'ACTION-training_evaluation,model-gen3_resnet50_VFNet,dataset-fish,num_iters-KEEP_CONFIG_FIELD_VALUE,batch-KEEP_CONFIG_FIELD_VALUE,usecase-reallife':
         'metrics.accuracy.f-measure':
-                'target_value': 0.897
+                'target_value': 0.905
                 'max_drop': 0.005
 'ACTION-export_evaluation,model-gen3_resnet50_VFNet,dataset-fish,num_iters-KEEP_CONFIG_FIELD_VALUE,batch-KEEP_CONFIG_FIELD_VALUE,usecase-reallife':
         'metrics.accuracy.f-measure':
