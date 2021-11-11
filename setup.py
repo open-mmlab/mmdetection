@@ -143,7 +143,8 @@ def add_mim_extension():
     if 'develop' in sys.argv:
         # installed by `pip install -e .`
         mode = 'symlink'
-    elif 'sdist' in sys.argv or 'bdist_wheel' in sys.argv or platform.system() == 'Windows':
+    elif 'sdist' in sys.argv or 'bdist_wheel' in sys.argv or \
+            platform.system() == 'Windows':
         # installed by `pip install .`
         # or create source distribution by `python setup.py sdist`
         # set `copy` mode here since symlink fails with WinError on Windows.
