@@ -12,18 +12,18 @@ class LADHead(PAAHead):
     Label Assignment Distillation <https://arxiv.org/pdf/2108.10520.pdf>`_"""
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'iou_preds'))
-    def get_la(self,
-               cls_scores,
-               bbox_preds,
-               iou_preds,
-               gt_bboxes,
-               gt_labels,
-               img_metas,
-               gt_bboxes_ignore=None):
+    def get_label_assignment(self,
+                             cls_scores,
+                             bbox_preds,
+                             iou_preds,
+                             gt_bboxes,
+                             gt_labels,
+                             img_metas,
+                             gt_bboxes_ignore=None):
         """Get label assignment (from teacher).
 
         Args:
-            cls_scores (list[Tensor]): Box scores for each scale level
+            cls_scores (list[Tensor]): Box scores for each scale level.
                 Has shape (N, num_anchors * num_classes, H, W)
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
                 level with shape (N, num_anchors * 4, H, W)
@@ -112,26 +112,26 @@ class LADHead(PAAHead):
         else:
             pos_anchors = None
 
-        label_reassign = (labels, labels_weight, bboxes_target, bboxes_weight,
-                          pos_inds_flatten, pos_anchors, num_pos)
-        return label_reassign
+        label_assignment_results = (labels, labels_weight, bboxes_target,
+                                    bboxes_weight, pos_inds_flatten,
+                                    pos_anchors, num_pos)
+        return label_assignment_results
 
     def forward_train(self,
                       x,
-                      la_results,
+                      label_assignment_results,
                       img_metas,
                       gt_bboxes,
                       gt_labels=None,
                       gt_bboxes_ignore=None,
-                      proposal_cfg=None,
                       **kwargs):
         """Forward train with the available label assignment (student receives
         from teacher).
 
         Args:
             x (list[Tensor]): Features from FPN.
-            la_results (tuple): As the outputs defined in the function
-                `self.get_la`.
+            label_assignment_results (tuple): As the outputs defined in the
+                function `self.get_label_assignment`.
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
             gt_bboxes (Tensor): Ground truth bboxes of the image,
@@ -140,8 +140,6 @@ class LADHead(PAAHead):
                 shape (num_gts,).
             gt_bboxes_ignore (Tensor): Ground truth bboxes to be
                 ignored, shape (num_ignored_gts, 4).
-            proposal_cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used
 
         Returns:
             tuple:
@@ -156,12 +154,8 @@ class LADHead(PAAHead):
         losses = self.loss(
             *loss_inputs,
             gt_bboxes_ignore=gt_bboxes_ignore,
-            la_results=la_results)
-        if proposal_cfg is None:
-            return losses
-        else:
-            proposal_list = self.get_bboxes(*outs, img_metas, cfg=proposal_cfg)
-            return losses, proposal_list
+            label_assignment_results=label_assignment_results)
+        return losses
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'iou_preds'))
     def loss(self,
@@ -172,7 +166,7 @@ class LADHead(PAAHead):
              gt_labels,
              img_metas,
              gt_bboxes_ignore=None,
-             la_results=None):
+             label_assignment_results=None):
         """Compute losses of the head.
 
         Args:
@@ -189,15 +183,15 @@ class LADHead(PAAHead):
                 image size, scaling factor, etc.
             gt_bboxes_ignore (list[Tensor] | None): Specify which bounding
                 boxes can be ignored when are computing the loss.
-            la_results (tuple): As the outputs defined in the function
-                `self.get_la`.
+            label_assignment_results (tuple): As the outputs defined in the
+                function `self.get_label_assignment`.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss gmm_assignment.
         """
 
         (labels, labels_weight, bboxes_target, bboxes_weight, pos_inds_flatten,
-         pos_anchors, num_pos) = la_results
+         pos_anchors, num_pos) = label_assignment_results
 
         cls_scores = levels_to_images(cls_scores)
         cls_scores = [

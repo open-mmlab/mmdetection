@@ -74,14 +74,18 @@ class LAD(KnowledgeDistillationSingleStageDetector):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
+        # get label assignment from the teacher
         with torch.no_grad():
             x_teacher = self.extract_teacher_feat(img)
             outs_teacher = self.teacher_model.bbox_head(x_teacher)
-            la_results = self.teacher_model.bbox_head.get_la(
-                *outs_teacher, gt_bboxes, gt_labels, img_metas,
-                gt_bboxes_ignore)
+            label_assignment_results = \
+                self.teacher_model.bbox_head.get_label_assignment(
+                    *outs_teacher, gt_bboxes, gt_labels, img_metas,
+                    gt_bboxes_ignore)
+
+        # the student use the label assignment from the teacher to learn
         x = self.extract_feat(img)
-        losses = self.bbox_head.forward_train(x, la_results, img_metas,
-                                              gt_bboxes, gt_labels,
+        losses = self.bbox_head.forward_train(x, label_assignment_results,
+                                              img_metas, gt_bboxes, gt_labels,
                                               gt_bboxes_ignore)
         return losses
