@@ -22,11 +22,6 @@ except ImportError:
 
 def pq_compute_single_core(proc_id, annotation_set, gt_folder, pred_folder,
                            categories, file_client):
-    if PQStat is None:
-        raise RuntimeError(
-            'panopticapi is not installed, please install it by: '
-            'pip install git+https://github.com/cocodataset/'
-            'panopticapi.git.')
     pq_stat = PQStat()
 
     idx = 0
@@ -143,6 +138,11 @@ def pq_compute_single_core(proc_id, annotation_set, gt_folder, pred_folder,
 
 def pq_compute_multi_core(matched_annotations_list, gt_folder, pred_folder,
                           categories, file_client):
+    if PQStat is None:
+        raise RuntimeError(
+            'panopticapi is not installed, please install it by: '
+            'pip install git+https://github.com/cocodataset/'
+            'panopticapi.git.')
     cpu_num = multiprocessing.cpu_count()
     annotations_split = np.array_split(matched_annotations_list, cpu_num)
     print('Number of cores: {}, images per core: {}'.format(
