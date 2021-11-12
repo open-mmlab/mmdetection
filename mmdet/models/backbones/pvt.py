@@ -158,6 +158,10 @@ class SpatialReductionAttention(MultiheadAttention):
         # handle the BC-breaking from https://github.com/open-mmlab/mmcv/pull/1418 # noqa
         from mmdet import mmcv_version, digit_version
         if mmcv_version < digit_version('1.3.17'):
+            warnings.warn('The legacy version of forward function in'
+                          'SpatialReductionAttention is deprecated in'
+                          'mmcv>=1.3.17 and will no longer support in the'
+                          'future. Please upgrade your mmcv.')
             self.forward = self.legacy_forward
 
     def forward(self, x, hw_shape, identity=None):
@@ -276,7 +280,6 @@ class PVTEncoderLayer(BaseModule):
             act_cfg=act_cfg)
 
     def forward(self, x, hw_shape):
-        print(x.shape)
         x = self.attn(self.norm1(x), hw_shape, identity=x)
         x = self.ffn(self.norm2(x), hw_shape, identity=x)
 
