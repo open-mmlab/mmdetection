@@ -142,9 +142,7 @@ class LADHead(PAAHead):
                 ignored, shape (num_ignored_gts, 4).
 
         Returns:
-            tuple:
-                losses: (dict[str, Tensor]): A dictionary of loss components.
-                proposal_list (list[Tensor]): Proposals of each image.
+            losses: (dict[str, Tensor]): A dictionary of loss components.
         """
         outs = self(x)
         if gt_labels is None:
