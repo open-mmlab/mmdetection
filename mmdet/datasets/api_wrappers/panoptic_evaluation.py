@@ -3,7 +3,7 @@
 # Copyright (c) 2018, Alexander Kirillov
 # This file supports `file_client` for `panopticapi`,
 # the source code is copied from `panopticapi`,
-# only the way to read the gt images is modified.
+# only the way to load the gt images is modified.
 import multiprocessing
 import os
 
@@ -22,6 +22,19 @@ except ImportError:
 
 def pq_compute_single_core(proc_id, annotation_set, gt_folder, pred_folder,
                            categories, file_client):
+    """The single core function to evaluate the metric of Panoptic
+    Segmentation.
+
+    Same as the function with the same name in `panopticapi`. Only the function
+    to load the images is changed to use the file client.
+
+    Args:
+        proc_id (int): The id of the mini process.
+        gt_folder (str): The path of the ground truth images.
+        pred_folder (str): The path of the prediction images.
+        categories (str): The categories of the dataset.
+        file_client (object): The file client of the dataset.
+    """
     pq_stat = PQStat()
 
     idx = 0
@@ -138,6 +151,19 @@ def pq_compute_single_core(proc_id, annotation_set, gt_folder, pred_folder,
 
 def pq_compute_multi_core(matched_annotations_list, gt_folder, pred_folder,
                           categories, file_client):
+    """Evaluate the metrics of Panoptic Segmentation with multithreading.
+
+    Same as the function with the same name in `panopticapi`.
+
+    Args:
+        matched_annotations_list (list): The matched annotation list. Each
+            element is a tuple of annotations of the same image with the
+            format (gt_anns, pred_anns).
+        gt_folder (str): The path of the ground truth images.
+        pred_folder (str): The path of the prediction images.
+        categories (str): The categories of the dataset.
+        file_client (object): The file client of the dataset.
+    """
     if PQStat is None:
         raise RuntimeError(
             'panopticapi is not installed, please install it by: '
