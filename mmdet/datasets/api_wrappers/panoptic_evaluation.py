@@ -1,5 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-# This file supports `file_client` for panopticapi
+
+# Copyright (c) 2018, Alexander Kirillov
+# This file supports `file_client` for `panopticapi`,
+# the source code is copied from `panopticapi`,
+# only the way to read the gt images is modified.
 import multiprocessing
 import os
 
