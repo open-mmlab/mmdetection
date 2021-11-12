@@ -155,8 +155,44 @@ class SpatialReductionAttention(MultiheadAttention):
             # The ret[0] of build_norm_layer is norm name.
             self.norm = build_norm_layer(norm_cfg, embed_dims)[1]
 
+        # handle the BC-breaking from https://github.com/open-mmlab/mmcv/pull/1418 # noqa
+        from mmdet import mmcv_version, digit_version
+        if mmcv_version < digit_version('1.3.17'):
+            self.forward = self.legacy_forward
+
     def forward(self, x, hw_shape, identity=None):
 
+        x_q = x
+        if self.sr_ratio > 1:
+            x_kv = nlc_to_nchw(x, hw_shape)
+            x_kv = self.sr(x_kv)
+            x_kv = nchw_to_nlc(x_kv)
+            x_kv = self.norm(x_kv)
+        else:
+            x_kv = x
+
+        if identity is None:
+            identity = x_q
+
+        # Because the dataflow('key', 'query', 'value') of
+        # ``torch.nn.MultiheadAttention`` is (num_query, batch,
+        # embed_dims), We should adjust the shape of dataflow from
+        # batch_first (batch, num_query, embed_dims) to num_query_first
+        # (num_query ,batch, embed_dims), and recover ``attn_output``
+        # from num_query_first to batch_first.
+        if self.batch_first:
+            x_q = x_q.transpose(0, 1)
+            x_kv = x_kv.transpose(0, 1)
+
+        out = self.attn(query=x_q, key=x_kv, value=x_kv)[0]
+
+        if self.batch_first:
+            out = out.transpose(0, 1)
+
+        return identity + self.dropout_layer(self.proj_drop(out))
+
+    def legacy_forward(self, x, hw_shape, identity=None):
+        """multi head attention forward in mmcv version < 1.3.17."""
         x_q = x
         if self.sr_ratio > 1:
             x_kv = nlc_to_nchw(x, hw_shape)
@@ -240,6 +276,7 @@ class PVTEncoderLayer(BaseModule):
             act_cfg=act_cfg)
 
     def forward(self, x, hw_shape):
+        print(x.shape)
         x = self.attn(self.norm1(x), hw_shape, identity=x)
         x = self.ffn(self.norm2(x), hw_shape, identity=x)
 
