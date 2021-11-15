@@ -9,6 +9,7 @@ from mmcv.cnn import (Conv2d, build_activation_layer, build_norm_layer,
                       constant_init, normal_init, trunc_normal_init)
 from mmcv.cnn.bricks.drop import build_dropout
 from mmcv.cnn.bricks.transformer import MultiheadAttention
+from mmcv.cnn.utils.weight_init import trunc_normal_
 from mmcv.runner import (BaseModule, ModuleList, Sequential, _load_checkpoint,
                          load_state_dict)
 from torch.nn.modules.utils import _pair as to_2tuple
@@ -315,7 +316,7 @@ class AbsolutePositionEmbedding(BaseModule):
         self.drop = nn.Dropout(p=drop_rate)
 
     def init_weights(self):
-        trunc_normal_init(self.pos_embed, std=0.02)
+        trunc_normal_(self.pos_embed, std=0.02)
 
     def resize_pos_embed(self, pos_embed, input_shape, mode='bilinear'):
         """Resize pos_embed weights.
@@ -526,9 +527,7 @@ class PyramidVisionTransformer(BaseModule):
                         f'training start from scratch')
             for m in self.modules():
                 if isinstance(m, nn.Linear):
-                    trunc_normal_init(m.weight, std=.02)
-                    if m.bias is not None:
-                        constant_init(m.bias, 0)
+                    trunc_normal_init(m, std=.02, bias=0.)
                 elif isinstance(m, nn.LayerNorm):
                     constant_init(m.bias, 0)
                     constant_init(m.weight, 1.0)
