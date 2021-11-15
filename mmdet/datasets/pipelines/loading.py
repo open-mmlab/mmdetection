@@ -231,7 +231,7 @@ class LoadAnnotations:
         self.with_seg = with_seg
         self.poly2mask = poly2mask
         self.file_client_args = file_client_args.copy()
-        self.file_client = mmcv.FileClient(**self.file_client_args)
+        self.file_client = None
 
     def _load_bboxes(self, results):
         """Private function to load bounding box annotations.
@@ -344,6 +344,10 @@ class LoadAnnotations:
         Returns:
             dict: The dict contains loaded semantic segmentation annotations.
         """
+
+        if self.file_client is None:
+            self.file_client = mmcv.FileClient(**self.file_client_args)
+
         filename = osp.join(results['seg_prefix'],
                             results['ann_info']['seg_map'])
         img_bytes = self.file_client.get(filename)
@@ -434,6 +438,10 @@ class LoadPanopticAnnotations(LoadAnnotations):
             dict: The dict contains loaded mask and semantic segmentation
                 annotations. `BitmapMasks` is used for mask annotations.
         """
+
+        if self.file_client is None:
+            self.file_client = mmcv.FileClient(**self.file_client_args)
+
         filename = osp.join(results['seg_prefix'],
                             results['ann_info']['seg_map'])
         img_bytes = self.file_client.get(filename)

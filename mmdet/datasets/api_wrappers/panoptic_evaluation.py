@@ -20,8 +20,12 @@ except ImportError:
     OFFSET = 256 * 256 * 256
 
 
-def pq_compute_single_core(proc_id, annotation_set, gt_folder, pred_folder,
-                           categories, file_client):
+def pq_compute_single_core(proc_id,
+                           annotation_set,
+                           gt_folder,
+                           pred_folder,
+                           categories,
+                           file_client=None):
     """The single core function to evaluate the metric of Panoptic
     Segmentation.
 
@@ -33,8 +37,13 @@ def pq_compute_single_core(proc_id, annotation_set, gt_folder, pred_folder,
         gt_folder (str): The path of the ground truth images.
         pred_folder (str): The path of the prediction images.
         categories (str): The categories of the dataset.
-        file_client (object): The file client of the dataset.
+        file_client (object): The file client of the dataset. If None,
+            the backend will be set to `disk`.
     """
+    if file_client is None:
+        file_client_args = dict(backend='disk')
+        file_client = mmcv.FileClient(**file_client_args)
+
     pq_stat = PQStat()
 
     idx = 0
@@ -45,14 +54,13 @@ def pq_compute_single_core(proc_id, annotation_set, gt_folder, pred_folder,
         idx += 1
         img_bytes = file_client.get(
             os.path.join(gt_folder, gt_ann['file_name']))
-        pan_gt = mmcv.imfrombytes(
-            img_bytes, flag='color', channel_order='rgb').squeeze()
+        pan_gt = mmcv.imfrombytes(img_bytes, flag='color', channel_order='rgb')
         pan_gt = rgb2id(pan_gt)
 
         pan_pred = mmcv.imread(
             os.path.join(pred_folder, pred_ann['file_name']),
             flag='color',
-            channel_order='rgb').squeeze()
+            channel_order='rgb')
         pan_pred = rgb2id(pan_pred)
 
         gt_segms = {el['id']: el for el in gt_ann['segments_info']}
@@ -149,8 +157,11 @@ def pq_compute_single_core(proc_id, annotation_set, gt_folder, pred_folder,
     return pq_stat
 
 
-def pq_compute_multi_core(matched_annotations_list, gt_folder, pred_folder,
-                          categories, file_client):
+def pq_compute_multi_core(matched_annotations_list,
+                          gt_folder,
+                          pred_folder,
+                          categories,
+                          file_client=None):
     """Evaluate the metrics of Panoptic Segmentation with multithreading.
 
     Same as the function with the same name in `panopticapi`.
@@ -162,13 +173,19 @@ def pq_compute_multi_core(matched_annotations_list, gt_folder, pred_folder,
         gt_folder (str): The path of the ground truth images.
         pred_folder (str): The path of the prediction images.
         categories (str): The categories of the dataset.
-        file_client (object): The file client of the dataset.
+        file_client (object): The file client of the dataset. If None,
+            the backend will be set to `disk`.
     """
     if PQStat is None:
         raise RuntimeError(
             'panopticapi is not installed, please install it by: '
             'pip install git+https://github.com/cocodataset/'
             'panopticapi.git.')
+
+    if file_client is None:
+        file_client_args = dict(backend='disk')
+        file_client = mmcv.FileClient(**file_client_args)
+
     cpu_num = multiprocessing.cpu_count()
     annotations_split = np.array_split(matched_annotations_list, cpu_num)
     print('Number of cores: {}, images per core: {}'.format(

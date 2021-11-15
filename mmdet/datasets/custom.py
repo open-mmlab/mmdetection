@@ -78,18 +78,15 @@ class CustomDataset(Dataset):
         # join paths if data_root is specified
         if self.data_root is not None:
             if not osp.isabs(self.ann_file):
-                self.ann_file = self.file_client.join_path(
-                    self.data_root, self.ann_file)
+                self.ann_file = osp.join(self.data_root, self.ann_file)
             if not (self.img_prefix is None or osp.isabs(self.img_prefix)):
-                self.img_prefix = self.file_client.join_path(
-                    self.data_root, self.img_prefix)
+                self.img_prefix = osp.join(self.data_root, self.img_prefix)
             if not (self.seg_prefix is None or osp.isabs(self.seg_prefix)):
-                self.seg_prefix = self.file_client.join_path(
-                    self.data_root, self.seg_prefix)
+                self.seg_prefix = osp.join(self.data_root, self.seg_prefix)
             if not (self.proposal_file is None
                     or osp.isabs(self.proposal_file)):
-                self.proposal_file = self.file_client.join_path(
-                    self.data_root, self.proposal_file)
+                self.proposal_file = osp.join(self.data_root,
+                                              self.proposal_file)
         # load annotations (and proposals)
         with self.file_client.get_local_path(self.ann_file) as local_path:
             self.data_infos = self.load_annotations(local_path)
