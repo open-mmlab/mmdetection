@@ -16,20 +16,19 @@
 
 - Fix aug test error when the number of prediction bboxes is 0 (#6398)
 - Fix SpatialReductionAttention in PVT (#6488)
-- Fix wrong trunc_normal_init usage in PVT and Swin-Transformer (#6432)
+- Fix wrong use of `trunc_normal_init` in PVT and Swin-Transformer (#6432)
 
 #### Improvements
 
-- Save coco summarize print information to logger (#6505)
+- Save the printed AP information of COCO API to logger (#6505)
 - Always map location to cpu when load checkpoint (#6405)
-- Set a random seed when the user does not set a seed. (#6457)
+- Set a random seed when the user does not set a seed (#6457)
 
 #### Documents
 
-- Chinese version of robustness_benchmarking.md (#6375)
-- Fix type error in 2_new_data_mode.md  (#6469)
+- Chinese version of [Corruption Benchmarking](docs/robustness_benchmarking.mddocs/robustness_benchmarking.md) (#6375)
 - Fix config path in docs (#6396)
-- Update groie readme (#6401)
+- Update GRoIE readme (#6401)
 
 #### Contributors
 
