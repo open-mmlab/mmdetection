@@ -1,5 +1,42 @@
 ## Changelog
 
+### v2.18.1 (15/11/2021)
+
+#### Highlights
+
+- Release [QueryInst](http://arxiv.org/abs/2105.01928) pre-trained weights (#6460)
+- Support plot confusion matrix (#6344)
+
+#### New Features
+
+- Release [QueryInst](http://arxiv.org/abs/2105.01928) pre-trained weights (#6460)
+- Support plot confusion matrix (#6344)
+
+#### Bug Fixes
+
+- Fix aug test error when the number of prediction bboxes is 0 (#6398)
+- Fix SpatialReductionAttention in PVT (#6488)
+- Fix wrong trunc_normal_init usage in PVT and Swin-Transformer (#6432)
+
+#### Improvements
+
+- Save coco summarize print information to logger (#6505)
+- Always map location to cpu when load checkpoint (#6405)
+- Set a random seed when the user does not set a seed. (#6457)
+
+#### Documents
+
+- Chinese version of robustness_benchmarking.md (#6375)
+- Fix type error in 2_new_data_mode.md  (#6469)
+- Fix config path in docs (#6396)
+- Update groie readme (#6401)
+
+#### Contributors
+
+A total of 11 developers contributed to this release.
+Thanks @st9007a, @hachreak, @HarborYuan, @vealocia, @chhluo, @AndreaPi, @AronLin, @BIGWangYuDong, @hhaAndroid, @RangiLyu, @ZwwWayne
+
+
 ### v2.18.0 (27/10/2021)
 
 #### Highlights
