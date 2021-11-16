@@ -1,5 +1,18 @@
 # Compatibility of MMDetection 2.x
 
+## MMDetection 2.18.1
+
+### MMCV compatibility
+
+In order to fix the wrong weight reference bug in BaseTransformerLayer, the logic in batch first mode of MultiheadAttention has been changed.
+We recommend to use MMCV v1.3.17 or higher. For more details, please refer to [MMCV PR #1418](https://github.com/open-mmlab/mmcv/pull/1418).
+
+## MMDetection 2.18.0
+
+### DIIHead compatibility
+
+In order to support QueryInst, attn_feats is added into the returned tuple of DIIHead.
+
 ## MMDetection 2.14.0
 
 ### MMCV Version

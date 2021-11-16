@@ -50,6 +50,12 @@ def test_paa_head_loss():
         num_classes=4,
         in_channels=1,
         train_cfg=train_cfg,
+        anchor_generator=dict(
+            type='AnchorGenerator',
+            ratios=[1.0],
+            octave_base_scale=8,
+            scales_per_octave=1,
+            strides=[8, 16, 32, 64, 128]),
         loss_cls=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         loss_bbox=dict(type='GIoULoss', loss_weight=1.3),
@@ -98,12 +104,25 @@ def test_paa_head_loss():
     assert len(results) == n
     assert results[0].size() == (h * w * 5, c)
     assert self.with_score_voting
+
+    self = PAAHead(
+        num_classes=4,
+        in_channels=1,
+        train_cfg=train_cfg,
+        anchor_generator=dict(
+            type='AnchorGenerator',
+            ratios=[1.0],
+            octave_base_scale=8,
+            scales_per_octave=1,
+            strides=[8]),
+        loss_cls=dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+        loss_bbox=dict(type='GIoULoss', loss_weight=1.3),
+        loss_centerness=dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=0.5))
     cls_scores = [torch.ones(2, 4, 5, 5)]
     bbox_preds = [torch.ones(2, 4, 5, 5)]
     iou_preds = [torch.ones(2, 1, 5, 5)]
-    mlvl_anchors = [torch.ones(2, 5 * 5, 4)]
-    img_shape = None
-    scale_factor = [0.5, 0.5]
     cfg = mmcv.Config(
         dict(
             nms_pre=1000,
@@ -112,12 +131,5 @@ def test_paa_head_loss():
             nms=dict(type='nms', iou_threshold=0.6),
             max_per_img=100))
     rescale = False
-    self._get_bboxes(
-        cls_scores,
-        bbox_preds,
-        iou_preds,
-        mlvl_anchors,
-        img_shape,
-        scale_factor,
-        cfg,
-        rescale=rescale)
+    self.get_bboxes(
+        cls_scores, bbox_preds, iou_preds, img_metas, cfg, rescale=rescale)

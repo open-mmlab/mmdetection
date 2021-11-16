@@ -1,13 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
+
 import torch
 import torch.nn as nn
 from mmcv.ops import DeformConv2d, MaskedConv2d
 from mmcv.runner import BaseModule, force_fp32
 
-from mmdet.core import (anchor_inside_flags, build_anchor_generator,
-                        build_assigner, build_bbox_coder, build_sampler,
-                        calc_region, images_to_levels, multi_apply,
-                        multiclass_nms, unmap)
+from mmdet.core import (anchor_inside_flags, build_assigner, build_bbox_coder,
+                        build_prior_generator, build_sampler, calc_region,
+                        images_to_levels, multi_apply, multiclass_nms, unmap)
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
 
@@ -152,17 +153,18 @@ class GuidedAnchorHead(AnchorHead):
                 square_anchor_generator['scales'][0])
         assert (approx_anchor_generator['strides'] ==
                 square_anchor_generator['strides'])
-        self.approx_anchor_generator = build_anchor_generator(
+        self.approx_anchor_generator = build_prior_generator(
             approx_anchor_generator)
-        self.square_anchor_generator = build_anchor_generator(
+        self.square_anchor_generator = build_prior_generator(
             square_anchor_generator)
         self.approxs_per_octave = self.approx_anchor_generator \
-            .num_base_anchors[0]
+            .num_base_priors[0]
 
         self.reg_decoded_bbox = reg_decoded_bbox
 
         # one anchor per location
-        self.num_anchors = 1
+        self.num_base_priors = self.square_anchor_generator.num_base_priors[0]
+
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
         self.loc_focal_loss = loss_loc['type'] in ['FocalLoss']
         self.sampling = loss_cls['type'] not in ['FocalLoss']
@@ -206,20 +208,27 @@ class GuidedAnchorHead(AnchorHead):
 
         self._init_layers()
 
+    @property
+    def num_anchors(self):
+        warnings.warn('DeprecationWarning: `num_anchors` is deprecated, '
+                      'please use "num_base_priors" instead')
+        return self.square_anchor_generator.num_base_priors[0]
+
     def _init_layers(self):
         self.relu = nn.ReLU(inplace=True)
         self.conv_loc = nn.Conv2d(self.in_channels, 1, 1)
-        self.conv_shape = nn.Conv2d(self.in_channels, self.num_anchors * 2, 1)
+        self.conv_shape = nn.Conv2d(self.in_channels, self.num_base_priors * 2,
+                                    1)
         self.feature_adaption = FeatureAdaption(
             self.in_channels,
             self.feat_channels,
             kernel_size=3,
             deform_groups=self.deform_groups)
-        self.conv_cls = MaskedConv2d(self.feat_channels,
-                                     self.num_anchors * self.cls_out_channels,
-                                     1)
-        self.conv_reg = MaskedConv2d(self.feat_channels, self.num_anchors * 4,
-                                     1)
+        self.conv_cls = MaskedConv2d(
+            self.feat_channels, self.num_base_priors * self.cls_out_channels,
+            1)
+        self.conv_reg = MaskedConv2d(self.feat_channels,
+                                     self.num_base_priors * 4, 1)
 
     def forward_single(self, x):
         loc_pred = self.conv_loc(x)
@@ -252,7 +261,7 @@ class GuidedAnchorHead(AnchorHead):
 
         # since feature map sizes of all images are the same, we only compute
         # approxes for one time
-        multi_level_approxs = self.approx_anchor_generator.grid_anchors(
+        multi_level_approxs = self.approx_anchor_generator.grid_priors(
             featmap_sizes, device=device)
         approxs_list = [multi_level_approxs for _ in range(num_imgs)]
 
@@ -313,7 +322,7 @@ class GuidedAnchorHead(AnchorHead):
 
         # since feature map sizes of all images are the same, we only compute
         # squares for one time
-        multi_level_squares = self.square_anchor_generator.grid_anchors(
+        multi_level_squares = self.square_anchor_generator.grid_priors(
             featmap_sizes, device=device)
         squares_list = [multi_level_squares for _ in range(num_imgs)]
 
@@ -360,7 +369,7 @@ class GuidedAnchorHead(AnchorHead):
             loc_mask = loc_pred >= self.loc_filter_thr
         else:
             loc_mask = loc_pred >= 0.0
-        mask = loc_mask.permute(1, 2, 0).expand(-1, -1, self.num_anchors)
+        mask = loc_mask.permute(1, 2, 0).expand(-1, -1, self.num_base_priors)
         mask = mask.contiguous().view(-1)
         # calculate guided anchors
         squares = squares[mask]

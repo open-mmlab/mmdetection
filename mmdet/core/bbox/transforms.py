@@ -133,6 +133,7 @@ def distance2bbox(points, distance, max_shape=None):
     Returns:
         Tensor: Boxes with shape (N, 4) or (B, N, 4)
     """
+
     x1 = points[..., 0] - distance[..., 0]
     y1 = points[..., 1] - distance[..., 1]
     x2 = points[..., 0] + distance[..., 2]
@@ -141,6 +142,12 @@ def distance2bbox(points, distance, max_shape=None):
     bboxes = torch.stack([x1, y1, x2, y2], -1)
 
     if max_shape is not None:
+        if bboxes.dim() == 2 and not torch.onnx.is_in_onnx_export():
+            # speed up
+            bboxes[:, 0::2].clamp_(min=0, max=max_shape[1])
+            bboxes[:, 1::2].clamp_(min=0, max=max_shape[0])
+            return bboxes
+
         # clip bboxes with dynamic `min` and `max` for onnx
         if torch.onnx.is_in_onnx_export():
             from mmdet.core.export import dynamic_clip_for_onnx
