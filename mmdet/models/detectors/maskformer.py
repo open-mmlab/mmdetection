@@ -3,7 +3,7 @@ from .single_stage import SingleStageDetector
 
 
 @DETECTORS.register_module()
-class Maskformer(SingleStageDetector):
+class MaskFormer(SingleStageDetector):
     r"""Implementation of `Per-Pixel Classification is 
     NOT All You Need for Semantic Segmentation 
     <https://arxiv.org/pdf/2107.06278>`"""
