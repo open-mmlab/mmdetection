@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import contextlib
+import io
 import itertools
 import logging
 import os.path as osp
@@ -490,7 +492,13 @@ class CocoDataset(CustomDataset):
                 cocoEval.params.useCats = 0
                 cocoEval.evaluate()
                 cocoEval.accumulate()
-                cocoEval.summarize()
+
+                # Save coco summarize print information to logger
+                redirect_string = io.StringIO()
+                with contextlib.redirect_stdout(redirect_string):
+                    cocoEval.summarize()
+                print_log('\n' + redirect_string.getvalue(), logger=logger)
+
                 if metric_items is None:
                     metric_items = [
                         'AR@100', 'AR@300', 'AR@1000', 'AR_s@1000',
@@ -504,7 +512,13 @@ class CocoDataset(CustomDataset):
             else:
                 cocoEval.evaluate()
                 cocoEval.accumulate()
-                cocoEval.summarize()
+
+                # Save coco summarize print information to logger
+                redirect_string = io.StringIO()
+                with contextlib.redirect_stdout(redirect_string):
+                    cocoEval.summarize()
+                print_log('\n' + redirect_string.getvalue(), logger=logger)
+
                 if classwise:  # Compute per-category AP
                     # Compute per-category AP
                     # from https://github.com/facebookresearch/detectron2/
