@@ -202,11 +202,9 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         if dist.is_available() and dist.is_initialized():
             log_var_length = torch.tensor(len(log_vars), device=loss.device)
             dist.all_reduce(log_var_length)
-            message = (
-                f'rank {dist.get_rank()}'
-                + f' len(log_vars): {len(log_vars)}'
-                + ' keys: ' + ','.join(log_vars.keys())
-            )
+            message = (f'rank {dist.get_rank()}' +
+                       f' len(log_vars): {len(log_vars)}' + ' keys: ' +
+                       ','.join(log_vars.keys()))
             assert log_var_length == len(log_vars) * dist.get_world_size(), \
                 'loss log variables are different across GPUs!\n' + message
 
