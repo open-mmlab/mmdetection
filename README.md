@@ -13,10 +13,10 @@
   <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
 
-[📘Documentation](https://mmdetection.readthedocs.io/en/v2.18.0/) |
-[🛠️Installation](https://mmdetection.readthedocs.io/en/v2.18.0/get_started.html) |
-[👀Model Zoo](https://mmdetection.readthedocs.io/zh_CN/v2.18.0/model_zoo.html) |
-[🆕Update News](https://mmdetection.readthedocs.io/en/v2.18.0/changelog.html) |
+[📘Documentation](https://mmdetection.readthedocs.io/en/v2.18.1/) |
+[🛠️Installation](https://mmdetection.readthedocs.io/en/v2.18.1/get_started.html) |
+[👀Model Zoo](https://mmdetection.readthedocs.io/zh_CN/v2.18.1/model_zoo.html) |
+[🆕Update News](https://mmdetection.readthedocs.io/en/v2.18.1/changelog.html) |
 [🚀Ongoing Projects](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔Reporting Issues](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
@@ -60,10 +60,10 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-**2.18.0** was released in 27/10/2021:
-- Support [QueryInst](http://arxiv.org/abs/2105.01928).
-- Refactor dense_head to decouple onnx export from get_bboxes and speed up inference time.
-- Support infinite sampler to accelerate training when using iter based runner.
+**2.18.1** was released in 15/11/2021:
+- Release [QueryInst](http://arxiv.org/abs/2105.01928) pre-trained weights.
+- Support plot confusion matrix.
+- Fix SpatialReductionAttention in PVT and fix trunc_normal_init in both PVT and Swin-Transformer.
 
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 
