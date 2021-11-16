@@ -269,7 +269,7 @@ class MaskFormer(nn.Module):
         raise NotImplementedError
 
 
-    def load_state_dict(self, state_dict: 'OrderedDict[str, Tensor]', strict: bool = True):
+    def load_state_dict(self, state_dict, strict):
         new_state_dict = {}
         for k in state_dict.keys():
             if "criterion" in k:
