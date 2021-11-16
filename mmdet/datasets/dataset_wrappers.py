@@ -48,7 +48,7 @@ class ConcatDataset(_ConcatDataset):
 
     def get_cat_ids(self, idx):
         """Get category ids of concatenated dataset by index.
-
+        
         Args:
             idx (int): Index of data.
 
@@ -67,6 +67,30 @@ class ConcatDataset(_ConcatDataset):
         else:
             sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
         return self.datasets[dataset_idx].get_cat_ids(sample_idx)
+
+    def get_ann_info(self, idx):
+        """Get annotation of concatenated dataset by index.
+
+        This is needed by MixUp.
+
+        Args:
+            idx (int): Index of data.
+        
+        Returns:
+            dict: Annotation info of specified index.
+        """
+
+        if idx < 0:
+            if -idx > len(self):
+                raise ValueError(
+                    'absolute value of index should not exceed dataset length')
+            idx = len(self) + idx
+        dataset_idx = bisect.bisect_right(self.cumulative_sizes, idx)
+        if dataset_idx == 0:
+            sample_idx = idx
+        else:
+            sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
+        return self.datasets[dataset_idx].get_ann_info(sample_idx)
 
     def evaluate(self, results, logger=None, **kwargs):
         """Evaluate the results.
@@ -164,6 +188,18 @@ class RepeatDataset:
         """
 
         return self.dataset.get_cat_ids(idx % self._ori_len)
+
+    def get_ann_info(self, idx):
+        """Get annotation of repeat dataset by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            dict: Annotation info of specified index.
+        """
+
+        return self.dataset.get_ann_info(idx % self._ori_len)
 
     def __len__(self):
         """Length after repetition."""
@@ -279,6 +315,18 @@ class ClassBalancedDataset:
     def __getitem__(self, idx):
         ori_index = self.repeat_indices[idx]
         return self.dataset[ori_index]
+
+    def get_ann_info(self, idx):
+        """Get annotation of dataset by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            dict: Annotation info of specified index.
+        """
+        ori_index = self.repeat_indices[idx]
+        return self.dataset.get_ann_info(ori_index)
 
     def __len__(self):
         """Length after repetition."""
