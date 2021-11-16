@@ -1,5 +1,12 @@
 # MMDetection v2.x 兼容性说明
 
+## MMDetection 2.18.1
+
+### MMCV compatibility
+
+为了修复 BaseTransformerLayer 中的权重引用问题, MultiheadAttention 中 batch first 的逻辑有所改变。
+我们推荐使用 MMCV v1.3.17 或更高版本。 更多信息请参考 [MMCV PR #1418](https://github.com/open-mmlab/mmcv/pull/1418) 。
+
 ## MMDetection 2.18.0
 
 ### DIIHead 兼容性
