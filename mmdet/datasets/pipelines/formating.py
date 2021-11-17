@@ -210,6 +210,10 @@ class DefaultFormatBundle:
         if 'img' in results:
             img = results['img']
             if self.img_to_float is True and img.dtype == np.uint8:
+                # Normally, image is of uint8 type without normalization.
+                # At this time, it needs to be forced to be converted to
+                # flot32, otherwise the model training and inference
+                # will be wrong. Only used for YOLOX currently .
                 img = img.astype(np.float32)
             # add default meta keys
             results = self._add_default_meta_keys(results)
@@ -254,7 +258,8 @@ class DefaultFormatBundle:
         return results
 
     def __repr__(self):
-        return self.__class__.__name__
+        return self.__class__.__name__ + \
+               f'(img_to_float={self.img_to_float})'
 
 
 @PIPELINES.register_module()

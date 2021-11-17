@@ -25,14 +25,6 @@ model = dict(
 data_root = 'data/coco/'
 dataset_type = 'CocoDataset'
 
-file_client_args = dict(backend='disk')
-# file_client_args = dict(
-#     backend='petrel',
-#     path_mapping=dict({
-#         '.data/coco/': 's3://openmmlab/datasets/detection/coco/',
-#         'data/coco/': 's3://openmmlab/datasets/detection/coco/'
-#     }))
-
 train_pipeline = [
     dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
     dict(
@@ -63,7 +55,7 @@ train_dataset = dict(
         ann_file=data_root + 'annotations/instances_train2017.json',
         img_prefix=data_root + 'train2017/',
         pipeline=[
-            dict(type='LoadImageFromFile', file_client_args=file_client_args),
+            dict(type='LoadImageFromFile'),
             dict(type='LoadAnnotations', with_bbox=True)
         ],
         filter_empty_gt=False,
@@ -71,7 +63,7 @@ train_dataset = dict(
     pipeline=train_pipeline)
 
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
         img_scale=img_scale,

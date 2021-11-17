@@ -36,9 +36,9 @@ class YOLOX(SingleStageDetector):
                                     test_cfg, pretrained, init_cfg)
         self.rank, self.world_size = get_dist_info()
         self._default_input_size = input_size
-        self.input_size = input_size
-        self.random_size_range = random_size_range
-        self.random_size_interval = random_size_interval
+        self._input_size = input_size
+        self._random_size_range = random_size_range
+        self._random_size_interval = random_size_interval
         self._progress_in_iter = 0
 
     def forward_train(self,
@@ -65,25 +65,25 @@ class YOLOX(SingleStageDetector):
             dict[str, Tensor]: A dictionary of loss components.
         """
         # Multi-scale training
-        img, gt_bboxes = self.preprocess(img, gt_bboxes)
+        img, gt_bboxes = self._preprocess(img, gt_bboxes)
 
         losses = super(YOLOX, self).forward_train(img, img_metas, gt_bboxes,
                                                   gt_labels, gt_bboxes_ignore)
 
         # random resizing
-        if (self._progress_in_iter + 1) % self.random_size_interval == 0:
-            self.input_size = self.random_resize()
+        if (self._progress_in_iter + 1) % self._random_size_interval == 0:
+            self._input_size = self._random_resize()
         self._progress_in_iter += 1
 
         return losses
 
-    def preprocess(self, img, gt_bboxes):
-        scale_y = self.input_size[0] / self._default_input_size[0]
-        scale_x = self.input_size[1] / self._default_input_size[1]
+    def _preprocess(self, img, gt_bboxes):
+        scale_y = self._input_size[0] / self._default_input_size[0]
+        scale_x = self._input_size[1] / self._default_input_size[1]
         if scale_x != 1 or scale_y != 1:
             img = F.interpolate(
                 img,
-                size=self.input_size,
+                size=self._input_size,
                 mode='bilinear',
                 align_corners=False)
             for gt_bbox in gt_bboxes:
@@ -91,11 +91,11 @@ class YOLOX(SingleStageDetector):
                 gt_bbox[..., 1::2] = gt_bbox[..., 1::2] * scale_y
         return img, gt_bboxes
 
-    def random_resize(self):
+    def _random_resize(self):
         tensor = torch.LongTensor(2).cuda()
 
         if self.rank == 0:
-            size = random.randint(*self.random_size_range)
+            size = random.randint(*self._random_size_range)
             size = (32 * size, 32 * size)
             tensor[0] = size[0]
             tensor[1] = size[1]

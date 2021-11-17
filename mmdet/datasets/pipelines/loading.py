@@ -574,3 +574,8 @@ class FilterAnnotations:
                 if key in results:
                     results[key] = results[key][keep]
             return results
+
+    def __repr__(self):
+        return self.__class__.__name__ + \
+               f'(min_gt_bbox_wh={self.min_gt_bbox_wh},' \
+               f'always_keep={self.always_keep})'
