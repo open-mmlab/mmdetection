@@ -19,6 +19,28 @@ class YOLOX(SingleStageDetector):
     Taking into account the training speed and accuracy, it will
     be temporarily retained, but a more elegant implementation will
     be adopted in the future.
+
+    Args:
+        backbone (nn.Module): The backbone module.
+        neck (nn.Module): The neck module.
+        bbox_head (nn.Module): The bbox head module.
+        train_cfg (obj:`ConfigDict`, optional): The training config
+            of YOLOX. Default: None.
+        test_cfg (obj:`ConfigDict`, optional): The testing config
+            of YOLOX. Default: None.
+        pretrained (str, optional): model pretrained path.
+            Default: None.
+        input_size (tuple): The model default input image size.
+            Default: (640, 640).
+        size_multiplier (int): Image size multiplication factor.
+            Default: 32.
+        random_size_range (tuple): The multi-scale random range during
+            multi-scale training. The real training image size will
+            be multiplied by size_multiplier. Default: (15, 25).
+        random_size_interval (int): The iter interval of change
+            image size. Default: 10.
+        init_cfg (dict, optional): Initialization config dict.
+            Default: None.
     """
 
     def __init__(self,
@@ -29,6 +51,7 @@ class YOLOX(SingleStageDetector):
                  test_cfg=None,
                  pretrained=None,
                  input_size=(640, 640),
+                 size_multiplier=32,
                  random_size_range=(15, 25),
                  random_size_interval=10,
                  init_cfg=None):
@@ -39,6 +62,7 @@ class YOLOX(SingleStageDetector):
         self._input_size = input_size
         self._random_size_range = random_size_range
         self._random_size_interval = random_size_interval
+        self._size_multiplier = size_multiplier
         self._progress_in_iter = 0
 
     def forward_train(self,
@@ -96,7 +120,7 @@ class YOLOX(SingleStageDetector):
 
         if self.rank == 0:
             size = random.randint(*self._random_size_range)
-            size = (32 * size, 32 * size)
+            size = (self._size_multiplier * size, self._size_multiplier * size)
             tensor[0] = size[0]
             tensor[1] = size[1]
 

@@ -2192,9 +2192,9 @@ class Mosaic:
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'img_scale={self.img_scale}, '
-        repr_str += f'center_ratio_range={self.center_ratio_range})'
-        repr_str += f'pad_val={self.pad_val})'
-        repr_str += f'min_bbox_size={self.min_bbox_size})'
+        repr_str += f'center_ratio_range={self.center_ratio_range}, '
+        repr_str += f'pad_val={self.pad_val}, '
+        repr_str += f'min_bbox_size={self.min_bbox_size}, '
         repr_str += f'skip_filter_rule={self.skip_filter_rule})'
         return repr_str
 
@@ -2432,13 +2432,13 @@ class MixUp:
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'dynamic_scale={self.dynamic_scale}, '
-        repr_str += f'ratio_range={self.ratio_range})'
-        repr_str += f'flip_ratio={self.flip_ratio})'
-        repr_str += f'pad_val={self.pad_val})'
-        repr_str += f'max_iters={self.max_iters})'
-        repr_str += f'min_bbox_size={self.min_bbox_size})'
-        repr_str += f'min_area_ratio={self.min_area_ratio})'
-        repr_str += f'max_aspect_ratio={self.max_aspect_ratio})'
+        repr_str += f'ratio_range={self.ratio_range}, '
+        repr_str += f'flip_ratio={self.flip_ratio}, '
+        repr_str += f'pad_val={self.pad_val}, '
+        repr_str += f'max_iters={self.max_iters}, '
+        repr_str += f'min_bbox_size={self.min_bbox_size}, '
+        repr_str += f'min_area_ratio={self.min_area_ratio}, '
+        repr_str += f'max_aspect_ratio={self.max_aspect_ratio}, '
         repr_str += f'skip_filter_rule={self.skip_filter_rule})'
         return repr_str
 
@@ -2607,7 +2607,7 @@ class RandomAffine:
         repr_str += f'border_val={self.border_val}, '
         repr_str += f'min_bbox_size={self.min_bbox_size}, '
         repr_str += f'min_area_ratio={self.min_area_ratio}, '
-        repr_str += f'max_aspect_ratio={self.max_aspect_ratio})'
+        repr_str += f'max_aspect_ratio={self.max_aspect_ratio}, '
         repr_str += f'skip_filter_rule={self.skip_filter_rule})'
         return repr_str
 
@@ -2690,5 +2690,5 @@ class YOLOXHSVRandomAug:
         repr_str = self.__class__.__name__
         repr_str += f'(hue_delta={self.hue_delta}, '
         repr_str += f'saturation_delta={self.saturation_delta}, '
-        repr_str += f'value_delta={self.value_delta}, '
+        repr_str += f'value_delta={self.value_delta})'
         return repr_str
