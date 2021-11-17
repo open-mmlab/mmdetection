@@ -15,6 +15,7 @@ from .custom import CustomDataset
 
 @DATASETS.register_module()
 class OpenImagesDataset(CustomDataset):
+    """"""
 
     def __init__(self,
                  label_csv_path='',
@@ -22,11 +23,11 @@ class OpenImagesDataset(CustomDataset):
                  need_get_father=True,
                  hierarchy_file_path=None,
                  **kwargs):
-        super(OpenImagesDataset, self).__init__(**kwargs)
-        self.min_size = min_size
         self.cat2label = defaultdict(str)
         self.index_dict = {}
         self.CLASSES = self.get_classes_from_csv(label_csv_path)
+        super(OpenImagesDataset, self).__init__(**kwargs)
+        self.min_size = min_size
         if need_get_father is True and hierarchy_file_path is not None:
             self.class_label_tree = self.get_father(hierarchy_file_path)
         self.need_get_father = need_get_father
@@ -43,7 +44,7 @@ class OpenImagesDataset(CustomDataset):
                 classes.append(line[1])
                 index_list.append(line[0])
         self.index_dict = {index: i for i, index in enumerate(index_list)}
-        assert len(self.cat2label) == len(self.index_list) == len(classes)
+        assert len(self.cat2label) == len(self.index_dict) == len(classes)
         return classes
 
     def list_from_csv(self, ann_file):
@@ -65,9 +66,10 @@ class OpenImagesDataset(CustomDataset):
                 i += 1
                 if i == 0:
                     continue
-                # else:
-                elif i < 30:  # for debug, TODO: delete later
-                    filename = line[0]
+                else:
+                    # elif i < 30:  # for debug, TODO: delete later
+                    img_id = line[0]
+                    filename = f'{img_id}.jpg'
                     label = int(self.index_dict[line[2]])
                     bbox = [
                         float(line[4]),  # xmin
@@ -81,7 +83,7 @@ class OpenImagesDataset(CustomDataset):
                     is_depiction = True if line[11] == 1 else False
                     is_inside = True if line[12] == 1 else False
 
-                    item_list[filename].append(
+                    item_list[img_id].append(
                         dict(
                             bbox=bbox,
                             label=label,
@@ -90,7 +92,7 @@ class OpenImagesDataset(CustomDataset):
                             is_group_of=is_group_of,
                             is_depiction=is_depiction,
                             is_inside=is_inside))
-                    data_infos.append(dict(filename=filename))
+                    data_infos.append(dict(img_id=img_id, filename=filename))
 
         return item_list, data_infos
 
@@ -99,7 +101,7 @@ class OpenImagesDataset(CustomDataset):
         return data_infos
 
     def get_ann_info(self, idx):
-        filename = self.data_infos[idx]['filename']
+        img_id = self.data_infos[idx]['img_id']
         bboxes = []
         labels = []
         bboxes_ignore = []
@@ -109,7 +111,7 @@ class OpenImagesDataset(CustomDataset):
         is_group_ofs = []
         is_depictions = []
         is_insides = []
-        for obj in self.ann_infos[filename]:
+        for obj in self.ann_infos[img_id]:
             label = int(obj['label'])
             bbox = [
                 int(float(obj['bbox'][0])),
@@ -380,9 +382,6 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
         """class-descriptions-boxable.csv."""
         label_list = []
         id_list = []
-        # self.cat2label = {}
-        if self.data_root is not None:
-            label_csv_path = osp.join(self.data_root, label_csv_path)
         with open(label_csv_path, 'r') as f:
             reader = csv.reader(f)
             for line in reader:

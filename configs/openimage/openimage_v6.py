@@ -3,10 +3,10 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
-model = dict(roi_head=dict(bbox_head=dict(num_classes=500)))
+model = dict(roi_head=dict(bbox_head=dict(num_classes=601)))
 
 # dataset settings
-dataset_type = 'OpenImagesChallengeDataset'
+dataset_type = 'OpenImagesDataset'
 data_root = 'data/OpenImages/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -44,27 +44,29 @@ data = dict(
     # class_aware_sampling=True,
     train=dict(
         type=dataset_type,
-        ann_file=data_root +
-        'challenge2019/challenge-2019-validation-detection-bbox.txt',
-        # 'challenge2019/challenge-2019-train-detection-bbox.txt',
-        img_prefix=data_root,
-        label_csv_path=data_root + 'challenge2019/cls-label-description.csv',
-        hierarchy_file_path=data_root + 'challenge2019/class_label_tree.np',
+        ann_file=data_root + 'annotations/oidv6-train-annotations-bbox.csv',
+        img_prefix=data_root + 'train/',
+        label_csv_path=data_root +
+        'annotations/class-descriptions-boxable.csv',
+        hierarchy_file_path=data_root +
+        'annotations/bbox_labels_600_hierarchy.json',
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file=data_root +
-        'challenge2019/challenge-2019-validation-detection-bbox.txt',
-        img_prefix=data_root,
-        label_csv_path=data_root + 'challenge2019/cls-label-description.csv',
-        hierarchy_file_path=data_root + 'challenge2019/class_label_tree.np',
+        ann_file=data_root + 'annotations/validation-annotations-bbox.csv',
+        img_prefix=data_root + 'validation/',
+        label_csv_path=data_root +
+        'annotations/class-descriptions-boxable.csv',
+        hierarchy_file_path=data_root +
+        'annotations/bbox_labels_600_hierarchy.json',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root +
-        'challenge2019/challenge-2019-validation-detection-bbox.txt',
-        img_prefix=data_root,
-        label_csv_path=data_root + 'challenge2019/cls-label-description.csv',
-        hierarchy_file_path=data_root + 'challenge2019/class_label_tree.np',
+        ann_file=data_root + 'annotations/validation-annotations-bbox.csv',
+        img_prefix=data_root + 'validation/',
+        label_csv_path=data_root +
+        'annotations/class-descriptions-boxable.csv',
+        hierarchy_file_path=data_root +
+        'annotations/bbox_labels_600_hierarchy.json',
         pipeline=test_pipeline))
 evaluation = dict(interval=1, metric='mAP')
