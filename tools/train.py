@@ -13,7 +13,7 @@ from mmcv.runner import get_dist_info, init_dist
 from mmcv.utils import get_git_hash
 
 from mmdet import __version__
-from mmdet.apis import set_random_seed, train_detector
+from mmdet.apis import init_random_seed, set_random_seed, train_detector
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
 from mmdet.utils import collect_env, get_root_logger
@@ -148,12 +148,12 @@ def main():
     logger.info(f'Config:\n{cfg.pretty_text}')
 
     # set random seeds
-    if args.seed is not None:
-        logger.info(f'Set random seed to {args.seed}, '
-                    f'deterministic: {args.deterministic}')
-        set_random_seed(args.seed, deterministic=args.deterministic)
-    cfg.seed = args.seed
-    meta['seed'] = args.seed
+    seed = init_random_seed(args.seed)
+    logger.info(f'Set random seed to {seed}, '
+                f'deterministic: {args.deterministic}')
+    set_random_seed(seed, deterministic=args.deterministic)
+    cfg.seed = seed
+    meta['seed'] = seed
     meta['exp_name'] = osp.basename(args.config)
 
     model = build_detector(

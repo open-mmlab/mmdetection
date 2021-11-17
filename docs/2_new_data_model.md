@@ -257,7 +257,7 @@ For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).
 To test the trained model, you can simply run
 
 ```shell
-python tools/test.py configs/balloon/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py work_dirs/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py/latest.pth --eval bbox segm
+python tools/test.py configs/balloon/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py work_dirs/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon/latest.pth --eval bbox segm
 ```
 
 For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).
