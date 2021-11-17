@@ -85,6 +85,12 @@ def parse_args():
         help='custom options for evaluation, the key-value pair in xxx=yyy '
         'format will be kwargs for dataset.evaluate() function')
     parser.add_argument(
+        '--format-options',
+        nargs='+',
+        action=DictAction,
+        help='custom options for format_only, the key-value pair in xxx=yyy '
+        'format will be kwargs for dataset.format_results() function')
+    parser.add_argument(
         '--launcher',
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
@@ -112,9 +118,6 @@ def main():
         ('Please specify at least one operation (save/eval/format/show the '
          'results / save the results) with the argument "--out", "--eval"'
          ', "--format-only", "--show" or "--show-dir"')
-
-    if args.eval and args.format_only:
-        raise ValueError('--eval and --format_only cannot be both specified')
 
     if args.out is not None and not args.out.endswith(('.pkl', '.pickle')):
         raise ValueError('The output file must be a pkl file.')
@@ -215,10 +218,11 @@ def main():
         if args.out:
             print(f'\nwriting results to {args.out}')
             mmcv.dump(outputs, args.out)
-        kwargs = {} if args.eval_options is None else args.eval_options
         if args.format_only:
+            kwargs = {} if args.format_options is None else args.format_options
             dataset.format_results(outputs, **kwargs)
         if args.eval:
+            kwargs = {} if args.eval_options is None else args.eval_options
             eval_kwargs = cfg.get('evaluation', {}).copy()
             # hard-code way to remove EvalHook args
             for key in [
