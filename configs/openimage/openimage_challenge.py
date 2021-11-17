@@ -45,8 +45,7 @@ data = dict(
     train=dict(
         type=dataset_type,
         ann_file=data_root +
-        'challenge2019/challenge-2019-validation-detection-bbox.txt',
-        # 'challenge2019/challenge-2019-train-detection-bbox.txt',
+        'challenge2019/challenge-2019-train-detection-bbox.txt',
         img_prefix=data_root,
         label_csv_path=data_root + 'challenge2019/cls-label-description.csv',
         hierarchy_file_path=data_root + 'challenge2019/class_label_tree.np',
