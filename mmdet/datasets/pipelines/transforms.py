@@ -2187,8 +2187,8 @@ class Mosaic:
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += f'img_scale={self.img_scale}, '
-        repr_str += f'center_ratio_range={self.center_ratio_range})'
+        repr_str += f'(img_scale={self.img_scale}, '
+        repr_str += f'center_ratio_range={self.center_ratio_range}, '
         repr_str += f'pad_val={self.pad_val})'
         return repr_str
 
