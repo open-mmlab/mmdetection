@@ -59,6 +59,7 @@ class OpenImagesDataset(CustomDataset):
 
         item_list = defaultdict(list)
         data_infos = []
+        cp_filename = None
         with open(ann_file, 'r') as f:
             reader = csv.reader(f)
             i = -1
@@ -92,8 +93,10 @@ class OpenImagesDataset(CustomDataset):
                             is_group_of=is_group_of,
                             is_depiction=is_depiction,
                             is_inside=is_inside))
-                    data_infos.append(dict(img_id=img_id, filename=filename))
-
+                    if filename != cp_filename:
+                        data_infos.append(
+                            dict(img_id=img_id, filename=filename))
+                        cp_filename = filename
         return item_list, data_infos
 
     def load_annotations(self, ann_file):
