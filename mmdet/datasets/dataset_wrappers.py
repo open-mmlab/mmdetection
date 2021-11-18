@@ -48,7 +48,7 @@ class ConcatDataset(_ConcatDataset):
 
     def get_cat_ids(self, idx):
         """Get category ids of concatenated dataset by index.
-        
+
         Args:
             idx (int): Index of data.
 
@@ -75,7 +75,7 @@ class ConcatDataset(_ConcatDataset):
 
         Args:
             idx (int): Index of data.
-        
+
         Returns:
             dict: Annotation info of specified index.
         """

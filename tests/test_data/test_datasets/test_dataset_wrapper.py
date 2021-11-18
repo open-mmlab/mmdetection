@@ -31,7 +31,8 @@ def test_dataset_wrapper():
         ],
                                  axis=1)
         gt_labels = np.random.randint(0, 80, 2)
-        ann_info_list_a.append(dict(gt_bboxes=gt_bbox, gt_labels=gt_labels, img=img))
+        ann_info_list_a.append(
+            dict(gt_bboxes=gt_bbox, gt_labels=gt_labels, img=img))
     dataset_a.data_infos = MagicMock()
     dataset_a.data_infos.__len__.return_value = len_a
     dataset_a.get_cat_ids = MagicMock(
@@ -56,7 +57,8 @@ def test_dataset_wrapper():
         ],
                                  axis=1)
         gt_labels = np.random.randint(0, 80, 2)
-        ann_info_list_b.append(dict(gt_bboxes=gt_bbox, gt_labels=gt_labels, img=img))
+        ann_info_list_b.append(
+            dict(gt_bboxes=gt_bbox, gt_labels=gt_labels, img=img))
     dataset_b.data_infos = MagicMock()
     dataset_b.data_infos.__len__.return_value = len_b
     dataset_b.get_cat_ids = MagicMock(
@@ -112,8 +114,8 @@ def test_dataset_wrapper():
     for idx in np.random.randint(0, len(repeat_factor_dataset), 3):
         assert repeat_factor_dataset[idx] == bisect.bisect_right(
             repeat_factors_cumsum, idx)
-        assert repeat_factor_dataset.get_ann_info(idx) == ann_info_list_a[bisect.bisect_right(
-            repeat_factors_cumsum, idx)]
+        assert repeat_factor_dataset.get_ann_info(idx) == ann_info_list_a[
+            bisect.bisect_right(repeat_factors_cumsum, idx)]
 
     img_scale = (60, 60)
     dynamic_scale = (80, 80)
