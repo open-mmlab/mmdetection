@@ -52,11 +52,14 @@ def pq_compute_single_core(proc_id,
             print('Core: {}, {} from {} images processed'.format(
                 proc_id, idx, len(annotation_set)))
         idx += 1
+        # The gt images can be on the local disk or `ceph`, so we use
+        # file_client here.
         img_bytes = file_client.get(
             os.path.join(gt_folder, gt_ann['file_name']))
         pan_gt = mmcv.imfrombytes(img_bytes, flag='color', channel_order='rgb')
         pan_gt = rgb2id(pan_gt)
 
+        # The predictions can only be on the local dist now.
         pan_pred = mmcv.imread(
             os.path.join(pred_folder, pred_ann['file_name']),
             flag='color',
