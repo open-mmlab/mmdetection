@@ -4,7 +4,7 @@ ARG CUDNN="7"
 FROM pytorch/pytorch:${PYTORCH}-cuda${CUDA}-cudnn${CUDNN}-devel
 
 ARG MMCV="1.3.14"
-ARG MMDET="2.17.0"
+ARG MMDET="2.18.0"
 
 ENV PYTHONUNBUFFERED TRUE
 
