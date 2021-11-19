@@ -40,6 +40,12 @@ def pq_compute_single_core(proc_id,
         file_client (object): The file client of the dataset. If None,
             the backend will be set to `disk`.
     """
+    if PQStat is None:
+        raise RuntimeError(
+            'panopticapi is not installed, please install it by: '
+            'pip install git+https://github.com/cocodataset/'
+            'panopticapi.git.')
+
     if file_client is None:
         file_client_args = dict(backend='disk')
         file_client = mmcv.FileClient(**file_client_args)
