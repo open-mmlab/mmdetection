@@ -108,7 +108,10 @@ def main():
                                 osp.splitext(osp.basename(args.config))[0])
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
-    if args.gpu_ids is not None:
+
+    if os.environ.get("LOCAL_RANK"):
+        cfg.gpu_ids = [int(os.environ["LOCAL_RANK"])]
+    elif args.gpu_ids is not None:
         cfg.gpu_ids = args.gpu_ids
     else:
         cfg.gpu_ids = range(1) if args.gpus is None else range(args.gpus)
