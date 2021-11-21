@@ -388,7 +388,7 @@ python tools/dataset_converters/pascal_voc.py ${DEVKIT_PATH} [-h] [-o ${OUT_DIR}
 `tools/analysis_tools/benchmark.py` helps users to calculate FPS. The FPS value includes model forward and post-processing. In order to get a more accurate value, currently only supports single GPU distributed startup mode.
 
 ```shell
-torchrun --nnodes=1 --nproc_per_node=1 --master_port=${PORT} tools/analysis_tools/benchmark.py \
+torchrun --standalone --nnodes=1 --nproc_per_node=1 --master_port=${PORT} tools/analysis_tools/benchmark.py \
     ${CONFIG} \
     ${CHECKPOINT} \
     [--repeat-num ${REPEAT_NUM}] \
@@ -399,7 +399,7 @@ torchrun --nnodes=1 --nproc_per_node=1 --master_port=${PORT} tools/analysis_tool
 Examples: Assuming that you have already downloaded the `Faster R-CNN` model checkpoint to the directory `checkpoints/`.
 
 ```shell
-torchrun --nnodes=1 --nproc_per_node=1 --master_port=29500 tools/analysis_tools/benchmark.py \
+torchrun --standalone --nnodes=1 --nproc_per_node=1 --master_port=29500 tools/analysis_tools/benchmark.py \
        configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
        checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
 ```
