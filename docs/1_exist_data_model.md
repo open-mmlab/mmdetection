@@ -549,8 +549,8 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 PORT=29501 ./tools/dist_train.sh ${CONFIG_FILE} 4
 
 ### Training on multiple nodes
 
-MMDetection relies on `torch.distributed` package for distributed training.
-Thus, as a basic usage, one can launch distributed training via PyTorch's [launch utility](https://pytorch.org/docs/stable/distributed.html#launch-utility).
+MMDetection relies on `torchrun` package for distributed training.
+Thus, as a basic usage, one can launch distributed training via PyTorch's [torchrun](https://pytorch.org/docs/stable/elastic/run.html).
 
 ### Manage jobs with Slurm
 
