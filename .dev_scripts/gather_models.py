@@ -13,7 +13,6 @@ import yaml
 
 
 def ordered_yaml_dump(data, stream=None, Dumper=yaml.SafeDumper, **kwds):
-
     class OrderedDumper(Dumper):
         pass
 
@@ -51,6 +50,14 @@ def process_checkpoint(in_file, out_file):
 def get_final_epoch(config):
     cfg = mmcv.Config.fromfile('./configs/' + config)
     return cfg.runner.max_epochs
+
+
+def get_best_epoch(exp_dir):
+    best_epoch_model_name = list(
+        sorted(glob.glob(osp.join(exp_dir, 'best_*.pth'))))[-1]
+    print(best_epoch_model_name)
+    best_epoch = best_epoch_model_name.split('_')[-1].split('.')[0]
+    return best_epoch_model_name, best_epoch
 
 
 def get_real_epoch(config):
@@ -160,6 +167,10 @@ def parse_args():
         help='root path of benchmarked models to be gathered')
     parser.add_argument(
         'out', type=str, help='output path of gathered models to be stored')
+    parser.add_argument(
+        '--best',
+        action='store_true',
+        help='whether to gather the best model.')
 
     args = parser.parse_args()
     return args
@@ -187,9 +198,13 @@ def main():
     for used_config in used_configs:
         exp_dir = osp.join(models_root, used_config)
         # check whether the exps is finished
-        final_epoch = get_final_epoch(used_config)
-        final_model = 'epoch_{}.pth'.format(final_epoch)
-        model_path = osp.join(exp_dir, final_model)
+        if args.best is True:
+            best_epoch_model_name, final_epoch = get_best_epoch(exp_dir)
+            model_path = best_epoch_model_name
+        else:
+            final_epoch = get_final_epoch(used_config)
+            final_model = 'epoch_{}.pth'.format(final_epoch)
+            model_path = osp.join(exp_dir, final_model)
 
         # skip if the model is still training
         if not osp.exists(model_path):
