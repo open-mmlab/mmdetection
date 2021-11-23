@@ -881,7 +881,7 @@ def test_random_affine():
         border=(0, 0),
         min_bbox_size=2,
         max_aspect_ratio=20,
-        skip_filter_rule=False)
+        skip_filter=False)
     random_affine_module = build_from_cfg(transform, PIPELINES)
 
     results = random_affine_module(results)

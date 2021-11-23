@@ -15,10 +15,9 @@ class YOLOX(SingleStageDetector):
     r"""Implementation of `YOLOX: Exceeding YOLO Series in 2021
     <https://arxiv.org/abs/2107.08430>`_
 
-    Note: Multi-scale training in the model is not recommended.
-    Taking into account the training speed and accuracy, it will
-    be temporarily retained, but a more elegant implementation will
-    be adopted in the future.
+    Note: Considering the trade-off between training speed and accuracy,
+    multi-scale training is temporarily kept. More elegant implementation
+    will be adopted in the future.
 
     Args:
         backbone (nn.Module): The backbone module.

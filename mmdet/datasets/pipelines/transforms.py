@@ -1985,7 +1985,7 @@ class Mosaic:
            output. Default to (0.5, 1.5).
         min_bbox_size (int | float): The minimum pixel for filtering
             invalid bboxes after the mosaic pipeline. Default to 0.
-        skip_filter_rule (bool): Whether to skip filtering rules. If it
+        skip_filter (bool): Whether to skip filtering rules. If it
             is True, the filter rule will not be applied, and the
             `min_bbox_size` is invalid. Default to True.
         pad_val (int): Pad value. Default to 114.
@@ -1995,13 +1995,13 @@ class Mosaic:
                  img_scale=(640, 640),
                  center_ratio_range=(0.5, 1.5),
                  min_bbox_size=0,
-                 skip_filter_rule=True,
+                 skip_filter=True,
                  pad_val=114):
         assert isinstance(img_scale, tuple)
         self.img_scale = img_scale
         self.center_ratio_range = center_ratio_range
         self.min_bbox_size = min_bbox_size
-        self.skip_filter_rule = skip_filter_rule
+        self.skip_filter = skip_filter
         self.pad_val = pad_val
 
     def __call__(self, results):
@@ -2108,7 +2108,7 @@ class Mosaic:
                                              2 * self.img_scale[0])
             mosaic_labels = np.concatenate(mosaic_labels, 0)
 
-            if not self.skip_filter_rule:
+            if not self.skip_filter:
                 mosaic_bboxes, mosaic_labels = \
                     self._filter_box_candidates(mosaic_bboxes, mosaic_labels)
 
@@ -2195,7 +2195,7 @@ class Mosaic:
         repr_str += f'center_ratio_range={self.center_ratio_range}, '
         repr_str += f'pad_val={self.pad_val}, '
         repr_str += f'min_bbox_size={self.min_bbox_size}, '
-        repr_str += f'skip_filter_rule={self.skip_filter_rule})'
+        repr_str += f'skip_filter={self.skip_filter})'
         return repr_str
 
 
@@ -2245,7 +2245,7 @@ class MixUp:
         max_aspect_ratio (float): Aspect ratio of width and height
             threshold to filter bboxes. If max(h/w, w/h) larger than this
             value, the box will be removed. Default: 20.
-        skip_filter_rule (bool): Whether to skip filtering rules. If it
+        skip_filter (bool): Whether to skip filtering rules. If it
             is True, the filter rule will not be applied, and the
             `min_bbox_size` and `min_area_ratio` and `max_aspect_ratio`
             is invalid. Default to True.
@@ -2260,7 +2260,7 @@ class MixUp:
                  min_bbox_size=5,
                  min_area_ratio=0.2,
                  max_aspect_ratio=20,
-                 skip_filter_rule=True):
+                 skip_filter=True):
         assert isinstance(img_scale, tuple)
         self.dynamic_scale = img_scale
         self.ratio_range = ratio_range
@@ -2270,7 +2270,7 @@ class MixUp:
         self.min_bbox_size = min_bbox_size
         self.min_area_ratio = min_area_ratio
         self.max_aspect_ratio = max_aspect_ratio
-        self.skip_filter_rule = skip_filter_rule
+        self.skip_filter = skip_filter
 
     def __call__(self, results):
         """Call function to make a mixup of image.
@@ -2394,7 +2394,7 @@ class MixUp:
         mixup_img = 0.5 * ori_img + 0.5 * padded_cropped_img.astype(np.float32)
 
         retrieve_gt_labels = retrieve_results['gt_labels']
-        if not self.skip_filter_rule:
+        if not self.skip_filter:
             keep_list = self._filter_box_candidates(retrieve_gt_bboxes.T,
                                                     cp_retrieve_gt_bboxes.T)
 
@@ -2439,7 +2439,7 @@ class MixUp:
         repr_str += f'min_bbox_size={self.min_bbox_size}, '
         repr_str += f'min_area_ratio={self.min_area_ratio}, '
         repr_str += f'max_aspect_ratio={self.max_aspect_ratio}, '
-        repr_str += f'skip_filter_rule={self.skip_filter_rule})'
+        repr_str += f'skip_filter={self.skip_filter})'
         return repr_str
 
 
@@ -2473,7 +2473,7 @@ class RandomAffine:
         max_aspect_ratio (float): Aspect ratio of width and height
             threshold to filter bboxes. If max(h/w, w/h) larger than this
             value, the box will be removed.
-        skip_filter_rule (bool): Whether to skip filtering rules. If it
+        skip_filter (bool): Whether to skip filtering rules. If it
             is True, the filter rule will not be applied, and the
             `min_bbox_size` and `min_area_ratio` and `max_aspect_ratio`
             is invalid. Default to True.
@@ -2489,7 +2489,7 @@ class RandomAffine:
                  min_bbox_size=2,
                  min_area_ratio=0.2,
                  max_aspect_ratio=20,
-                 skip_filter_rule=True):
+                 skip_filter=True):
         assert 0 <= max_translate_ratio <= 1
         assert scaling_ratio_range[0] <= scaling_ratio_range[1]
         assert scaling_ratio_range[0] > 0
@@ -2502,7 +2502,7 @@ class RandomAffine:
         self.min_bbox_size = min_bbox_size
         self.min_area_ratio = min_area_ratio
         self.max_aspect_ratio = max_aspect_ratio
-        self.skip_filter_rule = skip_filter_rule
+        self.skip_filter = skip_filter
 
     def __call__(self, results):
         img = results['img']
@@ -2565,7 +2565,7 @@ class RandomAffine:
                 warp_bboxes[:, [0, 2]] = warp_bboxes[:, [0, 2]].clip(0, width)
                 warp_bboxes[:, [1, 3]] = warp_bboxes[:, [1, 3]].clip(0, height)
 
-                if not self.skip_filter_rule:
+                if not self.skip_filter:
                     # filter bboxes
                     valid_index = self.filter_gt_bboxes(
                         bboxes * scaling_ratio, warp_bboxes)
@@ -2608,7 +2608,7 @@ class RandomAffine:
         repr_str += f'min_bbox_size={self.min_bbox_size}, '
         repr_str += f'min_area_ratio={self.min_area_ratio}, '
         repr_str += f'max_aspect_ratio={self.max_aspect_ratio}, '
-        repr_str += f'skip_filter_rule={self.skip_filter_rule})'
+        repr_str += f'skip_filter={self.skip_filter})'
         return repr_str
 
     @staticmethod
