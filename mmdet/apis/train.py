@@ -105,7 +105,9 @@ def train_detector(model,
             num_gpus=len(cfg.gpu_ids),
             dist=distributed,
             seed=cfg.seed,
-            runner_type=runner_type) for ds in dataset
+            runner_type=runner_type,
+            persistent_workers=cfg.data.get('persistent_workers', False))
+        for ds in dataset
     ]
 
     # put model on gpus
