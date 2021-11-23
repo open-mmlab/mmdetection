@@ -147,10 +147,3 @@ def test_lad_head_loss():
     rescale = False
     self.get_bboxes(
         cls_scores, bbox_preds, iou_preds, img_metas, cfg, rescale=rescale)
-
-
-# ------------------------------------------------------------------------------
-#  Main execution
-# ------------------------------------------------------------------------------
-if __name__ == '__main__':
-    test_lad_head_loss()
