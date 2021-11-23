@@ -194,20 +194,6 @@ def train_detector(model,
         runner.register_hook(
             eval_hook(val_dataloader, **eval_cfg), priority='LOW')
 
-    # user-defined hooks
-    if cfg.get('custom_hooks', None):
-        custom_hooks = cfg.custom_hooks
-        assert isinstance(custom_hooks, list), \
-            f'custom_hooks expect list type, but got {type(custom_hooks)}'
-        for hook_cfg in cfg.custom_hooks:
-            assert isinstance(hook_cfg, dict), \
-                'Each item in custom_hooks expects dict type, but got ' \
-                f'{type(hook_cfg)}'
-            hook_cfg = hook_cfg.copy()
-            priority = hook_cfg.pop('priority', 'NORMAL')
-            hook = build_from_cfg(hook_cfg, HOOKS)
-            runner.register_hook(hook, priority=priority)
-
     if cfg.resume_from:
         runner.resume(cfg.resume_from)
     elif cfg.load_from:
