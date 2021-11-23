@@ -15,7 +15,7 @@
 
 [📘Documentation](https://mmdetection.readthedocs.io/en/v2.18.1/) |
 [🛠️Installation](https://mmdetection.readthedocs.io/en/v2.18.1/get_started.html) |
-[👀Model Zoo](https://mmdetection.readthedocs.io/zh_CN/v2.18.1/model_zoo.html) |
+[👀Model Zoo](https://mmdetection.readthedocs.io/en/v2.18.1/model_zoo.html) |
 [🆕Update News](https://mmdetection.readthedocs.io/en/v2.18.1/changelog.html) |
 [🚀Ongoing Projects](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔Reporting Issues](https://github.com/open-mmlab/mmdetection/issues/new/choose)
@@ -205,3 +205,4 @@ If you use this toolbox or benchmark in your research, please cite this project.
 - [MMEditing](https://github.com/open-mmlab/mmediting): OpenMMLab image and video editing toolbox.
 - [MMOCR](https://github.com/open-mmlab/mmocr): A Comprehensive Toolbox for Text Detection, Recognition and Understanding.
 - [MMGeneration](https://github.com/open-mmlab/mmgeneration): OpenMMLab image and video generative models toolbox.
+- [MMFlow](https://github.com/open-mmlab/mmflow): OpenMMLab optical flow toolbox and benchmark.

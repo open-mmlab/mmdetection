@@ -441,9 +441,9 @@ class LoadPanopticAnnotations(LoadAnnotations):
 
         if self.file_client is None:
             self.file_client = mmcv.FileClient(**self.file_client_args)
+
         filename = osp.join(results['seg_prefix'],
                             results['ann_info']['seg_map'])
-
         img_bytes = self.file_client.get(filename)
         pan_png = mmcv.imfrombytes(
             img_bytes, flag='color', channel_order='rgb').squeeze()
