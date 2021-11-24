@@ -8,6 +8,7 @@ on:
       - '!tools/**'
 
   pull_request:
+    paths:
       - '!demo/**'
       - '!docker/**'
       - '!tools/**'
