@@ -167,8 +167,7 @@ def train_detector(model,
         cfg.checkpoint_config,
         cfg.log_config,
         cfg.get('momentum_config', None),
-        custom_hooks_config=cfg.get('custom_hooks', None)
-    )
+        custom_hooks_config=cfg.get('custom_hooks', None))
 
     if distributed:
         if isinstance(runner, EpochBasedRunner):
