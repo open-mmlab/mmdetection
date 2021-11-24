@@ -880,7 +880,8 @@ def test_random_affine():
         max_shear_degree=0.,
         border=(0, 0),
         min_bbox_size=2,
-        max_aspect_ratio=20)
+        max_aspect_ratio=20,
+        skip_filter=False)
     random_affine_module = build_from_cfg(transform, PIPELINES)
 
     results = random_affine_module(results)

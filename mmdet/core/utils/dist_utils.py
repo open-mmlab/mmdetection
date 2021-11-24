@@ -101,7 +101,8 @@ def all_reduce_dict(py_dict, op='sum', group=None, to_float=True):
     BaseDetection/YOLOX/blob/main/yolox/utils/allreduce_norm.py.
 
     NOTE: make sure that py_dict in different ranks has the same keys and
-    the values should be in the same shape.
+    the values should be in the same shape. Currently only supports
+    nccl backend.
 
     Args:
         py_dict (dict): Dict to be applied all reduce op.
@@ -114,25 +115,25 @@ def all_reduce_dict(py_dict, op='sum', group=None, to_float=True):
     Returns:
         OrderedDict: reduced python dict object.
     """
+    warnings.warn(
+        'group` is deprecated. Currently only supports NCCL backend.')
     _, world_size = get_dist_info()
     if world_size == 1:
-        return py_dict
-    if group is None:
-        # TODO: May try not to use gloo in the future
-        group = _get_global_gloo_group()
-    if dist.get_world_size(group) == 1:
         return py_dict
 
     # all reduce logic across different devices.
     py_key = list(py_dict.keys())
-    py_key_tensor = obj2tensor(py_key)
-    dist.broadcast(py_key_tensor, src=0)
-    py_key = tensor2obj(py_key_tensor)
+    if not isinstance(py_dict, OrderedDict):
+        py_key_tensor = obj2tensor(py_key)
+        dist.broadcast(py_key_tensor, src=0)
+        py_key = tensor2obj(py_key_tensor)
 
     tensor_shapes = [py_dict[k].shape for k in py_key]
     tensor_numels = [py_dict[k].numel() for k in py_key]
 
     if to_float:
+        warnings.warn('Note: the "to_float" is True, you need to '
+                      'ensure that the behavior is reasonable.')
         flatten_tensor = torch.cat(
             [py_dict[k].flatten().float() for k in py_key])
     else:
@@ -146,4 +147,7 @@ def all_reduce_dict(py_dict, op='sum', group=None, to_float=True):
         x.reshape(shape) for x, shape in zip(
             torch.split(flatten_tensor, tensor_numels), tensor_shapes)
     ]
-    return OrderedDict({k: v for k, v in zip(py_key, split_tensors)})
+    out_dict = {k: v for k, v in zip(py_key, split_tensors)}
+    if isinstance(py_dict, OrderedDict):
+        out_dict = OrderedDict(out_dict)
+    return out_dict
