@@ -980,10 +980,7 @@ class PhotoMetricDistortion:
             assert results['img_fields'] == ['img'], \
                 'Only single img_fields is allowed'
         img = results['img']
-        assert img.dtype == np.float32, \
-            'PhotoMetricDistortion needs the input image of dtype ' \
-            'np.float32, please set "to_float32=True" in ' \
-            '"LoadImageFromFile" pipeline'
+        img = img.astype(np.float32)
         # random brightness
         if random.randint(2):
             delta = random.uniform(-self.brightness_delta,
