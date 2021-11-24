@@ -1,6 +1,18 @@
 name: build
 
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - '!demo/**'
+      - '!docker/**'
+      - '!tools/**'
+
+  pull_request:
+      - '!demo/**'
+      - '!docker/**'
+      - '!tools/**'
+      - '!docs/**'
+      - '!docs_zh-CN/**'
 
 jobs:
   lint:
