@@ -15,6 +15,7 @@ on:
       - '!docs/**'
       - '!docs_zh-CN/**'
 
+jobs:
   build_cpu:
     runs-on: ubuntu-18.04
     strategy:
