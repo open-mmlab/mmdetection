@@ -219,7 +219,7 @@ class AnchorGenerator:
 
     def grid_priors(self, featmap_sizes, dtype=torch.float32, device='cuda'):
         """Generate grid anchors in multiple feature levels.
-
+        在多个特征图上生成全部的anchor(anchor首先在特征图上生成，再映射到原图，这个过程会假设原图的左上角坐标原点映射到特征图的左上角原点，对于的坐标只是7做一个平移，注意anchor的大小不会发生变化7)
         Args:
             featmap_sizes (list[tuple]): List of feature map sizes in
                 multiple feature levels.
@@ -248,7 +248,7 @@ class AnchorGenerator:
                                  dtype=torch.float32,
                                  device='cuda'):
         """Generate grid anchors of a single level.
-
+        在一个特征图上通过base_anchors+meshgrid+stride网格生成该特征图上所有的anchors
         Note:
             This function is usually called by method ``self.grid_priors``.
 
@@ -291,7 +291,7 @@ class AnchorGenerator:
                       dtype=torch.float32,
                       device='cuda'):
         """Generate sparse anchors according to the ``prior_idxs``.
-
+        生成稀疏的anchor，根据prior_idxs, prior_idxs最大是torch.Tensor([0,1,2,...,A-1]), A是总共的anchor个数=num_base_achors*width*height
         Args:
             prior_idxs (Tensor): The index of corresponding anchors
                 in the feature map.
