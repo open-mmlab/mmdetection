@@ -85,11 +85,11 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - Save the best model
 
-  It can be turned on by configuring `evaluation = dict(save_best=‘auto’)`. In the case of the `auto` parameter, the first key in the returned evaluation result will be used as the basis for selecting the best model. You can also directly set the key in the evaluation result to manually set it, for example, `evaluation = dict(save_best='mAP' )`.
+    It can be turned on by configuring `evaluation = dict(save_best=‘auto’)`. In the case of the `auto` parameter, the first key in the returned evaluation result will be used as the basis for selecting the best model. You can also directly set the key in the evaluation result to manually set it, for example, `evaluation = dict(save_best='mAP' )`.
 
 - Usage of EMA Hook in Resume
 
-  If you use `EMA Hook` in training, you can't use command line parameters to restore model parameters during resume, you can only do so by modifying the `resume_from` field in the configuration file. This is because the implementation of `EMA Hook` is quite special, and the weights need to be loaded again during initialization.
+    If you use `EMA Hook` in training, you can't use command line parameters to restore model parameters during resume, you can only do so by modifying the `resume_from` field in the configuration file. This is because the implementation of `EMA Hook` is quite special, and the weights need to be loaded again during initialization.
 
 ## Evaluation
 
@@ -101,21 +101,21 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - ResNet style parameter description
 
-  ResNet `style` optional parameters include `pytorch` and `caffe`, the difference lies in the Bottleneck module. Bottleneck is a stacking structure of `1x1-3x3-1x1`. In the case of sampling with stride=2, the stride parameter of `caffe` mode is placed on the first `1x1` convolution, while in `pyorch` mode, stride is placed on the second `3x3` convolution. The sample code is as follows:
+    ResNet `style` optional parameters include `pytorch` and `caffe`, the difference lies in the Bottleneck module. Bottleneck is a stacking structure of `1x1-3x3-1x1`. In the case of sampling with stride=2, the stride parameter of `caffe` mode is placed on the first `1x1` convolution, while in `pyorch` mode, stride is placed on the second `3x3` convolution. The sample code is as follows:
 
-  ```
-  if self.style == 'pytorch':
-          self.conv1_stride = 1
-          self.conv2_stride = stride
-      else:
-          self.conv1_stride = stride
-          self.conv2_stride = 1
-  ```
+    ```
+    if self.style == 'pytorch':
+            self.conv1_stride = 1
+            self.conv2_stride = stride
+        else:
+            self.conv1_stride = stride
+            self.conv2_stride = 1
+    ```
 
 - ResNeXt parameter description
 
-  ResNeXt comes from the paper `Aggregated Residual Transformations for Deep Neural Networks`. It introduces grouped convolution and uses “cardinality” to control the number of groups to achieve a balance between accuracy and complexity. It controls the basic width and grouping parameters of the internal Bottleneck module through two hyperparameters `baseWidth` and `cardinality`. The configuration name in MMDetection is `mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco.py`, where `mask_rcnn` represents the algorithm using Mask R-CNN, `x101` represents the backbone network using ResNeXt-101, and `64x4d` represents the Botleneck basic width is 4, which is divided into 64 group.
+    ResNeXt comes from the paper `Aggregated Residual Transformations for Deep Neural Networks`. It introduces grouped convolution and uses “cardinality” to control the number of groups to achieve a balance between accuracy and complexity. It controls the basic width and grouping parameters of the internal Bottleneck module through two hyperparameters `baseWidth` and `cardinality`. The configuration name in MMDetection is `mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco.py`, where `mask_rcnn` represents the algorithm using Mask R-CNN, `x101` represents the backbone network using ResNeXt-101, and `64x4d` represents the Botleneck basic width is 4, which is divided into 64 group.
 
 - Backbone network BatchNorm layer eval mode description
 
-  Since the detection model is usually large and the input image resolution is high, this will result in a small batch of the detection model, which will make the variance of the statistics calculated by BatchNorm during the training process very large and not as stable as the statistics obtained during the pre-training of the backbone network . Therefore, the `norm_eval=True` mode is generally used in training, and the BatchNorm statistics in the pre-trained backbone network are directly used. The few algorithms that use large batches are the `norm_eval=False` mode, such as NASFPN. For the backbone network without ImageNet pre-training and the batch is relatively small, you can consider using `SyncBN`.
+    Since the detection model is usually large and the input image resolution is high, this will result in a small batch of the detection model, which will make the variance of the statistics calculated by BatchNorm during the training process very large and not as stable as the statistics obtained during the pre-training of the backbone network . Therefore, the `norm_eval=True` mode is generally used in training, and the BatchNorm statistics in the pre-trained backbone network are directly used. The few algorithms that use large batches are the `norm_eval=False` mode, such as NASFPN. For the backbone network without ImageNet pre-training and the batch is relatively small, you can consider using `SyncBN`.
