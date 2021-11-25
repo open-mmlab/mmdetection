@@ -31,19 +31,19 @@ jobs:
         include:
           - torch: 1.5.1
             torchvision: 0.6.1
-            mmcv: "latest+torch1.5.0+cpu"
+            mmcv_link: "torch1.5.0"
           - torch: 1.6.0
             torchvision: 0.7.0
-            mmcv: "latest+torch1.6.0+cpu"
+            mmcv_link: "torch1.6.0"
           - torch: 1.7.0
             torchvision: 0.8.1
-            mmcv: "latest+torch1.7.0+cpu"
+            mmcv_link: "torch1.7.0"
           - torch: 1.8.0
             torchvision: 0.9.0
-            mmcv: "latest+torch1.8.0+cpu"
+            mmcv_link: "torch1.8.0"
           - torch: 1.9.0
             torchvision: 0.10.0
-            mmcv: "latest+torch1.9.0+cpu"
+            mmcv_link: "torch1.9.0"
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -57,7 +57,7 @@ jobs:
         run: pip install torch==${{matrix.torch}}+cpu torchvision==${{matrix.torchvision}}+cpu -f https://download.pytorch.org/whl/torch_stable.html
       - name: Install MMCV
         run: |
-          pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cpu/torch${{matrix.torch}}/index.html
+          pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cpu/torch${{matrix.mmcv_link}}/index.html
           python -c 'import mmcv; print(mmcv.__version__)'
       - name: Install unittest dependencies
         run: |
