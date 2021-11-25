@@ -115,8 +115,8 @@
 
 - **ResNeXt 参数说明**
 
-    ResNeXt 来自论文 `Aggregated Residual Transformations for Deep Neural Networks`. 其引入分组卷积，并且通过变量基数来控制组的数量达到精度和复杂度的平衡，其有两个超参 `baseWidth` 和 `cardinality `来控制内部 Bottleneck 模块的基本宽度和分组数参数。在 MMDetection 中配置名为 `mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco.py` ，其中 `mask_rcnn` 代表算法采用 Mask R-CNN，`x101` 代表骨架网络采用 ResNeXt-101，`64x4d`代表 Bottleneck 基本宽度是 4，一共分成 64 组。
+    ResNeXt 来自论文 [`Aggregated Residual Transformations for Deep Neural Networks`](https://arxiv.org/abs/1611.05431). 其引入分组卷积，并且通过变量基数来控制组的数量达到精度和复杂度的平衡，其有两个超参 `baseWidth` 和 `cardinality `来控制内部 Bottleneck 模块的基本宽度和分组数参数。在 MMDetection 中配置名为 `mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco.py` ，其中 `mask_rcnn` 代表算法采用 Mask R-CNN，`x101` 代表骨架网络采用 ResNeXt-101，`64x4d`代表 Bottleneck 基本宽度是 4，一共分成 64 组。
 
-- **骨架网络 BatchNorm 层 eval 模式说明**
+- **骨架网络 eval 模式说明**
 
     因为检测模型通常比较大且输入图片分辨率很高，这会导致检测模型的 batch 很小，通常是 2，这会使得 BatchNorm 在训练过程计算的统计量方差非常大，不如主干网络预训练时得到的统计量稳定，因此在训练是一般都会使用 `norm_eval=True` 模式，直接使用预训练主干网络中的 BatchNorm 统计量，少数使用大 batch 的算法是 `norm_eval=False` 模式，例如 NASFPN。对于没有 ImageNet 预训练的骨架网络，如果 batch 比较小，可以考虑使用 `SyncBN`。
