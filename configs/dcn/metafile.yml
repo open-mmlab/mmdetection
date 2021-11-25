@@ -186,10 +186,6 @@ Models:
     Config: configs/dcn/mask_rcnn_r50_fpn_mdconv_c3-c5_1x_coco.py
     Metadata:
       Training Memory (GB): 4.5
-      Training Techniques:
-        - SGD with Momentum
-        - Weight Decay
-        - Mixed Precision Training
       inference time (ms/im):
         - value: 66.23
           hardware: V100
@@ -213,6 +209,10 @@ Models:
     In Collection: Deformable Convolutional Networks
     Config: configs/dcn/mask_rcnn_r50_fpn_fp16_dconv_c3-c5_1x_coco.py
     Metadata:
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+        - Mixed Precision Training
       Training Memory (GB): 3.0
       Epochs: 12
     Results:
