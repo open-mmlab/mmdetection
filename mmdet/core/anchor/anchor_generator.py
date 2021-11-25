@@ -15,14 +15,14 @@ class AnchorGenerator:
 
     Args:
         strides (list[int] | list[tuple[int, int]]): Strides of anchors
-            in multiple feature levels in order (w, h).
+            in multiple feature levels in order (w, h). 感受野 <--> 特征图上的一个点对应原图上的多少个像素
         ratios (list[float]): The list of ratios between the height and width
-            of anchors in a single level.
+            of anchors in a single level. 长宽比
         scales (list[int] | None): Anchor scales for anchors in a single level.
             It cannot be set at the same time if `octave_base_scale` and
-            `scales_per_octave` are set.
+            `scales_per_octave` are set. 生成anchor后需要乘上的scale
         base_sizes (list[int] | None): The basic sizes
-            of anchors in multiple levels.
+            of anchors in multiple levels. 基本的anchor大小，然后进行ratio(只改变长宽比，面积大小不变)，生成不同比例的anchor，在乘上scale生成不同大小的最终anchor
             If None is given, strides will be used as base_sizes.
             (If strides are non square, the shortest stride is taken.)
         scale_major (bool): Whether to multiply scales first when generating
@@ -36,6 +36,7 @@ class AnchorGenerator:
             relative to the feature grid center in multiple feature levels.
             By default it is set to be None and not used. If a list of tuple of
             float is given, they will be used to shift the centers of anchors.
+            这个参数指的是各个feature levels上作为基准anchor的中心点
         center_offset (float): The offset of center in proportion to anchors'
             width and height. By default it is 0 in V2.0.
 
@@ -81,9 +82,9 @@ class AnchorGenerator:
                 f'{strides} and {centers}'
 
         # calculate base sizes of anchors
-        self.strides = [_pair(stride) for stride in strides]
+        self.strides = [_pair(stride) for stride in strides]# [num_featmaps, 2]
         self.base_sizes = [min(stride) for stride in self.strides
-                           ] if base_sizes is None else base_sizes
+                           ] if base_sizes is None else base_sizes # [num_featmaps]
         assert len(self.base_sizes) == len(self.strides), \
             'The number of strides should be the same as base sizes, got ' \
             f'{self.strides} and {self.base_sizes}'
@@ -110,6 +111,9 @@ class AnchorGenerator:
         self.scale_major = scale_major
         self.centers = centers
         self.center_offset = center_offset
+        """
+        base_anchors并不是全部的anchor，而是特征图上的基准anchor(通常是在左上角的那一个），其它的都是由它经过平移转化而来
+        """
         self.base_anchors = self.gen_base_anchors()
 
     @property
@@ -133,7 +137,7 @@ class AnchorGenerator:
 
         Returns:
             list(torch.Tensor): Base anchors of a feature grid in multiple \
-                feature levels.
+                feature levels. Each element is base anchor(torch.Tensor) in one feature level.
         """
         multi_level_base_anchors = []
         for i, base_size in enumerate(self.base_sizes):
@@ -154,7 +158,7 @@ class AnchorGenerator:
                                       ratios,
                                       center=None):
         """Generate base anchors of a single level.
-
+        
         Args:
             base_size (int | float): Basic size of an anchor.
             scales (torch.Tensor): Scales of the anchor.
@@ -164,7 +168,7 @@ class AnchorGenerator:
                 related to a single feature grid. Defaults to None.
 
         Returns:
-            torch.Tensor: Anchors in a single-level feature maps.
+            torch.Tensor: Anchors in a single-level feature maps. shape of (N, 4)
         """
         w = base_size
         h = base_size
