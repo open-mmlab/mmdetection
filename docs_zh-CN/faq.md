@@ -84,8 +84,39 @@
     1. 这个错误出现在存在参数没有在 forward 中使用，容易在 DDP 中运行不同分支时发生。
     2. 你可以在 config 设置 `find_unused_parameters = True`，或者手动查找哪些参数没有用到。
 
+- 训练中保存最好模型
+
+    可以通过配置 `evaluation = dict(save_best=‘auto’)`开启。在 auto 参数情况下会根据返回的验证结果中的第一个 key 作为选择最优模型的依据，你也可以直接设置评估结果中的 key 来手动设置，例如 `evaluation = dict(save_best=‘mAP’)`。
+
+- Resume 情况下 EMA Hook 说明
+
+    如果在训练中你使用了 EMA Hook，那么在 resume 时候你不能通过命令行参数实现恢复模型参数功能，只能通过修改配置文件中的 `resume_from` 字段实现。这是因为 EMA Hook 实现比较特殊，初始化时候需要再次加载一遍权重。
+
 ## Evaluation 相关
 
 - 使用 COCO Dataset 的测评接口时, 测评结果中 AP 或者 AR = -1
     1. 根据COCO数据集的定义，一张图像中的中等物体与小物体面积的阈值分别为 9216（96\*96）与 1024（32\*32）。
     2. 如果在某个区间没有检测框 AP 与 AR 认定为 -1.
+
+## Model 相关
+
+- **ResNet style 参数说明**
+
+    ResNet style 可选参数包括 `pytorch` 和 `caffe`，其差别在于 Bottleneck 模块。Bottleneck 是 `1x1-3x3-1x1` 堆叠结构，在 stride=2 下采样情况下，`caffe` 模式的 stride 参数放置在第一个 `1x1` 卷积上，而 `pyorch` 模式下，stride 放在第二个 `3x3` 卷积上。示例代码如下：
+
+  ```text
+  if self.style == 'pytorch':
+          self.conv1_stride = 1
+          self.conv2_stride = stride
+      else:
+          self.conv1_stride = stride
+          self.conv2_stride = 1
+  ```
+
+- **ResNeXt 参数说明**
+
+    ResNeXt 来自论文 `Aggregated Residual Transformations for Deep Neural Networks`. 其引入分组卷积，并且通过变量基数来控制组的数量达到精度和复杂度的平衡，其有两个超参 `baseWidth` 和 `cardinality `来控制内部 Bottleneck 模块的基本宽度和分组数参数。在 MMDetection 中配置名为 `mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco.py` ，其中 `mask_rcnn` 代表算法采用 Mask R-CNN，`x101` 代表骨架网络采用 ResNeXt-101，`64x4d`代表 Bottleneck 基本宽度是 4，一共分成 64 组。
+
+- **骨架网络 BatchNorm 层 eval 模式说明**
+
+    因为检测模型通常比较大且输入图片分辨率很高，这会导致检测模型的 batch 很小，通常是 2，这会使得 BatchNorm 在训练过程计算的统计量方差非常大，不如主干网络预训练时得到的统计量稳定，因此在训练是一般都会使用 `norm_eval=True` 模式，直接使用预训练主干网络中的 BatchNorm 统计量，少数使用大 batch 的算法是 `norm_eval=False` 模式，例如 NASFPN。对于没有 ImageNet 预训练的骨架网络，如果 batch 比较小，可以考虑使用 `SyncBN`。
