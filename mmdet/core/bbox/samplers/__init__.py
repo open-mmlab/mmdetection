@@ -8,9 +8,11 @@ from .pseudo_sampler import PseudoSampler
 from .random_sampler import RandomSampler
 from .sampling_result import SamplingResult
 from .score_hlr_sampler import ScoreHLRSampler
+from .mask_pseudo_sampler import MaskPseudoSampler
 
 __all__ = [
     'BaseSampler', 'PseudoSampler', 'RandomSampler',
     'InstanceBalancedPosSampler', 'IoUBalancedNegSampler', 'CombinedSampler',
-    'OHEMSampler', 'SamplingResult', 'ScoreHLRSampler'
+    'OHEMSampler', 'SamplingResult', 'ScoreHLRSampler',
+    'MaskPseudoSampler'
 ]
