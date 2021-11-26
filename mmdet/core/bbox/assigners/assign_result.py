@@ -6,7 +6,7 @@ from mmdet.utils import util_mixins
 
 class AssignResult(util_mixins.NiceRepr):
     """Stores assignments between predicted and truth boxes.
-    根据gt对predicted赋值
+    存储赋值结果，在assigner中使用
     
     Attributes:
         num_gts (int): the number of truth boxes considered when computing this
@@ -14,7 +14,7 @@ class AssignResult(util_mixins.NiceRepr):
  
         gt_inds (LongTensor): for each predicted box indicates the 1-based
             index of the assigned truth box. 0 means unassigned and -1 means
-            ignore. 对于每一个预测的bbox，这个index指的是在gt中的index，注意从1开始，0表示没有，-1表示忽略 ，shape of [n,], n是predicted bbox的个数
+            ignore. 对于每一个预测的bbox，这个index指的是在gt中的index，注意从1开始，0表示不赋值，-1表示忽略 ，shape of [n,], n是predicted bbox的个数
 
         max_overlaps (FloatTensor): the iou between the predicted box and its
             assigned truth box. 预测bbox和gt的iou，shape of [n], n是predicted bbox的个数
