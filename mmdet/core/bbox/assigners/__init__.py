@@ -11,9 +11,11 @@ from .point_assigner import PointAssigner
 from .region_assigner import RegionAssigner
 from .sim_ota_assigner import SimOTAAssigner
 from .uniform_assigner import UniformAssigner
+from .mask_hungarian_assigner import MaskHungarianAssigner
 
 __all__ = [
     'BaseAssigner', 'MaxIoUAssigner', 'ApproxMaxIoUAssigner', 'AssignResult',
     'PointAssigner', 'ATSSAssigner', 'CenterRegionAssigner', 'GridAssigner',
-    'HungarianAssigner', 'RegionAssigner', 'UniformAssigner', 'SimOTAAssigner'
+    'HungarianAssigner', 'RegionAssigner', 'UniformAssigner', 'SimOTAAssigner',
+    'MaskHungarianAssigner'
 ]
