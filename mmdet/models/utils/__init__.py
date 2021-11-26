@@ -17,8 +17,6 @@ from .transformer import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
                           DynamicConv, PatchEmbed, Transformer, nchw_to_nlc,
                           nlc_to_nchw)
 
-from .maskformer_utils import HungarianMatcher
-
 __all__ = [
     'ResLayer', 'gaussian_radius', 'gen_gaussian_target',
     'DetrTransformerDecoderLayer', 'DetrTransformerDecoder', 'Transformer',
@@ -28,5 +26,4 @@ __all__ = [
     'SELayer', 'interpolate_as', 'ConvUpsample', 'CSPLayer',
     'adaptive_avg_pool2d', 'AdaptiveAvgPool2d', 'PatchEmbed', 'nchw_to_nlc',
     'nlc_to_nchw', 'pvt_convert', 
-    'HungarianMatcher'
 ]
