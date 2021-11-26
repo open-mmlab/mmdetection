@@ -144,6 +144,11 @@ def main():
     logger.info(f'Config:\n{cfg.pretty_text}')
 
     # set random seeds
+    if hasattr(cfg, "seed") and args.seed is None:
+        args.seed = cfg.seed
+    if hasattr(cfg, "deterministic") and args.deterministic is None:
+        args.deterministic = cfg.deterministic
+
     seed = init_random_seed(args.seed)
     logger.info(f'Set random seed to {seed}, '
                 f'deterministic: {args.deterministic}')

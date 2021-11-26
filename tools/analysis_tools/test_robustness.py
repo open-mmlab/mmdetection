@@ -209,6 +209,9 @@ def main():
     # set random seeds
     if args.seed is not None:
         set_random_seed(args.seed)
+    else:
+        if hasattr(cfg, "seed"):
+            set_random_seed(cfg.seed)
 
     if 'all' in args.corruptions:
         corruptions = [
