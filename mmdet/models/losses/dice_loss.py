@@ -121,3 +121,73 @@ class DiceLoss(nn.Module):
             avg_factor=avg_factor)
 
         return loss
+
+
+def naive_dice_loss(pred,
+              target,
+              weight=None,
+              eps=1e-3,
+              reduction='mean',
+              avg_factor=None):
+    
+    input = pred.flatten(1)
+    target = target.flatten(1).float()
+
+    a = torch.sum(input * target, 1)
+    b = torch.sum(input, 1) 
+    c = torch.sum(target, 1)
+    d = (2 * a + eps) / (b + c + eps)
+    loss = 1 - d
+    if weight is not None:
+        assert weight.ndim == loss.ndim
+        assert len(weight) == len(pred)
+    loss = weight_reduce_loss(loss, weight, reduction, avg_factor)
+    return loss        
+
+
+@LOSSES.register_module()
+class NaiveDiceLoss(DiceLoss):
+
+    def forward(self,
+                pred,
+                target,
+                weight=None,
+                reduction_override=None,
+                avg_factor=None):
+        """Forward function.
+
+        Args:
+            pred (torch.Tensor): The prediction, has a shape (n, *).
+            target (torch.Tensor): The label of the prediction,
+                shape (n, *), same shape of pred.
+            weight (torch.Tensor, optional): The weight of loss for each
+                prediction, has a shape (n,). Defaults to None.
+            avg_factor (int, optional): Average factor that is used to average
+                the loss. Defaults to None.
+            reduction_override (str, optional): The reduction method used to
+                override the original reduction method of the loss.
+                Options are "none", "mean" and "sum".
+
+        Returns:
+            torch.Tensor: The calculated loss
+        """
+
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+        reduction = (
+            reduction_override if reduction_override else self.reduction)
+
+        if self.activate:
+            if self.use_sigmoid:
+                pred = pred.sigmoid()
+            else:
+                raise NotImplementedError
+
+        loss = self.loss_weight * naive_dice_loss(
+            pred,
+            target,
+            weight,
+            eps=self.eps,
+            reduction=reduction,
+            avg_factor=avg_factor)
+
+        return loss
