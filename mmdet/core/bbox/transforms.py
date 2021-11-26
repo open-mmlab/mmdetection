@@ -61,10 +61,10 @@ def bbox2roi(bbox_list):
 
     Args:
         bbox_list (list[Tensor]): a list of bboxes corresponding to a batch
-            of images.
+            of images. 一个batch中每张图片包含的bboxes
 
     Returns:
-        Tensor: shape (n, 5), [batch_ind, x1, y1, x2, y2]
+        Tensor: shape (n, 5), [batch_ind, x1, y1, x2, y2] 这里的batch_ind实际上指的就是img_index，也就是说把每一个bbox加上他所属于的图片的index
     """
     rois_list = []
     for img_id, bboxes in enumerate(bbox_list):
@@ -80,7 +80,7 @@ def bbox2roi(bbox_list):
 
 def roi2bbox(rois):
     """Convert rois to bounding box format.
-
+    roi2bbox的逆过程，注意一下：这里返回的数据会过滤掉不包含bboxes的图片
     Args:
         rois (torch.Tensor): RoIs with the shape (n, 5) where the first
             column indicates batch id of each RoI.
@@ -89,7 +89,10 @@ def roi2bbox(rois):
         list[torch.Tensor]: Converted boxes of corresponding rois.
     """
     bbox_list = []
-    img_ids = torch.unique(rois[:, 0].cpu(), sorted=True)
+    # 对于rois[i].shape==(0,5)的数据这里不起作用，i.e. 
+    # a = torch.rand((0,50))
+    # a[:,0] 返回为空 tensor([])
+    img_ids = torch.unique(rois[:, 0].cpu(), sorted=True) 
     for img_id in img_ids:
         inds = (rois[:, 0] == img_id.item())
         bbox = rois[inds, 1:]
@@ -106,7 +109,7 @@ def bbox2result(bboxes, labels, num_classes):
         num_classes (int): class number, including background class
 
     Returns:
-        list(ndarray): bbox results of each class
+        list(ndarray): bbox results of each class, each result shape is (m, 5)
     """
     if bboxes.shape[0] == 0:
         return [np.zeros((0, 5), dtype=np.float32) for i in range(num_classes)]
@@ -172,6 +175,7 @@ def distance2bbox(points, distance, max_shape=None):
 
 def bbox2distance(points, bbox, max_dis=None, eps=0.1):
     """Decode bounding box based on distances.
+    Encode bboxes based on points
 
     Args:
         points (Tensor): Shape (n, 2), [x, y].
@@ -180,7 +184,7 @@ def bbox2distance(points, bbox, max_dis=None, eps=0.1):
         eps (float): a small value to ensure target < max_dis, instead <=
 
     Returns:
-        Tensor: Decoded distances.
+        Tensor: Eecoded distances. (n, 4)
     """
     left = points[:, 0] - bbox[:, 0]
     top = points[:, 1] - bbox[:, 1]
@@ -196,9 +200,9 @@ def bbox2distance(points, bbox, max_dis=None, eps=0.1):
 
 def bbox_rescale(bboxes, scale_factor=1.0):
     """Rescale bounding box w.r.t. scale_factor.
-
+    Bbox cener fixed,中心点固定，只对height和width进行rescale，和data augmentation中的resize是不同的
     Args:
-        bboxes (Tensor): Shape (n, 4) for bboxes or (n, 5) for rois
+        bboxes (Tensor): Shape (n, 4) for bboxes or (n, 5) for rois 如果shape是(n,5)，第第一个表示的是rois里的图片index
         scale_factor (float): rescale factor
 
     Returns:
