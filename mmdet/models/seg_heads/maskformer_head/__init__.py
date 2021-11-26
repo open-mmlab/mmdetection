@@ -1,1 +1,0 @@
-from .maskformer_head import MaskFormerHead
