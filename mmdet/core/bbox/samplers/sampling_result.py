@@ -6,7 +6,8 @@ from mmdet.utils import util_mixins
 
 class SamplingResult(util_mixins.NiceRepr):
     """Bbox sampling result.
-
+    bbox的sampling结果
+    
     Example:
         >>> # xdoctest: +IGNORE_WANT
         >>> from mmdet.core.bbox.samplers.sampling_result import *  # NOQA
@@ -25,14 +26,14 @@ class SamplingResult(util_mixins.NiceRepr):
 
     def __init__(self, pos_inds, neg_inds, bboxes, gt_bboxes, assign_result,
                  gt_flags):
-        self.pos_inds = pos_inds
-        self.neg_inds = neg_inds
-        self.pos_bboxes = bboxes[pos_inds]
-        self.neg_bboxes = bboxes[neg_inds]
-        self.pos_is_gt = gt_flags[pos_inds]
+        self.pos_inds = pos_inds # sample的正样本索引
+        self.neg_inds = neg_inds # sample的负样本索引
+        self.pos_bboxes = bboxes[pos_inds] # sample的正样本
+        self.neg_bboxes = bboxes[neg_inds] # sample的负样本
+        self.pos_is_gt = gt_flags[pos_inds] # sample的正样本是否是gt
 
-        self.num_gts = gt_bboxes.shape[0]
-        self.pos_assigned_gt_inds = assign_result.gt_inds[pos_inds] - 1
+        self.num_gts = gt_bboxes.shape[0] # 总的gt个数
+        self.pos_assigned_gt_inds = assign_result.gt_inds[pos_inds] - 1 # 
 
         if gt_bboxes.numel() == 0:
             # hack for index error case
