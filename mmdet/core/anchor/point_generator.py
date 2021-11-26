@@ -23,6 +23,10 @@ class PointGenerator:
         shift_y = torch.arange(0., feat_h, device=device) * stride
         shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
         stride = shift_x.new_full((shift_xx.shape[0], ), stride)
+        '''
+        为什么返回的数据需要加上stride?
+        point不同与anchor，anchor由于包含两个点可以确定region，但是point只能对应到原图上的一个点，没办法确定region，加上stride之后就可以变成两个点point, point+stride,这样才能确定一个region
+        '''
         shifts = torch.stack([shift_xx, shift_yy, stride], dim=-1)
         all_points = shifts.to(device)
         return all_points
