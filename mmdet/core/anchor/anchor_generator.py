@@ -742,7 +742,7 @@ class YOLOAnchorGenerator(AnchorGenerator):
         strides (list[int] | list[tuple[int, int]]): Strides of anchors
             in multiple feature levels.
         base_sizes (list[list[tuple[int, int]]]): The basic sizes
-            of anchors in multiple levels.
+            of anchors in multiple levels. 这个参数跟AnchorGenerator里的不一样，第一个list指的是 feat level, 第二个list指的是每个level的base_size个数，第三个tuple才是base_size的值
     """
 
     def __init__(self, strides, base_sizes):
@@ -855,16 +855,16 @@ class YOLOAnchorGenerator(AnchorGenerator):
         feat_h, feat_w = featmap_size
         gt_bboxes_cx = ((gt_bboxes[:, 0] + gt_bboxes[:, 2]) * 0.5).to(device)
         gt_bboxes_cy = ((gt_bboxes[:, 1] + gt_bboxes[:, 3]) * 0.5).to(device)
-        gt_bboxes_grid_x = torch.floor(gt_bboxes_cx / stride[0]).long()
-        gt_bboxes_grid_y = torch.floor(gt_bboxes_cy / stride[1]).long()
+        gt_bboxes_grid_x = torch.floor(gt_bboxes_cx / stride[0]).long() #  (n)
+        gt_bboxes_grid_y = torch.floor(gt_bboxes_cy / stride[1]).long() # (n,)
 
         # row major indexing
-        gt_bboxes_grid_idx = gt_bboxes_grid_y * feat_w + gt_bboxes_grid_x
+        gt_bboxes_grid_idx = gt_bboxes_grid_y * feat_w + gt_bboxes_grid_x # (n) 
 
         responsible_grid = torch.zeros(
             feat_h * feat_w, dtype=torch.uint8, device=device)
-        responsible_grid[gt_bboxes_grid_idx] = 1
+        responsible_grid[gt_bboxes_grid_idx] = 1 #(feat_h*feat_w)
 
         responsible_grid = responsible_grid[:, None].expand(
-            responsible_grid.size(0), num_base_anchors).contiguous().view(-1)
+            responsible_grid.size(0), num_base_anchors).contiguous().view(-1) #(feat_h*feat_w*num_base_anchors)
         return responsible_grid
