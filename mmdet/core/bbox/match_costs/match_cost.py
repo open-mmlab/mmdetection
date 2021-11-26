@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
-
+#由于没有被其它模块调用，不看  属于被废弃的模块
 from mmdet.core.bbox.iou_calculators import bbox_overlaps
 from mmdet.core.bbox.transforms import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
 from .builder import MATCH_COST
@@ -40,7 +40,7 @@ class BBoxL1Cost:
                 coordinates (x1, y1, x2, y2). Shape [num_gt, 4].
 
         Returns:
-            torch.Tensor: bbox_cost value with weight
+            torch.Tensor: bbox_cost value with weight, shape of [num_query, num_gt]. 每一个query的bbox和每一个gt的bbox的L1 norm
         """
         if self.box_format == 'xywh':
             gt_bboxes = bbox_xyxy_to_cxcywh(gt_bboxes)
@@ -88,7 +88,7 @@ class FocalLossCost:
             gt_labels (Tensor): Label of `gt_bboxes`, shape (num_gt,).
 
         Returns:
-            torch.Tensor: cls_cost value with weight
+            torch.Tensor: cls_cost value with weight. shape of [num_query, num_gt], 每一个query的label和gt的label的Focal Cost
         """
         cls_pred = cls_pred.sigmoid()
         neg_cost = -(1 - cls_pred + self.eps).log() * (
