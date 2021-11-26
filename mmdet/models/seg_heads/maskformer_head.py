@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from mmcv.cnn import Conv2d, ConvModule, kaiming_init
 from mmcv.cnn.bricks.transformer import (build_positional_encoding,
                                          build_transformer_layer_sequence)
-from mmcv.runner import BaseModule, force_fp32
+from mmcv.runner import BaseModule, force_fp32, ModuleList
 
 from mmdet.core import build_assigner, build_sampler, multi_apply, reduce_mean
 from mmdet.datasets.coco_panoptic import INSTANCE_OFFSET
@@ -434,7 +434,6 @@ class MaskFormerHead(AnchorFreeHead):
         mask_targets = torch.cat(mask_targets_list, dim=0) #! shape [n_gts, h, w]
         mask_weights = torch.stack(mask_weights_list, dim=0) #! shape [bs, nq]
         
-
         # classfication loss
         cls_scores = cls_scores.flatten(0, 1) # shape [bs * nq, ]
         labels = labels.flatten(0, 1) # shape [bs * nq, ]
@@ -618,7 +617,7 @@ class MaskFormerHead(AnchorFreeHead):
                 mask_pred_result = F.interpolate(mask_pred_result.unsqueeze(1),
                                                  size=(ori_height, ori_width), 
                                                  mode='bilinear', 
-                                                 align_corners=False)[0]
+                                                 align_corners=False).squeeze(1)
 
             mask = self.post_process(mask_cls_result, mask_pred_result)
             result = {
@@ -719,9 +718,8 @@ class TransformerEncoderPixelDecoder(BaseModule):
         super().__init__(init_cfg)
         self.in_channels = in_channels
         self.num_inputs = len(in_channels)
-        # use mmcv ModuleList
-        self.lateral_convs = nn.ModuleList()
-        self.output_convs = nn.ModuleList()
+        self.lateral_convs = ModuleList()
+        self.output_convs = ModuleList()
         self.use_bias = norm_cfg is None
         for i in range(0, self.num_inputs - 1):
             l_conv = ConvModule(in_channels[i], 
@@ -753,7 +751,6 @@ class TransformerEncoderPixelDecoder(BaseModule):
 
     def init_weights(self):
         for i in range(0, self.num_inputs - 2):
-            
             kaiming_init(self.lateral_convs[i].conv, a=1)
             kaiming_init(self.output_convs[i].conv, a=1)
             
@@ -773,8 +770,6 @@ class TransformerEncoderPixelDecoder(BaseModule):
                 - mask_feature (Tensor): shape [bs, c, h, w].
                 - memory (Tensor): shape [bs, c, h, w].
         """
-        # feats (list[Tensor]) [res2, res3, res4, res5].
-        # each element of shape [bs, c, h, w]
         feat_last = feats[-1]
         bs, c, h, w = feat_last.shape
         padding_mask = feat_last.new_ones((bs, h, w))
