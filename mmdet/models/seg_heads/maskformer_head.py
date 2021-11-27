@@ -199,7 +199,8 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
         for i in range(self.num_inputs - 2, -1, -1):
             x = feats[i]
             cur_fpn = self.lateral_convs[i](x)
-            y = cur_fpn + F.interpolate(y, size=cur_fpn.shape[-2:], mode='nearest')
+            y = cur_fpn + F.interpolate(y, size=cur_fpn.shape[-2:], 
+                mode='nearest', align_corners=False)
             y = self.output_convs[i](y)
 
         mask_feature = self.mask_feature(y)
@@ -292,7 +293,9 @@ class MaskFormerHead(AnchorFreeHead):
             self.pixel_decoder = TransformerEncoderPixelDecoder(**pixel_decoder)
         self.transformer_decoder = build_transformer_layer_sequence(transformer_decoder)
         self.decoder_embed_dims = self.transformer_decoder.embed_dims
-        if self.decoder_embed_dims != in_channels[-1] or enforce_decoder_input_project:
+        if pixel_decoder_type == "PixelDecoder" and (
+            self.decoder_embed_dims != in_channels[-1] or 
+            enforce_decoder_input_project):
             self.decoder_input_proj = Conv2d(in_channels[-1], self.decoder_embed_dims, kernel_size=1)
         else:
             self.decoder_input_proj = nn.Identity()
@@ -526,7 +529,7 @@ class MaskFormerHead(AnchorFreeHead):
         """
         target_shape = mask_pred.shape[-2:]
         gt_masks_downsampled = F.interpolate(gt_masks.unsqueeze(1).float(), 
-            target_shape, mode="nearest").squeeze(1).long()
+            target_shape, mode="nearest", align_corners=False).squeeze(1).long()
         # assign and sample
         assign_result = self.assigner.assign(cls_score, mask_pred, 
                                              gt_labels, gt_masks_downsampled, 
@@ -661,7 +664,8 @@ class MaskFormerHead(AnchorFreeHead):
         mask_preds = F.interpolate(
             mask_preds.unsqueeze(1),
             target_shape, 
-            mode="bilinear").squeeze(1) # [n_gts, h, w]
+            mode="bilinear",
+            align_corners=False).squeeze(1) # [n_gts, h, w]
 
         # dice loss 
         loss_dice = self.loss_dice(mask_preds, mask_targets,
