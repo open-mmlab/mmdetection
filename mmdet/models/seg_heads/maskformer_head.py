@@ -4,12 +4,206 @@ import torch.nn.functional as F
 from mmcv.cnn import Conv2d, ConvModule, kaiming_init
 from mmcv.cnn.bricks.transformer import (build_positional_encoding,
                                          build_transformer_layer_sequence)
-from mmcv.runner import BaseModule, force_fp32, ModuleList
+from mmcv.runner import BaseModule, ModuleList, force_fp32
 
 from mmdet.core import build_assigner, build_sampler, multi_apply, reduce_mean
 from mmdet.datasets.coco_panoptic import INSTANCE_OFFSET
 from ..builder import HEADS, build_loss
 from ..dense_heads.anchor_free_head import AnchorFreeHead
+
+
+class PixelDecoder(BaseModule):
+
+    def __init__(self, 
+                in_channels,
+                conv_dim,
+                mask_dim,
+                norm_cfg=dict(type="GN", num_groups=32),
+                act_cfg=dict(type="ReLU"),
+                init_cfg=None):
+        """Pixel decoder with a structure like fpn.
+
+        Args:
+            in_channels (list[int] | tuple[int]): Number of channels in the 
+                input feature maps.
+            conv_dim (int): Number channels for conv layer. 
+            mask_dim (int): Number channels for mask feature.
+            norm_cfg (obj:`mmcv.ConfigDict`|dict): Config for normalization. 
+                Defaults to dict(type="GN", num_groups=32).
+            act_cfg (obj:`mmcv.ConfigDict`|dict): Config for activation. 
+                Defaults to dict(type="ReLU").
+            encoder (obj:`mmcv.ConfigDict`|dict): Config for transorformer 
+                encoder.Defaults to None.
+            positional_encoding (obj:`mmcv.ConfigDict`|dict): Config for 
+                transformer encoder position encoding. Defaults to 
+                dict(type='SinePositionalEncoding', num_feats=128, 
+                normalize=True).
+            init_cfg (obj:`mmcv.ConfigDict`|dict):  Initialization config dict.
+                Default: None
+        """
+        super().__init__(init_cfg=init_cfg)
+        self.in_channels = in_channels
+        self.num_inputs = len(in_channels)
+        self.lateral_convs = ModuleList()
+        self.output_convs = ModuleList()
+        self.use_bias = norm_cfg is None
+        for i in range(0, self.num_inputs - 1):
+            l_conv = ConvModule(in_channels[i], 
+                                conv_dim, 
+                                kernel_size=1,
+                                bias=self.use_bias,
+                                norm_cfg=norm_cfg) 
+            o_conv = ConvModule(conv_dim, 
+                                conv_dim,
+                                kernel_size=3,
+                                stride=1,
+                                padding=1,
+                                bias=self.use_bias,
+                                norm_cfg=norm_cfg,
+                                act_cfg=act_cfg)
+            self.lateral_convs.append(l_conv)
+            self.output_convs.append(o_conv)
+
+        self.last_feat_output_conv = ConvModule(in_channels[-1],
+                                                conv_dim,
+                                                kernel_size=1,
+                                                bias=self.use_bias,
+                                                norm_cfg=norm_cfg)
+        self.mask_feature = Conv2d(conv_dim, 
+                                   mask_dim, 
+                                   kernel_size=3, 
+                                   stride=1, 
+                                   padding=1)
+    
+    def init_weights(self):
+        """Initialize weights"""
+        for i in range(0, self.num_inputs - 2):
+            kaiming_init(self.lateral_convs[i].conv, a=1)
+            kaiming_init(self.output_convs[i].conv, a=1)
+            
+        kaiming_init(self.mask_feature, a=1)    
+        kaiming_init(self.last_feat_output_conv, a=1)    
+
+    def forward(self, feats):
+        """
+        Args:
+            feats (list[Tensor]): Feature maps of each level. Each has
+                shape of [bs, c, h, w].
+
+        Returns:
+            tuple: a tuple containing the following:
+                
+                - mask_feature (Tensor): shape [bs, c, h, w].
+                - memory (Tensor): shape [bs, c, h, w].
+        """
+        y = self.last_feat_output_conv(feats[-1])
+        for i in range(self.num_inputs - 2, -1, -1):
+            x = feats[i]
+            cur_fpn = self.lateral_convs[i](x)
+            y = cur_fpn + F.interpolate(y, size=cur_fpn.shape[-2:], mode='nearest')
+            y = self.output_convs[i](y)
+        
+        return y, feats[-1]
+
+
+class TransformerEncoderPixelDecoder(PixelDecoder):
+    """Pixel decoder with transormer encoder inside.
+
+    Args:
+        in_channels (list[int] | tuple[int]): Number of channels in the 
+            input feature maps.
+        conv_dim (int): Number channels for conv layer. 
+        mask_dim (int): Number channels for mask feature.
+        norm_cfg (obj:`mmcv.ConfigDict`|dict): Config for normalization. 
+            Defaults to dict(type="GN", num_groups=32).
+        act_cfg (obj:`mmcv.ConfigDict`|dict): Config for activation. 
+            Defaults to dict(type="ReLU").
+        encoder (obj:`mmcv.ConfigDict`|dict): Config for transorformer 
+            encoder.Defaults to None.
+        positional_encoding (obj:`mmcv.ConfigDict`|dict): Config for 
+            transformer encoder position encoding. Defaults to 
+            dict(type='SinePositionalEncoding', num_feats=128, 
+            normalize=True).
+        init_cfg (obj:`mmcv.ConfigDict`|dict):  Initialization config dict.
+            Default: None
+    """
+    def __init__(self,
+                 in_channels, 
+                 conv_dim,
+                 mask_dim,
+                 norm_cfg=dict(type="GN", num_groups=32),
+                 act_cfg=dict(type="ReLU"),
+                 encoder=None,
+                 positional_encoding=dict(
+                     type='SinePositionalEncoding', num_feats=128, normalize=True),
+                 init_cfg=None):
+        super(TransformerEncoderPixelDecoder, self).__init__(in_channels, 
+                                                             conv_dim, 
+                                                             mask_dim, 
+                                                             norm_cfg, 
+                                                             act_cfg, 
+                                                             init_cfg=init_cfg)
+        self.last_feat_output_conv = None
+        
+        self.encoder = build_transformer_layer_sequence(encoder)
+        self.encoder_embed_dims = self.encoder.embed_dims 
+        assert self.encoder_embed_dims == conv_dim, 'embed_dims({}) of tranformer encoder'\
+            'must equal to conv_dim({})'.format(conv_dim, self.encoder_embed_dims)
+        self.pe = build_positional_encoding(positional_encoding)
+        self.encoder_in_proj = Conv2d(in_channels[-1], conv_dim, kernel_size=1)
+        self.encoder_out_proj = ConvModule(conv_dim, conv_dim, 
+                    kernel_size=3, stride=1, padding=1, bias=self.use_bias,
+                    norm_cfg=norm_cfg, act_cfg=act_cfg)
+    
+    def init_weights(self):
+        """Initialize weights"""
+        for i in range(0, self.num_inputs - 2):
+            kaiming_init(self.lateral_convs[i].conv, a=1)
+            kaiming_init(self.output_convs[i].conv, a=1)
+            
+        kaiming_init(self.mask_feature, a=1)    
+        kaiming_init(self.encoder_in_proj, a=1)
+        kaiming_init(self.encoder_out_proj.conv, a=1) 
+
+    def forward(self, feats):
+        """
+        Args:
+            feats (list[Tensor]): Feature maps of each level. Each has
+                shape of [bs, c, h, w].
+
+        Returns:
+            tuple: a tuple containing the following:
+                
+                - mask_feature (Tensor): shape [bs, c, h, w].
+                - memory (Tensor): shape [bs, c, h, w].
+        """
+        feat_last = feats[-1]
+        bs, c, h, w = feat_last.shape
+        padding_mask = feat_last.new_ones((bs, h, w))
+        pos_embed = self.pe(padding_mask)
+        feat_last = self.encoder_in_proj(feat_last)
+        # [bs, c, h, w] -> [nq, bs, dim]
+        feat_last = feat_last.flatten(2).permute(2, 0, 1)
+        pos_embed = pos_embed.flatten(2).permute(2, 0, 1)
+        padding_mask = padding_mask.flatten(1) # [bs, h, w] -> [bs, h*w]
+        memory = self.encoder(
+            query=feat_last, 
+            key=None, 
+            value=None, 
+            query_pos=pos_embed,
+            query_key_padding_mask=padding_mask)
+        # [nq, bs, em] -> [bs, c, h, w]
+        memory = memory.permute(1, 2, 0).view(bs, self.encoder_embed_dims, h, w)
+        memory = self.encoder_out_proj(memory)
+        y = memory    
+        for i in range(self.num_inputs - 2, -1, -1):
+            x = feats[i]
+            cur_fpn = self.lateral_convs[i](x)
+            y = cur_fpn + F.interpolate(y, size=cur_fpn.shape[-2:], mode='nearest')
+            y = self.output_convs[i](y)
+
+        mask_feature = self.mask_feature(y)
+        return mask_feature, memory
 
 
 @HEADS.register_module()
@@ -85,14 +279,21 @@ class MaskFormerHead(AnchorFreeHead):
         self.num_stuff_classes = num_stuff_classes
         self.num_classes = self.num_things_classes + self.num_stuff_classes
         self.num_queries = num_queries
+
+        pixel_decoder_type = pixel_decoder.get("type", None)
+        assert pixel_decoder_type in ("PixelDecoder", "TransformerEncoderPixelDecoder")
+        pixel_decoder.pop("type")
         pixel_decoder.update(in_channels=in_channels, 
                              conv_dim=conv_dim, 
                              mask_dim=mask_dim)
-        self.pixel_decoder = TransformerEncoderPixelDecoder(**pixel_decoder)
+        if pixel_decoder_type == "PixelDecoder":
+            self.pixel_decoder = PixelDecoder(**pixel_decoder)
+        else:
+            self.pixel_decoder = TransformerEncoderPixelDecoder(**pixel_decoder)
         self.transformer_decoder = build_transformer_layer_sequence(transformer_decoder)
         self.decoder_embed_dims = self.transformer_decoder.embed_dims
-        if self.decoder_embed_dims != conv_dim or enforce_decoder_input_project:
-            self.decoder_input_proj = Conv2d(conv_dim, self.decoder_embed_dims, kernel_size=1)
+        if self.decoder_embed_dims != in_channels[-1] or enforce_decoder_input_project:
+            self.decoder_input_proj = Conv2d(in_channels[-1], self.decoder_embed_dims, kernel_size=1)
         else:
             self.decoder_input_proj = nn.Identity()
         self.decoder_pe = build_positional_encoding(positional_encoding)
@@ -493,9 +694,12 @@ class MaskFormerHead(AnchorFreeHead):
                 layer. Each with shape [n_dec, bs, num_query, h, w].
         """
         bs, c, h, w = feats[-1].shape
+        # when backbone is swin, memory is output of last stage of swin
+        # when backbone is r50, memory is output of tranformer encoder
         mask_features, memory = self.pixel_decoder(feats)
         padding_mask = feats[-1].new_ones((bs, h, w))
         pos_embed = self.decoder_pe(padding_mask)
+        memory = self.decoder_input_proj(memory)
         # [bs, c, h, w] -> [h*w, bs, c]
         memory = memory.flatten(2).permute(2, 0, 1)
         pos_embed = pos_embed.flatten(2).permute(2, 0, 1)
@@ -683,117 +887,3 @@ class MaskFormerHead(AnchorFreeHead):
                         panoptic_seg[mask] = pred_class + instance_id * INSTANCE_OFFSET
                         instance_id += 1
         return panoptic_seg
-
-
-class TransformerEncoderPixelDecoder(BaseModule):
-    """Pixel decoder with transormer encoder inside.
-
-    Args:
-        in_channels (int): Number of channels in the input feature map.
-        conv_dim (int): Number channels for conv layer. 
-        mask_dim (int): Number channels for mask feature.
-        norm_cfg (obj:`mmcv.ConfigDict`|dict): Config for normalization. 
-            Defaults to dict(type="GN", num_groups=32).
-        act_cfg (obj:`mmcv.ConfigDict`|dict): Config for activation. 
-            Defaults to dict(type="ReLU").
-        encoder (obj:`mmcv.ConfigDict`|dict): Config for transorformer 
-            encoder.Defaults to None.
-        positional_encoding (obj:`mmcv.ConfigDict`|dict): Config for 
-            transformer encoder position encoding. Defaults to 
-            dict(type='SinePositionalEncoding', num_feats=128, 
-            normalize=True).
-        init_cfg (obj:`mmcv.ConfigDict`|dict):  Initialization config dict.
-            Default: None
-    """
-    def __init__(self,
-                in_channels, 
-                conv_dim,
-                mask_dim,
-                norm_cfg=dict(type="GN", num_groups=32),
-                act_cfg=dict(type="ReLU"),
-                encoder=None,
-                positional_encoding=dict(
-                    type='SinePositionalEncoding', num_feats=128, normalize=True),
-                init_cfg=None):
-        super().__init__(init_cfg)
-        self.in_channels = in_channels
-        self.num_inputs = len(in_channels)
-        self.lateral_convs = ModuleList()
-        self.output_convs = ModuleList()
-        self.use_bias = norm_cfg is None
-        for i in range(0, self.num_inputs - 1):
-            l_conv = ConvModule(in_channels[i], 
-                                conv_dim, 
-                                kernel_size=1,
-                                bias=self.use_bias,
-                                norm_cfg=norm_cfg) 
-            o_conv = ConvModule(conv_dim, 
-                                conv_dim,
-                                kernel_size=3,
-                                stride=1,
-                                padding=1,
-                                bias=self.use_bias,
-                                norm_cfg=norm_cfg,
-                                act_cfg=act_cfg)
-            self.lateral_convs.append(l_conv)
-            self.output_convs.append(o_conv)
-
-        self.encoder = build_transformer_layer_sequence(encoder)
-        self.encoder_embed_dims = self.encoder.embed_dims 
-        assert self.encoder_embed_dims == conv_dim, 'embed_dims({}) of tranformer encoder'\
-            'must equal to conv_dim({})'.format(conv_dim, self.encoder_embed_dims)
-        self.pe = build_positional_encoding(positional_encoding)
-        self.encoder_in_proj = Conv2d(in_channels[-1], conv_dim, kernel_size=1)
-        self.encoder_out_proj = ConvModule(conv_dim, conv_dim, 
-                    kernel_size=3, stride=1, padding=1, bias=self.use_bias,
-                    norm_cfg=norm_cfg, act_cfg=act_cfg)
-        self.mask_feature = Conv2d(conv_dim, mask_dim, kernel_size=3, stride=1, padding=1)
-
-    def init_weights(self):
-        for i in range(0, self.num_inputs - 2):
-            kaiming_init(self.lateral_convs[i].conv, a=1)
-            kaiming_init(self.output_convs[i].conv, a=1)
-            
-        kaiming_init(self.encoder_in_proj, a=1)
-        kaiming_init(self.encoder_out_proj.conv, a=1)
-        kaiming_init(self.mask_feature, a=1)
-
-    def forward(self, feats):
-        """
-        Args:
-            feats (list[Tensor]): Feature maps of each level. Each has
-                shape of [bs, c, h, w].
-
-        Returns:
-            tuple: a tuple containing the following:
-                
-                - mask_feature (Tensor): shape [bs, c, h, w].
-                - memory (Tensor): shape [bs, c, h, w].
-        """
-        feat_last = feats[-1]
-        bs, c, h, w = feat_last.shape
-        padding_mask = feat_last.new_ones((bs, h, w))
-        pos_embed = self.pe(padding_mask)
-        feat_last = self.encoder_in_proj(feat_last)
-        # [bs, c, h, w] -> [nq, bs, dim]
-        feat_last = feat_last.flatten(2).permute(2, 0, 1)
-        pos_embed = pos_embed.flatten(2).permute(2, 0, 1)
-        padding_mask = padding_mask.flatten(1) # [bs, h, w] -> [bs, h*w]
-        memory = self.encoder(
-            query=feat_last, 
-            key=None, 
-            value=None, 
-            query_pos=pos_embed,
-            query_key_padding_mask=padding_mask)
-        # [nq, bs, em] -> [bs, c, h, w]
-        memory = memory.permute(1, 2, 0).view(bs, self.encoder_embed_dims, h, w)
-        memory = self.encoder_out_proj(memory)
-        y = memory    
-        for i in range(self.num_inputs - 2, -1, -1):
-            x = feats[i]
-            cur_fpn = self.lateral_convs[i](x)
-            y = cur_fpn + F.interpolate(y, size=cur_fpn.shape[-2:], mode='nearest')
-            y = self.output_convs[i](y)
-
-        mask_feature = self.mask_feature(y)
-        return mask_feature, memory
