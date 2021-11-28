@@ -124,17 +124,17 @@ class DiceLoss(nn.Module):
 
 
 def naive_dice_loss(pred,
-              target,
-              weight=None,
-              eps=1e-3,
-              reduction='mean',
-              avg_factor=None):
-    
+                    target,
+                    weight=None,
+                    eps=1e-3,
+                    reduction='mean',
+                    avg_factor=None):
+
     input = pred.flatten(1)
     target = target.flatten(1).float()
 
     a = torch.sum(input * target, 1)
-    b = torch.sum(input, 1) 
+    b = torch.sum(input, 1)
     c = torch.sum(target, 1)
     d = (2 * a + eps) / (b + c + eps)
     loss = 1 - d
@@ -142,7 +142,7 @@ def naive_dice_loss(pred,
         assert weight.ndim == loss.ndim
         assert len(weight) == len(pred)
     loss = weight_reduce_loss(loss, weight, reduction, avg_factor)
-    return loss        
+    return loss
 
 
 @LOSSES.register_module()
