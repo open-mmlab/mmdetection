@@ -15,12 +15,10 @@ from .resnext import ResNeXt
 from .ssd_vgg import SSDVGG
 from .swin import SwinTransformer
 from .trident_resnet import TridentResNet
-from .resnet_det2 import build_resnet_backbone
 
 __all__ = [
     'RegNet', 'ResNet', 'ResNetV1d', 'ResNeXt', 'SSDVGG', 'HRNet',
     'MobileNetV2', 'Res2Net', 'HourglassNet', 'DetectoRS_ResNet',
     'DetectoRS_ResNeXt', 'Darknet', 'ResNeSt', 'TridentResNet', 'CSPDarknet',
-    'SwinTransformer', 'PyramidVisionTransformer', 'PyramidVisionTransformerV2',
-    'build_resnet_backbone'
+    'SwinTransformer', 'PyramidVisionTransformer', 'PyramidVisionTransformerV2'
 ]
