@@ -1,3 +1,6 @@
+"""copy from
+https://github.com/ZwwWayne/K-Net/blob/main/knet/det/mask_pseudo_sampler.py."""
+
 import torch
 
 from .sampling_result import SamplingResult
