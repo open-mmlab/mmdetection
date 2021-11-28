@@ -8,8 +8,8 @@ from .base import BaseDetector
 class SingleStageSegmentor(BaseDetector):
     """Base class for single-stage segmentors.
 
-    Single-stage segmentors directly and densely predict mask on the
-    output features of the backbone+neck.
+    Single-stage segmentors directly and densely predict mask on the output
+    features of the backbone+neck.
     """
 
     def __init__(self,
@@ -32,7 +32,7 @@ class SingleStageSegmentor(BaseDetector):
         semantic_head.update(test_cfg=test_cfg)
         self.semantic_head = build_head(semantic_head)
         self.train_cfg = train_cfg
-        self.test_cfg = test_cfg        
+        self.test_cfg = test_cfg
 
     def extract_feat(self, img):
         """Directly extract features from the backbone+neck."""
@@ -40,7 +40,7 @@ class SingleStageSegmentor(BaseDetector):
         if self.with_neck:
             x = self.neck(x)
         return x
-    
+
     def forward_dummy(self, img):
         """Used for computing network flops.
 
@@ -50,9 +50,9 @@ class SingleStageSegmentor(BaseDetector):
         outs = self.semantic_head(x)
         return outs
 
-    def forward_train(self, 
-                      img, 
-                      img_metas, 
+    def forward_train(self,
+                      img,
+                      img_metas,
                       gt_bboxes,
                       gt_labels,
                       gt_masks,
@@ -63,7 +63,7 @@ class SingleStageSegmentor(BaseDetector):
         Args:
             img (Tensor): of shape (N, C, H, W) encoding input images.
                 Typically these should be mean centered and std scaled.
-            img_metas (list[Dict]): ist of image info dict where each dict
+            img_metas (list[Dict]): list of image info dict where each dict
                 has: 'img_shape', 'scale_factor', 'flip', and may also contain
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 For details on the values of these keys see
@@ -74,29 +74,27 @@ class SingleStageSegmentor(BaseDetector):
             gt_masks (list[BitmapMasks]): true segmentation masks for each box
                 used if the architecture supports a segmentation task.
             gt_semantic_seg (list[tensor]): semantic segmentation mask for
-                images. 
+                images.
             gt_bboxes_ignore (list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss.. Defaults to None.
+                boxes can be ignored when computing the loss.
+                Defaults to None.
 
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
         x = self.extract_feat(img)
-        losses = self.semantic_head.forward_train(x, 
-                                                  img_metas,
-                                                  gt_bboxes,
-                                                  gt_labels,
-                                                  gt_masks,
+        losses = self.semantic_head.forward_train(x, img_metas, gt_bboxes,
+                                                  gt_labels, gt_masks,
                                                   gt_semantic_seg,
                                                   gt_bboxes_ignore)
-        
+
         return losses
 
     def simple_test(self, img, img_metas, **kwargs):
         """Test without augmentation."""
         feat = self.extract_feat(img)
-        mask_results = self.semantic_head.simple_test(
-            feat, img_metas, **kwargs)
+        mask_results = self.semantic_head.simple_test(feat, img_metas,
+                                                      **kwargs)
 
         return mask_results
 
