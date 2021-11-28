@@ -24,9 +24,6 @@ model = dict(
         num_queries=100,
         pixel_decoder=dict(
             type='TransformerEncoderPixelDecoder',
-            # in_channels=[256, 512, 1024, 2048],
-            # conv_dim=256,
-            # mask_dim=256,
             norm_cfg=dict(type='GN', num_groups=32),
             act_cfg=dict(type='ReLU'),
             encoder=dict(
