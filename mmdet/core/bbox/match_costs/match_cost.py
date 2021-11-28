@@ -183,3 +183,88 @@ class IoUCost:
         # The 1 is a constant that doesn't change the matching, so omitted.
         iou_cost = -overlaps
         return iou_cost * self.weight
+
+
+@MATCH_COST.register_module()
+class BinaryDiceCost:
+    """BinaryDiceCost.
+
+    Args:
+        weight (int | float, optional): loss_weight. Defaults to 1.
+        pred_act (bool, optional): Whether to apply sigmoid to mask_pred.
+            Defaults to False.
+        eps (float, optional): default 1e-12.
+    """
+
+    def __init__(self, weight=1., pred_act=False, eps=1e-3):
+        self.weight = weight
+        self.pred_act = pred_act
+        self.eps = eps
+
+    def binary_mask_dice_loss(self, mask_preds, gt_masks):
+        """
+        Args:
+            mask_preds (Tensor): Mask prediction, shape = [N1, H, W].
+            gt_masks (Tensor): Ground truth, shape = [N2, H, W],
+                store 0 or 1, 0 for negative class and 1 for
+                positive class.
+
+        Returns:
+            Tensor: Dice cost matrix, shape [N1, N2].
+        """
+        mask_preds = mask_preds.reshape((mask_preds.shape[0], -1))
+        gt_masks = gt_masks.reshape((gt_masks.shape[0], -1)).float()
+        numerator = 2 * torch.einsum('nc,mc->nm', mask_preds, gt_masks)
+        denominator = mask_preds.sum(-1)[:, None] + gt_masks.sum(-1)[None, :]
+        loss = 1 - (numerator + self.eps) / (denominator + self.eps)
+        return loss
+
+    def __call__(self, mask_preds, gt_masks):
+        """
+        Args:
+            mask_preds (Tensor): Mask prediction logits, shape [N1, h, w].
+            gt_masks (Tensor): Ground truth, shape [N2, h, w].
+
+        Returns:
+            Tensor: Dice cost matrix, shape [N1, N2].
+        """
+        if self.pred_act:
+            mask_preds = mask_preds.sigmoid()
+        dice_cost = self.binary_mask_dice_loss(mask_preds, gt_masks)
+        return dice_cost * self.weight
+
+
+@MATCH_COST.register_module()
+class MaskFocalLossCost(FocalLossCost):
+    """MaskFocalLossCost.
+
+    Args:
+        weight (int | float, optional): loss_weight.
+        alpha (int | float, optional): focal_loss alpha.
+        gamma (int | float, optional): focal_loss gamma.
+        eps (float, optional): default 1e-12.
+    """
+
+    def __call__(self, cls_pred, gt_labels):
+        """
+        Args:
+            cls_pred (Tensor): Predicted classfication logits,
+                shape [n1, h, w], dtype=torch.float32.
+            gt_labels (Tensor): Ground truth, shape [n2, h, w],
+                dtype=torch.long.
+
+        Returns:
+            Tensor: classification cost matrix, shape [n1, n2].
+        """
+        cls_pred = cls_pred.reshape((cls_pred.shape[0], -1))
+        gt_labels = gt_labels.reshape((gt_labels.shape[0], -1)).float()
+        hw = cls_pred.shape[1]
+        cls_pred = cls_pred.sigmoid()
+        neg_cost = -(1 - cls_pred + self.eps).log() * (
+            1 - self.alpha) * cls_pred.pow(self.gamma)
+        pos_cost = -(cls_pred + self.eps).log() * self.alpha * (
+            1 - cls_pred).pow(self.gamma)
+
+        cls_cost = torch.einsum('nc,mc->nm', pos_cost, gt_labels) + \
+            torch.einsum('nc,mc->nm', neg_cost, (1 - gt_labels))
+        return cls_cost / hw * self.weight
