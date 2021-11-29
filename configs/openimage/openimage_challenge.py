@@ -46,23 +46,26 @@ data = dict(
         ann_file=data_root +
         'challenge2019/challenge-2019-train-detection-bbox.txt',
         img_prefix=data_root + 'OpenImages/',
-        label_csv_path=data_root + 'challenge2019/cls-label-description.csv',
-        hierarchy_file_path=data_root + 'challenge2019/class_label_tree.np',
+        label_description_file=data_root +
+        'challenge2019/cls-label-description.csv',
+        hierarchy_file=data_root + 'challenge2019/class_label_tree.np',
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
         ann_file=data_root +
         'challenge2019/challenge-2019-validation-detection-bbox.txt',
         img_prefix=data_root + 'OpenImages/',
-        label_csv_path=data_root + 'challenge2019/cls-label-description.csv',
-        hierarchy_file_path=data_root + 'challenge2019/class_label_tree.np',
+        label_description_file=data_root +
+        'challenge2019/cls-label-description.csv',
+        hierarchy_file=data_root + 'challenge2019/class_label_tree.np',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
         ann_file=data_root +
         'challenge2019/challenge-2019-validation-detection-bbox.txt',
         img_prefix=data_root + 'OpenImages/',
-        label_csv_path=data_root + 'challenge2019/cls-label-description.csv',
-        hierarchy_file_path=data_root + 'challenge2019/class_label_tree.np',
+        label_description_file=data_root +
+        'challenge2019/cls-label-description.csv',
+        hierarchy_file=data_root + 'challenge2019/class_label_tree.np',
         pipeline=test_pipeline))
 evaluation = dict(interval=1, metric='mAP')

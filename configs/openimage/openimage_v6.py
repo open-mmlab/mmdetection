@@ -43,27 +43,27 @@ data = dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/oidv6-train-annotations-bbox.csv',
         img_prefix=data_root + 'OpenImages/train/',
-        label_csv_path=data_root +
+        label_description_file=data_root +
         'annotations/class-descriptions-boxable.csv',
-        hierarchy_file_path=data_root +
+        hierarchy_file=data_root +
         'annotations/bbox_labels_600_hierarchy.json',
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/validation-annotations-bbox.csv',
         img_prefix=data_root + 'OpenImages/validation/',
-        label_csv_path=data_root +
+        label_description_file=data_root +
         'annotations/class-descriptions-boxable.csv',
-        hierarchy_file_path=data_root +
+        hierarchy_file=data_root +
         'annotations/bbox_labels_600_hierarchy.json',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/validation-annotations-bbox.csv',
         img_prefix=data_root + 'OpenImages/validation/',
-        label_csv_path=data_root +
+        label_description_file=data_root +
         'annotations/class-descriptions-boxable.csv',
-        hierarchy_file_path=data_root +
+        hierarchy_file=data_root +
         'annotations/bbox_labels_600_hierarchy.json',
         pipeline=test_pipeline))
 evaluation = dict(interval=1, metric='mAP')
