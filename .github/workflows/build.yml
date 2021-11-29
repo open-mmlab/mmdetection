@@ -2,18 +2,22 @@ name: build
 
 on:
   push:
-    paths:
-      - '!demo/**'
-      - '!docker/**'
-      - '!tools/**'
+    paths-ignore:
+      - '.dev_scripts/**'
+      - '.github/**.md'
+      - 'demo/**'
+      - 'docker/**'
+      - 'tools/**'
 
   pull_request:
-    paths:
-      - '!demo/**'
-      - '!docker/**'
-      - '!tools/**'
-      - '!docs/**'
-      - '!docs_zh-CN/**'
+    paths-ignore:
+      - '.dev_scripts/**'
+      - '.github/**.md'
+      - 'demo/**'
+      - 'docker/**'
+      - 'tools/**'
+      - 'docs/**'
+      - 'docs_zh-CN/**'
 
 jobs:
   build_cpu:
