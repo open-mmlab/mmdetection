@@ -4,9 +4,9 @@
 
 #### Highlights
 
-- Support [Label Assignment Distillation](https://arxiv.org/abs/2108.10520) (#6342)
-- Support `persistent_workers` for Pytorch >= 1.7 (#6435)
-- Align accuracy to the updated official YOLOX (#6443)
+- Support [Label Assignment Distillation](https://arxiv.org/abs/2108.10520)
+- Support `persistent_workers` for Pytorch >= 1.7
+- Align accuracy to the updated official YOLOX
 
 #### New Features
 
@@ -35,7 +35,7 @@
 #### Contributors
 
 A total of 11 developers contributed to this release.
-Thanks @FloydHsiu, @RangiLyu, @ZwwWayne, @AndreaPi, @st9007a, @hachreak, @BIGWangYuDong, @hhaAndroid, @AronLin, @chhluo, @vealocia, @@HarborYuan, @st9007a
+Thanks @FloydHsiu, @RangiLyu, @ZwwWayne, @AndreaPi, @st9007a, @hachreak, @BIGWangYuDong, @hhaAndroid, @AronLin, @chhluo, @vealocia, @@HarborYuan, @st9007a, @jshilong
 
 
 

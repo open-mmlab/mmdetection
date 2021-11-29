@@ -59,10 +59,10 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 更新日志
 
-最新的 **2.19.0** 版本已经在2021.11.29发布:
-- 支持了 [Label Assignment Distillation](https://arxiv.org/abs/2108.10520) (#6342)
-- 对 PyTorch >= 1.7 支持 `persistent_workers` (#6435)
-- 与最近更新的 YOLOX 对齐精度 (#6443)
+最新的 **2.19.0** 版本已经在 2021.11.29 发布:
+- 支持了 [Label Assignment Distillation](https://arxiv.org/abs/2108.10520)
+- 对 PyTorch >= 1.7 支持 `persistent_workers`
+- 与最近更新的 YOLOX 对齐精度
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/changelog.md)。
 

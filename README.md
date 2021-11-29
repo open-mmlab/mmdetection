@@ -62,9 +62,9 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 **2.19.0** was released in 29/11/2021:
 
-- Support [Label Assignment Distillation](https://arxiv.org/abs/2108.10520) (#6342)
-- Support `persistent_workers` for Pytorch >= 1.7 (#6435)
-- Align accuracy to the updated official YOLOX (#6443)
+- Support [Label Assignment Distillation](https://arxiv.org/abs/2108.10520)
+- Support `persistent_workers` for Pytorch >= 1.7
+- Align accuracy to the updated official YOLOX
 
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 
