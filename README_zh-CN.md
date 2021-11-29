@@ -13,10 +13,10 @@
   <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
 
-[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/v2.18.1/) |
-[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/v2.18.1/get_started.html) |
-[👀模型库](https://mmdetection.readthedocs.io/zh_CN/v2.18.1/model_zoo.html) |
-[🆕更新日志](https://mmdetection.readthedocs.io/en/v2.18.1/changelog.html) |
+[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/v2.19.0/) |
+[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/v2.19.0/get_started.html) |
+[👀模型库](https://mmdetection.readthedocs.io/zh_CN/v2.19.0/model_zoo.html) |
+[🆕更新日志](https://mmdetection.readthedocs.io/en/v2.19.0/changelog.html) |
 [🚀进行中的项目](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔报告问题](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
@@ -59,10 +59,10 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 更新日志
 
-最新的 **2.18.1** 版本已经在2021.11.15发布:
-- 发布了 [QueryInst](http://arxiv.org/abs/2105.01928) 的预训练模型。
-- 支持绘制混淆矩阵。
-- 修复了 PVT 中的 SpatialReductionAttention 以及 PVT 和 Swin-Transformer 中 trunc_normal_init 的错误用法。
+最新的 **2.19.0** 版本已经在2021.11.29发布:
+- 支持了 [Label Assignment Distillation](https://arxiv.org/abs/2108.10520) (#6342)
+- 对 PyTorch >= 1.7 支持 `persistent_workers` (#6435)
+- 与最近更新的 YOLOX 对齐精度 (#6443)
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/changelog.md)。
 
