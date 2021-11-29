@@ -129,6 +129,9 @@ class OpenImagesDataset(CustomDataset):
                         float(line[5]),  # xmax
                         float(line[7])  # ymax
                     ]
+
+                    if img_id == '77e62fdbefbe32f5':
+                        print(bbox)
                     is_occluded = True if line[8] == 1 else False
                     is_truncated = True if line[9] == 1 else False
                     is_group_of = True if line[10] == 1 else False
@@ -164,7 +167,6 @@ class OpenImagesDataset(CustomDataset):
         Returns:
             dict: Annotation info of specified index.
         """
-
         img_id = self.data_infos[idx]['img_id']
         bboxes = []
         labels = []
@@ -178,10 +180,10 @@ class OpenImagesDataset(CustomDataset):
         for obj in self.ann_infos[img_id]:
             label = int(obj['label'])
             bbox = [
-                int(float(obj['bbox'][0])),
-                int(float(obj['bbox'][1])),
-                int(float(obj['bbox'][2])),
-                int(float(obj['bbox'][3]))
+                float(obj['bbox'][0]),
+                float(obj['bbox'][1]),
+                float(obj['bbox'][2]),
+                float(obj['bbox'][3])
             ]
             bboxes.append(bbox)
             labels.append(label)

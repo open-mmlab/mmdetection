@@ -67,3 +67,14 @@ data = dict(
         'annotations/bbox_labels_600_hierarchy.json',
         pipeline=test_pipeline))
 evaluation = dict(interval=1, metric='mAP')
+
+optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+optimizer_config = dict(
+    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
+lr_config = dict(
+    policy='step',
+    warmup='linear',
+    warmup_iters=26000,
+    warmup_ratio=1.0 / 64,
+    step=[8, 11],
+)
