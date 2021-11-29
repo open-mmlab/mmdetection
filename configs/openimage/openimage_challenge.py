@@ -3,7 +3,9 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
-model = dict(roi_head=dict(bbox_head=dict(num_classes=500)))
+model = dict(
+    roi_head=dict(bbox_head=dict(num_classes=500)),
+    test_cfg=dict(rcnn=dict(score_thr=0.01)))
 
 # dataset settings
 dataset_type = 'OpenImagesChallengeDataset'
@@ -39,14 +41,11 @@ test_pipeline = [
 data = dict(
     samples_per_gpu=2,
     workers_per_gpu=0,
-    # TODO: support
-    # class_sample_path=data_root + "challenge2019/class_sample_train.pkl",
-    # class_aware_sampling=True,
     train=dict(
         type=dataset_type,
         ann_file=data_root +
         'challenge2019/challenge-2019-train-detection-bbox.txt',
-        img_prefix=data_root,
+        img_prefix=data_root + 'OpenImages/',
         label_csv_path=data_root + 'challenge2019/cls-label-description.csv',
         hierarchy_file_path=data_root + 'challenge2019/class_label_tree.np',
         pipeline=train_pipeline),
@@ -54,7 +53,7 @@ data = dict(
         type=dataset_type,
         ann_file=data_root +
         'challenge2019/challenge-2019-validation-detection-bbox.txt',
-        img_prefix=data_root,
+        img_prefix=data_root + 'OpenImages/',
         label_csv_path=data_root + 'challenge2019/cls-label-description.csv',
         hierarchy_file_path=data_root + 'challenge2019/class_label_tree.np',
         pipeline=test_pipeline),
@@ -62,7 +61,7 @@ data = dict(
         type=dataset_type,
         ann_file=data_root +
         'challenge2019/challenge-2019-validation-detection-bbox.txt',
-        img_prefix=data_root,
+        img_prefix=data_root + 'OpenImages/',
         label_csv_path=data_root + 'challenge2019/cls-label-description.csv',
         hierarchy_file_path=data_root + 'challenge2019/class_label_tree.np',
         pipeline=test_pipeline))

@@ -39,13 +39,10 @@ test_pipeline = [
 data = dict(
     samples_per_gpu=2,
     workers_per_gpu=0,
-    # TODO: support
-    # class_sample_path=data_root + "challenge2019/class_sample_train.pkl",
-    # class_aware_sampling=True,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/oidv6-train-annotations-bbox.csv',
-        img_prefix=data_root + 'train/',
+        img_prefix=data_root + 'OpenImages/train/',
         label_csv_path=data_root +
         'annotations/class-descriptions-boxable.csv',
         hierarchy_file_path=data_root +
@@ -54,7 +51,7 @@ data = dict(
     val=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/validation-annotations-bbox.csv',
-        img_prefix=data_root + 'validation/',
+        img_prefix=data_root + 'OpenImages/validation/',
         label_csv_path=data_root +
         'annotations/class-descriptions-boxable.csv',
         hierarchy_file_path=data_root +
@@ -63,7 +60,7 @@ data = dict(
     test=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/validation-annotations-bbox.csv',
-        img_prefix=data_root + 'validation/',
+        img_prefix=data_root + 'OpenImages/validation/',
         label_csv_path=data_root +
         'annotations/class-descriptions-boxable.csv',
         hierarchy_file_path=data_root +
