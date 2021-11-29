@@ -14,6 +14,15 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
     def __init__(self, init_cfg=None):
         super(BaseDenseHead, self).__init__(init_cfg)
 
+    def init_weights(self):
+        super(BaseDenseHead, self).init_weights()
+        # avoid init_cfg overwrite the initialization of `conv_offset`
+        for m in self.modules():
+            # DeformConv2dPack, ModulatedDeformConv2dPack
+            if hasattr(m, 'conv_offset'):
+                m.conv_offset.weight.data.zero_()
+                m.conv_offset.bias.data.zero_()
+
     @abstractmethod
     def loss(self, **kwargs):
         """Compute losses of the head."""
