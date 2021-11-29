@@ -227,13 +227,13 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         """bbox post-processing method.
 
         The boxes would be rescaled to the original image scale and do
-        the nms operation. Usually with_nms is False is used for aug test.
+        the nms operation. Usually `with_nms` is False is used for aug test.
 
         Args:
             mlvl_scores (list[Tensor]): Box scores from all scale
                 levels of a single image, each item has shape
                 (num_bboxes, ).
-           mlvl_labels (list[Tensor]): Box class labels from all scale
+            mlvl_labels (list[Tensor]): Box class labels from all scale
                 levels of a single image, each item has shape
                 (num_bboxes, ).
             mlvl_bboxes (list[Tensor]): Decoded bboxes from all scale
