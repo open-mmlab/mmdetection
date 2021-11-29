@@ -76,23 +76,28 @@ def tpfp_imagenet(det_bboxes,
         default_iou_thr (float): IoU threshold to be considered as matched for
             medium and large bboxes (small ones have special rules).
             Default: 0.5.
+        ioa_thr (float | None): IoA threshold to be considered as matched,
+            which only used in OpenImages evaluation. Default: None.
         area_ranges (list[tuple] | None): Range of bbox areas to be evaluated,
             in the format [(min1, max1), (min2, max2), ...]. Default: None.
         use_legacy_coordinate (bool): Whether to use coordinate system in
             mmdet v1.x. which means width, height should be
             calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
             Default: False.
+        use_group_of (bool): Whether to use group of when calculate TP and FP,
+            which only used in OpenImages evaluation. Default: False.
 
     Returns:
-        tuple[np.ndarray]: (tp, fp) whose elements are 0 and 1. The shape of
-            each array is (num_scales, m).
+        tuple[np.ndarray] (tp, fp, det_bboxes): (tp, fp) whose elements
+            are 0 and 1. The shape of each array is (num_scales, m).
+            det_bboxes is same as input. The shape is (num_scales, m)
     """
     assert gt_bboxes_group_of is None and \
            ioa_thr is None and \
-           use_group_of is False, \
-           '`gt_bboxes_group_of` and `ioa_thr` should be None and ' \
+           use_group_of is False and \
+           '`gt_bboxes_group_of` and `ioa_thr` should be None, ' \
            '`use_group_of` should be False. ' \
-           'Only used in `tpfp_openimage`'
+           'Only used when evaluate OpenImages'
 
     if not use_legacy_coordinate:
         extra_length = 0.
@@ -174,134 +179,6 @@ def tpfp_imagenet(det_bboxes,
     return tp, fp, det_bboxes
 
 
-def tpfp_openimage(det_bboxes,
-                   gt_bboxes,
-                   gt_bboxes_ignore=None,
-                   gt_bboxes_group_of=None,
-                   iou_thr=0.5,
-                   ioa_thr=0.5,
-                   area_ranges=None,
-                   use_group_of=True):
-    """This is the original one, before add into tpfp_default."""
-    # an indicator of ignored gts
-    gt_ignore_inds = np.concatenate(
-        (np.zeros(gt_bboxes.shape[0], dtype=np.bool),
-         np.ones(gt_bboxes_ignore.shape[0], dtype=np.bool)))
-    # stack gt_bboxes and gt_bboxes_ignore for convenience
-    gt_bboxes = np.vstack((gt_bboxes, gt_bboxes_ignore))
-    if gt_bboxes_group_of is not None and use_group_of:
-        assert gt_bboxes_group_of.shape[0] == gt_bboxes.shape[0]
-        non_group_gt_bboxes = gt_bboxes[~gt_bboxes_group_of]
-        group_gt_bboxes = gt_bboxes[gt_bboxes_group_of]
-        num_dets = det_bboxes.shape[0]
-        num_gts = gt_bboxes.shape[0]
-        num_gts_group = group_gt_bboxes.shape[0]
-
-        if area_ranges is None:
-            area_ranges = [(None, None)]
-        num_scales = len(area_ranges)
-        tp = np.zeros((num_scales, num_dets), dtype=np.float32)
-        fp = np.zeros((num_scales, num_dets), dtype=np.float32)
-        if gt_bboxes.shape[0] == 0:
-            if area_ranges == [(None, None)]:
-                fp[...] = 1
-            else:
-                det_areas = (det_bboxes[:, 2] - det_bboxes[:, 0]) * (
-                    det_bboxes[:, 3] - det_bboxes[:, 1])
-                for i, (min_area, max_area) in enumerate(area_ranges):
-                    fp[i, (det_areas >= min_area) & (det_areas < max_area)] = 1
-            return tp, fp, det_bboxes
-
-        ious = bbox_overlaps(det_bboxes, non_group_gt_bboxes)
-        ioas = bbox_overlaps(det_bboxes, group_gt_bboxes, mode='iof')
-
-        if ious.shape[1] > 0:
-            ious_max = ious.max(axis=1)
-            # for each det, which gt overlaps most with it
-            ious_argmax = ious.argmax(axis=1)
-            # sort all dets in descending order by scores
-            sort_inds = np.argsort(-det_bboxes[:, -1])
-            for k, (min_area, max_area) in enumerate(area_ranges):
-                gt_covered = np.zeros(num_gts, dtype=bool)
-                # if no area range is specified, gt_area_ignore is all False
-                if min_area is None:
-                    gt_area_ignore = np.zeros_like(gt_ignore_inds, dtype=bool)
-                else:
-                    gt_areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (
-                        gt_bboxes[:, 3] - gt_bboxes[:, 1])
-                    gt_area_ignore = (gt_areas < min_area) | (
-                        gt_areas >= max_area)
-                for i in sort_inds:
-                    if ious_max[i] >= iou_thr:
-                        matched_gt = ious_argmax[i]
-                        if not (gt_ignore_inds[matched_gt]
-                                or gt_area_ignore[matched_gt]):
-                            if not gt_covered[matched_gt]:
-                                gt_covered[matched_gt] = True
-                                tp[k, i] = 1
-                            else:
-                                fp[k, i] = 1
-                        # otherwise ignore this detected bbox, tp = 0, fp = 0
-                    elif min_area is None:
-                        fp[k, i] = 1
-                    else:
-                        bbox = det_bboxes[i, :4]
-                        area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
-                        if area >= min_area and area < max_area:
-                            fp[k, i] = 1
-            if ioas.shape[1] <= 0:
-                return tp, fp, det_bboxes
-
-        if ioas.shape[1] > 0:
-            ignore_det_bboxes = np.zeros(num_dets, dtype=bool)
-            match_group_of = np.zeros((num_scales, num_dets), dtype=bool)
-            tp_group = np.zeros((num_scales, num_gts_group), dtype=np.float32)
-            fp_group = np.zeros((num_scales, num_gts_group), dtype=np.float32)
-            ioas_max = ioas.max(axis=1)
-            # for each det, which gt overlaps most with it
-            ioas_argmax = ioas.argmax(axis=1)
-            # sort all dets in descending order by scores
-            sort_inds = np.argsort(-det_bboxes[:, -1])
-            for k, (min_area, max_area) in enumerate(area_ranges):
-                box_is_covered = tp[k]
-                # group_covered = np.zeros(num_gts_group, dtype=bool)
-                # if no area range is specified, gt_area_ignore is all False
-                if min_area is None:
-                    gt_area_ignore = np.zeros_like(gt_ignore_inds, dtype=bool)
-                else:
-                    gt_areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (
-                        gt_bboxes[:, 3] - gt_bboxes[:, 1])
-                    gt_area_ignore = (gt_areas < min_area) | (
-                        gt_areas >= max_area)
-                for i in sort_inds:
-                    matched_gt = ioas_argmax[i]
-                    if not box_is_covered[i]:
-                        if ioas_max[i] >= ioa_thr:
-                            if not (gt_ignore_inds[matched_gt]
-                                    or gt_area_ignore[matched_gt]):
-                                if not tp_group[k, matched_gt]:
-                                    tp_group[k, matched_gt] = 1
-                                    match_group_of[k, i] = True
-                                else:
-                                    ignore_det_bboxes[i] = True
-                                    match_group_of[k, i] = True
-                            else:
-                                fp_group[k, matched_gt] = 1
-            tps = []
-            fps = []
-            for i in range(num_scales):
-                tps.append(
-                    np.concatenate((tp[i][~match_group_of[i]], tp_group[i])))
-                fps.append(
-                    np.concatenate((fp[i][~match_group_of[i]], fp_group[i])))
-
-            tp = np.vstack(tps)
-            fp = np.vstack(fps)
-            det_bboxes = det_bboxes[~ignore_det_bboxes]
-
-        return tp, fp, det_bboxes
-
-
 def tpfp_default(det_bboxes,
                  gt_bboxes,
                  gt_bboxes_ignore=None,
@@ -320,7 +197,8 @@ def tpfp_default(det_bboxes,
             of shape (k, 4). Default: None
         iou_thr (float): IoU threshold to be considered as matched.
             Default: 0.5.
-        ioa_thr
+        ioa_thr (float | None): IoA threshold to be considered as matched,
+            which only used in OpenImages evaluation. Default: None.
         area_ranges (list[tuple] | None): Range of bbox areas to be
             evaluated, in the format [(min1, max1), (min2, max2), ...].
             Default: None.
@@ -328,10 +206,15 @@ def tpfp_default(det_bboxes,
             mmdet v1.x. which means width, height should be
             calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
             Default: False.
+        use_group_of (bool): Whether to use group of when calculate TP and FP,
+            which only used in OpenImages evaluation. Default: False.
 
     Returns:
-        tuple[np.ndarray]: (tp, fp) whose elements are 0 and 1. The shape of
-            each array is (num_scales, m).
+        tuple[np.ndarray] (tp, fp, det_bboxes): (tp, fp) whose elements
+            are 0 and 1. The shape of each array is (num_scales, m).
+            det_bboxes whose will filter those are not matched by group of
+            gts when processing OpenImages evaluation, and same as input
+            otherwise. The shape is (num_scales, m)
     """
 
     if not use_legacy_coordinate:
@@ -370,6 +253,10 @@ def tpfp_default(det_bboxes,
         return tp, fp, det_bboxes
 
     if gt_bboxes_group_of is not None and use_group_of:
+        # if handle group-of boxes, divided gt boxes into two parts:
+        # non-group-of and group-of.Then calculate ious and ioas through
+        # non-group-of group-of gts respectively. This only used in
+        # OpenImages evaluation.
         assert gt_bboxes_group_of.shape[0] == gt_bboxes.shape[0]
         non_group_gt_bboxes = gt_bboxes[~gt_bboxes_group_of]
         group_gt_bboxes = gt_bboxes[gt_bboxes_group_of]
@@ -377,6 +264,7 @@ def tpfp_default(det_bboxes,
         ious = bbox_overlaps(det_bboxes, non_group_gt_bboxes)
         ioas = bbox_overlaps(det_bboxes, group_gt_bboxes, mode='iof')
     else:
+        # if not consider group-of boxes, only calculate ious through gt boxes
         ious = bbox_overlaps(
             det_bboxes, gt_bboxes, use_legacy_coordinate=use_legacy_coordinate)
         ioas = None
@@ -417,14 +305,32 @@ def tpfp_default(det_bboxes,
                         bbox[3] - bbox[1] + extra_length)
                     if area >= min_area and area < max_area:
                         fp[k, i] = 1
-        if ioas is None or ioas.shape[1] <= 0:
-            return tp, fp, det_bboxes
+    else:
+        # if there is no no-group-of gt bboxes in this image,
+        # then all det bboxes within area range are false positives.
+        # Only used in OpenImages evaluation.
+        if area_ranges == [(None, None)]:
+            fp[...] = 1
+        else:
+            det_areas = (
+                det_bboxes[:, 2] - det_bboxes[:, 0] + extra_length) * (
+                    det_bboxes[:, 3] - det_bboxes[:, 1] + extra_length)
+            for i, (min_area, max_area) in enumerate(area_ranges):
+                fp[i, (det_areas >= min_area) & (det_areas < max_area)] = 1
 
-    if ioas is not None and ioas.shape[1] > 0:
-        ignore_det_bboxes = np.zeros(num_dets, dtype=bool)
+    if ioas is None or ioas.shape[1] <= 0:
+        return tp, fp, det_bboxes
+    else:
+        # The evaluation of group-of TP and FP are done in two stages:
+        # 1. All detections are first matched to non group-of boxes; true
+        #    positives are determined.
+        # 2. Detections that are determined as false positives are matched
+        #    against group-of boxes and calculated group-of TP and FP.
+        # Only used in OpenImages evaluation.
+        det_bboxes_group = np.zeros(
+            (num_scales, ioas.shape[1], det_bboxes.shape[1]), dtype=float)
         match_group_of = np.zeros((num_scales, num_dets), dtype=bool)
         tp_group = np.zeros((num_scales, num_gts_group), dtype=np.float32)
-        fp_group = np.zeros((num_scales, num_gts_group), dtype=np.float32)
         ioas_max = ioas.max(axis=1)
         # for each det, which gt overlaps most with it
         ioas_argmax = ioas.argmax(axis=1)
@@ -432,7 +338,6 @@ def tpfp_default(det_bboxes,
         sort_inds = np.argsort(-det_bboxes[:, -1])
         for k, (min_area, max_area) in enumerate(area_ranges):
             box_is_covered = tp[k]
-            # group_covered = np.zeros(num_gts_group, dtype=bool)
             # if no area range is specified, gt_area_ignore is all False
             if min_area is None:
                 gt_area_ignore = np.zeros_like(gt_ignore_inds, dtype=bool)
@@ -450,22 +355,30 @@ def tpfp_default(det_bboxes,
                                 tp_group[k, matched_gt] = 1
                                 match_group_of[k, i] = True
                             else:
-                                ignore_det_bboxes[i] = True
                                 match_group_of[k, i] = True
-                        else:
-                            fp_group[k, matched_gt] = 1
+
+                            if det_bboxes_group[k, matched_gt, -1] < \
+                                    det_bboxes[i, -1]:
+                                det_bboxes_group[k, matched_gt] = \
+                                    det_bboxes[i]
+
+        fp_group = (tp_group <= 0).astype(float)
         tps = []
         fps = []
+        # concatenate tp, fp, and det-boxes which not matched group of
+        # gt boxes and tp_group, fp_group, and det_bboxes_group which
+        # matched group of boxes respectively.
         for i in range(num_scales):
             tps.append(
                 np.concatenate((tp[i][~match_group_of[i]], tp_group[i])))
             fps.append(
                 np.concatenate((fp[i][~match_group_of[i]], fp_group[i])))
+            det_bboxes = np.concatenate(
+                (det_bboxes[~match_group_of[i]], det_bboxes_group[i]))
 
         tp = np.vstack(tps)
         fp = np.vstack(fps)
-        det_bboxes = det_bboxes[~ignore_det_bboxes]
-    return tp, fp, det_bboxes
+        return tp, fp, det_bboxes
 
 
 def get_cls_results(det_results, annotations, class_id):
@@ -528,6 +441,8 @@ def eval_map(det_results,
             Default: None.
         iou_thr (float): IoU threshold to be considered as matched.
             Default: 0.5.
+        ioa_thr (float | None): IoA threshold to be considered as matched,
+            which only used in OpenImages evaluation. Default: None.
         dataset (list[str] | str | None): Dataset name or dataset classes,
             there are minor differences in metrics for different datasets, e.g.
             "voc07", "imagenet_det", etc. Default: None.
@@ -544,6 +459,8 @@ def eval_map(det_results,
             mmdet v1.x. which means width, height should be
             calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
             Default: False.
+        use_group_of (bool): Whether to use group of when calculate TP and FP,
+            which only used in OpenImages evaluation. Default: False.
 
     Returns:
         tuple: (mAP, [dict, dict, ...])
