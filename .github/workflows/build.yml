@@ -8,7 +8,7 @@ on:
       - '!tools/**'
 
   pull_request:
-    paths:
+    paths-ignore:
       - '!demo/**'
       - '!dev_scripts/**'
       - '!docker/**'
