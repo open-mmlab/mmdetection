@@ -1,4 +1,4 @@
-# Seesaw Loss for Long-Tailed Instance Segmentation 
+# Seesaw Loss for Long-Tailed Instance Segmentation
 
 ## Abstract
 
