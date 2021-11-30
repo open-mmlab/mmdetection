@@ -704,4 +704,4 @@ def test_yolox_random_size():
         gt_bboxes=gt_bboxes,
         gt_labels=gt_labels,
         return_loss=True)
-    assert detector.input_size == (64, 64)
+    assert detector._input_size == (64, 64)
