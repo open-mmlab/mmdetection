@@ -1,0 +1,23 @@
+name: lint
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Install pre-commit hook
+        run: |
+          pip install pre-commit
+          pre-commit install
+      - name: Linting
+        run: pre-commit run --all-files
+      - name: Check docstring coverage
+        run: |
+          pip install interrogate
+          interrogate -v --ignore-init-method --ignore-module --ignore-nested-functions --ignore-regex "__repr__" --fail-under 80 mmdet

@@ -28,7 +28,7 @@
 
 MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [OpenMMLab](https://openmmlab.com/) 项目的一部分。
 
-主分支代码目前支持 PyTorch 1.3 以上的版本。
+主分支代码目前支持 PyTorch 1.5 以上的版本。
 
 
 <details open>
@@ -203,6 +203,7 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 - [MMEditing](https://github.com/open-mmlab/mmediting): OpenMMLab 图像视频编辑工具箱
 - [MMOCR](https://github.com/open-mmlab/mmocr): OpenMMLab 全流程文字检测识别理解工具包
 - [MMGeneration](https://github.com/open-mmlab/mmgeneration): OpenMMLab 图片视频生成模型工具箱
+- [MMFlow](https://github.com/open-mmlab/mmflow): OpenMMLab 光流估计工具箱与测试基准
 
 ## 欢迎加入 OpenMMLab 社区
 
