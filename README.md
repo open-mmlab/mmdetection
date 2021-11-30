@@ -13,10 +13,10 @@
   <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
 
-[📘Documentation](https://mmdetection.readthedocs.io/en/v2.17.0/) |
-[🛠️Installation](https://mmdetection.readthedocs.io/en/v2.17.0/get_started.html) |
-[👀Model Zoo](https://mmdetection.readthedocs.io/zh_CN/v2.17.0/model_zoo.html) |
-[🆕Update News](https://mmdetection.readthedocs.io/en/v2.17.0/changelog.html) |
+[📘Documentation](https://mmdetection.readthedocs.io/en/v2.18.1/) |
+[🛠️Installation](https://mmdetection.readthedocs.io/en/v2.18.1/get_started.html) |
+[👀Model Zoo](https://mmdetection.readthedocs.io/zh_CN/v2.18.1/model_zoo.html) |
+[🆕Update News](https://mmdetection.readthedocs.io/en/v2.18.1/changelog.html) |
 [🚀Ongoing Projects](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔Reporting Issues](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
@@ -60,10 +60,10 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-**2.17.0** was released in 28/09/2021:
-- Support PVT, PVTv2 and SOLO.
-- Support large scale jittering and New Mask R-CNN baselines.
-- Speed up YOLOv3 inference.
+**2.18.1** was released in 15/11/2021:
+- Release [QueryInst](http://arxiv.org/abs/2105.01928) pre-trained weights.
+- Support plot confusion matrix.
+- Fix SpatialReductionAttention in PVT and fix trunc_normal_init in both PVT and Swin-Transformer.
 
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 
@@ -147,6 +147,7 @@ Results and models are available in the [model zoo](docs/model_zoo.md).
 - [x] [CenterNet (CVPR'2019)](configs/centernet/README.md)
 - [x] [YOLOX (ArXiv'2021)](configs/yolox/README.md)
 - [x] [SOLO (ECCV'2020)](configs/solo/README.md)
+- [x] [QueryInst (ICCV'2021)](configs/queryinst/README.md)
 </details>
 
 Some other methods are also supported in [projects using MMDetection](./docs/projects.md).

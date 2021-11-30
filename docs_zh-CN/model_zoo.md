@@ -225,6 +225,22 @@ MMdetection 常用到的主干网络细节如下表所示：
 
 请参考 [CenterNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/centernet)。
 
+### YOLOX
+
+请参考 [YOLOX](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolox)。
+
+### PVT
+
+请参考 [PVT](https://github.com/open-mmlab/mmdetection/blob/master/configs/pvt)。
+
+### SOLO
+
+请参考 [SOLO](https://github.com/open-mmlab/mmdetection/blob/master/configs/solo)。
+
+### QueryInst
+
+请参考 [QueryInst](https://github.com/open-mmlab/mmdetection/blob/master/configs/queryinst)。
+
 ### Other datasets
 
 我们还在 [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc)，[Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) 和 [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face) 上对一些方法进行了基准测试。

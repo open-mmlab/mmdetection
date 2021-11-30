@@ -2,8 +2,7 @@
 import torch
 from mmcv.runner import force_fp32
 
-from mmdet.core import (bbox2distance, bbox_overlaps, distance2bbox,
-                        multi_apply, reduce_mean)
+from mmdet.core import bbox_overlaps, multi_apply, reduce_mean
 from ..builder import HEADS, build_loss
 from .gfl_head import GFLHead
 
@@ -90,8 +89,8 @@ class LDHead(GFLHead):
             weight_targets = cls_score.detach().sigmoid()
             weight_targets = weight_targets.max(dim=1)[0][pos_inds]
             pos_bbox_pred_corners = self.integral(pos_bbox_pred)
-            pos_decode_bbox_pred = distance2bbox(pos_anchor_centers,
-                                                 pos_bbox_pred_corners)
+            pos_decode_bbox_pred = self.bbox_coder.decode(
+                pos_anchor_centers, pos_bbox_pred_corners)
             pos_decode_bbox_targets = pos_bbox_targets / stride[0]
             score[pos_inds] = bbox_overlaps(
                 pos_decode_bbox_pred.detach(),
@@ -101,9 +100,9 @@ class LDHead(GFLHead):
             pos_soft_targets = soft_targets[pos_inds]
             soft_corners = pos_soft_targets.reshape(-1, self.reg_max + 1)
 
-            target_corners = bbox2distance(pos_anchor_centers,
-                                           pos_decode_bbox_targets,
-                                           self.reg_max).reshape(-1)
+            target_corners = self.bbox_coder.encode(pos_anchor_centers,
+                                                    pos_decode_bbox_targets,
+                                                    self.reg_max).reshape(-1)
 
             # regression loss
             loss_bbox = self.loss_bbox(
@@ -212,7 +211,7 @@ class LDHead(GFLHead):
         """
 
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == self.anchor_generator.num_levels
+        assert len(featmap_sizes) == self.prior_generator.num_levels
 
         device = cls_scores[0].device
         anchor_list, valid_flag_list = self.get_anchors(
@@ -247,7 +246,7 @@ class LDHead(GFLHead):
                 labels_list,
                 label_weights_list,
                 bbox_targets_list,
-                self.anchor_generator.strides,
+                self.prior_generator.strides,
                 soft_target,
                 num_total_samples=num_total_samples)
 

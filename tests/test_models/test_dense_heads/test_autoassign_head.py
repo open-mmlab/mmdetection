@@ -67,12 +67,18 @@ def test_autoassign_head_loss():
     results = levels_to_images(mlvl_tensor)
     assert len(results) == n
     assert results[0].size() == (h * w * 5, c)
+
+    self = AutoAssignHead(
+        num_classes=4,
+        in_channels=1,
+        train_cfg=train_cfg,
+        loss_cls=dict(
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
+        loss_bbox=dict(type='GIoULoss', loss_weight=1.3),
+        strides=(4, ))
     cls_scores = [torch.ones(2, 4, 5, 5)]
     bbox_preds = [torch.ones(2, 4, 5, 5)]
     iou_preds = [torch.ones(2, 1, 5, 5)]
-    mlvl_anchors = [torch.ones(5 * 5, 2)]
-    img_shape = None
-    scale_factor = [0.5, 0.5]
     cfg = mmcv.Config(
         dict(
             nms_pre=1000,
@@ -81,12 +87,5 @@ def test_autoassign_head_loss():
             nms=dict(type='nms', iou_threshold=0.6),
             max_per_img=100))
     rescale = False
-    self._get_bboxes(
-        cls_scores,
-        bbox_preds,
-        iou_preds,
-        mlvl_anchors,
-        img_shape,
-        scale_factor,
-        cfg,
-        rescale=rescale)
+    self.get_bboxes(
+        cls_scores, bbox_preds, iou_preds, img_metas, cfg, rescale=rescale)

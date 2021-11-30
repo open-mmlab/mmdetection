@@ -68,20 +68,27 @@ class MlvlPointGenerator:
         return [1 for _ in range(len(self.strides))]
 
     def _meshgrid(self, x, y, row_major=True):
-        xx = x.repeat(len(y))
-        yy = y.view(-1, 1).repeat(1, len(x)).view(-1)
+        yy, xx = torch.meshgrid(y, x)
         if row_major:
-            return xx, yy
-        else:
-            return yy, xx
+            # warning .flatten() would cause error in ONNX exporting
+            # have to use reshape here
+            return xx.reshape(-1), yy.reshape(-1)
 
-    def grid_priors(self, featmap_sizes, device='cuda', with_stride=False):
+        else:
+            return yy.reshape(-1), xx.reshape(-1)
+
+    def grid_priors(self,
+                    featmap_sizes,
+                    dtype=torch.float32,
+                    device='cuda',
+                    with_stride=False):
         """Generate grid points of multiple feature levels.
 
         Args:
             featmap_sizes (list[tuple]): List of feature map sizes in
                 multiple feature levels, each size arrange as
                 as (h, w).
+            dtype (:obj:`dtype`): Dtype of priors. Default: torch.float32.
             device (str): The device where the anchors will be put on.
             with_stride (bool): Whether to concatenate the stride to
                 the last dimension of points.
@@ -96,12 +103,14 @@ class MlvlPointGenerator:
             and the last dimension 4 represent
             (coord_x, coord_y, stride_w, stride_h).
         """
+
         assert self.num_levels == len(featmap_sizes)
         multi_level_priors = []
         for i in range(self.num_levels):
             priors = self.single_level_grid_priors(
                 featmap_sizes[i],
                 level_idx=i,
+                dtype=dtype,
                 device=device,
                 with_stride=with_stride)
             multi_level_priors.append(priors)
@@ -110,6 +119,7 @@ class MlvlPointGenerator:
     def single_level_grid_priors(self,
                                  featmap_size,
                                  level_idx,
+                                 dtype=torch.float32,
                                  device='cuda',
                                  with_stride=False):
         """Generate grid Points of a single level.
@@ -121,6 +131,7 @@ class MlvlPointGenerator:
             featmap_size (tuple[int]): Size of the feature maps, arrange as
                 (h, w).
             level_idx (int): The index of corresponding feature map level.
+            dtype (:obj:`dtype`): Dtype of priors. Default: torch.float32.
             device (str, optional): The device the tensor will be put on.
                 Defaults to 'cuda'.
             with_stride (bool): Concatenate the stride to the last dimension
@@ -138,16 +149,26 @@ class MlvlPointGenerator:
         """
         feat_h, feat_w = featmap_size
         stride_w, stride_h = self.strides[level_idx]
-        shift_x = (torch.arange(0., feat_w, device=device) +
+        shift_x = (torch.arange(0, feat_w, device=device) +
                    self.offset) * stride_w
-        shift_y = (torch.arange(0., feat_h, device=device) +
+        # keep featmap_size as Tensor instead of int, so that we
+        # can convert to ONNX correctly
+        shift_x = shift_x.to(dtype)
+
+        shift_y = (torch.arange(0, feat_h, device=device) +
                    self.offset) * stride_h
+        # keep featmap_size as Tensor instead of int, so that we
+        # can convert to ONNX correctly
+        shift_y = shift_y.to(dtype)
         shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
         if not with_stride:
             shifts = torch.stack([shift_xx, shift_yy], dim=-1)
         else:
-            stride_w = shift_xx.new_full((len(shift_xx), ), stride_w)
-            stride_h = shift_xx.new_full((len(shift_yy), ), stride_h)
+            # use `shape[0]` instead of `len(shift_xx)` for ONNX export
+            stride_w = shift_xx.new_full((shift_xx.shape[0], ),
+                                         stride_w).to(dtype)
+            stride_h = shift_xx.new_full((shift_yy.shape[0], ),
+                                         stride_h).to(dtype)
             shifts = torch.stack([shift_xx, shift_yy, stride_w, stride_h],
                                  dim=-1)
         all_points = shifts.to(device)

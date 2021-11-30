@@ -10,7 +10,9 @@ from mmcv.runner import get_dist_info
 from mmcv.utils import Registry, build_from_cfg
 from torch.utils.data import DataLoader
 
-from .samplers import DistributedGroupSampler, DistributedSampler, GroupSampler
+from .samplers import (DistributedGroupSampler, DistributedSampler,
+                       GroupSampler, InfiniteBatchSampler,
+                       InfiniteGroupBatchSampler)
 
 if platform.system() != 'Windows':
     # https://github.com/pytorch/pytorch/issues/973
@@ -87,6 +89,7 @@ def build_dataloader(dataset,
                      dist=True,
                      shuffle=True,
                      seed=None,
+                     runner_type='EpochBasedRunner',
                      **kwargs):
     """Build PyTorch DataLoader.
 
@@ -103,27 +106,58 @@ def build_dataloader(dataset,
         dist (bool): Distributed training/test or not. Default: True.
         shuffle (bool): Whether to shuffle the data at every epoch.
             Default: True.
+        runner_type (str): Type of runner. Default: `EpochBasedRunner`
         kwargs: any keyword argument to be used to initialize DataLoader
 
     Returns:
         DataLoader: A PyTorch dataloader.
     """
     rank, world_size = get_dist_info()
+
     if dist:
-        # DistributedGroupSampler will definitely shuffle the data to satisfy
-        # that images on each GPU are in the same group
-        if shuffle:
-            sampler = DistributedGroupSampler(
-                dataset, samples_per_gpu, world_size, rank, seed=seed)
-        else:
-            sampler = DistributedSampler(
-                dataset, world_size, rank, shuffle=False, seed=seed)
+        # When model is :obj:`DistributedDataParallel`,
+        # `batch_size` of :obj:`dataloader` is the
+        # number of training samples on each GPU.
         batch_size = samples_per_gpu
         num_workers = workers_per_gpu
     else:
-        sampler = GroupSampler(dataset, samples_per_gpu) if shuffle else None
+        # When model is obj:`DataParallel`
+        # the batch size is samples on all the GPUS
         batch_size = num_gpus * samples_per_gpu
         num_workers = num_gpus * workers_per_gpu
+
+    if runner_type == 'IterBasedRunner':
+        # this is a batch sampler, which can yield
+        # a mini-batch indices each time.
+        # it can be used in both `DataParallel` and
+        # `DistributedDataParallel`
+        if shuffle:
+            batch_sampler = InfiniteGroupBatchSampler(
+                dataset, batch_size, world_size, rank, seed=seed)
+        else:
+            batch_sampler = InfiniteBatchSampler(
+                dataset,
+                batch_size,
+                world_size,
+                rank,
+                seed=seed,
+                shuffle=False)
+        batch_size = 1
+        sampler = None
+    else:
+        if dist:
+            # DistributedGroupSampler will definitely shuffle the data to
+            # satisfy that images on each GPU are in the same group
+            if shuffle:
+                sampler = DistributedGroupSampler(
+                    dataset, samples_per_gpu, world_size, rank, seed=seed)
+            else:
+                sampler = DistributedSampler(
+                    dataset, world_size, rank, shuffle=False, seed=seed)
+        else:
+            sampler = GroupSampler(dataset,
+                                   samples_per_gpu) if shuffle else None
+        batch_sampler = None
 
     init_fn = partial(
         worker_init_fn, num_workers=num_workers, rank=rank,
@@ -134,6 +168,7 @@ def build_dataloader(dataset,
         batch_size=batch_size,
         sampler=sampler,
         num_workers=num_workers,
+        batch_sampler=batch_sampler,
         collate_fn=partial(collate, samples_per_gpu=samples_per_gpu),
         pin_memory=False,
         worker_init_fn=init_fn,
