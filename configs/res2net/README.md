@@ -8,7 +8,7 @@ Representing features at multiple scales is of great importance for numerous vis
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143972411-8d08113f-9fce-4d24-a138-4fadf2c54f9a.png"/>
+<img src="https://user-images.githubusercontent.com/40661020/143972411-8d08113f-9fce-4d24-a138-4fadf2c54f9a.png" height="300"/>
 </div>
 
 <!-- [PAPER_TITLE: Res2Net: A New Multi-scale Backbone Architecture] -->

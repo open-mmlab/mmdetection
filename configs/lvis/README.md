@@ -8,7 +8,7 @@ Progress on object detection is enabled by datasets that focus the research comm
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143967423-85b9b705-05ea-4bbc-9a41-eccc14240c7a.png"/>
+<img src="https://user-images.githubusercontent.com/40661020/143967423-85b9b705-05ea-4bbc-9a41-eccc14240c7a.png" height="300"/>
 </div>
 
 <!-- [PAPER_TITLE: LVIS: A Dataset for Large Vocabulary Instance Segmentation] -->

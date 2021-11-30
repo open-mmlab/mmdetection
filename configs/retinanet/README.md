@@ -8,7 +8,7 @@ The highest accuracy object detectors to date are based on a two-stage approach 
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143973551-2b8e766a-1677-4f6d-953d-2e6d2a3c67b5.png"/>
+<img src="https://user-images.githubusercontent.com/40661020/143973551-2b8e766a-1677-4f6d-953d-2e6d2a3c67b5.png" height="300"/>
 </div>
 
 <!-- [PAPER_TITLE: Focal Loss for Dense Object Detection] -->

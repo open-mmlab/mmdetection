@@ -10,7 +10,7 @@ This paper describes the dataset and evaluation procedure. We review the state-o
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143969235-6bb4d665-0470-4bae-825c-492eb4582127.png"/>
+<img src="https://user-images.githubusercontent.com/40661020/143969235-6bb4d665-0470-4bae-825c-492eb4582127.png" height="600"/>
 </div>
 
 <!-- [PAPER_TITLE: The Pascal Visual Object Classes (VOC) Challenge] -->

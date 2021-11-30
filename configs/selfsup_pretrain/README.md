@@ -15,7 +15,7 @@ We present Momentum Contrast (MoCo) for unsupervised visual representation learn
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143997315-5ff824d4-1007-4b59-8952-bc5a2c0bfd78.png"/>
+<img src="https://user-images.githubusercontent.com/40661020/143997315-5ff824d4-1007-4b59-8952-bc5a2c0bfd78.png" height="300"/>
 </div>
 
 <!-- [PAPER_TITLE: Unsupervised Learning of Visual Features by Contrasting Cluster Assignments] -->
