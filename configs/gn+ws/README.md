@@ -8,7 +8,7 @@ Batch Normalization (BN) has become an out-of-box technique to improve deep netw
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143889309-b1f3487d-abfe-4615-befc-79384bc8b65c.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143889309-b1f3487d-abfe-4615-befc-79384bc8b65c.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Weight Standardization] -->

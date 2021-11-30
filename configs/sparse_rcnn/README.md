@@ -8,7 +8,7 @@ We present Sparse R-CNN, a purely sparse method for object detection in images. 
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143998489-8a5a687d-ceec-4590-8347-708e427e7dfe.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143998489-8a5a687d-ceec-4590-8347-708e427e7dfe.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Sparse R-CNN: End-to-End Object Detection with Learnable Proposals] -->

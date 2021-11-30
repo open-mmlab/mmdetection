@@ -9,7 +9,7 @@ Feature pyramid networks have been widely adopted in the object detection litera
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143885611-85902399-2885-4a85-9126-9b9b7464ad08.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143885611-85902399-2885-4a85-9126-9b9b7464ad08.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Feature Pyramid Grids] -->

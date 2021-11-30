@@ -10,7 +10,7 @@ Grid R-CNN is a well-performed objection detection framework. It transforms the 
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143890379-5d9e6233-0533-48b4-88b9-bc33abbd9f82.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143890379-5d9e6233-0533-48b4-88b9-bc33abbd9f82.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Grid r-cnn] -->

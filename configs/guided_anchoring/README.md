@@ -8,7 +8,7 @@ Region anchors are the cornerstone of modern object detection techniques. State-
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143891529-4c178948-c3fd-4543-ae6e-bb2aa3c8147e.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143891529-4c178948-c3fd-4543-ae6e-bb2aa3c8147e.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Region Proposal by Guided Anchoring] -->

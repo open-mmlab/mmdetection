@@ -7,7 +7,7 @@ The recently introduced panoptic segmentation task has renewed our community's i
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143968979-a1593758-c9d7-44a6-a3b8-d9686ef19ce8.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143968979-a1593758-c9d7-44a6-a3b8-d9686ef19ce8.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Panoptic Feature Pyramid Networks] -->

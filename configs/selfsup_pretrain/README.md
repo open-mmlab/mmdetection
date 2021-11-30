@@ -8,14 +8,14 @@ Unsupervised image representations have significantly reduced the gap with super
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143997246-ac40fd8a-9b48-4ff5-a0d9-ba10e1e333d2.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143997246-ac40fd8a-9b48-4ff5-a0d9-ba10e1e333d2.png"/>
 </div>
 
 We present Momentum Contrast (MoCo) for unsupervised visual representation learning. From a perspective on contrastive learning as dictionary look-up, we build a dynamic dictionary with a queue and a moving-averaged encoder. This enables building a large and consistent dictionary on-the-fly that facilitates contrastive unsupervised learning. MoCo provides competitive results under the common linear protocol on ImageNet classification. More importantly, the representations learned by MoCo transfer well to downstream tasks. MoCo can outperform its supervised pre-training counterpart in 7 detection/segmentation tasks on PASCAL VOC, COCO, and other datasets, sometimes surpassing it by large margins. This suggests that the gap between unsupervised and supervised representation learning has been largely closed in many vision tasks.
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143997315-5ff824d4-1007-4b59-8952-bc5a2c0bfd78.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143997315-5ff824d4-1007-4b59-8952-bc5a2c0bfd78.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Unsupervised Learning of Visual Features by Contrasting Cluster Assignments] -->

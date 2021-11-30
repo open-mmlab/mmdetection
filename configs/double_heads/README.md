@@ -8,7 +8,7 @@ Two head structures (i.e. fully connected head and convolution head) have been w
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143879010-e30f654b-f93e-44b2-a186-c251fdca5bda.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143879010-e30f654b-f93e-44b2-a186-c251fdca5bda.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Rethinking Classification and Localization for Object Detection] -->

@@ -8,7 +8,7 @@ We present a method for detecting objects in images using a single deep neural n
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143998553-4e12f681-6025-46b4-8410-9e2e1e53a8ec.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143998553-4e12f681-6025-46b4-8410-9e2e1e53a8ec.png"/>
 </div>
 
 <!-- [PAPER_TITLE: SSD: Single Shot MultiBox Detector] -->

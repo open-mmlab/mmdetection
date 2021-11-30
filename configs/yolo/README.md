@@ -8,7 +8,7 @@ We present some updates to YOLO! We made a bunch of little design changes to mak
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/144001433-b4f7fb5e-3b7a-414b-b949-93733213b670.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/144001433-b4f7fb5e-3b7a-414b-b949-93733213b670.png"/>
 </div>
 
 <!-- [PAPER_TITLE: YOLOv3: An Incremental Improvement] -->

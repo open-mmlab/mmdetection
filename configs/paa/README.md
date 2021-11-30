@@ -8,7 +8,7 @@ In object detection, determining which anchors to assign as positive or negative
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143968195-519a116a-de29-437e-b4c8-30aef43dcb15.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143968195-519a116a-de29-437e-b4c8-30aef43dcb15.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Probabilistic Anchor Assignment with IoU Prediction for Object Detection] -->

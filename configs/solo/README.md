@@ -8,7 +8,7 @@ We present a new, embarrassingly simple approach to instance segmentation in ima
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143998371-10e6f14b-4506-481d-91a7-5f8f58213307.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143998371-10e6f14b-4506-481d-91a7-5f8f58213307.png"/>
 </div>
 
 <!-- [PAPER_TITLE: SOLO: Segmenting Objects by Locations] -->

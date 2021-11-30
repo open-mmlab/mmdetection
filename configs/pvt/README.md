@@ -11,7 +11,7 @@ With these modifications, our PVTv2 significantly improves PVTv1 on three tasks 
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143969989-6f94e695-23b1-4f8f-b406-d589fdc3cfb2.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143969989-6f94e695-23b1-4f8f-b406-d589fdc3cfb2.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Pyramid vision transformer: A versatile backbone for dense prediction without convolutions] -->

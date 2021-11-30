@@ -8,7 +8,7 @@ Data augmentation is a commonly used technique for increasing both the size and 
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143870703-74f3ea3f-ae23-4035-9856-746bc3f88464.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143870703-74f3ea3f-ae23-4035-9856-746bc3f88464.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Albumentations: fast and flexible image augmentations] -->

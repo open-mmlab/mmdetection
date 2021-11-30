@@ -8,7 +8,7 @@ Recent advances in clothes recognition have been driven by the construction of c
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143876310-08470a6a-ea3a-4ec1-a6f2-8ec5df36a8a0.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143876310-08470a6a-ea3a-4ec1-a6f2-8ec5df36a8a0.png"/>
 </div>
 
 <!-- [PAPER_TITLE: DeepFashion: Powering Robust Clothes Recognition and Retrieval With Rich Annotations] -->

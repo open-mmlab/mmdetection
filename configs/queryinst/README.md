@@ -8,7 +8,7 @@ We present QueryInst, a new perspective for instance segmentation. QueryInst is 
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143971527-c1b7ff78-e95f-4edb-9d5e-3d6d7d902999.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143971527-c1b7ff78-e95f-4edb-9d5e-3d6d7d902999.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Instances As Queries] -->

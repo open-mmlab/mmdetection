@@ -11,7 +11,7 @@ In this paper, we conduct a further study on high-resolution representations by 
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143892740-a4e9743e-a323-4ace-8025-50e251ef43ff.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143892740-a4e9743e-a323-4ace-8025-50e251ef43ff.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Deep High-Resolution Representation Learning for Human Pose Estimation] -->

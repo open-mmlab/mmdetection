@@ -8,7 +8,7 @@ We present FoveaBox, an accurate, flexible, and completely anchor-free framework
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143885497-332d38a7-b492-4f51-b9d2-ef9d4ad4412a.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143885497-332d38a7-b492-4f51-b9d2-ef9d4ad4412a.png"/>
 </div>
 
 <!-- [PAPER_TITLE: FoveaBox: Beyond Anchor-based Object Detector] -->

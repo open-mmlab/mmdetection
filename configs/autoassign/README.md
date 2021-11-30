@@ -8,7 +8,7 @@ Determining positive/negative samples for object detection is known as label ass
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143870875-33567e44-0584-4470-9a90-0df0fb6c1fe2.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143870875-33567e44-0584-4470-9a90-0df0fb6c1fe2.png"/>
 </div>
 
 <!-- [PAPER_TITLE: AutoAssign: Differentiable Label Assignment for Dense Object Detection] -->

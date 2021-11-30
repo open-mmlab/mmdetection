@@ -8,7 +8,7 @@ Letting a deep network be aware of the quality of its own predictions is an inte
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143967239-3a95ae92-6443-4181-9cbc-dfe16e81b969.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143967239-3a95ae92-6443-4181-9cbc-dfe16e81b969.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Mask Scoring R-CNN] -->

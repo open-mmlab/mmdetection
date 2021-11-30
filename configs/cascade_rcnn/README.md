@@ -8,7 +8,7 @@ In object detection, the intersection over union (IoU) threshold is frequently u
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143872197-d99b90e4-4f05-4329-80a4-327ac862a051.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143872197-d99b90e4-4f05-4329-80a4-327ac862a051.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Cascade R-CNN: High Quality Object Detection and Instance Segmentation] -->

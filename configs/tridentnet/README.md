@@ -8,7 +8,7 @@ Scale variation is one of the key challenges in object detection. In this work, 
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143999668-0927922e-efc2-45fa-8bfc-1e3df18720f5.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143999668-0927922e-efc2-45fa-8bfc-1e3df18720f5.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Scale-Aware Trident Networks for Object Detection] -->

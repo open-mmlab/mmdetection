@@ -9,7 +9,7 @@ To address this, we introduce Cityscapes, a benchmark suite and large-scale data
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143874154-db4484a5-9211-41f6-852a-b7f0a8c9ec26.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143874154-db4484a5-9211-41f6-852a-b7f0a8c9ec26.png"/>
 </div>
 
 <!-- [PAPER_TITLE: The Cityscapes Dataset for Semantic Urban Scene Understanding] -->

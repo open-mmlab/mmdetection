@@ -8,7 +8,7 @@
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143971942-da50f719-61e9-43bd-9468-0dbfbe80284e.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143971942-da50f719-61e9-43bd-9468-0dbfbe80284e.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Designing Network Design Spaces] -->

@@ -8,7 +8,7 @@ We propose CornerNet, a new approach to object detection where we detect an obje
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143876061-4de20768-c812-4b97-b089-944d8db91ca2.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143876061-4de20768-c812-4b97-b089-944d8db91ca2.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Cornernet: Detecting objects as paired keypoints] -->

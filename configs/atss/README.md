@@ -8,7 +8,7 @@ Object detection has been dominated by anchor-based detectors for several years.
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143870776-c81168f5-e8b2-44ee-978b-509e4372c5c9.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143870776-c81168f5-e8b2-44ee-978b-509e4372c5c9.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Bridging the Gap Between Anchor-based and Anchor-free Detection via Adaptive Training Sample Selection] -->

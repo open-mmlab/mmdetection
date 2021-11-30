@@ -8,7 +8,7 @@ We present a simple, fully-convolutional model for real-time instance segmentati
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/144001225-8c62cad7-a330-4f60-873f-61aa17e99223.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/144001225-8c62cad7-a330-4f60-873f-61aa17e99223.png"/>
 </div>
 
 <!-- [PAPER_TITLE: YOLACT: Real-time Instance Segmentation] -->

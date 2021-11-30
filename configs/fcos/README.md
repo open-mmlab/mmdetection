@@ -8,7 +8,7 @@ We propose a fully convolutional one-stage object detector (FCOS) to solve objec
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143882011-45b234bc-d04b-4bbe-a822-94bec057ac86.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143882011-45b234bc-d04b-4bbe-a822-94bec057ac86.png"/>
 </div>
 
 <!-- [PAPER_TITLE: FCOS: Fully Convolutional One-Stage Object Detection] -->

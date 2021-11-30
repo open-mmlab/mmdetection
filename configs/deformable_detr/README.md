@@ -8,7 +8,7 @@ DETR has been recently proposed to eliminate the need for many hand-designed com
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143877617-ad9b24fd-77ce-46aa-9689-1a44b5594132.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143877617-ad9b24fd-77ce-46aa-9689-1a44b5594132.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Deformable DETR: Deformable Transformers for End-to-End Object Detection] -->

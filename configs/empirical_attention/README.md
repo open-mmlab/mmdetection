@@ -8,7 +8,7 @@ Attention mechanisms have become a popular component in deep neural networks, ye
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143879619-f1817da9-1573-45c9-891d-cfe55ad54911.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143879619-f1817da9-1573-45c9-891d-cfe55ad54911.png"/>
 </div>
 
 <!-- [PAPER_TITLE: An Empirical Study of Spatial Attention Mechanisms in Deep Networks] -->

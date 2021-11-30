@@ -8,7 +8,7 @@ We present a conceptually simple, flexible, and general framework for object ins
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143967081-c2552bed-9af2-46c4-ae44-5b3b74e5679f.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143967081-c2552bed-9af2-46c4-ae44-5b3b74e5679f.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Mask R-CNN] -->

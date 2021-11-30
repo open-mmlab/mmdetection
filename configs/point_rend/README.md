@@ -8,7 +8,7 @@ We present a new method for efficient high-quality image segmentation of objects
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143970097-d38b6801-d3c8-468f-b8b0-639be3689907.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143970097-d38b6801-d3c8-468f-b8b0-639be3689907.png"/>
 </div>
 
 <!-- [PAPER_TITLE: PointRend: Image Segmentation as Rendering] -->

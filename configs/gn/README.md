@@ -8,7 +8,7 @@ Batch Normalization (BN) is a milestone technique in the development of deep lea
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143889171-d4660307-3a4f-4ac2-a0ad-7d17c2f045b1.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143889171-d4660307-3a4f-4ac2-a0ad-7d17c2f045b1.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Group Normalization] -->

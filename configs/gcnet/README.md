@@ -13,7 +13,7 @@ The Non-Local Network (NLNet) presents a pioneering approach for capturing long-
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143887418-c5d2c906-d6c9-415d-bce7-c5355c20a10a.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143887418-c5d2c906-d6c9-415d-bce7-c5355c20a10a.png"/>
 </div>
 
 <!-- [PAPER_TITLE: GCNet: Non-local Networks Meet Squeeze-Excitation Networks and Beyond] -->

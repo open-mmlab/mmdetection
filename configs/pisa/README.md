@@ -8,7 +8,7 @@ It is a common paradigm in object detection frameworks to treat all samples equa
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143970710-5cfd5960-fcf9-4e32-860a-acd46ce5d274.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143970710-5cfd5960-fcf9-4e32-860a-acd46ce5d274.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Prime sample attention in object detection] -->

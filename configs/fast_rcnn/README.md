@@ -8,7 +8,7 @@ This paper proposes a Fast Region-based Convolutional Network method (Fast R-CNN
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143882189-6258c05c-f2a1-4320-9282-7e2f2d502eb2.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143882189-6258c05c-f2a1-4320-9282-7e2f2d502eb2.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Fast R-CNN] -->

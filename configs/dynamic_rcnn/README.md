@@ -8,7 +8,7 @@ Although two-stage object detectors have continuously advanced the state-of-the-
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143879518-842f5bec-9f65-4454-93a1-9b3b0c42ec3c.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143879518-842f5bec-9f65-4454-93a1-9b3b0c42ec3c.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Dynamic R-CNN: Towards High Quality Object Detection via Dynamic Training] -->

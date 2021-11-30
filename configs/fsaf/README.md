@@ -8,7 +8,7 @@ We motivate and present feature selective anchor-free (FSAF) module, a simple an
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143887228-c790b542-c0f7-4113-8597-12250c50fe8f.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143887228-c790b542-c0f7-4113-8597-12250c50fe8f.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Feature Selective Anchor-Free Module for Single-Shot Object Detection] -->

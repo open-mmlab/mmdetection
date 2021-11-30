@@ -8,7 +8,7 @@ This paper considers an architecture referred to as Cascade Region Proposal Netw
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143872368-1580193a-d19c-4723-a579-c7ed2d5da4d1.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143872368-1580193a-d19c-4723-a579-c7ed2d5da4d1.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Cascade RPN: Delving into High-Quality Region Proposal Network with Adaptive Convolution] -->

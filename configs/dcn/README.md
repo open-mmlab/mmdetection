@@ -8,7 +8,7 @@ Convolutional neural networks (CNNs) are inherently limited to model geometric t
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143876246-c4985e25-e286-4511-9b7c-97af2857461e.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143876246-c4985e25-e286-4511-9b7c-97af2857461e.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Deformable Convolutional Networks] -->

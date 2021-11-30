@@ -8,7 +8,7 @@ Detection identifies objects as axis-aligned boxes in an image. Most successful 
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143873810-85ffa6e7-915b-46a4-9b8f-709e5d7700bb.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143873810-85ffa6e7-915b-46a4-9b8f-709e5d7700bb.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Objects as Points] -->

@@ -8,7 +8,7 @@ The way that information propagates in neural networks is of great importance. I
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143968947-5f2d7e8a-a236-4d59-8f2d-7fbb12764845.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143968947-5f2d7e8a-a236-4d59-8f2d-7fbb12764845.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Path Aggregation Network for Instance Segmentation] -->

@@ -8,7 +8,7 @@ Current object detection frameworks mainly rely on bounding box regression to lo
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143973698-3dfaea91-4415-4818-9781-5017183e7489.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143973698-3dfaea91-4415-4818-9781-5017183e7489.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Side-Aware Boundary Localization for More Precise Object Detection

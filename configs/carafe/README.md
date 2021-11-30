@@ -8,7 +8,7 @@ Feature upsampling is a key operation in a number of modern convolutional networ
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143872016-48225685-0e59-49cf-bd65-a50ee04ca8a2.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143872016-48225685-0e59-49cf-bd65-a50ee04ca8a2.png"/>
 </div>
 
 <!-- [PAPER_TITLE: CARAFE: Content-Aware ReAssembly of FEatures] -->

@@ -8,7 +8,7 @@ Accurately ranking the vast number of candidate detections is crucial for dense 
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="" width="400"/>
+<img src=""/>
 </div>
 
 <!-- [PAPER_TITLE: VarifocalNet: An IoU-aware Dense Object Detector] -->

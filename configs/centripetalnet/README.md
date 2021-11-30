@@ -8,7 +8,7 @@ Keypoint-based detectors have achieved pretty-well performance. However, incorre
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143873955-42804e0e-3638-4c5b-8bf4-ac8133bbcdc8.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143873955-42804e0e-3638-4c5b-8bf4-ac8133bbcdc8.png"/>
 </div>
 
 <!-- [PAPER_TITLE: CentripetalNet: Pursuing High-quality Keypoint Pairs for Object Detection] -->

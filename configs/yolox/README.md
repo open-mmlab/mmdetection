@@ -8,7 +8,7 @@ In this report, we present some experienced improvements to YOLO series, forming
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/144001736-9fb303dd-eac7-46b0-ad45-214cfa51e928.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/144001736-9fb303dd-eac7-46b0-ad45-214cfa51e928.png"/>
 </div>
 
 <!-- [PAPER_TITLE: YOLOX: Exceeding YOLO Series in 2021] -->

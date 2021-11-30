@@ -8,7 +8,7 @@ Instance segmentation requires a large number of training samples to achieve sat
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143894053-ecfe8406-1a05-461b-953c-efeef22d7a60.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143894053-ecfe8406-1a05-461b-953c-efeef22d7a60.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Instaboost: Boosting instance segmentation via probability map guided copy-pasting

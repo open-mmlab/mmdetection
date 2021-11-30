@@ -8,7 +8,7 @@ Instance segmentation has witnessed a remarkable progress on class-balanced benc
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143974715-d181abe5-d0a2-40d3-a2bd-17d8c60b89b8.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143974715-d181abe5-d0a2-40d3-a2bd-17d8c60b89b8.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Seesaw Loss for Long-Tailed Instance Segmentation] -->

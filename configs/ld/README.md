@@ -8,7 +8,7 @@ Knowledge distillation (KD) has witnessed its powerful capability in learning co
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143966265-48a03668-8585-4525-8a86-afa2209d1602.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143966265-48a03668-8585-4525-8a86-afa2209d1602.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Localization Distillation for Object Detection] -->

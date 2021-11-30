@@ -8,7 +8,7 @@ Face detection is one of the most studied topics in the computer vision communit
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/144000364-3320de79-34fc-40a6-938f-bb512f05a4bb.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/144000364-3320de79-34fc-40a6-938f-bb512f05a4bb.png"/>
 </div>
 
 <!-- [PAPER_TITLE: WIDER FACE: A Face Detection Benchmark] -->

@@ -8,7 +8,7 @@ Cascade is a classic yet powerful architecture that has boosted performance on v
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143893906-e05acaa6-d46f-4c11-84e8-bb9940a95b44.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143893906-e05acaa6-d46f-4c11-84e8-bb9940a95b44.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Hybrid Task Cascade for Instance Segmentation] -->

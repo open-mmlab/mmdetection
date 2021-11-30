@@ -8,7 +8,7 @@ We report competitive results on object detection and instance segmentation on t
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143974572-69c4f57d-0d6d-4f56-ba91-23f8a65a2a77.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143974572-69c4f57d-0d6d-4f56-ba91-23f8a65a2a77.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Rethinking imagenet pre-training] -->

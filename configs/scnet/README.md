@@ -8,7 +8,7 @@ Cascaded architectures have brought significant performance improvement in objec
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143974840-8fed75f3-661e-4e2a-a210-acf4ab5f42a3.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143974840-8fed75f3-661e-4e2a-a210-acf4ab5f42a3.png"/>
 </div>
 
 <!-- [PAPER_TITLE: SCNet: Training Inference Sample Consistency for Instance Segmentation] -->

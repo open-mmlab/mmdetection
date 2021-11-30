@@ -8,7 +8,7 @@ We present a new method that views object detection as a direct set prediction p
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143878072-0a7434e4-416b-4315-aeea-a8297f4d6453.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143878072-0a7434e4-416b-4315-aeea-a8297f4d6453.png"/>
 </div>
 
 <!-- [PAPER_TITLE: End-to-End Object Detection with Transformers] -->

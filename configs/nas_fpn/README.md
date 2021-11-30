@@ -8,7 +8,7 @@ Current state-of-the-art convolutional architectures for object detection are ma
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143968037-cedd76e9-1ae7-4869-bd34-c9d8611d630c.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143968037-cedd76e9-1ae7-4869-bd34-c9d8611d630c.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Nas-fpn: Learning scalable feature pyramid architecture for object detection] -->

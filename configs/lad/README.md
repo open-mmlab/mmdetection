@@ -8,7 +8,7 @@ Label assignment in object detection aims to assign targets, foreground or backg
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143894499-c2a3a243-988f-4604-915b-17918732bf03.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143894499-c2a3a243-988f-4604-915b-17918732bf03.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Improving Object Detection by Label Assignment Distillation] -->

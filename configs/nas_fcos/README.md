@@ -8,7 +8,7 @@ The success of deep neural networks relies on significant architecture engineeri
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143967900-1c8a65b9-c58d-4b03-8900-96af8f9768e8.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143967900-1c8a65b9-c58d-4b03-8900-96af8f9768e8.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Nas-fcos: Fast neural architecture search for object detection] -->

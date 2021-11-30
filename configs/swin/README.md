@@ -8,7 +8,7 @@ This paper presents a new vision Transformer, called Swin Transformer, that capa
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143999551-6a527048-de38-485c-a1b6-3133ffa5bfaa.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143999551-6a527048-de38-485c-a1b6-3133ffa5bfaa.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Swin Transformer: Hierarchical Vision Transformer using Shifted Windows] -->

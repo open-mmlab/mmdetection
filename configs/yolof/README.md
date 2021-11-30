@@ -8,7 +8,7 @@ This paper revisits feature pyramids networks (FPN) for one-stage detectors and 
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/144001639-257374ef-7d4f-412b-a783-88abdd22f277.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/144001639-257374ef-7d4f-412b-a783-88abdd22f277.png"/>
 </div>
 
 <!-- [PAPER_TITLE: You Only Look One-level Feature] -->

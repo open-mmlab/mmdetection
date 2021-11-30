@@ -8,7 +8,7 @@ It is well known that featuremap attention and multi-path representation are imp
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143973475-b5b33b15-ed04-4fc6-890a-521f1a62bc52.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143973475-b5b33b15-ed04-4fc6-890a-521f1a62bc52.png"/>
 </div>
 
 <!-- [PAPER_TITLE: ResNeSt: Split-Attention Networks] -->

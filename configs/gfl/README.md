@@ -8,7 +8,7 @@ One-stage detector basically formulates object detection as dense classification
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143887865-44dc384d-ba0d-44e8-b3d7-d5fa837838cf.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143887865-44dc384d-ba0d-44e8-b3d7-d5fa837838cf.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes for Dense Object Detection] -->

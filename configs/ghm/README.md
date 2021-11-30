@@ -8,7 +8,7 @@ Despite the great success of two-stage detectors, single-stage detector is still
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143889057-0341f32b-1291-4b9a-8444-52ad266ae709.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143889057-0341f32b-1291-4b9a-8444-52ad266ae709.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Gradient Harmonized Single-stage Detector] -->

@@ -8,7 +8,7 @@ Many modern object detectors demonstrate outstanding performances by using the m
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143877901-24451581-2c50-4a54-b000-c4cb111e29ad.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143877901-24451581-2c50-4a54-b000-c4cb111e29ad.png"/>
 </div>
 
 <!-- [PAPER_TITLE: DetectoRS: Detecting Objects with Recursive Feature Pyramid and Switchable Atrous Convolution] -->

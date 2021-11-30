@@ -9,7 +9,7 @@ Compared with model architectures, the training process, which is also crucial t
 Instance recognition is rapidly advanced along with the developments of various deep convolutional neural networks. Compared to the architectures of networks, the training process, which is also crucial to the success of detectors, has received relatively less attention. In this work, we carefully revisit the standard training practice of detectors, and find that the detection performance is often limited by the imbalance during the training process, which generally consists in three levels - sample level, feature level, and objective level. To mitigate the adverse effects caused thereby, we propose Libra R-CNN, a simple yet effective framework towards balanced learning for instance recognition. It integrates IoU-balanced sampling, balanced feature pyramid, and objective re-weighting, respectively for reducing the imbalance at sample, feature, and objective level. Extensive experiments conducted on MS COCO, LVIS and Pascal VOC datasets prove the effectiveness of the overall balanced design. 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143966392-2633684c-a67a-4269-b71b-afe945c67bcd.png" width="400"/>
+<img src="https://user-images.githubusercontent.com/40661020/143966392-2633684c-a67a-4269-b71b-afe945c67bcd.png"/>
 </div>
 
 <!-- [PAPER_TITLE: Libra R-CNN: Towards Balanced Learning for Object Detection] -->
