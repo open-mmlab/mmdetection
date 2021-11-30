@@ -66,7 +66,7 @@ jobs:
           name: Install mmdet dependencies
           command: |
             pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cpu/torch<< parameters.torch >>/index.html
-            pip install -r requirements.txt
+            pip install -r requirements/tests.txt -r requirements/optional.txt
             pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
             pip install git+https://github.com/cocodataset/panopticapi.git
       - run:
@@ -107,7 +107,7 @@ jobs:
           # pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/torch${{matrix.torch_version}}/index.html
           command: |
             pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.6.0/index.html
-            pip install -r requirements.txt
+            pip install -r requirements/tests.txt -r requirements/optional.txt
             pip install pycocotools
             pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
             pip install git+https://github.com/cocodataset/panopticapi.git
