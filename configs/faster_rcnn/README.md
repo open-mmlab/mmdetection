@@ -8,7 +8,7 @@ State-of-the-art object detection networks depend on region proposal algorithms 
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143881188-ab87720f-5059-4b4e-a928-b540fb8fb84d.png" height="300"/>
+<img src="https://user-images.githubusercontent.com/40661020/143881188-ab87720f-5059-4b4e-a928-b540fb8fb84d.png" height="200"/>
 </div>
 
 <!-- [PAPER_TITLE: Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks] -->
