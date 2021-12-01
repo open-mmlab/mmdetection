@@ -53,8 +53,8 @@ class OpenImagesDataset(CustomDataset):
 
         self.cat2label = defaultdict(str)
         self.index_dict = {}
-        self.CLASSES = self.get_classes_from_csv(label_description_file)
         super(OpenImagesDataset, self).__init__(**kwargs)
+        self.CLASSES = self.get_classes_from_csv(label_description_file)
         if need_get_father is True and hierarchy_file is not None:
             self.class_label_tree = self.get_father(hierarchy_file)
         self.need_get_father = need_get_father
@@ -588,7 +588,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
 
         results = self.pipeline(results)
         if not self.get_meta:
-            self.get_meta_from_pipeline(results, idx)
+            self.get_meta_from_pipeline(results)
         return results
 
     def get_father(self, hierarchy_file):
