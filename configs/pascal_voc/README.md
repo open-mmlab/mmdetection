@@ -14,7 +14,7 @@ This paper describes the dataset and evaluation procedure. We review the state-o
 </div>
 
 <!-- [PAPER_TITLE: The Pascal Visual Object Classes (VOC) Challenge] -->
-<!-- [PAPER_URL: http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.167.6629&rep=rep1&type=pdf] -->
+<!-- [PAPER_URL: https://link.springer.com/article/10.1007/s11263-009-0275-4] -->
 
 ## Citation
 
