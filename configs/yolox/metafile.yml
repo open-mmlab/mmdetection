@@ -18,16 +18,17 @@ Collections:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.15.1/mmdet/models/detectors/yolox.py#L6
       Version: v2.15.1
 
+
 Models:
-  - Name: yolox_tiny_8x8_300e_coco
+  - Name: yolox_s_8x8_300e_coco
     In Collection: YOLOX
-    Config: configs/yolox/yolox_tiny_8x8_300e_coco.py
+    Config: configs/yolox/yolox_s_8x8_300e_coco.py
     Metadata:
-      Training Memory (GB): 3.6
+      Training Memory (GB): 7.6
       Epochs: 300
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          box AP: 31.6
-    Weights: https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_tiny_8x8_300e_coco/yolox_tiny_8x8_300e_coco_20210806_234250-4ff3b67e.pth
+          box AP: 40.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_s_8x8_300e_coco/yolox_s_8x8_300e_coco_20211121_095711-4592a793.pth
