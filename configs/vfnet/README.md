@@ -8,7 +8,7 @@ Accurately ranking the vast number of candidate detections is crucial for dense 
 
 <!-- [IMAGE] -->
 <div align=center>
-<img src=""/>
+<img src="https://user-images.githubusercontent.com/9102141/97464778-4b9ab000-197c-11eb-9283-ab2907ee0252.png"/>
 </div>
 
 <!-- [PAPER_TITLE: VarifocalNet: An IoU-aware Dense Object Detector] -->
@@ -20,10 +20,6 @@ Accurately ranking the vast number of candidate detections is crucial for dense 
 
 **VarifocalNet (VFNet)** learns to predict the IoU-aware classification score which mixes the object presence confidence and localization accuracy together as the detection score for a bounding box. The learning is supervised by the proposed Varifocal Loss (VFL), based on a new star-shaped bounding box feature representation (the features at nine yellow sampling points). Given the new representation, the object localization accuracy is further improved by refining the initially regressed bounding box. The full paper is available at: [https://arxiv.org/abs/2008.13367](https://arxiv.org/abs/2008.13367).
 
-<div align="center">
-  <img src="https://user-images.githubusercontent.com/9102141/97464778-4b9ab000-197c-11eb-9283-ab2907ee0252.png" width="600px" />
-  <p>Learning to Predict the IoU-aware Classification Score.</p>
-</div>
 
 ## Citing VarifocalNet
 

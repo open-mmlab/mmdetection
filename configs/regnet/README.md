@@ -16,7 +16,7 @@
 
 ## Citation
 
-[BACKBONE]
+<!-- [BACKBONE] -->
 
 We implement RegNetX and RegNetY models in detection systems and provide their first results on Mask R-CNN, Faster R-CNN and RetinaNet.
 

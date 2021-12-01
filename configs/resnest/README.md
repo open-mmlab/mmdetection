@@ -16,7 +16,7 @@ It is well known that featuremap attention and multi-path representation are imp
 
 ## Citation
 
-[BACKBONE]
+<!-- [BACKBONE] -->
 
 ```latex
 @article{zhang2020resnest,
