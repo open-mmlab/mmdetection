@@ -1,10 +1,5 @@
 # RepPoints: Point Set Representation for Object Detection
 
-By [Ze Yang](https://yangze.tech/), [Shaohui Liu](http://b1ueber2y.me/), and [Han Hu](https://ancientmooner.github.io/).
-
-We provide code support and configuration files to reproduce the results in the paper for
-["RepPoints: Point Set Representation for Object Detection"](https://arxiv.org/abs/1904.11490) on COCO object detection.
-
 ## Abstract
 
 <!-- [ABSTRACT] -->
@@ -19,7 +14,10 @@ Modern object detectors rely heavily on rectangular bounding boxes, such as anch
 <!-- [PAPER_TITLE: RepPoints: Point Set Representation for Object Detection] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1904.11490] -->
 
+By [Ze Yang](https://yangze.tech/), [Shaohui Liu](http://b1ueber2y.me/), and [Han Hu](https://ancientmooner.github.io/).
 
+We provide code support and configuration files to reproduce the results in the paper for
+["RepPoints: Point Set Representation for Object Detection"](https://arxiv.org/abs/1904.11490) on COCO object detection.
 
 <!-- [ALGORITHM] -->
 

@@ -1,12 +1,5 @@
 # A novel Region of Interest Extraction Layer for Instance Segmentation
 
-By Leonardo Rossi, Akbar Karimi and Andrea Prati from
-[IMPLab](http://implab.ce.unipr.it/).
-
-We provide configs to reproduce the results in the paper for
-"*A novel Region of Interest Extraction Layer for Instance Segmentation*"
-on COCO object detection.
-
 ## Abstract
 
 <!-- [ABSTRACT] -->
@@ -22,6 +15,14 @@ A comprehensive ablation study at component level is conducted to find the best 
 
 <!-- [PAPER_TITLE: A novel Region of Interest Extraction Layer for Instance Segmentation] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/2004.13665] -->
+
+By Leonardo Rossi, Akbar Karimi and Andrea Prati from
+[IMPLab](http://implab.ce.unipr.it/).
+
+We provide configs to reproduce the results in the paper for
+"*A novel Region of Interest Extraction Layer for Instance Segmentation*"
+on COCO object detection.
+
 
 <!-- [ALGORITHM] -->
 
