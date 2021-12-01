@@ -23,7 +23,7 @@ We present Momentum Contrast (MoCo) for unsupervised visual representation learn
 
 ## Citation
 
-<!-- [BACKBONE] --> 
+<!-- [BACKBONE] -->
 
 We support to apply the backbone models pre-trained by different self-supervised methods in detection systems and provide their results on Mask R-CNN.
 
