@@ -407,6 +407,8 @@ def get_cls_results(det_results, annotations, class_id):
             cls_gts_ignore.append(np.empty((0, 4), dtype=np.float32))
         if ann.get('gt_is_group_ofs', None) is not None:
             is_group_ofs.append(ann['gt_is_group_ofs'][gt_inds])
+        else:
+            is_group_ofs.append(np.empty((0, 1), dtype=np.bool))
 
     return cls_dets, cls_gts, cls_gts_ignore, is_group_ofs
 

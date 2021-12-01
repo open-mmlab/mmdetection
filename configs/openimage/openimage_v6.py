@@ -68,7 +68,7 @@ data = dict(
         pipeline=test_pipeline))
 evaluation = dict(interval=1, metric='mAP')
 
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.08, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
 lr_config = dict(
