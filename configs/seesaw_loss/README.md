@@ -1,6 +1,20 @@
-# Seesaw Loss for Long-Tailed Instance Segmentation (CVPR 2021)
+# Seesaw Loss for Long-Tailed Instance Segmentation
 
-## Introduction
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+Instance segmentation has witnessed a remarkable progress on class-balanced benchmarks. However, they fail to perform as accurately in real-world scenarios, where the category distribution of objects naturally comes with a long tail. Instances of head classes dominate a long-tailed dataset and they serve as negative samples of tail categories. The overwhelming gradients of negative samples on tail classes lead to a biased learning process for classifiers. Consequently, objects of tail categories are more likely to be misclassified as backgrounds or head categories. To tackle this problem, we propose Seesaw Loss to dynamically re-balance gradients of positive and negative samples for each category, with two complementary factors, i.e., mitigation factor and compensation factor. The mitigation factor reduces punishments to tail categories w.r.t. the ratio of cumulative training instances between different categories. Meanwhile, the compensation factor increases the penalty of misclassified instances to avoid false positives of tail categories. We conduct extensive experiments on Seesaw Loss with mainstream frameworks and different data sampling strategies. With a simple end-to-end training pipeline, Seesaw Loss obtains significant gains over Cross-Entropy Loss, and achieves state-of-the-art performance on LVIS dataset without bells and whistles.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143974715-d181abe5-d0a2-40d3-a2bd-17d8c60b89b8.png"/>
+</div>
+
+<!-- [PAPER_TITLE: Seesaw Loss for Long-Tailed Instance Segmentation] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/2008.10032] -->
+
+## Citation
 
 <!-- [ALGORITHM] -->
 
