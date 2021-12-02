@@ -1,6 +1,20 @@
-# LVIS dataset
+# LVIS: A Dataset for Large Vocabulary Instance Segmentation
 
-## Introduction
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+Progress on object detection is enabled by datasets that focus the research community's attention on open challenges. This process led us from simple images to complex scenes and from bounding boxes to segmentation masks. In this work, we introduce LVIS (pronounced `el-vis'): a new dataset for Large Vocabulary Instance Segmentation. We plan to collect ~2 million high-quality instance segmentation masks for over 1000 entry-level object categories in 164k images. Due to the Zipfian distribution of categories in natural images, LVIS naturally has a long tail of categories with few training samples. Given that state-of-the-art deep learning methods for object detection perform poorly in the low-sample regime, we believe that our dataset poses an important and exciting new scientific challenge.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143967423-85b9b705-05ea-4bbc-9a41-eccc14240c7a.png" height="300"/>
+</div>
+
+<!-- [PAPER_TITLE: LVIS: A Dataset for Large Vocabulary Instance Segmentation] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/1908.03195] -->
+
+## Citation
 
 <!-- [DATASET] -->
 

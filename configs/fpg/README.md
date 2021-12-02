@@ -1,7 +1,21 @@
 # Feature Pyramid Grids
 <!-- [ALGORITHM] -->
 
-## Introduction
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+Feature pyramid networks have been widely adopted in the object detection literature to improve feature representations for better handling of variations in scale. In this paper, we present Feature Pyramid Grids (FPG), a deep multi-pathway feature pyramid, that represents the feature scale-space as a regular grid of parallel bottom-up pathways which are fused by multi-directional lateral connections. FPG can improve single-pathway feature pyramid networks by significantly increasing its performance at similar computation cost, highlighting importance of deep pyramid representations. In addition to its general and uniform structure, over complicated structures that have been found with neural architecture search, it also compares favorably against such approaches without relying on search. We hope that FPG with its uniform and effective nature can serve as a strong component for future work in object recognition.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143885611-85902399-2885-4a85-9126-9b9b7464ad08.png"/>
+</div>
+
+<!-- [PAPER_TITLE: Feature Pyramid Grids] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/2004.03580] -->
+
+## Citation
 
 ```latex
 @article{chen2020feature,
