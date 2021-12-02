@@ -93,7 +93,9 @@ class MaskFormerHead(AnchorFreeHead):
             in_channels=in_channels,
             feat_channels=feat_channels,
             out_channels=out_channels)
-        self.pixel_decoder = build_plugin_layer(pixel_decoder)
+        pixel_decoder_name, layer = build_plugin_layer(pixel_decoder)
+        self.pixel_decoder_name = pixel_decoder_name
+        self.add_module(pixel_decoder_name, layer)
         self.transformer_decoder = build_transformer_layer_sequence(
             transformer_decoder)
         self.decoder_embed_dims = self.transformer_decoder.embed_dims
@@ -149,6 +151,10 @@ class MaskFormerHead(AnchorFreeHead):
 
     def init_weights(self):
         kaiming_init(self.decoder_input_proj, a=1)
+
+    @property
+    def pixel_decoder(self, ):
+        return getattr(self, self.pixel_decoder_name)
 
     def preprocess_gt(self, gt_labels_list, gt_masks_list, gt_semantic_segs):
         """Preprocess the ground truth for all images:
