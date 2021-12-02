@@ -28,7 +28,7 @@ class MaskFormer(SingleStageDetector):
             self.neck = build_neck(neck)
         panoptic_head.update(train_cfg=train_cfg)
         panoptic_head.update(test_cfg=test_cfg)
-        self.semantic_head = build_head(panoptic_head)
+        self.panoptic_head = build_head(panoptic_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
