@@ -119,7 +119,8 @@ class DistEvalHook(BaseDistEvalHook):
             gpu_collect=self.gpu_collect)
         if runner.rank == 0:
             print('\n')
-            runner.log_buffer.output['eval_iter_num'] = len(self.dataloader)
+            runner.log_buffer.output['eval_iter_num'] = len(
+                self.dataloader.dataset)
             key_score = self.evaluate(runner, results)
 
             if self.save_best:
