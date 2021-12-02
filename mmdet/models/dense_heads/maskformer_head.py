@@ -867,13 +867,13 @@ class MaskFormerHead(AnchorFreeHead):
                 each element in Tensor means:
                 segment_id = _cls + instance_id * INSTANCE_OFFSET.
         """
-        object_mask_threshold = self.test_cfg.get('object_mask_threshold', 0.8)
-        overlap_threshold = self.test_cfg.get('overlap_threshold', 0.8)
+        object_mask_thr = self.test_cfg.get('object_mask_thr', 0.8)
+        iou_thr = self.test_cfg.get('iou_thr', 0.8)
 
         scores, labels = F.softmax(mask_cls, dim=-1).max(-1)
         mask_pred = mask_pred.sigmoid()
 
-        keep = labels.ne(self.num_classes) & (scores > object_mask_threshold)
+        keep = labels.ne(self.num_classes) & (scores > object_mask_thr)
         cur_scores = scores[keep]
         cur_classes = labels[keep]
         cur_masks = mask_pred[keep]
@@ -898,7 +898,7 @@ class MaskFormerHead(AnchorFreeHead):
                 mask_area = mask.sum().item()
                 original_area = (cur_masks[k] >= 0.5).sum().item()
                 if mask_area > 0 and original_area > 0:
-                    if mask_area / original_area < overlap_threshold:
+                    if mask_area / original_area < iou_thr:
                         continue
 
                     if not isthing:
