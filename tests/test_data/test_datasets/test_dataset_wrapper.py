@@ -5,6 +5,7 @@ from collections import defaultdict
 from unittest.mock import MagicMock
 
 import numpy as np
+import pytest
 
 from mmdet.datasets import (ClassBalancedDataset, ConcatDataset, CustomDataset,
                             MultiImageMixDataset, RepeatDataset)
@@ -81,7 +82,6 @@ def test_dataset_wrapper():
             repeat_factors_cumsum, idx)
 
     img_scale = (60, 60)
-    dynamic_scale = (80, 80)
     pipeline = [
         dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
         dict(
@@ -94,7 +94,7 @@ def test_dataset_wrapper():
             ratio_range=(0.8, 1.6),
             pad_val=114.0),
         dict(type='RandomFlip', flip_ratio=0.5),
-        dict(type='Resize', keep_ratio=True),
+        dict(type='Resize', img_scale=img_scale, keep_ratio=True),
         dict(type='Pad', pad_to_square=True, pad_val=114.0),
     ]
 
@@ -125,17 +125,19 @@ def test_dataset_wrapper():
     dataset_a.get_cat_ids = MagicMock(
         side_effect=lambda idx: cat_ids_list_a[idx])
 
-    multi_image_mix_dataset = MultiImageMixDataset(dataset_a, pipeline,
-                                                   dynamic_scale)
+    # test dynamic_scale deprecated
+    with pytest.raises(RuntimeError):
+        MultiImageMixDataset(dataset_a, pipeline, (80, 80))
+
+    multi_image_mix_dataset = MultiImageMixDataset(dataset_a, pipeline)
     for idx in range(len_a):
         results_ = multi_image_mix_dataset[idx]
-        assert results_['img'].shape == (dynamic_scale[0], dynamic_scale[1], 3)
+        assert results_['img'].shape == (img_scale[0], img_scale[1], 3)
 
     # test skip_type_keys
     multi_image_mix_dataset = MultiImageMixDataset(
         dataset_a,
         pipeline,
-        dynamic_scale,
         skip_type_keys=('MixUp', 'RandomFlip', 'Resize', 'Pad'))
     for idx in range(len_a):
         results_ = multi_image_mix_dataset[idx]

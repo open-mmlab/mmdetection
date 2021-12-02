@@ -131,6 +131,10 @@ html_theme_options = {
                     'name': 'MMTracking',
                     'url': 'https://github.com/open-mmlab/mmtracking',
                 },
+                {
+                    'name': 'MMFlow',
+                    'url': 'https://github.com/open-mmlab/mmflow',
+                },
             ]
         },
         {

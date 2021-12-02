@@ -1,0 +1,168 @@
+version: 2.1
+
+jobs:
+  lint:
+    docker:
+      - image: cimg/python:3.7.4
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            sudo apt-add-repository ppa:brightbox/ruby-ng -y
+            sudo apt-get update
+            sudo apt-get install -y ruby2.7
+      - run:
+          name: Install pre-commit hook
+          command: |
+            pip install pre-commit
+            pre-commit install
+      - run:
+          name: Linting
+          command: pre-commit run --all-files
+      - run:
+          name: Check docstring coverage
+          command: |
+            pip install interrogate
+            interrogate -v --ignore-init-method --ignore-module --ignore-nested-functions --ignore-regex "__repr__" --fail-under 50 mmdet
+
+  build_cpu:
+    parameters:
+      # The python version must match available image tags in
+      # https://circleci.com/developer/images/image/cimg/python
+      python:
+        type: string
+        default: "3.7.4"
+      torch:
+        type: string
+      torchvision:
+        type: string
+    docker:
+      - image: cimg/python:<< parameters.python >>
+    resource_class: large
+    steps:
+      - checkout
+      - run:
+          name: Install Libraries
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 libgl1-mesa-glx libjpeg-dev zlib1g-dev libtinfo-dev libncurses5
+      - run:
+          name: Configure Python & pip
+          command: |
+            pip install --upgrade pip
+            pip install wheel
+      - run:
+          name: Install PyTorch
+          command: |
+            python -V
+            pip install torch==<< parameters.torch >>+cpu torchvision==<< parameters.torchvision >>+cpu -f https://download.pytorch.org/whl/torch_stable.html
+      - when:
+          condition:
+            equal: [ "3.9.0", << parameters.python >> ]
+          steps:
+            - run: pip install protobuf && sudo apt-get update && sudo apt-get -y install libprotobuf-dev protobuf-compiler cmake
+      - run:
+          name: Install mmdet dependencies
+          command: |
+            pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cpu/torch<< parameters.torch >>/index.html
+            pip install -r requirements/tests.txt -r requirements/optional.txt
+            pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
+            pip install git+https://github.com/cocodataset/panopticapi.git
+      - run:
+          name: Build and install
+          command: |
+            pip install -e .
+      - run:
+          name: Run unittests
+          command: |
+            coverage run --branch --source mmdet -m pytest tests/
+            coverage xml
+            coverage report -m
+
+  build_cu101:
+    machine:
+      image: ubuntu-1604-cuda-10.1:201909-23
+    resource_class: gpu.nvidia.small
+    steps:
+      - checkout
+      - run:
+          name: Install Libraries
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y git ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 libgl1-mesa-glx
+      - run:
+          name: Configure Python & pip
+          command: |
+            pyenv global 3.7.0
+            pip install --upgrade pip
+            pip install wheel
+      - run:
+          name: Install PyTorch
+          command: |
+            python -V
+            pip install torch==1.6.0+cu101 torchvision==0.7.0+cu101 -f https://download.pytorch.org/whl/torch_stable.html
+      - run:
+          name: Install mmdet dependencies
+          # pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/torch${{matrix.torch_version}}/index.html
+          command: |
+            pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.6.0/index.html
+            pip install -r requirements/tests.txt -r requirements/optional.txt
+            pip install pycocotools
+            pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
+            pip install git+https://github.com/cocodataset/panopticapi.git
+            python -c 'import mmcv; print(mmcv.__version__)'
+      - run:
+          name: Build and install
+          command: |
+            python setup.py check -m -s
+            TORCH_CUDA_ARCH_LIST=7.0 pip install -e .
+      - run:
+          name: Run unittests
+          command: |
+            pytest tests/
+
+workflows:
+  unit_tests:
+    jobs:
+      - lint
+      - build_cpu:
+          name: build_cpu_th1.6
+          torch: 1.6.0
+          torchvision: 0.7.0
+          requires:
+            - lint
+      - build_cpu:
+          name: build_cpu_th1.7
+          torch: 1.7.0
+          torchvision: 0.8.1
+          requires:
+            - lint
+      - build_cpu:
+          name: build_cpu_th1.8_py3.9
+          torch: 1.8.0
+          torchvision: 0.9.0
+          python: "3.9.0"
+          requires:
+            - lint
+      - build_cpu:
+          name: build_cpu_th1.9_py3.8
+          torch: 1.9.0
+          torchvision: 0.10.0
+          python: "3.8.12"
+          requires:
+            - lint
+      - build_cpu:
+          name: build_cpu_th1.9_py3.9
+          torch: 1.9.0
+          torchvision: 0.10.0
+          python: "3.9.0"
+          requires:
+            - lint
+      - build_cu101:
+          requires:
+            - build_cpu_th1.6
+            - build_cpu_th1.7
+            - build_cpu_th1.8_py3.9
+            - build_cpu_th1.9_py3.8
+            - build_cpu_th1.9_py3.9

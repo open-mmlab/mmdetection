@@ -5,6 +5,7 @@ import tempfile
 import mmcv
 import numpy as np
 
+from mmdet.datasets.api_wrappers import pq_compute_single_core
 from mmdet.datasets.coco_panoptic import INSTANCE_OFFSET, CocoPanopticDataset
 
 try:
@@ -305,3 +306,34 @@ def test_panoptic_evaluation():
     assert np.isclose(parsed_results['PQ_st'], 82.701)
     assert np.isclose(parsed_results['SQ_st'], 82.701)
     assert np.isclose(parsed_results['RQ_st'], 100.000)
+
+    # test the api wrapper of `pq_compute_single_core`
+    # Codes are copied from `coco_panoptic.py` and modified
+    result_files, _ = dataset.format_results(
+        results, jsonfile_prefix=outfile_prefix)
+
+    imgs = dataset.coco.imgs
+    gt_json = dataset.coco.img_ann_map  # image to annotations
+    gt_json = [{
+        'image_id': k,
+        'segments_info': v,
+        'file_name': imgs[k]['segm_file']
+    } for k, v in gt_json.items()]
+    pred_json = mmcv.load(result_files['panoptic'])
+    pred_json = dict((el['image_id'], el) for el in pred_json['annotations'])
+
+    # match the gt_anns and pred_anns in the same image
+    matched_annotations_list = []
+    for gt_ann in gt_json:
+        img_id = gt_ann['image_id']
+        matched_annotations_list.append((gt_ann, pred_json[img_id]))
+    gt_folder = dataset.seg_prefix
+    pred_folder = osp.join(osp.dirname(outfile_prefix), 'panoptic')
+
+    pq_stat = pq_compute_single_core(0, matched_annotations_list, gt_folder,
+                                     pred_folder, dataset.categories)
+    pq_all = pq_stat.pq_average(dataset.categories, isthing=None)[0]
+    assert np.isclose(pq_all['pq'] * 100, 67.869)
+    assert np.isclose(pq_all['sq'] * 100, 80.898)
+    assert np.isclose(pq_all['rq'] * 100, 83.333)
+    assert pq_all['n'] == 3

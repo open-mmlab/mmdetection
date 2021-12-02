@@ -278,6 +278,16 @@ def test_evaluation_hook(EvalHookParam):
     runner.run([dataloader], [('train', 1)], 2)
     assert evalhook.evaluate.call_count == 3  # before epoch1 and after e1 & e2
 
+    # 6. start=0, interval=2, dynamic_intervals=[(3, 1)]: the evaluation
+    # interval is 2 when it is less than 3 epoch, otherwise it is 1.
+    runner = _build_demo_runner()
+    evalhook = EvalHookParam(
+        dataloader, start=0, interval=2, dynamic_intervals=[(3, 1)])
+    evalhook.evaluate = MagicMock()
+    runner.register_hook(evalhook)
+    runner.run([dataloader], [('train', 1)], 4)
+    assert evalhook.evaluate.call_count == 3
+
     # the evaluation start epoch cannot be less than 0
     runner = _build_demo_runner()
     with pytest.raises(ValueError):
