@@ -2,6 +2,7 @@
 from abc import ABCMeta, abstractmethod
 
 import torch
+from mmcv.cnn.utils.weight_init import constant_init
 from mmcv.ops import batched_nms
 from mmcv.runner import BaseModule, force_fp32
 
@@ -13,6 +14,14 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
     def __init__(self, init_cfg=None):
         super(BaseDenseHead, self).__init__(init_cfg)
+
+    def init_weights(self):
+        super(BaseDenseHead, self).init_weights()
+        # avoid init_cfg overwrite the initialization of `conv_offset`
+        for m in self.modules():
+            # DeformConv2dPack, ModulatedDeformConv2dPack
+            if hasattr(m, 'conv_offset'):
+                constant_init(m.conv_offset, 0)
 
     @abstractmethod
     def loss(self, **kwargs):
@@ -227,13 +236,13 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         """bbox post-processing method.
 
         The boxes would be rescaled to the original image scale and do
-        the nms operation. Usually with_nms is False is used for aug test.
+        the nms operation. Usually `with_nms` is False is used for aug test.
 
         Args:
             mlvl_scores (list[Tensor]): Box scores from all scale
                 levels of a single image, each item has shape
                 (num_bboxes, ).
-           mlvl_labels (list[Tensor]): Box class labels from all scale
+            mlvl_labels (list[Tensor]): Box class labels from all scale
                 levels of a single image, each item has shape
                 (num_bboxes, ).
             mlvl_bboxes (list[Tensor]): Decoded bboxes from all scale

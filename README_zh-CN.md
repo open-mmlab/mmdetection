@@ -13,10 +13,10 @@
   <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
 
-[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/v2.18.1/) |
-[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/v2.18.1/get_started.html) |
-[👀模型库](https://mmdetection.readthedocs.io/zh_CN/v2.18.1/model_zoo.html) |
-[🆕更新日志](https://mmdetection.readthedocs.io/en/v2.18.1/changelog.html) |
+[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/v2.19.0/) |
+[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/v2.19.0/get_started.html) |
+[👀模型库](https://mmdetection.readthedocs.io/zh_CN/v2.19.0/model_zoo.html) |
+[🆕更新日志](https://mmdetection.readthedocs.io/en/v2.19.0/changelog.html) |
 [🚀进行中的项目](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔报告问题](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
@@ -28,7 +28,7 @@
 
 MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [OpenMMLab](https://openmmlab.com/) 项目的一部分。
 
-主分支代码目前支持 PyTorch 1.3 以上的版本。
+主分支代码目前支持 PyTorch 1.5 以上的版本。
 
 
 <details open>
@@ -59,10 +59,10 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 更新日志
 
-最新的 **2.18.1** 版本已经在2021.11.15发布:
-- 发布了 [QueryInst](http://arxiv.org/abs/2105.01928) 的预训练模型。
-- 支持绘制混淆矩阵。
-- 修复了 PVT 中的 SpatialReductionAttention 以及 PVT 和 Swin-Transformer 中 trunc_normal_init 的错误用法。
+最新的 **2.19.0** 版本已经在 2021.11.29 发布:
+- 支持了 [Label Assignment Distillation](https://arxiv.org/abs/2108.10520)
+- 对 PyTorch >= 1.7 支持 `persistent_workers`
+- 与最近更新的 YOLOX 对齐精度
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/changelog.md)。
 
@@ -159,7 +159,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 请参考[快速入门文档](docs/get_started.md)学习 MMDetection 的基本使用。
 我们提供了 [colab 教程](demo/MMDet_Tutorial.ipynb)，也为新手提供了完整的运行教程，分别针对[已有数据集](docs/1_exist_data_model.md)和[新数据集](docs/2_new_data_model.md) 完整的使用指南
 
-我们也提供了一些进阶教程，内容覆盖了 [finetune 模型](docs/tutorials/finetune.md)，[增加新数据集支持](docs/tutorials/new_dataset.md)，[设计新的数据预处理流程](docs/tutorials/data_pipeline.md)，[增加自定义模型](ocs/tutorials/customize_models.md)，[增加自定义的运行时配置](docs/tutorials/customize_runtime.md)，[常用工具和脚本](docs/useful_tools.md)。
+我们也提供了一些进阶教程，内容覆盖了 [finetune 模型](docs/tutorials/finetune.md)，[增加新数据集支持](docs/tutorials/customize_dataset.md)，[设计新的数据预处理流程](docs/tutorials/data_pipeline.md)，[增加自定义模型](docs/tutorials/customize_models.md)，[增加自定义的运行时配置](docs/tutorials/customize_runtime.md)，[常用工具和脚本](docs/useful_tools.md)。
 
 如果遇到问题，请参考 [常见问题解答](docs_zh-CN/faq.md)。
 
