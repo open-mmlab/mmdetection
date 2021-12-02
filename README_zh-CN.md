@@ -13,10 +13,10 @@
   <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
 
-[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/v2.18.1/) |
-[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/v2.18.1/get_started.html) |
-[👀模型库](https://mmdetection.readthedocs.io/zh_CN/v2.18.1/model_zoo.html) |
-[🆕更新日志](https://mmdetection.readthedocs.io/en/v2.18.1/changelog.html) |
+[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/v2.19.0/) |
+[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/v2.19.0/get_started.html) |
+[👀模型库](https://mmdetection.readthedocs.io/zh_CN/v2.19.0/model_zoo.html) |
+[🆕更新日志](https://mmdetection.readthedocs.io/en/v2.19.0/changelog.html) |
 [🚀进行中的项目](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔报告问题](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
@@ -28,7 +28,7 @@
 
 MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [OpenMMLab](https://openmmlab.com/) 项目的一部分。
 
-主分支代码目前支持 PyTorch 1.3 以上的版本。
+主分支代码目前支持 PyTorch 1.5 以上的版本。
 
 
 <details open>
@@ -59,10 +59,10 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 更新日志
 
-最新的 **2.18.1** 版本已经在2021.11.15发布:
-- 发布了 [QueryInst](http://arxiv.org/abs/2105.01928) 的预训练模型。
-- 支持绘制混淆矩阵。
-- 修复了 PVT 中的 SpatialReductionAttention 以及 PVT 和 Swin-Transformer 中 trunc_normal_init 的错误用法。
+最新的 **2.19.0** 版本已经在 2021.11.29 发布:
+- 支持了 [Label Assignment Distillation](https://arxiv.org/abs/2108.10520)
+- 对 PyTorch >= 1.7 支持 `persistent_workers`
+- 与最近更新的 YOLOX 对齐精度
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/changelog.md)。
 
@@ -203,6 +203,7 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 - [MMEditing](https://github.com/open-mmlab/mmediting): OpenMMLab 图像视频编辑工具箱
 - [MMOCR](https://github.com/open-mmlab/mmocr): OpenMMLab 全流程文字检测识别理解工具包
 - [MMGeneration](https://github.com/open-mmlab/mmgeneration): OpenMMLab 图片视频生成模型工具箱
+- [MMFlow](https://github.com/open-mmlab/mmflow): OpenMMLab 光流估计工具箱与测试基准
 
 ## 欢迎加入 OpenMMLab 社区
 
