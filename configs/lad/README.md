@@ -1,5 +1,6 @@
 # Improving Object Detection by Label Assignment Distillation
 
+
 ## Abstract
 
 <!-- [ABSTRACT] -->
@@ -15,6 +16,7 @@ Label assignment in object detection aims to assign targets, foreground or backg
 <!-- [PAPER_URL: https://arxiv.org/abs/2108.10520] -->
 
 ## Citation
+
 
 <!-- [ALGORITHM] -->
 
@@ -35,12 +37,12 @@ Distillation.
 
 ### PAA with LAD
 
-| Teacher | Student | Training schedule | AP (val) |                        Config                         |
-| :-----: | :-----: | :---------------: | :------: | :---------------------------------------------------: |
-|   --    |  R-50   |        1x         |   40.4   |                                                       |
-|   --    |  R-101  |        1x         |   42.6   |                                                       |
-|  R-101  |  R-50   |        1x         |   41.6   | [config](configs/lad/lad_r50_paa_r101_fpn_coco_1x.py) |
-|  R-50   |  R-101  |        1x         |   43.2   | [config](configs/lad/lad_r101_paa_r50_fpn_coco_1x.py) |
+|  Teacher  | Student | Training schedule | AP (val) |                         Config                          |
+| :-------: | :-----: | :---------------: | :------: |  :----------------------------------------------------: |
+|    --     |  R-50   |        1x         |   40.4   |                                                         |
+|    --     |  R-101  |        1x         |   42.6   |                                                         |
+|   R-101   |  R-50   |        1x         |   41.6   |  [config](configs/lad/lad_r50_paa_r101_fpn_coco_1x.py)  |
+|   R-50    |  R-101  |        1x         |   43.2   |  [config](configs/lad/lad_r101_paa_r50_fpn_coco_1x.py)  |
 
 ## Note
 
