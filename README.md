@@ -13,10 +13,10 @@
   <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
 
-[📘Documentation](https://mmdetection.readthedocs.io/en/v2.18.1/) |
-[🛠️Installation](https://mmdetection.readthedocs.io/en/v2.18.1/get_started.html) |
-[👀Model Zoo](https://mmdetection.readthedocs.io/zh_CN/v2.18.1/model_zoo.html) |
-[🆕Update News](https://mmdetection.readthedocs.io/en/v2.18.1/changelog.html) |
+[📘Documentation](https://mmdetection.readthedocs.io/en/v2.19.0/) |
+[🛠️Installation](https://mmdetection.readthedocs.io/en/v2.19.0/get_started.html) |
+[👀Model Zoo](https://mmdetection.readthedocs.io/en/v2.19.0/model_zoo.html) |
+[🆕Update News](https://mmdetection.readthedocs.io/en/v2.19.0/changelog.html) |
 [🚀Ongoing Projects](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔Reporting Issues](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
@@ -29,7 +29,7 @@ English | [简体中文](README_zh-CN.md)
 MMDetection is an open source object detection toolbox based on PyTorch. It is
 a part of the [OpenMMLab](https://openmmlab.com/) project.
 
-The master branch works with **PyTorch 1.3+**.
+The master branch works with **PyTorch 1.5+**.
 
 <details open>
 <summary>Major features</summary>
@@ -60,10 +60,11 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-**2.18.1** was released in 15/11/2021:
-- Release [QueryInst](http://arxiv.org/abs/2105.01928) pre-trained weights.
-- Support plot confusion matrix.
-- Fix SpatialReductionAttention in PVT and fix trunc_normal_init in both PVT and Swin-Transformer.
+**2.19.0** was released in 29/11/2021:
+
+- Support [Label Assignment Distillation](https://arxiv.org/abs/2108.10520)
+- Support `persistent_workers` for Pytorch >= 1.7
+- Align accuracy to the updated official YOLOX
 
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 
@@ -205,3 +206,5 @@ If you use this toolbox or benchmark in your research, please cite this project.
 - [MMEditing](https://github.com/open-mmlab/mmediting): OpenMMLab image and video editing toolbox.
 - [MMOCR](https://github.com/open-mmlab/mmocr): A Comprehensive Toolbox for Text Detection, Recognition and Understanding.
 - [MMGeneration](https://github.com/open-mmlab/mmgeneration): OpenMMLab image and video generative models toolbox.
+- [MMFlow](https://github.com/open-mmlab/mmflow): OpenMMLab optical flow toolbox and benchmark.
+- [MMFewShot](https://github.com/open-mmlab/mmfewshot): OpenMMLab FewShot Learning Toolbox and Benchmark.

@@ -10,7 +10,8 @@ from mmcv.ops.nms import batched_nms
 from mmcv.runner import force_fp32
 
 from mmdet.core import (MlvlPointGenerator, bbox_xyxy_to_cxcywh,
-                        build_assigner, build_sampler, multi_apply)
+                        build_assigner, build_sampler, multi_apply,
+                        reduce_mean)
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -383,7 +384,14 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
              flatten_priors.unsqueeze(0).repeat(num_imgs, 1, 1),
              flatten_bboxes.detach(), gt_bboxes, gt_labels)
 
-        num_total_samples = max(sum(num_fg_imgs), 1)
+        # The experimental results show that ‘reduce_mean’ can improve
+        # performance on the COCO dataset.
+        num_pos = torch.tensor(
+            sum(num_fg_imgs),
+            dtype=torch.float,
+            device=flatten_cls_preds.device)
+        num_total_samples = max(reduce_mean(num_pos), 1.0)
+
         pos_masks = torch.cat(pos_masks, 0)
         cls_targets = torch.cat(cls_targets, 0)
         obj_targets = torch.cat(obj_targets, 0)
