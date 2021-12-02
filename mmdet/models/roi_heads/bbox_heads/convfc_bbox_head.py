@@ -107,6 +107,7 @@ class ConvFCBBoxHead(BBoxHead):
             self.init_cfg += [
                 dict(
                     type='Xavier',
+                    distribution='uniform',
                     override=[
                         dict(name='shared_fcs'),
                         dict(name='cls_fcs'),
