@@ -153,7 +153,7 @@ class MaskFormerHead(AnchorFreeHead):
         kaiming_init(self.decoder_input_proj, a=1)
 
     @property
-    def pixel_decoder(self, ):
+    def pixel_decoder(self):
         return getattr(self, self.pixel_decoder_name)
 
     def preprocess_gt(self, gt_labels_list, gt_masks_list, gt_semantic_segs):
@@ -508,7 +508,7 @@ class MaskFormerHead(AnchorFreeHead):
         # when backbone is swin, memory is output of last stage of swin.
         # when backbone is r50, memory is output of tranformer encoder.
         mask_features, memory = self.pixel_decoder(feats)
-        padding_mask = feats[-1].new_ones((bs, h, w))
+        padding_mask = feats[-1].new_zeros((bs, h, w), dtype=torch.bool)
         pos_embed = self.decoder_pe(padding_mask)
         memory = self.decoder_input_proj(memory)
         # [bs, c, h, w] -> [h*w, bs, c]

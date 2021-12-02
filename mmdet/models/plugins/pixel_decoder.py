@@ -1,3 +1,4 @@
+import torch
 import torch.nn.functional as F
 from mmcv.cnn import PLUGIN_LAYERS, Conv2d, ConvModule, kaiming_init
 from mmcv.cnn.bricks.transformer import (build_positional_encoding,
@@ -190,7 +191,7 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
         """
         feat_last = feats[-1]
         bs, c, h, w = feat_last.shape
-        padding_mask = feat_last.new_ones((bs, h, w))
+        padding_mask = feat_last.new_zeros((bs, h, w), dtype=torch.bool)
         pos_embed = self.pe(padding_mask)
         feat_last = self.encoder_in_proj(feat_last)
         # [bs, c, h, w] -> [nq, bs, dim]
