@@ -91,7 +91,7 @@ model = dict(
             dice_cost=dict(
                 type='DiceCost', weight=1.0, pred_act=True, eps=1.0)),
         sampler=dict(type='MaskPseudoSampler')),
-    test_cfg=dict(object_mask_threshold=0.8, overlap_threshold=0.8),
+    test_cfg=dict(object_mask_thr=0.8, iou_thr=0.8),
     pretrained=None,
     init_cfg=None)
 
