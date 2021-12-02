@@ -2,6 +2,7 @@
 from abc import ABCMeta, abstractmethod
 
 import torch
+from mmcv.cnn.utils.weight_init import constant_init
 from mmcv.ops import batched_nms
 from mmcv.runner import BaseModule, force_fp32
 
@@ -20,8 +21,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         for m in self.modules():
             # DeformConv2dPack, ModulatedDeformConv2dPack
             if hasattr(m, 'conv_offset'):
-                m.conv_offset.weight.data.zero_()
-                m.conv_offset.bias.data.zero_()
+                constant_init(m.conv_offset, 0)
 
     @abstractmethod
     def loss(self, **kwargs):
