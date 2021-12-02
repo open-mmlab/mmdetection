@@ -366,8 +366,7 @@ class MaskFormerHead(AnchorFreeHead):
     def init_weights(self):
         kaiming_init(self.decoder_input_proj, a=1)
 
-    def preprocess_ground_truth(self, gt_labels_list, gt_masks_list,
-                                gt_semantic_segs):
+    def preprocess_gt(self, gt_labels_list, gt_masks_list, gt_semantic_segs):
         """Preprocess the ground truth for all images:
 
             - labels should contain labels for each type of stuff and
@@ -398,13 +397,12 @@ class MaskFormerHead(AnchorFreeHead):
                 - masks (list[Tensor]): Ground truth mask for each image, each
                     with shape (n, h, w).
         """
-        targets = multi_apply(self._preprocess_ground_truth_single,
-                              gt_labels_list, gt_masks_list, gt_semantic_segs)
+        targets = multi_apply(self._preprocess_gt_single, gt_labels_list,
+                              gt_masks_list, gt_semantic_segs)
         labels, masks = targets
         return labels, masks
 
-    def _preprocess_ground_truth_single(self, gt_labels, gt_masks,
-                                        gt_semantic_seg):
+    def _preprocess_gt_single(self, gt_labels, gt_masks, gt_semantic_seg):
         """Preprocess the ground truth for a image:
 
             - labels should contain labels for each type of stuff and
@@ -789,8 +787,8 @@ class MaskFormerHead(AnchorFreeHead):
         all_cls_scores, all_mask_preds = self(feats)
 
         # preprocess ground truth
-        gt_labels, gt_masks = self.preprocess_ground_truth(
-            gt_labels, gt_masks, gt_semantic_seg)
+        gt_labels, gt_masks = self.preprocess_gt(gt_labels, gt_masks,
+                                                 gt_semantic_seg)
 
         # loss
         losses = self.loss(all_cls_scores, all_mask_preds, gt_labels, gt_masks,
