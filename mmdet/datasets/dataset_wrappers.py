@@ -71,8 +71,6 @@ class ConcatDataset(_ConcatDataset):
     def get_ann_info(self, idx):
         """Get annotation of concatenated dataset by index.
 
-        This is needed by MixUp.
-
         Args:
             idx (int): Index of data.
 
