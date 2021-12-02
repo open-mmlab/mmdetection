@@ -13,7 +13,7 @@ Collections:
         - RoIPool
     Paper:
       URL: https://arxiv.org/abs/1506.01497
-      Title: 'Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks'
+      Title: "Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks"
     README: configs/faster_rcnn/README.md
     Code:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/detectors/faster_rcnn.py#L6
@@ -65,18 +65,42 @@ Models:
           box AP: 37.4
     Weights: https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
 
+  - Name: faster_rcnn_r50_fpn_fp16_1x_coco
+    In Collection: Faster R-CNN
+    Config: configs/faster_rcnn/faster_rcnn_r50_fpn_fp16_1x_coco.py
+    Metadata:
+      Training Memory (GB): 3.4
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+        - Mixed Precision Training
+      inference time (ms/im):
+        - value: 34.72
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP16
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 37.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fp16/faster_rcnn_r50_fpn_fp16_1x_coco/faster_rcnn_r50_fpn_fp16_1x_coco_20200204-d4dc1471.pth
+
   - Name: faster_rcnn_r50_fpn_2x_coco
     In Collection: Faster R-CNN
     Config: configs/faster_rcnn/faster_rcnn_r50_fpn_2x_coco.py
     Metadata:
       Training Memory (GB): 4.0
       inference time (ms/im):
-         - value: 46.73
-           hardware: V100
-           backend: PyTorch
-           batch size: 1
-           mode: FP32
-           resolution: (800, 1333)
+        - value: 46.73
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
@@ -104,12 +128,12 @@ Models:
     Metadata:
       Training Memory (GB): 6.0
       inference time (ms/im):
-         - value: 64.1
-           hardware: V100
-           backend: PyTorch
-           batch size: 1
-           mode: FP32
-           resolution: (800, 1333)
+        - value: 64.1
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -124,12 +148,12 @@ Models:
     Metadata:
       Training Memory (GB): 6.0
       inference time (ms/im):
-         - value: 64.1
-           hardware: V100
-           backend: PyTorch
-           batch size: 1
-           mode: FP32
-           resolution: (800, 1333)
+        - value: 64.1
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
@@ -144,12 +168,12 @@ Models:
     Metadata:
       Training Memory (GB): 7.2
       inference time (ms/im):
-         - value: 72.46
-           hardware: V100
-           backend: PyTorch
-           batch size: 1
-           mode: FP32
-           resolution: (800, 1333)
+        - value: 72.46
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -164,12 +188,12 @@ Models:
     Metadata:
       Training Memory (GB): 7.2
       inference time (ms/im):
-         - value: 72.46
-           hardware: V100
-           backend: PyTorch
-           batch size: 1
-           mode: FP32
-           resolution: (800, 1333)
+        - value: 72.46
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
@@ -184,12 +208,12 @@ Models:
     Metadata:
       Training Memory (GB): 10.3
       inference time (ms/im):
-         - value: 106.38
-           hardware: V100
-           backend: PyTorch
-           batch size: 1
-           mode: FP32
-           resolution: (800, 1333)
+        - value: 106.38
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 12
     Results:
       - Task: Object Detection
@@ -204,12 +228,12 @@ Models:
     Metadata:
       Training Memory (GB): 10.3
       inference time (ms/im):
-         - value: 106.38
-           hardware: V100
-           backend: PyTorch
-           batch size: 1
-           mode: FP32
-           resolution: (800, 1333)
+        - value: 106.38
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
       Epochs: 24
     Results:
       - Task: Object Detection
