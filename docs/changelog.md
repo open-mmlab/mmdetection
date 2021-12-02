@@ -1,5 +1,82 @@
 ## Changelog
 
+### v2.19.0 (29/11/2021)
+
+#### Highlights
+
+- Support [Label Assignment Distillation](https://arxiv.org/abs/2108.10520)
+- Support `persistent_workers` for Pytorch >= 1.7
+- Align accuracy to the updated official YOLOX
+
+#### New Features
+
+- Support [Label Assignment Distillation](https://arxiv.org/abs/2108.10520) (#6342)
+- Support `persistent_workers` for Pytorch >= 1.7 (#6435)
+
+#### Bug Fixes
+
+- Fix repeatedly output warning message (#6584)
+- Avoid infinite GPU waiting in dist training (#6501)
+- Fix SSD512 config error (#6574)
+- Fix MMDetection model to ONNX command (#6558)
+
+#### Improvements
+
+- Refactor configs of FP16 models (#6592)
+- Align accuracy to the updated official YOLOX (#6443)
+- Speed up training and reduce memory cost when using PhotoMetricDistortion. (#6442)
+- Make OHEM work with seesaw loss (#6514)
+
+
+#### Documents
+
+- Update README.md (#6567)
+
+#### Contributors
+
+A total of 11 developers contributed to this release.
+Thanks @FloydHsiu, @RangiLyu, @ZwwWayne, @AndreaPi, @st9007a, @hachreak, @BIGWangYuDong, @hhaAndroid, @AronLin, @chhluo, @vealocia, @HarborYuan, @st9007a, @jshilong
+
+
+
+
+
+### v2.18.1 (15/11/2021)
+
+#### Highlights
+
+- Release [QueryInst](http://arxiv.org/abs/2105.01928) pre-trained weights (#6460)
+- Support plot confusion matrix (#6344)
+
+#### New Features
+
+- Release [QueryInst](http://arxiv.org/abs/2105.01928) pre-trained weights (#6460)
+- Support plot confusion matrix (#6344)
+
+#### Bug Fixes
+
+- Fix aug test error when the number of prediction bboxes is 0 (#6398)
+- Fix SpatialReductionAttention in PVT (#6488)
+- Fix wrong use of `trunc_normal_init` in PVT and Swin-Transformer (#6432)
+
+#### Improvements
+
+- Save the printed AP information of COCO API to logger (#6505)
+- Always map location to cpu when load checkpoint (#6405)
+- Set a random seed when the user does not set a seed (#6457)
+
+#### Documents
+
+- Chinese version of [Corruption Benchmarking](docs/robustness_benchmarking.mddocs/robustness_benchmarking.md) (#6375)
+- Fix config path in docs (#6396)
+- Update GRoIE readme (#6401)
+
+#### Contributors
+
+A total of 11 developers contributed to this release.
+Thanks @st9007a, @hachreak, @HarborYuan, @vealocia, @chhluo, @AndreaPi, @AronLin, @BIGWangYuDong, @hhaAndroid, @RangiLyu, @ZwwWayne
+
+
 ### v2.18.0 (27/10/2021)
 
 #### Highlights

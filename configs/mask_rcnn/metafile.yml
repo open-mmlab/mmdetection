@@ -16,7 +16,7 @@ Collections:
         - RoIAlign
     Paper:
       URL: https://arxiv.org/abs/1703.06870v3
-      Title: 'Mask R-CNN'
+      Title: "Mask R-CNN"
     README: configs/mask_rcnn/README.md
     Code:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/detectors/mask_rcnn.py#L6
@@ -63,6 +63,34 @@ Models:
         Metrics:
           mask AP: 34.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_fpn_1x_coco/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth
+
+  - Name: mask_rcnn_r50_fpn_fp16_1x_coco
+    In Collection: Mask R-CNN
+    Config: configs/mask_rcnn/mask_rcnn_r50_fpn_fp16_1x_coco.py
+    Metadata:
+      Training Memory (GB): 3.6
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+        - Mixed Precision Training
+      inference time (ms/im):
+        - value: 41.49
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP16
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 38.1
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 34.7
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fp16/mask_rcnn_r50_fpn_fp16_1x_coco/mask_rcnn_r50_fpn_fp16_1x_coco_20200205-59faf7e4.pth
 
   - Name: mask_rcnn_r50_fpn_2x_coco
     In Collection: Mask R-CNN

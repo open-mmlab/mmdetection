@@ -12,7 +12,7 @@ Collections:
         - ResNet
     Paper:
       URL: https://arxiv.org/abs/1708.02002
-      Title: 'Focal Loss for Dense Object Detection'
+      Title: "Focal Loss for Dense Object Detection"
     README: configs/retinanet/README.md
     Code:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/detectors/retinanet.py#L6
@@ -58,6 +58,30 @@ Models:
         Metrics:
           box AP: 36.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth
+
+  - Name: retinanet_r50_fpn_fp16_1x_coco
+    In Collection: RetinaNet
+    Config: configs/fp16/retinanet_r50_fpn_fp16_1x_coco.py
+    Metadata:
+      Training Memory (GB): 2.8
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+        - Mixed Precision Training
+      inference time (ms/im):
+        - value: 31.65
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP16
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 36.4
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fp16/retinanet_r50_fpn_fp16_1x_coco/retinanet_r50_fpn_fp16_1x_coco_20200702-0dbfb212.pth
 
   - Name: retinanet_r50_fpn_2x_coco
     In Collection: RetinaNet
@@ -166,7 +190,6 @@ Models:
         Metrics:
           box AP: 41
     Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_fpn_mstrain_3x_coco/retinanet_r101_fpn_mstrain_3x_coco_20210720_214650-7ee888e0.pth
-
 
   - Name: retinanet_x101_32x4d_fpn_1x_coco
     In Collection: RetinaNet
