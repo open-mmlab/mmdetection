@@ -14,7 +14,7 @@ Recent advances in clothes recognition have been driven by the construction of c
 <!-- [PAPER_TITLE: DeepFashion: Powering Robust Clothes Recognition and Retrieval With Rich Annotations] -->
 <!-- [PAPER_URL: https://openaccess.thecvf.com/content_cvpr_2016/html/Liu_DeepFashion_Powering_Robust_CVPR_2016_paper.html] -->
 
-
+## Introduction
 
 <!-- [DATASET] -->
 

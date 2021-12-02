@@ -15,11 +15,13 @@ Instance segmentation requires a large number of training samples to achieve sat
 ] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1908.07801] -->
 
-## Citation
+## Introduction
 
 <!-- [ALGORITHM] -->
 
 Configs in this directory is the implementation for ICCV2019 paper "InstaBoost: Boosting Instance Segmentation Via Probability Map Guided Copy-Pasting" and provided by the authors of the paper. InstaBoost is a data augmentation method for object detection and instance segmentation. The paper has been released on [`arXiv`](https://arxiv.org/abs/1908.07801).
+
+## Citation
 
 ```latex
 @inproceedings{fang2019instaboost,

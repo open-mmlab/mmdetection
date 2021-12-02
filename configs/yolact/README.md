@@ -14,17 +14,9 @@ We present a simple, fully-convolutional model for real-time instance segmentati
 <!-- [PAPER_TITLE: YOLACT: Real-time Instance Segmentation] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1904.02689] -->
 
+## Introduction
 
 <!-- [ALGORITHM] -->
-
-```
-    ██╗   ██╗ ██████╗ ██╗      █████╗  ██████╗████████╗
-    ╚██╗ ██╔╝██╔═══██╗██║     ██╔══██╗██╔════╝╚══██╔══╝
-     ╚████╔╝ ██║   ██║██║     ███████║██║        ██║
-      ╚██╔╝  ██║   ██║██║     ██╔══██║██║        ██║
-       ██║   ╚██████╔╝███████╗██║  ██║╚██████╗   ██║
-       ╚═╝    ╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝   ╚═╝
-```
 
 A simple, fully convolutional model for real-time instance segmentation. This is the code for our paper:
 

@@ -16,6 +16,8 @@ A comprehensive ablation study at component level is conducted to find the best 
 <!-- [PAPER_TITLE: A novel Region of Interest Extraction Layer for Instance Segmentation] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/2004.13665] -->
 
+## Introduction
+
 By Leonardo Rossi, Akbar Karimi and Andrea Prati from
 [IMPLab](http://implab.ce.unipr.it/).
 

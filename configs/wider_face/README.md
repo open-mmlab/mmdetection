@@ -14,7 +14,7 @@ Face detection is one of the most studied topics in the computer vision communit
 <!-- [PAPER_TITLE: WIDER FACE: A Face Detection Benchmark] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1511.06523] -->
 
-## Citation
+## Introduction
 
 <!-- [DATASET] -->
 
@@ -48,6 +48,8 @@ mmdetection
 
 After that you can train the SSD300 on WIDER by launching training with the `ssd300_wider_face.py` config or
 create your own config based on the presented one.
+
+## Citation
 
 ```
 @inproceedings{yang2016wider,

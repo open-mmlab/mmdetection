@@ -14,7 +14,7 @@ Representing features at multiple scales is of great importance for numerous vis
 <!-- [PAPER_TITLE: Res2Net: A New Multi-scale Backbone Architecture] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1904.01169] -->
 
-## Citation
+## Introduction
 
 <!-- [ALGORITHM] -->
 
@@ -32,6 +32,8 @@ Compared with other backbone networks, Res2Net requires fewer parameters and FLO
 **Note:**
 
 - GFLOPs for classification are calculated with image size (224x224).
+
+## Citation
 
 ```latex
 @article{gao2019res2net,

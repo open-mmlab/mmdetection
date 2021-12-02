@@ -14,6 +14,8 @@ We motivate and present feature selective anchor-free (FSAF) module, a simple an
 <!-- [PAPER_TITLE: Feature Selective Anchor-Free Module for Single-Shot Object Detection] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1903.00621] -->
 
+## Introduction
+
 <!-- [ALGORITHM] -->
 
 FSAF is an anchor-free method published in CVPR2019 ([https://arxiv.org/pdf/1903.00621.pdf](https://arxiv.org/pdf/1903.00621.pdf)).
