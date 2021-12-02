@@ -8,17 +8,16 @@ import numpy as np
 from mmcv.utils import print_log
 from terminaltables import AsciiTable
 
-from .api_wrappers import COCO
+from .api_wrappers import COCO, pq_compute_multi_core
 from .builder import DATASETS
 from .coco import CocoDataset
 
 try:
     import panopticapi
-    from panopticapi.evaluation import pq_compute_multi_core, VOID
+    from panopticapi.evaluation import VOID
     from panopticapi.utils import id2rgb
 except ImportError:
     panopticapi = None
-    pq_compute_multi_core = None
     id2rgb = None
     VOID = None
 
@@ -421,7 +420,8 @@ class CocoPanopticDataset(CocoDataset):
         pred_folder = os.path.join(os.path.dirname(outfile_prefix), 'panoptic')
 
         pq_stat = pq_compute_multi_core(matched_annotations_list, gt_folder,
-                                        pred_folder, self.categories)
+                                        pred_folder, self.categories,
+                                        self.file_client)
 
         metrics = [('All', None), ('Things', True), ('Stuff', False)]
         pq_results = {}

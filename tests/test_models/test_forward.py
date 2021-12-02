@@ -670,3 +670,38 @@ def test_inference_detector():
     # test multiple image
     result = inference_detector(model, [img1, img2])
     assert len(result) == 2 and len(result[0]) == num_class
+
+
+@pytest.mark.skipif(
+    not torch.cuda.is_available(), reason='requires CUDA support')
+def test_yolox_random_size():
+    from mmdet.models import build_detector
+    model = _get_detector_cfg('yolox/yolox_tiny_8x8_300e_coco.py')
+    model.random_size_range = (2, 2)
+    model.input_size = (64, 96)
+    model.random_size_interval = 1
+
+    detector = build_detector(model)
+    input_shape = (1, 3, 64, 64)
+    mm_inputs = _demo_mm_inputs(input_shape)
+
+    imgs = mm_inputs.pop('imgs')
+    img_metas = mm_inputs.pop('img_metas')
+
+    # Test forward train with non-empty truth batch
+    detector.train()
+    gt_bboxes = mm_inputs['gt_bboxes']
+    gt_labels = mm_inputs['gt_labels']
+    detector.forward(
+        imgs,
+        img_metas,
+        gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels,
+        return_loss=True)
+    detector.forward(
+        imgs,
+        img_metas,
+        gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels,
+        return_loss=True)
+    assert detector._input_size == (64, 64)
