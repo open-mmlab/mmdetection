@@ -152,6 +152,7 @@ def test_rpn_forward():
 @pytest.mark.parametrize(
     'cfg_file',
     [
+        'reppoints/reppoints_moment_r50_fpn_1x_coco.py',
         'retinanet/retinanet_r50_fpn_1x_coco.py',
         'guided_anchoring/ga_retinanet_r50_fpn_1x_coco.py',
         'ghm/retinanet_ghm_r50_fpn_1x_coco.py',
@@ -159,7 +160,6 @@ def test_rpn_forward():
         'foveabox/fovea_align_r50_fpn_gn-head_4x4_2x_coco.py',
         # 'free_anchor/retinanet_free_anchor_r50_fpn_1x_coco.py',
         # 'atss/atss_r50_fpn_1x_coco.py',  # not ready for topk
-        'reppoints/reppoints_moment_r50_fpn_1x_coco.py',
         'yolo/yolov3_mobilenetv2_320_300e_coco.py',
         'yolox/yolox_tiny_8x8_300e_coco.py'
     ])
@@ -195,6 +195,7 @@ def test_single_stage_forward_gpu(cfg_file):
     assert isinstance(losses, dict)
 
     # Test forward test
+    detector.eval()
     with torch.no_grad():
         img_list = [g[None, :] for g in imgs]
         batch_results = []
@@ -426,6 +427,7 @@ def test_single_stage_forward_cpu(cfg_file):
     assert isinstance(losses, dict)
 
     # Test forward test
+    detector.eval()
     with torch.no_grad():
         img_list = [g[None, :] for g in imgs]
         batch_results = []
@@ -540,6 +542,9 @@ def test_yolact_forward():
         gt_masks=gt_masks,
         return_loss=True)
     assert isinstance(losses, dict)
+
+    # Test forward dummy for get_flops
+    detector.forward_dummy(imgs)
 
     # Test forward test
     detector.eval()
@@ -665,3 +670,38 @@ def test_inference_detector():
     # test multiple image
     result = inference_detector(model, [img1, img2])
     assert len(result) == 2 and len(result[0]) == num_class
+
+
+@pytest.mark.skipif(
+    not torch.cuda.is_available(), reason='requires CUDA support')
+def test_yolox_random_size():
+    from mmdet.models import build_detector
+    model = _get_detector_cfg('yolox/yolox_tiny_8x8_300e_coco.py')
+    model.random_size_range = (2, 2)
+    model.input_size = (64, 96)
+    model.random_size_interval = 1
+
+    detector = build_detector(model)
+    input_shape = (1, 3, 64, 64)
+    mm_inputs = _demo_mm_inputs(input_shape)
+
+    imgs = mm_inputs.pop('imgs')
+    img_metas = mm_inputs.pop('img_metas')
+
+    # Test forward train with non-empty truth batch
+    detector.train()
+    gt_bboxes = mm_inputs['gt_bboxes']
+    gt_labels = mm_inputs['gt_labels']
+    detector.forward(
+        imgs,
+        img_metas,
+        gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels,
+        return_loss=True)
+    detector.forward(
+        imgs,
+        img_metas,
+        gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels,
+        return_loss=True)
+    assert detector._input_size == (64, 64)

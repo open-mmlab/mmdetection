@@ -50,22 +50,22 @@ def test_swin_transformer():
     model(temp)
 
     # Test normal inference
-    temp = torch.randn((1, 3, 512, 512))
+    temp = torch.randn((1, 3, 32, 32))
     model = SwinTransformer()
     outs = model(temp)
-    assert outs[0].shape == (1, 96, 128, 128)
-    assert outs[1].shape == (1, 192, 64, 64)
-    assert outs[2].shape == (1, 384, 32, 32)
-    assert outs[3].shape == (1, 768, 16, 16)
+    assert outs[0].shape == (1, 96, 8, 8)
+    assert outs[1].shape == (1, 192, 4, 4)
+    assert outs[2].shape == (1, 384, 2, 2)
+    assert outs[3].shape == (1, 768, 1, 1)
 
     # Test abnormal inference size
-    temp = torch.randn((1, 3, 511, 511))
+    temp = torch.randn((1, 3, 31, 31))
     model = SwinTransformer()
     outs = model(temp)
-    assert outs[0].shape == (1, 96, 128, 128)
-    assert outs[1].shape == (1, 192, 64, 64)
-    assert outs[2].shape == (1, 384, 32, 32)
-    assert outs[3].shape == (1, 768, 16, 16)
+    assert outs[0].shape == (1, 96, 8, 8)
+    assert outs[1].shape == (1, 192, 4, 4)
+    assert outs[2].shape == (1, 384, 2, 2)
+    assert outs[3].shape == (1, 768, 1, 1)
 
     # Test abnormal inference size
     temp = torch.randn((1, 3, 112, 137))

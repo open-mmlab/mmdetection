@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
 from abc import abstractmethod
 
 import torch
@@ -6,7 +7,8 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmcv.runner import force_fp32
 
-from mmdet.core import multi_apply
+from mmdet.core import build_bbox_coder, multi_apply
+from mmdet.core.anchor.point_generator import MlvlPointGenerator
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -30,6 +32,8 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
             None, otherwise False. Default: "auto".
         loss_cls (dict): Config of classification loss.
         loss_bbox (dict): Config of localization loss.
+        bbox_coder (dict): Config of bbox coder. Defaults
+            'DistancePointBBoxCoder'.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Config dict for normalization layer. Default: None.
         train_cfg (dict): Training config of anchor head.
@@ -54,6 +58,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                      alpha=0.25,
                      loss_weight=1.0),
                  loss_bbox=dict(type='IoULoss', loss_weight=1.0),
+                 bbox_coder=dict(type='DistancePointBBoxCoder'),
                  conv_cfg=None,
                  norm_cfg=None,
                  train_cfg=None,
@@ -69,7 +74,11 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                          bias_prob=0.01))):
         super(AnchorFreeHead, self).__init__(init_cfg)
         self.num_classes = num_classes
-        self.cls_out_channels = num_classes
+        self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
+        if self.use_sigmoid_cls:
+            self.cls_out_channels = num_classes
+        else:
+            self.cls_out_channels = num_classes + 1
         self.in_channels = in_channels
         self.feat_channels = feat_channels
         self.stacked_convs = stacked_convs
@@ -79,6 +88,14 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         self.conv_bias = conv_bias
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
+        self.bbox_coder = build_bbox_coder(bbox_coder)
+
+        self.prior_generator = MlvlPointGenerator(strides)
+
+        # In order to keep a more general interface and be consistent with
+        # anchor_head. We can think of point like one anchor
+        self.num_base_priors = self.prior_generator.num_base_priors[0]
+
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.conv_cfg = conv_cfg
@@ -248,30 +265,6 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         raise NotImplementedError
 
     @abstractmethod
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def get_bboxes(self,
-                   cls_scores,
-                   bbox_preds,
-                   img_metas,
-                   cfg=None,
-                   rescale=None):
-        """Transform network output for a batch into bbox predictions.
-
-        Args:
-            cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (N, num_points * num_classes, H, W)
-            bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (N, num_points * 4, H, W)
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used
-            rescale (bool): If True, return boxes in original image space
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
     def get_targets(self, points, gt_bboxes_list, gt_labels_list):
         """Compute regression, classification and centerness targets for points
         in multiple images.
@@ -292,7 +285,17 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                            dtype,
                            device,
                            flatten=False):
-        """Get points of a single scale level."""
+        """Get points of a single scale level.
+
+        This function will be deprecated soon.
+        """
+
+        warnings.warn(
+            '`_get_points_single` in `AnchorFreeHead` will be '
+            'deprecated soon, we support a multi level point generator now'
+            'you can get points of a single level feature map '
+            'with `self.prior_generator.single_level_grid_priors` ')
+
         h, w = featmap_size
         # First create Range with the default dtype, than convert to
         # target `dtype` for onnx exporting.
@@ -315,6 +318,12 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         Returns:
             tuple: points of each image.
         """
+        warnings.warn(
+            '`get_points` in `AnchorFreeHead` will be '
+            'deprecated soon, we support a multi level point generator now'
+            'you can get points of all levels '
+            'with `self.prior_generator.grid_priors` ')
+
         mlvl_points = []
         for i in range(len(featmap_sizes)):
             mlvl_points.append(

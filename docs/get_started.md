@@ -11,8 +11,10 @@ Compatible MMDetection and MMCV versions are shown as below. Please install the 
 
 | MMDetection version |    MMCV version     |
 |:-------------------:|:-------------------:|
-| master              | mmcv-full>=1.3.8, <1.4.0 |
-| 2.17.0              | mmcv-full>=1.3.8, <1.4.0 |
+| master              | mmcv-full>=1.3.17, <1.5.0 |
+| 2.19.0              | mmcv-full>=1.3.17, <1.5.0 |
+| 2.18.0              | mmcv-full>=1.3.17, <1.4.0 |
+| 2.17.0              | mmcv-full>=1.3.14, <1.4.0 |
 | 2.16.0              | mmcv-full>=1.3.8, <1.4.0 |
 | 2.15.1              | mmcv-full>=1.3.8, <1.4.0 |
 | 2.15.0              | mmcv-full>=1.3.8, <1.4.0 |
@@ -71,7 +73,7 @@ If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
     conda install pytorch=1.3.1 cudatoolkit=9.2 torchvision=0.4.2 -c pytorch
     ```
 
-    If you build PyTorch from source instead of installing the prebuilt pacakge,
+    If you build PyTorch from source instead of installing the prebuilt package,
     you can use more CUDA versions such as 9.0.
 
 ### Install MMDetection

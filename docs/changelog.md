@@ -1,5 +1,131 @@
 ## Changelog
 
+### v2.19.0 (29/11/2021)
+
+#### Highlights
+
+- Support [Label Assignment Distillation](https://arxiv.org/abs/2108.10520)
+- Support `persistent_workers` for Pytorch >= 1.7
+- Align accuracy to the updated official YOLOX
+
+#### New Features
+
+- Support [Label Assignment Distillation](https://arxiv.org/abs/2108.10520) (#6342)
+- Support `persistent_workers` for Pytorch >= 1.7 (#6435)
+
+#### Bug Fixes
+
+- Fix repeatedly output warning message (#6584)
+- Avoid infinite GPU waiting in dist training (#6501)
+- Fix SSD512 config error (#6574)
+- Fix MMDetection model to ONNX command (#6558)
+
+#### Improvements
+
+- Refactor configs of FP16 models (#6592)
+- Align accuracy to the updated official YOLOX (#6443)
+- Speed up training and reduce memory cost when using PhotoMetricDistortion. (#6442)
+- Make OHEM work with seesaw loss (#6514)
+
+
+#### Documents
+
+- Update README.md (#6567)
+
+#### Contributors
+
+A total of 11 developers contributed to this release.
+Thanks @FloydHsiu, @RangiLyu, @ZwwWayne, @AndreaPi, @st9007a, @hachreak, @BIGWangYuDong, @hhaAndroid, @AronLin, @chhluo, @vealocia, @HarborYuan, @st9007a, @jshilong
+
+
+
+
+
+### v2.18.1 (15/11/2021)
+
+#### Highlights
+
+- Release [QueryInst](http://arxiv.org/abs/2105.01928) pre-trained weights (#6460)
+- Support plot confusion matrix (#6344)
+
+#### New Features
+
+- Release [QueryInst](http://arxiv.org/abs/2105.01928) pre-trained weights (#6460)
+- Support plot confusion matrix (#6344)
+
+#### Bug Fixes
+
+- Fix aug test error when the number of prediction bboxes is 0 (#6398)
+- Fix SpatialReductionAttention in PVT (#6488)
+- Fix wrong use of `trunc_normal_init` in PVT and Swin-Transformer (#6432)
+
+#### Improvements
+
+- Save the printed AP information of COCO API to logger (#6505)
+- Always map location to cpu when load checkpoint (#6405)
+- Set a random seed when the user does not set a seed (#6457)
+
+#### Documents
+
+- Chinese version of [Corruption Benchmarking](docs/robustness_benchmarking.mddocs/robustness_benchmarking.md) (#6375)
+- Fix config path in docs (#6396)
+- Update GRoIE readme (#6401)
+
+#### Contributors
+
+A total of 11 developers contributed to this release.
+Thanks @st9007a, @hachreak, @HarborYuan, @vealocia, @chhluo, @AndreaPi, @AronLin, @BIGWangYuDong, @hhaAndroid, @RangiLyu, @ZwwWayne
+
+
+### v2.18.0 (27/10/2021)
+
+#### Highlights
+
+- Support [QueryInst](http://arxiv.org/abs/2105.01928) (#6050)
+- Refactor dense heads to decouple onnx export logics from `get_bboxes` and speed up inference (#5317, #6003, #6369, #6268, #6315)
+
+#### New Features
+
+- Support [QueryInst](http://arxiv.org/abs/2105.01928) (#6050)
+- Support infinite sampler (#5996)
+
+#### Bug Fixes
+
+- Fix init_weight in fcn_mask_head (#6378)
+- Fix type error in imshow_bboxes of RPN (#6386)
+- Fix broken colab link in MMDetection Tutorial (#6382)
+- Make sure the device and dtype of scale_factor are the same as bboxes (#6374)
+- Remove sampling hardcode (#6317)
+- Fix RandomAffine bbox coordinate recorrection (#6293)
+- Fix init bug of final cls/reg layer in convfc head (#6279)
+- Fix img_shape broken in auto_augment (#6259)
+- Fix kwargs parameter missing error in two_stage (#6256)
+
+#### Improvements
+
+- Unify the interface of stuff head and panoptic head (#6308)
+- Polish readme (#6243)
+- Add code-spell pre-commit hook and fix a typo (#6306)
+- Fix typo (#6245, #6190)
+- Fix sampler unit test (#6284)
+- Fix `forward_dummy` of YOLACT to enable `get_flops` (#6079)
+- Fix link error in the config documentation (#6252)
+- Adjust the order to beautify the document (#6195)
+
+#### Refactors
+
+- Refactor one-stage get_bboxes logic (#5317)
+- Refactor ONNX export of One-Stage models (#6003, #6369)
+- Refactor dense_head and speedup (#6268)
+- Migrate to use prior_generator in training of dense heads (#6315)
+
+#### Contributors
+
+A total of 18 developers contributed to this release.
+Thanks @Boyden, @onnkeat, @st9007a, @vealocia, @yhcao6, @DapangpangX, @yellowdolphin, @cclauss, @kennymckormick,
+@pingguokiller, @collinzrj, @AndreaPi, @AronLin, @BIGWangYuDong, @hhaAndroid, @jshilong, @RangiLyu, @ZwwWayne
+
+
 ### v2.17.0 (28/9/2021)
 
 #### Highlights
@@ -385,7 +511,7 @@ In v2.12.0 MMDetection inevitably brings some BC-breakings, including the MMCV d
 - Update documentations (#4642, #4650, #4620, #4630)
 - Remove redundant code calling `import_modules_from_strings` (#4601)
 - Clean deprecated FP16 API (#4571)
-- Check whether `CLASSES` is correctly initialized in the intialization of `XMLDataset` (#4555)
+- Check whether `CLASSES` is correctly initialized in the initialization of `XMLDataset` (#4555)
 - Support batch inference in the inference API (#4462, #4526)
 - Clean deprecated warning and fix 'meta' error (#4695)
 
@@ -579,7 +705,7 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 - Fix the bug of training ATSS when there is no ground truth boxes (#3702)
 - Fix the bug of using Focal Loss when there is `num_pos` is 0 (#3702)
 - Fix the label index mapping in dataset browser (#3708)
-- Fix Mask R-CNN training stuck problem when ther is no positive rois (#3713)
+- Fix Mask R-CNN training stuck problem when their is no positive rois (#3713)
 - Fix the bug of `self.rpn_head.test_cfg` in `RPNTestMixin` by using `self.rpn_head` in rpn head (#3808)
 - Fix deprecated `Conv2d` from mmcv.ops (#3791)
 - Fix device bug in RepPoints (#3836)
@@ -594,7 +720,7 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 
 - Change to use `mmcv.utils.collect_env` for collecting environment information to avoid duplicate codes (#3779)
 - Update checkpoint file names to v2.0 models in documentation (#3795)
-- Update tutorials for changing runtime settings (#3778), modifing loss (#3777)
+- Update tutorials for changing runtime settings (#3778), modifying loss (#3777)
 - Improve the function of `simple_test_bboxes` in SABL (#3853)
 - Convert mask to bool before using it as img's index for robustness and speedup (#3870)
 - Improve documentation of modules and dataset customization (#3821)

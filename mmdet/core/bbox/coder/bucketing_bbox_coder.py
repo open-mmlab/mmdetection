@@ -196,7 +196,7 @@ def bbox2bucket(proposals,
     t_offsets = (t_buckets - gy1[:, None]) / bucket_h[:, None]
     d_offsets = (d_buckets - gy2[:, None]) / bucket_h[:, None]
 
-    # select top-k nearset buckets
+    # select top-k nearest buckets
     l_topk, l_label = l_offsets.abs().topk(
         offset_topk, dim=1, largest=False, sorted=True)
     r_topk, r_label = r_offsets.abs().topk(
@@ -212,7 +212,7 @@ def bbox2bucket(proposals,
     offset_d_weights = d_offsets.new_zeros(d_offsets.size())
     inds = torch.arange(0, proposals.size(0)).to(proposals).long()
 
-    # generate offset weights of top-k nearset buckets
+    # generate offset weights of top-k nearest buckets
     for k in range(offset_topk):
         if k >= 1:
             offset_l_weights[inds, l_label[:,

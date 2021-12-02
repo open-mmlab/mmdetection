@@ -228,7 +228,8 @@ class SimOTAAssigner(BaseAssigner):
     def dynamic_k_matching(self, cost, pairwise_ious, num_gt, valid_mask):
         matching_matrix = torch.zeros_like(cost)
         # select candidate topk ious for dynamic-k calculation
-        topk_ious, _ = torch.topk(pairwise_ious, self.candidate_topk, dim=0)
+        candidate_topk = min(self.candidate_topk, pairwise_ious.size(0))
+        topk_ious, _ = torch.topk(pairwise_ious, candidate_topk, dim=0)
         # calculate dynamic k for each gt
         dynamic_ks = torch.clamp(topk_ious.sum(0).int(), min=1)
         for gt_idx in range(num_gt):

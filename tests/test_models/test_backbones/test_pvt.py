@@ -37,22 +37,22 @@ def test_pvt():
     model(temp)
 
     # Test normal inference
-    temp = torch.randn((1, 3, 512, 512))
+    temp = torch.randn((1, 3, 32, 32))
     model = PyramidVisionTransformer()
     outs = model(temp)
-    assert outs[0].shape == (1, 64, 128, 128)
-    assert outs[1].shape == (1, 128, 64, 64)
-    assert outs[2].shape == (1, 320, 32, 32)
-    assert outs[3].shape == (1, 512, 16, 16)
+    assert outs[0].shape == (1, 64, 8, 8)
+    assert outs[1].shape == (1, 128, 4, 4)
+    assert outs[2].shape == (1, 320, 2, 2)
+    assert outs[3].shape == (1, 512, 1, 1)
 
     # Test abnormal inference size
-    temp = torch.randn((1, 3, 511, 511))
+    temp = torch.randn((1, 3, 33, 33))
     model = PyramidVisionTransformer()
     outs = model(temp)
-    assert outs[0].shape == (1, 64, 127, 127)
-    assert outs[1].shape == (1, 128, 63, 63)
-    assert outs[2].shape == (1, 320, 31, 31)
-    assert outs[3].shape == (1, 512, 15, 15)
+    assert outs[0].shape == (1, 64, 8, 8)
+    assert outs[1].shape == (1, 128, 4, 4)
+    assert outs[2].shape == (1, 320, 2, 2)
+    assert outs[3].shape == (1, 512, 1, 1)
 
     # Test abnormal inference size
     temp = torch.randn((1, 3, 112, 137))
@@ -76,22 +76,22 @@ def test_pvtv2():
         PyramidVisionTransformerV2(pretrain_img_size=(224, 224, 224))
 
     # Test normal inference
-    temp = torch.randn((1, 3, 512, 512))
+    temp = torch.randn((1, 3, 32, 32))
     model = PyramidVisionTransformerV2()
     outs = model(temp)
-    assert outs[0].shape == (1, 64, 128, 128)
-    assert outs[1].shape == (1, 128, 64, 64)
-    assert outs[2].shape == (1, 320, 32, 32)
-    assert outs[3].shape == (1, 512, 16, 16)
+    assert outs[0].shape == (1, 64, 8, 8)
+    assert outs[1].shape == (1, 128, 4, 4)
+    assert outs[2].shape == (1, 320, 2, 2)
+    assert outs[3].shape == (1, 512, 1, 1)
 
     # Test abnormal inference size
-    temp = torch.randn((1, 3, 511, 511))
+    temp = torch.randn((1, 3, 31, 31))
     model = PyramidVisionTransformerV2()
     outs = model(temp)
-    assert outs[0].shape == (1, 64, 128, 128)
-    assert outs[1].shape == (1, 128, 64, 64)
-    assert outs[2].shape == (1, 320, 32, 32)
-    assert outs[3].shape == (1, 512, 16, 16)
+    assert outs[0].shape == (1, 64, 8, 8)
+    assert outs[1].shape == (1, 128, 4, 4)
+    assert outs[2].shape == (1, 320, 2, 2)
+    assert outs[3].shape == (1, 512, 1, 1)
 
     # Test abnormal inference size
     temp = torch.randn((1, 3, 112, 137))

@@ -188,7 +188,7 @@ def gaussian_radius(det_size, min_overlap):
 
 
 def get_local_maximum(heat, kernel=3):
-    """Extract local maximum pixel with given kernal.
+    """Extract local maximum pixel with given kernel.
 
     Args:
         heat (Tensor): Target heatmap.

@@ -177,7 +177,7 @@ def test_patch_embed():
     # test L = out_h * out_w
     assert shape[0] * shape[1] == x3.shape[1]
 
-    # test thte init_out_size with nn.Unfold
+    # test the init_out_size with nn.Unfold
     assert patch_merge_3.init_out_size[1] == (input_size[0] - 2 * 4 -
                                               1) // 2 + 1
     assert patch_merge_3.init_out_size[0] == (input_size[0] - 2 * 4 -
@@ -199,7 +199,7 @@ def test_patch_embed():
 
     _, shape = patch_merge_3(dummy_input)
     # when input_size equal to real input
-    # the out_size shoule be equal to `init_out_size`
+    # the out_size should be equal to `init_out_size`
     assert shape == patch_merge_3.init_out_size
 
     input_size = (H, W)
@@ -217,7 +217,7 @@ def test_patch_embed():
 
     _, shape = patch_merge_3(dummy_input)
     # when input_size equal to real input
-    # the out_size shoule be equal to `init_out_size`
+    # the out_size should be equal to `init_out_size`
     assert shape == patch_merge_3.init_out_size
 
     # test adap padding
@@ -292,7 +292,7 @@ def test_patch_embed():
         assert out_size == (2, 1)
         assert x_out.size(1) == out_size[0] * out_size[1]
 
-        # test different kernel_size with diffrent stride
+        # test different kernel_size with different stride
         input_size = (6, 5)
         kernel_size = (6, 2)
         stride = (6, 2)
@@ -441,7 +441,7 @@ def test_patch_merging():
         assert out_size == (2, 1)
         assert x_out.size(1) == out_size[0] * out_size[1]
 
-        # test different kernel_size with diffrent stride
+        # test different kernel_size with different stride
         input_size = (6, 5)
         kernel_size = (6, 2)
         stride = (6, 2)

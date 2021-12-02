@@ -339,7 +339,7 @@ class BBoxHead(BaseModule):
 
         Returns:
             tuple[Tensor, Tensor]:
-                Fisrt tensor is `det_bboxes`, has the shape
+                First tensor is `det_bboxes`, has the shape
                 (num_boxes, 5) and last
                 dimension 5 represent (tl_x, tl_y, br_x, br_y, score).
                 Second tensor is the labels with shape (num_boxes, ).
