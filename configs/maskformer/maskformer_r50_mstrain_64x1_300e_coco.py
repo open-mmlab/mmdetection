@@ -14,7 +14,7 @@ model = dict(
         norm_eval=True,
         style='pytorch',
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
-    semantic_head=dict(
+    panoptic_head=dict(
         type='MaskFormerHead',
         in_channels=[256, 512, 1024, 2048],  # pass to pixel_decoder inside
         conv_dim=256,

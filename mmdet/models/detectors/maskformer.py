@@ -13,7 +13,7 @@ class MaskFormer(SingleStageDetector):
     def __init__(self,
                  backbone,
                  neck=None,
-                 semantic_head=None,
+                 panoptic_head=None,
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None,
@@ -26,18 +26,11 @@ class MaskFormer(SingleStageDetector):
         self.backbone = build_backbone(backbone)
         if neck is not None:
             self.neck = build_neck(neck)
-        semantic_head.update(train_cfg=train_cfg)
-        semantic_head.update(test_cfg=test_cfg)
-        self.semantic_head = build_head(semantic_head)
+        panoptic_head.update(train_cfg=train_cfg)
+        panoptic_head.update(test_cfg=test_cfg)
+        self.semantic_head = build_head(panoptic_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-
-    def extract_feat(self, img):
-        """Directly extract features from the backbone+neck."""
-        x = self.backbone(img)
-        if self.with_neck:
-            x = self.neck(x)
-        return x
 
     def forward_dummy(self, img):
         """Used for computing network flops.
@@ -45,7 +38,7 @@ class MaskFormer(SingleStageDetector):
         See `mmdetection/tools/analysis_tools/get_flops.py`
         """
         x = self.extract_feat(img)
-        outs = self.semantic_head(x)
+        outs = self.panoptic_head(x)
         return outs
 
     def forward_train(self,
@@ -81,7 +74,7 @@ class MaskFormer(SingleStageDetector):
             dict[str, Tensor]: a dictionary of loss components
         """
         x = self.extract_feat(img)
-        losses = self.semantic_head.forward_train(x, img_metas, gt_bboxes,
+        losses = self.panoptic_head.forward_train(x, img_metas, gt_bboxes,
                                                   gt_labels, gt_masks,
                                                   gt_semantic_seg,
                                                   gt_bboxes_ignore)
@@ -91,7 +84,7 @@ class MaskFormer(SingleStageDetector):
     def simple_test(self, img, img_metas, **kwargs):
         """Test without augmentation."""
         feat = self.extract_feat(img)
-        mask_results = self.semantic_head.simple_test(feat, img_metas,
+        mask_results = self.panoptic_head.simple_test(feat, img_metas,
                                                       **kwargs)
 
         return mask_results

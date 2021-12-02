@@ -23,7 +23,7 @@ model = dict(
         with_cp=False,
         convert_weights=True,
         init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
-    semantic_head=dict(
+    panoptic_head=dict(
         type='MaskFormerHead',
         in_channels=[96, 192, 384, 768],  # pass to pixel_decoder inside
         conv_dim=256,
