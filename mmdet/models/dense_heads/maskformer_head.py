@@ -881,11 +881,10 @@ class MaskFormerHead(AnchorFreeHead):
         cur_prob_masks = cur_scores.view(-1, 1, 1) * cur_masks
 
         h, w = cur_masks.shape[-2:]
-        panoptic_seg = torch.zeros((h, w),
-                                   dtype=torch.int32,
-                                   device=cur_masks.device)\
-            .fill_(self.num_classes)
-
+        panoptic_seg = torch.full((h, w),
+                                  self.num_classes,
+                                  dtype=torch.int32,
+                                  device=cur_masks.device)
         if cur_masks.shape[0] == 0:
             # We didn't detect any mask :(
             pass
