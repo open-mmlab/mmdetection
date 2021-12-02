@@ -51,8 +51,8 @@ def naive_dice_loss(pred,
                     eps=1e-3,
                     reduction='mean',
                     avg_factor=None):
-    """Calculate dice loss, the coefficient in the denominator is the first
-    power instead of the second power.
+    """Calculate naive dice loss, the coefficient in the denominator is the
+    first power instead of the second power.
 
     Args:
         pred (torch.Tensor): The prediction, has a shape (n, *)
@@ -89,7 +89,7 @@ class DiceLoss(nn.Module):
                  use_sigmoid=True,
                  activate=True,
                  reduction='mean',
-                 use_second_power=True,
+                 naive_dice=False,
                  loss_weight=1.0,
                  eps=1e-3):
         """`Dice Loss, there are two forms of dice loss is supported:
@@ -110,11 +110,11 @@ class DiceLoss(nn.Module):
             reduction (str, optional): The method used
                 to reduce the loss. Options are "none",
                 "mean" and "sum". Defaults to 'mean'.
-            use_second_power (bool, optional): If true, use the dice
+            naive_dice (bool, optional): If false, use the dice
                 loss defined in the V-Net paper, otherwise, use the
-                dice loss in which the power of the number in the
+                naive dice loss in which the power of the number in the
                 denominator is the first power instead of the second
-                power.Defaults to True.
+                power.Defaults to False.
             loss_weight (float, optional): Weight of loss. Defaults to 1.0.
             eps (float): Avoid dividing by zero. Defaults to 1e-3.
         """
@@ -122,7 +122,7 @@ class DiceLoss(nn.Module):
         super(DiceLoss, self).__init__()
         self.use_sigmoid = use_sigmoid
         self.reduction = reduction
-        self.use_second_power = use_second_power
+        self.naive_dice = naive_dice
         self.loss_weight = loss_weight
         self.eps = eps
         self.activate = activate
@@ -161,8 +161,8 @@ class DiceLoss(nn.Module):
             else:
                 raise NotImplementedError
 
-        if self.use_second_power:
-            loss = self.loss_weight * dice_loss(
+        if self.naive_dice:
+            loss = self.loss_weight * naive_dice_loss(
                 pred,
                 target,
                 weight,
@@ -170,7 +170,7 @@ class DiceLoss(nn.Module):
                 reduction=reduction,
                 avg_factor=avg_factor)
         else:
-            loss = self.loss_weight * naive_dice_loss(
+            loss = self.loss_weight * dice_loss(
                 pred,
                 target,
                 weight,
