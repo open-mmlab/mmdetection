@@ -855,6 +855,9 @@ class MaskFormerHead(AnchorFreeHead):
     def post_process(self, mask_cls, mask_pred):
         """Panoptic segmengation inference.
 
+        This implementation is modified from
+            https://github.com/facebookresearch/MaskFormer
+
         Args:
             mask_cls (Tensor): Classfication outputs for a image.
                 shape = [num_query, cls_out_channels].
