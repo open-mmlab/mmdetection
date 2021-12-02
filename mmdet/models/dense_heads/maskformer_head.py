@@ -13,34 +13,34 @@ from ..dense_heads.anchor_free_head import AnchorFreeHead
 
 
 class PixelDecoder(BaseModule):
+    """Pixel decoder with a structure like fpn.
+
+    Args:
+        in_channels (list[int] | tuple[int]): Number of channels in the
+            input feature maps.
+        feat_channels (int): Number channels for feature.
+        out_channels (int): Number channels for output.
+        norm_cfg (obj:`mmcv.ConfigDict`|dict): Config for normalization.
+            Defaults to dict(type='GN', num_groups=32).
+        act_cfg (obj:`mmcv.ConfigDict`|dict): Config for activation.
+            Defaults to dict(type='ReLU').
+        encoder (obj:`mmcv.ConfigDict`|dict): Config for transorformer
+            encoder.Defaults to None.
+        positional_encoding (obj:`mmcv.ConfigDict`|dict): Config for
+            transformer encoder position encoding. Defaults to
+            dict(type='SinePositionalEncoding', num_feats=128,
+            normalize=True).
+        init_cfg (obj:`mmcv.ConfigDict`|dict):  Initialization config dict.
+            Default: None
+    """
 
     def __init__(self,
                  in_channels,
-                 conv_dim,
-                 mask_dim,
+                 feat_channels,
+                 out_channels,
                  norm_cfg=dict(type='GN', num_groups=32),
                  act_cfg=dict(type='ReLU'),
                  init_cfg=None):
-        """Pixel decoder with a structure like fpn.
-
-        Args:
-            in_channels (list[int] | tuple[int]): Number of channels in the
-                input feature maps.
-            conv_dim (int): Number channels for conv layer.
-            mask_dim (int): Number channels for mask feature.
-            norm_cfg (obj:`mmcv.ConfigDict`|dict): Config for normalization.
-                Defaults to dict(type='GN', num_groups=32).
-            act_cfg (obj:`mmcv.ConfigDict`|dict): Config for activation.
-                Defaults to dict(type='ReLU').
-            encoder (obj:`mmcv.ConfigDict`|dict): Config for transorformer
-                encoder.Defaults to None.
-            positional_encoding (obj:`mmcv.ConfigDict`|dict): Config for
-                transformer encoder position encoding. Defaults to
-                dict(type='SinePositionalEncoding', num_feats=128,
-                normalize=True).
-            init_cfg (obj:`mmcv.ConfigDict`|dict):  Initialization config dict.
-                Default: None
-        """
         super().__init__(init_cfg=init_cfg)
         self.in_channels = in_channels
         self.num_inputs = len(in_channels)
@@ -50,13 +50,13 @@ class PixelDecoder(BaseModule):
         for i in range(0, self.num_inputs - 1):
             l_conv = ConvModule(
                 in_channels[i],
-                conv_dim,
+                feat_channels,
                 kernel_size=1,
                 bias=self.use_bias,
                 norm_cfg=norm_cfg)
             o_conv = ConvModule(
-                conv_dim,
-                conv_dim,
+                feat_channels,
+                feat_channels,
                 kernel_size=3,
                 stride=1,
                 padding=1,
@@ -68,12 +68,12 @@ class PixelDecoder(BaseModule):
 
         self.last_feat_output_conv = ConvModule(
             in_channels[-1],
-            conv_dim,
+            feat_channels,
             kernel_size=1,
             bias=self.use_bias,
             norm_cfg=norm_cfg)
         self.mask_feature = Conv2d(
-            conv_dim, mask_dim, kernel_size=3, stride=1, padding=1)
+            feat_channels, out_channels, kernel_size=3, stride=1, padding=1)
 
     def init_weights(self):
         """Initialize weights."""
@@ -116,8 +116,8 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
     Args:
         in_channels (list[int] | tuple[int]): Number of channels in the
             input feature maps.
-        conv_dim (int): Number channels for conv layer.
-        mask_dim (int): Number channels for mask feature.
+        feat_channels (int): Number channels for feature.
+        out_channels (int): Number channels for output.
         norm_cfg (obj:`mmcv.ConfigDict`|dict): Config for normalization.
             Defaults to dict(type='GN', num_groups=32).
         act_cfg (obj:`mmcv.ConfigDict`|dict): Config for activation.
@@ -134,8 +134,8 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
 
     def __init__(self,
                  in_channels,
-                 conv_dim,
-                 mask_dim,
+                 feat_channels,
+                 out_channels,
                  norm_cfg=dict(type='GN', num_groups=32),
                  act_cfg=dict(type='ReLU'),
                  encoder=None,
@@ -146,8 +146,8 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
                  init_cfg=None):
         super(TransformerEncoderPixelDecoder, self).__init__(
             in_channels,
-            conv_dim,
-            mask_dim,
+            feat_channels,
+            out_channels,
             norm_cfg,
             act_cfg,
             init_cfg=init_cfg)
@@ -155,14 +155,15 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
 
         self.encoder = build_transformer_layer_sequence(encoder)
         self.encoder_embed_dims = self.encoder.embed_dims
-        assert self.encoder_embed_dims == conv_dim, 'embed_dims({}) of ' \
-            'tranformer encoder must equal to conv_dim({})'.format(
-                conv_dim, self.encoder_embed_dims)
+        assert self.encoder_embed_dims == feat_channels, 'embed_dims({}) of ' \
+            'tranformer encoder must equal to feat_channels({})'.format(
+                feat_channels, self.encoder_embed_dims)
         self.pe = build_positional_encoding(positional_encoding)
-        self.encoder_in_proj = Conv2d(in_channels[-1], conv_dim, kernel_size=1)
+        self.encoder_in_proj = Conv2d(
+            in_channels[-1], feat_channels, kernel_size=1)
         self.encoder_out_proj = ConvModule(
-            conv_dim,
-            conv_dim,
+            feat_channels,
+            feat_channels,
             kernel_size=3,
             stride=1,
             padding=1,
