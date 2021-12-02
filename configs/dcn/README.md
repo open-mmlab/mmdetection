@@ -40,7 +40,6 @@ Convolutional neural networks (CNNs) are inherently limited to model geometric t
 
 ## Results and Models
 
-
 | Backbone         | Model        | Style   | Conv          | Pool   | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Config | Download |
 |:----------------:|:------------:|:-------:|:-------------:|:------:|:-------:|:--------:|:--------------:|:------:|:-------:|:------:|:--------:|
 | R-50-FPN         | Faster       | pytorch | dconv(c3-c5)  | -      | 1x      | 4.0  | 17.8 | 41.3 |     | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/dcn/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/dcn/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco_20200130-d68aed1e.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/dcn/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco/faster_rcnn_r50_fpn_dconv_c3-c5_1x_coco_20200130_212941.log.json) |
@@ -60,7 +59,6 @@ Convolutional neural networks (CNNs) are inherently limited to model geometric t
 | X-101-32x4d-FPN        | Cascade Mask | pytorch | dconv(c3-c5)  | -      | 1x      | 9.2 |   | 47.3 | 41.1 | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/dcn/cascade_mask_rcnn_x101_32x4d_fpn_dconv_c3-c5_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/dcn/cascade_mask_rcnn_x101_32x4d_fpn_dconv_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_dconv_c3-c5_1x_coco-e75f90c8.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/dcn/cascade_mask_rcnn_x101_32x4d_fpn_dconv_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_dconv_c3-c5_1x_coco-20200606_183737.log.json) |
 | R-50-FPN (FP16)      | Mask         | pytorch | dconv(c3-c5) | -      | 1x      | 3.0      |                | 41.9   | 37.5    |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/fp16/mask_rcnn_r50_fpn_fp16_dconv_c3-c5_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/fp16/mask_rcnn_r50_fpn_fp16_dconv_c3-c5_1x_coco/mask_rcnn_r50_fpn_fp16_dconv_c3-c5_1x_coco_20210520_180247-c06429d2.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/fp16/mask_rcnn_r50_fpn_fp16_dconv_c3-c5_1x_coco/mask_rcnn_r50_fpn_fp16_dconv_c3-c5_1x_coco_20210520_180247.log.json)  |
 | R-50-FPN (FP16)      | Mask         | pytorch | mdconv(c3-c5)| -      | 1x      | 3.1      |                | 42.0   | 37.6    |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/fp16/mask_rcnn_r50_fpn_fp16_mdconv_c3-c5_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/fp16/mask_rcnn_r50_fpn_fp16_mdconv_c3-c5_1x_coco/mask_rcnn_r50_fpn_fp16_mdconv_c3-c5_1x_coco_20210520_180434-cf8fefa5.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/fp16/mask_rcnn_r50_fpn_fp16_mdconv_c3-c5_1x_coco/mask_rcnn_r50_fpn_fp16_mdconv_c3-c5_1x_coco_20210520_180434.log.json)  |
-
 
 **Notes:**
 
