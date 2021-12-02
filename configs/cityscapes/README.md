@@ -1,4 +1,21 @@
-# Cityscapes Dataset
+# The Cityscapes Dataset for Semantic Urban Scene Understanding
+
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+Visual understanding of complex urban street scenes is an enabling factor for a wide range of applications. Object detection has benefited enormously from large-scale datasets, especially in the context of deep learning. For semantic urban scene understanding, however, no current dataset adequately captures the complexity of real-world urban scenes.
+To address this, we introduce Cityscapes, a benchmark suite and large-scale dataset to train and test approaches for pixel-level and instance-level semantic labeling. Cityscapes is comprised of a large, diverse set of stereo video sequences recorded in streets from 50 different cities. 5000 of these images have high quality pixel-level annotations; 20000 additional images have coarse annotations to enable methods that leverage large volumes of weakly-labeled data. Crucially, our effort exceeds previous attempts in terms of dataset size, annotation richness, scene variability, and complexity. Our accompanying empirical study provides an in-depth analysis of the dataset characteristics, as well as a performance evaluation of several state-of-the-art approaches based on our benchmark.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143874154-db4484a5-9211-41f6-852a-b7f0a8c9ec26.png"/>
+</div>
+
+<!-- [PAPER_TITLE: The Cityscapes Dataset for Semantic Urban Scene Understanding] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/1604.01685] -->
+
+## Citation
 
 <!-- [DATASET] -->
 

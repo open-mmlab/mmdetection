@@ -1,6 +1,20 @@
 # Mask Scoring R-CNN
 
-## Introduction
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+Letting a deep network be aware of the quality of its own predictions is an interesting yet important problem. In the task of instance segmentation, the confidence of instance classification is used as mask quality score in most instance segmentation frameworks. However, the mask quality, quantified as the IoU between the instance mask and its ground truth, is usually not well correlated with classification score. In this paper, we study this problem and propose Mask Scoring R-CNN which contains a network block to learn the quality of the predicted instance masks. The proposed network block takes the instance feature and the corresponding predicted mask together to regress the mask IoU. The mask scoring strategy calibrates the misalignment between mask quality and mask score, and improves instance segmentation performance by prioritizing more accurate mask predictions during COCO AP evaluation. By extensive evaluations on the COCO dataset, Mask Scoring R-CNN brings consistent and noticeable gain with different models, and outperforms the state-of-the-art Mask R-CNN. We hope our simple and effective approach will provide a new direction for improving instance segmentation.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143967239-3a95ae92-6443-4181-9cbc-dfe16e81b969.png"/>
+</div>
+
+<!-- [PAPER_TITLE: Mask Scoring R-CNN] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/1903.00241] -->
+
+## Citation
 
 <!-- [ALGORITHM] -->
 
