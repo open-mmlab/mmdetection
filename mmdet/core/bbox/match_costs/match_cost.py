@@ -186,8 +186,8 @@ class IoUCost:
 
 
 @MATCH_COST.register_module()
-class BinaryDiceCost:
-    """BinaryDiceCost.
+class DiceCost:
+    """DiceCost.
 
     Args:
         weight (int | float, optional): loss_weight. Defaults to 1.

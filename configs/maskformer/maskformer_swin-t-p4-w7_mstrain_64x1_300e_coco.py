@@ -80,7 +80,7 @@ model = dict(
             cls_cost=dict(type='ClassificationCost', weight=1.0),
             mask_cost=dict(type='MaskFocalLossCost', weight=20.0),
             dice_cost=dict(
-                type='BinaryDiceCost', weight=1.0, pred_act=True, eps=1.0)),
+                type='DiceCost', weight=1.0, pred_act=True, eps=1.0)),
         sampler=dict(type='MaskPseudoSampler')),
     test_cfg=dict(object_mask_threshold=0.8, overlap_threshold=0.8),
     pretrained=None,
