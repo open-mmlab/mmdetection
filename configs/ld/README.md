@@ -1,6 +1,20 @@
 # Localization Distillation for Object Detection
 
-## Introduction
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+Knowledge distillation (KD) has witnessed its powerful capability in learning compact models in object detection. Previous KD methods for object detection mostly focus on imitating deep features within the imitation regions instead of mimicking classification logits due to its inefficiency in distilling localization information. In this paper, by reformulating the knowledge distillation process on localization, we present a novel localization distillation (LD) method which can efficiently transfer the localization knowledge from the teacher to the student. Moreover, we also heuristically introduce the concept of valuable localization region that can aid to selectively distill the semantic and localization knowledge for a certain region. Combining these two new components, for the first time, we show that logit mimicking can outperform feature imitation and localization knowledge distillation is more important and efficient than semantic knowledge for distilling object detectors. Our distillation scheme is simple as well as effective and can be easily applied to different dense object detectors. Experiments show that our LD can boost the AP score of GFocal-ResNet-50 with a single-scale 1× training schedule from 40.1 to 42.1 on the COCO benchmark without any sacrifice on the inference speed.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143966265-48a03668-8585-4525-8a86-afa2209d1602.png"/>
+</div>
+
+<!-- [PAPER_TITLE: Localization Distillation for Object Detection] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/2102.12252] -->
+
+## Citation
 
 <!-- [ALGORITHM] -->
 

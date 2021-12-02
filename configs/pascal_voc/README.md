@@ -1,4 +1,22 @@
-# PASCAL VOC Dataset
+# The Pascal Visual Object Classes (VOC) Challenge
+
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+The Pascal Visual Object Classes (VOC) challenge is a benchmark in visual object category recognition and detection, providing the vision and machine learning communities with a standard dataset of images and annotation, and standard evaluation procedures. Organised annually from 2005 to present, the challenge and its associated dataset has become accepted as the benchmark for object detection.
+
+This paper describes the dataset and evaluation procedure. We review the state-of-the-art in evaluated methods for both classification and detection, analyse whether the methods are statistically different, what they are learning from the images (e.g. the object or its context), and what the methods find easy or confuse. The paper concludes with lessons learnt in the three year history of the challenge, and proposes directions for future improvement and extension.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143969235-6bb4d665-0470-4bae-825c-492eb4582127.png" height="600"/>
+</div>
+
+<!-- [PAPER_TITLE: The Pascal Visual Object Classes (VOC) Challenge] -->
+<!-- [PAPER_URL: https://link.springer.com/article/10.1007/s11263-009-0275-4] -->
+
+## Citation
 
 <!-- [DATASET] -->
 

@@ -1,6 +1,20 @@
 # Path Aggregation Network for Instance Segmentation
 
-## Introduction
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+The way that information propagates in neural networks is of great importance. In this paper, we propose Path Aggregation Network (PANet) aiming at boosting information flow in proposal-based instance segmentation framework. Specifically, we enhance the entire feature hierarchy with accurate localization signals in lower layers by bottom-up path augmentation, which shortens the information path between lower layers and topmost feature. We present adaptive feature pooling, which links feature grid and all feature levels to make useful information in each feature level propagate directly to following proposal subnetworks. A complementary branch capturing different views for each proposal is created to further improve mask prediction. These improvements are simple to implement, with subtle extra computational overhead. Our PANet reaches the 1st place in the COCO 2017 Challenge Instance Segmentation task and the 2nd place in Object Detection task without large-batch training. It is also state-of-the-art on MVD and Cityscapes.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143968947-5f2d7e8a-a236-4d59-8f2d-7fbb12764845.png"/>
+</div>
+
+<!-- [PAPER_TITLE: Path Aggregation Network for Instance Segmentation] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/1803.01534] -->
+
+## Citation
 
 <!-- [ALGORITHM] -->
 
