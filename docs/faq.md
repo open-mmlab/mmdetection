@@ -89,7 +89,7 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - Usage of EMA Hook in Resume
 
-    If you use `EMA Hook` in training, you can't use command line parameters to restore model parameters during resume, you can only do so by modifying the `resume_from` field in the configuration file. This is because the implementation of `EMA Hook` is quite special, and the weights need to be loaded again during initialization.
+    If you use `EMA Hook` in training, you can't use command line parameters such as `--resume-from` and `--cfg-options resume_from`to restore model parameters during resume, you can only do so by modifying the `resume_from` field in the configuration file. This is because EMA Hook cannot obtain command line parameters, and thus cannot implement the weight reload function.
 
 ## Evaluation
 
@@ -99,9 +99,9 @@ We list some common troubles faced by many users and their corresponding solutio
 
 ## Model
 
-- ResNet style parameter description
+- `style` in ResNet
 
-    ResNet `style` optional parameters include `pytorch` and `caffe`, the difference lies in the Bottleneck module. Bottleneck is a stacking structure of `1x1-3x3-1x1`. In the case of sampling with stride=2, the stride parameter of `caffe` mode is placed on the first `1x1` convolution, while in `pyorch` mode, stride is placed on the second `3x3` convolution. The sample code is as follows:
+    The `style` parameter in ResNet allows either `pytorch` or `caffe` style. It indicates the difference in the Bottleneck module. Bottleneck is a stacking structure of `1x1-3x3-1x1`. In the case of sampling with stride=2, the stride parameter of `caffe` mode is placed on the first `1x1` convolution, while in `pyorch` mode, stride is placed on the second `3x3` convolution. The sample code is as follows:
 
     ```
     if self.style == 'pytorch':
@@ -114,8 +114,8 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - ResNeXt parameter description
 
-    ResNeXt comes from the paper [`Aggregated Residual Transformations for Deep Neural Networks`](https://arxiv.org/abs/1611.05431). It introduces grouped convolution and uses “cardinality” to control the number of groups to achieve a balance between accuracy and complexity. It controls the basic width and grouping parameters of the internal Bottleneck module through two hyperparameters `baseWidth` and `cardinality`. The configuration name in MMDetection is `mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco.py`, where `mask_rcnn` represents the algorithm using Mask R-CNN, `x101` represents the backbone network using ResNeXt-101, and `64x4d` represents that the bottleneck block has 64 group and each group has basic width of 4.
+    ResNeXt comes from the paper [`Aggregated Residual Transformations for Deep Neural Networks`](https://arxiv.org/abs/1611.05431). It introduces  group and uses “cardinality” to control the number of groups to achieve a balance between accuracy and complexity. It controls the basic width and grouping parameters of the internal Bottleneck module through two hyperparameters `baseWidth` and `cardinality`. The configuration name in MMDetection is `mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco.py`, where `mask_rcnn` represents the algorithm using Mask R-CNN, `x101` represents the backbone network using ResNeXt-101, and `64x4d` represents that the bottleneck block has 64 group and each group has basic width of 4.
 
--  norm_eval option in backbone
+-  `norm_eval` in backbone
 
     Since the detection model is usually large and the input image resolution is high, this will result in a small batch of the detection model, which will make the variance of the statistics calculated by BatchNorm during the training process very large and not as stable as the statistics obtained during the pre-training of the backbone network . Therefore, the `norm_eval=True` mode is generally used in training, and the BatchNorm statistics in the pre-trained backbone network are directly used. The few algorithms that use large batches are the `norm_eval=False` mode, such as NASFPN. For the backbone network without ImageNet pre-training and the batch is relatively small, you can consider using `SyncBN`.
