@@ -3,7 +3,6 @@ import argparse
 import copy
 import os
 import os.path as osp
-import random
 import time
 import warnings
 
