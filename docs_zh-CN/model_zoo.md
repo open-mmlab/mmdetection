@@ -10,7 +10,7 @@
 - 我们使用分布式训练。
 - 所有 pytorch-style 的 ImageNet 预训练主干网络来自 PyTorch 的模型库，caffe-style 的预训练主干网络来自 detectron2 最新开源的模型。
 - 为了与其他代码库公平比较，文档中所写的 GPU 内存是8个 GPU 的 `torch.cuda.max_memory_allocated()` 的最大值，此值通常小于 nvidia-smi 显示的值。
-- 我们以网络 foward 和后处理的时间加和作为推理时间，不包含数据加载时间。所有结果通过 [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/benchmark.py) 脚本计算所得。该脚本会计算推理 2000 张图像的平均时间。
+- 我们以网络 forward 和后处理的时间加和作为推理时间，不包含数据加载时间。所有结果通过 [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/benchmark.py) 脚本计算所得。该脚本会计算推理 2000 张图像的平均时间。
 
 ## ImageNet 预训练模型
 
@@ -224,6 +224,22 @@ MMdetection 常用到的主干网络细节如下表所示：
 ### CenterNet
 
 请参考 [CenterNet](https://github.com/open-mmlab/mmdetection/blob/master/configs/centernet)。
+
+### YOLOX
+
+请参考 [YOLOX](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolox)。
+
+### PVT
+
+请参考 [PVT](https://github.com/open-mmlab/mmdetection/blob/master/configs/pvt)。
+
+### SOLO
+
+请参考 [SOLO](https://github.com/open-mmlab/mmdetection/blob/master/configs/solo)。
+
+### QueryInst
+
+请参考 [QueryInst](https://github.com/open-mmlab/mmdetection/blob/master/configs/queryinst)。
 
 ### Other datasets
 

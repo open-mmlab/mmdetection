@@ -30,7 +30,10 @@ class YOLACT(SingleStageDetector):
 
         See `mmdetection/tools/analysis_tools/get_flops.py`
         """
-        raise NotImplementedError
+        feat = self.extract_feat(img)
+        bbox_outs = self.bbox_head(feat)
+        prototypes = self.mask_head.forward_dummy(feat[0])
+        return (bbox_outs, prototypes)
 
     def forward_train(self,
                       img,

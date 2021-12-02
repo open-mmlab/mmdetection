@@ -85,7 +85,7 @@ html_theme_options = {
     'menu': [
         {
             'name': 'GitHub',
-            'url': 'https://github.com/open-mmlab/mmcv'
+            'url': 'https://github.com/open-mmlab/mmdetection'
         },
         {
             'name':
@@ -130,6 +130,10 @@ html_theme_options = {
                 {
                     'name': 'MMTracking',
                     'url': 'https://github.com/open-mmlab/mmtracking',
+                },
+                {
+                    'name': 'MMFlow',
+                    'url': 'https://github.com/open-mmlab/mmflow',
                 },
             ]
         },

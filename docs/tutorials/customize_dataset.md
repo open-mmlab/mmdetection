@@ -45,7 +45,7 @@ The annotation json files in COCO format has the following necessary keys:
 
 There are three necessary keys in the json file:
 
-- `images`: contains a list of images with their informations like `file_name`, `height`, `width`, and `id`.
+- `images`: contains a list of images with their information like `file_name`, `height`, `width`, and `id`.
 - `annotations`: contains the list of instance annotations.
 - `categories`: contains the list of categories names and their ID.
 
@@ -157,7 +157,7 @@ We use this way to support CityScapes dataset. The script is in [cityscapes.py](
 **Note**
 
 1. For instance segmentation datasets, **MMDetection only supports evaluating mask AP of dataset in COCO format for now**.
-2. It is recommanded to convert the data offline before training, thus you can still use `CocoDataset` and only need to modify the path of annotations and the training classes.
+2. It is recommended to convert the data offline before training, thus you can still use `CocoDataset` and only need to modify the path of annotations and the training classes.
 
 ### Reorganize new data format to middle format
 

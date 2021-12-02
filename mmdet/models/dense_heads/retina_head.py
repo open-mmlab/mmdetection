@@ -85,11 +85,11 @@ class RetinaHead(AnchorHead):
                     norm_cfg=self.norm_cfg))
         self.retina_cls = nn.Conv2d(
             self.feat_channels,
-            self.num_anchors * self.cls_out_channels,
+            self.num_base_priors * self.cls_out_channels,
             3,
             padding=1)
         self.retina_reg = nn.Conv2d(
-            self.feat_channels, self.num_anchors * 4, 3, padding=1)
+            self.feat_channels, self.num_base_priors * 4, 3, padding=1)
 
     def forward_single(self, x):
         """Forward feature of a single scale level.

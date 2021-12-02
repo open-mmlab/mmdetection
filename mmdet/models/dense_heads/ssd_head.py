@@ -1,12 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 from mmcv.runner import force_fp32
 
-from mmdet.core import (build_anchor_generator, build_assigner,
-                        build_bbox_coder, build_sampler, multi_apply)
+from mmdet.core import (build_assigner, build_bbox_coder,
+                        build_prior_generator, build_sampler, multi_apply)
 from ..builder import HEADS
 from ..losses import smooth_l1_loss
 from .anchor_head import AnchorHead
@@ -86,8 +88,12 @@ class SSDHead(AnchorHead):
         self.act_cfg = act_cfg
 
         self.cls_out_channels = num_classes + 1  # add background class
-        self.anchor_generator = build_anchor_generator(anchor_generator)
-        self.num_anchors = self.anchor_generator.num_base_anchors
+        self.prior_generator = build_prior_generator(anchor_generator)
+
+        # Usually the numbers of anchors for each level are the same
+        # except SSD detectors. So it is an int in the most dense
+        # heads but a list of int in SSDHead
+        self.num_base_priors = self.prior_generator.num_base_priors
 
         self._init_layers()
 
@@ -106,6 +112,16 @@ class SSDHead(AnchorHead):
             self.sampler = build_sampler(sampler_cfg, context=self)
         self.fp16_enabled = False
 
+    @property
+    def num_anchors(self):
+        """
+        Returns:
+            list[int]: Number of base_anchors on each point of each level.
+        """
+        warnings.warn('DeprecationWarning: `num_anchors` is deprecated, '
+                      'please use "num_base_priors" instead')
+        return self.num_base_priors
+
     def _init_layers(self):
         """Initialize layers of the head."""
         self.cls_convs = nn.ModuleList()
@@ -114,7 +130,8 @@ class SSDHead(AnchorHead):
         conv = DepthwiseSeparableConvModule \
             if self.use_depthwise else ConvModule
 
-        for channel, num_anchors in zip(self.in_channels, self.num_anchors):
+        for channel, num_base_priors in zip(self.in_channels,
+                                            self.num_base_priors):
             cls_layers = []
             reg_layers = []
             in_channel = channel
@@ -164,13 +181,13 @@ class SSDHead(AnchorHead):
             cls_layers.append(
                 nn.Conv2d(
                     in_channel,
-                    num_anchors * self.cls_out_channels,
+                    num_base_priors * self.cls_out_channels,
                     kernel_size=1 if self.use_depthwise else 3,
                     padding=0 if self.use_depthwise else 1))
             reg_layers.append(
                 nn.Conv2d(
                     in_channel,
-                    num_anchors * 4,
+                    num_base_priors * 4,
                     kernel_size=1 if self.use_depthwise else 3,
                     padding=0 if self.use_depthwise else 1))
             self.cls_convs.append(nn.Sequential(*cls_layers))
@@ -215,8 +232,8 @@ class SSDHead(AnchorHead):
                 (num_total_anchors,).
             label_weights (Tensor): Label weights of each anchor with shape
                 (num_total_anchors,)
-            bbox_targets (Tensor): BBox regression targets of each anchor wight
-                shape (num_total_anchors, 4).
+            bbox_targets (Tensor): BBox regression targets of each anchor
+                weight shape (num_total_anchors, 4).
             bbox_weights (Tensor): BBox regression loss weights of each anchor
                 with shape (num_total_anchors, 4).
             num_total_samples (int): If sampling, num total samples equal to
@@ -285,7 +302,7 @@ class SSDHead(AnchorHead):
             dict[str, Tensor]: A dictionary of loss components.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == self.anchor_generator.num_levels
+        assert len(featmap_sizes) == self.prior_generator.num_levels
 
         device = cls_scores[0].device
 
