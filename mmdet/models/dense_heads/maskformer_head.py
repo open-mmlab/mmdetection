@@ -617,7 +617,7 @@ class MaskFormerHead(AnchorFreeHead):
         mask_pred_results = all_mask_preds[-1]
 
         # upsample masks
-        img_shape = img_metas[0]['pad_shape'][:2]
+        img_shape = img_metas[0]['batch_input_shape']
         mask_pred_results = F.interpolate(
             mask_pred_results,
             size=(img_shape[0], img_shape[1]),
