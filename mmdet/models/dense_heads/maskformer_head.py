@@ -446,18 +446,20 @@ class MaskFormerHead(AnchorFreeHead):
             label_weights,
             avg_factor=class_weight[labels].sum())
 
+        num_total_masks = reduce_mean(cls_scores.new_tensor([num_total_pos]))
+        num_total_masks = max(num_total_masks, 1)
+
+        # extract positive ones
+        mask_preds = mask_preds[mask_weights > 0]
+        target_shape = mask_targets.shape[-2:]
+
         if mask_targets.shape[0] == 0:
             # zero match
             loss_dice = mask_preds.sum()
             loss_mask = mask_preds.sum()
             return loss_cls, loss_mask, loss_dice
 
-        num_total_masks = reduce_mean(cls_scores.new_tensor([num_total_pos]))
-        num_total_masks = max(num_total_masks, 1)
-
-        # extract positive ones and upsample
-        mask_preds = mask_preds[mask_weights > 0]
-        target_shape = mask_targets.shape[-2:]
+        # upsample to shape of target
         mask_preds = F.interpolate(
             mask_preds.unsqueeze(1),
             target_shape,
