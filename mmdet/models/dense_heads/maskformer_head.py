@@ -448,10 +448,8 @@ class MaskFormerHead(AnchorFreeHead):
 
         if mask_targets.shape[0] == 0:
             # zero match
-            loss_dice = torch.tensor(
-                0.0, dtype=torch.float32, device=mask_preds.device)
-            loss_mask = torch.tensor(
-                0.0, dtype=torch.float32, device=mask_preds.device)
+            loss_dice = mask_preds.sum()
+            loss_mask = mask_preds.sum()
             return loss_cls, loss_mask, loss_dice
 
         num_total_masks = reduce_mean(cls_scores.new_tensor([num_total_pos]))
