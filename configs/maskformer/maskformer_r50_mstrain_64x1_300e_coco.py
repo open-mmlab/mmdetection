@@ -202,12 +202,16 @@ optimizer = dict(
 optimizer_config = dict(grad_clip=dict(max_norm=0.01, norm_type=2))
 
 # learning policy
+# TODO lr scheduler in det2 is complexing, ):
+# lr config needs to be checked and updated,
+# working on it.
 lr_config = dict(
     policy='step',
     by_epoch=True,
     step=[200],
     warmup='linear',
     warmup_by_epoch=False,
+    warmup_ratio=1.0,
     warmup_iters=10)
 runner = dict(type='EpochBasedRunner', max_epochs=300)
 

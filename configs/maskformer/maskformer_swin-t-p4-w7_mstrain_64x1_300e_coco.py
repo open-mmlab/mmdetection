@@ -176,22 +176,26 @@ evaluation = dict(interval=1, metric=['PQ'])
 # optimizer
 optimizer = dict(
     type='AdamW',
-    lr=0.0001,
-    weight_decay=0.0001,
+    lr=6.0e-05,
+    weight_decay=0.01,
     eps=1e-8,
     betas=(0.9, 0.999),
     paramwise_cfg=dict(
-        custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
+        custom_keys={'backbone': dict(lr_mult=1.0, decay_mult=1.0)}))
 optimizer_config = dict(grad_clip=dict(max_norm=0.01, norm_type=2))
 
 # learning policy
+# TODO lr scheduler in det2 is complexing, ):
+# lr config needs to be checked and updated.
+# working on it.
 lr_config = dict(
     policy='step',
     by_epoch=True,
     step=[200],
     warmup='linear',
     warmup_by_epoch=False,
-    warmup_iters=10)
+    warmup_ratio=1.0e-06,
+    warmup_iters=1500)
 runner = dict(type='EpochBasedRunner', max_epochs=300)
 
 log_config = dict(
