@@ -60,6 +60,9 @@ model = dict(
                     ffn_drop=0.1,
                     dropout_layer=None,
                     add_identity=True),
+                # ! the following parameter was not used,
+                # ! just make current api happy
+                feedforward_channels=2048,
                 operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
                                  'ffn', 'norm')),
             init_cfg=None),
