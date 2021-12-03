@@ -73,6 +73,8 @@ class MaskFormer(SingleStageDetector):
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
+        # ! add batch_input_shape in img_metas
+        super(SingleStageDetector, self).forward_train(img, img_metas)
         x = self.extract_feat(img)
         losses = self.panoptic_head.forward_train(x, img_metas, gt_bboxes,
                                                   gt_labels, gt_masks,

@@ -483,12 +483,13 @@ class MaskFormerHead(AnchorFreeHead):
 
         return loss_cls, loss_mask, loss_dice
 
-    def forward(self, feats):
+    def forward(self, feats, img_metas):
         """Forward function.
 
         Args:
             feats (list[Tensor]): Features from the upstream network, each
                 is a 4D-tensor.
+            img_metas (list[dict]): List of image information.
 
         Returns:
             all_cls_scores (Tensor): Classification scores for each
@@ -498,11 +499,20 @@ class MaskFormerHead(AnchorFreeHead):
             all_mask_preds (Tensor): Mask scores for each decoder
                 layer. Each with shape [n_dec, bs, num_query, h, w].
         """
-        bs, c, h, w = feats[-1].shape
+        bs = len(img_metas)
+        input_img_h, input_img_w = img_metas[0]['batch_input_shape']
+        padding_mask = feats[-1].new_zeros((bs, input_img_h, input_img_w),
+                                           dtype=torch.float32)
+        for i in range(bs):
+            img_h, img_w, _ = img_metas[i]['img_shape']
+            padding_mask[i, img_h:, img_w:] = 1
+        padding_mask = F.interpolate(
+            padding_mask.unsqueeze(1),
+            size=feats[-1].shape[-2:],
+            mode='nearest').to(torch.bool).squeeze(1)
         # when backbone is swin, memory is output of last stage of swin.
         # when backbone is r50, memory is output of tranformer encoder.
         mask_features, memory = self.pixel_decoder(feats)
-        padding_mask = feats[-1].new_zeros((bs, h, w), dtype=torch.bool)
         pos_embed = self.decoder_pe(padding_mask)
         memory = self.decoder_input_proj(memory)
         # [bs, c, h, w] -> [h*w, bs, c]
@@ -568,7 +578,7 @@ class MaskFormerHead(AnchorFreeHead):
         assert gt_bboxes_ignore is None  # not consider ignoring bboxes
 
         # forward
-        all_cls_scores, all_mask_preds = self(feats)
+        all_cls_scores, all_mask_preds = self(feats, img_metas)
 
         # preprocess ground truth
         gt_labels, gt_masks = self.preprocess_gt(gt_labels, gt_masks,
@@ -602,7 +612,7 @@ class MaskFormerHead(AnchorFreeHead):
                     ...
                 ]
         """
-        all_cls_scores, all_mask_preds = self(feats)
+        all_cls_scores, all_mask_preds = self(feats, img_metas)
         mask_cls_results = all_cls_scores[-1]
         mask_pred_results = all_mask_preds[-1]
 
