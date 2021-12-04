@@ -1,7 +1,6 @@
 _base_ = [
     '../_base_/datasets/coco_panoptic.py', '../_base_/default_runtime.py'
 ]
-# find_unused_parameters = True
 pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_tiny_patch4_window7_224.pth'  # noqa
 model = dict(
     type='MaskFormer',
