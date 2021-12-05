@@ -12,7 +12,7 @@ class PointAssigner(BaseAssigner):
 
     Each proposals will be assigned with an integer indicating the ground truth
      index. (semi-positive index: gt label (0-based), -1: background)
-     
+
     - -1: negative sample, no assigned gt
     - semi-positive integer: positive sample, index (0-based) of assigned gt
     """
