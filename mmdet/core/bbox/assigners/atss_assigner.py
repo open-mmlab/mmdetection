@@ -11,11 +11,11 @@ from .base_assigner import BaseAssigner
 class ATSSAssigner(BaseAssigner):
     """Assign a corresponding gt bbox or background to each bbox.
 
-    Each proposals will be assigned with `0` or a positive integer
-    indicating the ground truth index.
-
-    - 0: negative sample, no assigned gt
-    - positive integer: positive sample, index (1-based) of assigned gt
+    Each proposals will be assigned with an integer indicating the ground truth
+     index. (semi-positive index: gt label (0-based), -1: background)
+     
+    - -1: negative sample, no assigned gt
+    - semi-positive integer: positive sample, index (0-based) of assigned gt
 
     Args:
         topk (float): number of bbox selected in each level
