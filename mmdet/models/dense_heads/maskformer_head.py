@@ -501,11 +501,11 @@ class MaskFormerHead(AnchorFreeHead):
         """
         bs = len(img_metas)
         input_img_h, input_img_w = img_metas[0]['batch_input_shape']
-        padding_mask = feats[-1].new_zeros((bs, input_img_h, input_img_w),
-                                           dtype=torch.float32)
+        padding_mask = feats[-1].new_ones((bs, input_img_h, input_img_w),
+                                          dtype=torch.float32)
         for i in range(bs):
             img_h, img_w, _ = img_metas[i]['img_shape']
-            padding_mask[i, img_h:, img_w:] = 1
+            padding_mask[i, img_h:, img_w:] = 0
         padding_mask = F.interpolate(
             padding_mask.unsqueeze(1),
             size=feats[-1].shape[-2:],

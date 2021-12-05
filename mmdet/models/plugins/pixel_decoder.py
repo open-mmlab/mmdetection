@@ -154,7 +154,8 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
         assert self.encoder_embed_dims == feat_channels, 'embed_dims({}) of ' \
             'tranformer encoder must equal to feat_channels({})'.format(
                 feat_channels, self.encoder_embed_dims)
-        self.pe = build_positional_encoding(positional_encoding)
+        self.positional_encoding = build_positional_encoding(
+            positional_encoding)
         self.encoder_in_proj = Conv2d(
             in_channels[-1], feat_channels, kernel_size=1)
         self.encoder_out_proj = ConvModule(
@@ -177,11 +178,12 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
         kaiming_init(self.encoder_in_proj, a=1)
         kaiming_init(self.encoder_out_proj.conv, a=1)
 
-    def forward(self, feats):
+    def forward(self, feats, img_metas):
         """
         Args:
             feats (list[Tensor]): Feature maps of each level. Each has
                 shape of [bs, c, h, w].
+            img_metas (list[dict]): List of image information.
 
         Returns:
             tuple: a tuple containing the following:
@@ -191,8 +193,18 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
         """
         feat_last = feats[-1]
         bs, c, h, w = feat_last.shape
-        padding_mask = feat_last.new_zeros((bs, h, w), dtype=torch.bool)
-        pos_embed = self.pe(padding_mask)
+        input_img_h, input_img_w = img_metas[0]['batch_input_shape']
+        padding_mask = feat_last.new_ones((bs, input_img_h, input_img_w),
+                                          dtype=torch.float32)
+        for i in range(bs):
+            img_h, img_w, _ = img_metas[i]['img_shape']
+            padding_mask[i, img_h:, img_w:] = 0
+        padding_mask = F.interpolate(
+            padding_mask.unsqueeze(1),
+            size=feat_last.shape[-2:],
+            mode='nearest').to(torch.bool).squeeze(1)
+
+        pos_embed = self.positional_encoding(padding_mask)
         feat_last = self.encoder_in_proj(feat_last)
         # [bs, c, h, w] -> [nq, bs, dim]
         feat_last = feat_last.flatten(2).permute(2, 0, 1)
