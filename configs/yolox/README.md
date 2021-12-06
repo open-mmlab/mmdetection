@@ -41,4 +41,4 @@ In this report, we present some experienced improvements to YOLO series, forming
 
 1. The test score threshold is 0.001, and the box AP indicates the best AP.
 2. Due to the need for pre-training weights, we cannot reproduce the performance of the `yolox-nano` model. Please refer to https://github.com/Megvii-BaseDetection/YOLOX/issues/674 for more information.
-3. We retrained the official yolox based on https://github.com/Megvii-BaseDetection/YOLOX/issues/735, but found that the performance will still drop by about 0.3. The best AP of `YOLOX-s` is 40.3, the best AP of `YOLOX-l` is 49.2, the best AP of `YOLOX-x` is 50.9 and the best AP of `YOLOX-tiny` is 31.8.
+3. We retrained the official yolox based on https://github.com/Megvii-BaseDetection/YOLOX/issues/735, but found that the performance will still drop by about 0.3. Its commit id is `38c633bf176462ee42b110c70e4ffe17b5753208`. The best AP of `YOLOX-s` is 40.3, the best AP of `YOLOX-l` is 49.2, the best AP of `YOLOX-x` is 50.9 and the best AP of `YOLOX-tiny` is 31.8.
