@@ -90,52 +90,93 @@ html_theme_options = {
         {
             'name':
             'Projects',
-            'children': [
-                {
-                    'name': 'MMAction2',
-                    'url': 'https://github.com/open-mmlab/mmaction2',
-                },
-                {
-                    'name': 'MMClassification',
-                    'url': 'https://github.com/open-mmlab/mmclassification',
-                },
-                {
-                    'name': 'MMDetection',
-                    'url': 'https://github.com/open-mmlab/mmdetection',
-                },
-                {
-                    'name': 'MMDetection3D',
-                    'url': 'https://github.com/open-mmlab/mmdetection3d',
-                },
-                {
-                    'name': 'MMEditing',
-                    'url': 'https://github.com/open-mmlab/mmediting',
-                },
-                {
-                    'name': 'MMGeneration',
-                    'url': 'https://github.com/open-mmlab/mmgeneration',
-                },
-                {
-                    'name': 'MMOCR',
-                    'url': 'https://github.com/open-mmlab/mmocr',
-                },
-                {
-                    'name': 'MMPose',
-                    'url': 'https://github.com/open-mmlab/mmpose',
-                },
-                {
-                    'name': 'MMSegmentation',
-                    'url': 'https://github.com/open-mmlab/mmsegmentation',
-                },
-                {
-                    'name': 'MMTracking',
-                    'url': 'https://github.com/open-mmlab/mmtracking',
-                },
-                {
-                    'name': 'MMFlow',
-                    'url': 'https://github.com/open-mmlab/mmflow',
-                },
-            ]
+            'children': [{
+                'name':
+                'MMCV',
+                'url':
+                'https://mmcv.readthedocs.io/en/latest/',
+                'description':
+                'Foundational library for computer vision'
+            }, {
+                'name':
+                'MMDetection',
+                'url':
+                'https://mmdetection.readthedocs.io/en/latest/',
+                'description':
+                'Object detection toolbox and benchmark'
+            }, {
+                'name':
+                'MMAction2',
+                'url':
+                'https://mmaction2.readthedocs.io/en/latest/',
+                'description':
+                'Action understanding toolbox and benchmark'
+            }, {
+                'name':
+                'MMClassification',
+                'url':
+                'https://mmclassification.readthedocs.io/en/latest/',
+                'description':
+                'Image classification toolbox and benchmark'
+            }, {
+                'name':
+                'MMSegmentation',
+                'url':
+                'https://mmsegmentation.readthedocs.io/en/latest/',
+                'description':
+                'Semantic segmentation toolbox and benchmark'
+            }, {
+                'name': 'MMDetection3D',
+                'url': 'https://mmdetection3d.readthedocs.io/en/latest/',
+                'description': 'General 3D object detection platform'
+            }, {
+                'name': 'MMEditing',
+                'url': 'https://mmediting.readthedocs.io/en/latest/',
+                'description': 'Image and video editing toolbox'
+            }, {
+                'name':
+                'MMOCR',
+                'url':
+                'https://mmocr.readthedocs.io/en/latest/',
+                'description':
+                'Text detection, recognition and understanding toolbox'
+            }, {
+                'name':
+                'MMPose',
+                'url':
+                'https://mmpose.readthedocs.io/en/latest/',
+                'description':
+                'Pose estimation toolbox and benchmark'
+            }, {
+                'name':
+                'MMTracking',
+                'url':
+                'https://mmtracking.readthedocs.io/en/latest/',
+                'description':
+                'Video perception toolbox and benchmark'
+            }, {
+                'name': 'MMGeneration',
+                'url': 'https://mmgeneration.readthedocs.io/en/latest/',
+                'description': 'Generative model toolbox'
+            }, {
+                'name': 'MMFlow',
+                'url': 'https://mmflow.readthedocs.io/en/latest/',
+                'description': 'Optical flow toolbox and benchmark'
+            }, {
+                'name':
+                'MMFewShot',
+                'url':
+                'https://mmfewshot.readthedocs.io/en/latest/',
+                'description':
+                'FewShot learning toolbox and benchmark'
+            }, {
+                'name':
+                'MMHuman3D',
+                'url':
+                'https://mmhuman3d.readthedocs.io/en/latest/',
+                'description':
+                '3D human parametric model toolbox and benchmark.'
+            }]
         },
         {
             'name':
