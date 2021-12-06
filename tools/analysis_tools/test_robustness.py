@@ -207,11 +207,18 @@ def main():
         init_dist(args.launcher, **cfg.dist_params)
 
     # set random seeds
-    if args.seed is not None:
-        set_random_seed(args.seed)
+    if hasattr(cfg, "seed") and args.seed is not None:
+        seed = args.seed
+        print(f'Argument seed passed both in config file and as an argument. \
+            Please avoid setting the seed in the config file if also passing it as an argument. \
+            Using argument random seed {args.seed}')
+    elif args.seed is not None:
+        seed=args.seed
+    elif hasattr(cfg, "seed"):
+        seed=cfg.seed
     else:
-        if hasattr(cfg, "seed"):
-            set_random_seed(cfg.seed)
+        seed=None   
+    set_random_seed(seed)
 
     if 'all' in args.corruptions:
         corruptions = [

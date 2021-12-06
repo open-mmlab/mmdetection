@@ -144,15 +144,34 @@ def main():
     logger.info(f'Config:\n{cfg.pretty_text}')
 
     # set random seeds
-    if hasattr(cfg, "seed") and args.seed is None:
-        args.seed = cfg.seed
-    if hasattr(cfg, "deterministic") and args.deterministic is None:
-        args.deterministic = cfg.deterministic
+    if hasattr(cfg, "seed") and args.seed is not None:
+        seed = args.seed
+        logger.info(f'Argument seed passed both in config file and as an argument. \
+            Please avoid setting the seed in the config file if also passing it as an argument. \
+            Using argument random seed {args.seed}')    
+    elif args.seed is not None:
+        seed=args.seed
+    elif hasattr(cfg, "seed"):
+        seed=cfg.seed
+    else:
+        seed=None                
 
-    seed = init_random_seed(args.seed)
+    if hasattr(cfg, "deterministic") and args.deterministic is not None:
+        deterministic = args.deterministic
+        logger.info(f'Option deterministic passed both in config file and as an argument. \
+            Please avoid setting the option in the config file if also passing it as an argument \
+            Using argument random seed {args.deterministic}')    
+    elif args.deterministic is not None:
+        deterministic=args.deterministic
+    elif hasattr(cfg, "deterministic"):
+        deterministic=cfg.deterministic
+    else:
+        deterministic=None      
+
+    seed = init_random_seed(seed)
     logger.info(f'Set random seed to {seed}, '
-                f'deterministic: {args.deterministic}')
-    set_random_seed(seed, deterministic=args.deterministic)
+                f'deterministic: {deterministic}')
+    set_random_seed(seed, deterministic=deterministic)
     cfg.seed = seed
     meta['seed'] = seed
     meta['exp_name'] = osp.basename(args.config)
