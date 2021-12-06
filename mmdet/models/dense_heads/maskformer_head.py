@@ -512,7 +512,7 @@ class MaskFormerHead(AnchorFreeHead):
             mode='nearest').to(torch.bool).squeeze(1)
         # when backbone is swin, memory is output of last stage of swin.
         # when backbone is r50, memory is output of tranformer encoder.
-        mask_features, memory = self.pixel_decoder(feats)
+        mask_features, memory = self.pixel_decoder(feats, img_metas)
         pos_embed = self.decoder_pe(padding_mask)
         memory = self.decoder_input_proj(memory)
         # [bs, c, h, w] -> [h*w, bs, c]

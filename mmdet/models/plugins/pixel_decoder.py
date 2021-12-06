@@ -183,7 +183,8 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
         Args:
             feats (list[Tensor]): Feature maps of each level. Each has
                 shape of [bs, c, h, w].
-            img_metas (list[dict]): List of image information.
+            img_metas (list[dict]): List of image information. Pass in
+                for creating more accurate padding mask.
 
         Returns:
             tuple: a tuple containing the following:
