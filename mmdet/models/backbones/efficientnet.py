@@ -1,19 +1,15 @@
+import mmcv
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
-from torch.nn.modules.batchnorm import _BatchNorm
+from mmcv.cnn import build_conv_layer, build_norm_layer
 
-from mmcv.cnn import (build_conv_layer, build_norm_layer, constant_init,
-                      kaiming_init)
-from mmcv.runner import load_checkpoint
-
-from mmdet.utils import get_root_logger
 from ..builder import BACKBONES
-from ..utils.activations import Swish
-from ..utils.se_block import SE
+from ..utils.activations import MemoryEfficientSwish
+from ..utils.inverted_residual import InvertedResidual
 
 
-def drop_path(x, drop_prob: float = 0., training: bool = False):
+def drop_path(x, drop_prob=0., training=False):
     """Drop paths
 
     Args:
@@ -34,134 +30,54 @@ def drop_path(x, drop_prob: float = 0., training: bool = False):
     return output
 
 
-class MBConv(nn.Module):
-    """Mobile inverted Bottleneck block with Squeeze-and-Excitation (SE).
-
-    Args:
-        input_width (int): Number of input filters.
-        output_width (int): Number of output filters.
-        stride (int): stride of the first block.
-        exp_ratio (int): Expansion ratio..
-        kernel (int): Kernel size of the dwise conv.
-        se_ratio (float): Ratio of the Squeeze-and-Excitation (SE).
-            Default: 0.25
-        conv_cfg (dict): dictionary to construct and config conv layer.
-            Default: None
-        norm_cfg (dict): dictionary to construct and config norm layer.
-            Default: dict(type='BN', requires_grad=True)
-        with_cp (bool): Use checkpoint or not. Using checkpoint will save some
-            memory while slowing down the training speed.
-        dropout (float): Drop-path rate.
-            Default: 0.0
-    """
-
+class MBConv(InvertedResidual):
     def __init__(self,
-                 input_width,
-                 output_width,
-                 stride,
-                 exp_ratio,
-                 kernel,
-                 se_ratio=0.25,
-                 conv_cfg=None,
-                 norm_cfg=dict(type='BN', requires_grad=True),
-                 with_cp=False,
-                 dropout=0.0):
-        super().__init__()
-        self.exp = None
-        self.with_cp = with_cp
+                 dropout=0.0,
+                 **kwargs):
+        super(MBConv, self).__init__(**kwargs)
         self.dropout = dropout
-        exp_width = int(input_width * exp_ratio)
-        if exp_width != input_width:
-            self.exp = build_conv_layer(
-                conv_cfg,
-                input_width,
-                exp_width,
-                1,
-                stride=1,
-                padding=0,
-                bias=False)
-            self.exp_bn_name, exp_bn = build_norm_layer(
-                norm_cfg, exp_width, postfix='exp')
-            self.add_module(self.exp_bn_name, exp_bn)
-            self.exp_swish = Swish()
-        dwise_args = {
-            'groups': exp_width,
-            'padding': (kernel - 1) // 2,
-            'bias': False
-        }
-        self.dwise = build_conv_layer(
-            conv_cfg,
-            exp_width,
-            exp_width,
-            kernel,
-            stride=stride,
-            **dwise_args)
-        self.dwise_bn_name, dwise_bn = build_norm_layer(
-            norm_cfg, exp_width, postfix='dwise')
-        self.add_module(self.dwise_bn_name, dwise_bn)
-        self.dwise_swish = Swish()
-        self.se = SE(exp_width, int(input_width * se_ratio))
-        self.lin_proj = build_conv_layer(
-            conv_cfg,
-            exp_width,
-            output_width,
-            1,
-            stride=1,
-            padding=0,
-            bias=False,
-        )
-        self.lin_proj_bn_name, lin_proj_bn = build_norm_layer(
-            norm_cfg, output_width, postfix='lin_proj')
-        self.add_module(self.lin_proj_bn_name, lin_proj_bn)
-        # Skip connection if in and out shapes are the same (MN-V2 style)
-        self.has_skip = (stride == 1 and input_width == output_width)
-
-    @property
-    def dwise_bn(self):
-        return getattr(self, self.dwise_bn_name)
-
-    @property
-    def exp_bn(self):
-        return getattr(self, self.exp_bn_name)
-
-    @property
-    def lin_proj_bn(self):
-        return getattr(self, self.lin_proj_bn_name)
 
     def forward(self, x):
         def _inner_forward(x):
-            f_x = x
-            if self.exp:
-                f_x = self.exp_swish(self.exp_bn(self.exp(f_x)))
-            f_x = self.dwise_swish(self.dwise_bn(self.dwise(f_x)))
-            f_x = self.se(f_x)
-            f_x = self.lin_proj_bn(self.lin_proj(f_x))
-            if self.has_skip:
-                if self.dropout > 0:
-                    f_x = drop_path(f_x, self.dropout, True)
-                f_x = x + f_x
+            out = x
 
-            return f_x
+            if self.with_expand_conv:
+                out = self.expand_conv(out)
+
+            out = self.depthwise_conv(out)
+
+            if self.with_se:
+                out = self.se(out)
+
+            out = self.linear_conv(out)
+
+            if self.with_res_shortcut:
+                if self.dropout > 0:
+                    out = drop_path(out, self.dropout, True)
+                out = x + out
+                return out
+            else:
+                return out
 
         if self.with_cp and x.requires_grad:
-            f_x = cp.checkpoint(_inner_forward, x)
+            out = cp.checkpoint(_inner_forward, x)
         else:
-            f_x = _inner_forward(x)
+            out = _inner_forward(x)
 
-        return f_x
+        return out
 
 
 class EfficientLayer(nn.Sequential):
     """EfficientLayer to build EfficientNet style backbone.
 
     Args:
-        input_width (int): Number of input filters.
-        output_width (int): Number of output filters.
-        depth (int): Number of Mobile inverted Bottleneck blocks.
+        in_channels (int): Number of input filters.
+        out_channels (int): Number of output filters.
+        num_blocks (int): Number of Mobile inverted Bottleneck blocks.
         stride (int): stride of the first block.
-        exp_ratio (int):
+        expand_ratio (int):
             Expansion ratios of the MBConv blocks.
-        kernel (int):
+        kernel_size (int):
             Kernel size of the dwise conv of the MBConv blocks.
         se_ratio (float): Ratio of the Squeeze-and-Excitation (SE) blocks.
             Default: 0.25
@@ -172,37 +88,46 @@ class EfficientLayer(nn.Sequential):
     """
 
     def __init__(self,
-                 input_width,
-                 output_width,
-                 depth,
+                 in_channels,
+                 out_channels,
+                 num_blocks,
                  stride,
-                 exp_ratio,
-                 kernel,
-                 se_ratio=0.25,
+                 expand_ratio,
+                 kernel_size,
+                 se_ratio=4,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  with_cp=False,
-                 dropout=0.0
-                 ):
+                 dropout=0.0,
+                 init_cfg=None):
         layers = []
-        for d in range(depth):
+        for d in range(num_blocks):
             block_stride = stride if d == 0 else 1
-            block_width = input_width if d == 0 else output_width
+            block_width = in_channels if d == 0 else out_channels
+            midchannels = int(block_width * expand_ratio)
+            se_cfg = {'channels': midchannels, 'ratio': expand_ratio * se_ratio}
+            with_expand_conv = False
+            if midchannels != block_width:
+                with_expand_conv = True
             layers.append(
                 MBConv(
-                    input_width=block_width,
-                    output_width=output_width,
+                    in_channels=block_width,
+                    out_channels=out_channels,
+                    mid_channels=midchannels,
                     stride=block_stride,
-                    exp_ratio=exp_ratio,
-                    kernel=kernel,
-                    se_ratio=se_ratio,
+                    # expand_ratio=expand_ratio,
+                    kernel_size=kernel_size,
+                    # se_ratio=se_ratio,
                     with_cp=with_cp,
-                    dropout=dropout))
+                    dropout=dropout,
+                    se_cfg=se_cfg,
+                    with_expand_conv=with_expand_conv,
+                    init_cfg=init_cfg))
             super().__init__(*layers)
 
 
 @BACKBONES.register_module()
-class EfficientNet(nn.Module):
+class EfficientNet(mmcv.runner.BaseModule):
     """EfficientNet backbone.
 
     More details can be found in:
@@ -213,15 +138,15 @@ class EfficientNet(nn.Module):
             From {0, 1, 2, 3, 4, 5, 6, 7}.
         in_channels (int): Number of input image channels.
             Default: 3.
-        base_channels (int): Number of channels of the stem layer.
+        stem_channels (int): Number of channels of the stem layer.
             Default: 32
         strides (Sequence[int]):
             Strides of the first block of each EfficientLayer.
             Default: (1, 2, 2, 2, 1, 2, 1)
-        exp_ratios (Sequence[int]):
+        expand_ratios (Sequence[int]):
             Expansion ratios of the MBConv blocks.
             Default: (1, 6, 6, 6, 6, 6, 6)
-        kernels (Sequence[int]):
+        kernel_size (Sequence[int]):
             Kernel size for the dwise conv of the MBConv blocks.
             Default: (3, 3, 5, 3, 5, 5, 3)
         se_ratio (float): Ratio of the Squeeze-and-Excitation (SE) blocks.
@@ -267,37 +192,38 @@ class EfficientNet(nn.Module):
     def __init__(self,
                  scale,
                  in_channels=3,
-                 base_channels=40,
+                 stem_channels=32,
                  strides=(1, 2, 2, 2, 1, 2, 1),
-                 exp_ratios=(1, 6, 6, 6, 6, 6, 6),
-                 kernels=(3, 3, 5, 3, 5, 5, 3),
-                 se_ratio=0.25,
+                 expand_ratios=(1, 6, 6, 6, 6, 6, 6),
+                 kernel_size=(3, 3, 5, 3, 5, 5, 3),
+                 se_ratio=4,
                  out_indices=(2, 4, 6),
                  frozen_stages=-1,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  norm_eval=True,
                  with_cp=False,
-                 dropout=0.0
+                 dropout=0.0,
+                 init_cfg=None,
                  ):
-        super().__init__()
+        super().__init__(init_cfg)
         self.out_indices = out_indices
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.with_cp = with_cp
         self.stage_depths, self.stage_widths = self.arch_settings[scale]
         self.dropout = dropout
-        self._make_stem_layer(3, base_channels)
+        self._make_stem_layer(3, stem_channels)
         self.efficient_layers = []
-        previous_width = base_channels
+        previous_width = stem_channels
         for i, (d, w) in enumerate(zip(self.stage_depths, self.stage_widths)):
             efficient_layer = self.make_efficient_layer(
-                input_width=previous_width,
-                output_width=w,
-                depth=d,
+                in_channels=previous_width,
+                out_channels=w,
+                num_blocks=d,
                 stride=strides[i],
-                exp_ratio=exp_ratios[i],
-                kernel=kernels[i],
+                expand_ratio=expand_ratios[i],
+                kernel_size=kernel_size[i],
                 se_ratio=se_ratio,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
@@ -321,7 +247,7 @@ class EfficientNet(nn.Module):
         self.norm1_name, norm1 = build_norm_layer(
             self.norm_cfg, out_channels, postfix=1)
         self.add_module(self.norm1_name, norm1)
-        self.swish = Swish()
+        self.swish = MemoryEfficientSwish()
 
     def make_efficient_layer(self, **kwargs):
         return EfficientLayer(**kwargs)
@@ -342,19 +268,6 @@ class EfficientNet(nn.Module):
             m.eval()
             for param in m.parameters():
                 param.requires_grad = False
-
-    def init_weights(self, pretrained=None):
-        if isinstance(pretrained, str):
-            logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=False, logger=logger)
-        elif pretrained is None:
-            for m in self.modules():
-                if isinstance(m, nn.Conv2d):
-                    kaiming_init(m)
-                elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
-                    constant_init(m, 1)
-        else:
-            raise TypeError('pretrained must be a str or None')
 
     def forward(self, x):
         x = self.conv1(x)
