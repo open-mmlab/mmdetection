@@ -6,7 +6,6 @@ from zipfile import ZipFile
 from itertools import repeat
 import os
 
-
 def download(url, dir, unzip=True, delete=False, curl=False, threads=1):
     def download_one(url, dir):
         f = dir / Path(url).name
