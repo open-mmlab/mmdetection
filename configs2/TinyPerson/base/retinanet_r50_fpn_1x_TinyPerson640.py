@@ -10,7 +10,7 @@ optimizer = dict(type='SGD', lr=0.005, momentum=0.9, weight_decay=0.0001)  # sin
 
 model = dict(
     type='RetinaNet',
-    pretrained='torchvision://resnet50',
+    # pretrained='torchvision://resnet50',
     backbone=dict(
         type='ResNet',
         depth=50,

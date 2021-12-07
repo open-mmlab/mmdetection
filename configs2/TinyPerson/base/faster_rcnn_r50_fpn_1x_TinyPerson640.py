@@ -7,7 +7,7 @@ _base_ = [
 optimizer = dict(type='SGD', lr=0.04, momentum=0.9, weight_decay=0.0001)  # 8GPU
 model = dict(
     type='FasterRCNN',
-    # pretrained='torchvision://resnet50',
+    pretrained='torchvision://resnet50',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -18,7 +18,6 @@ model = dict(
         norm_eval=True,
         style='pytorch'
         ),
-        # init_config=None),# 加这条是因为另外一个采用
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],

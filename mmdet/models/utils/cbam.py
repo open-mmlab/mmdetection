@@ -87,15 +87,20 @@ class SpatialGate(nn.Module):
         scale = F.sigmoid(x_out) # broadcasting
         return x * scale
 
+# modify by lzj 增加了禁用通道注意力的选项
 class CBAM(nn.Module):
-    def __init__(self, gate_channels, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False):
+    def __init__(self, gate_channels, reduction_ratio=16, pool_types=['avg', 'max'], no_spatial=False,no_channel=False):
         super(CBAM, self).__init__()
-        self.ChannelGate = ChannelGate(gate_channels, reduction_ratio, pool_types)
+        assert no_spatial | no_channel == False
+        self.no_channel = no_channel
+        if not no_channel:
+            self.ChannelGate = ChannelGate(gate_channels, reduction_ratio, pool_types)
         self.no_spatial=no_spatial
         if not no_spatial:
             self.SpatialGate = SpatialGate()
     def forward(self, x):
-        x_out = self.ChannelGate(x)
+        if not self.no_channel:
+            x_out = self.ChannelGate(x)
         if not self.no_spatial:
             x_out = self.SpatialGate(x_out)
-        return x_out
+        return x_out if x_out != None else x

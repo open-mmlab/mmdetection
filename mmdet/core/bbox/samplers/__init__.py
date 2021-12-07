@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from .base_sampler import BaseSampler
 from .combined_sampler import CombinedSampler
+from .ic_neg_sampler import ICNegSampler
 from .instance_balanced_pos_sampler import InstanceBalancedPosSampler
 from .iou_balanced_neg_sampler import IoUBalancedNegSampler
 from .ohem_sampler import OHEMSampler
@@ -13,4 +14,5 @@ __all__ = [
     'BaseSampler', 'PseudoSampler', 'RandomSampler',
     'InstanceBalancedPosSampler', 'IoUBalancedNegSampler', 'CombinedSampler',
     'OHEMSampler', 'SamplingResult', 'ScoreHLRSampler'
+    ,'ICNegSampler'
 ]
