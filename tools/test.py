@@ -57,7 +57,7 @@ def parse_args():
         '--show-colors',
         type=str,
         default='green',
-        help='The colors for each classes (default: `green`)')
+        help='The colors for different classes (default: `green`)')
     parser.add_argument(
         '--gpu-collect',
         action='store_true',
