@@ -217,7 +217,8 @@ def main():
     elif hasattr(cfg, "seed"):
         seed=cfg.seed
     else:
-        seed=None   
+        seed=None
+    seed = init_random_seed(seed)   
     set_random_seed(seed)
 
     if 'all' in args.corruptions:
