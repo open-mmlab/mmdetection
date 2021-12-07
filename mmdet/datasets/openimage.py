@@ -53,8 +53,10 @@ class OpenImagesDataset(CustomDataset):
 
         self.cat2label = defaultdict(str)
         self.index_dict = {}
+        # need get index_dict before load annotations
+        class_names = self.get_classes_from_csv(label_description_file)
         super(OpenImagesDataset, self).__init__(**kwargs)
-        self.CLASSES = self.get_classes_from_csv(label_description_file)
+        self.CLASSES = class_names
         if need_get_father is True and hierarchy_file is not None:
             self.class_label_tree = self.get_father(hierarchy_file)
         self.need_get_father = need_get_father
@@ -67,9 +69,9 @@ class OpenImagesDataset(CustomDataset):
         self.save_meta_file_path = save_meta_file_path
         self.load_meta_from_pipeline = False if get_meta else True
         if self.get_meta is True and self.meta_file is not None:
-            self.get_metas(metas=None, meta_file=self.meta_file)
+            self.get_meta_from_file(metas=None, meta_file=self.meta_file)
 
-    def get_metas(self, metas=None, meta_file=''):
+    def get_meta_from_file(self, metas=None, meta_file=''):
         """Get image metas from pkl file."""
         if metas is None:
             assert meta_file.endswith('pkl'), 'Only support load pkl file'
@@ -94,16 +96,17 @@ class OpenImagesDataset(CustomDataset):
         """
 
         index_list = []
-        classes = []
+        classes_names = []
         with open(label_description_file, 'r') as f:
             reader = csv.reader(f)
             for line in reader:
                 self.cat2label[line[0]] = line[1]
-                classes.append(line[1])
+                classes_names.append(line[1])
                 index_list.append(line[0])
         self.index_dict = {index: i for i, index in enumerate(index_list)}
-        assert len(self.cat2label) == len(self.index_dict) == len(classes)
-        return classes
+        assert len(self.cat2label) == len(self.index_dict) == \
+               len(classes_names)
+        return classes_names
 
     def list_from_csv(self, ann_file):
         """Load annotation from csv style ann_file.
@@ -115,6 +118,7 @@ class OpenImagesDataset(CustomDataset):
             item_list (defaultdict[list[dict]]): Annotations where item of the
                 defaultdict indicates an image, each of which has (n) dicts.
                 Keys of dicts are:
+
                 - `bbox` (list): of shape 4.
                 - `label` (int): of shape 1.
                 - `is_group_of` (bool): of shape 1.
@@ -124,6 +128,7 @@ class OpenImagesDataset(CustomDataset):
                 - `is_inside` (bool): of shape 1.
             data_infos (list[dict]): Data infos where each item of the list
                 indicates an image. Keys of annotations are:
+
                 - `img_id` (str): Image name.
                 - `filename` (str): Image name with suffix.
         """
@@ -314,6 +319,7 @@ class OpenImagesDataset(CustomDataset):
         Args:
             hierarchy (dict): Including label name and corresponding
                 subcategory. Keys of dicts are:
+
                 - `LabeName` (str): Name of the label.
                 - `Subcategory` (dict | list): Corresponding subcategory(ies).
             class_label_tree (ndarray): The matrix of the corresponding
@@ -406,6 +412,10 @@ class OpenImagesDataset(CustomDataset):
         position."""
         # save image meta file
         if self.save_meta_file and self.save_meta_file_path is not None:
+            if self.data_root is not None:
+                if not osp.isabs(self.save_meta_file_path):
+                    self.save_meta_file_path = \
+                        osp.join(self.data_root, self.save_meta_file_path)
             if not self.save_meta_file_path.endswith('pkl'):
                 self.save_meta_file_path = \
                     osp.join(self.save_meta_file_path,
@@ -414,13 +424,11 @@ class OpenImagesDataset(CustomDataset):
             self.get_meta = True
             self.meta_file = self.save_meta_file_path
         if self.load_meta_from_pipeline:
-            self.get_metas(self.test_img_metas)
+            self.get_meta_from_file(self.test_img_metas)
         for i in range(len(annotations)):
             h, w, _ = self.data_infos[i]['ori_shape']
-            annotations[i]['bboxes'][:, 0] *= w
-            annotations[i]['bboxes'][:, 1] *= h
-            annotations[i]['bboxes'][:, 2] *= w
-            annotations[i]['bboxes'][:, 3] *= h
+            annotations[i]['bboxes'][:, 0::2] *= w
+            annotations[i]['bboxes'][:, 1::2] *= h
         return annotations
 
     def evaluate(self,
@@ -518,10 +526,10 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
                 id_list.append(int(line[2]))
         indexes = np.argsort(id_list)
         assert len(label_list) == len(id_list)
-        classes = []
+        classes_names = []
         for index in indexes:
-            classes.append(label_list[index])
-        return classes
+            classes_names.append(label_list[index])
+        return classes_names
 
     def load_annotations(self, ann_file):
         """Load annotation from annotation file."""
