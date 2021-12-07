@@ -6,6 +6,7 @@ from zipfile import ZipFile
 from itertools import repeat
 import os
 
+
 def download(url, dir, unzip=True, delete=False, curl=False, threads=1):
     def download_one(url, dir):
         f = dir / Path(url).name
@@ -14,7 +15,7 @@ def download(url, dir, unzip=True, delete=False, curl=False, threads=1):
         elif not f.exists():
             print('Downloading {} to {}'.format(url, f))
             if not curl:
-                os.system("curl -L {} -o {} --retry 9 -C -".format(url, f))
+                os.system('curl -L {} -o {} --retry 9 -C -'.format(url, f))
             else:
                 torch.hub.download_url_to_file(url, f, progress=True)
         if unzip and f.suffix in ('.zip', '.gz'):
