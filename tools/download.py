@@ -1,13 +1,15 @@
 import argparse
-import torch
-from pathlib import Path
-from multiprocessing.pool import ThreadPool
-from zipfile import ZipFile
-from itertools import repeat
 import os
+from itertools import repeat
+from multiprocessing.pool import ThreadPool
+from pathlib import Path
+from zipfile import ZipFile
+
+import torch
 
 
 def download(url, dir, unzip=True, delete=False, curl=False, threads=1):
+
     def download_one(url, dir):
         f = dir / Path(url).name
         if Path(url).is_file():
@@ -44,55 +46,45 @@ def main(args):
     if not path.exists():
         path.mkdir(parents=True, exist_ok=True)
 
-    urls = ['http://images.cocodataset.org/zips/train2017.zip',
-            'http://images.cocodataset.org/zips/val2017.zip',
-            'http://images.cocodataset.org/zips/test2017.zip',
-            'http://images.cocodataset.org/annotations/' +
-            'annotations_trainval2017.zip']
+    urls = [
+        'http://images.cocodataset.org/zips/train2017.zip',
+        'http://images.cocodataset.org/zips/val2017.zip',
+        'http://images.cocodataset.org/zips/test2017.zip',
+        'http://images.cocodataset.org/annotations/' +
+        'annotations_trainval2017.zip'
+    ]
 
-    download(urls,
-             dir=path,
-             unzip=args.unzip,
-             delete=args.delete,
-             curl=args.win,
-             threads=args.threads)
+    download(
+        urls,
+        dir=path,
+        unzip=args.unzip,
+        delete=args.delete,
+        curl=args.win,
+        threads=args.threads)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Download datasets for training')
     parser.add_argument(
-        '--dataset-name',
-        type=str,
-        help='dataset name',
-        default="coco2017")
+        '--dataset-name', type=str, help='dataset name', default='coco2017')
 
     parser.add_argument(
         '--save-dir',
         type=str,
         help='the dir to save dataset',
-        default="data/coco")
+        default='data/coco')
 
     parser.add_argument(
-        '--unzip',
-        action='store_true',
-        help='whether unzip dataset or not')
+        '--unzip', action='store_true', help='whether unzip dataset or not')
+
+    parser.add_argument('--delete', action='store_true', help='del dataset')
 
     parser.add_argument(
-        '--delete',
-        action='store_true',
-        help='del dataset')
+        '--threads', type=int, help='number of threading', default=4)
 
     parser.add_argument(
-        '--threads',
-        type=int,
-        help='number of threading',
-        default=4)
-
-    parser.add_argument(
-        '--win',
-        action='store_true',
-        help='use windows to download or not')
+        '--win', action='store_true', help='use windows to download or not')
 
     args = parser.parse_args()
     main(args)
