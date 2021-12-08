@@ -2201,6 +2201,7 @@ class MixUp:
     """MixUp data augmentation.
 
     .. code:: text
+
                          mixup transform
                 +------------------------------+
                 | mixup image   |              |
