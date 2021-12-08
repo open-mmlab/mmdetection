@@ -89,7 +89,7 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - Usage of EMA Hook in Resume
 
-    If you use `EMA Hook` in training, you can't use command line parameters such as `--resume-from` and `--cfg-options resume_from`to restore model parameters during resume, you can only do so by modifying the `resume_from` field in the configuration file. This is because EMA Hook cannot obtain command line parameters, and thus cannot implement the weight reload function.
+    If you use `EMA Hook` in training, you can't use command line parameters such as `--resume-from` and `--cfg-options resume_from`to restore model parameters during resume e.g. `python tools/train.py configs/yolox/yolox_s_8x8_300e_coco.py --resume-from ./work_dir/yolox_s_8x8_300e_coco/epoch_1.pth `, you can only do so by modifying the `resume_from` field in the configuration file. This is because EMA Hook cannot obtain command line parameters, and thus cannot implement the weight reload function.
 
 ## Evaluation
 

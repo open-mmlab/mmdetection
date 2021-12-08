@@ -90,7 +90,7 @@
 
 - Resume 情况下 EMA Hook 说明
 
-    如果在训练中你使用了 EMA Hook，那么在 resume 时候你不能通过命令行参数例如 `--resume-from` 和`--cfg-options resume_from` 实现恢复模型参数功能，只能通过修改配置文件中的 `resume_from` 字段实现。这是因为 EMA Hook 无法获取命令行参数，从而无法实现重新加载权重功能。
+    如果在训练中你使用了 EMA Hook，那么在 resume 时候你不能通过命令行参数例如 `--resume-from` 和`--cfg-options resume_from` 实现恢复模型参数功能例如 `python tools/train.py configs/yolox/yolox_s_8x8_300e_coco.py --resume-from ./work_dir/yolox_s_8x8_300e_coco/epoch_1.pth`，只能通过修改配置文件中的 `resume_from` 字段实现。这是因为 EMA Hook 无法获取命令行参数，从而无法实现重新加载权重功能。
 
 ## Evaluation 相关
 
