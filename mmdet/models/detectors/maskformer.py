@@ -32,13 +32,22 @@ class MaskFormer(SingleStageDetector):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
-    def forward_dummy(self, img):
-        """Used for computing network flops.
+    def forward_dummy(self, img, img_metas):
+        """Used for computing network flops. See
+        `mmdetection/tools/analysis_tools/get_flops.py`
 
-        See `mmdetection/tools/analysis_tools/get_flops.py`
+        Args:
+            img (Tensor): of shape (N, C, H, W) encoding input images.
+                Typically these should be mean centered and std scaled.
+            img_metas (list[Dict]): list of image info dict where each dict
+                has: 'img_shape', 'scale_factor', 'flip', and may also contain
+                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
+                For details on the values of these keys see
+                `mmdet/datasets/pipelines/formatting.py:Collect`.
         """
+        super(SingleStageDetector, self).forward_train(img, img_metas)
         x = self.extract_feat(img)
-        outs = self.panoptic_head(x)
+        outs = self.panoptic_head(x, img_metas)
         return outs
 
     def forward_train(self,
