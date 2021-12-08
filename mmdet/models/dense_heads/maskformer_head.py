@@ -505,7 +505,7 @@ class MaskFormerHead(AnchorFreeHead):
                                           dtype=torch.float32)
         for i in range(bs):
             img_h, img_w, _ = img_metas[i]['img_shape']
-            padding_mask[i, img_h:, img_w:] = 0
+            padding_mask[i, :img_h, :img_w] = 0
         padding_mask = F.interpolate(
             padding_mask.unsqueeze(1),
             size=feats[-1].shape[-2:],
