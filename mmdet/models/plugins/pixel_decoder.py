@@ -48,7 +48,8 @@ class PixelDecoder(BaseModule):
                 feat_channels,
                 kernel_size=1,
                 bias=self.use_bias,
-                norm_cfg=norm_cfg)
+                norm_cfg=norm_cfg,
+                act_cfg=None)
             o_conv = ConvModule(
                 feat_channels,
                 feat_channels,
@@ -199,7 +200,7 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
                                           dtype=torch.float32)
         for i in range(bs):
             img_h, img_w, _ = img_metas[i]['img_shape']
-            padding_mask[i, img_h:, img_w:] = 0
+            padding_mask[i, :img_h, :img_w] = 0
         padding_mask = F.interpolate(
             padding_mask.unsqueeze(1),
             size=feat_last.shape[-2:],
@@ -220,8 +221,7 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
         # [nq, bs, em] -> [bs, c, h, w]
         memory = memory.permute(1, 2, 0).view(bs, self.encoder_embed_dims, h,
                                               w)
-        memory = self.encoder_out_proj(memory)
-        y = memory
+        y = self.encoder_out_proj(memory)
         for i in range(self.num_inputs - 2, -1, -1):
             x = feats[i]
             cur_fpn = self.lateral_convs[i](x)
