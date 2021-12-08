@@ -4,7 +4,7 @@
 
 - 主干网络 (backbone)：通常是一个用来提取特征图 (feature map) 的全连接网络 (FCN network)，例如：ResNet, MobileNet。
 - 颈部 (neck)：主干网络和头部之间的部分，例如：FPN, PAFPN。
-- 头部 (head)：用于具体任务的模块，例如：边界框预测和掩膜预测。
+- 头部 (head)：用于具体任务的组件，例如：边界框预测和掩膜预测。
 - 区域提取器 (roi extractor)：从特征图中提取RoI特征，例如：RoI Align。
 - 损失 (loss)：在头部组件中用于计算损失的部分，例如：FocalLoss, L1Loss, GHMLoss.
 
@@ -66,7 +66,7 @@ model = dict(
 
 #### 1. 定义一个颈部（以 PAFPN 为例）
 
-新建一个文件 `mmdet/models/necks/pafpn.py`.
+新建一个文件 `mmdet/models/necks/pafpn.py`
 
 ```python
 from ..builder import NECKS
@@ -90,7 +90,7 @@ class PAFPN(nn.Module):
 
 #### 2. 导入该模块
 
-你可以添加下述代码到 `mmdet/models/necks/__init__.py`,
+你可以添加下述代码到 `mmdet/models/necks/__init__.py`
 
 ```python
 from .pafpn import PAFPN
@@ -121,7 +121,7 @@ neck=dict(
 这里，我们以 [Double Head R-CNN](https://arxiv.org/abs/1904.06493) 为例来展示如何开发一个新的头部。
 
 首先，添加一个新的边界框头（bbox head）到 `mmdet/models/roi_heads/bbox_heads/double_bbox_head.py`。
-Double Head R-CNN 在目标检测上实现了一个新的边界框头。为了实现一个边界框头，我们需要使用如下的新模块中三个函数。
+Double Head R-CNN 在目标检测上实现了一个新的边界框头。为了实现边界框头，我们需要使用如下的新模块中三个函数。
 
 ```python
 from mmdet.models.builder import HEADS
@@ -156,7 +156,7 @@ class DoubleConvFCBBoxHead(BBoxHead):
 
 ```
 
-然后，如有必要，实现一个新的边界框头。我们打算从 `StandardRoIHead` 来继承新的 `DoubleHeadRoIHead`。我们可以发现一个 `StandardRoIHead` 已经在下述函数中实现。
+然后，如有必要，实现一个新的边界框头。我们打算从 `StandardRoIHead` 来继承新的 `DoubleHeadRoIHead`。我们可以发现 `StandardRoIHead` 已经实现了下述函数。
 
 ```python
 import torch
@@ -349,7 +349,7 @@ custom_imports=dict(
 到配置文件来实现相同的目的。
 
 如使用，请修改 `loss_xxx` 字段。
-因为 MyLoss 适用于回归的，你去要在头部中修改 `loss_xxx` 字段。
+因为 MyLoss 是用于回归的，你需要在头部中修改 `loss_xxx` 字段。
 
 ```python
 loss_bbox=dict(type='MyLoss', loss_weight=1.0))
