@@ -88,11 +88,11 @@ We list some common troubles faced by many users and their corresponding solutio
 
     It can be turned on by configuring `evaluation = dict(save_best=‘auto’)`. In the case of the `auto` parameter, the first key in the returned evaluation result will be used as the basis for selecting the best model. You can also directly set the key in the evaluation result to manually set it, for example, `evaluation = dict(save_best='mAP' )`.
 
-- Usage of EMA Hook in Resume
+- Resume training with `ExpMomentumEMAHook`
 
-    If you use `EMA Hook` in training, you can't just use command line parameters such as `--resume-from` and `--cfg-options resume_from`to restore model parameters during resume e.g. `python tools/train.py configs/yolox/yolox_s_8x8_300e_coco.py --resume-from ./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth `. Since EMA Hook needs to reload the weights, taking the `yolox_s` algorithm as an example, you can do this by doing the following:
+    If you use `ExpMomentumEMAHook` in training, you can't just use command line parameters  `--resume-from` nor `--cfg-options resume_from` to restore model parameters during resume e.g. `python tools/train.py configs/yolox/yolox_s_8x8_300e_coco.py --resume-from ./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth `. Since `ExpMomentumEMAHook` needs to reload the weights, taking the `yolox_s` algorithm as an example, you can do this as below:
 
-    ```shell
+    ```python
     # Open configs/yolox/yolox_s_8x8_300e_coco.py directly and modify all resume_from fields
     resume_from=./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth
     custom_hooks=[...
@@ -114,20 +114,20 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - `style` in ResNet
 
-    The `style` parameter in ResNet allows either `pytorch` or `caffe` style. It indicates the difference in the Bottleneck module. Bottleneck is a stacking structure of `1x1-3x3-1x1`. In the case of sampling with stride=2, the stride parameter of `caffe` mode is placed on the first `1x1` convolution, while in `pyorch` mode, stride is placed on the second `3x3` convolution. The sample code is as follows:
+    The `style` parameter in ResNet allows either `pytorch` or `caffe` style. It indicates the difference in the Bottleneck module. Bottleneck is a stacking structure of `1x1-3x3-1x1` convolutional layers. In the case of `caffe` mode, the convolution layer with `stride=2` is the first `1x1` convolution, while in `pyorch` mode, it is the second `3x3` convolution has `stride=2`. A sample code is as below:
 
-    ```
+    ```python
     if self.style == 'pytorch':
-            self.conv1_stride = 1
-            self.conv2_stride = stride
-        else:
-            self.conv1_stride = stride
-            self.conv2_stride = 1
+          self.conv1_stride = 1
+          self.conv2_stride = stride
+    else:
+          self.conv1_stride = stride
+          self.conv2_stride = 1
     ```
 
 - ResNeXt parameter description
 
-    ResNeXt comes from the paper [`Aggregated Residual Transformations for Deep Neural Networks`](https://arxiv.org/abs/1611.05431). It introduces  group and uses “cardinality” to control the number of groups to achieve a balance between accuracy and complexity. It controls the basic width and grouping parameters of the internal Bottleneck module through two hyperparameters `baseWidth` and `cardinality`. The configuration name in MMDetection is `mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco.py`, where `mask_rcnn` represents the algorithm using Mask R-CNN, `x101` represents the backbone network using ResNeXt-101, and `64x4d` represents that the bottleneck block has 64 group and each group has basic width of 4.
+    ResNeXt comes from the paper [`Aggregated Residual Transformations for Deep Neural Networks`](https://arxiv.org/abs/1611.05431). It introduces  group and uses “cardinality” to control the number of groups to achieve a balance between accuracy and complexity. It controls the basic width and grouping parameters of the internal Bottleneck module through two hyperparameters `baseWidth` and `cardinality`. An example configuration name in MMDetection is `mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco.py`, where `mask_rcnn` represents the algorithm using Mask R-CNN, `x101` represents the backbone network using ResNeXt-101, and `64x4d` represents that the bottleneck block has 64 group and each group has basic width of 4.
 
 -  `norm_eval` in backbone
 
