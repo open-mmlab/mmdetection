@@ -31,9 +31,14 @@ In this report, we present some experienced improvements to YOLO series, forming
 
 | Backbone  | size   | Mem (GB) |   box AP | Config | Download |
 |:---------:|:-------:|:-------:|:-------:|:--------:|:------:|
+| YOLOX-tiny | 416 |   3.5      |   32.0  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/yolox/yolox_tiny_8x8_300e_coco.py)       |[model](https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_tiny_8x8_300e_coco/yolox_tiny_8x8_300e_coco_20211124_171234-b4047906.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_tiny_8x8_300e_coco/yolox_tiny_8x8_300e_coco_20211124_171234.log.json) |
 | YOLOX-s | 640 |   7.6      |   40.5  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/yolox/yolox_s_8x8_300e_coco.py)       |[model](https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_s_8x8_300e_coco/yolox_s_8x8_300e_coco_20211121_095711-4592a793.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_s_8x8_300e_coco/yolox_s_8x8_300e_coco_20211121_095711.log.json) |
+| YOLOX-l | 640 |   19.9      |   49.4  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/yolox/yolox_l_8x8_300e_coco.py)       |[model](https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_l_8x8_300e_coco/yolox_l_8x8_300e_coco_20211126_140236-d3bd2b23.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_l_8x8_300e_coco/yolox_l_8x8_300e_coco_20211126_140236.log.json) |
+| YOLOX-x | 640 |   28.1      |   50.9  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/yolox/yolox_x_8x8_300e_coco.py)       |[model](https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_x_8x8_300e_coco/yolox_x_8x8_300e_coco_20211126_140254-1ef88d67.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_x_8x8_300e_coco/yolox_x_8x8_300e_coco_20211126_140254.log.json) |
 
 
 **Note**:
 
-1. The test score threshold is 0.001.
+1. The test score threshold is 0.001, and the box AP indicates the best AP.
+2. Due to the need for pre-training weights, we cannot reproduce the performance of the `yolox-nano` model. Please refer to https://github.com/Megvii-BaseDetection/YOLOX/issues/674 for more information.
+3. We also trained the model by the official release of YOLOX based on [Megvii-BaseDetection/YOLOX#735](https://github.com/Megvii-BaseDetection/YOLOX/issues/735) with commit ID [38c633](https://github.com/Megvii-BaseDetection/YOLOX/tree/38c633bf176462ee42b110c70e4ffe17b5753208). We found that the best AP of `YOLOX-tiny`, `YOLOX-s`, `YOLOX-l`, and `YOLOX-x` is 31.8, 40.3, 49.2, and 50.9, respectively. The performance is consistent with that of our re-implementation (see Table above) but still has a gap (0.3~0.8 AP) in comparison with the reported performance in their [README](https://github.com/Megvii-BaseDetection/YOLOX/blob/38c633bf176462ee42b110c70e4ffe17b5753208/README.md#benchmark).
