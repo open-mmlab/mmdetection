@@ -92,9 +92,10 @@ class CustomDataset(Dataset):
             with self.file_client.get_local_path(self.ann_file) as local_path:
                 self.data_infos = self.load_annotations(local_path)
         else:
+            warnings.warn(
+                'We treat the self.ann_file as local paths and it might '
+                'cause errors if the path is not a local path')
             self.data_infos = self.load_annotations(self.ann_file)
-            warnings.warn('Do not use `mmcv.FileClient.get_local_path` here, '
-                          'it is suggested to upgrade MMCV to >= 1.3.16')
 
         if self.proposal_file is not None:
             if hasattr(self.file_client, 'get_local_path'):
@@ -102,10 +103,10 @@ class CustomDataset(Dataset):
                         self.proposal_file) as local_path:
                     self.proposals = self.load_proposals(local_path)
             else:
-                self.proposals = self.load_proposals(self.proposal_file)
                 warnings.warn(
-                    'Do not use `mmcv.FileClient.get_local_path` here, '
-                    'it is suggested to upgrade MMCV to >= 1.3.16')
+                    'We treat the self.ann_file as local paths and it might '
+                    'cause errors if the path is not a local path')
+                self.proposals = self.load_proposals(self.proposal_file)
         else:
             self.proposals = None
 
