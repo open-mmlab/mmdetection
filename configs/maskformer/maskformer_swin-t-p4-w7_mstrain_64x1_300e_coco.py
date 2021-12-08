@@ -85,6 +85,7 @@ model = dict(
             activate=True,
             reduction='mean',
             naive_dice=True,
+            eps=1.0,
             loss_weight=1.0)),
     train_cfg=dict(
         assigner=dict(
