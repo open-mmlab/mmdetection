@@ -15,7 +15,8 @@ from pycocotools.cocoeval import COCOeval
 from tools.analysis_tools.robustness_eval import get_results
 
 from mmdet import datasets
-from mmdet.apis import multi_gpu_test, set_random_seed, single_gpu_test
+from mmdet.apis import (multi_gpu_test, init_random_seed, set_random_seed,
+                        single_gpu_test)
 from mmdet.core import eval_map
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
@@ -210,15 +211,15 @@ def main():
     if hasattr(cfg, "seed") and args.seed is not None:
         seed = args.seed
         print(f'Argument seed passed both in config file and as an argument. \
-            Please avoid setting the seed in the config file if also passing it as an argument. \
-            Using argument random seed {args.seed}')
+            Please avoid setting the seed in the config file if also passing \
+            it as an argument. Using argument random seed {args.seed}')
     elif args.seed is not None:
-        seed=args.seed
+        seed = args.seed
     elif hasattr(cfg, "seed"):
-        seed=cfg.seed
+        seed = cfg.seed
     else:
-        seed=None
-    seed = init_random_seed(seed)   
+        seed = None
+    seed = init_random_seed(seed)
     set_random_seed(seed)
 
     if 'all' in args.corruptions:
