@@ -88,16 +88,24 @@ class CustomDataset(Dataset):
                 self.proposal_file = osp.join(self.data_root,
                                               self.proposal_file)
         # load annotations (and proposals)
-        try:
+        if hasattr(self.file_client, 'get_local_path'):
             with self.file_client.get_local_path(self.ann_file) as local_path:
                 self.data_infos = self.load_annotations(local_path)
-        except AttributeError:
-            raise AttributeError('Please upgrade mmcv to >= 1.3.16')
+        else:
+            self.data_infos = self.load_annotations(self.ann_file)
+            warnings.warn('Do not use `mmcv.FileClient.get_local_path` here, '
+                          'it is suggested to upgrade MMCV to >= 1.3.16')
 
         if self.proposal_file is not None:
-            with self.file_client.get_local_path(
-                    self.proposal_file) as local_path:
-                self.proposals = self.load_proposals(local_path)
+            if hasattr(self.file_client, 'get_local_path'):
+                with self.file_client.get_local_path(
+                        self.proposal_file) as local_path:
+                    self.proposals = self.load_proposals(local_path)
+            else:
+                self.proposals = self.load_proposals(self.proposal_file)
+                warnings.warn(
+                    'Do not use `mmcv.FileClient.get_local_path` here, '
+                    'it is suggested to upgrade MMCV to >= 1.3.16')
         else:
             self.proposals = None
 
