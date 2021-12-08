@@ -93,13 +93,15 @@ We list some common troubles faced by many users and their corresponding solutio
     If you use `EMA Hook` in training, you can't just use command line parameters such as `--resume-from` and `--cfg-options resume_from`to restore model parameters during resume e.g. `python tools/train.py configs/yolox/yolox_s_8x8_300e_coco.py --resume-from ./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth `. Since EMA Hook needs to reload the weights, taking the `yolox_s` algorithm as an example, you can do this by doing the following:
 
     ```shell
-    # method 1, open configs/yolox/yolox_s_8x8_300e_coco.py directly and modify the resume_from (recommended)
+    # Open configs/yolox/yolox_s_8x8_300e_coco.py directly and modify all resume_from fields
     resume_from=./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth
-
-    # method 2, through command line parameters
-    python tools/train.py configs/yolox/yolox_s_8x8_300e_coco.py --cfg-options \
-    resume_from=./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth \
-    custom_hooks.2.resume_from=./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth
+    custom_hooks=[...
+        dict(
+            type='ExpMomentumEMAHook',
+            resume_from=./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth,
+            momentum=0.0001,
+            priority=49)
+        ]
     ```
 
 ## Evaluation

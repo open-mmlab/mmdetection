@@ -95,13 +95,15 @@
     如果在训练中你使用了 EMA Hook，那么在 resume 时候你不能仅仅通过命令行参数例如 `--resume-from` 和`--cfg-options resume_from` 实现恢复模型参数功能例如 `python tools/train.py configs/yolox/yolox_s_8x8_300e_coco.py --resume-from ./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth`。以 `yolox_s` 算法为例，由于 EMA Hook 需要重新加载权重，你可以通过如下做法实现：
 
     ```shell
-    # 方式 1，直接打开 configs/yolox/yolox_s_8x8_300e_coco.py 修改 resume_from 字段 (推荐)
+    # 直接打开 configs/yolox/yolox_s_8x8_300e_coco.py 修改所有 resume_from 字段
     resume_from=./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth
-
-    # 方式 2，通过命令行参数实现
-    python tools/train.py configs/yolox/yolox_s_8x8_300e_coco.py --cfg-options \
-    resume_from=./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth \
-    custom_hooks.2.resume_from=./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth
+    custom_hooks=[...
+        dict(
+            type='ExpMomentumEMAHook',
+            resume_from=./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth,
+            momentum=0.0001,
+            priority=49)
+        ]
     ```
 
 ## Evaluation 相关
