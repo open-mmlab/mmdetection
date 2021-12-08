@@ -119,9 +119,10 @@ class YOLOX(SingleStageDetector):
 
         if self.rank == 0:
             size = random.randint(*self._random_size_range)
-            size = (self._size_multiplier * size, self._size_multiplier * size)
-            tensor[0] = size[0]
-            tensor[1] = size[1]
+            scale_factor = float(
+                self._default_input_size[1]) / self._default_input_size[0]
+            size = (self._size_multiplier * size,
+                    self._size_multiplier * int(scale_factor * size))
 
         if self.world_size > 1:
             dist.barrier()
