@@ -123,6 +123,8 @@ class YOLOX(SingleStageDetector):
                 self._default_input_size[1]) / self._default_input_size[0]
             size = (self._size_multiplier * size,
                     self._size_multiplier * int(scale_factor * size))
+            tensor[0] = size[0]
+            tensor[1] = size[1]
 
         if self.world_size > 1:
             dist.barrier()
