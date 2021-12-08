@@ -17,7 +17,7 @@ Collections:
         - Seesaw Loss
     Paper:
       URL: https://arxiv.org/abs/2008.10032
-      Title: "Seesaw Loss for Long-Tailed Instance Segmentation"
+      Title: 'Seesaw Loss for Long-Tailed Instance Segmentation'
     README: configs/seesaw_loss/README.md
 
 Models:
