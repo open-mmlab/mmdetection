@@ -76,10 +76,12 @@
     2. 降低学习率：由于某些原因，例如 batch size 大小的变化， 导致当前学习率可能太大。 您可以降低为可以稳定训练模型的值。
     3. 延长 warm up 的时间：一些模型在训练初始时对学习率很敏感，您可以把 `warmup_iters` 从 500 更改为 1000 或 2000。
     4. 添加 gradient clipping: 一些模型需要梯度裁剪来稳定训练过程。 默认的 `grad_clip` 是 `None`,  你可以在 config 设置 `optimizer_config=dict(_delete_=True, grad_clip=dict(max_norm=35, norm_type=2))`  如果你的 config 没有继承任何包含 `optimizer_config=dict(grad_clip=None)`,  你可以直接设置`optimizer_config=dict(grad_clip=dict(max_norm=35, norm_type=2))`.
+
 - ’GPU out of memory"
     1. 存在大量 ground truth boxes 或者大量 anchor 的场景，可能在 assigner 会 OOM。 您可以在 assigner 的配置中设置 `gpu_assign_thr=N`，这样当超过 N 个 GT boxes 时，assigner 会通过 CPU 计算 IOU。
     2. 在 backbone 中设置 `with_cp=True`。 这使用 PyTorch 中的 `sublinear strategy` 来降低 backbone 占用的 GPU 显存。
     3. 使用 `config/fp16` 中的示例尝试混合精度训练。`loss_scale` 可能需要针对不同模型进行调整。
+
 - "RuntimeError: Expected to have finished reduction in the prior iteration before starting a new one"
     1. 这个错误出现在存在参数没有在 forward 中使用，容易在 DDP 中运行不同分支时发生。
     2. 你可以在 config 设置 `find_unused_parameters = True`，或者手动查找哪些参数没有用到。
@@ -90,7 +92,17 @@
 
 - Resume 情况下 EMA Hook 说明
 
-    如果在训练中你使用了 EMA Hook，那么在 resume 时候你不能通过命令行参数例如 `--resume-from` 和`--cfg-options resume_from` 实现恢复模型参数功能例如 `python tools/train.py configs/yolox/yolox_s_8x8_300e_coco.py --resume-from ./work_dir/yolox_s_8x8_300e_coco/epoch_1.pth`，只能通过修改配置文件中的 `resume_from` 字段实现。这是因为 EMA Hook 无法获取命令行参数，从而无法实现重新加载权重功能。
+    如果在训练中你使用了 EMA Hook，那么在 resume 时候你不能仅仅通过命令行参数例如 `--resume-from` 和`--cfg-options resume_from` 实现恢复模型参数功能例如 `python tools/train.py configs/yolox/yolox_s_8x8_300e_coco.py --resume-from ./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth`。以 `yolox_s` 算法为例，由于 EMA Hook 需要重新加载权重，你可以通过如下做法实现：
+
+    ```shell
+    # 方式 1，直接打开 configs/yolox/yolox_s_8x8_300e_coco.py 修改 resume_from 字段 (推荐)
+    resume_from=./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth
+
+    # 方式 2，通过命令行参数实现
+    python tools/train.py configs/yolox/yolox_s_8x8_300e_coco.py --cfg-options \
+    resume_from=./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth \
+    custom_hooks.2.resume_from=./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth
+    ```
 
 ## Evaluation 相关
 

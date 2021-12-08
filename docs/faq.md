@@ -74,6 +74,7 @@ We list some common troubles faced by many users and their corresponding solutio
     2. Reduce the learning rate: the learning rate might be too large due to some reasons, e.g., change of batch size. You can rescale them to the value that could stably train the model.
     3. Extend the warmup iterations: some models are sensitive to the learning rate at the start of the training. You can extend the warmup iterations, e.g., change the `warmup_iters` from 500 to 1000 or 2000.
     4. Add gradient clipping: some models requires gradient clipping to stabilize the training process. The default of `grad_clip` is `None`, you can add gradient clippint to avoid gradients that are too large, i.e., set `optimizer_config=dict(_delete_=True, grad_clip=dict(max_norm=35, norm_type=2))` in your config file. If your config does not inherits from any basic config that contains `optimizer_config=dict(grad_clip=None)`, you can simply add `optimizer_config=dict(grad_clip=dict(max_norm=35, norm_type=2))`.
+
 - ’GPU out of memory"
     1. There are some scenarios when there are large amount of ground truth boxes, which may cause OOM during target assignment. You can set `gpu_assign_thr=N` in the config of assigner thus the assigner will calculate box overlaps through CPU when there are more than N GT boxes.
     2. Set `with_cp=True` in the backbone. This uses the sublinear strategy in PyTorch to reduce GPU memory cost in the backbone.
@@ -89,7 +90,17 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - Usage of EMA Hook in Resume
 
-    If you use `EMA Hook` in training, you can't use command line parameters such as `--resume-from` and `--cfg-options resume_from`to restore model parameters during resume e.g. `python tools/train.py configs/yolox/yolox_s_8x8_300e_coco.py --resume-from ./work_dir/yolox_s_8x8_300e_coco/epoch_1.pth `, you can only do so by modifying the `resume_from` field in the configuration file. This is because EMA Hook cannot obtain command line parameters, and thus cannot implement the weight reload function.
+    If you use `EMA Hook` in training, you can't just use command line parameters such as `--resume-from` and `--cfg-options resume_from`to restore model parameters during resume e.g. `python tools/train.py configs/yolox/yolox_s_8x8_300e_coco.py --resume-from ./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth `. Since EMA Hook needs to reload the weights, taking the `yolox_s` algorithm as an example, you can do this by doing the following:
+
+    ```shell
+    # method 1, open configs/yolox/yolox_s_8x8_300e_coco.py directly and modify the resume_from (recommended)
+    resume_from=./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth
+
+    # method 2, through command line parameters
+    python tools/train.py configs/yolox/yolox_s_8x8_300e_coco.py --cfg-options \
+    resume_from=./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth \
+    custom_hooks.2.resume_from=./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth
+    ```
 
 ## Evaluation
 
