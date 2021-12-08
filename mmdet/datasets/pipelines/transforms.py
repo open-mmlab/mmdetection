@@ -9,7 +9,7 @@ import mmcv
 import numpy as np
 from numpy import random
 
-from mmdet.core import PolygonMasks
+from mmdet.core import PolygonMasks, remove_outside_bboxes
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from ..builder import PIPELINES
 
@@ -1982,6 +1982,8 @@ class Mosaic:
            output. Default to (0.5, 1.5).
         min_bbox_size (int | float): The minimum pixel for filtering
             invalid bboxes after the mosaic pipeline. Default to 0.
+        bbox_clip_border (bool, optional): Whether clip the objects outside
+            the border of the image. Defaults to True.
         skip_filter (bool): Whether to skip filtering rules. If it
             is True, the filter rule will not be applied, and the
             `min_bbox_size` is invalid. Default to True.
@@ -1992,12 +1994,14 @@ class Mosaic:
                  img_scale=(640, 640),
                  center_ratio_range=(0.5, 1.5),
                  min_bbox_size=0,
+                 bbox_clip_border=True,
                  skip_filter=True,
                  pad_val=114):
         assert isinstance(img_scale, tuple)
         self.img_scale = img_scale
         self.center_ratio_range = center_ratio_range
         self.min_bbox_size = min_bbox_size
+        self.bbox_clip_border = bbox_clip_border
         self.skip_filter = skip_filter
         self.pad_val = pad_val
 
@@ -2099,15 +2103,24 @@ class Mosaic:
 
         if len(mosaic_labels) > 0:
             mosaic_bboxes = np.concatenate(mosaic_bboxes, 0)
-            mosaic_bboxes[:, 0::2] = np.clip(mosaic_bboxes[:, 0::2], 0,
-                                             2 * self.img_scale[1])
-            mosaic_bboxes[:, 1::2] = np.clip(mosaic_bboxes[:, 1::2], 0,
-                                             2 * self.img_scale[0])
             mosaic_labels = np.concatenate(mosaic_labels, 0)
+
+            if self.bbox_clip_border:
+                mosaic_bboxes[:, 0::2] = np.clip(mosaic_bboxes[:, 0::2], 0,
+                                                 2 * self.img_scale[1])
+                mosaic_bboxes[:, 1::2] = np.clip(mosaic_bboxes[:, 1::2], 0,
+                                                 2 * self.img_scale[0])
 
             if not self.skip_filter:
                 mosaic_bboxes, mosaic_labels = \
                     self._filter_box_candidates(mosaic_bboxes, mosaic_labels)
+
+        # remove outside bboxes
+        inside_inds = remove_outside_bboxes(mosaic_bboxes,
+                                            2 * self.img_scale[0],
+                                            2 * self.img_scale[1])
+        mosaic_bboxes = mosaic_bboxes[inside_inds]
+        mosaic_labels = mosaic_labels[inside_inds]
 
         results['img'] = mosaic_img
         results['img_shape'] = mosaic_img.shape
@@ -2242,6 +2255,8 @@ class MixUp:
         max_aspect_ratio (float): Aspect ratio of width and height
             threshold to filter bboxes. If max(h/w, w/h) larger than this
             value, the box will be removed. Default: 20.
+        bbox_clip_border (bool, optional): Whether clip the objects outside
+            the border of the image. Defaults to True.
         skip_filter (bool): Whether to skip filtering rules. If it
             is True, the filter rule will not be applied, and the
             `min_bbox_size` and `min_area_ratio` and `max_aspect_ratio`
@@ -2257,6 +2272,7 @@ class MixUp:
                  min_bbox_size=5,
                  min_area_ratio=0.2,
                  max_aspect_ratio=20,
+                 bbox_clip_border=True,
                  skip_filter=True):
         assert isinstance(img_scale, tuple)
         self.dynamic_scale = img_scale
@@ -2267,6 +2283,7 @@ class MixUp:
         self.min_bbox_size = min_bbox_size
         self.min_area_ratio = min_area_ratio
         self.max_aspect_ratio = max_aspect_ratio
+        self.bbox_clip_border = bbox_clip_border
         self.skip_filter = skip_filter
 
     def __call__(self, results):
@@ -2370,10 +2387,13 @@ class MixUp:
 
         # 6. adjust bbox
         retrieve_gt_bboxes = retrieve_results['gt_bboxes']
-        retrieve_gt_bboxes[:, 0::2] = np.clip(
-            retrieve_gt_bboxes[:, 0::2] * scale_ratio, 0, origin_w)
-        retrieve_gt_bboxes[:, 1::2] = np.clip(
-            retrieve_gt_bboxes[:, 1::2] * scale_ratio, 0, origin_h)
+        retrieve_gt_bboxes[:, 0::2] = retrieve_gt_bboxes[:, 0::2] * scale_ratio
+        retrieve_gt_bboxes[:, 1::2] = retrieve_gt_bboxes[:, 1::2] * scale_ratio
+        if self.bbox_clip_border:
+            retrieve_gt_bboxes[:, 0::2] = np.clip(retrieve_gt_bboxes[:, 0::2],
+                                                  0, origin_w)
+            retrieve_gt_bboxes[:, 1::2] = np.clip(retrieve_gt_bboxes[:, 1::2],
+                                                  0, origin_h)
 
         if is_filp:
             retrieve_gt_bboxes[:, 0::2] = (
@@ -2381,10 +2401,15 @@ class MixUp:
 
         # 7. filter
         cp_retrieve_gt_bboxes = retrieve_gt_bboxes.copy()
-        cp_retrieve_gt_bboxes[:, 0::2] = np.clip(
-            cp_retrieve_gt_bboxes[:, 0::2] - x_offset, 0, target_w)
-        cp_retrieve_gt_bboxes[:, 1::2] = np.clip(
-            cp_retrieve_gt_bboxes[:, 1::2] - y_offset, 0, target_h)
+        cp_retrieve_gt_bboxes[:, 0::2] = \
+            cp_retrieve_gt_bboxes[:, 0::2] - x_offset
+        cp_retrieve_gt_bboxes[:, 1::2] = \
+            cp_retrieve_gt_bboxes[:, 1::2] - y_offset
+        if self.bbox_clip_border:
+            cp_retrieve_gt_bboxes[:, 0::2] = np.clip(
+                cp_retrieve_gt_bboxes[:, 0::2], 0, target_w)
+            cp_retrieve_gt_bboxes[:, 1::2] = np.clip(
+                cp_retrieve_gt_bboxes[:, 1::2], 0, target_h)
 
         # 8. mix up
         ori_img = ori_img.astype(np.float32)
@@ -2403,6 +2428,12 @@ class MixUp:
             (results['gt_bboxes'], cp_retrieve_gt_bboxes), axis=0)
         mixup_gt_labels = np.concatenate(
             (results['gt_labels'], retrieve_gt_labels), axis=0)
+
+        # remove outside bbox
+        inside_inds = remove_outside_bboxes(mixup_gt_bboxes, target_h,
+                                            target_w)
+        mixup_gt_bboxes = mixup_gt_bboxes[inside_inds]
+        mixup_gt_labels = mixup_gt_labels[inside_inds]
 
         results['img'] = mixup_img.astype(np.uint8)
         results['img_shape'] = mixup_img.shape
@@ -2470,6 +2501,8 @@ class RandomAffine:
         max_aspect_ratio (float): Aspect ratio of width and height
             threshold to filter bboxes. If max(h/w, w/h) larger than this
             value, the box will be removed.
+        bbox_clip_border (bool, optional): Whether clip the objects outside
+            the border of the image. Defaults to True.
         skip_filter (bool): Whether to skip filtering rules. If it
             is True, the filter rule will not be applied, and the
             `min_bbox_size` and `min_area_ratio` and `max_aspect_ratio`
@@ -2486,6 +2519,7 @@ class RandomAffine:
                  min_bbox_size=2,
                  min_area_ratio=0.2,
                  max_aspect_ratio=20,
+                 bbox_clip_border=True,
                  skip_filter=True):
         assert 0 <= max_translate_ratio <= 1
         assert scaling_ratio_range[0] <= scaling_ratio_range[1]
@@ -2499,6 +2533,7 @@ class RandomAffine:
         self.min_bbox_size = min_bbox_size
         self.min_area_ratio = min_area_ratio
         self.max_aspect_ratio = max_aspect_ratio
+        self.bbox_clip_border = bbox_clip_border
         self.skip_filter = skip_filter
 
     def __call__(self, results):
@@ -2559,20 +2594,25 @@ class RandomAffine:
                 warp_bboxes = np.vstack(
                     (xs.min(1), ys.min(1), xs.max(1), ys.max(1))).T
 
-                warp_bboxes[:, [0, 2]] = warp_bboxes[:, [0, 2]].clip(0, width)
-                warp_bboxes[:, [1, 3]] = warp_bboxes[:, [1, 3]].clip(0, height)
+                if self.bbox_clip_border:
+                    warp_bboxes[:, [0, 2]] = \
+                        warp_bboxes[:, [0, 2]].clip(0, width)
+                    warp_bboxes[:, [1, 3]] = \
+                        warp_bboxes[:, [1, 3]].clip(0, height)
 
+                # remove outside bbox
+                valid_index = remove_outside_bboxes(warp_bboxes, height, width)
                 if not self.skip_filter:
                     # filter bboxes
-                    valid_index = self.filter_gt_bboxes(
+                    filter_index = self.filter_gt_bboxes(
                         bboxes * scaling_ratio, warp_bboxes)
-                    results[key] = warp_bboxes[valid_index]
-                    if key in ['gt_bboxes']:
-                        if 'gt_labels' in results:
-                            results['gt_labels'] = results['gt_labels'][
-                                valid_index]
-                else:
-                    results[key] = warp_bboxes
+                    valid_index = valid_index & filter_index
+
+                results[key] = warp_bboxes[valid_index]
+                if key in ['gt_bboxes']:
+                    if 'gt_labels' in results:
+                        results['gt_labels'] = results['gt_labels'][
+                            valid_index]
 
                 if 'gt_masks' in results:
                     raise NotImplementedError(
