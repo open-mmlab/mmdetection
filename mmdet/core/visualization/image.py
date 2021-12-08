@@ -33,7 +33,7 @@ def colors_val(colors):
     """Multiple colors validation,
 
     Args:
-        colors (list[str/tuple/int/ndarray]): Colors or the file containing colors.
+        colors (list[str/tuple/int/ndarray]): Colors or the color file.
 
     Returns:
         list[tuple[float]]: A list of color tuples
