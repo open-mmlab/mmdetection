@@ -8,7 +8,7 @@ from .single_stage import SingleStageDetector
 class MaskFormer(SingleStageDetector):
     r"""Implementation of `Per-Pixel Classification is
     NOT All You Need for Semantic Segmentation
-    <https://arxiv.org/pdf/2107.06278>`"""
+    <https://arxiv.org/pdf/2107.06278>`_"""
 
     def __init__(self,
                  backbone,
@@ -82,7 +82,7 @@ class MaskFormer(SingleStageDetector):
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
-        # ! add batch_input_shape in img_metas
+        # add batch_input_shape in img_metas
         super(SingleStageDetector, self).forward_train(img, img_metas)
         x = self.extract_feat(img)
         losses = self.panoptic_head.forward_train(x, img_metas, gt_bboxes,
