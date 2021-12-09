@@ -65,9 +65,12 @@ class PixelDecoder(BaseModule):
         self.last_feat_output_conv = ConvModule(
             in_channels[-1],
             feat_channels,
-            kernel_size=1,
+            kernel_size=3,
+            padding=1,
+            stride=1,
             bias=self.use_bias,
-            norm_cfg=norm_cfg)
+            norm_cfg=norm_cfg,
+            act_cfg=act_cfg)
         self.mask_feature = Conv2d(
             feat_channels, out_channels, kernel_size=3, stride=1, padding=1)
 
@@ -80,11 +83,13 @@ class PixelDecoder(BaseModule):
         kaiming_init(self.mask_feature, a=1)
         kaiming_init(self.last_feat_output_conv, a=1)
 
-    def forward(self, feats):
+    def forward(self, feats, img_metas):
         """
         Args:
             feats (list[Tensor]): Feature maps of each level. Each has
                 shape of [bs, c, h, w].
+            img_metas (list[dict]): List of image information. Pass in
+                for creating more accurate padding mask. #! not used here.
 
         Returns:
             tuple: a tuple containing the following:
