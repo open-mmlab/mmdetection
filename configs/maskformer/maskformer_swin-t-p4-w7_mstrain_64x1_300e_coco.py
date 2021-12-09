@@ -3,7 +3,6 @@ pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.
 model = dict(
     type='MaskFormer',
     backbone=dict(
-        # _delete_=True,
         type='SwinTransformer',
         embed_dims=96,
         depths=[2, 2, 6, 2],
