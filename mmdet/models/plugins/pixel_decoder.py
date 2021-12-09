@@ -62,7 +62,7 @@ class PixelDecoder(BaseModule):
             self.lateral_convs.append(l_conv)
             self.output_convs.append(o_conv)
 
-        self.last_feat_output_conv = ConvModule(
+        self.last_feat_conv = ConvModule(
             in_channels[-1],
             feat_channels,
             kernel_size=3,
@@ -98,7 +98,7 @@ class PixelDecoder(BaseModule):
                 - memory (Tensor): Output of last stage of backbone.
                     Shape [bs, c, h, w].
         """
-        y = self.last_feat_output_conv(feats[-1])
+        y = self.last_feat_conv(feats[-1])
         for i in range(self.num_inputs - 2, -1, -1):
             x = feats[i]
             cur_fpn = self.lateral_convs[i](x)
@@ -153,7 +153,7 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
             norm_cfg,
             act_cfg,
             init_cfg=init_cfg)
-        self.last_feat_output_conv = None
+        self.last_feat_conv = None
 
         self.encoder = build_transformer_layer_sequence(encoder)
         self.encoder_embed_dims = self.encoder.embed_dims
