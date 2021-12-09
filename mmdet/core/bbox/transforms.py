@@ -4,7 +4,7 @@ import torch
 
 
 def remove_outside_bboxes(bboxes, img_h, img_w):
-    """Remove bboxes that are out of the image boundary.
+    """Remove bboxes that are completely out of the image boundary.
 
     Args:
         bboxes (Tensor): Shape (N, 4).
@@ -14,10 +14,8 @@ def remove_outside_bboxes(bboxes, img_h, img_w):
     Returns:
         Tensor: Index of the remaining bboxes.
     """
-    inside_inds = bboxes[:, 0] < img_w
-    inside_inds = inside_inds & (bboxes[:, 2] > 0)
-    inside_inds = inside_inds & (bboxes[:, 1] < img_h)
-    inside_inds = inside_inds & (bboxes[:, 3] > 0)
+    inside_inds = (bboxes[:, 0] < img_w) & (bboxes[:, 2] > 0) \
+        & (bboxes[:, 1] < img_h) & (bboxes[:, 3] > 0)
     return inside_inds
 
 
