@@ -79,8 +79,8 @@ model = dict(
                     ffn_drop=0.1,
                     dropout_layer=None,
                     add_identity=True),
-                # ! the following parameter was not used,
-                # ! just make current api happy
+                # the following parameter was not used,
+                # just make current api happy
                 feedforward_channels=2048,
                 operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
                                  'ffn', 'norm')),
@@ -210,7 +210,7 @@ lr_config = dict(
     step=[200],
     warmup='linear',
     warmup_by_epoch=False,
-    warmup_ratio=1.0,  # ! no warmup
+    warmup_ratio=1.0,  # no warmup
     warmup_iters=10)
 runner = dict(type='EpochBasedRunner', max_epochs=300)
 

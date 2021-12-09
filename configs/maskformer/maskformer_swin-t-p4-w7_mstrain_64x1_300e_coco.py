@@ -3,6 +3,7 @@ pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.
 model = dict(
     type='MaskFormer',
     backbone=dict(
+        _delete_=True,
         type='SwinTransformer',
         embed_dims=96,
         depths=[2, 2, 6, 2],
@@ -13,7 +14,7 @@ model = dict(
         qk_scale=None,
         drop_rate=0.,
         attn_drop_rate=0.,
-        drop_path_rate=0.3,  # ! 0.3
+        drop_path_rate=0.3,
         patch_norm=True,
         out_indices=(0, 1, 2, 3),
         with_cp=False,
@@ -23,6 +24,7 @@ model = dict(
         type='MaskFormerHead',
         in_channels=[96, 192, 384, 768],  # pass to pixel_decoder inside
         pixel_decoder=dict(
+            _delete_=True,
             type='PixelDecoder',
             norm_cfg=dict(type='GN', num_groups=32),
             act_cfg=dict(type='ReLU')),
