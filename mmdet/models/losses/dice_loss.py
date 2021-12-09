@@ -92,7 +92,7 @@ class DiceLoss(nn.Module):
                  naive_dice=False,
                  loss_weight=1.0,
                  eps=1e-3):
-        """`Dice Loss, there are two forms of dice loss is supported:
+        """Dice Loss, there are two forms of dice loss is supported:
 
             - the one proposed in `V-Net: Fully Convolutional Neural
                 Networks for Volumetric Medical Image Segmentation
