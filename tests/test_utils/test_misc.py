@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import tempfile
+
 import numpy as np
 import pytest
 import torch
@@ -7,6 +9,7 @@ from mmdet.core.bbox import distance2bbox
 from mmdet.core.mask.structures import BitmapMasks, PolygonMasks
 from mmdet.core.utils import (center_of_mass, filter_scores_and_topk,
                               flip_tensor, mask2ndarray, select_single_mlvl)
+from mmdet.utils import find_latest_checkpoint
 
 
 def dummy_raw_polygon_masks(size):
@@ -160,3 +163,35 @@ def test_filter_scores_and_topk():
     assert keep_idxs.allclose(torch.tensor([1, 2, 1, 3]))
     assert results['bbox_pred'].allclose(
         torch.tensor([[0.4, 0.7], [0.1, 0.1], [0.4, 0.7], [0.5, 0.1]]))
+
+
+def test_find_latest_checkpoint():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = tmpdir + '/none'
+        latest = find_latest_checkpoint(path)
+        assert latest is None
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with open(tmpdir + '/latest.pth', 'w') as f:
+            f.write('latest')
+        path = tmpdir
+        latest = find_latest_checkpoint(path)
+        assert latest == tmpdir + '/latest.pth'
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with open(tmpdir + '/iter_4000.pth', 'w') as f:
+            f.write('iter_4000')
+        with open(tmpdir + '/iter_8000.pth', 'w') as f:
+            f.write('iter_8000')
+        path = tmpdir
+        latest = find_latest_checkpoint(path)
+        assert latest == tmpdir + '/iter_8000.pth'
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with open(tmpdir + '/epoch_1.pth', 'w') as f:
+            f.write('epoch_1')
+        with open(tmpdir + '/epoch_2.pth', 'w') as f:
+            f.write('epoch_2')
+        path = tmpdir
+        latest = find_latest_checkpoint(path)
+        assert latest == tmpdir + '/epoch_2.pth'
