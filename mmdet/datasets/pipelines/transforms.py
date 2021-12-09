@@ -239,6 +239,9 @@ class Resize:
         """Resize bounding boxes with ``results['scale_factor']``."""
         for key in results.get('bbox_fields', []):
             bboxes = results[key] * results['scale_factor']
+            # In some dataset like MOT17, the gt bboxes are allowed to cross
+            # the border of images. Therefore, we don't need to clip the gt
+            # bboxes in these cases.
             if self.bbox_clip_border:
                 img_shape = results['img_shape']
                 bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1])
@@ -2105,6 +2108,9 @@ class Mosaic:
             mosaic_bboxes = np.concatenate(mosaic_bboxes, 0)
             mosaic_labels = np.concatenate(mosaic_labels, 0)
 
+            # In some dataset like MOT17, the gt bboxes are allowed to cross
+            # the border of images. Therefore, we don't need to clip the gt
+            # bboxes in these cases.
             if self.bbox_clip_border:
                 mosaic_bboxes[:, 0::2] = np.clip(mosaic_bboxes[:, 0::2], 0,
                                                  2 * self.img_scale[1])
@@ -2389,6 +2395,9 @@ class MixUp:
         retrieve_gt_bboxes = retrieve_results['gt_bboxes']
         retrieve_gt_bboxes[:, 0::2] = retrieve_gt_bboxes[:, 0::2] * scale_ratio
         retrieve_gt_bboxes[:, 1::2] = retrieve_gt_bboxes[:, 1::2] * scale_ratio
+        # In some dataset like MOT17, the gt bboxes are allowed to cross
+        # the border of images. Therefore, we don't need to clip the gt
+        # bboxes in these cases.
         if self.bbox_clip_border:
             retrieve_gt_bboxes[:, 0::2] = np.clip(retrieve_gt_bboxes[:, 0::2],
                                                   0, origin_w)
@@ -2405,6 +2414,9 @@ class MixUp:
             cp_retrieve_gt_bboxes[:, 0::2] - x_offset
         cp_retrieve_gt_bboxes[:, 1::2] = \
             cp_retrieve_gt_bboxes[:, 1::2] - y_offset
+        # In some dataset like MOT17, the gt bboxes are allowed to cross
+        # the border of images. Therefore, we don't need to clip the gt
+        # bboxes in these cases.
         if self.bbox_clip_border:
             cp_retrieve_gt_bboxes[:, 0::2] = np.clip(
                 cp_retrieve_gt_bboxes[:, 0::2], 0, target_w)
@@ -2594,6 +2606,9 @@ class RandomAffine:
                 warp_bboxes = np.vstack(
                     (xs.min(1), ys.min(1), xs.max(1), ys.max(1))).T
 
+                # In some dataset like MOT17, the gt bboxes are allowed to
+                # cross the border of images. Therefore, we don't need to clip
+                # the gt bboxes in these cases.
                 if self.bbox_clip_border:
                     warp_bboxes[:, [0, 2]] = \
                         warp_bboxes[:, [0, 2]].clip(0, width)
