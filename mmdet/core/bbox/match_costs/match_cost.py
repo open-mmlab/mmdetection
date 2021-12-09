@@ -187,7 +187,7 @@ class IoUCost:
 
 @MATCH_COST.register_module()
 class DiceCost:
-    """DiceCost.
+    """Cost of mask assignments based on dice losses.
 
     Args:
         weight (int | float, optional): loss_weight. Defaults to 1.
@@ -204,13 +204,13 @@ class DiceCost:
     def binary_mask_dice_loss(self, mask_preds, gt_masks):
         """
         Args:
-            mask_preds (Tensor): Mask prediction, shape = [N1, H, W].
-            gt_masks (Tensor): Ground truth, shape = [N2, H, W],
+            mask_preds (Tensor): Mask prediction in shape (N1, H, W).
+            gt_masks (Tensor): Ground truth in shape (N2, H, W)
                 store 0 or 1, 0 for negative class and 1 for
                 positive class.
 
         Returns:
-            Tensor: Dice cost matrix, shape [N1, N2].
+            Tensor: Dice cost matrix in shape (N1, N2).
         """
         mask_preds = mask_preds.reshape((mask_preds.shape[0], -1))
         gt_masks = gt_masks.reshape((gt_masks.shape[0], -1)).float()
@@ -222,11 +222,11 @@ class DiceCost:
     def __call__(self, mask_preds, gt_masks):
         """
         Args:
-            mask_preds (Tensor): Mask prediction logits, shape [N1, h, w].
-            gt_masks (Tensor): Ground truth, shape [N2, h, w].
+            mask_preds (Tensor): Mask prediction logits in shape (N1, H, W).
+            gt_masks (Tensor): Ground truth in shape (N2, H, W).
 
         Returns:
-            Tensor: Dice cost matrix, shape [N1, N2].
+            Tensor: Dice cost matrix in shape (N1, N2).
         """
         if self.pred_act:
             mask_preds = mask_preds.sigmoid()
@@ -236,7 +236,7 @@ class DiceCost:
 
 @MATCH_COST.register_module()
 class MaskFocalLossCost(FocalLossCost):
-    """MaskFocalLossCost.
+    """Cost of mask assignments based on focal losses.
 
     Args:
         weight (int | float, optional): loss_weight.
@@ -248,13 +248,13 @@ class MaskFocalLossCost(FocalLossCost):
     def __call__(self, cls_pred, gt_labels):
         """
         Args:
-            cls_pred (Tensor): Predicted classfication logits,
-                shape [n1, h, w], dtype=torch.float32.
-            gt_labels (Tensor): Ground truth, shape [n2, h, w],
+            cls_pred (Tensor): Predicted classfication logits
+                in shape (N1, H, W), dtype=torch.float32.
+            gt_labels (Tensor): Ground truth in shape (N2, H, W),
                 dtype=torch.long.
 
         Returns:
-            Tensor: classification cost matrix, shape [n1, n2].
+            Tensor: classification cost matrix in shape (N1, N2).
         """
         cls_pred = cls_pred.reshape((cls_pred.shape[0], -1))
         gt_labels = gt_labels.reshape((gt_labels.shape[0], -1)).float()
