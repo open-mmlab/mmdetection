@@ -291,25 +291,10 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         else:
             return mlvl_bboxes, mlvl_scores, mlvl_labels
 
-    def forward_train(self,
-                      x,
-                      img_metas,
-                      gt_bboxes,
-                      gt_labels=None,
-                      gt_bboxes_ignore=None,
-                      proposal_cfg=None,
-                      **kwargs):
+    def forward_train(self, x, data_samples, proposal_cfg=None, **kwargs):
         """
         Args:
             x (list[Tensor]): Features from FPN.
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            gt_bboxes (Tensor): Ground truth bboxes of the image,
-                shape (num_gts, 4).
-            gt_labels (Tensor): Ground truth labels of each box,
-                shape (num_gts,).
-            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
-                ignored, shape (num_ignored_gts, 4).
             proposal_cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used
 
@@ -318,7 +303,30 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 losses: (dict[str, Tensor]): A dictionary of loss components.
                 proposal_list (list[Tensor]): Proposals of each image.
         """
+        img_metas = [data_sample['meta'] for data_sample in data_samples]
+
         outs = self(x)
+
+        gt_bboxes = [
+            data_sample.gt_instances.bboxes for data_sample in data_samples
+        ]
+
+        if hasattr(data_samples[0].gt_instances, 'labels'):
+            gt_labels = [
+                data_sample.gt_instances.labels for data_sample in data_samples
+            ]
+        else:
+            # RPN
+            gt_labels = None
+
+        if hasattr(data_samples[0], 'instances_ignore'):
+            gt_bboxes_ignore = [
+                data_sample.ignored_instances.bboxes
+                for data_sample in data_samples
+            ]
+        else:
+            gt_bboxes_ignore = None
+
         if gt_labels is None:
             loss_inputs = outs + (gt_bboxes, img_metas)
         else:

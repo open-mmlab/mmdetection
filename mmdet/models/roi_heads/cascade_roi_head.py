@@ -188,34 +188,27 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         mask_results.update(loss_mask=loss_mask)
         return mask_results
 
-    def forward_train(self,
-                      x,
-                      img_metas,
-                      proposal_list,
-                      gt_bboxes,
-                      gt_labels,
-                      gt_bboxes_ignore=None,
-                      gt_masks=None):
+    def forward_train(self, x, proposal_list, data_samples, **kwargs):
         """
         Args:
             x (list[Tensor]): list of multi-level img features.
-            img_metas (list[dict]): list of image info dict where each dict
-                has: 'img_shape', 'scale_factor', 'flip', and may also contain
-                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
-                For details on the values of these keys see
-                `mmdet/datasets/pipelines/formatting.py:Collect`.
-            proposals (list[Tensors]): list of region proposals.
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box
-            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss.
-            gt_masks (None | Tensor) : true segmentation masks for each box
-                used if the architecture supports a segmentation task.
+            proposal_list (list[Tensors]): list of region proposals.
 
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
+        img_metas = [data_sample['meta'] for data_sample in data_samples]
+        gt_labels = [
+            data_sample.gt_instances.labels for data_sample in data_samples
+        ]
+        gt_bboxes = [
+            data_sample.gt_instances.bboxes for data_sample in data_samples
+        ]
+        gt_bboxes_ignore = [
+            data_sample.ignored_instances.bboxes
+            for data_sample in data_samples
+        ]
+
         losses = dict()
         for i in range(self.num_stages):
             self.current_stage = i
@@ -254,6 +247,10 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
             # mask head forward and loss
             if self.with_mask:
+                gt_masks = [
+                    data_sample.gt_instances.masks
+                    for data_sample in data_samples
+                ]
                 mask_results = self._mask_forward_train(
                     i, x, sampling_results, gt_masks, rcnn_train_cfg,
                     bbox_results['bbox_feats'])

@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import copy
+
 import torch
 
 from mmdet.core import bbox2roi, multiclass_nms
@@ -25,12 +27,13 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
             test_cfg=None,
             pretrained=None,
             init_cfg=None,
+            img_norm_cfg=None,
             # for panoptic segmentation
             semantic_head=None,
             panoptic_fusion_head=None):
         super(TwoStagePanopticSegmentor,
               self).__init__(backbone, neck, rpn_head, roi_head, train_cfg,
-                             test_cfg, pretrained, init_cfg)
+                             test_cfg, pretrained, init_cfg, img_norm_cfg)
         if semantic_head is not None:
             self.semantic_head = build_head(semantic_head)
         if panoptic_fusion_head is not None:
@@ -63,16 +66,7 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         raise NotImplementedError(
             f'`forward_dummy` is not implemented in {self.__class__.__name__}')
 
-    def forward_train(self,
-                      img,
-                      img_metas,
-                      gt_bboxes,
-                      gt_labels,
-                      gt_bboxes_ignore=None,
-                      gt_masks=None,
-                      gt_semantic_seg=None,
-                      proposals=None,
-                      **kwargs):
+    def forward_train(self, img, data_samples, proposals=None, **kwargs):
         x = self.extract_feat(img)
         losses = dict()
 
@@ -80,24 +74,24 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         if self.with_rpn:
             proposal_cfg = self.train_cfg.get('rpn_proposal',
                                               self.test_cfg.rpn)
+
+            # TODO: RPN does not need gt label, so it needs to be
+            # deleted forcibly.
+            cp_data_samples = copy.deepcopy(data_samples)
+            for data_sample in cp_data_samples:
+                del data_sample.gt_instances.labels
+
             rpn_losses, proposal_list = self.rpn_head.forward_train(
-                x,
-                img_metas,
-                gt_bboxes,
-                gt_labels=None,
-                gt_bboxes_ignore=gt_bboxes_ignore,
-                proposal_cfg=proposal_cfg)
+                x, cp_data_samples, proposal_cfg=proposal_cfg)
             losses.update(rpn_losses)
         else:
             proposal_list = proposals
 
-        roi_losses = self.roi_head.forward_train(x, img_metas, proposal_list,
-                                                 gt_bboxes, gt_labels,
-                                                 gt_bboxes_ignore, gt_masks,
-                                                 **kwargs)
+        roi_losses = self.roi_head.forward_train(x, proposal_list,
+                                                 data_samples, **kwargs)
         losses.update(roi_losses)
 
-        semantic_loss = self.semantic_head.forward_train(x, gt_semantic_seg)
+        semantic_loss = self.semantic_head.forward_train(x, data_samples)
         losses.update(semantic_loss)
 
         return losses

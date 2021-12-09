@@ -8,15 +8,27 @@ import torch
 import torch.distributed as dist
 from mmcv.runner import BaseModule, auto_fp16
 
+from mmdet.core.utils import stack_batch
 from mmdet.core.visualization import imshow_det_bboxes
 
 
 class BaseDetector(BaseModule, metaclass=ABCMeta):
     """Base class for detectors."""
 
-    def __init__(self, init_cfg=None):
+    def __init__(self, img_norm_cfg, init_cfg=None):
         super(BaseDetector, self).__init__(init_cfg)
         self.fp16_enabled = False
+        self.to_rgb = img_norm_cfg['to_rgb']
+        self.register_buffer('pixel_mean',
+                             torch.tensor(img_norm_cfg['mean']).view(-1, 1, 1),
+                             False)
+        self.register_buffer('pixel_std',
+                             torch.tensor(img_norm_cfg['std']).view(-1, 1, 1),
+                             False)
+
+    @property
+    def device(self):
+        return self.pixel_mean.device
 
     @property
     def with_neck(self):
@@ -60,24 +72,20 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         assert isinstance(imgs, list)
         return [self.extract_feat(img) for img in imgs]
 
-    def forward_train(self, imgs, img_metas, **kwargs):
+    @auto_fp16(apply_to=('imgs', ))
+    def forward_train(self, imgs, data_samples, **kwargs):
         """
         Args:
-            img (list[Tensor]): List of tensors of shape (1, C, H, W).
+            imgs (list[Tensor]): List of tensors of shape (1, C, H, W).
                 Typically these should be mean centered and std scaled.
-            img_metas (list[dict]): List of image info dict where each dict
-                has: 'img_shape', 'scale_factor', 'flip', and may also contain
-                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
-                For details on the values of these keys, see
-                :class:`mmdet.datasets.pipelines.Collect`.
             kwargs (keyword arguments): Specific to concrete implementation.
         """
         # NOTE the batched image size information may be useful, e.g.
         # in DETR, this is needed for the construction of masks, which is
         # then used for the transformer_head.
         batch_input_shape = tuple(imgs[0].size()[-2:])
-        for img_meta in img_metas:
-            img_meta['batch_input_shape'] = batch_input_shape
+        for sample in data_samples:
+            sample.meta['batch_input_shape'] = batch_input_shape
 
     async def async_simple_test(self, img, img_metas, **kwargs):
         raise NotImplementedError
@@ -91,39 +99,58 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         """Test function with test time augmentation."""
         pass
 
-    async def aforward_test(self, *, img, img_metas, **kwargs):
-        for var, name in [(img, 'img'), (img_metas, 'img_metas')]:
+    async def aforward_test(self, *, imgs, data_samples, **kwargs):
+
+        assert isinstance(imgs, list)
+        num_augs = len(imgs)
+        if num_augs == 1:
+            img_metas = [[
+                data_sample[0]['meta'] for data_sample in data_samples
+            ]]
+        else:
+            img_metas = [[data_sample['meta']]
+                         for data_sample in data_samples[0]]
+
+        for var, name in [(imgs, 'img'), (img_metas, 'img_metas')]:
             if not isinstance(var, list):
                 raise TypeError(f'{name} must be a list, but got {type(var)}')
 
-        num_augs = len(img)
         if num_augs != len(img_metas):
-            raise ValueError(f'num of augmentations ({len(img)}) '
+            raise ValueError(f'num of augmentations ({len(imgs)}) '
                              f'!= num of image metas ({len(img_metas)})')
         # TODO: remove the restriction of samples_per_gpu == 1 when prepared
-        samples_per_gpu = img[0].size(0)
+        samples_per_gpu = imgs[0].size(0)
         assert samples_per_gpu == 1
 
         if num_augs == 1:
-            return await self.async_simple_test(img[0], img_metas[0], **kwargs)
+            return await self.async_simple_test(imgs[0], img_metas[0],
+                                                **kwargs)
         else:
             raise NotImplementedError
 
-    def forward_test(self, imgs, img_metas, **kwargs):
+    # TODO:  auto_fp16 supports context embedding
+    @auto_fp16(apply_to=('imgs', ))
+    def forward_test(self, imgs, data_samples, **kwargs):
         """
         Args:
-            imgs (List[Tensor]): the outer list indicates test-time
-                augmentations and inner Tensor should have a shape NxCxHxW,
-                which contains all images in the batch.
-            img_metas (List[List[dict]]): the outer list indicates test-time
-                augs (multiscale, flip, etc.) and the inner list indicates
-                images in a batch.
+            imgs (List[List[Tensor]]): the outer list indicates test-time
+                augmentations and inner list indicates batch images, the Tensor
+                should have a shape NxCxHxW.
         """
+        assert isinstance(imgs, list)
+        num_augs = len(imgs)
+        if num_augs == 1:
+            img_metas = [[
+                data_sample[0]['meta'] for data_sample in data_samples
+            ]]
+        else:
+            img_metas = [[data_sample['meta']]
+                         for data_sample in data_samples[0]]
+
         for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
             if not isinstance(var, list):
                 raise TypeError(f'{name} must be a list, but got {type(var)}')
 
-        num_augs = len(imgs)
         if num_augs != len(img_metas):
             raise ValueError(f'num of augmentations ({len(imgs)}) '
                              f'!= num of image meta ({len(img_metas)})')
@@ -153,25 +180,115 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
             assert 'proposals' not in kwargs
             return self.aug_test(imgs, img_metas, **kwargs)
 
-    @auto_fp16(apply_to=('img', ))
-    def forward(self, img, img_metas, return_loss=True, **kwargs):
-        """Calls either :func:`forward_train` or :func:`forward_test` depending
-        on whether ``return_loss`` is ``True``.
-
-        Note this setting will change the expected inputs. When
-        ``return_loss=True``, img and img_meta are single-nested (i.e. Tensor
-        and List[dict]), and when ``resturn_loss=False``, img and img_meta
-        should be double nested (i.e.  List[Tensor], List[List[dict]]), with
-        the outer list indicating test time augmentations.
+    def forward(self, data, optimizer=None, return_loss=True, **kwargs):
+        """The iteration step during training.
+        This method defines an iteration step during training, except for the
+        back propagation and optimizer updating, which are done in an optimizer
+        hook. Note that in some complicated cases or models, the whole process
+        including back propagation and optimizer updating is also defined in
+        this method, such as GAN.
+        Args:
+            data (list[dict]): The output of dataloader.
+            optimizer (:obj:`torch.optim.Optimizer` | dict): The optimizer of
+                runner is passed to ``train_step()``. This argument is unused
+                and reserved.
+        Returns:
+            dict: It should contain at least 3 keys: ``loss``, ``log_vars``, \
+                ``num_samples``.
+                - ``loss`` is a tensor for back propagation, which can be a
+                  weighted sum of multiple losses.
+                - ``log_vars`` contains all the variables to be sent to the
+                  logger.
+                - ``num_samples`` indicates the batch size (when the model is
+                  DDP, it means the batch size on each GPU), which is used for
+                  averaging the logs.
         """
         if torch.onnx.is_in_onnx_export():
-            assert len(img_metas) == 1
-            return self.onnx_export(img[0], img_metas[0])
+            images, data_samples = self.preprocss_testing_data(data)
+            assert len(images) == 1
+            return self.onnx_export(images[0], data_samples[0])
 
         if return_loss:
-            return self.forward_train(img, img_metas, **kwargs)
+            batch_image, data_samples = self.preprocss_training_data(data)
+            losses = self.forward_train(batch_image, data_samples, **kwargs)
+            loss, log_vars = self._parse_losses(losses)
+
+            outputs = dict(
+                loss=loss, log_vars=log_vars, num_samples=len(data_samples))
+
+            return outputs
         else:
-            return self.forward_test(img, img_metas, **kwargs)
+            images, data_samples = self.preprocss_testing_data(data)
+            return self.forward_test(images, data_samples, **kwargs)
+
+    def preprocss_training_data(self, data):
+        """ Process input data during training and testing phases.
+        Args:
+            data (list[dict]): The data to be processed, which
+                comes from dataloader.
+
+        Returns:
+            tuple:  It should contain 3 item.
+                 - img (Tensor): The batch image tensor.
+                 - img_metas (list[dict], list[list[dict]]): Meta information
+                     of each image, e.g., image size, scaling factor, etc.
+                 - data_samples (list[:obj:`GeneralData`], Optional): The Data
+                     Samples. It usually includes information such as
+                     `gt_instance`. Return None If the input datas does not
+                     contain `data_sample`.
+        """
+        images = [data_['img'] for data_ in data]
+        data_samples = [data_['data_sample'] for data_ in data]
+
+        data_samples = [
+            data_sample.to(self.device) for data_sample in data_samples
+        ]
+        images = [img.to(self.device) for img in images]
+        if self.to_rgb and images[0].size(0) == 3:
+            images = [image[[2, 1, 0], ...] for image in images]
+        images = [(x - self.pixel_mean) / self.pixel_std for x in images]
+        batch_image = stack_batch(images)
+
+        return batch_image, data_samples
+
+    def preprocss_testing_data(self, data):
+        """ Process input data during training and testing phases.
+        Args:
+            data (list[dict]): The data to be processed, which
+                comes from dataloader.
+
+        Returns:
+            tuple:  It should contain 3 item.
+                 - img (Tensor): The batch image tensor.
+                 - img_metas (list[dict], list[list[dict]]): Meta information
+                     of each image, e.g., image size, scaling factor, etc.
+                 - data_samples (list[:obj:`GeneralData`], Optional): The Data
+                     Samples. It usually includes information such as
+                     `gt_instance`. Return None If the input datas does not
+                     contain `data_sample`.
+        """
+        images = [data_['img'] for data_ in data]
+        data_samples = [data_['data_sample'] for data_ in data]
+
+        if len(images[0]) > 1:
+            model_state = 'testing_with_msaug'
+            images = [image.to(self.device) for image in images[0]]
+        else:
+            model_state = 'testing_no_msaug'
+            images = [image[0].to(self.device) for image in images]
+
+        if self.to_rgb and images[0].size(0) == 3:
+            images = [image[[2, 1, 0], ...] for image in images]
+        images = [(x - self.pixel_mean) / self.pixel_std for x in images]
+
+        if model_state == 'testing_no_msaug':
+            images = [stack_batch(images)]
+        elif model_state == 'testing_with_msaug':
+            images = [stack_batch([img]) for img in images]
+        else:
+            raise NotImplementedError()
+
+        return images, data_samples
 
     def _parse_losses(self, losses):
         """Parse the raw outputs (losses) of the network.
@@ -207,56 +324,6 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
             log_vars[loss_name] = loss_value.item()
 
         return loss, log_vars
-
-    def train_step(self, data, optimizer):
-        """The iteration step during training.
-
-        This method defines an iteration step during training, except for the
-        back propagation and optimizer updating, which are done in an optimizer
-        hook. Note that in some complicated cases or models, the whole process
-        including back propagation and optimizer updating is also defined in
-        this method, such as GAN.
-
-        Args:
-            data (dict): The output of dataloader.
-            optimizer (:obj:`torch.optim.Optimizer` | dict): The optimizer of
-                runner is passed to ``train_step()``. This argument is unused
-                and reserved.
-
-        Returns:
-            dict: It should contain at least 3 keys: ``loss``, ``log_vars``, \
-                ``num_samples``.
-
-                - ``loss`` is a tensor for back propagation, which can be a
-                  weighted sum of multiple losses.
-                - ``log_vars`` contains all the variables to be sent to the
-                  logger.
-                - ``num_samples`` indicates the batch size (when the model is
-                  DDP, it means the batch size on each GPU), which is used for
-                  averaging the logs.
-        """
-        losses = self(**data)
-        loss, log_vars = self._parse_losses(losses)
-
-        outputs = dict(
-            loss=loss, log_vars=log_vars, num_samples=len(data['img_metas']))
-
-        return outputs
-
-    def val_step(self, data, optimizer=None):
-        """The iteration step during validation.
-
-        This method shares the same signature as :func:`train_step`, but used
-        during val epochs. Note that the evaluation after training epochs is
-        not implemented with this method, but an evaluation hook.
-        """
-        losses = self(**data)
-        loss, log_vars = self._parse_losses(losses)
-
-        outputs = dict(
-            loss=loss, log_vars=log_vars, num_samples=len(data['img_metas']))
-
-        return outputs
 
     def show_result(self,
                     img,
@@ -345,6 +412,7 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         if not (show or out_file):
             return img
 
-    def onnx_export(self, img, img_metas):
+    # TODO
+    def onnx_export(self, img, data_sample):
         raise NotImplementedError(f'{self.__class__.__name__} does '
                                   f'not support ONNX EXPORT')

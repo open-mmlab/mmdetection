@@ -3,8 +3,11 @@ _base_ = [
     '../_base_/datasets/coco_panoptic.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
+img_norm_cfg = dict(
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 model = dict(
     type='PanopticFPN',
+    img_norm_cfg=img_norm_cfg,
     semantic_head=dict(
         type='PanopticFPNHead',
         num_things_classes=80,
@@ -30,4 +33,5 @@ model = dict(
             nms=dict(type='nms', iou_threshold=0.5, class_agnostic=True),
             stuff_area_limit=4096)))
 
+# Forced to remove NumClassCheckHook
 custom_hooks = []

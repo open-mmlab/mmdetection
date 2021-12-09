@@ -6,7 +6,8 @@ import torch
 from mmdet.core.bbox import distance2bbox
 from mmdet.core.mask.structures import BitmapMasks, PolygonMasks
 from mmdet.core.utils import (center_of_mass, filter_scores_and_topk,
-                              flip_tensor, mask2ndarray, select_single_mlvl)
+                              flip_tensor, mask2ndarray, select_single_mlvl,
+                              stack_batch)
 
 
 def dummy_raw_polygon_masks(size):
@@ -160,3 +161,24 @@ def test_filter_scores_and_topk():
     assert keep_idxs.allclose(torch.tensor([1, 2, 1, 3]))
     assert results['bbox_pred'].allclose(
         torch.tensor([[0.4, 0.7], [0.1, 0.1], [0.4, 0.7], [0.5, 0.1]]))
+
+
+def test_padding_stacking_to_max_shape():
+    input_tensor = torch.rand((3, 10, 10))
+    # test list input
+    with pytest.raises(AssertionError):
+        stack_batch(input_tensor)
+
+    # test ndim error
+    with pytest.raises(AssertionError):
+        stack_batch([torch.rand((10, 10)), torch.rand((3, 8, 7))])
+
+    # test shape error
+    with pytest.raises(AssertionError):
+        stack_batch([torch.rand((2, 10, 10)), torch.rand((3, 8, 7))])
+
+    result_tensor = stack_batch([input_tensor])
+    assert result_tensor.shape == (1, 3, 10, 10)
+    input_tensor = [torch.rand((3, 10, 10)), torch.rand((3, 8, 7))]
+    result_tensor = stack_batch(input_tensor)
+    assert result_tensor.shape == (2, 3, 10, 10)
