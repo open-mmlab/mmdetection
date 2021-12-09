@@ -1,6 +1,10 @@
 # model settings
+img_norm_cfg = dict(
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+
 model = dict(
     type='RetinaNet',
+    img_norm_cfg=img_norm_cfg,
     backbone=dict(
         type='ResNet',
         depth=50,

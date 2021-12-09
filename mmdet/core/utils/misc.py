@@ -3,6 +3,7 @@ from functools import partial
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 from six.moves import map, zip
 
 from ..mask.structures import BitmapMasks, PolygonMasks
@@ -206,3 +207,38 @@ def generate_coordinate(featmap_sizes, device='cuda'):
     coord_feat = torch.cat([x, y], 1)
 
     return coord_feat
+
+
+def stack_batch(tensors, pad_value=0):
+    """Stack multiple tensors to form a batch and pad the images to the max
+    shape use the right bottom padding mode in these images.
+
+    Args:
+        tensors (Tensor, List[Tensor]): The input multiple tensors.
+            each is a CHW 3D-tensor.
+        pad_value: The padding value. Default: 0
+
+    Returns:
+       Tensor: The 4D-tensor.
+    """
+    assert isinstance(tensors, list)
+    if len(tensors) == 1:
+        return tensors[0][None]
+
+    assert len(set([tensor.ndim for tensor in tensors])) == 1
+    assert len(set([tensor.shape[:-2] for tensor in tensors])) == 1
+
+    tensor_sizes = [(tensor.shape[-2], tensor.shape[-1]) for tensor in tensors]
+    max_size = np.stack(tensor_sizes).max(0)
+    padded_samples = []
+    for tensor in tensors:
+        padding_size = [
+            0, max_size[-1] - tensor.shape[-1], 0,
+            max_size[-2] - tensor.shape[-2]
+        ]
+        if sum(padding_size) == 0:
+            padded_samples.append(tensor)
+        else:
+            padded_samples.append(F.pad(tensor, padding_size, value=pad_value))
+
+    return torch.stack(padded_samples, dim=0)

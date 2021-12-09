@@ -65,15 +65,7 @@ class BaseRoIHead(BaseModule, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def forward_train(self,
-                      x,
-                      img_meta,
-                      proposal_list,
-                      gt_bboxes,
-                      gt_labels,
-                      gt_bboxes_ignore=None,
-                      gt_masks=None,
-                      **kwargs):
+    def forward_train(self, x, proposal_list, data_samples, **kwargs):
         """Forward function during training."""
 
     async def async_simple_test(self,

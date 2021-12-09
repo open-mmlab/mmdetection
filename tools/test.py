@@ -9,14 +9,13 @@ import mmcv
 import torch
 from mmcv import Config, DictAction
 from mmcv.cnn import fuse_conv_bn
-from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import (get_dist_info, init_dist, load_checkpoint,
                          wrap_fp16_model)
 
 from mmdet.apis import multi_gpu_test, single_gpu_test
-from mmdet.datasets import (build_dataloader, build_dataset,
-                            replace_ImageToTensor)
+from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
+from mmdet.utils.parallel import MMDataParallel, MMDistributedDataParallel
 
 
 def parse_args():
@@ -141,23 +140,15 @@ def main():
             if cfg.model.neck.rfp_backbone.get('pretrained'):
                 cfg.model.neck.rfp_backbone.pretrained = None
 
-    # in case the test dataset is concatenated
     samples_per_gpu = 1
     if isinstance(cfg.data.test, dict):
         cfg.data.test.test_mode = True
         samples_per_gpu = cfg.data.test.pop('samples_per_gpu', 1)
-        if samples_per_gpu > 1:
-            # Replace 'ImageToTensor' to 'DefaultFormatBundle'
-            cfg.data.test.pipeline = replace_ImageToTensor(
-                cfg.data.test.pipeline)
     elif isinstance(cfg.data.test, list):
         for ds_cfg in cfg.data.test:
             ds_cfg.test_mode = True
-        samples_per_gpu = max(
-            [ds_cfg.pop('samples_per_gpu', 1) for ds_cfg in cfg.data.test])
-        if samples_per_gpu > 1:
-            for ds_cfg in cfg.data.test:
-                ds_cfg.pipeline = replace_ImageToTensor(ds_cfg.pipeline)
+            samples_per_gpu = max(
+                [ds_cfg.pop('samples_per_gpu', 1) for ds_cfg in cfg.data.test])
 
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':
