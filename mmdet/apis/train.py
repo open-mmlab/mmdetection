@@ -10,7 +10,7 @@ from mmcv.runner import (DistSamplerSeedHook, EpochBasedRunner,
                          Fp16OptimizerHook, OptimizerHook, build_optimizer,
                          build_runner, get_dist_info)
 
-from mmdet.core import DistEvalHook, EvalHook
+from mmdet.core import DistEvalHook, EvalHook, PreciseBNHook
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
 from mmdet.utils import get_root_logger
@@ -172,6 +172,21 @@ def train_detector(model,
     if distributed:
         if isinstance(runner, EpochBasedRunner):
             runner.register_hook(DistSamplerSeedHook())
+
+    # precise bn setting
+    if cfg.get('precise_bn', False):
+        precise_bn_dataset = build_dataset(cfg.data.train)
+        dataloader_setting = dict(
+            samples_per_gpu=cfg.data.get('samples_per_gpu', 1),
+            workers_per_gpu=0,  # save memory and time
+            num_gpus=len(cfg.gpu_ids),
+            dist=distributed,
+            seed=cfg.seed)
+        data_loader_precise_bn = build_dataloader(precise_bn_dataset,
+                                                  **dataloader_setting)
+        precise_bn_hook = PreciseBNHook(data_loader_precise_bn,
+                                        **cfg.get('precise_bn'))
+        runner.register_hook(precise_bn_hook)
 
     # register eval hooks
     if validate:
