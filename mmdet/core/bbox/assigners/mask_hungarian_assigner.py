@@ -49,10 +49,12 @@ class MaskHungarianAssigner(BaseAssigner):
         """Computes one-to-one matching based on the weighted costs.
 
         Args:
-            cls_pred (Tensor): shape = [N1, ]
-            mask_pred (Tensor): shape = [N1, H, W]
-            gt_labels (Tensor): shape = [N2, ]
-            gt_mask (Tensor): shape = [N2, H, W]
+            cls_pred (Tensor): Class prediction in shape (N1, ),
+                N1 is the number of queries.
+            mask_pred (Tensor): Mask prediction in shape (N1, H, W).
+            gt_labels (Tensor): Label of 'gt_mask'in shape = (N2, ), N2
+                is the number of labels.
+            gt_mask (Tensor): Ground truth mask in shape = (N2, H, W).
             img_meta (dict): Meta information for current image.
             gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
                 labelled as `ignored`. Default None.
@@ -60,7 +62,7 @@ class MaskHungarianAssigner(BaseAssigner):
                 numerical stability. Default 1e-7.
 
         Returns:
-            (:obj:`AssignResult`): The assigned result.
+            :obj:`AssignResult`: The assigned result.
         """
         assert gt_bboxes_ignore is None, \
             'Only case when gt_bboxes_ignore is None is supported.'
