@@ -54,7 +54,7 @@ class Resize:
         ratio_range (tuple[float]): (min_ratio, max_ratio)
         keep_ratio (bool): Whether to keep the aspect ratio when resizing the
             image.
-        bbox_clip_border (bool, optional): Whether clip the objects outside
+        bbox_clip_border (bool, optional): Whether to clip the objects outside
             the border of the image. Defaults to True.
         backend (str): Image resize backend, choices are 'cv2' and 'pillow'.
             These two backends generates slightly different results. Defaults
@@ -1985,7 +1985,7 @@ class Mosaic:
            output. Default to (0.5, 1.5).
         min_bbox_size (int | float): The minimum pixel for filtering
             invalid bboxes after the mosaic pipeline. Default to 0.
-        bbox_clip_border (bool, optional): Whether clip the objects outside
+        bbox_clip_border (bool, optional): Whether to clip the objects outside
             the border of the image. Defaults to True.
         skip_filter (bool): Whether to skip filtering rules. If it
             is True, the filter rule will not be applied, and the
@@ -2261,7 +2261,7 @@ class MixUp:
         max_aspect_ratio (float): Aspect ratio of width and height
             threshold to filter bboxes. If max(h/w, w/h) larger than this
             value, the box will be removed. Default: 20.
-        bbox_clip_border (bool, optional): Whether clip the objects outside
+        bbox_clip_border (bool, optional): Whether to clip the objects outside
             the border of the image. Defaults to True.
         skip_filter (bool): Whether to skip filtering rules. If it
             is True, the filter rule will not be applied, and the
@@ -2513,7 +2513,7 @@ class RandomAffine:
         max_aspect_ratio (float): Aspect ratio of width and height
             threshold to filter bboxes. If max(h/w, w/h) larger than this
             value, the box will be removed.
-        bbox_clip_border (bool, optional): Whether clip the objects outside
+        bbox_clip_border (bool, optional): Whether to clip the objects outside
             the border of the image. Defaults to True.
         skip_filter (bool): Whether to skip filtering rules. If it
             is True, the filter rule will not be applied, and the
