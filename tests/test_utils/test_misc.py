@@ -9,8 +9,8 @@ import torch
 from mmdet.core.bbox import distance2bbox
 from mmdet.core.mask.structures import BitmapMasks, PolygonMasks
 from mmdet.core.utils import (center_of_mass, filter_scores_and_topk,
-                              flip_tensor, mask2ndarray, select_single_mlvl)
-from mmdet.utils import find_latest_checkpoint
+                              flip_tensor, mask2ndarray, select_single_mlvl,
+                              stack_batch)
 
 
 def dummy_raw_polygon_masks(size):
@@ -166,39 +166,22 @@ def test_filter_scores_and_topk():
         torch.tensor([[0.4, 0.7], [0.1, 0.1], [0.4, 0.7], [0.5, 0.1]]))
 
 
-def test_find_latest_checkpoint():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        path = tmpdir
-        latest = find_latest_checkpoint(path)
-        # There are no checkpoints in the path.
-        assert latest is None
+def test_padding_stacking_to_max_shape():
+    input_tensor = torch.rand((3, 10, 10))
+    # test list input
+    with pytest.raises(AssertionError):
+        stack_batch(input_tensor)
 
-        path = osp.join(tmpdir, 'none')
-        latest = find_latest_checkpoint(path)
-        # The path does not exist.
-        assert latest is None
+    # test ndim error
+    with pytest.raises(AssertionError):
+        stack_batch([torch.rand((10, 10)), torch.rand((3, 8, 7))])
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        with open(osp.join(tmpdir, 'latest.pth'), 'w') as f:
-            f.write('latest')
-        path = tmpdir
-        latest = find_latest_checkpoint(path)
-        assert latest == osp.join(tmpdir, 'latest.pth')
+    # test shape error
+    with pytest.raises(AssertionError):
+        stack_batch([torch.rand((2, 10, 10)), torch.rand((3, 8, 7))])
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        with open(osp.join(tmpdir, 'iter_4000.pth'), 'w') as f:
-            f.write('iter_4000')
-        with open(osp.join(tmpdir, 'iter_8000.pth'), 'w') as f:
-            f.write('iter_8000')
-        path = tmpdir
-        latest = find_latest_checkpoint(path)
-        assert latest == osp.join(tmpdir, 'iter_8000.pth')
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        with open(osp.join(tmpdir, 'epoch_1.pth'), 'w') as f:
-            f.write('epoch_1')
-        with open(osp.join(tmpdir, 'epoch_2.pth'), 'w') as f:
-            f.write('epoch_2')
-        path = tmpdir
-        latest = find_latest_checkpoint(path)
-        assert latest == osp.join(tmpdir, 'epoch_2.pth')
+    result_tensor = stack_batch([input_tensor])
+    assert result_tensor.shape == (1, 3, 10, 10)
+    input_tensor = [torch.rand((3, 10, 10)), torch.rand((3, 8, 7))]
+    result_tensor = stack_batch(input_tensor)
+    assert result_tensor.shape == (2, 3, 10, 10)

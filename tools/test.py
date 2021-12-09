@@ -13,12 +13,9 @@ from mmcv.runner import (get_dist_info, init_dist, load_checkpoint,
                          wrap_fp16_model)
 
 from mmdet.apis import multi_gpu_test, single_gpu_test
-from mmdet.datasets import (build_dataloader, build_dataset,
-                            replace_ImageToTensor)
+from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
-from mmdet.utils import (build_ddp, build_dp, compat_cfg, get_device,
-                         replace_cfg_vals, setup_multi_processes,
-                         update_data_root)
+from mmdet.utils.parallel import MMDataParallel, MMDistributedDataParallel
 
 
 def parse_args():

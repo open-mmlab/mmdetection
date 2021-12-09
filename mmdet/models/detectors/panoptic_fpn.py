@@ -18,6 +18,7 @@ class PanopticFPN(TwoStagePanopticSegmentor):
             test_cfg=None,
             pretrained=None,
             init_cfg=None,
+            img_norm_cfg=None,
             # for panoptic segmentation
             semantic_head=None,
             panoptic_fusion_head=None):
@@ -30,5 +31,6 @@ class PanopticFPN(TwoStagePanopticSegmentor):
             test_cfg=test_cfg,
             pretrained=pretrained,
             init_cfg=init_cfg,
+            img_norm_cfg=img_norm_cfg,
             semantic_head=semantic_head,
             panoptic_fusion_head=panoptic_fusion_head)

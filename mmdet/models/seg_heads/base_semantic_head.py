@@ -4,6 +4,7 @@ from abc import ABCMeta, abstractmethod
 import torch.nn.functional as F
 from mmcv.runner import BaseModule, force_fp32
 
+from ...core.utils import stack_batch
 from ..builder import build_loss
 from ..utils import interpolate_as
 
@@ -62,10 +63,14 @@ class BaseSemanticHead(BaseModule, metaclass=ABCMeta):
         """
         pass
 
-    def forward_train(self, x, gt_semantic_seg):
+    def forward_train(self, x, data_samples):
         output = self.forward(x)
         seg_preds = output['seg_preds']
-        return self.loss(seg_preds, gt_semantic_seg)
+        gt_semantic_segs = [
+            data_sample.gt_sem_seg for data_sample in data_samples
+        ]
+        gt_semantic_segs = stack_batch(gt_semantic_segs, pad_value=255)
+        return self.loss(seg_preds, gt_semantic_segs)
 
     def simple_test(self, x, img_metas, rescale=False):
         output = self.forward(x)
