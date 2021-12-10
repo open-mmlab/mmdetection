@@ -20,26 +20,9 @@ class TaskAlignedAssigner(BaseAssigner):
         topk (float): number of bbox selected in each level
     """
 
-    def __init__(self,
-                 topk,
-                 iou_calculator=dict(type='BboxOverlaps2D'),
-                 ignore_iof_thr=-1):
+    def __init__(self, topk, iou_calculator=dict(type='BboxOverlaps2D')):
         self.topk = topk
         self.iou_calculator = build_iou_calculator(iou_calculator)
-        self.ignore_iof_thr = ignore_iof_thr
-
-    def anchor_center(self, anchors):
-        """Get anchor centers from anchors.
-
-        Args:
-            anchors (Tensor): Anchor list with shape (N, 4), "xyxy" format.
-
-        Returns:
-            Tensor: Anchor centers with shape (N, 2), "xy" format.
-        """
-        anchors_cx = (anchors[:, 2] + anchors[:, 0]) / 2
-        anchors_cy = (anchors[:, 3] + anchors[:, 1]) / 2
-        return torch.stack([anchors_cx, anchors_cy], dim=-1)
 
     def assign(self,
                scores,
