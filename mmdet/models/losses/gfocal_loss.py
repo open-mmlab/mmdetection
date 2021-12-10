@@ -210,7 +210,7 @@ class QualityFocalLossWithProb(nn.Module):
                  beta=2.0,
                  reduction='mean',
                  loss_weight=1.0):
-        super(QualityFocalLoss, self).__init__()
+        super(QualityFocalLossWithProb, self).__init__()
         assert use_sigmoid is True, 'Only sigmoid in QFL supported now.'
         self.use_sigmoid = use_sigmoid
         self.beta = beta
