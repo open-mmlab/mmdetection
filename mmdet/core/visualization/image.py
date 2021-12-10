@@ -1,8 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import matplotlib.pyplot as plt
-import os.path as osp
 import mmcv
 import numpy as np
+import os.path as osp
 import pycocotools.mask as mask_util
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
