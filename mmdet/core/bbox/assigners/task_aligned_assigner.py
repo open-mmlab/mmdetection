@@ -1,9 +1,9 @@
 import torch
 
-from mmdet.core.bbox.assigners.base_assigner import BaseAssigner
-from mmdet.core.bbox.builder import BBOX_ASSIGNERS
-from mmdet.core.bbox.iou_calculators import build_iou_calculator
-from .task_aligned_assign_result import TaskAlignedAssignResult
+from ..builder import BBOX_ASSIGNERS
+from ..iou_calculators import build_iou_calculator
+from .assign_result import AssignResult
+from .base_assigner import BaseAssigner
 
 
 @BBOX_ASSIGNERS.register_module()
@@ -102,12 +102,10 @@ class TaskAlignedAssigner(BaseAssigner):
                 assigned_labels = alignment_metrics.new_full((num_bboxes, ),
                                                              -1,
                                                              dtype=torch.long)
-            return TaskAlignedAssignResult(
-                num_gt,
-                assigned_gt_inds,
-                max_overlaps,
-                assign_metrics,
-                labels=assigned_labels)
+            assign_result = AssignResult(
+                num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
+            assign_result = assign_metrics
+            return assign_result
 
         # select top-k bbox as candidates for each gt
         _, candidate_idxs = alignment_metrics.topk(
@@ -159,9 +157,7 @@ class TaskAlignedAssigner(BaseAssigner):
                     assigned_gt_inds[pos_inds] - 1]
         else:
             assigned_labels = None
-        return TaskAlignedAssignResult(
-            num_gt,
-            assigned_gt_inds,
-            max_overlaps,
-            assign_metrics,
-            labels=assigned_labels)
+        assign_result = AssignResult(
+            num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
+        assign_result = assign_metrics
+        return assign_result
