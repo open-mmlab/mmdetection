@@ -105,11 +105,6 @@ class CustomDataset(Dataset):
                         self.proposal_file) as local_path:
                     self.proposals = self.load_proposals(local_path)
             else:
-                warnings.warn(
-                    f'The used MMCV version does not have get_local_path. '
-                    f'We treat the {self.ann_file} as local paths and it '
-                    f'might cause errors if the path is not a local path. '
-                    f'Please use MMCV>= 1.3.16 if you meet errors')
                 self.proposals = self.load_proposals(self.proposal_file)
         else:
             self.proposals = None
