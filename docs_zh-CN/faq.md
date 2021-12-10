@@ -82,7 +82,8 @@
     3. 使用 `config/fp16` 中的示例尝试混合精度训练。`loss_scale` 可能需要针对不同模型进行调整。
 - "RuntimeError: Expected to have finished reduction in the prior iteration before starting a new one"
     1. 这个错误出现在存在参数没有在 forward 中使用，容易在 DDP 中运行不同分支时发生。
-    2. 你可以在 config 设置 `find_unused_parameters = True`，或者手动查找哪些参数没有用到。
+    2. 你可以在 config 设置 `find_unused_parameters = True` 进行训练 (会降低训练速度)。
+    3. 你也可以通过在 config 中的 `optimizer_config` 里设置 `detect_anomalous_params=True` 查找哪些参数没有用到，但是需要 MMCV 的版本 >= 1.4.1。
 
 ## Evaluation 相关
 
