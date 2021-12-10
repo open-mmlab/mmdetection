@@ -104,7 +104,7 @@ class TaskAlignedAssigner(BaseAssigner):
                                                              dtype=torch.long)
             assign_result = AssignResult(
                 num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
-            assign_result = assign_metrics
+            assign_result.assign_metrics = assign_metrics
             return assign_result
 
         # select top-k bbox as candidates for each gt
@@ -159,5 +159,5 @@ class TaskAlignedAssigner(BaseAssigner):
             assigned_labels = None
         assign_result = AssignResult(
             num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
-        assign_result = assign_metrics
+        assign_result.assign_metrics = assign_metrics
         return assign_result
