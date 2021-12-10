@@ -249,7 +249,7 @@ class DoubleHeadRoIHead(StandardRoIHead):
         return bbox_results
 ```
 
-最终，用户需要把该模块添加到 `mmdet/models/bbox_heads/__init__.py` 和 `mmdet/models/roi_heads/__init__.py` 以使相关的文件可以找到并加载他们。
+最终，用户需要把该模块添加到 `mmdet/models/bbox_heads/__init__.py` 和 `mmdet/models/roi_heads/__init__.py` 以使相关的注册表可以找到并加载他们。
 
 或者，用户可以添加：
 
