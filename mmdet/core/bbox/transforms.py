@@ -3,8 +3,8 @@ import numpy as np
 import torch
 
 
-def remove_outside_bboxes(bboxes, img_h, img_w):
-    """Remove bboxes that are completely out of the image boundary.
+def find_inside_bboxes(bboxes, img_h, img_w):
+    """Find bboxes as long as a part of bboxes is inside the image.
 
     Args:
         bboxes (Tensor): Shape (N, 4).

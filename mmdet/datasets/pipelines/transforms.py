@@ -9,7 +9,7 @@ import mmcv
 import numpy as np
 from numpy import random
 
-from mmdet.core import PolygonMasks, remove_outside_bboxes
+from mmdet.core import PolygonMasks, find_inside_bboxes
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from ..builder import PIPELINES
 
@@ -2122,9 +2122,8 @@ class Mosaic:
                     self._filter_box_candidates(mosaic_bboxes, mosaic_labels)
 
         # remove outside bboxes
-        inside_inds = remove_outside_bboxes(mosaic_bboxes,
-                                            2 * self.img_scale[0],
-                                            2 * self.img_scale[1])
+        inside_inds = find_inside_bboxes(mosaic_bboxes, 2 * self.img_scale[0],
+                                         2 * self.img_scale[1])
         mosaic_bboxes = mosaic_bboxes[inside_inds]
         mosaic_labels = mosaic_labels[inside_inds]
 
@@ -2442,8 +2441,7 @@ class MixUp:
             (results['gt_labels'], retrieve_gt_labels), axis=0)
 
         # remove outside bbox
-        inside_inds = remove_outside_bboxes(mixup_gt_bboxes, target_h,
-                                            target_w)
+        inside_inds = find_inside_bboxes(mixup_gt_bboxes, target_h, target_w)
         mixup_gt_bboxes = mixup_gt_bboxes[inside_inds]
         mixup_gt_labels = mixup_gt_labels[inside_inds]
 
@@ -2616,7 +2614,7 @@ class RandomAffine:
                         warp_bboxes[:, [1, 3]].clip(0, height)
 
                 # remove outside bbox
-                valid_index = remove_outside_bboxes(warp_bboxes, height, width)
+                valid_index = find_inside_bboxes(warp_bboxes, height, width)
                 if not self.skip_filter:
                     # filter bboxes
                     filter_index = self.filter_gt_bboxes(
