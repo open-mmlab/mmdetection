@@ -1,12 +1,12 @@
 # 教程 4: 自定义模型
 
-我们基本可以把模型的各个组件分为五类：
+我们简单地把模型的各个组件分为五类：
 
 - 主干网络 (backbone)：通常是一个用来提取特征图 (feature map) 的全连接网络 (FCN network)，例如：ResNet, MobileNet。
-- 颈部 (neck)：主干网络和头部之间的部分，例如：FPN, PAFPN。
-- 头部 (head)：用于具体任务的组件，例如：边界框预测和掩膜预测。
-- 区域提取器 (roi extractor)：从特征图中提取RoI特征，例如：RoI Align。
-- 损失 (loss)：在头部组件中用于计算损失的部分，例如：FocalLoss, L1Loss, GHMLoss.
+- Neck：主干网络和 Head 之间的部分，例如：FPN, PAFPN。
+- Head：用于具体任务的组件，例如：边界框预测和掩码预测。
+- 区域提取器 (roi extractor)：从特征图中提取 RoI 特征，例如：RoI Align。
+- 损失 (loss)：在 Head 组件中用于计算损失的部分，例如：FocalLoss, L1Loss, GHMLoss.
 
 ## 开发新的组件
 
@@ -62,9 +62,9 @@ model = dict(
     ...
 ```
 
-### 添加新的颈部
+### 添加新的 Neck
 
-#### 1. 定义一个颈部（以 PAFPN 为例）
+#### 1. 定义一个 Neck（以 PAFPN 为例）
 
 新建一个文件 `mmdet/models/necks/pafpn.py`
 
@@ -116,12 +116,12 @@ neck=dict(
     num_outs=5)
 ```
 
-### 添加新的头部
+### 添加新的 Head
 
-这里，我们以 [Double Head R-CNN](https://arxiv.org/abs/1904.06493) 为例来展示如何开发一个新的头部。
+这里，我们以 [Double Head R-CNN](https://arxiv.org/abs/1904.06493) 为例来展示如何开发一个新的 Head。
 
-首先，添加一个新的边界框头（bbox head）到 `mmdet/models/roi_heads/bbox_heads/double_bbox_head.py`。
-Double Head R-CNN 在目标检测上实现了一个新的边界框头。为了实现边界框头，我们需要使用如下的新模块中三个函数。
+首先，添加一个新的 bbox head 到 `mmdet/models/roi_heads/bbox_heads/double_bbox_head.py`。
+Double Head R-CNN 在目标检测上实现了一个新的 bbox head。为了实现 bbox head，我们需要使用如下的新模块中三个函数。
 
 ```python
 from mmdet.models.builder import HEADS
@@ -156,7 +156,7 @@ class DoubleConvFCBBoxHead(BBoxHead):
 
 ```
 
-然后，如有必要，实现一个新的边界框头。我们打算从 `StandardRoIHead` 来继承新的 `DoubleHeadRoIHead`。我们可以发现 `StandardRoIHead` 已经实现了下述函数。
+然后，如有必要，实现一个新的 bbox head。我们打算从 `StandardRoIHead` 来继承新的 `DoubleHeadRoIHead`。我们可以发现 `StandardRoIHead` 已经实现了下述函数。
 
 ```python
 import torch
@@ -212,7 +212,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
 ```
 
-Double Head 的修改主要在 bbox_forward 的逻辑中，且它从 `StandardRoIHead` 中继承了其他逻辑。在 `mmdet/models/roi_heads/double_roi_head.py` 中，我们用下述代码实现新的检测框头：
+Double Head 的修改主要在 bbox_forward 的逻辑中，且它从 `StandardRoIHead` 中继承了其他逻辑。在 `mmdet/models/roi_heads/double_roi_head.py` 中，我们用下述代码实现新的 bbox head：
 
 ```python
 from ..builder import HEADS
@@ -349,21 +349,8 @@ custom_imports=dict(
 到配置文件来实现相同的目的。
 
 如使用，请修改 `loss_xxx` 字段。
-因为 MyLoss 是用于回归的，你需要在头部中修改 `loss_xxx` 字段。
+因为 MyLoss 是用于回归的，你需要在 Head 中修改 `loss_xxx` 字段。
 
 ```python
 loss_bbox=dict(type='MyLoss', loss_weight=1.0))
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
