@@ -127,7 +127,13 @@ class SimOTAAssigner(BaseAssigner):
         assigned_gt_inds = decoded_bboxes.new_full((num_bboxes, ),
                                                    0,
                                                    dtype=torch.long)
-        if num_gt == 0 or num_bboxes == 0:
+        valid_mask, is_in_boxes_and_center = self.get_in_gt_and_in_center_info(
+            priors, gt_bboxes)
+        valid_decoded_bbox = decoded_bboxes[valid_mask]
+        valid_pred_scores = pred_scores[valid_mask]
+        num_valid = valid_decoded_bbox.size(0)
+
+        if num_gt == 0 or num_bboxes == 0 or num_valid == 0:
             # No ground truth or boxes, return empty assignment
             max_overlaps = decoded_bboxes.new_zeros((num_bboxes, ))
             if num_gt == 0:
@@ -141,13 +147,6 @@ class SimOTAAssigner(BaseAssigner):
                                                           dtype=torch.long)
             return AssignResult(
                 num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
-
-        valid_mask, is_in_boxes_and_center = self.get_in_gt_and_in_center_info(
-            priors, gt_bboxes)
-
-        valid_decoded_bbox = decoded_bboxes[valid_mask]
-        valid_pred_scores = pred_scores[valid_mask]
-        num_valid = valid_decoded_bbox.size(0)
 
         pairwise_ious = bbox_overlaps(valid_decoded_bbox, gt_bboxes)
         iou_cost = -torch.log(pairwise_ious + eps)
