@@ -6,7 +6,7 @@ import torch
 from mmdet.core import bbox2roi, multiclass_nms
 from ..builder import DETECTORS, build_head
 from ..roi_heads.mask_heads.fcn_mask_head import _do_paste_mask
-from .two_stage import TwoStageDetector
+from .two_stage import TwoStageDetector, results2proposal
 
 
 @DETECTORS.register_module()
@@ -87,6 +87,8 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         else:
             proposal_list = proposals
 
+        # TODO: remove this after refactor two stage input
+        proposal_list = results2proposal(proposal_list)
         roi_losses = self.roi_head.forward_train(x, proposal_list,
                                                  data_samples, **kwargs)
         losses.update(roi_losses)
@@ -165,7 +167,8 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
             proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
         else:
             proposal_list = proposals
-
+        # TODO: remove this after refactor two stage input
+        proposal_list = results2proposal(proposal_list)
         bboxes, scores = self.roi_head.simple_test_bboxes(
             x, img_metas, proposal_list, None, rescale=rescale)
 

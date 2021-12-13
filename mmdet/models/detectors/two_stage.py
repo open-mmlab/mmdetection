@@ -4,6 +4,7 @@ import warnings
 
 import torch
 
+from mmdet.core import InstanceData
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
 
@@ -118,6 +119,8 @@ class TwoStageDetector(BaseDetector):
         else:
             proposal_list = proposals
 
+        # TODO: remove this after refactor two stage input
+        proposal_list = results2proposal(proposal_list)
         roi_losses = self.roi_head.forward_train(x, proposal_list,
                                                  data_samples, **kwargs)
         losses.update(roi_losses)
@@ -138,7 +141,8 @@ class TwoStageDetector(BaseDetector):
                 x, img_meta)
         else:
             proposal_list = proposals
-
+        # TODO: remove this after refactor two stage input
+        proposal_list = results2proposal(proposal_list)
         return await self.roi_head.async_simple_test(
             x, proposal_list, img_meta, rescale=rescale)
 
@@ -151,7 +155,8 @@ class TwoStageDetector(BaseDetector):
             proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
         else:
             proposal_list = proposals
-
+        # TODO: remove this after refactor two stage input
+        proposal_list = results2proposal(proposal_list)
         return self.roi_head.simple_test(
             x, proposal_list, img_metas, rescale=rescale)
 
@@ -163,6 +168,8 @@ class TwoStageDetector(BaseDetector):
         """
         x = self.extract_feats(imgs)
         proposal_list = self.rpn_head.aug_test_rpn(x, img_metas)
+        # TODO: remove this after refactor two stage input
+        proposal_list = results2proposal(proposal_list)
         return self.roi_head.aug_test(
             x, proposal_list, img_metas, rescale=rescale)
 
@@ -181,3 +188,15 @@ class TwoStageDetector(BaseDetector):
                 f'list of supported models,'
                 f'https://mmdetection.readthedocs.io/en/latest/tutorials/pytorch2onnx.html#list-of-supported-models-exportable-to-onnx'  # noqa E501
             )
+
+
+# TODO: remove this after refactor two stage input
+def results2proposal(results_list):
+    if isinstance(results_list[0], InstanceData):
+        proposal_list = []
+        for results in results_list:
+            proposal_list.append(
+                torch.cat([results.bboxes, results.scores[:, None]], dim=-1))
+        return proposal_list
+    else:
+        return results_list

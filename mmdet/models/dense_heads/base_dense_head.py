@@ -1,10 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
 from abc import ABCMeta, abstractmethod
 
 import torch
 from mmcv.ops import batched_nms
 from mmcv.runner import BaseModule, force_fp32
 
+from mmdet.core import InstanceData
 from mmdet.core.utils import filter_scores_and_topk, select_single_mlvl
 
 
@@ -19,16 +21,21 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         """Compute losses of the head."""
         pass
 
+    def get_bboxes(self, *args, **kwargs):
+        warnings.warn('`get_bboxes` is deprecated and will be removed in '
+                      'the future. Please use `get_results` instead.')
+        return self.get_results(*args, **kwargs)
+
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def get_bboxes(self,
-                   cls_scores,
-                   bbox_preds,
-                   score_factors=None,
-                   img_metas=None,
-                   cfg=None,
-                   rescale=False,
-                   with_nms=True,
-                   **kwargs):
+    def get_results(self,
+                    cls_scores,
+                    bbox_preds,
+                    score_factors=None,
+                    img_metas=None,
+                    cfg=None,
+                    rescale=False,
+                    with_nms=True,
+                    **kwargs):
         """Transform network outputs of a batch into bbox results.
 
         Note: When score_factors is not None, the cls_scores are
@@ -90,23 +97,23 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             else:
                 score_factor_list = [None for _ in range(num_levels)]
 
-            results = self._get_bboxes_single(cls_score_list, bbox_pred_list,
-                                              score_factor_list, mlvl_priors,
-                                              img_meta, cfg, rescale, with_nms,
-                                              **kwargs)
+            results = self._get_results_single(cls_score_list, bbox_pred_list,
+                                               score_factor_list, mlvl_priors,
+                                               img_meta, cfg, rescale,
+                                               with_nms, **kwargs)
             result_list.append(results)
         return result_list
 
-    def _get_bboxes_single(self,
-                           cls_score_list,
-                           bbox_pred_list,
-                           score_factor_list,
-                           mlvl_priors,
-                           img_meta,
-                           cfg,
-                           rescale=False,
-                           with_nms=True,
-                           **kwargs):
+    def _get_results_single(self,
+                            cls_score_list,
+                            bbox_pred_list,
+                            score_factor_list,
+                            mlvl_priors,
+                            img_meta,
+                            cfg,
+                            rescale=False,
+                            with_nms=True,
+                            **kwargs):
         """Transform outputs of a single image into bbox predictions.
 
         Args:
@@ -209,20 +216,23 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             mlvl_labels.append(labels)
             if with_score_factors:
                 mlvl_score_factors.append(score_factor)
+        results = InstanceData(img_meta)
+        results.bboxes = torch.cat(mlvl_bboxes)
+        results.scores = torch.cat(mlvl_scores)
+        results.labels = torch.cat(mlvl_labels)
+        if with_score_factors:
+            results.score_factors = torch.cat(mlvl_score_factors)
 
-        return self._bbox_post_process(mlvl_scores, mlvl_labels, mlvl_bboxes,
-                                       img_meta['scale_factor'], cfg, rescale,
-                                       with_nms, mlvl_score_factors, **kwargs)
+        return self._bbox_post_process(results, img_meta['scale_factor'], cfg,
+                                       rescale, with_nms, img_meta, **kwargs)
 
     def _bbox_post_process(self,
-                           mlvl_scores,
-                           mlvl_labels,
-                           mlvl_bboxes,
+                           results,
                            scale_factor,
                            cfg,
                            rescale=False,
                            with_nms=True,
-                           mlvl_score_factors=None,
+                           img_meta=None,
                            **kwargs):
         """bbox post-processing method.
 
@@ -230,14 +240,8 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         the nms operation. Usually with_nms is False is used for aug test.
 
         Args:
-            mlvl_scores (list[Tensor]): Box scores from all scale
-                levels of a single image, each item has shape
-                (num_bboxes, ).
-           mlvl_labels (list[Tensor]): Box class labels from all scale
-                levels of a single image, each item has shape
-                (num_bboxes, ).
-            mlvl_bboxes (list[Tensor]): Decoded bboxes from all scale
-                levels of a single image, each item has shape (num_bboxes, 4).
+            results (obj: InstanceData): Detection instance results,
+                each item has shape (num_bboxes, ).
             scale_factor (ndarray, optional): Scale factor of the image arange
                 as (w_scale, h_scale, w_scale, h_scale).
             cfg (mmcv.Config): Test / postprocessing configuration,
@@ -246,9 +250,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 Default: False.
             with_nms (bool): If True, do nms before return boxes.
                 Default: True.
-            mlvl_score_factors (list[Tensor], optional): Score factor from
-                all scale levels of a single image, each item has shape
-                (num_bboxes, ). Default: None.
+            img_meta (dict, optional): Image meta info. Default: None.
 
         Returns:
             tuple[Tensor]: Results of detected bboxes and labels. If with_nms
@@ -264,32 +266,23 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 - det_labels (Tensor): Predicted labels of the corresponding \
                     box with shape [num_bboxes].
         """
-        assert len(mlvl_scores) == len(mlvl_bboxes) == len(mlvl_labels)
 
-        mlvl_bboxes = torch.cat(mlvl_bboxes)
         if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-        mlvl_scores = torch.cat(mlvl_scores)
-        mlvl_labels = torch.cat(mlvl_labels)
+            results.bboxes /= results.bboxes.new_tensor(scale_factor)
 
-        if mlvl_score_factors is not None:
+        if hasattr(results, 'score_factors'):
             # TODO： Add sqrt operation in order to be consistent with
             #  the paper.
-            mlvl_score_factors = torch.cat(mlvl_score_factors)
-            mlvl_scores = mlvl_scores * mlvl_score_factors
+            score_factors = results.pop('score_factors')
+            results.scores = results.scores * score_factors
 
-        if with_nms:
-            if mlvl_bboxes.numel() == 0:
-                det_bboxes = torch.cat([mlvl_bboxes, mlvl_scores[:, None]], -1)
-                return det_bboxes, mlvl_labels
+        if with_nms and results.bboxes.numel() != 0:
 
-            det_bboxes, keep_idxs = batched_nms(mlvl_bboxes, mlvl_scores,
-                                                mlvl_labels, cfg.nms)
-            det_bboxes = det_bboxes[:cfg.max_per_img]
-            det_labels = mlvl_labels[keep_idxs][:cfg.max_per_img]
-            return det_bboxes, det_labels
+            _, keep_idxs = batched_nms(results.bboxes, results.scores,
+                                       results.labels, cfg.nms)
+            return results[keep_idxs][:cfg.max_per_img]
         else:
-            return mlvl_bboxes, mlvl_scores, mlvl_labels
+            return results
 
     def forward_train(self, x, data_samples, proposal_cfg=None, **kwargs):
         """
