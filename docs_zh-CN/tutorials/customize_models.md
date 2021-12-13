@@ -2,8 +2,8 @@
 
 我们简单地把模型的各个组件分为五类：
 
-- 主干网络 (backbone)：通常是一个用来提取特征图 (feature map) 的全连接网络 (FCN network)，例如：ResNet, MobileNet。
-- Neck：主干网络和 Head 之间的部分，例如：FPN, PAFPN。
+- 主干网络 (backbone)：通常是一个用来提取特征图 (feature map) 的全卷积网络 (FCN network)，例如：ResNet, MobileNet。
+- Neck：主干网络和 Head 之间的连接部分，例如：FPN, PAFPN。
 - Head：用于具体任务的组件，例如：边界框预测和掩码预测。
 - 区域提取器 (roi extractor)：从特征图中提取 RoI 特征，例如：RoI Align。
 - 损失 (loss)：在 Head 组件中用于计算损失的部分，例如：FocalLoss, L1Loss, GHMLoss.
@@ -118,7 +118,7 @@ neck=dict(
 
 ### 添加新的 Head
 
-这里，我们以 [Double Head R-CNN](https://arxiv.org/abs/1904.06493) 为例来展示如何开发一个新的 Head。
+我们以 [Double Head R-CNN](https://arxiv.org/abs/1904.06493) 为例来展示如何添加一个新的 Head。
 
 首先，添加一个新的 bbox head 到 `mmdet/models/roi_heads/bbox_heads/double_bbox_head.py`。
 Double Head R-CNN 在目标检测上实现了一个新的 bbox head。为了实现 bbox head，我们需要使用如下的新模块中三个函数。
