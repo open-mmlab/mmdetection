@@ -74,6 +74,7 @@ We list some common troubles faced by many users and their corresponding solutio
     2. Reduce the learning rate: the learning rate might be too large due to some reasons, e.g., change of batch size. You can rescale them to the value that could stably train the model.
     3. Extend the warmup iterations: some models are sensitive to the learning rate at the start of the training. You can extend the warmup iterations, e.g., change the `warmup_iters` from 500 to 1000 or 2000.
     4. Add gradient clipping: some models requires gradient clipping to stabilize the training process. The default of `grad_clip` is `None`, you can add gradient clippint to avoid gradients that are too large, i.e., set `optimizer_config=dict(_delete_=True, grad_clip=dict(max_norm=35, norm_type=2))` in your config file. If your config does not inherits from any basic config that contains `optimizer_config=dict(grad_clip=None)`, you can simply add `optimizer_config=dict(grad_clip=dict(max_norm=35, norm_type=2))`.
+
 - ’GPU out of memory"
     1. There are some scenarios when there are large amount of ground truth boxes, which may cause OOM during target assignment. You can set `gpu_assign_thr=N` in the config of assigner thus the assigner will calculate box overlaps through CPU when there are more than N GT boxes.
     2. Set `with_cp=True` in the backbone. This uses the sublinear strategy in PyTorch to reduce GPU memory cost in the backbone.
@@ -81,10 +82,54 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - "RuntimeError: Expected to have finished reduction in the prior iteration before starting a new one"
     1. This error indicates that your module has parameters that were not used in producing loss. This phenomenon may be caused by running different branches in your code in DDP mode.
-    2. You can set ` find_unused_parameters = True` in the config to solve the above problems or find those unused parameters manually.
+    2. You can set ` find_unused_parameters = True` in the config to solve the above problems(but this will slow down the training speed.
+    3. If the version of your MMCV >= 1.4.1, you can get the name of those unused parameters with `detect_anomalous_params=True` in `optimizer_config` of config.
+
+- Save the best model
+
+    It can be turned on by configuring `evaluation = dict(save_best=‘auto’)`. In the case of the `auto` parameter, the first key in the returned evaluation result will be used as the basis for selecting the best model. You can also directly set the key in the evaluation result to manually set it, for example, `evaluation = dict(save_best='mAP' )`.
+
+- Resume training with `ExpMomentumEMAHook`
+
+    If you use `ExpMomentumEMAHook` in training, you can't just use command line parameters  `--resume-from` nor `--cfg-options resume_from` to restore model parameters during resume, i.e., the command `python tools/train.py configs/yolox/yolox_s_8x8_300e_coco.py --resume-from ./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth ` will not work. Since `ExpMomentumEMAHook` needs to reload the weights, taking the `yolox_s` algorithm as an example, you should modify the values of `resume_from` in two places of the config as below:
+
+    ```python
+    # Open configs/yolox/yolox_s_8x8_300e_coco.py directly and modify all resume_from fields
+    resume_from=./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth
+    custom_hooks=[...
+        dict(
+            type='ExpMomentumEMAHook',
+            resume_from=./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth,
+            momentum=0.0001,
+            priority=49)
+        ]
+    ```
 
 ## Evaluation
 
 - COCO Dataset, AP or AR = -1
     1. According to the definition of COCO dataset, the small and medium areas in an image are less than 1024 (32\*32), 9216 (96\*96), respectively.
     2. If the corresponding area has no object, the result of AP and AR will set to -1.
+
+## Model
+
+- `style` in ResNet
+
+    The `style` parameter in ResNet allows either `pytorch` or `caffe` style. It indicates the difference in the Bottleneck module. Bottleneck is a stacking structure of `1x1-3x3-1x1` convolutional layers. In the case of `caffe` mode, the convolution layer with `stride=2` is the first `1x1` convolution, while in `pyorch` mode, it is the second `3x3` convolution has `stride=2`. A sample code is as below:
+
+    ```python
+    if self.style == 'pytorch':
+          self.conv1_stride = 1
+          self.conv2_stride = stride
+    else:
+          self.conv1_stride = stride
+          self.conv2_stride = 1
+    ```
+
+- ResNeXt parameter description
+
+    ResNeXt comes from the paper [`Aggregated Residual Transformations for Deep Neural Networks`](https://arxiv.org/abs/1611.05431). It introduces  group and uses “cardinality” to control the number of groups to achieve a balance between accuracy and complexity. It controls the basic width and grouping parameters of the internal Bottleneck module through two hyperparameters `baseWidth` and `cardinality`. An example configuration name in MMDetection is `mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco.py`, where `mask_rcnn` represents the algorithm using Mask R-CNN, `x101` represents the backbone network using ResNeXt-101, and `64x4d` represents that the bottleneck block has 64 group and each group has basic width of 4.
+
+-  `norm_eval` in backbone
+
+    Since the detection model is usually large and the input image resolution is high, this will result in a small batch of the detection model, which will make the variance of the statistics calculated by BatchNorm during the training process very large and not as stable as the statistics obtained during the pre-training of the backbone network . Therefore, the `norm_eval=True` mode is generally used in training, and the BatchNorm statistics in the pre-trained backbone network are directly used. The few algorithms that use large batches are the `norm_eval=False` mode, such as NASFPN. For the backbone network without ImageNet pre-training and the batch is relatively small, you can consider using `SyncBN`.
