@@ -8,8 +8,11 @@ from .base_assigner import BaseAssigner
 
 @BBOX_ASSIGNERS.register_module()
 class TaskAlignedAssigner(BaseAssigner):
-    """Assign a corresponding gt bbox or background to each bbox.
+    """Task aligned assigner used in the paper:
+    `TOOD: Task-aligned One-stage Object Detection.
+    <https://arxiv.org/abs/2108.07755>`_.
 
+    Assign a corresponding gt bbox or background to each bbox.
     Each proposals will be assigned with `0` or a positive integer
     indicating the ground truth index.
 
@@ -17,10 +20,13 @@ class TaskAlignedAssigner(BaseAssigner):
     - positive integer: positive sample, index (1-based) of assigned gt
 
     Args:
-        topk (float): number of bbox selected in each level
+        topk (int): number of bbox selected in each level
+        iou_calculator (dict): Config dict for iou calculator.
+            Default: dict(type='BboxOverlaps2D')
     """
 
     def __init__(self, topk, iou_calculator=dict(type='BboxOverlaps2D')):
+        assert topk >= 1
         self.topk = topk
         self.iou_calculator = build_iou_calculator(iou_calculator)
 
@@ -28,7 +34,6 @@ class TaskAlignedAssigner(BaseAssigner):
                scores,
                decode_bboxes,
                anchors,
-               num_level_bboxes,
                gt_bboxes,
                gt_bboxes_ignore=None,
                gt_labels=None,
@@ -49,7 +54,6 @@ class TaskAlignedAssigner(BaseAssigner):
             scores (Tensor): predicted class probability, shape(n, 80)
             decode_bboxes (Tensor): predicted bounding boxes, shape(n, 4)
             anchors (Tensor): pre-defined anchors, shape(n, 4).
-            num_level_bboxes (List): num of bboxes in each level
             gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
             gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
                 labelled as `ignored`, e.g., crowd boxes in COCO.
@@ -61,38 +65,36 @@ class TaskAlignedAssigner(BaseAssigner):
         INF = 100000000
         anchors = anchors[:, :4]
         num_gt, num_bboxes = gt_bboxes.size(0), anchors.size(0)
-
         # compute alignment metric between all bbox and gt
         overlaps = self.iou_calculator(decode_bboxes, gt_bboxes).detach()
         bbox_scores = scores[:, gt_labels].detach()
-        alignment_metrics = bbox_scores**alpha * overlaps**beta
-
         # assign 0 by default
-        assigned_gt_inds = alignment_metrics.new_full((num_bboxes, ),
-                                                      0,
-                                                      dtype=torch.long)
-        assign_metrics = alignment_metrics.new_zeros((num_bboxes, ))
+        assigned_gt_inds = anchors.new_full((num_bboxes, ),
+                                            0,
+                                            dtype=torch.long)
+        assign_metrics = anchors.new_zeros((num_bboxes, ))
 
         if num_gt == 0 or num_bboxes == 0:
             # No ground truth or boxes, return empty assignment
-            max_overlaps = overlaps.new_zeros((num_bboxes, ))
+            max_overlaps = anchors.new_zeros((num_bboxes, ))
             if num_gt == 0:
                 # No truth, assign everything to background
                 assigned_gt_inds[:] = 0
             if gt_labels is None:
                 assigned_labels = None
             else:
-                assigned_labels = alignment_metrics.new_full((num_bboxes, ),
-                                                             -1,
-                                                             dtype=torch.long)
+                assigned_labels = anchors.new_full((num_bboxes, ),
+                                                   -1,
+                                                   dtype=torch.long)
             assign_result = AssignResult(
                 num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
             assign_result.assign_metrics = assign_metrics
             return assign_result
 
         # select top-k bbox as candidates for each gt
-        _, candidate_idxs = alignment_metrics.topk(
-            self.topk, dim=0, largest=True)
+        alignment_metrics = bbox_scores**alpha * overlaps**beta
+        topk = min(self.topk, alignment_metrics.size(0))
+        _, candidate_idxs = alignment_metrics.topk(topk, dim=0, largest=True)
         candidate_metrics = alignment_metrics[candidate_idxs,
                                               torch.arange(num_gt)]
         is_pos = candidate_metrics > 0

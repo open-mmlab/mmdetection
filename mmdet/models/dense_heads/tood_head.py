@@ -306,11 +306,12 @@ class TOODHead(ATSSHead):
             labels (Tensor): Labels of each anchors with shape
                 (N, num_total_anchors).
             label_weights (Tensor): Label weights of each anchor with shape
-                (N, num_total_anchors)
+                (N, num_total_anchors).
             bbox_targets (Tensor): BBox regression targets of each anchor with
                 shape (N, num_total_anchors, 4).
-            num_total_samples (int): Number os positive samples that is
-                reduced over all GPUs.
+            alignment_metrics (Tensor): Alignment metrics with shape
+                (N, num_total_anchors).
+            stride (tuple[int]): Downsample stride of the feature map.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -622,7 +623,6 @@ class TOODHead(ATSSHead):
                  bbox_preds,
                  anchor_list,
                  valid_flag_list,
-                 num_level_anchors_list,
                  gt_bboxes_list,
                  gt_bboxes_ignore_list,
                  gt_labels_list,
@@ -651,7 +651,6 @@ class TOODHead(ATSSHead):
                            bbox_preds,
                            flat_anchors,
                            valid_flags,
-                           num_level_anchors,
                            gt_bboxes,
                            gt_bboxes_ignore,
                            gt_labels,
@@ -669,7 +668,6 @@ class TOODHead(ATSSHead):
             valid_flags (Tensor): Multi level valid flags of the image,
                 which are concatenated into a single tensor of
                     shape (num_anchors,).
-            num_level_anchors Tensor): Number of anchors of each scale level.
             gt_bboxes (Tensor): Ground truth bboxes of the image,
                 shape (num_gts, 4).
             gt_bboxes_ignore (Tensor): Ground truth bboxes to be
@@ -683,18 +681,15 @@ class TOODHead(ATSSHead):
 
         Returns:
             tuple: N is the number of total anchors in the image.
+                anchors (Tensor): All anchors in the image with shape (N, 4).
                 labels (Tensor): Labels of all anchors in the image with shape
                     (N,).
                 label_weights (Tensor): Label weights of all anchor in the
                     image with shape (N,).
                 bbox_targets (Tensor): BBox targets of all anchors in the
                     image with shape (N, 4).
-                bbox_weights (Tensor): BBox weights of all anchors in the
-                    image with shape (N, 4)
-                pos_inds (Tensor): Indices of positive anchor with shape
-                    (num_pos,).
-                neg_inds (Tensor): Indices of negative anchor with shape
-                    (num_neg,).
+                norm_alignment_metrics (Tensor): Normalized alignment metrics
+                    of all priors in the image with shape (N,).
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
@@ -703,13 +698,9 @@ class TOODHead(ATSSHead):
             return (None, ) * 7
         # assign gt and sample anchors
         anchors = flat_anchors[inside_flags, :]
-
-        num_level_anchors_inside = self.get_num_level_anchors_inside(
-            num_level_anchors, inside_flags)
         assign_result = self.alignment_assigner.assign(
             cls_scores[inside_flags, :], bbox_preds[inside_flags, :], anchors,
-            num_level_anchors_inside, gt_bboxes, gt_bboxes_ignore, gt_labels,
-            self.alpha, self.beta)
+            gt_bboxes, gt_bboxes_ignore, gt_labels, self.alpha, self.beta)
         assign_ious = assign_result.max_overlaps
         assign_metrics = assign_result.assign_metrics
 
