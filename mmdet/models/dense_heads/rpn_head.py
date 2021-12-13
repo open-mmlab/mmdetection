@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmcv.ops import batched_nms
 
+from mmdet.core import InstanceData
 from ..builder import HEADS
 from .anchor_head import AnchorHead
 
@@ -100,16 +101,16 @@ class RPNHead(AnchorHead):
         return dict(
             loss_rpn_cls=losses['loss_cls'], loss_rpn_bbox=losses['loss_bbox'])
 
-    def _get_bboxes_single(self,
-                           cls_score_list,
-                           bbox_pred_list,
-                           score_factor_list,
-                           mlvl_anchors,
-                           img_meta,
-                           cfg,
-                           rescale=False,
-                           with_nms=True,
-                           **kwargs):
+    def _get_results_single(self,
+                            cls_score_list,
+                            bbox_pred_list,
+                            score_factor_list,
+                            mlvl_anchors,
+                            img_meta,
+                            cfg,
+                            rescale=False,
+                            with_nms=True,
+                            **kwargs):
         """Transform outputs of a single image into bbox predictions.
 
         Args:
@@ -184,10 +185,10 @@ class RPNHead(AnchorHead):
 
         return self._bbox_post_process(mlvl_scores, mlvl_bbox_preds,
                                        mlvl_valid_anchors, level_ids, cfg,
-                                       img_shape)
+                                       img_shape, img_meta)
 
     def _bbox_post_process(self, mlvl_scores, mlvl_bboxes, mlvl_valid_anchors,
-                           level_ids, cfg, img_shape, **kwargs):
+                           level_ids, cfg, img_shape, img_meta, **kwargs):
         """bbox post-processing method.
 
         The boxes would be rescaled to the original image scale and do
@@ -206,12 +207,14 @@ class RPNHead(AnchorHead):
             cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             img_shape (tuple(int)): Shape of current image.
+            img_meta (dict): Image meta info.
 
         Returns:
             Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
                 are bounding box positions (tl_x, tl_y, br_x, br_y) and the
                 5-th column is a score between 0 and 1.
         """
+        results = InstanceData(img_meta)
         scores = torch.cat(mlvl_scores)
         anchors = torch.cat(mlvl_valid_anchors)
         rpn_bbox_pred = torch.cat(mlvl_bboxes)
@@ -230,10 +233,12 @@ class RPNHead(AnchorHead):
 
         if proposals.numel() > 0:
             dets, _ = batched_nms(proposals, scores, ids, cfg.nms)
+            results.bboxes = dets[:cfg.max_per_img, :4]
+            results.scores = dets[:cfg.max_per_img, 4]
         else:
-            return proposals.new_zeros(0, 5)
-
-        return dets[:cfg.max_per_img]
+            results.bboxes = proposals.new_zeros(0, 4)
+            results.scores = proposals.new_zeros(0)
+        return results
 
     def onnx_export(self, x, img_metas):
         """Test without augmentation.
