@@ -3,7 +3,7 @@ import warnings
 
 import torch
 
-from mmdet.core import bbox2result
+from mmdet.core import InstanceData, bbox2result
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .base import BaseDetector
 
@@ -86,10 +86,21 @@ class SingleStageDetector(BaseDetector):
         feat = self.extract_feat(img)
         results_list = self.bbox_head.simple_test(
             feat, img_metas, rescale=rescale)
-        bbox_results = [
-            bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
-            for det_bboxes, det_labels in results_list
-        ]
+        # TODO: directly return the result
+        if isinstance(results_list[0], InstanceData):
+            bbox_results = []
+            for results in results_list:
+                det_bboxes = torch.cat(
+                    [results.bboxes, results.scores[:, None]], dim=-1)
+                det_labels = results.labels
+            bbox_results.append(
+                bbox2result(det_bboxes, det_labels,
+                            self.bbox_head.num_classes))
+        else:
+            bbox_results = [
+                bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
+                for det_bboxes, det_labels in results_list
+            ]
         return bbox_results
 
     def aug_test(self, imgs, img_metas, rescale=False):

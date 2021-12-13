@@ -5,7 +5,7 @@ from inspect import signature
 import torch
 from mmcv.ops import batched_nms
 
-from mmdet.core import bbox_mapping_back, merge_aug_proposals
+from mmdet.core import InstanceData, bbox_mapping_back, merge_aug_proposals
 
 if sys.version_info >= (3, 7):
     from mmdet.utils.contextmanagers import completed
@@ -34,7 +34,7 @@ class BBoxTestMixin(object):
                 with shape (n,)
         """
         outs = self.forward(feats)
-        results_list = self.get_bboxes(
+        results_list = self.get_results(
             *outs, img_metas=img_metas, rescale=rescale)
         return results_list
 
@@ -61,9 +61,9 @@ class BBoxTestMixin(object):
                 with shape (n,). The length of list should always be 1.
         """
         # check with_nms argument
-        gb_sig = signature(self.get_bboxes)
+        gb_sig = signature(self.get_results)
         gb_args = [p.name for p in gb_sig.parameters.values()]
-        gbs_sig = signature(self._get_bboxes_single)
+        gbs_sig = signature(self._get_results_single)
         gbs_args = [p.name for p in gbs_sig.parameters.values()]
         assert ('with_nms' in gb_args) and ('with_nms' in gbs_args), \
             f'{self.__class__.__name__}' \
@@ -75,16 +75,16 @@ class BBoxTestMixin(object):
         for x, img_meta in zip(feats, img_metas):
             # only one image in the batch
             outs = self.forward(x)
-            bbox_outputs = self.get_bboxes(
+            bbox_outputs = self.get_results(
                 *outs,
                 img_metas=img_meta,
                 cfg=self.test_cfg,
                 rescale=False,
                 with_nms=False)[0]
-            aug_bboxes.append(bbox_outputs[0])
-            aug_scores.append(bbox_outputs[1])
+            aug_bboxes.append(bbox_outputs.bboxes)
+            aug_scores.append(bbox_outputs.scores)
             if len(bbox_outputs) >= 3:
-                aug_labels.append(bbox_outputs[2])
+                aug_labels.append(bbox_outputs.labels)
 
         # after merging, bboxes will be rescaled to the original image size
         merged_bboxes, merged_scores = self.merge_aug_bboxes(
@@ -109,9 +109,11 @@ class BBoxTestMixin(object):
             _det_bboxes[:, :4] *= det_bboxes.new_tensor(
                 img_metas[0][0]['scale_factor'])
 
-        return [
-            (_det_bboxes, det_labels),
-        ]
+        results = InstanceData()
+        results.bboxes = _det_bboxes[:, :4]
+        results.scores = _det_bboxes[:, 4]
+        results.labels = det_labels
+        return [results]
 
     def simple_test_rpn(self, x, img_metas):
         """Test without augmentation, only for ``RPNHead`` and its variants,
@@ -127,7 +129,7 @@ class BBoxTestMixin(object):
                 where 5 represent (tl_x, tl_y, br_x, br_y, score).
         """
         rpn_outs = self(x)
-        proposal_list = self.get_bboxes(*rpn_outs, img_metas=img_metas)
+        proposal_list = self.get_results(*rpn_outs, img_metas=img_metas)
         return proposal_list
 
     def aug_test_rpn(self, feats, img_metas):
@@ -146,8 +148,10 @@ class BBoxTestMixin(object):
         samples_per_gpu = len(img_metas[0])
         aug_proposals = [[] for _ in range(samples_per_gpu)]
         for x, img_meta in zip(feats, img_metas):
-            proposal_list = self.simple_test_rpn(x, img_meta)
-            for i, proposals in enumerate(proposal_list):
+            results_list = self.simple_test_rpn(x, img_meta)
+            for i, results in enumerate(results_list):
+                proposals = torch.cat(
+                    [results.bboxes, results.scores[:, None]], dim=-1)
                 aug_proposals[i].append(proposals)
         # reorganize the order of 'img_metas' to match the dimensions
         # of 'aug_proposals'
@@ -158,10 +162,15 @@ class BBoxTestMixin(object):
                 aug_img_meta.append(img_metas[j][i])
             aug_img_metas.append(aug_img_meta)
         # after merging, proposals will be rescaled to the original image size
-        merged_proposals = [
-            merge_aug_proposals(proposals, aug_img_meta, self.test_cfg)
-            for proposals, aug_img_meta in zip(aug_proposals, aug_img_metas)
-        ]
+
+        merged_proposals = []
+        for proposals, aug_img_meta in zip(aug_proposals, aug_img_metas):
+            merged_proposal = merge_aug_proposals(proposals, aug_img_meta,
+                                                  self.test_cfg)
+            results = InstanceData()
+            results.bboxes = merged_proposal[:, :4]
+            results.scores = merged_proposal[:, 4]
+            merged_proposals.append(results)
         return merged_proposals
 
     if sys.version_info >= (3, 7):
@@ -173,7 +182,7 @@ class BBoxTestMixin(object):
                     sleep_interval=sleep_interval):
                 rpn_outs = self(x)
 
-            proposal_list = self.get_bboxes(*rpn_outs, img_metas=img_metas)
+            proposal_list = self.get_results(*rpn_outs, img_metas=img_metas)
             return proposal_list
 
     def merge_aug_bboxes(self, aug_bboxes, aug_scores, img_metas):

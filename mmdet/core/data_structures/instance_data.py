@@ -99,9 +99,6 @@ class InstanceData(GeneralData):
         """
         assert len(self), ' This is a empty instance'
 
-        assert isinstance(
-            item, (str, slice, int, torch.LongTensor, torch.BoolTensor))
-
         if isinstance(item, str):
             return getattr(self, item)
 
