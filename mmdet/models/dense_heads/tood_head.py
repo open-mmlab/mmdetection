@@ -131,7 +131,7 @@ class TOODHead(ATSSHead):
                 self.train_cfg.initial_assigner)
             self.initial_loss_cls = LOSSES.build(initial_loss_cls)
             self.assigner = self.initial_assigner
-            self.alingment_assigner = build_assigner(self.train_cfg.assigner)
+            self.alignment_assigner = build_assigner(self.train_cfg.assigner)
             self.alpha = self.train_cfg.alpha
             self.beta = self.train_cfg.beta
 
@@ -225,9 +225,7 @@ class TOODHead(ATSSHead):
                 zip(feats, self.scales, self.prior_generator.strides)):
             b, c, h, w = x.shape
             anchor = self.prior_generator.single_level_grid_priors(
-                (h, w),
-                idx,
-            )
+                (h, w), idx, device=x.device)
             anchor = torch.cat([anchor for _ in range(b)])
             # extract task interactive features
             inter_feats = []
@@ -360,7 +358,7 @@ class TOODHead(ATSSHead):
                 avg_factor=1.0)
         else:
             loss_bbox = bbox_pred.sum() * 0
-            pos_bbox_weight = torch.tensor(0).cuda()
+            pos_bbox_weight = bbox_targets.new_tensor(0.)
 
         return loss_cls, loss_bbox, alignment_metrics.sum(
         ), pos_bbox_weight.sum()
@@ -708,7 +706,7 @@ class TOODHead(ATSSHead):
 
         num_level_anchors_inside = self.get_num_level_anchors_inside(
             num_level_anchors, inside_flags)
-        assign_result = self.alingment_assigner.assign(
+        assign_result = self.alignment_assigner.assign(
             cls_scores[inside_flags, :], bbox_preds[inside_flags, :], anchors,
             num_level_anchors_inside, gt_bboxes, gt_bboxes_ignore, gt_labels,
             self.alpha, self.beta)
