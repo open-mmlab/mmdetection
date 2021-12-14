@@ -1,5 +1,39 @@
 ## Changelog
 
+### v2.19.1 (14/12/2021)
+
+#### New Features
+
+- Release [YOLOX](configs/yolox/README.md) COCO pretrained models (#6698)
+
+#### Bug Fixes
+
+- Fix DCN initialization in DenseHead (#6625)
+- Fix initialization of ConvFCHead (#6624)
+- Fix PseudoSampler in RCNN (#6622)
+- Fix weight initialization in Swin and PVT (#6663)
+- Fix dtype bug in BaseDenseHead (#6767)
+- Fix SimOTA with no valid bbox (#6733)
+
+#### Improvements
+
+- Add an example of combining swin and one-stage models (#6621)
+- Add `get_ann_info` to dataset_wrappers (#6526)
+- Support keeping image ratio in the multi-scale training of YOLOX (#6732)
+- Support `bbox_clip_border` for the augmentations of YOLOX (#6730)
+
+#### Documents
+
+- Update metafile (#6717)
+- Add mmhuman3d in readme (#6699)
+- Update FAQ docs (#6587)
+- Add doc for `detect_anomalous_params` (#6697)
+
+#### Contributors
+
+A total of 11 developers contributed to this release.
+Thanks @ZwwWayne, @LJoson, @Czm369, @jshilong, @ZCMax, @RangiLyu, @BIGWangYuDong, @hhaAndroid, @zhaoxin111, @GT9505, @shinya7y
+
 ### v2.19.0 (29/11/2021)
 
 #### Highlights
