@@ -13,10 +13,10 @@
   <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
 
-[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/v2.19.0/) |
-[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/v2.19.0/get_started.html) |
-[👀模型库](https://mmdetection.readthedocs.io/zh_CN/v2.19.0/model_zoo.html) |
-[🆕更新日志](https://mmdetection.readthedocs.io/en/v2.19.0/changelog.html) |
+[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/v2.19.1/) |
+[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/v2.19.1/get_started.html) |
+[👀模型库](https://mmdetection.readthedocs.io/zh_CN/v2.19.1/model_zoo.html) |
+[🆕更新日志](https://mmdetection.readthedocs.io/en/v2.19.1/changelog.html) |
 [🚀进行中的项目](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔报告问题](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
@@ -59,10 +59,10 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 更新日志
 
-最新的 **2.19.0** 版本已经在 2021.11.29 发布:
-- 支持了 [Label Assignment Distillation](https://arxiv.org/abs/2108.10520)
-- 对 PyTorch >= 1.7 支持 `persistent_workers`
-- 与最近更新的 YOLOX 对齐精度
+最新的 **2.19.1** 版本已经在 2021.12.14 发布:
+- 发布 [YOLOX](configs/yolox/README.md) COCO 预训练模型
+- 在自述文件中添加论文的摘要和草图
+- 修复一些权重初始化错误
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/changelog.md)。
 
