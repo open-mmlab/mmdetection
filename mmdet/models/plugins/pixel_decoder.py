@@ -81,7 +81,7 @@ class PixelDecoder(BaseModule):
             kaiming_init(self.output_convs[i].conv, a=1)
 
         kaiming_init(self.mask_feature, a=1)
-        kaiming_init(self.last_feat_output_conv, a=1)
+        kaiming_init(self.last_feat_conv, a=1)
 
     def forward(self, feats, img_metas):
         """

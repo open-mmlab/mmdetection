@@ -334,7 +334,7 @@ class MaskFormerHead(AnchorFreeHead):
 
         # mask target
         mask_targets = gt_masks[sampling_result.pos_assigned_gt_inds]
-        mask_weights = mask_pred.mew_zeros((self.num_queries, ))
+        mask_weights = mask_pred.new_zeros((self.num_queries, ))
         mask_weights[pos_inds] = 1.0
 
         return (labels, label_weights, mask_targets, mask_weights, pos_inds,
