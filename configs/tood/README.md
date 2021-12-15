@@ -29,15 +29,15 @@ One-stage object detection is commonly implemented by optimizing two sub-tasks: 
 
 ## Results and Models
 
-| Backbone          | Style   | Anchor       | Lr schd | Multi-scale Training| Inf time (fps) | box AP | Config | Download |
-|:-----------------:|:-------:|:------------:|:-------:|:-------------------:|:--------------:|:------:|:------:|:--------:|
-| R-50              | pytorch | Anchor-free  | 1x      | No                  |                | 42.4   | [config](./tood_r50_fpn_1x_coco.py) | [model]() &#124; [log]() |
-| R-50              | pytorch | Anchor-based | 1x      | No                  |                |        | [config](./tood_r50_fpn_anchor_based_1x_coco.py) | [model]() &#124; [log]() |
-| R-50              | pytorch | Anchor-free  | 2x      | Yes                 |                | 44.5   | [config](./tood_r50_fpn_mstrain_2x_coco.py) | [model]() &#124; [log]() |
-| R-101             | pytorch | Anchor-free  | 2x      | Yes                 |                | 46.1   | [config](./tood_r101_fpn_mstrain_2x_coco.py) | [model]() &#124; [log]() |
-| R-101-dcnv2       | pytorch | Anchor-free  | 2x      | Yes                 |                | 49.3   | [config](./tood_r101_fpn_dconv_c3-c5_mstrain_2x_coco.py) | [model]() &#124; [log]() |
-| X-101-64x4d       | pytorch | Anchor-free  | 2x      | Yes                 |                | 47.6   | [config](./tood_x101_64x4d_fpn_mstrain_2x_coco.py) | [model]() &#124; [log]() |
-| X-101-64x4d-dcnv2 | pytorch | Anchor-free  | 2x      | Yes                 |                |        | [config](./tood_x101_64x4d_fpn_dconv_c4-c5_mstrain_2x_coco.py) | [model]() &#124; [log]() |
+| Backbone          | Style   | Anchor Type  | Lr schd | Multi-scale Training| Mem (GB)| Inf time (fps) | box AP | Config | Download |
+|:-----------------:|:-------:|:------------:|:-------:|:-------------------:|:-------:|:--------------:|:------:|:------:|:--------:|
+| R-50              | pytorch | Anchor-free  | 1x      | N                   |         |                | 42.4   | [config](./tood_r50_fpn_1x_coco.py) | [model]() &#124; [log]() |
+| R-50              | pytorch | Anchor-based | 1x      | N                   |         |                | 42.4   | [config](./tood_r50_fpn_anchor_based_1x_coco.py) | [model]() &#124; [log]() |
+| R-50              | pytorch | Anchor-free  | 2x      | Y                   |         |                | 44.5   | [config](./tood_r50_fpn_mstrain_2x_coco.py) | [model]() &#124; [log]() |
+| R-101             | pytorch | Anchor-free  | 2x      | Y                   |         |                | 46.1   | [config](./tood_r101_fpn_mstrain_2x_coco.py) | [model]() &#124; [log]() |
+| R-101-dcnv2       | pytorch | Anchor-free  | 2x      | Y                   |         |                | 49.3   | [config](./tood_r101_fpn_dconv_c3-c5_mstrain_2x_coco.py) | [model]() &#124; [log]() |
+| X-101-64x4d       | pytorch | Anchor-free  | 2x      | Y                   |         |                | 47.6   | [config](./tood_x101_64x4d_fpn_mstrain_2x_coco.py) | [model]() &#124; [log]() |
+| X-101-64x4d-dcnv2 | pytorch | Anchor-free  | 2x      | Y                   |         |                |        | [config](./tood_x101_64x4d_fpn_dconv_c4-c5_mstrain_2x_coco.py) | [model]() &#124; [log]() |
 
 [1] *1x and 2x mean the model is trained for 90K and 180K iterations, respectively.* \
 [2] *All results are obtained with a single model and without any test time data augmentation such as multi-scale, flipping and etc..* \

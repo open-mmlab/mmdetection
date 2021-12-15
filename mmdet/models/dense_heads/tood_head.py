@@ -9,7 +9,7 @@ from mmcv.runner import force_fp32
 from mmdet.core import (anchor_inside_flags, build_assigner, distance2bbox,
                         images_to_levels, multi_apply, reduce_mean, unmap)
 from mmdet.core.utils import filter_scores_and_topk
-from ..builder import HEADS, LOSSES
+from ..builder import HEADS, build_loss
 from .atss_head import ATSSHead
 
 
@@ -95,7 +95,7 @@ class TOODHead(ATSSHead):
     Learning (TAL).
 
     Args:
-        num_dcn_on_head (int): Number of deformable convolution in the head.
+        num_dcn (int): Number of deformable convolution in the head.
             Default: 0.
         anchor_type (str): If set to `anchor_free`, the head will use centers
             to regress bboxes. If set to `anchor_based`, the head will
@@ -110,7 +110,7 @@ class TOODHead(ATSSHead):
     """
 
     def __init__(self,
-                 num_dcn_on_head=0,
+                 num_dcn=0,
                  anchor_type='anchor_free',
                  initial_loss_cls=dict(
                      type='FocalLossWithProb',
@@ -120,7 +120,7 @@ class TOODHead(ATSSHead):
                      loss_weight=1.0),
                  **kwargs):
         assert anchor_type in ['anchor_free', 'anchor_based']
-        self.num_dcn_on_head = num_dcn_on_head
+        self.num_dcn = num_dcn
         self.anchor_type = anchor_type
         self.epoch = 0  # which would be update in head hook!
         super(TOODHead, self).__init__(**kwargs)
@@ -129,7 +129,7 @@ class TOODHead(ATSSHead):
             self.initial_epoch = self.train_cfg.initial_epoch
             self.initial_assigner = build_assigner(
                 self.train_cfg.initial_assigner)
-            self.initial_loss_cls = LOSSES.build(initial_loss_cls)
+            self.initial_loss_cls = build_loss(initial_loss_cls)
             self.assigner = self.initial_assigner
             self.alignment_assigner = build_assigner(self.train_cfg.assigner)
             self.alpha = self.train_cfg.alpha
@@ -140,7 +140,7 @@ class TOODHead(ATSSHead):
         self.relu = nn.ReLU(inplace=True)
         self.inter_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
-            if i < self.num_dcn_on_head:
+            if i < self.num_dcn:
                 conv_cfg = dict(type='DCNv2', deform_groups=4)
             else:
                 conv_cfg = self.conv_cfg
@@ -215,9 +215,9 @@ class TOODHead(ATSSHead):
                 cls_scores (list[Tensor]): Classification scores for all scale
                     levels, each is a 4D-tensor, the channels number is
                     num_anchors * num_classes.
-                bbox_preds (list[Tensor]): Box energies / deltas for all scale
-                    levels, each is a 4D-tensor, the channels number is
-                    num_anchors * 4.
+                bbox_preds (list[Tensor]): Decoded box for all scale levels,
+                    each is a 4D-tensor, the channels number is
+                    num_anchors * 4. In [tl_x, tl_y, br_x, br_y] format.
         """
         cls_scores = []
         bbox_preds = []
@@ -301,7 +301,7 @@ class TOODHead(ATSSHead):
                 (N, num_total_anchors, 4).
             cls_score (Tensor): Box scores for each scale level
                 Has shape (N, num_anchors * num_classes, H, W).
-            bbox_pred (Tensor): Box energies / deltas for each scale
+            bbox_pred (Tensor): Decoded bboxes for each scale
                 level with shape (N, num_anchors * 4, H, W).
             labels (Tensor): Labels of each anchors with shape
                 (N, num_total_anchors).
@@ -377,8 +377,9 @@ class TOODHead(ATSSHead):
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level
                 Has shape (N, num_anchors * num_classes, H, W)
-            bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (N, num_anchors * 4, H, W)
+            bbox_preds (list[Tensor]): Decoded box for each scale
+                level with shape (N, num_anchors * 4, H, W) in
+                [tl_x, tl_y, br_x, br_y] format.
             gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
                 shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (list[Tensor]): class indices corresponding to each box
