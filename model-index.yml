@@ -15,7 +15,6 @@ Import:
   - configs/faster_rcnn/metafile.yml
   - configs/fcos/metafile.yml
   - configs/foveabox/metafile.yml
-  - configs/fp16/metafile.yml
   - configs/fpg/metafile.yml
   - configs/free_anchor/metafile.yml
   - configs/fsaf/metafile.yml
@@ -59,4 +58,3 @@ Import:
   - configs/yolof/metafile.yml
   - configs/yolox/metafile.yml
   - configs/swin/metafile.yml
-  - configs/strong_baselines/metafile.yml
