@@ -66,13 +66,13 @@ This project is released under the [Apache 2.0 license](LICENSE).
 - Add abstract and sketch of the papers in readmes
 - Fix some weight initialization bugs
 
-Please refer to [changelog.md](docs/changelog.md) for details and release history.
+Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 
-For compatibility changes between different versions of MMDetection, please refer to [compatibility.md](docs/compatibility.md).
+For compatibility changes between different versions of MMDetection, please refer to [compatibility.md](docs/en/compatibility.md).
 
 ## Benchmark and model zoo
 
-Results and models are available in the [model zoo](docs/model_zoo.md).
+Results and models are available in the [model zoo](docs/en/model_zoo.md).
 
 
 <details open>
@@ -151,19 +151,19 @@ Results and models are available in the [model zoo](docs/model_zoo.md).
 - [x] [QueryInst (ICCV'2021)](configs/queryinst/README.md)
 </details>
 
-Some other methods are also supported in [projects using MMDetection](./docs/projects.md).
+Some other methods are also supported in [projects using MMDetection](./docs/en/projects.md).
 
 ## Installation
 
-Please refer to [get_started.md](docs/get_started.md) for installation.
+Please refer to [get_started.md](docs/en/get_started.md) for installation.
 
 ## Getting Started
 
-Please see [get_started.md](docs/get_started.md) for the basic usage of MMDetection.
-We provide [colab tutorial](demo/MMDet_Tutorial.ipynb), and full guidance for quick run [with existing dataset](docs/1_exist_data_model.md) and [with new dataset](docs/2_new_data_model.md) for beginners.
-There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/customize_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), [customizing models](docs/tutorials/customize_models.md), [customizing runtime settings](docs/tutorials/customize_runtime.md) and [useful tools](docs/useful_tools.md).
+Please see [get_started.md](docs/en/get_started.md) for the basic usage of MMDetection.
+We provide [colab tutorial](demo/MMDet_Tutorial.ipynb), and full guidance for quick run [with existing dataset](docs/en/1_exist_data_model.md) and [with new dataset](docs/en/2_new_data_model.md) for beginners.
+There are also tutorials for [finetuning models](docs/en/tutorials/finetune.md), [adding new dataset](docs/en/tutorials/customize_dataset.md), [designing data pipeline](docs/en/tutorials/data_pipeline.md), [customizing models](docs/en/tutorials/customize_models.md), [customizing runtime settings](docs/en/tutorials/customize_runtime.md) and [useful tools](docs/en/useful_tools.md).
 
-Please refer to [FAQ](docs/faq.md) for frequently asked questions.
+Please refer to [FAQ](docs/en/faq.md) for frequently asked questions.
 
 ## Contributing
 
