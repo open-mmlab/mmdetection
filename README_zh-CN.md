@@ -66,11 +66,11 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/changelog.md)。
 
-如果想了解 MMDetection 不同版本之间的兼容性, 请参考[兼容性说明文档](docs/compatibility.md)。
+如果想了解 MMDetection 不同版本之间的兼容性, 请参考[兼容性说明文档](docs/zh_cn/compatibility.md)。
 
 ## 基准测试和模型库
 
-测试结果和模型可以在[模型库](docs/model_zoo.md)中找到。
+测试结果和模型可以在[模型库](docs/zh_cn/model_zoo.md)中找到。
 
 <details open>
 <summary>已支持的骨干网络：</summary>
@@ -148,20 +148,20 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 - [x] [QueryInst (ICCV'2021)](configs/queryinst/README.md)
 </details>
 
-我们在[基于 MMDetection 的项目](./docs/projects.md)中列举了一些其他的支持的算法。
+我们在[基于 MMDetection 的项目](./docs/zh_cn/projects.md)中列举了一些其他的支持的算法。
 
 ## 安装
 
-请参考[快速入门文档](docs/get_started.md)进行安装。
+请参考[快速入门文档](docs/zh_cn/get_started.md)进行安装。
 
 ## 快速入门
 
-请参考[快速入门文档](docs/get_started.md)学习 MMDetection 的基本使用。
-我们提供了 [colab 教程](demo/MMDet_Tutorial.ipynb)，也为新手提供了完整的运行教程，分别针对[已有数据集](docs/1_exist_data_model.md)和[新数据集](docs/2_new_data_model.md) 完整的使用指南
+请参考[快速入门文档](docs/zh_cn/get_started.md)学习 MMDetection 的基本使用。
+我们提供了 [colab 教程](demo/MMDet_Tutorial.ipynb)，也为新手提供了完整的运行教程，分别针对[已有数据集](docs/zh_cn/1_exist_data_model.md)和[新数据集](docs/zh_cn/2_new_data_model.md) 完整的使用指南
 
-我们也提供了一些进阶教程，内容覆盖了 [finetune 模型](docs/tutorials/finetune.md)，[增加新数据集支持](docs/tutorials/customize_dataset.md)，[设计新的数据预处理流程](docs/tutorials/data_pipeline.md)，[增加自定义模型](docs/tutorials/customize_models.md)，[增加自定义的运行时配置](docs/tutorials/customize_runtime.md)，[常用工具和脚本](docs/useful_tools.md)。
+我们也提供了一些进阶教程，内容覆盖了 [finetune 模型](docs/zh_cn/tutorials/finetune.md)，[增加新数据集支持](docs/zh_cn/tutorials/customize_dataset.md)，[设计新的数据预处理流程](docs/zh_cn/tutorials/data_pipeline.md)，[增加自定义模型](docs/zh_cn/tutorials/customize_models.md)，[增加自定义的运行时配置](docs/zh_cn/tutorials/customize_runtime.md)，[常用工具和脚本](docs/zh_cn/useful_tools.md)。
 
-如果遇到问题，请参考 [常见问题解答](docs_zh-CN/faq.md)。
+如果遇到问题，请参考 [常见问题解答](docs/zh_cn/faq.md)。
 
 ## 贡献指南
 
