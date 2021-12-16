@@ -101,7 +101,7 @@ Thanks @FloydHsiu, @RangiLyu, @ZwwWayne, @AndreaPi, @st9007a, @hachreak, @BIGWan
 
 #### Documents
 
-- Chinese version of [Corruption Benchmarking](docs/robustness_benchmarking.mddocs/robustness_benchmarking.md) (#6375)
+- Chinese version of [Corruption Benchmarking](robustness_benchmarking.md) (#6375)
 - Fix config path in docs (#6396)
 - Update GRoIE readme (#6401)
 
