@@ -26,6 +26,7 @@ img_norm_cfg = dict(
     mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
 file_client_args = dict(
     backend='petrel',
+    enable_mc=True,
     path_mapping=dict({
         './data/': 's3://openmmlab/datasets/detection/',
         'data/': 's3://openmmlab/datasets/detection/'
