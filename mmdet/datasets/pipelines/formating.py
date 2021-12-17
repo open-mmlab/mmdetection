@@ -191,10 +191,15 @@ class DefaultFormatBundle:
     Args:
         img_to_float (bool): Whether to force the image to be converted to
             float type. Default: True.
+        pad_val (dict): A dict for padding value when collcate in parallel,
+            the default value is `dict(img=0, masks=0, seg=255)`.
     """
 
-    def __init__(self, img_to_float=True):
+    def __init__(self,
+                 img_to_float=True,
+                 pad_val=dict(img=0, masks=0, seg=255)):
         self.img_to_float = img_to_float
+        self.pad_val = pad_val
 
     def __call__(self, results):
         """Call function to transform and format common fields in results.
@@ -220,16 +225,22 @@ class DefaultFormatBundle:
             if len(img.shape) < 3:
                 img = np.expand_dims(img, -1)
             img = np.ascontiguousarray(img.transpose(2, 0, 1))
-            results['img'] = DC(to_tensor(img), stack=True)
+            results['img'] = DC(
+                to_tensor(img), padding_value=self.pad_val['img'], stack=True)
         for key in ['proposals', 'gt_bboxes', 'gt_bboxes_ignore', 'gt_labels']:
             if key not in results:
                 continue
             results[key] = DC(to_tensor(results[key]))
         if 'gt_masks' in results:
-            results['gt_masks'] = DC(results['gt_masks'], cpu_only=True)
+            results['gt_masks'] = DC(
+                results['gt_masks'],
+                padding_value=self.pad_val['masks'],
+                cpu_only=True)
         if 'gt_semantic_seg' in results:
             results['gt_semantic_seg'] = DC(
-                to_tensor(results['gt_semantic_seg'][None, ...]), stack=True)
+                to_tensor(results['gt_semantic_seg'][None, ...]),
+                padding_value=self.pad_val['seg'],
+                stack=True)
         return results
 
     def _add_default_meta_keys(self, results):
