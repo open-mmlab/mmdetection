@@ -22,8 +22,7 @@ model = dict(
             start_level=1,
             add_extra_convs='on_output',
             num_outs=5),
-        dict(
-            type='DyHead', in_channels=256, out_channels=256, stacked_convs=6)
+        dict(type='DyHead', in_channels=256, out_channels=256, num_blocks=6)
     ],
     bbox_head=dict(
         type='ATSSHead',
