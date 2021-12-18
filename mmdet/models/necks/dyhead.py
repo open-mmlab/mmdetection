@@ -1,94 +1,17 @@
-import mmcv
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import (ConvModule, build_activation_layer, build_norm_layer,
-                      constant_init, normal_init)
+from mmcv.cnn import (build_activation_layer, build_norm_layer, constant_init,
+                      normal_init)
 from mmcv.ops.modulated_deform_conv import ModulatedDeformConv2d
 from mmcv.runner import BaseModule
 
 from ..builder import NECKS
+from ..utils import DYReLU
 
 # Reference:
 # https://github.com/microsoft/DynamicHead
 # https://github.com/jshilong/SEPC
-
-# We follow official code for hard-sigmoid function.
-# paper's hard-sigmoid corresponds to HSigmoid(bias=1.0, divisor=2.0)
-# code's hard-sigmoid corresponds to HSigmoid(bias=3.0, divisor=6.0)
-# https://github.com/microsoft/DynamicHead/blob/master/dyhead/dyrelu.py
-
-
-class DYReLU(BaseModule):
-    """DYReLU module for Task-aware Attention in DyHead.
-
-    Dynamic ReLU https://arxiv.org/abs/2003.10027
-
-    Args:
-        in_channels (int): The input channels of the DYReLU module.
-        out_channels (int): The output channels of the DYReLU module.
-        ratio (int): Squeeze ratio in Squeeze-and-Excitation-like module,
-            the intermediate channel will be ``int(channels/ratio)``.
-            Default: 4.
-        conv_cfg (None or dict): Config dict for convolution layer.
-            Default: None, which means using conv2d.
-        act_cfg (dict or Sequence[dict]): Config dict for activation layer.
-            If act_cfg is a dict, two activation layers will be configurated
-            by this dict. If act_cfg is a sequence of dicts, the first
-            activation layer will be configurated by the first dict and the
-            second activation layer will be configurated by the second dict.
-            Default: (dict(type='ReLU'), dict(type='HSigmoid', bias=3.0,
-            divisor=6.0))
-        init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default: None
-    """
-
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 ratio=4,
-                 conv_cfg=None,
-                 act_cfg=(dict(type='ReLU'),
-                          dict(type='HSigmoid', bias=3.0, divisor=6.0)),
-                 init_cfg=None):
-        super().__init__(init_cfg=init_cfg)
-        if isinstance(act_cfg, dict):
-            act_cfg = (act_cfg, act_cfg)
-        assert len(act_cfg) == 2
-        assert mmcv.is_tuple_of(act_cfg, dict)
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        self.expansion = 4  # for a1, b1, a2, b2
-        self.global_avgpool = nn.AdaptiveAvgPool2d(1)
-        self.conv1 = ConvModule(
-            in_channels=in_channels,
-            out_channels=int(in_channels / ratio),
-            kernel_size=1,
-            stride=1,
-            conv_cfg=conv_cfg,
-            act_cfg=act_cfg[0])
-        self.conv2 = ConvModule(
-            in_channels=int(in_channels / ratio),
-            out_channels=out_channels * self.expansion,
-            kernel_size=1,
-            stride=1,
-            conv_cfg=conv_cfg,
-            act_cfg=act_cfg[1])
-
-    def forward(self, x):
-        """Forward function."""
-        # forward Squeeze-and-Excitation-like module
-        coeffs = self.global_avgpool(x)
-        coeffs = self.conv1(coeffs)
-        coeffs = self.conv2(coeffs)  # [0.0, 1.0] if default HSigmoid
-        # split DYReLU coefficients and normalize them
-        a1, b1, a2, b2 = torch.split(coeffs, self.out_channels, dim=1)
-        a1 = (a1 - 0.5) * 2.0 + 1.0  # [-1.0, 1.0] + 1.0
-        a2 = (a2 - 0.5) * 2.0  # [-1.0, 1.0]
-        b1 = b1 - 0.5  # [-0.5, 0.5]
-        b2 = b2 - 0.5  # [-0.5, 0.5]
-        out = torch.max(x * a1 + b1, x * a2 + b2)
-        return out
 
 
 class MDCN3x3Norm(nn.Module):
@@ -112,7 +35,11 @@ class MDCN3x3Norm(nn.Module):
 
 
 class DyHeadBlock(nn.Module):
-    """DyHead Block."""
+    """DyHead Block.
+
+    HSigmoid arguments in default act_cfg follow official code, not paper.
+    https://github.com/microsoft/DynamicHead/blob/master/dyhead/dyrelu.py
+    """
 
     def __init__(self,
                  in_channels=256,
@@ -133,7 +60,7 @@ class DyHeadBlock(nn.Module):
             nn.AdaptiveAvgPool2d(1), nn.Conv2d(in_channels, 1, 1),
             nn.ReLU(inplace=True))
         self.scale_attn_sigmoid = build_activation_layer(act_cfg)
-        self.task_attn_module = DYReLU(in_channels, out_channels)
+        self.task_attn_module = DYReLU(out_channels)
         self._init_weights()
 
     def _init_weights(self):
