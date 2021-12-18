@@ -49,7 +49,7 @@ class MaskHungarianAssigner(BaseAssigner):
         """Computes one-to-one matching based on the weighted costs.
 
         Args:
-            cls_pred (Tensor): Class prediction in shape (N1, ),
+            cls_pred (Tensor): Class prediction in shape (N1, num_class),
                 N1 is the number of queries.
             mask_pred (Tensor): Mask prediction in shape (N1, H, W).
             gt_labels (Tensor): Label of 'gt_mask'in shape = (N2, ), N2
