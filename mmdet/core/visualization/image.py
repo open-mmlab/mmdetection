@@ -2,7 +2,6 @@
 import matplotlib.pyplot as plt
 import mmcv
 import numpy as np
-import os.path as osp
 import pycocotools.mask as mask_util
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
@@ -22,30 +21,9 @@ def color_val_matplotlib(color):
     Returns:
         tuple[float]: A tuple of 3 normalized floats indicating RGB channels.
     """
-    if mmcv.is_str(color) and color.startswith('#'):
-        color = (int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16))
     color = mmcv.color_val(color)
     color = [color / 255 for color in color[::-1]]
     return tuple(color)
-
-
-def colors_val(colors):
-    """Multiple colors validation,
-
-    Args:
-        colors (list[str/tuple/int/ndarray]): Colors or the color file.
-
-    Returns:
-        list[tuple[float]]: A list of color tuples
-    """
-    if mmcv.is_str(colors):
-        if osp.isfile(colors):
-            colors = mmcv.list_from_file(colors)
-        else:
-            colors = colors.split()
-    if mmcv.is_seq_of(colors, int) and len(colors) == 3:
-        colors = [colors]
-    return [color_val_matplotlib(c) for c in colors]
 
 
 def imshow_det_bboxes(img,
@@ -126,20 +104,13 @@ def imshow_det_bboxes(img,
             np.random.set_state(state)
         else:
             # specify  color
-            mask_colors = colors_val(mask_color)
-            if len(mask_colors) == 1:
-                mask_colors = mask_colors * (max(labels) + 1)
-            mask_colors = (255 * np.array(mask_colors)).astype(dtype=np.uint8)
             mask_colors = [
-                mask_colors[[i], :] for i in range(len(mask_colors))
-            ]
+                np.array(mmcv.color_val(mask_color)[::-1], dtype=np.uint8)
+            ] * (
+                max(labels) + 1)
 
-    bbox_colors = colors_val(bbox_color)
-    if len(bbox_colors) == 1:
-        bbox_colors = bbox_colors * (max(labels) + 1)
-    text_colors = colors_val(text_color)
-    if len(text_colors) == 1:
-        text_colors = text_colors * (max(labels) + 1)
+    bbox_color = color_val_matplotlib(bbox_color)
+    text_color = color_val_matplotlib(text_color)
 
     img = mmcv.bgr2rgb(img)
     width, height = img.shape[1], img.shape[0]
@@ -166,7 +137,7 @@ def imshow_det_bboxes(img,
                 [bbox_int[2], bbox_int[3]], [bbox_int[2], bbox_int[1]]]
         np_poly = np.array(poly).reshape((4, 2))
         polygons.append(Polygon(np_poly))
-        color.append(bbox_colors[label])
+        color.append(bbox_color)
         label_text = class_names[
             label] if class_names is not None else f'class {label}'
         if len(bbox) > 4:
@@ -181,7 +152,7 @@ def imshow_det_bboxes(img,
                 'pad': 0.7,
                 'edgecolor': 'none'
             },
-            color=text_colors[label],
+            color=text_color,
             fontsize=font_size,
             verticalalignment='top',
             horizontalalignment='left')

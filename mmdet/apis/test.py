@@ -18,8 +18,7 @@ def single_gpu_test(model,
                     data_loader,
                     show=False,
                     out_dir=None,
-                    show_score_thr=0.3,
-                    show_colors='green'):
+                    show_score_thr=0.3):
     model.eval()
     results = []
     dataset = data_loader.dataset
@@ -55,9 +54,7 @@ def single_gpu_test(model,
                     result[i],
                     show=show,
                     out_file=out_file,
-                    score_thr=show_score_thr,
-                    bbox_color=show_colors,
-                    text_color=show_colors)
+                    score_thr=show_score_thr)
 
         # encode mask results
         if isinstance(result[0], tuple):
