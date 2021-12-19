@@ -21,9 +21,21 @@ def color_val_matplotlib(color):
     Returns:
         tuple[float]: A tuple of 3 normalized floats indicating RGB channels.
     """
+    if isinstance(color, list):
+        color = tuple(color)
     color = mmcv.color_val(color)
     color = [color / 255 for color in color[::-1]]
     return tuple(color)
+
+
+def palette_val(palette):
+    if mmcv.is_str(palette):
+        palette = palette.split()
+    elif mmcv.is_seq_of(palette, int) and len(palette) == 3:
+        palette = [palette]
+    elif isinstance(palette, np.ndarray):
+        assert palette.ndim == 2 and palette.shape[1] == 3
+    return [color_val_matplotlib(c) for c in palette]
 
 
 def imshow_det_bboxes(img,
@@ -88,29 +100,35 @@ def imshow_det_bboxes(img,
         if segms is not None:
             segms = segms[inds, ...]
 
-    mask_colors = []
-    if labels.shape[0] > 0:
-        if mask_color is None:
-            # Get random state before set seed, and restore random state later.
-            # Prevent loss of randomness.
-            # See: https://github.com/open-mmlab/mmdetection/issues/5844
-            state = np.random.get_state()
-            # random color
-            np.random.seed(42)
-            mask_colors = [
-                np.random.randint(0, 256, (1, 3), dtype=np.uint8)
-                for _ in range(max(labels) + 1)
-            ]
-            np.random.set_state(state)
-        else:
-            # specify  color
-            mask_colors = [
-                np.array(mmcv.color_val(mask_color)[::-1], dtype=np.uint8)
-            ] * (
-                max(labels) + 1)
+    if (bbox_color is None) or (text_color is None) or (mask_color is None):
+        state = np.random.get_state()
+        # Get random state before set seed, and restore random state later.
+        # Prevent loss of randomness.
+        # See: https://github.com/open-mmlab/mmdetection/issues/5844
+        np.random.seed(42)
+        # random color
+        random_colors = [
+            np.random.randint(0, 256, (3, ), dtype=np.uint8)
+            for _ in range(max(labels) + 1)
+        ]
+        np.random.set_state(state)
 
-    bbox_color = color_val_matplotlib(bbox_color)
-    text_color = color_val_matplotlib(text_color)
+    bbox_color = random_colors if bbox_color is None else bbox_color
+    bbox_color = palette_val(bbox_color)
+    if len(bbox_color) == 1:
+        bbox_color = bbox_color * (max(labels) + 1)
+
+    text_color = random_colors if text_color is None else text_color
+    text_color = palette_val(text_color)
+    if len(text_color) == 1:
+        text_color = text_color * (max(labels) + 1)
+
+    mask_color = random_colors if mask_color is None else mask_color
+    mask_color = palette_val(mask_color)
+    if len(mask_color) == 1:
+        mask_color = mask_color * (max(labels) + 1)
+    mask_color = (255 * np.array(mask_color)).astype(dtype=np.uint8)
+    mask_color = [mask_color[[i], :] for i in range(len(mask_color))]
 
     img = mmcv.bgr2rgb(img)
     width, height = img.shape[1], img.shape[0]
@@ -137,7 +155,7 @@ def imshow_det_bboxes(img,
                 [bbox_int[2], bbox_int[3]], [bbox_int[2], bbox_int[1]]]
         np_poly = np.array(poly).reshape((4, 2))
         polygons.append(Polygon(np_poly))
-        color.append(bbox_color)
+        color.append(bbox_color[label])
         label_text = class_names[
             label] if class_names is not None else f'class {label}'
         if len(bbox) > 4:
@@ -152,12 +170,12 @@ def imshow_det_bboxes(img,
                 'pad': 0.7,
                 'edgecolor': 'none'
             },
-            color=text_color,
+            color=text_color[label],
             fontsize=font_size,
             verticalalignment='top',
             horizontalalignment='left')
         if segms is not None:
-            color_mask = mask_colors[labels[i]]
+            color_mask = mask_color[labels[i]]
             mask = segms[i].astype(bool)
             img[mask] = img[mask] * 0.5 + color_mask * 0.5
 
