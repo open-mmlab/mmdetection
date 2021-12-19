@@ -1,4 +1,4 @@
-import torch
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import (build_activation_layer, build_norm_layer, constant_init,
@@ -55,8 +55,9 @@ class DyHeadBlock(nn.Module):
     Args:
         in_channels (int): Number of input channels.
         out_channels (int): Number of output channels.
-        act_cfg (dict, optional): Config dict for activation layer.
-            Default: dict(type='HSigmoid', bias=3.0, divisor=6.0).
+        act_cfg (dict, optional): Config dict for the last activation layer of
+            scale-aware attention. Default: dict(type='HSigmoid', bias=3.0,
+            divisor=6.0).
     """
 
     def __init__(self,
@@ -115,41 +116,6 @@ class DyHeadBlock(nn.Module):
 
         return outs
 
-    def forward_stack(self, x):
-        """Forward function."""
-        outs = []
-        for level, mid_feat in enumerate(x):
-            # calculate offset and mask of DCNv2 from middle-level feature
-            offset_and_mask = self.spatial_conv_offset(mid_feat)
-            offset = offset_and_mask[:, :self.offset_dim, :, :]
-            mask = offset_and_mask[:, self.offset_dim:, :, :].sigmoid()
-
-            # spatial-aware attention
-            mlvl_feats = [self.spatial_conv_mid(mid_feat, offset, mask)]
-            if level > 0:
-                mlvl_feats.append(
-                    self.spatial_conv_low(x[level - 1], offset, mask))
-            if level < len(x) - 1:
-                # this upsample order is weird, but faster than natural order
-                # https://github.com/microsoft/DynamicHead/issues/25
-                mlvl_feats.append(
-                    F.interpolate(
-                        self.spatial_conv_high(x[level + 1], offset, mask),
-                        size=mid_feat.shape[-2:],
-                        mode='bilinear',
-                        align_corners=True))
-
-            # scale-aware attention and task-aware attention
-            res_feat = torch.stack(mlvl_feats)
-            attn_feats = [
-                self.scale_attn_module[:3](feat) for feat in mlvl_feats
-            ]
-            scale_attn = self.scale_attn_module[3](torch.stack(attn_feats))
-            mean_feat = torch.mean(res_feat * scale_attn, dim=0, keepdim=False)
-            outs.append(self.task_attn_module(mean_feat))
-
-        return outs
-
 
 @NECKS.register_module()
 class DyHead(BaseModule):
@@ -161,7 +127,7 @@ class DyHead(BaseModule):
     Args:
         in_channels (int): Number of input channels.
         out_channels (int): Number of output channels.
-        num_blocks (int, optional): number of DyHead Blocks. Default: 6.
+        num_blocks (int, optional): Number of DyHead Blocks. Default: 6.
         init_cfg (dict or list[dict], optional): Initialization config dict.
             Default: None.
     """
@@ -182,5 +148,6 @@ class DyHead(BaseModule):
 
     def forward(self, inputs):
         """Forward function."""
+        assert isinstance(inputs, (tuple, list))
         outs = self.dyhead_blocks(inputs)
         return tuple(outs)

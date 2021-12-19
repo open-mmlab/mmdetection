@@ -63,7 +63,7 @@ class DYReLU(BaseModule):
     """Dynamic ReLU (DY-ReLU) module.
 
     See `Dynamic ReLU <https://arxiv.org/abs/2003.10027>`_ for details.
-    Current implementation is specialized for Task-aware Attention in DyHead.
+    Current implementation is specialized for task-aware attention in DyHead.
     HSigmoid arguments in default act_cfg follow DyHead official code.
     https://github.com/microsoft/DynamicHead/blob/master/dyhead/dyrelu.py
 
