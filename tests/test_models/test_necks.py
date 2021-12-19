@@ -5,6 +5,7 @@ from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmdet.models.necks import (FPN, YOLOXPAFPN, ChannelMapper, CTResNetNeck,
                                 DilatedEncoder, DyHead, SSDNeck, YOLOV3Neck)
+from mmdet.models.necks.dyhead import DyHeadBlock
 
 
 def test_fpn():
@@ -422,3 +423,14 @@ def test_dyhead():
     for i in range(len(outs)):
         assert outs[i].shape[1] == out_channels
         assert outs[i].shape[2] == outs[i].shape[3] == s // (2**i)
+
+    feats = [
+        torch.rand(2, in_channels, feat_sizes[i], feat_sizes[i])
+        for i in range(len(feat_sizes))
+    ]
+    dyhead_block = DyHeadBlock(
+        in_channels=in_channels, out_channels=out_channels)
+    outs_by_sum = dyhead_block(feats)
+    outs_by_stack = dyhead_block.forward_stack(feats)
+    for i in range(len(outs_by_sum)):
+        assert torch.equal(outs_by_sum[i], outs_by_stack[i])

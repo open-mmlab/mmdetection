@@ -73,10 +73,9 @@ class DyHeadBlock(nn.Module):
         self.spatial_conv_low = DyDCNv2(in_channels, out_channels, stride=2)
         self.spatial_conv_offset = nn.Conv2d(
             in_channels, self.offset_and_mask_dim, 3, padding=1)
-        self.scale_attn_conv = nn.Sequential(
+        self.scale_attn_module = nn.Sequential(
             nn.AdaptiveAvgPool2d(1), nn.Conv2d(out_channels, 1, 1),
-            nn.ReLU(inplace=True))
-        self.scale_attn_sigmoid = build_activation_layer(act_cfg)
+            nn.ReLU(inplace=True), build_activation_layer(act_cfg))
         self.task_attn_module = DYReLU(out_channels)
         self._init_weights()
 
@@ -87,6 +86,36 @@ class DyHeadBlock(nn.Module):
         constant_init(self.spatial_conv_offset, 0)
 
     def forward(self, x):
+        """Forward function."""
+        outs = []
+        for level in range(len(x)):
+            # calculate offset and mask of DCNv2 from middle-level feature
+            offset_and_mask = self.spatial_conv_offset(x[level])
+            offset = offset_and_mask[:, :self.offset_dim, :, :]
+            mask = offset_and_mask[:, self.offset_dim:, :, :].sigmoid()
+
+            mid_feat = self.spatial_conv_mid(x[level], offset, mask)
+            sum_feat = mid_feat * self.scale_attn_module(mid_feat)
+            summed_levels = 1
+            if level > 0:
+                low_feat = self.spatial_conv_low(x[level - 1], offset, mask)
+                sum_feat += low_feat * self.scale_attn_module(low_feat)
+                summed_levels += 1
+            if level < len(x) - 1:
+                # this upsample order is weird, but faster than natural order
+                # https://github.com/microsoft/DynamicHead/issues/25
+                high_feat = F.interpolate(
+                    self.spatial_conv_high(x[level + 1], offset, mask),
+                    size=x[level].shape[-2:],
+                    mode='bilinear',
+                    align_corners=True)
+                sum_feat += high_feat * self.scale_attn_module(high_feat)
+                summed_levels += 1
+            outs.append(self.task_attn_module(sum_feat / summed_levels))
+
+        return outs
+
+    def forward_stack(self, x):
         """Forward function."""
         outs = []
         for level, mid_feat in enumerate(x):
@@ -112,8 +141,10 @@ class DyHeadBlock(nn.Module):
 
             # scale-aware attention and task-aware attention
             res_feat = torch.stack(mlvl_feats)
-            attn_feats = [self.scale_attn_conv(feat) for feat in mlvl_feats]
-            scale_attn = self.scale_attn_sigmoid(torch.stack(attn_feats))
+            attn_feats = [
+                self.scale_attn_module[:3](feat) for feat in mlvl_feats
+            ]
+            scale_attn = self.scale_attn_module[3](torch.stack(attn_feats))
             mean_feat = torch.mean(res_feat * scale_attn, dim=0, keepdim=False)
             outs.append(self.task_attn_module(mean_feat))
 
