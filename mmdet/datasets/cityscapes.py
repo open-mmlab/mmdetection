@@ -23,6 +23,9 @@ class CityscapesDataset(CocoDataset):
     CLASSES = ('person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle',
                'bicycle')
 
+    PALETTE = [[0, 192, 64], [0, 64, 96], [128, 192, 192], [0, 64, 64],
+               [0, 192, 224], [0, 192, 192], [128, 192, 64], [0, 192, 96]]
+
     def _filter_imgs(self, min_size=32):
         """Filter images too small or without ground truths."""
         valid_inds = []

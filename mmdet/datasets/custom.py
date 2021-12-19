@@ -54,10 +54,13 @@ class CustomDataset(Dataset):
 
     CLASSES = None
 
+    PALETTE = None
+
     def __init__(self,
                  ann_file,
                  pipeline,
                  classes=None,
+                 palette=None,
                  data_root=None,
                  img_prefix='',
                  seg_prefix=None,
@@ -72,7 +75,8 @@ class CustomDataset(Dataset):
         self.proposal_file = proposal_file
         self.test_mode = test_mode
         self.filter_empty_gt = filter_empty_gt
-        self.CLASSES = self.get_classes(classes)
+        self.CLASSES, self.PALETTE = self.get_classes_and_palette(
+            classes, palette)
         self.file_client = mmcv.FileClient(**file_client_args)
 
         # join paths if data_root is specified
@@ -241,7 +245,7 @@ class CustomDataset(Dataset):
         return self.pipeline(results)
 
     @classmethod
-    def get_classes(cls, classes=None):
+    def get_classes_and_palette(cls, classes=None, palette=None):
         """Get class names of current dataset.
 
         Args:
@@ -250,14 +254,17 @@ class CustomDataset(Dataset):
                 string, take it as a file name. The file contains the name of
                 classes where each line contains one class name. If classes is
                 a tuple or list, override the CLASSES defined by the dataset.
+            palette (Sequence[Sequence[int]]) | np.ndarry | None):
+                The palette of visualization. If None is given, random palette
+                will be generated. Default: None
 
         Returns:
             tuple[str] or list[str]: Names of categories of the dataset.
+            Sequence[Sequence[int]] or np.ndarray: colors for categories.
         """
         if classes is None:
-            return cls.CLASSES
-
-        if isinstance(classes, str):
+            class_names = cls.CLASSES
+        elif isinstance(classes, str):
             # take it as a file path
             class_names = mmcv.list_from_file(classes)
         elif isinstance(classes, (tuple, list)):
@@ -265,7 +272,27 @@ class CustomDataset(Dataset):
         else:
             raise ValueError(f'Unsupported type {type(classes)} of classes.')
 
-        return class_names
+        if classes is None:
+            palette = cls.PALETTE if not palette else palette
+        elif cls.CLASSES:
+            if not set(class_names).issubset(cls.CLASSES):
+                raise ValueError('classes is not a subset of CLASSES.')
+
+            if (palette is None) and (cls.PALETTE is not None):
+                mapper = {
+                    cls: color
+                    for cls, color in zip(cls.CLASSES, cls.PALETTE)
+                }
+                palette = type(cls.PALETTE)([mapper[c] for c in class_names])
+
+        if class_names is None:
+            return class_names, palette
+        else:
+            # random generate palette if palette is still None
+            if palette is None:
+                palette = np.random.randint(0, 255, size=(len(class_names), 3))
+            assert len(class_names) == len(palette)
+            return class_names, palette
 
     def format_results(self, results, **kwargs):
         """Place holder to format result to dataset specific output."""
