@@ -8,7 +8,7 @@ from mmcv.ops import RoIPool
 from mmcv.parallel import collate, scatter
 from mmcv.runner import load_checkpoint
 
-from mmdet.core import get_classes
+from mmdet.core import get_classes, get_palette
 from mmdet.datasets import replace_ImageToTensor
 from mmdet.datasets.pipelines import Compose
 from mmdet.models import build_detector
@@ -47,6 +47,13 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
             warnings.warn('Class names are not saved in the checkpoint\'s '
                           'meta data, use COCO classes by default.')
             model.CLASSES = get_classes('coco')
+        if 'PALETTE' in checkpoint.get('meta', {}):
+            model.PALETTE = checkpoint['meta']['PALETTE']
+        else:
+            warnings.simplefilter('once')
+            warnings.warn('The palette are not saved in the checkpoint\'s '
+                          'meta data, use the COCO palette by default.')
+            model.PALETTE = get_palette('coco')
     model.cfg = config  # save the config in the model for convenience
     model.to(device)
     model.eval()
@@ -212,6 +219,7 @@ async def async_inference_detector(model, imgs):
 def show_result_pyplot(model,
                        img,
                        result,
+                       palette=None,
                        score_thr=0.3,
                        title='result',
                        wait_time=0):
@@ -236,5 +244,6 @@ def show_result_pyplot(model,
         show=True,
         wait_time=wait_time,
         win_name=title,
-        bbox_color=(72, 101, 241),
-        text_color=(72, 101, 241))
+        bbox_color=palette,
+        text_color=palette,
+        mask_color=palette)

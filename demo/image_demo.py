@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 
 from mmdet.apis import (async_inference_detector, inference_detector,
                         init_detector, show_result_pyplot)
+from mmdet.core.evaluation import get_palette
 
 
 def parse_args():
@@ -13,6 +14,10 @@ def parse_args():
     parser.add_argument('checkpoint', help='Checkpoint file')
     parser.add_argument(
         '--device', default='cuda:0', help='Device used for inference')
+    parser.add_argument(
+        '--palette',
+        default='coco',
+        help='Color palette used for visualization')
     parser.add_argument(
         '--score-thr', type=float, default=0.3, help='bbox score threshold')
     parser.add_argument(
@@ -39,7 +44,12 @@ async def async_main(args):
     tasks = asyncio.create_task(async_inference_detector(model, args.img))
     result = await asyncio.gather(tasks)
     # show the results
-    show_result_pyplot(model, args.img, result[0], score_thr=args.score_thr)
+    show_result_pyplot(
+        model,
+        args.img,
+        result[0],
+        palette=get_palette(args.palette),
+        score_thr=args.score_thr)
 
 
 if __name__ == '__main__':
