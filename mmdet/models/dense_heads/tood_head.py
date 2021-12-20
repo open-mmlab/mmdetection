@@ -110,6 +110,8 @@ class TOODHead(ATSSHead):
     """
 
     def __init__(self,
+                 num_classes,
+                 in_channels,
                  num_dcn=0,
                  anchor_type='anchor_free',
                  initial_loss_cls=dict(
@@ -122,8 +124,8 @@ class TOODHead(ATSSHead):
         assert anchor_type in ['anchor_free', 'anchor_based']
         self.num_dcn = num_dcn
         self.anchor_type = anchor_type
-        self.epoch = 0  # which would be update in head hook!
-        super(TOODHead, self).__init__(**kwargs)
+        self.epoch = 0  # which would be update in SetEpochHook!
+        super(TOODHead, self).__init__(num_classes, in_channels, **kwargs)
 
         if self.train_cfg:
             self.initial_epoch = self.train_cfg.initial_epoch
@@ -258,7 +260,9 @@ class TOODHead(ATSSHead):
                 reg_bbox = self.bbox_coder.decode(anchor, reg_dist).reshape(
                     b, h, w, 4).permute(0, 3, 1, 2) / stride[0]
             else:
-                raise NotImplementedError
+                raise NotImplementedError(
+                    f'Unknown anchor type: {self.anchor_type}.'
+                    f'Please use `anchor_free` or `anchor_based`.')
             reg_offset = self.reg_offset_module(feat)
             bbox_pred = self.deform_sampling(reg_bbox.contiguous(),
                                              reg_offset.contiguous())

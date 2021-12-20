@@ -5,6 +5,8 @@ from ..iou_calculators import build_iou_calculator
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
+INF = 100000000
+
 
 @BBOX_ASSIGNERS.register_module()
 class TaskAlignedAssigner(BaseAssigner):
@@ -12,7 +14,7 @@ class TaskAlignedAssigner(BaseAssigner):
     `TOOD: Task-aligned One-stage Object Detection.
     <https://arxiv.org/abs/2108.07755>`_.
 
-    Assign a corresponding gt bbox or background to each bbox.
+    Assign a corresponding gt bbox or background to each predicted bbox.
     Each proposals will be assigned with `0` or a positive integer
     indicating the ground truth index.
 
@@ -31,7 +33,7 @@ class TaskAlignedAssigner(BaseAssigner):
         self.iou_calculator = build_iou_calculator(iou_calculator)
 
     def assign(self,
-               scores,
+               pred_scores,
                decode_bboxes,
                anchors,
                gt_bboxes,
@@ -51,7 +53,8 @@ class TaskAlignedAssigner(BaseAssigner):
 
 
         Args:
-            scores (Tensor): predicted class probability, shape(n, 80)
+            pred_scores (Tensor): predicted class probability,
+                shape(n, num_classes)
             decode_bboxes (Tensor): predicted bounding boxes, shape(n, 4)
             anchors (Tensor): pre-defined anchors, shape(n, 4).
             gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
@@ -62,12 +65,11 @@ class TaskAlignedAssigner(BaseAssigner):
         Returns:
             :obj:`TaskAlignedAssignResult`: The assign result.
         """
-        INF = 100000000
         anchors = anchors[:, :4]
         num_gt, num_bboxes = gt_bboxes.size(0), anchors.size(0)
         # compute alignment metric between all bbox and gt
         overlaps = self.iou_calculator(decode_bboxes, gt_bboxes).detach()
-        bbox_scores = scores[:, gt_labels].detach()
+        bbox_scores = pred_scores[:, gt_labels].detach()
         # assign 0 by default
         assigned_gt_inds = anchors.new_full((num_bboxes, ),
                                             0,
