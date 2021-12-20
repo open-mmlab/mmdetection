@@ -248,13 +248,13 @@ class MaskFocalLossCost(FocalLossCost):
     def __call__(self, cls_pred, gt_labels):
         """
         Args:
-            cls_pred (Tensor): Predicted classfication logits
+            cls_pred (Tensor): Mask prediction logits
                 in shape (N1, H, W), dtype=torch.float32.
             gt_labels (Tensor): Ground truth in shape (N2, H, W),
                 dtype=torch.long.
 
         Returns:
-            Tensor: classification cost matrix in shape (N1, N2).
+            Tensor: Mask focal loss cost matrix in shape (N1, N2).
         """
         cls_pred = cls_pred.reshape((cls_pred.shape[0], -1))
         gt_labels = gt_labels.reshape((gt_labels.shape[0], -1)).float()
