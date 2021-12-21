@@ -12,7 +12,6 @@ import torch.distributed as dist
 from mmcv.runner import get_dist_info
 from mmcv.utils import print_log
 
-from mmdet.apis.test import collect_results_cpu
 from mmdet.core import eval_map
 from .builder import DATASETS
 from .custom import CustomDataset
@@ -265,6 +264,8 @@ class OpenImagesDataset(CustomDataset):
         """Get image metas from pipeline."""
         self.temp_img_metas.extend(results['img_metas'])
         if dist.is_available() and self.world_size > 1:
+            from mmdet.apis.test import collect_results_cpu
+
             self.test_img_metas = collect_results_cpu(self.temp_img_metas,
                                                       len(self))
         else:
