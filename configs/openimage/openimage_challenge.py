@@ -58,6 +58,8 @@ data = dict(
         label_description_file=data_root +
         'challenge2019/cls-label-description.csv',
         hierarchy_file=data_root + 'challenge2019/class_label_tree.np',
+        meta_file=data_root +
+        'challenge2019/challenge-2019-validation-metas.pkl',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
@@ -67,5 +69,7 @@ data = dict(
         label_description_file=data_root +
         'challenge2019/cls-label-description.csv',
         hierarchy_file=data_root + 'challenge2019/class_label_tree.np',
+        meta_file=data_root +
+        'challenge2019/challenge-2019-validation-metas.pkl',
         pipeline=test_pipeline))
 evaluation = dict(interval=1, metric='mAP')

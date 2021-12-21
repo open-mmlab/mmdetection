@@ -1,10 +1,3 @@
-_base_ = [
-    '../_base_/models/faster_rcnn_r50_fpn.py',
-    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
-]
-
-model = dict(roi_head=dict(bbox_head=dict(num_classes=601)))
-
 # dataset settings
 dataset_type = 'OpenImagesDataset'
 data_root = 'data/OpenImages/'
@@ -38,7 +31,7 @@ test_pipeline = [
 ]
 data = dict(
     samples_per_gpu=2,
-    workers_per_gpu=0,
+    workers_per_gpu=0,  # workers_per_gpu > 0 may occur out of memory
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'annotations/oidv6-train-annotations-bbox.csv',
@@ -56,6 +49,7 @@ data = dict(
         'annotations/class-descriptions-boxable.csv',
         hierarchy_file=data_root +
         'annotations/bbox_labels_600_hierarchy.json',
+        meta_file=data_root + 'annotations/validation-image-metas.pkl',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
@@ -65,16 +59,6 @@ data = dict(
         'annotations/class-descriptions-boxable.csv',
         hierarchy_file=data_root +
         'annotations/bbox_labels_600_hierarchy.json',
+        meta_file=data_root + 'annotations/validation-image-metas.pkl',
         pipeline=test_pipeline))
 evaluation = dict(interval=1, metric='mAP')
-
-optimizer = dict(type='SGD', lr=0.08, momentum=0.9, weight_decay=0.0001)
-optimizer_config = dict(
-    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
-lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=26000,
-    warmup_ratio=1.0 / 64,
-    step=[8, 11],
-)
