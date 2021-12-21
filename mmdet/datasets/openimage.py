@@ -7,7 +7,6 @@ import pickle
 import warnings
 from collections import OrderedDict, defaultdict
 
-import mmcv
 import numpy as np
 import torch.distributed as dist
 from mmcv.runner import get_dist_info
@@ -27,11 +26,10 @@ class OpenImagesDataset(CustomDataset):
                  label_description_file='',
                  need_get_father=True,
                  hierarchy_file=None,
-                 get_meta=False,
-                 meta_file=None,
+                 get_metas=True,
+                 load_from_file=True,
+                 meta_file='',
                  filter_labels=True,
-                 save_meta_file=True,
-                 save_meta_file_path=None,
                  **kwargs):
         """
         Args:
@@ -40,51 +38,46 @@ class OpenImagesDataset(CustomDataset):
                 class. Default: True.
             hierarchy_file (str): File path to the hierarchy for classes.
                 Default: None.
-            get_meta (bool): Whether get image metas from pkl file.
-                Default: False.
+            get_metas (bool): Whether get image metas. Default: True.
+                The OpenImages annotations do not have image metas (width and
+                height of the image), which will be used during evaluation.
+                We provide two ways to get image metas in `OpenImagesDataset`:
+
+                1. `load from file`: Load image metas from file, which is
+                suggested to use. We provide a script to get image metas.
+                `tools/misc/get_image_metas.py`
+
+                2. `load from pipeline`, which will get image metas during
+                test time. However, this may reduce the inference speed,
+                especially when using distribution.
+
+            load_from_file (bool): Whether get image metas from pkl file.
             meta_file (str): File path to get image metas.
             filter_labels (bool): Whether filter unannotated classes.
                 Default: True.
-            save_meta_file (bool): Whether save test images meta files.
-                Default: False.
-            save_meta_file_path (str): File path to save test images meta
-                files. Default: None
         """
 
         self.cat2label = defaultdict(str)
         self.index_dict = {}
-        # need get index_dict before load annotations
+        # need get `index_dict` before load annotations
         class_names = self.get_classes_from_csv(label_description_file)
         super(OpenImagesDataset, self).__init__(**kwargs)
         self.CLASSES = class_names
         if need_get_father is True and hierarchy_file is not None:
             self.class_label_tree = self.get_father(hierarchy_file)
         self.need_get_father = need_get_father
-        self.get_meta = get_meta
+        self.get_metas = get_metas
+        self.load_from_file = load_from_file
         self.meta_file = meta_file
+        if self.data_root is not None:
+            if not osp.isabs(self.meta_file):
+                self.meta_file = osp.join(self.data_root, self.meta_file)
         self.filter_labels = filter_labels
         self.rank, self.world_size = get_dist_info()
-        self.temp_img_shape = []
-        self.save_meta_file = save_meta_file
-        self.save_meta_file_path = save_meta_file_path
-        self.load_meta_from_pipeline = False if get_meta else True
-        if self.get_meta is True and self.meta_file is not None:
-            self.get_meta_from_file(metas=None, meta_file=self.meta_file)
-
-    def get_meta_from_file(self, metas=None, meta_file=''):
-        """Get image metas from pkl file."""
-        if metas is None:
-            assert meta_file.endswith('pkl'), 'Only support load pkl file'
-            print('load meta file begin')
-            with open(meta_file, 'rb') as f:
-                metas = pickle.load(f)
-        assert len(metas) == len(self)
-        for i in range(len(metas)):
-            file_name = metas[i][0].data['filename'].split('/')[-1]
-            assert file_name == self.data_infos[i].get('filename', None)
-            if self.data_infos[i].get('ori_shape', None) is None:
-                self.data_infos[i]['ori_shape'] = \
-                    metas[i][0].data['ori_shape']
+        self.temp_img_metas = []
+        self.test_img_metas = []
+        self.test_img_shapes = []
+        self.load_from_pipeline = False if load_from_file else True
 
     def get_classes_from_csv(self, label_description_file):
         """Get class name and label map proto.
@@ -250,14 +243,41 @@ class OpenImagesDataset(CustomDataset):
 
         return ann
 
+    def get_meta_from_file(self, meta_file=''):
+        """Get image metas from pkl file."""
+        assert meta_file.endswith('pkl'), 'File name must be pkl suffix'
+        print('load meta file begin')
+        with open(meta_file, 'rb') as f:
+            metas = pickle.load(f)
+        assert len(metas) == len(self)
+        for i in range(len(metas)):
+            file_name = metas[i].data[0][0]['filename'].split('/')[-1]
+            img_info = self.data_infos[i].get('img_info', None)
+            if img_info is not None:
+                assert file_name == img_info['filename'].split('/')[-1]
+            else:
+                assert file_name == self.data_infos[i]['filename']
+            hw = metas[i].data[0][0]['ori_shape'][:2]
+            self.test_img_shapes.append(hw)
+
     def get_meta_from_pipeline(self, results):
+        """Get image metas from pipeline."""
+        self.temp_img_metas.extend(results['img_metas'])
         if dist.is_available() and self.world_size > 1:
-            self.temp_img_shape.append(results['img_metas'])
-            self.test_img_metas = collect_results_cpu(self.temp_img_shape,
+            self.test_img_metas = collect_results_cpu(self.temp_img_metas,
                                                       len(self))
         else:
-            self.temp_img_shape.append(results['img_metas'])
-            self.test_img_metas = self.temp_img_shape
+            self.test_img_metas = self.temp_img_metas
+
+    def get_img_shape(self, metas):
+        """Set images original shape into data_infos."""
+        assert len(metas) == len(self)
+        for i in range(len(metas)):
+            file_name = metas[i].data['filename'].split('/')[-1]
+            assert file_name == \
+                   self.data_infos[i].get('filename', None).split('/')[-1]
+            hw = metas[i].data['ori_shape'][:2]
+            self.test_img_shapes.append(hw)
 
     def prepare_test_img(self, idx):
         """Get testing data after pipeline."""
@@ -267,7 +287,7 @@ class OpenImagesDataset(CustomDataset):
             results['proposals'] = self.proposals[idx]
         self.pre_pipeline(results)
         results = self.pipeline(results)
-        if self.load_meta_from_pipeline:
+        if self.get_metas and self.load_from_pipeline:
             self.get_meta_from_pipeline(results)
         return results
 
@@ -407,26 +427,12 @@ class OpenImagesDataset(CustomDataset):
                             (0, 5)).astype(np.float32)
         return det_results
 
-    def normed_bbox(self, annotations):
+    def denormalize_gt_bboxes(self, annotations):
         """Convert ground truth bboxes from relative position to absolute
         position."""
-        # save image meta file
-        if self.save_meta_file and self.save_meta_file_path is not None:
-            if self.data_root is not None:
-                if not osp.isabs(self.save_meta_file_path):
-                    self.save_meta_file_path = \
-                        osp.join(self.data_root, self.save_meta_file_path)
-            if not self.save_meta_file_path.endswith('pkl'):
-                self.save_meta_file_path = \
-                    osp.join(self.save_meta_file_path,
-                             'OpenImages_metafile.pkl')
-            mmcv.dump(self.test_img_metas, self.save_meta_file_path)
-            self.get_meta = True
-            self.meta_file = self.save_meta_file_path
-        if self.load_meta_from_pipeline:
-            self.get_meta_from_file(self.test_img_metas)
+        assert len(self.test_img_shapes) == len(annotations)
         for i in range(len(annotations)):
-            h, w, _ = self.data_infos[i]['ori_shape']
+            h, w = self.test_img_shapes[i]
             annotations[i]['bboxes'][:, 0::2] *= w
             annotations[i]['bboxes'][:, 1::2] *= h
         return annotations
@@ -469,8 +475,25 @@ class OpenImagesDataset(CustomDataset):
         if metric not in allowed_metrics:
             raise KeyError(f'metric {metric} is not supported')
         annotations = [self.get_ann_info(i) for i in range(len(self))]
+
+        # load from file
+        if self.get_metas and self.load_from_file:
+            self.get_meta_from_file(self.meta_file)
+        # load from pipeline
+        else:
+            self.get_img_shape(self.test_img_metas)
+
+        if len(self.test_img_shapes) > len(self):
+            self.test_img_shapes = self.test_img_shapes[:len(self)]
+
         if normed_bbox:
-            annotations = self.normed_bbox(annotations)
+            annotations = self.denormalize_gt_bboxes(annotations)
+
+        # Reset test_image_metas, temp_image_metas and test_img_shapes
+        # to avoid potential error
+        self.temp_img_metas = []
+        self.test_img_shapes = []
+        self.test_img_metas = []
         if self.need_get_father:
             annotations = self.get_gt_fathers(annotations)
             results = self.get_result_fathers(results, annotations)
@@ -595,7 +618,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
         self.pre_pipeline(results)
 
         results = self.pipeline(results)
-        if not self.get_meta:
+        if self.get_metas and self.load_from_pipeline:
             self.get_meta_from_pipeline(results)
         return results
 
