@@ -1,13 +1,12 @@
-import mmcv
-import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
 from torch.nn.modules.batchnorm import _BatchNorm
 import warnings
 
+import mmcv
 from mmcv.cnn import build_conv_layer, build_norm_layer
-from mmcv.runner import load_checkpoint
 from mmcv.cnn.bricks.drop import drop_path
+from mmcv.runner import load_checkpoint
 
 from ..builder import BACKBONES
 from ..utils.activations import MemoryEfficientSwish

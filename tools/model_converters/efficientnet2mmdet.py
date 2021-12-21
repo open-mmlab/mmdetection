@@ -1,7 +1,6 @@
 import argparse
-from collections import OrderedDict
-
 import torch
+from collections import OrderedDict
 
 
 def convert(src, dst):
@@ -17,14 +16,14 @@ def convert(src, dst):
            for i in range(20)},
         'stem.conv': 'conv1',
         'stem.bn': 'bn1',
-        'dwise.':'depthwise_conv.conv.',
+        'dwise.': 'depthwise_conv.conv.',
         'dwise_bn': 'depthwise_conv.bn',
-        'lin_proj.':'linear_conv.conv.',
+        'lin_proj.': 'linear_conv.conv.',
         'lin_proj_bn': 'linear_conv.bn',
         'exp.': 'expand_conv.conv.',
         'exp_bn': 'expand_conv.bn',
-        'se.f_ex.0':'se.conv1.conv',
-        'se.f_ex.2':'se.conv2.conv'
+        'se.f_ex.0': 'se.conv1.conv',
+        'se.f_ex.2': 'se.conv2.conv'
     }
     for k, v in efficientnet_model['model_state'].items():
         old_k = k
@@ -44,6 +43,7 @@ def convert(src, dst):
     checkpoint = dict()
     checkpoint['state_dict'] = new_model_state
     torch.save(checkpoint, dst)
+
 
 def main():
     parser = argparse.ArgumentParser(description='Convert model keys')
