@@ -1,6 +1,20 @@
-# SCNet
+# SCNet: Training Inference Sample Consistency for Instance Segmentation
 
-## Introduction
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+Cascaded architectures have brought significant performance improvement in object detection and instance segmentation. However, there are lingering issues regarding the disparity in the Intersection-over-Union (IoU) distribution of the samples between training and inference. This disparity can potentially exacerbate detection accuracy. This paper proposes an architecture referred to as Sample Consistency Network (SCNet) to ensure that the IoU distribution of the samples at training time is close to that at inference time. Furthermore, SCNet incorporates feature relay and utilizes global contextual information to further reinforce the reciprocal relationships among classifying, detecting, and segmenting sub-tasks. Extensive experiments on the standard COCO dataset reveal the effectiveness of the proposed method over multiple evaluation metrics, including box AP, mask AP, and inference speed. In particular, while running 38\% faster, the proposed SCNet improves the AP of the box and mask predictions by respectively 1.3 and 2.3 points compared to the strong Cascade Mask R-CNN baseline.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143974840-8fed75f3-661e-4e2a-a210-acf4ab5f42a3.png"/>
+</div>
+
+<!-- [PAPER_TITLE: SCNet: Training Inference Sample Consistency for Instance Segmentation] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/2012.10150] -->
+
+## Citation
 
 <!-- [ALGORITHM] -->
 

@@ -1,6 +1,20 @@
-# YOLOv3
+# YOLOv3: An Incremental Improvement
 
-## Introduction
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+We present some updates to YOLO! We made a bunch of little design changes to make it better. We also trained this new network that's pretty swell. It's a little bigger than last time but more accurate. It's still fast though, don't worry. At 320x320 YOLOv3 runs in 22 ms at 28.2 mAP, as accurate as SSD but three times faster. When we look at the old .5 IOU mAP detection metric YOLOv3 is quite good. It achieves 57.9 mAP@50 in 51 ms on a Titan X, compared to 57.5 mAP@50 in 198 ms by RetinaNet, similar performance but 3.8x faster.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/144001433-b4f7fb5e-3b7a-414b-b949-93733213b670.png" height="300"/>
+</div>
+
+<!-- [PAPER_TITLE: YOLOv3: An Incremental Improvement] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/1804.02767] -->
+
+## Citation
 
 <!-- [ALGORITHM] -->
 

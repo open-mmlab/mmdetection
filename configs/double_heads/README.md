@@ -1,6 +1,20 @@
 # Rethinking Classification and Localization for Object Detection
 
-## Introduction
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+Two head structures (i.e. fully connected head and convolution head) have been widely used in R-CNN based detectors for classification and localization tasks. However, there is a lack of understanding of how does these two head structures work for these two tasks. To address this issue, we perform a thorough analysis and find an interesting fact that the two head structures have opposite preferences towards the two tasks. Specifically, the fully connected head (fc-head) is more suitable for the classification task, while the convolution head (conv-head) is more suitable for the localization task. Furthermore, we examine the output feature maps of both heads and find that fc-head has more spatial sensitivity than conv-head. Thus, fc-head has more capability to distinguish a complete object from part of an object, but is not robust to regress the whole object. Based upon these findings, we propose a Double-Head method, which has a fully connected head focusing on classification and a convolution head for bounding box regression. Without bells and whistles, our method gains +3.5 and +2.8 AP on MS COCO dataset from Feature Pyramid Network (FPN) baselines with ResNet-50 and ResNet-101 backbones, respectively.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143879010-e30f654b-f93e-44b2-a186-c251fdca5bda.png"/>
+</div>
+
+<!-- [PAPER_TITLE: Rethinking Classification and Localization for Object Detection] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/1904.06493] -->
+
+## Citation
 
 <!-- [ALGORITHM] -->
 

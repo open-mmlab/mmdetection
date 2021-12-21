@@ -1,15 +1,22 @@
 # **Y**ou **O**nly **L**ook **A**t **C**oefficien**T**s
 
-<!-- [ALGORITHM] -->
+## Abstract
 
-```
-    ██╗   ██╗ ██████╗ ██╗      █████╗  ██████╗████████╗
-    ╚██╗ ██╔╝██╔═══██╗██║     ██╔══██╗██╔════╝╚══██╔══╝
-     ╚████╔╝ ██║   ██║██║     ███████║██║        ██║
-      ╚██╔╝  ██║   ██║██║     ██╔══██║██║        ██║
-       ██║   ╚██████╔╝███████╗██║  ██║╚██████╗   ██║
-       ╚═╝    ╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝   ╚═╝
-```
+<!-- [ABSTRACT] -->
+
+We present a simple, fully-convolutional model for real-time instance segmentation that achieves 29.8 mAP on MS COCO at 33.5 fps evaluated on a single Titan Xp, which is significantly faster than any previous competitive approach. Moreover, we obtain this result after training on only one GPU. We accomplish this by breaking instance segmentation into two parallel subtasks: (1) generating a set of prototype masks and (2) predicting per-instance mask coefficients. Then we produce instance masks by linearly combining the prototypes with the mask coefficients. We find that because this process doesn't depend on repooling, this approach produces very high-quality masks and exhibits temporal stability for free. Furthermore, we analyze the emergent behavior of our prototypes and show they learn to localize instances on their own in a translation variant manner, despite being fully-convolutional. Finally, we also propose Fast NMS, a drop-in 12 ms faster replacement for standard NMS that only has a marginal performance penalty.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/144001225-8c62cad7-a330-4f60-873f-61aa17e99223.png"/>
+</div>
+
+<!-- [PAPER_TITLE: YOLACT: Real-time Instance Segmentation] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/1904.02689] -->
+
+## Introduction
+
+<!-- [ALGORITHM] -->
 
 A simple, fully convolutional model for real-time instance segmentation. This is the code for our paper:
 
