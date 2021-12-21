@@ -2,32 +2,16 @@ import mmcv
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
+from torch.nn.modules.batchnorm import _BatchNorm
+import warnings
+
 from mmcv.cnn import build_conv_layer, build_norm_layer
+from mmcv.runner import load_checkpoint
+from mmcv.cnn.bricks.drop import drop_path
 
 from ..builder import BACKBONES
 from ..utils.activations import MemoryEfficientSwish
 from ..utils.inverted_residual import InvertedResidual
-
-
-def drop_path(x, drop_prob=0., training=False):
-    """Drop paths
-
-    Args:
-        x (int): Feature map input.
-        drop_prob (float): Drop path rate.
-            Default: 0.0
-        training (bool): Whether the layer is in train mode.
-            Default: False
-    """
-    if drop_prob == 0. or not training:
-        return x
-    with torch.no_grad():
-        keep_prob = 1 - drop_prob
-        shape = (x.shape[0],) + (1,) * (x.ndim - 1)
-        random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
-        random_tensor = torch.floor(random_tensor)
-    output = x / keep_prob * random_tensor
-    return output
 
 
 class MBConv(InvertedResidual):
@@ -115,12 +99,12 @@ class EfficientLayer(nn.Sequential):
                     out_channels=out_channels,
                     mid_channels=midchannels,
                     stride=block_stride,
-                    # expand_ratio=expand_ratio,
                     kernel_size=kernel_size,
-                    # se_ratio=se_ratio,
                     with_cp=with_cp,
                     dropout=dropout,
                     se_cfg=se_cfg,
+                    norm_cfg=norm_cfg,
+                    conv_cfg=conv_cfg,
                     with_expand_conv=with_expand_conv,
                     init_cfg=init_cfg))
             super().__init__(*layers)
@@ -191,7 +175,6 @@ class EfficientNet(mmcv.runner.BaseModule):
 
     def __init__(self,
                  scale,
-                 in_channels=3,
                  stem_channels=32,
                  strides=(1, 2, 2, 2, 1, 2, 1),
                  expand_ratios=(1, 6, 6, 6, 6, 6, 6),
@@ -201,9 +184,10 @@ class EfficientNet(mmcv.runner.BaseModule):
                  frozen_stages=-1,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
-                 norm_eval=True,
+                 norm_eval=False,
                  with_cp=False,
                  dropout=0.0,
+                 pretrained=None,
                  init_cfg=None,
                  ):
         super().__init__(init_cfg)
@@ -212,9 +196,28 @@ class EfficientNet(mmcv.runner.BaseModule):
         self.norm_cfg = norm_cfg
         self.with_cp = with_cp
         self.stage_depths, self.stage_widths = self.arch_settings[scale]
+        assert scale >= 0 and scale <= 5
+        assert max(out_indices) <= 6
+        assert not (init_cfg and pretrained), \
+            'init_cfg and pretrained cannot be specified at the same time'
+        if isinstance(pretrained, str):
+            warnings.warn('DeprecationWarning: pretrained is deprecated, '
+                          'please use "init_cfg" instead')
+            self.init_cfg = dict(type='Pretrained', checkpoint=pretrained)
+        elif pretrained is None:
+            if init_cfg is None:
+                self.init_cfg = [
+                    dict(type='Kaiming', layer='Conv2d'),
+                    dict(
+                        type='Constant',
+                        val=1,
+                        layer=['_BatchNorm', 'GroupNorm'])
+                ]
         self.dropout = dropout
         self._make_stem_layer(3, stem_channels)
         self.efficient_layers = []
+        self.frozen_stages = frozen_stages
+        self.norm_eval = norm_eval
         previous_width = stem_channels
         for i, (d, w) in enumerate(zip(self.stage_depths, self.stage_widths)):
             efficient_layer = self.make_efficient_layer(
@@ -262,12 +265,22 @@ class EfficientNet(mmcv.runner.BaseModule):
             for m in [self.conv1, self.norm1]:
                 for param in m.parameters():
                     param.requires_grad = False
-
         for i in range(1, self.frozen_stages + 1):
             m = getattr(self, f'layer{i}')
             m.eval()
             for param in m.parameters():
                 param.requires_grad = False
+
+    def train(self, mode=True):
+        """Convert the model into training mode while keep normalization layer
+        freezed."""
+        super(EfficientNet, self).train(mode)
+        self._freeze_stages()
+        if mode and self.norm_eval:
+            for m in self.modules():
+                # trick: eval have effect on BatchNorm only
+                if isinstance(m, _BatchNorm):
+                    m.eval()
 
     def forward(self, x):
         x = self.conv1(x)

@@ -11,7 +11,6 @@ model = dict(
         stem_channels=40,
         norm_cfg=norm_cfg,
         scale=3,
-        frozen_stages=1,
         with_cp=True,
         dropout=0.3,
         init_cfg=dict(

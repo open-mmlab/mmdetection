@@ -1,6 +1,8 @@
 import torch
 from torch import nn
 
+from mmcv.cnn.bricks.registry import ACTIVATION_LAYERS
+
 
 class MemoryEfficientSwishImplementation(torch.autograd.Function):
 
@@ -17,7 +19,7 @@ class MemoryEfficientSwishImplementation(torch.autograd.Function):
         return grad_output * (sigmoid_i * (1 + i * (1 - sigmoid_i)))
 
 
+@ACTIVATION_LAYERS.register_module()
 class MemoryEfficientSwish(nn.Module):
-
     def forward(self, x):
         return MemoryEfficientSwishImplementation.apply(x)

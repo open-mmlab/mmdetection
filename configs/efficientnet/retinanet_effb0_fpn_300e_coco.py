@@ -10,7 +10,6 @@ model = dict(
         type='EfficientNet',
         norm_cfg=norm_cfg,
         scale=0,
-        frozen_stages=1,
         with_cp=True,
         dropout=0.2,
         init_cfg=dict(
