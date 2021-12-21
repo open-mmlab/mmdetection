@@ -87,12 +87,11 @@ def main():
         metas = single_collect_metas(data_loader)
     else:
         metas = multi_collect_metas(data_loader)
-    print()
+
     root_path = cfg.data.test.ann_file.rsplit('/', 1)[0]
     save_path = os.path.join(root_path, args.out)
     mmcv.dump(metas, save_path)
     print(f'save image meta file: {save_path}')
-    # data_root = cfg.data.test.ann_file
 
 
 if __name__ == '__main__':
