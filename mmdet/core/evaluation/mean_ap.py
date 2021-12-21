@@ -115,7 +115,7 @@ def tpfp_imagenet(det_bboxes,
                     det_bboxes[:, 3] - det_bboxes[:, 1] + extra_length)
             for i, (min_area, max_area) in enumerate(area_ranges):
                 fp[i, (det_areas >= min_area) & (det_areas < max_area)] = 1
-        return tp, fp, det_bboxes
+        return tp, fp
     ious = bbox_overlaps(
         det_bboxes, gt_bboxes - 1, use_legacy_coordinate=use_legacy_coordinate)
     gt_w = gt_bboxes[:, 2] - gt_bboxes[:, 0] + extra_length
@@ -189,7 +189,7 @@ def tpfp_default(det_bboxes,
             Default: False.
 
     Returns:
-         tuple[np.ndarray]: (tp, fp) whose elements are 0 and 1. The shape of
+        tuple[np.ndarray]: (tp, fp) whose elements are 0 and 1. The shape of
             each array is (num_scales, m).
     """
 
