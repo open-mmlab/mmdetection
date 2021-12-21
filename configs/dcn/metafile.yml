@@ -10,7 +10,7 @@ Collections:
         - Deformable Convolution
     Paper:
       URL: https://arxiv.org/abs/1811.11168
-      Title: 'Deformable ConvNets v2: More Deformable, Better Results'
+      Title: "Deformable ConvNets v2: More Deformable, Better Results"
     README: configs/dcn/README.md
     Code:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/ops/dcn/deform_conv.py#L15
@@ -178,7 +178,7 @@ Models:
       - Task: Instance Segmentation
         Dataset: COCO
         Metrics:
-          mask AP:  37.4
+          mask AP: 37.4
     Weights: https://download.openmmlab.com/mmdetection/v2.0/dcn/mask_rcnn_r50_fpn_dconv_c3-c5_1x_coco/mask_rcnn_r50_fpn_dconv_c3-c5_1x_coco_20200203-4d9ad43b.pth
 
   - Name: mask_rcnn_r50_fpn_mdconv_c3-c5_1x_coco
@@ -202,8 +202,50 @@ Models:
       - Task: Instance Segmentation
         Dataset: COCO
         Metrics:
-          mask AP:  37.1
+          mask AP: 37.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/dcn/mask_rcnn_r50_fpn_mdconv_c3-c5_1x_coco/mask_rcnn_r50_fpn_mdconv_c3-c5_1x_coco_20200203-ad97591f.pth
+
+  - Name: mask_rcnn_r50_fpn_fp16_dconv_c3-c5_1x_coco
+    In Collection: Deformable Convolutional Networks
+    Config: configs/dcn/mask_rcnn_r50_fpn_fp16_dconv_c3-c5_1x_coco.py
+    Metadata:
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+        - Mixed Precision Training
+      Training Memory (GB): 3.0
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.9
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 37.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fp16/mask_rcnn_r50_fpn_fp16_dconv_c3-c5_1x_coco/mask_rcnn_r50_fpn_fp16_dconv_c3-c5_1x_coco_20210520_180247-c06429d2.pth
+
+  - Name: mask_rcnn_r50_fpn_fp16_mdconv_c3-c5_1x_coco
+    In Collection: Deformable Convolutional Networks
+    Config: configs/dcn/mask_rcnn_r50_fpn_fp16_mdconv_c3-c5_1x_coco.py
+    Metadata:
+      Training Memory (GB): 3.1
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+        - Mixed Precision Training
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 42.0
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 37.6
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fp16/mask_rcnn_r50_fpn_fp16_mdconv_c3-c5_1x_coco/mask_rcnn_r50_fpn_fp16_mdconv_c3-c5_1x_coco_20210520_180434-cf8fefa5.pth
 
   - Name: mask_rcnn_r101_fpn_dconv_c3-c5_1x_coco
     In Collection: Deformable Convolutional Networks
@@ -226,7 +268,7 @@ Models:
       - Task: Instance Segmentation
         Dataset: COCO
         Metrics:
-          mask AP:  38.9
+          mask AP: 38.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/dcn/mask_rcnn_r101_fpn_dconv_c3-c5_1x_coco/mask_rcnn_r101_fpn_dconv_c3-c5_1x_coco_20200216-a71f5bce.pth
 
   - Name: cascade_rcnn_r50_fpn_dconv_c3-c5_1x_coco
@@ -290,7 +332,7 @@ Models:
       - Task: Instance Segmentation
         Dataset: COCO
         Metrics:
-          mask AP:  38.6
+          mask AP: 38.6
     Weights: https://download.openmmlab.com/mmdetection/v2.0/dcn/cascade_mask_rcnn_r50_fpn_dconv_c3-c5_1x_coco/cascade_mask_rcnn_r50_fpn_dconv_c3-c5_1x_coco_20200202-42e767a2.pth
 
   - Name: cascade_mask_rcnn_r101_fpn_dconv_c3-c5_1x_coco
@@ -314,7 +356,7 @@ Models:
       - Task: Instance Segmentation
         Dataset: COCO
         Metrics:
-          mask AP:  39.7
+          mask AP: 39.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/dcn/cascade_mask_rcnn_r101_fpn_dconv_c3-c5_1x_coco/cascade_mask_rcnn_r101_fpn_dconv_c3-c5_1x_coco_20200204-df0c5f10.pth
 
   - Name: cascade_mask_rcnn_x101_32x4d_fpn_dconv_c3-c5_1x_coco
@@ -331,5 +373,5 @@ Models:
       - Task: Instance Segmentation
         Dataset: COCO
         Metrics:
-          mask AP:  41.1
+          mask AP: 41.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/dcn/cascade_mask_rcnn_x101_32x4d_fpn_dconv_c3-c5_1x_coco/cascade_mask_rcnn_x101_32x4d_fpn_dconv_c3-c5_1x_coco-e75f90c8.pth

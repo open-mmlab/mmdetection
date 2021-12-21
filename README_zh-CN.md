@@ -13,10 +13,10 @@
   <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
 
-[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/v2.18.1/) |
-[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/v2.18.1/get_started.html) |
-[👀模型库](https://mmdetection.readthedocs.io/zh_CN/v2.18.1/model_zoo.html) |
-[🆕更新日志](https://mmdetection.readthedocs.io/en/v2.18.1/changelog.html) |
+[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/v2.19.1/) |
+[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/v2.19.1/get_started.html) |
+[👀模型库](https://mmdetection.readthedocs.io/zh_CN/v2.19.1/model_zoo.html) |
+[🆕更新日志](https://mmdetection.readthedocs.io/en/v2.19.1/changelog.html) |
 [🚀进行中的项目](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔报告问题](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
@@ -28,7 +28,7 @@
 
 MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [OpenMMLab](https://openmmlab.com/) 项目的一部分。
 
-主分支代码目前支持 PyTorch 1.3 以上的版本。
+主分支代码目前支持 PyTorch 1.5 以上的版本。
 
 
 <details open>
@@ -59,18 +59,18 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 更新日志
 
-最新的 **2.18.1** 版本已经在2021.11.15发布:
-- 发布了 [QueryInst](http://arxiv.org/abs/2105.01928) 的预训练模型。
-- 支持绘制混淆矩阵。
-- 修复了 PVT 中的 SpatialReductionAttention 以及 PVT 和 Swin-Transformer 中 trunc_normal_init 的错误用法。
+最新的 **2.19.1** 版本已经在 2021.12.14 发布:
+- 发布 [YOLOX](configs/yolox/README.md) COCO 预训练模型
+- 在自述文件中添加论文的摘要和草图
+- 修复一些权重初始化错误
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/changelog.md)。
 
-如果想了解 MMDetection 不同版本之间的兼容性, 请参考[兼容性说明文档](docs/compatibility.md)。
+如果想了解 MMDetection 不同版本之间的兼容性, 请参考[兼容性说明文档](docs/zh_cn/compatibility.md)。
 
 ## 基准测试和模型库
 
-测试结果和模型可以在[模型库](docs/model_zoo.md)中找到。
+测试结果和模型可以在[模型库](docs/zh_cn/model_zoo.md)中找到。
 
 <details open>
 <summary>已支持的骨干网络：</summary>
@@ -148,20 +148,20 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 - [x] [QueryInst (ICCV'2021)](configs/queryinst/README.md)
 </details>
 
-我们在[基于 MMDetection 的项目](./docs/projects.md)中列举了一些其他的支持的算法。
+我们在[基于 MMDetection 的项目](./docs/zh_cn/projects.md)中列举了一些其他的支持的算法。
 
 ## 安装
 
-请参考[快速入门文档](docs/get_started.md)进行安装。
+请参考[快速入门文档](docs/zh_cn/get_started.md)进行安装。
 
 ## 快速入门
 
-请参考[快速入门文档](docs/get_started.md)学习 MMDetection 的基本使用。
-我们提供了 [colab 教程](demo/MMDet_Tutorial.ipynb)，也为新手提供了完整的运行教程，分别针对[已有数据集](docs/1_exist_data_model.md)和[新数据集](docs/2_new_data_model.md) 完整的使用指南
+请参考[快速入门文档](docs/zh_cn/get_started.md)学习 MMDetection 的基本使用。
+我们提供了 [colab 教程](demo/MMDet_Tutorial.ipynb)，也为新手提供了完整的运行教程，分别针对[已有数据集](docs/zh_cn/1_exist_data_model.md)和[新数据集](docs/zh_cn/2_new_data_model.md) 完整的使用指南
 
-我们也提供了一些进阶教程，内容覆盖了 [finetune 模型](docs/tutorials/finetune.md)，[增加新数据集支持](docs/tutorials/new_dataset.md)，[设计新的数据预处理流程](docs/tutorials/data_pipeline.md)，[增加自定义模型](ocs/tutorials/customize_models.md)，[增加自定义的运行时配置](docs/tutorials/customize_runtime.md)，[常用工具和脚本](docs/useful_tools.md)。
+我们也提供了一些进阶教程，内容覆盖了 [finetune 模型](docs/zh_cn/tutorials/finetune.md)，[增加新数据集支持](docs/zh_cn/tutorials/customize_dataset.md)，[设计新的数据预处理流程](docs/zh_cn/tutorials/data_pipeline.md)，[增加自定义模型](docs/zh_cn/tutorials/customize_models.md)，[增加自定义的运行时配置](docs/zh_cn/tutorials/customize_runtime.md)，[常用工具和脚本](docs/zh_cn/useful_tools.md)。
 
-如果遇到问题，请参考 [常见问题解答](docs_zh-CN/faq.md)。
+如果遇到问题，请参考 [常见问题解答](docs/zh_cn/faq.md)。
 
 ## 贡献指南
 
@@ -203,6 +203,9 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 - [MMEditing](https://github.com/open-mmlab/mmediting): OpenMMLab 图像视频编辑工具箱
 - [MMOCR](https://github.com/open-mmlab/mmocr): OpenMMLab 全流程文字检测识别理解工具包
 - [MMGeneration](https://github.com/open-mmlab/mmgeneration): OpenMMLab 图片视频生成模型工具箱
+- [MMFlow](https://github.com/open-mmlab/mmflow): OpenMMLab 光流估计工具箱与测试基准
+- [MMFewShot](https://github.com/open-mmlab/mmfewshot): OpenMMLab 少样本学习工具箱与测试基准
+- [MMHuman3D](https://github.com/open-mmlab/mmhuman3d): OpenMMLab 人体参数化模型工具箱与测试基准
 
 ## 欢迎加入 OpenMMLab 社区
 

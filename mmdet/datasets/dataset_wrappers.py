@@ -68,6 +68,28 @@ class ConcatDataset(_ConcatDataset):
             sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
         return self.datasets[dataset_idx].get_cat_ids(sample_idx)
 
+    def get_ann_info(self, idx):
+        """Get annotation of concatenated dataset by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            dict: Annotation info of specified index.
+        """
+
+        if idx < 0:
+            if -idx > len(self):
+                raise ValueError(
+                    'absolute value of index should not exceed dataset length')
+            idx = len(self) + idx
+        dataset_idx = bisect.bisect_right(self.cumulative_sizes, idx)
+        if dataset_idx == 0:
+            sample_idx = idx
+        else:
+            sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
+        return self.datasets[dataset_idx].get_ann_info(sample_idx)
+
     def evaluate(self, results, logger=None, **kwargs):
         """Evaluate the results.
 
@@ -164,6 +186,18 @@ class RepeatDataset:
         """
 
         return self.dataset.get_cat_ids(idx % self._ori_len)
+
+    def get_ann_info(self, idx):
+        """Get annotation of repeat dataset by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            dict: Annotation info of specified index.
+        """
+
+        return self.dataset.get_ann_info(idx % self._ori_len)
 
     def __len__(self):
         """Length after repetition."""
@@ -280,6 +314,18 @@ class ClassBalancedDataset:
         ori_index = self.repeat_indices[idx]
         return self.dataset[ori_index]
 
+    def get_ann_info(self, idx):
+        """Get annotation of dataset by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            dict: Annotation info of specified index.
+        """
+        ori_index = self.repeat_indices[idx]
+        return self.dataset.get_ann_info(ori_index)
+
     def __len__(self):
         """Length after repetition."""
         return len(self.repeat_indices)
@@ -301,7 +347,7 @@ class MultiImageMixDataset:
         pipeline (Sequence[dict]): Sequence of transform object or
             config dict to be composed.
         dynamic_scale (tuple[int], optional): The image scale can be changed
-            dynamically. Default to None.
+            dynamically. Default to None. It is deprecated.
         skip_type_keys (list[str], optional): Sequence of type string to
             be skip pipeline. Default to None.
     """
@@ -311,6 +357,10 @@ class MultiImageMixDataset:
                  pipeline,
                  dynamic_scale=None,
                  skip_type_keys=None):
+        if dynamic_scale is not None:
+            raise RuntimeError(
+                'dynamic_scale is deprecated. Please use Resize pipeline '
+                'to achieve similar functions')
         assert isinstance(pipeline, collections.abc.Sequence)
         if skip_type_keys is not None:
             assert all([
@@ -335,10 +385,6 @@ class MultiImageMixDataset:
             self.flag = dataset.flag
         self.num_samples = len(dataset)
 
-        if dynamic_scale is not None:
-            assert isinstance(dynamic_scale, tuple)
-        self._dynamic_scale = dynamic_scale
-
     def __len__(self):
         return self.num_samples
 
@@ -359,11 +405,6 @@ class MultiImageMixDataset:
                 ]
                 results['mix_results'] = mix_results
 
-            if self._dynamic_scale is not None:
-                # Used for subsequent pipeline to automatically change
-                # the output image size. E.g MixUp, Resize.
-                results['scale'] = self._dynamic_scale
-
             results = transform(results)
 
             if 'mix_results' in results:
@@ -382,13 +423,3 @@ class MultiImageMixDataset:
             isinstance(skip_type_key, str) for skip_type_key in skip_type_keys
         ])
         self._skip_type_keys = skip_type_keys
-
-    def update_dynamic_scale(self, dynamic_scale):
-        """Update dynamic_scale. It is called by an external hook.
-
-        Args:
-            dynamic_scale (tuple[int]): The image scale can be
-               changed dynamically.
-        """
-        assert isinstance(dynamic_scale, tuple)
-        self._dynamic_scale = dynamic_scale

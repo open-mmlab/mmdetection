@@ -2,9 +2,8 @@ _base_ = './yolov3_d53_mstrain-608_273e_coco.py'
 # dataset settings
 img_norm_cfg = dict(mean=[0, 0, 0], std=[255., 255., 255.], to_rgb=True)
 train_pipeline = [
-    dict(type='LoadImageFromFile', to_float32=True),
+    dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='PhotoMetricDistortion'),
     dict(
         type='Expand',
         mean=img_norm_cfg['mean'],
@@ -16,6 +15,7 @@ train_pipeline = [
         min_crop_size=0.3),
     dict(type='Resize', img_scale=(320, 320), keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='PhotoMetricDistortion'),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),

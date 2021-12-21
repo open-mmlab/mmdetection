@@ -1,5 +1,80 @@
 ## Changelog
 
+### v2.19.1 (14/12/2021)
+
+#### New Features
+
+- Release [YOLOX](configs/yolox/README.md) COCO pretrained models (#6698)
+
+#### Bug Fixes
+
+- Fix DCN initialization in DenseHead (#6625)
+- Fix initialization of ConvFCHead (#6624)
+- Fix PseudoSampler in RCNN (#6622)
+- Fix weight initialization in Swin and PVT (#6663)
+- Fix dtype bug in BaseDenseHead (#6767)
+- Fix SimOTA with no valid bbox (#6733)
+
+#### Improvements
+
+- Add an example of combining swin and one-stage models (#6621)
+- Add `get_ann_info` to dataset_wrappers (#6526)
+- Support keeping image ratio in the multi-scale training of YOLOX (#6732)
+- Support `bbox_clip_border` for the augmentations of YOLOX (#6730)
+
+#### Documents
+
+- Update metafile (#6717)
+- Add mmhuman3d in readme (#6699)
+- Update FAQ docs (#6587)
+- Add doc for `detect_anomalous_params` (#6697)
+
+#### Contributors
+
+A total of 11 developers contributed to this release.
+Thanks @ZwwWayne, @LJoson, @Czm369, @jshilong, @ZCMax, @RangiLyu, @BIGWangYuDong, @hhaAndroid, @zhaoxin111, @GT9505, @shinya7y
+
+### v2.19.0 (29/11/2021)
+
+#### Highlights
+
+- Support [Label Assignment Distillation](https://arxiv.org/abs/2108.10520)
+- Support `persistent_workers` for Pytorch >= 1.7
+- Align accuracy to the updated official YOLOX
+
+#### New Features
+
+- Support [Label Assignment Distillation](https://arxiv.org/abs/2108.10520) (#6342)
+- Support `persistent_workers` for Pytorch >= 1.7 (#6435)
+
+#### Bug Fixes
+
+- Fix repeatedly output warning message (#6584)
+- Avoid infinite GPU waiting in dist training (#6501)
+- Fix SSD512 config error (#6574)
+- Fix MMDetection model to ONNX command (#6558)
+
+#### Improvements
+
+- Refactor configs of FP16 models (#6592)
+- Align accuracy to the updated official YOLOX (#6443)
+- Speed up training and reduce memory cost when using PhotoMetricDistortion. (#6442)
+- Make OHEM work with seesaw loss (#6514)
+
+
+#### Documents
+
+- Update README.md (#6567)
+
+#### Contributors
+
+A total of 11 developers contributed to this release.
+Thanks @FloydHsiu, @RangiLyu, @ZwwWayne, @AndreaPi, @st9007a, @hachreak, @BIGWangYuDong, @hhaAndroid, @AronLin, @chhluo, @vealocia, @HarborYuan, @st9007a, @jshilong
+
+
+
+
+
 ### v2.18.1 (15/11/2021)
 
 #### Highlights
@@ -26,7 +101,7 @@
 
 #### Documents
 
-- Chinese version of [Corruption Benchmarking](docs/robustness_benchmarking.mddocs/robustness_benchmarking.md) (#6375)
+- Chinese version of [Corruption Benchmarking](robustness_benchmarking.md) (#6375)
 - Fix config path in docs (#6396)
 - Update GRoIE readme (#6401)
 
