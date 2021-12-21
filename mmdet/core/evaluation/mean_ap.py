@@ -60,12 +60,9 @@ def average_precision(recalls, precisions, mode='area'):
 def tpfp_imagenet(det_bboxes,
                   gt_bboxes,
                   gt_bboxes_ignore=None,
-                  gt_bboxes_group_of=None,
                   default_iou_thr=0.5,
-                  ioa_thr=None,
                   area_ranges=None,
-                  use_legacy_coordinate=False,
-                  use_group_of=False):
+                  use_legacy_coordinate=False):
     """Check if detected bboxes are true positive or false positive.
 
     Args:
@@ -76,28 +73,17 @@ def tpfp_imagenet(det_bboxes,
         default_iou_thr (float): IoU threshold to be considered as matched for
             medium and large bboxes (small ones have special rules).
             Default: 0.5.
-        ioa_thr (float | None): IoA threshold to be considered as matched,
-            which only used in OpenImages evaluation. Default: None.
         area_ranges (list[tuple] | None): Range of bbox areas to be evaluated,
             in the format [(min1, max1), (min2, max2), ...]. Default: None.
         use_legacy_coordinate (bool): Whether to use coordinate system in
             mmdet v1.x. which means width, height should be
             calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
             Default: False.
-        use_group_of (bool): Whether to use group of when calculate TP and FP,
-            which only used in OpenImages evaluation. Default: False.
 
     Returns:
-        tuple[np.ndarray] (tp, fp, det_bboxes): (tp, fp) whose elements
-            are 0 and 1. The shape of each array is (num_scales, m).
-            det_bboxes is same as input. The shape is (num_scales, m)
+        tuple[np.ndarray]: (tp, fp) whose elements are 0 and 1. The shape of
+            each array is (num_scales, m).
     """
-    assert gt_bboxes_group_of is None and \
-           ioa_thr is None and \
-           use_group_of is False and \
-           '`gt_bboxes_group_of` and `ioa_thr` should be None, ' \
-           '`use_group_of` should be False. ' \
-           'Only used when evaluate OpenImages'
 
     if not use_legacy_coordinate:
         extra_length = 0.
@@ -176,18 +162,122 @@ def tpfp_imagenet(det_bboxes,
                     bbox[3] - bbox[1] + extra_length)
                 if area >= min_area and area < max_area:
                     fp[k, i] = 1
-    return tp, fp, det_bboxes
+    return tp, fp
 
 
 def tpfp_default(det_bboxes,
                  gt_bboxes,
                  gt_bboxes_ignore=None,
-                 gt_bboxes_group_of=None,
                  iou_thr=0.5,
-                 ioa_thr=None,
                  area_ranges=None,
-                 use_legacy_coordinate=False,
-                 use_group_of=False):
+                 use_legacy_coordinate=False):
+    """Check if detected bboxes are true positive or false positive.
+
+    Args:
+        det_bbox (ndarray): Detected bboxes of this image, of shape (m, 5).
+        gt_bboxes (ndarray): GT bboxes of this image, of shape (n, 4).
+        gt_bboxes_ignore (ndarray): Ignored gt bboxes of this image,
+            of shape (k, 4). Default: None
+        iou_thr (float): IoU threshold to be considered as matched.
+            Default: 0.5.
+        area_ranges (list[tuple] | None): Range of bbox areas to be
+            evaluated, in the format [(min1, max1), (min2, max2), ...].
+            Default: None.
+        use_legacy_coordinate (bool): Whether to use coordinate system in
+            mmdet v1.x. which means width, height should be
+            calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
+            Default: False.
+
+    Returns:
+         tuple[np.ndarray]: (tp, fp) whose elements are 0 and 1. The shape of
+            each array is (num_scales, m).
+    """
+
+    if not use_legacy_coordinate:
+        extra_length = 0.
+    else:
+        extra_length = 1.
+
+    # an indicator of ignored gts
+    gt_ignore_inds = np.concatenate(
+        (np.zeros(gt_bboxes.shape[0], dtype=np.bool),
+         np.ones(gt_bboxes_ignore.shape[0], dtype=np.bool)))
+    # stack gt_bboxes and gt_bboxes_ignore for convenience
+    gt_bboxes = np.vstack((gt_bboxes, gt_bboxes_ignore))
+
+    num_dets = det_bboxes.shape[0]
+    num_gts = gt_bboxes.shape[0]
+    if area_ranges is None:
+        area_ranges = [(None, None)]
+    num_scales = len(area_ranges)
+    # tp and fp are of shape (num_scales, num_gts), each row is tp or fp of
+    # a certain scale
+    tp = np.zeros((num_scales, num_dets), dtype=np.float32)
+    fp = np.zeros((num_scales, num_dets), dtype=np.float32)
+
+    # if there is no gt bboxes in this image, then all det bboxes
+    # within area range are false positives
+    if gt_bboxes.shape[0] == 0:
+        if area_ranges == [(None, None)]:
+            fp[...] = 1
+        else:
+            det_areas = (
+                det_bboxes[:, 2] - det_bboxes[:, 0] + extra_length) * (
+                    det_bboxes[:, 3] - det_bboxes[:, 1] + extra_length)
+            for i, (min_area, max_area) in enumerate(area_ranges):
+                fp[i, (det_areas >= min_area) & (det_areas < max_area)] = 1
+        return tp, fp
+
+    ious = bbox_overlaps(
+        det_bboxes, gt_bboxes, use_legacy_coordinate=use_legacy_coordinate)
+    # for each det, the max iou with all gts
+    ious_max = ious.max(axis=1)
+    # for each det, which gt overlaps most with it
+    ious_argmax = ious.argmax(axis=1)
+    # sort all dets in descending order by scores
+    sort_inds = np.argsort(-det_bboxes[:, -1])
+    for k, (min_area, max_area) in enumerate(area_ranges):
+        gt_covered = np.zeros(num_gts, dtype=bool)
+        # if no area range is specified, gt_area_ignore is all False
+        if min_area is None:
+            gt_area_ignore = np.zeros_like(gt_ignore_inds, dtype=bool)
+        else:
+            gt_areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0] + extra_length) * (
+                gt_bboxes[:, 3] - gt_bboxes[:, 1] + extra_length)
+            gt_area_ignore = (gt_areas < min_area) | (gt_areas >= max_area)
+        for i in sort_inds:
+            if ious_max[i] >= iou_thr:
+                matched_gt = ious_argmax[i]
+                if not (gt_ignore_inds[matched_gt]
+                        or gt_area_ignore[matched_gt]):
+                    if not gt_covered[matched_gt]:
+                        gt_covered[matched_gt] = True
+                        tp[k, i] = 1
+                    else:
+                        fp[k, i] = 1
+                # otherwise ignore this detected bbox, tp = 0, fp = 0
+            elif min_area is None:
+                fp[k, i] = 1
+            else:
+                bbox = det_bboxes[i, :4]
+                area = (bbox[2] - bbox[0] + extra_length) * (
+                    bbox[3] - bbox[1] + extra_length)
+                if area >= min_area and area < max_area:
+                    fp[k, i] = 1
+    return tp, fp
+
+
+def tpfp_openimages(
+    det_bboxes,
+    gt_bboxes,
+    gt_bboxes_ignore=None,
+    iou_thr=0.5,
+    area_ranges=None,
+    use_legacy_coordinate=False,
+    gt_bboxes_group_of=None,
+    use_group_of=False,
+    ioa_thr=None,
+):
     """Check if detected bboxes are true positive or false positive.
 
     Args:
@@ -395,7 +485,6 @@ def get_cls_results(det_results, annotations, class_id):
     cls_dets = [img_res[class_id] for img_res in det_results]
     cls_gts = []
     cls_gts_ignore = []
-    is_group_ofs = []
     for ann in annotations:
         gt_inds = ann['labels'] == class_id
         cls_gts.append(ann['bboxes'][gt_inds, :])
@@ -405,12 +494,20 @@ def get_cls_results(det_results, annotations, class_id):
             cls_gts_ignore.append(ann['bboxes_ignore'][ignore_inds, :])
         else:
             cls_gts_ignore.append(np.empty((0, 4), dtype=np.float32))
+
+    return cls_dets, cls_gts, cls_gts_ignore
+
+
+def get_cls_group_ofs(annotations, class_id):
+    is_group_ofs = []
+    for ann in annotations:
+        gt_inds = ann['labels'] == class_id
         if ann.get('gt_is_group_ofs', None) is not None:
             is_group_ofs.append(ann['gt_is_group_ofs'][gt_inds])
         else:
             is_group_ofs.append(np.empty((0, 1), dtype=np.bool))
 
-    return cls_dets, cls_gts, cls_gts_ignore, is_group_ofs
+    return is_group_ofs
 
 
 def eval_map(det_results,
@@ -483,28 +580,38 @@ def eval_map(det_results,
     eval_results = []
     for i in range(num_classes):
         # get gt and det bboxes of this class
-        cls_dets, cls_gts, cls_gts_ignore, is_group_ofs = get_cls_results(
+        cls_dets, cls_gts, cls_gts_ignore = get_cls_results(
             det_results, annotations, i)
         # choose proper function according to datasets to compute tp and fp
         if tpfp_fn is None:
             if dataset in ['det', 'vid']:
                 tpfp_fn = tpfp_imagenet
+            elif use_group_of:
+                tpfp_fn = tpfp_openimages
             else:
                 tpfp_fn = tpfp_default
         if not callable(tpfp_fn):
             raise ValueError(
                 f'tpfp_fn has to be a function or None, but got {tpfp_fn}')
-
+        args = []
+        if use_group_of:
+            # used in Open Images Dataset evaluation
+            gt_group_ofs = get_cls_group_ofs(annotations, i)
+            args.append(gt_group_ofs)
+            args.append([use_group_of for _ in range(num_imgs)])
+        if ioa_thr is not None:
+            args.append([ioa_thr for _ in range(num_imgs)])
         # compute tp and fp for each image with multiple processes
         tpfp = pool.starmap(
             tpfp_fn,
-            zip(cls_dets, cls_gts, cls_gts_ignore, is_group_ofs,
-                [iou_thr
-                 for _ in range(num_imgs)], [ioa_thr for _ in range(num_imgs)],
+            zip(cls_dets, cls_gts, cls_gts_ignore,
+                [iou_thr for _ in range(num_imgs)],
                 [area_ranges for _ in range(num_imgs)],
-                [use_legacy_coordinate for _ in range(num_imgs)],
-                [use_group_of for _ in range(num_imgs)]))
-        tp, fp, cls_dets = tuple(zip(*tpfp))
+                [use_legacy_coordinate for _ in range(num_imgs)], *args))
+        if use_group_of:
+            tp, fp, cls_dets = tuple(zip(*tpfp))
+        else:
+            tp, fp = tuple(zip(*tpfp))
         # calculate gt number of each scale
         # ignored gts or gts beyond the specific scale are not counted
         num_gts = np.zeros(num_scales, dtype=int)

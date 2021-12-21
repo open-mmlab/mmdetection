@@ -259,6 +259,7 @@ class OpenImagesDataset(CustomDataset):
                 assert file_name == self.data_infos[i]['filename']
             hw = metas[i].data[0][0]['ori_shape'][:2]
             self.test_img_shapes.append(hw)
+        print('load meta file end')
 
     def get_meta_from_pipeline(self, results):
         """Get image metas from pipeline."""
