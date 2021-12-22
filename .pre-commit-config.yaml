@@ -43,7 +43,9 @@ repos:
     hooks:
       - id: docformatter
         args: ["--in-place", "--wrap-descriptions", "79"]
-  - repo: https://github.com/zhouzaida/pre-commit-hooks
+  - repo: https://github.com/open-mmlab/pre-commit-hooks
     rev: master  # Use the ref you want to point at
     hooks:
       - id: check-algo-readme
+      - id: check-copyright
+        args: ["mmdet"]  # replace the dir_to_check with your expected directory to check
