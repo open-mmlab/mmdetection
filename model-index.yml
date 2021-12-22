@@ -62,3 +62,6 @@ Import:
   - configs/yolo/metafile.yml
   - configs/yolof/metafile.yml
   - configs/yolox/metafile.yml
+  - configs/swin/metafile.yml
+  - configs/strong_baselines/metafile.yml
+  - configs/tood/metafile.yml
