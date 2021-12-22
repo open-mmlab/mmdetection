@@ -112,6 +112,12 @@ def main():
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':
         distributed = False
+        if len(cfg.gpu_ids) > 1:
+            warnings.warn(
+                'Only supports single GPU in non-distribute training time.'
+                f'We treat gpu-ids is set to {cfg.gpu_ids}, and will set '
+                f'to {cfg.gpu_ids[0:1]}.')
+            cfg.gpu_ids = cfg.gpu_ids[0:1]
     else:
         distributed = True
         init_dist(args.launcher, **cfg.dist_params)
