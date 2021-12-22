@@ -20,7 +20,7 @@ def average_precision(recalls, precisions, mode='area'):
             under precision-recall curve, '11points' means calculating
             the average precision of recalls at [0, 0.1, ..., 1]
 
-    Returns:
+        Returns:
         float or ndarray: calculated average precision
     """
     no_scale = False
@@ -80,7 +80,7 @@ def tpfp_imagenet(det_bboxes,
             calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
             Default: False.
 
-    Returns:
+        Returns:
         tuple[np.ndarray]: (tp, fp) whose elements are 0 and 1. The shape of
             each array is (num_scales, m).
     """
@@ -188,7 +188,7 @@ def tpfp_default(det_bboxes,
             calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
             Default: False.
 
-    Returns:
+        Returns:
         tuple[np.ndarray]: (tp, fp) whose elements are 0 and 1. The shape of
             each array is (num_scales, m).
     """
@@ -267,17 +267,15 @@ def tpfp_default(det_bboxes,
     return tp, fp
 
 
-def tpfp_openimages(
-    det_bboxes,
-    gt_bboxes,
-    gt_bboxes_ignore=None,
-    iou_thr=0.5,
-    area_ranges=None,
-    use_legacy_coordinate=False,
-    gt_bboxes_group_of=None,
-    use_group_of=False,
-    ioa_thr=None,
-):
+def tpfp_openimages(det_bboxes,
+                    gt_bboxes,
+                    gt_bboxes_ignore=None,
+                    iou_thr=0.5,
+                    area_ranges=None,
+                    use_legacy_coordinate=False,
+                    gt_bboxes_group_of=None,
+                    use_group_of=False,
+                    ioa_thr=None):
     """Check if detected bboxes are true positive or false positive.
 
     Args:
@@ -299,12 +297,12 @@ def tpfp_openimages(
         use_group_of (bool): Whether to use group of when calculate TP and FP,
             which only used in OpenImages evaluation. Default: False.
 
-    Returns:
+        Returns:
         tuple[np.ndarray] (tp, fp, det_bboxes): (tp, fp) whose elements
             are 0 and 1. The shape of each array is (num_scales, m).
             det_bboxes whose will filter those are not matched by group of
-            gts when processing OpenImages evaluation, and same as input
-            otherwise. The shape is (num_scales, m)
+            gts when processing Open Images evaluation. The shape is
+            (num_scales, m).
     """
 
     if not use_legacy_coordinate:
@@ -479,7 +477,7 @@ def get_cls_results(det_results, annotations, class_id):
         annotations (list[dict]): Same as `eval_map()`.
         class_id (int): ID of a specific class.
 
-    Returns:
+        Returns:
         tuple[list[np.ndarray]]: detected bboxes, gt bboxes, ignored gt bboxes
     """
     cls_dets = [img_res[class_id] for img_res in det_results]
@@ -499,6 +497,15 @@ def get_cls_results(det_results, annotations, class_id):
 
 
 def get_cls_group_ofs(annotations, class_id):
+    """Get `gt_group_of` of a certain class, which is used in Open Images.
+
+    Args:
+        annotations (list[dict]): Same as `eval_map()`.
+        class_id (int): ID of a specific class.
+
+        Returns:
+        is_group_ofs list[np.ndarray]
+    """
     is_group_ofs = []
     for ann in annotations:
         gt_inds = ann['labels'] == class_id
@@ -561,7 +568,7 @@ def eval_map(det_results,
         use_group_of (bool): Whether to use group of when calculate TP and FP,
             which only used in OpenImages evaluation. Default: False.
 
-    Returns:
+        Returns:
         tuple: (mAP, [dict, dict, ...])
     """
     assert len(det_results) == len(annotations)

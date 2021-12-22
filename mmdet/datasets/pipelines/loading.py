@@ -213,7 +213,7 @@ class LoadAnnotations:
             annotation. Default: False.
         poly2mask (bool): Whether to convert the instance masks from polygons
             to bitmaps. Default: True.
-        normed_bbox (bool): Whether to convert bbox from relative value to
+        denorm_bbox (bool): Whether to convert bbox from relative value to
             absolute value. Only used in OpenImage Dataset.
             Default: False.
         file_client_args (dict): Arguments to instantiate a FileClient.
@@ -227,14 +227,14 @@ class LoadAnnotations:
                  with_mask=False,
                  with_seg=False,
                  poly2mask=True,
-                 normed_bbox=False,
+                 denorm_bbox=False,
                  file_client_args=dict(backend='disk')):
         self.with_bbox = with_bbox
         self.with_label = with_label
         self.with_mask = with_mask
         self.with_seg = with_seg
         self.poly2mask = poly2mask
-        self.normed_bbox = normed_bbox
+        self.denorm_bbox = denorm_bbox
         self.file_client_args = file_client_args.copy()
         self.file_client = None
 
@@ -251,7 +251,7 @@ class LoadAnnotations:
         ann_info = results['ann_info']
         results['gt_bboxes'] = ann_info['bboxes'].copy()
 
-        if self.normed_bbox:
+        if self.denorm_bbox:
             h, w = results['img_shape'][:2]
             bbox_num = results['gt_bboxes'].shape[0]
             if bbox_num != 0:
