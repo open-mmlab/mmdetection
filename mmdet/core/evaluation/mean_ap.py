@@ -300,11 +300,11 @@ def tpfp_openimages(det_bboxes,
             which only used in OpenImages evaluation. Default: None.
 
     Returns:
-        tuple[np.ndarray] (tp, fp, det_bboxes): (tp, fp) whose elements
-            are 0 and 1. The shape of each array is (num_scales, m).
-            det_bboxes whose will filter those are not matched by group of
-            gts when processing Open Images evaluation. The shape is
-            (num_scales, m).
+        tuple[np.ndarray]: Returns a tuple (tp, fp, det_bboxes), where
+            (tp, fp) whose elements are 0 and 1. The shape of each array is
+            (num_scales, m). (det_bboxes) whose will filter those are not
+            matched by group of gts when processing Open Images evaluation.
+            The shape is (num_scales, m).
     """
 
     if not use_legacy_coordinate:

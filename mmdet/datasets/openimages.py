@@ -110,22 +110,23 @@ class OpenImagesDataset(CustomDataset):
 
         Returns:
             tuple: Returns a tuple (item_list, data_infos), where
-                item_list (defaultdict[list[dict]]) is annotations where
-                item of the defaultdict indicates an image, each of which
-                has (n) dicts. Keys of dicts are:
 
-                - `bbox` (list): of shape 4.
-                - `label` (int): of shape 1.
-                - `is_group_of` (bool): of shape 1.
-                - `is_occluded` (bool): of shape 1.
-                - `is_truncated` (bool): of shape 1.
-                - `is_depiction` (bool): of shape 1.
-                - `is_inside` (bool): of shape 1.
-            data_infos (list[dict]) is data infos where each item of the list
-                indicates an image. Keys of annotations are:
+                - item_list (defaultdict[list[dict]]) is annotations where
+                    item of the defaultdict indicates an image, each of which
+                    has (n) dicts. Keys of dicts are:
 
-                - `img_id` (str): Image name.
-                - `filename` (str): Image name with suffix.
+                    - `bbox` (list): of shape 4.
+                    - `label` (int): of shape 1.
+                    - `is_group_of` (bool): of shape 1.
+                    - `is_occluded` (bool): of shape 1.
+                    - `is_truncated` (bool): of shape 1.
+                    - `is_depiction` (bool): of shape 1.
+                    - `is_inside` (bool): of shape 1.
+                - data_infos (list[dict]) is data infos where each item of
+                    the list indicates an image. Keys of annotations are:
+
+                    - `img_id` (str): Image name.
+                    - `filename` (str): Image name with suffix.
         """
 
         item_list = defaultdict(list)
