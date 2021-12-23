@@ -191,8 +191,10 @@ class DefaultFormatBundle:
     Args:
         img_to_float (bool): Whether to force the image to be converted to
             float type. Default: True.
-        pad_val (dict): A dict for padding value when collcate in parallel,
+        pad_val (dict): A dict for padding value in batch collating,
             the default value is `dict(img=0, masks=0, seg=255)`.
+            Without this argument, the padding value of "gt_semantic_seg"
+            will be set to 0 by default, which should be 255.
     """
 
     def __init__(self,
