@@ -109,12 +109,12 @@ class OpenImagesDataset(CustomDataset):
             ann_file (str): CSV style annotation file path.
 
         Returns:
-            tuple: Returns a tuple (item_list, data_infos), where
+            tuple: Returns (item_list, data_infos), where
 
-            - item_list (defaultdict[list[dict]]):
-                Annotations where item of the defaultdict
-                indicates an image, each of which has (n) dicts.
-                Keys of dicts are:
+            item_list (defaultdict[list[dict]]):
+            Annotations where item of the defaultdict indicates an
+            image, each of which has (n) dicts. Keys of dicts are:
+
                 - `bbox` (list): of shape 4.
                 - `label` (int): of shape 1.
                 - `is_group_of` (bool): of shape 1.
@@ -122,9 +122,8 @@ class OpenImagesDataset(CustomDataset):
                 - `is_truncated` (bool): of shape 1.
                 - `is_depiction` (bool): of shape 1.
                 - `is_inside` (bool): of shape 1.
-            - data_infos (list[dict])：
-                Data infos where each item of the list
-                indicates an image. Keys of annotations are:
+            data_infos (list[dict])： Data infos where each item of
+            the list indicates an image. Keys of annotations are:
 
                 - `img_id` (str): Image name.
                 - `filename` (str): Image name with suffix.
@@ -545,7 +544,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
             label_description_file (str): File path to the label map proto.
 
         Returns:
-            classes (list[str]): Class name of OpenImages.
+            list: Class name of OpenImages.
         """
 
         label_list = []

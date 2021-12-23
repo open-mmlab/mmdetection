@@ -82,7 +82,7 @@ def tpfp_imagenet(det_bboxes,
 
     Returns:
         tuple[np.ndarray]: (tp, fp) whose elements are 0 and 1. The shape of
-            each array is (num_scales, m).
+        each array is (num_scales, m).
     """
 
     if not use_legacy_coordinate:
@@ -190,7 +190,7 @@ def tpfp_default(det_bboxes,
 
     Returns:
         tuple[np.ndarray]: (tp, fp) whose elements are 0 and 1. The shape of
-            each array is (num_scales, m).
+        each array is (num_scales, m).
     """
 
     if not use_legacy_coordinate:
@@ -301,10 +301,10 @@ def tpfp_openimages(det_bboxes,
 
     Returns:
         tuple[np.ndarray]: Returns a tuple (tp, fp, det_bboxes), where
-            (tp, fp) whose elements are 0 and 1. The shape of each array is
-            (num_scales, m). (det_bboxes) whose will filter those are not
-            matched by group of gts when processing Open Images evaluation.
-            The shape is (num_scales, m).
+        (tp, fp) whose elements are 0 and 1. The shape of each array is
+        (num_scales, m). (det_bboxes) whose will filter those are not
+        matched by group of gts when processing Open Images evaluation.
+        The shape is (num_scales, m).
     """
 
     if not use_legacy_coordinate:
@@ -506,7 +506,7 @@ def get_cls_group_ofs(annotations, class_id):
         class_id (int): ID of a specific class.
 
     Returns:
-        is_group_ofs (list[np.ndarray]): `gt_group_of` of a certain class.
+        list[np.ndarray]: `gt_group_of` of a certain class.
     """
     gt_group_ofs = []
     for ann in annotations:
