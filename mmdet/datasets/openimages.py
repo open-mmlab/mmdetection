@@ -86,7 +86,7 @@ class OpenImagesDataset(CustomDataset):
             label_description_file (str): File path to the label map proto.
 
         Returns:
-            classes (list[str]): Class name of OpenImages.
+            list[str]: Class name of OpenImages.
         """
 
         index_list = []
@@ -109,9 +109,10 @@ class OpenImagesDataset(CustomDataset):
             ann_file (str): CSV style annotation file path.
 
         Returns:
-            item_list (defaultdict[list[dict]]): Annotations where item of the
-                defaultdict indicates an image, each of which has (n) dicts.
-                Keys of dicts are:
+            tuple: Returns a tuple (item_list, data_infos), where:
+                item_list (defaultdict[list[dict]]): Annotations where item of
+                the defaultdict indicates an image, each of which has (n)
+                dicts. Keys of dicts are:
 
                 - `bbox` (list): of shape 4.
                 - `label` (int): of shape 1.
@@ -315,9 +316,9 @@ class OpenImagesDataset(CustomDataset):
             hierarchy_file (sty): File path to the hierarchy for classes.
 
         Returns:
-            class_label_tree (ndarray): The matrix of the corresponding
-                relationship between the father class and the
-                child class, of shape (class_num, class_num).
+            ndarray: The matrix of the corresponding relationship between
+            the father class and the child class, of shape
+            (class_num, class_num).
         """
 
         assert hierarchy_file.endswith('json')
@@ -353,9 +354,9 @@ class OpenImagesDataset(CustomDataset):
             get_all_fathers (bool): Whether get all father name. Default: True
 
             Returns:
-                class_label_tree (ndarray): The matrix of the corresponding
-                    relationship between the father class and the child class,
-                    of shape (class_num, class_num).
+                ndarray: The matrix of the corresponding relationship between
+                    the father class and the child class, of shape
+                    (class_num, class_num).
         """
 
         if 'Subcategory' in hierarchy:
