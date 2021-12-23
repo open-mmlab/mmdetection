@@ -595,7 +595,7 @@ def eval_map(det_results,
         if tpfp_fn is None:
             if dataset in ['det', 'vid']:
                 tpfp_fn = tpfp_imagenet
-            elif use_group_of:
+            elif dataset in ['oid_challenge', 'oid_v6']:
                 tpfp_fn = tpfp_openimages
             else:
                 tpfp_fn = tpfp_default

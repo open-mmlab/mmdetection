@@ -258,7 +258,6 @@ class OpenImagesDataset(CustomDataset):
     def get_meta_from_file(self, meta_file=''):
         """Get image metas from pkl file."""
         assert meta_file.endswith('pkl'), 'File name must be pkl suffix'
-        print('load meta file begin')
         with open(meta_file, 'rb') as f:
             metas = pickle.load(f)
         assert len(metas) == len(self)
@@ -271,7 +270,6 @@ class OpenImagesDataset(CustomDataset):
                 assert file_name == self.data_infos[i]['filename']
             hw = metas[i].data[0][0]['ori_shape'][:2]
             self.test_img_shapes.append(hw)
-        print('load meta file end')
 
     def get_meta_from_pipeline(self, results):
         """Get image metas from pipeline."""
@@ -623,11 +621,24 @@ class OpenImagesDataset(CustomDataset):
 
         results = self.process_results(results, annotations,
                                        image_level_annotations)
+        if use_group_of:
+            assert ioa_thr is not None, \
+                'ioa_thr must have value when using group_of in evaluation.'
 
         eval_results = OrderedDict()
         iou_thrs = [iou_thr] if isinstance(iou_thr, float) else iou_thr
         ioa_thrs = [ioa_thr] if isinstance(ioa_thr, float) or ioa_thr is None \
             else ioa_thr
+
+        # get dataset type
+        if len(self.CLASSES) == 500:
+            ds_name = 'oid_challenge'
+        elif len(self.CLASSES) == 601:
+            ds_name = 'oid_v6'
+        else:
+            raise ValueError('Cannot infer dataset type from the '
+                             'length of the classes')
+
         if metric == 'mAP':
             assert isinstance(iou_thrs, list) and isinstance(ioa_thrs, list)
             assert len(ioa_thrs) == len(iou_thrs)
@@ -641,7 +652,7 @@ class OpenImagesDataset(CustomDataset):
                     scale_ranges=scale_ranges,
                     iou_thr=iou_thr,
                     ioa_thr=ioa_thr,
-                    dataset=self.CLASSES,
+                    dataset=ds_name,
                     logger=logger,
                     use_group_of=use_group_of)
                 mean_aps.append(mean_ap)
