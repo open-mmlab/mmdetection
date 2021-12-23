@@ -109,10 +109,10 @@ class OpenImagesDataset(CustomDataset):
             ann_file (str): CSV style annotation file path.
 
         Returns:
-            tuple: Returns a tuple (item_list, data_infos), where:
-                item_list (defaultdict[list[dict]]): Annotations where item of
-                the defaultdict indicates an image, each of which has (n)
-                dicts. Keys of dicts are:
+            tuple: Returns a tuple (item_list, data_infos), where
+                item_list (defaultdict[list[dict]]) is annotations where
+                item of the defaultdict indicates an image, each of which
+                has (n) dicts. Keys of dicts are:
 
                 - `bbox` (list): of shape 4.
                 - `label` (int): of shape 1.
@@ -121,7 +121,7 @@ class OpenImagesDataset(CustomDataset):
                 - `is_truncated` (bool): of shape 1.
                 - `is_depiction` (bool): of shape 1.
                 - `is_inside` (bool): of shape 1.
-            data_infos (list[dict]): Data infos where each item of the list
+            data_infos (list[dict]) is data infos where each item of the list
                 indicates an image. Keys of annotations are:
 
                 - `img_id` (str): Image name.
