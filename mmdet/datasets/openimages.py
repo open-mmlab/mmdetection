@@ -30,7 +30,7 @@ class OpenImagesDataset(CustomDataset):
                  load_from_file=True,
                  meta_file='',
                  filter_labels=True,
-                 load_image_level_labels=True,
+                 load_image_level_labels=False,
                  **kwargs):
         """
         Args:
@@ -428,10 +428,12 @@ class OpenImagesDataset(CustomDataset):
         of the detection bboxes. 2. Whether ignore the classes that unannotated
         on that image.
         """
-
-        assert len(annotations) == \
-               len(image_level_annotations) == \
-               len(det_results)
+        if image_level_annotations is not None:
+            assert len(annotations) == \
+                   len(image_level_annotations) == \
+                   len(det_results)
+        else:
+            assert len(annotations) == len(det_results)
         for i in range(len(det_results)):
             results = copy.deepcopy(det_results[i])
             valid_classes = np.where(
