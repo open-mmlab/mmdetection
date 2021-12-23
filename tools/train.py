@@ -6,6 +6,7 @@ import os.path as osp
 import time
 import warnings
 
+import cv2
 import mmcv
 import torch
 from mmcv import Config, DictAction
@@ -17,6 +18,8 @@ from mmdet.apis import init_random_seed, set_random_seed, train_detector
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
 from mmdet.utils import collect_env, get_root_logger
+
+cv2.setNumThreads(0)
 
 
 def parse_args():
