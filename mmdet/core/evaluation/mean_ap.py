@@ -285,8 +285,6 @@ def tpfp_openimages(det_bboxes,
             of shape (k, 4). Default: None
         iou_thr (float): IoU threshold to be considered as matched.
             Default: 0.5.
-        ioa_thr (float | None): IoA threshold to be considered as matched,
-            which only used in OpenImages evaluation. Default: None.
         area_ranges (list[tuple] | None): Range of bbox areas to be
             evaluated, in the format [(min1, max1), (min2, max2), ...].
             Default: None.
@@ -294,8 +292,12 @@ def tpfp_openimages(det_bboxes,
             mmdet v1.x. which means width, height should be
             calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
             Default: False.
+        gt_bboxes_group_of (ndarray): GT group_of of this image, of shape
+            (k, 1). Default: None
         use_group_of (bool): Whether to use group of when calculate TP and FP,
             which only used in OpenImages evaluation. Default: False.
+        ioa_thr (float | None): IoA threshold to be considered as matched,
+            which only used in OpenImages evaluation. Default: None.
 
     Returns:
         tuple[np.ndarray] (tp, fp, det_bboxes): (tp, fp) whose elements

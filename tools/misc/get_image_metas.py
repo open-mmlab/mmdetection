@@ -1,4 +1,20 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+"""Get test image metas on a specific dataset.
+
+This script provides two ways to get test image metas including non-distribute
+and distribute way. Here is an example to run this script.
+
+Example:
+    Use non-distribute way::
+
+         python tools/misc/get_image_metas.py ${CONFIG} \
+         --out ${OUTPUT FILE NAME}
+
+    Use distribute way::
+        python -m torch.distributed.launch --nproc_per_node=${GPUS} \
+        tools/misc/get_image_metas.py ${CONFIG} --out ${OUTPUT FILE NAME} \
+        --launcher pytorch
+"""
 import argparse
 import os
 import time
@@ -15,7 +31,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Collect image metas')
     parser.add_argument('config', help='Config file path')
     parser.add_argument(
-        'out',
+        '--out',
+        default='validation-image-metas.pkl',
         help='The output image metas file name. The save dir is in the '
         'same directory as `dataset.ann_file` path')
     parser.add_argument(

@@ -42,11 +42,12 @@ class OpenImagesDataset(CustomDataset):
                 height of the image), which will be used during evaluation.
                 We provide two ways to get image metas in `OpenImagesDataset`:
 
-                1. `load from file`: Load image metas from file, which is
-                suggested to use. We provide a script to get image metas.
-                `tools/misc/get_image_metas.py`
+                - 1. `load from file`: Load image metas from pkl file, which
+                is suggested to use. We provide a script to get image metas:
+                `tools/misc/get_image_metas.py`. Please refer to
+                `config/openimages/README.md` for more details.
 
-                2. `load from pipeline`, which will get image metas during
+                - 2. `load from pipeline`, which will get image metas during
                 test time. However, this may reduce the inference speed,
                 especially when using distribution.
 
@@ -84,7 +85,8 @@ class OpenImagesDataset(CustomDataset):
         Args:
             label_description_file (str): File path to the label map proto.
 
-        Returns: classes (list[str]): Class name of OpenImages.
+        Returns:
+            classes (list[str]): Class name of OpenImages.
         """
 
         index_list = []
@@ -313,9 +315,9 @@ class OpenImagesDataset(CustomDataset):
             hierarchy_file (sty): File path to the hierarchy for classes.
 
         Returns:
-            Returns: class_label_tree (ndarray): The matrix of the
-            corresponding relationship between the father class and the
-            child class, of shape (class_num, class_num).
+            class_label_tree (ndarray): The matrix of the corresponding
+                relationship between the father class and the
+                child class, of shape (class_num, class_num).
         """
 
         assert hierarchy_file.endswith('json')
@@ -350,10 +352,10 @@ class OpenImagesDataset(CustomDataset):
             father (list): Corresponding father class.
             get_all_fathers (bool): Whether get all father name. Default: True
 
-        Returns:
-            class_label_tree (ndarray): The matrix of the corresponding
-                relationship between the father class and the child class,
-                of shape (class_num, class_num).
+            Returns:
+                class_label_tree (ndarray): The matrix of the corresponding
+                    relationship between the father class and the child class,
+                    of shape (class_num, class_num).
         """
 
         if 'Subcategory' in hierarchy:
@@ -406,14 +408,14 @@ class OpenImagesDataset(CustomDataset):
 
         return annotations
 
-    def get_result_fathers(self, det_results, annotations):
+    def get_father_results(self, det_results, annotations):
         """Add father classes of the corresponding class of the detection
         bboxes."""
         for i in range(len(det_results)):
             results = copy.deepcopy(det_results[i])
             valid_classes = np.where(
                 np.array([[bbox.shape[0]] for bbox in det_results[i]]) != 0)[
-                    0]  # openimage label begin from 1
+                    0]  # label begin from 1
             allowed_labeles = np.unique(annotations[i]['labels'])
 
             for valid_class in valid_classes:
@@ -446,14 +448,14 @@ class OpenImagesDataset(CustomDataset):
                  iou_thr=0.5,
                  ioa_thr=0.5,
                  scale_ranges=None,
-                 normed_bbox=True,
+                 denorm_gt_bbox=True,
                  use_group_of=True):
         """Evaluate in OpenImages.
 
         Args:
             results (list[list | tuple]): Testing results of the dataset.
-            metric (str | list[str]): Metrics to be evaluated. Options only
-                support 'mAP' right now.
+            metric (str | list[str]): Metrics to be evaluated. Option is
+                 'mAP'. Default: 'mAP'.
             logger (logging.Logger | str, optional): Logger used for printing
                 related information during evaluation. Default: None.
             iou_thr (float | list[float]): IoU threshold. Default: 0.5.
@@ -461,7 +463,7 @@ class OpenImagesDataset(CustomDataset):
             scale_ranges (list[tuple], optional): Scale ranges for evaluating
                 mAP. If not specified, all bounding boxes would be included in
                 evaluation. Default: None
-            normed_bbox (bool): Whether to convert ground truth bboxes from
+            denorm_gt_bbox (bool): Whether to denorm ground truth bboxes from
                 relative position to absolute position. Default: True
             use_group_of (bool): Whether consider group of groud truth bboxes
                 during evaluating. Default: True.
@@ -488,7 +490,7 @@ class OpenImagesDataset(CustomDataset):
         if len(self.test_img_shapes) > len(self):
             self.test_img_shapes = self.test_img_shapes[:len(self)]
 
-        if normed_bbox:
+        if denorm_gt_bbox:
             annotations = self.denormalize_gt_bboxes(annotations)
 
         # Reset test_image_metas, temp_image_metas and test_img_shapes
@@ -498,7 +500,7 @@ class OpenImagesDataset(CustomDataset):
         self.test_img_metas = []
         if self.need_get_father:
             annotations = self.get_gt_fathers(annotations)
-            results = self.get_result_fathers(results, annotations)
+            results = self.get_father_results(results, annotations)
 
         eval_results = OrderedDict()
         iou_thrs = [iou_thr] if isinstance(iou_thr, float) else iou_thr
@@ -539,7 +541,8 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
         Args:
             label_description_file (str): File path to the label map proto.
 
-        Returns: classes (list[str]): Class name of OpenImages.
+        Returns:
+            classes (list[str]): Class name of OpenImages.
         """
 
         label_list = []
@@ -558,7 +561,6 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
 
     def load_annotations(self, ann_file):
         """Load annotation from annotation file."""
-        print('load annotation begin', flush=True)
         with open(ann_file) as f:
             lines = f.readlines()
         i = 0
@@ -578,8 +580,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
                      float(sp[2]),
                      float(sp[3]),
                      float(sp[4])])
-                # OpenImage labels begin from 1
-                labels.append(int(sp[0]) - 1)
+                labels.append(int(sp[0]) - 1)  # labels begin from 1
                 is_group_ofs.append(True if int(sp[5]) == 1 else False)
             i += img_gt_size
 
@@ -596,7 +597,6 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
                 gt_is_group_ofs=gt_is_group_ofs)
             ann_infos.append(dict(img_info=img_info, ann_info=ann_info))
 
-        print('load annotation end', flush=True)
         return ann_infos
 
     def prepare_train_img(self, idx):
@@ -630,9 +630,10 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
         Args:
             hierarchy_file (str): File path to the hierarchy for classes.
 
-        Returns: class_label_tree (ndarray): The matrix of the corresponding
-            relationship between the father class and the child class,
-            of shape (class_num, class_num).
+        Returns:
+            class_label_tree (ndarray): The matrix of the corresponding
+                relationship between the father class and the child class,
+                of shape (class_num, class_num).
         """
 
         assert hierarchy_file.endswith('np')

@@ -49,7 +49,7 @@ test_pipeline = [
 ]
 data = dict(
     samples_per_gpu=8,
-    workers_per_gpu=0,
+    workers_per_gpu=0,  # workers_per_gpu > 0 may occur out of memory
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
