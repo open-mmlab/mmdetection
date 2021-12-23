@@ -361,10 +361,10 @@ class OpenImagesDataset(CustomDataset):
             father (list): Corresponding father class.
             get_all_fathers (bool): Whether get all father name. Default: True
 
-            Returns:
-                ndarray: The matrix of the corresponding relationship between
-                the father class and the child class, of shape
-                (class_num, class_num).
+        Returns:
+            ndarray: The matrix of the corresponding relationship between
+            the father class and the child class, of shape
+            (class_num, class_num).
         """
 
         if 'Subcategory' in hierarchy:
