@@ -50,6 +50,8 @@ data = dict(
         hierarchy_file=data_root +
         'annotations/bbox_labels_600_hierarchy.json',
         meta_file=data_root + 'annotations/validation-image-metas.pkl',
+        image_level_ann_file=data_root +
+        'annotations/validation-annotations-human-imagelabels-boxable.csv',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
@@ -60,5 +62,7 @@ data = dict(
         hierarchy_file=data_root +
         'annotations/bbox_labels_600_hierarchy.json',
         meta_file=data_root + 'annotations/validation-image-metas.pkl',
+        image_level_ann_file=data_root +
+        'annotations/validation-annotations-human-imagelabels-boxable.csv',
         pipeline=test_pipeline))
 evaluation = dict(interval=1, metric='mAP')

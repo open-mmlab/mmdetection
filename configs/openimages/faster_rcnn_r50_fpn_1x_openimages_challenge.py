@@ -25,7 +25,10 @@ data = dict(
         'challenge2019/cls-label-description.csv',
         hierarchy_file=data_root + 'challenge2019/class_label_tree.np',
         meta_file=data_root +
-        'challenge2019/challenge-2019-validation-metas.pkl'),
+        'challenge2019/challenge-2019-validation-metas.pkl',
+        image_level_ann_file=data_root +
+        'challenge2019/challenge-2019-validation-detection-'
+        'human-imagelabels.csv'),
     test=dict(
         type=dataset_type,
         ann_file=data_root +
@@ -35,5 +38,8 @@ data = dict(
         'challenge2019/cls-label-description.csv',
         hierarchy_file=data_root + 'challenge2019/class_label_tree.np',
         meta_file=data_root +
-        'challenge2019/challenge-2019-validation-metas.pkl'))
+        'challenge2019/challenge-2019-validation-metas.pkl',
+        image_level_ann_file=data_root +
+        'challenge2019/challenge-2019-validation-detection-'
+        'human-imagelabels.csv'))
 evaluation = dict(interval=1, metric='mAP')

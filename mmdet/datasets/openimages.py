@@ -23,16 +23,20 @@ class OpenImagesDataset(CustomDataset):
 
     def __init__(self,
                  label_description_file='',
+                 image_level_ann_file='',
                  get_parent_class=True,
                  hierarchy_file=None,
                  get_metas=True,
                  load_from_file=True,
                  meta_file='',
                  filter_labels=True,
+                 load_image_level_labels=True,
                  **kwargs):
         """
         Args:
             label_description_file (str): File path to the label map proto.
+            image_level_ann_file (str): Image level annotation, which is used
+                in evaluation.
             get_parent_class (bool): Whether get father class of the current
                 class. Default: True.
             hierarchy_file (str): File path to the hierarchy for classes.
@@ -56,6 +60,8 @@ class OpenImagesDataset(CustomDataset):
             meta_file (str): File path to get image metas.
             filter_labels (bool): Whether filter unannotated classes.
                 Default: True.
+            load_image_level_labels (bool): Whether load and consider image
+                level labels during evaluating. Default: True.
         """
 
         self.cat2label = defaultdict(str)
@@ -64,6 +70,8 @@ class OpenImagesDataset(CustomDataset):
         class_names = self.get_classes_from_csv(label_description_file)
         super(OpenImagesDataset, self).__init__(**kwargs)
         self.CLASSES = class_names
+        self.image_level_ann_file = image_level_ann_file
+        self.load_image_level_labels = load_image_level_labels
         if get_parent_class is True and hierarchy_file is not None:
             self.class_label_tree = self.get_father(hierarchy_file)
         self.get_parent_class = get_parent_class
@@ -411,20 +419,38 @@ class OpenImagesDataset(CustomDataset):
 
         return annotations
 
-    def get_father_results(self, det_results, annotations):
-        """Add father classes of the corresponding class of the detection
-        bboxes."""
+    def process_results(self, det_results, annotations,
+                        image_level_annotations):
+        """Process results of the corresponding class of the detection bboxes.
+
+        Will choose to do the following two processing according to the
+        parameters: 1. Whether add father classes of the corresponding class
+        of the detection bboxes. 2. Whether ignore the classes that unannotated
+        on that image.
+        """
+
+        assert len(annotations) == \
+               len(image_level_annotations) == \
+               len(det_results)
         for i in range(len(det_results)):
             results = copy.deepcopy(det_results[i])
             valid_classes = np.where(
-                np.array([[bbox.shape[0]] for bbox in det_results[i]]) != 0)[
-                    0]  # label begin from 1
-            allowed_labeles = np.unique(annotations[i]['labels'])
+                np.array([[bbox.shape[0]] for bbox in det_results[i]]) != 0)[0]
+            if image_level_annotations is not None:
+                labels = annotations[i]['labels']
+                image_level_labels = \
+                    image_level_annotations[i]['image_level_labels']
+                allowed_labeles = np.unique(
+                    np.append(labels, image_level_labels))
+            else:
+                allowed_labeles = np.unique(annotations[i]['labels'])
 
             for valid_class in valid_classes:
                 det_cls = np.where(self.class_label_tree[valid_class])[0]
                 for index in det_cls:
-                    if index in allowed_labeles and index != valid_class:
+                    if index in allowed_labeles and \
+                            index != valid_class and \
+                            self.get_parent_class:
                         det_results[i][index] = \
                             np.concatenate((det_results[i][index],
                                             results[valid_class]))
@@ -433,6 +459,89 @@ class OpenImagesDataset(CustomDataset):
                         det_results[i][index] = np.empty(
                             (0, 5)).astype(np.float32)
         return det_results
+
+    def load_image_label_from_csv(self, image_level_ann_file):
+        """Load image level annotations from csv style ann_file.
+
+        Args:
+            image_level_ann_file (str): CSV style image level annotation
+                file path.
+
+
+        Returns:
+            defaultdict[list[dict]]: Annotations where item of the defaultdict
+            indicates an image, each of which has (n) dicts.
+            Keys of dicts are:
+
+                - `image_level_label` (int): of shape 1.
+                - `confidence` (float): of shape 1.
+        """
+
+        item_lists = defaultdict(list)
+        with open(image_level_ann_file, 'r') as f:
+            reader = csv.reader(f)
+            i = -1
+            for line in reader:
+                i += 1
+                if i == 0:
+                    continue
+                else:
+                    img_id = line[0]
+                    image_level_label = int(self.index_dict[line[2]])
+                    confidence = float(line[3])
+                    item_lists[img_id].append(
+                        dict(
+                            image_level_label=image_level_label,
+                            confidence=confidence))
+        return item_lists
+
+    def get_image_level_ann(self, image_level_ann_file):
+        """Get OpenImages annotation by index.
+
+        Args:
+            image_level_ann_file (str): CSV style image level annotation
+                file path.
+
+        Returns:
+            dict: Annotation info of specified index.
+        """
+
+        item_lists = self.load_image_label_from_csv(image_level_ann_file)
+        image_level_annotations = []
+        for i in range(len(self)):
+            img_info = self.data_infos[i].get('img_info', None)
+            if img_info is not None:
+                # for Open Images Challenges
+                img_id = img_info['filename'].split('/')[-1][:-4]
+            else:
+                # for Open Images v6
+                img_id = self.data_infos[i]['img_id']
+            item_list = item_lists.get(img_id, None)
+            if item_list is not None:
+                image_level_labels = []
+                confidences = []
+                for obj in item_list:
+                    image_level_label = int(obj['image_level_label'])
+                    confidence = float(obj['confidence'])
+
+                    image_level_labels.append(image_level_label)
+                    confidences.append(confidence)
+
+                if not image_level_labels:
+                    image_level_labels = np.zeros((0, ))
+                    confidences = np.zeros((0, ))
+                else:
+                    image_level_labels = np.array(image_level_labels)
+                    confidences = np.array(confidences)
+            else:
+                image_level_labels = np.zeros((0, ))
+                confidences = np.zeros((0, ))
+            ann = dict(
+                image_level_labels=image_level_labels.astype(np.int64),
+                confidences=confidences.astype(np.float32))
+            image_level_annotations.append(ann)
+
+        return image_level_annotations
 
     def denormalize_gt_bboxes(self, annotations):
         """Convert ground truth bboxes from relative position to absolute
@@ -483,10 +592,16 @@ class OpenImagesDataset(CustomDataset):
             raise KeyError(f'metric {metric} is not supported')
         annotations = [self.get_ann_info(i) for i in range(len(self))]
 
-        # load from file
+        if self.load_image_level_labels:
+            image_level_annotations = \
+                self.get_image_level_ann(self.image_level_ann_file)
+        else:
+            image_level_annotations = None
+
+        # load metas from file
         if self.get_metas and self.load_from_file:
             self.get_meta_from_file(self.meta_file)
-        # load from pipeline
+        # load metas from pipeline
         else:
             self.get_img_shape(self.test_img_metas)
 
@@ -503,7 +618,9 @@ class OpenImagesDataset(CustomDataset):
         self.test_img_metas = []
         if self.get_parent_class:
             annotations = self.get_gt_fathers(annotations)
-            results = self.get_father_results(results, annotations)
+
+        results = self.process_results(results, annotations,
+                                       image_level_annotations)
 
         eval_results = OrderedDict()
         iou_thrs = [iou_thr] if isinstance(iou_thr, float) else iou_thr
@@ -553,8 +670,13 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
         with open(label_description_file, 'r') as f:
             reader = csv.reader(f)
             for line in reader:
+                label_name = line[0]
+                label_id = int(line[2])
+
                 label_list.append(line[1])
-                id_list.append(int(line[2]))
+                id_list.append(label_id)
+                self.index_dict[label_name] = label_id - 1
+
         indexes = np.argsort(id_list)
         assert len(label_list) == len(id_list)
         classes_names = []
@@ -655,3 +777,37 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
         """
 
         return self.data_infos[idx]['ann_info']
+
+    def load_image_label_from_csv(self, image_level_ann_file):
+        """Load image level annotations from csv style ann_file.
+
+        Args:
+            image_level_ann_file (str): CSV style image level annotation
+                file path.
+
+        Returns:
+            defaultdict[list[dict]]: Annotations where item of the defaultdict
+            indicates an image, each of which has (n) dicts.
+            Keys of dicts are:
+
+                - `image_level_label` (int): of shape 1.
+                - `confidence` (float): of shape 1.
+        """
+
+        item_lists = defaultdict(list)
+        with open(image_level_ann_file, 'r') as f:
+            reader = csv.reader(f)
+            i = -1
+            for line in reader:
+                i += 1
+                if i == 0:
+                    continue
+                else:
+                    img_id = line[0]
+                    image_level_label = int(self.index_dict[line[1]])
+                    confidence = float(line[2])
+                    item_lists[img_id].append(
+                        dict(
+                            image_level_label=image_level_label,
+                            confidence=confidence))
+        return item_lists
