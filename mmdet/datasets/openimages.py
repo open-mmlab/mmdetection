@@ -30,7 +30,7 @@ class OpenImagesDataset(CustomDataset):
                  load_from_file=True,
                  meta_file='',
                  filter_labels=True,
-                 load_image_level_labels=False,
+                 load_image_level_labels=True,
                  **kwargs):
         """
         Args:

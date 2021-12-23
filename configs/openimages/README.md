@@ -97,12 +97,14 @@ training/testing by using `tools/misc/get_image_metas.py`.
     │   │   │   ├── class-descriptions-boxable.csv
     │   │   │   ├── oidv6-train-annotations-bbox.scv
     │   │   │   ├── validation-annotations-bbox.csv
+    │   │   │   ├── validation-annotations-human-imagelabels-boxable.csv
     │   │   │   ├── validation-image-metas.pkl      # get from script
     │   │   ├── challenge2019
     │   │   │   ├── challenge-2019-train-detection-bbox.txt
     │   │   │   ├── challenge-2019-validation-detection-bbox.txt
     │   │   │   ├── class_label_tree.np
     │   │   │   ├── class_sample_train.pkl
+    │   │   │   ├── challenge-2019-validation-detection-human-imagelabels.csv       # download from official website
     │   │   │   ├── challenge-2019-validation-metas.pkl     # get from script
     │   │   ├── OpenImages
     │   │   │   ├── train           # training images
