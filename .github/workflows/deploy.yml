@@ -2,6 +2,10 @@ name: deploy
 
 on: push
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-n-publish:
     runs-on: ubuntu-latest

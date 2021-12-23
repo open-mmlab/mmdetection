@@ -1,6 +1,21 @@
 # Side-Aware Boundary Localization for More Precise Object Detection
 
-## Introduction
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+Current object detection frameworks mainly rely on bounding box regression to localize objects. Despite the remarkable progress in recent years, the precision of bounding box regression remains unsatisfactory, hence limiting performance in object detection. We observe that precise localization requires careful placement of each side of the bounding box. However, the mainstream approach, which focuses on predicting centers and sizes, is not the most effective way to accomplish this task, especially when there exists displacements with large variance between the anchors and the targets. In this paper, we propose an alternative approach, named as Side-Aware Boundary Localization (SABL), where each side of the bounding box is respectively localized with a dedicated network branch. To tackle the difficulty of precise localization in the presence of displacements with large variance, we further propose a two-step localization scheme, which first predicts a range of movement through bucket prediction and then pinpoints the precise position within the predicted bucket. We test the proposed method on both two-stage and single-stage detection frameworks. Replacing the standard bounding box regression branch with the proposed design leads to significant improvements on Faster R-CNN, RetinaNet, and Cascade R-CNN, by 3.0%, 1.7%, and 0.9%, respectively.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143973698-3dfaea91-4415-4818-9781-5017183e7489.png"/>
+</div>
+
+<!-- [PAPER_TITLE: Side-Aware Boundary Localization for More Precise Object Detection
+] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/1912.04260] -->
+
+## Citation
 
 <!-- [ALGORITHM] -->
 

@@ -1,6 +1,20 @@
 # Deformable Convolutional Networks
 
-## Introduction
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+Convolutional neural networks (CNNs) are inherently limited to model geometric transformations due to the fixed geometric structures in its building modules. In this work, we introduce two new modules to enhance the transformation modeling capacity of CNNs, namely, deformable convolution and deformable RoI pooling. Both are based on the idea of augmenting the spatial sampling locations in the modules with additional offsets and learning the offsets from target tasks, without additional supervision. The new modules can readily replace their plain counterparts in existing CNNs and can be easily trained end-to-end by standard back-propagation, giving rise to deformable convolutional networks. Extensive experiments validate the effectiveness of our approach on sophisticated vision tasks of object detection and semantic segmentation.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143876246-c4985e25-e286-4511-9b7c-97af2857461e.png"/>
+</div>
+
+<!-- [PAPER_TITLE: Deformable Convolutional Networks] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/1703.06211] -->
+
+## Citation
 
 <!-- [ALGORITHM] -->
 
