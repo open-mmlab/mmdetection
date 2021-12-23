@@ -23,7 +23,7 @@ class OpenImagesDataset(CustomDataset):
 
     def __init__(self,
                  label_description_file='',
-                 need_get_father=True,
+                 get_parent_class=True,
                  hierarchy_file=None,
                  get_metas=True,
                  load_from_file=True,
@@ -33,7 +33,7 @@ class OpenImagesDataset(CustomDataset):
         """
         Args:
             label_description_file (str): File path to the label map proto.
-            need_get_father (bool): Whether get father class of the current
+            get_parent_class (bool): Whether get father class of the current
                 class. Default: True.
             hierarchy_file (str): File path to the hierarchy for classes.
                 Default: None.
@@ -43,8 +43,9 @@ class OpenImagesDataset(CustomDataset):
                 We provide two ways to get image metas in `OpenImagesDataset`:
 
                 - 1. `load from file`: Load image metas from pkl file, which
-                is suggested to use. We provide a script to get image metas:
-                `tools/misc/get_image_metas.py`. Please refer to
+                is suggested to use. We provided a script to get image metas:
+                `tools/misc/get_image_metas.py`, which need to run this script
+                 before training/testing. Please refer to
                 `config/openimages/README.md` for more details.
 
                 - 2. `load from pipeline`, which will get image metas during
@@ -63,9 +64,9 @@ class OpenImagesDataset(CustomDataset):
         class_names = self.get_classes_from_csv(label_description_file)
         super(OpenImagesDataset, self).__init__(**kwargs)
         self.CLASSES = class_names
-        if need_get_father is True and hierarchy_file is not None:
+        if get_parent_class is True and hierarchy_file is not None:
             self.class_label_tree = self.get_father(hierarchy_file)
-        self.need_get_father = need_get_father
+        self.get_parent_class = get_parent_class
         self.get_metas = get_metas
         self.load_from_file = load_from_file
         self.meta_file = meta_file
@@ -111,7 +112,7 @@ class OpenImagesDataset(CustomDataset):
         Returns:
             tuple: Returns (item_list, data_infos), where
 
-            item_list (defaultdict[list[dict]]):
+            `item_list` (defaultdict[list[dict]]):
             Annotations where item of the defaultdict indicates an
             image, each of which has (n) dicts. Keys of dicts are:
 
@@ -122,7 +123,7 @@ class OpenImagesDataset(CustomDataset):
                 - `is_truncated` (bool): of shape 1.
                 - `is_depiction` (bool): of shape 1.
                 - `is_inside` (bool): of shape 1.
-            data_infos (list[dict])： Data infos where each item of
+            `data_infos` (list[dict])： Data infos where each item of
             the list indicates an image. Keys of annotations are:
 
                 - `img_id` (str): Image name.
@@ -500,7 +501,7 @@ class OpenImagesDataset(CustomDataset):
         self.temp_img_metas = []
         self.test_img_shapes = []
         self.test_img_metas = []
-        if self.need_get_father:
+        if self.get_parent_class:
             annotations = self.get_gt_fathers(annotations)
             results = self.get_father_results(results, annotations)
 
@@ -563,6 +564,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
 
     def load_annotations(self, ann_file):
         """Load annotation from annotation file."""
+        assert ann_file.endswith('txt')
         with open(ann_file) as f:
             lines = f.readlines()
         i = 0
