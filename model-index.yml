@@ -57,6 +57,7 @@ Import:
   - configs/ssd/metafile.yml
   - configs/swin/metafile.yml
   - configs/tridentnet/metafile.yml
+  - configs/tood/metafile.yml
   - configs/vfnet/metafile.yml
   - configs/yolact/metafile.yml
   - configs/yolo/metafile.yml
