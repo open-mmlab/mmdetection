@@ -115,8 +115,9 @@ class TOODHead(ATSSHead):
                  num_dcn=0,
                  anchor_type='anchor_free',
                  initial_loss_cls=dict(
-                     type='FocalLossWithProb',
+                     type='FocalLoss',
                      use_sigmoid=True,
+                     activated=True,
                      gamma=2.0,
                      alpha=0.25,
                      loss_weight=1.0),
@@ -124,7 +125,7 @@ class TOODHead(ATSSHead):
         assert anchor_type in ['anchor_free', 'anchor_based']
         self.num_dcn = num_dcn
         self.anchor_type = anchor_type
-        self.epoch = 0  # which would be update in SetEpochHook!
+        self.epoch = 0  # which would be update in SetEpochInfoHook!
         super(TOODHead, self).__init__(num_classes, in_channels, **kwargs)
 
         if self.train_cfg:

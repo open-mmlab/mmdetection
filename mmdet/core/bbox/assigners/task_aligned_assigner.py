@@ -16,7 +16,7 @@ class TaskAlignedAssigner(BaseAssigner):
     <https://arxiv.org/abs/2108.07755>`_.
 
     Assign a corresponding gt bbox or background to each predicted bbox.
-    Each proposals will be assigned with `0` or a positive integer
+    Each bbox will be assigned with `0` or a positive integer
     indicating the ground truth index.
 
     - 0: negative sample, no assigned gt
@@ -81,7 +81,7 @@ class TaskAlignedAssigner(BaseAssigner):
             # No ground truth or boxes, return empty assignment
             max_overlaps = anchors.new_zeros((num_bboxes, ))
             if num_gt == 0:
-                # No truth, assign everything to background
+                # No gt boxes, assign everything to background
                 assigned_gt_inds[:] = 0
             if gt_labels is None:
                 assigned_labels = None
@@ -94,7 +94,7 @@ class TaskAlignedAssigner(BaseAssigner):
             assign_result.assign_metrics = assign_metrics
             return assign_result
 
-        # select top-k bbox as candidates for each gt
+        # select top-k bboxes as candidates for each gt
         alignment_metrics = bbox_scores**alpha * overlaps**beta
         topk = min(self.topk, alignment_metrics.size(0))
         _, candidate_idxs = alignment_metrics.topk(topk, dim=0, largest=True)
