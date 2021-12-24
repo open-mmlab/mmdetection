@@ -1,4 +1,18 @@
-# Res2Net for object detection and instance segmentation
+# Res2Net: A New Multi-scale Backbone Architecture
+
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+Representing features at multiple scales is of great importance for numerous vision tasks. Recent advances in backbone convolutional neural networks (CNNs) continually demonstrate stronger multi-scale representation ability, leading to consistent performance gains on a wide range of applications. However, most existing methods represent the multi-scale features in a layer-wise manner. In this paper, we propose a novel building block for CNNs, namely Res2Net, by constructing hierarchical residual-like connections within one single residual block. The Res2Net represents multi-scale features at a granular level and increases the range of receptive fields for each network layer. The proposed Res2Net block can be plugged into the state-of-the-art backbone CNN models, e.g., ResNet, ResNeXt, and DLA. We evaluate the Res2Net block on all these models and demonstrate consistent performance gains over baseline models on widely-used datasets, e.g., CIFAR-100 and ImageNet. Further ablation studies and experimental results on representative computer vision tasks, i.e., object detection, class activation mapping, and salient object detection, further verify the superiority of the Res2Net over the state-of-the-art baseline methods.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143972411-8d08113f-9fce-4d24-a138-4fadf2c54f9a.png" height="300"/>
+</div>
+
+<!-- [PAPER_TITLE: Res2Net: A New Multi-scale Backbone Architecture] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/1904.01169] -->
 
 ## Introduction
 
@@ -18,6 +32,8 @@ Compared with other backbone networks, Res2Net requires fewer parameters and FLO
 **Note:**
 
 - GFLOPs for classification are calculated with image size (224x224).
+
+## Citation
 
 ```latex
 @article{gao2019res2net,
