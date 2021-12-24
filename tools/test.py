@@ -171,9 +171,9 @@ def main():
         distributed = False
         if len(cfg.gpu_ids) > 1:
             warnings.warn(
-                'Only supports single GPU in non-distribute testing time.'
-                f'We treat gpu-ids is set to {cfg.gpu_ids}, and will set '
-                f'to {cfg.gpu_ids[0:1]}.')
+                f'We treat {cfg.gpu_ids} as gpu-ids, and reset to '
+                f'{cfg.gpu_ids[0:1]} as gpu-ids to avoid potential error in '
+                'non-distribute testing time.')
             cfg.gpu_ids = cfg.gpu_ids[0:1]
     else:
         distributed = True
