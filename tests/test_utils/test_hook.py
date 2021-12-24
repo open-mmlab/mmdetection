@@ -325,8 +325,8 @@ def test_check_invalid_loss_hook(set_loss):
     shutil.rmtree(runner.work_dir)
 
 
-def test_set_epoch_hook():
-    """Test SetEpochHook."""
+def test_set_epoch_info_hook():
+    """Test SetEpochInfoHook."""
 
     class DemoModel(nn.Module):
 
@@ -349,6 +349,6 @@ def test_set_epoch_hook():
 
     demo_model = DemoModel()
     runner.model = demo_model
-    runner.register_hook_from_cfg(dict(type='SetEpochHook'))
+    runner.register_hook_from_cfg(dict(type='SetEpochInfoHook'))
     runner.run([loader], [('train', 1)])
     assert demo_model.epoch == 2

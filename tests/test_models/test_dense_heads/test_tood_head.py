@@ -49,14 +49,16 @@ def test_paa_head_loss():
             target_means=[.0, .0, .0, .0],
             target_stds=[0.1, 0.1, 0.2, 0.2]),
         initial_loss_cls=dict(
-            type='FocalLossWithProb',
+            type='FocalLoss',
             use_sigmoid=True,
+            activated=True,  # use probability instead of logit as input
             gamma=2.0,
             alpha=0.25,
             loss_weight=1.0),
         loss_cls=dict(
-            type='QualityFocalLossWithProb',
+            type='QualityFocalLoss',
             use_sigmoid=True,
+            activated=True,  # use probability instead of logit as input
             beta=2.0,
             loss_weight=1.0),
         loss_bbox=dict(type='GIoULoss', loss_weight=2.0),
