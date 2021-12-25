@@ -311,12 +311,6 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         """
         img = mmcv.imread(img)
         img = img.copy()
-        if bbox_color is None:
-            bbox_color = self.PALETTE
-        if text_color is None:
-            text_color = self.PALETTE
-        if mask_color is None:
-            mask_color = self.PALETTE
         if isinstance(result, tuple):
             bbox_result, segm_result = result
             if isinstance(segm_result, tuple):

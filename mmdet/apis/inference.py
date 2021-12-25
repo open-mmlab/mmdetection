@@ -8,7 +8,7 @@ from mmcv.ops import RoIPool
 from mmcv.parallel import collate, scatter
 from mmcv.runner import load_checkpoint
 
-from mmdet.core import get_classes, get_palette
+from mmdet.core import get_classes
 from mmdet.datasets import replace_ImageToTensor
 from mmdet.datasets.pipelines import Compose
 from mmdet.models import build_detector
@@ -47,13 +47,6 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
             warnings.warn('Class names are not saved in the checkpoint\'s '
                           'meta data, use COCO classes by default.')
             model.CLASSES = get_classes('coco')
-        if 'PALETTE' in checkpoint.get('meta', {}):
-            model.PALETTE = checkpoint['meta']['PALETTE']
-        else:
-            warnings.simplefilter('once')
-            warnings.warn('The palette are not saved in the checkpoint\'s '
-                          'meta data, use the COCO palette by default.')
-            model.PALETTE = get_palette('coco')
     model.cfg = config  # save the config in the model for convenience
     model.to(device)
     model.eval()
