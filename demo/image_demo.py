@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 
 from mmdet.apis import (async_inference_detector, inference_detector,
                         init_detector, show_result_pyplot)
-from mmdet.core.evaluation import get_palette
+from mmdet.core.visualization import get_palette
 
 
 def parse_args():
@@ -17,6 +17,7 @@ def parse_args():
     parser.add_argument(
         '--palette',
         default='coco',
+        choices=['coco', 'voc', 'citys', 'random'],
         help='Color palette used for visualization')
     parser.add_argument(
         '--score-thr', type=float, default=0.3, help='bbox score threshold')
@@ -34,7 +35,13 @@ def main(args):
     # test a single image
     result = inference_detector(model, args.img)
     # show the results
-    show_result_pyplot(model, args.img, result, score_thr=args.score_thr)
+    num_classes = len(model.CLASSES)
+    show_result_pyplot(
+        model,
+        args.img,
+        result,
+        palette=get_palette(args.palette, num_classes),
+        score_thr=args.score_thr)
 
 
 async def async_main(args):
@@ -44,11 +51,12 @@ async def async_main(args):
     tasks = asyncio.create_task(async_inference_detector(model, args.img))
     result = await asyncio.gather(tasks)
     # show the results
+    num_classes = len(model.CLASSES)
     show_result_pyplot(
         model,
         args.img,
         result[0],
-        palette=get_palette(args.palette),
+        palette=get_palette(args.palette, num_classes),
         score_thr=args.score_thr)
 
 
