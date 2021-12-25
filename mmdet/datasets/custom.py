@@ -75,8 +75,8 @@ class CustomDataset(Dataset):
         self.proposal_file = proposal_file
         self.test_mode = test_mode
         self.filter_empty_gt = filter_empty_gt
-        self.CLASSES, self.PALETTE = self.get_classes_and_palette(
-            classes, palette)
+        self.CLASSES = self.get_classes(classes)
+        self.PALETTE = self.get_palette(self.CLASSES, palette)
         self.file_client = mmcv.FileClient(**file_client_args)
 
         # join paths if data_root is specified
@@ -245,7 +245,7 @@ class CustomDataset(Dataset):
         return self.pipeline(results)
 
     @classmethod
-    def get_classes_and_palette(cls, classes=None, palette=None):
+    def get_classes(cls, classes=None):
         """Get class names of current dataset.
 
         Args:
@@ -254,17 +254,14 @@ class CustomDataset(Dataset):
                 string, take it as a file name. The file contains the name of
                 classes where each line contains one class name. If classes is
                 a tuple or list, override the CLASSES defined by the dataset.
-            palette (Sequence[Sequence[int]]) | np.ndarry | None):
-                The palette of visualization. If None is given, random palette
-                will be generated. Default: None
 
         Returns:
             tuple[str] or list[str]: Names of categories of the dataset.
-            Sequence[Sequence[int]] or np.ndarray: colors for categories.
         """
         if classes is None:
-            class_names = cls.CLASSES
-        elif isinstance(classes, str):
+            return cls.CLASSES
+
+        if isinstance(classes, str):
             # take it as a file path
             class_names = mmcv.list_from_file(classes)
         elif isinstance(classes, (tuple, list)):
@@ -272,27 +269,44 @@ class CustomDataset(Dataset):
         else:
             raise ValueError(f'Unsupported type {type(classes)} of classes.')
 
+        return class_names
+
+    @classmethod
+    def get_palette(cls, classes=None, palette=None):
+        """Get palette of current dataset.
+
+        Args:
+            classes (Sequence[str]): A sequence of class names.
+            palette (Sequence[Sequence[int]]) | np.ndarry | None): The palette
+                of visualization. If None is given, random palette will be
+                generated. Default: None
+
+        Returns:
+            Sequence[Sequence[int]] or np.ndarray: colors for categories.
+        """
         if classes is None:
-            palette = cls.PALETTE if not palette else palette
-        elif cls.CLASSES:
-            if not set(class_names).issubset(cls.CLASSES):
-                raise ValueError('classes is not a subset of CLASSES.')
+            return None
 
-            if (palette is None) and (cls.PALETTE is not None):
-                mapper = {
-                    cls: color
-                    for cls, color in zip(cls.CLASSES, cls.PALETTE)
-                }
-                palette = type(cls.PALETTE)([mapper[c] for c in class_names])
+        if palette is not None:
+            return palette
+        elif (cls.CLASSES is not None) and (cls.PALETTE is not None):
+            if len(cls.PALETTE) == 1:
+                return cls.PALETTE
 
-        if class_names is None:
-            return class_names, palette
+            assert len(cls.CLASSES) == len(cls.PALETTE)
+            mapper = dict(zip(cls.CLASSES, cls.PALETTE))
+            return [mapper[c] for c in classes]
         else:
-            # random generate palette if palette is still None
-            if palette is None:
-                palette = np.random.randint(0, 255, size=(len(class_names), 3))
-            assert len(class_names) == len(palette)
-            return class_names, palette
+            state = np.random.get_state()
+            # Get random state before set seed,
+            # and restore random state later.
+            # Prevent loss of randomness.
+            # See: https://github.com/open-mmlab/mmdetection/issues/5844
+            np.random.seed(42)
+            # random palette
+            palette = np.random.randint(0, 255, size=(len(classes), 3))
+            np.random.set_state(state)
+            return palette.tolist()
 
     def format_results(self, results, **kwargs):
         """Place holder to format result to dataset specific output."""

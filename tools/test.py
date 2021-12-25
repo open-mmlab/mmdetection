@@ -193,10 +193,6 @@ def main():
         model.CLASSES = checkpoint['meta']['CLASSES']
     else:
         model.CLASSES = dataset.CLASSES
-    if 'PALETTE' in checkpoint.get('meta', {}):
-        model.PALETTE = checkpoint['meta']['PALETTE']
-    else:
-        model.PALETTE = dataset.PALETTE
 
     if not distributed:
         model = MMDataParallel(model, device_ids=[0])
