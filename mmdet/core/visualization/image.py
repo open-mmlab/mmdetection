@@ -12,8 +12,7 @@ EPS = 1e-2
 
 
 def color_val_matplotlib(color):
-    """Convert various input in BGR order to normalized RGB matplotlib color
-    tuples,
+    """Convert various input to normalized RGB matplotlib color tuples.
 
     Args:
         color (:obj:`Color`/str/tuple/int/ndarray): Color inputs
@@ -21,21 +20,47 @@ def color_val_matplotlib(color):
     Returns:
         tuple[float]: A tuple of 3 normalized floats indicating RGB channels.
     """
-    if isinstance(color, list):
-        color = tuple(color)
-    color = mmcv.color_val(color)
-    color = [color / 255 for color in color[::-1]]
-    return tuple(color)
+    if mmcv.is_str(color):
+        color = mmcv.Color[color].value
+        return tuple(color / 255 for color in color[::-1])
+    elif isinstance(color, mmcv.Color):
+        color = color.value
+        return tuple(color / 255 for color in color[::-1])
+    elif isinstance(color, tuple):
+        assert len(color) == 3
+        mpl_color = []
+        for channel in color:
+            assert 0 <= channel <= 255
+            mpl_color.append(channel / 255)
+        return tuple(mpl_color)
+    elif isinstance(color, int):
+        assert 0 <= color <= 255
+        color = color / 255
+        return color, color, color
+    elif isinstance(color, np.ndarray):
+        assert color.ndim == 1 and color.size == 3
+        assert np.all((color >= 0) & (color <= 255))
+        color = color / 255.
+        return tuple(color)
+    else:
+        raise TypeError(f'Invalid type for color: {type(color)}')
 
 
 def palette_val(palette):
-    if mmcv.is_str(palette):
-        palette = palette.split()
-    elif mmcv.is_seq_of(palette, int) and len(palette) == 3:
-        palette = [palette]
+    """Validate palette.
+
+    Args:
+        palette List[:obj:`Color`/str/tuple/int/ndarray]: Palette inputs
+
+    Returns:
+        List[tuple[float]]: A list of RGB matplotlib color tuples.
+    """
+    if isinstance(palette, list):
+        return [color_val_matplotlib(c) for c in palette]
     elif isinstance(palette, np.ndarray):
         assert palette.ndim == 2 and palette.shape[1] == 3
-    return [color_val_matplotlib(c) for c in palette]
+        return [color_val_matplotlib(c) for c in palette]
+    return [color_val_matplotlib(palette)]
 
 
 def imshow_det_bboxes(img,
