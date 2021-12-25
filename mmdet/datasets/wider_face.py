@@ -17,7 +17,7 @@ class WIDERFaceDataset(XMLDataset):
     """
     CLASSES = ('face', )
 
-    PALETTE = [[0, 255, 0]]
+    PALETTE = [(0, 255, 0)]
 
     def __init__(self, **kwargs):
         super(WIDERFaceDataset, self).__init__(**kwargs)

@@ -277,12 +277,12 @@ class CustomDataset(Dataset):
 
         Args:
             classes (Sequence[str]): A sequence of class names.
-            palette (Sequence[Sequence[int]]) | np.ndarry | None): The palette
+            palette (List[tuple[int]] | np.ndarry | None): The palette
                 of visualization. If None is given, random palette will be
                 generated. Default: None
 
         Returns:
-            Sequence[Sequence[int]] or np.ndarray: colors for categories.
+            List[tuple[int]] or np.ndarray: colors for categories.
         """
         if classes is None:
             return None
@@ -290,7 +290,7 @@ class CustomDataset(Dataset):
         if palette is not None:
             return palette
         elif (cls.CLASSES is not None) and (cls.PALETTE is not None):
-            if len(cls.PALETTE) == 1:
+            if len(cls.PALETTE) == 1 or isinstance(cls.PALETTE, tuple):
                 return cls.PALETTE
 
             assert len(cls.CLASSES) == len(cls.PALETTE)
@@ -306,7 +306,7 @@ class CustomDataset(Dataset):
             # random palette
             palette = np.random.randint(0, 255, size=(len(classes), 3))
             np.random.set_state(state)
-            return palette.tolist()
+            return [tuple(c) for c in palette]
 
     def format_results(self, results, **kwargs):
         """Place holder to format result to dataset specific output."""
