@@ -295,7 +295,17 @@ class CustomDataset(Dataset):
 
             assert len(cls.CLASSES) == len(cls.PALETTE)
             mapper = dict(zip(cls.CLASSES, cls.PALETTE))
-            return [mapper[c] for c in classes]
+            # Prevent loss of randomness
+            state = np.random.get_state()
+            np.random.seed(42)
+            palette = []
+            for c in classes:
+                if c in mapper:
+                    palette.append(mapper[c])
+                else:
+                    palette.append(tuple(np.random.randint(0, 255, (3, ))))
+            np.random.set_state(state)
+            return palette
         else:
             state = np.random.get_state()
             # Get random state before set seed,
