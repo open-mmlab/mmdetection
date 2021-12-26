@@ -289,34 +289,35 @@ class CustomDataset(Dataset):
 
         if palette is not None:
             return palette
-        elif (cls.CLASSES is not None) and (cls.PALETTE is not None):
+
+        if (cls.CLASSES is not None) and (cls.PALETTE is not None):
             if len(cls.PALETTE) == 1 or isinstance(cls.PALETTE, tuple):
                 return cls.PALETTE
 
-            assert len(cls.CLASSES) == len(cls.PALETTE)
-            mapper = dict(zip(cls.CLASSES, cls.PALETTE))
-            # Prevent loss of randomness
-            state = np.random.get_state()
-            np.random.seed(42)
-            palette = []
-            for c in classes:
-                if c in mapper:
-                    palette.append(mapper[c])
-                else:
-                    palette.append(tuple(np.random.randint(0, 255, (3, ))))
-            np.random.set_state(state)
-            return palette
-        else:
-            state = np.random.get_state()
-            # Get random state before set seed,
-            # and restore random state later.
-            # Prevent loss of randomness.
-            # See: https://github.com/open-mmlab/mmdetection/issues/5844
-            np.random.seed(42)
-            # random palette
-            palette = np.random.randint(0, 255, size=(len(classes), 3))
-            np.random.set_state(state)
-            return [tuple(c) for c in palette]
+            if len(cls.CLASSES) == len(cls.PALETTE):
+                mapper = dict(zip(cls.CLASSES, cls.PALETTE))
+                # Prevent loss of randomness
+                state = np.random.get_state()
+                np.random.seed(42)
+                palette = []
+                for c in classes:
+                    if c in mapper:
+                        palette.append(mapper[c])
+                    else:
+                        palette.append(tuple(np.random.randint(0, 255, (3, ))))
+                np.random.set_state(state)
+                return palette
+
+        state = np.random.get_state()
+        # Get random state before set seed,
+        # and restore random state later.
+        # Prevent loss of randomness.
+        # See: https://github.com/open-mmlab/mmdetection/issues/5844
+        np.random.seed(42)
+        # random palette
+        palette = np.random.randint(0, 255, size=(len(classes), 3))
+        np.random.set_state(state)
+        return [tuple(c) for c in palette]
 
     def format_results(self, results, **kwargs):
         """Place holder to format result to dataset specific output."""

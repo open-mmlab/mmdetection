@@ -125,6 +125,8 @@ def imshow_det_bboxes(img,
         if segms is not None:
             segms = segms[inds, ...]
 
+    max_label = max(labels) if labels.shape[0] > 0 else 0
+
     if (bbox_color is None) or (text_color is None) or (mask_color is None):
         if labels.shape[0] > 0:
             state = np.random.get_state()
@@ -135,24 +137,24 @@ def imshow_det_bboxes(img,
             # random color
             random_colors = [
                 np.random.randint(0, 256, (3, ), dtype=np.uint8)
-                for _ in range(max(labels) + 1)
+                for _ in range(max_label + 1)
             ]
             np.random.set_state(state)
 
     bbox_color = random_colors if bbox_color is None else bbox_color
     bbox_color = palette_val(bbox_color)
     if len(bbox_color) == 1:
-        bbox_color = bbox_color * (max(labels) + 1)
+        bbox_color = bbox_color * (max_label + 1)
 
     text_color = random_colors if text_color is None else text_color
     text_color = palette_val(text_color)
     if len(text_color) == 1:
-        text_color = text_color * (max(labels) + 1)
+        text_color = text_color * (max_label + 1)
 
     mask_color = random_colors if mask_color is None else mask_color
     mask_color = palette_val(mask_color)
     if len(mask_color) == 1:
-        mask_color = mask_color * (max(labels) + 1)
+        mask_color = mask_color * (max_label + 1)
     mask_color = (255 * np.array(mask_color)).astype(dtype=np.uint8)
     mask_color = [mask_color[[i], :] for i in range(len(mask_color))]
 
