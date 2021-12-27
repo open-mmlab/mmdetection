@@ -7,7 +7,7 @@ from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 
 from ..utils import mask2ndarray
-from .palette import get_palette
+from .palette import get_palette, palette_val
 
 EPS = 1e-2
 
@@ -25,22 +25,6 @@ def color_val_matplotlib(color):
     color = mmcv.color_val(color)
     color = [color / 255 for color in color[::-1]]
     return tuple(color)
-
-
-def palette_val(palette):
-    """Convert palette to matplotlib palette.
-
-    Args:
-        palette List[tuple]: A list of color tuples.
-
-    Returns:
-        List[tuple[float]]: A list of RGB matplotlib color tuples.
-    """
-    new_palette = []
-    for color in palette:
-        color = [c / 255 for c in color]
-        new_palette.append(tuple(color))
-    return new_palette
 
 
 def imshow_det_bboxes(img,
@@ -105,15 +89,9 @@ def imshow_det_bboxes(img,
         if segms is not None:
             segms = segms[inds, ...]
 
-    max_label = max(labels) if labels.shape[0] > 0 else -1
+    max_label = int(max(labels)) if labels.shape[0] > 0 else -1
     bbox_color = palette_val(get_palette(bbox_color, max_label + 1))
-    if len(bbox_color) == 1:
-        bbox_color = bbox_color * (max_label + 1)
-
     text_color = palette_val(get_palette(text_color, max_label + 1))
-    if len(text_color) == 1:
-        text_color = text_color * (max_label + 1)
-
     mask_color = get_palette(mask_color, max_label + 1)
     mask_color = np.array(mask_color, dtype=np.uint8)
 

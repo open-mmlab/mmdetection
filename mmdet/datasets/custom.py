@@ -60,7 +60,6 @@ class CustomDataset(Dataset):
                  ann_file,
                  pipeline,
                  classes=None,
-                 palette=None,
                  data_root=None,
                  img_prefix='',
                  seg_prefix=None,
@@ -76,7 +75,6 @@ class CustomDataset(Dataset):
         self.test_mode = test_mode
         self.filter_empty_gt = filter_empty_gt
         self.CLASSES = self.get_classes(classes)
-        self.PALETTE = self.get_palette(self.CLASSES, palette)
         self.file_client = mmcv.FileClient(**file_client_args)
 
         # join paths if data_root is specified
@@ -270,39 +268,6 @@ class CustomDataset(Dataset):
             raise ValueError(f'Unsupported type {type(classes)} of classes.')
 
         return class_names
-
-    @classmethod
-    def get_palette(cls, classes=None, palette=None):
-        """Get palette of current dataset.
-
-        Args:
-            classes (Sequence[str]): A sequence of class names.
-            palette (List[tuple[int]] | np.ndarry | None): The palette
-                of visualization. If None is given, random palette will be
-                generated. Default: None
-
-        Returns:
-            List[tuple[int]] or np.ndarray: colors for categories.
-        """
-        if classes is None:
-            return None
-
-        if palette is not None:
-            return palette
-
-        if cls.PALETTE is not None:
-            return cls.PALETTE
-
-        state = np.random.get_state()
-        # Get random state before set seed,
-        # and restore random state later.
-        # Prevent loss of randomness.
-        # See: https://github.com/open-mmlab/mmdetection/issues/5844
-        np.random.seed(42)
-        # random palette
-        palette = np.random.randint(0, 255, size=(len(classes), 3))
-        np.random.set_state(state)
-        return [tuple(c) for c in palette]
 
     def format_results(self, results, **kwargs):
         """Place holder to format result to dataset specific output."""
