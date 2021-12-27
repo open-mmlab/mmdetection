@@ -527,7 +527,6 @@ class TOODHead(ATSSHead):
             scores, labels, keep_idxs, filtered_results = results
 
             bboxes = filtered_results['bbox_pred']
-            priors = filtered_results['priors']
 
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
