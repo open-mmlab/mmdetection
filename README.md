@@ -13,10 +13,10 @@
   <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
 
-[📘Documentation](https://mmdetection.readthedocs.io/en/v2.19.1/) |
-[🛠️Installation](https://mmdetection.readthedocs.io/en/v2.19.1/get_started.html) |
-[👀Model Zoo](https://mmdetection.readthedocs.io/en/v2.19.1/model_zoo.html) |
-[🆕Update News](https://mmdetection.readthedocs.io/en/v2.19.1/changelog.html) |
+[📘Documentation](https://mmdetection.readthedocs.io/en/v2.20.0/) |
+[🛠️Installation](https://mmdetection.readthedocs.io/en/v2.20.0/get_started.html) |
+[👀Model Zoo](https://mmdetection.readthedocs.io/en/v2.20.0/model_zoo.html) |
+[🆕Update News](https://mmdetection.readthedocs.io/en/v2.20.0/changelog.html) |
 [🚀Ongoing Projects](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔Reporting Issues](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
@@ -60,11 +60,12 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-**2.19.1** was released in 14/12/2021:
+**2.20.0** was released in 27/12/2021:
 
-- Release [YOLOX](configs/yolox/README.md) COCO pretrained models
-- Add abstract and sketch of the papers in readmes
-- Fix some weight initialization bugs
+- Support [TOOD](configs/tood/README.md): Task-aligned One-stage Object Detection (ICCV 2021 Oral)
+- Support selecting GPU-ids in non-distributed testing time
+- Support resuming from the latest checkpoint automatically
+- Fix some bugs in documentation, links and codes
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 

@@ -1,5 +1,36 @@
 ## Changelog
 
+### v2.20.0 (27/12/2021)
+
+#### New Features
+
+- Support [TOOD](configs/tood/README.md): Task-aligned One-stage Object Detection (ICCV 2021 Oral) (#6746)
+- Support resuming from the latest checkpoint automatically (#6727)
+
+#### Bug Fixes
+- Fix yolox ci failed (#6864)
+- Fix wrong bbox loss_weight of the PAA head (#6744)
+- Fix the padding value of `gt_semantic_seg` in batch collating (#6837)
+- Fix test error of lvis when using `classwise` (#6845)
+
+#### Improvements
+- Add unit test for SimOTA with no valid bbox (#6770)
+- Use precommit to check readme (#6802)
+- Support selecting GPU-ids in non-distributed testing time (#6781)
+
+#### Documents
+- Update docs/conf.py and docs_zh-CN/conf.py to use shared items (#6801)
+- Add MMRazor and MMSelfSup in readme (#6874)
+- Update comments in base detector (#6795)
+- Fix link (#6796)
+- Fix typo (#6865)
+
+#### Contributors
+
+A total of 10 developers contributed to this release.
+Thanks @ZwwWayne, @Czm369, @jshilong, @RangiLyu, @BIGWangYuDong, @hhaAndroid, @jamiechoi1995, @AronLin, @Keiku, @gkagkos
+
+
 ### v2.19.1 (14/12/2021)
 
 #### New Features
