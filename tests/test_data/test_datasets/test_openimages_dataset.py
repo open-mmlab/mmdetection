@@ -213,10 +213,10 @@ def test_openimages_dataset():
     # test with hierarchy file wrong suffix
     with pytest.raises(AssertionError):
         fake_path = osp.join(tmp_dir.name, 'hierarchy.csv')
-        dataset.get_father(fake_path)
+        dataset.get_label_tree(fake_path)
 
     # test load hierarchy file succseefully
-    hierarchy = dataset.get_father(hierarchy_json)
+    hierarchy = dataset.get_label_tree(hierarchy_json)
     hierarchy_gt = np.array([[1, 0, 0, 0], [1, 1, 0, 0], [1, 1, 1, 0],
                              [1, 0, 0, 1]])
     assert np.equal(hierarchy, hierarchy_gt).all()
