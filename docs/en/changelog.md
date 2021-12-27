@@ -12,6 +12,10 @@
 - Fix wrong bbox loss_weight of the PAA head (#6744)
 - Fix the padding value of `gt_semantic_seg` in batch collating (#6837)
 - Fix test error of lvis when using `classwise` (#6845)
+- Avoid get_local_path bc-breaking (#6719)
+- Fix norm sync bug (#6852)
+- Cancel previous runs that are not completed in workflow (#6772)
+- Use pycocotools directly no matter what platform it is (#6838)
 
 #### Improvements
 - Add unit test for SimOTA with no valid bbox (#6770)
@@ -27,8 +31,8 @@
 
 #### Contributors
 
-A total of 10 developers contributed to this release.
-Thanks @ZwwWayne, @Czm369, @jshilong, @RangiLyu, @BIGWangYuDong, @hhaAndroid, @jamiechoi1995, @AronLin, @Keiku, @gkagkos
+A total of 12 developers contributed to this release.
+Thanks @ZwwWayne, @Czm369, @jshilong, @RangiLyu, @BIGWangYuDong, @hhaAndroid, @jamiechoi1995, @AronLin, @Keiku, @gkagkos, @fcakyon, @www516717402
 
 
 ### v2.19.1 (14/12/2021)
