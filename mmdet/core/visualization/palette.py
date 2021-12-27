@@ -72,4 +72,5 @@ def get_palette(palette, num_classes=None):
     elif isinstance(palette, tuple):
         assert isinstance(num_classes, int)
         return [palette] * num_classes
-    return palette
+    else:
+        raise TypeError(f'Invalid type for palette: {type(palette)}')
