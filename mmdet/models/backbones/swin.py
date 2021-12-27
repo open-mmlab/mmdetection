@@ -515,7 +515,7 @@ class SwinTransformer(BaseModule):
             to convert some keys to make it compatible.
             Default: False.
         frozen_stages (int): Stages to be frozen (stop grad and set eval mode).
-            -1 means not freezing any parameters.
+            Default: -1 (-1 means not freezing any parameters).
         init_cfg (dict, optional): The Config for initialization.
             Defaults to None.
     """
