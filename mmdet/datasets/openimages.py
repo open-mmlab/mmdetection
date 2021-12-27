@@ -72,7 +72,8 @@ class OpenImagesDataset(CustomDataset):
         self.CLASSES = class_names
         self.image_level_ann_file = image_level_ann_file
         self.load_image_level_labels = load_image_level_labels
-        if get_parent_class is True and hierarchy_file is not None:
+        if get_parent_class is True:
+            assert hierarchy_file is not None
             self.class_label_tree = self.get_father(hierarchy_file)
         self.get_parent_class = get_parent_class
         self.get_metas = get_metas
@@ -107,8 +108,6 @@ class OpenImagesDataset(CustomDataset):
                 classes_names.append(line[1])
                 index_list.append(line[0])
         self.index_dict = {index: i for i, index in enumerate(index_list)}
-        assert len(self.cat2label) == len(self.index_dict) == \
-               len(classes_names)
         return classes_names
 
     def list_from_csv(self, ann_file):
@@ -151,18 +150,20 @@ class OpenImagesDataset(CustomDataset):
                 else:
                     img_id = line[0]
                     filename = f'{img_id}.jpg'
-                    label = int(self.index_dict[line[2]])
+                    label_id = line[2]
+                    assert label_id in self.index_dict
+                    label = int(self.index_dict[label_id])
                     bbox = [
                         float(line[4]),  # xmin
                         float(line[6]),  # ymin
                         float(line[5]),  # xmax
                         float(line[7])  # ymax
                     ]
-                    is_occluded = True if line[8] == 1 else False
-                    is_truncated = True if line[9] == 1 else False
-                    is_group_of = True if line[10] == 1 else False
-                    is_depiction = True if line[11] == 1 else False
-                    is_inside = True if line[12] == 1 else False
+                    is_occluded = True if int(line[8]) == 1 else False
+                    is_truncated = True if int(line[9]) == 1 else False
+                    is_group_of = True if int(line[10]) == 1 else False
+                    is_depiction = True if int(line[11]) == 1 else False
+                    is_inside = True if int(line[12]) == 1 else False
 
                     item_list[img_id].append(
                         dict(
@@ -636,8 +637,9 @@ class OpenImagesDataset(CustomDataset):
         elif len(self.CLASSES) == 601:
             ds_name = 'oid_v6'
         else:
-            raise ValueError('Cannot infer dataset type from the '
-                             'length of the classes')
+            ds_name = self.CLASSES
+            warnings.warn('Cannot infer dataset type from the length of the '
+                          'classes. Set `oid_v6` as dataset type.')
 
         if metric == 'mAP':
             assert isinstance(iou_thrs, list) and isinstance(ioa_thrs, list)
@@ -691,7 +693,6 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
                 self.index_dict[label_name] = label_id - 1
 
         indexes = np.argsort(id_list)
-        assert len(label_list) == len(id_list)
         classes_names = []
         for index in indexes:
             classes_names.append(label_list[index])
@@ -817,7 +818,9 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
                     continue
                 else:
                     img_id = line[0]
-                    image_level_label = int(self.index_dict[line[1]])
+                    label_id = line[1]
+                    assert label_id in self.index_dict
+                    image_level_label = int(self.index_dict[label_id])
                     confidence = float(line[2])
                     item_lists[img_id].append(
                         dict(

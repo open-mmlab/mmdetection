@@ -274,8 +274,8 @@ def tpfp_openimages(det_bboxes,
                     area_ranges=None,
                     use_legacy_coordinate=False,
                     gt_bboxes_group_of=None,
-                    use_group_of=False,
-                    ioa_thr=None):
+                    use_group_of=True,
+                    ioa_thr=0.5):
     """Check if detected bboxes are true positive or false positive.
 
     Args:
@@ -295,9 +295,9 @@ def tpfp_openimages(det_bboxes,
         gt_bboxes_group_of (ndarray): GT group_of of this image, of shape
             (k, 1). Default: None
         use_group_of (bool): Whether to use group of when calculate TP and FP,
-            which only used in OpenImages evaluation. Default: False.
+            which only used in OpenImages evaluation. Default: True.
         ioa_thr (float | None): IoA threshold to be considered as matched,
-            which only used in OpenImages evaluation. Default: None.
+            which only used in OpenImages evaluation. Default: 0.5.
 
     Returns:
         tuple[np.ndarray]: Returns a tuple (tp, fp, det_bboxes), where
@@ -595,7 +595,8 @@ def eval_map(det_results,
         if tpfp_fn is None:
             if dataset in ['det', 'vid']:
                 tpfp_fn = tpfp_imagenet
-            elif dataset in ['oid_challenge', 'oid_v6']:
+            elif dataset in ['oid_challenge', 'oid_v6'] \
+                    or use_group_of is True:
                 tpfp_fn = tpfp_openimages
             else:
                 tpfp_fn = tpfp_default
