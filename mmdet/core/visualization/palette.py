@@ -1,16 +1,15 @@
 import numpy as np
 
+import mmdet.datasets as datasets
+
 
 def get_palette(palette, num_classes=None):
     if palette == 'coco':
-        from mmdet.datasets import CocoDataset
-        palette = CocoDataset.PALETTE
+        palette = datasets.CocoDataset.PALETTE
     elif palette == 'voc':
-        from mmdet.datasets import VOCDataset
-        palette = VOCDataset.PALETTE
+        palette = datasets.VOCDataset.PALETTE
     elif palette == 'citys':
-        from mmdet.datasets import CityscapesDataset
-        palette = CityscapesDataset.PALETTE
+        palette = datasets.CityscapesDataset.PALETTE
     elif palette == 'random' or palette is None:
         assert isinstance(num_classes, int)
         state = np.random.get_state()

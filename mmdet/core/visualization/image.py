@@ -7,12 +7,14 @@ from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 
 from ..utils import mask2ndarray
+from .palette import get_palette
 
 EPS = 1e-2
 
 
 def color_val_matplotlib(color):
-    """Convert various input to normalized RGB matplotlib color tuples.
+    """Convert various input in BGR order to normalized RGB matplotlib color
+    tuples,
 
     Args:
         color (:obj:`Color`/str/tuple/int/ndarray): Color inputs
@@ -20,47 +22,25 @@ def color_val_matplotlib(color):
     Returns:
         tuple[float]: A tuple of 3 normalized floats indicating RGB channels.
     """
-    if mmcv.is_str(color):
-        color = mmcv.Color[color].value
-        return tuple(color / 255 for color in color[::-1])
-    elif isinstance(color, mmcv.Color):
-        color = color.value
-        return tuple(color / 255 for color in color[::-1])
-    elif isinstance(color, tuple):
-        assert len(color) == 3
-        mpl_color = []
-        for channel in color:
-            assert 0 <= channel <= 255
-            mpl_color.append(channel / 255)
-        return tuple(mpl_color)
-    elif isinstance(color, int):
-        assert 0 <= color <= 255
-        color = color / 255
-        return color, color, color
-    elif isinstance(color, np.ndarray):
-        assert color.ndim == 1 and color.size == 3
-        assert np.all((color >= 0) & (color <= 255))
-        color = color / 255.
-        return tuple(color)
-    else:
-        raise TypeError(f'Invalid type for color: {type(color)}')
+    color = mmcv.color_val(color)
+    color = [color / 255 for color in color[::-1]]
+    return tuple(color)
 
 
 def palette_val(palette):
-    """Validate palette.
+    """Convert palette to matplotlib palette.
 
     Args:
-        palette List[:obj:`Color`/str/tuple/int/ndarray]: Palette inputs
+        palette List[tuple]: A list of color tuples.
 
     Returns:
         List[tuple[float]]: A list of RGB matplotlib color tuples.
     """
-    if isinstance(palette, list):
-        return [color_val_matplotlib(c) for c in palette]
-    elif isinstance(palette, np.ndarray):
-        assert palette.ndim == 2 and palette.shape[1] == 3
-        return [color_val_matplotlib(c) for c in palette]
-    return [color_val_matplotlib(palette)]
+    new_palette = []
+    for color in palette:
+        color = [c / 255 for c in color]
+        new_palette.append(tuple(color))
+    return new_palette
 
 
 def imshow_det_bboxes(img,
@@ -126,36 +106,16 @@ def imshow_det_bboxes(img,
             segms = segms[inds, ...]
 
     max_label = max(labels) if labels.shape[0] > 0 else -1
-
-    if (bbox_color is None) or (text_color is None) or (mask_color is None):
-        state = np.random.get_state()
-        # Get random state before set seed, and restore random state later.
-        # Prevent loss of randomness.
-        # See: https://github.com/open-mmlab/mmdetection/issues/5844
-        np.random.seed(42)
-        # random color
-        random_colors = [
-            np.random.randint(0, 256, (3, ), dtype=np.uint8)
-            for _ in range(max_label + 1)
-        ]
-        np.random.set_state(state)
-
-    bbox_color = random_colors if bbox_color is None else bbox_color
-    bbox_color = palette_val(bbox_color)
+    bbox_color = palette_val(get_palette(bbox_color, max_label + 1))
     if len(bbox_color) == 1:
         bbox_color = bbox_color * (max_label + 1)
 
-    text_color = random_colors if text_color is None else text_color
-    text_color = palette_val(text_color)
+    text_color = palette_val(get_palette(text_color, max_label + 1))
     if len(text_color) == 1:
         text_color = text_color * (max_label + 1)
 
-    mask_color = random_colors if mask_color is None else mask_color
-    mask_color = palette_val(mask_color)
-    if len(mask_color) == 1:
-        mask_color = mask_color * (max_label + 1)
-    mask_color = (255 * np.array(mask_color)).astype(dtype=np.uint8)
-    mask_color = [mask_color[[i], :] for i in range(len(mask_color))]
+    mask_color = get_palette(mask_color, max_label + 1)
+    mask_color = np.array(mask_color, dtype=np.uint8)
 
     img = mmcv.bgr2rgb(img)
     width, height = img.shape[1], img.shape[0]

@@ -290,23 +290,8 @@ class CustomDataset(Dataset):
         if palette is not None:
             return palette
 
-        if (cls.CLASSES is not None) and (cls.PALETTE is not None):
-            if len(cls.PALETTE) == 1 or isinstance(cls.PALETTE, tuple):
-                return cls.PALETTE
-
-            if len(cls.CLASSES) == len(cls.PALETTE):
-                mapper = dict(zip(cls.CLASSES, cls.PALETTE))
-                # Prevent loss of randomness
-                state = np.random.get_state()
-                np.random.seed(42)
-                palette = []
-                for c in classes:
-                    if c in mapper:
-                        palette.append(mapper[c])
-                    else:
-                        palette.append(tuple(np.random.randint(0, 255, (3, ))))
-                np.random.set_state(state)
-                return palette
+        if cls.PALETTE is not None:
+            return cls.PALETTE
 
         state = np.random.get_state()
         # Get random state before set seed,
