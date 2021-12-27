@@ -48,24 +48,23 @@ def get_palette(palette, num_classes=None):
     """
     if isinstance(palette, list):
         return palette
+    elif palette == 'coco':
+        palette = mmdet.datasets.CocoDataset.PALETTE
+    elif palette == 'voc':
+        palette = mmdet.datasets.VOCDataset.PALETTE
+    elif palette == 'citys':
+        palette = mmdet.datasets.CityscapesDataset.PALETTE
+    elif palette == 'random' or palette is None:
+        assert isinstance(num_classes, int)
+        state = np.random.get_state()
+        # random color
+        np.random.seed(42)
+        palette = np.random.randint(0, 256, size=(num_classes, 3))
+        palette = [tuple(c) for c in palette]
+        np.random.set_state(state)
     elif mmcv.is_str(palette):
-        if palette == 'coco':
-            palette = mmdet.datasets.CocoDataset.PALETTE
-        elif palette == 'voc':
-            palette = mmdet.datasets.VOCDataset.PALETTE
-        elif palette == 'citys':
-            palette = mmdet.datasets.CityscapesDataset.PALETTE
-        elif palette == 'random' or palette is None:
-            assert isinstance(num_classes, int)
-            state = np.random.get_state()
-            # random color
-            np.random.seed(42)
-            palette = np.random.randint(0, 256, size=(num_classes, 3))
-            palette = [tuple(c) for c in palette]
-            np.random.set_state(state)
-        else:
-            assert isinstance(num_classes, int)
-            return [Color[palette].value] * num_classes
+        assert isinstance(num_classes, int)
+        return [Color[palette].value] * num_classes
     elif isinstance(palette, Color):
         assert isinstance(num_classes, int)
         return [palette.value] * num_classes
