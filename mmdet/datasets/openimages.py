@@ -326,7 +326,7 @@ class OpenImagesDataset(CustomDataset):
 
         Returns:
             ndarray: The matrix of the corresponding relationship between
-            the father class and the child class, of shape
+            the parent class and the child class, of shape
             (class_num, class_num).
         """
 
@@ -347,7 +347,7 @@ class OpenImagesDataset(CustomDataset):
                             class_label_tree,
                             parents=[],
                             get_all_parents=True):
-        """Get matrix of the corresponding relationship between the father
+        """Get matrix of the corresponding relationship between the parent
         class and the child class.
 
         Args:
@@ -357,7 +357,7 @@ class OpenImagesDataset(CustomDataset):
                 - `LabeName` (str): Name of the label.
                 - `Subcategory` (dict | list): Corresponding subcategory(ies).
             class_label_tree (ndarray): The matrix of the corresponding
-                relationship between the father class and the child class,
+                relationship between the parent class and the child class,
                 of shape (class_num, class_num).
             parents (list): Corresponding parent class.
             get_all_parents (bool): Whether get all parent names.
@@ -365,7 +365,7 @@ class OpenImagesDataset(CustomDataset):
 
         Returns:
             ndarray: The matrix of the corresponding relationship between
-            the father class and the child class, of shape
+            the parent class and the child class, of shape
             (class_num, class_num).
         """
 
@@ -378,10 +378,10 @@ class OpenImagesDataset(CustomDataset):
                 else:
                     continue
                 if len(parents) > 0:
-                    for father_index in parents:
+                    for parent_index in parents:
                         if get_all_parents:
-                            children.append(father_index)
-                        class_label_tree[children_index, father_index] = 1
+                            children.append(parent_index)
+                        class_label_tree[children_index, parent_index] = 1
 
                 class_label_tree = self.get_parent_children(
                     node, class_label_tree, parents=children)
@@ -389,7 +389,7 @@ class OpenImagesDataset(CustomDataset):
         return class_label_tree
 
     def get_gt_parents(self, annotations):
-        """Add father classes of the corresponding class of the ground truth
+        """Add parent classes of the corresponding class of the ground truth
         bboxes."""
         for i, ann in enumerate(annotations):
             assert len(ann['labels']) == len(ann['bboxes']) == \
@@ -424,7 +424,7 @@ class OpenImagesDataset(CustomDataset):
         """Process results of the corresponding class of the detection bboxes.
 
         Will choose to do the following two processing according to the
-        parameters: 1. Whether add father classes of the corresponding class
+        parameters: 1. Whether add parent classes of the corresponding class
         of the detection bboxes. 2. Whether ignore the classes that unannotated
         on that image.
         """
@@ -773,7 +773,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
 
         Returns:
             ndarray: The matrix of the corresponding
-            relationship between the father class and the child class,
+            relationship between the parent class and the child class,
             of shape (class_num, class_num).
         """
 
