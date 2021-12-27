@@ -37,7 +37,7 @@ class OpenImagesDataset(CustomDataset):
             label_description_file (str): File path to the label map proto.
             image_level_ann_file (str): Image level annotation, which is used
                 in evaluation.
-            get_parent_class (bool): Whether get father class of the current
+            get_parent_class (bool): Whether get parent class of the current
                 class. Default: True.
             hierarchy_file (str): File path to the hierarchy for classes.
                 Default: None.
@@ -74,7 +74,7 @@ class OpenImagesDataset(CustomDataset):
         self.load_image_level_labels = load_image_level_labels
         if get_parent_class is True:
             assert hierarchy_file is not None
-            self.class_label_tree = self.get_father(hierarchy_file)
+            self.class_label_tree = self.get_label_tree(hierarchy_file)
         self.get_parent_class = get_parent_class
         self.get_metas = get_metas
         self.load_from_file = load_from_file
@@ -318,7 +318,7 @@ class OpenImagesDataset(CustomDataset):
         self.flag = np.zeros(len(self), dtype=np.uint8)
         # TODO: set flag without width and height
 
-    def get_father(self, hierarchy_file):
+    def get_label_tree(self, hierarchy_file):
         """Get hierarchy for classes.
 
         Args:
@@ -345,8 +345,8 @@ class OpenImagesDataset(CustomDataset):
     def get_parent_children(self,
                             hierarchy,
                             class_label_tree,
-                            father=[],
-                            get_all_fathers=True):
+                            parents=[],
+                            get_all_parents=True):
         """Get matrix of the corresponding relationship between the father
         class and the child class.
 
@@ -359,8 +359,9 @@ class OpenImagesDataset(CustomDataset):
             class_label_tree (ndarray): The matrix of the corresponding
                 relationship between the father class and the child class,
                 of shape (class_num, class_num).
-            father (list): Corresponding father class.
-            get_all_fathers (bool): Whether get all father name. Default: True
+            parents (list): Corresponding parent class.
+            get_all_parents (bool): Whether get all parent names.
+                Default: True
 
         Returns:
             ndarray: The matrix of the corresponding relationship between
@@ -376,18 +377,18 @@ class OpenImagesDataset(CustomDataset):
                     children = [children_index]
                 else:
                     continue
-                if len(father) > 0:
-                    for father_index in father:
-                        if get_all_fathers:
+                if len(parents) > 0:
+                    for father_index in parents:
+                        if get_all_parents:
                             children.append(father_index)
                         class_label_tree[children_index, father_index] = 1
 
                 class_label_tree = self.get_parent_children(
-                    node, class_label_tree, father=children)
+                    node, class_label_tree, parents=children)
 
         return class_label_tree
 
-    def get_gt_fathers(self, annotations):
+    def get_gt_parents(self, annotations):
         """Add father classes of the corresponding class of the ground truth
         bboxes."""
         for i, ann in enumerate(annotations):
@@ -618,7 +619,7 @@ class OpenImagesDataset(CustomDataset):
         self.test_img_shapes = []
         self.test_img_metas = []
         if self.get_parent_class:
-            annotations = self.get_gt_fathers(annotations)
+            annotations = self.get_gt_parents(annotations)
 
         results = self.process_results(results, annotations,
                                        image_level_annotations)
@@ -764,7 +765,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
             self.get_meta_from_pipeline(results)
         return results
 
-    def get_father(self, hierarchy_file):
+    def get_label_tree(self, hierarchy_file):
         """Get hierarchy for classes.
 
         Args:
