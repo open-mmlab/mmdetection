@@ -58,13 +58,13 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         """
         self.bbox_roi_extractor = ModuleList()
         self.bbox_head = ModuleList()
+        num_bbox_heads = len(bbox_head)
         if not isinstance(bbox_roi_extractor, list):
             bbox_roi_extractor = [
-                bbox_roi_extractor for _ in range(self.num_stages)
+                bbox_roi_extractor for _ in range(num_bbox_heads)
             ]
         if not isinstance(bbox_head, list):
-            bbox_head = [bbox_head for _ in range(self.num_stages)]
-        assert len(bbox_roi_extractor) == len(bbox_head) == self.num_stages
+            bbox_head = [bbox_head for _ in range(num_bbox_heads)]
         for roi_extractor, head in zip(bbox_roi_extractor, bbox_head):
             self.bbox_roi_extractor.append(build_roi_extractor(roi_extractor))
             self.bbox_head.append(build_head(head))
@@ -77,9 +77,9 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             mask_head (dict): Config of mask in mask head.
         """
         self.mask_head = nn.ModuleList()
+        num_mask_heads = len(mask_head)
         if not isinstance(mask_head, list):
-            mask_head = [mask_head for _ in range(self.num_stages)]
-        assert len(mask_head) == self.num_stages
+            mask_head = [mask_head for _ in range(num_mask_heads)]
         for head in mask_head:
             self.mask_head.append(build_head(head))
         if mask_roi_extractor is not None:
@@ -87,9 +87,8 @@ class CascadeRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             self.mask_roi_extractor = ModuleList()
             if not isinstance(mask_roi_extractor, list):
                 mask_roi_extractor = [
-                    mask_roi_extractor for _ in range(self.num_stages)
+                    mask_roi_extractor for _ in range(num_mask_heads)
                 ]
-            assert len(mask_roi_extractor) == self.num_stages
             for roi_extractor in mask_roi_extractor:
                 self.mask_roi_extractor.append(
                     build_roi_extractor(roi_extractor))
