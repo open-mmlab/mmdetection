@@ -8,7 +8,7 @@
 
 我们在下图展示了一个经典的数据处理流程。蓝色块是数据处理操作，随着数据流程的处理，每个操作都可以在结果字典中加入新的键（标记为绿色）或更新现有的键（标记为橙色）。
 
-![pipeline figure](../../resources/data_pipeline.png)
+![pipeline figure](../../../resources/data_pipeline.png)
 
 这些操作可以分为数据加载（data loading）、预处理（pre-processing）、格式变化（formatting）和测试时数据增强（test-time augmentation）。
 
