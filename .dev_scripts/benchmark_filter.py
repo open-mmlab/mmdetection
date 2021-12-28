@@ -85,7 +85,7 @@ benchmark_pool = [
     'configs/fcos/fcos_center_r50_caffe_fpn_gn-head_4x4_1x_coco.py',
     'configs/foveabox/fovea_align_r50_fpn_gn-head_4x4_2x_coco.py',
     'configs/fp16/retinanet_r50_fpn_fp16_1x_coco.py',
-    'configs/fp16/mask_rcnn_r50_fpn_fp16_1x_coco.py',
+    'configs/mask_rcnn/mask_rcnn_r50_fpn_fp16_1x_coco.py',
     'configs/free_anchor/retinanet_free_anchor_r50_fpn_1x_coco.py',
     'configs/fsaf/fsaf_r50_fpn_1x_coco.py',
     'configs/gcnet/mask_rcnn_r50_fpn_r4_gcb_c3-c5_1x_coco.py',
