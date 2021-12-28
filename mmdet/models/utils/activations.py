@@ -21,5 +21,8 @@ class MemoryEfficientSwishImplementation(torch.autograd.Function):
 
 @ACTIVATION_LAYERS.register_module()
 class MemoryEfficientSwish(nn.Module):
+    def __init__(self, inplace):
+        super(MemoryEfficientSwish, self).__init__()
+
     def forward(self, x):
         return MemoryEfficientSwishImplementation.apply(x)

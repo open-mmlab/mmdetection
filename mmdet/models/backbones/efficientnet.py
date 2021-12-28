@@ -7,9 +7,9 @@ import mmcv
 from mmcv.cnn import build_conv_layer, build_norm_layer
 from mmcv.cnn.bricks.drop import drop_path
 from mmcv.runner import load_checkpoint
+from mmcv.cnn import ConvModule
 
 from ..builder import BACKBONES
-from ..utils.activations import MemoryEfficientSwish
 from ..utils.inverted_residual import InvertedResidual
 
 
@@ -88,7 +88,8 @@ class EfficientLayer(nn.Sequential):
             block_stride = stride if d == 0 else 1
             block_width = in_channels if d == 0 else out_channels
             midchannels = int(block_width * expand_ratio)
-            se_cfg = {'channels': midchannels, 'ratio': expand_ratio * se_ratio}
+            se_cfg = {'channels': midchannels,
+                      'ratio': expand_ratio * se_ratio}
             with_expand_conv = False
             if midchannels != block_width:
                 with_expand_conv = True
@@ -238,18 +239,17 @@ class EfficientNet(mmcv.runner.BaseModule):
             previous_width = w
 
     def _make_stem_layer(self, in_channels, out_channels):
-        self.conv1 = build_conv_layer(
-            self.conv_cfg,
+        self.conv1 = ConvModule(
             in_channels,
             out_channels,
             kernel_size=3,
             stride=2,
             padding=1,
-            bias=False)
-        self.norm1_name, norm1 = build_norm_layer(
-            self.norm_cfg, out_channels, postfix=1)
-        self.add_module(self.norm1_name, norm1)
-        self.swish = MemoryEfficientSwish()
+            bias=False,
+            conv_cfg=self.conv_cfg,
+            norm_cfg=self.norm_cfg,
+            act_cfg=dict(type='MemoryEfficientSwish')
+        )
 
     def make_efficient_layer(self, **kwargs):
         return EfficientLayer(**kwargs)
@@ -283,8 +283,6 @@ class EfficientNet(mmcv.runner.BaseModule):
 
     def forward(self, x):
         x = self.conv1(x)
-        x = self.norm1(x)
-        x = self.swish(x)
         outs = []
         for i, layer_name in enumerate(self.efficient_layers):
             efficient_layer = getattr(self, layer_name)
