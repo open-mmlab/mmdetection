@@ -388,7 +388,7 @@ class OpenImagesDataset(CustomDataset):
 
         return class_label_tree
 
-    def get_gt_parents(self, annotations):
+    def get_parents_ann(self, annotations):
         """Add parent classes of the corresponding class of the ground truth
         bboxes."""
         for i, ann in enumerate(annotations):
@@ -619,7 +619,7 @@ class OpenImagesDataset(CustomDataset):
         self.test_img_shapes = []
         self.test_img_metas = []
         if self.get_parent_class:
-            annotations = self.get_gt_parents(annotations)
+            annotations = self.get_parents_ann(annotations)
 
         results = self.process_results(results, annotations,
                                        image_level_annotations)
