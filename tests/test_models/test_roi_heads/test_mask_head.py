@@ -1,7 +1,9 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import mmcv
 import torch
 
-from mmdet.models.roi_heads.mask_heads import FCNMaskHead, MaskIoUHead
+from mmdet.models.roi_heads.mask_heads import (DynamicMaskHead, FCNMaskHead,
+                                               MaskIoUHead)
 from .utils import _dummy_bbox_sampling
 
 
@@ -67,3 +69,28 @@ def test_mask_head_loss():
     loss_mask_iou = mask_iou_head.loss(pos_mask_iou_pred, mask_iou_targets)
     onegt_mask_iou_loss = loss_mask_iou['loss_mask_iou'].sum()
     assert onegt_mask_iou_loss.item() >= 0
+
+    # test dynamic_mask_head
+    dummy_proposal_feats = torch.rand(num_sampled, 8)
+    dynamic_mask_head = DynamicMaskHead(
+        dynamic_conv_cfg=dict(
+            type='DynamicConv',
+            in_channels=8,
+            feat_channels=8,
+            out_channels=8,
+            input_feat_shape=6,
+            with_proj=False,
+            act_cfg=dict(type='ReLU', inplace=True),
+            norm_cfg=dict(type='LN')),
+        num_convs=1,
+        num_classes=8,
+        in_channels=8,
+        roi_feat_size=6)
+
+    mask_pred = dynamic_mask_head(dummy_feats, dummy_proposal_feats)
+
+    mask_target = dynamic_mask_head.get_targets(sampling_results, gt_masks,
+                                                train_cfg)
+    loss_mask = dynamic_mask_head.loss(mask_pred, mask_target, pos_labels)
+    loss_mask = loss_mask['loss_mask'].sum()
+    assert loss_mask.item() >= 0

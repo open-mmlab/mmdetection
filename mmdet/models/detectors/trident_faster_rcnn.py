@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from ..builder import DETECTORS
 from .faster_rcnn import FasterRCNN
 
@@ -13,7 +14,8 @@ class TridentFasterRCNN(FasterRCNN):
                  train_cfg,
                  test_cfg,
                  neck=None,
-                 pretrained=None):
+                 pretrained=None,
+                 init_cfg=None):
 
         super(TridentFasterRCNN, self).__init__(
             backbone=backbone,
@@ -22,7 +24,8 @@ class TridentFasterRCNN(FasterRCNN):
             roi_head=roi_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
-            pretrained=pretrained)
+            pretrained=pretrained,
+            init_cfg=init_cfg)
         assert self.backbone.num_branch == self.roi_head.num_branch
         assert self.backbone.test_branch_idx == self.roi_head.test_branch_idx
         self.num_branch = self.backbone.num_branch
@@ -38,7 +41,8 @@ class TridentFasterRCNN(FasterRCNN):
             proposal_list = self.rpn_head.simple_test_rpn(x, trident_img_metas)
         else:
             proposal_list = proposals
-
+        # TODO： Fix trident_img_metas undefined errors
+        #  when proposals is specified
         return self.roi_head.simple_test(
             x, proposal_list, trident_img_metas, rescale=rescale)
 

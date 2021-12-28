@@ -1,0 +1,104 @@
+Collections:
+  - Name: Feature Pyramid Grids
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - Feature Pyramid Grids
+    Paper:
+      URL: https://arxiv.org/abs/2004.03580
+      Title: 'Feature Pyramid Grids'
+    README: configs/fpg/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.10.0/mmdet/models/necks/fpg.py#L101
+      Version: v2.10.0
+
+Models:
+  - Name: faster_rcnn_r50_fpg_crop640_50e_coco
+    In Collection: Feature Pyramid Grids
+    Config: configs/fpg/faster_rcnn_r50_fpg_crop640_50e_coco.py
+    Metadata:
+      Training Memory (GB): 20.0
+      Epochs: 50
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 42.2
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fpg/faster_rcnn_r50_fpg_crop640_50e_coco/faster_rcnn_r50_fpg_crop640_50e_coco-76220505.pth
+
+  - Name: faster_rcnn_r50_fpg-chn128_crop640_50e_coco
+    In Collection: Feature Pyramid Grids
+    Config: configs/fpg/faster_rcnn_r50_fpg-chn128_crop640_50e_coco.py
+    Metadata:
+      Training Memory (GB): 11.9
+      Epochs: 50
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.2
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fpg/faster_rcnn_r50_fpg-chn128_crop640_50e_coco/faster_rcnn_r50_fpg-chn128_crop640_50e_coco-24257de9.pth
+
+  - Name: mask_rcnn_r50_fpg_crop640_50e_coco
+    In Collection: Feature Pyramid Grids
+    Config: configs/fpg/mask_rcnn_r50_fpg_crop640_50e_coco.py
+    Metadata:
+      Training Memory (GB): 23.2
+      Epochs: 50
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 42.7
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP:  37.8
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fpg/mask_rcnn_r50_fpg_crop640_50e_coco/mask_rcnn_r50_fpg_crop640_50e_coco-c5860453.pth
+
+  - Name: mask_rcnn_r50_fpg-chn128_crop640_50e_coco
+    In Collection: Feature Pyramid Grids
+    Config: configs/fpg/mask_rcnn_r50_fpg-chn128_crop640_50e_coco.py
+    Metadata:
+      Training Memory (GB): 15.3
+      Epochs: 50
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.7
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP:  36.9
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fpg/mask_rcnn_r50_fpg-chn128_crop640_50e_coco/mask_rcnn_r50_fpg-chn128_crop640_50e_coco-5c6ea10d.pth
+
+  - Name: retinanet_r50_fpg_crop640_50e_coco
+    In Collection: Feature Pyramid Grids
+    Config: configs/fpg/retinanet_r50_fpg_crop640_50e_coco.py
+    Metadata:
+      Training Memory (GB): 20.8
+      Epochs: 50
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fpg/retinanet_r50_fpg_crop640_50e_coco/retinanet_r50_fpg_crop640_50e_coco-46fdd1c6.pth
+
+  - Name: retinanet_r50_fpg-chn128_crop640_50e_coco
+    In Collection: Feature Pyramid Grids
+    Config: configs/fpg/retinanet_r50_fpg-chn128_crop640_50e_coco.py
+    Metadata:
+      Training Memory (GB): 19.9
+      Epochs: 50
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.3
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/fpg/retinanet_r50_fpg-chn128_crop640_50e_coco/retinanet_r50_fpg-chn128_crop640_50e_coco-5cf33c76.pth

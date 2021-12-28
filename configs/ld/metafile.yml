@@ -1,0 +1,72 @@
+Collections:
+  - Name: Localization Distillation
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - Localization Distillation
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - FPN
+        - ResNet
+    Paper:
+      URL: https://arxiv.org/abs/2102.12252
+      Title: 'Localization Distillation for Object Detection'
+    README: configs/ld/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.11.0/mmdet/models/dense_heads/ld_head.py#L11
+      Version: v2.11.0
+
+Models:
+  - Name: ld_r18_gflv1_r101_fpn_coco_1x
+    In Collection: Localization Distillation
+    Config: configs/ld/ld_r18_gflv1_r101_fpn_coco_1x.py
+    Metadata:
+      Teacher: R-101
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 36.5
+          box AP@0.5: 52.9
+          box AP@0.75: 39.3
+
+  - Name: ld_r34_gflv1_r101_fpn_coco_1x
+    In Collection: Localization Distillation
+    Config: configs/ld/ld_r34_gflv1_r101_fpn_coco_1x.py
+    Metadata:
+      Teacher: R-101
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 39.8
+          box AP@0.5: 56.6
+          box AP@0.75: 43.1
+
+  - Name: ld_r50_gflv1_r101_fpn_coco_1x
+    In Collection: Localization Distillation
+    Config: configs/ld/ld_r50_gflv1_r101_fpn_coco_1x.py
+    Metadata:
+      Teacher: R-101
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.1
+          box AP@0.5: 58.7
+          box AP@0.75: 44.9
+
+  - Name: ld_r101_gflv1_r101dcn_fpn_coco_1x
+    In Collection: Localization Distillation
+    Config: configs/ld/ld_r101_gflv1_r101dcn_fpn_coco_1x.py
+    Metadata:
+      Teacher: R-101-DCN
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 45.4
+          box AP@0.5: 63.1
+          box AP@0.75: 49.5

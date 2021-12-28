@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from collections.abc import Sequence
 
 import mmcv
@@ -34,7 +35,7 @@ def to_tensor(data):
 
 
 @PIPELINES.register_module()
-class ToTensor(object):
+class ToTensor:
     """Convert some results to :obj:`torch.Tensor` by given keys.
 
     Args:
@@ -63,7 +64,7 @@ class ToTensor(object):
 
 
 @PIPELINES.register_module()
-class ImageToTensor(object):
+class ImageToTensor:
     """Convert image to :obj:`torch.Tensor` by given keys.
 
     The dimension order of input image is (H, W, C). The pipeline will convert
@@ -92,7 +93,7 @@ class ImageToTensor(object):
             img = results[key]
             if len(img.shape) < 3:
                 img = np.expand_dims(img, -1)
-            results[key] = to_tensor(img.transpose(2, 0, 1))
+            results[key] = (to_tensor(img.transpose(2, 0, 1))).contiguous()
         return results
 
     def __repr__(self):
@@ -100,7 +101,7 @@ class ImageToTensor(object):
 
 
 @PIPELINES.register_module()
-class Transpose(object):
+class Transpose:
     """Transpose some results by given keys.
 
     Args:
@@ -128,11 +129,11 @@ class Transpose(object):
 
     def __repr__(self):
         return self.__class__.__name__ + \
-            f'(keys={self.keys}, order={self.order})'
+               f'(keys={self.keys}, order={self.order})'
 
 
 @PIPELINES.register_module()
-class ToDataContainer(object):
+class ToDataContainer:
     """Convert results to :obj:`mmcv.DataContainer` by given fields.
 
     Args:
@@ -171,7 +172,7 @@ class ToDataContainer(object):
 
 
 @PIPELINES.register_module()
-class DefaultFormatBundle(object):
+class DefaultFormatBundle:
     """Default formatting bundle.
 
     It simplifies the pipeline of formatting common fields, including "img",
@@ -186,7 +187,14 @@ class DefaultFormatBundle(object):
     - gt_masks: (1)to tensor, (2)to DataContainer (cpu_only=True)
     - gt_semantic_seg: (1)unsqueeze dim-0 (2)to tensor, \
                        (3)to DataContainer (stack=True)
+
+    Args:
+        img_to_float (bool): Whether to force the image to be converted to
+            float type. Default: True.
     """
+
+    def __init__(self, img_to_float=True):
+        self.img_to_float = img_to_float
 
     def __call__(self, results):
         """Call function to transform and format common fields in results.
@@ -201,6 +209,12 @@ class DefaultFormatBundle(object):
 
         if 'img' in results:
             img = results['img']
+            if self.img_to_float is True and img.dtype == np.uint8:
+                # Normally, image is of uint8 type without normalization.
+                # At this time, it needs to be forced to be converted to
+                # flot32, otherwise the model training and inference
+                # will be wrong. Only used for YOLOX currently .
+                img = img.astype(np.float32)
             # add default meta keys
             results = self._add_default_meta_keys(results)
             if len(img.shape) < 3:
@@ -244,11 +258,12 @@ class DefaultFormatBundle(object):
         return results
 
     def __repr__(self):
-        return self.__class__.__name__
+        return self.__class__.__name__ + \
+               f'(img_to_float={self.img_to_float})'
 
 
 @PIPELINES.register_module()
-class Collect(object):
+class Collect:
     """Collect data from the loader relevant to the specific task.
 
     This is usually the last stage of the data loader pipeline. Typically keys
@@ -320,11 +335,11 @@ class Collect(object):
 
     def __repr__(self):
         return self.__class__.__name__ + \
-            f'(keys={self.keys}, meta_keys={self.meta_keys})'
+               f'(keys={self.keys}, meta_keys={self.meta_keys})'
 
 
 @PIPELINES.register_module()
-class WrapFieldsToLists(object):
+class WrapFieldsToLists:
     """Wrap fields of the data dictionary into lists for evaluation.
 
     This class can be used as a last step of a test or validation

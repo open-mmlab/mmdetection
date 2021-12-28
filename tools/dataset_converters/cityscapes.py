@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 import glob
 import os.path as osp
@@ -140,7 +141,7 @@ def main():
     for split, json_name in set_name.items():
         print(f'Converting {split} into {json_name}')
         with mmcv.Timer(
-                print_tmpl='It tooks {}s to convert Cityscapes annotation'):
+                print_tmpl='It took {}s to convert Cityscapes annotation'):
             files = collect_files(
                 osp.join(img_dir, split), osp.join(gt_dir, split))
             image_infos = collect_annotations(files, nproc=args.nproc)

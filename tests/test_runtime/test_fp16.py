@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import numpy as np
 import pytest
 import torch
@@ -53,7 +54,7 @@ def test_auto_fp16():
     with pytest.raises(TypeError):
         # ExampleObject is not a subclass of nn.Module
 
-        class ExampleObject(object):
+        class ExampleObject:
 
             @auto_fp16()
             def __call__(self, x):
@@ -179,7 +180,7 @@ def test_force_fp32():
     with pytest.raises(TypeError):
         # ExampleObject is not a subclass of nn.Module
 
-        class ExampleObject(object):
+        class ExampleObject:
 
             @force_fp32()
             def __call__(self, x):

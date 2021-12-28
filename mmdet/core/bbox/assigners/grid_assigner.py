@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
 from ..builder import BBOX_ASSIGNERS
@@ -112,7 +113,7 @@ class GridAssigner(BaseAssigner):
 
         # 3. assign positive: falls into responsible cell and above
         # positive IOU threshold, the order matters.
-        # the prior condition of comparision is to filter out all
+        # the prior condition of comparison is to filter out all
         # unrelated anchors, i.e. not box_responsible_flags
         overlaps[:, ~box_responsible_flags.type(torch.bool)] = -1.
 

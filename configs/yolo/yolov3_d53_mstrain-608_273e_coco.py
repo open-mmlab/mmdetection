@@ -2,8 +2,11 @@ _base_ = '../_base_/default_runtime.py'
 # model settings
 model = dict(
     type='YOLOV3',
-    pretrained='open-mmlab://darknet53',
-    backbone=dict(type='Darknet', depth=53, out_indices=(3, 4, 5)),
+    backbone=dict(
+        type='Darknet',
+        depth=53,
+        out_indices=(3, 4, 5),
+        init_cfg=dict(type='Pretrained', checkpoint='open-mmlab://darknet53')),
     neck=dict(
         type='YOLOV3Neck',
         num_scales=3,
@@ -59,7 +62,6 @@ img_norm_cfg = dict(mean=[0, 0, 0], std=[255., 255., 255.], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='PhotoMetricDistortion'),
     dict(
         type='Expand',
         mean=img_norm_cfg['mean'],
@@ -71,6 +73,7 @@ train_pipeline = [
         min_crop_size=0.3),
     dict(type='Resize', img_scale=[(320, 320), (608, 608)], keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='PhotoMetricDistortion'),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
     dict(type='DefaultFormatBundle'),

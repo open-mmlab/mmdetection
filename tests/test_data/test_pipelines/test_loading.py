@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import os.path as osp
 
@@ -8,7 +9,7 @@ from mmdet.datasets.pipelines import (LoadImageFromFile, LoadImageFromWebcam,
                                       LoadMultiChannelImageFromFiles)
 
 
-class TestLoading(object):
+class TestLoading:
 
     @classmethod
     def setup_class(cls):

@@ -1,5 +1,7 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 
+import numpy as np
 import torch
 from mmcv import Config, DictAction
 
@@ -30,6 +32,12 @@ def parse_args():
         'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
         'Note that the quotation marks are necessary and that no white space '
         'is allowed.')
+    parser.add_argument(
+        '--size-divisor',
+        type=int,
+        default=32,
+        help='Pad the input image, the minimum size that is divisible '
+        'by size_divisor, -1 means do not pad the image.')
     args = parser.parse_args()
     return args
 
@@ -39,19 +47,22 @@ def main():
     args = parse_args()
 
     if len(args.shape) == 1:
-        input_shape = (3, args.shape[0], args.shape[0])
+        h = w = args.shape[0]
     elif len(args.shape) == 2:
-        input_shape = (3, ) + tuple(args.shape)
+        h, w = args.shape
     else:
         raise ValueError('invalid input shape')
+    orig_shape = (3, h, w)
+    divisor = args.size_divisor
+    if divisor > 0:
+        h = int(np.ceil(h / divisor)) * divisor
+        w = int(np.ceil(w / divisor)) * divisor
+
+    input_shape = (3, h, w)
 
     cfg = Config.fromfile(args.config)
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
-    # import modules from string list.
-    if cfg.get('custom_imports', None):
-        from mmcv.utils import import_modules_from_strings
-        import_modules_from_strings(**cfg['custom_imports'])
 
     model = build_detector(
         cfg.model,
@@ -70,6 +81,11 @@ def main():
 
     flops, params = get_model_complexity_info(model, input_shape)
     split_line = '=' * 30
+
+    if divisor > 0 and \
+            input_shape != orig_shape:
+        print(f'{split_line}\nUse size divisor set input shape '
+              f'from {orig_shape} to {input_shape}\n')
     print(f'{split_line}\nInput shape: {input_shape}\n'
           f'Flops: {flops}\nParams: {params}\n{split_line}')
     print('!!!Please be cautious if you use the results in papers. '

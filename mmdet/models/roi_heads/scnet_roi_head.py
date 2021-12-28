@@ -1,9 +1,12 @@
+# Copyright (c) OpenMMLab. All rights reserved.
+import numpy as np
 import torch
 import torch.nn.functional as F
 
 from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, merge_aug_bboxes,
                         merge_aug_masks, multiclass_nms)
 from ..builder import HEADS, build_head, build_roi_extractor
+from ..utils.brick_wrappers import adaptive_avg_pool2d
 from .cascade_roi_head import CascadeRoIHead
 
 
@@ -49,27 +52,6 @@ class SCNetRoIHead(CascadeRoIHead):
         if mask_roi_extractor is not None:
             self.mask_roi_extractor = build_roi_extractor(mask_roi_extractor)
             self.mask_head = build_head(mask_head)
-
-    def init_weights(self, pretrained):
-        """Initialize the weights in head.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        for i in range(self.num_stages):
-            if self.with_bbox:
-                self.bbox_roi_extractor[i].init_weights()
-                self.bbox_head[i].init_weights()
-        if self.with_mask:
-            self.mask_roi_extractor.init_weights()
-            self.mask_head.init_weights()
-        if self.with_semantic:
-            self.semantic_head.init_weights()
-        if self.with_glbctx:
-            self.glbctx_head.init_weights()
-        if self.with_feat_relay:
-            self.feat_relay_head.init_weights()
 
     @property
     def with_semantic(self):
@@ -126,7 +108,7 @@ class SCNetRoIHead(CascadeRoIHead):
             bbox_semantic_feat = self.semantic_roi_extractor([semantic_feat],
                                                              rois)
             if bbox_semantic_feat.shape[-2:] != bbox_feats.shape[-2:]:
-                bbox_semantic_feat = F.adaptive_avg_pool2d(
+                bbox_semantic_feat = adaptive_avg_pool2d(
                     bbox_semantic_feat, bbox_feats.shape[-2:])
             bbox_feats += bbox_semantic_feat
         if self.with_glbctx and glbctx_feat is not None:
@@ -233,26 +215,19 @@ class SCNetRoIHead(CascadeRoIHead):
         """
         Args:
             x (list[Tensor]): list of multi-level img features.
-
             img_metas (list[dict]): list of image info dict where each dict
                 has: 'img_shape', 'scale_factor', 'flip', and may also contain
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 For details on the values of these keys see
                 `mmdet/datasets/pipelines/formatting.py:Collect`.
-
             proposal_list (list[Tensors]): list of region proposals.
-
             gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
                 shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-
             gt_labels (list[Tensor]): class indices corresponding to each box
-
             gt_bboxes_ignore (None, list[Tensor]): specify which bounding
                 boxes can be ignored when computing the loss.
-
             gt_masks (None, Tensor) : true segmentation masks for each box
                 used if the architecture supports a segmentation task.
-
             gt_semantic_seg (None, list[Tensor]): semantic segmentation masks
                 used if the architecture supports semantic segmentation task.
 
@@ -337,7 +312,28 @@ class SCNetRoIHead(CascadeRoIHead):
         return losses
 
     def simple_test(self, x, proposal_list, img_metas, rescale=False):
-        """Test without augmentation."""
+        """Test without augmentation.
+
+        Args:
+            x (tuple[Tensor]): Features from upstream network. Each
+                has shape (batch_size, c, h, w).
+            proposal_list (list(Tensor)): Proposals from rpn head.
+                Each has shape (num_proposals, 5), last dimension
+                5 represent (x1, y1, x2, y2, score).
+            img_metas (list[dict]): Meta information of images.
+            rescale (bool): Whether to rescale the results to
+                the original image. Default: True.
+
+        Returns:
+            list[list[np.ndarray]] or list[tuple]: When no mask branch,
+            it is bbox results of each image and classes with type
+            `list[list[np.ndarray]]`. The outer list
+            corresponds to each image. The inner list
+            corresponds to each class. When the model has mask branch,
+            it contains bbox results and mask results.
+            The outer list corresponds to each image, and first element
+            of tuple is bbox results, second element is mask results.
+        """
         if self.with_semantic:
             _, semantic_feat = self.semantic_head(x)
         else:
@@ -358,6 +354,24 @@ class SCNetRoIHead(CascadeRoIHead):
         rcnn_test_cfg = self.test_cfg
 
         rois = bbox2roi(proposal_list)
+
+        if rois.shape[0] == 0:
+            # There is no proposal in the whole batch
+            bbox_results = [[
+                np.zeros((0, 5), dtype=np.float32)
+                for _ in range(self.bbox_head[-1].num_classes)
+            ]] * num_imgs
+
+            if self.with_mask:
+                mask_classes = self.mask_head.num_classes
+                segm_results = [[[] for _ in range(mask_classes)]
+                                for _ in range(num_imgs)]
+                results = list(zip(bbox_results, segm_results))
+            else:
+                results = bbox_results
+
+            return results
+
         for i in range(self.num_stages):
             bbox_head = self.bbox_head[i]
             bbox_results = self._bbox_forward(
@@ -376,12 +390,14 @@ class SCNetRoIHead(CascadeRoIHead):
             ms_scores.append(cls_score)
 
             if i < self.num_stages - 1:
-                bbox_label = [s[:, :-1].argmax(dim=1) for s in cls_score]
-                rois = torch.cat([
-                    bbox_head.regress_by_class(rois[i], bbox_label[i],
-                                               bbox_pred[i], img_metas[i])
-                    for i in range(num_imgs)
-                ])
+                refine_rois_list = []
+                for j in range(num_imgs):
+                    if rois[j].shape[0] > 0:
+                        bbox_label = cls_score[j][:, :-1].argmax(dim=1)
+                        refine_rois = bbox_head.regress_by_class(
+                            rois[j], bbox_label, bbox_pred[j], img_metas[j])
+                        refine_rois_list.append(refine_rois)
+                rois = torch.cat(refine_rois_list)
 
         # average scores of each image by stages
         cls_score = [
@@ -497,6 +513,13 @@ class SCNetRoIHead(CascadeRoIHead):
             ms_scores = []
 
             rois = bbox2roi([proposals])
+
+            if rois.shape[0] == 0:
+                # There is no proposal in the single image
+                aug_bboxes.append(rois.new_zeros(0, 4))
+                aug_scores.append(rois.new_zeros(0, 1))
+                continue
+
             for i in range(self.num_stages):
                 bbox_head = self.bbox_head[i]
                 bbox_results = self._bbox_forward(

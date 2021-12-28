@@ -1,0 +1,78 @@
+Collections:
+  - Name: SSD
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - VGG
+    Paper:
+      URL: https://arxiv.org/abs/1512.02325
+      Title: 'SSD: Single Shot MultiBox Detector'
+    README: configs/ssd/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.14.0/mmdet/models/dense_heads/ssd_head.py#L16
+      Version: v2.14.0
+
+Models:
+  - Name: ssd300_coco
+    In Collection: SSD
+    Config: configs/ssd/ssd300_coco.py
+    Metadata:
+      Training Memory (GB): 9.9
+      inference time (ms/im):
+        - value: 22.88
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (300, 300)
+      Epochs: 120
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 25.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/ssd/ssd300_coco/ssd300_coco_20210803_015428-d231a06e.pth
+
+  - Name: ssd512_coco
+    In Collection: SSD
+    Config: configs/ssd/ssd512_coco.py
+    Metadata:
+      Training Memory (GB): 19.4
+      inference time (ms/im):
+        - value: 32.57
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (512, 512)
+      Epochs: 120
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 29.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/ssd/ssd512_coco/ssd512_coco_20210803_022849-0a47a1ca.pth
+
+  - Name: ssdlite_mobilenetv2_scratch_600e_coco
+    In Collection: SSD
+    Config: configs/ssd/ssdlite_mobilenetv2_scratch_600e_coco.py
+    Metadata:
+      Training Memory (GB): 4.0
+      inference time (ms/im):
+        - value: 14.3
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (320, 320)
+      Epochs: 600
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 21.3
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/ssd/ssdlite_mobilenetv2_scratch_600e_coco/ssdlite_mobilenetv2_scratch_600e_coco_20210629_110627-974d9307.pth

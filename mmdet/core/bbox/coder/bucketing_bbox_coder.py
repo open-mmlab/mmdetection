@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import mmcv
 import numpy as np
 import torch
@@ -10,7 +11,7 @@ from .base_bbox_coder import BaseBBoxCoder
 
 @BBOX_CODERS.register_module()
 class BucketingBBoxCoder(BaseBBoxCoder):
-    """Bucketing BBox Coder for Side-Aware Bounday Localization (SABL).
+    """Bucketing BBox Coder for Side-Aware Boundary Localization (SABL).
 
     Boundary Localization with Bucketing and Bucketing Guided Rescoring
     are implemented here.
@@ -195,7 +196,7 @@ def bbox2bucket(proposals,
     t_offsets = (t_buckets - gy1[:, None]) / bucket_h[:, None]
     d_offsets = (d_buckets - gy2[:, None]) / bucket_h[:, None]
 
-    # select top-k nearset buckets
+    # select top-k nearest buckets
     l_topk, l_label = l_offsets.abs().topk(
         offset_topk, dim=1, largest=False, sorted=True)
     r_topk, r_label = r_offsets.abs().topk(
@@ -211,7 +212,7 @@ def bbox2bucket(proposals,
     offset_d_weights = d_offsets.new_zeros(d_offsets.size())
     inds = torch.arange(0, proposals.size(0)).to(proposals).long()
 
-    # generate offset weights of top-k nearset buckets
+    # generate offset weights of top-k nearest buckets
     for k in range(offset_topk):
         if k >= 1:
             offset_l_weights[inds, l_label[:,
@@ -255,7 +256,7 @@ def bbox2bucket(proposals,
         bucket_cls_d_weights
     ],
                                    dim=-1)
-    # ignore second nearest buckets for cls if necessay
+    # ignore second nearest buckets for cls if necessary
     if cls_ignore_neighbor:
         bucket_cls_weights = (~((bucket_cls_weights == 1) &
                                 (bucket_labels == 0))).float()

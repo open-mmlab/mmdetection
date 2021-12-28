@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import copy
 
 import numpy as np
@@ -6,62 +7,7 @@ from mmcv.utils import build_from_cfg
 
 from mmdet.core.mask import BitmapMasks, PolygonMasks
 from mmdet.datasets.builder import PIPELINES
-
-
-def construct_toy_data(poly2mask=True):
-    img = np.array([[1, 2, 3, 4], [5, 6, 7, 8]], dtype=np.uint8)
-    img = np.stack([img, img, img], axis=-1)
-    results = dict()
-    # image
-    results['img'] = img
-    results['img_shape'] = img.shape
-    results['img_fields'] = ['img']
-    # bboxes
-    results['bbox_fields'] = ['gt_bboxes', 'gt_bboxes_ignore']
-    results['gt_bboxes'] = np.array([[0., 0., 2., 1.]], dtype=np.float32)
-    results['gt_bboxes_ignore'] = np.array([[2., 0., 3., 1.]],
-                                           dtype=np.float32)
-    # labels
-    results['gt_labels'] = np.array([1], dtype=np.int64)
-    # masks
-    results['mask_fields'] = ['gt_masks']
-    if poly2mask:
-        gt_masks = np.array([[0, 1, 1, 0], [0, 1, 0, 0]],
-                            dtype=np.uint8)[None, :, :]
-        results['gt_masks'] = BitmapMasks(gt_masks, 2, 4)
-    else:
-        raw_masks = [[np.array([1, 0, 2, 0, 2, 1, 1, 1], dtype=np.float)]]
-        results['gt_masks'] = PolygonMasks(raw_masks, 2, 4)
-
-    # segmentations
-    results['seg_fields'] = ['gt_semantic_seg']
-    results['gt_semantic_seg'] = img[..., 0]
-    return results
-
-
-def _check_fields(results, results_sheared, keys):
-    for key in keys:
-        if isinstance(results[key], (BitmapMasks, PolygonMasks)):
-            assert np.equal(results[key].to_ndarray(),
-                            results_sheared[key].to_ndarray()).all()
-        else:
-            assert np.equal(results[key], results_sheared[key]).all()
-
-
-def check_shear(results, results_sheared):
-    # _check_keys(results, results_sheared)
-    # check image
-    _check_fields(results, results_sheared, results.get('img_fields', ['img']))
-    # check bboxes
-    _check_fields(results, results_sheared, results.get('bbox_fields', []))
-    # check masks
-    _check_fields(results, results_sheared, results.get('mask_fields', []))
-    # check segmentations
-    _check_fields(results, results_sheared, results.get('seg_fields', []))
-    # check gt_labels
-    if 'gt_labels' in results:
-        assert np.equal(results['gt_labels'],
-                        results_sheared['gt_labels']).all()
+from .utils import check_result_same, construct_toy_data
 
 
 def test_shear():
@@ -93,7 +39,7 @@ def test_shear():
         direction='horizontal')
     shear_module = build_from_cfg(transform, PIPELINES)
     results_wo_shear = shear_module(copy.deepcopy(results))
-    check_shear(results, results_wo_shear)
+    check_result_same(results, results_wo_shear)
 
     # test case when no shear aug (level=0, direction='vertical')
     transform = dict(
@@ -105,7 +51,7 @@ def test_shear():
         direction='vertical')
     shear_module = build_from_cfg(transform, PIPELINES)
     results_wo_shear = shear_module(copy.deepcopy(results))
-    check_shear(results, results_wo_shear)
+    check_result_same(results, results_wo_shear)
 
     # test case when no shear aug (prob<=0)
     transform = dict(
@@ -116,7 +62,7 @@ def test_shear():
         direction='vertical')
     shear_module = build_from_cfg(transform, PIPELINES)
     results_wo_shear = shear_module(copy.deepcopy(results))
-    check_shear(results, results_wo_shear)
+    check_result_same(results, results_wo_shear)
 
     # test shear horizontally, magnitude=1
     transform = dict(
@@ -142,14 +88,15 @@ def test_shear():
     results_gt['gt_masks'] = BitmapMasks(gt_masks, 2, 4)
     results_gt['gt_semantic_seg'] = np.array(
         [[1, 2, 3, 4], [255, 5, 6, 7]], dtype=results['gt_semantic_seg'].dtype)
-    check_shear(results_gt, results_sheared)
+    check_result_same(results_gt, results_sheared)
 
     # test PolygonMasks with shear horizontally, magnitude=1
     results = construct_toy_data(poly2mask=False)
     results_sheared = shear_module(copy.deepcopy(results))
-    gt_masks = [[np.array([1, 0, 2, 0, 3, 1, 2, 1], dtype=np.float)]]
+    print(results_sheared['gt_masks'])
+    gt_masks = [[np.array([0, 0, 2, 0, 3, 1, 1, 1], dtype=np.float)]]
     results_gt['gt_masks'] = PolygonMasks(gt_masks, 2, 4)
-    check_shear(results_gt, results_sheared)
+    check_result_same(results_gt, results_sheared)
 
     # test shear vertically, magnitude=-1
     img_fill_val = 128
@@ -179,14 +126,14 @@ def test_shear():
     results_gt['gt_semantic_seg'] = np.array(
         [[1, 6, 255, 255], [5, 255, 255, 255]],
         dtype=results['gt_semantic_seg'].dtype)
-    check_shear(results_gt, results_sheared)
+    check_result_same(results_gt, results_sheared)
 
     # test PolygonMasks with shear vertically, magnitude=-1
     results = construct_toy_data(poly2mask=False)
     results_sheared = shear_module(copy.deepcopy(results))
-    gt_masks = [[np.array([1, 0, 2, 0, 2, 0, 1, 0], dtype=np.float)]]
+    gt_masks = [[np.array([0, 0, 2, 0, 2, 0, 0, 1], dtype=np.float)]]
     results_gt['gt_masks'] = PolygonMasks(gt_masks, 2, 4)
-    check_shear(results_gt, results_sheared)
+    check_result_same(results_gt, results_sheared)
 
     results = construct_toy_data()
     # same mask for BitmapMasks and PolygonMasks
@@ -195,7 +142,7 @@ def test_shear():
         4)
     results['gt_bboxes'] = np.array([[1., 0., 2., 1.]], dtype=np.float32)
     results_sheared_bitmap = shear_module(copy.deepcopy(results))
-    check_shear(results_sheared_bitmap, results_sheared)
+    check_result_same(results_sheared_bitmap, results_sheared)
 
     # test AutoAugment equipped with Shear
     policies = [[dict(type='Shear', level=10, prob=1.)]]

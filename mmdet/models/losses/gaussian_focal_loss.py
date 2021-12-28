@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import mmcv
 import torch.nn as nn
 
@@ -41,7 +42,7 @@ class GaussianFocalLoss(nn.Module):
 
     Args:
         alpha (float): Power of prediction.
-        gamma (float): Power of target for negtive samples.
+        gamma (float): Power of target for negative samples.
         reduction (str): Options are "none", "mean" and "sum".
         loss_weight (float): Loss weight of current loss.
     """

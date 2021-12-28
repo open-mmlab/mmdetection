@@ -1,14 +1,16 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 import torch.nn as nn
 from mmcv.cnn import (bias_init_with_prob, build_activation_layer,
                       build_norm_layer)
+from mmcv.cnn.bricks.transformer import FFN, MultiheadAttention
 from mmcv.runner import auto_fp16, force_fp32
 
 from mmdet.core import multi_apply
 from mmdet.models.builder import HEADS, build_loss
 from mmdet.models.dense_heads.atss_head import reduce_mean
 from mmdet.models.losses import accuracy
-from mmdet.models.utils import FFN, MultiheadAttention, build_transformer
+from mmdet.models.utils import build_transformer
 from .bbox_head import BBoxHead
 
 
@@ -60,11 +62,15 @@ class DIIHead(BBoxHead):
                      act_cfg=dict(type='ReLU', inplace=True),
                      norm_cfg=dict(type='LN')),
                  loss_iou=dict(type='GIoULoss', loss_weight=2.0),
+                 init_cfg=None,
                  **kwargs):
+        assert init_cfg is None, 'To prevent abnormal initialization ' \
+                                 'behavior, init_cfg is not allowed to be set'
         super(DIIHead, self).__init__(
             num_classes=num_classes,
             reg_decoded_bbox=True,
             reg_class_agnostic=True,
+            init_cfg=init_cfg,
             **kwargs)
         self.loss_iou = build_loss(loss_iou)
         self.in_channels = in_channels
@@ -119,6 +125,7 @@ class DIIHead(BBoxHead):
     def init_weights(self):
         """Use xavier initialization for all weight parameter and set
         classification head bias as a specific value when use focal loss."""
+        super(DIIHead, self).init_weights()
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
@@ -161,10 +168,10 @@ class DIIHead(BBoxHead):
         # Self attention
         proposal_feat = proposal_feat.permute(1, 0, 2)
         proposal_feat = self.attention_norm(self.attention(proposal_feat))
+        attn_feats = proposal_feat.permute(1, 0, 2)
 
         # instance interactive
-        proposal_feat = proposal_feat.permute(1, 0,
-                                              2).reshape(-1, self.in_channels)
+        proposal_feat = attn_feats.reshape(-1, self.in_channels)
         proposal_feat_iic = self.instance_interactive_conv(
             proposal_feat, roi_feat)
         proposal_feat = proposal_feat + self.instance_interactive_conv_dropout(
@@ -182,10 +189,13 @@ class DIIHead(BBoxHead):
         for reg_layer in self.reg_fcs:
             reg_feat = reg_layer(reg_feat)
 
-        cls_score = self.fc_cls(cls_feat).view(N, num_proposals, -1)
-        bbox_delta = self.fc_reg(reg_feat).view(N, num_proposals, -1)
+        cls_score = self.fc_cls(cls_feat).view(
+            N, num_proposals, self.num_classes
+            if self.loss_cls.use_sigmoid else self.num_classes + 1)
+        bbox_delta = self.fc_reg(reg_feat).view(N, num_proposals, 4)
 
-        return cls_score, bbox_delta, obj_feat.view(N, num_proposals, -1)
+        return cls_score, bbox_delta, obj_feat.view(
+            N, num_proposals, self.in_channels), attn_feats
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
     def loss(self,
@@ -295,11 +305,12 @@ class DIIHead(BBoxHead):
             neg_bboxes (Tensor): Contains all the negative boxes,
                 has shape (num_neg, 4), the last dimension 4
                 represents [tl_x, tl_y, br_x, br_y].
-            pos_gt_bboxes (Tensor): Contains all the gt_boxes,
-                has shape (num_gt, 4), the last dimension 4
+            pos_gt_bboxes (Tensor): Contains gt_boxes for
+                all positive samples, has shape (num_pos, 4),
+                the last dimension 4
                 represents [tl_x, tl_y, br_x, br_y].
-            pos_gt_labels (Tensor): Contains all the gt_labels,
-                has shape (num_gt).
+            pos_gt_labels (Tensor): Contains gt_labels for
+                all positive samples, has shape (num_pos, ).
             cfg (obj:`ConfigDict`): `train_cfg` of R-CNN.
 
         Returns:

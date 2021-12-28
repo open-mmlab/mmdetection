@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import contextlib
 import sys
 import time

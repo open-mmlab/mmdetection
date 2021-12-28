@@ -1,8 +1,7 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 import os
 import os.path as osp
-
-import mmcv
 
 
 def parse_args():
@@ -25,19 +24,23 @@ def parse_args():
         '--model-options',
         nargs='+',
         help='custom options to special model benchmark')
-
+    parser.add_argument(
+        '--out',
+        type=str,
+        default='batch_train_list.txt',
+        help='output path of gathered metrics to be stored')
     args = parser.parse_args()
     return args
 
 
 basic_arch_root = [
-    'atss', 'cascade_rcnn', 'cascade_rpn', 'centripetalnet', 'cornernet',
-    'detectors', 'detr', 'double_heads', 'dynamic_rcnn', 'faster_rcnn', 'fcos',
-    'foveabox', 'fp16', 'free_anchor', 'fsaf', 'gfl', 'ghm', 'grid_rcnn',
-    'guided_anchoring', 'htc', 'libra_rcnn', 'mask_rcnn', 'ms_rcnn',
-    'nas_fcos', 'paa', 'pisa', 'point_rend', 'reppoints', 'retinanet', 'rpn',
-    'sabl', 'ssd', 'tridentnet', 'vfnet', 'yolact', 'yolo', 'sparse_rcnn',
-    'scnet'
+    'atss', 'autoassign', 'cascade_rcnn', 'cascade_rpn', 'centripetalnet',
+    'cornernet', 'detectors', 'deformable_detr', 'detr', 'double_heads',
+    'dynamic_rcnn', 'faster_rcnn', 'fcos', 'foveabox', 'fp16', 'free_anchor',
+    'fsaf', 'gfl', 'ghm', 'grid_rcnn', 'guided_anchoring', 'htc', 'ld',
+    'libra_rcnn', 'mask_rcnn', 'ms_rcnn', 'nas_fcos', 'paa', 'pisa',
+    'point_rend', 'reppoints', 'retinanet', 'rpn', 'sabl', 'ssd', 'tridentnet',
+    'vfnet', 'yolact', 'yolo', 'sparse_rcnn', 'scnet', 'yolof', 'centernet'
 ]
 
 datasets_root = [
@@ -54,22 +57,25 @@ nn_module_root = [
 benchmark_pool = [
     'configs/albu_example/mask_rcnn_r50_fpn_albu_1x_coco.py',
     'configs/atss/atss_r50_fpn_1x_coco.py',
+    'configs/autoassign/autoassign_r50_fpn_8x2_1x_coco.py',
     'configs/carafe/mask_rcnn_r50_fpn_carafe_1x_coco.py',
     'configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
     'configs/cascade_rpn/crpn_faster_rcnn_r50_caffe_fpn_1x_coco.py',
+    'configs/centernet/centernet_resnet18_dcnv2_140e_coco.py',
     'configs/centripetalnet/'
     'centripetalnet_hourglass104_mstest_16x6_210e_coco.py',
     'configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py',
     'configs/cornernet/'
-    'cornernet_hourglass104_mstest_8x6_210e_coco.py',  # special
+    'cornernet_hourglass104_mstest_8x6_210e_coco.py',
     'configs/dcn/mask_rcnn_r50_fpn_mdconv_c3-c5_1x_coco.py',
     'configs/dcn/faster_rcnn_r50_fpn_dpool_1x_coco.py',
     'configs/dcn/faster_rcnn_r50_fpn_mdpool_1x_coco.py',
     'configs/dcn/mask_rcnn_r50_fpn_dconv_c3-c5_1x_coco.py',
+    'configs/deformable_detr/deformable_detr_r50_16x2_50e_coco.py',
     'configs/detectors/detectors_htc_r50_1x_coco.py',
     'configs/detr/detr_r50_8x2_150e_coco.py',
     'configs/double_heads/dh_faster_rcnn_r50_fpn_1x_coco.py',
-    'configs/dynamic_rcnn/dynamic_rcnn_r50_fpn_1x.py',
+    'configs/dynamic_rcnn/dynamic_rcnn_r50_fpn_1x_coco.py',
     'configs/empirical_attention/faster_rcnn_r50_fpn_attention_1111_dcn_1x_coco.py',  # noqa
     'configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py',
     'configs/faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py',
@@ -93,6 +99,7 @@ benchmark_pool = [
     'configs/hrnet/mask_rcnn_hrnetv2p_w18_1x_coco.py',
     'configs/htc/htc_r50_fpn_1x_coco.py',
     'configs/instaboost/mask_rcnn_r50_fpn_instaboost_4x_coco.py',
+    'configs/ld/ld_r18_gflv1_r101_fpn_coco_1x.py',
     'configs/libra_rcnn/libra_faster_rcnn_r50_fpn_1x_coco.py',
     'configs/lvis/mask_rcnn_r50_fpn_sample1e-3_mstrain_1x_lvis_v1.py',
     'configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py',
@@ -117,7 +124,8 @@ benchmark_pool = [
     'configs/yolact/yolact_r50_1x8_coco.py',
     'configs/yolo/yolov3_d53_320_273e_coco.py',
     'configs/sparse_rcnn/sparse_rcnn_r50_fpn_1x_coco.py',
-    'configs/scnet/scnet_r50_fpn_1x_coco.py'
+    'configs/scnet/scnet_r50_fpn_1x_coco.py',
+    'configs/yolof/yolof_r50_c5_8x8_1x_coco.py',
 ]
 
 
@@ -150,8 +158,9 @@ def main():
                 benchmark_configs.append(config_path)
 
     print(f'Totally found {len(benchmark_configs)} configs to benchmark')
-    config_dicts = dict(models=benchmark_configs)
-    mmcv.dump(config_dicts, 'regression_test_configs.json')
+    with open(args.out, 'w') as f:
+        for config in benchmark_configs:
+            f.write(config + '\n')
 
 
 if __name__ == '__main__':

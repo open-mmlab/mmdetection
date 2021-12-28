@@ -1,0 +1,99 @@
+Collections:
+  - Name: Libra R-CNN
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - IoU-Balanced Sampling
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - Balanced Feature Pyramid
+    Paper:
+      URL: https://arxiv.org/abs/1904.02701
+      Title: 'Libra R-CNN: Towards Balanced Learning for Object Detection'
+    README: configs/libra_rcnn/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/necks/bfp.py#L10
+      Version: v2.0.0
+
+Models:
+  - Name: libra_faster_rcnn_r50_fpn_1x_coco
+    In Collection: Libra R-CNN
+    Config: configs/libra_rcnn/libra_faster_rcnn_r50_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 4.6
+      inference time (ms/im):
+        - value: 52.63
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 38.3
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/libra_rcnn/libra_faster_rcnn_r50_fpn_1x_coco/libra_faster_rcnn_r50_fpn_1x_coco_20200130-3afee3a9.pth
+
+  - Name: libra_faster_rcnn_r101_fpn_1x_coco
+    In Collection: Libra R-CNN
+    Config: configs/libra_rcnn/libra_faster_rcnn_r101_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 6.5
+      inference time (ms/im):
+        - value: 69.44
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.1
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/libra_rcnn/libra_faster_rcnn_r101_fpn_1x_coco/libra_faster_rcnn_r101_fpn_1x_coco_20200203-8dba6a5a.pth
+
+  - Name: libra_faster_rcnn_x101_64x4d_fpn_1x_coco
+    In Collection: Libra R-CNN
+    Config: configs/libra_rcnn/libra_faster_rcnn_x101_64x4d_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 10.8
+      inference time (ms/im):
+        - value: 117.65
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 42.7
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/libra_rcnn/libra_faster_rcnn_x101_64x4d_fpn_1x_coco/libra_faster_rcnn_x101_64x4d_fpn_1x_coco_20200315-3a7d0488.pth
+
+  - Name: libra_retinanet_r50_fpn_1x_coco
+    In Collection: Libra R-CNN
+    Config: configs/libra_rcnn/libra_retinanet_r50_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 4.2
+      inference time (ms/im):
+        - value: 56.5
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 37.6
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/libra_rcnn/libra_retinanet_r50_fpn_1x_coco/libra_retinanet_r50_fpn_1x_coco_20200205-804d94ce.pth
