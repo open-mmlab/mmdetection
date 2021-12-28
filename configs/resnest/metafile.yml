@@ -1,0 +1,136 @@
+Collections:
+  - Name: ResNeSt
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - ResNeSt
+    Paper:
+      URL: https://arxiv.org/abs/2004.08955
+      Title: 'ResNeSt: Split-Attention Networks'
+    README: configs/renest/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.7.0/mmdet/models/backbones/resnest.py#L273
+      Version: v2.7.0
+
+Models:
+  - Name: faster_rcnn_s50_fpn_syncbn-backbone+head_mstrain-range_1x_coco
+    In Collection: ResNeSt
+    Config: configs/resnest/faster_rcnn_s50_fpn_syncbn-backbone+head_mstrain-range_1x_coco.py
+    Metadata:
+      Training Memory (GB): 4.8
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 42.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/resnest/faster_rcnn_s50_fpn_syncbn-backbone%2Bhead_mstrain-range_1x_coco/faster_rcnn_s50_fpn_syncbn-backbone%2Bhead_mstrain-range_1x_coco_20200926_125502-20289c16.pth
+
+  - Name: faster_rcnn_s101_fpn_syncbn-backbone+head_mstrain-range_1x_coco
+    In Collection: ResNeSt
+    Config: configs/resnest/faster_rcnn_s101_fpn_syncbn-backbone+head_mstrain-range_1x_coco.py
+    Metadata:
+      Training Memory (GB): 7.1
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 44.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/resnest/faster_rcnn_s101_fpn_syncbn-backbone%2Bhead_mstrain-range_1x_coco/faster_rcnn_s101_fpn_syncbn-backbone%2Bhead_mstrain-range_1x_coco_20201006_021058-421517f1.pth
+
+  - Name: mask_rcnn_s50_fpn_syncbn-backbone+head_mstrain_1x_coco
+    In Collection: ResNeSt
+    Config: configs/resnest/mask_rcnn_s50_fpn_syncbn-backbone+head_mstrain_1x_coco.py
+    Metadata:
+      Training Memory (GB): 5.5
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 42.6
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 38.1
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/resnest/mask_rcnn_s50_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco/mask_rcnn_s50_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco_20200926_125503-8a2c3d47.pth
+
+  - Name: mask_rcnn_s101_fpn_syncbn-backbone+head_mstrain_1x_coco
+    In Collection: ResNeSt
+    Config: configs/resnest/mask_rcnn_s101_fpn_syncbn-backbone+head_mstrain_1x_coco.py
+    Metadata:
+      Training Memory (GB): 7.8
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 45.2
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 40.2
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/resnest/mask_rcnn_s101_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco/mask_rcnn_s101_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco_20201005_215831-af60cdf9.pth
+
+  - Name: cascade_rcnn_s50_fpn_syncbn-backbone+head_mstrain-range_1x_coco
+    In Collection: ResNeSt
+    Config: configs/resnest/cascade_rcnn_s50_fpn_syncbn-backbone+head_mstrain-range_1x_coco.py
+    Metadata:
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 44.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/resnest/cascade_rcnn_s50_fpn_syncbn-backbone%2Bhead_mstrain-range_1x_coco/cascade_rcnn_s50_fpn_syncbn-backbone%2Bhead_mstrain-range_1x_coco_20201122_213640-763cc7b5.pth
+
+  - Name: cascade_rcnn_s101_fpn_syncbn-backbone+head_mstrain-range_1x_coco
+    In Collection: ResNeSt
+    Config: configs/resnest/cascade_rcnn_s101_fpn_syncbn-backbone+head_mstrain-range_1x_coco.py
+    Metadata:
+      Training Memory (GB): 8.4
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 46.8
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/resnest/cascade_rcnn_s101_fpn_syncbn-backbone%2Bhead_mstrain-range_1x_coco/cascade_rcnn_s101_fpn_syncbn-backbone%2Bhead_mstrain-range_1x_coco_20201005_113242-b9459f8f.pth
+
+  - Name: cascade_mask_rcnn_s50_fpn_syncbn-backbone+head_mstrain_1x_coco
+    In Collection: ResNeSt
+    Config: configs/resnest/cascade_mask_rcnn_s50_fpn_syncbn-backbone+head_mstrain_1x_coco.py
+    Metadata:
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 45.4
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 39.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/resnest/cascade_mask_rcnn_s50_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco/cascade_mask_rcnn_s50_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco_20201122_104428-99eca4c7.pth
+
+  - Name: cascade_mask_rcnn_s101_fpn_syncbn-backbone+head_mstrain_1x_coco
+    In Collection: ResNeSt
+    Config: configs/resnest/cascade_mask_rcnn_s101_fpn_syncbn-backbone+head_mstrain_1x_coco.py
+    Metadata:
+      Training Memory (GB): 10.5
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 47.7
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 41.4
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/resnest/cascade_mask_rcnn_s101_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco/cascade_mask_rcnn_s101_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco_20201005_113243-42607475.pth

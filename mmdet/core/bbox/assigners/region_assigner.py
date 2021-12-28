@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
 from mmdet.core import anchor_inside_flags
@@ -71,17 +72,17 @@ class RegionAssigner(BaseAssigner):
         will be assigned with -1, 0, or a positive number. -1 means don't care,
         0 means negative sample, positive number is the index (1-based) of
         assigned gt.
-        The assignment is done in following steps, the order matters.
+
+        The assignment is done in following steps, and the order matters.
 
         1. Assign every anchor to 0 (negative)
-        For each gt_bboxes:
-            2. Compute ignore flags based on ignore_region then
-                assign -1 to anchors w.r.t. ignore flags
-            3. Compute pos flags based on center_region then
-               assign gt_bboxes to anchors w.r.t. pos flags
-            4. Compute ignore flags based on adjacent anchor lvl then
-               assign -1 to anchors w.r.t. ignore flags
-            5. Assign anchor outside of image to -1
+        2. (For each gt_bboxes) Compute ignore flags based on ignore_region
+           then assign -1 to anchors w.r.t. ignore flags
+        3. (For each gt_bboxes) Compute pos flags based on center_region then
+           assign gt_bboxes to anchors w.r.t. pos flags
+        4. (For each gt_bboxes) Compute ignore flags based on adjacent anchor
+           level then assign -1 to anchors w.r.t. ignore flags
+        5. Assign anchor outside of image to -1
 
         Args:
             mlvl_anchors (list[Tensor]): Multi level anchors.
@@ -101,12 +102,29 @@ class RegionAssigner(BaseAssigner):
         Returns:
             :obj:`AssignResult`: The assign result.
         """
-        # TODO support gt_bboxes_ignore
         if gt_bboxes_ignore is not None:
             raise NotImplementedError
-        if gt_bboxes.shape[0] == 0:
-            raise ValueError('No gt bboxes')
+
         num_gts = gt_bboxes.shape[0]
+        num_bboxes = sum(x.shape[0] for x in mlvl_anchors)
+
+        if num_gts == 0 or num_bboxes == 0:
+            # No ground truth or boxes, return empty assignment
+            max_overlaps = gt_bboxes.new_zeros((num_bboxes, ))
+            assigned_gt_inds = gt_bboxes.new_zeros((num_bboxes, ),
+                                                   dtype=torch.long)
+            if gt_labels is None:
+                assigned_labels = None
+            else:
+                assigned_labels = gt_bboxes.new_full((num_bboxes, ),
+                                                     -1,
+                                                     dtype=torch.long)
+            return AssignResult(
+                num_gts,
+                assigned_gt_inds,
+                max_overlaps,
+                labels=assigned_labels)
+
         num_lvls = len(mlvl_anchors)
         r1 = (1 - self.center_ratio) / 2
         r2 = (1 - self.ignore_ratio) / 2

@@ -1,0 +1,46 @@
+Collections:
+  - Name: CenterNet
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x TITANXP GPUs
+      Architecture:
+        - ResNet
+    Paper:
+      URL: https://arxiv.org/abs/1904.07850
+      Title: 'Objects as Points'
+    README: configs/centernet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.13.0/mmdet/models/detectors/centernet.py#L10
+      Version: v2.13.0
+
+Models:
+  - Name: centernet_resnet18_dcnv2_140e_coco
+    In Collection: CenterNet
+    Config: configs/centernet/centernet_resnet18_dcnv2_140e_coco.py
+    Metadata:
+      Batch Size: 128
+      Training Memory (GB): 3.47
+      Epochs: 140
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 29.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/centernet/centernet_resnet18_dcnv2_140e_coco/centernet_resnet18_dcnv2_140e_coco_20210702_155131-c8cd631f.pth
+
+  - Name: centernet_resnet18_140e_coco
+    In Collection: CenterNet
+    Config: configs/centernet/centernet_resnet18_140e_coco.py
+    Metadata:
+      Batch Size: 128
+      Training Memory (GB): 3.45
+      Epochs: 140
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 25.9
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/centernet/centernet_resnet18_140e_coco/centernet_resnet18_140e_coco_20210705_093630-bb5b3bf7.pth

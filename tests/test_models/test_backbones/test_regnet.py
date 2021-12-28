@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import pytest
 import torch
 
@@ -39,20 +40,19 @@ def test_regnet_backbone(arch_name, arch, out_channels):
 
     # Test RegNet with arch_name
     model = RegNet(arch_name)
-    model.init_weights()
     model.train()
 
-    imgs = torch.randn(1, 3, 224, 224)
+    imgs = torch.randn(1, 3, 32, 32)
     feat = model(imgs)
     assert len(feat) == 4
-    assert feat[0].shape == torch.Size([1, out_channels[0], 56, 56])
-    assert feat[1].shape == torch.Size([1, out_channels[1], 28, 28])
-    assert feat[2].shape == torch.Size([1, out_channels[2], 14, 14])
-    assert feat[3].shape == torch.Size([1, out_channels[3], 7, 7])
+    assert feat[0].shape == torch.Size([1, out_channels[0], 8, 8])
+    assert feat[1].shape == torch.Size([1, out_channels[1], 4, 4])
+    assert feat[2].shape == torch.Size([1, out_channels[2], 2, 2])
+    assert feat[3].shape == torch.Size([1, out_channels[3], 1, 1])
 
     # Test RegNet with arch
     model = RegNet(arch)
-    assert feat[0].shape == torch.Size([1, out_channels[0], 56, 56])
-    assert feat[1].shape == torch.Size([1, out_channels[1], 28, 28])
-    assert feat[2].shape == torch.Size([1, out_channels[2], 14, 14])
-    assert feat[3].shape == torch.Size([1, out_channels[3], 7, 7])
+    assert feat[0].shape == torch.Size([1, out_channels[0], 8, 8])
+    assert feat[1].shape == torch.Size([1, out_channels[1], 4, 4])
+    assert feat[2].shape == torch.Size([1, out_channels[2], 2, 2])
+    assert feat[3].shape == torch.Size([1, out_channels[3], 1, 1])

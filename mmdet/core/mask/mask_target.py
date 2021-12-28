@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import numpy as np
 import torch
 from torch.nn.modules.utils import _pair
@@ -103,6 +104,7 @@ def mask_target_single(pos_proposals, pos_assigned_gt_inds, gt_masks, cfg):
     """
     device = pos_proposals.device
     mask_size = _pair(cfg.mask_size)
+    binarize = not cfg.get('soft_mask_target', False)
     num_pos = pos_proposals.size(0)
     if num_pos > 0:
         proposals_np = pos_proposals.cpu().numpy()
@@ -112,8 +114,11 @@ def mask_target_single(pos_proposals, pos_assigned_gt_inds, gt_masks, cfg):
         pos_assigned_gt_inds = pos_assigned_gt_inds.cpu().numpy()
 
         mask_targets = gt_masks.crop_and_resize(
-            proposals_np, mask_size, device=device,
-            inds=pos_assigned_gt_inds).to_ndarray()
+            proposals_np,
+            mask_size,
+            device=device,
+            inds=pos_assigned_gt_inds,
+            binarize=binarize).to_ndarray()
 
         mask_targets = torch.from_numpy(mask_targets).float().to(device)
     else:

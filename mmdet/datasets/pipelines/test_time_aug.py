@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import warnings
 
 import mmcv
@@ -7,7 +8,7 @@ from .compose import Compose
 
 
 @PIPELINES.register_module()
-class MultiScaleFlipAug(object):
+class MultiScaleFlipAug:
     """Test-time augmentation with multiple scales and flipping.
 
     An example configuration is as followed:
@@ -44,9 +45,10 @@ class MultiScaleFlipAug(object):
         scale_factor (float | list[float] | None): Scale factors for resizing.
         flip (bool): Whether apply flip augmentation. Default: False.
         flip_direction (str | list[str]): Flip augmentation directions,
-            options are "horizontal" and "vertical". If flip_direction is list,
-            multiple flip augmentations will be applied.
-            It has no effect when flip == False. Default: "horizontal".
+            options are "horizontal", "vertical" and "diagonal". If
+            flip_direction is a list, multiple flip augmentations will be
+            applied. It has no effect when flip == False. Default:
+            "horizontal".
     """
 
     def __init__(self,
@@ -57,7 +59,7 @@ class MultiScaleFlipAug(object):
                  flip_direction='horizontal'):
         self.transforms = Compose(transforms)
         assert (img_scale is None) ^ (scale_factor is None), (
-            'Must have but only one variable can be setted')
+            'Must have but only one variable can be set')
         if img_scale is not None:
             self.img_scale = img_scale if isinstance(img_scale,
                                                      list) else [img_scale]

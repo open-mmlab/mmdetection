@@ -3,7 +3,6 @@ _base_ = [
 ]
 model = dict(
     type='DETR',
-    pretrained='torchvision://resnet50',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -12,25 +11,45 @@ model = dict(
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=False),
         norm_eval=True,
-        style='pytorch'),
+        style='pytorch',
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
     bbox_head=dict(
-        type='TransformerHead',
+        type='DETRHead',
         num_classes=80,
         in_channels=2048,
-        num_fcs=2,
         transformer=dict(
             type='Transformer',
-            embed_dims=256,
-            num_heads=8,
-            num_encoder_layers=6,
-            num_decoder_layers=6,
-            feedforward_channels=2048,
-            dropout=0.1,
-            act_cfg=dict(type='ReLU', inplace=True),
-            norm_cfg=dict(type='LN'),
-            num_fcs=2,
-            pre_norm=False,
-            return_intermediate_dec=True),
+            encoder=dict(
+                type='DetrTransformerEncoder',
+                num_layers=6,
+                transformerlayers=dict(
+                    type='BaseTransformerLayer',
+                    attn_cfgs=[
+                        dict(
+                            type='MultiheadAttention',
+                            embed_dims=256,
+                            num_heads=8,
+                            dropout=0.1)
+                    ],
+                    feedforward_channels=2048,
+                    ffn_dropout=0.1,
+                    operation_order=('self_attn', 'norm', 'ffn', 'norm'))),
+            decoder=dict(
+                type='DetrTransformerDecoder',
+                return_intermediate=True,
+                num_layers=6,
+                transformerlayers=dict(
+                    type='DetrTransformerDecoderLayer',
+                    attn_cfgs=dict(
+                        type='MultiheadAttention',
+                        embed_dims=256,
+                        num_heads=8,
+                        dropout=0.1),
+                    feedforward_channels=2048,
+                    ffn_dropout=0.1,
+                    operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
+                                     'ffn', 'norm')),
+            )),
         positional_encoding=dict(
             type='SinePositionalEncoding', num_feats=128, normalize=True),
         loss_cls=dict(
@@ -46,7 +65,7 @@ model = dict(
         assigner=dict(
             type='HungarianAssigner',
             cls_cost=dict(type='ClassificationCost', weight=1.),
-            reg_cost=dict(type='BBoxL1Cost', weight=5.0),
+            reg_cost=dict(type='BBoxL1Cost', weight=5.0, box_format='xywh'),
             iou_cost=dict(type='IoUCost', iou_mode='giou', weight=2.0))),
     test_cfg=dict(max_per_img=100))
 img_norm_cfg = dict(

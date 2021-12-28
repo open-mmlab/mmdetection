@@ -1,4 +1,4 @@
-from __future__ import division
+# Copyright (c) OpenMMLab. All rights reserved.
 import math
 
 import numpy as np

@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
 from ..builder import BBOX_ASSIGNERS
@@ -182,7 +183,7 @@ class MaxIoUAssigner(BaseAssigner):
         assigned_gt_inds[pos_inds] = argmax_overlaps[pos_inds] + 1
 
         if self.match_low_quality:
-            # Low-quality matching will overwirte the assigned_gt_inds assigned
+            # Low-quality matching will overwrite the assigned_gt_inds assigned
             # in Step 3. Thus, the assigned gt might not be the best one for
             # prediction.
             # For example, if bbox A has 0.9 and 0.8 iou with GT bbox 1 & 2,

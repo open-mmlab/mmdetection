@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 from mmcv.ops import nms_match
 
@@ -231,7 +232,7 @@ class ScoreHLRSampler(BaseSampler):
             gt_labels (Tensor, optional): Class labels of ground truth bboxes.
 
         Returns:
-            tuple[:obj:`SamplingResult`, Tensor]: Sampling result and negetive
+            tuple[:obj:`SamplingResult`, Tensor]: Sampling result and negative
                 label weights.
         """
         bboxes = bboxes[:, :4]

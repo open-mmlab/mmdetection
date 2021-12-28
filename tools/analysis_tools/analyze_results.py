@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 import os.path as osp
 
@@ -45,7 +46,7 @@ def bbox_map_eval(det_result, annotation):
     return sum(mean_aps) / len(mean_aps)
 
 
-class ResultVisualizer(object):
+class ResultVisualizer:
     """Display and save evaluation results.
 
     Args:
@@ -182,10 +183,6 @@ def main():
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
     cfg.data.test.test_mode = True
-    # import modules from string list.
-    if cfg.get('custom_imports', None):
-        from mmcv.utils import import_modules_from_strings
-        import_modules_from_strings(**cfg['custom_imports'])
 
     cfg.data.test.pop('samples_per_gpu', 0)
     cfg.data.test.pipeline = get_loading_pipeline(cfg.data.train.pipeline)

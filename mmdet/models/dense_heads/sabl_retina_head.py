@@ -1,19 +1,24 @@
+# Copyright (c) OpenMMLab. All rights reserved.
+import warnings
+
 import numpy as np
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
+from mmcv.cnn import ConvModule
 from mmcv.runner import force_fp32
 
-from mmdet.core import (build_anchor_generator, build_assigner,
-                        build_bbox_coder, build_sampler, images_to_levels,
-                        multi_apply, multiclass_nms, unmap)
+from mmdet.core import (build_assigner, build_bbox_coder,
+                        build_prior_generator, build_sampler, images_to_levels,
+                        multi_apply, unmap)
+from mmdet.core.utils import filter_scores_and_topk
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
+from .dense_test_mixins import BBoxTestMixin
 from .guided_anchor_head import GuidedAnchorHead
 
 
 @HEADS.register_module()
-class SABLRetinaHead(BaseDenseHead):
+class SABLRetinaHead(BaseDenseHead, BBoxTestMixin):
     """Side-Aware Boundary Localization (SABL) for RetinaNet.
 
     The anchor generation, assigning and sampling in SABLRetinaHead
@@ -43,6 +48,7 @@ class SABLRetinaHead(BaseDenseHead):
         loss_cls (dict): Config of classification loss.
         loss_bbox_cls (dict): Config of classification loss for bbox branch.
         loss_bbox_reg (dict): Config of regression loss for bbox branch.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 
     def __init__(self,
@@ -81,8 +87,17 @@ class SABLRetinaHead(BaseDenseHead):
                      use_sigmoid=True,
                      loss_weight=1.5),
                  loss_bbox_reg=dict(
-                     type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.5)):
-        super(SABLRetinaHead, self).__init__()
+                     type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.5),
+                 init_cfg=dict(
+                     type='Normal',
+                     layer='Conv2d',
+                     std=0.01,
+                     override=dict(
+                         type='Normal',
+                         name='retina_cls',
+                         std=0.01,
+                         bias_prob=0.01))):
+        super(SABLRetinaHead, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.feat_channels = feat_channels
@@ -94,15 +109,16 @@ class SABLRetinaHead(BaseDenseHead):
         assert (approx_anchor_generator['strides'] ==
                 square_anchor_generator['strides'])
 
-        self.approx_anchor_generator = build_anchor_generator(
+        self.approx_anchor_generator = build_prior_generator(
             approx_anchor_generator)
-        self.square_anchor_generator = build_anchor_generator(
+        self.square_anchor_generator = build_prior_generator(
             square_anchor_generator)
         self.approxs_per_octave = (
-            self.approx_anchor_generator.num_base_anchors[0])
+            self.approx_anchor_generator.num_base_priors[0])
 
         # one anchor per location
-        self.num_anchors = 1
+        self.num_base_priors = self.square_anchor_generator.num_base_priors[0]
+
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
@@ -138,6 +154,12 @@ class SABLRetinaHead(BaseDenseHead):
         self.fp16_enabled = False
         self._init_layers()
 
+    @property
+    def num_anchors(self):
+        warnings.warn('DeprecationWarning: `num_anchors` is deprecated, '
+                      'please use "num_base_priors" instead')
+        return self.square_anchor_generator.num_base_priors[0]
+
     def _init_layers(self):
         self.relu = nn.ReLU(inplace=True)
         self.cls_convs = nn.ModuleList()
@@ -168,16 +190,6 @@ class SABLRetinaHead(BaseDenseHead):
             self.feat_channels, self.side_num * 4, 3, padding=1)
         self.retina_bbox_cls = nn.Conv2d(
             self.feat_channels, self.side_num * 4, 3, padding=1)
-
-    def init_weights(self):
-        for m in self.cls_convs:
-            normal_init(m.conv, std=0.01)
-        for m in self.reg_convs:
-            normal_init(m.conv, std=0.01)
-        bias_cls = bias_init_with_prob(0.01)
-        normal_init(self.retina_cls, std=0.01, bias=bias_cls)
-        normal_init(self.retina_bbox_reg, std=0.01)
-        normal_init(self.retina_bbox_cls, std=0.01)
 
     def forward_single(self, x):
         cls_feat = x
@@ -210,7 +222,7 @@ class SABLRetinaHead(BaseDenseHead):
 
         # since feature map sizes of all images are the same, we only compute
         # squares for one time
-        multi_level_squares = self.square_anchor_generator.grid_anchors(
+        multi_level_squares = self.square_anchor_generator.grid_priors(
             featmap_sizes, device=device)
         squares_list = [multi_level_squares for _ in range(num_imgs)]
 
@@ -546,27 +558,28 @@ class SABLRetinaHead(BaseDenseHead):
             ]
             img_shape = img_metas[img_id]['img_shape']
             scale_factor = img_metas[img_id]['scale_factor']
-            proposals = self.get_bboxes_single(cls_score_list,
-                                               bbox_cls_pred_list,
-                                               bbox_reg_pred_list,
-                                               mlvl_anchors[img_id], img_shape,
-                                               scale_factor, cfg, rescale)
+            proposals = self._get_bboxes_single(
+                cls_score_list, bbox_cls_pred_list, bbox_reg_pred_list,
+                mlvl_anchors[img_id], img_shape, scale_factor, cfg, rescale)
             result_list.append(proposals)
         return result_list
 
-    def get_bboxes_single(self,
-                          cls_scores,
-                          bbox_cls_preds,
-                          bbox_reg_preds,
-                          mlvl_anchors,
-                          img_shape,
-                          scale_factor,
-                          cfg,
-                          rescale=False):
+    def _get_bboxes_single(self,
+                           cls_scores,
+                           bbox_cls_preds,
+                           bbox_reg_preds,
+                           mlvl_anchors,
+                           img_shape,
+                           scale_factor,
+                           cfg,
+                           rescale=False):
         cfg = self.test_cfg if cfg is None else cfg
+        nms_pre = cfg.get('nms_pre', -1)
+
         mlvl_bboxes = []
         mlvl_scores = []
         mlvl_confids = []
+        mlvl_labels = []
         assert len(cls_scores) == len(bbox_cls_preds) == len(
             bbox_reg_preds) == len(mlvl_anchors)
         for cls_score, bbox_cls_pred, bbox_reg_pred, anchors in zip(
@@ -578,44 +591,40 @@ class SABLRetinaHead(BaseDenseHead):
             if self.use_sigmoid_cls:
                 scores = cls_score.sigmoid()
             else:
-                scores = cls_score.softmax(-1)
+                scores = cls_score.softmax(-1)[:, :-1]
             bbox_cls_pred = bbox_cls_pred.permute(1, 2, 0).reshape(
                 -1, self.side_num * 4)
             bbox_reg_pred = bbox_reg_pred.permute(1, 2, 0).reshape(
                 -1, self.side_num * 4)
-            nms_pre = cfg.get('nms_pre', -1)
-            if nms_pre > 0 and scores.shape[0] > nms_pre:
-                if self.use_sigmoid_cls:
-                    max_scores, _ = scores.max(dim=1)
-                else:
-                    max_scores, _ = scores[:, :-1].max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
-                anchors = anchors[topk_inds, :]
-                bbox_cls_pred = bbox_cls_pred[topk_inds, :]
-                bbox_reg_pred = bbox_reg_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
+
+            # After https://github.com/open-mmlab/mmdetection/pull/6268/,
+            # this operation keeps fewer bboxes under the same `nms_pre`.
+            # There is no difference in performance for most models. If you
+            # find a slight drop in performance, you can set a larger
+            # `nms_pre` than before.
+            results = filter_scores_and_topk(
+                scores, cfg.score_thr, nms_pre,
+                dict(
+                    anchors=anchors,
+                    bbox_cls_pred=bbox_cls_pred,
+                    bbox_reg_pred=bbox_reg_pred))
+            scores, labels, _, filtered_results = results
+
+            anchors = filtered_results['anchors']
+            bbox_cls_pred = filtered_results['bbox_cls_pred']
+            bbox_reg_pred = filtered_results['bbox_reg_pred']
+
             bbox_preds = [
                 bbox_cls_pred.contiguous(),
                 bbox_reg_pred.contiguous()
             ]
             bboxes, confids = self.bbox_coder.decode(
                 anchors.contiguous(), bbox_preds, max_shape=img_shape)
+
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_confids.append(confids)
-        mlvl_bboxes = torch.cat(mlvl_bboxes)
-        if rescale:
-            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-        mlvl_scores = torch.cat(mlvl_scores)
-        mlvl_confids = torch.cat(mlvl_confids)
-        if self.use_sigmoid_cls:
-            padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
-            mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-        det_bboxes, det_labels = multiclass_nms(
-            mlvl_bboxes,
-            mlvl_scores,
-            cfg.score_thr,
-            cfg.nms,
-            cfg.max_per_img,
-            score_factors=mlvl_confids)
-        return det_bboxes, det_labels
+            mlvl_labels.append(labels)
+        return self._bbox_post_process(mlvl_scores, mlvl_labels, mlvl_bboxes,
+                                       scale_factor, cfg, rescale, True,
+                                       mlvl_confids)

@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 import copy
 import os
@@ -190,10 +191,6 @@ def main():
     cfg = mmcv.Config.fromfile(args.config)
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
-    # import modules from string list.
-    if cfg.get('custom_imports', None):
-        from mmcv.utils import import_modules_from_strings
-        import_modules_from_strings(**cfg['custom_imports'])
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
@@ -294,7 +291,7 @@ def main():
                 model, args.checkpoint, map_location='cpu')
             # old versions did not save class info in checkpoints,
             # this walkaround is for backward compatibility
-            if 'CLASSES' in checkpoint['meta']:
+            if 'CLASSES' in checkpoint.get('meta', {}):
                 model.CLASSES = checkpoint['meta']['CLASSES']
             else:
                 model.CLASSES = dataset.CLASSES
@@ -367,7 +364,7 @@ def main():
                 mmcv.dump(aggregated_results, eval_results_filename)
 
     if rank == 0:
-        # print filan results
+        # print final results
         print('\nAggregated results:')
         prints = args.final_prints
         aggregate = args.final_prints_aggregate

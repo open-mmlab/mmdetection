@@ -1,0 +1,101 @@
+Collections:
+  - Name: Grid R-CNN
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RPN
+        - Dilated Convolution
+        - ResNet
+        - RoIAlign
+    Paper:
+      URL: https://arxiv.org/abs/1906.05688
+      Title: 'Grid R-CNN'
+    README: configs/grid_rcnn/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/detectors/grid_rcnn.py#L6
+      Version: v2.0.0
+
+Models:
+  - Name: grid_rcnn_r50_fpn_gn-head_2x_coco
+    In Collection: Grid R-CNN
+    Config: configs/grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco.py
+    Metadata:
+      Training Memory (GB): 5.1
+      inference time (ms/im):
+        - value: 66.67
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.4
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco/grid_rcnn_r50_fpn_gn-head_2x_coco_20200130-6cca8223.pth
+
+  - Name: grid_rcnn_r101_fpn_gn-head_2x_coco
+    In Collection: Grid R-CNN
+    Config: configs/grid_rcnn/grid_rcnn_r101_fpn_gn-head_2x_coco.py
+    Metadata:
+      Training Memory (GB): 7.0
+      inference time (ms/im):
+        - value: 79.37
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.5
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_r101_fpn_gn-head_2x_coco/grid_rcnn_r101_fpn_gn-head_2x_coco_20200309-d6eca030.pth
+
+  - Name: grid_rcnn_x101_32x4d_fpn_gn-head_2x_coco
+    In Collection: Grid R-CNN
+    Config: configs/grid_rcnn/grid_rcnn_x101_32x4d_fpn_gn-head_2x_coco.py
+    Metadata:
+      Training Memory (GB): 8.3
+      inference time (ms/im):
+        - value: 92.59
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 42.9
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_x101_32x4d_fpn_gn-head_2x_coco/grid_rcnn_x101_32x4d_fpn_gn-head_2x_coco_20200130-d8f0e3ff.pth
+
+  - Name: grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco
+    In Collection: Grid R-CNN
+    Config: configs/grid_rcnn/grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco.py
+    Metadata:
+      Training Memory (GB): 11.3
+      inference time (ms/im):
+        - value: 129.87
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 43.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/grid_rcnn/grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco/grid_rcnn_x101_64x4d_fpn_gn-head_2x_coco_20200204-ec76a754.pth

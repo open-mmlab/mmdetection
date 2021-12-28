@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import copy
 
 import cv2
@@ -43,7 +44,7 @@ def bbox2fields():
 
 
 @PIPELINES.register_module()
-class AutoAugment(object):
+class AutoAugment:
     """Auto augmentation.
 
     This data augmentation is proposed in `Learning Data Augmentation
@@ -109,7 +110,7 @@ class AutoAugment(object):
 
 
 @PIPELINES.register_module()
-class Shear(object):
+class Shear:
     """Apply Shear Transformation to image (and its corresponding bbox, mask,
     segmentation).
 
@@ -199,6 +200,7 @@ class Shear(object):
                 border_value=self.img_fill_val,
                 interpolation=interpolation)
             results[key] = img_sheared.astype(img.dtype)
+            results['img_shape'] = results[key].shape
 
     def _shear_bboxes(self, results, magnitude):
         """Shear the bboxes."""
@@ -326,7 +328,7 @@ class Shear(object):
 
 
 @PIPELINES.register_module()
-class Rotate(object):
+class Rotate:
     """Apply Rotate Transformation to image (and its corresponding bbox, mask,
     segmentation).
 
@@ -420,6 +422,7 @@ class Rotate(object):
             img_rotated = mmcv.imrotate(
                 img, angle, center, scale, border_value=self.img_fill_val)
             results[key] = img_rotated.astype(img.dtype)
+            results['img_shape'] = results[key].shape
 
     def _rotate_bboxes(self, results, rotate_matrix):
         """Rotate the bboxes."""
@@ -540,7 +543,7 @@ class Rotate(object):
 
 
 @PIPELINES.register_module()
-class Translate(object):
+class Translate:
     """Translate the images, bboxes, masks and segmentation maps horizontally
     or vertically.
 
@@ -620,6 +623,7 @@ class Translate(object):
             img = results[key].copy()
             results[key] = mmcv.imtranslate(
                 img, offset, direction, self.img_fill_val).astype(img.dtype)
+            results['img_shape'] = results[key].shape
 
     def _translate_bboxes(self, results, offset):
         """Shift bboxes horizontally or vertically, according to offset."""
@@ -634,7 +638,7 @@ class Translate(object):
                 min_y = np.maximum(0, min_y + offset)
                 max_y = np.minimum(h, max_y + offset)
 
-            # the boxs translated outside of image will be filtered along with
+            # the boxes translated outside of image will be filtered along with
             # the corresponding masks, by invoking ``_filter_invalid``.
             results[key] = np.concatenate([min_x, min_y, max_x, max_y],
                                           axis=-1)
@@ -706,7 +710,7 @@ class Translate(object):
 
 
 @PIPELINES.register_module()
-class ColorTransform(object):
+class ColorTransform:
     """Apply Color transformation to image. The bboxes, masks, and
     segmentations are not modified.
 
@@ -755,7 +759,7 @@ class ColorTransform(object):
 
 
 @PIPELINES.register_module()
-class EqualizeTransform(object):
+class EqualizeTransform:
     """Apply Equalize transformation to image. The bboxes, masks and
     segmentations are not modified.
 
@@ -794,7 +798,7 @@ class EqualizeTransform(object):
 
 
 @PIPELINES.register_module()
-class BrightnessTransform(object):
+class BrightnessTransform:
     """Apply Brightness transformation to image. The bboxes, masks and
     segmentations are not modified.
 
@@ -843,7 +847,7 @@ class BrightnessTransform(object):
 
 
 @PIPELINES.register_module()
-class ContrastTransform(object):
+class ContrastTransform:
     """Apply Contrast transformation to image. The bboxes, masks and
     segmentations are not modified.
 

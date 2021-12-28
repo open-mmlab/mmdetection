@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
 from ..builder import BBOX_ASSIGNERS
@@ -48,7 +49,7 @@ class ATSSAssigner(BaseAssigner):
         4. get corresponding iou for the these candidates, and compute the
            mean and std, set mean + std as the iou threshold
         5. select these candidates whose iou are greater than or equal to
-           the threshold as postive
+           the threshold as positive
         6. limit the positive sample's center in gt
 
 

@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
 from ..builder import BBOX_SAMPLERS
@@ -18,6 +19,7 @@ class OHEMSampler(BaseSampler):
                  context,
                  neg_pos_ub=-1,
                  add_gt_as_proposals=True,
+                 loss_key='loss_cls',
                  **kwargs):
         super(OHEMSampler, self).__init__(num, pos_fraction, neg_pos_ub,
                                           add_gt_as_proposals)
@@ -26,6 +28,8 @@ class OHEMSampler(BaseSampler):
             self.bbox_head = self.context.bbox_head
         else:
             self.bbox_head = self.context.bbox_head[self.context.current_stage]
+
+        self.loss_key = loss_key
 
     def hard_mining(self, inds, num_expected, bboxes, labels, feats):
         with torch.no_grad():
@@ -44,7 +48,7 @@ class OHEMSampler(BaseSampler):
                 label_weights=cls_score.new_ones(cls_score.size(0)),
                 bbox_targets=None,
                 bbox_weights=None,
-                reduction_override='none')['loss_cls']
+                reduction_override='none')[self.loss_key]
             _, topk_loss_inds = loss.topk(num_expected)
         return inds[topk_loss_inds]
 

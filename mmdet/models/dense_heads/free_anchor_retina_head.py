@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 import torch.nn.functional as F
 
@@ -76,7 +77,7 @@ class FreeAnchorRetinaHead(RetinaHead):
             dict[str, Tensor]: A dictionary of loss components.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == len(self.anchor_generator.base_anchors)
+        assert len(featmap_sizes) == self.prior_generator.num_levels
 
         anchor_list, _ = self.get_anchors(featmap_sizes, img_metas)
         anchors = [torch.cat(anchor) for anchor in anchor_list]
@@ -226,7 +227,7 @@ class FreeAnchorRetinaHead(RetinaHead):
         :math:`P_{ij}^{loc}`: matched_box_prob, box probability of matched samples.
 
         Args:
-            matched_cls_prob (Tensor): Classification probabilty of matched
+            matched_cls_prob (Tensor): Classification probability of matched
                 samples in shape (num_gt, pre_anchor_topk).
             matched_box_prob (Tensor): BBox probability of matched samples,
                 in shape (num_gt, pre_anchor_topk).

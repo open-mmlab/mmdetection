@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 from mmcv.cnn import ConvModule
 
 from mmdet.models.builder import HEADS
@@ -17,11 +18,6 @@ class HTCMaskHead(FCNMaskHead):
                 1,
                 conv_cfg=self.conv_cfg,
                 norm_cfg=self.norm_cfg)
-
-    def init_weights(self):
-        super(HTCMaskHead, self).init_weights()
-        if self.with_conv_res:
-            self.conv_res.init_weights()
 
     def forward(self, x, res_feat=None, return_logits=True, return_feat=True):
         if res_feat is not None:

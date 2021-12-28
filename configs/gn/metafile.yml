@@ -1,0 +1,162 @@
+Collections:
+  - Name: Group Normalization
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - Group Normalization
+    Paper:
+      URL: https://arxiv.org/abs/1803.08494
+      Title: 'Group Normalization'
+    README: configs/gn/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/configs/gn/mask_rcnn_r50_fpn_gn-all_2x_coco.py
+      Version: v2.0.0
+
+Models:
+  - Name: mask_rcnn_r50_fpn_gn-all_2x_coco
+    In Collection: Group Normalization
+    Config: configs/gn/mask_rcnn_r50_fpn_gn-all_2x_coco.py
+    Metadata:
+      Training Memory (GB): 7.1
+      inference time (ms/im):
+        - value: 90.91
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.2
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP:  36.4
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gn/mask_rcnn_r50_fpn_gn-all_2x_coco/mask_rcnn_r50_fpn_gn-all_2x_coco_20200206-8eee02a6.pth
+
+  - Name: mask_rcnn_r50_fpn_gn-all_3x_coco
+    In Collection: Group Normalization
+    Config: configs/gn/mask_rcnn_r50_fpn_gn-all_3x_coco.py
+    Metadata:
+      Training Memory (GB): 7.1
+      inference time (ms/im):
+        - value: 90.91
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.5
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP:  36.7
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gn/mask_rcnn_r50_fpn_gn-all_3x_coco/mask_rcnn_r50_fpn_gn-all_3x_coco_20200214-8b23b1e5.pth
+
+  - Name: mask_rcnn_r101_fpn_gn-all_2x_coco
+    In Collection: Group Normalization
+    Config: configs/gn/mask_rcnn_r101_fpn_gn-all_2x_coco.py
+    Metadata:
+      Training Memory (GB): 9.9
+      inference time (ms/im):
+        - value: 111.11
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.9
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP:  37.6
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gn/mask_rcnn_r101_fpn_gn-all_2x_coco/mask_rcnn_r101_fpn_gn-all_2x_coco_20200205-d96b1b50.pth
+
+  - Name: mask_rcnn_r101_fpn_gn-all_3x_coco
+    In Collection: Group Normalization
+    Config: configs/gn/mask_rcnn_r101_fpn_gn-all_3x_coco.py
+    Metadata:
+      Training Memory (GB): 9.9
+      inference time (ms/im):
+        - value: 111.11
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 42.1
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP:  38.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gn/mask_rcnn_r101_fpn_gn-all_3x_coco/mask_rcnn_r101_fpn_gn-all_3x_coco_20200513_181609-0df864f4.pth
+
+  - Name: mask_rcnn_r50_fpn_gn-all_contrib_2x_coco
+    In Collection: Group Normalization
+    Config: configs/gn/mask_rcnn_r50_fpn_gn-all_contrib_2x_coco.py
+    Metadata:
+      Training Memory (GB): 7.1
+      inference time (ms/im):
+        - value: 91.74
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 24
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.0
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP:  36.1
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gn/mask_rcnn_r50_fpn_gn-all_contrib_2x_coco/mask_rcnn_r50_fpn_gn-all_contrib_2x_coco_20200207-20d3e849.pth
+
+  - Name: mask_rcnn_r50_fpn_gn-all_contrib_3x_coco
+    In Collection: Group Normalization
+    Config: configs/gn/mask_rcnn_r50_fpn_gn-all_contrib_3x_coco.py
+    Metadata:
+      Training Memory (GB): 7.1
+      inference time (ms/im):
+        - value: 91.74
+          hardware: V100
+          backend: PyTorch
+          batch size: 1
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 36
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.1
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP:  36.2
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/gn/mask_rcnn_r50_fpn_gn-all_contrib_3x_coco/mask_rcnn_r50_fpn_gn-all_contrib_3x_coco_20200225-542aefbc.pth

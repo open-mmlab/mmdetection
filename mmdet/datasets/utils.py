@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import warnings
 
@@ -116,7 +117,7 @@ class NumClassCheckHook(Hook):
 
     def _check_head(self, runner):
         """Check whether the `num_classes` in head matches the length of
-        `CLASSSES` in `dataset`.
+        `CLASSES` in `dataset`.
 
         Args:
             runner (obj:`EpochBasedRunner`): Epoch based Runner.
@@ -130,6 +131,11 @@ class NumClassCheckHook(Hook):
                 f'check if it is consistent with the `num_classes` '
                 f'of head')
         else:
+            assert type(dataset.CLASSES) is not str, \
+                (f'`CLASSES` in {dataset.__class__.__name__}'
+                 f'should be a tuple of str.'
+                 f'Add comma if number of classes is 1 as '
+                 f'CLASSES = ({dataset.CLASSES},)')
             for name, module in model.named_modules():
                 if hasattr(module, 'num_classes') and not isinstance(
                         module, (RPNHead, VGG, FusedSemanticHead, GARPNHead)):

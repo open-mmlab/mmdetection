@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import collections
 
 from mmcv.utils import build_from_cfg
@@ -6,7 +7,7 @@ from ..builder import PIPELINES
 
 
 @PIPELINES.register_module()
-class Compose(object):
+class Compose:
     """Compose multiple transforms sequentially.
 
     Args:
