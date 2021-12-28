@@ -61,9 +61,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 最新的 **2.20.0** 版本已经在 2021.12.27 发布:
 - 支持了 ICCV 2021 Oral 方法 [TOOD](configs/tood/README.md): Task-aligned One-stage Object Detection
-- 支持了在非分布式测试时选择 GPU
 - 支持了自动从最新的存储参数节点恢复训练
-- 修复了一些文档、代码和链接上的问题
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/changelog.md)。
 

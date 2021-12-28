@@ -63,9 +63,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 **2.20.0** was released in 27/12/2021:
 
 - Support [TOOD](configs/tood/README.md): Task-aligned One-stage Object Detection (ICCV 2021 Oral)
-- Support selecting GPU-ids in non-distributed testing time
 - Support resuming from the latest checkpoint automatically
-- Fix some bugs in documentation, links and codes
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 

@@ -8,32 +8,25 @@
 - Support resuming from the latest checkpoint automatically (#6727)
 
 #### Bug Fixes
+
 - Fix yolox ci failed (#6864)
 - Fix wrong bbox loss_weight of the PAA head (#6744)
 - Fix the padding value of `gt_semantic_seg` in batch collating (#6837)
 - Fix test error of lvis when using `classwise` (#6845)
-- Avoid get_local_path bc-breaking (#6719)
-- Fix norm sync bug (#6852)
-- Cancel previous runs that are not completed in workflow (#6772)
+- Avoid BC-breaking of `get_local_path`  (#6719)
+- Fix bug in `sync_norm_hook` when the BN layer does not exist (#6852)
 - Use pycocotools directly no matter what platform it is (#6838)
 
 #### Improvements
+
 - Add unit test for SimOTA with no valid bbox (#6770)
 - Use precommit to check readme (#6802)
 - Support selecting GPU-ids in non-distributed testing time (#6781)
-
-#### Documents
-- Update docs/conf.py and docs_zh-CN/conf.py to use shared items (#6801)
-- Add MMRazor and MMSelfSup in readme (#6874)
-- Update comments in base detector (#6795)
-- Fix link (#6796)
-- Fix typo (#6865)
 
 #### Contributors
 
 A total of 12 developers contributed to this release.
 Thanks @ZwwWayne, @Czm369, @jshilong, @RangiLyu, @BIGWangYuDong, @hhaAndroid, @jamiechoi1995, @AronLin, @Keiku, @gkagkos, @fcakyon, @www516717402
-
 
 ### v2.19.1 (14/12/2021)
 
