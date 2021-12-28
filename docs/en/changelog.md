@@ -9,8 +9,7 @@
 
 #### Bug Fixes
 
-- Fix yolox ci failed (#6864)
-- Fix wrong bbox loss_weight of the PAA head (#6744)
+- Fix wrong bbox `loss_weight` of the PAA head (#6744)
 - Fix the padding value of `gt_semantic_seg` in batch collating (#6837)
 - Fix test error of lvis when using `classwise` (#6845)
 - Avoid BC-breaking of `get_local_path`  (#6719)
