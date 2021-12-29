@@ -288,8 +288,11 @@ class OpenImagesDataset(CustomDataset):
         assert len(metas) == len(self)
         for i in range(len(metas)):
             file_name = metas[i].data['filename'].split('/')[-1]
-            assert file_name == \
-                   self.data_infos[i].get('filename', None).split('/')[-1]
+            img_info = self.data_infos[i].get('img_info', None)
+            if img_info is not None:
+                assert file_name == img_info['filename'].split('/')[-1]
+            else:
+                assert file_name == self.data_infos[i]['filename']
             hw = metas[i].data['ori_shape'][:2]
             self.test_img_shapes.append(hw)
 
@@ -790,8 +793,9 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
         Returns:
             dict: Annotation info of specified index.
         """
-
-        return self.data_infos[idx]['ann_info']
+        # avoid some potential error
+        data_infos = copy.deepcopy(self.data_infos[idx]['ann_info'])
+        return data_infos
 
     def load_image_label_from_csv(self, image_level_ann_file):
         """Load image level annotations from csv style ann_file.
