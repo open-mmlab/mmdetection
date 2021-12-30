@@ -13,10 +13,10 @@
   <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
 
-[📘Documentation](https://mmdetection.readthedocs.io/en/v2.19.1/) |
-[🛠️Installation](https://mmdetection.readthedocs.io/en/v2.19.1/get_started.html) |
-[👀Model Zoo](https://mmdetection.readthedocs.io/en/v2.19.1/model_zoo.html) |
-[🆕Update News](https://mmdetection.readthedocs.io/en/v2.19.1/changelog.html) |
+[📘Documentation](https://mmdetection.readthedocs.io/en/v2.20.0/) |
+[🛠️Installation](https://mmdetection.readthedocs.io/en/v2.20.0/get_started.html) |
+[👀Model Zoo](https://mmdetection.readthedocs.io/en/v2.20.0/model_zoo.html) |
+[🆕Update News](https://mmdetection.readthedocs.io/en/v2.20.0/changelog.html) |
 [🚀Ongoing Projects](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔Reporting Issues](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
@@ -60,11 +60,10 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-**2.19.1** was released in 14/12/2021:
+**2.20.0** was released in 27/12/2021:
 
-- Release [YOLOX](configs/yolox/README.md) COCO pretrained models
-- Add abstract and sketch of the papers in readmes
-- Fix some weight initialization bugs
+- Support [TOOD](configs/tood/README.md): Task-aligned One-stage Object Detection (ICCV 2021 Oral)
+- Support resuming from the latest checkpoint automatically
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 
@@ -149,6 +148,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
 - [x] [YOLOX (ArXiv'2021)](configs/yolox/README.md)
 - [x] [SOLO (ECCV'2020)](configs/solo/README.md)
 - [x] [QueryInst (ICCV'2021)](configs/queryinst/README.md)
+- [x] [TOOD (ICCV'2021)](configs/tood/README.md)
 </details>
 
 Some other methods are also supported in [projects using MMDetection](./docs/en/projects.md).
@@ -209,3 +209,5 @@ If you use this toolbox or benchmark in your research, please cite this project.
 - [MMFlow](https://github.com/open-mmlab/mmflow): OpenMMLab optical flow toolbox and benchmark.
 - [MMFewShot](https://github.com/open-mmlab/mmfewshot): OpenMMLab fewshot learning toolbox and benchmark.
 - [MMHuman3D](https://github.com/open-mmlab/mmhuman3d): OpenMMLab 3D human parametric model toolbox and benchmark.
+- [MMSelfSup](https://github.com/open-mmlab/mmselfsup): OpenMMLab self-supervised learning toolbox and benchmark.
+- [MMRazor](https://github.com/open-mmlab/mmrazor): OpenMMLab Model Compression Toolbox and Benchmark.

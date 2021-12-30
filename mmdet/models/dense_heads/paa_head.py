@@ -248,7 +248,7 @@ class PAAHead(ATSSHead):
             pos_bbox_pred,
             pos_bbox_target,
             pos_bbox_weight,
-            avg_factor=self.loss_cls.loss_weight,
+            avg_factor=self.loss_bbox.loss_weight,
             reduction_override='none')
 
         loss_cls = loss_cls.sum(-1)

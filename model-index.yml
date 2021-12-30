@@ -1,6 +1,7 @@
 Import:
   - configs/atss/metafile.yml
   - configs/autoassign/metafile.yml
+  - configs/carafe/metafile.yml
   - configs/cascade_rcnn/metafile.yml
   - configs/centernet/metafile.yml
   - configs/centripetalnet/metafile.yml
@@ -15,7 +16,6 @@ Import:
   - configs/faster_rcnn/metafile.yml
   - configs/fcos/metafile.yml
   - configs/foveabox/metafile.yml
-  - configs/fp16/metafile.yml
   - configs/fpg/metafile.yml
   - configs/free_anchor/metafile.yml
   - configs/fsaf/metafile.yml
@@ -38,9 +38,11 @@ Import:
   - configs/nas_fpn/metafile.yml
   - configs/paa/metafile.yml
   - configs/pafpn/metafile.yml
+  - configs/panoptic_fpn/metafile.yml
   - configs/pvt/metafile.yml
   - configs/pisa/metafile.yml
   - configs/point_rend/metafile.yml
+  - configs/queryinst/metafile.yml
   - configs/regnet/metafile.yml
   - configs/reppoints/metafile.yml
   - configs/res2net/metafile.yml
@@ -49,14 +51,15 @@ Import:
   - configs/sabl/metafile.yml
   - configs/scnet/metafile.yml
   - configs/scratch/metafile.yml
+  - configs/seesaw_loss/metafile.yml
   - configs/sparse_rcnn/metafile.yml
   - configs/solo/metafile.yml
   - configs/ssd/metafile.yml
+  - configs/swin/metafile.yml
   - configs/tridentnet/metafile.yml
+  - configs/tood/metafile.yml
   - configs/vfnet/metafile.yml
   - configs/yolact/metafile.yml
   - configs/yolo/metafile.yml
   - configs/yolof/metafile.yml
   - configs/yolox/metafile.yml
-  - configs/swin/metafile.yml
-  - configs/strong_baselines/metafile.yml
