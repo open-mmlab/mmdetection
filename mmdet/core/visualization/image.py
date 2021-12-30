@@ -52,13 +52,15 @@ def imshow_det_bboxes(img,
         segms (ndarray or None): Masks, shaped (n,h,w) or None
         class_names (list[str]): Names of each classes.
         score_thr (float): Minimum score of bboxes to be shown.  Default: 0
-        bbox_color (str or tuple(int) or :obj:`Color`):Color of bbox lines.
-           The tuple of color should be in BGR order. Default: 'green'
-        text_color (str or tuple(int) or :obj:`Color`):Color of texts.
-           The tuple of color should be in BGR order. Default: 'green'
-        mask_color (str or tuple(int) or :obj:`Color`, optional):
-           Color of masks. The tuple of color should be in BGR order.
-           Default: None
+        bbox_color (list[tuple]/tuple/str/None):Colors of bbox lines.
+           If a single color is given, it will be applied to all classes.
+           The tuple of color should be in RGB order. Default: 'green'
+        text_color (list[tuple]/tuple/str/None):Colors of texts.
+           If a single color is given, it will be applied to all classes.
+           The tuple of color should be in RGB order. Default: 'green'
+        mask_color (list[tuple]/tuple/str/None, optional):Colors of masks.
+           If a single color is given, it will be applied to all classes.
+           The tuple of color should be in RGB order. Default: None
         thickness (int): Thickness of lines. Default: 2
         font_size (int): Font size of texts. Default: 13
         show (bool): Whether to show the image. Default: True
@@ -202,20 +204,24 @@ def imshow_gt_det_bboxes(img,
           (bbox, segm) or just bbox.
       class_names (list[str]): Names of each classes.
       score_thr (float): Minimum score of bboxes to be shown.  Default: 0
-      gt_bbox_color (str or tuple(int) or :obj:`Color`):Color of bbox lines.
-           The tuple of color should be in BGR order. Default: (255, 102, 61)
-      gt_text_color (str or tuple(int) or :obj:`Color`):Color of texts.
-           The tuple of color should be in BGR order. Default: (255, 102, 61)
-      gt_mask_color (str or tuple(int) or :obj:`Color`, optional):
-           Color of masks. The tuple of color should be in BGR order.
-           Default: (255, 102, 61)
-      det_bbox_color (str or tuple(int) or :obj:`Color`):Color of bbox lines.
-           The tuple of color should be in BGR order. Default: (72, 101, 241)
-      det_text_color (str or tuple(int) or :obj:`Color`):Color of texts.
-           The tuple of color should be in BGR order. Default: (72, 101, 241)
-      det_mask_color (str or tuple(int) or :obj:`Color`, optional):
-           Color of masks. The tuple of color should be in BGR order.
-           Default: (72, 101, 241)
+      gt_bbox_color (list[tuple]/tuple/str/None):Colors of bbox lines.
+           If a single color is given, it will be applied to all classes.
+           The tuple of color should be in RGB order. Default: (255, 102, 61)
+      gt_text_color (list[tuple]/tuple/str/None):Colors of texts.
+           If a single color is given, it will be applied to all classes.
+           The tuple of color should be in RGB order. Default: (255, 102, 61)
+      gt_mask_color (list[tuple]/tuple/str/None, optional):Colors of masks.
+           If a single color is given, it will be applied to all classes.
+           The tuple of color should be in RGB order. Default: (255, 102, 61)
+      det_bbox_color (list[tuple]/tuple/str/None):Colors of bbox lines.
+           If a single color is given, it will be applied to all classes.
+           The tuple of color should be in RGB order. Default: (72, 101, 241)
+      det_text_color (list[tuple]/tuple/str/None):Colors of texts.
+           If a single color is given, it will be applied to all classes.
+           The tuple of color should be in RGB order. Default: (72, 101, 241)
+      det_mask_color (list[tuple]/tuple/str/None, optional): Color of masks.
+           If a single color is given, it will be applied to all classes.
+           The tuple of color should be in RGB order. Default: (72, 101, 241)
       thickness (int): Thickness of lines. Default: 2
       font_size (int): Font size of texts. Default: 13
       win_name (str): The window name. Default: ''
