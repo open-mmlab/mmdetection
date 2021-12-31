@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
+import torch.nn.functional as F
 
 from mmdet.core.bbox.iou_calculators import bbox_overlaps
 from mmdet.core.bbox.transforms import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
@@ -204,16 +205,16 @@ class DiceCost:
     def binary_mask_dice_loss(self, mask_preds, gt_masks):
         """
         Args:
-            mask_preds (Tensor): Mask prediction in shape (N1, H, W).
-            gt_masks (Tensor): Ground truth in shape (N2, H, W)
+            mask_preds (Tensor): Mask prediction in shape (num_query, *).
+            gt_masks (Tensor): Ground truth in shape (num_gt, *)
                 store 0 or 1, 0 for negative class and 1 for
                 positive class.
 
         Returns:
-            Tensor: Dice cost matrix in shape (N1, N2).
+            Tensor: Dice cost matrix in shape (num_query, num_gt).
         """
-        mask_preds = mask_preds.reshape((mask_preds.shape[0], -1))
-        gt_masks = gt_masks.reshape((gt_masks.shape[0], -1)).float()
+        mask_preds = mask_preds.flatten(1)
+        gt_masks = gt_masks.flatten(1).float()
         numerator = 2 * torch.einsum('nc,mc->nm', mask_preds, gt_masks)
         denominator = mask_preds.sum(-1)[:, None] + gt_masks.sum(-1)[None, :]
         loss = 1 - (numerator + self.eps) / (denominator + self.eps)
@@ -222,11 +223,11 @@ class DiceCost:
     def __call__(self, mask_preds, gt_masks):
         """
         Args:
-            mask_preds (Tensor): Mask prediction logits in shape (N1, H, W).
-            gt_masks (Tensor): Ground truth in shape (N2, H, W).
+            mask_preds (Tensor): Mask prediction logits in shape (num_query, *)
+            gt_masks (Tensor): Ground truth in shape (num_gt, *)
 
         Returns:
-            Tensor: Dice cost matrix in shape (N1, N2).
+            Tensor: Dice cost matrix with weight in shape (num_query, num_gt).
         """
         if self.pred_act:
             mask_preds = mask_preds.sigmoid()
@@ -248,17 +249,18 @@ class MaskFocalLossCost(FocalLossCost):
     def __call__(self, cls_pred, gt_labels):
         """
         Args:
-            cls_pred (Tensor): Mask prediction logits
-                in shape (N1, H, W), dtype=torch.float32.
-            gt_labels (Tensor): Ground truth in shape (N2, H, W),
+            cls_pred (Tensor): Predicted classfication logits
+                in shape (num_query, *), dtype=torch.float32.
+            gt_labels (Tensor): Ground truth in shape (num_gt, *),
                 dtype=torch.long.
 
         Returns:
-            Tensor: Mask focal loss cost matrix in shape (N1, N2).
+            Tensor: Focal cost matrix with weight in shape
+                (num_query, num_gt).
         """
-        cls_pred = cls_pred.reshape((cls_pred.shape[0], -1))
-        gt_labels = gt_labels.reshape((gt_labels.shape[0], -1)).float()
-        hw = cls_pred.shape[1]
+        cls_pred = cls_pred.flatten(1)
+        gt_labels = gt_labels.flatten(1).float()
+        n = cls_pred.shape[1]
         cls_pred = cls_pred.sigmoid()
         neg_cost = -(1 - cls_pred + self.eps).log() * (
             1 - self.alpha) * cls_pred.pow(self.gamma)
@@ -267,4 +269,98 @@ class MaskFocalLossCost(FocalLossCost):
 
         cls_cost = torch.einsum('nc,mc->nm', pos_cost, gt_labels) + \
             torch.einsum('nc,mc->nm', neg_cost, (1 - gt_labels))
-        return cls_cost / hw * self.weight
+        return cls_cost / n * self.weight
+
+
+@MATCH_COST.register_module()
+class CrossEntropyLossCost:
+    """CrossEntropyLossCost.
+
+    Args:
+        weight (int | float, optional): loss weight. Defaults to 1.
+        use_sigmoid (bool, optional): Whether the prediction uses sigmoid
+                of softmax. Defaults to False.
+    Examples:
+         >>> from mmdet.core.bbox.match_costs import CrossEntropyLossCost
+         >>> import torch
+         >>> bce = CrossEntropyLossCost(use_sigmoid=True)
+         >>> cls_pred = torch.tensor([[7.6, 1.2], [-1.3, 10]])
+         >>> gt_labels = torch.tensor([[1, 1], [1, 0]])
+         >>> print(bce(cls_pred, gt_labels))
+
+         >>> ce = CrossEntropyLossCost()
+         >>> cls_pred = torch.tensor(
+            [[[0.3, 0.5, 0.2], [0.1, 0.1, 0.8]], [[1, 2, 3], [6, 2, 1]]]
+         ).transpose(-2, -1)
+         >>> gt_labels = torch.tensor([[1, 2], [2, 0], [0, 0]])
+         >>> print(ce(cls_pred, gt_labels))
+    """
+
+    def __init__(self, weight=1., use_sigmoid=False):
+        self.weight = weight
+        self.use_sigmoid = use_sigmoid
+
+    def _binary_cross_entropy(self, cls_pred, gt_labels):
+        """
+        Args:
+            cls_pred (Tensor): The prediction with shape (num_query, 1, *) or
+                (num_query, *).
+            gt_labels (Tensor): The learning label of prediction with
+                shape (num_gt, *).
+
+        Returns:
+            Tensor: Cross entropy cost matrix in shape (num_query, num_gt).
+        """
+        cls_pred = cls_pred.flatten(1).float()
+        gt_labels = gt_labels.flatten(1).float()
+        n = cls_pred.shape[1]
+        pos = F.binary_cross_entropy_with_logits(
+            cls_pred, torch.ones_like(cls_pred), reduction='none')
+        neg = F.binary_cross_entropy_with_logits(
+            cls_pred, torch.zeros_like(cls_pred), reduction='none')
+        cls_cost = torch.einsum('nc,mc->nm', pos, gt_labels) + \
+            torch.einsum('nc,mc->nm', neg, 1 - gt_labels)
+        cls_cost = cls_cost / n
+
+        return cls_cost
+
+    def _cross_entropy(self, cls_pred, gt_labels):
+        """
+        Args:
+            cls_pred (Tensor): The prediction with shape (num_query, C, *),
+                C is num_class.
+            gt_labels (Tensor): The learning label of prediction with
+                shape (num_gt, *).
+
+        Returns:
+            Tensor: Cross entropy cost matrix in shape (num_query, num_gt).
+        """
+        num_query = cls_pred.shape[0]
+        num_gt = gt_labels.shape[0]
+        cls_pred = cls_pred.flatten(2).unsqueeze(1).repeat(
+            (1, num_gt, 1, 1)).flatten(0, 1)
+        gt_labels = gt_labels.flatten(1).unsqueeze(0).repeat(num_query, 1,
+                                                             1).flatten(0, 1)
+        n = gt_labels.shape[-1]
+        cls_cost = F.cross_entropy(cls_pred, gt_labels, reduction='none')
+        cls_cost = cls_cost.sum(-1).reshape((num_query, num_gt))
+        cls_cost = cls_cost / n
+
+        return cls_cost
+
+    def __call__(self, cls_pred, gt_labels):
+        """
+        Args:
+            cls_pred (Tensor): Predicted classification logits.
+            gt_labels (Tensor): Labels.
+
+        Returns:
+            Tensor: Cross entropy cost matrix with weight in
+                shape (num_query, num_gt).
+        """
+        if self.use_sigmoid:
+            cls_cost = self._binary_cross_entropy(cls_pred, gt_labels)
+        else:
+            cls_cost = self._cross_entropy(cls_pred, gt_labels)
+
+        return cls_cost * self.weight
