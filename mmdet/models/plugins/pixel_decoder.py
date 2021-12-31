@@ -88,16 +88,16 @@ class PixelDecoder(BaseModule):
         """
         Args:
             feats (list[Tensor]): Feature maps of each level. Each has
-                shape of [bs, c, h, w].
+                shape of (batch_size, c, h, w).
             img_metas (list[dict]): List of image information. Pass in
                 for creating more accurate padding mask. #! not used here.
 
         Returns:
             tuple: a tuple containing the following:
 
-                - mask_feature (Tensor): Shape [bs, c, h, w].
+                - mask_feature (Tensor): Shape (batch_size, c, h, w).
                 - memory (Tensor): Output of last stage of backbone.
-                    Shape [bs, c, h, w].
+                    Shape (batch_size, c, h, w).
         """
         y = self.last_feat_conv(feats[-1])
         for i in range(self.num_inputs - 2, -1, -1):
@@ -189,15 +189,15 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
         """
         Args:
             feats (list[Tensor]): Feature maps of each level. Each has
-                shape of [bs, c, h, w].
+                shape of (batch_size, c, h, w).
             img_metas (list[dict]): List of image information. Pass in
                 for creating more accurate padding mask.
 
         Returns:
             tuple: a tuple containing the following:
 
-                - mask_feature (Tensor): shape [bs, c, h, w].
-                - memory (Tensor): shape [bs, c, h, w].
+                - mask_feature (Tensor): shape (batch_size, c, h, w).
+                - memory (Tensor): shape (batch_size, c, h, w).
         """
         feat_last = feats[-1]
         bs, c, h, w = feat_last.shape
@@ -214,17 +214,18 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
 
         pos_embed = self.positional_encoding(padding_mask)
         feat_last = self.encoder_in_proj(feat_last)
-        # [bs, c, h, w] -> [nq, bs, dim]
+        # (batch_size, c, h, w) -> (num_queries, batch_size, c)
         feat_last = feat_last.flatten(2).permute(2, 0, 1)
         pos_embed = pos_embed.flatten(2).permute(2, 0, 1)
-        padding_mask = padding_mask.flatten(1)  # [bs, h, w] -> [bs, h*w]
+        # (batch_size, h, w) -> (batch_size, h*w)
+        padding_mask = padding_mask.flatten(1)
         memory = self.encoder(
             query=feat_last,
             key=None,
             value=None,
             query_pos=pos_embed,
             query_key_padding_mask=padding_mask)
-        # [nq, bs, em] -> [bs, c, h, w]
+        # (num_queries, batch_size, c) -> (batch_size, c, h, w)
         memory = memory.permute(1, 2, 0).view(bs, self.encoder_embed_dims, h,
                                               w)
         y = self.encoder_out_proj(memory)
