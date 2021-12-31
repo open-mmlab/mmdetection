@@ -1,6 +1,6 @@
 # Strong Baselines
 
-We train Mask R-CNN with large-scale jittor and longer schedule as strong baselines.
+We train Mask R-CNN with large-scale jitter and longer schedule as strong baselines.
 The modifications follow those in [Detectron2](https://github.com/facebookresearch/detectron2/tree/master/configs/new_baselines).
 
 ## Results and models

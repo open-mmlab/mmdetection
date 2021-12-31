@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 import torch.nn.functional as F
 from mmcv.cnn import PLUGIN_LAYERS, Conv2d, ConvModule, kaiming_init

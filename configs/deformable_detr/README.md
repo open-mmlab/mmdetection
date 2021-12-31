@@ -1,6 +1,20 @@
-# Deformable DETR
+# Deformable DETR: Deformable Transformers for End-to-End Object Detection
 
-## Introduction
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+DETR has been recently proposed to eliminate the need for many hand-designed components in object detection while demonstrating good performance. However, it suffers from slow convergence and limited feature spatial resolution, due to the limitation of Transformer attention modules in processing image feature maps. To mitigate these issues, we proposed Deformable DETR, whose attention modules only attend to a small set of key sampling points around a reference. Deformable DETR can achieve better performance than DETR (especially on small objects) with 10 times less training epochs. Extensive experiments on the COCO benchmark demonstrate the effectiveness of our approach.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143877617-ad9b24fd-77ce-46aa-9689-1a44b5594132.png"/>
+</div>
+
+<!-- [PAPER_TITLE: Deformable DETR: Deformable Transformers for End-to-End Object Detection] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/2010.04159] -->
+
+## Citation
 
 <!-- [ALGORITHM] -->
 

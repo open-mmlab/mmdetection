@@ -1,6 +1,20 @@
 # Gradient Harmonized Single-stage Detector
 
-## Introduction
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+Despite the great success of two-stage detectors, single-stage detector is still a more elegant and efficient way, yet suffers from the two well-known disharmonies during training, i.e. the huge difference in quantity between positive and negative examples as well as between easy and hard examples. In this work, we first point out that the essential effect of the two disharmonies can be summarized in term of the gradient. Further, we propose a novel gradient harmonizing mechanism (GHM) to be a hedging for the disharmonies. The philosophy behind GHM can be easily embedded into both classification loss function like cross-entropy (CE) and regression loss function like smooth-L1 (SL1) loss. To this end, two novel loss functions called GHM-C and GHM-R are designed to balancing the gradient flow for anchor classification and bounding box refinement, respectively. Ablation study on MS COCO demonstrates that without laborious hyper-parameter tuning, both GHM-C and GHM-R can bring substantial improvement for single-stage detector. Without any whistles and bells, our model achieves 41.6 mAP on COCO test-dev set which surpasses the state-of-the-art method, Focal Loss (FL) + SL1, by 0.8.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143889057-0341f32b-1291-4b9a-8444-52ad266ae709.png"/>
+</div>
+
+<!-- [PAPER_TITLE: Gradient Harmonized Single-stage Detector] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/1811.05181] -->
+
+## Citation
 
 <!-- [ALGORITHM] -->
 

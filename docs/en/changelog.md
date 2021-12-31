@@ -1,5 +1,66 @@
 ## Changelog
 
+### v2.20.0 (27/12/2021)
+
+#### New Features
+
+- Support [TOOD](configs/tood/README.md): Task-aligned One-stage Object Detection (ICCV 2021 Oral) (#6746)
+- Support resuming from the latest checkpoint automatically (#6727)
+
+#### Bug Fixes
+
+- Fix wrong bbox `loss_weight` of the PAA head (#6744)
+- Fix the padding value of `gt_semantic_seg` in batch collating (#6837)
+- Fix test error of lvis when using `classwise` (#6845)
+- Avoid BC-breaking of `get_local_path`  (#6719)
+- Fix bug in `sync_norm_hook` when the BN layer does not exist (#6852)
+- Use pycocotools directly no matter what platform it is (#6838)
+
+#### Improvements
+
+- Add unit test for SimOTA with no valid bbox (#6770)
+- Use precommit to check readme (#6802)
+- Support selecting GPU-ids in non-distributed testing time (#6781)
+
+#### Contributors
+
+A total of 12 developers contributed to this release.
+Thanks @ZwwWayne, @Czm369, @jshilong, @RangiLyu, @BIGWangYuDong, @hhaAndroid, @jamiechoi1995, @AronLin, @Keiku, @gkagkos, @fcakyon, @www516717402
+
+### v2.19.1 (14/12/2021)
+
+#### New Features
+
+- Release [YOLOX](configs/yolox/README.md) COCO pretrained models (#6698)
+
+#### Bug Fixes
+
+- Fix DCN initialization in DenseHead (#6625)
+- Fix initialization of ConvFCHead (#6624)
+- Fix PseudoSampler in RCNN (#6622)
+- Fix weight initialization in Swin and PVT (#6663)
+- Fix dtype bug in BaseDenseHead (#6767)
+- Fix SimOTA with no valid bbox (#6733)
+
+#### Improvements
+
+- Add an example of combining swin and one-stage models (#6621)
+- Add `get_ann_info` to dataset_wrappers (#6526)
+- Support keeping image ratio in the multi-scale training of YOLOX (#6732)
+- Support `bbox_clip_border` for the augmentations of YOLOX (#6730)
+
+#### Documents
+
+- Update metafile (#6717)
+- Add mmhuman3d in readme (#6699)
+- Update FAQ docs (#6587)
+- Add doc for `detect_anomalous_params` (#6697)
+
+#### Contributors
+
+A total of 11 developers contributed to this release.
+Thanks @ZwwWayne, @LJoson, @Czm369, @jshilong, @ZCMax, @RangiLyu, @BIGWangYuDong, @hhaAndroid, @zhaoxin111, @GT9505, @shinya7y
+
 ### v2.19.0 (29/11/2021)
 
 #### Highlights
@@ -67,7 +128,7 @@ Thanks @FloydHsiu, @RangiLyu, @ZwwWayne, @AndreaPi, @st9007a, @hachreak, @BIGWan
 
 #### Documents
 
-- Chinese version of [Corruption Benchmarking](docs/robustness_benchmarking.mddocs/robustness_benchmarking.md) (#6375)
+- Chinese version of [Corruption Benchmarking](robustness_benchmarking.md) (#6375)
 - Fix config path in docs (#6396)
 - Update GRoIE readme (#6401)
 

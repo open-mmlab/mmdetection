@@ -1,8 +1,22 @@
 # ResNeSt: Split-Attention Networks
 
-## Introduction
+## Abstract
 
-[BACKBONE]
+<!-- [ABSTRACT] -->
+
+It is well known that featuremap attention and multi-path representation are important for visual recognition. In this paper, we present a modularized architecture, which applies the channel-wise attention on different network branches to leverage their success in capturing cross-feature interactions and learning diverse representations. Our design results in a simple and unified computation block, which can be parameterized using only a few variables. Our model, named ResNeSt, outperforms EfficientNet in accuracy and latency trade-off on image classification. In addition, ResNeSt has achieved superior transfer learning results on several public benchmarks serving as the backbone, and has been adopted by the winning entries of COCO-LVIS challenge.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143973475-b5b33b15-ed04-4fc6-890a-521f1a62bc52.png"/>
+</div>
+
+<!-- [PAPER_TITLE: ResNeSt: Split-Attention Networks] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/2004.08955] -->
+
+## Citation
+
+<!-- [BACKBONE] -->
 
 ```latex
 @article{zhang2020resnest,

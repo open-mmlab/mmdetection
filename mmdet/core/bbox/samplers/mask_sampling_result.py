@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 """copy from
 https://github.com/ZwwWayne/K-Net/blob/main/knet/det/mask_pseudo_sampler.py."""
 

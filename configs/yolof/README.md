@@ -1,6 +1,20 @@
 # You Only Look One-level Feature
 
-## Introduction
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+This paper revisits feature pyramids networks (FPN) for one-stage detectors and points out that the success of FPN is due to its divide-and-conquer solution to the optimization problem in object detection rather than multi-scale feature fusion. From the perspective of optimization, we introduce an alternative way to address the problem instead of adopting the complex feature pyramids - {\em utilizing only one-level feature for detection}. Based on the simple and efficient solution, we present You Only Look One-level Feature (YOLOF). In our method, two key components, Dilated Encoder and Uniform Matching, are proposed and bring considerable improvements. Extensive experiments on the COCO benchmark prove the effectiveness of the proposed model. Our YOLOF achieves comparable results with its feature pyramids counterpart RetinaNet while being 2.5× faster. Without transformer layers, YOLOF can match the performance of DETR in a single-level feature manner with 7× less training epochs. With an image size of 608×608, YOLOF achieves 44.3 mAP running at 60 fps on 2080Ti, which is 13% faster than YOLOv4.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/144001639-257374ef-7d4f-412b-a783-88abdd22f277.png"/>
+</div>
+
+<!-- [PAPER_TITLE: You Only Look One-level Feature] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/2103.09460] -->
+
+## Citation
 
 <!-- [ALGORITHM] -->
 
