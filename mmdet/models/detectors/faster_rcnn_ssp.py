@@ -1,3 +1,5 @@
+import warnings
+
 import torch
 import torch.nn as nn
 import cv2
@@ -22,10 +24,14 @@ class TwoStageDetector(BaseDetector):
                  roi_head=None,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None):
-        super(TwoStageDetector, self).__init__()
+                 pretrained=None,
+                 init_cfg=None):
+        super(TwoStageDetector, self).__init__(init_cfg)
+        if pretrained:
+            warnings.warn('DeprecationWarning: pretrained is deprecated, '
+                          'please use "init_cfg" instead')
+            backbone.pretrained = pretrained
         self.backbone = build_backbone(backbone)
-        self.iou_calculator = build_iou_calculator(dict(type='BboxOverlaps2D'))
 
         if neck is not None:
             self.neck = build_neck(neck)
@@ -42,12 +48,14 @@ class TwoStageDetector(BaseDetector):
             rcnn_train_cfg = train_cfg.rcnn if train_cfg is not None else None
             roi_head.update(train_cfg=rcnn_train_cfg)
             roi_head.update(test_cfg=test_cfg.rcnn)
+            roi_head.pretrained = pretrained
             self.roi_head = build_head(roi_head)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
-        self.init_weights(pretrained=pretrained)
+        self.iou_calculator = build_iou_calculator(dict(type='BboxOverlaps2D'))
+        # self.init_weights(pretrained=pretrained)
         self.att_loss = Heatmap()
 
     @property
@@ -59,27 +67,6 @@ class TwoStageDetector(BaseDetector):
     def with_roi_head(self):
         """bool: whether the detector has a RoI head"""
         return hasattr(self, 'roi_head') and self.roi_head is not None
-
-    def init_weights(self, pretrained=None):
-        """Initialize the weights in detector.
-
-        Args:
-            pretrained (str, optional): Path to pre-trained weights.
-                Defaults to None.
-        """
-        # super(TwoStageDetector, self).init_weights(pretrained)
-        super(TwoStageDetector, self).init_weights()
-        self.backbone.init_weights(pretrained=pretrained)
-        if self.with_neck:
-            if isinstance(self.neck, nn.Sequential):
-                for m in self.neck:
-                    m.init_weights()
-            else:
-                self.neck.init_weights()
-        if self.with_rpn:
-            self.rpn_head.init_weights()
-        if self.with_roi_head:
-            self.roi_head.init_weights(pretrained)
 
     def extract_feat(self, img):
         """Directly extract features from the backbone+neck."""
@@ -95,7 +82,7 @@ class TwoStageDetector(BaseDetector):
     def forward_dummy(self, img):
         """Used for computing network flops.
 
-        See `mmdetection/tools/get_flops.py`
+        See `mmdetection/tools/analysis_tools/get_flops.py`
         """
         outs = ()
         # backbone
@@ -197,9 +184,9 @@ class TwoStageDetector(BaseDetector):
 
     def simple_test(self, img, img_metas, proposals=None, rescale=False):
         """Test without augmentation."""
+
         assert self.with_bbox, 'Bbox head must be implemented.'
         x = self.extract_feat(img)
-
         if proposals is None:
             proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
         else:
@@ -214,148 +201,105 @@ class TwoStageDetector(BaseDetector):
         If rescale is False, then returned bboxes and masks will fit the scale
         of imgs[0].
         """
+        # original:
+        # x = self.extract_feats(imgs)
+        # proposal_list = self.rpn_head.aug_test_rpn(x, img_metas)
+        # return self.roi_head.aug_test(
+        #     x, proposal_list, img_metas, rescale=rescale)
+
+        # modified by hui #####################################
+        if self.test_cfg.rcnn.get('do_tile_as_aug', False):
+            x = self.extract_feats(imgs)
+            proposal_list = self.rpn_head.aug_test_rpn(x, img_metas)
+            return self.roi_head.aug_test(
+                x, proposal_list, img_metas, rescale=rescale)
+        else:
+            return self.tile_aug_test(imgs, img_metas, rescale)
+        ##########################################################################
+
+    #  add by hui ######################################################################
+    def tile_aug_test(self, imgs, img_metas, rescale=False):
+        """Test with augmentations for each tile seperatelly.
+
+        If rescale is False, then returned bboxes and masks will fit the scale
+        of imgs[0].
+        """
         x = self.extract_feats(imgs)
-        proposal_list = self.rpn_head.aug_test_rpn(x, img_metas)
 
-        return self.roi_head.aug_test(
-            x, proposal_list, img_metas, rescale=rescale)
+        assert len(x) == len(img_metas)
+        assert not self.roi_head.with_mask
+        tile2img_metas = {}
+        tile2feats = {}
+        for feat, img_meta in zip(x, img_metas):
+            assert len(img_meta) == 1
+            tile_off = img_meta[0].pop('tile_offset')  # must pop here, attention.
+            if tile_off in tile2img_metas:
+                tile2img_metas[tile_off].append(img_meta)
+                tile2feats[tile_off].append(feat)
+            else:
+                tile2img_metas[tile_off] = [img_meta]
+                tile2feats[tile_off] = [feat]
 
-    @staticmethod
-    def show_img(imgs, window_names=None, wait_time_ms=0, is_merge=False, row_col_num=(1, -1)):
-        """
-        Displays an image or a list of images in specified windows or self-initiated windows.
-        You can also control display wait time by parameter 'wait_time_ms'.
-        Additionally, this function provides an optional parameter 'is_merge' to
-        decide whether to display all imgs in a particular window 'merge'.
-        Besides, parameter 'row_col_num' supports user specified merge format.
-        Notice, specified format must be greater than or equal to imgs number.
+        # forward and merge all result on each tile
+        all_tile_bboxes = []
+        all_tile_labels = []
+        num_classes = 0
+        for tile_off, img_metas in tile2img_metas.items():
+            x = tile2feats[tile_off]
+            proposal_list = self.rpn_head.aug_test_rpn(x, img_metas)
+            bboxes = self.roi_head.aug_test(x, proposal_list, img_metas, rescale=rescale)[0]
 
-        :param imgs: numpy.ndarray or list.
-        :param window_names: specified or None, if None, function will create different windows as '1', '2'.
-        :param wait_time_ms: display wait time.
-        :param is_merge: whether to merge all images.
-        :param row_col_num: merge format. default is (1, -1), image will line up to show.
-                            example=(2, 5), images will display in two rows and five columns.
-        """
-        if not isinstance(imgs, list):
-            imgs = [imgs]
+            device = x[0][0].device
+            dx, dy = tile_off
+            labels = []
+            num_classes = max(num_classes, len(bboxes))
+            for cls in range(len(bboxes)):
+                bboxes[cls][:, [0, 2]] += dx
+                bboxes[cls][:, [1, 3]] += dy
+                label = torch.zeros((len(bboxes[cls]),), dtype=torch.long, device=device) + cls
+                labels.append(label)
+            all_tile_bboxes.extend(bboxes)
+            all_tile_labels.extend(labels)
+        import numpy as np
+        all_tile_bboxes = np.concatenate(all_tile_bboxes, axis=0)
+        all_tile_bboxes = torch.from_numpy(all_tile_bboxes).to(device)
+        all_tile_labels = torch.cat(all_tile_labels, dim=0)
 
-        if window_names is None:
-            window_names = list(range(len(imgs)))
+        # performance NMS
+        if len(all_tile_bboxes) > 0:
+            from mmcv.ops.nms import batched_nms
+            dets, keep = batched_nms(all_tile_bboxes[:, :4], all_tile_bboxes[:, 4].contiguous(),
+                                     all_tile_labels, self.test_cfg.rcnn.nms)
+            max_num = self.test_cfg.rcnn.max_per_img
+            if max_num > 0:
+                dets = dets[:max_num]
+                keep = keep[:max_num]
+            det_bboxes, det_labels = dets, all_tile_labels[keep]
         else:
-            if not isinstance(window_names, list):
-                window_names = [window_names]
-            assert len(imgs) == len(window_names), 'window names does not match images!'
+            det_bboxes, det_labels = torch.zeros((0, 5)), torch.zeros((0,))
 
-        if is_merge:
-            merge_imgs = TwoStageDetector.merge_imgs(imgs, row_col_num)
+        from mmdet.core import bbox2result
+        bbox_results = bbox2result(det_bboxes, det_labels, num_classes)
+        return [bbox_results]
 
-            cv2.namedWindow('merge', 0)
-            cv2.imshow('merge', merge_imgs)
+    ##################################################################
+
+    def onnx_export(self, img, img_metas):
+
+        img_shape = torch._shape_as_tensor(img)[2:]
+        img_metas[0]['img_shape_for_onnx'] = img_shape
+        x = self.extract_feat(img)
+        proposals = self.rpn_head.onnx_export(x, img_metas)
+        if hasattr(self.roi_head, 'onnx_export'):
+            return self.roi_head.onnx_export(x, proposals, img_metas)
         else:
-            for img, win_name in zip(imgs, window_names):
-                if img is None:
-                    continue
-                win_name = str(win_name)
-                cv2.namedWindow(win_name, 0)
-                cv2.imshow(win_name, img)
-
-        cv2.waitKey(wait_time_ms)
-
-    @staticmethod
-    def merge_imgs(imgs, row_col_num):
-        """
-        Merges all input images as an image with specified merge format.
-
-        :param imgs : img list
-        :param row_col_num : number of rows and columns displayed
-        :return img : merges img
-        """
-
-        # from ..visualtools import random_color
-
-        length = len(imgs)
-        row, col = row_col_num
-
-        assert row > 0 or col > 0, 'row and col cannot be negative at same time!'
-        # color = random_color(rgb=True).astype(np.float64)
-        color = (0, 0, 255)
-        for img in imgs:
-            cv2.rectangle(img, (0, 0), (img.shape[1], img.shape[0]), color)
-
-        if row_col_num[1] < 0 or length < row:
-            merge_imgs = np.hstack(imgs)
-        elif row_col_num[0] < 0 or length < col:
-            merge_imgs = np.vstack(imgs)
-        else:
-            assert row * col >= length, 'Imgs overboundary, not enough windows to display all imgs!'
-
-            fill_img_list = [np.zeros(imgs[0].shape, dtype=np.uint8)] * (row * col - length)
-            imgs.extend(fill_img_list)
-            merge_imgs_col = []
-            for i in range(row):
-                start = col * i
-                end = col * (i + 1)
-                merge_col = np.hstack(imgs[start: end])
-                merge_imgs_col.append(merge_col)
-
-            merge_imgs = np.vstack(merge_imgs_col)
-
-        return merge_imgs
-
-    @staticmethod
-    # 可视化显示相关
-    def show_bbox(image, bboxs_list, color=None,
-                  thickness=1, font_scale=0.3, wait_time_ms=0, names=None,
-                  is_show=True, is_without_mask=False):
-        """
-        Visualize bbox in object detection by drawing rectangle.
-
-        :param image: numpy.ndarray.
-        :param bboxs_list: list: [pts_xyxy, prob, id]: label or prediction.
-        :param color: tuple.
-        :param thickness: int.
-        :param fontScale: float.
-        :param wait_time_ms: int
-        :param names: string: window name
-        :param is_show: bool: whether to display during middle process
-        :return: numpy.ndarray
-        """
-        # from ..visualtools import random_color
-        assert image is not None
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        image_copy = image.copy()
-        colorss = [(0, 255, 0), (0, 0, 255)]
-        for id, bbox_list in enumerate(bboxs_list):
-            colors = colorss[id]
-            for bbox in bbox_list:
-                if len(bbox) == 5:
-                    txt = '{:.3f}'.format(bbox[4])
-                elif len(bbox) == 6:
-                    txt = 'p={:.3f},id={:.3f}'.format(bbox[4], bbox[5])
-                bbox_f = np.array(bbox[:4], np.int32)[0]
-                # if color is None:
-                #     colors = random_color(rgb=True).astype(np.float64)
-                # else:
-                #     colors = color
-                # colors = (0, 255, 0)
-
-                if not is_without_mask:
-                    image_copy = cv2.rectangle(image_copy, (bbox_f[0], bbox_f[1]), (bbox_f[2], bbox_f[3]), colors,
-                                               thickness)
-                else:
-                    mask = np.zeros_like(image_copy, np.uint8)
-                    mask1 = cv2.rectangle(mask, (bbox_f[0], bbox_f[1]), (bbox_f[2], bbox_f[3]), colors, -1)
-                    mask = np.zeros_like(image_copy, np.uint8)
-                    mask2 = cv2.rectangle(mask, (bbox_f[0], bbox_f[1]), (bbox_f[2], bbox_f[3]), colors, thickness)
-                    mask2 = cv2.addWeighted(mask1, 0.5, mask2, 8, 0.0)
-                    image_copy = cv2.addWeighted(image_copy, 1.0, mask2, 0.6, 0.0)
-                if len(bbox) == 5 or len(bbox) == 6:
-                    cv2.putText(image_copy, txt, (bbox_f[0], bbox_f[1] - 2),
-                                font, font_scale, (255, 255, 255), thickness=thickness, lineType=cv2.LINE_AA)
-        if is_show:
-            TwoStageDetector.show_img(image_copy, names, wait_time_ms)
-        return image_copy
+            raise NotImplementedError(
+                f'{self.__class__.__name__} can not '
+                f'be exported to ONNX. Please refer to the '
+                f'list of supported models,'
+                f'https://mmdetection.readthedocs.io/en/latest/tutorials/pytorch2onnx.html#list-of-supported-models-exportable-to-onnx'
+                # noqa E501
+            )
 
 
 @DETECTORS.register_module()

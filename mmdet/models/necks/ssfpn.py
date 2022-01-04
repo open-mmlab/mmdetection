@@ -345,7 +345,7 @@ class SSFPN(nn.Module):
                     else:
                         outs.append(self.fpn_convs[i](outs[-1]))
 
-        # return tuple(outs), tuple(att_list)
+        return tuple(outs), tuple(att_list)
         # modify by lzj 根据论文来看，这里应该不需要att_list这个输出
         # modify by lzj 根据论文来看，网络中有attention_loss，放出来看看？
-        return tuple(outs)
+        # return tuple(outs)
