@@ -163,6 +163,10 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 如果遇到问题，请参考 [常见问题解答](docs/zh_cn/faq.md)。
 
+## 相关教程
+
+请参考 [MMDetection 中文解读文案汇总](docs/zh_cn/article.md)
+
 ## 贡献指南
 
 我们感谢所有的贡献者为改进和提升 MMDetection 所作出的努力。我们将正在进行中的项目添加进了[GitHub Projects](https://github.com/open-mmlab/mmdetection/projects)页面，非常欢迎社区用户能参与进这些项目中来。请参考[贡献指南](.github/CONTRIBUTING.md)来了解参与项目贡献的相关指引。
