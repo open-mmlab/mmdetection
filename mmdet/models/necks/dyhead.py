@@ -33,7 +33,8 @@ class DyDCNv2(nn.Module):
                  norm_cfg=dict(type='GN', num_groups=16, requires_grad=True)):
         super().__init__()
         self.with_norm = norm_cfg is not None
-        bias = not self.with_norm
+        # bias = not self.with_norm
+        bias = True  # for official pre-trained model
         self.conv = ModulatedDeformConv2d(
             in_channels, out_channels, 3, stride=stride, padding=1, bias=bias)
         self.norm = build_norm_layer(norm_cfg, out_channels)[1]
