@@ -24,7 +24,7 @@ class OpenImagesDataset(CustomDataset):
     def __init__(self,
                  label_description_file='',
                  image_level_ann_file='',
-                 get_parent_class=True,
+                 get_supercategory=True,
                  hierarchy_file=None,
                  get_metas=True,
                  load_from_file=True,
@@ -37,11 +37,12 @@ class OpenImagesDataset(CustomDataset):
             label_description_file (str): File path to the label map proto.
             image_level_ann_file (str): Image level annotation, which is used
                 in evaluation.
-            get_parent_class (bool): Whether get parent class of the current
+            get_supercategory (bool): Whether get parent class of the current
                 class. Default: True.
             hierarchy_file (str): File path to the hierarchy for classes.
                 Default: None.
-            get_metas (bool): Whether get image metas. Default: True.
+            get_metas (bool): Whether get image metas in testing or validation
+                time. This should be `True` during evaluation. Default: True.
                 The OpenImages annotations do not have image metas (width and
                 height of the image), which will be used during evaluation.
                 We provide two ways to get image metas in `OpenImagesDataset`:
@@ -72,10 +73,10 @@ class OpenImagesDataset(CustomDataset):
         self.CLASSES = class_names
         self.image_level_ann_file = image_level_ann_file
         self.load_image_level_labels = load_image_level_labels
-        if get_parent_class is True:
+        if get_supercategory is True:
             assert hierarchy_file is not None
-            self.class_label_tree = self.get_label_tree(hierarchy_file)
-        self.get_parent_class = get_parent_class
+            self.class_label_tree = self.get_relation_matrix(hierarchy_file)
+        self.get_supercategory = get_supercategory
         self.get_metas = get_metas
         self.load_from_file = load_from_file
         self.meta_file = meta_file
@@ -123,13 +124,19 @@ class OpenImagesDataset(CustomDataset):
             Annotations where item of the defaultdict indicates an
             image, each of which has (n) dicts. Keys of dicts are:
 
-                - `bbox` (list): of shape 4.
-                - `label` (int): of shape 1.
-                - `is_group_of` (bool): of shape 1.
-                - `is_occluded` (bool): of shape 1.
-                - `is_truncated` (bool): of shape 1.
-                - `is_depiction` (bool): of shape 1.
-                - `is_inside` (bool): of shape 1.
+                - `bbox` (list): coordinates of the box, in normalized image
+                    coordinates, of shape 4.
+                - `label` (int): the label id.
+                - `is_group_of` (bool):  Indicates that the box spans a group
+                    of objects (e.g., a bed of flowers or a crowd of people).
+                - `is_occluded` (bool): Indicates that the object is occluded
+                    by another object in the image.
+                - `is_truncated` (bool): Indicates that the object extends
+                    beyond the boundary of the image.
+                - `is_depiction` (bool): Indicates that the object is a
+                    depiction.
+                - `is_inside` (bool): Indicates a picture taken from the
+                    inside of the object.
             `data_infos` (list[dict])： Data infos where each item of
             the list indicates an image. Keys of annotations are:
 
@@ -321,7 +328,7 @@ class OpenImagesDataset(CustomDataset):
         self.flag = np.zeros(len(self), dtype=np.uint8)
         # TODO: set flag without width and height
 
-    def get_label_tree(self, hierarchy_file):
+    def get_relation_matrix(self, hierarchy_file):
         """Get hierarchy for classes.
 
         Args:
@@ -341,20 +348,20 @@ class OpenImagesDataset(CustomDataset):
             hierarchy = json.load(f)
         class_num = len(self.CLASSES)
         class_label_tree = np.eye(class_num, class_num)
-        class_label_tree = self.get_parent_children(hierarchy,
-                                                    class_label_tree)
+        class_label_tree = self._convert_hierarchy_tree(
+            hierarchy, class_label_tree)
         return class_label_tree
 
-    def get_parent_children(self,
-                            hierarchy,
-                            class_label_tree,
-                            parents=[],
-                            get_all_parents=True):
+    def _convert_hierarchy_tree(self,
+                                hierarchy_map,
+                                class_label_tree,
+                                parents=[],
+                                get_all_parents=True):
         """Get matrix of the corresponding relationship between the parent
         class and the child class.
 
         Args:
-            hierarchy (dict): Including label name and corresponding
+            hierarchy_map (dict): Including label name and corresponding
                 subcategory. Keys of dicts are:
 
                 - `LabeName` (str): Name of the label.
@@ -372,8 +379,8 @@ class OpenImagesDataset(CustomDataset):
             (class_num, class_num).
         """
 
-        if 'Subcategory' in hierarchy:
-            for node in hierarchy['Subcategory']:
+        if 'Subcategory' in hierarchy_map:
+            for node in hierarchy_map['Subcategory']:
                 if 'LabelName' in node:
                     children_name = node['LabelName']
                     children_index = self.index_dict[children_name]
@@ -386,12 +393,12 @@ class OpenImagesDataset(CustomDataset):
                             children.append(parent_index)
                         class_label_tree[children_index, parent_index] = 1
 
-                class_label_tree = self.get_parent_children(
+                class_label_tree = self._convert_hierarchy_tree(
                     node, class_label_tree, parents=children)
 
         return class_label_tree
 
-    def get_parents_ann(self, annotations):
+    def add_supercategory_ann(self, annotations):
         """Add parent classes of the corresponding class of the ground truth
         bboxes."""
         for i, ann in enumerate(annotations):
@@ -455,7 +462,7 @@ class OpenImagesDataset(CustomDataset):
                 for index in det_cls:
                     if index in allowed_labeles and \
                             index != valid_class and \
-                            self.get_parent_class:
+                            self.get_supercategory:
                         det_results[i][index] = \
                             np.concatenate((det_results[i][index],
                                             results[valid_class]))
@@ -478,8 +485,14 @@ class OpenImagesDataset(CustomDataset):
             indicates an image, each of which has (n) dicts.
             Keys of dicts are:
 
-                - `image_level_label` (int): of shape 1.
-                - `confidence` (float): of shape 1.
+                - `image_level_label` (int): Label id.
+                - `confidence` (float): Labels that are human-verified to be
+                    present in an image have confidence = 1 (positive labels).
+                    Labels that are human-verified to be absent from an image
+                    have confidence = 0 (negative labels). Machine-generated
+                    labels have fractional confidences, generally >= 0.5.
+                    The higher the confidence, the smaller the chance for
+                    the label to be a false positive.
         """
 
         item_lists = defaultdict(list)
@@ -492,12 +505,10 @@ class OpenImagesDataset(CustomDataset):
                     continue
                 else:
                     img_id = line[0]
-                    image_level_label = int(self.index_dict[line[2]])
-                    confidence = float(line[3])
                     item_lists[img_id].append(
                         dict(
-                            image_level_label=image_level_label,
-                            confidence=confidence))
+                            image_level_label=int(self.index_dict[line[2]]),
+                            confidence=float(line[3])))
         return item_lists
 
     def get_image_level_ann(self, image_level_ann_file):
@@ -621,8 +632,8 @@ class OpenImagesDataset(CustomDataset):
         self.temp_img_metas = []
         self.test_img_shapes = []
         self.test_img_metas = []
-        if self.get_parent_class:
-            annotations = self.get_parents_ann(annotations)
+        if self.get_supercategory:
+            annotations = self.add_supercategory_ann(annotations)
 
         results = self.process_results(results, annotations,
                                        image_level_annotations)
@@ -768,7 +779,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
             self.get_meta_from_pipeline(results)
         return results
 
-    def get_label_tree(self, hierarchy_file):
+    def get_relation_matrix(self, hierarchy_file):
         """Get hierarchy for classes.
 
         Args:

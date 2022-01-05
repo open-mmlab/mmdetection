@@ -48,7 +48,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=8,
+    samples_per_gpu=8,  # using 32 GPUS while training.
     workers_per_gpu=0,  # workers_per_gpu > 0 may occur out of memory
     train=dict(
         _delete_=True,

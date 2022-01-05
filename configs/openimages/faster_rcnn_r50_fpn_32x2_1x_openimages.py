@@ -6,6 +6,7 @@ _base_ = [
 
 model = dict(roi_head=dict(bbox_head=dict(num_classes=601)))
 
+# Using 32 GPUS while training
 optimizer = dict(type='SGD', lr=0.08, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))

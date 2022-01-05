@@ -25,8 +25,8 @@ def _create_ids_error_oid_csv(
         'IsInside'
     ]
     annotations = [[
-        '0001eeaf4aed83f9', 'xclick', '/m/000002', '1', '0.022673031',
-        '0.9642005', '0.07103825', '0.80054647', '0', '0', '0', '0', '0'
+        'color', 'xclick', '/m/000002', '1', '0.022673031', '0.9642005',
+        '0.07103825', '0.80054647', '0', '0', '0', '0', '0'
     ],
                    [
                        '000595fe6fee6369', 'xclick', '/m/000000', '1', '0',
@@ -53,12 +53,12 @@ def _create_oid_style_ann(label_file, csv_file, label_level_file):
     ]
     annotations = [
         [
-            '0001eeaf4aed83f9', 'xclick', '/m/000002', 1, 0.0333333, 0.1,
-            0.0333333, 0.1, 0, 0, 1, 0, 0
+            'color', 'xclick', '/m/000002', 1, 0.0333333, 0.1, 0.0333333, 0.1,
+            0, 0, 1, 0, 0
         ],
         [
-            '0001eeaf4aed83f9', 'xclick', '/m/000002', 1, 0.1, 0.166667, 0.1,
-            0.166667, 0, 0, 0, 0, 0
+            'color', 'xclick', '/m/000002', 1, 0.1, 0.166667, 0.1, 0.166667, 0,
+            0, 0, 0, 0
         ],
     ]
     with open(csv_file, 'w') as f:
@@ -67,8 +67,8 @@ def _create_oid_style_ann(label_file, csv_file, label_level_file):
         f_csv.writerows(annotations)
 
     header = ['ImageID', 'Source', 'LabelName', 'Confidence']
-    annotations = [['0001eeaf4aed83f9', 'xclick', '/m/000002', '1'],
-                   ['0001eeaf4aed83f9', 'xclick', '/m/000004', '0']]
+    annotations = [['color', 'xclick', '/m/000002', '1'],
+                   ['color', 'xclick', '/m/000004', '0']]
     with open(label_level_file, 'w') as f:
         f_csv = csv.writer(f)
         f_csv.writerow(header)
@@ -102,6 +102,14 @@ def _create_hierarchy_json(hierarchy_name):
     mmcv.dump(fake_hierarchy, hierarchy_name)
 
 
+def _create_hierarchy_np(hierarchy_name):
+    fake_hierarchy = np.array([[0, 1, 0, 0, 0], [0, 1, 1, 0,
+                                                 0], [0, 1, 1, 1, 0],
+                               [0, 1, 0, 0, 1], [0, 0, 0, 0, 0]])
+    with open(hierarchy_name, 'wb') as f:
+        np.save(f, fake_hierarchy)
+
+
 def _create_dummy_results():
     boxes = [
         np.zeros((0, 5)),
@@ -114,14 +122,13 @@ def _create_dummy_results():
     return [boxes]
 
 
-def _creat_oid_challenge_style_ann(txt_file, label_file):
+def _creat_oid_challenge_style_ann(txt_file, label_file, label_level_file):
     bboxes = [
-        'validation / 000595fe6fee6369.jpg\n',
+        'validation/color.jpg\n',
         '4 29\n',
-        '3\n',
-        '1 0.1413844 0.67627496 0.179676 0.73170733 0\n',
-        '1 0.21354933 0.29933482 0.25331370000000003 0.35476717 0\n',
-        '1 0.23269513 0.49002218 0.28865978 0.54545456 1',
+        '2\n',
+        '1 0.0333333 0.1 0.0333333 0.1 1\n',
+        '1 0.1 0.166667 0.1 0.166667 0\n',
     ]
 
     with open(txt_file, 'w') as f:
@@ -136,13 +143,20 @@ def _creat_oid_challenge_style_ann(txt_file, label_file):
         f_csv = csv.writer(f)
         f_csv.writerows(label_description)
 
+    header = ['ImageID', 'LabelName', 'Confidence']
+    annotations = [['color', '/m/000001', '1'], ['color', '/m/000000', '0']]
+    with open(label_level_file, 'w') as f:
+        f_csv = csv.writer(f)
+        f_csv.writerow(header)
+        f_csv.writerows(annotations)
+
 
 def _create_metas(meta_file):
 
     data = [[{
         'filename': 'data/OpenImages/OpenImages/'
-        'validation/0001eeaf4aed83f9.jpg',
-        'ori_filename': '0001eeaf4aed83f9.jpg',
+        'validation/color.jpg',
+        'ori_filename': 'color.jpg',
         'ori_shape': (300, 300, 3),
         'img_shape': (300, 300, 3),
         'pad_shape': (304, 304, 3),
@@ -206,6 +220,39 @@ def test_openimages_dataset():
     assert ann['bboxes'].shape[0] == ann['labels'].shape[0] == \
            ann['gt_is_group_ofs'].shape[0] == 2
 
+    # test load metas from pipeline
+    img_norm_cfg = dict(
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        to_rgb=True)
+    test_pipeline = [
+        dict(type='LoadImageFromFile'),
+        dict(
+            type='MultiScaleFlipAug',
+            img_scale=(128, 128),
+            flip=False,
+            transforms=[
+                dict(type='Resize', keep_ratio=True),
+                dict(type='RandomFlip'),
+                dict(type='Normalize', **img_norm_cfg),
+                dict(type='Pad', size_divisor=32),
+                dict(type='ImageToTensor', keys=['img']),
+                dict(type='Collect', keys=['img']),
+            ])
+    ]
+    dataset = OpenImagesDataset(
+        ann_file=ann_file,
+        img_prefix='tests/data',
+        label_description_file=label_file,
+        image_level_ann_file=label_level_file,
+        load_from_file=False,
+        hierarchy_file=hierarchy_json,
+        pipeline=test_pipeline)
+    dataset.prepare_test_img(0)
+    assert len(dataset.test_img_metas) == 1
+    result = _create_dummy_results()
+    dataset.evaluate(result)
+
     # test get hierarchy for classes
     hierarchy_json = osp.join(tmp_dir.name, 'hierarchy.json')
     _create_hierarchy_json(hierarchy_json)
@@ -213,10 +260,10 @@ def test_openimages_dataset():
     # test with hierarchy file wrong suffix
     with pytest.raises(AssertionError):
         fake_path = osp.join(tmp_dir.name, 'hierarchy.csv')
-        dataset.get_label_tree(fake_path)
+        dataset.get_relation_matrix(fake_path)
 
     # test load hierarchy file succseefully
-    hierarchy = dataset.get_label_tree(hierarchy_json)
+    hierarchy = dataset.get_relation_matrix(hierarchy_json)
     hierarchy_gt = np.array([[1, 0, 0, 0], [1, 1, 0, 0], [1, 1, 1, 0],
                              [1, 0, 0, 1]])
     assert np.equal(hierarchy, hierarchy_gt).all()
@@ -271,18 +318,47 @@ def test_openimages_challenge_dataset():
     tmp_dir = tempfile.TemporaryDirectory()
     ann_file = osp.join(tmp_dir.name, 'ann_file.txt')
     label_file = osp.join(tmp_dir.name, 'label_file.csv')
-    _creat_oid_challenge_style_ann(ann_file, label_file)
+    label_level_file = osp.join(tmp_dir.name, 'label_level_file.csv')
+    _creat_oid_challenge_style_ann(ann_file, label_file, label_level_file)
 
     dataset = OpenImagesChallengeDataset(
         ann_file=ann_file,
         label_description_file=label_file,
         load_image_level_labels=False,
-        get_parent_class=False,
+        get_supercategory=False,
         pipeline=[])
     ann = dataset.get_ann_info(0)
 
     # two legal detection bboxes with `group_of` parameter
     assert ann['bboxes'].shape[0] == ann['labels'].shape[0] == \
-           ann['gt_is_group_ofs'].shape[0] == 3
+           ann['gt_is_group_ofs'].shape[0] == 2
 
+    dataset.prepare_train_img(0)
+    dataset.prepare_test_img(0)
+
+    meta_file = osp.join(tmp_dir.name, 'meta.pkl')
+    _create_metas(meta_file)
+
+    result = _create_dummy_results()
+    with pytest.raises(AssertionError):
+        fake_json = osp.join(tmp_dir.name, 'hierarchy.json')
+        dataset = OpenImagesChallengeDataset(
+            ann_file=ann_file,
+            label_description_file=label_file,
+            image_level_ann_file=label_level_file,
+            hierarchy_file=fake_json,
+            meta_file=meta_file,
+            pipeline=[])
+        dataset.evaluate(result)
+
+    hierarchy_file = osp.join(tmp_dir.name, 'hierarchy.np')
+    _create_hierarchy_np(hierarchy_file)
+    dataset = OpenImagesChallengeDataset(
+        ann_file=ann_file,
+        label_description_file=label_file,
+        image_level_ann_file=label_level_file,
+        hierarchy_file=hierarchy_file,
+        meta_file=meta_file,
+        pipeline=[])
+    dataset.evaluate(result)
     tmp_dir.cleanup()

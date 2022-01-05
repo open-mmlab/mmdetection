@@ -1,4 +1,5 @@
 # Open Images Dataset
+<!-- [DATASET] -->
 
 ## Abstract
 
@@ -63,7 +64,6 @@ often contain complex scenes with several objects (explore the dataset).
 
 ## Prepare Dataset
 
-<!-- [DATASET] -->
 1. You need to download and extract Open Images dataset.
 
 2. The Open Images dataset do not have image metas (width and height of the image),
@@ -97,14 +97,14 @@ training/testing by using `tools/misc/get_image_metas.py`.
     │   │   │   ├── class-descriptions-boxable.csv
     │   │   │   ├── oidv6-train-annotations-bbox.scv
     │   │   │   ├── validation-annotations-bbox.csv
-    │   │   │   ├── validation-annotations-human-imagelabels-boxable.csv
+    │   │   │   ├── validation-annotations-human-imagelabels-boxable.csv    # is not necessary
     │   │   │   ├── validation-image-metas.pkl      # get from script
     │   │   ├── challenge2019
     │   │   │   ├── challenge-2019-train-detection-bbox.txt
     │   │   │   ├── challenge-2019-validation-detection-bbox.txt
     │   │   │   ├── class_label_tree.np
     │   │   │   ├── class_sample_train.pkl
-    │   │   │   ├── challenge-2019-validation-detection-human-imagelabels.csv       # download from official website
+    │   │   │   ├── challenge-2019-validation-detection-human-imagelabels.csv       # download from official website, not necessary
     │   │   │   ├── challenge-2019-validation-metas.pkl     # get from script
     │   │   ├── OpenImages
     │   │   │   ├── train           # training images
@@ -118,6 +118,8 @@ Open Images v6, but the test images are different.
 2. The Open Images Challenges annotations are obtained from [TSD](https://github.com/Sense-X/TSD).
 You can also download the annotations from [official website](https://storage.googleapis.com/openimages/web/challenge2019_downloads.html),
 and use `OpenImagesDataset` type to train/test.
+3. If do not want to use `validation-annotations-human-imagelabels-boxable.csv` and `challenge-2019-validation-detection-human-imagelabels.csv`
+it should set `load_image_level_labels` to `False`.
 
 
 ## Results and Models
