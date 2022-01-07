@@ -212,10 +212,10 @@ async def async_inference_detector(model, imgs):
 def show_result_pyplot(model,
                        img,
                        result,
-                       palette=None,
                        score_thr=0.3,
                        title='result',
-                       wait_time=0):
+                       wait_time=0,
+                       palette=None):
     """Visualize the detection results on the image.
 
     Args:
