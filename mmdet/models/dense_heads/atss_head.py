@@ -87,21 +87,22 @@ class ATSSHead(AnchorHead):
                     padding=1,
                     conv_cfg=self.conv_cfg,
                     norm_cfg=self.norm_cfg))
+        pred_pad_size = self.pred_kernel_size // 2
         self.atss_cls = nn.Conv2d(
             self.feat_channels,
             self.num_anchors * self.cls_out_channels,
             self.pred_kernel_size,
-            padding=1)
+            padding=pred_pad_size)
         self.atss_reg = nn.Conv2d(
             self.feat_channels,
             self.num_base_priors * 4,
             self.pred_kernel_size,
-            padding=1)
+            padding=pred_pad_size)
         self.atss_centerness = nn.Conv2d(
             self.feat_channels,
             self.num_base_priors * 1,
             self.pred_kernel_size,
-            padding=1)
+            padding=pred_pad_size)
         self.scales = nn.ModuleList(
             [Scale(1.0) for _ in self.prior_generator.strides])
 

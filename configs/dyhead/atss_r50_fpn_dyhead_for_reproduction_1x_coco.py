@@ -33,14 +33,13 @@ model = dict(
         pred_kernel_size=1,
         stacked_convs=0,
         feat_channels=256,
-        # TODO reproduce anchor setting
         anchor_generator=dict(
             type='AnchorGenerator',
             ratios=[1.0],
             octave_base_scale=8,
             scales_per_octave=1,
             strides=[8, 16, 32, 64, 128],
-            centers=[(x * -0.5, x * -0.5) for x in [8, 16, 32, 64, 128]]),
+            center_offset=0.5),
         bbox_coder=dict(
             type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
