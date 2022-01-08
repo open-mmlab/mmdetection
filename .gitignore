@@ -21,6 +21,7 @@ sdist/
 var/
 wheels/
 *.egg-info/
+checkpoints/
 .installed.cfg
 *.egg
 MANIFEST

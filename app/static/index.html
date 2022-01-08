@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1 class="display-5">Cell Instance Segmentation web-app</h1>
+
+<p>Please, upload an image for cell instance segmentation.</p>
+
+  <form method='POST' enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+    {{ form.image }}
+    <br>
+    <span class="validation_error" style="color:red">{{ ', '.join(form.image.errors) }} </span><br>
+    
+    <br>
+    <input type=submit class='btn btn-primary' value='Submit'> 
+  </form>
+
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1 class="display-5">Cell Instance Segmentation web-app</h1>
+
+{% if job_complete %}
+  <br>
+  <h3 class="display-5">Result of object detection</h3>
+    <br>
+  <img src="{{url_for('templates', filename='img/detected_'+pic)}}"  class="rounded mx-auto d-block">
+     
+  <br>
+  <br>
+  <form method='POST' enctype="multipart/form-data">
+    <br>
+    {{ form.hidden_tag() }}
+    <!-- {{ form.submit }} -->
+    <br>
+    <input type=submit class='btn btn-primary' value='Download'>
+  </form>
+
+   
+{% else %}
+  <br>
+  <br>
+  <h3> Submitted image is being processed. Please, wait... <i class="fas fa-sync fa-spin"></i> </h3>
+  <div class="loader"></div> 
+  <meta http-equiv="refresh" content="5"> 
+{% endif %}
+
+
+              
+{% endblock %}

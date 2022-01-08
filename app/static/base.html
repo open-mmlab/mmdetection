@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.0/css/all.css" integrity="sha384-lZN37f5QGtY3VHgisS14W3ExzMWZxybE1SJSEsQp9S+oqd12jhcu+A56Ebc1zFSJ" crossorigin="anonymous">
+
+    <title>Flask mmdetection cell-is</title>
+
+  </head>
+  <body>
+        <br>
+        <div class="container  text-black">
+
+            <nav class="navbar navbar-expand-lg bg-light ml-auto>
+                <ul class="navbar-nav">
+                    <a class="nav-link" href={{url_for('index')}}>
+                        <i class="fas fa-home fa"></i> Home</a>
+                    <a class="nav-link" href="https://github.com/lenardxu/cell_is">
+                        <i class="fab fa-github"></i> GitHub</a>
+                    <a class="nav-link" href="https://mmdetection.readthedocs.io/en/latest/">
+                        <i class="fas fa-question-circle fa"></i> About MMdetect</a>
+                </ul>
+            </nav>
+            <br>
+            <div class="container">
+                {% block content %}
+
+                {% endblock %}
+            </div>
+            <br>
+            <br>
+            <a class="nav-item"  href="#" style="text-align: right">
+            <i class="fas fa-copyright fa-1x"> Data Science II</i></a>
+        </div>
+    </body>
+</html>
