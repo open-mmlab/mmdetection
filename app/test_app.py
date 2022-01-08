@@ -30,6 +30,8 @@ print(f"the path to the folder holding the testing imgs: {ds_path}")
 
 app = Flask(__name__)
 
+# About the issue related with os.environ['SECRET_KEY'], please check the reference below:
+# https://stackoverflow.com/questions/28090391/getting-raise-keyerrorkey-keyerror-secret-key-with-django-on-production-set
 # app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 0)
 app.config['UPLOADED_IMAGES_DEST'] = 'app/templates/img/'
