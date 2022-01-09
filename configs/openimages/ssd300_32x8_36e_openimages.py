@@ -1,6 +1,6 @@
 _base_ = [
     '../_base_/models/ssd300.py', '../_base_/datasets/openimages_detection.py',
-    '../_base_/default_runtime.py'
+    '../_base_/default_runtime.py', '../_base_/schedules/schedule_1x.py'
 ]
 model = dict(
     bbox_head=dict(
