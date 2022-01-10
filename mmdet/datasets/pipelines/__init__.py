@@ -3,8 +3,8 @@ from .auto_augment import (AutoAugment, BrightnessTransform, ColorTransform,
                            ContrastTransform, EqualizeTransform, Rotate, Shear,
                            Translate)
 from .compose import Compose
-from .formating import (Collect, DefaultFormatBundle, ImageToTensor,
-                        ToDataContainer, ToTensor, Transpose, to_tensor)
+from .formatting import (Collect, DefaultFormatBundle, ImageToTensor,
+                         ToDataContainer, ToTensor, Transpose, to_tensor)
 from .instaboost import InstaBoost
 from .loading import (LoadAnnotations, LoadImageFromFile, LoadImageFromWebcam,
                       LoadMultiChannelImageFromFiles, LoadProposals)
