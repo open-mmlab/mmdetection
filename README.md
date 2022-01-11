@@ -69,87 +69,188 @@ Please refer to [changelog.md](docs/en/changelog.md) for details and release his
 
 For compatibility changes between different versions of MMDetection, please refer to [compatibility.md](docs/en/compatibility.md).
 
-## Benchmark and model zoo
+## Overview of Benchmark and Model Zoo
 
 Results and models are available in the [model zoo](docs/en/model_zoo.md).
 
-
-<details open>
-<summary>Supported backbones:</summary>
-
-- [x] ResNet (CVPR'2016)
-- [x] ResNeXt (CVPR'2017)
-- [x] VGG (ICLR'2015)
-- [x] MobileNetV2 (CVPR'2018)
-- [x] HRNet (CVPR'2019)
-- [x] RegNet (CVPR'2020)
-- [x] Res2Net (TPAMI'2020)
-- [x] ResNeSt (ArXiv'2020)
-- [X] Swin (CVPR'2021)
-- [x] PVT (ICCV'2021)
-- [x] PVTv2 (ArXiv'2021)
-</details>
-
-<details open>
-<summary>Supported methods:</summary>
-
-- [x] [RPN (NeurIPS'2015)](configs/rpn)
-- [x] [Fast R-CNN (ICCV'2015)](configs/fast_rcnn)
-- [x] [Faster R-CNN (NeurIPS'2015)](configs/faster_rcnn)
-- [x] [Mask R-CNN (ICCV'2017)](configs/mask_rcnn)
-- [x] [Cascade R-CNN (CVPR'2018)](configs/cascade_rcnn)
-- [x] [Cascade Mask R-CNN (CVPR'2018)](configs/cascade_rcnn)
-- [x] [SSD (ECCV'2016)](configs/ssd)
-- [x] [RetinaNet (ICCV'2017)](configs/retinanet)
-- [x] [GHM (AAAI'2019)](configs/ghm)
-- [x] [Mask Scoring R-CNN (CVPR'2019)](configs/ms_rcnn)
-- [x] [Double-Head R-CNN (CVPR'2020)](configs/double_heads)
-- [x] [Hybrid Task Cascade (CVPR'2019)](configs/htc)
-- [x] [Libra R-CNN (CVPR'2019)](configs/libra_rcnn)
-- [x] [Guided Anchoring (CVPR'2019)](configs/guided_anchoring)
-- [x] [FCOS (ICCV'2019)](configs/fcos)
-- [x] [RepPoints (ICCV'2019)](configs/reppoints)
-- [x] [Foveabox (TIP'2020)](configs/foveabox)
-- [x] [FreeAnchor (NeurIPS'2019)](configs/free_anchor)
-- [x] [NAS-FPN (CVPR'2019)](configs/nas_fpn)
-- [x] [ATSS (CVPR'2020)](configs/atss)
-- [x] [FSAF (CVPR'2019)](configs/fsaf)
-- [x] [PAFPN (CVPR'2018)](configs/pafpn)
-- [x] [Dynamic R-CNN (ECCV'2020)](configs/dynamic_rcnn)
-- [x] [PointRend (CVPR'2020)](configs/point_rend)
-- [x] [CARAFE (ICCV'2019)](configs/carafe/README.md)
-- [x] [DCNv2 (CVPR'2019)](configs/dcn/README.md)
-- [x] [Group Normalization (ECCV'2018)](configs/gn/README.md)
-- [x] [Weight Standardization (ArXiv'2019)](configs/gn+ws/README.md)
-- [x] [OHEM (CVPR'2016)](configs/faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py)
-- [x] [Soft-NMS (ICCV'2017)](configs/faster_rcnn/faster_rcnn_r50_fpn_soft_nms_1x_coco.py)
-- [x] [Generalized Attention (ICCV'2019)](configs/empirical_attention/README.md)
-- [x] [GCNet (ICCVW'2019)](configs/gcnet/README.md)
-- [x] [Mixed Precision (FP16) Training (ArXiv'2017)](configs/fp16/README.md)
-- [x] [InstaBoost (ICCV'2019)](configs/instaboost/README.md)
-- [x] [GRoIE (ICPR'2020)](configs/groie/README.md)
-- [x] [DetectoRS (ArXiv'2020)](configs/detectors/README.md)
-- [x] [Generalized Focal Loss (NeurIPS'2020)](configs/gfl/README.md)
-- [x] [CornerNet (ECCV'2018)](configs/cornernet/README.md)
-- [x] [Side-Aware Boundary Localization (ECCV'2020)](configs/sabl/README.md)
-- [x] [YOLOv3 (ArXiv'2018)](configs/yolo/README.md)
-- [x] [PAA (ECCV'2020)](configs/paa/README.md)
-- [x] [YOLACT (ICCV'2019)](configs/yolact/README.md)
-- [x] [CentripetalNet (CVPR'2020)](configs/centripetalnet/README.md)
-- [x] [VFNet (ArXiv'2020)](configs/vfnet/README.md)
-- [x] [DETR (ECCV'2020)](configs/detr/README.md)
-- [x] [Deformable DETR (ICLR'2021)](configs/deformable_detr/README.md)
-- [x] [CascadeRPN (NeurIPS'2019)](configs/cascade_rpn/README.md)
-- [x] [SCNet (AAAI'2021)](configs/scnet/README.md)
-- [x] [AutoAssign (ArXiv'2020)](configs/autoassign/README.md)
-- [x] [YOLOF (CVPR'2021)](configs/yolof/README.md)
-- [x] [Seasaw Loss (CVPR'2021)](configs/seesaw_loss/README.md)
-- [x] [CenterNet (CVPR'2019)](configs/centernet/README.md)
-- [x] [YOLOX (ArXiv'2021)](configs/yolox/README.md)
-- [x] [SOLO (ECCV'2020)](configs/solo/README.md)
-- [x] [QueryInst (ICCV'2021)](configs/queryinst/README.md)
-- [x] [TOOD (ICCV'2021)](configs/tood/README.md)
-</details>
+<table align="center">
+  <tbody>
+    <tr align="center" valign="bottom">
+      <td>
+        <b>Architectures</b>
+      </td>
+      <td>
+        <b>Backbones</b>
+      </td>
+      <td>
+        <b>Components</b>
+      </td>
+      <td>
+        <b>Data Augmentation</b>
+      </td>
+      <td>
+        <b>Tasks by datasets</b>
+      </td>
+      <td>
+        <b>Other configs</b>
+      </td>
+    </tr>
+    <tr valign="top">
+      <td>
+        <ul>
+          <li><b>Object Detection</b></li>
+          <ul>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/fast_rcnn">Fast R-CNN (ICCV'2015)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn">Faster R-CNN (NeurIPS'2015)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/ssd">SSD (ECCV'2016)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/retinanet">RetinaNet (ICCV'2017)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/cascade_rcnn">Cascade R-CNN (CVPR'2018)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/yolo">YOLOv3 (ArXiv'2018)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/cornernet">CornerNet (ECCV'2018)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/grid_rcnn">Grid R-CNN (CVPR'2019)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/centernet">CenterNet (CVPR'2019)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/libra_rcnn">Libra R-CNN (CVPR'2019)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/tridentnet">TridentNet (ICCV'2019)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/fcos">FCOS (ICCV'2019)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/reppoints">RepPoints (ICCV'2019)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/foveabox">Foveabox (TIP'2020)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/atss">ATSS (CVPR'2020)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/nas_fcos">NAS-FCOS (CVPR'2020)</a> # Not officially listed</li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/autoassign">AutoAssign (ArXiv'2020)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/dynamic_rcnn">Dynamic R-CNN (ECCV'2020)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/detr">DETR (ECCV'2020)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/vfnet">VarifocalNet (CVPR'2021)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/sparse_rcnn">Sparse R-CNN (CVPR'2021)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/yolof">YOLOF (CVPR'2021)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/yolox">YOLOX (CVPR'2021)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/deformable_detr">Deformable DETR (ICLR'2021)</a></li>
+          </ul>
+        <li><b>Instance Segmentation</b></li>
+        <ul>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/mask_rcnn">Mask R-CNN (ICCV'2017)</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/cascade_rcnn">Cascade Mask R-CNN (CVPR'2018)</a> # Same folder as cascade_rcnn</li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/ms_rcnn">Mask Scoring R-CNN (CVPR'2019)</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/htc">Hybrid Task Cascade (CVPR'2019)</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/yolact">YOLACT (ICCV'2019)</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/instaboost">InstaBoost (ICCV'2019)</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/solo">SOLO (ECCV'2020)</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/point_rend">PointRend (CVPR'2020)</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/detectors">DetectoRS (ArXiv'2020)</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/scnet">SCNet (AAAI'2021)</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/queryinst">QueryInst (ICCV'2021)</a></li>
+        </ul>
+        <li><b>Contrastive Learning</b></li>
+        <ul>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/selfsup_pretrain">SwAV (NeurIPS'2020)</a> # Not officially listed</li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/selfsup_pretrain">MoCo (CVPR'2020)</a> # Not officially listed</li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/selfsup_pretrain">MoCov2 (ArXiv'2020)</a> # Not officially listed</li>
+        </ul>
+        <li><b>Distillation</b></li>
+        <ul>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/ld">Localization Distillation (ArXiv'2021)</a> # Not officially listed</li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/lad">Label Assignment Distillation (WACV'2022)</a> # Not officially listed</li>
+        </ul>
+      </ul>
+      </td>
+      <td>
+        <ul>
+          <li>VGG (ICLR'2015)</li>
+          <li>ResNet (CVPR'2016)</li>
+          <li>ResNeXt (CVPR'2017)</li>
+          <li>MobileNetV2 (CVPR'2018)</li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/hrnet">HRNet (CVPR'2019)</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/empirical_attention">Generalized Attention (ICCV'2019)</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/gcnet">GCNet (ICCVW'2019)</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/res2net">Res2Net (TPAMI'2020)</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/regnet">RegNet (CVPR'2020)</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/resnest">ResNeSt (ArXiv'2020)</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/pvt">PVT (ICCV'2021)</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/swin">Swin (CVPR'2021)</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/pvt">PVTv2 (ArXiv'2021)</a> # Same folder as pvt</li>
+        </ul>
+      </td>
+      <td>
+        <ul><li><b>Common</b></li>
+          <ul>
+            <li><a href="https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py">OHEM (CVPR'2016)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/gn">Group Normalization (ECCV'2018)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/dcn">DCNv2 (CVPR'2019)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/gn+ws">Weight Standardization (ArXiv'2019)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/pisa">Prime Sample Attention (CVPR'2020)</a> # Not officially listed</li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/strong_baselines">Mask R-CNN with Large-Scale Jitter (New, improved Detectron2 Mask R-CNN baselines)</a> # Not officially listed</li>
+          </ul>
+        </ul>
+        </ul>
+        <ul><li><b>Necks</b></li>
+          <ul>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/pafpn">PAFPN (CVPR'2018)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/panoptic_fpn">Panoptic FPN (CVPR'2019)</a> # Not officially listed</li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/nas_fpn">NAS-FPN (CVPR'2019)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/carafe">CARAFE (ICCV'2019)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/fpg">FPG (ArXiv'2020)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/groie">GRoIE (ICPR'2020)</a></li>
+          </ul>
+        </ul>
+        <ul><li><b>Heads</b></li>
+          <ul>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/rpn">RPN (NeurIPS'2015)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/guided_anchoring">Guided Anchoring (CVPR'2019)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/fsaf">FSAF (CVPR'2019)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/free_anchor">FreeAnchor (NeurIPS'2019)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/cascade_rpn">CascadeRPN (NeurIPS'2019)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/double_heads">Double-Head R-CNN (CVPR'2020)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/sabl">Side-Aware Boundary Localization (ECCV'2020)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/paa">PAA (ECCV'2020)</a></li>
+          </ul>
+        </ul>
+        <ul><li><b>Loss</b></li>
+          <ul>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/ghm">GHM (AAAI'2019)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/gfl">Generalized Focal Loss (NeurIPS'2020)</a></li>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/seesaw_loss">Seasaw Loss (CVPR'2021)</a></li>
+          </ul>
+        </ul>
+        <ul><li><b>Post-processing</b></li>
+          <ul>
+            <li><a href="https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_fpn_soft_nms_1x_coco.py">Soft-NMS (ICCV'2017)</a> # Example of faster_rcnn folder</li>
+          </ul>
+        </ul>
+        <ul><li><b>Speed</b></li>
+          <ul>
+            <li><a href="https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/retinanet_r50_fpn_fp16_1x_coco.py">Mixed Precision (FP16) Training (ArXiv'2017)</a> # Example of retinanet folder</li>
+          </ul>
+        </ul>
+        <ul><li><b>Pre-training</b></li>
+          <ul>
+            <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/scratch">Rethinking ImageNet Pre-training (ArXiv'2018)</a> # Not officially listed</li>
+          </ul>
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/albu_example">Albumentations (ArXiv'2018)</a> # Not officially listed</li>
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/cityscapes">Cityscapes</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/deepfashion">DeepFashion-Inshop</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/lvis">LVIS</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/pascal_voc">Pascal VOC</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/wider_face">WIDER FACE</a></li>
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/common">common (No README.md)</a></li>
+          <li><a href="https://github.com/open-mmlab/mmdetection/tree/master/configs/legacy_1.x">Legacy Configs in MMDetection V1.x</a></li>
+        </ul>
+      </td>
+    </tr>
+</td>
+    </tr>
+  </tbody>
+</table>
 
 Some other methods are also supported in [projects using MMDetection](./docs/en/projects.md).
 
