@@ -5,12 +5,13 @@ CommandLine:
     pytest tests/test_utils/test_assigner.py
     xdoctest tests/test_utils/test_assigner.py zero
 """
+import pytest
 import torch
 
 from mmdet.core.bbox.assigners import (ApproxMaxIoUAssigner,
                                        CenterRegionAssigner, HungarianAssigner,
                                        MaxIoUAssigner, PointAssigner,
-                                       UniformAssigner)
+                                       TaskAlignedAssigner, UniformAssigner)
 
 
 def test_max_iou_assigner():
@@ -496,3 +497,45 @@ def test_uniform_assigner_with_empty_boxes():
     # Test without gt_labels
     assign_result = self.assign(pred_bbox, anchor, gt_bboxes, gt_labels=None)
     assert len(assign_result.gt_inds) == 0
+
+
+def test_task_aligned_assigner():
+    with pytest.raises(AssertionError):
+        TaskAlignedAssigner(topk=0)
+
+    self = TaskAlignedAssigner(topk=13)
+    pred_score = torch.FloatTensor([[0.1, 0.2], [0.2, 0.3], [0.3, 0.4],
+                                    [0.4, 0.5]])
+    pred_bbox = torch.FloatTensor([
+        [1, 1, 12, 8],
+        [4, 4, 20, 20],
+        [1, 5, 15, 15],
+        [30, 5, 32, 42],
+    ])
+    anchor = torch.FloatTensor([
+        [0, 0, 10, 10],
+        [10, 10, 20, 20],
+        [5, 5, 15, 15],
+        [32, 32, 38, 42],
+    ])
+    gt_bboxes = torch.FloatTensor([
+        [0, 0, 10, 9],
+        [0, 10, 10, 19],
+    ])
+    gt_labels = torch.LongTensor([0, 1])
+    assign_result = self.assign(
+        pred_score,
+        pred_bbox,
+        anchor,
+        gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels)
+    assert len(assign_result.gt_inds) == 4
+    assert len(assign_result.labels) == 4
+
+    # test empty gt
+    gt_bboxes = torch.empty(0, 4)
+    gt_labels = torch.empty(0, 2)
+    assign_result = self.assign(
+        pred_score, pred_bbox, anchor, gt_bboxes=gt_bboxes)
+    expected_gt_inds = torch.LongTensor([0, 0, 0, 0])
+    assert torch.all(assign_result.gt_inds == expected_gt_inds)
