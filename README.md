@@ -149,6 +149,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
 - [x] [SOLO (ECCV'2020)](configs/solo/README.md)
 - [x] [QueryInst (ICCV'2021)](configs/queryinst/README.md)
 - [x] [TOOD (ICCV'2021)](configs/tood/README.md)
+- [x] [DyHead (CVPR'2021)](configs/dyhead/README.md)
 </details>
 
 Some other methods are also supported in [projects using MMDetection](./docs/en/projects.md).

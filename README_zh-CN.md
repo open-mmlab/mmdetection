@@ -146,6 +146,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 - [x] [SOLO (ECCV'2020)](configs/solo/README.md)
 - [x] [QueryInst (ICCV'2021)](configs/queryinst/README.md)
 - [x] [TOOD (ICCV'2021)](configs/tood/README.md)
+- [x] [DyHead (CVPR'2021)](configs/dyhead/README.md)
 </details>
 
 我们在[基于 MMDetection 的项目](./docs/zh_cn/projects.md)中列举了一些其他的支持的算法。
