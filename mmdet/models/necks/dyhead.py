@@ -33,8 +33,7 @@ class DyDCNv2(nn.Module):
                  norm_cfg=dict(type='GN', num_groups=16, requires_grad=True)):
         super().__init__()
         self.with_norm = norm_cfg is not None
-        # bias = not self.with_norm
-        bias = True  # for official pre-trained model
+        bias = not self.with_norm
         self.conv = ModulatedDeformConv2d(
             in_channels, out_channels, 3, stride=stride, padding=1, bias=bias)
         self.norm = build_norm_layer(norm_cfg, out_channels)[1]
@@ -56,6 +55,8 @@ class DyHeadBlock(nn.Module):
     Args:
         in_channels (int): Number of input channels.
         out_channels (int): Number of output channels.
+        zero_init_offset (bool, optional): Whether to use zero init for
+            `spatial_conv_offset`. Default: True.
         act_cfg (dict, optional): Config dict for the last activation layer of
             scale-aware attention. Default: dict(type='HSigmoid', bias=3.0,
             divisor=6.0).
@@ -64,8 +65,10 @@ class DyHeadBlock(nn.Module):
     def __init__(self,
                  in_channels,
                  out_channels,
+                 zero_init_offset=True,
                  act_cfg=dict(type='HSigmoid', bias=3.0, divisor=6.0)):
         super().__init__()
+        self.zero_init_offset = zero_init_offset
         # (offset_x, offset_y, mask) * kernel_size_y * kernel_size_x
         self.offset_and_mask_dim = 3 * 3 * 3
         self.offset_dim = 2 * 3 * 3
@@ -85,7 +88,8 @@ class DyHeadBlock(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 normal_init(m, 0, 0.01)
-        constant_init(self.spatial_conv_offset, 0)
+        if self.zero_init_offset:
+            constant_init(self.spatial_conv_offset, 0)
 
     def forward(self, x):
         """Forward function."""
@@ -129,22 +133,34 @@ class DyHead(BaseModule):
         in_channels (int): Number of input channels.
         out_channels (int): Number of output channels.
         num_blocks (int, optional): Number of DyHead Blocks. Default: 6.
+        zero_init_offset (bool, optional): Whether to use zero init for
+            `spatial_conv_offset`. Default: True.
         init_cfg (dict or list[dict], optional): Initialization config dict.
             Default: None.
     """
 
-    def __init__(self, in_channels, out_channels, num_blocks=6, init_cfg=None):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 num_blocks=6,
+                 zero_init_offset=True,
+                 init_cfg=None):
         assert init_cfg is None, 'To prevent abnormal initialization ' \
                                  'behavior, init_cfg is not allowed to be set'
         super().__init__(init_cfg=init_cfg)
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.num_blocks = num_blocks
+        self.zero_init_offset = zero_init_offset
 
         dyhead_blocks = []
         for i in range(num_blocks):
             in_channels = self.in_channels if i == 0 else self.out_channels
-            dyhead_blocks.append(DyHeadBlock(in_channels, self.out_channels))
+            dyhead_blocks.append(
+                DyHeadBlock(
+                    in_channels,
+                    self.out_channels,
+                    zero_init_offset=zero_init_offset))
         self.dyhead_blocks = nn.Sequential(*dyhead_blocks)
 
     def forward(self, inputs):
