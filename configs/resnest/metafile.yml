@@ -11,7 +11,7 @@ Collections:
     Paper:
       URL: https://arxiv.org/abs/2004.08955
       Title: 'ResNeSt: Split-Attention Networks'
-    README: configs/renest/README.md
+    README: configs/resnest/README.md
     Code:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.7.0/mmdet/models/backbones/resnest.py#L273
       Version: v2.7.0
