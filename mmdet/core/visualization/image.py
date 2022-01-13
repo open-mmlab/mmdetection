@@ -215,21 +215,21 @@ def imshow_gt_det_bboxes(img,
           masks. If a single color is given, it will be applied to all classes.
           The tuple of color should be in RGB order. Default: (255, 102, 61).
       det_bbox_color (list[tuple] | tuple | str | None):Colors of bbox lines.
-           If a single color is given, it will be applied to all classes.
-           The tuple of color should be in RGB order. Default: (72, 101, 241).
+          If a single color is given, it will be applied to all classes.
+          The tuple of color should be in RGB order. Default: (72, 101, 241).
       det_text_color (list[tuple] | tuple | str | None):Colors of texts.
-           If a single color is given, it will be applied to all classes.
-           The tuple of color should be in RGB order. Default: (72, 101, 241).
-      det_mask_color (list[tuple] | tuple | str | None, optional): Color of masks.
-           If a single color is given, it will be applied to all classes.
-           The tuple of color should be in RGB order. Default: (72, 101, 241).
+          If a single color is given, it will be applied to all classes.
+          The tuple of color should be in RGB order. Default: (72, 101, 241).
+      det_mask_color (list[tuple] | tuple | str | None, optional): Color of
+          masks. If a single color is given, it will be applied to all classes.
+          The tuple of color should be in RGB order. Default: (72, 101, 241).
       thickness (int): Thickness of lines. Default: 2.
       font_size (int): Font size of texts. Default: 13.
       win_name (str): The window name. Default: ''.
       show (bool): Whether to show the image. Default: True.
       wait_time (float): Value of waitKey param. Default: 0.
       out_file (str, optional): The filename to write the image.
-         Default: None.
+          Default: None.
 
     Returns:
         ndarray: The image with bboxes or masks drawn on it.
