@@ -45,29 +45,30 @@ def imshow_det_bboxes(img,
     """Draw bboxes and class labels (with scores) on an image.
 
     Args:
-        img (str or ndarray): The image to be displayed.
+        img (str | ndarray): The image to be displayed.
         bboxes (ndarray): Bounding boxes (with scores), shaped (n, 4) or
             (n, 5).
         labels (ndarray): Labels of bboxes.
-        segms (ndarray or None): Masks, shaped (n,h,w) or None
+        segms (ndarray | None): Masks, shaped (n,h,w) or None.
         class_names (list[str]): Names of each classes.
-        score_thr (float): Minimum score of bboxes to be shown.  Default: 0
-        bbox_color (list[tuple]/tuple/str/None):Colors of bbox lines.
+        score_thr (float): Minimum score of bboxes to be shown. Default: 0.
+        bbox_color (list[tuple] | tuple | str | None): Colors of bbox lines.
            If a single color is given, it will be applied to all classes.
-           The tuple of color should be in RGB order. Default: 'green'
-        text_color (list[tuple]/tuple/str/None):Colors of texts.
+           The tuple of color should be in RGB order. Default: 'green'.
+        text_color (list[tuple] | tuple | str | None): Colors of texts.
            If a single color is given, it will be applied to all classes.
-           The tuple of color should be in RGB order. Default: 'green'
-        mask_color (list[tuple]/tuple/str/None, optional):Colors of masks.
-           If a single color is given, it will be applied to all classes.
-           The tuple of color should be in RGB order. Default: None
-        thickness (int): Thickness of lines. Default: 2
-        font_size (int): Font size of texts. Default: 13
-        show (bool): Whether to show the image. Default: True
-        win_name (str): The window name. Default: ''
+           The tuple of color should be in RGB order. Default: 'green'.
+        mask_color (list[tuple] | tuple | str | None, optional): Colors of
+           masks. If a single color is given, it will be applied to all
+           classes. The tuple of color should be in RGB order.
+           Default: None.
+        thickness (int): Thickness of lines. Default: 2.
+        font_size (int): Font size of texts. Default: 13.
+        show (bool): Whether to show the image. Default: True.
+        win_name (str): The window name. Default: ''.
         wait_time (float): Value of waitKey param. Default: 0.
         out_file (str, optional): The filename to write the image.
-            Default: None
+            Default: None.
 
     Returns:
         ndarray: The image with bboxes drawn on it.
@@ -197,38 +198,38 @@ def imshow_gt_det_bboxes(img,
     """General visualization GT and result function.
 
     Args:
-      img (str or ndarray): The image to be displayed.)
+      img (str | ndarray): The image to be displayed.
       annotation (dict): Ground truth annotations where contain keys of
-          'gt_bboxes' and 'gt_labels' or 'gt_masks'
-      result (tuple[list] or list): The detection result, can be either
+          'gt_bboxes' and 'gt_labels' or 'gt_masks'.
+      result (tuple[list] | list): The detection result, can be either
           (bbox, segm) or just bbox.
       class_names (list[str]): Names of each classes.
-      score_thr (float): Minimum score of bboxes to be shown.  Default: 0
-      gt_bbox_color (list[tuple]/tuple/str/None):Colors of bbox lines.
+      score_thr (float): Minimum score of bboxes to be shown. Default: 0.
+      gt_bbox_color (list[tuple] | tuple | str | None): Colors of bbox lines.
+          If a single color is given, it will be applied to all classes.
+          The tuple of color should be in RGB order. Default: (255, 102, 61).
+      gt_text_color (list[tuple] | tuple | str | None): Colors of texts.
+          If a single color is given, it will be applied to all classes.
+          The tuple of color should be in RGB order. Default: (255, 102, 61).
+      gt_mask_color (list[tuple] | tuple | str | None, optional): Colors of
+          masks. If a single color is given, it will be applied to all classes.
+          The tuple of color should be in RGB order. Default: (255, 102, 61).
+      det_bbox_color (list[tuple] | tuple | str | None):Colors of bbox lines.
            If a single color is given, it will be applied to all classes.
-           The tuple of color should be in RGB order. Default: (255, 102, 61)
-      gt_text_color (list[tuple]/tuple/str/None):Colors of texts.
+           The tuple of color should be in RGB order. Default: (72, 101, 241).
+      det_text_color (list[tuple] | tuple | str | None):Colors of texts.
            If a single color is given, it will be applied to all classes.
-           The tuple of color should be in RGB order. Default: (255, 102, 61)
-      gt_mask_color (list[tuple]/tuple/str/None, optional):Colors of masks.
+           The tuple of color should be in RGB order. Default: (72, 101, 241).
+      det_mask_color (list[tuple] | tuple | str | None, optional): Color of masks.
            If a single color is given, it will be applied to all classes.
-           The tuple of color should be in RGB order. Default: (255, 102, 61)
-      det_bbox_color (list[tuple]/tuple/str/None):Colors of bbox lines.
-           If a single color is given, it will be applied to all classes.
-           The tuple of color should be in RGB order. Default: (72, 101, 241)
-      det_text_color (list[tuple]/tuple/str/None):Colors of texts.
-           If a single color is given, it will be applied to all classes.
-           The tuple of color should be in RGB order. Default: (72, 101, 241)
-      det_mask_color (list[tuple]/tuple/str/None, optional): Color of masks.
-           If a single color is given, it will be applied to all classes.
-           The tuple of color should be in RGB order. Default: (72, 101, 241)
-      thickness (int): Thickness of lines. Default: 2
-      font_size (int): Font size of texts. Default: 13
-      win_name (str): The window name. Default: ''
-      show (bool): Whether to show the image. Default: True
+           The tuple of color should be in RGB order. Default: (72, 101, 241).
+      thickness (int): Thickness of lines. Default: 2.
+      font_size (int): Font size of texts. Default: 13.
+      win_name (str): The window name. Default: ''.
+      show (bool): Whether to show the image. Default: True.
       wait_time (float): Value of waitKey param. Default: 0.
       out_file (str, optional): The filename to write the image.
-         Default: None
+         Default: None.
 
     Returns:
         ndarray: The image with bboxes or masks drawn on it.
