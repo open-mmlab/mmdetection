@@ -24,8 +24,8 @@
 
 #### Contributors
 
-A total of 12 developers contributed to this release.
-Thanks @ZwwWayne, @Czm369, @jshilong, @RangiLyu, @BIGWangYuDong, @hhaAndroid, @jamiechoi1995, @AronLin, @Keiku, @gkagkos, @fcakyon, @www516717402
+A total of 16 developers contributed to this release.
+Thanks @ZwwWayne, @Czm369, @jshilong, @RangiLyu, @BIGWangYuDong, @hhaAndroid, @jamiechoi1995, @AronLin, @Keiku, @gkagkos, @fcakyon, @www516717402, @vansin, @zactodd, @kimnamu, @jenhaoyang
 
 ### v2.19.1 (14/12/2021)
 
