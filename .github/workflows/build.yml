@@ -8,7 +8,8 @@ on:
       - "demo/**"
       - "docker/**"
       - "tools/**"
-      - "**.md"
+      - "README.md"
+      - "README_zh-CN.md"
 
   pull_request:
     paths-ignore:
@@ -19,7 +20,8 @@ on:
       - "docs/**"
       - "docs_zh-CN/**"
       - "tools/**"
-      - "**.md"
+      - "README.md"
+      - "README_zh-CN.md"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
