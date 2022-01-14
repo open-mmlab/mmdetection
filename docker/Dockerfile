@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y ffmpeg libsm6 libxext6 git ninja-build 
     && rm -rf /var/lib/apt/lists/*
 
 # Install MMCV
-RUN pip install --no-cache-dir -U pip wheel setuptools
+RUN pip install --no-cache-dir --upgrade pip wheel setuptools
 RUN pip install --no-cache-dir mmcv-full==1.3.17 -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.6.0/index.html
 
 # Install MMDetection
