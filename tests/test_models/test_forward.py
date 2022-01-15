@@ -699,3 +699,88 @@ def test_yolox_random_size():
         gt_labels=gt_labels,
         return_loss=True)
     assert detector._input_size == (64, 96)
+
+
+def test_maskformer_forward():
+    model_cfg = _get_detector_cfg(
+        'maskformer/maskformer_r50_mstrain_16x1_75e_coco.py')
+    model_cfg.backbone.init_cfg = None
+
+    from mmdet.core import BitmapMasks
+    from mmdet.models import build_detector
+    detector = build_detector(model_cfg)
+
+    # Test forward train with non-empty truth batch
+    detector.train()
+    img_metas = [
+        {
+            'batch_input_shape': (960, 1280),
+            'img_shape': (958, 1271, 3),
+            'ori_shape': (479, 635, 3),
+            'pad_shape': (960, 1280, 3)
+        },
+    ]
+    img = torch.rand((1, 3, 960, 1280))
+    gt_bboxes = None
+    gt_labels = [
+        torch.tensor([10]).long(),
+    ]
+    thing_mask1 = np.zeros((1, 960, 1280), dtype=np.int32)
+    thing_mask1[0, :500] = 1
+    gt_masks = [
+        BitmapMasks(thing_mask1, 960, 1280),
+    ]
+    stuff_mask1 = torch.zeros((1, 960, 1280)).long()
+    stuff_mask1[0, :500] = 10
+    stuff_mask1[0, 500:] = 100
+    gt_semantic_seg = [
+        stuff_mask1,
+    ]
+    losses = detector.forward(
+        img=img,
+        img_metas=img_metas,
+        gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels,
+        gt_masks=gt_masks,
+        gt_semantic_seg=gt_semantic_seg,
+        return_loss=True)
+    assert isinstance(losses, dict)
+    loss, _ = detector._parse_losses(losses)
+    assert float(loss.item()) > 0
+
+    # Test forward train with an empty truth batch
+    gt_bboxes = [
+        torch.empty((0, 4)).float(),
+    ]
+    gt_labels = [
+        torch.empty((0, )).long(),
+    ]
+    mask = np.zeros((0, 960, 1280), dtype=np.uint8)
+    gt_masks = [
+        BitmapMasks(mask, 960, 1280),
+    ]
+    gt_semantic_seg = [
+        torch.randint(0, 133, (0, 960, 1280)),
+    ]
+    losses = detector.forward(
+        img,
+        img_metas,
+        gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels,
+        gt_masks=gt_masks,
+        gt_semantic_seg=gt_semantic_seg,
+        return_loss=True)
+    assert isinstance(losses, dict)
+    loss, _ = detector._parse_losses(losses)
+    assert float(loss.item()) > 0
+
+    # Test forward test
+    detector.eval()
+    with torch.no_grad():
+        img_list = [g[None, :] for g in img]
+        batch_results = []
+        for one_img, one_meta in zip(img_list, img_metas):
+            result = detector.forward([one_img], [[one_meta]],
+                                      rescale=True,
+                                      return_loss=False)
+        batch_results.append(result)
