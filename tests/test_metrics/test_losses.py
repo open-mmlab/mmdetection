@@ -31,6 +31,34 @@ def test_ce_loss():
     loss_cls = build_loss(loss_cls_cfg)
     assert torch.allclose(loss_cls(fake_pred, fake_label), torch.tensor(200.))
 
+    # test loss with bce_expand_one_hot=False
+    loss_cls_cfg = dict(
+        type='CrossEntropyLoss',
+        use_sigmoid=True,
+        bce_expand_one_hot=False,
+        loss_weight=1.0)
+    fake_pred = torch.Tensor([
+        1.,
+    ])
+    fake_label = torch.Tensor([0.9])
+    loss_cls = build_loss(loss_cls_cfg)
+    assert torch.allclose(
+        loss_cls(fake_pred, fake_label), torch.tensor(0.41326168))
+
+    # test loss with bce_expand_one_hot=True
+    loss_cls_cfg = dict(
+        type='CrossEntropyLoss',
+        use_sigmoid=True,
+        bce_expand_one_hot=True,
+        loss_weight=1.0)
+    fake_pred = torch.Tensor([
+        [1.],
+    ])
+    fake_label = torch.Tensor([1.]).long()
+    loss_cls = build_loss(loss_cls_cfg)
+    assert torch.allclose(
+        loss_cls(fake_pred, 1 - fake_label), torch.tensor(0.31326166))
+
 
 def test_varifocal_loss():
     # only sigmoid version of VarifocalLoss is implemented
