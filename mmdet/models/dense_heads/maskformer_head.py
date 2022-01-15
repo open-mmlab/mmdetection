@@ -8,9 +8,9 @@ from mmcv.cnn.bricks.transformer import (build_positional_encoding,
 from mmcv.runner import force_fp32
 
 from mmdet.core import build_assigner, build_sampler, multi_apply, reduce_mean
-from mmdet.datasets.coco_panoptic import INSTANCE_OFFSET
+from mmdet.models.utils import INSTANCE_OFFSET
 from ..builder import HEADS, build_loss
-from ..dense_heads.anchor_free_head import AnchorFreeHead
+from .anchor_free_head import AnchorFreeHead
 
 
 @HEADS.register_module()
