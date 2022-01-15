@@ -315,9 +315,13 @@ class MaskFormerHead(AnchorFreeHead):
                 - neg_inds (Tensor): Sampled negative indices for each image.
         """
         target_shape = mask_pred.shape[-2:]
-        gt_masks_downsampled = F.interpolate(
-            gt_masks.unsqueeze(1).float(), target_shape,
-            mode='nearest').squeeze(1).long()
+        if gt_masks.shape[0] > 0:
+            gt_masks_downsampled = F.interpolate(
+                gt_masks.unsqueeze(1).float(), target_shape,
+                mode='nearest').squeeze(1).long()
+        else:
+            gt_masks_downsampled = gt_masks
+
         # assign and sample
         assign_result = self.assigner.assign(cls_score, mask_pred, gt_labels,
                                              gt_masks_downsampled, img_metas)
