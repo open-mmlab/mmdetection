@@ -9,6 +9,7 @@ from .inverted_residual import InvertedResidual
 from .make_divisible import make_divisible
 from .misc import interpolate_as
 from .normed_predictor import NormedConv2d, NormedLinear
+from .panoptic_utils import INSTANCE_OFFSET
 from .positional_encoding import (LearnedPositionalEncoding,
                                   SinePositionalEncoding)
 from .res_layer import ResLayer, SimplifiedBasicBlock
@@ -25,5 +26,5 @@ __all__ = [
     'NormedLinear', 'NormedConv2d', 'make_divisible', 'InvertedResidual',
     'SELayer', 'interpolate_as', 'ConvUpsample', 'CSPLayer',
     'adaptive_avg_pool2d', 'AdaptiveAvgPool2d', 'PatchEmbed', 'nchw_to_nlc',
-    'nlc_to_nchw', 'pvt_convert'
+    'nlc_to_nchw', 'pvt_convert', 'INSTANCE_OFFSET'
 ]
