@@ -157,7 +157,7 @@ class MaskFormerHead(AnchorFreeHead):
         Args:
             gt_labels_list (list[Tensor]): Each is ground truth
                 labels of each bbox, with shape (num_gts, ).
-            gt_masks_list (list[Tensor]): Each is ground truth
+            gt_masks_list (list[BitmapMasks]): Each is ground truth
                 masks of each instances of a image, shape
                 (num_gts, h, w).
             gt_semantic_seg (Tensor): Ground truth of semantic
@@ -188,7 +188,7 @@ class MaskFormerHead(AnchorFreeHead):
         Args:
             gt_labels (Tensor): Ground truth labels of each bbox,
                 with shape (num_gts, ).
-            gt_masks (Tensor): Ground truth masks of each instances
+            gt_masks (BitmapMasks): Ground truth masks of each instances
                 of a image, shape (num_gts, h, w).
             gt_semantic_seg (Tensor): Ground truth of semantic
                 segmentation with the shape (1, h, w).
