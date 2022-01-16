@@ -71,6 +71,7 @@ jobs:
         run: rm -rf .eggs && pip install -e .
       - name: Run unittests and generate coverage report
         run: |
+          pip install timm
           coverage run --branch --source mmdet -m pytest tests/
           coverage xml
           coverage report -m
@@ -143,6 +144,7 @@ jobs:
           TORCH_CUDA_ARCH_LIST=7.0 pip install .
       - name: Run unittests and generate coverage report
         run: |
+          python -m pip install timm
           coverage run --branch --source mmdet -m pytest tests/
           coverage xml
           coverage report -m
@@ -216,6 +218,7 @@ jobs:
           TORCH_CUDA_ARCH_LIST=7.0 pip install .
       - name: Run unittests and generate coverage report
         run: |
+          python -m pip install timm
           coverage run --branch --source mmdet -m pytest tests/
           coverage xml
           coverage report -m
