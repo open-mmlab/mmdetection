@@ -32,18 +32,19 @@ def test_dropblock():
 
 
 def test_pixeldecoder():
+    base_channels = 64
     pixel_decoder_cfg = ConfigDict(
         dict(
             type='PixelDecoder',
-            in_channels=[256, 512, 1024, 2048],
-            feat_channels=256,
-            out_channels=256,
+            in_channels=[base_channels * 2**i for i in range(4)],
+            feat_channels=base_channels,
+            out_channels=base_channels,
             norm_cfg=dict(type='GN', num_groups=32),
             act_cfg=dict(type='ReLU')))
     self = build_plugin_layer(pixel_decoder_cfg)[1]
     img_metas = [{}, {}]
     feats = [
-        torch.rand((2, 256 * 2**i, 30 * 2**(3 - i), 40 * 2**(3 - i)))
+        torch.rand((2, base_channels * 2**i, 4 * 2**(3 - i), 5 * 2**(3 - i)))
         for i in range(4)
     ]
     mask_feature, memory = self(feats, img_metas)
@@ -53,12 +54,13 @@ def test_pixeldecoder():
 
 
 def test_transformerencoderpixeldecoer():
+    base_channels = 64
     pixel_decoder_cfg = ConfigDict(
         dict(
             type='TransformerEncoderPixelDecoder',
-            in_channels=[256, 512, 1024, 2048],  # pass to pixel_decoder inside
-            feat_channels=256,
-            out_channels=256,
+            in_channels=[base_channels * 2**i for i in range(4)],
+            feat_channels=base_channels,
+            out_channels=base_channels,
             norm_cfg=dict(type='GN', num_groups=32),
             act_cfg=dict(type='ReLU'),
             encoder=dict(
@@ -68,15 +70,15 @@ def test_transformerencoderpixeldecoer():
                     type='BaseTransformerLayer',
                     attn_cfgs=dict(
                         type='MultiheadAttention',
-                        embed_dims=256,
+                        embed_dims=base_channels,
                         num_heads=8,
                         attn_drop=0.1,
                         proj_drop=0.1,
                         dropout_layer=None,
                         batch_first=False),
                     ffn_cfgs=dict(
-                        embed_dims=256,
-                        feedforward_channels=2048,
+                        embed_dims=base_channels,
+                        feedforward_channels=base_channels * 8,
                         num_fcs=2,
                         act_cfg=dict(type='ReLU', inplace=True),
                         ffn_drop=0.1,
@@ -88,17 +90,19 @@ def test_transformerencoderpixeldecoer():
                     batch_first=False),
                 init_cfg=None),
             positional_encoding=dict(
-                type='SinePositionalEncoding', num_feats=128, normalize=True)))
+                type='SinePositionalEncoding',
+                num_feats=base_channels // 2,
+                normalize=True)))
     self = build_plugin_layer(pixel_decoder_cfg)[1]
     img_metas = [{
-        'batch_input_shape': (960, 1280),
-        'img_shape': (958, 1271, 3),
+        'batch_input_shape': (128, 160),
+        'img_shape': (120, 160, 3),
     }, {
-        'batch_input_shape': (960, 1280),
-        'img_shape': (954, 1280, 3),
+        'batch_input_shape': (128, 160),
+        'img_shape': (125, 160, 3),
     }]
     feats = [
-        torch.rand((2, 256 * 2**i, 30 * 2**(3 - i), 40 * 2**(3 - i)))
+        torch.rand((2, base_channels * 2**i, 4 * 2**(3 - i), 5 * 2**(3 - i)))
         for i in range(4)
     ]
     mask_feature, memory = self(feats, img_metas)

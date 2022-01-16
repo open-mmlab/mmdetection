@@ -704,7 +704,32 @@ def test_yolox_random_size():
 def test_maskformer_forward():
     model_cfg = _get_detector_cfg(
         'maskformer/maskformer_r50_mstrain_16x1_75e_coco.py')
+    base_channels = 64
     model_cfg.backbone.init_cfg = None
+    model_cfg.backbone.base_channels = base_channels // 4
+    model_cfg.panoptic_head.in_channels = [
+        base_channels * 2**i for i in range(4)
+    ]
+    model_cfg.panoptic_head.feat_channels = base_channels
+    model_cfg.panoptic_head.out_channels = base_channels
+    model_cfg.panoptic_head.pixel_decoder.encoder.\
+        transformerlayers.attn_cfgs.embed_dims = base_channels
+    model_cfg.panoptic_head.pixel_decoder.encoder.\
+        transformerlayers.ffn_cfgs.embed_dims = base_channels
+    model_cfg.panoptic_head.pixel_decoder.encoder.\
+        transformerlayers.ffn_cfgs.feedforward_channels = base_channels * 8
+    model_cfg.panoptic_head.pixel_decoder.\
+        positional_encoding.num_feats = base_channels // 2
+    model_cfg.panoptic_head.positional_encoding.\
+        num_feats = base_channels // 2
+    model_cfg.panoptic_head.transformer_decoder.\
+        transformerlayers.attn_cfgs.embed_dims = base_channels
+    model_cfg.panoptic_head.transformer_decoder.\
+        transformerlayers.ffn_cfgs.embed_dims = base_channels
+    model_cfg.panoptic_head.transformer_decoder.\
+        transformerlayers.ffn_cfgs.feedforward_channels = base_channels * 8
+    model_cfg.panoptic_head.transformer_decoder.\
+        transformerlayers.feedforward_channels = base_channels * 8
 
     from mmdet.core import BitmapMasks
     from mmdet.models import build_detector
@@ -714,25 +739,25 @@ def test_maskformer_forward():
     detector.train()
     img_metas = [
         {
-            'batch_input_shape': (960, 1280),
-            'img_shape': (958, 1271, 3),
-            'ori_shape': (479, 635, 3),
-            'pad_shape': (960, 1280, 3)
+            'batch_input_shape': (128, 160),
+            'img_shape': (126, 160, 3),
+            'ori_shape': (63, 80, 3),
+            'pad_shape': (128, 160, 3)
         },
     ]
-    img = torch.rand((1, 3, 960, 1280))
+    img = torch.rand((1, 3, 128, 160))
     gt_bboxes = None
     gt_labels = [
         torch.tensor([10]).long(),
     ]
-    thing_mask1 = np.zeros((1, 960, 1280), dtype=np.int32)
-    thing_mask1[0, :500] = 1
+    thing_mask1 = np.zeros((1, 128, 160), dtype=np.int32)
+    thing_mask1[0, :50] = 1
     gt_masks = [
-        BitmapMasks(thing_mask1, 960, 1280),
+        BitmapMasks(thing_mask1, 128, 160),
     ]
-    stuff_mask1 = torch.zeros((1, 960, 1280)).long()
-    stuff_mask1[0, :500] = 10
-    stuff_mask1[0, 500:] = 100
+    stuff_mask1 = torch.zeros((1, 128, 160)).long()
+    stuff_mask1[0, :50] = 10
+    stuff_mask1[0, 50:] = 100
     gt_semantic_seg = [
         stuff_mask1,
     ]
@@ -755,12 +780,12 @@ def test_maskformer_forward():
     gt_labels = [
         torch.empty((0, )).long(),
     ]
-    mask = np.zeros((0, 960, 1280), dtype=np.uint8)
+    mask = np.zeros((0, 128, 160), dtype=np.uint8)
     gt_masks = [
-        BitmapMasks(mask, 960, 1280),
+        BitmapMasks(mask, 128, 160),
     ]
     gt_semantic_seg = [
-        torch.randint(0, 133, (0, 960, 1280)),
+        torch.randint(0, 133, (0, 128, 160)),
     ]
     losses = detector.forward(
         img,
