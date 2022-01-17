@@ -1,8 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 import copy
+import multiprocessing as mp
 import os
 import os.path as osp
+import platform
 import time
 import warnings
 
@@ -18,8 +20,6 @@ from mmdet.apis import init_random_seed, set_random_seed, train_detector
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
 from mmdet.utils import collect_env, get_root_logger
-
-cv2.setNumThreads(0)
 
 
 def parse_args():
@@ -91,12 +91,48 @@ def parse_args():
     return args
 
 
+def setup_multi_processes(cfg):
+    # set multi-process start method as `fork` to speed up the training
+    if platform.system() != 'Windows':
+        mp_start_method = cfg.get('mp_start_method', 'fork')
+        mp.set_start_method(mp_start_method)
+
+    # disable opencv multithreading to avoid system being overloaded
+    opencv_num_threads = cfg.get('opencv_num_threads', 0)
+    cv2.setNumThreads(opencv_num_threads)
+
+    # setup OMP threads
+    # This code is referred from https://github.com/pytorch/pytorch/blob/master/torch/distributed/run.py  # noqa
+    if ('OMP_NUM_THREADS' not in os.environ and cfg.data.workers_per_gpu > 1):
+        omp_num_threads = 1
+        warnings.warn(
+            f'Setting OMP_NUM_THREADS environment variable for each process '
+            f'to be {omp_num_threads} in default, to avoid your system being '
+            f'overloaded, please further tune the variable for optimal '
+            f'performance in your application as needed.')
+        os.environ['OMP_NUM_THREADS'] = str(omp_num_threads)
+
+    # setup MKL threads
+    if 'MKL_NUM_THREADS' not in os.environ and cfg.data.workers_per_gpu > 1:
+        mkl_num_threads = 1
+        warnings.warn(
+            f'Setting MKL_NUM_THREADS environment variable for each process '
+            f'to be {mkl_num_threads} in default, to avoid your system being '
+            f'overloaded, please further tune the variable for optimal '
+            f'performance in your application as needed.')
+        os.environ['MKL_NUM_THREADS'] = str(mkl_num_threads)
+
+
 def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
+
+    # set multi-process settings
+    setup_multi_processes(cfg)
+
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
