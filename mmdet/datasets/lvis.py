@@ -267,6 +267,8 @@ class LVISV05Dataset(CocoDataset):
         'wrench', 'wristband', 'wristlet', 'yacht', 'yak', 'yogurt',
         'yoke_(animal_equipment)', 'zebra', 'zucchini')
 
+    PALETTE = None
+
     def load_annotations(self, ann_file):
         """Load annotation from lvis style annotation file.
 
@@ -424,8 +426,10 @@ class LVISV05Dataset(CocoDataset):
                     for idx, catId in enumerate(self.cat_ids):
                         # area range index 0: all area ranges
                         # max dets index -1: typically 100 per image
-                        nm = self.coco.load_cats(catId)[0]
-                        precision = precisions[:, :, idx, 0, -1]
+                        # the dimensions of precisions are
+                        # [num_thrs, num_recalls, num_cats, num_area_rngs]
+                        nm = self.coco.load_cats([catId])[0]
+                        precision = precisions[:, :, idx, 0]
                         precision = precision[precision > -1]
                         if precision.size:
                             ap = np.mean(precision)

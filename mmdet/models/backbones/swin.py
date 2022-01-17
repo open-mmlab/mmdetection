@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import warnings
 from collections import OrderedDict
 from copy import deepcopy
@@ -515,7 +516,7 @@ class SwinTransformer(BaseModule):
             to convert some keys to make it compatible.
             Default: False.
         frozen_stages (int): Stages to be frozen (stop grad and set eval mode).
-            -1 means not freezing any parameters.
+            Default: -1 (-1 means not freezing any parameters).
         init_cfg (dict, optional): The Config for initialization.
             Defaults to None.
     """
@@ -678,8 +679,7 @@ class SwinTransformer(BaseModule):
                 if isinstance(m, nn.Linear):
                     trunc_normal_init(m, std=.02, bias=0.)
                 elif isinstance(m, nn.LayerNorm):
-                    constant_init(m.bias, 0)
-                    constant_init(m.weight, 1.0)
+                    constant_init(m, 1.0)
         else:
             assert 'checkpoint' in self.init_cfg, f'Only support ' \
                                                   f'specify `Pretrained` in ' \

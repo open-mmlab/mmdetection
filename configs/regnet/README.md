@@ -1,12 +1,28 @@
 # Designing Network Design Spaces
 
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+ In this work, we present a new network design paradigm. Our goal is to help advance the understanding of network design and discover design principles that generalize across settings. Instead of focusing on designing individual network instances, we design network design spaces that parametrize populations of networks. The overall process is analogous to classic manual design of networks, but elevated to the design space level. Using our methodology we explore the structure aspect of network design and arrive at a low-dimensional design space consisting of simple, regular networks that we call RegNet. The core insight of the RegNet parametrization is surprisingly simple: widths and depths of good networks can be explained by a quantized linear function. We analyze the RegNet design space and arrive at interesting findings that do not match the current practice of network design. The RegNet design space provides simple and fast networks that work well across a wide range of flop regimes. Under comparable training settings and flops, the RegNet models outperform the popular EfficientNet models while being up to 5x faster on GPUs.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143971942-da50f719-61e9-43bd-9468-0dbfbe80284e.png"/>
+</div>
+
+<!-- [PAPER_TITLE: Designing Network Design Spaces] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/2003.13678] -->
+
 ## Introduction
 
-[BACKBONE]
+<!-- [BACKBONE] -->
 
 We implement RegNetX and RegNetY models in detection systems and provide their first results on Mask R-CNN, Faster R-CNN and RetinaNet.
 
 The pre-trained modles are converted from [model zoo of pycls](https://github.com/facebookresearch/pycls/blob/master/MODEL_ZOO.md).
+
+## Citation
 
 ```latex
 @article{radosavovic2020designing,

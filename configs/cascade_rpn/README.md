@@ -1,4 +1,20 @@
-# Cascade RPN
+# Cascade RPN: Delving into High-Quality Region Proposal Network with Adaptive Convolution
+
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+This paper considers an architecture referred to as Cascade Region Proposal Network (Cascade RPN) for improving the region-proposal quality and detection performance by systematically addressing the limitation of the conventional RPN that heuristically defines the anchors and aligns the features to the anchors. First, instead of using multiple anchors with predefined scales and aspect ratios, Cascade RPN relies on a single anchor per location and performs multi-stage refinement. Each stage is progressively more stringent in defining positive samples by starting out with an anchor-free metric followed by anchor-based metrics in the ensuing stages. Second, to attain alignment between the features and the anchors throughout the stages, adaptive convolution is proposed that takes the anchors in addition to the image features as its input and learns the sampled features guided by the anchors. A simple implementation of a two-stage Cascade RPN achieves AR 13.4 points higher than that of the conventional RPN, surpassing any existing region proposal methods. When adopting to Fast R-CNN and Faster R-CNN, Cascade RPN can improve the detection mAP by 3.1 and 3.5 points, respectively.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143872368-1580193a-d19c-4723-a579-c7ed2d5da4d1.png"/>
+</div>
+
+<!-- [PAPER_TITLE: Cascade RPN: Delving into High-Quality Region Proposal Network with Adaptive Convolution] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/1909.06720] -->
+
+## Citation
 
 <!-- [ALGORITHM] -->
 

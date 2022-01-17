@@ -19,6 +19,11 @@ on:
       - 'docs/**'
       - 'docs_zh-CN/**'
 
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build_cpu:
     runs-on: ubuntu-18.04

@@ -1,6 +1,20 @@
-# PointRend
+# PointRend: Image Segmentation as Rendering
 
-## Introduction
+## Abstract
+
+<!-- [ABSTRACT] -->
+
+We present a new method for efficient high-quality image segmentation of objects and scenes. By analogizing classical computer graphics methods for efficient rendering with over- and undersampling challenges faced in pixel labeling tasks, we develop a unique perspective of image segmentation as a rendering problem. From this vantage, we present the PointRend (Point-based Rendering) neural network module: a module that performs point-based segmentation predictions at adaptively selected locations based on an iterative subdivision algorithm. PointRend can be flexibly applied to both instance and semantic segmentation tasks by building on top of existing state-of-the-art models. While many concrete implementations of the general idea are possible, we show that a simple design already achieves excellent results. Qualitatively, PointRend outputs crisp object boundaries in regions that are over-smoothed by previous methods. Quantitatively, PointRend yields significant gains on COCO and Cityscapes, for both instance and semantic segmentation. PointRend's efficiency enables output resolutions that are otherwise impractical in terms of memory or computation compared to existing approaches.
+
+<!-- [IMAGE] -->
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143970097-d38b6801-d3c8-468f-b8b0-639be3689907.png"/>
+</div>
+
+<!-- [PAPER_TITLE: PointRend: Image Segmentation as Rendering] -->
+<!-- [PAPER_URL: https://arxiv.org/abs/1912.08193] -->
+
+## Citation
 
 <!-- [ALGORITHM] -->
 
