@@ -8,9 +8,12 @@ from .utils import check_norm_state
 
 def test_timm_backbone():
     with pytest.raises(TypeError):
-        # pretrained must be a string path
-        model = TIMMBackbone()
-        model.init_weights(pretrained=0)
+        # TIMMBackbone has 1 required positional argument: 'model_name'
+        model = TIMMBackbone(features_only=True)
+
+    with pytest.raises(TypeError):
+        # pretrained must be bool
+        model = TIMMBackbone(model_name='resnet18', pretrained='model.pth')
 
     # Test different norm_layer, can be: 'SyncBN', 'BN2d', 'GN', 'LN', 'IN'
     # Test resnet18 from timm, norm_layer='BN2d'

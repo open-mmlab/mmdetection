@@ -52,6 +52,8 @@ class TIMMBackbone(BaseModule):
             raise RuntimeError(
                 'Failed to import timm. Please run "pip install timm". '
                 '"pip install dataclasses" may also be needed for Python 3.6.')
+        if not isinstance(pretrained, bool):
+            raise TypeError('pretrained must be bool, not str for model path')
         if features_only and checkpoint_path:
             warnings.warn(
                 'Using both features_only and checkpoint_path will cause error'
