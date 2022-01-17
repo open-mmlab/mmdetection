@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 from itertools import repeat
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
@@ -56,15 +57,22 @@ def main(args):
             'http://images.cocodataset.org/annotations/' +
             'annotations_trainval2017.zip'
         ],
-        lvis=[],
-        voc2007=[],
+        lvis=[
+            'https://s3-us-west-2.amazonaws.com/dl.fbaipublicfiles.com/LVIS/lvis_v1_train.json.zip',  # noqa
+            'https://s3-us-west-2.amazonaws.com/dl.fbaipublicfiles.com/LVIS/lvis_v1_train.json.zip',  # noqa
+        ],
+        voc2007=[
+            'http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtrainval_06-Nov-2007.tar',  # noqa
+            'http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtest_06-Nov-2007.tar',  # noqa
+            'http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCdevkit_08-Jun-2007.tar',  # noqa
+        ],
     )
     download(
         data2url[args.dataset_name],
         dir=path,
         unzip=args.unzip,
         delete=args.delete,
-        curl=not args.win,
+        curl=(sys.platform == 'linux'),
         threads=args.threads)
 
 
@@ -88,7 +96,5 @@ if __name__ == '__main__':
         help='delete the download zipped files')
     parser.add_argument(
         '--threads', type=int, help='number of threading', default=4)
-    parser.add_argument(
-        '--win', action='store_true', help='use windows to download or not')
     args = parser.parse_args()
     main(args)
