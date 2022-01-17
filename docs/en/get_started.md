@@ -181,7 +181,6 @@ The following table lists affected algorithms.
 |                         CARAFE                          |                            CARAFE                            |
 |                      SyncBatchNorm                      |                           ResNeSt                            |
 
-**Notice:** MMDetection does not support training with CPU for now.
 
 ### Another option: Docker Image
 

@@ -246,6 +246,7 @@ We provide testing scripts for evaluating an existing model on the whole dataset
 The following testing environments are supported:
 
 - single GPU
+- CPU
 - single node multiple GPUs
 - multiple nodes
 
@@ -253,6 +254,15 @@ Choose the proper script to perform testing depending on the testing environment
 
 ```shell
 # single-gpu testing
+python tools/test.py \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--out ${RESULT_FILE}] \
+    [--eval ${EVAL_METRICS}] \
+    [--show]
+
+# CPU: disable GPUs and run single-gpu testing script
+export CUDA_VISIBLE_DEVICES=-1
 python tools/test.py \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
@@ -398,6 +408,15 @@ python tools/test.py \
     --options ${JSONFILE_PREFIX} \
     [--show]
 
+# CPU: disable GPUs and run single-gpu testing script
+export CUDA_VISIBLE_DEVICES=-1
+python tools/test.py \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--out ${RESULT_FILE}] \
+    [--eval ${EVAL_METRICS}] \
+    [--show]
+
 # multi-gpu testing
 bash tools/dist_test.sh \
     ${CONFIG_FILE} \
@@ -521,6 +540,20 @@ Difference between `resume-from` and `load-from`:
 `resume-from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
 `load-from` only loads the model weights and the training epoch starts from 0. It is usually used for finetuning.
 
+### Training on CPU
+
+The process of training on the CPU is consistent with single GPU training. We just need to disable GPUs before the training process.
+
+```shell
+export CUDA_VISIBLE_DEVICES=-1
+```
+
+And then run the script [above](#training-on-a-single-GPU).
+
+**Note**:
+
+We do not recommend users to use CPU for training because it is too slow. We support this feature to allow users to debug on machines without GPU, which is more convenient.
+
 ### Training on multiple GPUs
 
 We provide `tools/dist_train.sh` to launch training on multiple GPUs.
@@ -533,7 +566,7 @@ bash ./tools/dist_train.sh \
     [optional arguments]
 ```
 
-Optional arguments remain the same as stated [above](#train-with-a-single-GPU).
+Optional arguments remain the same as stated [above](#training-on-a-single-GPU).
 
 #### Launch multiple jobs simultaneously
 
