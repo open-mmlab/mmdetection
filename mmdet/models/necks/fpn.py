@@ -85,13 +85,14 @@ class FPN(BaseModule):
         self.fp16_enabled = False
         self.upsample_cfg = upsample_cfg.copy()
 
-        if end_level == -1:
+        if end_level == -1 or end_level == self.num_ins:
+            # if end_level == len(inputs) or end_level == -1, extra level is allowed
             self.backbone_end_level = self.num_ins
             assert num_outs >= self.num_ins - start_level
         else:
             # if end_level < inputs, no extra level is allowed
             self.backbone_end_level = end_level
-            assert end_level <= len(in_channels)
+            assert end_level < len(in_channels)
             assert num_outs == end_level - start_level
         self.start_level = start_level
         self.end_level = end_level
