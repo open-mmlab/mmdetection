@@ -1,5 +1,32 @@
 ## Changelog
 
+### v2.20.0 (27/12/2021)
+
+#### New Features
+
+- Support [TOOD](configs/tood/README.md): Task-aligned One-stage Object Detection (ICCV 2021 Oral) (#6746)
+- Support resuming from the latest checkpoint automatically (#6727)
+
+#### Bug Fixes
+
+- Fix wrong bbox `loss_weight` of the PAA head (#6744)
+- Fix the padding value of `gt_semantic_seg` in batch collating (#6837)
+- Fix test error of lvis when using `classwise` (#6845)
+- Avoid BC-breaking of `get_local_path`  (#6719)
+- Fix bug in `sync_norm_hook` when the BN layer does not exist (#6852)
+- Use pycocotools directly no matter what platform it is (#6838)
+
+#### Improvements
+
+- Add unit test for SimOTA with no valid bbox (#6770)
+- Use precommit to check readme (#6802)
+- Support selecting GPU-ids in non-distributed testing time (#6781)
+
+#### Contributors
+
+A total of 16 developers contributed to this release.
+Thanks @ZwwWayne, @Czm369, @jshilong, @RangiLyu, @BIGWangYuDong, @hhaAndroid, @jamiechoi1995, @AronLin, @Keiku, @gkagkos, @fcakyon, @www516717402, @vansin, @zactodd, @kimnamu, @jenhaoyang
+
 ### v2.19.1 (14/12/2021)
 
 #### New Features

@@ -13,10 +13,10 @@
   <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
 
-[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/v2.19.1/) |
-[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/v2.19.1/get_started.html) |
-[👀模型库](https://mmdetection.readthedocs.io/zh_CN/v2.19.1/model_zoo.html) |
-[🆕更新日志](https://mmdetection.readthedocs.io/en/v2.19.1/changelog.html) |
+[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/v2.20.0/) |
+[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/v2.20.0/get_started.html) |
+[👀模型库](https://mmdetection.readthedocs.io/zh_CN/v2.20.0/model_zoo.html) |
+[🆕更新日志](https://mmdetection.readthedocs.io/en/v2.20.0/changelog.html) |
 [🚀进行中的项目](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔报告问题](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
@@ -59,10 +59,9 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 更新日志
 
-最新的 **2.19.1** 版本已经在 2021.12.14 发布:
-- 发布 [YOLOX](configs/yolox/README.md) COCO 预训练模型
-- 在自述文件中添加论文的摘要和草图
-- 修复一些权重初始化错误
+最新的 **2.20.0** 版本已经在 2021.12.27 发布:
+- 支持了 ICCV 2021 Oral 方法 [TOOD](configs/tood/README.md): Task-aligned One-stage Object Detection
+- 支持了自动从最新的存储参数节点恢复训练
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/changelog.md)。
 
@@ -146,6 +145,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 - [x] [YOLOX (ArXiv'2021)](configs/yolox/README.md)
 - [x] [SOLO (ECCV'2020)](configs/solo/README.md)
 - [x] [QueryInst (ICCV'2021)](configs/queryinst/README.md)
+- [x] [TOOD (ICCV'2021)](configs/tood/README.md)
 </details>
 
 我们在[基于 MMDetection 的项目](./docs/zh_cn/projects.md)中列举了一些其他的支持的算法。
@@ -162,6 +162,10 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 我们也提供了一些进阶教程，内容覆盖了 [finetune 模型](docs/zh_cn/tutorials/finetune.md)，[增加新数据集支持](docs/zh_cn/tutorials/customize_dataset.md)，[设计新的数据预处理流程](docs/zh_cn/tutorials/data_pipeline.md)，[增加自定义模型](docs/zh_cn/tutorials/customize_models.md)，[增加自定义的运行时配置](docs/zh_cn/tutorials/customize_runtime.md)，[常用工具和脚本](docs/zh_cn/useful_tools.md)。
 
 如果遇到问题，请参考 [常见问题解答](docs/zh_cn/faq.md)。
+
+## 相关教程
+
+请参考 [MMDetection 中文解读文案汇总](docs/zh_cn/article.md)
 
 ## 贡献指南
 
@@ -206,6 +210,8 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 - [MMFlow](https://github.com/open-mmlab/mmflow): OpenMMLab 光流估计工具箱与测试基准
 - [MMFewShot](https://github.com/open-mmlab/mmfewshot): OpenMMLab 少样本学习工具箱与测试基准
 - [MMHuman3D](https://github.com/open-mmlab/mmhuman3d): OpenMMLab 人体参数化模型工具箱与测试基准
+- [MMSelfSup](https://github.com/open-mmlab/mmselfsup): OpenMMLab 自监督学习工具箱与测试基准
+- [MMRazor](https://github.com/open-mmlab/mmrazor): OpenMMLab 模型压缩工具箱与测试基准
 
 ## 欢迎加入 OpenMMLab 社区
 
