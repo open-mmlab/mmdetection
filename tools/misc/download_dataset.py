@@ -9,6 +9,30 @@ from zipfile import ZipFile
 import torch
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Download datasets for training')
+    parser.add_argument(
+        '--dataset-name', type=str, help='dataset name', default='coco2017')
+    parser.add_argument(
+        '--save-dir',
+        type=str,
+        help='the dir to save dataset',
+        default='data/coco')
+    parser.add_argument(
+        '--unzip',
+        action='store_true',
+        help='whether unzip dataset or not, zipped files will be saved')
+    parser.add_argument(
+        '--delete',
+        action='store_true',
+        help='delete the download zipped files')
+    parser.add_argument(
+        '--threads', type=int, help='number of threading', default=4)
+    args = parser.parse_args()
+    return args
+
+
 def download(url, dir, unzip=True, delete=False, curl=False, threads=1):
 
     def download_one(url, dir):
@@ -45,7 +69,8 @@ def download(url, dir, unzip=True, delete=False, curl=False, threads=1):
             download_one(u, dir)
 
 
-def main(args):
+def main():
+    args = parse_args()
     path = Path(args.save_dir)
     if not path.exists():
         path.mkdir(parents=True, exist_ok=True)
@@ -77,24 +102,4 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description='Download datasets for training')
-    parser.add_argument(
-        '--dataset-name', type=str, help='dataset name', default='coco2017')
-    parser.add_argument(
-        '--save-dir',
-        type=str,
-        help='the dir to save dataset',
-        default='data/coco')
-    parser.add_argument(
-        '--unzip',
-        action='store_true',
-        help='whether unzip dataset or not, zipped files will be saved')
-    parser.add_argument(
-        '--delete',
-        action='store_true',
-        help='delete the download zipped files')
-    parser.add_argument(
-        '--threads', type=int, help='number of threading', default=4)
-    args = parser.parse_args()
-    main(args)
+    main()
