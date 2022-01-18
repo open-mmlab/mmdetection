@@ -6,30 +6,23 @@ import pycocotools.mask as mask_util
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 
+from ..mask.structures import bitmap_to_polygon
 from ..utils import mask2ndarray
 from .palette import get_palette, palette_val
 
 EPS = 1e-2
 
 
-def color_val_matplotlib(color):
-    """Convert various input in BGR order to normalized RGB matplotlib color
-    tuples,
-
-    Args:
-        color (:obj:`Color`/str/tuple/int/ndarray): Color inputs
-
-    Returns:
-        tuple[float]: A tuple of 3 normalized floats indicating RGB channels.
-    """
-    color = mmcv.color_val(color)
-    color = [color / 255 for color in color[::-1]]
-    return tuple(color)
+def _random_color(base, max_dist=30):
+    new_color = np.array(
+        base, dtype=np.int32) + np.random.randint(
+            low=-max_dist, high=max_dist + 1, size=3)
+    return tuple(np.maximum(0, np.minimum(255, new_color)))
 
 
 def imshow_det_bboxes(img,
-                      bboxes,
-                      labels,
+                      bboxes=None,
+                      labels=None,
                       segms=None,
                       class_names=None,
                       score_thr=0,
@@ -73,18 +66,23 @@ def imshow_det_bboxes(img,
     Returns:
         ndarray: The image with bboxes drawn on it.
     """
-    assert bboxes.ndim == 2, \
+    assert bboxes is None or bboxes.ndim == 2, \
         f' bboxes ndim should be 2, but its ndim is {bboxes.ndim}.'
     assert labels.ndim == 1, \
         f' labels ndim should be 1, but its ndim is {labels.ndim}.'
-    assert bboxes.shape[0] == labels.shape[0], \
+    assert bboxes is None or bboxes.shape[0] == labels.shape[0], \
         'bboxes.shape[0] and labels.shape[0] should have the same length.'
-    assert bboxes.shape[1] == 4 or bboxes.shape[1] == 5, \
+    assert bboxes is None or bboxes.shape[1] == 4 or bboxes.shape[1] == 5, \
         f' bboxes.shape[1] should be 4 or 5, but its {bboxes.shape[1]}.'
+    assert segms is None or segms.shape[0] == labels.shape[0], \
+        'segms.shape[0] and labels.shape[0] should have the same length.'
+    assert segms is not None or bboxes is not None, \
+        'segms and bboxes should not be None at the same time.'
+
     img = mmcv.imread(img).astype(np.uint8)
 
     if score_thr > 0:
-        assert bboxes.shape[1] == 5
+        assert bboxes is not None and bboxes.shape[1] == 5
         scores = bboxes[:, -1]
         inds = scores > score_thr
         bboxes = bboxes[inds, :]
@@ -92,7 +90,7 @@ def imshow_det_bboxes(img,
         if segms is not None:
             segms = segms[inds, ...]
 
-    max_label = int(max(labels)) if labels.shape[0] > 0 else -1
+    max_label = int(max(labels))
     bbox_color = palette_val(get_palette(bbox_color, max_label + 1))
     text_color = palette_val(get_palette(text_color, max_label + 1))
     mask_color = get_palette(mask_color, max_label + 1)
@@ -117,20 +115,31 @@ def imshow_det_bboxes(img,
 
     polygons = []
     color = []
-    for i, (bbox, label) in enumerate(zip(bboxes, labels)):
-        bbox_int = bbox.astype(np.int32)
-        poly = [[bbox_int[0], bbox_int[1]], [bbox_int[0], bbox_int[3]],
-                [bbox_int[2], bbox_int[3]], [bbox_int[2], bbox_int[1]]]
-        np_poly = np.array(poly).reshape((4, 2))
-        polygons.append(Polygon(np_poly))
-        color.append(bbox_color[label])
+    taken_colors = set([0, 0, 0])
+    for i, label in enumerate(labels):
         label_text = class_names[
             label] if class_names is not None else f'class {label}'
-        if len(bbox) > 4:
-            label_text += f'|{bbox[-1]:.02f}'
+
+        if bboxes is not None:
+            bbox = bboxes[i]
+            bbox_int = bbox.astype(np.int32)
+            poly = [[bbox_int[0], bbox_int[1]], [bbox_int[0], bbox_int[3]],
+                    [bbox_int[2], bbox_int[3]], [bbox_int[2], bbox_int[1]]]
+            np_poly = np.array(poly).reshape((4, 2))
+            text_pos = (bbox_int[0], bbox_int[1])
+            if len(bbox) > 4:
+                label_text += f'|{bbox[-1]:.02f}'
+            color.append(bbox_color[label])
+        else:
+            np_poly = bitmap_to_polygon(segms[i])
+            text_pos = np.median(segms[i].nonzero(), axis=1)[::-1]
+            color.append((1., 1., 1.))
+
+        polygons.append(Polygon(np_poly))
+
         ax.text(
-            bbox_int[0],
-            bbox_int[1],
+            text_pos[0],
+            text_pos[1],
             f'{label_text}',
             bbox={
                 'facecolor': 'black',
@@ -144,6 +153,10 @@ def imshow_det_bboxes(img,
             horizontalalignment='left')
         if segms is not None:
             color_mask = mask_color[labels[i]]
+            while color_mask in taken_colors:
+                color_mask = _random_color(color_mask)
+            taken_colors.add(color_mask)
+
             mask = segms[i].astype(bool)
             img[mask] = img[mask] * 0.5 + color_mask * 0.5
 

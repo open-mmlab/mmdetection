@@ -25,7 +25,7 @@ def get_palette(palette, num_classes=None):
     """Get palette from various inputs.
 
     Args:
-        palette (list[tuple]/str/tuple/:obj:`Color`): palette inputs
+        palette (list[tuple] | str | tuple | :obj:`Color`): palette inputs.
 
     Returns:
         list[tuple[int]]: A list of color tuples.

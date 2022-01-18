@@ -1069,3 +1069,31 @@ def polygon_to_bitmap(polygons, height, width):
     rle = maskUtils.merge(rles)
     bitmap_mask = maskUtils.decode(rle).astype(np.bool)
     return bitmap_mask
+
+
+def bitmap_to_polygon(bitmap):
+    """Convert masks from the form of bitmaps to polygons.
+
+    Args:
+        bitmap (ndarray): masks in bitmap representation.
+
+    Return:
+        list(ndarray): the converted mask in polygon representation.
+        with_hole(bool): whether the mask has holes.
+    """
+    bitmap = np.ascontiguousarray(bitmap).astype(np.uint8)
+    # cv2.RETR_CCOMP: retrieves all of the contours and organizes them
+    #   into a two-level hierarchy. At the top level, there are external
+    #   boundaries of the components. At the second level, there are
+    #   boundaries of the holes. If there is another contour inside a hole
+    #   of a connected component, it is still put at the top level.
+    # cv2.CHAIN_APPROX_NONE: stores absolutely all the contour points.
+    contours, hierarchy = cv2.findContours(bitmap, cv2.RETR_CCOMP,
+                                           cv2.CHAIN_APPROX_NONE)
+    if hierarchy is None:
+        return [], False
+    # hierarchy[i]: 4 elements, for the indexes of next, previous,
+    # parent, or nested contours. If there is no corresponding contour,
+    # it will be -1.
+    with_hole = (hierarchy[:, 3] >= 0).any()
+    return contours, with_hole
