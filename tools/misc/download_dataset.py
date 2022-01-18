@@ -55,7 +55,7 @@ def download(url, dir, unzip=True, delete=False, curl=False, threads=1):
                 f.unlink()
 
     if not url:
-        print('Only support coco now!')
+        print('Only support coco, voc, and lvis now!')
         return
     dir = Path(dir)
     dir.mkdir(parents=True, exist_ok=True)
