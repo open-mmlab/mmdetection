@@ -249,7 +249,9 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         img = img.copy()
         pan_results = result['pan_results']
         ids = np.unique(pan_results)
-        labels = [id % INSTANCE_OFFSET for id in ids]
+        legal_indices = ids != self.num_classes  # for VOID label
+        ids = ids[legal_indices]
+        labels = np.array([id % INSTANCE_OFFSET for id in ids], dtype=np.int64)
         masks = pan_results[None] == ids[:, None, None]
 
         # if out_file specified, do not show image in window

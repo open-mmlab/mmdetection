@@ -115,7 +115,7 @@ def test_palette():
 
     # test list
     palette = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]
-    palette_ = vis.get_palette(palette)
+    palette_ = vis.get_palette(palette, 3)
     for color, color_ in zip(palette, palette_):
         assert color == color_
 

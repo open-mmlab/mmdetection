@@ -1095,5 +1095,6 @@ def bitmap_to_polygon(bitmap):
     # hierarchy[i]: 4 elements, for the indexes of next, previous,
     # parent, or nested contours. If there is no corresponding contour,
     # it will be -1.
-    with_hole = (hierarchy[:, 3] >= 0).any()
+    with_hole = (hierarchy.reshape(-1, 4)[:, 3] >= 0).any()
+    contours = [c.reshape(-1, 2) for c in contours]
     return contours, with_hole

@@ -12,13 +12,20 @@ from ..utils import mask2ndarray
 from .palette import get_palette, palette_val
 
 EPS = 1e-2
+_MAX_AREA = 30000
+_MIN_AREA = 800
 
 
 def _bias_color(base, max_dist=30):
-    new_color = np.array(
-        base, dtype=np.int32) + np.random.randint(
-            low=-max_dist, high=max_dist + 1, size=3)
-    return tuple(np.maximum(0, np.minimum(255, new_color)))
+    new_color = base + np.random.randint(
+        low=-max_dist, high=max_dist + 1, size=3)
+    return np.maximum(0, np.minimum(255, new_color))
+
+
+def _size_scale(areas):
+    scales = 0.5 + (areas - _MIN_AREA) / (_MAX_AREA - _MIN_AREA)
+    scales = np.maximum(0.5, np.minimum(1.0, scales))
+    return scales
 
 
 def draw_bboxes(ax, bboxes, color='g', alpha=0.8, thickness=2):
@@ -45,8 +52,10 @@ def draw_labels(ax,
                 positions,
                 scores=None,
                 class_names=None,
-                color='g',
-                font_size=13):
+                color='w',
+                font_size=8,
+                scales=None,
+                horizontal_alignment='left'):
     for i, (pos, label) in enumerate(zip(positions, labels)):
         label_text = class_names[
             label] if class_names is not None else f'class {label}'
@@ -54,6 +63,7 @@ def draw_labels(ax,
             label_text += f'|{scores[i]:.02f}'
         text_color = color[i] if isinstance(color, list) else color
 
+        font_size_mask = font_size if scales is None else font_size * scales[i]
         ax.text(
             pos[0],
             pos[1],
@@ -65,28 +75,29 @@ def draw_labels(ax,
                 'edgecolor': 'none'
             },
             color=text_color,
-            fontsize=font_size,
+            fontsize=font_size_mask,
             verticalalignment='top',
-            horizontalalignment='left')
+            horizontalalignment=horizontal_alignment)
 
     return ax
 
 
-def draw_masks(ax, img, masks, color=None, with_edge=True, alpha=0.5):
+def draw_masks(ax, img, masks, color=None, with_edge=True, alpha=0.8):
     taken_colors = set([0, 0, 0])
     if color is None:
         random_colors = np.random.randint(0, 255, (masks.size(0), 3))
         color = [tuple(c) for c in random_colors]
+        color = np.array(color, dtype=np.uint8)
     polygons = []
     for i, mask in enumerate(masks):
         if with_edge:
             contours, _ = bitmap_to_polygon(mask)
-            polygons.append(Polygon(contours))
+            polygons += [Polygon(c) for c in contours]
 
         color_mask = color[i]
-        while color_mask in taken_colors:
+        while tuple(color_mask) in taken_colors:
             color_mask = _bias_color(color_mask)
-        taken_colors.add(color_mask)
+        taken_colors.add(tuple(color_mask))
 
         mask = mask.astype(bool)
         img[mask] = img[mask] * (1 - alpha) + color_mask * alpha
@@ -108,7 +119,7 @@ def imshow_det_bboxes(img,
                       text_color='green',
                       mask_color=None,
                       thickness=2,
-                      font_size=13,
+                      font_size=8,
                       win_name='',
                       show=True,
                       wait_time=0,
@@ -189,11 +200,12 @@ def imshow_det_bboxes(img,
     if bboxes is not None:
         bbox_color = palette_val(get_palette(bbox_color, max_label + 1))
         colors = [bbox_color[label] for label in labels]
-        draw_bboxes(ax, bboxes, colors, alpha=0.8)
+        draw_bboxes(ax, bboxes, colors, alpha=0.8, thickness=thickness)
 
     if segms is not None:
         mask_color = get_palette(mask_color, max_label + 1)
         colors = [mask_color[label] for label in labels]
+        colors = np.array(colors, dtype=np.uint8)
         draw_masks(ax, img, segms, colors, with_edge=True)
 
     text_color = palette_val(get_palette(text_color, max_label + 1))
@@ -202,15 +214,32 @@ def imshow_det_bboxes(img,
     if bboxes is not None and bboxes.shape[1] == 5:
         scores = bboxes[:, 4]
     if bboxes is not None:
-        positions = bboxes[:, :2].astype(np.int32)
+        horizontal_alignment = 'left'
+        positions = bboxes[:, :2].astype(np.int32) + thickness
+        areas = (bboxes[:, 3] - bboxes[:, 1]) * (bboxes[:, 2] - bboxes[:, 0])
+        scales = _size_scale(areas)
     else:
+        horizontal_alignment = 'center'
+        areas = []
         positions = []
         for mask in segms:
             _, _, stats, centroids = cv2.connectedComponentsWithStats(
-                mask, connectivity=8)
+                mask.astype(np.uint8), connectivity=8)
             largest_id = np.argmax(stats[1:, -1]) + 1
             positions.append(centroids[largest_id])
-    draw_labels(ax, labels, positions, scores, class_names, colors, font_size)
+            areas.append(stats[largest_id, -1])
+        areas = np.stack(areas, axis=0)
+        scales = _size_scale(areas)
+    draw_labels(
+        ax,
+        labels,
+        positions,
+        scores=scores,
+        class_names=class_names,
+        color=colors,
+        font_size=font_size,
+        scales=scales,
+        horizontal_alignment=horizontal_alignment)
 
     plt.imshow(img)
 
@@ -299,7 +328,8 @@ def imshow_gt_det_bboxes(img,
     assert 'gt_labels' in annotation
     assert isinstance(
         result,
-        (tuple, list)), f'Expected tuple or list, but get {type(result)}'
+        (tuple, list,
+         dict)), f'Expected tuple or list or dict, but get {type(result)}'
 
     gt_masks = annotation.get('gt_masks', None)
     if gt_masks is not None:
