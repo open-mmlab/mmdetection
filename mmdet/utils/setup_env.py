@@ -1,10 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import multiprocessing as mp
 import os
 import platform
 import warnings
 
 import cv2
+import torch.multiprocessing as mp
 
 
 def setup_multi_processes(cfg):
