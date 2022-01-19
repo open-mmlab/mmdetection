@@ -1,9 +1,8 @@
 import argparse
-import os
-import sys
 from itertools import repeat
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
+from tarfile import TarFile
 from zipfile import ZipFile
 
 import torch
@@ -33,7 +32,7 @@ def parse_args():
     return args
 
 
-def download(url, dir, unzip=True, delete=False, curl=False, threads=1):
+def download(url, dir, unzip=True, delete=False, threads=1):
 
     def download_one(url, dir):
         f = dir / Path(url).name
@@ -41,24 +40,18 @@ def download(url, dir, unzip=True, delete=False, curl=False, threads=1):
             Path(url).rename(f)
         elif not f.exists():
             print('Downloading {} to {}'.format(url, f))
-            if curl:
-                os.system('curl -L {} -o {} --retry 9 -C -'.format(url, f))
-            else:
-                torch.hub.download_url_to_file(url, f, progress=True)
-        if unzip and f.suffix in ('.zip', '.gz'):
+            torch.hub.download_url_to_file(url, f, progress=True)
+        if unzip and f.suffix in ('.zip', '.tar'):
             print('Unzipping {}'.format(f.name))
             if f.suffix == '.zip':
                 ZipFile(f).extractall(path=dir)
-            elif f.suffix == '.gz':
-                os.system(f'tar xfz {f} --directory {f.parent}')
+            elif f.suffix == '.tar':
+                TarFile(f).extractall(path=dir)
             if delete:
                 f.unlink()
+                print('Delete {}'.format(f))
 
-    if not url:
-        print('Only support coco, voc, and lvis now!')
-        return
     dir = Path(dir)
-    dir.mkdir(parents=True, exist_ok=True)
     if threads > 1:
         pool = ThreadPool(threads)
         pool.imap(lambda x: download_one(*x), zip(url, repeat(dir)))
@@ -75,6 +68,7 @@ def main():
     if not path.exists():
         path.mkdir(parents=True, exist_ok=True)
     data2url = dict(
+        # TODO: Support for downloading Panoptic Segmentation of COCO
         coco2017=[
             'http://images.cocodataset.org/zips/train2017.zip',
             'http://images.cocodataset.org/zips/val2017.zip',
@@ -92,12 +86,15 @@ def main():
             'http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCdevkit_08-Jun-2007.tar',  # noqa
         ],
     )
+    url = data2url[args.dataset_name]
+    if url is None:
+        print('Only support coco, voc, and lvis now!')
+        return
     download(
-        data2url[args.dataset_name],
+        url,
         dir=path,
         unzip=args.unzip,
         delete=args.delete,
-        curl=(sys.platform == 'linux'),
         threads=args.threads)
 
 
