@@ -174,6 +174,10 @@ Public datasets like [Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/index.h
 It is recommended to download and extract the dataset somewhere outside the project directory and symlink the dataset root to `$MMDETECTION/data` as below.
 If your folder structure is different, you may need to change the corresponding paths in config files.
 
+We provide a script to download datasets such as COCO , you can run `python tools/misc/download_dataset.py --dataset-name coco2017` to download COCO dataset.
+
+For more usage please refer to [dataset-download](https://github.com/open-mmlab/mmdetection/tree/master/docs/en/useful_tools.md#dataset-download)
+
 ```text
 mmdetection
 ├── mmdet
