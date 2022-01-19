@@ -86,9 +86,9 @@ def main():
             'http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCdevkit_08-Jun-2007.tar',  # noqa
         ],
     )
-    url = data2url[args.dataset_name]
+    url = data2url.get(args.dataset_name, None)
     if url is None:
-        print('Only support coco, voc, and lvis now!')
+        print('Only support COCO, VOC, and LVIS now!')
         return
     download(
         url,
