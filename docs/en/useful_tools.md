@@ -473,7 +473,7 @@ differential_evolution step 489: f(x)= 0.386625
 2021-07-19 19:46:40,798 - mmdet - INFO Result saved in work_dirs/anchor_optimize_result.json
 ```
 
-## Confution Matrix
+## Confusion Matrix
 
 A confusion matrix is a summary of prediction results.
 
