@@ -248,7 +248,8 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         img = mmcv.imread(img)
         img = img.copy()
         pan_results = result['pan_results']
-        ids = np.unique(pan_results)
+        # keep objects ahead
+        ids = np.unique(pan_results, return_inverse=True)
         legal_indices = ids != self.num_classes  # for VOID label
         ids = ids[legal_indices]
         labels = np.array([id % INSTANCE_OFFSET for id in ids], dtype=np.int64)

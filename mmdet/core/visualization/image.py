@@ -159,8 +159,6 @@ def imshow_det_bboxes(img,
         f' bboxes ndim should be 2, but its ndim is {bboxes.ndim}.'
     assert labels.ndim == 1, \
         f' labels ndim should be 1, but its ndim is {labels.ndim}.'
-    assert bboxes is None or bboxes.shape[0] == labels.shape[0], \
-        'bboxes.shape[0] and labels.shape[0] should have the same length.'
     assert bboxes is None or bboxes.shape[1] == 4 or bboxes.shape[1] == 5, \
         f' bboxes.shape[1] should be 4 or 5, but its {bboxes.shape[1]}.'
     assert segms is None or segms.shape[0] == labels.shape[0], \
@@ -199,7 +197,8 @@ def imshow_det_bboxes(img,
     max_label = int(max(labels))
     if bboxes is not None:
         bbox_color = palette_val(get_palette(bbox_color, max_label + 1))
-        colors = [bbox_color[label] for label in labels]
+        _labels = labels[:bboxes.size(0)]
+        colors = [bbox_color[label] for label in _labels]
         draw_bboxes(ax, bboxes, colors, alpha=0.8, thickness=thickness)
 
     if segms is not None:
@@ -273,12 +272,12 @@ def imshow_gt_det_bboxes(img,
                          result,
                          class_names=None,
                          score_thr=0,
-                         gt_bbox_color=(255, 102, 61),
-                         gt_text_color=(255, 102, 61),
-                         gt_mask_color=(255, 102, 61),
-                         det_bbox_color=(72, 101, 241),
-                         det_text_color=(72, 101, 241),
-                         det_mask_color=(72, 101, 241),
+                         gt_bbox_color=(61, 102, 255),
+                         gt_text_color=(200, 200, 200),
+                         gt_mask_color=(61, 102, 255),
+                         det_bbox_color=(241, 101, 72),
+                         det_text_color=(200, 200, 200),
+                         det_mask_color=(241, 101, 72),
                          thickness=2,
                          font_size=13,
                          win_name='',
@@ -331,6 +330,8 @@ def imshow_gt_det_bboxes(img,
         (tuple, list,
          dict)), f'Expected tuple or list or dict, but get {type(result)}'
 
+    gt_bboxes = annotation['gt_bboxes']
+    gt_labels = annotation['gt_labels']
     gt_masks = annotation.get('gt_masks', None)
     if gt_masks is not None:
         gt_masks = mask2ndarray(gt_masks)
@@ -339,8 +340,8 @@ def imshow_gt_det_bboxes(img,
 
     img = imshow_det_bboxes(
         img,
-        annotation['gt_bboxes'],
-        annotation['gt_labels'],
+        gt_bboxes,
+        gt_labels,
         gt_masks,
         class_names=class_names,
         bbox_color=gt_bbox_color,
