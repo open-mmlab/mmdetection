@@ -247,10 +247,10 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         """
         img = mmcv.imread(img)
         img = img.copy()
-        pan_result = result[0]
-        ids = np.unique(pan_result)
+        pan_results = result['pan_results']
+        ids = np.unique(pan_results)
         labels = [id % INSTANCE_OFFSET for id in ids]
-        masks = pan_result[None] == ids[:, None, None]
+        masks = pan_results[None] == ids[:, None, None]
 
         # if out_file specified, do not show image in window
         if out_file is not None:

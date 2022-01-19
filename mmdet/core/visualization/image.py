@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import cv2
 import matplotlib.pyplot as plt
 import mmcv
 import numpy as np
@@ -13,11 +14,88 @@ from .palette import get_palette, palette_val
 EPS = 1e-2
 
 
-def _random_color(base, max_dist=30):
+def _bias_color(base, max_dist=30):
     new_color = np.array(
         base, dtype=np.int32) + np.random.randint(
             low=-max_dist, high=max_dist + 1, size=3)
     return tuple(np.maximum(0, np.minimum(255, new_color)))
+
+
+def draw_bboxes(ax, bboxes, color='g', alpha=0.8, thickness=2):
+    polygons = []
+    for i, bbox in enumerate(bboxes):
+        bbox_int = bbox.astype(np.int32)
+        poly = [[bbox_int[0], bbox_int[1]], [bbox_int[0], bbox_int[3]],
+                [bbox_int[2], bbox_int[3]], [bbox_int[2], bbox_int[1]]]
+        np_poly = np.array(poly).reshape((4, 2))
+        polygons.append(Polygon(np_poly))
+    p = PatchCollection(
+        polygons,
+        facecolor='none',
+        edgecolors=color,
+        linewidths=thickness,
+        alpha=alpha)
+    ax.add_collection(p)
+
+    return ax
+
+
+def draw_labels(ax,
+                labels,
+                positions,
+                scores=None,
+                class_names=None,
+                color='g',
+                font_size=13):
+    for i, (pos, label) in enumerate(zip(positions, labels)):
+        label_text = class_names[
+            label] if class_names is not None else f'class {label}'
+        if scores is not None:
+            label_text += f'|{scores[i]:.02f}'
+        text_color = color[i] if isinstance(color, list) else color
+
+        ax.text(
+            pos[0],
+            pos[1],
+            f'{label_text}',
+            bbox={
+                'facecolor': 'black',
+                'alpha': 0.8,
+                'pad': 0.7,
+                'edgecolor': 'none'
+            },
+            color=text_color,
+            fontsize=font_size,
+            verticalalignment='top',
+            horizontalalignment='left')
+
+    return ax
+
+
+def draw_masks(ax, img, masks, color=None, with_edge=True, alpha=0.5):
+    taken_colors = set([0, 0, 0])
+    if color is None:
+        random_colors = np.random.randint(0, 255, (masks.size(0), 3))
+        color = [tuple(c) for c in random_colors]
+    polygons = []
+    for i, mask in enumerate(masks):
+        if with_edge:
+            contours, _ = bitmap_to_polygon(mask)
+            polygons.append(Polygon(contours))
+
+        color_mask = color[i]
+        while color_mask in taken_colors:
+            color_mask = _bias_color(color_mask)
+        taken_colors.add(color_mask)
+
+        mask = mask.astype(bool)
+        img[mask] = img[mask] * (1 - alpha) + color_mask * alpha
+
+    p = PatchCollection(
+        polygons, facecolor='none', edgecolors='w', linewidths=1, alpha=0.8)
+    ax.add_collection(p)
+
+    return ax, img
 
 
 def imshow_det_bboxes(img,
@@ -90,12 +168,6 @@ def imshow_det_bboxes(img,
         if segms is not None:
             segms = segms[inds, ...]
 
-    max_label = int(max(labels))
-    bbox_color = palette_val(get_palette(bbox_color, max_label + 1))
-    text_color = palette_val(get_palette(text_color, max_label + 1))
-    mask_color = get_palette(mask_color, max_label + 1)
-    mask_color = np.array(mask_color, dtype=np.uint8)
-
     img = mmcv.bgr2rgb(img)
     width, height = img.shape[1], img.shape[0]
     img = np.ascontiguousarray(img)
@@ -113,58 +185,34 @@ def imshow_det_bboxes(img,
     ax = plt.gca()
     ax.axis('off')
 
-    polygons = []
-    color = []
-    taken_colors = set([0, 0, 0])
-    for i, label in enumerate(labels):
-        label_text = class_names[
-            label] if class_names is not None else f'class {label}'
+    max_label = int(max(labels))
+    if bboxes is not None:
+        bbox_color = palette_val(get_palette(bbox_color, max_label + 1))
+        colors = [bbox_color[label] for label in labels]
+        draw_bboxes(ax, bboxes, colors, alpha=0.8)
 
-        if bboxes is not None:
-            bbox = bboxes[i]
-            bbox_int = bbox.astype(np.int32)
-            poly = [[bbox_int[0], bbox_int[1]], [bbox_int[0], bbox_int[3]],
-                    [bbox_int[2], bbox_int[3]], [bbox_int[2], bbox_int[1]]]
-            np_poly = np.array(poly).reshape((4, 2))
-            text_pos = (bbox_int[0], bbox_int[1])
-            if len(bbox) > 4:
-                label_text += f'|{bbox[-1]:.02f}'
-            color.append(bbox_color[label])
-        else:
-            np_poly = bitmap_to_polygon(segms[i])
-            text_pos = np.median(segms[i].nonzero(), axis=1)[::-1]
-            color.append((1., 1., 1.))
+    if segms is not None:
+        mask_color = get_palette(mask_color, max_label + 1)
+        colors = [mask_color[label] for label in labels]
+        draw_masks(ax, img, segms, colors, with_edge=True)
 
-        polygons.append(Polygon(np_poly))
-
-        ax.text(
-            text_pos[0],
-            text_pos[1],
-            f'{label_text}',
-            bbox={
-                'facecolor': 'black',
-                'alpha': 0.8,
-                'pad': 0.7,
-                'edgecolor': 'none'
-            },
-            color=text_color[label],
-            fontsize=font_size,
-            verticalalignment='top',
-            horizontalalignment='left')
-        if segms is not None:
-            color_mask = mask_color[labels[i]]
-            while color_mask in taken_colors:
-                color_mask = _random_color(color_mask)
-            taken_colors.add(color_mask)
-
-            mask = segms[i].astype(bool)
-            img[mask] = img[mask] * 0.5 + color_mask * 0.5
+    text_color = palette_val(get_palette(text_color, max_label + 1))
+    colors = [text_color[label] for label in labels]
+    scores = None
+    if bboxes is not None and bboxes.shape[1] == 5:
+        scores = bboxes[:, 4]
+    if bboxes is not None:
+        positions = bboxes[:, :2].astype(np.int32)
+    else:
+        positions = []
+        for mask in segms:
+            _, _, stats, centroids = cv2.connectedComponentsWithStats(
+                mask, connectivity=8)
+            largest_id = np.argmax(stats[1:, -1]) + 1
+            positions.append(centroids[largest_id])
+    draw_labels(ax, labels, positions, scores, class_names, colors, font_size)
 
     plt.imshow(img)
-
-    p = PatchCollection(
-        polygons, facecolor='none', edgecolors=color, linewidths=thickness)
-    ax.add_collection(p)
 
     stream, _ = canvas.print_to_buffer()
     buffer = np.frombuffer(stream, dtype='uint8')
