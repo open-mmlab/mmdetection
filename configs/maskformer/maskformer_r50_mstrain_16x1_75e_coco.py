@@ -13,7 +13,7 @@ model = dict(
         depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
-        frozen_stages=-1,
+        frozen_stages=3,
         norm_cfg=dict(type='BN', requires_grad=False),
         norm_eval=True,
         style='pytorch',
@@ -203,7 +203,11 @@ optimizer = dict(
     eps=1e-8,
     betas=(0.9, 0.999),
     paramwise_cfg=dict(
-        custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
+        custom_keys={
+            'backbone': dict(lr_mult=0.1, decay_mult=1.0),
+            'query_embed': dict(lr_mult=1.0, decay_mult=0.0)
+        },
+        norm_decay_mult=0.0))
 optimizer_config = dict(grad_clip=dict(max_norm=0.01, norm_type=2))
 
 # learning policy
