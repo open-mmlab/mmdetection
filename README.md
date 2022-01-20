@@ -118,7 +118,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/foveabox">Foveabox (TIP'2020)</a></li>
             <li><a href="configs/double_heads">Double-Head R-CNN (CVPR'2020)</a></li>
             <li><a href="configs/atss">ATSS (CVPR'2020)</a></li>
-            <li><a href="configs/nas_fcos">NAS-FCOS (CVPR'2020)</a> # Not officially listed</li>
+            <li><a href="configs/nas_fcos">NAS-FCOS (CVPR'2020)</a></li>
             <li><a href="configs/autoassign">AutoAssign (ArXiv'2020)</a></li>
             <li><a href="configs/sabl">Side-Aware Boundary Localization (ECCV'2020)</a></li>
             <li><a href="configs/dynamic_rcnn">Dynamic R-CNN (ECCV'2020)</a></li>
@@ -134,7 +134,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
       <td>
         <ul>
           <li><a href="configs/mask_rcnn">Mask R-CNN (ICCV'2017)</a></li>
-          <li><a href="configs/cascade_rcnn">Cascade Mask R-CNN (CVPR'2018)</a> # Same folder as cascade_rcnn</li>
+          <li><a href="configs/cascade_rcnn">Cascade Mask R-CNN (CVPR'2018)</a></li>
           <li><a href="configs/ms_rcnn">Mask Scoring R-CNN (CVPR'2019)</a></li>
           <li><a href="configs/htc">Hybrid Task Cascade (CVPR'2019)</a></li>
           <li><a href="configs/yolact">YOLACT (ICCV'2019)</a></li>
@@ -148,13 +148,13 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
       </td>
       <td>
         <ul>
-          <li><a href="configs/panoptic_fpn">Panoptic FPN (CVPR'2019)</a> # Not officially listed</li>
+          <li><a href="configs/panoptic_fpn">Panoptic FPN (CVPR'2019)</a></li>
         </ul>
       </td>
       <td>
         <ul>
-          <li><a href="configs/ld">Localization Distillation (ArXiv'2021)</a> # Not officially listed</li>
-          <li><a href="configs/lad">Label Assignment Distillation (WACV'2022)</a> # Not officially listed</li>
+          <li><a href="configs/ld">Localization Distillation (ArXiv'2021)</a></li>
+          <li><a href="configs/lad">Label Assignment Distillation (WACV'2022)</a></li>
         </ul>
       </td>
     </tr>
@@ -196,7 +196,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         <li><a href="configs/resnest">ResNeSt (ArXiv'2020)</a></li>
         <li><a href="configs/pvt">PVT (ICCV'2021)</a></li>
         <li><a href="configs/swin">Swin (CVPR'2021)</a></li>
-        <li><a href="configs/pvt">PVTv2 (ArXiv'2021)</a> # Same folder as pvt</li>
+        <li><a href="configs/pvt">PVTv2 (ArXiv'2021)</a></li>
       </ul>
       </td>
       <td>
