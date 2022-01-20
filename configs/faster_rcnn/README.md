@@ -1,4 +1,8 @@
-# Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks
+# Faster R-CNN
+
+> [Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks](https://arxiv.org/abs/1506.01497)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,21 +18,7 @@ State-of-the-art object detection networks depend on region proposal algorithms 
 <!-- [PAPER_TITLE: Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1506.01497] -->
 
-## Citation
-<!-- [ALGORITHM] -->
-
-```latex
-@article{Ren_2017,
-   title={Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks},
-   journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
-   publisher={Institute of Electrical and Electronics Engineers (IEEE)},
-   author={Ren, Shaoqing and He, Kaiming and Girshick, Ross and Sun, Jian},
-   year={2017},
-   month={Jun},
-}
-```
-
-## Results and models
+## Results and Models
 
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: | :--------: |
@@ -79,3 +69,16 @@ We further finetune some pre-trained models on the COCO subsets, which only cont
 | ------------------------------------------------------------ | ----- | ------------------ | ------------------------------------------------------------ | -------- | ------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | [R-50-FPN](./faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-person.py)          | caffe | person             | [R-50-FPN-Caffe-3x](./faster_rcnn_r50_caffe_fpn_mstrain_3x_coco.py) | 3.7      | 55.8   | [config](./faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-person.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco-person/faster_rcnn_r50_fpn_1x_coco-person_20201216_175929-d022e227.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco-person/faster_rcnn_r50_fpn_1x_coco-person_20201216_175929.log.json)                                                 |
 | [R-50-FPN](./faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-person-bicycle-car.py) | caffe | person-bicycle-car | [R-50-FPN-Caffe-3x](./faster_rcnn_r50_caffe_fpn_mstrain_3x_coco.py) | 3.7      | 44.1   | [config](./faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-person-bicycle-car.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco-person-bicycle-car/faster_rcnn_r50_fpn_1x_coco-person-bicycle-car_20201216_173117-6eda6d92.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco-person-bicycle-car/faster_rcnn_r50_fpn_1x_coco-person-bicycle-car_20201216_173117.log.json) |
+
+## Citation
+
+```latex
+@article{Ren_2017,
+   title={Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks},
+   journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
+   publisher={Institute of Electrical and Electronics Engineers (IEEE)},
+   author={Ren, Shaoqing and He, Kaiming and Girshick, Ross and Sun, Jian},
+   year={2017},
+   month={Jun},
+}
+```

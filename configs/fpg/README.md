@@ -1,4 +1,7 @@
-# Feature Pyramid Grids
+# FPG
+
+> [Feature Pyramid Grids](https://arxiv.org/abs/2004.03580)
+
 <!-- [ALGORITHM] -->
 
 ## Abstract
@@ -14,17 +17,6 @@ Feature pyramid networks have been widely adopted in the object detection litera
 
 <!-- [PAPER_TITLE: Feature Pyramid Grids] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/2004.03580] -->
-
-## Citation
-
-```latex
-@article{chen2020feature,
-  title={Feature pyramid grids},
-  author={Chen, Kai and Cao, Yuhang and Loy, Chen Change and Lin, Dahua and Feichtenhofer, Christoph},
-  journal={arXiv preprint arXiv:2004.03580},
-  year={2020}
-}
-```
 
 ## Results and Models
 
@@ -42,3 +34,14 @@ All backbones are Resnet-50 in pytorch style.
 
 **Note**: Chn128 means to decrease the number of channels of features and convs from 256 (default) to 128 in
 Neck and BBox Head, which can greatly decrease memory consumption without sacrificing much precision.
+
+## Citation
+
+```latex
+@article{chen2020feature,
+  title={Feature pyramid grids},
+  author={Chen, Kai and Cao, Yuhang and Loy, Chen Change and Lin, Dahua and Feichtenhofer, Christoph},
+  journal={arXiv preprint arXiv:2004.03580},
+  year={2020}
+}
+```

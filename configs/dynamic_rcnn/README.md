@@ -1,4 +1,8 @@
-# Dynamic R-CNN: Towards High Quality Object Detection via Dynamic Training
+# Dynamic R-CNN
+
+> [Dynamic R-CNN: Towards High Quality Object Detection via Dynamic Training](https://arxiv.org/abs/2004.06002)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,11 +18,15 @@ Although two-stage object detectors have continuously advanced the state-of-the-
 <!-- [PAPER_TITLE: Dynamic R-CNN: Towards High Quality Object Detection via Dynamic Training] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/2004.06002] -->
 
+## Results and Models
+
+| Backbone  | Style   | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
+|:---------:|:-------:|:-------:|:--------:|:--------------:|:------:|:------:|:--------:|
+| R-50      | pytorch | 1x      | 3.8      |                |  38.9  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/dynamic_rcnn/dynamic_rcnn_r50_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/dynamic_rcnn/dynamic_rcnn_r50_fpn_1x/dynamic_rcnn_r50_fpn_1x-62a3f276.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/dynamic_rcnn/dynamic_rcnn_r50_fpn_1x/dynamic_rcnn_r50_fpn_1x_20200618_095048.log.json) |
+
 ## Citation
 
-<!-- [ALGORITHM] -->
-
-```
+```latex
 @article{DynamicRCNN,
     author = {Hongkai Zhang and Hong Chang and Bingpeng Ma and Naiyan Wang and Xilin Chen},
     title = {Dynamic {R-CNN}: Towards High Quality Object Detection via Dynamic Training},
@@ -26,9 +34,3 @@ Although two-stage object detectors have continuously advanced the state-of-the-
     year = {2020}
 }
 ```
-
-## Results and Models
-
-| Backbone  | Style   | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
-|:---------:|:-------:|:-------:|:--------:|:--------------:|:------:|:------:|:--------:|
-| R-50      | pytorch | 1x      | 3.8      |                |  38.9  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/dynamic_rcnn/dynamic_rcnn_r50_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/dynamic_rcnn/dynamic_rcnn_r50_fpn_1x/dynamic_rcnn_r50_fpn_1x-62a3f276.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/dynamic_rcnn/dynamic_rcnn_r50_fpn_1x/dynamic_rcnn_r50_fpn_1x_20200618_095048.log.json) |

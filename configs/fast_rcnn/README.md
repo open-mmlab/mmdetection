@@ -1,5 +1,9 @@
 # Fast R-CNN
 
+> [Fast R-CNN](https://arxiv.org/abs/1504.08083)
+
+<!-- [ALGORITHM] -->
+
 ## Abstract
 
 <!-- [ABSTRACT] -->
@@ -14,9 +18,9 @@ This paper proposes a Fast Region-based Convolutional Network method (Fast R-CNN
 <!-- [PAPER_TITLE: Fast R-CNN] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1504.08083] -->
 
-## Citation
+## Results and models
 
-<!-- [ALGORITHM] -->
+## Citation
 
 ```latex
 @inproceedings{girshick2015fast,
@@ -26,5 +30,3 @@ This paper proposes a Fast Region-based Convolutional Network method (Fast R-CNN
   year={2015}
 }
 ```
-
-## Results and models

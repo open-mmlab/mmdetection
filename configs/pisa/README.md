@@ -1,4 +1,8 @@
-# Prime Sample Attention in Object Detection
+# PISA
+
+> [Prime Sample Attention in Object Detection](https://arxiv.org/abs/1904.04821)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,20 +18,7 @@ It is a common paradigm in object detection frameworks to treat all samples equa
 <!-- [PAPER_TITLE: Prime sample attention in object detection] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1904.04821] -->
 
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```latex
-@inproceedings{cao2019prime,
-  title={Prime sample attention in object detection},
-  author={Cao, Yuhang and Chen, Kai and Loy, Chen Change and Lin, Dahua},
-  booktitle={IEEE Conference on Computer Vision and Pattern Recognition},
-  year={2020}
-}
-```
-
-## Results and models
+## Results and Models
 
 | PISA | Network | Backbone            | Lr schd | box AP | mask AP | Config | Download |
 |:----:|:-------:|:-------------------:|:-------:|:------:|:-------:|:------:|:--------:|
@@ -52,3 +43,14 @@ It is a common paradigm in object detection frameworks to treat all samples equa
 
 - In the original paper, all models are trained and tested on mmdet v1.x, thus results may not be exactly the same with this release on v2.0.
 - It is noted PISA only modifies the training pipeline so the inference time remains the same with the baseline.
+
+## Citation
+
+```latex
+@inproceedings{cao2019prime,
+  title={Prime sample attention in object detection},
+  author={Cao, Yuhang and Chen, Kai and Loy, Chen Change and Lin, Dahua},
+  booktitle={IEEE Conference on Computer Vision and Pattern Recognition},
+  year={2020}
+}
+```

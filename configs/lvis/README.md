@@ -1,4 +1,8 @@
-# LVIS: A Dataset for Large Vocabulary Instance Segmentation
+# LVIS
+
+> [LVIS: A Dataset for Large Vocabulary Instance Segmentation](https://arxiv.org/abs/1908.03195)
+
+<!-- [DATASET] -->
 
 ## Abstract
 
@@ -13,19 +17,6 @@ Progress on object detection is enabled by datasets that focus the research comm
 
 <!-- [PAPER_TITLE: LVIS: A Dataset for Large Vocabulary Instance Segmentation] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1908.03195] -->
-
-## Citation
-
-<!-- [DATASET] -->
-
-```latex
-@inproceedings{gupta2019lvis,
-  title={{LVIS}: A Dataset for Large Vocabulary Instance Segmentation},
-  author={Gupta, Agrim and Dollar, Piotr and Girshick, Ross},
-  booktitle={Proceedings of the {IEEE} Conference on Computer Vision and Pattern Recognition},
-  year={2019}
-}
-```
 
 ## Common Setting
 
@@ -56,3 +47,14 @@ Progress on object detection is enabled by datasets that focus the research comm
 |    R-101-FPN    | pytorch |   1x    | 10.8     | -              | 24.6   | 23.6    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/lvis/mask_rcnn_r101_fpn_sample1e-3_mstrain_1x_lvis_v1.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/lvis/mask_rcnn_r101_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_r101_fpn_sample1e-3_mstrain_1x_lvis_v1-ec55ce32.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/lvis/mask_rcnn_r101_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_r101_fpn_sample1e-3_mstrain_1x_lvis_v1-20200829_070959.log.json)  |
 | X-101-32x4d-FPN | pytorch |   1x    | 11.8     | -              | 26.7   | 25.5    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/lvis/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_1x_lvis_v1.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/lvis/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_1x_lvis_v1-ebbc5c81.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/lvis/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_1x_lvis_v1-20200829_071317.log.json)  |
 | X-101-64x4d-FPN | pytorch |   1x    | 14.6     | -              | 27.2   | 25.8    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/lvis/mask_rcnn_x101_64x4d_fpn_sample1e-3_mstrain_1x_lvis_v1.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/lvis/mask_rcnn_x101_64x4d_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_x101_64x4d_fpn_sample1e-3_mstrain_1x_lvis_v1-43d9edfe.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/lvis/mask_rcnn_x101_64x4d_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_x101_64x4d_fpn_sample1e-3_mstrain_1x_lvis_v1-20200830_060206.log.json)  |
+
+## Citation
+
+```latex
+@inproceedings{gupta2019lvis,
+  title={{LVIS}: A Dataset for Large Vocabulary Instance Segmentation},
+  author={Gupta, Agrim and Dollar, Piotr and Girshick, Ross},
+  booktitle={Proceedings of the {IEEE} Conference on Computer Vision and Pattern Recognition},
+  year={2019}
+}
+```

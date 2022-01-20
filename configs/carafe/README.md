@@ -1,4 +1,8 @@
-# CARAFE: Content-Aware ReAssembly of FEatures
+# CARAFE
+
+> [CARAFE: Content-Aware ReAssembly of FEatures](https://arxiv.org/abs/1905.02188)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,22 +18,6 @@ Feature upsampling is a key operation in a number of modern convolutional networ
 <!-- [PAPER_TITLE: CARAFE: Content-Aware ReAssembly of FEatures] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1905.02188] -->
 
-## Citation
-
-<!-- [ALGORITHM] -->
-
-We provide config files to reproduce the object detection & instance segmentation results in the ICCV 2019 Oral paper for [CARAFE: Content-Aware ReAssembly of FEatures](https://arxiv.org/abs/1905.02188).
-
-```
-@inproceedings{Wang_2019_ICCV,
-    title = {CARAFE: Content-Aware ReAssembly of FEatures},
-    author = {Wang, Jiaqi and Chen, Kai and Xu, Rui and Liu, Ziwei and Loy, Chen Change and Lin, Dahua},
-    booktitle = {The IEEE International Conference on Computer Vision (ICCV)},
-    month = {October},
-    year = {2019}
-}
-```
-
 ## Results and Models
 
 The results on COCO 2017 val is shown in the below table.
@@ -44,3 +32,17 @@ The results on COCO 2017 val is shown in the below table.
 ## Implementation
 
 The CUDA implementation of CARAFE can be find at https://github.com/myownskyW7/CARAFE.
+
+## Citation
+
+We provide config files to reproduce the object detection & instance segmentation results in the ICCV 2019 Oral paper for [CARAFE: Content-Aware ReAssembly of FEatures](https://arxiv.org/abs/1905.02188).
+
+```latex
+@inproceedings{Wang_2019_ICCV,
+    title = {CARAFE: Content-Aware ReAssembly of FEatures},
+    author = {Wang, Jiaqi and Chen, Kai and Xu, Rui and Liu, Ziwei and Loy, Chen Change and Lin, Dahua},
+    booktitle = {The IEEE International Conference on Computer Vision (ICCV)},
+    month = {October},
+    year = {2019}
+}
+```

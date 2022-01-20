@@ -1,4 +1,8 @@
-# Cascade R-CNN: High Quality Object Detection and Instance Segmentation
+# Cascade R-CNN
+
+> [Cascade R-CNN: High Quality Object Detection and Instance Segmentation](https://arxiv.org/abs/1906.09756)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,25 +18,7 @@ In object detection, the intersection over union (IoU) threshold is frequently u
 <!-- [PAPER_TITLE: Cascade R-CNN: High Quality Object Detection and Instance Segmentation] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1906.09756] -->
 
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```latex
-@article{Cai_2019,
-   title={Cascade R-CNN: High Quality Object Detection and Instance Segmentation},
-   ISSN={1939-3539},
-   url={http://dx.doi.org/10.1109/tpami.2019.2956516},
-   DOI={10.1109/tpami.2019.2956516},
-   journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
-   publisher={Institute of Electrical and Electronics Engineers (IEEE)},
-   author={Cai, Zhaowei and Vasconcelos, Nuno},
-   year={2019},
-   pages={1–1}
-}
-```
-
-## Results and models
+## Results and Models
 
 ### Cascade R-CNN
 
@@ -81,3 +67,19 @@ We also train some models with longer schedules and multi-scale training for Cas
 |    X-101-32x4d-FPN |  pytorch|   3x    |   9.0    |                |  46.3  |  40.1   |  [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_mstrain_3x_coco.py)   |   [model](https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_mstrain_3x_coco/cascade_mask_rcnn_x101_32x4d_fpn_mstrain_3x_coco_20210706_225234-40773067.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_mstrain_3x_coco/cascade_mask_rcnn_x101_32x4d_fpn_mstrain_3x_coco_20210706_225234.log.json)
 |    X-101-32x8d-FPN |  pytorch|   3x    |   12.1   |                |  46.1  |  39.9   |  [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cascade_rcnn/cascade_mask_rcnn_x101_32x8d_fpn_mstrain_3x_coco.py)   |   [model](https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_32x8d_fpn_mstrain_3x_coco/cascade_mask_rcnn_x101_32x8d_fpn_mstrain_3x_coco_20210719_180640-9ff7e76f.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_32x8d_fpn_mstrain_3x_coco/cascade_mask_rcnn_x101_32x8d_fpn_mstrain_3x_coco_20210719_180640.log.json)
 |    X-101-64x4d-FPN |  pytorch|   3x    |   12.0   |                |  46.6  |  40.3   |  [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_mstrain_3x_coco.py)   |   [model](https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_mstrain_3x_coco/cascade_mask_rcnn_x101_64x4d_fpn_mstrain_3x_coco_20210719_210311-d3e64ba0.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_mstrain_3x_coco/cascade_mask_rcnn_x101_64x4d_fpn_mstrain_3x_coco_20210719_210311.log.json)
+
+## Citation
+
+```latex
+@article{Cai_2019,
+   title={Cascade R-CNN: High Quality Object Detection and Instance Segmentation},
+   ISSN={1939-3539},
+   url={http://dx.doi.org/10.1109/tpami.2019.2956516},
+   DOI={10.1109/tpami.2019.2956516},
+   journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
+   publisher={Institute of Electrical and Electronics Engineers (IEEE)},
+   author={Cai, Zhaowei and Vasconcelos, Nuno},
+   year={2019},
+   pages={1–1}
+}
+```

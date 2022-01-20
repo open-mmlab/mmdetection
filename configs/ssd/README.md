@@ -1,4 +1,8 @@
-# SSD: Single Shot MultiBox Detector
+# SSD
+
+> [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -13,19 +17,6 @@ We present a method for detecting objects in images using a single deep neural n
 
 <!-- [PAPER_TITLE: SSD: Single Shot MultiBox Detector] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1512.02325] -->
-
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```latex
-@article{Liu_2016,
-   title={SSD: Single Shot MultiBox Detector},
-   journal={ECCV},
-   author={Liu, Wei and Anguelov, Dragomir and Erhan, Dumitru and Szegedy, Christian and Reed, Scott and Fu, Cheng-Yang and Berg, Alexander C.},
-   year={2016},
-}
-```
 
 ## Results and models of SSD
 
@@ -64,3 +55,14 @@ There are some differences between our implementation of MobileNetV2 SSD-Lite an
 2. The anchor sizes are different.
 3. The C4 feature map is taken from the last layer of stage 4 instead of the middle of the block.
 4. The model in TensorFlow1.x is trained on coco 2014 and validated on coco minival2014, but we trained and validated the model on coco 2017. The mAP on val2017 is usually a little lower than minival2014 (refer to the results in TensorFlow Object Detection API, e.g., MobileNetV2 SSD gets 22 mAP on minival2014 but 20.2 mAP on val2017).
+
+## Citation
+
+```latex
+@article{Liu_2016,
+   title={SSD: Single Shot MultiBox Detector},
+   journal={ECCV},
+   author={Liu, Wei and Anguelov, Dragomir and Erhan, Dumitru and Szegedy, Christian and Reed, Scott and Fu, Cheng-Yang and Berg, Alexander C.},
+   year={2016},
+}
+```

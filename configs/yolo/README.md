@@ -1,4 +1,8 @@
-# YOLOv3: An Incremental Improvement
+# YOLOv3
+
+> [YOLOv3: An Incremental Improvement](https://arxiv.org/abs/1804.02767)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -13,21 +17,6 @@ We present some updates to YOLO! We made a bunch of little design changes to mak
 
 <!-- [PAPER_TITLE: YOLOv3: An Incremental Improvement] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1804.02767] -->
-
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```latex
-@misc{redmon2018yolov3,
-    title={YOLOv3: An Incremental Improvement},
-    author={Joseph Redmon and Ali Farhadi},
-    year={2018},
-    eprint={1804.02767},
-    archivePrefix={arXiv},
-    primaryClass={cs.CV}
-}
-```
 
 ## Results and Models
 
@@ -57,3 +46,16 @@ Notice: We reduce the number of channels to 96 in both head and neck. It can red
 ## Credit
 
 This implementation originates from the project of Haoyu Wu(@wuhy08) at Western Digital.
+
+## Citation
+
+```latex
+@misc{redmon2018yolov3,
+    title={YOLOv3: An Incremental Improvement},
+    author={Joseph Redmon and Ali Farhadi},
+    year={2018},
+    eprint={1804.02767},
+    archivePrefix={arXiv},
+    primaryClass={cs.CV}
+}
+```

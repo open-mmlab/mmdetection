@@ -1,4 +1,8 @@
-# ResNeSt: Split-Attention Networks
+# ResNeSt
+
+> [ResNeSt: Split-Attention Networks](https://arxiv.org/abs/2004.08955)
+
+<!-- [BACKBONE] -->
 
 ## Abstract
 
@@ -13,19 +17,6 @@ It is well known that featuremap attention and multi-path representation are imp
 
 <!-- [PAPER_TITLE: ResNeSt: Split-Attention Networks] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/2004.08955] -->
-
-## Citation
-
-<!-- [BACKBONE] -->
-
-```latex
-@article{zhang2020resnest,
-title={ResNeSt: Split-Attention Networks},
-author={Zhang, Hang and Wu, Chongruo and Zhang, Zhongyue and Zhu, Yi and Zhang, Zhi and Lin, Haibin and Sun, Yue and He, Tong and Muller, Jonas and Manmatha, R. and Li, Mu and Smola, Alexander},
-journal={arXiv preprint arXiv:2004.08955},
-year={2020}
-}
-```
 
 ## Results and Models
 
@@ -56,3 +47,14 @@ year={2020}
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: | :--------: |
 |S-50-FPN       | pytorch |    1x   |   -    |      -         | 45.4 | 39.5 |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/resnest/cascade_mask_rcnn_s50_fpn_syncbn-backbone+head_mstrain_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/resnest/cascade_mask_rcnn_s50_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco/cascade_mask_rcnn_s50_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco_20201122_104428-99eca4c7.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/resnest/cascade_mask_rcnn_s50_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco/cascade_mask_rcnn_s50_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco-20201122_104428.log.json) |
 |S-101-FPN       | pytorch |    1x   |  10.5  |      -         | 47.7 | 41.4 |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/resnest/cascade_mask_rcnn_s101_fpn_syncbn-backbone+head_mstrain_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/resnest/cascade_mask_rcnn_s101_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco/cascade_mask_rcnn_s101_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco_20201005_113243-42607475.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/resnest/cascade_mask_rcnn_s101_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco/cascade_mask_rcnn_s101_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco-20201005_113243.log.json) |
+
+## Citation
+
+```latex
+@article{zhang2020resnest,
+title={ResNeSt: Split-Attention Networks},
+author={Zhang, Hang and Wu, Chongruo and Zhang, Zhongyue and Zhu, Yi and Zhang, Zhi and Lin, Haibin and Sun, Yue and He, Tong and Muller, Jonas and Manmatha, R. and Li, Mu and Smola, Alexander},
+journal={arXiv preprint arXiv:2004.08955},
+year={2020}
+}
+```

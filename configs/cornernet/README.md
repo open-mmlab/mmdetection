@@ -1,4 +1,8 @@
-# Cornernet: Detecting objects as paired keypoints
+# CornerNet
+
+> [Cornernet: Detecting objects as paired keypoints](https://arxiv.org/abs/1808.01244)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,22 +18,7 @@ We propose CornerNet, a new approach to object detection where we detect an obje
 <!-- [PAPER_TITLE: Cornernet: Detecting objects as paired keypoints] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1808.01244] -->
 
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```latex
-@inproceedings{law2018cornernet,
-  title={Cornernet: Detecting objects as paired keypoints},
-  author={Law, Hei and Deng, Jia},
-  booktitle={15th European Conference on Computer Vision, ECCV 2018},
-  pages={765--781},
-  year={2018},
-  organization={Springer Verlag}
-}
-```
-
-## Results and models
+## Results and Models
 
 | Backbone        | Batch Size | Step/Total Epochs | Mem (GB) | Inf time (fps) | box AP | Config | Download |
 | :-------------: | :--------: |:----------------: | :------: | :------------: | :----: | :------: | :--------: |
@@ -45,3 +34,16 @@ Note:
   - 10 x 5: 10 GPUs with 5 images per gpu. This is the same setting as that reported in the original paper.
   - 8 x 6: 8 GPUs with 6 images per gpu. The total batchsize is similar to paper and only need 1 node to train.
   - 32 x 3: 32 GPUs with 3 images per gpu. The default setting for 1080TI and need 4 nodes to train.
+
+## Citation
+
+```latex
+@inproceedings{law2018cornernet,
+  title={Cornernet: Detecting objects as paired keypoints},
+  author={Law, Hei and Deng, Jia},
+  booktitle={15th European Conference on Computer Vision, ECCV 2018},
+  pages={765--781},
+  year={2018},
+  organization={Springer Verlag}
+}
+```

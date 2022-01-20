@@ -1,4 +1,8 @@
-# Swin Transformer: Hierarchical Vision Transformer using Shifted Windows
+# Swin
+
+> [Swin Transformer: Hierarchical Vision Transformer using Shifted Windows](https://arxiv.org/abs/2103.14030)
+
+<!-- [BACKBONE] -->
 
 ## Abstract
 
@@ -14,20 +18,7 @@ This paper presents a new vision Transformer, called Swin Transformer, that capa
 <!-- [PAPER_TITLE: Swin Transformer: Hierarchical Vision Transformer using Shifted Windows] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/2103.14030] -->
 
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```latex
-@article{liu2021Swin,
-    title={Swin Transformer: Hierarchical Vision Transformer using Shifted Windows},
-    author={Liu, Ze and Lin, Yutong and Cao, Yue and Hu, Han and Wei, Yixuan and Zhang, Zheng and Lin, Stephen and Guo, Baining},
-    journal={arXiv preprint arXiv:2103.14030},
-    year={2021}
-}
-```
-
-## Results and models
+## Results and Models
 
 ### Mask R-CNN
 
@@ -42,3 +33,14 @@ This paper presents a new vision Transformer, called Swin Transformer, that capa
 Please follow the example
 of `retinanet_swin-t-p4-w7_fpn_1x_coco.py` when you want to combine Swin Transformer with
 the one-stage detector. Because there is a layer norm at the outs of Swin Transformer, you must set `start_level` as 0 in FPN, so we have to set the `out_indices` of backbone as `[1,2,3]`.
+
+## Citation
+
+```latex
+@article{liu2021Swin,
+    title={Swin Transformer: Hierarchical Vision Transformer using Shifted Windows},
+    author={Liu, Ze and Lin, Yutong and Cao, Yue and Hu, Han and Wei, Yixuan and Zhang, Zheng and Lin, Stephen and Guo, Baining},
+    journal={arXiv preprint arXiv:2103.14030},
+    year={2021}
+}
+```

@@ -1,4 +1,8 @@
-# Region Proposal by Guided Anchoring
+# Guided Anchoring
+
+> [Region Proposal by Guided Anchoring](https://arxiv.org/abs/1901.03278)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -13,21 +17,6 @@ Region anchors are the cornerstone of modern object detection techniques. State-
 
 <!-- [PAPER_TITLE: Region Proposal by Guided Anchoring] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1901.03278] -->
-
-## Citation
-
-<!-- [ALGORITHM] -->
-
-We provide config files to reproduce the results in the CVPR 2019 paper for [Region Proposal by Guided Anchoring](https://arxiv.org/abs/1901.03278).
-
-```latex
-@inproceedings{wang2019region,
-    title={Region Proposal by Guided Anchoring},
-    author={Jiaqi Wang and Kai Chen and Shuo Yang and Chen Change Loy and Dahua Lin},
-    booktitle={IEEE Conference on Computer Vision and Pattern Recognition},
-    year={2019}
-}
-```
 
 ## Results and Models
 
@@ -61,3 +50,16 @@ The results on COCO 2017 val is shown in the below table. (results on test-dev a
 | GA-Faster RCNN | R-101-FPN | caffe |   1x    |     F     |   0.001   |       |       |       |          |           |          |          |
 |  GA-RetinaNet  | R-101-FPN | caffe |   1x    |     F     |   0.05    |       |       |       |          |           |          |          |
 |  GA-RetinaNet  | R-101-FPN | caffe |   2x    |     T     |   0.05    |       |       |       |          |           |          |          |
+
+## Citation
+
+We provide config files to reproduce the results in the CVPR 2019 paper for [Region Proposal by Guided Anchoring](https://arxiv.org/abs/1901.03278).
+
+```latex
+@inproceedings{wang2019region,
+    title={Region Proposal by Guided Anchoring},
+    author={Jiaqi Wang and Kai Chen and Shuo Yang and Chen Change Loy and Dahua Lin},
+    booktitle={IEEE Conference on Computer Vision and Pattern Recognition},
+    year={2019}
+}
+```

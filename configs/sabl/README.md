@@ -1,4 +1,8 @@
-# Side-Aware Boundary Localization for More Precise Object Detection
+# SABL
+
+> [Side-Aware Boundary Localization for More Precise Object Detection](https://arxiv.org/abs/1912.04260)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,21 +18,6 @@ Current object detection frameworks mainly rely on bounding box regression to lo
 <!-- [PAPER_TITLE: Side-Aware Boundary Localization for More Precise Object Detection
 ] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1912.04260] -->
-
-## Citation
-
-<!-- [ALGORITHM] -->
-
-We provide config files to reproduce the object detection results in the ECCV 2020 Spotlight paper for [Side-Aware Boundary Localization for More Precise Object Detection](https://arxiv.org/abs/1912.04260).
-
-```latex
-@inproceedings{Wang_2020_ECCV,
-    title = {Side-Aware Boundary Localization for More Precise Object Detection},
-    author = {Jiaqi Wang and Wenwei Zhang and Yuhang Cao and Kai Chen and Jiangmiao Pang and Tao Gong and Jianping Shi and Chen Change Loy and Dahua Lin},
-    booktitle = {ECCV},
-    year = {2020}
-}
-```
 
 ## Results and Models
 
@@ -50,3 +39,16 @@ Single-scale testing (1333x800) is adopted in all results.
 | SABL RetinaNet | R-101-FPN |   Y   |   1x    |      N      |  40.5  |      [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/sabl/sabl_retinanet_r101_fpn_gn_1x_coco.py)       |                 [model](https://download.openmmlab.com/mmdetection/v2.0/sabl/sabl_retinanet_r101_fpn_gn_1x_coco/sabl_retinanet_r101_fpn_gn_1x_coco-40a893e8.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/sabl/sabl_retinanet_r101_fpn_gn_1x_coco/20200830_201422.log.json)                  |
 | SABL RetinaNet | R-101-FPN |   Y   |   2x    | Y (640~800) |  42.9  | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/sabl/sabl_retinanet_r101_fpn_gn_2x_ms_640_800_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/sabl/sabl_retinanet_r101_fpn_gn_2x_ms_640_800_coco/sabl_retinanet_r101_fpn_gn_2x_ms_640_800_coco-1e63382c.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/sabl/sabl_retinanet_r101_fpn_gn_2x_ms_640_800_coco/20200830_144807.log.json) |
 | SABL RetinaNet | R-101-FPN |   Y   |   2x    | Y (480~960) |  43.6  | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/sabl/sabl_retinanet_r101_fpn_gn_2x_ms_480_960_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/sabl/sabl_retinanet_r101_fpn_gn_2x_ms_480_960_coco/sabl_retinanet_r101_fpn_gn_2x_ms_480_960_coco-5342f857.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/sabl/sabl_retinanet_r101_fpn_gn_2x_ms_480_960_coco/20200830_164537.log.json) |
+
+## Citation
+
+We provide config files to reproduce the object detection results in the ECCV 2020 Spotlight paper for [Side-Aware Boundary Localization for More Precise Object Detection](https://arxiv.org/abs/1912.04260).
+
+```latex
+@inproceedings{Wang_2020_ECCV,
+    title = {Side-Aware Boundary Localization for More Precise Object Detection},
+    author = {Jiaqi Wang and Wenwei Zhang and Yuhang Cao and Kai Chen and Jiangmiao Pang and Tao Gong and Jianping Shi and Chen Change Loy and Dahua Lin},
+    booktitle = {ECCV},
+    year = {2020}
+}
+```

@@ -1,4 +1,8 @@
-# Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks
+# RPN
+
+> [Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks](https://arxiv.org/abs/1506.01497)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,20 +18,7 @@ State-of-the-art object detection networks depend on region proposal algorithms 
 <!-- [PAPER_TITLE: Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1506.01497] -->
 
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```latex
-@inproceedings{ren2015faster,
-  title={Faster r-cnn: Towards real-time object detection with region proposal networks},
-  author={Ren, Shaoqing and He, Kaiming and Girshick, Ross and Sun, Jian},
-  booktitle={Advances in neural information processing systems},
-  year={2015}
-}
-```
-
-## Results and models
+## Results and Models
 
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | AR1000 | Config | Download |
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: | :--------: |
@@ -41,3 +32,14 @@ State-of-the-art object detection networks depend on region proposal algorithms 
 | X-101-32x4d-FPN | pytorch |   2x    |    -     |       -        |  61.1  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/rpn/rpn_x101_32x4d_fpn_2x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_x101_32x4d_fpn_2x_coco/rpn_x101_32x4d_fpn_2x_coco_20200208-d22bd0bb.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_x101_32x4d_fpn_2x_coco/rpn_x101_32x4d_fpn_2x_coco_20200208_200752.log.json) |
 | X-101-64x4d-FPN | pytorch |   1x    |   10.1   |      9.1       |  61.0  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/rpn/rpn_x101_64x4d_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_x101_64x4d_fpn_1x_coco/rpn_x101_64x4d_fpn_1x_coco_20200208-cde6f7dd.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_x101_64x4d_fpn_1x_coco/rpn_x101_64x4d_fpn_1x_coco_20200208_200752.log.json) |
 | X-101-64x4d-FPN | pytorch |   2x    |    -     |       -        |  61.5  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/rpn/rpn_x101_64x4d_fpn_2x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_x101_64x4d_fpn_2x_coco/rpn_x101_64x4d_fpn_2x_coco_20200208-c65f524f.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/rpn/rpn_x101_64x4d_fpn_2x_coco/rpn_x101_64x4d_fpn_2x_coco_20200208_200752.log.json) |
+
+## Citation
+
+```latex
+@inproceedings{ren2015faster,
+  title={Faster r-cnn: Towards real-time object detection with region proposal networks},
+  author={Ren, Shaoqing and He, Kaiming and Girshick, Ross and Sun, Jian},
+  booktitle={Advances in neural information processing systems},
+  year={2015}
+}
+```

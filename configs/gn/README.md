@@ -1,4 +1,8 @@
-# Group Normalization
+# GN
+
+> [Group Normalization](https://arxiv.org/abs/1803.08494)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -13,19 +17,6 @@ Batch Normalization (BN) is a milestone technique in the development of deep lea
 
 <!-- [PAPER_TITLE: Group Normalization] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1803.08494] -->
-
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```latex
-@inproceedings{wu2018group,
-  title={Group Normalization},
-  author={Wu, Yuxin and He, Kaiming},
-  booktitle={Proceedings of the European Conference on Computer Vision (ECCV)},
-  year={2018}
-}
-```
 
 ## Results and Models
 
@@ -43,3 +34,14 @@ Batch Normalization (BN) is a milestone technique in the development of deep lea
 - (d) means pretrained model converted from Detectron, and (c) means the contributed model pretrained by [@thangvubk](https://github.com/thangvubk).
 - The `3x` schedule is epoch [28, 34, 36].
 - **Memory, Train/Inf time is outdated.**
+
+## Citation
+
+```latex
+@inproceedings{wu2018group,
+  title={Group Normalization},
+  author={Wu, Yuxin and He, Kaiming},
+  booktitle={Proceedings of the European Conference on Computer Vision (ECCV)},
+  year={2018}
+}
+```

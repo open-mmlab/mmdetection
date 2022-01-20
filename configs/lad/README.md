@@ -1,5 +1,8 @@
-# Improving Object Detection by Label Assignment Distillation
+# LAD
 
+> [Improving Object Detection by Label Assignment Distillation](https://arxiv.org/abs/2108.10520)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,20 +17,6 @@ Label assignment in object detection aims to assign targets, foreground or backg
 
 <!-- [PAPER_TITLE: Improving Object Detection by Label Assignment Distillation] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/2108.10520] -->
-
-## Citation
-
-
-<!-- [ALGORITHM] -->
-
-```latex
-@inproceedings{nguyen2021improving,
-  title={Improving Object Detection by Label Assignment Distillation},
-  author={Chuong H. Nguyen and Thuy C. Nguyen and Tuan N. Tang and Nam L. H. Phan},
-  booktitle = {WACV},
-  year={2022}
-}
-```
 
 ## Results and Models
 
@@ -48,3 +37,14 @@ Distillation.
 
 - Meaning of Config name: lad_r50(student model)_paa(based on paa)_r101(teacher model)_fpn(neck)_coco(dataset)_1x(12 epoch).py
 - Results may fluctuate by about 0.2 mAP.
+
+## Citation
+
+```latex
+@inproceedings{nguyen2021improving,
+  title={Improving Object Detection by Label Assignment Distillation},
+  author={Chuong H. Nguyen and Thuy C. Nguyen and Tuan N. Tang and Nam L. H. Phan},
+  booktitle = {WACV},
+  year={2022}
+}
+```

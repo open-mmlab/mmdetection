@@ -1,4 +1,8 @@
-# Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes for Dense Object Detection
+# GFL
+
+> [Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes for Dense Object Detection](https://arxiv.org/abs/2006.04388)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -13,21 +17,6 @@ One-stage detector basically formulates object detection as dense classification
 
 <!-- [PAPER_TITLE: Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes for Dense Object Detection] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/2006.04388] -->
-
-## Citation
-
-<!-- [ALGORITHM] -->
-
-We provide config files to reproduce the object detection results in the paper [Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes for Dense Object Detection](https://arxiv.org/abs/2006.04388)
-
-```latex
-@article{li2020generalized,
-  title={Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes for Dense Object Detection},
-  author={Li, Xiang and Wang, Wenhai and Wu, Lijun and Chen, Shuo and Hu, Xiaolin and Li, Jun and Tang, Jinhui and Yang, Jian},
-  journal={arXiv preprint arXiv:2006.04388},
-  year={2020}
-}
-```
 
 ## Results and Models
 
@@ -44,3 +33,16 @@ We provide config files to reproduce the object detection results in the paper [
 [2] *All results are obtained with a single model and without any test time data augmentation such as multi-scale, flipping and etc..* \
 [3] *`dcnv2` denotes deformable convolutional networks v2.* \
 [4] *FPS is tested with a single GeForce RTX 2080Ti GPU, using a batch size of 1.*
+
+## Citation
+
+We provide config files to reproduce the object detection results in the paper [Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes for Dense Object Detection](https://arxiv.org/abs/2006.04388)
+
+```latex
+@article{li2020generalized,
+  title={Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes for Dense Object Detection},
+  author={Li, Xiang and Wang, Wenhai and Wu, Lijun and Chen, Shuo and Hu, Xiaolin and Li, Jun and Tang, Jinhui and Yang, Jian},
+  journal={arXiv preprint arXiv:2006.04388},
+  year={2020}
+}
+```

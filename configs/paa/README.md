@@ -1,4 +1,8 @@
-# Probabilistic Anchor Assignment with IoU Prediction for Object Detection
+# PAA
+
+> [Probabilistic Anchor Assignment with IoU Prediction for Object Detection](https://arxiv.org/abs/2007.08103)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -13,19 +17,6 @@ In object detection, determining which anchors to assign as positive or negative
 
 <!-- [PAPER_TITLE: Probabilistic Anchor Assignment with IoU Prediction for Object Detection] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/2007.08103] -->
-
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```latex
-@inproceedings{paa-eccv2020,
-  title={Probabilistic Anchor Assignment with IoU Prediction for Object Detection},
-  author={Kim, Kang and Lee, Hee Seok},
-  booktitle = {ECCV},
-  year={2020}
-}
-```
 
 ## Results and Models
 
@@ -49,3 +40,14 @@ Prediction for Object Detection.
 **Note**:
 
 1. We find that the performance is unstable with 1x setting and may fluctuate by about 0.2 mAP. We report the best results.
+
+## Citation
+
+```latex
+@inproceedings{paa-eccv2020,
+  title={Probabilistic Anchor Assignment with IoU Prediction for Object Detection},
+  author={Kim, Kang and Lee, Hee Seok},
+  booktitle = {ECCV},
+  year={2020}
+}
+```

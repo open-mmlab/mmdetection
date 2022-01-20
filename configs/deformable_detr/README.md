@@ -1,4 +1,8 @@
-# Deformable DETR: Deformable Transformers for End-to-End Object Detection
+# Deformable DETR
+
+> [Deformable DETR: Deformable Transformers for End-to-End Object Detection](https://arxiv.org/abs/2010.04159)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,23 +18,6 @@ DETR has been recently proposed to eliminate the need for many hand-designed com
 <!-- [PAPER_TITLE: Deformable DETR: Deformable Transformers for End-to-End Object Detection] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/2010.04159] -->
 
-## Citation
-
-<!-- [ALGORITHM] -->
-
-We provide the config files for Deformable DETR: [Deformable DETR: Deformable Transformers for End-to-End Object Detection](https://arxiv.org/abs/2010.04159).
-
-```
-@inproceedings{
-zhu2021deformable,
-title={Deformable DETR: Deformable Transformers for End-to-End Object Detection},
-author={Xizhou Zhu and Weijie Su and Lewei Lu and Bin Li and Xiaogang Wang and Jifeng Dai},
-booktitle={International Conference on Learning Representations},
-year={2021},
-url={https://openreview.net/forum?id=gZ9hCDWe6ke}
-}
-```
-
 ## Results and Models
 
 | Backbone | Model | Lr schd  | box AP | Config | Download |
@@ -43,3 +30,18 @@ url={https://openreview.net/forum?id=gZ9hCDWe6ke}
 
 1. All models are trained with batch size 32.
 2. The performance is unstable. `Deformable DETR` and `iterative bounding box refinement` may fluctuate about 0.3 mAP. `two-stage Deformable DETR` may fluctuate about 0.2 mAP.
+
+## Citation
+
+We provide the config files for Deformable DETR: [Deformable DETR: Deformable Transformers for End-to-End Object Detection](https://arxiv.org/abs/2010.04159).
+
+```latex
+@inproceedings{
+zhu2021deformable,
+title={Deformable DETR: Deformable Transformers for End-to-End Object Detection},
+author={Xizhou Zhu and Weijie Su and Lewei Lu and Bin Li and Xiaogang Wang and Jifeng Dai},
+booktitle={International Conference on Learning Representations},
+year={2021},
+url={https://openreview.net/forum?id=gZ9hCDWe6ke}
+}
+```

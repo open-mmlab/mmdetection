@@ -1,4 +1,8 @@
-# Focal Loss for Dense Object Detection
+# RetinaNet
+
+> [Focal Loss for Dense Object Detection](https://arxiv.org/abs/1708.02002)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,20 +18,7 @@ The highest accuracy object detectors to date are based on a two-stage approach 
 <!-- [PAPER_TITLE: Focal Loss for Dense Object Detection] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1708.02002] -->
 
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```latex
-@inproceedings{lin2017focal,
-  title={Focal loss for dense object detection},
-  author={Lin, Tsung-Yi and Goyal, Priya and Girshick, Ross and He, Kaiming and Doll{\'a}r, Piotr},
-  booktitle={Proceedings of the IEEE international conference on computer vision},
-  year={2017}
-}
-```
-
-## Results and models
+## Results and Models
 
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download  |
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: | :--------: |
@@ -53,3 +44,14 @@ We also train some models with longer schedules and multi-scale training. The us
 |    R-101-FPN       |  caffe  |   3x    |   5.4    |  40.7  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/retinanet/retinanet_r101_caffe_fpn_mstrain_3x_coco.py)    |  [model](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_caffe_fpn_mstrain_3x_coco/retinanet_r101_caffe_fpn_mstrain_3x_coco_20210721_063439-88a8a944.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_caffe_fpn_mstrain_3x_coco/retinanet_r101_caffe_fpn_mstrain_3x_coco_20210721_063439-88a8a944.log.json)
 |    R-101-FPN       |  pytorch|   3x    |   5.4    |  41    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/retinanet/retinanet_r101_fpn_mstrain_640-800_3x_coco.py)      | [model](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_fpn_mstrain_3x_coco/retinanet_r101_fpn_mstrain_3x_coco_20210720_214650-7ee888e0.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_fpn_mstrain_3x_coco/retinanet_r101_fpn_mstrain_3x_coco_20210720_214650-7ee888e0.log.json)
 |    X-101-64x4d-FPN |  pytorch|   3x    |   9.8   |  41.6  |  [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/retinanet/retinanet_x101_64x4d_fpn_mstrain_640-800_3x_coco.py)      |      [model](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_x101_64x4d_fpn_mstrain_3x_coco/retinanet_x101_64x4d_fpn_mstrain_3x_coco_20210719_051838-022c2187.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_x101_64x4d_fpn_mstrain_3x_coco/retinanet_x101_64x4d_fpn_mstrain_3x_coco_20210719_051838-022c2187.log.json)
+
+## Citation
+
+```latex
+@inproceedings{lin2017focal,
+  title={Focal loss for dense object detection},
+  author={Lin, Tsung-Yi and Goyal, Priya and Girshick, Ross and He, Kaiming and Doll{\'a}r, Piotr},
+  booktitle={Proceedings of the IEEE international conference on computer vision},
+  year={2017}
+}
+```

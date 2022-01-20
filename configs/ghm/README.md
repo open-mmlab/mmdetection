@@ -1,4 +1,8 @@
-# Gradient Harmonized Single-stage Detector
+# GHM
+
+> [Gradient Harmonized Single-stage Detector](https://arxiv.org/abs/1811.05181)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,19 +18,6 @@ Despite the great success of two-stage detectors, single-stage detector is still
 <!-- [PAPER_TITLE: Gradient Harmonized Single-stage Detector] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1811.05181] -->
 
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```
-@inproceedings{li2019gradient,
-  title={Gradient Harmonized Single-stage Detector},
-  author={Li, Buyu and Liu, Yu and Wang, Xiaogang},
-  booktitle={AAAI Conference on Artificial Intelligence},
-  year={2019}
-}
-```
-
 ## Results and Models
 
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
@@ -35,3 +26,14 @@ Despite the great success of two-stage detectors, single-stage detector is still
 |    R-101-FPN    | pytorch |   1x    |   6.0    | 4.4            |  39.1  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/ghm/retinanet_ghm_r101_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/ghm/retinanet_ghm_r101_fpn_1x_coco/retinanet_ghm_r101_fpn_1x_coco_20200130-c148ee8f.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/ghm/retinanet_ghm_r101_fpn_1x_coco/retinanet_ghm_r101_fpn_1x_coco_20200130_145259.log.json) |
 | X-101-32x4d-FPN | pytorch |   1x    |   7.2    | 5.1            |  40.7  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/ghm/retinanet_ghm_x101_32x4d_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/ghm/retinanet_ghm_x101_32x4d_fpn_1x_coco/retinanet_ghm_x101_32x4d_fpn_1x_coco_20200131-e4333bd0.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/ghm/retinanet_ghm_x101_32x4d_fpn_1x_coco/retinanet_ghm_x101_32x4d_fpn_1x_coco_20200131_113653.log.json) |
 | X-101-64x4d-FPN | pytorch |   1x    |   10.3   | 5.2            |  41.4  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/ghm/retinanet_ghm_x101_64x4d_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/ghm/retinanet_ghm_x101_64x4d_fpn_1x_coco/retinanet_ghm_x101_64x4d_fpn_1x_coco_20200131-dd381cef.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/ghm/retinanet_ghm_x101_64x4d_fpn_1x_coco/retinanet_ghm_x101_64x4d_fpn_1x_coco_20200131_113723.log.json) |
+
+## Citation
+
+```latex
+@inproceedings{li2019gradient,
+  title={Gradient Harmonized Single-stage Detector},
+  author={Li, Buyu and Liu, Yu and Wang, Xiaogang},
+  booktitle={AAAI Conference on Artificial Intelligence},
+  year={2019}
+}
+```

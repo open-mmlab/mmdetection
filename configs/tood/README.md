@@ -1,4 +1,8 @@
-# TOOD: Task-aligned One-stage Object Detection
+# TOOD
+
+> [TOOD: Task-aligned One-stage Object Detection](https://arxiv.org/abs/2108.07755)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -13,19 +17,6 @@ One-stage object detection is commonly implemented by optimizing two sub-tasks: 
 
 <!-- [PAPER_TITLE: TOOD: Task-aligned One-stage Object Detection] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/2108.07755] -->
-
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```latex
-@inproceedings{feng2021tood,
-    title={TOOD: Task-aligned One-stage Object Detection},
-    author={Feng, Chengjian and Zhong, Yujie and Gao, Yu and Scott, Matthew R and Huang, Weilin},
-    booktitle={ICCV},
-    year={2021}
-}
-```
 
 ## Results and Models
 
@@ -42,3 +33,14 @@ One-stage object detection is commonly implemented by optimizing two sub-tasks: 
 [1] *1x and 2x mean the model is trained for 90K and 180K iterations, respectively.* \
 [2] *All results are obtained with a single model and without any test time data augmentation such as multi-scale, flipping and etc..* \
 [3] *`dcnv2` denotes deformable convolutional networks v2.* \
+
+## Citation
+
+```latex
+@inproceedings{feng2021tood,
+    title={TOOD: Task-aligned One-stage Object Detection},
+    author={Feng, Chengjian and Zhong, Yujie and Gao, Yu and Scott, Matthew R and Huang, Weilin},
+    booktitle={ICCV},
+    year={2021}
+}
+```

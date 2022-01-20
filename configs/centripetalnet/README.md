@@ -1,4 +1,8 @@
-# CentripetalNet: Pursuing High-quality Keypoint Pairs for Object Detection
+# CentripetalNet
+
+> [CentripetalNet: Pursuing High-quality Keypoint Pairs for Object Detection](https://arxiv.org/abs/2003.09119)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,9 +18,18 @@ Keypoint-based detectors have achieved pretty-well performance. However, incorre
 <!-- [PAPER_TITLE: CentripetalNet: Pursuing High-quality Keypoint Pairs for Object Detection] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/2003.09119] -->
 
-## Citation
+## Results and Models
 
-<!-- [ALGORITHM] -->
+| Backbone        | Batch Size | Step/Total Epochs | Mem (GB) | Inf time (fps) | box AP | Config | Download |
+| :-------------: | :--------: |:----------------: | :------: | :------------: | :----: | :------: | :--------: |
+| HourglassNet-104 | [16 x 6](./centripetalnet_hourglass104_mstest_16x6_210e_coco.py) | 190/210 | 16.7 | 3.7 | 44.8 | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/centripetalnet/centripetalnet_hourglass104_mstest_16x6_210e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/centripetalnet/centripetalnet_hourglass104_mstest_16x6_210e_coco/centripetalnet_hourglass104_mstest_16x6_210e_coco_20200915_204804-3ccc61e5.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/centripetalnet/centripetalnet_hourglass104_mstest_16x6_210e_coco/centripetalnet_hourglass104_mstest_16x6_210e_coco_20200915_204804.log.json) |
+
+Note:
+
+- TTA setting is single-scale and `flip=True`.
+- The model we released is the best checkpoint rather than the latest checkpoint (box AP 44.8 vs 44.6 in our experiment).
+
+## Citation
 
 ```latex
 @InProceedings{Dong_2020_CVPR,
@@ -27,14 +40,3 @@ month = {June},
 year = {2020}
 }
 ```
-
-## Results and models
-
-| Backbone        | Batch Size | Step/Total Epochs | Mem (GB) | Inf time (fps) | box AP | Config | Download |
-| :-------------: | :--------: |:----------------: | :------: | :------------: | :----: | :------: | :--------: |
-| HourglassNet-104 | [16 x 6](./centripetalnet_hourglass104_mstest_16x6_210e_coco.py) | 190/210 | 16.7 | 3.7 | 44.8 | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/centripetalnet/centripetalnet_hourglass104_mstest_16x6_210e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/centripetalnet/centripetalnet_hourglass104_mstest_16x6_210e_coco/centripetalnet_hourglass104_mstest_16x6_210e_coco_20200915_204804-3ccc61e5.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/centripetalnet/centripetalnet_hourglass104_mstest_16x6_210e_coco/centripetalnet_hourglass104_mstest_16x6_210e_coco_20200915_204804.log.json) |
-
-Note:
-
-- TTA setting is single-scale and `flip=True`.
-- The model we released is the best checkpoint rather than the latest checkpoint (box AP 44.8 vs 44.6 in our experiment).

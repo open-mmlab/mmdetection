@@ -1,4 +1,8 @@
-# Res2Net: A New Multi-scale Backbone Architecture
+# Res2Net
+
+> [Res2Net: A New Multi-scale Backbone Architecture](https://arxiv.org/abs/1904.01169)
+
+<!-- [BACKBONE] -->
 
 ## Abstract
 
@@ -16,8 +20,6 @@ Representing features at multiple scales is of great importance for numerous vis
 
 ## Introduction
 
-<!-- [ALGORITHM] -->
-
 We propose a novel building block for CNNs, namely Res2Net, by constructing hierarchical residual-like connections within one single residual block. The Res2Net represents multi-scale features at a granular level and increases the range of receptive fields for each network layer.
 
 |    Backbone     |Params. | GFLOPs  | top-1 err. | top-5 err. |
@@ -32,18 +34,6 @@ Compared with other backbone networks, Res2Net requires fewer parameters and FLO
 **Note:**
 
 - GFLOPs for classification are calculated with image size (224x224).
-
-## Citation
-
-```latex
-@article{gao2019res2net,
-  title={Res2Net: A New Multi-scale Backbone Architecture},
-  author={Gao, Shang-Hua and Cheng, Ming-Ming and Zhao, Kai and Zhang, Xin-Yu and Yang, Ming-Hsuan and Torr, Philip},
-  journal={IEEE TPAMI},
-  year={2020},
-  doi={10.1109/TPAMI.2019.2938758},
-}
-```
 
 ## Results and Models
 
@@ -79,3 +69,15 @@ R2-101-FPN       | pytorch |  20e   |    9.5  |      -         |  46.4  |  40.0 
 
 - Res2Net ImageNet pretrained models are in [Res2Net-PretrainedModels](https://github.com/Res2Net/Res2Net-PretrainedModels).
 - More applications of Res2Net are in [Res2Net-Github](https://github.com/Res2Net/).
+
+## Citation
+
+```latex
+@article{gao2019res2net,
+  title={Res2Net: A New Multi-scale Backbone Architecture},
+  author={Gao, Shang-Hua and Cheng, Ming-Ming and Zhao, Kai and Zhang, Xin-Yu and Yang, Ming-Hsuan and Torr, Philip},
+  journal={IEEE TPAMI},
+  year={2020},
+  doi={10.1109/TPAMI.2019.2938758},
+}
+```

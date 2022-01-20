@@ -1,4 +1,8 @@
-# Cascade RPN: Delving into High-Quality Region Proposal Network with Adaptive Convolution
+# Cascade RPN
+
+> [Cascade RPN: Delving into High-Quality Region Proposal Network with Adaptive Convolution](https://arxiv.org/abs/1909.06720)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,22 +18,7 @@ This paper considers an architecture referred to as Cascade Region Proposal Netw
 <!-- [PAPER_TITLE: Cascade RPN: Delving into High-Quality Region Proposal Network with Adaptive Convolution] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1909.06720] -->
 
-## Citation
-
-<!-- [ALGORITHM] -->
-
-We provide the code for reproducing experiment results of [Cascade RPN](https://arxiv.org/abs/1909.06720).
-
-```
-@inproceedings{vu2019cascade,
-  title={Cascade RPN: Delving into High-Quality Region Proposal Network with Adaptive Convolution},
-  author={Vu, Thang and Jang, Hyunjun and Pham, Trung X and Yoo, Chang D},
-  booktitle={Conference on Neural Information Processing Systems (NeurIPS)},
-  year={2019}
-}
-```
-
-## Benchmark
+## Results and Models
 
 ### Region proposal performance
 
@@ -43,3 +32,16 @@ We provide the code for reproducing experiment results of [Cascade RPN](https://
 |:-------------:|:-----------:|:--------:|:-------:|:--------:|:--------:|:-------------------:|:--------------:|:------:|:-------:|:--------------------------------------------:|
 |   Fast R-CNN  | Cascade RPN | R-50-FPN |  caffe  |    1x    |    -     |          -          |        -       |  39.9  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cascade_rpn/crpn_fast_rcnn_r50_caffe_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/cascade_rpn/crpn_fast_rcnn_r50_caffe_fpn_1x_coco/crpn_fast_rcnn_r50_caffe_fpn_1x_coco-cb486e66.pth) |
 |  Faster R-CNN | Cascade RPN | R-50-FPN |  caffe  |    1x    |    -     |          -          |        -       |  40.4  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/cascade_rpn/crpn_faster_rcnn_r50_caffe_fpn_1x_coco.py) |[model](https://download.openmmlab.com/mmdetection/v2.0/cascade_rpn/crpn_faster_rcnn_r50_caffe_fpn_1x_coco/crpn_faster_rcnn_r50_caffe_fpn_1x_coco-c8283cca.pth) |
+
+## Citation
+
+We provide the code for reproducing experiment results of [Cascade RPN](https://arxiv.org/abs/1909.06720).
+
+```latex
+@inproceedings{vu2019cascade,
+  title={Cascade RPN: Delving into High-Quality Region Proposal Network with Adaptive Convolution},
+  author={Vu, Thang and Jang, Hyunjun and Pham, Trung X and Yoo, Chang D},
+  booktitle={Conference on Neural Information Processing Systems (NeurIPS)},
+  year={2019}
+}
+```

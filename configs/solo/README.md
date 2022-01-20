@@ -1,4 +1,8 @@
-# SOLO: Segmenting Objects by Locations
+# SOLO
+
+> [SOLO: Segmenting Objects by Locations](https://arxiv.org/abs/1912.04488)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -13,17 +17,6 @@ We present a new, embarrassingly simple approach to instance segmentation in ima
 
 <!-- [PAPER_TITLE: SOLO: Segmenting Objects by Locations] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1912.04488] -->
-
-## Citation
-
-```
-@inproceedings{wang2020solo,
-  title     =  {{SOLO}: Segmenting Objects by Locations},
-  author    =  {Wang, Xinlong and Kong, Tao and Shen, Chunhua and Jiang, Yuning and Li, Lei},
-  booktitle =  {Proc. Eur. Conf. Computer Vision (ECCV)},
-  year      =  {2020}
-}
-```
 
 ## Results and Models
 
@@ -54,3 +47,14 @@ of SOLO. Please refer to the corresponding config files for details.
 - Decoupled Light SOLO using decoupled structure similar to Decoupled
 SOLO head, with light-weight head and smaller input size, Please refer
 to the corresponding config files for details.
+
+## Citation
+
+```latex
+@inproceedings{wang2020solo,
+  title     =  {{SOLO}: Segmenting Objects by Locations},
+  author    =  {Wang, Xinlong and Kong, Tao and Shen, Chunhua and Jiang, Yuning and Li, Lei},
+  booktitle =  {Proc. Eur. Conf. Computer Vision (ECCV)},
+  year      =  {2020}
+}
+```

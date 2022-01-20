@@ -1,4 +1,8 @@
-# You Only Look One-level Feature
+# YOLOF
+
+> [You Only Look One-level Feature](https://arxiv.org/abs/2103.09460)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,19 +18,6 @@ This paper revisits feature pyramids networks (FPN) for one-stage detectors and 
 <!-- [PAPER_TITLE: You Only Look One-level Feature] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/2103.09460] -->
 
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```
-@inproceedings{chen2021you,
-  title={You Only Look One-level Feature},
-  author={Chen, Qiang and Wang, Yingming and Yang, Tong and Zhang, Xiangyu and Cheng, Jian and Sun, Jian},
-  booktitle={IEEE Conference on Computer Vision and Pattern Recognition},
-  year={2021}
-}
-```
-
 ## Results and Models
 
 | Backbone  | Style   | Epoch | Lr schd | Mem (GB) |   box AP | Config | Download |
@@ -37,3 +28,14 @@ This paper revisits feature pyramids networks (FPN) for one-stage detectors and 
 
 1. We find that the performance is unstable and may fluctuate by about 0.3 mAP. mAP 37.4 ~ 37.7 is acceptable in YOLOF_R_50_C5_1x. Such fluctuation can also be found in the [original implementation](https://github.com/chensnathan/YOLOF).
 2. In addition to instability issues, sometimes there are large loss fluctuations and NAN, so there may still be problems with this project, which will be improved subsequently.
+
+## Citation
+
+```latex
+@inproceedings{chen2021you,
+  title={You Only Look One-level Feature},
+  author={Chen, Qiang and Wang, Yingming and Yang, Tong and Zhang, Xiangyu and Cheng, Jian and Sun, Jian},
+  booktitle={IEEE Conference on Computer Vision and Pattern Recognition},
+  year={2021}
+}
+```

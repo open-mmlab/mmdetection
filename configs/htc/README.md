@@ -1,4 +1,8 @@
-# Hybrid Task Cascade for Instance Segmentation
+# HTC
+
+> [Hybrid Task Cascade for Instance Segmentation](ttps://arxiv.org/abs/1901.07518)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,22 +18,7 @@ Cascade is a classic yet powerful architecture that has boosted performance on v
 <!-- [PAPER_TITLE: Hybrid Task Cascade for Instance Segmentation] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1901.07518] -->
 
-## Citation
-
-<!-- [ALGORITHM] -->
-
-We provide config files to reproduce the results in the CVPR 2019 paper for [Hybrid Task Cascade](https://arxiv.org/abs/1901.07518).
-
-```latex
-@inproceedings{chen2019hybrid,
-  title={Hybrid task cascade for instance segmentation},
-  author={Chen, Kai and Pang, Jiangmiao and Wang, Jiaqi and Xiong, Yu and Li, Xiaoxiao and Sun, Shuyang and Feng, Wansen and Liu, Ziwei and Shi, Jianping and Ouyang, Wanli and Chen Change Loy and Dahua Lin},
-  booktitle={IEEE Conference on Computer Vision and Pattern Recognition},
-  year={2019}
-}
-```
-
-## Dataset
+## Introduction
 
 HTC requires COCO and [COCO-stuff](http://calvin.inf.ed.ac.uk/wp-content/uploads/data/cocostuffdataset/stuffthingmaps_trainval2017.zip) dataset for training. You need to download and extract it in the COCO dataset path.
 The directory should be like this.
@@ -69,3 +58,16 @@ We also provide a powerful HTC with DCN and multi-scale training model. No testi
 | Backbone         | Style   | DCN   | training scales | Lr schd | box AP | mask AP | Config | Download |
 |:----------------:|:-------:|:-----:|:---------------:|:-------:|:------:|:-------:|:------:|:--------:|
 | X-101-64x4d-FPN  | pytorch | c3-c5 | 400~1400        | 20e     | 50.4   | 43.8    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/htc/htc_x101_64x4d_fpn_dconv_c3-c5_mstrain_400_1400_16x1_20e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/htc/htc_x101_64x4d_fpn_dconv_c3-c5_mstrain_400_1400_16x1_20e_coco/htc_x101_64x4d_fpn_dconv_c3-c5_mstrain_400_1400_16x1_20e_coco_20200312-946fd751.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/htc/htc_x101_64x4d_fpn_dconv_c3-c5_mstrain_400_1400_16x1_20e_coco/htc_x101_64x4d_fpn_dconv_c3-c5_mstrain_400_1400_16x1_20e_coco_20200312_203410.log.json) |
+
+## Citation
+
+We provide config files to reproduce the results in the CVPR 2019 paper for [Hybrid Task Cascade](https://arxiv.org/abs/1901.07518).
+
+```latex
+@inproceedings{chen2019hybrid,
+  title={Hybrid task cascade for instance segmentation},
+  author={Chen, Kai and Pang, Jiangmiao and Wang, Jiaqi and Xiong, Yu and Li, Xiaoxiao and Sun, Shuyang and Feng, Wansen and Liu, Ziwei and Shi, Jianping and Ouyang, Wanli and Chen Change Loy and Dahua Lin},
+  booktitle={IEEE Conference on Computer Vision and Pattern Recognition},
+  year={2019}
+}
+```

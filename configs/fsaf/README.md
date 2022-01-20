@@ -1,4 +1,8 @@
-# Feature Selective Anchor-Free Module for Single-Shot Object Detection
+# FSAF
+
+> [Feature Selective Anchor-Free Module for Single-Shot Object Detection](https://arxiv.org/abs/1903.00621)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -16,8 +20,6 @@ We motivate and present feature selective anchor-free (FSAF) module, a simple an
 
 ## Introduction
 
-<!-- [ALGORITHM] -->
-
 FSAF is an anchor-free method published in CVPR2019 ([https://arxiv.org/pdf/1903.00621.pdf](https://arxiv.org/pdf/1903.00621.pdf)).
 Actually it is equivalent to the anchor-based method with only one anchor at each feature map position in each FPN level.
 And this is how we implemented it.
@@ -26,7 +28,7 @@ Only the anchor-free branch is released for its better compatibility with the cu
 In the original paper, feature maps within the central 0.2-0.5 area of a gt box are tagged as ignored. However,
 it is empirically found that a hard threshold (0.2-0.2) gives a further gain on the performance. (see the table below)
 
-## Main Results
+## Results and Models
 
 ### Results on R50/R101/X101-FPN
 
@@ -46,7 +48,7 @@ it is empirically found that a hard threshold (0.2-0.2) gives a further gain on 
 - *All pretrained backbones use pytorch style.*
 - *All models are trained on 8 Titan-XP gpus and tested on a single gpu.*
 
-## Citations
+## Citation
 
 BibTeX reference is as follows.
 

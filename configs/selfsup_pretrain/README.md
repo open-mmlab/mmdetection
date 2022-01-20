@@ -1,5 +1,7 @@
 # Backbones Trained by Self-Supervise Algorithms
 
+<!-- [BACKBONE] -->
+
 ## Abstract
 
 <!-- [ABSTRACT] -->
@@ -20,42 +22,6 @@ We present Momentum Contrast (MoCo) for unsupervised visual representation learn
 
 <!-- [PAPER_TITLE: Unsupervised Learning of Visual Features by Contrasting Cluster Assignments] -->
 <!-- [PAPER_URL: Unsupervised Learning of Visual Features by Contrasting Cluster Assignments] -->
-
-## Citation
-
-<!-- [BACKBONE] -->
-
-We support to apply the backbone models pre-trained by different self-supervised methods in detection systems and provide their results on Mask R-CNN.
-
-The pre-trained models are converted from [MoCo](https://github.com/facebookresearch/moco) and downloaded from [SwAV](https://github.com/facebookresearch/swav).
-
-For SwAV, please cite
-
-```latex
-@article{caron2020unsupervised,
-  title={Unsupervised Learning of Visual Features by Contrasting Cluster Assignments},
-  author={Caron, Mathilde and Misra, Ishan and Mairal, Julien and Goyal, Priya and Bojanowski, Piotr and Joulin, Armand},
-  booktitle={Proceedings of Advances in Neural Information Processing Systems (NeurIPS)},
-  year={2020}
-}
-```
-
-For MoCo, please cite
-
-```latex
-@Article{he2019moco,
-  author  = {Kaiming He and Haoqi Fan and Yuxin Wu and Saining Xie and Ross Girshick},
-  title   = {Momentum Contrast for Unsupervised Visual Representation Learning},
-  journal = {arXiv preprint arXiv:1911.05722},
-  year    = {2019},
-}
-@Article{chen2020mocov2,
-  author  = {Xinlei Chen and Haoqi Fan and Ross Girshick and Kaiming He},
-  title   = {Improved Baselines with Momentum Contrastive Learning},
-  journal = {arXiv preprint arXiv:2003.04297},
-  year    = {2020},
-}
-```
 
 ## Usage
 
@@ -102,7 +68,7 @@ model = dict(
 
 ```
 
-## Results
+## Results and Models
 
 |    Method   |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Config | Download |
 | :-----: | :-----: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: |  :--------: |
@@ -114,3 +80,37 @@ model = dict(
 ### Notice
 
 1. We only provide single-scale 1x and multi-scale 2x configs as examples to show how to use backbones trained by self-supervised algorithms. We will try to reproduce the results in their corresponding paper using the released backbone in the future. Please stay tuned.
+
+## Citation
+
+We support to apply the backbone models pre-trained by different self-supervised methods in detection systems and provide their results on Mask R-CNN.
+
+The pre-trained models are converted from [MoCo](https://github.com/facebookresearch/moco) and downloaded from [SwAV](https://github.com/facebookresearch/swav).
+
+For SwAV, please cite
+
+```latex
+@article{caron2020unsupervised,
+  title={Unsupervised Learning of Visual Features by Contrasting Cluster Assignments},
+  author={Caron, Mathilde and Misra, Ishan and Mairal, Julien and Goyal, Priya and Bojanowski, Piotr and Joulin, Armand},
+  booktitle={Proceedings of Advances in Neural Information Processing Systems (NeurIPS)},
+  year={2020}
+}
+```
+
+For MoCo, please cite
+
+```latex
+@Article{he2019moco,
+  author  = {Kaiming He and Haoqi Fan and Yuxin Wu and Saining Xie and Ross Girshick},
+  title   = {Momentum Contrast for Unsupervised Visual Representation Learning},
+  journal = {arXiv preprint arXiv:1911.05722},
+  year    = {2019},
+}
+@Article{chen2020mocov2,
+  author  = {Xinlei Chen and Haoqi Fan and Ross Girshick and Kaiming He},
+  title   = {Improved Baselines with Momentum Contrastive Learning},
+  journal = {arXiv preprint arXiv:2003.04297},
+  year    = {2020},
+}
+```

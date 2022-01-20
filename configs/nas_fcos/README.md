@@ -1,4 +1,8 @@
-# NAS-FCOS: Fast Neural Architecture Search for Object Detection
+# NAS-FCOS
+
+> [NAS-FCOS: Fast Neural Architecture Search for Object Detection](https://arxiv.org/abs/1906.04423)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,19 +18,6 @@ The success of deep neural networks relies on significant architecture engineeri
 <!-- [PAPER_TITLE: Nas-fcos: Fast neural architecture search for object detection] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1906.04423] -->
 
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```latex
-@article{wang2019fcos,
-  title={Nas-fcos: Fast neural architecture search for object detection},
-  author={Wang, Ning and Gao, Yang and Chen, Hao and Wang, Peng and Tian, Zhi and Shen, Chunhua},
-  journal={arXiv preprint arXiv:1906.04423},
-  year={2019}
-}
-```
-
 ## Results and Models
 
 | Head      | Backbone  | Style   | GN-head | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
@@ -37,3 +28,14 @@ The success of deep neural networks relies on significant architecture engineeri
 **Notes:**
 
 - To be consistent with the author's implementation, we use 4 GPUs with 4 images/GPU.
+
+## Citation
+
+```latex
+@article{wang2019fcos,
+  title={Nas-fcos: Fast neural architecture search for object detection},
+  author={Wang, Ning and Gao, Yang and Chen, Hao and Wang, Peng and Tian, Zhi and Shen, Chunhua},
+  journal={arXiv preprint arXiv:1906.04423},
+  year={2019}
+}
+```

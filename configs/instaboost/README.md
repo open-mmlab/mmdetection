@@ -1,4 +1,8 @@
-# Instaboost: Boosting instance segmentation via probability map guided copy-pasting
+# Instaboost
+
+> [Instaboost: Boosting instance segmentation via probability map guided copy-pasting](https://arxiv.org/abs/1908.07801)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -17,21 +21,7 @@ Instance segmentation requires a large number of training samples to achieve sat
 
 ## Introduction
 
-<!-- [ALGORITHM] -->
-
 Configs in this directory is the implementation for ICCV2019 paper "InstaBoost: Boosting Instance Segmentation Via Probability Map Guided Copy-Pasting" and provided by the authors of the paper. InstaBoost is a data augmentation method for object detection and instance segmentation. The paper has been released on [`arXiv`](https://arxiv.org/abs/1908.07801).
-
-## Citation
-
-```latex
-@inproceedings{fang2019instaboost,
-  title={Instaboost: Boosting instance segmentation via probability map guided copy-pasting},
-  author={Fang, Hao-Shu and Sun, Jianhua and Wang, Runzhong and Gou, Minghao and Li, Yong-Lu and Lu, Cewu},
-  booktitle={Proceedings of the IEEE International Conference on Computer Vision},
-  pages={682--691},
-  year={2019}
-}
-```
 
 ## Usage
 
@@ -61,3 +51,15 @@ InstaBoost have been already integrated in the data pipeline, thus all you need 
 |    Mask R-CNN   |      R-101-FPN       |   4x    | 6.4       |                | 42.5    | 38.0    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/instaboost/mask_rcnn_r101_fpn_instaboost_4x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/instaboost/mask_rcnn_r101_fpn_instaboost_4x_coco/mask_rcnn_r101_fpn_instaboost_4x_coco_20200703_235738-f23f3a5f.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/instaboost/mask_rcnn_r101_fpn_instaboost_4x_coco/mask_rcnn_r101_fpn_instaboost_4x_coco_20200703_235738.log.json) |
 |    Mask R-CNN   |   X-101-64x4d-FPN    |   4x    | 10.7     |                | 44.7    | 39.7    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/instaboost/mask_rcnn_x101_64x4d_fpn_instaboost_4x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/instaboost/mask_rcnn_x101_64x4d_fpn_instaboost_4x_coco/mask_rcnn_x101_64x4d_fpn_instaboost_4x_coco_20200515_080947-8ed58c1b.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/instaboost/mask_rcnn_x101_64x4d_fpn_instaboost_4x_coco/mask_rcnn_x101_64x4d_fpn_instaboost_4x_coco_20200515_080947.log.json) |
 |  Cascade R-CNN  |       R-101-FPN      |   4x    | 6.0      | 12.0            | 43.7    | 38.0    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/instaboost/cascade_mask_rcnn_r50_fpn_instaboost_4x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/instaboost/cascade_mask_rcnn_r50_fpn_instaboost_4x_coco/cascade_mask_rcnn_r50_fpn_instaboost_4x_coco_20200307-c19d98d9.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/instaboost/cascade_mask_rcnn_r50_fpn_instaboost_4x_coco/cascade_mask_rcnn_r50_fpn_instaboost_4x_coco_20200307_223646.log.json) |
+
+## Citation
+
+```latex
+@inproceedings{fang2019instaboost,
+  title={Instaboost: Boosting instance segmentation via probability map guided copy-pasting},
+  author={Fang, Hao-Shu and Sun, Jianhua and Wang, Runzhong and Gou, Minghao and Li, Yong-Lu and Lu, Cewu},
+  booktitle={Proceedings of the IEEE International Conference on Computer Vision},
+  pages={682--691},
+  year={2019}
+}
+```

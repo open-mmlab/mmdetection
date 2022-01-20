@@ -1,4 +1,8 @@
-# High-resolution networks (HRNets) for object detection
+# HRNet
+
+> [Deep High-Resolution Representation Learning for Human Pose Estimation](https://arxiv.org/abs/1902.09212)
+
+<!-- [BACKBONE] -->
 
 ## Abstract
 
@@ -16,28 +20,6 @@ In this paper, we conduct a further study on high-resolution representations by 
 
 <!-- [PAPER_TITLE: Deep High-Resolution Representation Learning for Human Pose Estimation] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1902.09212] -->
-
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```latex
-@inproceedings{SunXLW19,
-  title={Deep High-Resolution Representation Learning for Human Pose Estimation},
-  author={Ke Sun and Bin Xiao and Dong Liu and Jingdong Wang},
-  booktitle={CVPR},
-  year={2019}
-}
-
-@article{SunZJCXLMWLW19,
-  title={High-Resolution Representations for Labeling Pixels and Regions},
-  author={Ke Sun and Yang Zhao and Borui Jiang and Tianheng Cheng and Bin Xiao
-  and Dong Liu and Yadong Mu and Xinggang Wang and Wenyu Liu and Jingdong Wang},
-  journal   = {CoRR},
-  volume    = {abs/1904.04514},
-  year={2019}
-}
-```
 
 ## Results and Models
 
@@ -103,3 +85,23 @@ In this paper, we conduct a further study on high-resolution representations by 
 
 - The `28e` schedule in HTC indicates decreasing the lr at 24 and 27 epochs, with a total of 28 epochs.
 - HRNetV2 ImageNet pretrained models are in [HRNets for Image Classification](https://github.com/HRNet/HRNet-Image-Classification).
+
+## Citation
+
+```latex
+@inproceedings{SunXLW19,
+  title={Deep High-Resolution Representation Learning for Human Pose Estimation},
+  author={Ke Sun and Bin Xiao and Dong Liu and Jingdong Wang},
+  booktitle={CVPR},
+  year={2019}
+}
+
+@article{SunZJCXLMWLW19,
+  title={High-Resolution Representations for Labeling Pixels and Regions},
+  author={Ke Sun and Yang Zhao and Borui Jiang and Tianheng Cheng and Bin Xiao
+  and Dong Liu and Yadong Mu and Xinggang Wang and Wenyu Liu and Jingdong Wang},
+  journal   = {CoRR},
+  volume    = {abs/1904.04514},
+  year={2019}
+}
+```

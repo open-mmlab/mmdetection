@@ -1,4 +1,8 @@
-# FCOS: Fully Convolutional One-Stage Object Detection
+# FCOS
+
+> [FCOS: Fully Convolutional One-Stage Object Detection](https://arxiv.org/abs/1904.01355)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -13,19 +17,6 @@ We propose a fully convolutional one-stage object detector (FCOS) to solve objec
 
 <!-- [PAPER_TITLE: FCOS: Fully Convolutional One-Stage Object Detection] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1904.01355] -->
-
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```latex
-@article{tian2019fcos,
-  title={FCOS: Fully Convolutional One-Stage Object Detection},
-  author={Tian, Zhi and Shen, Chunhua and Chen, Hao and He, Tong},
-  journal={arXiv preprint arXiv:1904.01355},
-  year={2019}
-}
-```
 
 ## Results and Models
 
@@ -47,3 +38,14 @@ We propose a fully convolutional one-stage object detector (FCOS) to solve objec
 - The X-101 backbone is X-101-64x4d.
 - Tricks means setting `norm_on_bbox`, `centerness_on_reg`, `center_sampling` as `True`.
 - DCN means using `DCNv2` in both backbone and head.
+
+## Citation
+
+```latex
+@article{tian2019fcos,
+  title={FCOS: Fully Convolutional One-Stage Object Detection},
+  author={Tian, Zhi and Shen, Chunhua and Chen, Hao and He, Tong},
+  journal={arXiv preprint arXiv:1904.01355},
+  year={2019}
+}
+```

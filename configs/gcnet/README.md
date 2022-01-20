@@ -1,4 +1,8 @@
-# GCNet: Non-local Networks Meet Squeeze-Excitation Networks and Beyond
+# GCNet
+
+> [GCNet: Non-local Networks Meet Squeeze-Excitation Networks and Beyond](https://arxiv.org/abs/1904.11492)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -21,22 +25,9 @@ By [Yue Cao](http://yue-cao.me), [Jiarui Xu](http://jerryxu.net), [Stephen Lin](
 We provide config files to reproduce the results in the paper for
 ["GCNet: Non-local Networks Meet Squeeze-Excitation Networks and Beyond"](https://arxiv.org/abs/1904.11492) on COCO object detection.
 
-<!-- [ALGORITHM] -->
-
 **GCNet** is initially described in [arxiv](https://arxiv.org/abs/1904.11492). Via absorbing advantages of Non-Local Networks (NLNet) and Squeeze-Excitation Networks (SENet),  GCNet provides a simple, fast and effective approach for global context modeling, which generally outperforms both NLNet and SENet on major benchmarks for various recognition tasks.
 
-## Citation
-
-```latex
-@article{cao2019GCNet,
-  title={GCNet: Non-local Networks Meet Squeeze-Excitation Networks and Beyond},
-  author={Cao, Yue and Xu, Jiarui and Lin, Stephen and Wei, Fangyun and Hu, Han},
-  journal={arXiv preprint arXiv:1904.11492},
-  year={2019}
-}
-```
-
-## Results and models
+## Results and Models
 
 The results on COCO 2017val are shown in the below table.
 
@@ -71,3 +62,14 @@ The results on COCO 2017val are shown in the below table.
 - `GC` denotes Global Context (GC) block is inserted after 1x1 conv of backbone.
 - `DCN` denotes replace 3x3 conv with 3x3 Deformable Convolution in `c3-c5` stages of backbone.
 - `r4` and `r16` denote ratio 4 and ratio 16 in GC block respectively.
+
+## Citation
+
+```latex
+@article{cao2019GCNet,
+  title={GCNet: Non-local Networks Meet Squeeze-Excitation Networks and Beyond},
+  author={Cao, Yue and Xu, Jiarui and Lin, Stephen and Wei, Fangyun and Hu, Han},
+  journal={arXiv preprint arXiv:1904.11492},
+  year={2019}
+}
+```

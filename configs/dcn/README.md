@@ -1,4 +1,8 @@
-# Deformable Convolutional Networks
+# DCN
+
+> [Deformable Convolutional Networks](https://arxiv.org/abs/1703.06211)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -13,30 +17,6 @@ Convolutional neural networks (CNNs) are inherently limited to model geometric t
 
 <!-- [PAPER_TITLE: Deformable Convolutional Networks] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1703.06211] -->
-
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```none
-@inproceedings{dai2017deformable,
-  title={Deformable Convolutional Networks},
-  author={Dai, Jifeng and Qi, Haozhi and Xiong, Yuwen and Li, Yi and Zhang, Guodong and Hu, Han and Wei, Yichen},
-  booktitle={Proceedings of the IEEE international conference on computer vision},
-  year={2017}
-}
-```
-
-<!-- [ALGORITHM] -->
-
-```
-@article{zhu2018deformable,
-  title={Deformable ConvNets v2: More Deformable, Better Results},
-  author={Zhu, Xizhou and Hu, Han and Lin, Stephen and Dai, Jifeng},
-  journal={arXiv preprint arXiv:1811.11168},
-  year={2018}
-}
-```
 
 ## Results and Models
 
@@ -66,3 +46,23 @@ Convolutional neural networks (CNNs) are inherently limited to model geometric t
 - The dcn ops are modified from https://github.com/chengdazhi/Deformable-Convolution-V2-PyTorch, which should be more memory efficient and slightly faster.
 - (*) For R-50-FPN (dg=4), dg is short for deformable_group. This model is trained and tested on Amazon EC2 p3dn.24xlarge instance.
 - **Memory, Train/Inf time is outdated.**
+
+## Citation
+
+```latex
+@inproceedings{dai2017deformable,
+  title={Deformable Convolutional Networks},
+  author={Dai, Jifeng and Qi, Haozhi and Xiong, Yuwen and Li, Yi and Zhang, Guodong and Hu, Han and Wei, Yichen},
+  booktitle={Proceedings of the IEEE international conference on computer vision},
+  year={2017}
+}
+```
+
+```latex
+@article{zhu2018deformable,
+  title={Deformable ConvNets v2: More Deformable, Better Results},
+  author={Zhu, Xizhou and Hu, Han and Lin, Stephen and Dai, Jifeng},
+  journal={arXiv preprint arXiv:1811.11168},
+  year={2018}
+}
+```

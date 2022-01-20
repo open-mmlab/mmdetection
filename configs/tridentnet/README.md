@@ -1,4 +1,8 @@
-# Scale-Aware Trident Networks for Object Detection
+# TridentNet
+
+> [Scale-Aware Trident Networks for Object Detection](https://arxiv.org/abs/1901.01892)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,20 +18,7 @@ Scale variation is one of the key challenges in object detection. In this work, 
 <!-- [PAPER_TITLE: Scale-Aware Trident Networks for Object Detection] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1901.01892] -->
 
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```
-@InProceedings{li2019scale,
-  title={Scale-Aware Trident Networks for Object Detection},
-  author={Li, Yanghao and Chen, Yuntao and Wang, Naiyan and Zhang, Zhaoxiang},
-  journal={The International Conference on Computer Vision (ICCV)},
-  year={2019}
-}
-```
-
-## Results and models
+## Results and Models
 
 We reports the test results using only one branch for inference.
 
@@ -40,3 +31,14 @@ We reports the test results using only one branch for inference.
 **Note**
 
 Similar to [Detectron2](https://github.com/facebookresearch/detectron2/tree/master/projects/TridentNet), we haven't implemented the Scale-aware Training Scheme in section 4.2 of the paper.
+
+## Citation
+
+```latex
+@InProceedings{li2019scale,
+  title={Scale-Aware Trident Networks for Object Detection},
+  author={Li, Yanghao and Chen, Yuntao and Wang, Naiyan and Zhang, Zhaoxiang},
+  journal={The International Conference on Computer Vision (ICCV)},
+  year={2019}
+}
+```

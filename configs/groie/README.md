@@ -1,4 +1,8 @@
-# A novel Region of Interest Extraction Layer for Instance Segmentation
+# GRoIE
+
+> [A novel Region of Interest Extraction Layer for Instance Segmentation](https://arxiv.org/abs/2004.13665)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -25,9 +29,6 @@ We provide configs to reproduce the results in the paper for
 "*A novel Region of Interest Extraction Layer for Instance Segmentation*"
 on COCO object detection.
 
-
-<!-- [ALGORITHM] -->
-
 This paper is motivated by the need to overcome to the limitations of existing
 RoI extractors which select only one (the best) layer from FPN.
 
@@ -37,7 +38,7 @@ Therefore, the proposed layer (called Generic RoI Extractor - **GRoIE**)
 introduces non-local building blocks and attention mechanisms to boost the
 performance.
 
-## Results and models
+## Results and Models
 
 The results on COCO 2017 minival (5k images) are shown in the below table.
 

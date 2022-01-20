@@ -1,4 +1,8 @@
-# Rethinking ImageNet Pre-training
+# Scratch
+
+> [Rethinking ImageNet Pre-training](https://arxiv.org/abs/1811.08883)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,19 +18,6 @@ We report competitive results on object detection and instance segmentation on t
 <!-- [PAPER_TITLE: Rethinking imagenet pre-training] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1811.08883] -->
 
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```latex
-@article{he2018rethinking,
-  title={Rethinking imagenet pre-training},
-  author={He, Kaiming and Girshick, Ross and Doll{\'a}r, Piotr},
-  journal={arXiv preprint arXiv:1811.08883},
-  year={2018}
-}
-```
-
 ## Results and Models
 
 | Model        | Backbone  | Style   | Lr schd | box AP | mask AP | Config | Download |
@@ -37,3 +28,14 @@ We report competitive results on object detection and instance segmentation on t
 Note:
 
 - The above models are trained with 16 GPUs.
+
+## Citation
+
+```latex
+@article{he2018rethinking,
+  title={Rethinking imagenet pre-training},
+  author={He, Kaiming and Girshick, Ross and Doll{\'a}r, Piotr},
+  journal={arXiv preprint arXiv:1811.08883},
+  year={2018}
+}
+```

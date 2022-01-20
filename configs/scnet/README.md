@@ -1,4 +1,8 @@
-# SCNet: Training Inference Sample Consistency for Instance Segmentation
+# SCNet
+
+> [SCNet: Training Inference Sample Consistency for Instance Segmentation](https://arxiv.org/abs/2012.10150)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -13,21 +17,6 @@ Cascaded architectures have brought significant performance improvement in objec
 
 <!-- [PAPER_TITLE: SCNet: Training Inference Sample Consistency for Instance Segmentation] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/2012.10150] -->
-
-## Citation
-
-<!-- [ALGORITHM] -->
-
-We provide the code for reproducing experiment results of [SCNet](https://arxiv.org/abs/2012.10150).
-
-```
-@inproceedings{vu2019cascade,
-  title={SCNet: Training Inference Sample Consistency for Instance Segmentation},
-  author={Vu, Thang and Haeyong, Kang and Yoo, Chang D},
-  booktitle={AAAI},
-  year={2021}
-}
-```
 
 ## Dataset
 
@@ -63,3 +52,16 @@ The results on COCO 2017val are shown in the below table. (results on test-dev a
 
 - Training hyper-parameters are identical to those of [HTC](https://github.com/open-mmlab/mmdetection/tree/master/configs/htc).
 - TTA means Test Time Augmentation, which applies horizontal flip and multi-scale testing. Refer to [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/scnet/scnet_r50_fpn_1x_coco.py).
+
+## Citation
+
+We provide the code for reproducing experiment results of [SCNet](https://arxiv.org/abs/2012.10150).
+
+```latex
+@inproceedings{vu2019cascade,
+  title={SCNet: Training Inference Sample Consistency for Instance Segmentation},
+  author={Vu, Thang and Haeyong, Kang and Yoo, Chang D},
+  booktitle={AAAI},
+  year={2021}
+}
+```

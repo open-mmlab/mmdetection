@@ -1,4 +1,8 @@
-# Localization Distillation for Object Detection
+# LD
+
+> [Localization Distillation for Object Detection](https://arxiv.org/abs/2102.12252)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,18 +18,7 @@ Knowledge distillation (KD) has witnessed its powerful capability in learning co
 <!-- [PAPER_TITLE: Localization Distillation for Object Detection] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/2102.12252] -->
 
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```latex
-@Article{zheng2021LD,
-  title={Localization Distillation for Object Detection},
-  author= {Zhaohui Zheng, Rongguang Ye, Ping Wang, Jun Wang, Dongwei Ren, Wangmeng Zuo},
-  journal={arXiv:2102.12252},
-  year={2021}
-}
-```
+## Results and Models
 
 ### GFocalV1 with LD
 
@@ -43,3 +36,14 @@ Knowledge distillation (KD) has witnessed its powerful capability in learning co
 ## Note
 
 - Meaning of Config name: ld_r18(student model)_gflv1(based on gflv1)_r101(teacher model)_fpn(neck)_coco(dataset)_1x(12 epoch).py
+
+## Citation
+
+```latex
+@Article{zheng2021LD,
+  title={Localization Distillation for Object Detection},
+  author= {Zhaohui Zheng, Rongguang Ye, Ping Wang, Jun Wang, Dongwei Ren, Wangmeng Zuo},
+  journal={arXiv:2102.12252},
+  year={2021}
+}
+```

@@ -1,4 +1,8 @@
-# WIDER FACE: A Face Detection Benchmark
+# WIDER FACE
+
+> [WIDER FACE: A Face Detection Benchmark](https://arxiv.org/abs/1511.06523)
+
+<!-- [DATASET] -->
 
 ## Abstract
 
@@ -15,8 +19,6 @@ Face detection is one of the most studied topics in the computer vision communit
 <!-- [PAPER_URL: https://arxiv.org/abs/1511.06523] -->
 
 ## Introduction
-
-<!-- [DATASET] -->
 
 To use the WIDER Face dataset you need to download it
 and extract to the `data/WIDERFace` folder. Annotation in the VOC format
@@ -51,7 +53,7 @@ create your own config based on the presented one.
 
 ## Citation
 
-```
+```latex
 @inproceedings{yang2016wider,
    Author = {Yang, Shuo and Luo, Ping and Loy, Chen Change and Tang, Xiaoou},
    Booktitle = {IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},

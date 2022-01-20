@@ -1,5 +1,9 @@
 # Mask R-CNN
 
+> [Mask R-CNN](https://arxiv.org/abs/1703.06870)
+
+<!-- [ALGORITHM] -->
+
 ## Abstract
 
 <!-- [ABSTRACT] -->
@@ -14,22 +18,7 @@ We present a conceptually simple, flexible, and general framework for object ins
 <!-- [PAPER_TITLE: Mask R-CNN] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1703.06870] -->
 
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```latex
-@article{He_2017,
-   title={Mask R-CNN},
-   journal={2017 IEEE International Conference on Computer Vision (ICCV)},
-   publisher={IEEE},
-   author={He, Kaiming and Gkioxari, Georgia and Dollar, Piotr and Girshick, Ross},
-   year={2017},
-   month={Oct}
-}
-```
-
-## Results and models
+## Results and Models
 
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Config | Download |
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: | :--------: |
@@ -61,3 +50,16 @@ We also train some models with longer schedules and multi-scale training. The us
 |    [X-101-32x8d-FPN](./mask_rcnn_x101_32x8d_fpn_mstrain-poly_3x_coco.py)     |  pytorch  |   1x    | -     |       | 43.6 | 39.0 |
 |    [X-101-32x8d-FPN](./mask_rcnn_x101_32x8d_fpn_mstrain-poly_3x_coco.py)     |  pytorch  |   3x    | 10.3  |       | 44.3 | 39.5 |         [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/mask_rcnn/mask_rcnn_x101_32x8d_fpn_mstrain-poly_3x_coco.py)   |   [model](https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_x101_32x8d_fpn_mstrain-poly_3x_coco/mask_rcnn_x101_32x8d_fpn_mstrain-poly_3x_coco_20210607_161042-8bd2c639.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_x101_32x8d_fpn_mstrain-poly_3x_coco/mask_rcnn_x101_32x8d_fpn_mstrain-poly_3x_coco_20210607_161042.log.json)
 |    [X-101-64x4d-FPN](./mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco.py)     |  pytorch  |   3x    | 10.4  |       | 44.5 | 39.7 |         [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/mask_rcnn/mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco.py)   |   [model](https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco/mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco_20210526_120447-c376f129.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco/mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco_20210526_120447.log.json)
+
+## Citation
+
+```latex
+@article{He_2017,
+   title={Mask R-CNN},
+   journal={2017 IEEE International Conference on Computer Vision (ICCV)},
+   publisher={IEEE},
+   author={He, Kaiming and Gkioxari, Georgia and Dollar, Piotr and Girshick, Ross},
+   year={2017},
+   month={Oct}
+}
+```

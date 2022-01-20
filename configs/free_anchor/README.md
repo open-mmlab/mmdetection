@@ -1,4 +1,8 @@
-# FreeAnchor: Learning to Match Anchors for Visual Object Detection
+# FreeAnchor
+
+> [FreeAnchor: Learning to Match Anchors for Visual Object Detection](https://arxiv.org/abs/1909.02466)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,19 +18,6 @@ Modern CNN-based object detectors assign anchors for ground-truth objects under 
 <!-- [PAPER_TITLE: FreeAnchor: Learning to Match Anchors for Visual Object Detection] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1909.02466] -->
 
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```latex
-@inproceedings{zhang2019freeanchor,
-  title   =  {{FreeAnchor}: Learning to Match Anchors for Visual Object Detection},
-  author  =  {Zhang, Xiaosong and Wan, Fang and Liu, Chang and Ji, Rongrong and Ye, Qixiang},
-  booktitle =  {Neural Information Processing Systems},
-  year    =  {2019}
-}
-```
-
 ## Results and Models
 
 | Backbone | Style   | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
@@ -39,3 +30,14 @@ Modern CNN-based object detectors assign anchors for ground-truth objects under 
 
 - We use 8 GPUs with 2 images/GPU.
 - For more settings and models, please refer to the [official repo](https://github.com/zhangxiaosong18/FreeAnchor).
+
+## Citation
+
+```latex
+@inproceedings{zhang2019freeanchor,
+  title   =  {{FreeAnchor}: Learning to Match Anchors for Visual Object Detection},
+  author  =  {Zhang, Xiaosong and Wan, Fang and Liu, Chang and Ji, Rongrong and Ye, Qixiang},
+  booktitle =  {Neural Information Processing Systems},
+  year    =  {2019}
+}
+```

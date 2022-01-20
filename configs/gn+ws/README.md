@@ -1,4 +1,8 @@
-# Weight Standardization
+# GN + WS
+
+> [Weight Standardization](https://arxiv.org/abs/1903.10520)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -13,19 +17,6 @@ Batch Normalization (BN) has become an out-of-box technique to improve deep netw
 
 <!-- [PAPER_TITLE: Weight Standardization] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1903.10520] -->
-
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```
-@article{weightstandardization,
-  author    = {Siyuan Qiao and Huiyu Wang and Chenxi Liu and Wei Shen and Alan Yuille},
-  title     = {Weight Standardization},
-  journal   = {arXiv preprint arXiv:1903.10520},
-  year      = {2019},
-}
-```
 
 ## Results and Models
 
@@ -56,3 +47,14 @@ Note:
 - GN+WS requires about 5% more memory than GN, and it is only 5% slower than GN.
 - In the paper, a 20-23-24e lr schedule is used instead of 2x.
 - The X-50-GN and X-101-GN pretrained models are also shared by the authors.
+
+## Citation
+
+```latex
+@article{weightstandardization,
+  author    = {Siyuan Qiao and Huiyu Wang and Chenxi Liu and Wei Shen and Alan Yuille},
+  title     = {Weight Standardization},
+  journal   = {arXiv preprint arXiv:1903.10520},
+  year      = {2019},
+}
+```

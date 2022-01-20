@@ -1,4 +1,8 @@
-# Seesaw Loss for Long-Tailed Instance Segmentation
+# Seesaw Loss
+
+> [Seesaw Loss for Long-Tailed Instance Segmentation](https://arxiv.org/abs/2008.10032)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -13,22 +17,6 @@ Instance segmentation has witnessed a remarkable progress on class-balanced benc
 
 <!-- [PAPER_TITLE: Seesaw Loss for Long-Tailed Instance Segmentation] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/2008.10032] -->
-
-## Citation
-
-<!-- [ALGORITHM] -->
-
-We provide config files to reproduce the instance segmentation performance in the CVPR 2021 paper for [Seesaw Loss for Long-Tailed Instance Segmentation](https://arxiv.org/abs/2008.10032).
-
-```latex
-@inproceedings{wang2021seesaw,
-  title={Seesaw Loss for Long-Tailed Instance Segmentation},
-  author={Jiaqi Wang and Wenwei Zhang and Yuhang Zang and Yuhang Cao and Jiangmiao Pang and Tao Gong and Kai Chen and Ziwei Liu and Chen Change Loy and Dahua Lin},
-  booktitle={Proceedings of the {IEEE} Conference on Computer Vision and Pattern Recognition},
-  year={2021}
-}
-```
-
 
 * Please setup [LVIS dataset](../lvis/README.md) for MMDetection.
 
@@ -51,3 +39,16 @@ We provide config files to reproduce the instance segmentation performance in th
 | Cascade Mask R-CNN | R-101-FPN | pytorch |   2x    |    random    |     Y     |  33.0  |  30.0   |   [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/seesaw_loss/cascade_mask_rcnn_r101_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1.py)   |     [model](https://download.openmmlab.com/mmdetection/v2.0/seesaw_loss/cascade_mask_rcnn_r101_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1-8b5a6745.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/seesaw_loss/cascade_mask_rcnn_r101_fpn_random_seesaw_loss_normed_mask_mstrain_2x_lvis_v1.log.json)     |
 | Cascade Mask R-CNN | R-101-FPN | pytorch |   2x    |     RFS      |     N     |  30.0  |  29.3   |       [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/seesaw_loss/cascade_mask_rcnn_r101_fpn_sample1e-3_seesaw_loss_mstrain_2x_lvis_v1.py)       |             [model](https://download.openmmlab.com/mmdetection/v2.0/seesaw_loss/cascade_mask_rcnn_r101_fpn_sample1e-3_seesaw_loss_mstrain_2x_lvis_v1-5d8ca2a4.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/seesaw_loss/cascade_mask_rcnn_r101_fpn_sample1e-3_seesaw_loss_mstrain_2x_lvis_v1.log.json)             |
 | Cascade Mask R-CNN | R-101-FPN | pytorch |   2x    |     RFS      |     Y     |  32.8  |  30.1   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/seesaw_loss/cascade_mask_rcnn_r101_fpn_sample1e-3_seesaw_loss_normed_mask_mstrain_2x_lvis_v1.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/seesaw_loss/cascade_mask_rcnn_r101_fpn_sample1e-3_seesaw_loss_normed_mask_mstrain_2x_lvis_v1-c8551505.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/seesaw_loss/cascade_mask_rcnn_r101_fpn_sample1e-3_seesaw_loss_normed_mask_mstrain_2x_lvis_v1.log.json) |
+
+## Citation
+
+We provide config files to reproduce the instance segmentation performance in the CVPR 2021 paper for [Seesaw Loss for Long-Tailed Instance Segmentation](https://arxiv.org/abs/2008.10032).
+
+```latex
+@inproceedings{wang2021seesaw,
+  title={Seesaw Loss for Long-Tailed Instance Segmentation},
+  author={Jiaqi Wang and Wenwei Zhang and Yuhang Zang and Yuhang Cao and Jiangmiao Pang and Tao Gong and Kai Chen and Ziwei Liu and Chen Change Loy and Dahua Lin},
+  booktitle={Proceedings of the {IEEE} Conference on Computer Vision and Pattern Recognition},
+  year={2021}
+}
+```

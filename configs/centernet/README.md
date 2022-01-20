@@ -1,4 +1,8 @@
-# Objects as Points
+# CenterNet
+
+> [Objects as Points](https://arxiv.org/abs/1904.07850)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -14,20 +18,7 @@ Detection identifies objects as axis-aligned boxes in an image. Most successful 
 <!-- [PAPER_TITLE: Objects as Points] -->
 <!-- [PAPER_URL: https://arxiv.org/abs/1904.07850] -->
 
-## Citation
-
-<!-- [ALGORITHM] -->
-
-```latex
-@article{zhou2019objects,
-  title={Objects as Points},
-  author={Zhou, Xingyi and Wang, Dequan and Kr{\"a}henb{\"u}hl, Philipp},
-  booktitle={arXiv preprint arXiv:1904.07850},
-  year={2019}
-}
-```
-
-## Results and models
+## Results and Models
 
 | Backbone        | DCN |  Mem (GB) | Box AP | Flip box AP| Config | Download |
 | :-------------: | :--------: |:----------------: | :------: | :------------: | :----: | :----: |
@@ -42,3 +33,14 @@ Note:
   - fix wrong image mean and variance in image normalization to be compatible with the pre-trained backbone.
   - Use SGD rather than ADAM optimizer and add warmup and grad clip.
   - Use DistributedDataParallel as other models in MMDetection rather than using DataParallel.
+
+## Citation
+
+```latex
+@article{zhou2019objects,
+  title={Objects as Points},
+  author={Zhou, Xingyi and Wang, Dequan and Kr{\"a}henb{\"u}hl, Philipp},
+  booktitle={arXiv preprint arXiv:1904.07850},
+  year={2019}
+}
+```

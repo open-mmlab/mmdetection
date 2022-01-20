@@ -1,4 +1,8 @@
-# VarifocalNet: An IoU-aware Dense Object Detector
+# VarifocalNet
+
+> [VarifocalNet: An IoU-aware Dense Object Detector](https://arxiv.org/abs/2008.13367)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -16,21 +20,7 @@ Accurately ranking the vast number of candidate detections is crucial for dense 
 
 ## Introduction
 
-<!-- [ALGORITHM] -->
-
 **VarifocalNet (VFNet)** learns to predict the IoU-aware classification score which mixes the object presence confidence and localization accuracy together as the detection score for a bounding box. The learning is supervised by the proposed Varifocal Loss (VFL), based on a new star-shaped bounding box feature representation (the features at nine yellow sampling points). Given the new representation, the object localization accuracy is further improved by refining the initially regressed bounding box. The full paper is available at: [https://arxiv.org/abs/2008.13367](https://arxiv.org/abs/2008.13367).
-
-
-## Citation
-
-```latex
-@article{zhang2020varifocalnet,
-  title={VarifocalNet: An IoU-aware Dense Object Detector},
-  author={Zhang, Haoyang and Wang, Ying and Dayoub, Feras and S{\"u}nderhauf, Niko},
-  journal={arXiv preprint arXiv:2008.13367},
-  year={2020}
-}
-```
 
 ## Results and Models
 
@@ -51,3 +41,14 @@ Accurately ranking the vast number of candidate detections is crucial for dense 
 - DCN means using `DCNv2` in both backbone and head.
 - Inference time will be updated soon.
 - More results and pre-trained models can be found in [VarifocalNet-Github](https://github.com/hyz-xmaster/VarifocalNet)
+
+## Citation
+
+```latex
+@article{zhang2020varifocalnet,
+  title={VarifocalNet: An IoU-aware Dense Object Detector},
+  author={Zhang, Haoyang and Wang, Ying and Dayoub, Feras and S{\"u}nderhauf, Niko},
+  journal={arXiv preprint arXiv:2008.13367},
+  year={2020}
+}
+```
