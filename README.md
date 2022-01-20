@@ -75,7 +75,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
 
 <div style="text-align: center;">
   <td>
-    <b>Architectures</b>
+    <b>Algorithms</b>
   </td>
 </div>
 <table align="center">
