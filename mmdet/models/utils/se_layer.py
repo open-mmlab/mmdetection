@@ -59,8 +59,8 @@ class SELayer(BaseModule):
         return x * out
 
 
-class DYReLU(BaseModule):
-    """Dynamic ReLU (DY-ReLU) module.
+class DyReLU(BaseModule):
+    """Dynamic ReLU (DyReLU) module.
 
     See `Dynamic ReLU <https://arxiv.org/abs/2003.10027>`_ for details.
     Current implementation is specialized for task-aware attention in DyHead.
@@ -68,7 +68,7 @@ class DYReLU(BaseModule):
     https://github.com/microsoft/DynamicHead/blob/master/dyhead/dyrelu.py
 
     Args:
-        channels (int): The input (and output) channels of DYReLU module.
+        channels (int): The input (and output) channels of DyReLU module.
         ratio (int): Squeeze ratio in Squeeze-and-Excitation-like module,
             the intermediate channel will be ``int(channels/ratio)``.
             Default: 4.

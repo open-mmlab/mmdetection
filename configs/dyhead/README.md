@@ -56,6 +56,6 @@ For results with the Swin Transformer backbones, you should cite the arXiv versi
 
 ## Relation to other methods
 
-- DyHead can be regarded as an improved [SEPC](https://arxiv.org/abs/2005.03101) with [DY-ReLU modules](https://arxiv.org/abs/2003.10027) and simplified [SE blocks](https://arxiv.org/abs/1709.01507).
+- DyHead can be regarded as an improved [SEPC](https://arxiv.org/abs/2005.03101) with [DyReLU modules](https://arxiv.org/abs/2003.10027) and simplified [SE blocks](https://arxiv.org/abs/1709.01507).
 - Xiyang Dai et al., the author team of DyHead, adopt it for [Dynamic DETR](https://openaccess.thecvf.com/content/ICCV2021/html/Dai_Dynamic_DETR_End-to-End_Object_Detection_With_Dynamic_Attention_ICCV_2021_paper.html).
   The description of Dynamic Encoder in Sec. 3.2 will help you understand DyHead.

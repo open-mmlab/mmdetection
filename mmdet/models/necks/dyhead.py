@@ -7,7 +7,7 @@ from mmcv.ops.modulated_deform_conv import ModulatedDeformConv2d
 from mmcv.runner import BaseModule
 
 from ..builder import NECKS
-from ..utils import DYReLU
+from ..utils import DyReLU
 
 # Reference:
 # https://github.com/microsoft/DynamicHead
@@ -16,6 +16,9 @@ from ..utils import DYReLU
 
 class DyDCNv2(nn.Module):
     """ModulatedDeformConv2d with normalization layer used in DyHead.
+
+    This module cannot be configured with `conv_cfg=dict(type='DCNv2')`
+    because DyHead calculates offset and mask from middle-level feature.
 
     Args:
         in_channels (int): Number of input channels.
@@ -36,7 +39,8 @@ class DyDCNv2(nn.Module):
         bias = not self.with_norm
         self.conv = ModulatedDeformConv2d(
             in_channels, out_channels, 3, stride=stride, padding=1, bias=bias)
-        self.norm = build_norm_layer(norm_cfg, out_channels)[1]
+        if self.with_norm:
+            self.norm = build_norm_layer(norm_cfg, out_channels)[1]
 
     def forward(self, x, offset, mask):
         """Forward function."""
@@ -81,7 +85,7 @@ class DyHeadBlock(nn.Module):
         self.scale_attn_module = nn.Sequential(
             nn.AdaptiveAvgPool2d(1), nn.Conv2d(out_channels, 1, 1),
             nn.ReLU(inplace=True), build_activation_layer(act_cfg))
-        self.task_attn_module = DYReLU(out_channels)
+        self.task_attn_module = DyReLU(out_channels)
         self._init_weights()
 
     def _init_weights(self):

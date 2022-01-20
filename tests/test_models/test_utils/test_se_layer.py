@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 from mmcv.cnn import constant_init
 
-from mmdet.models.utils import DYReLU, SELayer
+from mmdet.models.utils import DyReLU, SELayer
 
 
 def test_se_layer():
@@ -29,23 +29,23 @@ def test_se_layer():
 def test_dyrelu():
     with pytest.raises(AssertionError):
         # act_cfg sequence length must equal to 2
-        DYReLU(channels=32, act_cfg=(dict(type='ReLU'), ))
+        DyReLU(channels=32, act_cfg=(dict(type='ReLU'), ))
 
     with pytest.raises(AssertionError):
         # act_cfg sequence must be a tuple of dict
-        DYReLU(channels=32, act_cfg=[dict(type='ReLU'), dict(type='ReLU')])
+        DyReLU(channels=32, act_cfg=[dict(type='ReLU'), dict(type='ReLU')])
 
-    # Test DYReLU forward
-    layer = DYReLU(channels=32)
+    # Test DyReLU forward
+    layer = DyReLU(channels=32)
     layer.init_weights()
     layer.train()
     x = torch.randn((1, 32, 10, 10))
     x_out = layer(x)
     assert x_out.shape == torch.Size((1, 32, 10, 10))
 
-    # DYReLU should act as standard (static) ReLU
+    # DyReLU should act as standard (static) ReLU
     # when eliminating the effect of SE-like module
-    layer = DYReLU(channels=32)
+    layer = DyReLU(channels=32)
     constant_init(layer.conv2.conv, 0)
     layer.train()
     x = torch.randn((1, 32, 10, 10))
