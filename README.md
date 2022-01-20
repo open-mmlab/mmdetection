@@ -129,6 +129,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/yolof">YOLOF (CVPR'2021)</a></li>
             <li><a href="configs/yolox">YOLOX (CVPR'2021)</a></li>
             <li><a href="configs/deformable_detr">Deformable DETR (ICLR'2021)</a></li>
+            <li><a href="configs/tood">TOOD (ICCV'2021)</a></li>
       </ul>
       </td>
       <td>
