@@ -1,7 +1,6 @@
 <div align="center">
   <img src="resources/mmdet-logo.png" width="600"/>
 
-
 [![PyPI](https://img.shields.io/pypi/v/mmdet)](https://pypi.org/project/mmdet)
 [![docs](https://img.shields.io/badge/docs-latest-blue)](https://mmdetection.readthedocs.io/en/latest/)
 [![badge](https://github.com/open-mmlab/mmdetection/workflows/build/badge.svg)](https://github.com/open-mmlab/mmdetection/actions)
@@ -9,9 +8,7 @@
 [![license](https://img.shields.io/github/license/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/blob/master/LICENSE)
 [![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 
-
-  <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
-
+<img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
 [📘使用文档](https://mmdetection.readthedocs.io/zh_CN/v2.20.0/) |
 [🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/v2.20.0/get_started.html) |
@@ -22,14 +19,31 @@
 
 </div>
 
-## 简介
+---
+
+<font size=4><center><b> 目录 </b> </center></font>
+
+- [简介](#简介)
+- [开源许可证](#开源许可证)
+- [更新日志](#更新日志)
+- [基准测试和模型库](#基准测试和模型库)
+- [安装](#安装)
+- [快速入门](#快速入门)
+- [贡献指南](#贡献指南)
+- [致谢](#致谢)
+- [引用](#引用)
+- [OpenMMLab 的其他项目](#openmmlab-的其他项目)
+- [欢迎加入 OpenMMLab 社区](#欢迎加入-openmmlab-社区)
+
+---
+
+# 简介
 
 [English](README.md) | 简体中文
 
 MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [OpenMMLab](https://openmmlab.com/) 项目的一部分。
 
 主分支代码目前支持 PyTorch 1.5 以上的版本。
-
 
 <details open>
 <summary>主要特性</summary>
@@ -49,17 +63,19 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 - **性能高**
 
   MMDetection 这个算法库源自于 COCO 2018 目标检测竞赛的冠军团队 *MMDet* 团队开发的代码，我们在之后持续进行了改进和提升。
+
 </details>
 
 除了 MMDetection 之外，我们还开源了计算机视觉基础库 [MMCV](https://github.com/open-mmlab/mmcv)，MMCV 是 MMDetection 的主要依赖。
 
-## 开源许可证
+# 开源许可证
 
 该项目采用 [Apache 2.0 开源许可证](LICENSE)。
 
-## 更新日志
+# 更新日志
 
 最新的 **2.20.0** 版本已经在 2021.12.27 发布:
+
 - 支持了 ICCV 2021 Oral 方法 [TOOD](configs/tood/README.md): Task-aligned One-stage Object Detection
 - 支持了自动从最新的存储参数节点恢复训练
 
@@ -67,53 +83,54 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 如果想了解 MMDetection 不同版本之间的兼容性, 请参考[兼容性说明文档](docs/zh_cn/compatibility.md)。
 
-## 基准测试和模型库
+# 基准测试和模型库
 
 测试结果和模型可以在[模型库](docs/zh_cn/model_zoo.md)中找到。
 
 <details open>
 <summary>已支持的骨干网络：</summary>
 
-- [x] ResNet (CVPR'2016)
-- [x] ResNeXt (CVPR'2017)
-- [x] VGG (ICLR'2015)
-- [x] MobileNetV2 (CVPR'2018)
-- [x] HRNet (CVPR'2019)
-- [x] RegNet (CVPR'2020)
-- [x] Res2Net (TPAMI'2020)
-- [x] ResNeSt (ArXiv'2020)
-- [X] Swin (CVPR'2021)
-- [x] PVT (ICCV'2021)
-- [x] PVTv2 (ArXiv'2021)
+- [x] [ResNet (CVPR'2016)](mmdet/models/backbones/resnet.py)
+- [x] [ResNeXt (CVPR'2017)](mmdet/models/backbones/resnext.py)
+- [x] [VGG (ICLR'2015)](mmdet/models/backbones/ssd_vgg.py)
+- [x] [MobileNetV2 (CVPR'2018)](mmdet/models/backbones/mobilenet_v2.py)
+- [x] [HRNet (CVPR'2019)](mmdet/models/backbones/hrnet.py)
+- [x] [RegNet (CVPR'2020)](mmdet/models/backbones/regnet.py)
+- [x] [Res2Net (TPAMI'2020)](mmdet/models/backbones/res2net.py)
+- [x] [ResNeSt (ArXiv'2020)](mmdet/models/backbones/resnest.py)
+- [x] [Swin (CVPR'2021)](mmdet/models/backbones/swin.py)
+- [x] [PVT (ICCV'2021)](mmdet/models/backbones/pvt.py)
+- [x] [PVTv2 (ArXiv'2021)](mmdet/models/backbones/pvt.py)
+
 </details>
 
 <details open>
 <summary>已支持的算法：</summary>
 
-- [x] [RPN (NeurIPS'2015)](configs/rpn)
-- [x] [Fast R-CNN (ICCV'2015)](configs/fast_rcnn)
-- [x] [Faster R-CNN (NeurIPS'2015)](configs/faster_rcnn)
-- [x] [Mask R-CNN (ICCV'2017)](configs/mask_rcnn)
-- [x] [Cascade R-CNN (CVPR'2018)](configs/cascade_rcnn)
-- [x] [Cascade Mask R-CNN (CVPR'2018)](configs/cascade_rcnn)
-- [x] [SSD (ECCV'2016)](configs/ssd)
-- [x] [RetinaNet (ICCV'2017)](configs/retinanet)
-- [x] [GHM (AAAI'2019)](configs/ghm)
-- [x] [Mask Scoring R-CNN (CVPR'2019)](configs/ms_rcnn)
-- [x] [Double-Head R-CNN (CVPR'2020)](configs/double_heads)
-- [x] [Hybrid Task Cascade (CVPR'2019)](configs/htc)
-- [x] [Libra R-CNN (CVPR'2019)](configs/libra_rcnn)
-- [x] [Guided Anchoring (CVPR'2019)](configs/guided_anchoring)
-- [x] [FCOS (ICCV'2019)](configs/fcos)
-- [x] [RepPoints (ICCV'2019)](configs/reppoints)
-- [x] [Foveabox (TIP'2020)](configs/foveabox)
-- [x] [FreeAnchor (NeurIPS'2019)](configs/free_anchor)
-- [x] [NAS-FPN (CVPR'2019)](configs/nas_fpn)
-- [x] [ATSS (CVPR'2020)](configs/atss)
-- [x] [FSAF (CVPR'2019)](configs/fsaf)
-- [x] [PAFPN (CVPR'2018)](configs/pafpn)
-- [x] [Dynamic R-CNN (ECCV'2020)](configs/dynamic_rcnn)
-- [x] [PointRend (CVPR'2020)](configs/point_rend)
+- [x] [RPN (NeurIPS'2015)](configs/rpn/README.md)
+- [x] [Fast R-CNN (ICCV'2015)](configs/fast_rcnn/README.md)
+- [x] [Faster R-CNN (NeurIPS'2015)](configs/faster_rcnn/README.md)
+- [x] [Mask R-CNN (ICCV'2017)](configs/mask_rcnn/README.md)
+- [x] [Cascade R-CNN (CVPR'2018)](configs/cascade_rcnn/README.md)
+- [x] [Cascade Mask R-CNN (CVPR'2018)](configs/cascade_rcnn/README.md)
+- [x] [SSD (ECCV'2016)](configs/ssd/README.md)
+- [x] [RetinaNet (ICCV'2017)](configs/retinanet/README.md)
+- [x] [GHM (AAAI'2019)](configs/ghm/README.md)
+- [x] [Mask Scoring R-CNN (CVPR'2019)](configs/ms_rcnn/README.md)
+- [x] [Double-Head R-CNN (CVPR'2020)](configs/double_heads/README.md)
+- [x] [Hybrid Task Cascade (CVPR'2019)](configs/htc/README.md)
+- [x] [Libra R-CNN (CVPR'2019)](configs/libra_rcnn/README.md)
+- [x] [Guided Anchoring (CVPR'2019)](configs/guided_anchoring/README.md)
+- [x] [FCOS (ICCV'2019)](configs/fcos/README.md)
+- [x] [RepPoints (ICCV'2019)](configs/reppoints/README.md)
+- [x] [Foveabox (TIP'2020)](configs/foveabox/README.md)
+- [x] [FreeAnchor (NeurIPS'2019)](configs/free_anchor/README.md)
+- [x] [NAS-FPN (CVPR'2019)](configs/nas_fpn/README.md)
+- [x] [ATSS (CVPR'2020)](configs/atss/README.md)
+- [x] [FSAF (CVPR'2019)](configs/fsaf/README.md)
+- [x] [PAFPN (CVPR'2018)](configs/pafpn/README.md)
+- [x] [Dynamic R-CNN (ECCV'2020)](configs/dynamic_rcnn/README.md)
+- [x] [PointRend (CVPR'2020)](configs/point_rend/README.md)
 - [x] [CARAFE (ICCV'2019)](configs/carafe/README.md)
 - [x] [DCNv2 (CVPR'2019)](configs/dcn/README.md)
 - [x] [Group Normalization (ECCV'2018)](configs/gn/README.md)
@@ -146,32 +163,32 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 - [x] [SOLO (ECCV'2020)](configs/solo/README.md)
 - [x] [QueryInst (ICCV'2021)](configs/queryinst/README.md)
 - [x] [TOOD (ICCV'2021)](configs/tood/README.md)
+
 </details>
 
 我们在[基于 MMDetection 的项目](./docs/zh_cn/projects.md)中列举了一些其他的支持的算法。
 
-## 安装
+# 安装
 
 请参考[快速入门文档](docs/zh_cn/get_started.md)进行安装。
 
-## 快速入门
+# 快速入门
 
 请参考[快速入门文档](docs/zh_cn/get_started.md)学习 MMDetection 的基本使用。
-我们提供了 [colab 教程](demo/MMDet_Tutorial.ipynb)，也为新手提供了完整的运行教程，分别针对[已有数据集](docs/zh_cn/1_exist_data_model.md)和[新数据集](docs/zh_cn/2_new_data_model.md) 完整的使用指南
-
+我们提供了 [colab 教程](demo/MMDet_Tutorial.ipynb)，也为新手提供了完整的运行教程，分别针对[已有数据集](docs/zh_cn/1_exist_data_model.md)和[新数据集](docs/zh_cn/2_new_data_model.md) 完整的使用指南。
 我们也提供了一些进阶教程，内容覆盖了 [finetune 模型](docs/zh_cn/tutorials/finetune.md)，[增加新数据集支持](docs/zh_cn/tutorials/customize_dataset.md)，[设计新的数据预处理流程](docs/zh_cn/tutorials/data_pipeline.md)，[增加自定义模型](docs/zh_cn/tutorials/customize_models.md)，[增加自定义的运行时配置](docs/zh_cn/tutorials/customize_runtime.md)，[常用工具和脚本](docs/zh_cn/useful_tools.md)。
 
 如果遇到问题，请参考 [常见问题解答](docs/zh_cn/faq.md)。
 
-## 贡献指南
+# 贡献指南
 
 我们感谢所有的贡献者为改进和提升 MMDetection 所作出的努力。我们将正在进行中的项目添加进了[GitHub Projects](https://github.com/open-mmlab/mmdetection/projects)页面，非常欢迎社区用户能参与进这些项目中来。请参考[贡献指南](.github/CONTRIBUTING.md)来了解参与项目贡献的相关指引。
 
-## 致谢
+# 致谢
 
 MMDetection 是一款由来自不同高校和企业的研发人员共同参与贡献的开源项目。我们感谢所有为项目提供算法复现和新功能支持的贡献者，以及提供宝贵反馈的用户。 我们希望这个工具箱和基准测试可以为社区提供灵活的代码工具，供用户复现已有算法并开发自己的新模型，从而不断为开源社区提供贡献。
 
-## 引用
+# 引用
 
 如果你在研究中使用了本项目的代码或者性能基准，请参考如下 bibtex 引用 MMDetection。
 
@@ -189,7 +206,7 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 }
 ```
 
-## OpenMMLab 的其他项目
+# OpenMMLab 的其他项目
 
 - [MMCV](https://github.com/open-mmlab/mmcv): OpenMMLab 计算机视觉基础库
 - [MIM](https://github.com/open-mmlab/mim): MIM 是 OpenMMlab 项目、算法、模型的统一入口
@@ -209,9 +226,9 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 - [MMSelfSup](https://github.com/open-mmlab/mmselfsup): OpenMMLab 自监督学习工具箱与测试基准
 - [MMRazor](https://github.com/open-mmlab/mmrazor): OpenMMLab 模型压缩工具箱与测试基准
 
-## 欢迎加入 OpenMMLab 社区
+# 欢迎加入 OpenMMLab 社区
 
-扫描下方的二维码可关注 OpenMMLab 团队的 [知乎官方账号](https://www.zhihu.com/people/openmmlab)，加入 OpenMMLab 团队的 [官方交流 QQ 群](https://jq.qq.com/?_wv=1027&k=aCvMxdr3)
+扫描下方的二维码可关注 OpenMMLab 团队的 [知乎官方账号](https://www.zhihu.com/people/openmmlab)，加入 OpenMMLab 团队的 [官方交流 QQ 群](https://jq.qq.com/?_wv=1027&k=aCvMxdr3)。
 
 <div align="center">
 <img src="resources/zhihu_qrcode.jpg" height="400" />  <img src="resources/qq_group_qrcode.jpg" height="400" />

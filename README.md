@@ -1,7 +1,6 @@
 <div align="center">
   <img src="resources/mmdet-logo.png" width="600"/>
 
-
 [![PyPI](https://img.shields.io/pypi/v/mmdet)](https://pypi.org/project/mmdet)
 [![docs](https://img.shields.io/badge/docs-latest-blue)](https://mmdetection.readthedocs.io/en/latest/)
 [![badge](https://github.com/open-mmlab/mmdetection/workflows/build/badge.svg)](https://github.com/open-mmlab/mmdetection/actions)
@@ -9,9 +8,7 @@
 [![license](https://img.shields.io/github/license/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/blob/master/LICENSE)
 [![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 
-
-  <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
-
+<img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
 [📘Documentation](https://mmdetection.readthedocs.io/en/v2.20.0/) |
 [🛠️Installation](https://mmdetection.readthedocs.io/en/v2.20.0/get_started.html) |
@@ -22,12 +19,28 @@
 
 </div>
 
-## Introduction
+---
+
+<font size=4><center><b> Table of Contents </b> </center></font>
+
+- [Introduction](#introduction)
+- [License](#license)
+- [Changelog](#changelog)
+- [Benchmark and model zoo](#benchmark-and-model-zoo)
+- [Installation](#installation)
+- [Getting Started](#getting-started)
+- [Contributing](#contributing)
+- [Acknowledgement](#acknowledgement)
+- [Citation](#citation)
+- [Projects in OpenMMLab](#projects-in-openmmlab)
+
+---
+
+# Introduction
 
 English | [简体中文](README_zh-CN.md)
 
-MMDetection is an open source object detection toolbox based on PyTorch. It is
-a part of the [OpenMMLab](https://openmmlab.com/) project.
+MMDetection is an open source object detection toolbox based on PyTorch. It is a part of the [OpenMMLab](https://openmmlab.com/) project.
 
 The master branch works with **PyTorch 1.5+**.
 
@@ -49,16 +62,16 @@ The master branch works with **PyTorch 1.5+**.
 - **State of the art**
 
   The toolbox stems from the codebase developed by the *MMDet* team, who won [COCO Detection Challenge](http://cocodataset.org/#detection-leaderboard) in 2018, and we keep pushing it forward.
-</details>
 
+</details>
 
 Apart from MMDetection, we also released a library [mmcv](https://github.com/open-mmlab/mmcv) for computer vision research, which is heavily depended on by this toolbox.
 
-## License
+# License
 
 This project is released under the [Apache 2.0 license](LICENSE).
 
-## Changelog
+# Changelog
 
 **2.20.0** was released in 27/12/2021:
 
@@ -69,54 +82,54 @@ Please refer to [changelog.md](docs/en/changelog.md) for details and release his
 
 For compatibility changes between different versions of MMDetection, please refer to [compatibility.md](docs/en/compatibility.md).
 
-## Benchmark and model zoo
+# Benchmark and model zoo
 
 Results and models are available in the [model zoo](docs/en/model_zoo.md).
-
 
 <details open>
 <summary>Supported backbones:</summary>
 
-- [x] ResNet (CVPR'2016)
-- [x] ResNeXt (CVPR'2017)
-- [x] VGG (ICLR'2015)
-- [x] MobileNetV2 (CVPR'2018)
-- [x] HRNet (CVPR'2019)
-- [x] RegNet (CVPR'2020)
-- [x] Res2Net (TPAMI'2020)
-- [x] ResNeSt (ArXiv'2020)
-- [X] Swin (CVPR'2021)
-- [x] PVT (ICCV'2021)
-- [x] PVTv2 (ArXiv'2021)
+- [x] [ResNet (CVPR'2016)](mmdet/models/backbones/resnet.py)
+- [x] [ResNeXt (CVPR'2017)](mmdet/models/backbones/resnext.py)
+- [x] [VGG (ICLR'2015)](mmdet/models/backbones/ssd_vgg.py)
+- [x] [MobileNetV2 (CVPR'2018)](mmdet/models/backbones/mobilenet_v2.py)
+- [x] [HRNet (CVPR'2019)](mmdet/models/backbones/hrnet.py)
+- [x] [RegNet (CVPR'2020)](mmdet/models/backbones/regnet.py)
+- [x] [Res2Net (TPAMI'2020)](mmdet/models/backbones/res2net.py)
+- [x] [ResNeSt (ArXiv'2020)](mmdet/models/backbones/resnest.py)
+- [x] [Swin (CVPR'2021)](mmdet/models/backbones/swin.py)
+- [x] [PVT (ICCV'2021)](mmdet/models/backbones/pvt.py)
+- [x] [PVTv2 (ArXiv'2021)](mmdet/models/backbones/pvt.py)
+
 </details>
 
 <details open>
 <summary>Supported methods:</summary>
 
-- [x] [RPN (NeurIPS'2015)](configs/rpn)
-- [x] [Fast R-CNN (ICCV'2015)](configs/fast_rcnn)
-- [x] [Faster R-CNN (NeurIPS'2015)](configs/faster_rcnn)
-- [x] [Mask R-CNN (ICCV'2017)](configs/mask_rcnn)
-- [x] [Cascade R-CNN (CVPR'2018)](configs/cascade_rcnn)
-- [x] [Cascade Mask R-CNN (CVPR'2018)](configs/cascade_rcnn)
-- [x] [SSD (ECCV'2016)](configs/ssd)
-- [x] [RetinaNet (ICCV'2017)](configs/retinanet)
-- [x] [GHM (AAAI'2019)](configs/ghm)
-- [x] [Mask Scoring R-CNN (CVPR'2019)](configs/ms_rcnn)
-- [x] [Double-Head R-CNN (CVPR'2020)](configs/double_heads)
-- [x] [Hybrid Task Cascade (CVPR'2019)](configs/htc)
-- [x] [Libra R-CNN (CVPR'2019)](configs/libra_rcnn)
-- [x] [Guided Anchoring (CVPR'2019)](configs/guided_anchoring)
-- [x] [FCOS (ICCV'2019)](configs/fcos)
-- [x] [RepPoints (ICCV'2019)](configs/reppoints)
-- [x] [Foveabox (TIP'2020)](configs/foveabox)
-- [x] [FreeAnchor (NeurIPS'2019)](configs/free_anchor)
-- [x] [NAS-FPN (CVPR'2019)](configs/nas_fpn)
-- [x] [ATSS (CVPR'2020)](configs/atss)
-- [x] [FSAF (CVPR'2019)](configs/fsaf)
-- [x] [PAFPN (CVPR'2018)](configs/pafpn)
-- [x] [Dynamic R-CNN (ECCV'2020)](configs/dynamic_rcnn)
-- [x] [PointRend (CVPR'2020)](configs/point_rend)
+- [x] [RPN (NeurIPS'2015)](configs/rpn/README.md)
+- [x] [Fast R-CNN (ICCV'2015)](configs/fast_rcnn/README.md)
+- [x] [Faster R-CNN (NeurIPS'2015)](configs/faster_rcnn/README.md)
+- [x] [Mask R-CNN (ICCV'2017)](configs/mask_rcnn/README.md)
+- [x] [Cascade R-CNN (CVPR'2018)](configs/cascade_rcnn/README.md)
+- [x] [Cascade Mask R-CNN (CVPR'2018)](configs/cascade_rcnn/README.md)
+- [x] [SSD (ECCV'2016)](configs/ssd/README.md)
+- [x] [RetinaNet (ICCV'2017)](configs/retinanet/README.md)
+- [x] [GHM (AAAI'2019)](configs/ghm/README.md)
+- [x] [Mask Scoring R-CNN (CVPR'2019)](configs/ms_rcnn/README.md)
+- [x] [Double-Head R-CNN (CVPR'2020)](configs/double_heads/README.md)
+- [x] [Hybrid Task Cascade (CVPR'2019)](configs/htc/README.md)
+- [x] [Libra R-CNN (CVPR'2019)](configs/libra_rcnn/README.md)
+- [x] [Guided Anchoring (CVPR'2019)](configs/guided_anchoring/README.md)
+- [x] [FCOS (ICCV'2019)](configs/fcos/README.md)
+- [x] [RepPoints (ICCV'2019)](configs/reppoints/README.md)
+- [x] [Foveabox (TIP'2020)](configs/foveabox/README.md)
+- [x] [FreeAnchor (NeurIPS'2019)](configs/free_anchor/README.md)
+- [x] [NAS-FPN (CVPR'2019)](configs/nas_fpn/README.md)
+- [x] [ATSS (CVPR'2020)](configs/atss/README.md)
+- [x] [FSAF (CVPR'2019)](configs/fsaf/README.md)
+- [x] [PAFPN (CVPR'2018)](configs/pafpn/README.md)
+- [x] [Dynamic R-CNN (ECCV'2020)](configs/dynamic_rcnn/README.md)
+- [x] [PointRend (CVPR'2020)](configs/point_rend/README.md)
 - [x] [CARAFE (ICCV'2019)](configs/carafe/README.md)
 - [x] [DCNv2 (CVPR'2019)](configs/dcn/README.md)
 - [x] [Group Normalization (ECCV'2018)](configs/gn/README.md)
@@ -149,15 +162,16 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
 - [x] [SOLO (ECCV'2020)](configs/solo/README.md)
 - [x] [QueryInst (ICCV'2021)](configs/queryinst/README.md)
 - [x] [TOOD (ICCV'2021)](configs/tood/README.md)
+
 </details>
 
 Some other methods are also supported in [projects using MMDetection](./docs/en/projects.md).
 
-## Installation
+# Installation
 
 Please refer to [get_started.md](docs/en/get_started.md) for installation.
 
-## Getting Started
+# Getting Started
 
 Please see [get_started.md](docs/en/get_started.md) for the basic usage of MMDetection.
 We provide [colab tutorial](demo/MMDet_Tutorial.ipynb), and full guidance for quick run [with existing dataset](docs/en/1_exist_data_model.md) and [with new dataset](docs/en/2_new_data_model.md) for beginners.
@@ -165,16 +179,16 @@ There are also tutorials for [finetuning models](docs/en/tutorials/finetune.md),
 
 Please refer to [FAQ](docs/en/faq.md) for frequently asked questions.
 
-## Contributing
+# Contributing
 
 We appreciate all contributions to improve MMDetection. Ongoing projects can be found in out [GitHub Projects](https://github.com/open-mmlab/mmdetection/projects). Welcome community users to participate in these projects. Please refer to [CONTRIBUTING.md](.github/CONTRIBUTING.md) for the contributing guideline.
 
-## Acknowledgement
+# Acknowledgement
 
 MMDetection is an open source project that is contributed by researchers and engineers from various colleges and companies. We appreciate all the contributors who implement their methods or add new features, as well as users who give valuable feedbacks.
 We wish that the toolbox and benchmark could serve the growing research community by providing a flexible toolkit to reimplement existing methods and develop their own new detectors.
 
-## Citation
+# Citation
 
 If you use this toolbox or benchmark in your research, please cite this project.
 
@@ -192,7 +206,7 @@ If you use this toolbox or benchmark in your research, please cite this project.
 }
 ```
 
-## Projects in OpenMMLab
+# Projects in OpenMMLab
 
 - [MMCV](https://github.com/open-mmlab/mmcv): OpenMMLab foundational library for computer vision.
 - [MIM](https://github.com/open-mmlab/mim): MIM Installs OpenMMLab Packages.
