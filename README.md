@@ -99,23 +99,31 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         <ul>
             <li><a href="configs/fast_rcnn">Fast R-CNN (ICCV'2015)</a></li>
             <li><a href="configs/faster_rcnn">Faster R-CNN (NeurIPS'2015)</a></li>
+            <li><a href="configs/rpn">RPN (NeurIPS'2015)</a></li>
             <li><a href="configs/ssd">SSD (ECCV'2016)</a></li>
             <li><a href="configs/retinanet">RetinaNet (ICCV'2017)</a></li>
             <li><a href="configs/cascade_rcnn">Cascade R-CNN (CVPR'2018)</a></li>
             <li><a href="configs/yolo">YOLOv3 (ArXiv'2018)</a></li>
             <li><a href="configs/cornernet">CornerNet (ECCV'2018)</a></li>
             <li><a href="configs/grid_rcnn">Grid R-CNN (CVPR'2019)</a></li>
+            <li><a href="configs/guided_anchoring">Guided Anchoring (CVPR'2019)</a></li>
+            <li><a href="configs/fsaf">FSAF (CVPR'2019)</a></li>
             <li><a href="configs/centernet">CenterNet (CVPR'2019)</a></li>
             <li><a href="configs/libra_rcnn">Libra R-CNN (CVPR'2019)</a></li>
             <li><a href="configs/tridentnet">TridentNet (ICCV'2019)</a></li>
             <li><a href="configs/fcos">FCOS (ICCV'2019)</a></li>
             <li><a href="configs/reppoints">RepPoints (ICCV'2019)</a></li>
+            <li><a href="configs/free_anchor">FreeAnchor (NeurIPS'2019)</a></li>
+            <li><a href="configs/cascade_rpn">CascadeRPN (NeurIPS'2019)</a></li>
             <li><a href="configs/foveabox">Foveabox (TIP'2020)</a></li>
+            <li><a href="configs/double_heads">Double-Head R-CNN (CVPR'2020)</a></li>
             <li><a href="configs/atss">ATSS (CVPR'2020)</a></li>
             <li><a href="configs/nas_fcos">NAS-FCOS (CVPR'2020)</a> # Not officially listed</li>
             <li><a href="configs/autoassign">AutoAssign (ArXiv'2020)</a></li>
+            <li><a href="configs/sabl">Side-Aware Boundary Localization (ECCV'2020)</a></li>
             <li><a href="configs/dynamic_rcnn">Dynamic R-CNN (ECCV'2020)</a></li>
             <li><a href="configs/detr">DETR (ECCV'2020)</a></li>
+            <li><a href="configs/paa">PAA (ECCV'2020)</a></li>
             <li><a href="configs/vfnet">VarifocalNet (CVPR'2021)</a></li>
             <li><a href="configs/sparse_rcnn">Sparse R-CNN (CVPR'2021)</a></li>
             <li><a href="configs/yolof">YOLOF (CVPR'2021)</a></li>
@@ -170,9 +178,6 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         <b>Necks</b>
       </td>
       <td>
-        <b>Heads</b>
-      </td>
-      <td>
         <b>Loss</b>
       </td>
     </tr>
@@ -202,18 +207,6 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         <li><a href="configs/fpg">FPG (ArXiv'2020)</a></li>
         <li><a href="configs/groie">GRoIE (ICPR'2020)</a></li>
       </ul>
-      </td>
-      <td>
-        <ul>
-          <li><a href="configs/rpn">RPN (NeurIPS'2015)</a></li>
-          <li><a href="configs/guided_anchoring">Guided Anchoring (CVPR'2019)</a></li>
-          <li><a href="configs/fsaf">FSAF (CVPR'2019)</a></li>
-          <li><a href="configs/free_anchor">FreeAnchor (NeurIPS'2019)</a></li>
-          <li><a href="configs/cascade_rpn">CascadeRPN (NeurIPS'2019)</a></li>
-          <li><a href="configs/double_heads">Double-Head R-CNN (CVPR'2020)</a></li>
-          <li><a href="configs/sabl">Side-Aware Boundary Localization (ECCV'2020)</a></li>
-          <li><a href="configs/paa">PAA (ECCV'2020)</a></li>
-        </ul>
       </td>
       <td>
         <ul>
