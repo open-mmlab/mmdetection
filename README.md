@@ -73,10 +73,8 @@ For compatibility changes between different versions of MMDetection, please refe
 
 Results and models are available in the [model zoo](docs/en/model_zoo.md).
 
-<div style="text-align: center;">
-  <td>
-    <b>Algorithms</b>
-  </td>
+<div align="center">
+  <b>Architectures</b>
 </div>
 <table align="center">
   <tbody>
@@ -164,10 +162,8 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
   </tbody>
 </table>
 
-<div style="text-align: center;">
-  <td>
-    <b>Components</b>
-  </td>
+<div align="center">
+  <b>Components</b>
 </div>
 <table align="center">
   <tbody>
