@@ -10,31 +10,34 @@ model = dict(
         type='EfficientNet',
         stem_channels=40,
         norm_cfg=norm_cfg,
+        norm_eval=False,
+        frozen_stages=-1,
         scale=3,
         with_cp=True,
         dropout=0.3,
         init_cfg=dict(
             type='Pretrained',
             checkpoint=
-            '/mnt/lustre/jiangyitong1/mmdetection/checkpoints/converted_b3_2.pyth'
+            '/mnt/lustre/jiangyitong1/mmdetection/checkpoints/efficientNet_B3.pth'
         )),
     neck=dict(
         type='FPN',
         in_channels=[48, 136, 384],
         start_level=0,
         out_channels=160,
-        num_outs=5),
+        num_outs=5,
+        init_cfg=dict(type='Normal', layer='Conv2d', std=0.01)),
     test_cfg=dict(
         nms=dict(type='soft_nms', iou_threshold=0.5, method='gaussian')),
     bbox_head=dict(
         type='RetinaSepBNHead',
         num_ins=5,
         in_channels=160,
-        loss_cls=dict(gamma=1.5, ),
+        loss_cls=dict(gamma=1.5),
         norm_cfg=norm_cfg),
 )
 # lr = 0.08 * (batch_size / 64)
-optimizer = dict(type='SGD', lr=0.08, momentum=0.9, weight_decay=4e-5)
+optimizer = dict(type='SGD', lr=0.0875, momentum=0.9, weight_decay=4e-5)
 lr_config = dict(
     _delete_=True,
     policy='CosineAnnealing',
@@ -46,14 +49,15 @@ lr_config = dict(
     warmup_by_epoch=True)
 total_epochs = 300
 runner = dict(type='EpochBasedRunner', max_epochs=300)
-checkpoint_config = dict(interval=10)
+checkpoint_config = dict(interval=10, sync_buffer=True)
+fp16 = dict(loss_scale=512.)
 img_norm_cfg = dict(
     # The mean and std is used in PyCls
     mean=[103.53, 116.28, 123.675],
     std=[57.375, 57.12, 58.395],
     to_rgb=False)
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', to_float32=True),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='Resize',

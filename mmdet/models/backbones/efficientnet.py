@@ -1,13 +1,11 @@
+import mmcv
 import torch.nn as nn
 import torch.utils.checkpoint as cp
-from torch.nn.modules.batchnorm import _BatchNorm
 import warnings
-
-import mmcv
-from mmcv.cnn import build_conv_layer, build_norm_layer
+from mmcv.cnn import ConvModule, build_conv_layer, build_norm_layer
 from mmcv.cnn.bricks.drop import drop_path
 from mmcv.runner import load_checkpoint
-from mmcv.cnn import ConvModule
+from torch.nn.modules.batchnorm import _BatchNorm
 
 from ..builder import BACKBONES
 from ..utils.inverted_residual import InvertedResidual
@@ -36,7 +34,7 @@ class MBConv(InvertedResidual):
 
             if self.with_res_shortcut:
                 if self.dropout > 0:
-                    out = drop_path(out, self.dropout, True)
+                    out = drop_path(out, self.dropout, self.training)
                 out = x + out
                 return out
             else:
@@ -89,7 +87,9 @@ class EfficientLayer(nn.Sequential):
             block_width = in_channels if d == 0 else out_channels
             midchannels = int(block_width * expand_ratio)
             se_cfg = {'channels': midchannels,
-                      'ratio': expand_ratio * se_ratio}
+                      'ratio': expand_ratio * se_ratio,
+                      'act_cfg': (dict(type='MemoryEfficientSwish'),
+                                  dict(type='Sigmoid'))}
             with_expand_conv = False
             if midchannels != block_width:
                 with_expand_conv = True
@@ -106,6 +106,7 @@ class EfficientLayer(nn.Sequential):
                     norm_cfg=norm_cfg,
                     conv_cfg=conv_cfg,
                     with_expand_conv=with_expand_conv,
+                    act_cfg=dict(type='MemoryEfficientSwish'),
                     init_cfg=init_cfg))
             super().__init__(*layers)
 
@@ -260,8 +261,8 @@ class EfficientNet(mmcv.runner.BaseModule):
 
     def _freeze_stages(self):
         if self.frozen_stages >= 0:
-            self.norm1.eval()
-            for m in [self.conv1, self.norm1]:
+            # self.norm1.eval()
+            for m in [self.conv1]:
                 for param in m.parameters():
                     param.requires_grad = False
         for i in range(1, self.frozen_stages + 1):
