@@ -12,12 +12,26 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 36.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/faster_rcnn_hrnetv2p_w18_1x_coco/faster_rcnn_hrnetv2p_w18_1x_coco_20200130-56651a6d.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: faster_rcnn_hrnetv2p_w18_2x_coco
     In Collection: Faster R-CNN
@@ -32,12 +46,26 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 24
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 38.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/faster_rcnn_hrnetv2p_w18_2x_coco/faster_rcnn_hrnetv2p_w18_2x_coco_20200702_085731-a4ec0611.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: faster_rcnn_hrnetv2p_w32_1x_coco
     In Collection: Faster R-CNN
@@ -52,12 +80,26 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 40.2
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/faster_rcnn_hrnetv2p_w32_1x_coco/faster_rcnn_hrnetv2p_w32_1x_coco_20200130-6e286425.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: faster_rcnn_hrnetv2p_w32_2x_coco
     In Collection: Faster R-CNN
@@ -72,12 +114,26 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 24
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 41.4
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/faster_rcnn_hrnetv2p_w32_2x_coco/faster_rcnn_hrnetv2p_w32_2x_coco_20200529_015927-976a9c15.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: faster_rcnn_hrnetv2p_w40_1x_coco
     In Collection: Faster R-CNN
@@ -92,12 +148,26 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 41.2
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/faster_rcnn_hrnetv2p_w40_1x_coco/faster_rcnn_hrnetv2p_w40_1x_coco_20200210-95c1f5ce.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: faster_rcnn_hrnetv2p_w40_2x_coco
     In Collection: Faster R-CNN
@@ -112,12 +182,26 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 24
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 42.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/faster_rcnn_hrnetv2p_w40_2x_coco/faster_rcnn_hrnetv2p_w40_2x_coco_20200512_161033-0f236ef4.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: mask_rcnn_hrnetv2p_w18_1x_coco
     In Collection: Mask R-CNN
@@ -132,6 +216,13 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -142,6 +233,13 @@ Models:
         Metrics:
           mask AP: 34.2
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w18_1x_coco/mask_rcnn_hrnetv2p_w18_1x_coco_20200205-1c3d78ed.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: mask_rcnn_hrnetv2p_w18_2x_coco
     In Collection: Mask R-CNN
@@ -156,6 +254,13 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 24
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -166,6 +271,13 @@ Models:
         Metrics:
           mask AP: 36.0
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w18_2x_coco/mask_rcnn_hrnetv2p_w18_2x_coco_20200212-b3c825b1.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: mask_rcnn_hrnetv2p_w32_1x_coco
     In Collection: Mask R-CNN
@@ -180,6 +292,13 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -190,6 +309,13 @@ Models:
         Metrics:
           mask AP: 37.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w32_1x_coco/mask_rcnn_hrnetv2p_w32_1x_coco_20200207-b29f616e.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: mask_rcnn_hrnetv2p_w32_2x_coco
     In Collection: Mask R-CNN
@@ -204,6 +330,13 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 24
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -214,6 +347,13 @@ Models:
         Metrics:
           mask AP: 37.8
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w32_2x_coco/mask_rcnn_hrnetv2p_w32_2x_coco_20200213-45b75b4d.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: mask_rcnn_hrnetv2p_w40_1x_coco
     In Collection: Mask R-CNN
@@ -221,6 +361,13 @@ Models:
     Metadata:
       Training Memory (GB): 10.9
       Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -231,6 +378,13 @@ Models:
         Metrics:
           mask AP: 37.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w40_1x_coco/mask_rcnn_hrnetv2p_w40_1x_coco_20200511_015646-66738b35.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: mask_rcnn_hrnetv2p_w40_2x_coco
     In Collection: Mask R-CNN
@@ -238,6 +392,13 @@ Models:
     Metadata:
       Training Memory (GB): 10.9
       Epochs: 24
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -248,6 +409,13 @@ Models:
         Metrics:
           mask AP: 38.2
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/mask_rcnn_hrnetv2p_w40_2x_coco/mask_rcnn_hrnetv2p_w40_2x_coco_20200512_163732-aed5e4ab.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: cascade_rcnn_hrnetv2p_w18_20e_coco
     In Collection: Cascade R-CNN
@@ -262,12 +430,26 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 20
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 41.2
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/cascade_rcnn_hrnetv2p_w18_20e_coco/cascade_rcnn_hrnetv2p_w18_20e_coco_20200210-434be9d7.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: cascade_rcnn_hrnetv2p_w32_20e_coco
     In Collection: Cascade R-CNN
@@ -282,12 +464,26 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 20
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 43.3
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/cascade_rcnn_hrnetv2p_w32_20e_coco/cascade_rcnn_hrnetv2p_w32_20e_coco_20200208-928455a4.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: cascade_rcnn_hrnetv2p_w40_20e_coco
     In Collection: Cascade R-CNN
@@ -295,12 +491,26 @@ Models:
     Metadata:
       Training Memory (GB): 10.8
       Epochs: 20
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 43.8
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/cascade_rcnn_hrnetv2p_w40_20e_coco/cascade_rcnn_hrnetv2p_w40_20e_coco_20200512_161112-75e47b04.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: cascade_mask_rcnn_hrnetv2p_w18_20e_coco
     In Collection: Cascade R-CNN
@@ -315,6 +525,13 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 20
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -325,6 +542,13 @@ Models:
         Metrics:
           mask AP: 36.4
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/cascade_mask_rcnn_hrnetv2p_w18_20e_coco/cascade_mask_rcnn_hrnetv2p_w18_20e_coco_20200210-b543cd2b.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: cascade_mask_rcnn_hrnetv2p_w32_20e_coco
     In Collection: Cascade R-CNN
@@ -338,6 +562,13 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 20
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -348,6 +579,13 @@ Models:
         Metrics:
           mask AP: 38.6
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/cascade_mask_rcnn_hrnetv2p_w32_20e_coco/cascade_mask_rcnn_hrnetv2p_w32_20e_coco_20200512_154043-39d9cf7b.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: cascade_mask_rcnn_hrnetv2p_w40_20e_coco
     In Collection: Cascade R-CNN
@@ -355,6 +593,13 @@ Models:
     Metadata:
       Training Memory (GB): 12.5
       Epochs: 20
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -365,6 +610,13 @@ Models:
         Metrics:
           mask AP: 39.3
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/cascade_mask_rcnn_hrnetv2p_w40_20e_coco/cascade_mask_rcnn_hrnetv2p_w40_20e_coco_20200527_204922-969c4610.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: htc_hrnetv2p_w18_20e_coco
     In Collection: HTC
@@ -379,6 +631,13 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 20
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -389,6 +648,13 @@ Models:
         Metrics:
           mask AP: 37.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/htc_hrnetv2p_w18_20e_coco/htc_hrnetv2p_w18_20e_coco_20200210-b266988c.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: htc_hrnetv2p_w32_20e_coco
     In Collection: HTC
@@ -403,6 +669,13 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 20
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -413,6 +686,13 @@ Models:
         Metrics:
           mask AP: 39.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/htc_hrnetv2p_w32_20e_coco/htc_hrnetv2p_w32_20e_coco_20200207-7639fa12.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: htc_hrnetv2p_w40_20e_coco
     In Collection: HTC
@@ -420,6 +700,13 @@ Models:
     Metadata:
       Training Memory (GB): 14.6
       Epochs: 20
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -430,6 +717,13 @@ Models:
         Metrics:
           mask AP: 40.8
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/htc_hrnetv2p_w40_20e_coco/htc_hrnetv2p_w40_20e_coco_20200529_183411-417c4d5b.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: fcos_hrnetv2p_w18_gn-head_4x4_1x_coco
     In Collection: FCOS
@@ -446,12 +740,25 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 35.3
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w18_gn-head_4x4_1x_coco/fcos_hrnetv2p_w18_gn-head_4x4_1x_coco_20201212_100710-4ad151de.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: fcos_hrnetv2p_w18_gn-head_4x4_2x_coco
     In Collection: FCOS
@@ -468,12 +775,25 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 24
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 38.2
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w18_gn-head_4x4_2x_coco/fcos_hrnetv2p_w18_gn-head_4x4_2x_coco_20201212_101110-5c575fa5.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: fcos_hrnetv2p_w32_gn-head_4x4_1x_coco
     In Collection: FCOS
@@ -490,12 +810,25 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 39.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w32_gn-head_4x4_1x_coco/fcos_hrnetv2p_w32_gn-head_4x4_1x_coco_20201211_134730-cb8055c0.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: fcos_hrnetv2p_w32_gn-head_4x4_2x_coco
     In Collection: FCOS
@@ -512,12 +845,25 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 24
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 40.8
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w32_gn-head_4x4_2x_coco/fcos_hrnetv2p_w32_gn-head_4x4_2x_coco_20201212_112133-77b6b9bb.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: fcos_hrnetv2p_w18_gn-head_mstrain_640-800_4x4_2x_coco
     In Collection: FCOS
@@ -534,12 +880,25 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 24
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 38.3
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w18_gn-head_mstrain_640-800_4x4_2x_coco/fcos_hrnetv2p_w18_gn-head_mstrain_640-800_4x4_2x_coco_20201212_111651-441e9d9f.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: fcos_hrnetv2p_w32_gn-head_mstrain_640-800_4x4_2x_coco
     In Collection: FCOS
@@ -556,12 +915,25 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 24
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 41.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w32_gn-head_mstrain_640-800_4x4_2x_coco/fcos_hrnetv2p_w32_gn-head_mstrain_640-800_4x4_2x_coco_20201212_090846-b6f2b49f.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
 
   - Name: fcos_hrnetv2p_w40_gn-head_mstrain_640-800_4x4_2x_coco
     In Collection: FCOS
@@ -578,9 +950,22 @@ Models:
           mode: FP32
           resolution: (800, 1333)
       Epochs: 24
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Architecture:
+        - HRNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 42.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/hrnet/fcos_hrnetv2p_w40_gn-head_mstrain_640-800_4x4_2x_coco/fcos_hrnetv2p_w40_gn-head_mstrain_640-800_4x4_2x_coco_20201212_124752-f22d2ce5.pth
+    Paper:
+      URL: https://arxiv.org/abs/1904.04514
+      Title: 'Deep High-Resolution Representation Learning for Visual Recognition'
+    README: configs/hrnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
+      Version: v2.0.0
