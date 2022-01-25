@@ -14,8 +14,8 @@ def convert(src, dst):
            for i in range(20)},
         **{f's{i}': f'layer{i}'
            for i in range(20)},
-        'stem.conv': 'conv1',
-        'stem.bn': 'bn1',
+        'stem.conv': 'conv1.conv',
+        'stem.bn': 'conv1.bn',
         'dwise.': 'depthwise_conv.conv.',
         'dwise_bn': 'depthwise_conv.bn',
         'lin_proj.': 'linear_conv.conv.',

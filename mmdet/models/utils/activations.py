@@ -1,7 +1,6 @@
 import torch
-from torch import nn
-
 from mmcv.cnn.bricks.registry import ACTIVATION_LAYERS
+from torch import nn
 
 
 class MemoryEfficientSwishImplementation(torch.autograd.Function):

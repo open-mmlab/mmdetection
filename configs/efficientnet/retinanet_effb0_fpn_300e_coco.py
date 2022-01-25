@@ -16,8 +16,7 @@ model = dict(
         dropout=0.2,
         init_cfg=dict(
             type='Pretrained',
-            checkpoint=
-            '/mnt/lustre/jiangyitong1/mmdetection/checkpoints/converted_b0_2.pyth'
+            checkpoint='converted_b0_2.pyth'
         )),
     neck=dict(
         type='FPN',

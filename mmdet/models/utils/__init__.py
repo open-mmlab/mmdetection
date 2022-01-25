@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from .activations import MemoryEfficientSwish
 from .brick_wrappers import AdaptiveAvgPool2d, adaptive_avg_pool2d
 from .builder import build_linear_layer, build_transformer
 from .ckpt_convert import pvt_convert
@@ -16,7 +17,6 @@ from .se_layer import SELayer
 from .transformer import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
                           DynamicConv, PatchEmbed, Transformer, nchw_to_nlc,
                           nlc_to_nchw)
-from .activations import MemoryEfficientSwish
 
 __all__ = [
     'ResLayer', 'gaussian_radius', 'gen_gaussian_target',

@@ -23,7 +23,8 @@ def test_efficientnet_backbone():
     assert check_norm_state(model.modules(), False)
 
     # Test EfficientNet with torchvision pretrained weight
-    model = EfficientNet(scale=3, norm_eval=True, pretrained='/checkpoints/converted_b3_2.pyth')
+    model = EfficientNet(scale=3, norm_eval=True,
+                         pretrained='/checkpoints/converted_b3_2.pyth')
     model.train()
     assert check_norm_state(model.modules(), False)
 
@@ -32,8 +33,7 @@ def test_efficientnet_backbone():
     model = EfficientNet(scale=3, frozen_stages=frozen_stages)
     model.init_weights()
     model.train()
-    assert model.norm1.training is False
-    for layer in [model.conv1, model.norm1]:
+    for layer in [model.conv1]:
         for param in layer.parameters():
             assert param.requires_grad is False
     for i in range(1, frozen_stages + 1):

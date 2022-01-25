@@ -2,9 +2,8 @@ import mmcv
 import torch.nn as nn
 import torch.utils.checkpoint as cp
 import warnings
-from mmcv.cnn import ConvModule, build_conv_layer, build_norm_layer
+from mmcv.cnn import ConvModule
 from mmcv.cnn.bricks.drop import drop_path
-from mmcv.runner import load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from ..builder import BACKBONES
@@ -119,7 +118,7 @@ class EfficientNet(mmcv.runner.BaseModule):
     `paper <https://arxiv.org/abs/1905.11946>`_ .
 
     Args:
-        scale (int): Compund scale of EfficientNet.
+        scale (int): Compound scale of EfficientNet.
             From {0, 1, 2, 3, 4, 5, 6, 7}.
         in_channels (int): Number of input image channels.
             Default: 3.
