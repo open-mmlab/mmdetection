@@ -12,23 +12,63 @@ from ..utils import mask2ndarray
 from .palette import get_palette, palette_val
 
 EPS = 1e-2
-_MAX_AREA = 30000
-_MIN_AREA = 800
 
 
-def _bias_color(base, max_dist=30):
+def _get_adaptive_scales(areas, min_area=800, max_area=30000):
+    """Get adaptive scales according to areas.
+
+    The scale range is [0.5, 1.0]. When the area is less than
+    ``'min_area'``, the scale is 0.5 while the area is larger than
+    ``'max_area'``, the scale is 1.0.
+    Args:
+        areas (ndarray): The areas of bboxes or masks with the
+            shape of (n, ).
+        min_area: Lower bound areas for adaptive scales.
+            Default: 800.
+        max_area: Upper bound areas for adaptive scales.
+            Default: 30000.
+
+    Returns:
+        ndarray : The adaotive scales with the shape of (n, ).
+    """
+    scales = 0.5 + (areas - min_area) / (max_area - min_area)
+    scales = np.maximum(0.5, np.minimum(1.0, scales))
+    return scales
+
+
+def _get_bias_color(base, max_dist=30):
+    """Get different colors for each masks.
+
+    Get different colors for each masks by adding a bias
+    color to the base category color.
+    Args:
+        base (ndarray): The base category color with the shape
+            of (3, ).
+        max_dist: The max distance of bias. Default: 30.
+
+    Returns:
+        ndarray: The new color for a mask with the shape of (3, ).
+    """
     new_color = base + np.random.randint(
         low=-max_dist, high=max_dist + 1, size=3)
     return np.maximum(0, np.minimum(255, new_color))
 
 
-def _size_scale(areas):
-    scales = 0.5 + (areas - _MIN_AREA) / (_MAX_AREA - _MIN_AREA)
-    scales = np.maximum(0.5, np.minimum(1.0, scales))
-    return scales
-
-
 def draw_bboxes(ax, bboxes, color='g', alpha=0.8, thickness=2):
+    """Draw bounding boxes on the axes.
+
+    Args:
+        ax (matplotlib.Axes): The input axes.
+        bboxes (ndarray): The input bounding boxes with the shape
+            of (n, 4).
+        color (list[tuple] | matplotlib.color): the colors for each
+            bounding boxes.
+        alpha (float): Transparency of bounding boxes. Default: 0.8.
+        thickness (int): Thickness of lines. Default: 2.
+
+    Returns:
+        matplotlib.Axes: The result axes.
+    """
     polygons = []
     for i, bbox in enumerate(bboxes):
         bbox_int = bbox.astype(np.int32)
@@ -56,6 +96,23 @@ def draw_labels(ax,
                 font_size=8,
                 scales=None,
                 horizontal_alignment='left'):
+    """Draw labels on the axes.
+
+        Args:
+            ax (matplotlib.Axes): The input axes.
+            labels (ndarray): The labels with the shape of (n, ).
+            positions (ndarray): The positions to draw each labels.
+            scores (ndarray): The scores for each labels.
+            class_names (list[str]): The class names.
+            color (list[tuple] | matplotlib.color): The colors for labels.
+            font_size (int): Font size of texts. Default: 8.
+            scales (list[float]): Scales of texts. Default: None.
+            horizontal_alignment: The horizontal alignment method of
+                texts. Default: 'left'.
+
+        Returns:
+            matplotlib.Axes: The result axes.
+        """
     for i, (pos, label) in enumerate(zip(positions, labels)):
         label_text = class_names[
             label] if class_names is not None else f'class {label}'
@@ -83,6 +140,21 @@ def draw_labels(ax,
 
 
 def draw_masks(ax, img, masks, color=None, with_edge=True, alpha=0.8):
+    """Draw masks on the image and their edges on the axes.
+
+    Args:
+        ax (matplotlib.Axes): The input axes.
+        img (ndarray): The image with the shape of (3, h, w).
+        masks (ndarray): The masks with the shape of (n, h, w).
+        color (ndarray): The colors for each masks with the shape
+            of (n, 3).
+        with_edge (bool): Whether to draw edges. Default: True.
+        alpha (float): Transparency of bounding boxes. Default: 0.8.
+
+    Returns:
+        matplotlib.Axes: The result axes.
+        ndarray: The result image.
+    """
     taken_colors = set([0, 0, 0])
     if color is None:
         random_colors = np.random.randint(0, 255, (masks.size(0), 3))
@@ -96,7 +168,7 @@ def draw_masks(ax, img, masks, color=None, with_edge=True, alpha=0.8):
 
         color_mask = color[i]
         while tuple(color_mask) in taken_colors:
-            color_mask = _bias_color(color_mask)
+            color_mask = _get_bias_color(color_mask)
         taken_colors.add(tuple(color_mask))
 
         mask = mask.astype(bool)
@@ -216,7 +288,7 @@ def imshow_det_bboxes(img,
         horizontal_alignment = 'left'
         positions = bboxes[:, :2].astype(np.int32) + thickness
         areas = (bboxes[:, 3] - bboxes[:, 1]) * (bboxes[:, 2] - bboxes[:, 0])
-        scales = _size_scale(areas)
+        scales = _get_adaptive_scales(areas)
     else:
         horizontal_alignment = 'center'
         areas = []
@@ -228,7 +300,7 @@ def imshow_det_bboxes(img,
             positions.append(centroids[largest_id])
             areas.append(stats[largest_id, -1])
         areas = np.stack(areas, axis=0)
-        scales = _size_scale(areas)
+        scales = _get_adaptive_scales(areas)
     draw_labels(
         ax,
         labels,
@@ -296,22 +368,22 @@ def imshow_gt_det_bboxes(img,
       score_thr (float): Minimum score of bboxes to be shown. Default: 0.
       gt_bbox_color (list[tuple] | tuple | str | None): Colors of bbox lines.
           If a single color is given, it will be applied to all classes.
-          The tuple of color should be in RGB order. Default: (255, 102, 61).
+          The tuple of color should be in RGB order. Default: (61, 102, 255).
       gt_text_color (list[tuple] | tuple | str | None): Colors of texts.
           If a single color is given, it will be applied to all classes.
-          The tuple of color should be in RGB order. Default: (255, 102, 61).
+          The tuple of color should be in RGB order. Default: (200, 200, 200).
       gt_mask_color (list[tuple] | tuple | str | None, optional): Colors of
           masks. If a single color is given, it will be applied to all classes.
-          The tuple of color should be in RGB order. Default: (255, 102, 61).
+          The tuple of color should be in RGB order. Default: (61, 102, 255).
       det_bbox_color (list[tuple] | tuple | str | None):Colors of bbox lines.
           If a single color is given, it will be applied to all classes.
-          The tuple of color should be in RGB order. Default: (72, 101, 241).
+          The tuple of color should be in RGB order. Default: (241, 101, 72).
       det_text_color (list[tuple] | tuple | str | None):Colors of texts.
           If a single color is given, it will be applied to all classes.
-          The tuple of color should be in RGB order. Default: (72, 101, 241).
+          The tuple of color should be in RGB order. Default: (200, 200, 200).
       det_mask_color (list[tuple] | tuple | str | None, optional): Color of
           masks. If a single color is given, it will be applied to all classes.
-          The tuple of color should be in RGB order. Default: (72, 101, 241).
+          The tuple of color should be in RGB order. Default: (241, 101, 72).
       thickness (int): Thickness of lines. Default: 2.
       font_size (int): Font size of texts. Default: 13.
       win_name (str): The window name. Default: ''.
@@ -325,16 +397,27 @@ def imshow_gt_det_bboxes(img,
     """
     assert 'gt_bboxes' in annotation
     assert 'gt_labels' in annotation
-    assert isinstance(
-        result,
-        (tuple, list,
-         dict)), f'Expected tuple or list or dict, but get {type(result)}'
+    assert isinstance(result, (tuple, list, dict)), 'Expected ' \
+        f'tuple or list or dict, but get {type(result)}'
 
     gt_bboxes = annotation['gt_bboxes']
     gt_labels = annotation['gt_labels']
     gt_masks = annotation.get('gt_masks', None)
     if gt_masks is not None:
         gt_masks = mask2ndarray(gt_masks)
+
+    gt_seg = annotation.get('gt_semantic_seg', None)
+    if gt_seg is not None:
+        assert class_names is not None, 'We need to know the number ' \
+                                        'of classes.'
+        VOID = len(class_names)
+        sem_labels = np.unique(gt_seg)
+        all_labels = np.concatenate((gt_labels, sem_labels), axis=0)
+        all_labels, counts = np.unique(all_labels, return_counts=True)
+        stuff_labels = all_labels[counts < 2 and all_labels != VOID]
+        stuff_masks = gt_seg[None] == stuff_labels[:, None, None]
+        gt_labels = np.concatenate((gt_labels, stuff_labels), axis=0)
+        gt_masks = np.concatenate((gt_masks, stuff_masks.astype(np.int)), axis=0)
 
     img = mmcv.imread(img)
 
@@ -352,25 +435,28 @@ def imshow_gt_det_bboxes(img,
         win_name=win_name,
         show=False)
 
-    if isinstance(result, tuple):
-        bbox_result, segm_result = result
-        if isinstance(segm_result, tuple):
-            segm_result = segm_result[0]  # ms rcnn
+    if not isinstance(result, dict):
+        if isinstance(result, tuple):
+            bbox_result, segm_result = result
+            if isinstance(segm_result, tuple):
+                segm_result = segm_result[0]  # ms rcnn
+        else:
+            bbox_result, segm_result = result, None
+
+        bboxes = np.vstack(bbox_result)
+        labels = [
+            np.full(bbox.shape[0], i, dtype=np.int32)
+            for i, bbox in enumerate(bbox_result)
+        ]
+        labels = np.concatenate(labels)
+
+        segms = None
+        if segm_result is not None and len(labels) > 0:  # non empty
+            segms = mmcv.concat_list(segm_result)
+            segms = mask_util.decode(segms)
+            segms = segms.transpose(2, 0, 1)
     else:
-        bbox_result, segm_result = result, None
-
-    bboxes = np.vstack(bbox_result)
-    labels = [
-        np.full(bbox.shape[0], i, dtype=np.int32)
-        for i, bbox in enumerate(bbox_result)
-    ]
-    labels = np.concatenate(labels)
-
-    segms = None
-    if segm_result is not None and len(labels) > 0:  # non empty
-        segms = mmcv.concat_list(segm_result)
-        segms = mask_util.decode(segms)
-        segms = segms.transpose(2, 0, 1)
+        
 
     img = imshow_det_bboxes(
         img,
