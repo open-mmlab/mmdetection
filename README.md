@@ -89,7 +89,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         <b>Panoptic Segmentation</b>
       </td>
       <td>
-        <b>Distillation</b>
+        <b>Other</b>
       </td>
     </tr>
     <tr valign="top">
@@ -151,10 +151,24 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         </ul>
       </td>
       <td>
+        </ul>
+          <li><b>Contrastive Learning</b></li>
+        <ul>
+        <ul>
+          <li><a href="configs/selfsup_pretrain">SwAV (NeurIPS'2020)</a></li>
+          <li><a href="configs/selfsup_pretrain">MoCo (CVPR'2020)</a></li>
+          <li><a href="configs/selfsup_pretrain">MoCov2 (ArXiv'2020)</a></li>
+        </ul>
+        </ul>
+        </ul>
+          <li><b>Distillation</b></li>
+        <ul>
         <ul>
           <li><a href="configs/ld">Localization Distillation (ArXiv'2021)</a></li>
           <li><a href="configs/lad">Label Assignment Distillation (WACV'2022)</a></li>
         </ul>
+        </ul>
+      </ul>
       </td>
     </tr>
 </td>
@@ -176,6 +190,9 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
       </td>
       <td>
         <b>Loss</b>
+      </td>
+      <td>
+        <b>Common</b>
       </td>
     </tr>
     <tr valign="top">
@@ -210,6 +227,16 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="configs/ghm">GHM (AAAI'2019)</a></li>
           <li><a href="configs/gfl">Generalized Focal Loss (NeurIPS'2020)</a></li>
           <li><a href="configs/seesaw_loss">Seasaw Loss (CVPR'2021)</a></li>
+        </ul>
+      </td>
+      <td>
+        <ul>
+          <li><a href="configs/faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py">OHEM (CVPR'2016)</a></li>
+          <li><a href="configs/gn">Group Normalization (ECCV'2018)</a></li>
+          <li><a href="configs/dcn">DCNv2 (CVPR'2019)</a></li>
+          <li><a href="configs/gn+ws">Weight Standardization (ArXiv'2019)</a></li>
+          <li><a href="configs/pisa">Prime Sample Attention (CVPR'2020)</a></li>
+          <li><a href="configs/strong_baselines">Strong Baselines (CVPR'2021)</a></li>
         </ul>
       </td>
     </tr>
