@@ -43,7 +43,7 @@ repos:
     hooks:
       - id: docformatter
         args: ["--in-place", "--wrap-descriptions", "79"]
-  - repo: https://github.com/Pentahill/pre-commit-hooks
+  - repo: https://github.com/open-mmlab/pre-commit-hooks
     rev: master  # Use the ref you want to point at
     hooks:
       - id: check-algo-readme
