@@ -99,21 +99,21 @@ def draw_labels(ax,
                 horizontal_alignment='left'):
     """Draw labels on the axes.
 
-        Args:
-            ax (matplotlib.Axes): The input axes.
-            labels (ndarray): The labels with the shape of (n, ).
-            positions (ndarray): The positions to draw each labels.
-            scores (ndarray): The scores for each labels.
-            class_names (list[str]): The class names.
-            color (list[tuple] | matplotlib.color): The colors for labels.
-            font_size (int): Font size of texts. Default: 8.
-            scales (list[float]): Scales of texts. Default: None.
-            horizontal_alignment: The horizontal alignment method of
-                texts. Default: 'left'.
+    Args:
+        ax (matplotlib.Axes): The input axes.
+        labels (ndarray): The labels with the shape of (n, ).
+        positions (ndarray): The positions to draw each labels.
+        scores (ndarray): The scores for each labels.
+        class_names (list[str]): The class names.
+        color (list[tuple] | matplotlib.color): The colors for labels.
+        font_size (int): Font size of texts. Default: 8.
+        scales (list[float]): Scales of texts. Default: None.
+        horizontal_alignment: The horizontal alignment method of
+            texts. Default: 'left'.
 
-        Returns:
-            matplotlib.Axes: The result axes.
-        """
+    Returns:
+        matplotlib.Axes: The result axes.
+    """
     for i, (pos, label) in enumerate(zip(positions, labels)):
         label_text = class_names[
             label] if class_names is not None else f'class {label}'
@@ -418,7 +418,8 @@ def imshow_gt_det_bboxes(img,
         stuff_labels = all_labels[counts < 2 and all_labels != VOID]
         stuff_masks = gt_seg[None] == stuff_labels[:, None, None]
         gt_labels = np.concatenate((gt_labels, stuff_labels), axis=0)
-        gt_masks = np.concatenate((gt_masks, stuff_masks.astype(np.int)), axis=0)
+        gt_masks = np.concatenate((gt_masks, stuff_masks.astype(np.int)),
+                                  axis=0)
 
     img = mmcv.imread(img)
 
