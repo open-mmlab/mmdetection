@@ -12,7 +12,7 @@ This paper proposes a Fast Region-based Convolutional Network method (Fast R-CNN
 <img src="https://user-images.githubusercontent.com/40661020/143882189-6258c05c-f2a1-4320-9282-7e2f2d502eb2.png"/>
 </div>
 
-## Results and models
+## Results and Models
 
 ## Citation
 
