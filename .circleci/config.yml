@@ -76,7 +76,6 @@ jobs:
       - run:
           name: Run unittests
           command: |
-            pip install timm
             coverage run --branch --source mmdet -m pytest tests/
             coverage xml
             coverage report -m
@@ -121,7 +120,6 @@ jobs:
       - run:
           name: Run unittests
           command: |
-            pip install timm
             pytest tests/
 
 workflows:
