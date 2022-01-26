@@ -7,6 +7,7 @@ import pycocotools.mask as mask_util
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 
+from mmdet.datasets.coco_panoptic import INSTANCE_OFFSET
 from ..mask.structures import bitmap_to_polygon
 from ..utils import mask2ndarray
 from .palette import get_palette, palette_val
@@ -456,7 +457,17 @@ def imshow_gt_det_bboxes(img,
             segms = mask_util.decode(segms)
             segms = segms.transpose(2, 0, 1)
     else:
-        
+        assert class_names is not None, 'We need to know the number ' \
+                                        'of classes.'
+        VOID = len(class_names)
+        bboxes = None
+        pan_results = result['pan_results']
+        # keep objects ahead
+        ids = np.unique(pan_results, return_inverse=True)
+        legal_indices = ids != VOID
+        ids = ids[legal_indices]
+        labels = np.array([id % INSTANCE_OFFSET for id in ids], dtype=np.int64)
+        segms = pan_results[None] == ids[:, None, None]
 
     img = imshow_det_bboxes(
         img,

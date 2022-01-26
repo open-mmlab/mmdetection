@@ -253,7 +253,7 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         legal_indices = ids != self.num_classes  # for VOID label
         ids = ids[legal_indices]
         labels = np.array([id % INSTANCE_OFFSET for id in ids], dtype=np.int64)
-        masks = pan_results[None] == ids[:, None, None]
+        segms = pan_results[None] == ids[:, None, None]
 
         # if out_file specified, do not show image in window
         if out_file is not None:
@@ -261,7 +261,7 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         # draw bounding boxes
         img = imshow_det_bboxes(
             img,
-            segms=masks,
+            segms=segms,
             labels=labels,
             class_names=self.CLASSES,
             bbox_color=bbox_color,
