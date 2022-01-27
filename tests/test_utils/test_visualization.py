@@ -9,6 +9,7 @@ import pytest
 import torch
 
 from mmdet.core import visualization as vis
+from mmdet.datasets import CityscapesDataset, CocoDataset, VOCDataset
 
 
 def test_color():
@@ -125,3 +126,52 @@ def test_imshow_gt_det_bboxes():
     annotation['gt_masks'] = []
     with pytest.raises(TypeError):
         vis.imshow_gt_det_bboxes(image, annotation, result, show=False)
+
+
+def test_palette():
+    assert vis.palette_val([(1, 2, 3)])[0] == (1 / 255, 2 / 255, 3 / 255)
+
+    # test list
+    palette = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]
+    palette_ = vis.get_palette(palette)
+    for color, color_ in zip(palette, palette_):
+        assert color == color_
+
+    # test tuple
+    with pytest.raises(AssertionError):
+        vis.get_palette((1, 2, 3))
+    palette = vis.get_palette((1, 2, 3), 3)
+    assert len(palette) == 3
+    for color in palette:
+        assert color == (1, 2, 3)
+
+    # test color str
+    with pytest.raises(AssertionError):
+        vis.get_palette('red')
+    palette = vis.get_palette('red', 3)
+    assert len(palette) == 3
+    for color in palette:
+        assert color == (255, 0, 0)
+
+    # test dataset str
+    palette = vis.get_palette('coco')
+    for color, color_ in zip(palette, CocoDataset.PALETTE):
+        assert color == color_
+    palette = vis.get_palette('voc')
+    for color, color_ in zip(palette, VOCDataset.PALETTE):
+        assert color == color_
+    palette = vis.get_palette('citys')
+    for color, color_ in zip(palette, CityscapesDataset.PALETTE):
+        assert color == color_
+
+    # test random
+    with pytest.raises(AssertionError):
+        vis.get_palette('random')
+    with pytest.raises(AssertionError):
+        vis.get_palette(None)
+    palette1 = vis.get_palette('random', 3)
+    palette2 = vis.get_palette(None, 3)
+    for color1, color2 in zip(palette1, palette2):
+        assert isinstance(color1, tuple)
+        assert isinstance(color2, tuple)
+        assert color1 == color2
