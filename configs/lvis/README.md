@@ -1,31 +1,16 @@
-# LVIS: A Dataset for Large Vocabulary Instance Segmentation
+# LVIS
 
-## Abstract
-
-<!-- [ABSTRACT] -->
-
-Progress on object detection is enabled by datasets that focus the research community's attention on open challenges. This process led us from simple images to complex scenes and from bounding boxes to segmentation masks. In this work, we introduce LVIS (pronounced `el-vis'): a new dataset for Large Vocabulary Instance Segmentation. We plan to collect ~2 million high-quality instance segmentation masks for over 1000 entry-level object categories in 164k images. Due to the Zipfian distribution of categories in natural images, LVIS naturally has a long tail of categories with few training samples. Given that state-of-the-art deep learning methods for object detection perform poorly in the low-sample regime, we believe that our dataset poses an important and exciting new scientific challenge.
-
-<!-- [IMAGE] -->
-<div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143967423-85b9b705-05ea-4bbc-9a41-eccc14240c7a.png" height="300"/>
-</div>
-
-<!-- [PAPER_TITLE: LVIS: A Dataset for Large Vocabulary Instance Segmentation] -->
-<!-- [PAPER_URL: https://arxiv.org/abs/1908.03195] -->
-
-## Citation
+> [LVIS: A Dataset for Large Vocabulary Instance Segmentation](https://arxiv.org/abs/1908.03195)
 
 <!-- [DATASET] -->
 
-```latex
-@inproceedings{gupta2019lvis,
-  title={{LVIS}: A Dataset for Large Vocabulary Instance Segmentation},
-  author={Gupta, Agrim and Dollar, Piotr and Girshick, Ross},
-  booktitle={Proceedings of the {IEEE} Conference on Computer Vision and Pattern Recognition},
-  year={2019}
-}
-```
+## Abstract
+
+Progress on object detection is enabled by datasets that focus the research community's attention on open challenges. This process led us from simple images to complex scenes and from bounding boxes to segmentation masks. In this work, we introduce LVIS (pronounced `el-vis'): a new dataset for Large Vocabulary Instance Segmentation. We plan to collect ~2 million high-quality instance segmentation masks for over 1000 entry-level object categories in 164k images. Due to the Zipfian distribution of categories in natural images, LVIS naturally has a long tail of categories with few training samples. Given that state-of-the-art deep learning methods for object detection perform poorly in the low-sample regime, we believe that our dataset poses an important and exciting new scientific challenge.
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143967423-85b9b705-05ea-4bbc-9a41-eccc14240c7a.png" height="300"/>
+</div>
 
 ## Common Setting
 
@@ -56,3 +41,14 @@ Progress on object detection is enabled by datasets that focus the research comm
 |    R-101-FPN    | pytorch |   1x    | 10.8     | -              | 24.6   | 23.6    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/lvis/mask_rcnn_r101_fpn_sample1e-3_mstrain_1x_lvis_v1.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/lvis/mask_rcnn_r101_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_r101_fpn_sample1e-3_mstrain_1x_lvis_v1-ec55ce32.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/lvis/mask_rcnn_r101_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_r101_fpn_sample1e-3_mstrain_1x_lvis_v1-20200829_070959.log.json)  |
 | X-101-32x4d-FPN | pytorch |   1x    | 11.8     | -              | 26.7   | 25.5    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/lvis/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_1x_lvis_v1.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/lvis/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_1x_lvis_v1-ebbc5c81.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/lvis/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_x101_32x4d_fpn_sample1e-3_mstrain_1x_lvis_v1-20200829_071317.log.json)  |
 | X-101-64x4d-FPN | pytorch |   1x    | 14.6     | -              | 27.2   | 25.8    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/lvis/mask_rcnn_x101_64x4d_fpn_sample1e-3_mstrain_1x_lvis_v1.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/lvis/mask_rcnn_x101_64x4d_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_x101_64x4d_fpn_sample1e-3_mstrain_1x_lvis_v1-43d9edfe.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/lvis/mask_rcnn_x101_64x4d_fpn_sample1e-3_mstrain_1x_lvis_v1/mask_rcnn_x101_64x4d_fpn_sample1e-3_mstrain_1x_lvis_v1-20200830_060206.log.json)  |
+
+## Citation
+
+```latex
+@inproceedings{gupta2019lvis,
+  title={{LVIS}: A Dataset for Large Vocabulary Instance Segmentation},
+  author={Gupta, Agrim and Dollar, Piotr and Girshick, Ross},
+  booktitle={Proceedings of the {IEEE} Conference on Computer Vision and Pattern Recognition},
+  year={2019}
+}
+```
