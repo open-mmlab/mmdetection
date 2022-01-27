@@ -30,7 +30,8 @@ class ConcatDataset(_ConcatDataset):
     def __init__(self, datasets, separate_eval=True):
         super(ConcatDataset, self).__init__(datasets)
         self.CLASSES = datasets[0].CLASSES
-        self.PALETTE = datasets[0].PALETTE
+        self.PALETTE = datasets[0].PALETTE if hasattr(datasets[0],
+                                                      'PALETTE') else None
         self.separate_eval = separate_eval
         if not separate_eval:
             if any([isinstance(ds, CocoDataset) for ds in datasets]):

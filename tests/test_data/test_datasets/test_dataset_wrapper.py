@@ -76,6 +76,14 @@ def test_dataset_wrapper():
     assert concat_dataset.get_ann_info(25) == ann_info_list_b[15]
     assert len(concat_dataset) == len(dataset_a) + len(dataset_b)
 
+    # Test if ConcatDataset allows dataset classes without the PALETTE
+    # attribute
+    palette_backup = CustomDataset.PALETTE
+    delattr(CustomDataset, 'PALETTE')
+    concat_dataset = ConcatDataset([dataset_a, dataset_b])
+    assert concat_dataset.PALETTE is None
+    CustomDataset.PALETTE = palette_backup
+
     repeat_dataset = RepeatDataset(dataset_a, 10)
     assert repeat_dataset[5] == 5
     assert repeat_dataset[15] == 5
