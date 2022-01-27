@@ -1,31 +1,16 @@
-# FreeAnchor: Learning to Match Anchors for Visual Object Detection
+# FreeAnchor
 
-## Abstract
-
-<!-- [ABSTRACT] -->
-
-Modern CNN-based object detectors assign anchors for ground-truth objects under the restriction of object-anchor Intersection-over-Unit (IoU). In this study, we propose a learning-to-match approach to break IoU restriction, allowing objects to match anchors in a flexible manner. Our approach, referred to as FreeAnchor, updates hand-crafted anchor assignment to "free" anchor matching by formulating detector training as a maximum likelihood estimation (MLE) procedure. FreeAnchor targets at learning features which best explain a class of objects in terms of both classification and localization. FreeAnchor is implemented by optimizing detection customized likelihood and can be fused with CNN-based detectors in a plug-and-play manner. Experiments on COCO demonstrate that FreeAnchor consistently outperforms their counterparts with significant margins.
-
-<!-- [IMAGE] -->
-<div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143886006-8374bf9b-28af-442e-9abf-eb16562bb7d3.png"/>
-</div>
-
-<!-- [PAPER_TITLE: FreeAnchor: Learning to Match Anchors for Visual Object Detection] -->
-<!-- [PAPER_URL: https://arxiv.org/abs/1909.02466] -->
-
-## Citation
+> [FreeAnchor: Learning to Match Anchors for Visual Object Detection](https://arxiv.org/abs/1909.02466)
 
 <!-- [ALGORITHM] -->
 
-```latex
-@inproceedings{zhang2019freeanchor,
-  title   =  {{FreeAnchor}: Learning to Match Anchors for Visual Object Detection},
-  author  =  {Zhang, Xiaosong and Wan, Fang and Liu, Chang and Ji, Rongrong and Ye, Qixiang},
-  booktitle =  {Neural Information Processing Systems},
-  year    =  {2019}
-}
-```
+## Abstract
+
+Modern CNN-based object detectors assign anchors for ground-truth objects under the restriction of object-anchor Intersection-over-Unit (IoU). In this study, we propose a learning-to-match approach to break IoU restriction, allowing objects to match anchors in a flexible manner. Our approach, referred to as FreeAnchor, updates hand-crafted anchor assignment to "free" anchor matching by formulating detector training as a maximum likelihood estimation (MLE) procedure. FreeAnchor targets at learning features which best explain a class of objects in terms of both classification and localization. FreeAnchor is implemented by optimizing detection customized likelihood and can be fused with CNN-based detectors in a plug-and-play manner. Experiments on COCO demonstrate that FreeAnchor consistently outperforms their counterparts with significant margins.
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143886006-8374bf9b-28af-442e-9abf-eb16562bb7d3.png"/>
+</div>
 
 ## Results and Models
 
@@ -39,3 +24,14 @@ Modern CNN-based object detectors assign anchors for ground-truth objects under 
 
 - We use 8 GPUs with 2 images/GPU.
 - For more settings and models, please refer to the [official repo](https://github.com/zhangxiaosong18/FreeAnchor).
+
+## Citation
+
+```latex
+@inproceedings{zhang2019freeanchor,
+  title   =  {{FreeAnchor}: Learning to Match Anchors for Visual Object Detection},
+  author  =  {Zhang, Xiaosong and Wan, Fang and Liu, Chang and Ji, Rongrong and Ye, Qixiang},
+  booktitle =  {Neural Information Processing Systems},
+  year    =  {2019}
+}
+```

@@ -377,6 +377,16 @@ python tools/dataset_converters/cityscapes.py ${CITYSCAPES_PATH} [-h] [--img-dir
 python tools/dataset_converters/pascal_voc.py ${DEVKIT_PATH} [-h] [-o ${OUT_DIR}]
 ```
 
+## Dataset Download
+
+`tools/misc/download_dataset.py` supports downloading datasets such as COCO, VOC, and LVIS.
+
+```shell
+python tools/misc/download_dataset.py --dataset-name coco2017
+python tools/misc/download_dataset.py --dataset-name voc2007
+python tools/misc/download_dataset.py --dataset-name lvis
+```
+
 ## Benchmark
 
 ### Robust Detection Benchmark
@@ -473,7 +483,7 @@ differential_evolution step 489: f(x)= 0.386625
 2021-07-19 19:46:40,798 - mmdet - INFO Result saved in work_dirs/anchor_optimize_result.json
 ```
 
-## Confution Matrix
+## Confusion Matrix
 
 A confusion matrix is a summary of prediction results.
 
