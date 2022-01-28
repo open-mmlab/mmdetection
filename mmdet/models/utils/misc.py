@@ -29,6 +29,9 @@ class SigmoidGeometricMean(Function):
         return grad_x, grad_y
 
 
+sigmoid_geometric_mean = SigmoidGeometricMean.apply
+
+
 def interpolate_as(source, target, mode='bilinear', align_corners=False):
     """Interpolate the `source` to the shape of the `target`.
 
