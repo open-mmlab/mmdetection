@@ -99,7 +99,12 @@ class MaskFormer(SingleStageDetector):
         mask_results = self.panoptic_head.simple_test(feat, img_metas,
                                                       **kwargs)
 
-        return mask_results
+        results = []
+        for mask in mask_results:
+            result = {'pan_results': mask.detach().cpu().numpy()}
+            results.append(result)
+
+        return results
 
     def aug_test(self, imgs, img_metas, **kwargs):
         raise NotImplementedError

@@ -704,9 +704,10 @@ def test_yolox_random_size():
 def test_maskformer_forward():
     model_cfg = _get_detector_cfg(
         'maskformer/maskformer_r50_mstrain_16x1_75e_coco.py')
-    base_channels = 64
+    base_channels = 32
+    model_cfg.backbone.depth = 18
     model_cfg.backbone.init_cfg = None
-    model_cfg.backbone.base_channels = base_channels // 4
+    model_cfg.backbone.base_channels = base_channels
     model_cfg.panoptic_head.in_channels = [
         base_channels * 2**i for i in range(4)
     ]

@@ -29,12 +29,16 @@ class MaskHungarianAssigner(BaseAssigner):
     - positive integer: positive sample, index (1-based) of assigned gt
 
     Args:
-        cls_cost (obj:`mmcv.ConfigDict`|dict): Classification cost config.
-        mask_cost (obj:`mmcv.ConfigDict`|dict): Mask cost config.
-        dice_cost (obj:`mmcv.ConfigDict`|dict): Dice cost config.
+        cls_cost (obj:`mmcv.ConfigDict` | dict): Classification cost config.
+        mask_cost (obj:`mmcv.ConfigDict` | dict): Mask cost config.
+        dice_cost (obj:`mmcv.ConfigDict` | dict): Dice cost config.
     """
 
-    def __init__(self, cls_cost, mask_cost, dice_cost):
+    def __init__(self,
+                 cls_cost=dict(type='ClassificationCost', weight=1.0),
+                 mask_cost=dict(
+                     type='FocalLossCost', weight=1.0, binary_input=True),
+                 dice_cost=dict(type='DiceCost', weight=1.0)):
         self.cls_cost = build_match_cost(cls_cost)
         self.mask_cost = build_match_cost(mask_cost)
         self.dice_cost = build_match_cost(dice_cost)
@@ -51,11 +55,10 @@ class MaskHungarianAssigner(BaseAssigner):
 
         Args:
             cls_pred (Tensor): Class prediction in shape
-                (N1, cls_out_channels), N1 is the number of queries.
-            mask_pred (Tensor): Mask prediction in shape (N1, H, W).
-            gt_labels (Tensor): Label of 'gt_mask'in shape = (N2, ), N2
-                is the number of labels.
-            gt_mask (Tensor): Ground truth mask in shape = (N2, H, W).
+                (num_query, cls_out_channels).
+            mask_pred (Tensor): Mask prediction in shape (num_query, H, W).
+            gt_labels (Tensor): Label of 'gt_mask'in shape = (num_gt, ).
+            gt_mask (Tensor): Ground truth mask in shape = (num_gt, H, W).
             img_meta (dict): Meta information for current image.
             gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
                 labelled as `ignored`. Default None.
@@ -67,22 +70,22 @@ class MaskHungarianAssigner(BaseAssigner):
         """
         assert gt_bboxes_ignore is None, \
             'Only case when gt_bboxes_ignore is None is supported.'
-        num_gts, num_queries = gt_labels.shape[0], cls_pred.shape[0]
+        num_gt, num_query = gt_labels.shape[0], cls_pred.shape[0]
 
         # 1. assign -1 by default
-        assigned_gt_inds = cls_pred.new_full((num_queries, ),
+        assigned_gt_inds = cls_pred.new_full((num_query, ),
                                              -1,
                                              dtype=torch.long)
-        assigned_labels = cls_pred.new_full((num_queries, ),
+        assigned_labels = cls_pred.new_full((num_query, ),
                                             -1,
                                             dtype=torch.long)
-        if num_gts == 0 or num_queries == 0:
+        if num_gt == 0 or num_query == 0:
             # No ground truth or boxes, return empty assignment
-            if num_gts == 0:
+            if num_gt == 0:
                 # No ground truth, assign all to background
                 assigned_gt_inds[:] = 0
             return AssignResult(
-                num_gts, assigned_gt_inds, None, labels=assigned_labels)
+                num_gt, assigned_gt_inds, None, labels=assigned_labels)
 
         # 2. compute the weighted costs
         # classification and maskcost.
@@ -92,9 +95,9 @@ class MaskHungarianAssigner(BaseAssigner):
             cls_cost = 0
 
         if self.mask_cost.weight != 0:
-            # mask_pred shape = [nq, h, w]
-            # gt_mask shape = [ng, h, w]
-            # mask_cost shape = [nq, ng]
+            # mask_pred shape = [num_query, h, w]
+            # gt_mask shape = [num_gt, h, w]
+            # mask_cost shape = [num_query, num_gt]
             mask_cost = self.mask_cost(mask_pred, gt_mask)
         else:
             mask_cost = 0
@@ -124,4 +127,4 @@ class MaskHungarianAssigner(BaseAssigner):
         assigned_gt_inds[matched_row_inds] = matched_col_inds + 1
         assigned_labels[matched_row_inds] = gt_labels[matched_col_inds]
         return AssignResult(
-            num_gts, assigned_gt_inds, None, labels=assigned_labels)
+            num_gt, assigned_gt_inds, None, labels=assigned_labels)

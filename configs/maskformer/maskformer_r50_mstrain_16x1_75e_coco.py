@@ -25,7 +25,7 @@ model = dict(
         out_channels=256,
         num_things_classes=80,
         num_stuff_classes=53,
-        num_queries=100,
+        num_query=100,
         pixel_decoder=dict(
             type='TransformerEncoderPixelDecoder',
             norm_cfg=dict(type='GN', num_groups=32),
@@ -115,7 +115,8 @@ model = dict(
         assigner=dict(
             type='MaskHungarianAssigner',
             cls_cost=dict(type='ClassificationCost', weight=1.0),
-            mask_cost=dict(type='MaskFocalLossCost', weight=20.0),
+            mask_cost=dict(
+                type='FocalLossCost', weight=20.0, binary_input=True),
             dice_cost=dict(
                 type='DiceCost', weight=1.0, pred_act=True, eps=1.0)),
         sampler=dict(type='MaskPseudoSampler')),
@@ -221,8 +222,3 @@ lr_config = dict(
     warmup_ratio=1.0,  # no warmup
     warmup_iters=10)
 runner = dict(type='EpochBasedRunner', max_epochs=75)
-
-log_config = dict(
-    interval=50,
-    hooks=[dict(type='TextLoggerHook'),
-           dict(type='TensorboardLoggerHook')])

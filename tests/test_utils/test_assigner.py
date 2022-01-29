@@ -546,7 +546,7 @@ def test_mask_hungarian_match_assigner():
     # test no gt masks
     assigner_cfg = dict(
         cls_cost=dict(type='ClassificationCost', weight=1.0),
-        mask_cost=dict(type='MaskFocalLossCost', weight=20.0),
+        mask_cost=dict(type='FocalLossCost', weight=20.0, binary_input=True),
         dice_cost=dict(type='DiceCost', weight=1.0, pred_act=True, eps=1.0))
     self = MaskHungarianAssigner(**assigner_cfg)
     cls_pred = torch.rand((10, 133))
@@ -574,7 +574,7 @@ def test_mask_hungarian_match_assigner():
     # test with cls mode
     assigner_cfg = dict(
         cls_cost=dict(type='ClassificationCost', weight=1.0),
-        mask_cost=dict(type='MaskFocalLossCost', weight=0.0),
+        mask_cost=dict(type='FocalLossCost', weight=0.0, binary_input=True),
         dice_cost=dict(type='DiceCost', weight=0.0, pred_act=True, eps=1.0))
     self = MaskHungarianAssigner(**assigner_cfg)
     assign_result = self.assign(cls_pred, mask_pred, gt_labels, gt_masks,
@@ -586,7 +586,7 @@ def test_mask_hungarian_match_assigner():
     # test with mask focal mode
     assigner_cfg = dict(
         cls_cost=dict(type='ClassificationCost', weight=0.0),
-        mask_cost=dict(type='MaskFocalLossCost', weight=1.0),
+        mask_cost=dict(type='FocalLossCost', weight=1.0, binary_input=True),
         dice_cost=dict(type='DiceCost', weight=0.0, pred_act=True, eps=1.0))
     self = MaskHungarianAssigner(**assigner_cfg)
     assign_result = self.assign(cls_pred, mask_pred, gt_labels, gt_masks,
@@ -598,7 +598,7 @@ def test_mask_hungarian_match_assigner():
     # test with mask dice mode
     assigner_cfg = dict(
         cls_cost=dict(type='ClassificationCost', weight=0.0),
-        mask_cost=dict(type='MaskFocalLossCost', weight=0.0),
+        mask_cost=dict(type='FocalLossCost', weight=0.0, binary_input=True),
         dice_cost=dict(type='DiceCost', weight=1.0, pred_act=True, eps=1.0))
     self = MaskHungarianAssigner(**assigner_cfg)
     assign_result = self.assign(cls_pred, mask_pred, gt_labels, gt_masks,

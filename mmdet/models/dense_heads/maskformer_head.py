@@ -8,7 +8,7 @@ from mmcv.cnn.bricks.transformer import (build_positional_encoding,
 from mmcv.runner import force_fp32
 
 from mmdet.core import build_assigner, build_sampler, multi_apply, reduce_mean
-from mmdet.models.utils import INSTANCE_OFFSET
+from mmdet.core.evaluation import INSTANCE_OFFSET
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 
@@ -27,7 +27,7 @@ class MaskFormerHead(AnchorFreeHead):
         out_channels (int): Number of channels for output.
         num_things_classes (int): Number of things.
         num_stuff_classes (int): Number of stuff.
-        num_queries (int): Number of query in Transformer.
+        num_query (int): Number of query in Transformer.
         pixel_decoder (obj:`mmcv.ConfigDict`|dict): Config for pixel decoder.
             Defaults to None.
         enforce_decoder_input_project (bool, optional): Whether to add a layer
@@ -57,7 +57,7 @@ class MaskFormerHead(AnchorFreeHead):
                  out_channels,
                  num_things_classes=80,
                  num_stuff_classes=53,
-                 num_queries=100,
+                 num_query=100,
                  pixel_decoder=None,
                  enforce_decoder_input_project=False,
                  transformer_decoder=None,
@@ -88,7 +88,7 @@ class MaskFormerHead(AnchorFreeHead):
         self.num_things_classes = num_things_classes
         self.num_stuff_classes = num_stuff_classes
         self.num_classes = self.num_things_classes + self.num_stuff_classes
-        self.num_queries = num_queries
+        self.num_query = num_query
 
         pixel_decoder.update(
             in_channels=in_channels,
@@ -107,7 +107,7 @@ class MaskFormerHead(AnchorFreeHead):
         else:
             self.decoder_input_proj = nn.Identity()
         self.decoder_pe = build_positional_encoding(positional_encoding)
-        self.query_embed = nn.Embedding(self.num_queries, out_channels)
+        self.query_embed = nn.Embedding(self.num_query, out_channels)
 
         self.cls_embed = nn.Linear(feat_channels, self.num_classes + 1)
         self.mask_embed = nn.Sequential(
@@ -156,10 +156,10 @@ class MaskFormerHead(AnchorFreeHead):
 
         Args:
             gt_labels_list (list[Tensor]): Each is ground truth
-                labels of each bbox, with shape (num_gts, ).
+                labels of each bbox, with shape (num_gt, ).
             gt_masks_list (list[BitmapMasks]): Each is ground truth
                 masks of each instances of a image, shape
-                (num_gts, h, w).
+                (num_gt, h, w).
             gt_semantic_seg (Tensor): Ground truth of semantic
                 segmentation with the shape (batch_size, n, h, w).
                 [0, num_thing_class - 1] means things,
@@ -187,9 +187,9 @@ class MaskFormerHead(AnchorFreeHead):
 
         Args:
             gt_labels (Tensor): Ground truth labels of each bbox,
-                with shape (num_gts, ).
+                with shape (num_gt, ).
             gt_masks (BitmapMasks): Ground truth masks of each instances
-                of a image, shape (num_gts, h, w).
+                of a image, shape (num_gt, h, w).
             gt_semantic_seg (Tensor): Ground truth of semantic
                 segmentation with the shape (1, h, w).
                 [0, num_thing_class - 1] means things,
@@ -246,10 +246,10 @@ class MaskFormerHead(AnchorFreeHead):
 
         Args:
             cls_scores_list (list[Tensor]): Mask score logits from a single
-                decoder layer for all images. Each with shape (num_queries,
+                decoder layer for all images. Each with shape (num_query,
                 cls_out_channels).
             mask_preds_list (list[Tensor]): Mask logits from a single decoder
-                layer for all images. Each with shape (num_queries, h, w).
+                layer for all images. Each with shape (num_query, h, w).
             gt_labels_list (list[Tensor]): Ground truth class indices for all
                 images. Each with shape (n, ), n is the sum of number of stuff
                 type and number of instance in a image.
@@ -261,13 +261,13 @@ class MaskFormerHead(AnchorFreeHead):
             tuple[list[Tensor]]: a tuple containing the following targets.
 
                 - labels_list (list[Tensor]): Labels of all images.
-                    Each with shape (num_queries, ).
+                    Each with shape (num_query, ).
                 - label_weights_list (list[Tensor]): Label weights of all
-                    images.Each with shape (num_queries, ).
+                    images.Each with shape (num_query, ).
                 - mask_targets_list (list[Tensor]): Mask targets of all images.
-                    Each with shape (num_queries, h, w).
+                    Each with shape (num_query, h, w).
                 - mask_weights_list (list[Tensor]): Mask weights of all images.
-                    Each with shape (num_queries, ).
+                    Each with shape (num_query, ).
                 - num_total_pos (int): Number of positive samples in all
                     images.
                 - num_total_neg (int): Number of negative samples in all
@@ -290,9 +290,9 @@ class MaskFormerHead(AnchorFreeHead):
 
         Args:
             cls_score (Tensor): Mask score logits from a single decoder layer
-                for one image. Shape (num_queries, cls_out_channels).
+                for one image. Shape (num_query, cls_out_channels).
             mask_pred (Tensor): Mask logits for a single decoder layer for one
-                image. Shape (num_queries, h, w).
+                image. Shape (num_query, h, w).
             gt_labels (Tensor): Ground truth class indices for one image with
                 shape (n, ). n is the sum of number of stuff type and number
                 of instance in a image.
@@ -304,13 +304,13 @@ class MaskFormerHead(AnchorFreeHead):
             tuple[Tensor]: a tuple containing the following for one image.
 
                 - labels (Tensor): Labels of each image.
-                    shape (num_queries, ).
+                    shape (num_query, ).
                 - label_weights (Tensor): Label weights of each image.
-                    shape (num_queries, ).
+                    shape (num_query, ).
                 - mask_targets (Tensor): Mask targets of each image.
-                    shape (num_queries, h, w).
+                    shape (num_query, h, w).
                 - mask_weights (Tensor): Mask weights of each image.
-                    shape (num_queries, ).
+                    shape (num_query, ).
                 - pos_inds (Tensor): Sampled positive indices for each image.
                 - neg_inds (Tensor): Sampled negative indices for each image.
         """
@@ -331,15 +331,15 @@ class MaskFormerHead(AnchorFreeHead):
         neg_inds = sampling_result.neg_inds
 
         # label target
-        labels = gt_labels.new_full((self.num_queries, ),
+        labels = gt_labels.new_full((self.num_query, ),
                                     self.num_classes,
                                     dtype=torch.long)
         labels[pos_inds] = gt_labels[sampling_result.pos_assigned_gt_inds]
-        label_weights = gt_labels.new_ones(self.num_queries)
+        label_weights = gt_labels.new_ones(self.num_query)
 
         # mask target
         mask_targets = gt_masks[sampling_result.pos_assigned_gt_inds]
-        mask_weights = mask_pred.new_zeros((self.num_queries, ))
+        mask_weights = mask_pred.new_zeros((self.num_query, ))
         mask_weights[pos_inds] = 1.0
 
         return (labels, label_weights, mask_targets, mask_weights, pos_inds,
@@ -352,10 +352,10 @@ class MaskFormerHead(AnchorFreeHead):
 
         Args:
             all_cls_scores (Tensor): Classification scores for all decoder
-                layers with shape (num_decoder, batch_size, num_queries,
+                layers with shape (num_decoder, batch_size, num_query,
                 cls_out_channels).
             all_mask_preds (Tensor): Mask scores for all decoder layers with
-                shape (num_decoder, batch_size, num_queries, h, w).
+                shape (num_decoder, batch_size, num_query, h, w).
             gt_labels_list (list[Tensor]): Ground truth class indices for each
                 image with shape (n, ). n is the sum of number of stuff type
                 and number of instance in a image.
@@ -395,10 +395,10 @@ class MaskFormerHead(AnchorFreeHead):
 
         Args:
             cls_scores (Tensor): Mask score logits from a single decoder layer
-                for all images. Shape (batch_size, num_queries,
+                for all images. Shape (batch_size, num_query,
                 cls_out_channels).
             mask_preds (Tensor): Mask logits for a pixel decoder for all
-                images. Shape (batch_size, num_queries, h, w).
+                images. Shape (batch_size, num_query, h, w).
             gt_labels_list (list[Tensor]): Ground truth class indices for each
                 image, each with shape (n, ). n is the sum of number of stuff
                 types and number of instances in a image.
@@ -419,17 +419,17 @@ class MaskFormerHead(AnchorFreeHead):
          num_total_neg) = self.get_targets(cls_scores_list, mask_preds_list,
                                            gt_labels_list, gt_masks_list,
                                            img_metas)
-        # shape (batch_size, num_queries)
+        # shape (batch_size, num_query)
         labels = torch.stack(labels_list, dim=0)
-        # shape (batch_size, num_queries)
+        # shape (batch_size, num_query)
         label_weights = torch.stack(label_weights_list, dim=0)
         # shape (num_total_gts, h, w)
         mask_targets = torch.cat(mask_targets_list, dim=0)
-        # shape (batch_size, num_queries)
+        # shape (batch_size, num_query)
         mask_weights = torch.stack(mask_weights_list, dim=0)
 
         # classfication loss
-        # shape (batch_size * num_queries, )
+        # shape (batch_size * num_query, )
         cls_scores = cls_scores.flatten(0, 1)
         labels = labels.flatten(0, 1)
         label_weights = label_weights.flatten(0, 1)
@@ -446,7 +446,7 @@ class MaskFormerHead(AnchorFreeHead):
         num_total_masks = max(num_total_masks, 1)
 
         # extract positive ones
-        # shape (batch_size, num_queries, h, w) -> (num_total_gts, h, w)
+        # shape (batch_size, num_query, h, w) -> (num_total_gts, h, w)
         mask_preds = mask_preds[mask_weights > 0]
         target_shape = mask_targets.shape[-2:]
 
@@ -492,11 +492,11 @@ class MaskFormerHead(AnchorFreeHead):
         Returns:
             all_cls_scores (Tensor): Classification scores for each
                 scale level. Each is a 4D-tensor with shape
-                (num_decoder, batch_size, num_queries, cls_out_channels).
+                (num_decoder, batch_size, num_query, cls_out_channels).
                  Note `cls_out_channels` should includes background.
             all_mask_preds (Tensor): Mask scores for each decoder
                 layer. Each with shape (num_decoder, batch_size,
-                num_queries, h, w).
+                num_query, h, w).
         """
         batch_size = len(img_metas)
         input_img_h, input_img_w = img_metas[0]['batch_input_shape']
@@ -519,12 +519,12 @@ class MaskFormerHead(AnchorFreeHead):
         pos_embed = pos_embed.flatten(2).permute(2, 0, 1)
         # shape (batch_size, h * w)
         padding_mask = padding_mask.flatten(1)
-        # shape = (num_queries, embed_dims)
+        # shape = (num_query, embed_dims)
         query_embed = self.query_embed.weight
-        # shape = (num_queries, batch_size, embed_dims)
+        # shape = (num_query, batch_size, embed_dims)
         query_embed = query_embed.unsqueeze(1).repeat(1, batch_size, 1)
         target = torch.zeros_like(query_embed)
-        # shape (num_decoder, num_queries, batch_size, embed_dims)
+        # shape (num_decoder, num_query, batch_size, embed_dims)
         out_dec = self.transformer_decoder(
             query=target,
             key=memory,
@@ -532,7 +532,7 @@ class MaskFormerHead(AnchorFreeHead):
             key_pos=pos_embed,
             query_pos=query_embed,
             key_padding_mask=padding_mask)
-        # shape (num_decoder, batch_size, num_queries, embed_dims)
+        # shape (num_decoder, batch_size, num_query, embed_dims)
         out_dec = out_dec.transpose(1, 2)
 
         # cls_scores
@@ -560,11 +560,11 @@ class MaskFormerHead(AnchorFreeHead):
                 each is a 4D-tensor.
             img_metas (list[Dict]): List of image information.
             gt_bboxes (list[Tensor]): Each element is ground truth bboxes of
-                the image, shape (num_gts, 4). Not used here.
+                the image, shape (num_gt, 4). Not used here.
             gt_labels (list[Tensor]): Each element is ground truth labels of
-                each box, shape (num_gts,).
+                each box, shape (num_gt,).
             gt_masks (list[BitmapMasks]): Each element is masks of instances
-                of a image, shape (num_gts, h, w).
+                of a image, shape (num_gt, h, w).
             gt_semantic_seg (list[tensor]):Each element is the ground truth
                 of semantic segmentation with the shape (N, H, W).
                 [0, num_thing_class - 1] means things,
@@ -643,8 +643,7 @@ class MaskFormerHead(AnchorFreeHead):
                     .squeeze(1)
 
             mask = self.post_process(mask_cls_result, mask_pred_result)
-            result = {'pan_results': mask.detach().cpu().numpy()}
-            results.append(result)
+            results.append(mask)
 
         return results
 
@@ -656,9 +655,9 @@ class MaskFormerHead(AnchorFreeHead):
 
         Args:
             mask_cls (Tensor): Classfication outputs for a image.
-                shape = (num_queries, cls_out_channels).
+                shape = (num_query, cls_out_channels).
             mask_pred (Tensor): Mask outputs for a image.
-                shape = (num_queries, h, w).
+                shape = (num_query, h, w).
 
         Returns:
             panoptic_seg (Tensor): panoptic segment result of shape (h, w),

@@ -8,7 +8,7 @@ import numpy as np
 from mmcv.utils import print_log
 from terminaltables import AsciiTable
 
-from mmdet.models.utils import INSTANCE_OFFSET
+from mmdet.core.evaluation import INSTANCE_OFFSET
 from .api_wrappers import COCO, pq_compute_multi_core
 from .builder import DATASETS
 from .coco import CocoDataset
