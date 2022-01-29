@@ -24,6 +24,8 @@ The pre-trained modles are converted from [model zoo of pycls](https://github.co
 
 ## Citation
 
+<!-- [ALGORITHM] -->
+
 ```latex
 @article{radosavovic2020designing,
     title={Designing Network Design Spaces},

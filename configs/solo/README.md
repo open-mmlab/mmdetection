@@ -16,7 +16,9 @@ We present a new, embarrassingly simple approach to instance segmentation in ima
 
 ## Citation
 
-```
+<!-- [ALGORITHM] -->
+
+```latex
 @inproceedings{wang2020solo,
   title     =  {{SOLO}: Segmenting Objects by Locations},
   author    =  {Wang, Xinlong and Kong, Tao and Shen, Chunhua and Jiang, Yuning and Li, Lei},
