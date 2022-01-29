@@ -68,7 +68,7 @@ def set_random_seed(seed, deterministic=False):
         torch.backends.cudnn.benchmark = False
 
 
-def train_detector(model,
+def train_model(model,
                    dataset,
                    cfg,
                    distributed=False,
