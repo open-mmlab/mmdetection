@@ -53,6 +53,7 @@ class EvalHook(BaseEvalHook):
             return
 
         from mmdet.apis import single_gpu_test
+        assert len(self.dataloader) != 0, "empty dataloader, which may be due to the \"image\" field of json file"
         results = single_gpu_test(runner.model, self.dataloader, show=False)
         runner.log_buffer.output['eval_iter_num'] = len(self.dataloader)
         key_score = self.evaluate(runner, results)
