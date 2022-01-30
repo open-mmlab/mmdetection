@@ -53,7 +53,7 @@ class EvalHook(BaseEvalHook):
             return
 
         from mmdet.apis import single_gpu_test
-
+        # assert when dataloader is empty, in case that Error Occurs when running train.py with the "image" field of json file (val2017.json) set empty
         assert len(self.dataloader) != 0, "empty dataloader, which may be due to the \"image\" field of json file"
         results = single_gpu_test(runner.model, self.dataloader, show=False)
         runner.log_buffer.output['eval_iter_num'] = len(self.dataloader)
