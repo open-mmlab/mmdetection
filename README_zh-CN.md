@@ -18,7 +18,6 @@
   </div>
   <div>&nbsp;</div>
 
-
 [![PyPI](https://img.shields.io/pypi/v/mmdet)](https://pypi.org/project/mmdet)
 [![docs](https://img.shields.io/badge/docs-latest-blue)](https://mmdetection.readthedocs.io/en/latest/)
 [![badge](https://github.com/open-mmlab/mmdetection/workflows/build/badge.svg)](https://github.com/open-mmlab/mmdetection/actions)
@@ -26,14 +25,12 @@
 [![license](https://img.shields.io/github/license/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/blob/master/LICENSE)
 [![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 
-
   <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
-
-[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/v2.20.0/) |
-[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/v2.20.0/get_started.html) |
-[👀模型库](https://mmdetection.readthedocs.io/zh_CN/v2.20.0/model_zoo.html) |
-[🆕更新日志](https://mmdetection.readthedocs.io/en/v2.20.0/changelog.html) |
+[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/v2.21.0/) |
+[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/v2.21.0/get_started.html) |
+[👀模型库](https://mmdetection.readthedocs.io/zh_CN/v2.21.0/model_zoo.html) |
+[🆕更新日志](https://mmdetection.readthedocs.io/en/v2.21.0/changelog.html) |
 [🚀进行中的项目](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔报告问题](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
@@ -46,7 +43,6 @@
 MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [OpenMMLab](https://openmmlab.com/) 项目的一部分。
 
 主分支代码目前支持 PyTorch 1.5 以上的版本。
-
 
 <details open>
 <summary>主要特性</summary>
@@ -66,6 +62,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 - **性能高**
 
   MMDetection 这个算法库源自于 COCO 2018 目标检测竞赛的冠军团队 *MMDet* 团队开发的代码，我们在之后持续进行了改进和提升。
+
 </details>
 
 除了 MMDetection 之外，我们还开源了计算机视觉基础库 [MMCV](https://github.com/open-mmlab/mmcv)，MMCV 是 MMDetection 的主要依赖。
@@ -76,9 +73,10 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 更新日志
 
-最新的 **2.20.0** 版本已经在 2021.12.27 发布:
-- 支持了 ICCV 2021 Oral 方法 [TOOD](configs/tood/README.md): Task-aligned One-stage Object Detection
-- 支持了自动从最新的存储参数节点恢复训练
+最新的 **2.21.0** 版本已经在 2022.02.08 发布:
+
+- 支持了 CPU 训练
+- 允许设置多进程相关的参数来加速训练与推理
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/changelog.md)。
 
@@ -102,6 +100,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 - [X] Swin (CVPR'2021)
 - [x] PVT (ICCV'2021)
 - [x] PVTv2 (ArXiv'2021)
+
 </details>
 
 <details open>
@@ -163,6 +162,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 - [x] [SOLO (ECCV'2020)](configs/solo/README.md)
 - [x] [QueryInst (ICCV'2021)](configs/queryinst/README.md)
 - [x] [TOOD (ICCV'2021)](configs/tood/README.md)
+
 </details>
 
 我们在[基于 MMDetection 的项目](./docs/zh_cn/projects.md)中列举了一些其他的支持的算法。
