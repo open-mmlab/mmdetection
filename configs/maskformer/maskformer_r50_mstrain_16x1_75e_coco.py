@@ -25,7 +25,7 @@ model = dict(
         out_channels=256,
         num_things_classes=80,
         num_stuff_classes=53,
-        num_query=100,
+        num_queries=100,
         pixel_decoder=dict(
             type='TransformerEncoderPixelDecoder',
             norm_cfg=dict(type='GN', num_groups=32),
