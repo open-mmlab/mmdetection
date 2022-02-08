@@ -377,6 +377,16 @@ python tools/dataset_converters/cityscapes.py ${CITYSCAPES_PATH} [-h] [--img-dir
 python tools/dataset_converters/pascal_voc.py ${DEVKIT_PATH} [-h] [-o ${OUT_DIR}]
 ```
 
+## Dataset Download
+
+`tools/misc/download_dataset.py` supports downloading datasets such as COCO, VOC, and LVIS.
+
+```shell
+python tools/misc/download_dataset.py --dataset-name coco2017
+python tools/misc/download_dataset.py --dataset-name voc2007
+python tools/misc/download_dataset.py --dataset-name lvis
+```
+
 ## Benchmark
 
 ### Robust Detection Benchmark
@@ -473,11 +483,11 @@ differential_evolution step 489: f(x)= 0.386625
 2021-07-19 19:46:40,798 - mmdet - INFO Result saved in work_dirs/anchor_optimize_result.json
 ```
 
-## Confution Matrix
+## Confusion Matrix
 
 A confusion matrix is a summary of prediction results.
 
-`tools/analysis_tools/confusion_matrix.py` can analyze the prediction results and plot a confution matrix table.
+`tools/analysis_tools/confusion_matrix.py` can analyze the prediction results and plot a confusion matrix table.
 
 First, run `tools/test.py` to save the `.pkl` detection results.
 
@@ -487,6 +497,6 @@ Then, run
 python tools/analysis_tools/confusion_matrix.py ${CONFIG}  ${DETECTION_RESULTS}  ${SAVE_DIR} --show
 ```
 
-And you will get a confution matrix like this:
+And you will get a confusion matrix like this:
 
-![confution_matrix_example](https://user-images.githubusercontent.com/12907710/140513068-994cdbf4-3a4a-48f0-8fd8-2830d93fd963.png)
+![confusion_matrix_example](https://user-images.githubusercontent.com/12907710/140513068-994cdbf4-3a4a-48f0-8fd8-2830d93fd963.png)

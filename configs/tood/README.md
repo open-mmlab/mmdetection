@@ -1,31 +1,16 @@
-# TOOD: Task-aligned One-stage Object Detection
+# TOOD
 
-## Abstract
-
-<!-- [ABSTRACT] -->
-
-One-stage object detection is commonly implemented by optimizing two sub-tasks: object classification and localization, using heads with two parallel branches, which might lead to a certain level of spatial misalignment in predictions between the two tasks. In this work, we propose a Task-aligned One-stage Object Detection (TOOD) that explicitly aligns the two tasks in a learning-based manner. First, we design a novel Task-aligned Head (T-Head) which offers a better balance between learning task-interactive and task-specific features, as well as a greater flexibility to learn the alignment via a task-aligned predictor. Second, we propose Task Alignment Learning (TAL) to explicitly pull closer (or even unify) the optimal anchors for the two tasks during training via a designed sample assignment scheme and a task-aligned loss. Extensive experiments are conducted on MS-COCO, where TOOD achieves a 51.1 AP at single-model single-scale testing. This surpasses the recent one-stage detectors by a large margin, such as ATSS (47.7 AP), GFL (48.2 AP), and PAA (49.0 AP), with fewer parameters and FLOPs. Qualitative results also demonstrate the effectiveness of TOOD for better aligning the tasks of object classification and localization.
-
-<!-- [IMAGE] -->
-<div align=center>
-<img src="https://user-images.githubusercontent.com/12907710/145400075-e08191f5-8afa-4335-9b3b-27926fc9a26e.png"/>
-</div>
-
-<!-- [PAPER_TITLE: TOOD: Task-aligned One-stage Object Detection] -->
-<!-- [PAPER_URL: https://arxiv.org/abs/2108.07755] -->
-
-## Citation
+> [TOOD: Task-aligned One-stage Object Detection](https://arxiv.org/abs/2108.07755)
 
 <!-- [ALGORITHM] -->
 
-```latex
-@inproceedings{feng2021tood,
-    title={TOOD: Task-aligned One-stage Object Detection},
-    author={Feng, Chengjian and Zhong, Yujie and Gao, Yu and Scott, Matthew R and Huang, Weilin},
-    booktitle={ICCV},
-    year={2021}
-}
-```
+## Abstract
+
+One-stage object detection is commonly implemented by optimizing two sub-tasks: object classification and localization, using heads with two parallel branches, which might lead to a certain level of spatial misalignment in predictions between the two tasks. In this work, we propose a Task-aligned One-stage Object Detection (TOOD) that explicitly aligns the two tasks in a learning-based manner. First, we design a novel Task-aligned Head (T-Head) which offers a better balance between learning task-interactive and task-specific features, as well as a greater flexibility to learn the alignment via a task-aligned predictor. Second, we propose Task Alignment Learning (TAL) to explicitly pull closer (or even unify) the optimal anchors for the two tasks during training via a designed sample assignment scheme and a task-aligned loss. Extensive experiments are conducted on MS-COCO, where TOOD achieves a 51.1 AP at single-model single-scale testing. This surpasses the recent one-stage detectors by a large margin, such as ATSS (47.7 AP), GFL (48.2 AP), and PAA (49.0 AP), with fewer parameters and FLOPs. Qualitative results also demonstrate the effectiveness of TOOD for better aligning the tasks of object classification and localization.
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/12907710/145400075-e08191f5-8afa-4335-9b3b-27926fc9a26e.png"/>
+</div>
 
 ## Results and Models
 
@@ -42,3 +27,14 @@ One-stage object detection is commonly implemented by optimizing two sub-tasks: 
 [1] *1x and 2x mean the model is trained for 90K and 180K iterations, respectively.* \
 [2] *All results are obtained with a single model and without any test time data augmentation such as multi-scale, flipping and etc..* \
 [3] *`dcnv2` denotes deformable convolutional networks v2.* \
+
+## Citation
+
+```latex
+@inproceedings{feng2021tood,
+    title={TOOD: Task-aligned One-stage Object Detection},
+    author={Feng, Chengjian and Zhong, Yujie and Gao, Yu and Scott, Matthew R and Huang, Weilin},
+    booktitle={ICCV},
+    year={2021}
+}
+```

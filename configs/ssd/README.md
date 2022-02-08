@@ -1,31 +1,16 @@
-# SSD: Single Shot MultiBox Detector
+# SSD
 
-## Abstract
-
-<!-- [ABSTRACT] -->
-
-We present a method for detecting objects in images using a single deep neural network. Our approach, named SSD, discretizes the output space of bounding boxes into a set of default boxes over different aspect ratios and scales per feature map location. At prediction time, the network generates scores for the presence of each object category in each default box and produces adjustments to the box to better match the object shape. Additionally, the network combines predictions from multiple feature maps with different resolutions to naturally handle objects of various sizes. Our SSD model is simple relative to methods that require object proposals because it completely eliminates proposal generation and subsequent pixel or feature resampling stage and encapsulates all computation in a single network. This makes SSD easy to train and straightforward to integrate into systems that require a detection component. Experimental results on the PASCAL VOC, MS COCO, and ILSVRC datasets confirm that SSD has comparable accuracy to methods that utilize an additional object proposal step and is much faster, while providing a unified framework for both training and inference. Compared to other single stage methods, SSD has much better accuracy, even with a smaller input image size. For 300×300 input, SSD achieves 72.1% mAP on VOC2007 test at 58 FPS on a Nvidia Titan X and for 500×500 input, SSD achieves 75.1% mAP, outperforming a comparable state of the art Faster R-CNN model.
-
-<!-- [IMAGE] -->
-<div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143998553-4e12f681-6025-46b4-8410-9e2e1e53a8ec.png"/>
-</div>
-
-<!-- [PAPER_TITLE: SSD: Single Shot MultiBox Detector] -->
-<!-- [PAPER_URL: https://arxiv.org/abs/1512.02325] -->
-
-## Citation
+> [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325)
 
 <!-- [ALGORITHM] -->
 
-```latex
-@article{Liu_2016,
-   title={SSD: Single Shot MultiBox Detector},
-   journal={ECCV},
-   author={Liu, Wei and Anguelov, Dragomir and Erhan, Dumitru and Szegedy, Christian and Reed, Scott and Fu, Cheng-Yang and Berg, Alexander C.},
-   year={2016},
-}
-```
+## Abstract
+
+We present a method for detecting objects in images using a single deep neural network. Our approach, named SSD, discretizes the output space of bounding boxes into a set of default boxes over different aspect ratios and scales per feature map location. At prediction time, the network generates scores for the presence of each object category in each default box and produces adjustments to the box to better match the object shape. Additionally, the network combines predictions from multiple feature maps with different resolutions to naturally handle objects of various sizes. Our SSD model is simple relative to methods that require object proposals because it completely eliminates proposal generation and subsequent pixel or feature resampling stage and encapsulates all computation in a single network. This makes SSD easy to train and straightforward to integrate into systems that require a detection component. Experimental results on the PASCAL VOC, MS COCO, and ILSVRC datasets confirm that SSD has comparable accuracy to methods that utilize an additional object proposal step and is much faster, while providing a unified framework for both training and inference. Compared to other single stage methods, SSD has much better accuracy, even with a smaller input image size. For 300×300 input, SSD achieves 72.1% mAP on VOC2007 test at 58 FPS on a Nvidia Titan X and for 500×500 input, SSD achieves 75.1% mAP, outperforming a comparable state of the art Faster R-CNN model.
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143998553-4e12f681-6025-46b4-8410-9e2e1e53a8ec.png"/>
+</div>
 
 ## Results and models of SSD
 
@@ -64,3 +49,14 @@ There are some differences between our implementation of MobileNetV2 SSD-Lite an
 2. The anchor sizes are different.
 3. The C4 feature map is taken from the last layer of stage 4 instead of the middle of the block.
 4. The model in TensorFlow1.x is trained on coco 2014 and validated on coco minival2014, but we trained and validated the model on coco 2017. The mAP on val2017 is usually a little lower than minival2014 (refer to the results in TensorFlow Object Detection API, e.g., MobileNetV2 SSD gets 22 mAP on minival2014 but 20.2 mAP on val2017).
+
+## Citation
+
+```latex
+@article{Liu_2016,
+   title={SSD: Single Shot MultiBox Detector},
+   journal={ECCV},
+   author={Liu, Wei and Anguelov, Dragomir and Erhan, Dumitru and Szegedy, Christian and Reed, Scott and Fu, Cheng-Yang and Berg, Alexander C.},
+   year={2016},
+}
+```
