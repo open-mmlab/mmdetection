@@ -108,6 +108,9 @@ def train_detector(model,
             persistent_workers=cfg.data.get('persistent_workers', False))
         for ds in dataset
     ]
+    # assert an error due to the empty train dataloader
+    for i_dataloader in data_loaders:
+        assert len(i_dataloader) != 0, "empty train dataloader, which may be due to the \"image\" field of json file"
 
     # put model on gpus
     if distributed:
@@ -187,6 +190,8 @@ def train_detector(model,
             workers_per_gpu=cfg.data.workers_per_gpu,
             dist=distributed,
             shuffle=False)
+        # assert an error due to the empty validation dataloader
+        assert len(val_dataloader) != 0, "empty validation dataloader, which may be due to the \"image\" field of json file"
         eval_cfg = cfg.get('evaluation', {})
         eval_cfg['by_epoch'] = cfg.runner['type'] != 'IterBasedRunner'
         eval_hook = DistEvalHook if distributed else EvalHook
