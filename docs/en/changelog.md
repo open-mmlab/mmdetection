@@ -2,6 +2,10 @@
 
 ### v2.21.0 (8/2/2022)
 
+### Breaking Changes
+
+To standardize the contents in config READMEs and meta files of OpenMMLab projects, the READMEs and meta files in each config directory have been significantly changed. The template will be released in the future, for now, you can refer to the examples of README for [algorithm](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/README.md), [dataset](https://github.com/open-mmlab/mmdetection/blob/master/configs/deepfashion/README.md) and [backbone](https://github.com/open-mmlab/mmdetection/blob/master/configs/regnet/README.md). To align with the standard, the configs in dcn are put into to two directories named `dcn` and `dcnv2`.
+
 #### New Features
 
 - Allow to customize colors of different classes during visualization (#6716)
