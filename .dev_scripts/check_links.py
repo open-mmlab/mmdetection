@@ -50,14 +50,15 @@ class MatchTuple(NamedTuple):
     link: str
 
 
-def link_ok(match_tuple: MatchTuple,
-            http_session: requests.Session,
-            logger: logging = None) -> Tuple[MatchTuple, bool, Optional[str]]:
+def check_link(
+        match_tuple: MatchTuple,
+        http_session: requests.Session,
+        logger: logging = None) -> Tuple[MatchTuple, bool, Optional[str]]:
     reason: Optional[str] = None
     if match_tuple.link.startswith('http'):
-        result_ok, reason = url_ok(match_tuple, http_session)
+        result_ok, reason = check_url(match_tuple, http_session)
     else:
-        result_ok = path_ok(match_tuple)
+        result_ok = check_path(match_tuple)
     if logger is None:
         print(f"  {'✓' if result_ok else '✗'} {match_tuple.link}")
     else:
@@ -65,8 +66,8 @@ def link_ok(match_tuple: MatchTuple,
     return match_tuple, result_ok, reason
 
 
-def url_ok(match_tuple: MatchTuple,
-           http_session: requests.Session) -> Tuple[bool, str]:
+def check_url(match_tuple: MatchTuple,
+              http_session: requests.Session) -> Tuple[bool, str]:
     """Check if a URL is reachable."""
     try:
         result = http_session.head(
@@ -79,7 +80,7 @@ def url_ok(match_tuple: MatchTuple,
         return False, 'connection error'
 
 
-def path_ok(match_tuple: MatchTuple) -> bool:
+def check_path(match_tuple: MatchTuple) -> bool:
     """Check if a file in this repository exists."""
     relative_path = match_tuple.link.split('#')[0]
     full_path = os.path.join(
@@ -131,8 +132,8 @@ def main():
     logger.info('Checking to make sure we can retrieve each link...')
 
     with Pool(processes=args.num_threads) as pool:
-        results = pool.starmap(link_ok, [(match, http_session, logger)
-                                         for match in list(all_matches)])
+        results = pool.starmap(check_link, [(match, http_session, logger)
+                                            for match in list(all_matches)])
 
     # collect unreachable results
     unreachable_results = [(match_tuple, reason)
