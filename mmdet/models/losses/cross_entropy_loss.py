@@ -27,7 +27,6 @@ def cross_entropy(pred,
         class_weight (list[float], optional): The weight for each class.
         ignore_index (int | None): The label index to be ignored.
             If None, it will be set to default value. Default: -100.
-
     Returns:
         torch.Tensor: The calculated loss
     """
@@ -75,39 +74,30 @@ def binary_cross_entropy(pred,
                          label,
                          weight=None,
                          reduction='mean',
-                         expand_one_hot=True,
                          avg_factor=None,
                          class_weight=None,
                          ignore_index=-100):
     """Calculate the binary CrossEntropy loss.
 
     Args:
-        pred (torch.Tensor): The prediction with shape (N, 1). When
-            expand_one_hot is True, shape should be (N, ).
+        pred (torch.Tensor): The prediction with shape (N, 1).
         label (torch.Tensor): The learning label of the prediction.
         weight (torch.Tensor, optional): Sample-wise loss weight.
         reduction (str, optional): The method used to reduce the loss.
             Options are "none", "mean" and "sum".
-        expand_one_hot (bool, optional): If true, expand the label to one
-            hot, else doesn't expand. Defaults to True.
         avg_factor (int, optional): Average factor that is used to average
             the loss. Defaults to None.
         class_weight (list[float], optional): The weight for each class.
         ignore_index (int | None): The label index to be ignored.
             If None, it will be set to default value. Default: -100.
-
     Returns:
         torch.Tensor: The calculated loss.
     """
     # The default value of ignore_index is the same as F.cross_entropy
     ignore_index = -100 if ignore_index is None else ignore_index
-    if expand_one_hot:
-        if pred.dim() != label.dim():
-            label, weight = _expand_onehot_labels(label, weight, pred.size(-1),
-                                                  ignore_index)
-    else:
-        assert pred.shape == label.shape, 'pred and label '\
-            'should have same shape'
+    if pred.dim() != label.dim():
+        label, weight = _expand_onehot_labels(label, weight, pred.size(-1),
+                                              ignore_index)
 
     # weighted element-wise losses
     if weight is not None:
@@ -129,7 +119,6 @@ def mask_cross_entropy(pred,
                        class_weight=None,
                        ignore_index=None):
     """Calculate the CrossEntropy loss for masks.
-
     Args:
         pred (torch.Tensor): The prediction with shape (N, C, *), C is the
             number of classes. The trailing * indicates arbitrary shape.
@@ -145,10 +134,8 @@ def mask_cross_entropy(pred,
         class_weight (list[float], optional): The weight for each class.
         ignore_index (None): Placeholder, to be consistent with other loss.
             Default: None.
-
     Returns:
         torch.Tensor: The calculated loss
-
     Example:
         >>> N, C = 3, 11
         >>> H, W = 2, 2
@@ -179,7 +166,6 @@ class CrossEntropyLoss(nn.Module):
                  use_sigmoid=False,
                  use_mask=False,
                  reduction='mean',
-                 bce_expand_one_hot=True,
                  class_weight=None,
                  ignore_index=None,
                  loss_weight=1.0):
@@ -192,9 +178,6 @@ class CrossEntropyLoss(nn.Module):
                 Defaults to False.
             reduction (str, optional): . Defaults to 'mean'.
                 Options are "none", "mean" and "sum".
-            bce_expand_one_hot (bool, optional): If true, expand the label to
-                one hot, else doesn't expand when use_sigmoid is True. Defaults
-                to True.
             class_weight (list[float], optional): Weight of each class.
                 Defaults to None.
             ignore_index (int | None): The label index to be ignored.
@@ -209,7 +192,6 @@ class CrossEntropyLoss(nn.Module):
         self.loss_weight = loss_weight
         self.class_weight = class_weight
         self.ignore_index = ignore_index
-        self.bce_expand_one_hot = bce_expand_one_hot
 
         if self.use_sigmoid:
             self.cls_criterion = binary_cross_entropy
@@ -252,26 +234,13 @@ class CrossEntropyLoss(nn.Module):
                 self.class_weight, device=cls_score.device)
         else:
             class_weight = None
-
-        if self.use_sigmoid and not self.bce_expand_one_hot:
-            loss_cls = self.loss_weight * self.cls_criterion(
-                cls_score,
-                label,
-                weight,
-                class_weight=class_weight,
-                reduction=reduction,
-                avg_factor=avg_factor,
-                expand_one_hot=False,
-                ignore_index=ignore_index,
-                **kwargs)
-        else:
-            loss_cls = self.loss_weight * self.cls_criterion(
-                cls_score,
-                label,
-                weight,
-                class_weight=class_weight,
-                reduction=reduction,
-                avg_factor=avg_factor,
-                ignore_index=ignore_index,
-                **kwargs)
+        loss_cls = self.loss_weight * self.cls_criterion(
+            cls_score,
+            label,
+            weight,
+            class_weight=class_weight,
+            reduction=reduction,
+            avg_factor=avg_factor,
+            ignore_index=ignore_index,
+            **kwargs)
         return loss_cls
