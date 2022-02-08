@@ -23,6 +23,7 @@ model = dict(
         # Please only add indices that would be used
         # in FPN, otherwise some parameter will not be used
         with_cp=False,
+        convert_weights=True,
         init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
     neck=dict(in_channels=[192, 384, 768], start_level=0, num_outs=5))
 
