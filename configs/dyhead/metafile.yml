@@ -18,7 +18,7 @@ Collections:
       Title: 'Dynamic Head: Unifying Object Detection Heads with Attentions'
     README: configs/dyhead/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/v2.21.0/mmdet/models/necks/dyhead.py#L126
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.21.0/mmdet/models/necks/dyhead.py#L130
       Version: v2.21.0
 
 Models:
