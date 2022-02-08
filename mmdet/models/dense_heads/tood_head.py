@@ -9,6 +9,7 @@ from mmcv.runner import force_fp32
 from mmdet.core import (anchor_inside_flags, build_assigner, distance2bbox,
                         images_to_levels, multi_apply, reduce_mean, unmap)
 from mmdet.core.utils import filter_scores_and_topk
+from mmdet.models.utils import sigmoid_geometric_mean
 from ..builder import HEADS, build_loss
 from .atss_head import ATSSHead
 
@@ -245,7 +246,7 @@ class TOODHead(ATSSHead):
             # cls prediction and alignment
             cls_logits = self.tood_cls(cls_feat)
             cls_prob = self.cls_prob_module(feat)
-            cls_score = (cls_logits.sigmoid() * cls_prob.sigmoid()).sqrt()
+            cls_score = sigmoid_geometric_mean(cls_logits, cls_prob)
 
             # reg prediction and alignment
             if self.anchor_type == 'anchor_free':
