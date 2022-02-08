@@ -267,6 +267,8 @@ class LVISV05Dataset(CocoDataset):
         'wrench', 'wristband', 'wristlet', 'yacht', 'yak', 'yogurt',
         'yoke_(animal_equipment)', 'zebra', 'zucchini')
 
+    PALETTE = None
+
     def load_annotations(self, ann_file):
         """Load annotation from lvis style annotation file.
 

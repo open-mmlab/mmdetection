@@ -30,6 +30,7 @@ class ConcatDataset(_ConcatDataset):
     def __init__(self, datasets, separate_eval=True):
         super(ConcatDataset, self).__init__(datasets)
         self.CLASSES = datasets[0].CLASSES
+        self.PALETTE = getattr(datasets[0], 'PALETTE', None)
         self.separate_eval = separate_eval
         if not separate_eval:
             if any([isinstance(ds, CocoDataset) for ds in datasets]):
@@ -167,6 +168,7 @@ class RepeatDataset:
         self.dataset = dataset
         self.times = times
         self.CLASSES = dataset.CLASSES
+        self.PALETTE = getattr(dataset, 'PALETTE', None)
         if hasattr(self.dataset, 'flag'):
             self.flag = np.tile(self.dataset.flag, times)
 
@@ -247,6 +249,7 @@ class ClassBalancedDataset:
         self.oversample_thr = oversample_thr
         self.filter_empty_gt = filter_empty_gt
         self.CLASSES = dataset.CLASSES
+        self.PALETTE = getattr(dataset, 'PALETTE', None)
 
         repeat_factors = self._get_repeat_factors(dataset, oversample_thr)
         repeat_indices = []
@@ -381,6 +384,7 @@ class MultiImageMixDataset:
 
         self.dataset = dataset
         self.CLASSES = dataset.CLASSES
+        self.PALETTE = getattr(dataset, 'PALETTE', None)
         if hasattr(self.dataset, 'flag'):
             self.flag = dataset.flag
         self.num_samples = len(dataset)
