@@ -247,7 +247,8 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         <ul>
           <li><a href="configs/faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py">OHEM (CVPR'2016)</a></li>
           <li><a href="configs/gn">Group Normalization (ECCV'2018)</a></li>
-          <li><a href="configs/dcn">DCNv2 (CVPR'2019)</a></li>
+          <li><a href="configs/dcn">DCN (ICCV'2017)</a></li>
+          <li><a href="configs/dcnv2">DCNv2 (CVPR'2019)</a></li>
           <li><a href="configs/gn+ws">Weight Standardization (ArXiv'2019)</a></li>
           <li><a href="configs/pisa">Prime Sample Attention (CVPR'2020)</a></li>
           <li><a href="configs/strong_baselines">Strong Baselines (CVPR'2021)</a></li>
