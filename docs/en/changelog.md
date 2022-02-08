@@ -16,6 +16,8 @@
 - Fix bug in non-distributed multi-gpu training/testing (#7019)
 - Fix bbox clamp in PyTorch 1.10 (#7074)
 - Relax the requirement of PALETTE in dataset wrappers (#7085)
+- Keep the same weights before reassign in the PAA head (#7032)
+- Update code demo in doc (#7092)
 
 #### Improvements
 
@@ -28,8 +30,8 @@
 
 #### Contributors
 
-A total of 24 developers contributed to this release.
-Thanks @srishilesh, @imyhxy, @jenhaoyang, @jliu-ac, @kimnamu, @ShengliLiu, @garvan2021, @ciusji, @DIYer22, @kimnamu, @q3394101, @zhouzaida, @gaotongxiao, @topsy404, @AntoAndGar, @jbwang1997, @nijkah, @ZwwWayne, @Czm369, @jshilong, @RangiLyu, @BIGWangYuDong, @hhaAndroid, @AronLin
+A total of 26 developers contributed to this release.
+Thanks @del-zhenwu, @zimoqingfeng, @srishilesh, @imyhxy, @jenhaoyang, @jliu-ac, @kimnamu, @ShengliLiu, @garvan2021, @ciusji, @DIYer22, @kimnamu, @q3394101, @zhouzaida, @gaotongxiao, @topsy404, @AntoAndGar, @jbwang1997, @nijkah, @ZwwWayne, @Czm369, @jshilong, @RangiLyu, @BIGWangYuDong, @hhaAndroid, @AronLin
 
 ### v2.20.0 (27/12/2021)
 
