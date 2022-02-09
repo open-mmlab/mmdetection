@@ -100,6 +100,10 @@ class CustomDataset(Dataset):
                 'might cause errors if the path is not a local path. '
                 'Please use MMCV>= 1.3.16 if you meet errors.')
             self.data_infos = self.load_annotations(self.ann_file)
+        # assert an error when the data info is empty
+        assert len(self.data_infos) != 0, \
+            'empty data_infos, ' \
+            'which may be due to the \"image\" field of annotation json file'
 
         if self.proposal_file is not None:
             if hasattr(self.file_client, 'get_local_path'):
