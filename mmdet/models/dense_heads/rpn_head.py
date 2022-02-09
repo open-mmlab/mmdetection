@@ -238,6 +238,9 @@ class RPNHead(AnchorHead):
         else:
             results.bboxes = proposals.new_zeros(0, 4)
             results.scores = proposals.new_zeros(0)
+        # dummy label to be consistent with norm one-stage detector
+        results.labels = results.scores.new_zeros(
+            len(results), dtype=torch.long)
         return results
 
     def onnx_export(self, x, img_metas):

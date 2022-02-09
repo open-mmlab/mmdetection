@@ -1,12 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import warnings
 from abc import ABCMeta, abstractmethod
+from inspect import signature
 
 import torch
 from mmcv.ops import batched_nms
 from mmcv.runner import BaseModule, force_fp32
 
 from mmdet.core import InstanceData
+from mmdet.core.post_processing.merge_augs import merge_aug_results
 from mmdet.core.utils import filter_scores_and_topk, select_single_mlvl
 
 
@@ -61,12 +63,16 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 Default True.
 
         Returns:
-            list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class label of
-                the corresponding box.
+            list[:obj:`InstanceData`]: Instance segmentation
+            results of each image after the post process.
+            Each item usually contains following keys.
+
+            - scores (Tensor): Classification scores, has a shape
+              (num_instance,)
+            - labels (Tensor): Labels of bboxes, has a shape
+              (num_instances,).
+            - bboxes (Tensor): Has a shape (num_instances, 4),
+              the last dimension 4 arrange as (x1, y1, x2, y2).
         """
         assert len(cls_scores) == len(bbox_preds)
 
@@ -141,18 +147,16 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 Default: True.
 
         Returns:
-            tuple[Tensor]: Results of detected bboxes and labels. If with_nms
-                is False and mlvl_score_factor is None, return mlvl_bboxes and
-                mlvl_scores, else return mlvl_bboxes, mlvl_scores and
-                mlvl_score_factor. Usually with_nms is False is used for aug
-                test. If with_nms is True, then return the following format
+            :obj:`InstanceData`: Detection results of each image
+            after the post process.
+            Each item usually contains following keys.
 
-                - det_bboxes (Tensor): Predicted bboxes with shape \
-                    [num_bboxes, 5], where the first 4 columns are bounding \
-                    box positions (tl_x, tl_y, br_x, br_y) and the 5-th \
-                    column are scores between 0 and 1.
-                - det_labels (Tensor): Predicted labels of the corresponding \
-                    box with shape [num_bboxes].
+            - scores (Tensor): Classification scores, has a shape
+              (num_instance,)
+            - labels (Tensor): Labels of bboxes, has a shape
+              (num_instances,).
+            - bboxes (Tensor): Has a shape (num_instances, 4),
+              the last dimension 4 arrange as (x1, y1, x2, y2).
         """
         if score_factor_list[0] is None:
             # e.g. Retina, FreeAnchor, etc.
@@ -226,6 +230,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         return self._bbox_post_process(results, img_meta['scale_factor'], cfg,
                                        rescale, with_nms, img_meta, **kwargs)
 
+    # TODO fix the doc and explain the item in results
     def _bbox_post_process(self,
                            results,
                            scale_factor,
@@ -253,18 +258,16 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             img_meta (dict, optional): Image meta info. Default: None.
 
         Returns:
-            tuple[Tensor]: Results of detected bboxes and labels. If with_nms
-                is False and mlvl_score_factor is None, return mlvl_bboxes and
-                mlvl_scores, else return mlvl_bboxes, mlvl_scores and
-                mlvl_score_factor. Usually with_nms is False is used for aug
-                test. If with_nms is True, then return the following format
+            :obj:`InstanceData`: Detection results of each image
+            after the post process.
+            Each item usually contains following keys.
 
-                - det_bboxes (Tensor): Predicted bboxes with shape \
-                    [num_bboxes, 5], where the first 4 columns are bounding \
-                    box positions (tl_x, tl_y, br_x, br_y) and the 5-th \
-                    column are scores between 0 and 1.
-                - det_labels (Tensor): Predicted labels of the corresponding \
-                    box with shape [num_bboxes].
+            - scores (Tensor): Classification scores, has a shape
+              (num_instance,)
+            - labels (Tensor): Labels of bboxes, has a shape
+              (num_instances,).
+            - bboxes (Tensor): Has a shape (num_instances, 4),
+              the last dimension 4 arrange as (x1, y1, x2, y2).
         """
 
         if rescale:
@@ -275,12 +278,15 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             #  the paper.
             score_factors = results.pop('score_factors')
             results.scores = results.scores * score_factors
-
+        # TODO: deal with `with_nms` and `nms_cfg=None` in test_cfg
         if with_nms and results.bboxes.numel() != 0:
-
-            _, keep_idxs = batched_nms(results.bboxes, results.scores,
-                                       results.labels, cfg.nms)
-            return results[keep_idxs][:cfg.max_per_img]
+            det_bboxes, keep_idxs = batched_nms(results.bboxes, results.scores,
+                                                results.labels, cfg.nms)
+            results = results[keep_idxs]
+            # some nms would reweight the score, such as softnms
+            results.scores = det_bboxes[:, -1]
+            results = results[:cfg.max_per_img]
+            return results
         else:
             return results
 
@@ -288,18 +294,35 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         """
         Args:
             x (list[Tensor]): Features from FPN.
+            data_samples (list[:obj:`GeneralData`]): Each item contains
+                the meta information of each image and corresponding
+                annotations.
             proposal_cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used
 
         Returns:
-            tuple:
-                losses: (dict[str, Tensor]): A dictionary of loss components.
-                proposal_list (list[Tensor]): Proposals of each image.
+            tuple or Tensor: When `proposal_cfg` is None, the detector is a \
+            normal one-stage detector, The return value is the losses.
+
+            - losses: (dict[str, Tensor]): A dictionary of loss components.
+
+            When the `proposal_cfg` is not None, the head is used as a
+            `rpn_head`, the return value is a tuple contains:
+
+            - losses: (dict[str, Tensor]): A dictionary of loss components.
+            - results_list (list[:obj:`InstanceData`]): Detection
+              results of each image after the post process.
+              Each item usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance,)
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances,).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
         """
         img_metas = [data_sample['meta'] for data_sample in data_samples]
-
         outs = self(x)
-
         gt_bboxes = [
             data_sample.gt_instances.bboxes for data_sample in data_samples
         ]
@@ -328,9 +351,9 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         if proposal_cfg is None:
             return losses
         else:
-            proposal_list = self.get_bboxes(
+            results_list = self.get_results(
                 *outs, img_metas=img_metas, cfg=proposal_cfg)
-            return losses, proposal_list
+            return losses, results_list
 
     def simple_test(self, feats, img_metas, rescale=False):
         """Test function without test-time augmentation.
@@ -343,13 +366,112 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 Defaults to False.
 
         Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is ``bboxes`` with shape (n, 5),
-                where 5 represent (tl_x, tl_y, br_x, br_y, score).
-                The shape of the second tensor in the tuple is ``labels``
-                with shape (n, ).
+            list[obj:`InstanceData`]: Detection results of each image
+            after the post process.
+            Each item usually contains following keys.
+
+            - scores (Tensor): Classification scores, has a shape
+              (num_instance,)
+            - labels (Tensor): Labels of bboxes, has a shape
+              (num_instances,).
+            - bboxes (Tensor): Has a shape (num_instances, 4),
+              the last dimension 4 arrange as (x1, y1, x2, y2).
         """
-        return self.simple_test_bboxes(feats, img_metas, rescale=rescale)
+        outs = self.forward(feats)
+        results_list = self.get_results(
+            *outs, img_metas=img_metas, rescale=rescale)
+        return results_list
+
+    def aug_test(self,
+                 aug_batch_feats,
+                 aug_batch_img_metas,
+                 rescale=False,
+                 with_ori_nms=False,
+                 **kwargs):
+        """Test function with test time augmentation.
+
+        Args:
+            aug_batch_feats (list[tuple[Tensor]]): The outer list
+                indicates test-time augmentations and inner tuple
+                indicate the multi-level feats from
+                FPN, each Tensor should have a shape (B, C, H, W),
+            aug_batch_img_metas (list[list[dict]]): Meta information
+                of images under the different test-time augs
+                (multiscale, flip, etc.). The outer list indicate
+                the
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+            with_ori_nms (bool): Whether execute the nms in original head.
+                Default: False. It will be `True` when the head is
+                adopted as `rpn_head`.
+
+        Returns:
+            list(obj:`InstanceData`): Detection results of the
+            input images. Each item usually contains\
+            following keys.
+
+            - scores (Tensor): Classification scores, has a shape
+              (num_instance,)
+            - labels (Tensor): Labels of bboxes, has a shape
+              (num_instances,).
+            - bboxes (Tensor): Has a shape (num_instances, 4),
+              the last dimension 4 arrange as (x1, y1, x2, y2).
+        """
+        # TODO: remove this for detr and deformdetr
+        sig_of_get_results = signature(self.get_results)
+        get_results_args = [
+            p.name for p in sig_of_get_results.parameters.values()
+        ]
+        get_results_single_sig = signature(self._get_results_single)
+        get_results_single_sig_args = [
+            p.name for p in get_results_single_sig.parameters.values()
+        ]
+        assert ('with_nms' in get_results_args) and \
+               ('with_nms' in get_results_single_sig_args), \
+               f'{self.__class__.__name__}' \
+               'does not support test-time augmentation '
+
+        num_imgs = len(aug_batch_img_metas[0])
+        aug_batch_results = []
+        for x, img_metas in zip(aug_batch_feats, aug_batch_img_metas):
+            outs = self.forward(x)
+            batch_instance_results = self.get_results(
+                *outs,
+                img_metas=img_metas,
+                cfg=self.test_cfg,
+                rescale=False,
+                with_nms=with_ori_nms,
+                **kwargs)
+            aug_batch_results.append(batch_instance_results)
+
+        # after merging, bboxes will be rescaled to the original image
+        batch_results = merge_aug_results(aug_batch_results,
+                                          aug_batch_img_metas)
+
+        final_results = []
+        for img_id in range(num_imgs):
+            results = batch_results[img_id]
+            det_bboxes, keep_idxs = batched_nms(results.bboxes, results.scores,
+                                                results.labels,
+                                                self.test_cfg.nms)
+            results = results[keep_idxs]
+            # some nms operation may reweight the score such as softnms
+            results.scores = det_bboxes[:, -1]
+            results = results[:self.test_cfg.max_per_img]
+            if rescale:
+                # all results have been mapped to the original scale
+                # in `merge_aug_results`, so just pass
+                pass
+            else:
+                # map to the first aug image scale
+                scale_factor = results.bboxes.new_tensor(
+                    aug_batch_img_metas[0][img_id]['scale_factor'])
+                results.bboxes = \
+                    results.bboxes * scale_factor
+
+            final_results.append(results)
+
+        return final_results
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def onnx_export(self,

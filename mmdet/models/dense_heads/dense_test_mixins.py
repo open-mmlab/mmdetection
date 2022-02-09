@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import sys
+import warnings
 from inspect import signature
 
 import torch
@@ -27,12 +28,21 @@ class BBoxTestMixin(object):
                 Defaults to False.
 
         Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is ``bboxes`` with shape (n, 5),
-                where 5 represent (tl_x, tl_y, br_x, br_y, score).
-                The shape of the second tensor in the tuple is ``labels``
-                with shape (n,)
+            list[obj:`InstanceData`]: Detection results of each
+                image after the post process. \
+                Each item usually contains following keys. \
+
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance,)
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances,).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
         """
+        warnings.warn('You are calling `simple_test_bboxes` in '
+                      '`dense_test_mixins`, but the `dense_test_mixins`'
+                      'will be deprecated soon. Please use '
+                      '`simple_test` instead.')
         outs = self.forward(feats)
         results_list = self.get_results(
             *outs, img_metas=img_metas, rescale=rescale)
@@ -60,6 +70,11 @@ class BBoxTestMixin(object):
                 The shape of the second tensor in the tuple is ``labels``
                 with shape (n,). The length of list should always be 1.
         """
+
+        warnings.warn('You are calling `aug_test_bboxes` in '
+                      '`dense_test_mixins`, but the `dense_test_mixins`'
+                      'will be deprecated soon. Please use '
+                      '`aug_test` instead.')
         # check with_nms argument
         gb_sig = signature(self.get_results)
         gb_args = [p.name for p in gb_sig.parameters.values()]
@@ -128,6 +143,11 @@ class BBoxTestMixin(object):
             list[Tensor]: Proposals of each image, each item has shape (n, 5),
                 where 5 represent (tl_x, tl_y, br_x, br_y, score).
         """
+        warnings.warn('You are calling `simple_test_rpn` in '
+                      '`dense_test_mixins`, but the `dense_test_mixins`'
+                      'will be deprecated soon. Please use '
+                      '`simple_test` instead.')
+
         rpn_outs = self(x)
         proposal_list = self.get_results(*rpn_outs, img_metas=img_metas)
         return proposal_list

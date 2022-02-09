@@ -38,10 +38,10 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
                 (num_gts, h , w).
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            gt_bboxes (list[Tensor]): Ground truth bboxes of the image,
-                each item has a shape (num_gts, 4).
-            gt_bboxes_ignore (list[Tensor], None): Ground truth bboxes to be
-                ignored, each item has a shape (num_ignored_gts, 4).
+            gt_bboxes (list[Tensor], optional): Ground truth bboxes of
+                the image, each item has a shape (num_gts, 4).
+            gt_bboxes_ignore (list[Tensor], optional): Ground truth bboxes
+                to be ignored, each item has a shape (num_ignored_gts, 4).
             positive_infos (list[:obj:`InstanceData`], optional): Information
                 of positive samples. Used when the label assignment is
                 done outside the MaskHead, e.g., in BboxHead in

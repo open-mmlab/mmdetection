@@ -95,6 +95,11 @@ class TwoStageDetector(BaseDetector):
         Args:
             img (Tensor): of shape (N, C, H, W) encoding input images.
                 Typically these should be mean centered and std scaled.
+            data_samples (list[:obj:`GeneralData`]): Each item contains
+                the meta information of each image and corresponding
+                annotations.
+            proposals (List[Tensor]): The proposals obtained in advance
+                outside.  Default: None.
 
         Returns:
             dict[str, Tensor]: a dictionary of loss components
@@ -113,14 +118,14 @@ class TwoStageDetector(BaseDetector):
             for data_sample in cp_data_samples:
                 del data_sample.gt_instances.labels
 
-            rpn_losses, proposal_list = self.rpn_head.forward_train(
+            rpn_losses, results_list = self.rpn_head.forward_train(
                 x, cp_data_samples, proposal_cfg=proposal_cfg, **kwargs)
             losses.update(rpn_losses)
+            # TODO: remove this after refactor two stage input
+            proposal_list = results2proposal(results_list)
         else:
             proposal_list = proposals
 
-        # TODO: remove this after refactor two stage input
-        proposal_list = results2proposal(proposal_list)
         roi_losses = self.roi_head.forward_train(x, proposal_list,
                                                  data_samples, **kwargs)
         losses.update(roi_losses)
@@ -152,26 +157,58 @@ class TwoStageDetector(BaseDetector):
         assert self.with_bbox, 'Bbox head must be implemented.'
         x = self.extract_feat(img)
         if proposals is None:
-            proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
+            results_list = self.rpn_head.simple_test(x, img_metas)
+            proposal_list = results2proposal(results_list)
         else:
             proposal_list = proposals
         # TODO: remove this after refactor two stage input
-        proposal_list = results2proposal(proposal_list)
+
         return self.roi_head.simple_test(
             x, proposal_list, img_metas, rescale=rescale)
 
-    def aug_test(self, imgs, img_metas, rescale=False):
+    def aug_test(self, aug_batch_imgs, aug_batch_img_metas, rescale=False):
         """Test with augmentations.
 
-        If rescale is False, then returned bboxes and masks will fit the scale
-        of imgs[0].
+        Args:
+            aug_batch_imgs (list[Tensor]): The list indicate the
+                different augmentation. each item has shape
+                of (B, C, H, W).
+                Typically these should be mean centered and std scaled.
+            aug_batch_img_metas (list[list[dict]]): The outer list
+                indicate the test-time augmentations. The inter list indicate
+                the batch dimensions.  Each item contains
+                the meta information of image with corresponding
+                augmentation.
+
+        Returns:
+            list(obj:`InstanceData`): Detection results of the
+            input images. Each item usually contains\
+            following keys.
+
+            - scores (Tensor): Classification scores, has a shape
+              (num_instance,)
+            - labels (Tensor): Labels of bboxes, has a shape
+              (num_instances,).
+            - bboxes (Tensor): Has a shape (num_instances, 4),
+              the last dimension 4 arrange as (x1, y1, x2, y2).
+
+
+        Note:
+            If rescale is False, then returned bboxes and masks will fit
+            the scale of aug_imgs[0].
         """
-        x = self.extract_feats(imgs)
-        proposal_list = self.rpn_head.aug_test_rpn(x, img_metas)
+        x = self.extract_feats(aug_batch_imgs)
+        # results_list will be in original scale
+        results_list = self.rpn_head.aug_test(
+            x, aug_batch_img_metas, rescale=True, with_ori_nms=True)
+
         # TODO: remove this after refactor two stage input
-        proposal_list = results2proposal(proposal_list)
+        proposal_list = results2proposal(results_list)
+
+        # TODO support batch for two stage
+        assert len(proposal_list) == 1
         return self.roi_head.aug_test(
-            x, proposal_list, img_metas, rescale=rescale)
+            x, proposal_list, aug_batch_img_metas, rescale=rescale)
 
     def onnx_export(self, img, img_metas):
 
@@ -190,7 +227,7 @@ class TwoStageDetector(BaseDetector):
             )
 
 
-# TODO: remove this after refactor two stage input
+# TODO: remove this after refactor `roi_head` input
 def results2proposal(results_list):
     if isinstance(results_list[0], InstanceData):
         proposal_list = []

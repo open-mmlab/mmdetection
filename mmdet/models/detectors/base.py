@@ -99,99 +99,147 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         """Test function with test time augmentation."""
         pass
 
-    async def aforward_test(self, *, imgs, data_samples, **kwargs):
+    async def aforward_test(self, *, aug_batch_imgs, aug_batch_data_samples,
+                            **kwargs):
+        """
+        Args:
+            aug_batch_imgs (List[Tensor]): the outer list indicates test-time
+                augmentations, the Tensor should have a shape NxCxHxW.
+                We only support batch size = 1 when do the augtest.
+            aug_batch_data_samples (List[List[:obj:`GeneralData`]]): the
+                outer list indicates test-time augmentations and inner list
+                indicates batch dimension. We only support batch size = 1 when
+                do the augtest.
+        """
+        num_augs = len(aug_batch_data_samples)
+        batch_size = len(aug_batch_data_samples[0])
 
-        assert isinstance(imgs, list)
-        num_augs = len(imgs)
-        if num_augs == 1:
-            img_metas = [[
-                data_sample[0]['meta'] for data_sample in data_samples
-            ]]
-        else:
-            img_metas = [[data_sample['meta']]
-                         for data_sample in data_samples[0]]
+        aug_batch_img_metas = []
+        for aug_index in range(num_augs):
+            batch_img_metas = []
+            for batch_index in range(batch_size):
+                single_data_sample = aug_batch_data_samples[aug_index][
+                    batch_index]
+                batch_img_metas.append(single_data_sample.meta)
 
-        for var, name in [(imgs, 'img'), (img_metas, 'img_metas')]:
+            aug_batch_img_metas.append(batch_img_metas)
+
+        for var, name in [(aug_batch_imgs, 'imgs'),
+                          (aug_batch_img_metas, 'img_metas')]:
             if not isinstance(var, list):
-                raise TypeError(f'{name} must be a list, but got {type(var)}')
+                raise TypeError('{} must be a list, but got {}'.format(
+                    name, type(var)))
 
-        if num_augs != len(img_metas):
-            raise ValueError(f'num of augmentations ({len(imgs)}) '
-                             f'!= num of image metas ({len(img_metas)})')
-        # TODO: remove the restriction of samples_per_gpu == 1 when prepared
-        samples_per_gpu = imgs[0].size(0)
-        assert samples_per_gpu == 1
+        num_augs = len(aug_batch_imgs)
+        if num_augs != len(aug_batch_img_metas):
+            raise ValueError(
+                'num of augmentations ({}) != num of image meta ({})'.format(
+                    len(aug_batch_imgs), len(aug_batch_img_metas)))
+        # TODO: remove the restriction of imgs_per_gpu == 1 when prepared
+        imgs_per_gpu = aug_batch_imgs[0].size(0)
+        assert imgs_per_gpu == 1
+
+        # NOTE the batched image size information may be useful, e.g.
+        # in DETR, this is used for the constructing mask in
+        # transformer layer
+        for batch_img, batch_img_metas in zip(aug_batch_imgs,
+                                              aug_batch_img_metas):
+            batch_size = len(batch_img_metas)
+            for img_id in range(batch_size):
+                batch_img_metas[img_id]['batch_input_shape'] = \
+                    tuple(batch_img.size()[-2:])
 
         if num_augs == 1:
-            return await self.async_simple_test(imgs[0], img_metas[0],
+            return await self.async_simple_test(aug_batch_imgs[0],
+                                                aug_batch_img_metas[0],
                                                 **kwargs)
         else:
             raise NotImplementedError
 
     # TODO:  auto_fp16 supports context embedding
     @auto_fp16(apply_to=('imgs', ))
-    def forward_test(self, imgs, data_samples, **kwargs):
+    def forward_test(self, aug_batch_imgs, aug_batch_data_samples, **kwargs):
         """
         Args:
-            imgs (List[List[Tensor]]): the outer list indicates test-time
-                augmentations and inner list indicates batch images, the Tensor
-                should have a shape NxCxHxW.
+            aug_batch_imgs (List[Tensor]): the outer list indicates test-time
+                augmentations, the Tensor should have a shape NxCxHxW.
+                We only support batch size = 1 when do the augtest.
+            aug_batch_data_samples (List[List[:obj:`GeneralData`]]): the
+                outer list indicates test-time augmentations and inner list
+                indicates batch dimension. We only support batch size = 1 when
+                do the augtest.
+
+        Returns:
+            list(obj:`InstanceData`): Detection results of the
+            input images. Each item usually contains\
+            following keys.
+
+            - scores (Tensor): Classification scores, has a shape
+              (num_instance,)
+            - labels (Tensor): Labels of bboxes, has a shape
+              (num_instances,).
+            - bboxes (Tensor): Has a shape (num_instances, 4),
+              the last dimension 4 arrange as (x1, y1, x2, y2).
         """
-        assert isinstance(imgs, list)
-        num_augs = len(imgs)
-        if num_augs == 1:
-            img_metas = [[
-                data_sample[0]['meta'] for data_sample in data_samples
-            ]]
-        else:
-            img_metas = [[data_sample['meta']]
-                         for data_sample in data_samples[0]]
+        num_augs = len(aug_batch_data_samples)
+        batch_size = len(aug_batch_data_samples[0])
 
-        for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
+        aug_batch_img_metas = []
+        for aug_index in range(num_augs):
+            batch_img_metas = []
+            for batch_index in range(batch_size):
+                single_data_sample = aug_batch_data_samples[aug_index][
+                    batch_index]
+                batch_img_metas.append(single_data_sample.meta)
+
+            aug_batch_img_metas.append(batch_img_metas)
+
+        for var, name in [(aug_batch_imgs, 'imgs'),
+                          (aug_batch_img_metas, 'img_metas')]:
             if not isinstance(var, list):
-                raise TypeError(f'{name} must be a list, but got {type(var)}')
+                raise TypeError('{} must be a list, but got {}'.format(
+                    name, type(var)))
 
-        if num_augs != len(img_metas):
-            raise ValueError(f'num of augmentations ({len(imgs)}) '
-                             f'!= num of image meta ({len(img_metas)})')
+        num_augs = len(aug_batch_imgs)
+        if num_augs != len(aug_batch_img_metas):
+            raise ValueError(
+                'num of augmentations ({}) != num of image meta ({})'.format(
+                    len(aug_batch_imgs), len(aug_batch_img_metas)))
 
         # NOTE the batched image size information may be useful, e.g.
         # in DETR, this is needed for the construction of masks, which is
         # then used for the transformer_head.
-        for img, img_meta in zip(imgs, img_metas):
-            batch_size = len(img_meta)
+        for batch_img, batch_img_metas in zip(aug_batch_imgs,
+                                              aug_batch_img_metas):
+            batch_size = len(batch_img_metas)
             for img_id in range(batch_size):
-                img_meta[img_id]['batch_input_shape'] = tuple(img.size()[-2:])
+                batch_img_metas[img_id]['batch_input_shape'] = \
+                    tuple(batch_img.size()[-2:])
 
         if num_augs == 1:
-            # proposals (List[List[Tensor]]): the outer list indicates
-            # test-time augs (multiscale, flip, etc.) and the inner list
-            # indicates images in a batch.
-            # The Tensor should have a shape Px4, where P is the number of
-            # proposals.
-            if 'proposals' in kwargs:
-                kwargs['proposals'] = kwargs['proposals'][0]
-            return self.simple_test(imgs[0], img_metas[0], **kwargs)
+            return self.simple_test(aug_batch_imgs[0], aug_batch_img_metas[0],
+                                    **kwargs)
         else:
-            assert imgs[0].size(0) == 1, 'aug test does not support ' \
-                                         'inference with batch size ' \
-                                         f'{imgs[0].size(0)}'
-            # TODO: support test augmentation for predefined proposals
-            assert 'proposals' not in kwargs
-            return self.aug_test(imgs, img_metas, **kwargs)
+            assert 'proposals' not in kwargs, '`self.aug_test` do not ' \
+                                              'support pre-difined proposals'
+            aug_results = self.aug_test(aug_batch_imgs, aug_batch_img_metas,
+                                        **kwargs)
+            return aug_results
 
     def forward(self, data, optimizer=None, return_loss=True, **kwargs):
-        """The iteration step during training.
-        This method defines an iteration step during training, except for the
-        back propagation and optimizer updating, which are done in an optimizer
-        hook. Note that in some complicated cases or models, the whole process
-        including back propagation and optimizer updating is also defined in
-        this method, such as GAN.
+        """The iteration step during training. This method defines an iteration
+        step during training, except for the back propagation and optimizer
+        updating, which are done in an optimizer hook. Note that in some
+        complicated cases or models, the whole process including back
+        propagation and optimizer updating is also defined in this method, such
+        as GAN.
+
         Args:
             data (list[dict]): The output of dataloader.
             optimizer (:obj:`torch.optim.Optimizer` | dict): The optimizer of
                 runner is passed to ``train_step()``. This argument is unused
                 and reserved.
+
         Returns:
             dict: It should contain at least 3 keys: ``loss``, ``log_vars``, \
                 ``num_samples``.
@@ -218,8 +266,10 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
 
             return outputs
         else:
-            images, data_samples = self.preprocss_testing_data(data)
-            return self.forward_test(images, data_samples, **kwargs)
+            aug_batch_imgs, aug_batch_data_samples = \
+                self.preprocss_testing_data(data)
+            return self.forward_test(aug_batch_imgs, aug_batch_data_samples,
+                                     **kwargs)
 
     def preprocss_training_data(self, data):
         """ Process input data during training and testing phases.
@@ -228,14 +278,12 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
                 comes from dataloader.
 
         Returns:
-            tuple:  It should contain 3 item.
+            tuple:  It should contain 2 item.
                  - img (Tensor): The batch image tensor.
-                 - img_metas (list[dict], list[list[dict]]): Meta information
-                     of each image, e.g., image size, scaling factor, etc.
                  - data_samples (list[:obj:`GeneralData`], Optional): The Data
-                     Samples. It usually includes information such as
-                     `gt_instance`. Return None If the input datas does not
-                     contain `data_sample`.
+                   Samples. It usually includes information such as
+                   `gt_instance`. Return None If the input datas does not
+                   contain `data_sample`.
         """
         images = [data_['img'] for data_ in data]
         data_samples = [data_['data_sample'] for data_ in data]
@@ -255,40 +303,58 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         """ Process input data during training and testing phases.
         Args:
             data (list[dict]): The data to be processed, which
-                comes from dataloader.
+                comes from dataloader. The list indicate the batch dimension.
+                Each dict contains these keys:
+
+                - `img` (list[Tensor]): Image tensor with different test-time
+                  augmentation.
+                - `data_sample` (list[:obj:`GeneralData`]): Meta information
+                  and annotations under different test-time augmentation.
+
 
         Returns:
-            tuple:  It should contain 3 item.
-                 - img (Tensor): The batch image tensor.
-                 - img_metas (list[dict], list[list[dict]]): Meta information
-                     of each image, e.g., image size, scaling factor, etc.
-                 - data_samples (list[:obj:`GeneralData`], Optional): The Data
-                     Samples. It usually includes information such as
-                     `gt_instance`. Return None If the input datas does not
-                     contain `data_sample`.
+            tuple:  It should contain 2 items.
+
+                 - aug_batch_imgs (list[Tensor]):  List of batch image
+                   tensor. The list indicate the test-time augmentations.
+                   Note that the batch size always is 1
+                   when do the augtest.
+                 - aug_batch_data_samples
+                   (list[list[:obj:`GeneralData`]], Optional):
+                   The Data Samples. It usually includes information such as
+                   `gt_instance`. Return None If the input datas does not
+                   contain `data_sample`. The outer list indicate the
+                   number of augmentations and inter list indicate the
+                   batch dimension.
         """
-        images = [data_['img'] for data_ in data]
-        data_samples = [data_['data_sample'] for data_ in data]
 
-        if len(images[0]) > 1:
-            model_state = 'testing_with_msaug'
-            images = [image.to(self.device) for image in images[0]]
-        else:
-            model_state = 'testing_no_msaug'
-            images = [image[0].to(self.device) for image in images]
+        num_augs = len(data[0]['img'])
+        batch_size = len(data)
+        aug_batch_imgs = []
+        aug_batch_data_samples = []
 
-        if self.to_rgb and images[0].size(0) == 3:
-            images = [image[[2, 1, 0], ...] for image in images]
-        images = [(x - self.pixel_mean) / self.pixel_std for x in images]
+        # adjust `images` and `data_samples` to a list of list
+        # outer list is test-time augmentation and inter list
+        # is batch dimension
+        for aug_index in range(num_augs):
+            batch_imgs = []
+            batch_data_samples = []
+            for batch_index in range(batch_size):
+                single_img = data[batch_index]['img'][aug_index]
 
-        if model_state == 'testing_no_msaug':
-            images = [stack_batch(images)]
-        elif model_state == 'testing_with_msaug':
-            images = [stack_batch([img]) for img in images]
-        else:
-            raise NotImplementedError()
+                # to gpu and normalize
+                single_img = single_img.to(self.device)
+                if self.to_rgb and single_img[0].size(0) == 3:
+                    single_img = single_img[[2, 1, 0], ...]
+                single_img = (single_img - self.pixel_mean) / self.pixel_std
 
-        return images, data_samples
+                batch_imgs.append(single_img)
+                batch_data_samples.append(
+                    data[batch_index]['data_sample'][aug_index])
+            aug_batch_imgs.append(stack_batch(batch_imgs))
+            aug_batch_data_samples.append(batch_data_samples)
+
+        return aug_batch_imgs, aug_batch_data_samples
 
     def _parse_losses(self, losses):
         """Parse the raw outputs (losses) of the network.
