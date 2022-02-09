@@ -37,19 +37,19 @@ jobs:
         include:
           - torch: 1.5.1
             torchvision: 0.6.1
-            mmcv: 1.5.0
+            mmcv: 1.5
           - torch: 1.6.0
             torchvision: 0.7.0
-            mmcv: 1.6.0
+            mmcv: 1.6
           - torch: 1.7.0
             torchvision: 0.8.1
-            mmcv: 1.7.0
+            mmcv: 1.7
           - torch: 1.8.0
             torchvision: 0.9.0
-            mmcv: 1.8.0
+            mmcv: 1.8
           - torch: 1.9.0
             torchvision: 0.10.0
-            mmcv: 1.9.0
+            mmcv: 1.9
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -91,19 +91,19 @@ jobs:
           - torch: 1.5.1+cu101
             torch_version: torch1.5.1
             torchvision: 0.6.1+cu101
-            mmcv: 1.5.0
+            mmcv: 1.5
           - torch: 1.6.0+cu101
             torch_version: torch1.6.0
             torchvision: 0.7.0+cu101
-            mmcv: 1.6.0
+            mmcv: 1.6
           - torch: 1.7.0+cu101
             torch_version: torch1.7.0
             torchvision: 0.8.1+cu101
-            mmcv: 1.7.0
+            mmcv: 1.7
           - torch: 1.8.0+cu101
             torch_version: torch1.8.0
             torchvision: 0.9.0+cu101
-            mmcv: 1.8.0
+            mmcv: 1.8
 
     steps:
       - uses: actions/checkout@v2
@@ -165,7 +165,7 @@ jobs:
           - torch: 1.9.0+cu102
             torch_version: torch1.9.0
             torchvision: 0.10.0+cu102
-            mmcv: 1.9.0
+            mmcv: 1.9
 
     steps:
       - uses: actions/checkout@v2
