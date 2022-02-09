@@ -72,7 +72,6 @@ def train_detector(model,
                    dataset,
                    cfg,
                    distributed=False,
-                   device='cuda',
                    validate=False,
                    timestamp=None,
                    meta=None):
@@ -121,12 +120,14 @@ def train_detector(model,
             broadcast_buffers=False,
             find_unused_parameters=find_unused_parameters)
     else:
-        if device == 'cuda':
+        if digit_version(mmcv.__version__) >= digit_version('1.4.4'):
             model = MMDataParallel(model.cuda(cfg.gpu_ids[0]), device_ids=cfg.gpu_ids)
-        elif device == 'cpu':
-            model = model.cpu()
+        elif torch.cuda.is_available():
+            model = MMDataParallel(model.cuda(cfg.gpu_ids[0]), device_ids=cfg.gpu_ids)
         else:
-            raise ValueError(F'unsupported device name {device}.')
+            print('Recommand to use MMCV >= 1.4.4 for CPU training!')
+            print('Now we are using an earlier version for CPU training!')
+            model = model.cpu()
 
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
