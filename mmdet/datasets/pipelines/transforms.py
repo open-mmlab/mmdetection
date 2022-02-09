@@ -2426,9 +2426,8 @@ class MixUp:
             keep_list = self._filter_box_candidates(retrieve_gt_bboxes.T,
                                                     cp_retrieve_gt_bboxes.T)
 
-            if keep_list.sum() >= 1.0:
-                retrieve_gt_labels = retrieve_gt_labels[keep_list]
-                cp_retrieve_gt_bboxes = cp_retrieve_gt_bboxes[keep_list]
+            retrieve_gt_labels = retrieve_gt_labels[keep_list]
+            cp_retrieve_gt_bboxes = cp_retrieve_gt_bboxes[keep_list]
 
         mixup_gt_bboxes = np.concatenate(
             (results['gt_bboxes'], cp_retrieve_gt_bboxes), axis=0)
