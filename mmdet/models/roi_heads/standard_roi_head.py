@@ -260,13 +260,13 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 x, img_metas, det_bboxes, det_labels, rescale=rescale)
             return list(zip(bbox_results, segm_results))
 
-    def aug_test(self, x, proposal_list, img_metas, rescale=False):
+    def aug_test(self, x, proposal_list, aug_batch_img_metas, rescale=False):
         """Test with augmentations.
 
         If rescale is False, then returned bboxes and masks will fit the scale
         of imgs[0].
         """
-        det_bboxes, det_labels = self.aug_test_bboxes(x, img_metas,
+        det_bboxes, det_labels = self.aug_test_bboxes(x, aug_batch_img_metas,
                                                       proposal_list,
                                                       self.test_cfg)
         if rescale:
@@ -274,14 +274,14 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         else:
             _det_bboxes = det_bboxes.clone()
             _det_bboxes[:, :4] *= det_bboxes.new_tensor(
-                img_metas[0][0]['scale_factor'])
+                aug_batch_img_metas[0][0]['scale_factor'])
         bbox_results = bbox2result(_det_bboxes, det_labels,
                                    self.bbox_head.num_classes)
 
         # det_bboxes always keep the original scale
         if self.with_mask:
-            segm_results = self.aug_test_mask(x, img_metas, det_bboxes,
-                                              det_labels)
+            segm_results = self.aug_test_mask(x, aug_batch_img_metas,
+                                              det_bboxes, det_labels)
             return [(bbox_results, segm_results)]
         else:
             return [bbox_results]
