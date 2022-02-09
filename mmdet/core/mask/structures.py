@@ -960,6 +960,7 @@ class PolygonMasks(BaseInstanceMasks):
                 a list of vertices, in CCW order.
             """
             from scipy.stats import truncnorm
+
             # Generate around the unit circle
             cx, cy = (0.0, 0.0)
             radius = 1
