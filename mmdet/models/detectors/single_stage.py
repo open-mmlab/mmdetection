@@ -86,16 +86,16 @@ class SingleStageDetector(BaseDetector):
         feat = self.extract_feat(img)
         results_list = self.bbox_head.simple_test(
             feat, img_metas, rescale=rescale)
-        # TODO: directly return the result
+        # TODO: directly return the result waiting for the evaluator
         if isinstance(results_list[0], InstanceData):
             bbox_results = []
             for results in results_list:
                 det_bboxes = torch.cat(
                     [results.bboxes, results.scores[:, None]], dim=-1)
                 det_labels = results.labels
-            bbox_results.append(
-                bbox2result(det_bboxes, det_labels,
-                            self.bbox_head.num_classes))
+                bbox_results.append(
+                    bbox2result(det_bboxes, det_labels,
+                                self.bbox_head.num_classes))
         else:
             bbox_results = [
                 bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
@@ -103,16 +103,19 @@ class SingleStageDetector(BaseDetector):
             ]
         return bbox_results
 
-    def aug_test(self, imgs, img_metas, rescale=False):
+    def aug_test(self, aug_batch_imgs, aug_batch_img_metas, rescale=False):
         """Test function with test time augmentation.
 
         Args:
-            imgs (list[Tensor]): the outer list indicates test-time
-                augmentations and inner Tensor should have a shape NxCxHxW,
-                which contains all images in the batch.
-            img_metas (list[list[dict]]): the outer list indicates test-time
-                augs (multiscale, flip, etc.) and the inner list indicates
-                images in a batch. each dict has image information.
+            aug_batch_imgs (list[Tensor]): The list indicate the
+                different augmentation. each item has shape
+                of (B, C, H, W).
+                Typically these should be mean centered and std scaled.
+            aug_batch_img_metas (list[list[dict]]): The outer list
+                indicate the test-time augmentations. The inter list indicate
+                the batch dimensions.  Each item contains
+                the meta information of image with corresponding
+                augmentation.
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
 
@@ -125,13 +128,17 @@ class SingleStageDetector(BaseDetector):
             f'{self.bbox_head.__class__.__name__}' \
             ' does not support test-time augmentation'
 
-        feats = self.extract_feats(imgs)
+        feats = self.extract_feats(aug_batch_imgs)
         results_list = self.bbox_head.aug_test(
-            feats, img_metas, rescale=rescale)
-        bbox_results = [
-            bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
-            for det_bboxes, det_labels in results_list
-        ]
+            feats, aug_batch_img_metas, rescale=rescale)
+        bbox_results = []
+        for results in results_list:
+            det_bboxes = torch.cat([results.bboxes, results.scores[:, None]],
+                                   dim=-1)
+            det_labels = results.labels
+            bbox_results.append(
+                bbox2result(det_bboxes, det_labels,
+                            self.bbox_head.num_classes))
         return bbox_results
 
     # TODO
