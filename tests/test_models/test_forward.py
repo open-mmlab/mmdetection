@@ -616,9 +616,10 @@ def test_detr_forward():
 
 
 def test_inference_detector():
+    from mmcv import ConfigDict
+
     from mmdet.apis import inference_detector
     from mmdet.models import build_detector
-    from mmcv import ConfigDict
 
     # small RetinaNet
     num_class = 3

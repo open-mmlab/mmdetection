@@ -76,6 +76,14 @@ def test_dataset_wrapper():
     assert concat_dataset.get_ann_info(25) == ann_info_list_b[15]
     assert len(concat_dataset) == len(dataset_a) + len(dataset_b)
 
+    # Test if ConcatDataset allows dataset classes without the PALETTE
+    # attribute
+    palette_backup = CustomDataset.PALETTE
+    delattr(CustomDataset, 'PALETTE')
+    concat_dataset = ConcatDataset([dataset_a, dataset_b])
+    assert concat_dataset.PALETTE is None
+    CustomDataset.PALETTE = palette_backup
+
     repeat_dataset = RepeatDataset(dataset_a, 10)
     assert repeat_dataset[5] == 5
     assert repeat_dataset[15] == 5
@@ -87,6 +95,13 @@ def test_dataset_wrapper():
     assert repeat_dataset.get_ann_info(15) == ann_info_list_a[5]
     assert repeat_dataset.get_ann_info(27) == ann_info_list_a[7]
     assert len(repeat_dataset) == 10 * len(dataset_a)
+
+    # Test if RepeatDataset allows dataset classes without the PALETTE
+    # attribute
+    delattr(CustomDataset, 'PALETTE')
+    repeat_dataset = RepeatDataset(dataset_a, 10)
+    assert repeat_dataset.PALETTE is None
+    CustomDataset.PALETTE = palette_backup
 
     category_freq = defaultdict(int)
     for cat_ids in cat_ids_list_a:
@@ -117,6 +132,12 @@ def test_dataset_wrapper():
             repeat_factors_cumsum, idx)
         assert repeat_factor_dataset.get_ann_info(idx) == ann_info_list_a[
             bisect.bisect_right(repeat_factors_cumsum, idx)]
+    # Test if ClassBalancedDataset allows dataset classes without the PALETTE
+    # attribute
+    delattr(CustomDataset, 'PALETTE')
+    repeat_factor_dataset = ClassBalancedDataset(dataset_a, repeat_thr)
+    assert repeat_factor_dataset.PALETTE is None
+    CustomDataset.PALETTE = palette_backup
 
     img_scale = (60, 60)
     pipeline = [
@@ -179,3 +200,10 @@ def test_dataset_wrapper():
     for idx in range(len_a):
         results_ = multi_image_mix_dataset[idx]
         assert results_['img'].shape == (img_scale[0], img_scale[1], 3)
+
+    # Test if MultiImageMixDataset allows dataset classes without the PALETTE
+    # attribute
+    delattr(CustomDataset, 'PALETTE')
+    multi_image_mix_dataset = MultiImageMixDataset(dataset_a, pipeline)
+    assert multi_image_mix_dataset.PALETTE is None
+    CustomDataset.PALETTE = palette_backup
