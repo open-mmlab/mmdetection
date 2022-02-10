@@ -49,7 +49,7 @@ jobs:
             mmcv: 1.8.0
           - torch: 1.9.0
             torchvision: 0.10.0
-            mmcv: 1.9.0
+            mmcv: 1.9
           - torch: 1.10.1
             torchvision: 0.11.2
             mmcv: 1.10.0
@@ -168,7 +168,7 @@ jobs:
           - torch: 1.9.0+cu102
             torch_version: torch1.9.0
             torchvision: 0.10.0+cu102
-            mmcv: 1.9.0
+            mmcv: 1.9
           - torch: 1.10.1+cu102
             torch_version: torch1.10.1
             torchvision: 0.11.2+cu102
