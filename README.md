@@ -18,7 +18,6 @@
   </div>
   <div>&nbsp;</div>
 
-
 [![PyPI](https://img.shields.io/pypi/v/mmdet)](https://pypi.org/project/mmdet)
 [![docs](https://img.shields.io/badge/docs-latest-blue)](https://mmdetection.readthedocs.io/en/latest/)
 [![badge](https://github.com/open-mmlab/mmdetection/workflows/build/badge.svg)](https://github.com/open-mmlab/mmdetection/actions)
@@ -26,14 +25,12 @@
 [![license](https://img.shields.io/github/license/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/blob/master/LICENSE)
 [![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 
-
   <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
-
-[📘Documentation](https://mmdetection.readthedocs.io/en/v2.20.0/) |
-[🛠️Installation](https://mmdetection.readthedocs.io/en/v2.20.0/get_started.html) |
-[👀Model Zoo](https://mmdetection.readthedocs.io/en/v2.20.0/model_zoo.html) |
-[🆕Update News](https://mmdetection.readthedocs.io/en/v2.20.0/changelog.html) |
+[📘Documentation](https://mmdetection.readthedocs.io/en/v2.21.0/) |
+[🛠️Installation](https://mmdetection.readthedocs.io/en/v2.21.0/get_started.html) |
+[👀Model Zoo](https://mmdetection.readthedocs.io/en/v2.21.0/model_zoo.html) |
+[🆕Update News](https://mmdetection.readthedocs.io/en/v2.21.0/changelog.html) |
 [🚀Ongoing Projects](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔Reporting Issues](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
@@ -66,8 +63,8 @@ The master branch works with **PyTorch 1.5+**.
 - **State of the art**
 
   The toolbox stems from the codebase developed by the *MMDet* team, who won [COCO Detection Challenge](http://cocodataset.org/#detection-leaderboard) in 2018, and we keep pushing it forward.
-</details>
 
+</details>
 
 Apart from MMDetection, we also released a library [mmcv](https://github.com/open-mmlab/mmcv) for computer vision research, which is heavily depended on by this toolbox.
 
@@ -77,10 +74,10 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-**2.20.0** was released in 27/12/2021:
+**2.21.0** was released in 8/2/2022:
 
-- Support [TOOD](configs/tood/README.md): Task-aligned One-stage Object Detection (ICCV 2021 Oral)
-- Support resuming from the latest checkpoint automatically
+- Support CPU training
+- Allow to set parameters about multi-processing to speed up training and testing
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 
@@ -251,7 +248,8 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         <ul>
           <li><a href="configs/faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py">OHEM (CVPR'2016)</a></li>
           <li><a href="configs/gn">Group Normalization (ECCV'2018)</a></li>
-          <li><a href="configs/dcn">DCNv2 (CVPR'2019)</a></li>
+          <li><a href="configs/dcn">DCN (ICCV'2017)</a></li>
+          <li><a href="configs/dcnv2">DCNv2 (CVPR'2019)</a></li>
           <li><a href="configs/gn+ws">Weight Standardization (ArXiv'2019)</a></li>
           <li><a href="configs/pisa">Prime Sample Attention (CVPR'2020)</a></li>
           <li><a href="configs/strong_baselines">Strong Baselines (CVPR'2021)</a></li>
