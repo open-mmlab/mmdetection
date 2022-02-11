@@ -197,7 +197,7 @@ class AutoAssignHead(FCOSHead):
         # scale the bbox_pred of different level
         # float to avoid overflow when enabling FP16
         bbox_pred = scale(bbox_pred).float()
-        bbox_pred = F.relu(bbox_pred)
+        bbox_pred = bbox_pred.clamp(min=0)
         bbox_pred *= stride
         return cls_score, bbox_pred, centerness
 

@@ -1,36 +1,29 @@
-# RepPoints: Point Set Representation for Object Detection
+# RepPoints
+
+> [RepPoints: Point Set Representation for Object Detection](https://arxiv.org/abs/1904.11490)
+
+<!-- [ALGORITHM] -->
+
+## Abstract
+
+Modern object detectors rely heavily on rectangular bounding boxes, such as anchors, proposals and the final predictions, to represent objects at various recognition stages. The bounding box is convenient to use but provides only a coarse localization of objects and leads to a correspondingly coarse extraction of object features. In this paper, we present RepPoints(representative points), a new finer representation of objects as a set of sample points useful for both localization and recognition. Given ground truth localization and recognition targets for training, RepPoints learn to automatically arrange themselves in a manner that bounds the spatial extent of an object and indicates semantically significant local areas. They furthermore do not require the use of anchors to sample a space of bounding boxes. We show that an anchor-free object detector based on RepPoints can be as effective as the state-of-the-art anchor-based detection methods, with 46.5 AP and 67.4 AP50 on the COCO test-dev detection benchmark, using ResNet-101 model.
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143972514-93247220-4dad-4eb3-a51b-a1115dc7d449.png"/>
+</div>
+
+## Introdution
 
 By [Ze Yang](https://yangze.tech/), [Shaohui Liu](http://b1ueber2y.me/), and [Han Hu](https://ancientmooner.github.io/).
 
 We provide code support and configuration files to reproduce the results in the paper for
 ["RepPoints: Point Set Representation for Object Detection"](https://arxiv.org/abs/1904.11490) on COCO object detection.
 
-## Introduction
-
-<!-- [ALGORITHM] -->
-
 **RepPoints**, initially described in [arXiv](https://arxiv.org/abs/1904.11490), is a new representation method for visual objects, on which visual understanding tasks are typically centered. Visual object representation, aiming at both geometric description and appearance feature extraction, is conventionally achieved by `bounding box + RoIPool (RoIAlign)`. The bounding box representation is convenient to use; however, it provides only a rectangular localization of objects that lacks geometric precision and may consequently degrade feature quality. Our new representation, RepPoints, models objects by a `point set` instead of a `bounding box`, which learns to adaptively position themselves over an object in a manner that circumscribes the object’s `spatial extent` and enables `semantically aligned feature extraction`. This richer and more flexible representation maintains the convenience of bounding boxes while facilitating various visual understanding applications. This repo demonstrated the effectiveness of RepPoints for COCO object detection.
 
 Another feature of this repo is the demonstration of an `anchor-free detector`, which can be as effective as state-of-the-art anchor-based detection methods. The anchor-free detector can utilize either `bounding box` or `RepPoints` as the basic object representation.
 
-<div align="center">
-  <img src="reppoints.png" width="400px" />
-  <p>Learning RepPoints in Object Detection.</p>
-</div>
-
-## Citing RepPoints
-
-```
-@inproceedings{yang2019reppoints,
-  title={RepPoints: Point Set Representation for Object Detection},
-  author={Yang, Ze and Liu, Shaohui and Hu, Han and Wang, Liwei and Lin, Stephen},
-  booktitle={The IEEE International Conference on Computer Vision (ICCV)},
-  month={Oct},
-  year={2019}
-}
-```
-
-## Results and models
+## Results and Models
 
 The results on COCO 2017val are shown in the table below.
 
@@ -52,3 +45,15 @@ The results on COCO 2017val are shown in the table below.
 - `none` in the `anchor` column means 2-d `center point` (x,y) is used to represent the initial object hypothesis. `single` denotes one 4-d anchor box (x,y,w,h) with IoU based label assign criterion is adopted.
 - `moment`, `partial MinMax`, `MinMax` in the `convert func` column are three functions to convert a point set to a pseudo box.
 - Note the results here are slightly different from those reported in the paper, due to framework change. While the original paper uses an [MXNet](https://mxnet.apache.org/) implementation, we re-implement the method in [PyTorch](https://pytorch.org/) based on mmdetection.
+
+## Citation
+
+```latex
+@inproceedings{yang2019reppoints,
+  title={RepPoints: Point Set Representation for Object Detection},
+  author={Yang, Ze and Liu, Shaohui and Hu, Han and Wang, Liwei and Lin, Stephen},
+  booktitle={The IEEE International Conference on Computer Vision (ICCV)},
+  month={Oct},
+  year={2019}
+}
+```

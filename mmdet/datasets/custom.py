@@ -54,6 +54,8 @@ class CustomDataset(Dataset):
 
     CLASSES = None
 
+    PALETTE = None
+
     def __init__(self,
                  ann_file,
                  pipeline,
@@ -63,7 +65,8 @@ class CustomDataset(Dataset):
                  seg_prefix=None,
                  proposal_file=None,
                  test_mode=False,
-                 filter_empty_gt=True):
+                 filter_empty_gt=True,
+                 file_client_args=dict(backend='disk')):
         self.ann_file = ann_file
         self.data_root = data_root
         self.img_prefix = img_prefix
@@ -72,6 +75,7 @@ class CustomDataset(Dataset):
         self.test_mode = test_mode
         self.filter_empty_gt = filter_empty_gt
         self.CLASSES = self.get_classes(classes)
+        self.file_client = mmcv.FileClient(**file_client_args)
 
         # join paths if data_root is specified
         if self.data_root is not None:
@@ -86,10 +90,29 @@ class CustomDataset(Dataset):
                 self.proposal_file = osp.join(self.data_root,
                                               self.proposal_file)
         # load annotations (and proposals)
-        self.data_infos = self.load_annotations(self.ann_file)
+        if hasattr(self.file_client, 'get_local_path'):
+            with self.file_client.get_local_path(self.ann_file) as local_path:
+                self.data_infos = self.load_annotations(local_path)
+        else:
+            warnings.warn(
+                'The used MMCV version does not have get_local_path. '
+                f'We treat the {self.ann_file} as local paths and it '
+                'might cause errors if the path is not a local path. '
+                'Please use MMCV>= 1.3.16 if you meet errors.')
+            self.data_infos = self.load_annotations(self.ann_file)
 
         if self.proposal_file is not None:
-            self.proposals = self.load_proposals(self.proposal_file)
+            if hasattr(self.file_client, 'get_local_path'):
+                with self.file_client.get_local_path(
+                        self.proposal_file) as local_path:
+                    self.proposals = self.load_proposals(local_path)
+            else:
+                warnings.warn(
+                    'The used MMCV version does not have get_local_path. '
+                    f'We treat the {self.ann_file} as local paths and it '
+                    'might cause errors if the path is not a local path. '
+                    'Please use MMCV>= 1.3.16 if you meet errors.')
+                self.proposals = self.load_proposals(self.proposal_file)
         else:
             self.proposals = None
 

@@ -1,28 +1,27 @@
-# GCNet for Object Detection
+# GCNet
+
+> [GCNet: Non-local Networks Meet Squeeze-Excitation Networks and Beyond](https://arxiv.org/abs/1904.11492)
+
+<!-- [ALGORITHM] -->
+
+## Abstract
+
+The Non-Local Network (NLNet) presents a pioneering approach for capturing long-range dependencies, via aggregating query-specific global context to each query position. However, through a rigorous empirical analysis, we have found that the global contexts modeled by non-local network are almost the same for different query positions within an image. In this paper, we take advantage of this finding to create a simplified network based on a query-independent formulation, which maintains the accuracy of NLNet but with significantly less computation. We further observe that this simplified design shares similar structure with Squeeze-Excitation Network (SENet). Hence we unify them into a three-step general framework for global context modeling. Within the general framework, we design a better instantiation, called the global context (GC) block, which is lightweight and can effectively model the global context. The lightweight property allows us to apply it for multiple layers in a backbone network to construct a global context network (GCNet), which generally outperforms both simplified NLNet and SENet on major benchmarks for various recognition tasks.
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143887418-c5d2c906-d6c9-415d-bce7-c5355c20a10a.png" height="300"/>
+</div>
+
+## Introduction
 
 By [Yue Cao](http://yue-cao.me), [Jiarui Xu](http://jerryxu.net), [Stephen Lin](https://scholar.google.com/citations?user=c3PYmxUAAAAJ&hl=en), Fangyun Wei, [Han Hu](https://sites.google.com/site/hanhushomepage/).
 
 We provide config files to reproduce the results in the paper for
 ["GCNet: Non-local Networks Meet Squeeze-Excitation Networks and Beyond"](https://arxiv.org/abs/1904.11492) on COCO object detection.
 
-## Introduction
-
-<!-- [ALGORITHM] -->
-
 **GCNet** is initially described in [arxiv](https://arxiv.org/abs/1904.11492). Via absorbing advantages of Non-Local Networks (NLNet) and Squeeze-Excitation Networks (SENet),  GCNet provides a simple, fast and effective approach for global context modeling, which generally outperforms both NLNet and SENet on major benchmarks for various recognition tasks.
 
-## Citing GCNet
-
-```latex
-@article{cao2019GCNet,
-  title={GCNet: Non-local Networks Meet Squeeze-Excitation Networks and Beyond},
-  author={Cao, Yue and Xu, Jiarui and Lin, Stephen and Wei, Fangyun and Hu, Han},
-  journal={arXiv preprint arXiv:1904.11492},
-  year={2019}
-}
-```
-
-## Results and models
+## Results and Models
 
 The results on COCO 2017val are shown in the below table.
 
@@ -57,3 +56,14 @@ The results on COCO 2017val are shown in the below table.
 - `GC` denotes Global Context (GC) block is inserted after 1x1 conv of backbone.
 - `DCN` denotes replace 3x3 conv with 3x3 Deformable Convolution in `c3-c5` stages of backbone.
 - `r4` and `r16` denote ratio 4 and ratio 16 in GC block respectively.
+
+## Citation
+
+```latex
+@article{cao2019GCNet,
+  title={GCNet: Non-local Networks Meet Squeeze-Excitation Networks and Beyond},
+  author={Cao, Yue and Xu, Jiarui and Lin, Stephen and Wei, Fangyun and Hu, Han},
+  journal={arXiv preprint arXiv:1904.11492},
+  year={2019}
+}
+```

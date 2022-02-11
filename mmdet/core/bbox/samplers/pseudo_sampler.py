@@ -21,7 +21,7 @@ class PseudoSampler(BaseSampler):
         """Sample negative samples."""
         raise NotImplementedError
 
-    def sample(self, assign_result, bboxes, gt_bboxes, **kwargs):
+    def sample(self, assign_result, bboxes, gt_bboxes, *args, **kwargs):
         """Directly returns the positive and negative indices  of samples.
 
         Args:

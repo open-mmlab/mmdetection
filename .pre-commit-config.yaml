@@ -3,12 +3,8 @@ repos:
     rev: 3.8.3
     hooks:
       - id: flake8
-  - repo: https://github.com/asottile/seed-isort-config
-    rev: v2.2.0
-    hooks:
-      - id: seed-isort-config
-  - repo: https://github.com/timothycrosley/isort
-    rev: 4.3.21
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.10.1
     hooks:
       - id: isort
   - repo: https://github.com/pre-commit/mirrors-yapf
@@ -28,11 +24,12 @@ repos:
         args: ["--remove"]
       - id: mixed-line-ending
         args: ["--fix=lf"]
-  - repo: https://github.com/jumanjihouse/pre-commit-hooks
-    rev: 2.1.4
+  - repo: https://github.com/markdownlint/markdownlint
+    rev: v0.11.0
     hooks:
       - id: markdownlint
-        args: ["-r", "~MD002,~MD013,~MD024,~MD029,~MD033,~MD034,~MD036", "-t", "allow_different_nesting"]
+        args: ["-r", "~MD002,~MD013,~MD029,~MD033,~MD034",
+              "-t", "allow_different_nesting"]
   - repo: https://github.com/codespell-project/codespell
     rev: v2.1.0
     hooks:
@@ -42,3 +39,9 @@ repos:
     hooks:
       - id: docformatter
         args: ["--in-place", "--wrap-descriptions", "79"]
+  - repo: https://github.com/open-mmlab/pre-commit-hooks
+    rev: master  # Use the ref you want to point at
+    hooks:
+      - id: check-algo-readme
+      - id: check-copyright
+        args: ["mmdet"]  # replace the dir_to_check with your expected directory to check

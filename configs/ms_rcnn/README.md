@@ -1,17 +1,16 @@
-# Mask Scoring R-CNN
+# MS R-CNN
 
-## Introduction
+> [Mask Scoring R-CNN](https://arxiv.org/abs/1903.00241)
 
 <!-- [ALGORITHM] -->
 
-```
-@inproceedings{huang2019msrcnn,
-    title={Mask Scoring R-CNN},
-    author={Zhaojin Huang and Lichao Huang and Yongchao Gong and Chang Huang and Xinggang Wang},
-    booktitle={IEEE Conference on Computer Vision and Pattern Recognition},
-    year={2019},
-}
-```
+## Abstract
+
+Letting a deep network be aware of the quality of its own predictions is an interesting yet important problem. In the task of instance segmentation, the confidence of instance classification is used as mask quality score in most instance segmentation frameworks. However, the mask quality, quantified as the IoU between the instance mask and its ground truth, is usually not well correlated with classification score. In this paper, we study this problem and propose Mask Scoring R-CNN which contains a network block to learn the quality of the predicted instance masks. The proposed network block takes the instance feature and the corresponding predicted mask together to regress the mask IoU. The mask scoring strategy calibrates the misalignment between mask quality and mask score, and improves instance segmentation performance by prioritizing more accurate mask predictions during COCO AP evaluation. By extensive evaluations on the COCO dataset, Mask Scoring R-CNN brings consistent and noticeable gain with different models, and outperforms the state-of-the-art Mask R-CNN. We hope our simple and effective approach will provide a new direction for improving instance segmentation.
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143967239-3a95ae92-6443-4181-9cbc-dfe16e81b969.png"/>
+</div>
 
 ## Results and Models
 
@@ -24,3 +23,14 @@
 | R-X101-32x4d  | pytorch    | 2x      | 7.9      | 11.0           | 41.8   | 38.7    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/ms_rcnn/ms_rcnn_x101_32x4d_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/ms_rcnn/ms_rcnn_x101_32x4d_fpn_1x_coco/ms_rcnn_x101_32x4d_fpn_1x_coco_20200206-81fd1740.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/ms_rcnn/ms_rcnn_x101_32x4d_fpn_1x_coco/ms_rcnn_x101_32x4d_fpn_1x_coco_20200206_100113.log.json) |
 | R-X101-64x4d  | pytorch    | 1x      | 11.0     | 8.0            | 43.0   | 39.5    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/ms_rcnn/ms_rcnn_x101_64x4d_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/ms_rcnn/ms_rcnn_x101_64x4d_fpn_1x_coco/ms_rcnn_x101_64x4d_fpn_1x_coco_20200206-86ba88d2.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/ms_rcnn/ms_rcnn_x101_64x4d_fpn_1x_coco/ms_rcnn_x101_64x4d_fpn_1x_coco_20200206_091744.log.json) |
 | R-X101-64x4d  | pytorch    | 2x      | 11.0     | 8.0            | 42.6   | 39.5    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/ms_rcnn/ms_rcnn_x101_64x4d_fpn_2x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/ms_rcnn/ms_rcnn_x101_64x4d_fpn_2x_coco/ms_rcnn_x101_64x4d_fpn_2x_coco_20200308-02a445e2.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/ms_rcnn/ms_rcnn_x101_64x4d_fpn_2x_coco/ms_rcnn_x101_64x4d_fpn_2x_coco_20200308_012247.log.json) |
+
+## Citation
+
+```latex
+@inproceedings{huang2019msrcnn,
+    title={Mask Scoring R-CNN},
+    author={Zhaojin Huang and Lichao Huang and Yongchao Gong and Chang Huang and Xinggang Wang},
+    booktitle={IEEE Conference on Computer Vision and Pattern Recognition},
+    year={2019},
+}
+```

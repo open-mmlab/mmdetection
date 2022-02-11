@@ -880,7 +880,8 @@ def test_random_affine():
         max_shear_degree=0.,
         border=(0, 0),
         min_bbox_size=2,
-        max_aspect_ratio=20)
+        max_aspect_ratio=20,
+        skip_filter=False)
     random_affine_module = build_from_cfg(transform, PIPELINES)
 
     results = random_affine_module(results)
@@ -965,3 +966,57 @@ def test_mixup():
     assert results['gt_labels'].dtype == np.int64
     assert results['gt_bboxes'].dtype == np.float32
     assert results['gt_bboxes_ignore'].dtype == np.float32
+
+    # test filter bbox :
+    # 2 boxes with sides 1 and 3 are filtered as min_bbox_size=5
+    gt_bboxes = np.array([[0, 0, 1, 1], [0, 0, 3, 3]], dtype=np.float32)
+    results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
+    results['gt_bboxes'] = gt_bboxes
+    results['gt_bboxes_ignore'] = np.array([], dtype=np.float32)
+    mixresults = results['mix_results'][0]
+    mixresults['gt_labels'] = copy.deepcopy(results['gt_labels'])
+    mixresults['gt_bboxes'] = copy.deepcopy(results['gt_bboxes'])
+    mixresults['gt_bboxes_ignore'] = copy.deepcopy(results['gt_bboxes_ignore'])
+    transform = dict(
+        type='MixUp',
+        img_scale=(10, 12),
+        ratio_range=(1.5, 1.5),
+        min_bbox_size=5,
+        skip_filter=False)
+    mixup_module = build_from_cfg(transform, PIPELINES)
+
+    results = mixup_module(results)
+
+    assert results['gt_bboxes'].shape[0] == 2
+    assert results['gt_labels'].shape[0] == 2
+    assert results['gt_labels'].shape[0] == results['gt_bboxes'].shape[0]
+    assert results['gt_labels'].dtype == np.int64
+    assert results['gt_bboxes'].dtype == np.float32
+    assert results['gt_bboxes_ignore'].dtype == np.float32
+
+
+def test_photo_metric_distortion():
+    img = mmcv.imread(
+        osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
+    transform = dict(type='PhotoMetricDistortion')
+    distortion_module = build_from_cfg(transform, PIPELINES)
+
+    # test assertion for invalid img_fields
+    with pytest.raises(AssertionError):
+        results = dict()
+        results['img'] = img
+        results['img2'] = img
+        results['img_fields'] = ['img', 'img2']
+        distortion_module(results)
+
+    # test uint8 input
+    results = dict()
+    results['img'] = img
+    results = distortion_module(results)
+    assert results['img'].dtype == np.float32
+
+    # test float32 input
+    results = dict()
+    results['img'] = img.astype(np.float32)
+    results = distortion_module(results)
+    assert results['img'].dtype == np.float32

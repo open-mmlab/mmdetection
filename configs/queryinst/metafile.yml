@@ -33,7 +33,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 37.5
-    Weights:
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/queryinst/queryinst_r50_fpn_1x_coco/queryinst_r50_fpn_1x_coco_20210907_084916-5a8f1998.pth
 
   - Name: queryinst_r50_fpn_mstrain_480-800_3x_coco
     In Collection: QueryInst
@@ -49,7 +49,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 39.8
-    Weights:
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/queryinst/queryinst_r50_fpn_mstrain_480-800_3x_coco/queryinst_r50_fpn_mstrain_480-800_3x_coco_20210901_103643-7837af86.pth
 
   - Name: queryinst_r50_fpn_300_proposals_crop_mstrain_480-800_3x_coco
     In Collection: QueryInst
@@ -65,7 +65,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 41.7
-    Weights:
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/queryinst/queryinst_r50_fpn_300_proposals_crop_mstrain_480-800_3x_coco/queryinst_r50_fpn_300_proposals_crop_mstrain_480-800_3x_coco_20210904_101802-85cffbd8.pth
 
   - Name: queryinst_r101_fpn_mstrain_480-800_3x_coco
     In Collection: QueryInst
@@ -81,7 +81,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 41.0
-    Weights:
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/queryinst/queryinst_r101_fpn_mstrain_480-800_3x_coco/queryinst_r101_fpn_mstrain_480-800_3x_coco_20210904_104048-91f9995b.pth
 
   - Name: queryinst_r101_fpn_300_proposals_crop_mstrain_480-800_3x_coco
     In Collection: QueryInst
@@ -97,4 +97,4 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 42.9
-    Weights:
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/queryinst/queryinst_r101_fpn_300_proposals_crop_mstrain_480-800_3x_coco/queryinst_r101_fpn_300_proposals_crop_mstrain_480-800_3x_coco_20210904_153621-76cce59f.pth

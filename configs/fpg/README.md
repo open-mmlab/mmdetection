@@ -1,16 +1,16 @@
-# Feature Pyramid Grids
+# FPG
+
+> [Feature Pyramid Grids](https://arxiv.org/abs/2004.03580)
+
 <!-- [ALGORITHM] -->
 
-## Introduction
+## Abstract
 
-```latex
-@article{chen2020feature,
-  title={Feature pyramid grids},
-  author={Chen, Kai and Cao, Yuhang and Loy, Chen Change and Lin, Dahua and Feichtenhofer, Christoph},
-  journal={arXiv preprint arXiv:2004.03580},
-  year={2020}
-}
-```
+Feature pyramid networks have been widely adopted in the object detection literature to improve feature representations for better handling of variations in scale. In this paper, we present Feature Pyramid Grids (FPG), a deep multi-pathway feature pyramid, that represents the feature scale-space as a regular grid of parallel bottom-up pathways which are fused by multi-directional lateral connections. FPG can improve single-pathway feature pyramid networks by significantly increasing its performance at similar computation cost, highlighting importance of deep pyramid representations. In addition to its general and uniform structure, over complicated structures that have been found with neural architecture search, it also compares favorably against such approaches without relying on search. We hope that FPG with its uniform and effective nature can serve as a strong component for future work in object recognition.
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143885611-85902399-2885-4a85-9126-9b9b7464ad08.png"/>
+</div>
 
 ## Results and Models
 
@@ -28,3 +28,14 @@ All backbones are Resnet-50 in pytorch style.
 
 **Note**: Chn128 means to decrease the number of channels of features and convs from 256 (default) to 128 in
 Neck and BBox Head, which can greatly decrease memory consumption without sacrificing much precision.
+
+## Citation
+
+```latex
+@article{chen2020feature,
+  title={Feature pyramid grids},
+  author={Chen, Kai and Cao, Yuhang and Loy, Chen Change and Lin, Dahua and Feichtenhofer, Christoph},
+  journal={arXiv preprint arXiv:2004.03580},
+  year={2020}
+}
+```
