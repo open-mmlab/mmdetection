@@ -39,6 +39,27 @@ We also train some models with longer schedules and multi-scale training. The us
 |    R-101-FPN       |  pytorch|   3x    |   5.4    |  41    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/retinanet/retinanet_r101_fpn_mstrain_640-800_3x_coco.py)      | [model](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_fpn_mstrain_3x_coco/retinanet_r101_fpn_mstrain_3x_coco_20210720_214650-7ee888e0.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_fpn_mstrain_3x_coco/retinanet_r101_fpn_mstrain_3x_coco_20210720_214650-7ee888e0.log.json)
 |    X-101-64x4d-FPN |  pytorch|   3x    |   9.8   |  41.6  |  [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/retinanet/retinanet_x101_64x4d_fpn_mstrain_640-800_3x_coco.py)      |      [model](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_x101_64x4d_fpn_mstrain_3x_coco/retinanet_x101_64x4d_fpn_mstrain_3x_coco_20210719_051838-022c2187.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_x101_64x4d_fpn_mstrain_3x_coco/retinanet_x101_64x4d_fpn_mstrain_3x_coco_20210719_051838-022c2187.log.json)
 
+## Some tricks
+
+We also support exponential moving average (EMA) over the number of positive samples as loss normalizer to improve the performance. This trick is introduced in [Detectron2](https://github.com/facebookresearch/detectron2/blob/main/detectron2/modeling/meta_arch/retinanet.py#L183) to stabilize the training by reducing the variance of foreground number especially when the batch size is relatively small. Adding the following line in the head config could enable this option.
+
+```python
+loss_normalizer_momentum=0.9,
+loss_normalizer=100,
+```
+
+To enable a fair comparison when benchmarking with Detectron2, we use it in the benchmark configs. However, we do not recommend it as a default option since so many methods have proposed based on the original baseline. We compare the performance of models before/after adding EMA loss normalizer in the following table.
+
+| Backbone  |  Style  | Lr schd  | FPN Init |  EMA Normalizer | Mem (GB) | box AP | Config | Download |
+| :-------: | :-----: | :------: | :------: |:-------------: | :------:  | :----: | :----: | :------: |
+| R-50-FPN  |  caffe  |   1x     | Xavier   |      ✗            |            |    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/retinanet/retinanet_r50_caffe_fpn_mstrain_1x_coco.py) |          |
+| R-50-FPN  |  caffe  |   1x     | Xavier   |      ✓            |            |    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/retinanet/retinanet_r50_caffe_fpn_mstrain_loss-ema-norm_1x_coco.py) |          |
+| R-50-FPN  |  caffe  |   1x     | Caffe2Xavier   |      ✗            |            |    |        |          |
+| R-50-FPN  |  caffe  |   1x     | Caffe2Xavier   |      ✓            |            |    | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/retinanet/retinanet_r50_caffe_fpn_caffe2xavier_mstrain_loss-ema-norm_1x_coco.py) |          |
+
+- `Xavier` means that all convolutional layers in FPN use the `xavier uniform` parameter initialization method. `Caffe2Xavier` means that all convolutional layers in FPN use the `kaiming uniform` parameter initialization method.
+- In order to be consistent with the Detectron2, we set `relu_before_extra_convs=True` in the FPN initialized by `Caffe2Xavier` and `warmup_iters=1000`, this parameter has no effect on performance.
+
 ## Citation
 
 ```latex

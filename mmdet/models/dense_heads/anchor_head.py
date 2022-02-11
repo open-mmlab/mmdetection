@@ -31,6 +31,10 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             using `IoULoss`, `GIoULoss`, or `DIoULoss` in the bbox head.
         loss_cls (dict): Config of classification loss.
         loss_bbox (dict): Config of localization loss.
+        loss_normalizer_ratio (float): The momentum factor (from 0-1) used
+            for exponential moving average (EMA) loss normalizer.
+            Default: 0, no EMA
+        loss_normalizer (float): Default is 100
         train_cfg (dict): Training config of anchor head.
         test_cfg (dict): Testing config of anchor head.
         init_cfg (dict or list[dict], optional): Initialization config dict.
@@ -57,6 +61,8 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                      loss_weight=1.0),
                  loss_bbox=dict(
                      type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0),
+                 loss_normalizer_momentum=0,
+                 loss_normalizer=100,
                  train_cfg=None,
                  test_cfg=None,
                  init_cfg=dict(type='Normal', layer='Conv2d', std=0.01)):
@@ -102,6 +108,18 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
         self.fp16_enabled = False
+
+        # The loss normalizer normalizes the training loss according to the
+        # number of positive samples. Using EMA could reduce the variance
+        # of the normalizer thus improves the performance.
+        # The hardcode 100 is not important as long as it is reasonable
+        # and not too small according to Detectron2.
+        assert 0 <= loss_normalizer_momentum <= 1, \
+            '"loss_normalizer_momentum" should be in range [0, 1], ' \
+            f'got {loss_normalizer_momentum}'
+        self.loss_normalizer_momentum = loss_normalizer_momentum
+        self.register_buffer('loss_normalizer',
+                             torch.tensor(loss_normalizer, dtype=torch.float))
 
         self.prior_generator = build_prior_generator(anchor_generator)
 
@@ -400,7 +418,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         return res + tuple(rest_results)
 
     def loss_single(self, cls_score, bbox_pred, anchors, labels, label_weights,
-                    bbox_targets, bbox_weights, num_total_samples):
+                    bbox_targets, bbox_weights, avg_factor):
         """Compute loss of a single scale level.
 
         Args:
@@ -410,7 +428,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 level with shape (N, num_anchors * 4, H, W).
             anchors (Tensor): Box reference for each scale level with shape
                 (N, num_total_anchors, 4).
-            labels (Tensor): Labels of each anchors with shape
+            labels (Tensor): Labels of each anchor with shape
                 (N, num_total_anchors).
             label_weights (Tensor): Label weights of each anchor with shape
                 (N, num_total_anchors)
@@ -418,9 +436,9 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 weight shape (N, num_total_anchors, 4).
             bbox_weights (Tensor): BBox regression loss weights of each anchor
                 with shape (N, num_total_anchors, 4).
-            num_total_samples (int): If sampling, num total samples equal to
-                the number of total anchors; Otherwise, it is the number of
-                positive anchors.
+            avg_factor (float | int): If sampling, avg_factor equal to
+                the EMA value of the number of total anchors; Otherwise, it is
+                the EMA value of the number of positive anchors.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -431,7 +449,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         cls_score = cls_score.permute(0, 2, 3,
                                       1).reshape(-1, self.cls_out_channels)
         loss_cls = self.loss_cls(
-            cls_score, labels, label_weights, avg_factor=num_total_samples)
+            cls_score, labels, label_weights, avg_factor=avg_factor)
         # regression loss
         bbox_targets = bbox_targets.reshape(-1, 4)
         bbox_weights = bbox_weights.reshape(-1, 4)
@@ -443,10 +461,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             anchors = anchors.reshape(-1, 4)
             bbox_pred = self.bbox_coder.decode(anchors, bbox_pred)
         loss_bbox = self.loss_bbox(
-            bbox_pred,
-            bbox_targets,
-            bbox_weights,
-            avg_factor=num_total_samples)
+            bbox_pred, bbox_targets, bbox_weights, avg_factor=avg_factor)
         return loss_cls, loss_bbox
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
@@ -507,6 +522,12 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         all_anchor_list = images_to_levels(concat_anchor_list,
                                            num_level_anchors)
 
+        # Based on Detectron2, the loss normalizer using EMA could stabilize
+        # training thus improve the performance.
+        self.loss_normalizer = (
+            self.loss_normalizer_momentum * self.loss_normalizer +
+            (1 - self.loss_normalizer_momentum) * num_total_samples)
+
         losses_cls, losses_bbox = multi_apply(
             self.loss_single,
             cls_scores,
@@ -516,7 +537,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             label_weights_list,
             bbox_targets_list,
             bbox_weights_list,
-            num_total_samples=num_total_samples)
+            avg_factor=max(1., self.loss_normalizer))
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
 
     def aug_test(self, feats, img_metas, rescale=False):
