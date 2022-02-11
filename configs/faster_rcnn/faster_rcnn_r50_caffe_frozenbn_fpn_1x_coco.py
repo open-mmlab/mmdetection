@@ -1,4 +1,4 @@
-_base_ = './faster_rcnn_r50_caffe_fpn_mstrain_1x_coco.py'
+_base_ = './faster_rcnn_r50_caffe_fpn_1x_coco.py'
 model = dict(
     backbone=dict(
         # FrozenBN can only be used for BN with requires_grad=False and
