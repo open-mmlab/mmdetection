@@ -6,3 +6,5 @@ model = dict(
         loss_normalizer_momentum=0.9,
         loss_normalizer=100,
     ))
+
+data = dict(persistent_workers=True)
