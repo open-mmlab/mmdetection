@@ -142,7 +142,7 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
     # 安装 LVIS 数据集依赖
     pip install git+https://github.com/lvis-dataset/lvis-api.git
     # 安装 albumentations 依赖
-    pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
+    pip install -r requirements/albu.txt
     ```
 
 **注意：**
@@ -153,7 +153,7 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
 
 (3) 一些安装依赖是可以选择的。例如只需要安装最低运行要求的版本，则可以使用 `pip install -v -e .` 命令。如果希望使用可选择的像 `albumentations` 和 `imagecorruptions` 这种依赖项，可以使用 `pip install -r requirements/optional.txt` 进行手动安装，或者在使用 `pip` 时指定所需的附加功能（例如 `pip install -v -e .[optional]`），支持附加功能的有效键值包括  `all`、`tests`、`build` 以及 `optional` 。
 
-(4) 如果希望使用 `albumentations`，我们建议使用 `pip install albumentations>=0.3.2 --no-binary imgaug,albumentations` 进行安装。 如果简单地使用 `pip install albumentations>=0.3.2` 进行安装，则会同时安装 `opencv-python-headless`（即便已经安装了 `opencv-python` 也会再次安装）。我们不允许同时安装 `opencv-python` 和 `opencv-python-headless`，因为这样可能会导致一些问题。更多细节请参考[官方文档](https://albumentations.ai/docs/getting_started/installation/#note-on-opencv-dependencies)。
+(4) 如果希望使用 `albumentations`，我们建议使用 `pip install -r requirements/albu.txt` 或者 `pip install -U albumentations --no-binary qudida,albumentations` 进行安装。 如果简单地使用 `pip install albumentations>=0.3.2` 进行安装，则会同时安装 `opencv-python-headless`（即便已经安装了 `opencv-python` 也会再次安装）。我们建议在安装 `albumentations` 后检查环境，以确保没有同时安装 `opencv-python` 和 `opencv-python-headless`，因为同时安装可能会导致一些问题。更多细节请参考[官方文档](https://albumentations.ai/docs/getting_started/installation/#note-on-opencv-dependencies)。
 
 ### 只在 CPU 安装
 
