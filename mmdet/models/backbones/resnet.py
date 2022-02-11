@@ -8,7 +8,7 @@ from mmcv.runner import BaseModule
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from ..builder import BACKBONES
-from ..utils import ResLayer
+from ..utils import FrozenBatchNorm2d, ResLayer
 
 
 class BasicBlock(BaseModule):
@@ -616,17 +616,24 @@ class ResNet(BaseModule):
                 self.stem.eval()
                 for param in self.stem.parameters():
                     param.requires_grad = False
+                FrozenBatchNorm2d.convert_frozen_batchnorm(self.stem)
             else:
                 self.norm1.eval()
                 for m in [self.conv1, self.norm1]:
                     for param in m.parameters():
                         param.requires_grad = False
+                # Since self.norm1 has no children, it cannot be
+                # directly in_place
+                frozen_bn = FrozenBatchNorm2d.convert_frozen_batchnorm(
+                    self.norm1)
+                self.add_module(self.norm1_name, frozen_bn)
 
         for i in range(1, self.frozen_stages + 1):
             m = getattr(self, f'layer{i}')
             m.eval()
             for param in m.parameters():
                 param.requires_grad = False
+            FrozenBatchNorm2d.convert_frozen_batchnorm(m)
 
     def forward(self, x):
         """Forward function."""
