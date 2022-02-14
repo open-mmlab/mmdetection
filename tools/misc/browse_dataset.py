@@ -105,7 +105,9 @@ def main():
             gt_labels = np.concatenate((gt_labels, stuff_labels), axis=0)
             gt_masks = np.concatenate((gt_masks, stuff_masks.astype(np.uint8)),
                                       axis=0)
-            # gt_bboxes = None
+            # If you need to show the bounding boxes,
+            # please comment the following line
+            gt_bboxes = None
 
         imshow_det_bboxes(
             item['img'],

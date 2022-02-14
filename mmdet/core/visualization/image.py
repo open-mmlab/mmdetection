@@ -254,6 +254,8 @@ def imshow_det_bboxes(img,
         f' labels ndim should be 1, but its ndim is {labels.ndim}.'
     assert bboxes is None or bboxes.shape[1] == 4 or bboxes.shape[1] == 5, \
         f' bboxes.shape[1] should be 4 or 5, but its {bboxes.shape[1]}.'
+    assert bboxes is None or bboxes.shape[0] <= labels.shape[0], \
+        'labels.shape[0] should not be less than bboxes.shape[0].'
     assert segms is None or segms.shape[0] == labels.shape[0], \
         'segms.shape[0] and labels.shape[0] should have the same length.'
     assert segms is not None or bboxes is not None, \
@@ -287,7 +289,7 @@ def imshow_det_bboxes(img,
     ax = plt.gca()
     ax.axis('off')
 
-    max_label = int(max(labels))
+    max_label = int(max(labels) if len(labels) > 0 else 0)
     if segms is not None:
         mask_color = get_palette(mask_color, max_label + 1)
         colors = [mask_color[label] for label in labels]
@@ -451,6 +453,9 @@ def imshow_gt_det_bboxes(img,
         gt_labels = np.concatenate((gt_labels, stuff_labels), axis=0)
         gt_masks = np.concatenate((gt_masks, stuff_masks.astype(np.uint8)),
                                   axis=0)
+        # If you need to show the bounding boxes,
+        # please comment the following line
+        # gt_bboxes = None
 
     img = mmcv.imread(img)
 

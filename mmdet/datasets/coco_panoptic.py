@@ -196,7 +196,6 @@ class CocoPanopticDataset(CocoDataset):
         'rock-merged', 'wall-other-merged', 'rug-merged'
     ]
 
-    # The last color is for VOID label.
     PALETTE = [(220, 20, 60), (119, 11, 32), (0, 0, 142), (0, 0, 230),
                (106, 0, 228), (0, 60, 100), (0, 80, 100), (0, 0, 70),
                (0, 0, 192), (250, 170, 30), (100, 170, 30), (220, 220, 0),
@@ -232,7 +231,7 @@ class CocoPanopticDataset(CocoDataset):
                (70, 130, 180), (134, 199, 156), (209, 226, 140), (96, 36, 108),
                (96, 96, 96), (64, 170, 64), (152, 251, 152), (208, 229, 228),
                (206, 186, 171), (152, 161, 64), (116, 112, 0), (0, 114, 143),
-               (102, 102, 156), (250, 141, 255), (0, 0, 0)]
+               (102, 102, 156), (250, 141, 255)]
 
     def load_annotations(self, ann_file):
         """Load annotation from COCO Panoptic style annotation file.
