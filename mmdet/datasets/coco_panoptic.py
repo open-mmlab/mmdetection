@@ -8,6 +8,7 @@ import numpy as np
 from mmcv.utils import print_log
 from terminaltables import AsciiTable
 
+from mmdet.core import INSTANCE_OFFSET
 from .api_wrappers import COCO, pq_compute_multi_core
 from .builder import DATASETS
 from .coco import CocoDataset
@@ -22,12 +23,6 @@ except ImportError:
     VOID = None
 
 __all__ = ['CocoPanopticDataset']
-
-# A custom value to distinguish instance ID and category ID; need to
-# be greater than the number of categories.
-# For a pixel in the panoptic result map:
-#   pan_id = ins_id * INSTANCE_OFFSET + cat_id
-INSTANCE_OFFSET = 1000
 
 
 class COCOPanoptic(COCO):

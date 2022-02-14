@@ -3,9 +3,8 @@ import mmcv
 import numpy as np
 import torch
 
-from mmdet.core import bbox2roi, multiclass_nms
+from mmdet.core import INSTANCE_OFFSET, bbox2roi, multiclass_nms
 from mmdet.core.visualization import imshow_det_bboxes
-from mmdet.datasets.coco_panoptic import INSTANCE_OFFSET
 from ..builder import DETECTORS, build_head
 from ..roi_heads.mask_heads.fcn_mask_head import _do_paste_mask
 from .two_stage import TwoStageDetector
@@ -249,11 +248,11 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         img = img.copy()
         pan_results = result['pan_results']
         # keep objects ahead
-        ids = np.unique(pan_results, return_inverse=True)
+        ids = np.unique(pan_results)[::-1]
         legal_indices = ids != self.num_classes  # for VOID label
         ids = ids[legal_indices]
         labels = np.array([id % INSTANCE_OFFSET for id in ids], dtype=np.int64)
-        segms = pan_results[None] == ids[:, None, None]
+        segms = (pan_results[None] == ids[:, None, None]).astype(np.int32)
 
         # if out_file specified, do not show image in window
         if out_file is not None:

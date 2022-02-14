@@ -7,12 +7,32 @@ import pycocotools.mask as mask_util
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 
-from mmdet.datasets.coco_panoptic import INSTANCE_OFFSET
+from mmdet.core.evaluation.panoptic_utils import INSTANCE_OFFSET
 from ..mask.structures import bitmap_to_polygon
 from ..utils import mask2ndarray
 from .palette import get_palette, palette_val
 
+__all__ = [
+    'color_val_matplotlib', 'draw_masks', 'draw_bboxes', 'draw_labels',
+    'imshow_det_bboxes', 'imshow_gt_det_bboxes'
+]
+
 EPS = 1e-2
+
+
+def color_val_matplotlib(color):
+    """Convert various input in BGR order to normalized RGB matplotlib color
+    tuples.
+
+    Args:
+        color (:obj`Color` | str | tuple | int | ndarray): Color inputs.
+
+    Returns:
+        tuple[float]: A tuple of 3 normalized floats indicating RGB channels.
+    """
+    color = mmcv.color_val(color)
+    color = [color / 255 for color in color[::-1]]
+    return tuple(color)
 
 
 def _get_adaptive_scales(areas, min_area=800, max_area=30000):
@@ -268,29 +288,42 @@ def imshow_det_bboxes(img,
     ax.axis('off')
 
     max_label = int(max(labels))
-    if bboxes is not None:
-        bbox_color = palette_val(get_palette(bbox_color, max_label + 1))
-        _labels = labels[:bboxes.size(0)]
-        colors = [bbox_color[label] for label in _labels]
-        draw_bboxes(ax, bboxes, colors, alpha=0.8, thickness=thickness)
-
     if segms is not None:
         mask_color = get_palette(mask_color, max_label + 1)
         colors = [mask_color[label] for label in labels]
         colors = np.array(colors, dtype=np.uint8)
         draw_masks(ax, img, segms, colors, with_edge=True)
 
+    num_bboxes = 0
+    if bboxes is not None:
+        num_bboxes = bboxes.shape[0]
+        bbox_color = palette_val(get_palette(bbox_color, max_label + 1))
+        _labels = labels[:num_bboxes]
+        colors = [bbox_color[label] for label in _labels]
+        draw_bboxes(ax, bboxes, colors, alpha=0.8, thickness=thickness)
+
     text_color = palette_val(get_palette(text_color, max_label + 1))
     colors = [text_color[label] for label in labels]
-    scores = None
-    if bboxes is not None and bboxes.shape[1] == 5:
-        scores = bboxes[:, 4]
+
     if bboxes is not None:
         horizontal_alignment = 'left'
         positions = bboxes[:, :2].astype(np.int32) + thickness
         areas = (bboxes[:, 3] - bboxes[:, 1]) * (bboxes[:, 2] - bboxes[:, 0])
         scales = _get_adaptive_scales(areas)
-    else:
+        scores = bboxes[:, 4] if bboxes.shape[1] == 5 else None
+        draw_labels(
+            ax,
+            labels[:num_bboxes],
+            positions,
+            scores=scores,
+            class_names=class_names,
+            color=colors,
+            font_size=font_size,
+            scales=scales,
+            horizontal_alignment=horizontal_alignment)
+
+    if segms is not None and num_bboxes < segms.shape[0]:
+        segms = segms[num_bboxes:]
         horizontal_alignment = 'center'
         areas = []
         positions = []
@@ -302,16 +335,15 @@ def imshow_det_bboxes(img,
             areas.append(stats[largest_id, -1])
         areas = np.stack(areas, axis=0)
         scales = _get_adaptive_scales(areas)
-    draw_labels(
-        ax,
-        labels,
-        positions,
-        scores=scores,
-        class_names=class_names,
-        color=colors,
-        font_size=font_size,
-        scales=scales,
-        horizontal_alignment=horizontal_alignment)
+        draw_labels(
+            ax,
+            labels[num_bboxes:],
+            positions,
+            class_names=class_names,
+            color=colors,
+            font_size=font_size,
+            scales=scales,
+            horizontal_alignment=horizontal_alignment)
 
     plt.imshow(img)
 
@@ -409,16 +441,15 @@ def imshow_gt_det_bboxes(img,
 
     gt_seg = annotation.get('gt_semantic_seg', None)
     if gt_seg is not None:
-        assert class_names is not None, 'We need to know the number ' \
-                                        'of classes.'
-        VOID = len(class_names)
+        pad_value = 255  # the padding value of gt_seg
         sem_labels = np.unique(gt_seg)
         all_labels = np.concatenate((gt_labels, sem_labels), axis=0)
         all_labels, counts = np.unique(all_labels, return_counts=True)
-        stuff_labels = all_labels[counts < 2 and all_labels != VOID]
+        stuff_labels = all_labels[np.logical_and(counts < 2,
+                                                 all_labels != pad_value)]
         stuff_masks = gt_seg[None] == stuff_labels[:, None, None]
         gt_labels = np.concatenate((gt_labels, stuff_labels), axis=0)
-        gt_masks = np.concatenate((gt_masks, stuff_masks.astype(np.int)),
+        gt_masks = np.concatenate((gt_masks, stuff_masks.astype(np.uint8)),
                                   axis=0)
 
     img = mmcv.imread(img)
