@@ -1,4 +1,5 @@
 # 1: 使用已有模型在标准数据集上进行推理
+
 MMDetection 在 [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html) 中提供了数以百计的检测模型，并支持多种标准数据集，包括 Pascal VOC，COCO，Cityscapes，LVIS 等。这份文档将会讲述如何使用这些模型和标准数据集来运行一些常见的任务，包括：
 
 - 使用现有模型在给定图片上进行推理
@@ -45,6 +46,7 @@ for frame in video:
 jupyter notebook 上的演示样例在 [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/master/demo/inference_demo.ipynb) 。
 
 ### 异步接口-支持 Python 3.7+
+
 对于 Python 3.7+，MMDetection 也有异步接口。利用 CUDA 流，绑定 GPU 的推理代码不会阻塞 CPU，从而使得 CPU/GPU 在单线程应用中能达到更高的利用率。在推理流程中，不同数据样本的推理和不同模型的推理都能并发地运行。
 
 您可以参考 `tests/async_benchmark.py` 来对比同步接口和异步接口的运行速度。
@@ -86,9 +88,11 @@ asyncio.run(main())
 ```
 
 ### 演示样例
+
 我们还提供了三个演示脚本，它们是使用高层编程接口实现的。 [源码在此](https://github.com/open-mmlab/mmdetection/tree/master/demo) 。
 
 #### 图片样例
+
 这是在单张图片上进行推理的脚本，可以开启 `--async-test` 来进行异步推理。
 
    ```shell
@@ -111,6 +115,7 @@ asyncio.run(main())
    ```
 
 #### 摄像头样例
+
 这是使用摄像头实时图片的推理脚本。
 
    ```shell
@@ -131,6 +136,7 @@ asyncio.run(main())
    ```
 
 #### 视频样例
+
 这是在视频样例上进行推理的脚本。
 
    ```shell
@@ -155,15 +161,18 @@ asyncio.run(main())
    ```
 
 ## 在标准数据集上测试现有模型
+
 为了测试一个模型的精度，我们通常会在标准数据集上对其进行测试。MMDetection 支持多个公共数据集，包括 [COCO](https://cocodataset.org/) ，
 [Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC) ，[Cityscapes](https://www.cityscapes-dataset.com/) 等等。
 这一部分将会介绍如何在支持的数据集上测试现有模型。
 
 ### 数据集准备
+
 一些公共数据集，比如 Pascal VOC 及其镜像数据集，或者 COCO 等数据集都可以从官方网站或者镜像网站获取。
 注意：在检测任务中，Pascal VOC 2012 是 Pascal VOC 2007 的无交集扩展，我们通常将两者一起使用。
 我们建议将数据集下载，然后解压到项目外部的某个文件夹内，然后通过符号链接的方式，将数据集根目录链接到 `$MMDETECTION/data` 文件夹下，格式如下所示。
 如果你的文件夹结构和下方不同的话，你需要在配置文件中改变对应的路径。
+我们提供了下载 COCO 等数据集的脚本，你可以运行 `python tools/misc/download_dataset.py --dataset-name coco2017` 下载 COCO 数据集。
 
 ```plain
 mmdetection
@@ -230,9 +239,11 @@ python tools/dataset_converters/cityscapes.py \
 ```
 
 ### 测试现有模型
+
 我们提供了测试脚本，能够测试一个现有模型在所有数据集（COCO，Pascal VOC，Cityscapes 等）上的性能。我们支持在如下环境下测试：
 
 - 单 GPU 测试
+- CPU 测试
 - 单节点多 GPU 测试
 - 多节点测试
 
@@ -240,6 +251,15 @@ python tools/dataset_converters/cityscapes.py \
 
 ```shell
 # 单 GPU 测试
+python tools/test.py \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--out ${RESULT_FILE}] \
+    [--eval ${EVAL_METRICS}] \
+    [--show]
+
+# CPU 测试：禁用 GPU 并运行单 GPU 测试脚本
+export CUDA_VISIBLE_DEVICES=-1
 python tools/test.py \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
@@ -349,6 +369,7 @@ bash tools/dist_test.sh \
 生成的 png 和 txt 文件在 `./mask_rcnn_cityscapes_test_results` 文件夹下。
 
 ### 不使用 Ground Truth 标注进行测试
+
 MMDetection 支持在不使用 ground-truth 标注的情况下对模型进行测试，这需要用到 `CocoDataset`。如果你的数据集格式不是 COCO 格式的，请将其转化成 COCO 格式。如果你的数据集格式是 VOC 或者 Cityscapes，你可以使用 [tools/dataset_converters](https://github.com/open-mmlab/mmdetection/tree/master/tools/dataset_converters) 内的脚本直接将其转化成 COCO 格式。如果是其他格式，可以使用 [images2coco 脚本](https://github.com/open-mmlab/mmdetection/tree/master/tools/dataset_converters/images2coco.py) 进行转换。
 
 ```shell
@@ -376,6 +397,15 @@ python tools/test.py \
     ${CHECKPOINT_FILE} \
     --format-only \
     --options ${JSONFILE_PREFIX} \
+    [--show]
+
+# CPU 测试：禁用 GPU 并运行单 GPU 测试脚本
+export CUDA_VISIBLE_DEVICES=-1
+python tools/test.py \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--out ${RESULT_FILE}] \
+    [--eval ${EVAL_METRICS}] \
     [--show]
 
 # 单节点多 GPU 测试
@@ -414,6 +444,7 @@ data = dict(train=dict(...), val=dict(...), test=dict(samples_per_gpu=2, ...))
 或者你可以通过将 `--cfg-options` 设置为 `--cfg-options data.test.samples_per_gpu=2` 来开启它。
 
 ### 弃用 ImageToTensor
+
 在测试模式下，弃用 `ImageToTensor` 流程，取而代之的是 `DefaultFormatBundle`。建议在你的测试数据流程的配置文件中手动替换它，如：
 
 ```python
@@ -461,12 +492,14 @@ MMDetection 也为训练检测模型提供了开盖即食的工具。本节将�
 在 4 块 GPU 并且每张 GPU 上有 2 张图片的情况下，设置 `lr=0.01`； 在 16 块 GPU 并且每张 GPU 上有 4 张图片的情况下, 设置 `lr=0.08`。
 
 ### 数据集
+
 训练需要准备好数据集，细节请参考 [数据集准备](#数据集准备) 。
 
 **注意**：
 目前，`configs/cityscapes` 文件夹下的配置文件都是使用 COCO 预训练权值进行初始化的。如果网络连接不可用或者速度很慢，你可以提前下载现存的模型。否则可能在训练的开始会有错误发生。
 
 ### 使用单 GPU 训练
+
 我们提供了 `tools/train.py` 来开启在单张 GPU 上的训练任务。基本使用如下：
 
 ```shell
@@ -495,7 +528,22 @@ evaluation = dict(interval=12)
 
 `resume-from` 既加载了模型的权重和优化器的状态，也会继承指定 checkpoint 的迭代次数，不会重新开始训练。`load-from` 则是只加载模型的权重，它的训练是从头开始的，经常被用于微调模型。
 
+### 使用 CPU 训练
+
+使用 CPU 训练的流程和使用单 GPU 训练的流程一致，我们仅需要在训练流程开始前禁用 GPU。
+
+```shell
+export CUDA_VISIBLE_DEVICES=-1
+```
+
+之后运行单 GPU 训练脚本即可。
+
+**注意**：
+
+我们不推荐用户使用 CPU 进行训练，这太过缓慢。我们支持这个功能是为了方便用户在没有 GPU 的机器上进行调试。
+
 ### 在多 GPU 上训练
+
 我们提供了 `tools/dist_train.sh` 来开启在多 GPU 上的训练。基本使用如下：
 
 ```shell
@@ -505,9 +553,10 @@ bash ./tools/dist_train.sh \
     [optional arguments]
 ```
 
-可选参数和上一节所说的一致。
+可选参数和单 GPU 训练的可选参数一致。
 
 #### 同时启动多个任务
+
 如果你想在一台机器上启动多个任务的话，比如在一个有 8 块 GPU 的机器上启动 2 个需要 4 块GPU的任务，你需要给不同的训练任务指定不同的端口（默认为 29500）来避免冲突。
 
 如果你使用 `dist_train.sh` 来启动训练任务，你可以使用命令来设置端口。
@@ -518,6 +567,7 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 PORT=29501 ./tools/dist_train.sh ${CONFIG_FILE} 4
 ```
 
 #### 在多个节点上训练
+
 MMDetection 是依赖 `torch.distributed` 包进行分布式训练的。因此，我们可以通过 PyTorch 的 [启动工具](https://pytorch.org/docs/stable/distributed.html#launch-utility) 来进行基本地使用。
 
 #### 使用 Slurm 来管理任务

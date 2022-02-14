@@ -174,6 +174,10 @@ Public datasets like [Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/index.h
 It is recommended to download and extract the dataset somewhere outside the project directory and symlink the dataset root to `$MMDETECTION/data` as below.
 If your folder structure is different, you may need to change the corresponding paths in config files.
 
+We provide a script to download datasets such as COCO , you can run `python tools/misc/download_dataset.py --dataset-name coco2017` to download COCO dataset.
+
+For more usage please refer to [dataset-download](https://github.com/open-mmlab/mmdetection/tree/master/docs/en/useful_tools.md#dataset-download)
+
 ```text
 mmdetection
 ├── mmdet
@@ -246,6 +250,7 @@ We provide testing scripts for evaluating an existing model on the whole dataset
 The following testing environments are supported:
 
 - single GPU
+- CPU
 - single node multiple GPUs
 - multiple nodes
 
@@ -253,6 +258,15 @@ Choose the proper script to perform testing depending on the testing environment
 
 ```shell
 # single-gpu testing
+python tools/test.py \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--out ${RESULT_FILE}] \
+    [--eval ${EVAL_METRICS}] \
+    [--show]
+
+# CPU: disable GPUs and run single-gpu testing script
+export CUDA_VISIBLE_DEVICES=-1
 python tools/test.py \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
@@ -398,6 +412,15 @@ python tools/test.py \
     --options ${JSONFILE_PREFIX} \
     [--show]
 
+# CPU: disable GPUs and run single-gpu testing script
+export CUDA_VISIBLE_DEVICES=-1
+python tools/test.py \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--out ${RESULT_FILE}] \
+    [--eval ${EVAL_METRICS}] \
+    [--show]
+
 # multi-gpu testing
 bash tools/dist_test.sh \
     ${CONFIG_FILE} \
@@ -521,6 +544,20 @@ Difference between `resume-from` and `load-from`:
 `resume-from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
 `load-from` only loads the model weights and the training epoch starts from 0. It is usually used for finetuning.
 
+### Training on CPU
+
+The process of training on the CPU is consistent with single GPU training. We just need to disable GPUs before the training process.
+
+```shell
+export CUDA_VISIBLE_DEVICES=-1
+```
+
+And then run the script [above](#training-on-a-single-GPU).
+
+**Note**:
+
+We do not recommend users to use CPU for training because it is too slow. We support this feature to allow users to debug on machines without GPU for convenience.
+
 ### Training on multiple GPUs
 
 We provide `tools/dist_train.sh` to launch training on multiple GPUs.
@@ -533,7 +570,7 @@ bash ./tools/dist_train.sh \
     [optional arguments]
 ```
 
-Optional arguments remain the same as stated [above](#train-with-a-single-GPU).
+Optional arguments remain the same as stated [above](#training-on-a-single-GPU).
 
 #### Launch multiple jobs simultaneously
 

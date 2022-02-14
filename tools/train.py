@@ -1,14 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 import copy
-import multiprocessing as mp
 import os
 import os.path as osp
-import platform
 import time
 import warnings
 
-import cv2
 import mmcv
 import torch
 from mmcv import Config, DictAction
@@ -19,7 +16,7 @@ from mmdet import __version__
 from mmdet.apis import init_random_seed, set_random_seed, train_detector
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
-from mmdet.utils import collect_env, get_root_logger
+from mmdet.utils import collect_env, get_root_logger, setup_multi_processes
 
 
 def parse_args():
@@ -40,13 +37,19 @@ def parse_args():
     group_gpus.add_argument(
         '--gpus',
         type=int,
-        help='number of gpus to use '
+        help='(Deprecated, please use --gpu-id) number of gpus to use '
         '(only applicable to non-distributed training)')
     group_gpus.add_argument(
         '--gpu-ids',
         type=int,
         nargs='+',
-        help='ids of gpus to use '
+        help='(Deprecated, please use --gpu-id) ids of gpus to use '
+        '(only applicable to non-distributed training)')
+    group_gpus.add_argument(
+        '--gpu-id',
+        type=int,
+        default=0,
+        help='id of gpu to use '
         '(only applicable to non-distributed training)')
     parser.add_argument('--seed', type=int, default=None, help='random seed')
     parser.add_argument(
@@ -91,38 +94,6 @@ def parse_args():
     return args
 
 
-def setup_multi_processes(cfg):
-    # set multi-process start method as `fork` to speed up the training
-    if platform.system() != 'Windows':
-        mp_start_method = cfg.get('mp_start_method', 'fork')
-        mp.set_start_method(mp_start_method)
-
-    # disable opencv multithreading to avoid system being overloaded
-    opencv_num_threads = cfg.get('opencv_num_threads', 0)
-    cv2.setNumThreads(opencv_num_threads)
-
-    # setup OMP threads
-    # This code is referred from https://github.com/pytorch/pytorch/blob/master/torch/distributed/run.py  # noqa
-    if ('OMP_NUM_THREADS' not in os.environ and cfg.data.workers_per_gpu > 1):
-        omp_num_threads = 1
-        warnings.warn(
-            f'Setting OMP_NUM_THREADS environment variable for each process '
-            f'to be {omp_num_threads} in default, to avoid your system being '
-            f'overloaded, please further tune the variable for optimal '
-            f'performance in your application as needed.')
-        os.environ['OMP_NUM_THREADS'] = str(omp_num_threads)
-
-    # setup MKL threads
-    if 'MKL_NUM_THREADS' not in os.environ and cfg.data.workers_per_gpu > 1:
-        mkl_num_threads = 1
-        warnings.warn(
-            f'Setting MKL_NUM_THREADS environment variable for each process '
-            f'to be {mkl_num_threads} in default, to avoid your system being '
-            f'overloaded, please further tune the variable for optimal '
-            f'performance in your application as needed.')
-        os.environ['MKL_NUM_THREADS'] = str(mkl_num_threads)
-
-
 def main():
     args = parse_args()
 
@@ -148,20 +119,23 @@ def main():
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
     cfg.auto_resume = args.auto_resume
+    if args.gpus is not None:
+        cfg.gpu_ids = range(1)
+        warnings.warn('`--gpus` is deprecated because we only support '
+                      'single GPU mode in non-distributed training. '
+                      'Use `gpus=1` now.')
     if args.gpu_ids is not None:
-        cfg.gpu_ids = args.gpu_ids
-    else:
-        cfg.gpu_ids = range(1) if args.gpus is None else range(args.gpus)
+        cfg.gpu_ids = args.gpu_ids[0:1]
+        warnings.warn('`--gpu-ids` is deprecated, please use `--gpu-id`. '
+                      'Because we only support single GPU mode in '
+                      'non-distributed training. Use the first GPU '
+                      'in `gpu_ids` now.')
+    if args.gpus is None and args.gpu_ids is None:
+        cfg.gpu_ids = [args.gpu_id]
 
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':
         distributed = False
-        if len(cfg.gpu_ids) > 1:
-            warnings.warn(
-                f'We treat {cfg.gpu_ids} as gpu-ids, and reset to '
-                f'{cfg.gpu_ids[0:1]} as gpu-ids to avoid potential error in '
-                'non-distribute training time.')
-            cfg.gpu_ids = cfg.gpu_ids[0:1]
     else:
         distributed = True
         init_dist(args.launcher, **cfg.dist_params)
