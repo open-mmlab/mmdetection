@@ -5,9 +5,10 @@ assign:
   scedule:
     '*/1 * * * *'
   assignees:
-    - ZwwWayne
-    - jshilong
+    - Czm369
     - hhaAndroid
-    - AronLin
+    - jbwang1997
     - RangiLyu
     - BIGWangYuDong
+    - chhluo
+    - ZwwWayne
