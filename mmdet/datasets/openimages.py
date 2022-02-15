@@ -119,18 +119,18 @@ class OpenImagesDataset(CustomDataset):
         which has (n) dicts. Keys of dicts are:
 
             - `bbox` (list): coordinates of the box, in normalized image
-                coordinates, of shape 4.
+            coordinates, of shape 4.
             - `label` (int): the label id.
             - `is_group_of` (bool):  Indicates that the box spans a group
-                of objects (e.g., a bed of flowers or a crowd of people).
+            of objects (e.g., a bed of flowers or a crowd of people).
             - `is_occluded` (bool): Indicates that the object is occluded
-                by another object in the image.
+            by another object in the image.
             - `is_truncated` (bool): Indicates that the object extends
-                beyond the boundary of the image.
+            beyond the boundary of the image.
             - `is_depiction` (bool): Indicates that the object is a
-                depiction.
+            depiction.
             - `is_inside` (bool): Indicates a picture taken from the
-                inside of the object.
+            inside of the object.
 
         Args:
             ann_file (str): CSV style annotation file path.
