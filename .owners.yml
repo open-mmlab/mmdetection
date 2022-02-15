@@ -1,0 +1,13 @@
+assign:
+  strategy:
+    # random
+    daily-shift-based
+  scedule:
+    '*/1 * * * *'
+  assignees:
+    - ZwwWayne
+    - jshilong
+    - hhaAndroid
+    - AronLin
+    - RangiLyu
+    - BIGWangYuDong
