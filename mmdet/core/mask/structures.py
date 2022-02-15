@@ -1,11 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from abc import ABCMeta, abstractmethod
-
 import cv2
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
 import torch
+from abc import ABCMeta, abstractmethod
 from mmcv.ops.roi_align import roi_align
 
 
@@ -960,6 +959,7 @@ class PolygonMasks(BaseInstanceMasks):
                 a list of vertices, in CCW order.
             """
             from scipy.stats import truncnorm
+
             # Generate around the unit circle
             cx, cy = (0.0, 0.0)
             radius = 1
@@ -1088,8 +1088,9 @@ def bitmap_to_polygon(bitmap):
     #   boundaries of the holes. If there is another contour inside a hole
     #   of a connected component, it is still put at the top level.
     # cv2.CHAIN_APPROX_NONE: stores absolutely all the contour points.
-    contours, hierarchy = cv2.findContours(bitmap, cv2.RETR_CCOMP,
-                                           cv2.CHAIN_APPROX_NONE)
+    outs = cv2.findContours(bitmap, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
+    contours = outs[-2]
+    hierarchy = outs[-1]
     if hierarchy is None:
         return [], False
     # hierarchy[i]: 4 elements, for the indexes of next, previous,
