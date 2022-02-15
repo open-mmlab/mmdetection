@@ -3,10 +3,10 @@ import copy
 import csv
 import json
 import os.path as osp
-import pickle
 import warnings
 from collections import OrderedDict, defaultdict
 
+import mmcv
 import numpy as np
 import torch.distributed as dist
 from mmcv.runner import get_dist_info
@@ -37,15 +37,16 @@ class OpenImagesDataset(CustomDataset):
             label_description_file (str): File path to the label map proto.
             image_level_ann_file (str): Image level annotation, which is used
                 in evaluation.
-            get_supercategory (bool): Whether get parent class of the current
-                class. Default: True.
-            hierarchy_file (str): File path to the hierarchy for classes.
+            get_supercategory (bool): Whether to get parent class of the
+                current class. Default: True.
+            hierarchy_file (str): The file path of the class hierarchy.
                 Default: None.
-            get_metas (bool): Whether get image metas in testing or validation
-                time. This should be `True` during evaluation. Default: True.
-                The OpenImages annotations do not have image metas (width and
-                height of the image), which will be used during evaluation.
-                We provide two ways to get image metas in `OpenImagesDataset`:
+            get_metas (bool): Whether to get image metas in testing or
+                validation time. This should be `True` during evaluation.
+                Default: True. The OpenImages annotations do not have image
+                metas (width and height of the image), which will be used
+                during evaluation. We provide two ways to get image metas
+                in `OpenImagesDataset`:
 
                 - 1. `load from file`: Load image metas from pkl file, which
                 is suggested to use. We provided a script to get image metas:
@@ -57,12 +58,12 @@ class OpenImagesDataset(CustomDataset):
                 test time. However, this may reduce the inference speed,
                 especially when using distribution.
 
-            load_from_file (bool): Whether get image metas from pkl file.
+            load_from_file (bool): Whether to get image metas from pkl file.
             meta_file (str): File path to get image metas.
             filter_labels (bool): Whether filter unannotated classes.
                 Default: True.
             load_image_level_labels (bool): Whether load and consider image
-                level labels during evaluating. Default: True.
+                level labels during evaluation. Default: True.
         """
 
         self.cat2label = defaultdict(str)
@@ -111,85 +112,73 @@ class OpenImagesDataset(CustomDataset):
         self.index_dict = {index: i for i, index in enumerate(index_list)}
         return classes_names
 
-    def list_from_csv(self, ann_file):
-        """Load annotation from csv style ann_file.
+    def load_annotations(self, ann_file):
+        """Load annotation from annotation file. Special described
+        `self.data_infos` (defaultdict[list[dict]]) in this function:
+        Annotations where item of the defaultdict indicates an image, each of
+        which has (n) dicts. Keys of dicts are:
+
+            - `bbox` (list): coordinates of the box, in normalized image
+                coordinates, of shape 4.
+            - `label` (int): the label id.
+            - `is_group_of` (bool):  Indicates that the box spans a group
+                of objects (e.g., a bed of flowers or a crowd of people).
+            - `is_occluded` (bool): Indicates that the object is occluded
+                by another object in the image.
+            - `is_truncated` (bool): Indicates that the object extends
+                beyond the boundary of the image.
+            - `is_depiction` (bool): Indicates that the object is a
+                depiction.
+            - `is_inside` (bool): Indicates a picture taken from the
+                inside of the object.
 
         Args:
             ann_file (str): CSV style annotation file path.
 
         Returns:
-            tuple: Returns (item_list, data_infos), where
-
-            `item_list` (defaultdict[list[dict]]):
-            Annotations where item of the defaultdict indicates an
-            image, each of which has (n) dicts. Keys of dicts are:
-
-                - `bbox` (list): coordinates of the box, in normalized image
-                    coordinates, of shape 4.
-                - `label` (int): the label id.
-                - `is_group_of` (bool):  Indicates that the box spans a group
-                    of objects (e.g., a bed of flowers or a crowd of people).
-                - `is_occluded` (bool): Indicates that the object is occluded
-                    by another object in the image.
-                - `is_truncated` (bool): Indicates that the object extends
-                    beyond the boundary of the image.
-                - `is_depiction` (bool): Indicates that the object is a
-                    depiction.
-                - `is_inside` (bool): Indicates a picture taken from the
-                    inside of the object.
-            `data_infos` (list[dict])： Data infos where each item of
-            the list indicates an image. Keys of annotations are:
+            list[dict]:  Data infos where each item of the list
+            indicates an image. Keys of annotations are:
 
                 - `img_id` (str): Image name.
                 - `filename` (str): Image name with suffix.
         """
-
-        item_list = defaultdict(list)
+        self.ann_infos = defaultdict(list)
         data_infos = []
         cp_filename = None
         with open(ann_file, 'r') as f:
             reader = csv.reader(f)
-            i = -1
-            for line in reader:
-                i += 1
+            for i, line in enumerate(reader):
                 if i == 0:
                     continue
-                else:
-                    img_id = line[0]
-                    filename = f'{img_id}.jpg'
-                    label_id = line[2]
-                    assert label_id in self.index_dict
-                    label = int(self.index_dict[label_id])
-                    bbox = [
-                        float(line[4]),  # xmin
-                        float(line[6]),  # ymin
-                        float(line[5]),  # xmax
-                        float(line[7])  # ymax
-                    ]
-                    is_occluded = True if int(line[8]) == 1 else False
-                    is_truncated = True if int(line[9]) == 1 else False
-                    is_group_of = True if int(line[10]) == 1 else False
-                    is_depiction = True if int(line[11]) == 1 else False
-                    is_inside = True if int(line[12]) == 1 else False
+                img_id = line[0]
+                filename = f'{img_id}.jpg'
+                label_id = line[2]
+                assert label_id in self.index_dict
+                label = int(self.index_dict[label_id])
+                bbox = [
+                    float(line[4]),  # xmin
+                    float(line[6]),  # ymin
+                    float(line[5]),  # xmax
+                    float(line[7])  # ymax
+                ]
+                is_occluded = True if int(line[8]) == 1 else False
+                is_truncated = True if int(line[9]) == 1 else False
+                is_group_of = True if int(line[10]) == 1 else False
+                is_depiction = True if int(line[11]) == 1 else False
+                is_inside = True if int(line[12]) == 1 else False
 
-                    item_list[img_id].append(
-                        dict(
-                            bbox=bbox,
-                            label=label,
-                            is_occluded=is_occluded,
-                            is_truncated=is_truncated,
-                            is_group_of=is_group_of,
-                            is_depiction=is_depiction,
-                            is_inside=is_inside))
-                    if filename != cp_filename:
-                        data_infos.append(
-                            dict(img_id=img_id, filename=filename))
-                        cp_filename = filename
-        return item_list, data_infos
-
-    def load_annotations(self, ann_file):
-        """Load annotation from annotation file."""
-        self.ann_infos, data_infos = self.list_from_csv(ann_file)
+                self.ann_infos[img_id].append(
+                    dict(
+                        bbox=bbox,
+                        label=label,
+                        is_occluded=is_occluded,
+                        is_truncated=is_truncated,
+                        is_group_of=is_group_of,
+                        is_depiction=is_depiction,
+                        is_inside=is_inside))
+                if filename != cp_filename:
+                    data_infos.append(dict(img_id=img_id, filename=filename))
+                    cp_filename = filename
         return data_infos
 
     def get_ann_info(self, idx):
@@ -266,8 +255,7 @@ class OpenImagesDataset(CustomDataset):
     def get_meta_from_file(self, meta_file=''):
         """Get image metas from pkl file."""
         assert meta_file.endswith('pkl'), 'File name must be pkl suffix'
-        with open(meta_file, 'rb') as f:
-            metas = pickle.load(f)
+        metas = mmcv.load(meta_file)
         assert len(metas) == len(self)
         for i in range(len(metas)):
             file_name = metas[i].data[0][0]['filename'].split('/')[-1]
@@ -433,10 +421,12 @@ class OpenImagesDataset(CustomDataset):
                         image_level_annotations):
         """Process results of the corresponding class of the detection bboxes.
 
-        Will choose to do the following two processing according to the
-        parameters: 1. Whether add parent classes of the corresponding class
-        of the detection bboxes. 2. Whether ignore the classes that unannotated
-        on that image.
+        Note: It will choose to do the following two processing according to
+        the parameters:
+
+        1. Whether add parent classes of the corresponding class of the
+        detection bboxes.
+        2. Whether ignore the classes that unannotated on that image.
         """
         if image_level_annotations is not None:
             assert len(annotations) == \
@@ -479,7 +469,6 @@ class OpenImagesDataset(CustomDataset):
             image_level_ann_file (str): CSV style image level annotation
                 file path.
 
-
         Returns:
             defaultdict[list[dict]]: Annotations where item of the defaultdict
             indicates an image, each of which has (n) dicts.
@@ -498,17 +487,14 @@ class OpenImagesDataset(CustomDataset):
         item_lists = defaultdict(list)
         with open(image_level_ann_file, 'r') as f:
             reader = csv.reader(f)
-            i = -1
-            for line in reader:
-                i += 1
+            for i, line in enumerate(reader):
                 if i == 0:
                     continue
-                else:
-                    img_id = line[0]
-                    item_lists[img_id].append(
-                        dict(
-                            image_level_label=int(self.index_dict[line[2]]),
-                            confidence=float(line[3])))
+                img_id = line[0]
+                item_lists[img_id].append(
+                    dict(
+                        image_level_label=int(self.index_dict[line[2]]),
+                        confidence=float(line[3])))
         return item_lists
 
     def get_image_level_ann(self, image_level_ann_file):

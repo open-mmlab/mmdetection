@@ -1,4 +1,4 @@
-_base_ = ['faster_rcnn_r50_fpn_1x_openimages.py']
+_base_ = ['faster_rcnn_r50_fpn_32x2_1x_openimages.py']
 
 model = dict(
     roi_head=dict(bbox_head=dict(num_classes=500)),
