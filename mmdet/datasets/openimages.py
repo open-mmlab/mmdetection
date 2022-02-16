@@ -258,13 +258,13 @@ class OpenImagesDataset(CustomDataset):
         metas = mmcv.load(meta_file)
         assert len(metas) == len(self)
         for i in range(len(metas)):
-            file_name = metas[i].data[0][0]['filename'].split('/')[-1]
+            file_name = metas[i]['filename'].split('/')[-1]
             img_info = self.data_infos[i].get('img_info', None)
             if img_info is not None:
                 assert file_name == img_info['filename'].split('/')[-1]
             else:
                 assert file_name == self.data_infos[i]['filename']
-            hw = metas[i].data[0][0]['ori_shape'][:2]
+            hw = metas[i]['ori_shape'][:2]
             self.test_img_shapes.append(hw)
 
     def get_meta_from_pipeline(self, results):

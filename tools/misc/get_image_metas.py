@@ -1,30 +1,19 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 """Get test image metas on a specific dataset.
 
-This script provides two ways to get test image metas including non-distribute
-and distribute way. Here is an example to run this script.
+Here is an example to run this script.
 
 Example:
-    Use non-distribute way::
-
-         python tools/misc/get_image_metas.py ${CONFIG} \
-         --out ${OUTPUT FILE NAME}
-
-    Use distribute way::
-        python -m torch.distributed.launch --nproc_per_node=${GPUS} \
-        tools/misc/get_image_metas.py ${CONFIG} --out ${OUTPUT FILE NAME} \
-        --launcher pytorch
+    python tools/misc/get_image_metas.py ${CONFIG} \
+    --out ${OUTPUT FILE NAME}
 """
 import argparse
-import os
-import time
+import csv
+import os.path as osp
+from multiprocessing import Pool
 
 import mmcv
 from mmcv import Config
-from mmcv.runner import get_dist_info, init_dist
-
-from mmdet.apis.test import collect_results_cpu
-from mmdet.datasets import build_dataloader, build_dataset
 
 
 def parse_args():
@@ -36,78 +25,86 @@ def parse_args():
         help='The output image metas file name. The save dir is in the '
         'same directory as `dataset.ann_file` path')
     parser.add_argument(
-        '--launcher',
-        choices=['none', 'pytorch', 'slurm', 'mpi'],
-        default='none',
-        help='job launcher')
-    parser.add_argument('--local_rank', type=int, default=0)
+        '--nproc',
+        default=4,
+        type=int,
+        help='Processes used for get image metas')
     args = parser.parse_args()
-    if 'LOCAL_RANK' not in os.environ:
-        os.environ['LOCAL_RANK'] = str(args.local_rank)
     return args
 
 
-def single_collect_metas(data_loader):
-    metas = []
-    dataset = data_loader.dataset
-    prog_bar = mmcv.ProgressBar(len(dataset))
-    for i, data in enumerate(data_loader):
-        meta = data['img_metas']
-        metas.extend(meta)
-        batch_size = len(meta)
-        for _ in range(batch_size):
-            prog_bar.update()
-    return metas
+def get_metas_from_csv_style_ann_file(ann_file):
+    data_infos = []
+    cp_filename = None
+    with open(ann_file, 'r') as f:
+        reader = csv.reader(f)
+        for i, line in enumerate(reader):
+            if i == 0:
+                continue
+            img_id = line[0]
+            filename = f'{img_id}.jpg'
+            if filename != cp_filename:
+                data_infos.append(dict(filename=filename))
+                cp_filename = filename
+    return data_infos
 
 
-def multi_collect_metas(data_loader, tmpdir=None):
-    metas = []
-    dataset = data_loader.dataset
-    rank, world_size = get_dist_info()
-    if rank == 0:
-        prog_bar = mmcv.ProgressBar(len(dataset))
-    time.sleep(2)  # This line can prevent deadlock problem in some cases.
-    for i, data in enumerate(data_loader):
-        meta = data['img_metas']
-        metas.extend(meta)
-        if rank == 0:
-            batch_size = len(meta)
-            for _ in range(batch_size * world_size):
-                prog_bar.update()
+def get_metas_from_txt_style_ann_file(ann_file):
+    with open(ann_file) as f:
+        lines = f.readlines()
+    i = 0
+    data_infos = []
+    while i < len(lines):
+        filename = lines[i].rstrip()
+        data_infos.append(dict(filename=filename))
+        skip_lines = int(lines[i + 2]) + 3
+        i += skip_lines
+    return data_infos
 
-    # collect metas from all ranks
-    metas = collect_results_cpu(metas, len(dataset), tmpdir)
-    return metas
+
+def get_image_metas(data_info, img_prefix):
+    file_client = mmcv.FileClient(backend='disk')
+    filename = data_info.get('filename', None)
+    if filename is not None:
+        if img_prefix is not None:
+            filename = osp.join(img_prefix, filename)
+        img_bytes = file_client.get(filename)
+        img = mmcv.imfrombytes(img_bytes, flag='color')
+        meta = dict(filename=filename, ori_shape=img.shape)
+    else:
+        raise NotImplementedError('Missing `filename` in data_info')
+    return meta
 
 
 def main():
     args = parse_args()
     assert args.out.endswith('pkl'), 'The output file name must be pkl suffix'
+
+    # load config files
     cfg = Config.fromfile(args.config)
-
-    if args.launcher == 'none':
-        distributed = False
+    ann_file = cfg.data.test.ann_file
+    img_prefix = cfg.data.test.img_prefix
+    if ann_file.endswith('csv'):
+        data_infos = get_metas_from_csv_style_ann_file(ann_file)
+    elif ann_file.endswith('txt'):
+        data_infos = get_metas_from_txt_style_ann_file(ann_file)
     else:
-        distributed = True
-        init_dist(args.launcher, **cfg.dist_params)
+        shuffix = ann_file.split('.')[-1]
+        raise NotImplementedError('File name must be csv or txt suffix but '
+                                  f'get {shuffix}')
 
-    samples_per_gpu = 1
-    dataset = build_dataset(cfg.data.test)
-    data_loader = build_dataloader(
-        dataset,
-        samples_per_gpu=samples_per_gpu,
-        workers_per_gpu=cfg.data.workers_per_gpu,
-        dist=distributed,
-        shuffle=False)
+    pool = Pool(args.nproc)
+    # get image metas with multiple processes
+    image_metas = pool.starmap(
+        get_image_metas,
+        zip(data_infos, [img_prefix for _ in range(len(data_infos))]),
+    )
+    pool.close()
 
-    if not distributed:
-        metas = single_collect_metas(data_loader)
-    else:
-        metas = multi_collect_metas(data_loader)
-
+    # save image metas
     root_path = cfg.data.test.ann_file.rsplit('/', 1)[0]
-    save_path = os.path.join(root_path, args.out)
-    mmcv.dump(metas, save_path)
+    save_path = osp.join(root_path, args.out)
+    mmcv.dump(image_metas, save_path)
     print(f'save image meta file: {save_path}')
 
 
