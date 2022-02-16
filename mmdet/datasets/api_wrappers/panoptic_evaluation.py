@@ -11,7 +11,7 @@ import mmcv
 import numpy as np
 
 try:
-    from panopticapi.evaluation import PQStat, VOID, OFFSET
+    from panopticapi.evaluation import OFFSET, VOID, PQStat
     from panopticapi.utils import rgb2id
 except ImportError:
     PQStat = None

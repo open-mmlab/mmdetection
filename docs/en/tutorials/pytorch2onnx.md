@@ -1,5 +1,8 @@
 # Tutorial 8: Pytorch to ONNX (Experimental)
 
+
+> ## [Try the new MMDeploy to deploy your model](https://mmdeploy.readthedocs.io/)
+
 <!-- TOC -->
 
 - [Tutorial 8: Pytorch to ONNX (Experimental)](#tutorial-8-pytorch-to-onnx-experimental)
@@ -24,7 +27,7 @@
 ### Prerequisite
 
 1. Install the prerequisites following [get_started.md/Prepare environment](../get_started.md).
-2. Build custom operators for ONNX Runtime and install MMCV manually following [How to build custom operators for ONNX Runtime](https://github.com/open-mmlab/mmcv/blob/master/docs/deployment/onnxruntime_op.md/#how-to-build-custom-operators-for-onnx-runtime)
+2. Build custom operators for ONNX Runtime and install MMCV manually following [How to build custom operators for ONNX Runtime](https://github.com/open-mmlab/mmcv/blob/master/docs/en/deployment/onnxruntime_op.md/#how-to-build-custom-operators-for-onnx-runtime)
 3. Install MMdetection manually following steps 2-3 in [get_started.md/Install MMdetection](../get_started.md).
 
 ### Usage
@@ -99,7 +102,7 @@ We prepare a tool `tools/deplopyment/test.py` to evaluate ONNX models with ONNXR
   Note: onnxruntime-gpu is version-dependent on CUDA and CUDNN, please ensure that your
   environment meets the requirements.
 
-- Build custom operators for ONNX Runtime following [How to build custom operators for ONNX Runtime](https://github.com/open-mmlab/mmcv/blob/master/docs/deployment/onnxruntime_op.md/#how-to-build-custom-operators-for-onnx-runtime)
+- Build custom operators for ONNX Runtime following [How to build custom operators for ONNX Runtime](https://github.com/open-mmlab/mmcv/blob/master/docs/en/deployment/onnxruntime_op.md/#how-to-build-custom-operators-for-onnx-runtime)
 
 - Install TensorRT by referring to [How to build TensorRT plugins in MMCV](https://mmcv.readthedocs.io/en/latest/deployment/tensorrt_plugin.html#how-to-build-tensorrt-plugins-in-mmcv) (optional)
 
@@ -302,7 +305,7 @@ Notes:
 - Minimum required version of MMCV is `1.3.5`
 
 - *All models above are tested with Pytorch==1.6.0 and onnxruntime==1.5.1*, except for CornerNet. For more details about the
-torch version when exporting CornerNet to ONNX, which involves `mmcv::cummax`, please refer to the [Known Issues](https://github.com/open-mmlab/mmcv/blob/master/docs/deployment/onnxruntime_op.md#known-issues) in mmcv.
+torch version when exporting CornerNet to ONNX, which involves `mmcv::cummax`, please refer to the [Known Issues](https://github.com/open-mmlab/mmcv/blob/master/docs/en/deployment/onnxruntime_op.md#known-issues) in mmcv.
 
 - Though supported, it is *not recommended* to use batch inference in onnxruntime for `DETR`, because there is huge performance gap between ONNX and torch model (e.g. 33.5 vs 39.9 mAP on COCO for onnxruntime and torch respectively, with a batch size 2). The main reason for the gap is that these is non-negligible effect on the predicted regressions during batch inference for ONNX, since the predicted coordinates is normalized by `img_shape` (without padding) and should be converted to absolute format, but `img_shape` is not dynamically traceable thus the padded `img_shape_for_onnx` is used.
 

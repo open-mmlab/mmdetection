@@ -9,6 +9,8 @@ import pytest
 import torch
 
 from mmdet.core import visualization as vis
+from mmdet.datasets import (CityscapesDataset, CocoDataset,
+                            CocoPanopticDataset, VOCDataset)
 
 
 def test_color():
@@ -125,3 +127,47 @@ def test_imshow_gt_det_bboxes():
     annotation['gt_masks'] = []
     with pytest.raises(TypeError):
         vis.imshow_gt_det_bboxes(image, annotation, result, show=False)
+
+
+def test_palette():
+    assert vis.palette_val([(1, 2, 3)])[0] == (1 / 255, 2 / 255, 3 / 255)
+
+    # test list
+    palette = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]
+    palette_ = vis.get_palette(palette, 3)
+    for color, color_ in zip(palette, palette_):
+        assert color == color_
+
+    # test tuple
+    palette = vis.get_palette((1, 2, 3), 3)
+    assert len(palette) == 3
+    for color in palette:
+        assert color == (1, 2, 3)
+
+    # test color str
+    palette = vis.get_palette('red', 3)
+    assert len(palette) == 3
+    for color in palette:
+        assert color == (255, 0, 0)
+
+    # test dataset str
+    palette = vis.get_palette('coco', len(CocoDataset.CLASSES))
+    assert len(palette) == len(CocoDataset.CLASSES)
+    assert palette[0] == (220, 20, 60)
+    palette = vis.get_palette('coco', len(CocoPanopticDataset.CLASSES))
+    assert len(palette) == len(CocoPanopticDataset.CLASSES)
+    assert palette[-1] == (250, 141, 255)
+    palette = vis.get_palette('voc', len(VOCDataset.CLASSES))
+    assert len(palette) == len(VOCDataset.CLASSES)
+    assert palette[0] == (106, 0, 228)
+    palette = vis.get_palette('citys', len(CityscapesDataset.CLASSES))
+    assert len(palette) == len(CityscapesDataset.CLASSES)
+    assert palette[0] == (220, 20, 60)
+
+    # test random
+    palette1 = vis.get_palette('random', 3)
+    palette2 = vis.get_palette(None, 3)
+    for color1, color2 in zip(palette1, palette2):
+        assert isinstance(color1, tuple)
+        assert isinstance(color2, tuple)
+        assert color1 == color2

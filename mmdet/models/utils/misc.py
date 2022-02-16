@@ -1,5 +1,35 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from torch.autograd import Function
 from torch.nn import functional as F
+
+
+class SigmoidGeometricMean(Function):
+    """Forward and backward function of geometric mean of two sigmoid
+    functions.
+
+    This implementation with analytical gradient function substitutes
+    the autograd function of (x.sigmoid() * y.sigmoid()).sqrt(). The
+    original implementation incurs none during gradient backprapagation
+    if both x and y are very small values.
+    """
+
+    @staticmethod
+    def forward(ctx, x, y):
+        x_sigmoid = x.sigmoid()
+        y_sigmoid = y.sigmoid()
+        z = (x_sigmoid * y_sigmoid).sqrt()
+        ctx.save_for_backward(x_sigmoid, y_sigmoid, z)
+        return z
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        x_sigmoid, y_sigmoid, z = ctx.saved_tensors
+        grad_x = grad_output * z * (1 - x_sigmoid) / 2
+        grad_y = grad_output * z * (1 - y_sigmoid) / 2
+        return grad_x, grad_y
+
+
+sigmoid_geometric_mean = SigmoidGeometricMean.apply
 
 
 def interpolate_as(source, target, mode='bilinear', align_corners=False):

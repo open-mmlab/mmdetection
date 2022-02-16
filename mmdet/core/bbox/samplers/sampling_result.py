@@ -112,9 +112,9 @@ class SamplingResult(util_mixins.NiceRepr):
             >>> self = SamplingResult.random()
             >>> print(self.__dict__)
         """
-        from mmdet.core.bbox.samplers.random_sampler import RandomSampler
-        from mmdet.core.bbox.assigners.assign_result import AssignResult
         from mmdet.core.bbox import demodata
+        from mmdet.core.bbox.assigners.assign_result import AssignResult
+        from mmdet.core.bbox.samplers.random_sampler import RandomSampler
         rng = demodata.ensure_rng(rng)
 
         # make probabalistic?

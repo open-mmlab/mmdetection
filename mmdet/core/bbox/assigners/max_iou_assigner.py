@@ -189,7 +189,7 @@ class MaxIoUAssigner(BaseAssigner):
             # For example, if bbox A has 0.9 and 0.8 iou with GT bbox 1 & 2,
             # bbox 1 will be assigned as the best target for bbox A in step 3.
             # However, if GT bbox 2's gt_argmax_overlaps = A, bbox A's
-            # assigned_gt_inds will be overwritten to be bbox B.
+            # assigned_gt_inds will be overwritten to be bbox 2.
             # This might be the reason that it is not used in ROI Heads.
             for i in range(num_gts):
                 if gt_max_overlaps[i] >= self.min_pos_iou:

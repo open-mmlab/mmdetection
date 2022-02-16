@@ -7,6 +7,7 @@ Welcome to MMDetection's documentation!
 
    get_started.md
    model_zoo.md
+   article.md
 
 .. toctree::
    :maxdepth: 2

@@ -2,3 +2,4 @@ cityscapesscripts
 imagecorruptions
 scipy
 sklearn
+timm
