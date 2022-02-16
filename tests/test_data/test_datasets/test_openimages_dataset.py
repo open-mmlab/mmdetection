@@ -183,9 +183,7 @@ def test_oid_annotation_ids_unique():
     # test annotation ids not unique error
     with pytest.raises(AssertionError):
         OpenImagesDataset(
-            ann_file=fake_ann_file,
-            label_description_file=fake_label_file,
-            pipeline=[])
+            ann_file=fake_ann_file, label_file=fake_label_file, pipeline=[])
     tmp_dir.cleanup()
 
 
@@ -205,13 +203,13 @@ def test_openimages_dataset():
     with pytest.raises(AssertionError):
         OpenImagesDataset(
             ann_file=ann_file,
-            label_description_file=label_file,
+            label_file=label_file,
             image_level_ann_file=label_level_file,
             pipeline=[])
 
     dataset = OpenImagesDataset(
         ann_file=ann_file,
-        label_description_file=label_file,
+        label_file=label_file,
         image_level_ann_file=label_level_file,
         hierarchy_file=hierarchy_json,
         pipeline=[])
@@ -243,7 +241,7 @@ def test_openimages_dataset():
     dataset = OpenImagesDataset(
         ann_file=ann_file,
         img_prefix='tests/data',
-        label_description_file=label_file,
+        label_file=label_file,
         image_level_ann_file=label_level_file,
         load_from_file=False,
         hierarchy_file=hierarchy_json,
@@ -275,7 +273,7 @@ def test_openimages_dataset():
 
     dataset = OpenImagesDataset(
         ann_file=ann_file,
-        label_description_file=label_file,
+        label_file=label_file,
         image_level_ann_file=label_level_file,
         hierarchy_file=hierarchy_json,
         meta_file=meta_file,
@@ -293,7 +291,7 @@ def test_openimages_dataset():
 
     dataset = OpenImagesDataset(
         ann_file=ann_file,
-        label_description_file=label_file,
+        label_file=label_file,
         load_image_level_labels=False,
         image_level_ann_file=label_level_file,
         hierarchy_file=hierarchy_json,
@@ -323,7 +321,7 @@ def test_openimages_challenge_dataset():
 
     dataset = OpenImagesChallengeDataset(
         ann_file=ann_file,
-        label_description_file=label_file,
+        label_file=label_file,
         load_image_level_labels=False,
         get_supercategory=False,
         pipeline=[])
@@ -344,7 +342,7 @@ def test_openimages_challenge_dataset():
         fake_json = osp.join(tmp_dir.name, 'hierarchy.json')
         dataset = OpenImagesChallengeDataset(
             ann_file=ann_file,
-            label_description_file=label_file,
+            label_file=label_file,
             image_level_ann_file=label_level_file,
             hierarchy_file=fake_json,
             meta_file=meta_file,
@@ -355,7 +353,7 @@ def test_openimages_challenge_dataset():
     _create_hierarchy_np(hierarchy_file)
     dataset = OpenImagesChallengeDataset(
         ann_file=ann_file,
-        label_description_file=label_file,
+        label_file=label_file,
         image_level_ann_file=label_level_file,
         hierarchy_file=hierarchy_file,
         meta_file=meta_file,
