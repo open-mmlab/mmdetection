@@ -1,10 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from abc import ABCMeta, abstractmethod
+
 import cv2
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
 import torch
-from abc import ABCMeta, abstractmethod
 from mmcv.ops.roi_align import roi_align
 
 
