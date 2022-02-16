@@ -36,12 +36,29 @@
 
 </div>
 
-## Introduction
+---
+
+<font size=4><center><b> Table of Contents </b> </center></font>
+
+- [Introduction](#introduction)
+- [License](#license)
+- [Changelog](#changelog)
+- [Overview of Benchmark and Model Zoo](#overview-of-benchmark-and-model-zoo)
+- [Installation](#installation)
+- [Getting Started](#getting-started)
+  - [Related Tutorials](#related-tutorials)
+- [Contributing](#contributing)
+- [Acknowledgement](#acknowledgement)
+- [Citation](#citation)
+- [Projects in OpenMMLab](#projects-in-openmmlab)
+
+---
+
+# Introduction
 
 English | [简体中文](README_zh-CN.md)
 
-MMDetection is an open source object detection toolbox based on PyTorch. It is
-a part of the [OpenMMLab](https://openmmlab.com/) project.
+MMDetection is an open source object detection toolbox based on PyTorch. It is a part of the [OpenMMLab](https://openmmlab.com/) project.
 
 The master branch works with **PyTorch 1.5+**.
 
@@ -68,11 +85,11 @@ The master branch works with **PyTorch 1.5+**.
 
 Apart from MMDetection, we also released a library [mmcv](https://github.com/open-mmlab/mmcv) for computer vision research, which is heavily depended on by this toolbox.
 
-## License
+# License
 
 This project is released under the [Apache 2.0 license](LICENSE).
 
-## Changelog
+# Changelog
 
 **2.21.0** was released in 8/2/2022:
 
@@ -83,7 +100,7 @@ Please refer to [changelog.md](docs/en/changelog.md) for details and release his
 
 For compatibility changes between different versions of MMDetection, please refer to [compatibility.md](docs/en/compatibility.md).
 
-## Overview of Benchmark and Model Zoo
+# Overview of Benchmark and Model Zoo
 
 Results and models are available in the [model zoo](docs/en/model_zoo.md).
 
@@ -262,11 +279,11 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
 
 Some other methods are also supported in [projects using MMDetection](./docs/en/projects.md).
 
-## Installation
+# Installation
 
 Please refer to [get_started.md](docs/en/get_started.md) for installation.
 
-## Getting Started
+# Getting Started
 
 Please see [get_started.md](docs/en/get_started.md) for the basic usage of MMDetection.
 We provide [colab tutorial](demo/MMDet_Tutorial.ipynb), and full guidance for quick run [with existing dataset](docs/en/1_exist_data_model.md) and [with new dataset](docs/en/2_new_data_model.md) for beginners.
@@ -274,16 +291,20 @@ There are also tutorials for [finetuning models](docs/en/tutorials/finetune.md),
 
 Please refer to [FAQ](docs/en/faq.md) for frequently asked questions.
 
-## Contributing
+## Related Tutorials
+
+Please refer to [MMDetection tutorials](docs/en).
+
+# Contributing
 
 We appreciate all contributions to improve MMDetection. Ongoing projects can be found in out [GitHub Projects](https://github.com/open-mmlab/mmdetection/projects). Welcome community users to participate in these projects. Please refer to [CONTRIBUTING.md](.github/CONTRIBUTING.md) for the contributing guideline.
 
-## Acknowledgement
+# Acknowledgement
 
 MMDetection is an open source project that is contributed by researchers and engineers from various colleges and companies. We appreciate all the contributors who implement their methods or add new features, as well as users who give valuable feedbacks.
 We wish that the toolbox and benchmark could serve the growing research community by providing a flexible toolkit to reimplement existing methods and develop their own new detectors.
 
-## Citation
+# Citation
 
 If you use this toolbox or benchmark in your research, please cite this project.
 
@@ -301,7 +322,7 @@ If you use this toolbox or benchmark in your research, please cite this project.
 }
 ```
 
-## Projects in OpenMMLab
+# Projects in OpenMMLab
 
 - [MMCV](https://github.com/open-mmlab/mmcv): OpenMMLab foundational library for computer vision.
 - [MIM](https://github.com/open-mmlab/mim): MIM Installs OpenMMLab Packages.
