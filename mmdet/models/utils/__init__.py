@@ -27,5 +27,6 @@ __all__ = [
     'NormedLinear', 'NormedConv2d', 'make_divisible', 'InvertedResidual',
     'SELayer', 'interpolate_as', 'ConvUpsample', 'CSPLayer',
     'adaptive_avg_pool2d', 'AdaptiveAvgPool2d', 'PatchEmbed', 'nchw_to_nlc',
-    'nlc_to_nchw', 'pvt_convert', 'sigmoid_geometric_mean'
+    'nlc_to_nchw', 'pvt_convert', 'sigmoid_geometric_mean',
+    'MemoryEfficientSwish', 'samepadding',
 ]
