@@ -72,15 +72,8 @@ training/testing by using `tools/misc/get_image_metas.py`.
 
     **Usage**
     ```shell
-    # Use non-distribute way
     python tools/misc/get_image_metas.py ${CONFIG} \
     --out ${OUTPUT FILE NAME}
-
-    # Or
-    # Use distribute way
-    python -m torch.distributed.launch --nproc_per_node=${GPUS} \
-    tools/misc/get_image_metas.py ${CONFIG} --out ${OUTPUT FILE NAME} \
-    --launcher pytorch
     ```
 
 3. The directory should be like this:
