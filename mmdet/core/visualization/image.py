@@ -41,19 +41,20 @@ def _get_adaptive_scales(areas, min_area=800, max_area=30000):
     The scale range is [0.5, 1.0]. When the area is less than
     ``'min_area'``, the scale is 0.5 while the area is larger than
     ``'max_area'``, the scale is 1.0.
+
     Args:
         areas (ndarray): The areas of bboxes or masks with the
             shape of (n, ).
-        min_area: Lower bound areas for adaptive scales.
+        min_area (int): Lower bound areas for adaptive scales.
             Default: 800.
-        max_area: Upper bound areas for adaptive scales.
+        max_area (int): Upper bound areas for adaptive scales.
             Default: 30000.
 
     Returns:
-        ndarray : The adaotive scales with the shape of (n, ).
+        ndarray: The adaotive scales with the shape of (n, ).
     """
     scales = 0.5 + (areas - min_area) / (max_area - min_area)
-    scales = np.maximum(0.5, np.minimum(1.0, scales))
+    scales = np.clip(scales, 0.5, 1.0)
     return scales
 
 
@@ -65,14 +66,14 @@ def _get_bias_color(base, max_dist=30):
     Args:
         base (ndarray): The base category color with the shape
             of (3, ).
-        max_dist: The max distance of bias. Default: 30.
+        max_dist (int): The max distance of bias. Default: 30.
 
     Returns:
         ndarray: The new color for a mask with the shape of (3, ).
     """
     new_color = base + np.random.randint(
         low=-max_dist, high=max_dist + 1, size=3)
-    return np.maximum(0, np.minimum(255, new_color))
+    return np.clip(new_color, 0, 255, new_color)
 
 
 def draw_bboxes(ax, bboxes, color='g', alpha=0.8, thickness=2):
@@ -290,24 +291,16 @@ def imshow_det_bboxes(img,
     ax.axis('off')
 
     max_label = int(max(labels) if len(labels) > 0 else 0)
-    if segms is not None:
-        mask_color = get_palette(mask_color, max_label + 1)
-        colors = [mask_color[label] for label in labels]
-        colors = np.array(colors, dtype=np.uint8)
-        draw_masks(ax, img, segms, colors, with_edge=True)
+    text_palette = palette_val(get_palette(text_color, max_label + 1))
+    text_colors = [text_palette[label] for label in labels]
 
     num_bboxes = 0
     if bboxes is not None:
         num_bboxes = bboxes.shape[0]
-        bbox_color = palette_val(get_palette(bbox_color, max_label + 1))
-        _labels = labels[:num_bboxes]
-        colors = [bbox_color[label] for label in _labels]
+        bbox_palette = palette_val(get_palette(bbox_color, max_label + 1))
+        colors = [bbox_palette[label] for label in labels[:num_bboxes]]
         draw_bboxes(ax, bboxes, colors, alpha=0.8, thickness=thickness)
 
-    text_color = palette_val(get_palette(text_color, max_label + 1))
-    colors = [text_color[label] for label in labels]
-
-    if bboxes is not None:
         horizontal_alignment = 'left'
         positions = bboxes[:, :2].astype(np.int32) + thickness
         areas = (bboxes[:, 3] - bboxes[:, 1]) * (bboxes[:, 2] - bboxes[:, 0])
@@ -319,33 +312,39 @@ def imshow_det_bboxes(img,
             positions,
             scores=scores,
             class_names=class_names,
-            color=colors,
+            color=text_colors,
             font_size=font_size,
             scales=scales,
             horizontal_alignment=horizontal_alignment)
 
-    if segms is not None and num_bboxes < segms.shape[0]:
-        segms = segms[num_bboxes:]
-        horizontal_alignment = 'center'
-        areas = []
-        positions = []
-        for mask in segms:
-            _, _, stats, centroids = cv2.connectedComponentsWithStats(
-                mask.astype(np.uint8), connectivity=8)
-            largest_id = np.argmax(stats[1:, -1]) + 1
-            positions.append(centroids[largest_id])
-            areas.append(stats[largest_id, -1])
-        areas = np.stack(areas, axis=0)
-        scales = _get_adaptive_scales(areas)
-        draw_labels(
-            ax,
-            labels[num_bboxes:],
-            positions,
-            class_names=class_names,
-            color=colors,
-            font_size=font_size,
-            scales=scales,
-            horizontal_alignment=horizontal_alignment)
+    if segms is not None:
+        mask_palette = get_palette(mask_color, max_label + 1)
+        colors = [mask_palette[label] for label in labels]
+        colors = np.array(colors, dtype=np.uint8)
+        draw_masks(ax, img, segms, colors, with_edge=True)
+
+        if num_bboxes < segms.shape[0]:
+            segms = segms[num_bboxes:]
+            horizontal_alignment = 'center'
+            areas = []
+            positions = []
+            for mask in segms:
+                _, _, stats, centroids = cv2.connectedComponentsWithStats(
+                    mask.astype(np.uint8), connectivity=8)
+                largest_id = np.argmax(stats[1:, -1]) + 1
+                positions.append(centroids[largest_id])
+                areas.append(stats[largest_id, -1])
+            areas = np.stack(areas, axis=0)
+            scales = _get_adaptive_scales(areas)
+            draw_labels(
+                ax,
+                labels[num_bboxes:],
+                positions,
+                class_names=class_names,
+                color=text_colors,
+                font_size=font_size,
+                scales=scales,
+                horizontal_alignment=horizontal_alignment)
 
     plt.imshow(img)
 
@@ -500,11 +499,11 @@ def imshow_gt_det_bboxes(img,
         bboxes = None
         pan_results = result['pan_results']
         # keep objects ahead
-        ids = np.unique(pan_results, return_inverse=True)
+        ids = np.unique(pan_results)[::-1]
         legal_indices = ids != VOID
         ids = ids[legal_indices]
         labels = np.array([id % INSTANCE_OFFSET for id in ids], dtype=np.int64)
-        segms = pan_results[None] == ids[:, None, None]
+        segms = (pan_results[None] == ids[:, None, None])
 
     img = imshow_det_bboxes(
         img,

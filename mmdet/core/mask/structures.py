@@ -1078,8 +1078,8 @@ def bitmap_to_polygon(bitmap):
         bitmap (ndarray): masks in bitmap representation.
 
     Return:
-        list(ndarray): the converted mask in polygon representation.
-        with_hole(bool): whether the mask has holes.
+        list[ndarray]: the converted mask in polygon representation.
+        bool: whether the mask has holes.
     """
     bitmap = np.ascontiguousarray(bitmap).astype(np.uint8)
     # cv2.RETR_CCOMP: retrieves all of the contours and organizes them
