@@ -7,17 +7,18 @@ from mmcv.cnn.bricks.drop import drop_path
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from ..builder import BACKBONES
-from ..utils.inverted_residual import InvertedResidual
+from ..utils.inverted_residual_with_same_padding import \
+    InvertedResidualWithSamePadding
 
 
-class MBConv(InvertedResidual):
-    def __init__(self,
-                 dropout=0.0,
-                 **kwargs):
+class MBConv(InvertedResidualWithSamePadding):
+
+    def __init__(self, dropout=0.0, **kwargs):
         super(MBConv, self).__init__(**kwargs)
         self.dropout = dropout
 
     def forward(self, x):
+
         def _inner_forward(x):
             out = x
 
@@ -35,6 +36,7 @@ class MBConv(InvertedResidual):
                 if self.dropout > 0:
                     out = drop_path(out, self.dropout, self.training)
                 out = x + out
+                # print(x.shape, out.shape)
                 return out
             else:
                 return out
@@ -74,6 +76,8 @@ class EfficientLayer(nn.Sequential):
                  stride,
                  expand_ratio,
                  kernel_size,
+                 block_index,
+                 block_num,
                  se_ratio=4,
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
@@ -81,17 +85,24 @@ class EfficientLayer(nn.Sequential):
                  dropout=0.0,
                  init_cfg=None):
         layers = []
+        dropout_set = dropout
         for d in range(num_blocks):
             block_stride = stride if d == 0 else 1
             block_width = in_channels if d == 0 else out_channels
             midchannels = int(block_width * expand_ratio)
-            se_cfg = {'channels': midchannels,
-                      'ratio': expand_ratio * se_ratio,
-                      'act_cfg': (dict(type='MemoryEfficientSwish'),
-                                  dict(type='Sigmoid'))}
+            se_cfg = {
+                'channels':
+                midchannels,
+                'ratio':
+                expand_ratio * se_ratio,
+                'act_cfg':
+                (dict(type='MemoryEfficientSwish'), dict(type='Sigmoid'))
+            }
             with_expand_conv = False
             if midchannels != block_width:
                 with_expand_conv = True
+            dropout = dropout_set
+            dropout *= float(block_index + d) / block_num
             layers.append(
                 MBConv(
                     in_channels=block_width,
@@ -173,23 +184,24 @@ class EfficientNet(mmcv.runner.BaseModule):
         5: ([3, 5, 5, 7, 7, 9, 3], [24, 40, 64, 128, 176, 304, 512])
     }
 
-    def __init__(self,
-                 scale,
-                 stem_channels=32,
-                 strides=(1, 2, 2, 2, 1, 2, 1),
-                 expand_ratios=(1, 6, 6, 6, 6, 6, 6),
-                 kernel_size=(3, 3, 5, 3, 5, 5, 3),
-                 se_ratio=4,
-                 out_indices=(2, 4, 6),
-                 frozen_stages=-1,
-                 conv_cfg=None,
-                 norm_cfg=dict(type='BN', requires_grad=True),
-                 norm_eval=False,
-                 with_cp=False,
-                 dropout=0.0,
-                 pretrained=None,
-                 init_cfg=None,
-                 ):
+    def __init__(
+        self,
+        scale,
+        stem_channels=32,
+        strides=(1, 2, 2, 2, 1, 2, 1),
+        expand_ratios=(1, 6, 6, 6, 6, 6, 6),
+        kernel_size=(3, 3, 5, 3, 5, 5, 3),
+        se_ratio=4,
+        out_indices=(2, 4, 6),
+        frozen_stages=-1,
+        conv_cfg=None,
+        norm_cfg=dict(type='BN', requires_grad=True),
+        norm_eval=False,
+        with_cp=False,
+        dropout=0.0,
+        pretrained=None,
+        init_cfg=None,
+    ):
         super().__init__(init_cfg)
         self.out_indices = out_indices
         self.conv_cfg = conv_cfg
@@ -219,7 +231,9 @@ class EfficientNet(mmcv.runner.BaseModule):
         self.frozen_stages = frozen_stages
         self.norm_eval = norm_eval
         previous_width = stem_channels
+        block_num = sum(self.stage_depths)
         for i, (d, w) in enumerate(zip(self.stage_depths, self.stage_widths)):
+            block_index = sum(self.stage_depths[:i])
             efficient_layer = self.make_efficient_layer(
                 in_channels=previous_width,
                 out_channels=w,
@@ -227,16 +241,20 @@ class EfficientNet(mmcv.runner.BaseModule):
                 stride=strides[i],
                 expand_ratio=expand_ratios[i],
                 kernel_size=kernel_size[i],
+                block_num=block_num,
+                block_index=block_index,
                 se_ratio=se_ratio,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
                 with_cp=with_cp,
-                dropout=dropout
-            )
+                dropout=dropout,
+                init_cfg=self.init_cfg)
             layer_name = f'layer{i + 1}'
             self.add_module(layer_name, efficient_layer)
             self.efficient_layers.append(layer_name)
             previous_width = w
+
+        self._freeze_stages()
 
     def _make_stem_layer(self, in_channels, out_channels):
         self.conv1 = ConvModule(
@@ -248,22 +266,17 @@ class EfficientNet(mmcv.runner.BaseModule):
             bias=False,
             conv_cfg=self.conv_cfg,
             norm_cfg=self.norm_cfg,
-            act_cfg=dict(type='MemoryEfficientSwish')
-        )
+            padding_mode='samepadding',
+            act_cfg=dict(type='MemoryEfficientSwish'))
 
     def make_efficient_layer(self, **kwargs):
         return EfficientLayer(**kwargs)
 
-    @property
-    def norm1(self):
-        return getattr(self, self.norm1_name)
-
     def _freeze_stages(self):
         if self.frozen_stages >= 0:
-            # self.norm1.eval()
-            for m in [self.conv1]:
-                for param in m.parameters():
-                    param.requires_grad = False
+            self.conv1.eval()
+            for param in self.conv1.parameters():
+                param.requires_grad = False
         for i in range(1, self.frozen_stages + 1):
             m = getattr(self, f'layer{i}')
             m.eval()
