@@ -129,7 +129,7 @@ def draw_labels(ax,
         color (list[tuple] | matplotlib.color): The colors for labels.
         font_size (int): Font size of texts. Default: 8.
         scales (list[float]): Scales of texts. Default: None.
-        horizontal_alignment: The horizontal alignment method of
+        horizontal_alignment (str): The horizontal alignment method of
             texts. Default: 'left'.
 
     Returns:
