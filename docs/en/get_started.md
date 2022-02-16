@@ -12,6 +12,8 @@ Compatible MMDetection and MMCV versions are shown as below. Please install the 
 | MMDetection version |    MMCV version     |
 |:-------------------:|:-------------------:|
 | master              | mmcv-full>=1.3.17, <1.5.0 |
+| 2.21.0              | mmcv-full>=1.3.17, <1.5.0 |
+| 2.20.0              | mmcv-full>=1.3.17, <1.5.0 |
 | 2.19.1              | mmcv-full>=1.3.17, <1.5.0 |
 | 2.19.0              | mmcv-full>=1.3.17, <1.5.0 |
 | 2.18.0              | mmcv-full>=1.3.17, <1.4.0 |
@@ -179,8 +181,6 @@ The following table lists affected algorithms.
 |                      MaskedConv2d                       |                       Guided Anchoring                       |
 |                         CARAFE                          |                            CARAFE                            |
 |                      SyncBatchNorm                      |                           ResNeSt                            |
-
-**Notice:** MMDetection does not support training with CPU for now.
 
 ### Another option: Docker Image
 

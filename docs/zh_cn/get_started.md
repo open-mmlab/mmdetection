@@ -12,6 +12,8 @@ MMDetection 和 MMCV 版本兼容性如下所示，需要安装正确的 MMCV �
 | MMDetection 版本 |        MMCV 版本         |
 | :--------------: | :----------------------: |
 |      master      | mmcv-full>=1.3.17, <1.5.0 |
+| 2.21.0           | mmcv-full>=1.3.17, <1.5.0 |
+| 2.20.0           | mmcv-full>=1.3.17, <1.5.0 |
 |      2.19.1      | mmcv-full>=1.3.17, <1.5.0 |
 |      2.19.0      | mmcv-full>=1.3.17, <1.5.0 |
 |      2.18.1      | mmcv-full>=1.3.17, <1.4.0 |
@@ -149,7 +151,7 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
 
 (2) 如果希望使用 `opencv-python-headless` 而不是 `opencv-python`， 可以在安装 MMCV 之前安装；
 
-(3) 一些安装依赖是可以选择的。例如只需要安装最低运行要求的版本，则可以使用 `pip install -v -e .` 命令。如果希望使用可选择的像 `albumentations` 和 `imagecorruptions` 这种依赖项，可以使用 `pip install -r requirements/optional.txt ` 进行手动安装，或者在使用 `pip` 时指定所需的附加功能（例如 `pip install -v -e .[optional]`），支持附加功能的有效键值包括  `all`、`tests`、`build` 以及 `optional` 。
+(3) 一些安装依赖是可以选择的。例如只需要安装最低运行要求的版本，则可以使用 `pip install -v -e .` 命令。如果希望使用可选择的像 `albumentations` 和 `imagecorruptions` 这种依赖项，可以使用 `pip install -r requirements/optional.txt` 进行手动安装，或者在使用 `pip` 时指定所需的附加功能（例如 `pip install -v -e .[optional]`），支持附加功能的有效键值包括  `all`、`tests`、`build` 以及 `optional` 。
 
 (4) 如果希望使用 `albumentations`，我们建议使用 `pip install albumentations>=0.3.2 --no-binary imgaug,albumentations` 进行安装。 如果简单地使用 `pip install albumentations>=0.3.2` 进行安装，则会同时安装 `opencv-python-headless`（即便已经安装了 `opencv-python` 也会再次安装）。我们不允许同时安装 `opencv-python` 和 `opencv-python-headless`，因为这样可能会导致一些问题。更多细节请参考[官方文档](https://albumentations.ai/docs/getting_started/installation/#note-on-opencv-dependencies)。
 
@@ -180,8 +182,6 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
 |                      MaskedConv2d                       |                       Guided Anchoring                       |
 |                         CARAFE                          |                            CARAFE                            |
 |                      SyncBatchNorm                      |                           ResNeSt                            |
-
-**注意**： MMDetection 目前不支持使用 CPU 进行训练。
 
 ### 另一种选择： Docker 镜像
 

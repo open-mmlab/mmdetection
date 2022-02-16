@@ -1,31 +1,16 @@
-# Group Normalization
+# GN
 
-## Abstract
-
-<!-- [ABSTRACT] -->
-
-Batch Normalization (BN) is a milestone technique in the development of deep learning, enabling various networks to train. However, normalizing along the batch dimension introduces problems --- BN's error increases rapidly when the batch size becomes smaller, caused by inaccurate batch statistics estimation. This limits BN's usage for training larger models and transferring features to computer vision tasks including detection, segmentation, and video, which require small batches constrained by memory consumption. In this paper, we present Group Normalization (GN) as a simple alternative to BN. GN divides the channels into groups and computes within each group the mean and variance for normalization. GN's computation is independent of batch sizes, and its accuracy is stable in a wide range of batch sizes. On ResNet-50 trained in ImageNet, GN has 10.6% lower error than its BN counterpart when using a batch size of 2; when using typical batch sizes, GN is comparably good with BN and outperforms other normalization variants. Moreover, GN can be naturally transferred from pre-training to fine-tuning. GN can outperform its BN-based counterparts for object detection and segmentation in COCO, and for video classification in Kinetics, showing that GN can effectively replace the powerful BN in a variety of tasks. GN can be easily implemented by a few lines of code in modern libraries.
-
-<!-- [IMAGE] -->
-<div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143889171-d4660307-3a4f-4ac2-a0ad-7d17c2f045b1.png" height="200"/>
-</div>
-
-<!-- [PAPER_TITLE: Group Normalization] -->
-<!-- [PAPER_URL: https://arxiv.org/abs/1803.08494] -->
-
-## Citation
+> [Group Normalization](https://arxiv.org/abs/1803.08494)
 
 <!-- [ALGORITHM] -->
 
-```latex
-@inproceedings{wu2018group,
-  title={Group Normalization},
-  author={Wu, Yuxin and He, Kaiming},
-  booktitle={Proceedings of the European Conference on Computer Vision (ECCV)},
-  year={2018}
-}
-```
+## Abstract
+
+Batch Normalization (BN) is a milestone technique in the development of deep learning, enabling various networks to train. However, normalizing along the batch dimension introduces problems --- BN's error increases rapidly when the batch size becomes smaller, caused by inaccurate batch statistics estimation. This limits BN's usage for training larger models and transferring features to computer vision tasks including detection, segmentation, and video, which require small batches constrained by memory consumption. In this paper, we present Group Normalization (GN) as a simple alternative to BN. GN divides the channels into groups and computes within each group the mean and variance for normalization. GN's computation is independent of batch sizes, and its accuracy is stable in a wide range of batch sizes. On ResNet-50 trained in ImageNet, GN has 10.6% lower error than its BN counterpart when using a batch size of 2; when using typical batch sizes, GN is comparably good with BN and outperforms other normalization variants. Moreover, GN can be naturally transferred from pre-training to fine-tuning. GN can outperform its BN-based counterparts for object detection and segmentation in COCO, and for video classification in Kinetics, showing that GN can effectively replace the powerful BN in a variety of tasks. GN can be easily implemented by a few lines of code in modern libraries.
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143889171-d4660307-3a4f-4ac2-a0ad-7d17c2f045b1.png" height="200"/>
+</div>
 
 ## Results and Models
 
@@ -43,3 +28,14 @@ Batch Normalization (BN) is a milestone technique in the development of deep lea
 - (d) means pretrained model converted from Detectron, and (c) means the contributed model pretrained by [@thangvubk](https://github.com/thangvubk).
 - The `3x` schedule is epoch [28, 34, 36].
 - **Memory, Train/Inf time is outdated.**
+
+## Citation
+
+```latex
+@inproceedings{wu2018group,
+  title={Group Normalization},
+  author={Wu, Yuxin and He, Kaiming},
+  booktitle={Proceedings of the European Conference on Computer Vision (ECCV)},
+  year={2018}
+}
+```
