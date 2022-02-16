@@ -5,7 +5,6 @@ import tempfile
 import mmcv
 import numpy as np
 import pytest
-from mmcv.parallel import DataContainer
 
 from mmdet.datasets import OpenImagesChallengeDataset, OpenImagesDataset
 
@@ -153,23 +152,10 @@ def _creat_oid_challenge_style_ann(txt_file, label_file, label_level_file):
 
 def _create_metas(meta_file):
 
-    data = [[{
-        'filename': 'data/OpenImages/OpenImages/'
-        'validation/color.jpg',
-        'ori_filename': 'color.jpg',
-        'ori_shape': (300, 300, 3),
-        'img_shape': (300, 300, 3),
-        'pad_shape': (304, 304, 3),
-        'scale_factor': np.array([1., 1., 1., 1.], dtype=np.float32),
-        'flip': False,
-        'flip_direction': None,
-        'img_norm_cfg': {
-            'mean': np.array([123.675, 116.28, 103.53], dtype=np.float32),
-            'std': np.array([58.395, 57.12, 57.375], dtype=np.float32),
-            'to_rgb': True
-        }
-    }]]
-    fake_meta = [DataContainer(data)]
+    fake_meta = [{
+        'filename': 'data/OpenImages/OpenImages/validation/color.jpg',
+        'ori_shape': (300, 300, 3)
+    }]
     mmcv.dump(fake_meta, meta_file)
 
 
