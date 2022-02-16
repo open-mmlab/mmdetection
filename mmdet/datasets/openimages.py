@@ -22,7 +22,9 @@ class OpenImagesDataset(CustomDataset):
     """Open Images dataset for detection.
 
     Args:
-            label_description_file (str): File path to the label map proto.
+            label_file (str): File path of the label description file that
+                maps the classes names in MID format to their short
+                descriptions.
             image_level_ann_file (str): Image level annotation, which is used
                 in evaluation.
             get_supercategory (bool): Whether to get parent class of the
@@ -55,7 +57,7 @@ class OpenImagesDataset(CustomDataset):
     """
 
     def __init__(self,
-                 label_description_file='',
+                 label_file='',
                  image_level_ann_file='',
                  get_supercategory=True,
                  hierarchy_file=None,
@@ -68,7 +70,7 @@ class OpenImagesDataset(CustomDataset):
         self.cat2label = defaultdict(str)
         self.index_dict = {}
         # need get `index_dict` before load annotations
-        class_names = self.get_classes_from_csv(label_description_file)
+        class_names = self.get_classes_from_csv(label_file)
         super(OpenImagesDataset, self).__init__(**kwargs)
         self.CLASSES = class_names
         self.image_level_ann_file = image_level_ann_file
@@ -90,11 +92,13 @@ class OpenImagesDataset(CustomDataset):
         self.test_img_shapes = []
         self.load_from_pipeline = False if load_from_file else True
 
-    def get_classes_from_csv(self, label_description_file):
-        """Get class name and label map proto.
+    def get_classes_from_csv(self, label_file):
+        """Get classes name from file.
 
         Args:
-            label_description_file (str): File path to the label map proto.
+            label_file (str): File path of the label description file that
+                maps the classes names in MID format to their short
+                descriptions.
 
         Returns:
             list[str]: Class name of OpenImages.
@@ -102,7 +106,7 @@ class OpenImagesDataset(CustomDataset):
 
         index_list = []
         classes_names = []
-        with open(label_description_file, 'r') as f:
+        with open(label_file, 'r') as f:
             reader = csv.reader(f)
             for line in reader:
                 self.cat2label[line[0]] = line[1]
@@ -675,11 +679,13 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
     def __init__(self, **kwargs):
         super(OpenImagesChallengeDataset, self).__init__(**kwargs)
 
-    def get_classes_from_csv(self, label_description_file):
-        """Get class name and label map proto.
+    def get_classes_from_csv(self, label_file):
+        """Get classes name from file.
 
         Args:
-            label_description_file (str): File path to the label map proto.
+            label_file (str): File path of the label description file that
+                maps the classes names in MID format to their short
+                descriptions.
 
         Returns:
             list: Class name of OpenImages.
@@ -687,7 +693,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
 
         label_list = []
         id_list = []
-        with open(label_description_file, 'r') as f:
+        with open(label_file, 'r') as f:
             reader = csv.reader(f)
             for line in reader:
                 label_name = line[0]

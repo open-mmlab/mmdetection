@@ -59,7 +59,7 @@ data = dict(
             ann_file=data_root +
             'annotations/oidv6-train-annotations-bbox.csv',
             img_prefix=data_root + 'OpenImages/train/',
-            label_description_file=data_root +
+            label_file=data_root +
             'annotations/class-descriptions-boxable.csv',
             hierarchy_file=data_root +
             'annotations/bbox_labels_600_hierarchy.json',
