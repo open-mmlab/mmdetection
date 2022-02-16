@@ -19,21 +19,9 @@ from .custom import CustomDataset
 
 @DATASETS.register_module()
 class OpenImagesDataset(CustomDataset):
-    """Open Images dataset for detection."""
+    """Open Images dataset for detection.
 
-    def __init__(self,
-                 label_description_file='',
-                 image_level_ann_file='',
-                 get_supercategory=True,
-                 hierarchy_file=None,
-                 get_metas=True,
-                 load_from_file=True,
-                 meta_file='',
-                 filter_labels=True,
-                 load_image_level_labels=True,
-                 **kwargs):
-        """
-        Args:
+    Args:
             label_description_file (str): File path to the label map proto.
             image_level_ann_file (str): Image level annotation, which is used
                 in evaluation.
@@ -49,14 +37,14 @@ class OpenImagesDataset(CustomDataset):
                 in `OpenImagesDataset`:
 
                 - 1. `load from file`: Load image metas from pkl file, which
-                is suggested to use. We provided a script to get image metas:
-                `tools/misc/get_image_metas.py`, which need to run this script
-                 before training/testing. Please refer to
-                `config/openimages/README.md` for more details.
+                  is suggested to use. We provided a script to get image metas:
+                  `tools/misc/get_image_metas.py`, which need to run
+                  this script before training/testing. Please refer to
+                  `config/openimages/README.md` for more details.
 
                 - 2. `load from pipeline`, which will get image metas during
-                test time. However, this may reduce the inference speed,
-                especially when using distribution.
+                  test time. However, this may reduce the inference speed,
+                  especially when using distribution.
 
             load_from_file (bool): Whether to get image metas from pkl file.
             meta_file (str): File path to get image metas.
@@ -64,8 +52,19 @@ class OpenImagesDataset(CustomDataset):
                 Default: True.
             load_image_level_labels (bool): Whether load and consider image
                 level labels during evaluation. Default: True.
-        """
+    """
 
+    def __init__(self,
+                 label_description_file='',
+                 image_level_ann_file='',
+                 get_supercategory=True,
+                 hierarchy_file=None,
+                 get_metas=True,
+                 load_from_file=True,
+                 meta_file='',
+                 filter_labels=True,
+                 load_image_level_labels=True,
+                 **kwargs):
         self.cat2label = defaultdict(str)
         self.index_dict = {}
         # need get `index_dict` before load annotations
@@ -113,24 +112,25 @@ class OpenImagesDataset(CustomDataset):
         return classes_names
 
     def load_annotations(self, ann_file):
-        """Load annotation from annotation file. Special described
-        `self.data_infos` (defaultdict[list[dict]]) in this function:
-        Annotations where item of the defaultdict indicates an image, each of
-        which has (n) dicts. Keys of dicts are:
+        """Load annotation from annotation file.
+
+        Special described `self.data_infos` (defaultdict[list[dict]])
+        in this function: Annotations where item of the defaultdict
+        indicates an image, each of which has (n) dicts. Keys of dicts are:
 
             - `bbox` (list): coordinates of the box, in normalized image
-            coordinates, of shape 4.
+              coordinates, of shape 4.
             - `label` (int): the label id.
             - `is_group_of` (bool):  Indicates that the box spans a group
-            of objects (e.g., a bed of flowers or a crowd of people).
+              of objects (e.g., a bed of flowers or a crowd of people).
             - `is_occluded` (bool): Indicates that the object is occluded
-            by another object in the image.
+              by another object in the image.
             - `is_truncated` (bool): Indicates that the object extends
-            beyond the boundary of the image.
+              beyond the boundary of the image.
             - `is_depiction` (bool): Indicates that the object is a
-            depiction.
+              depiction.
             - `is_inside` (bool): Indicates a picture taken from the
-            inside of the object.
+              inside of the object.
 
         Args:
             ann_file (str): CSV style annotation file path.
@@ -424,9 +424,10 @@ class OpenImagesDataset(CustomDataset):
         Note: It will choose to do the following two processing according to
         the parameters:
 
-        1. Whether add parent classes of the corresponding class of the
+        1. Whether to add parent classes of the corresponding class of the
         detection bboxes.
-        2. Whether ignore the classes that unannotated on that image.
+
+        2. Whether to ignore the classes that unannotated on that image.
         """
         if image_level_annotations is not None:
             assert len(annotations) == \
@@ -476,12 +477,12 @@ class OpenImagesDataset(CustomDataset):
 
                 - `image_level_label` (int): Label id.
                 - `confidence` (float): Labels that are human-verified to be
-                    present in an image have confidence = 1 (positive labels).
-                    Labels that are human-verified to be absent from an image
-                    have confidence = 0 (negative labels). Machine-generated
-                    labels have fractional confidences, generally >= 0.5.
-                    The higher the confidence, the smaller the chance for
-                    the label to be a false positive.
+                  present in an image have confidence = 1 (positive labels).
+                  Labels that are human-verified to be absent from an image
+                  have confidence = 0 (negative labels). Machine-generated
+                  labels have fractional confidences, generally >= 0.5.
+                  The higher the confidence, the smaller the chance for
+                  the label to be a false positive.
         """
 
         item_lists = defaultdict(list)
@@ -547,7 +548,10 @@ class OpenImagesDataset(CustomDataset):
 
     def denormalize_gt_bboxes(self, annotations):
         """Convert ground truth bboxes from relative position to absolute
-        position."""
+        position.
+
+        Only used in evaluating time.
+        """
         assert len(self.test_img_shapes) == len(annotations)
         for i in range(len(annotations)):
             h, w = self.test_img_shapes[i]
