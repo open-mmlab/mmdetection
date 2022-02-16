@@ -29,7 +29,7 @@ repos:
       - id: mixed-line-ending
         args: ["--fix=lf"]
   - repo: https://github.com/markdownlint/markdownlint
-    rev: v0.11.0
+    rev: v0.10.0
     hooks:
       - id: markdownlint
         args: ["-r", "~MD002,~MD013,~MD029,~MD033,~MD034",
@@ -44,7 +44,7 @@ repos:
       - id: docformatter
         args: ["--in-place", "--wrap-descriptions", "79"]
   - repo: https://github.com/open-mmlab/pre-commit-hooks
-    rev: master  # Use the ref you want to point at
+    rev: v0.1.0  # Use the ref you want to point at
     hooks:
       - id: check-algo-readme
       - id: check-copyright
