@@ -213,8 +213,8 @@ def _demodata_refine_boxes(n_roi, n_img, rng=0):
     """Create random test data for the
     ``mmdet.models.bbox_heads.bbox_head.BBoxHead.refine_boxes`` method."""
     import numpy as np
-    from mmdet.core.bbox.demodata import random_boxes
-    from mmdet.core.bbox.demodata import ensure_rng
+
+    from mmdet.core.bbox.demodata import ensure_rng, random_boxes
     try:
         import kwarray
     except ImportError:
