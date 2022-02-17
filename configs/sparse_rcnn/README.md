@@ -1,31 +1,16 @@
-# Sparse R-CNN: End-to-End Object Detection with Learnable Proposals
+# Sparse R-CNN
 
-## Abstract
-
-<!-- [ABSTRACT] -->
-
-We present Sparse R-CNN, a purely sparse method for object detection in images. Existing works on object detection heavily rely on dense object candidates, such as k anchor boxes pre-defined on all grids of image feature map of size H×W. In our method, however, a fixed sparse set of learned object proposals, total length of N, are provided to object recognition head to perform classification and location. By eliminating HWk (up to hundreds of thousands) hand-designed object candidates to N (e.g. 100) learnable proposals, Sparse R-CNN completely avoids all efforts related to object candidates design and many-to-one label assignment. More importantly, final predictions are directly output without non-maximum suppression post-procedure. Sparse R-CNN demonstrates accuracy, run-time and training convergence performance on par with the well-established detector baselines on the challenging COCO dataset, e.g., achieving 45.0 AP in standard 3× training schedule and running at 22 fps using ResNet-50 FPN model. We hope our work could inspire re-thinking the convention of dense prior in object detectors.
-
-<!-- [IMAGE] -->
-<div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143998489-8a5a687d-ceec-4590-8347-708e427e7dfe.png" height="300"/>
-</div>
-
-<!-- [PAPER_TITLE: Sparse R-CNN: End-to-End Object Detection with Learnable Proposals] -->
-<!-- [PAPER_URL: https://arxiv.org/abs/2011.12450] -->
-
-## Citation
+> [Sparse R-CNN: End-to-End Object Detection with Learnable Proposals](https://arxiv.org/abs/2011.12450)
 
 <!-- [ALGORITHM] -->
 
-```
-@article{peize2020sparse,
-  title   =  {{SparseR-CNN}: End-to-End Object Detection with Learnable Proposals},
-  author  =  {Peize Sun and Rufeng Zhang and Yi Jiang and Tao Kong and Chenfeng Xu and Wei Zhan and Masayoshi Tomizuka and Lei Li and Zehuan Yuan and Changhu Wang and Ping Luo},
-  journal =  {arXiv preprint arXiv:2011.12450},
-  year    =  {2020}
-}
-```
+## Abstract
+
+We present Sparse R-CNN, a purely sparse method for object detection in images. Existing works on object detection heavily rely on dense object candidates, such as k anchor boxes pre-defined on all grids of image feature map of size H×W. In our method, however, a fixed sparse set of learned object proposals, total length of N, are provided to object recognition head to perform classification and location. By eliminating HWk (up to hundreds of thousands) hand-designed object candidates to N (e.g. 100) learnable proposals, Sparse R-CNN completely avoids all efforts related to object candidates design and many-to-one label assignment. More importantly, final predictions are directly output without non-maximum suppression post-procedure. Sparse R-CNN demonstrates accuracy, run-time and training convergence performance on par with the well-established detector baselines on the challenging COCO dataset, e.g., achieving 45.0 AP in standard 3× training schedule and running at 22 fps using ResNet-50 FPN model. We hope our work could inspire re-thinking the convention of dense prior in object detectors.
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143998489-8a5a687d-ceec-4590-8347-708e427e7dfe.png" height="300"/>
+</div>
 
 ## Results and Models
 
@@ -40,3 +25,14 @@ We present Sparse R-CNN, a purely sparse method for object detection in images. 
 ### Notes
 
 We observe about 0.3 AP noise especially when using ResNet-101 as the backbone.
+
+## Citation
+
+```latex
+@article{peize2020sparse,
+  title   =  {{SparseR-CNN}: End-to-End Object Detection with Learnable Proposals},
+  author  =  {Peize Sun and Rufeng Zhang and Yi Jiang and Tao Kong and Chenfeng Xu and Wei Zhan and Masayoshi Tomizuka and Lei Li and Zehuan Yuan and Changhu Wang and Ping Luo},
+  journal =  {arXiv preprint arXiv:2011.12450},
+  year    =  {2020}
+}
+```

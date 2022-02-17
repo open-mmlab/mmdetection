@@ -3,22 +3,25 @@ name: build
 on:
   push:
     paths-ignore:
-      - '.dev_scripts/**'
-      - '.github/**.md'
-      - 'demo/**'
-      - 'docker/**'
-      - 'tools/**'
+      - ".dev_scripts/**"
+      - ".github/**.md"
+      - "demo/**"
+      - "docker/**"
+      - "tools/**"
+      - "README.md"
+      - "README_zh-CN.md"
 
   pull_request:
     paths-ignore:
-      - '.dev_scripts/**'
-      - '.github/**.md'
-      - 'demo/**'
-      - 'docker/**'
-      - 'tools/**'
-      - 'docs/**'
-      - 'docs_zh-CN/**'
-
+      - ".dev_scripts/**"
+      - ".github/**.md"
+      - "demo/**"
+      - "docker/**"
+      - "docs/**"
+      - "docs_zh-CN/**"
+      - "tools/**"
+      - "README.md"
+      - "README_zh-CN.md"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -83,13 +86,7 @@ jobs:
     strategy:
       matrix:
         python-version: [3.7]
-        torch:
-          [
-            1.5.1+cu101,
-            1.6.0+cu101,
-            1.7.0+cu101,
-            1.8.0+cu101,
-          ]
+        torch: [1.5.1+cu101, 1.6.0+cu101, 1.7.0+cu101, 1.8.0+cu101]
         include:
           - torch: 1.5.1+cu101
             torch_version: torch1.5.1

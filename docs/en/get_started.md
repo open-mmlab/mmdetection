@@ -12,6 +12,8 @@ Compatible MMDetection and MMCV versions are shown as below. Please install the 
 | MMDetection version |    MMCV version     |
 |:-------------------:|:-------------------:|
 | master              | mmcv-full>=1.3.17, <1.5.0 |
+| 2.21.0              | mmcv-full>=1.3.17, <1.5.0 |
+| 2.20.0              | mmcv-full>=1.3.17, <1.5.0 |
 | 2.19.1              | mmcv-full>=1.3.17, <1.5.0 |
 | 2.19.0              | mmcv-full>=1.3.17, <1.5.0 |
 | 2.18.0              | mmcv-full>=1.3.17, <1.4.0 |
@@ -180,8 +182,6 @@ The following table lists affected algorithms.
 |                         CARAFE                          |                            CARAFE                            |
 |                      SyncBatchNorm                      |                           ResNeSt                            |
 
-**Notice:** MMDetection does not support training with CPU for now.
-
 ### Another option: Docker Image
 
 We provide a [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) to build an image. Ensure that you are using [docker version](https://docs.docker.com/engine/install/) >=19.03.
@@ -229,7 +229,11 @@ PYTHONPATH="$(dirname $0)/..":$PYTHONPATH
 
 ## Verification
 
-To verify whether MMDetection is installed correctly, we can run the following sample code to initialize a detector and inference a demo image.
+To verify whether MMDetection is installed correctly, we can run the following sample code to initialize a detector and inference a demo image, but first we need to download config and checkpoint files.
+
+```shell
+mim download mmdet --config faster_rcnn_r50_fpn_1x_coco --dest .
+```
 
 ```python
 from mmdet.apis import init_detector, inference_detector
