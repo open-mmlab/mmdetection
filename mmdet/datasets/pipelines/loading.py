@@ -88,11 +88,11 @@ class LoadImageFromFile:
 
 
 @PIPELINES.register_module()
-class LoadImageFromWebcam(LoadImageFromFile):
-    """Load an image from webcam.
+class LoadImageFromNdarray(LoadImageFromFile):
+    """Load an image from np.ndarray.
 
-    Similar with :obj:`LoadImageFromFile`, but the image read from webcam is in
-    ``results['img']``.
+    Similar with :obj:`LoadImageFromFile`, but the image read from np.ndarray
+    is in ``results['img']``.
     """
 
     def __call__(self, results):
@@ -117,6 +117,15 @@ class LoadImageFromWebcam(LoadImageFromFile):
         results['ori_shape'] = img.shape
         results['img_fields'] = ['img']
         return results
+
+
+@PIPELINES.register_module()
+class LoadImageFromWebcam(LoadImageFromNdarray):
+    """Load an image from webcam.
+
+    Similar with :obj:`LoadImageFromFile`, but the image read from webcam is in
+    ``results['img']``.
+    """
 
 
 @PIPELINES.register_module()
