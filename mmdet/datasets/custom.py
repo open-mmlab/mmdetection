@@ -103,7 +103,7 @@ class CustomDataset(Dataset):
         # assert an error when the data info is empty
         assert len(self.data_infos) != 0, \
             'empty data_infos, ' \
-            'which may be due to the \"image\" field of annotation json file'
+            'Please check your dataset files'
 
         if self.proposal_file is not None:
             if hasattr(self.file_client, 'get_local_path'):
