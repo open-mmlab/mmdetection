@@ -18,13 +18,13 @@ Collections:
       Title: 'Dynamic Head: Unifying Object Detection Heads with Attentions'
     README: configs/dyhead/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/v2.21.0/mmdet/models/necks/dyhead.py#L130
-      Version: v2.21.0
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.22.0/mmdet/models/necks/dyhead.py#L130
+      Version: v2.22.0
 
 Models:
-  - Name: atss_r50_fpn_dyhead_for_reproduction_1x_coco
+  - Name: atss_r50_caffe_fpn_dyhead_1x_coco
     In Collection: DyHead
-    Config: configs/dyhead/atss_r50_fpn_dyhead_for_reproduction_1x_coco.py
+    Config: configs/dyhead/atss_r50_caffe_fpn_dyhead_1x_coco.py
     Metadata:
       Training Memory (GB): 5.4
       inference time (ms/im):
@@ -40,7 +40,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 42.5
-    Weights: https://github.com/shinya7y/weights/releases/download/v1.0.0/atss_r50_fpn_dyhead_for_reproduction_4x4_1x_coco_20220107_213939-162888e6.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/dyhead/atss_r50_fpn_dyhead_for_reproduction_1x_coco/atss_r50_fpn_dyhead_for_reproduction_4x4_1x_coco_20220107_213939-162888e6.pth
 
   - Name: atss_r50_fpn_dyhead_1x_coco
     In Collection: DyHead
@@ -60,4 +60,4 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 43.3
-    Weights: https://github.com/shinya7y/weights/releases/download/v1.0.0/atss_r50_fpn_dyhead_4x4_1x_coco_20211219_023314-eaa620c6.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/dyhead/atss_r50_fpn_dyhead_4x4_1x_coco/atss_r50_fpn_dyhead_4x4_1x_coco_20211219_023314-eaa620c6.pth

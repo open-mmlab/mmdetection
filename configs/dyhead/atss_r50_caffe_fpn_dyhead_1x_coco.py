@@ -29,13 +29,14 @@ model = dict(
             in_channels=256,
             out_channels=256,
             num_blocks=6,
+            # disable zero_init_offset to follow official implementation
             zero_init_offset=False)
     ],
     bbox_head=dict(
         type='ATSSHead',
         num_classes=80,
         in_channels=256,
-        pred_kernel_size=1,
+        pred_kernel_size=1,  # follow DyHead official implementation
         stacked_convs=0,
         feat_channels=256,
         anchor_generator=dict(
@@ -44,7 +45,7 @@ model = dict(
             octave_base_scale=8,
             scales_per_octave=1,
             strides=[8, 16, 32, 64, 128],
-            center_offset=0.5),
+            center_offset=0.5),  # follow DyHead official implementation
         bbox_coder=dict(
             type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
