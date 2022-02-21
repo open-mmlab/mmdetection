@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 import torch.nn.functional as F
-from mmcv.cnn import PLUGIN_LAYERS, Conv2d, ConvModule, kaiming_init
+from mmcv.cnn import PLUGIN_LAYERS, Conv2d, ConvModule, caffe2_xavier_init
 from mmcv.cnn.bricks.transformer import (build_positional_encoding,
                                          build_transformer_layer_sequence)
 from mmcv.runner import BaseModule, ModuleList
@@ -78,11 +78,11 @@ class PixelDecoder(BaseModule):
     def init_weights(self):
         """Initialize weights."""
         for i in range(0, self.num_inputs - 2):
-            kaiming_init(self.lateral_convs[i].conv, a=1)
-            kaiming_init(self.output_convs[i].conv, a=1)
+            caffe2_xavier_init(self.lateral_convs[i].conv, bias=0)
+            caffe2_xavier_init(self.output_convs[i].conv, bias=0)
 
-        kaiming_init(self.mask_feature, a=1)
-        kaiming_init(self.last_feat_conv, a=1)
+        caffe2_xavier_init(self.mask_feature, bias=0)
+        caffe2_xavier_init(self.last_feat_conv, bias=0)
 
     def forward(self, feats, img_metas):
         """
@@ -178,12 +178,12 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
     def init_weights(self):
         """Initialize weights."""
         for i in range(0, self.num_inputs - 2):
-            kaiming_init(self.lateral_convs[i].conv, a=1)
-            kaiming_init(self.output_convs[i].conv, a=1)
+            caffe2_xavier_init(self.lateral_convs[i].conv, bias=0)
+            caffe2_xavier_init(self.output_convs[i].conv, bias=0)
 
-        kaiming_init(self.mask_feature, a=1)
-        kaiming_init(self.encoder_in_proj, a=1)
-        kaiming_init(self.encoder_out_proj.conv, a=1)
+        caffe2_xavier_init(self.mask_feature, bias=0)
+        caffe2_xavier_init(self.encoder_in_proj, bias=0)
+        caffe2_xavier_init(self.encoder_out_proj.conv, bias=0)
 
     def forward(self, feats, img_metas):
         """

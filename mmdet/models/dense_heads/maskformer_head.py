@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import Conv2d, build_plugin_layer, kaiming_init
+from mmcv.cnn import Conv2d, build_plugin_layer, caffe2_xavier_init
 from mmcv.cnn.bricks.transformer import (build_positional_encoding,
                                          build_transformer_layer_sequence)
 from mmcv.runner import force_fp32
@@ -149,7 +149,8 @@ class MaskFormerHead(AnchorFreeHead):
         self.loss_dice = build_loss(loss_dice)
 
     def init_weights(self):
-        kaiming_init(self.decoder_input_proj, a=1)
+        if isinstance(self.decoder_input_proj, Conv2d):
+            caffe2_xavier_init(self.decoder_input_proj, bias=0)
 
     def preprocess_gt(self, gt_labels_list, gt_masks_list, gt_semantic_segs):
         """Preprocess the ground truth for all images.
