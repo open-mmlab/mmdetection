@@ -8,7 +8,16 @@ from torch.utils.data import Sampler
 
 
 class ClassAwareSampler(Sampler):
-    """
+    r"""A class-aware sampling strategy to effectively tackle the
+    non-uniform class distribution. The length of the training data is
+    consistent with source data.
+
+    Simple improvements based on `Relay Backpropagation for Effective
+    Learning of Deep Convolutional Neural Networks
+    <https://arxiv.org/abs/1512.05830>`_
+
+    The implementation logic is referred to
+    https://github.com/Sense-X/TSD/blob/master/mmdet/datasets/samplers/distributed_classaware_sampler.py
 
     Args:
         dataset: Dataset used for sampling.
@@ -120,9 +129,24 @@ class ClassAwareSampler(Sampler):
 
 
 class RandomCycleIter:
-    """"""
+    """Shuffle the list and do it again after the list have traversed.
 
-    def __init__(self, data, generator):
+    The implementation logic is referred to
+    https://github.com/wutong16/DistributionBalancedLoss/blob/master/mllt/datasets/loader/sampler.py
+
+    Example:
+        >>> label_list = [0, 1, 2, 4, 5]
+        >>> g = torch.Generator()
+        >>> g.manual_seed(0)
+        >>> label_iter_list = RandomCycleIter(label_list, generator=g)
+        >>> index = next(label_iter_list)
+    Args:
+        data (list or ndarray): The data that needs to be shuffled.
+        generator: An torch.Generator object, which is used in setting the seed
+            for generating random numbers.
+    """  # noqa: W605
+
+    def __init__(self, data, generator=None):
         self.data = data
         self.length = len(data)
         self.index = torch.randperm(self.length, generator=generator).numpy()
