@@ -3,7 +3,6 @@ import warnings
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from mmcv.cnn import Scale
 from mmcv.runner import force_fp32
 
@@ -155,7 +154,10 @@ class FCOSHead(AnchorFreeHead):
         # float to avoid overflow when enabling FP16
         bbox_pred = scale(bbox_pred).float()
         if self.norm_on_bbox:
-            bbox_pred = F.relu(bbox_pred)
+            # bbox_pred needed for gradient computation has been modified
+            # by F.relu(bbox_pred) when run with PyTorch 1.10. So replace
+            # F.relu(bbox_pred) with bbox_pred.clamp(min=0)
+            bbox_pred = bbox_pred.clamp(min=0)
             if not self.training:
                 bbox_pred *= stride
         else:

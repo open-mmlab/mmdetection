@@ -1,31 +1,16 @@
-# ResNeSt: Split-Attention Networks
+# ResNeSt
 
-## Abstract
-
-<!-- [ABSTRACT] -->
-
-It is well known that featuremap attention and multi-path representation are important for visual recognition. In this paper, we present a modularized architecture, which applies the channel-wise attention on different network branches to leverage their success in capturing cross-feature interactions and learning diverse representations. Our design results in a simple and unified computation block, which can be parameterized using only a few variables. Our model, named ResNeSt, outperforms EfficientNet in accuracy and latency trade-off on image classification. In addition, ResNeSt has achieved superior transfer learning results on several public benchmarks serving as the backbone, and has been adopted by the winning entries of COCO-LVIS challenge.
-
-<!-- [IMAGE] -->
-<div align=center>
-<img src="https://user-images.githubusercontent.com/40661020/143973475-b5b33b15-ed04-4fc6-890a-521f1a62bc52.png"/>
-</div>
-
-<!-- [PAPER_TITLE: ResNeSt: Split-Attention Networks] -->
-<!-- [PAPER_URL: https://arxiv.org/abs/2004.08955] -->
-
-## Citation
+> [ResNeSt: Split-Attention Networks](https://arxiv.org/abs/2004.08955)
 
 <!-- [BACKBONE] -->
 
-```latex
-@article{zhang2020resnest,
-title={ResNeSt: Split-Attention Networks},
-author={Zhang, Hang and Wu, Chongruo and Zhang, Zhongyue and Zhu, Yi and Zhang, Zhi and Lin, Haibin and Sun, Yue and He, Tong and Muller, Jonas and Manmatha, R. and Li, Mu and Smola, Alexander},
-journal={arXiv preprint arXiv:2004.08955},
-year={2020}
-}
-```
+## Abstract
+
+It is well known that featuremap attention and multi-path representation are important for visual recognition. In this paper, we present a modularized architecture, which applies the channel-wise attention on different network branches to leverage their success in capturing cross-feature interactions and learning diverse representations. Our design results in a simple and unified computation block, which can be parameterized using only a few variables. Our model, named ResNeSt, outperforms EfficientNet in accuracy and latency trade-off on image classification. In addition, ResNeSt has achieved superior transfer learning results on several public benchmarks serving as the backbone, and has been adopted by the winning entries of COCO-LVIS challenge.
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143973475-b5b33b15-ed04-4fc6-890a-521f1a62bc52.png"/>
+</div>
 
 ## Results and Models
 
@@ -56,3 +41,14 @@ year={2020}
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :-----: | :------: | :--------: |
 |S-50-FPN       | pytorch |    1x   |   -    |      -         | 45.4 | 39.5 |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/resnest/cascade_mask_rcnn_s50_fpn_syncbn-backbone+head_mstrain_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/resnest/cascade_mask_rcnn_s50_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco/cascade_mask_rcnn_s50_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco_20201122_104428-99eca4c7.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/resnest/cascade_mask_rcnn_s50_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco/cascade_mask_rcnn_s50_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco-20201122_104428.log.json) |
 |S-101-FPN       | pytorch |    1x   |  10.5  |      -         | 47.7 | 41.4 |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/resnest/cascade_mask_rcnn_s101_fpn_syncbn-backbone+head_mstrain_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/resnest/cascade_mask_rcnn_s101_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco/cascade_mask_rcnn_s101_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco_20201005_113243-42607475.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/resnest/cascade_mask_rcnn_s101_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco/cascade_mask_rcnn_s101_fpn_syncbn-backbone%2Bhead_mstrain_1x_coco-20201005_113243.log.json) |
+
+## Citation
+
+```latex
+@article{zhang2020resnest,
+title={ResNeSt: Split-Attention Networks},
+author={Zhang, Hang and Wu, Chongruo and Zhang, Zhongyue and Zhu, Yi and Zhang, Zhi and Lin, Haibin and Sun, Yue and He, Tong and Muller, Jonas and Manmatha, R. and Li, Mu and Smola, Alexander},
+journal={arXiv preprint arXiv:2004.08955},
+year={2020}
+}
+```

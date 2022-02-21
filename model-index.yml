@@ -3,10 +3,12 @@ Import:
   - configs/autoassign/metafile.yml
   - configs/carafe/metafile.yml
   - configs/cascade_rcnn/metafile.yml
+  - configs/cascade_rpn/metafile.yml
   - configs/centernet/metafile.yml
   - configs/centripetalnet/metafile.yml
   - configs/cornernet/metafile.yml
   - configs/dcn/metafile.yml
+  - configs/dcnv2/metafile.yml
   - configs/deformable_detr/metafile.yml
   - configs/detectors/metafile.yml
   - configs/detr/metafile.yml
@@ -30,6 +32,7 @@ Import:
   - configs/hrnet/metafile.yml
   - configs/htc/metafile.yml
   - configs/instaboost/metafile.yml
+  - configs/lad/metafile.yml
   - configs/ld/metafile.yml
   - configs/libra_rcnn/metafile.yml
   - configs/mask_rcnn/metafile.yml

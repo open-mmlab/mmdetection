@@ -3,22 +3,25 @@ name: build
 on:
   push:
     paths-ignore:
-      - '.dev_scripts/**'
-      - '.github/**.md'
-      - 'demo/**'
-      - 'docker/**'
-      - 'tools/**'
+      - ".dev_scripts/**"
+      - ".github/**.md"
+      - "demo/**"
+      - "docker/**"
+      - "tools/**"
+      - "README.md"
+      - "README_zh-CN.md"
 
   pull_request:
     paths-ignore:
-      - '.dev_scripts/**'
-      - '.github/**.md'
-      - 'demo/**'
-      - 'docker/**'
-      - 'tools/**'
-      - 'docs/**'
-      - 'docs_zh-CN/**'
-
+      - ".dev_scripts/**"
+      - ".github/**.md"
+      - "demo/**"
+      - "docker/**"
+      - "docs/**"
+      - "docs_zh-CN/**"
+      - "tools/**"
+      - "README.md"
+      - "README_zh-CN.md"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -30,23 +33,26 @@ jobs:
     strategy:
       matrix:
         python-version: [3.7]
-        torch: [1.5.1, 1.6.0, 1.7.0, 1.8.0, 1.9.0]
+        torch: [1.5.1, 1.6.0, 1.7.0, 1.8.0, 1.9.0, 1.10.1]
         include:
           - torch: 1.5.1
             torchvision: 0.6.1
-            mmcv: 1.5.0
+            mmcv: 1.5
           - torch: 1.6.0
             torchvision: 0.7.0
-            mmcv: 1.6.0
+            mmcv: 1.6
           - torch: 1.7.0
             torchvision: 0.8.1
-            mmcv: 1.7.0
+            mmcv: 1.7
           - torch: 1.8.0
             torchvision: 0.9.0
-            mmcv: 1.8.0
+            mmcv: 1.8
           - torch: 1.9.0
             torchvision: 0.10.0
-            mmcv: 1.9.0
+            mmcv: 1.9
+          - torch: 1.10.1
+            torchvision: 0.11.2
+            mmcv: 1.10
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -83,30 +89,24 @@ jobs:
     strategy:
       matrix:
         python-version: [3.7]
-        torch:
-          [
-            1.5.1+cu101,
-            1.6.0+cu101,
-            1.7.0+cu101,
-            1.8.0+cu101,
-          ]
+        torch: [1.5.1+cu101, 1.6.0+cu101, 1.7.0+cu101, 1.8.0+cu101]
         include:
           - torch: 1.5.1+cu101
             torch_version: torch1.5.1
             torchvision: 0.6.1+cu101
-            mmcv: 1.5.0
+            mmcv: 1.5
           - torch: 1.6.0+cu101
             torch_version: torch1.6.0
             torchvision: 0.7.0+cu101
-            mmcv: 1.6.0
+            mmcv: 1.6
           - torch: 1.7.0+cu101
             torch_version: torch1.7.0
             torchvision: 0.8.1+cu101
-            mmcv: 1.7.0
+            mmcv: 1.7
           - torch: 1.8.0+cu101
             torch_version: torch1.8.0
             torchvision: 0.9.0+cu101
-            mmcv: 1.8.0
+            mmcv: 1.8
 
     steps:
       - uses: actions/checkout@v2
@@ -163,12 +163,16 @@ jobs:
     strategy:
       matrix:
         python-version: [3.6, 3.7, 3.8, 3.9]
-        torch: [1.9.0+cu102]
+        torch: [1.9.0+cu102, 1.10.1+cu102]
         include:
           - torch: 1.9.0+cu102
             torch_version: torch1.9.0
             torchvision: 0.10.0+cu102
-            mmcv: 1.9.0
+            mmcv: 1.9
+          - torch: 1.10.1+cu102
+            torch_version: torch1.10.1
+            torchvision: 0.11.2+cu102
+            mmcv: 1.10
 
     steps:
       - uses: actions/checkout@v2

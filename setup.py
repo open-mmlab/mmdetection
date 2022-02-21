@@ -67,9 +67,9 @@ def parse_requirements(fname='requirements.txt', with_version=True):
     CommandLine:
         python -c "import setup; print(setup.parse_requirements())"
     """
+    import re
     import sys
     from os.path import exists
-    import re
     require_fpath = fname
 
     def parse_line(line):
@@ -208,8 +208,6 @@ if __name__ == '__main__':
             'Programming Language :: Python :: 3.9',
         ],
         license='Apache License 2.0',
-        setup_requires=parse_requirements('requirements/build.txt'),
-        tests_require=parse_requirements('requirements/tests.txt'),
         install_requires=parse_requirements('requirements/runtime.txt'),
         extras_require={
             'all': parse_requirements('requirements.txt'),
