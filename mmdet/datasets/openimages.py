@@ -22,38 +22,41 @@ class OpenImagesDataset(CustomDataset):
     """Open Images dataset for detection.
 
     Args:
-            label_file (str): File path of the label description file that
-                maps the classes names in MID format to their short
-                descriptions.
-            image_level_ann_file (str): Image level annotation, which is used
-                in evaluation.
-            get_supercategory (bool): Whether to get parent class of the
-                current class. Default: True.
-            hierarchy_file (str): The file path of the class hierarchy.
-                Default: None.
-            get_metas (bool): Whether to get image metas in testing or
-                validation time. This should be `True` during evaluation.
-                Default: True. The OpenImages annotations do not have image
-                metas (width and height of the image), which will be used
-                during evaluation. We provide two ways to get image metas
-                in `OpenImagesDataset`:
+        label_file (str): File path of the label description file that
+            maps the classes names in MID format to their short
+            descriptions.
+        image_level_ann_file (str): Image level annotation, which is used
+            in evaluation.
+        get_supercategory (bool): Whether to get parent class of the
+            current class. Default: True.
+        hierarchy_file (str): The file path of the class hierarchy.
+            Default: None.
+        get_metas (bool): Whether to get image metas in testing or
+            validation time. This should be `True` during evaluation.
+            Default: True. The OpenImages annotations do not have image
+            metas (width and height of the image), which will be used
+            during evaluation. We provide two ways to get image metas
+            in `OpenImagesDataset`:
 
-                - 1. `load from file`: Load image metas from pkl file, which
-                  is suggested to use. We provided a script to get image metas:
-                  `tools/misc/get_image_metas.py`, which need to run
-                  this script before training/testing. Please refer to
-                  `config/openimages/README.md` for more details.
+            - 1. `load from file`: Load image metas from pkl file, which
+              is suggested to use. We provided a script to get image metas:
+              `tools/misc/get_image_metas.py`, which need to run
+              this script before training/testing. Please refer to
+              `config/openimages/README.md` for more details.
 
-                - 2. `load from pipeline`, which will get image metas during
-                  test time. However, this may reduce the inference speed,
-                  especially when using distribution.
+            - 2. `load from pipeline`, which will get image metas during
+              test time. However, this may reduce the inference speed,
+              especially when using distribution.
 
-            load_from_file (bool): Whether to get image metas from pkl file.
-            meta_file (str): File path to get image metas.
-            filter_labels (bool): Whether filter unannotated classes.
-                Default: True.
-            load_image_level_labels (bool): Whether load and consider image
-                level labels during evaluation. Default: True.
+        load_from_file (bool): Whether to get image metas from pkl file.
+        meta_file (str): File path to get image metas.
+        filter_labels (bool): Whether filter unannotated classes.
+            Default: True.
+        load_image_level_labels (bool): Whether to load and consider image
+            level labels during evaluation. Default: True.
+        num_sample_class (int): The number of samples taken from each
+            per-label list, which is used in :class:`ClassAwareSampler`.
+            Default: 1
     """
 
     def __init__(self,
@@ -66,6 +69,7 @@ class OpenImagesDataset(CustomDataset):
                  meta_file='',
                  filter_labels=True,
                  load_image_level_labels=True,
+                 num_sample_class=1,
                  **kwargs):
         self.cat2label = defaultdict(str)
         self.index_dict = {}
@@ -91,6 +95,7 @@ class OpenImagesDataset(CustomDataset):
         self.test_img_metas = []
         self.test_img_shapes = []
         self.load_from_pipeline = False if load_from_file else True
+        self.num_sample_class = num_sample_class
 
     def get_classes_from_csv(self, label_file):
         """Get classes name from file.

@@ -11,8 +11,8 @@ from mmcv.runner import get_dist_info
 from mmcv.utils import TORCH_VERSION, Registry, build_from_cfg, digit_version
 from torch.utils.data import DataLoader
 
-from .samplers import (DistributedGroupSampler, DistributedSampler,
-                       GroupSampler, InfiniteBatchSampler,
+from .samplers import (ClassAwareSampler, DistributedGroupSampler,
+                       DistributedSampler, GroupSampler, InfiniteBatchSampler,
                        InfiniteGroupBatchSampler)
 
 if platform.system() != 'Windows':
@@ -92,6 +92,7 @@ def build_dataloader(dataset,
                      seed=None,
                      runner_type='EpochBasedRunner',
                      persistent_workers=False,
+                     use_class_aware_sampler=False,
                      **kwargs):
     """Build PyTorch DataLoader.
 
@@ -114,6 +115,8 @@ def build_dataloader(dataset,
             the worker processes after a dataset has been consumed once.
             This allows to maintain the workers `Dataset` instances alive.
             This argument is only valid when PyTorch>=1.7.0. Default: False.
+        use_class_aware_sampler (bool): Whether to use `ClassAwareSampler`
+            during training. Default: False.
         kwargs: any keyword argument to be used to initialize DataLoader
 
     Returns:
@@ -152,7 +155,12 @@ def build_dataloader(dataset,
         batch_size = 1
         sampler = None
     else:
-        if dist:
+        if use_class_aware_sampler:
+            # ClassAwareSampler can be used in both distributed and
+            # non-distributed training.
+            sampler = ClassAwareSampler(
+                dataset, samples_per_gpu, world_size, rank, seed=seed)
+        elif dist:
             # DistributedGroupSampler will definitely shuffle the data to
             # satisfy that images on each GPU are in the same group
             if shuffle:

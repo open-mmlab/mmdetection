@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import os.path as osp
 import warnings
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 import mmcv
 import numpy as np
@@ -284,6 +284,27 @@ class CustomDataset(Dataset):
             raise ValueError(f'Unsupported type {type(classes)} of classes.')
 
         return class_names
+
+    def get_label_dict(self):
+        """Get per-label image list in the current dataset, which will be used
+        in :class:`ClassAwareSampler`.
+
+        Returns:
+            defaultdict[list]: A defaultdict of per-label image list,
+            the item of the defaultdict indicates a label index,
+            corresponds to the image index that contains the label.
+        """
+        label_dict = defaultdict(int)
+        if self.CLASSES is None:
+            raise ValueError('CLASSES can not be None')
+        for i in range(len(self.CLASSES)):
+            label_dict[i] = []
+        data_infos = [self.get_ann_info(idx) for idx in range(len(self))]
+        for i, ann in enumerate(data_infos):
+            labels = np.unique(ann['labels'])
+            for label in labels:
+                label_dict[label].append(i)
+        return label_dict
 
     def format_results(self, results, **kwargs):
         """Place holder to format result to dataset specific output."""
