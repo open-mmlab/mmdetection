@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import PLUGIN_LAYERS, Conv2d, ConvModule, caffe2_xavier_init
 from mmcv.cnn.bricks.transformer import (build_positional_encoding,
@@ -184,6 +185,10 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
         caffe2_xavier_init(self.mask_feature, bias=0)
         caffe2_xavier_init(self.encoder_in_proj, bias=0)
         caffe2_xavier_init(self.encoder_out_proj.conv, bias=0)
+
+        for p in self.encoder.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
 
     def forward(self, feats, img_metas):
         """
