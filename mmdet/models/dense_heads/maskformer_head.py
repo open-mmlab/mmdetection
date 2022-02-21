@@ -152,6 +152,12 @@ class MaskFormerHead(AnchorFreeHead):
         if isinstance(self.decoder_input_proj, Conv2d):
             caffe2_xavier_init(self.decoder_input_proj, bias=0)
 
+        self.pixel_decoder.init_weights()
+
+        for p in self.transformer_decoder.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
+
     def preprocess_gt(self, gt_labels_list, gt_masks_list, gt_semantic_segs):
         """Preprocess the ground truth for all images.
 
