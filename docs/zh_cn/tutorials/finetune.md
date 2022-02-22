@@ -1,18 +1,18 @@
 # 教程 7: 模型微调
 
 在 COCO 数据集上预训练的检测器可以作为其他数据集（例如 CityScapes 和 KITTI 数据集）优质的预训练模型。
-本教程将指导用户如何把Model Zoo中提供的模型用于其他数据集中并使得当前所训练的模型获得更好性能。
+本教程将指导用户如何把Model Zoo中[Model Zoo](../model_zoo.md)提供的模型用于其他数据集中并使得当前所训练的模型获得更好性能。
 
 以下是在新数据集中微调模型需要的两个步骤。
 
-- 按照教程2中的方法对新数据集添加支持
+- 按照教程2中的方法对新数据集添加支持[Tutorial 2:CustomizeDatasets](customize_dataset.md).
 - 按照本教程中所讨论方法，修改配置信息
 
 接下来将会以 Cityscapes Dataset 上的微调过程作为例子，具体讲述用户需要在配置中修改的五个部分。
 
 ## 继承基础配置
 
-为了减轻编写整个配置的负担并减少漏洞的数量，MMDetection V2.0 支持从多个现有配置中继承配置信息。微调 Mask RCNN 模型的时候，新的配置信息需要使用从 `_base_/models/mask_rcnn_r50_fpn.py`中继承的配置信息来构建模型的基本结构。当使用Cityscapes 数据集时，新的配置信息可以简便地从`_base_/datasets/cityscapes_instance.py`中继承。对于训练过程的运行设置部分，新配置需要从 `_base_/default_runtime.py`中继承。在此配置文件`configs`的目录中，用户可以选择全部内容的重新编写而不是使用继承方法。
+为了减轻编写整个配置的负担并减少漏洞的数量，MMDetection V2.0 支持从多个现有配置中继承配置信息。微调Mask RCNN模型的时候，新的配置信息需要使用从 `_base_/models/mask_rcnn_r50_fpn.py`中继承的配置信息来构建模型的基本结构。当使用Cityscapes数据集时，新的配置信息可以简便地从`_base_/datasets/cityscapes_instance.py`中继承。对于训练过程的运行设置部分，新配置需要从 `_base_/default_runtime.py`中继承。这些配置文件`configs`的目录下，用户可以选择全部内容的重新编写而不是使用继承方法。
 
 ```python
 _base_ = [
@@ -21,9 +21,9 @@ _base_ = [
 ]
 ```
 
-## 头部的修改
-接下来新的配置还需要根据新数据集的类别数量对修改头部信息进行修改。只需要对roi_head
-`num_classes`进行修改。修改后除了最后的预测模型的头部之外，预训练模型的权重的大部分都会被重新使用。
+##  Head的修改
+接下来新的配置还需要根据新数据集的类别数量对 Head 进行修改。只需要对roi_head
+`num_classes`进行修改。修改后除了最后的预测模型的Head之外，预训练模型的权重的大部分都会被重新使用。
 
 ```python
 model = dict(
@@ -56,22 +56,22 @@ model = dict(
 ## 数据集的修改
 用户可能还需要准备数据集并编写有关数据集的配置。目前MMDetection V2.0 的配置文件已经支持 VOC、WIDER FACE、COCO 和 Cityscapes Dataset的数据集信息。
 
-## 训练运行过程的修改
-微调超参数与默认的计划不同。它通常只需要更小的学习率和更少的训练时间。
+## 训练策略的修改
+微调超参数与默认的训练策略不同。它通常需要更小的学习率和更少的训练回合。
 
 ```python
-# optimizer
-# lr is set for a batch size of 8
+# 优化器
+# batch size 为 8 时的 lr 配置
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(grad_clip=None)
-# learning policy
+# 学习策略
 lr_config = dict(
     policy='step',
     warmup='linear',
     warmup_iters=500,
     warmup_ratio=0.001,
     step=[7])
-# the max_epochs and step in lr_config need specifically tuned for the customized dataset
+# lr_config 中的 max_epochs 和 step 需要针对自定义数据集进行专门调整
 runner = dict(max_epochs=8)
 log_config = dict(interval=100)
 ```
