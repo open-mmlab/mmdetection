@@ -6,8 +6,7 @@
 2. 像往常一样构建模型，然后显式调⽤ `model.init_weights()` ⽅法，此时模型参数将会被按照配置文件写法进行初始化。
 
 
-
-MMdetection 中初始化的⾼级⼯作流程是：
+MMdetection 初始化工作流的高层 API 调用流程是：
 
 model_cfg(init_cfg) -> build_from_cfg -> model -> init_weight() -> initialize(self, self.init_cfg) -> children's init_weight()
 
@@ -15,9 +14,9 @@ model_cfg(init_cfg) -> build_from_cfg -> model -> init_weight() -> initialize(se
 
 它的数据类型是 dict 或者 list[dict]，包含了下列键值:
 
-- `type` (str)，包含 `INTIALIZERS` 中的初始化程序名称，后面跟着初始化程序的参数。
+- `type` (str)，包含 `INTIALIZERS` 中的初始化器名称，后面跟着初始化器的参数。
 - `layer`（str 或 list[str]），包含 Pytorch 或 MMCV 中基本层的名称，以及将被初始化的可学习参数，例如 `'Conv2d'`，`'DeformConv2d'`。
-- `override` (dict or list[dict])，包含不继承⾃ `BaseModule` 且其初始化配置与 `layer` 键中的其他层不同的⼦模块。 `type` 中定义的初始化器将适⽤于 `layer` 中定义的所有层，因此如果⼦模块不是 `BaseModule` 的派⽣类但可以与 `layer` 中的层相同的⽅式初始化，则不需要使⽤ `override`。`override` 包含了：
+- `override` (dict 或 list[dict])，包含不继承⾃ `BaseModule` 且其初始化配置与 `layer` 键中的其他层不同的⼦模块。 `type` 中定义的初始化器将适⽤于 `layer` 中定义的所有层，因此如果⼦模块不是 `BaseModule` 的派⽣类但可以与 `layer` 中的层相同的⽅式初始化，则不需要使⽤ `override`。`override` 包含了：
   - `type` 后跟初始化器的参数； 
   - `name` 用以指⽰将被初始化的⼦模块。
 
@@ -125,7 +124,7 @@ class FooModel(BaseModule)
   # 叫 'reg' 的模块将被初始化为 dict(type='Constant', val=3, bias=4)
   ```
 
-- 如果 init_cfg 中的 `layer` 为 None，则只会初始化 override 中名称的⼦模块，⽽ override 中的 type 和其他参数可以省略。
+- 如果 init_cfg 中的 `layer` 为 None，则只会初始化 override 中有 name 的⼦模块，⽽ override 中的 type 和其他参数可以省略。
 
   ```python
   # layers：
