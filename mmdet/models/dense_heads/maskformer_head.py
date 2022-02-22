@@ -9,6 +9,7 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import build_assigner, build_sampler, multi_apply, reduce_mean
 from mmdet.core.evaluation import INSTANCE_OFFSET
+from mmdet.models.utils import preprocess_panoptic_gt
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
 
@@ -184,66 +185,13 @@ class MaskFormerHead(AnchorFreeHead):
                 - masks (list[Tensor]): Ground truth mask for each image, each
                     with shape (n, h, w).
         """
-        targets = multi_apply(self._preprocess_gt_single, gt_labels_list,
-                              gt_masks_list, gt_semantic_segs)
+        num_things_list = [self.num_things_classes] * len(gt_labels_list)
+        num_stuff_list = [self.num_stuff_classes] * len(gt_labels_list)
+
+        targets = multi_apply(preprocess_panoptic_gt, gt_labels_list,
+                              gt_masks_list, gt_semantic_segs, num_things_list,
+                              num_stuff_list)
         labels, masks = targets
-        return labels, masks
-
-    def _preprocess_gt_single(self, gt_labels, gt_masks, gt_semantic_seg):
-        """Preprocess the ground truth for a image.
-
-        Args:
-            gt_labels (Tensor): Ground truth labels of each bbox,
-                with shape (num_gts, ).
-            gt_masks (BitmapMasks): Ground truth masks of each instances
-                of a image, shape (num_gts, h, w).
-            gt_semantic_seg (Tensor): Ground truth of semantic
-                segmentation with the shape (1, h, w).
-                [0, num_thing_class - 1] means things,
-                [num_thing_class, num_class-1] means stuff,
-                255 means VOID.
-            target_shape (tuple[int]): Shape of output mask_preds.
-                Resize the masks to shape of mask_preds.
-
-        Returns:
-            tuple: a tuple containing the following targets.
-
-                - labels (Tensor): Ground truth class indices for a
-                    image, with shape (n, ), n is the sum of number
-                    of stuff type and number of instance in a image.
-                - masks (Tensor): Ground truth mask for a image, with
-                    shape (n, h, w).
-        """
-        things_labels = gt_labels
-        gt_semantic_seg = gt_semantic_seg.squeeze(0)
-
-        things_masks = gt_masks.pad(gt_semantic_seg.shape[-2:], pad_val=0)\
-            .to_tensor(dtype=torch.bool, device=gt_labels.device)
-
-        semantic_labels = torch.unique(
-            gt_semantic_seg,
-            sorted=False,
-            return_inverse=False,
-            return_counts=False)
-        stuff_masks_list = []
-        stuff_labels_list = []
-        for label in semantic_labels:
-            if label < self.num_things_classes or label >= self.num_classes:
-                continue
-            stuff_mask = gt_semantic_seg == label
-            stuff_masks_list.append(stuff_mask)
-            stuff_labels_list.append(label)
-
-        if len(stuff_masks_list) > 0:
-            stuff_masks = torch.stack(stuff_masks_list, dim=0)
-            stuff_labels = torch.stack(stuff_labels_list, dim=0)
-            labels = torch.cat([things_labels, stuff_labels], dim=0)
-            masks = torch.cat([things_masks, stuff_masks], dim=0)
-        else:
-            labels = things_labels
-            masks = things_masks
-
-        masks = masks.long()
         return labels, masks
 
     def get_targets(self, cls_scores_list, mask_preds_list, gt_labels_list,

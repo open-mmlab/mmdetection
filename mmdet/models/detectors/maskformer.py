@@ -1,6 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import warnings
-
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .single_stage import SingleStageDetector
 
@@ -17,13 +15,8 @@ class MaskFormer(SingleStageDetector):
                  panoptic_head=None,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None,
                  init_cfg=None):
         super(SingleStageDetector, self).__init__(init_cfg=init_cfg)
-        if pretrained:
-            warnings.warn('DeprecationWarning: pretrained is deprecated, '
-                          'please use "init_cfg" instead')
-            backbone.pretrained = pretrained
         self.backbone = build_backbone(backbone)
         if neck is not None:
             self.neck = build_neck(neck)

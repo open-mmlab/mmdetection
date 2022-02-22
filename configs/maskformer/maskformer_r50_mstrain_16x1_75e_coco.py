@@ -1,7 +1,3 @@
-"""This version was mentioned in Table XI, in paper `Masked-attention Mask
-Transformer for Universal Image
-Segmentation<https://arxiv.org/abs/2112.01527>`_"""
-
 _base_ = [
     '../_base_/datasets/coco_panoptic.py', '../_base_/default_runtime.py'
 ]
@@ -121,7 +117,7 @@ model = dict(
                 type='DiceCost', weight=1.0, pred_act=True, eps=1.0)),
         sampler=dict(type='MaskPseudoSampler')),
     test_cfg=dict(object_mask_thr=0.8, iou_thr=0.8),
-    pretrained=None,
+    # pretrained=None,
     init_cfg=None)
 
 # dataset settings

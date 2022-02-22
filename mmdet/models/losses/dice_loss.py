@@ -13,7 +13,14 @@ def dice_loss(pred,
               reduction='mean',
               naive_dice=False,
               avg_factor=None):
-    """Calculate dice loss.
+    """Calculate dice loss, there are two forms of dice loss is supported:
+
+        - the one proposed in `V-Net: Fully Convolutional Neural
+            Networks for Volumetric Medical Image Segmentation
+            <https://arxiv.org/abs/1606.04797>`_.
+        - the dice loss in which the power of the number in the
+            denominator is the first power instead of the second
+            power.
 
     Args:
         pred (torch.Tensor): The prediction, has a shape (n, *)

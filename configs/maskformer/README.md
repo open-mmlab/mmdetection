@@ -55,6 +55,6 @@ mmdetection
 
 ## Results and Models
 
-| Backbone |  style  | Lr schd | Mem (GB) | Inf time (fps) | PQ | SQ | RQ | PQ_th | SQ_th | RQ_th | PQ_st | SQ_st | RQ_st |                                                         Config                                                         |         Download         |
-| :------: | :-----: | :-----: | :------: | :------------: | :-: | :-: | :-: | :---: | :---: | :---: | :---: | :---: | :---: | :---------------------------------------------------------------------------------------------------------------------: | :----------------------: |
-| R-50 | pytorch |    75e    |          |                |    |    |    |      |      |      |      |      |      | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/maskformer/maskformer_r50_mstrain_16x1_75e_coco.py) |  |
+| Backbone |  style  | Lr schd | Mem (GB) | Inf time (fps) | PQ | SQ | RQ | PQ_th | SQ_th | RQ_th | PQ_st | SQ_st | RQ_st |                                                         Config                                                         |         Download         | detail |
+| :------: | :-----: | :-----: | :------: | :------------: | :-: | :-: | :-: | :---: | :---: | :---: | :---: | :---: | :---: | :---------------------------------------------------------------------------------------------------------------------: | :----------------------: | :---: |
+| R-50 | pytorch |    75e    |          |                |    |    |    |      |      |      |      |      |      | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/maskformer/maskformer_r50_mstrain_16x1_75e_coco.py) |  | This version was mentioned in Table XI, in paper [Masked-attention Mask Transformer for Universal Image Segmentation](https://arxiv.org/abs/2112.01527) |

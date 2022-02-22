@@ -59,7 +59,8 @@ class FocalLossCost:
          alpha (int | float, optional): focal_loss alpha
          gamma (int | float, optional): focal_loss gamma
          eps (float, optional): default 1e-12
-         isMask (bool, optional): default False
+         binary_input (bool, optional): Whether the input is binary,
+            default False.
 
      Examples:
          >>> from mmdet.core.bbox.match_costs.match_cost import FocalLossCost
