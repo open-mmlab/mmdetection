@@ -233,6 +233,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
         <li><a href="configs/carafe">CARAFE (ICCV'2019)</a></li>
         <li><a href="configs/fpg">FPG (ArXiv'2020)</a></li>
         <li><a href="configs/groie">GRoIE (ICPR'2020)</a></li>
+        <li><a href="configs/dyhead">DyHead (CVPR'2021)</a></li>
       </ul>
       </td>
       <td>
