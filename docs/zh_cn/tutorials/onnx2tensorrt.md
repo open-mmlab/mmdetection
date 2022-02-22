@@ -1,7 +1,7 @@
 # 教程 9: ONNX 到 TensorRT 的模型转换（实验性支持）
 
 
-> ## [尝试使用全新的 MMDeploy 来部署你的模型](https://mmdeploy.readthedocs.io/)
+> ## [尝试使用新的 MMDeploy 来部署你的模型](https://mmdeploy.readthedocs.io/)
 
 <!-- TOC -->
 
@@ -21,7 +21,7 @@
 ### 先决条件
 
 1. 请参考 [get_started.md](https://mmdetection.readthedocs.io/en/latest/get_started.html) 从源码安装 MMCV 和 MMDetection 。
-2. 请参考 [ONNXRuntime in mmcv](https://mmcv.readthedocs.io/en/latest/deployment/onnxruntime_op.html) 和 [TensorRT plugin in mmcv](https://github.com/open-mmlab/mmcv/blob/master/docs/en/deployment/tensorrt_plugin.md/) 安装支持 ONNXRuntime 自定义操作和 TensorRT 插件的 `mmcv-full` 。 
+2. 请参考 [ONNXRuntime in mmcv](https://mmcv.readthedocs.io/en/latest/deployment/onnxruntime_op.html) 和 [TensorRT plugin in mmcv](https://github.com/open-mmlab/mmcv/blob/master/docs/en/deployment/tensorrt_plugin.md/) 安装支持 ONNXRuntime 自定义操作和 TensorRT 插件的 `mmcv-full` 。
 3. 使用工具 [pytorch2onnx](https://mmdetection.readthedocs.io/en/latest/tutorials/pytorch2onnx.html) 将模型从 PyTorch 转换为 ONNX 。
 
 ### 用法
@@ -105,5 +105,3 @@ python tools/deployment/onnx2tensorrt.py \
 ## 常见问题
 
 - 空
-
-
