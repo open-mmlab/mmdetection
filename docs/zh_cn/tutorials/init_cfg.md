@@ -17,7 +17,7 @@ model_cfg(init_cfg) -> build_from_cfg -> model -> init_weight() -> initialize(se
 - `type` (str)，包含 `INTIALIZERS` 中的初始化器名称，后面跟着初始化器的参数。
 - `layer`（str 或 list[str]），包含 Pytorch 或 MMCV 中基本层的名称，以及将被初始化的可学习参数，例如 `'Conv2d'`，`'DeformConv2d'`。
 - `override` (dict 或 list[dict])，包含不继承⾃ `BaseModule` 且其初始化配置与 `layer` 键中的其他层不同的⼦模块。 `type` 中定义的初始化器将适⽤于 `layer` 中定义的所有层，因此如果⼦模块不是 `BaseModule` 的派⽣类但可以与 `layer` 中的层相同的⽅式初始化，则不需要使⽤ `override`。`override` 包含了：
-  - `type` 后跟初始化器的参数； 
+  - `type` 后跟初始化器的参数；
   - `name` 用以指⽰将被初始化的⼦模块。
 
 ### 初始化参数
@@ -43,7 +43,7 @@ class FooModel(BaseModule)
   import torch.nn as nn
   from mmcv.runner import BaseModule
   # or directly inherit mmdet models
-  
+
   class FooModel(BaseModule)
   	def __init__(self,
                   arg1,
@@ -57,7 +57,7 @@ class FooModel(BaseModule)
 
   ```python
   from mmcv.runner import BaseModule, ModuleList
-  
+
   class FooModel(BaseModule)
   	def __init__(self,
                 	arg1,
@@ -116,7 +116,7 @@ class FooModel(BaseModule)
   # self.feat = nn.Conv1d(3, 1, 3)
   # self.reg = nn.Conv2d(3, 3, 3)
   # self.cls = nn.Linear(1,2)
-  
+
   init_cfg = dict(type='Constant',
                   layer=['Conv1d','Conv2d'], val=1, bias=2,
                   override=dict(type='Constant', name='reg', val=3, bias=4))
@@ -131,9 +131,9 @@ class FooModel(BaseModule)
   # self.feat = nn.Conv1d(3, 1, 3)
   # self.reg = nn.Conv2d(3, 3, 3)
   # self.cls = nn.Linear(1,2)
-  
+
   init_cfg = dict(type='Constant', val=1, bias=2, 	override=dict(name='reg'))
-  
+
   # self.feat and self.cls 将被 Pytorch 初始化
   # 叫 'reg' 的模块将被 dict(type='Constant', val=1, bias=2) 初始化
   ```
@@ -146,7 +146,7 @@ class FooModel(BaseModule)
   # override 没有 name 键的话是无效的
   init_cfg = dict(type='Constant', layer ['Conv1d','Conv2d'], val=1, bias=2,
               	override=dict(type='Constant', val=3, bias=4))
-  
+
   # override 有 name 键和其他参数但是没有 type 键也是无效的
   init_cfg = dict(type='Constant', layer ['Conv1d','Conv2d'], val=1, bias=2,
                   override=dict(name='reg', val=3, bias=4))
