@@ -84,6 +84,8 @@ def main():
     cfg = Config.fromfile(args.config)
     ann_file = cfg.data.test.ann_file
     img_prefix = cfg.data.test.img_prefix
+
+    print(f'{"-" * 5} Start Processing {"-" * 5}')
     if ann_file.endswith('csv'):
         data_infos = get_metas_from_csv_style_ann_file(ann_file)
     elif ann_file.endswith('txt'):
@@ -93,6 +95,8 @@ def main():
         raise NotImplementedError('File name must be csv or txt suffix but '
                                   f'get {shuffix}')
 
+    print(f'Succsefully load annotation file from {ann_file}')
+    print(f'Processing {len(data_infos)} images...')
     pool = Pool(args.nproc)
     # get image metas with multiple processes
     image_metas = pool.starmap(
@@ -105,7 +109,7 @@ def main():
     root_path = cfg.data.test.ann_file.rsplit('/', 1)[0]
     save_path = osp.join(root_path, args.out)
     mmcv.dump(image_metas, save_path)
-    print(f'save image meta file: {save_path}')
+    print(f'Image meta file save to: {save_path}')
 
 
 if __name__ == '__main__':

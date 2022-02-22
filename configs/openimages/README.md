@@ -66,7 +66,7 @@ often contain complex scenes with several objects (explore the dataset).
 
 1. You need to download and extract Open Images dataset.
 
-2. The Open Images dataset do not have image metas (width and height of the image),
+2. The Open Images dataset does not have image metas (width and height of the image),
 which will be used during evaluation. We suggest to get test image metas before
 training/testing by using `tools/misc/get_image_metas.py`.
 
@@ -110,9 +110,9 @@ training/testing by using `tools/misc/get_image_metas.py`.
 Open Images v6, but the test images are different.
 2. The Open Images Challenges annotations are obtained from [TSD](https://github.com/Sense-X/TSD).
 You can also download the annotations from [official website](https://storage.googleapis.com/openimages/web/challenge2019_downloads.html),
-and use `OpenImagesDataset` type to train/test.
-3. If do not want to use `validation-annotations-human-imagelabels-boxable.csv` and `challenge-2019-validation-detection-human-imagelabels.csv`
-it should set `load_image_level_labels` to `False`.
+and set data.train.type=OpenImagesDataset, data.val.type=OpenImagesDataset, and data.test.type=OpenImagesDataset in the config
+3. If users do not want to use `validation-annotations-human-imagelabels-boxable.csv` and `challenge-2019-validation-detection-human-imagelabels.csv`
+users can should set `data.val.load_image_level_labels=False` and `data.test.load_image_level_labels=False` in the config .
 
 
 ## Results and Models
