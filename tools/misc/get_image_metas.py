@@ -95,7 +95,7 @@ def main():
         raise NotImplementedError('File name must be csv or txt suffix but '
                                   f'get {shuffix}')
 
-    print(f'Succsefully load annotation file from {ann_file}')
+    print(f'Successfully load annotation file from {ann_file}')
     print(f'Processing {len(data_infos)} images...')
     pool = Pool(args.nproc)
     # get image metas with multiple processes
