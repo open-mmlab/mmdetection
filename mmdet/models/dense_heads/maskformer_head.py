@@ -18,9 +18,8 @@ from .anchor_free_head import AnchorFreeHead
 class MaskFormerHead(AnchorFreeHead):
     """Implements the MaskFormer head.
 
-    See `paper: Per-Pixel Classification is Not All You Need
-    for Semantic Segmentation<https://arxiv.org/pdf/2107.06278>`
-    for details.
+    See `Per-Pixel Classification is Not All You Need for Semantic
+    Segmentation <https://arxiv.org/pdf/2107.06278>`_ for details.
 
     Args:
         in_channels (list[int]): Number of channels in the input feature map.
@@ -179,10 +178,10 @@ class MaskFormerHead(AnchorFreeHead):
         Returns:
             tuple: a tuple containing the following targets.
 
-                - labels (list[Tensor]): Ground truth class indices for all
-                    images. Each with shape (n, ), n is the sum of number
+                - labels (list[Tensor]): Ground truth class indices for all\
+                    images. Each with shape (n, ), n is the sum of number\
                     of stuff type and number of instance in a image.
-                - masks (list[Tensor]): Ground truth mask for each image, each
+                - masks (list[Tensor]): Ground truth mask for each image, each\
                     with shape (n, h, w).
         """
         num_things_list = [self.num_things_classes] * len(gt_labels_list)
@@ -215,17 +214,17 @@ class MaskFormerHead(AnchorFreeHead):
         Returns:
             tuple[list[Tensor]]: a tuple containing the following targets.
 
-                - labels_list (list[Tensor]): Labels of all images.
+                - labels_list (list[Tensor]): Labels of all images.\
                     Each with shape (num_queries, ).
-                - label_weights_list (list[Tensor]): Label weights of all
-                    images.Each with shape (num_queries, ).
-                - mask_targets_list (list[Tensor]): Mask targets of all images.
-                    Each with shape (num_queries, h, w).
-                - mask_weights_list (list[Tensor]): Mask weights of all images.
-                    Each with shape (num_queries, ).
-                - num_total_pos (int): Number of positive samples in all
+                - label_weights_list (list[Tensor]): Label weights of all\
+                    images. Each with shape (num_queries, ).
+                - mask_targets_list (list[Tensor]): Mask targets of all\
+                    images. Each with shape (num_queries, h, w).
+                - mask_weights_list (list[Tensor]): Mask weights of all\
+                    images. Each with shape (num_queries, ).
+                - num_total_pos (int): Number of positive samples in all\
                     images.
-                - num_total_neg (int): Number of negative samples in all
+                - num_total_neg (int): Number of negative samples in all\
                     images.
         """
         (labels_list, label_weights_list, mask_targets_list, mask_weights_list,
@@ -362,7 +361,7 @@ class MaskFormerHead(AnchorFreeHead):
             img_metas (list[dict]): List of image meta information.
 
         Returns:
-            tuple[Tensor]: Loss components for outputs from a single decoder
+            tuple[Tensor]: Loss components for outputs from a single decoder\
                 layer.
         """
         num_imgs = cls_scores.size(0)
@@ -445,12 +444,12 @@ class MaskFormerHead(AnchorFreeHead):
             img_metas (list[dict]): List of image information.
 
         Returns:
-            all_cls_scores (Tensor): Classification scores for each
-                scale level. Each is a 4D-tensor with shape
-                (num_decoder, batch_size, num_queries, cls_out_channels).
-                 Note `cls_out_channels` should includes background.
-            all_mask_preds (Tensor): Mask scores for each decoder
-                layer. Each with shape (num_decoder, batch_size,
+            all_cls_scores (Tensor): Classification scores for each\
+                scale level. Each is a 4D-tensor with shape\
+                (num_decoder, batch_size, num_queries, cls_out_channels).\
+                Note `cls_out_channels` should includes background.
+            all_mask_preds (Tensor): Mask scores for each decoder\
+                layer. Each with shape (num_decoder, batch_size,\
                 num_queries, h, w).
         """
         batch_size = len(img_metas)
@@ -560,7 +559,7 @@ class MaskFormerHead(AnchorFreeHead):
                 original image space. Default False.
 
         Returns:
-            list[dict[str, np.array]]: semantic segmentation results
+            list[dict[str, np.array]]: semantic segmentation results\
                 and panoptic segmentation results for each image.
 
             .. code-block:: none
@@ -608,7 +607,7 @@ class MaskFormerHead(AnchorFreeHead):
     def post_process(self, mask_cls, mask_pred):
         """Panoptic segmengation inference.
 
-        This implementation is modified from
+        This implementation is modified from\
             https://github.com/facebookresearch/MaskFormer
 
         Args:
@@ -618,7 +617,7 @@ class MaskFormerHead(AnchorFreeHead):
                 shape = (num_queries, h, w).
 
         Returns:
-            panoptic_seg (Tensor): panoptic segment result of shape (h, w),
+            panoptic_seg (Tensor): panoptic segment result of shape (h, w),\
                 each element in Tensor means:
                 segment_id = _cls + instance_id * INSTANCE_OFFSET.
         """

@@ -97,7 +97,7 @@ class PixelDecoder(BaseModule):
             tuple: a tuple containing the following:
 
                 - mask_feature (Tensor): Shape (batch_size, c, h, w).
-                - memory (Tensor): Output of last stage of backbone.
+                - memory (Tensor): Output of last stage of backbone.\
                     Shape (batch_size, c, h, w).
         """
         y = self.last_feat_conv(feats[-1])

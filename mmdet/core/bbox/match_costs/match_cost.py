@@ -116,7 +116,7 @@ class FocalLossCost:
                 dtype=torch.long. Labels should be binary.
 
         Returns:
-            Tensor: Focal cost matrix with weight in shape
+            Tensor: Focal cost matrix with weight in shape\
                 (num_query, num_gt).
         """
         cls_pred = cls_pred.flatten(1)
@@ -139,7 +139,7 @@ class FocalLossCost:
             gt_labels (Tensor)): Labels.
 
         Returns:
-            Tensor: Focal cost matrix with weight in shape
+            Tensor: Focal cost matrix with weight in shape\
                 (num_query, num_gt).
         """
         if self.binary_input:
