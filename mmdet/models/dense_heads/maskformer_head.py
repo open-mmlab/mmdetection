@@ -362,7 +362,7 @@ class MaskFormerHead(AnchorFreeHead):
             img_metas (list[dict]): List of image meta information.
 
         Returns:
-            tuple[Tensor]:Loss components for outputs from a single decoder
+            tuple[Tensor]: Loss components for outputs from a single decoder
                 layer.
         """
         num_imgs = cls_scores.size(0)
@@ -511,8 +511,8 @@ class MaskFormerHead(AnchorFreeHead):
         """Forward function for training mode.
 
         Args:
-            x (list[Tensor]): Multi-level features from the upstream network,
-                each is a 4D-tensor.
+            feats (list[Tensor]): Multi-level features from the upstream
+                network, each is a 4D-tensor.
             img_metas (list[Dict]): List of image information.
             gt_bboxes (list[Tensor]): Each element is ground truth bboxes of
                 the image, shape (num_gts, 4). Not used here.
@@ -562,9 +562,12 @@ class MaskFormerHead(AnchorFreeHead):
         Returns:
             list[dict[str, np.array]]: semantic segmentation results
                 and panoptic segmentation results for each image.
+
+            .. code-block:: none
+
                 [
                     {
-                        'pan_results': np.array, # shape = [h, w]
+                        'pan_results': <np.ndarray>, # shape = [h, w]
                     },
                     ...
                 ]
