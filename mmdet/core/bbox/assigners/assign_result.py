@@ -140,6 +140,7 @@ class AssignResult(util_mixins.NiceRepr):
                 labels = None
         else:
             import numpy as np
+
             # Create an overlap for each predicted box
             max_overlaps = torch.from_numpy(rng.rand(num_preds))
 

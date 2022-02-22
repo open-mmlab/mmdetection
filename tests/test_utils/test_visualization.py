@@ -9,7 +9,8 @@ import pytest
 import torch
 
 from mmdet.core import visualization as vis
-from mmdet.datasets import CityscapesDataset, CocoDataset, VOCDataset
+from mmdet.datasets import (CityscapesDataset, CocoDataset,
+                            CocoPanopticDataset, VOCDataset)
 
 
 def test_color():
@@ -133,42 +134,37 @@ def test_palette():
 
     # test list
     palette = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]
-    palette_ = vis.get_palette(palette)
+    palette_ = vis.get_palette(palette, 3)
     for color, color_ in zip(palette, palette_):
         assert color == color_
 
     # test tuple
-    with pytest.raises(AssertionError):
-        vis.get_palette((1, 2, 3))
     palette = vis.get_palette((1, 2, 3), 3)
     assert len(palette) == 3
     for color in palette:
         assert color == (1, 2, 3)
 
     # test color str
-    with pytest.raises(AssertionError):
-        vis.get_palette('red')
     palette = vis.get_palette('red', 3)
     assert len(palette) == 3
     for color in palette:
         assert color == (255, 0, 0)
 
     # test dataset str
-    palette = vis.get_palette('coco')
-    for color, color_ in zip(palette, CocoDataset.PALETTE):
-        assert color == color_
-    palette = vis.get_palette('voc')
-    for color, color_ in zip(palette, VOCDataset.PALETTE):
-        assert color == color_
-    palette = vis.get_palette('citys')
-    for color, color_ in zip(palette, CityscapesDataset.PALETTE):
-        assert color == color_
+    palette = vis.get_palette('coco', len(CocoDataset.CLASSES))
+    assert len(palette) == len(CocoDataset.CLASSES)
+    assert palette[0] == (220, 20, 60)
+    palette = vis.get_palette('coco', len(CocoPanopticDataset.CLASSES))
+    assert len(palette) == len(CocoPanopticDataset.CLASSES)
+    assert palette[-1] == (250, 141, 255)
+    palette = vis.get_palette('voc', len(VOCDataset.CLASSES))
+    assert len(palette) == len(VOCDataset.CLASSES)
+    assert palette[0] == (106, 0, 228)
+    palette = vis.get_palette('citys', len(CityscapesDataset.CLASSES))
+    assert len(palette) == len(CityscapesDataset.CLASSES)
+    assert palette[0] == (220, 20, 60)
 
     # test random
-    with pytest.raises(AssertionError):
-        vis.get_palette('random')
-    with pytest.raises(AssertionError):
-        vis.get_palette(None)
     palette1 = vis.get_palette('random', 3)
     palette2 = vis.get_palette(None, 3)
     for color1, color2 in zip(palette1, palette2):

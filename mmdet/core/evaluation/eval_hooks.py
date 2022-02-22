@@ -56,7 +56,9 @@ class EvalHook(BaseEvalHook):
         results = single_gpu_test(runner.model, self.dataloader, show=False)
         runner.log_buffer.output['eval_iter_num'] = len(self.dataloader)
         key_score = self.evaluate(runner, results)
-        if self.save_best:
+        # the key_score may be `None` so it needs to skip the action to save
+        # the best checkpoint
+        if self.save_best and key_score:
             self._save_ckpt(runner, key_score)
 
 
@@ -122,5 +124,7 @@ class DistEvalHook(BaseDistEvalHook):
             runner.log_buffer.output['eval_iter_num'] = len(self.dataloader)
             key_score = self.evaluate(runner, results)
 
-            if self.save_best:
+            # the key_score may be `None` so it needs to skip
+            # the action to save the best checkpoint
+            if self.save_best and key_score:
                 self._save_ckpt(runner, key_score)
