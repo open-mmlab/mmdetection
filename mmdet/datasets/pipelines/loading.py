@@ -213,6 +213,9 @@ class LoadAnnotations:
             annotation. Default: False.
         poly2mask (bool): Whether to convert the instance masks from polygons
             to bitmaps. Default: True.
+        denorm_bbox (bool): Whether to convert bbox from relative value to
+            absolute value. Only used in OpenImage Dataset.
+            Default: False.
         file_client_args (dict): Arguments to instantiate a FileClient.
             See :class:`mmcv.fileio.FileClient` for details.
             Defaults to ``dict(backend='disk')``.
@@ -224,12 +227,14 @@ class LoadAnnotations:
                  with_mask=False,
                  with_seg=False,
                  poly2mask=True,
+                 denorm_bbox=False,
                  file_client_args=dict(backend='disk')):
         self.with_bbox = with_bbox
         self.with_label = with_label
         self.with_mask = with_mask
         self.with_seg = with_seg
         self.poly2mask = poly2mask
+        self.denorm_bbox = denorm_bbox
         self.file_client_args = file_client_args.copy()
         self.file_client = None
 
@@ -246,11 +251,24 @@ class LoadAnnotations:
         ann_info = results['ann_info']
         results['gt_bboxes'] = ann_info['bboxes'].copy()
 
+        if self.denorm_bbox:
+            h, w = results['img_shape'][:2]
+            bbox_num = results['gt_bboxes'].shape[0]
+            if bbox_num != 0:
+                results['gt_bboxes'][:, 0::2] *= w
+                results['gt_bboxes'][:, 1::2] *= h
+            results['gt_bboxes'] = results['gt_bboxes'].astype(np.float32)
+
         gt_bboxes_ignore = ann_info.get('bboxes_ignore', None)
         if gt_bboxes_ignore is not None:
             results['gt_bboxes_ignore'] = gt_bboxes_ignore.copy()
             results['bbox_fields'].append('gt_bboxes_ignore')
         results['bbox_fields'].append('gt_bboxes')
+
+        gt_is_group_ofs = ann_info.get('gt_is_group_ofs', None)
+        if gt_is_group_ofs is not None:
+            results['gt_is_group_ofs'] = gt_is_group_ofs.copy()
+
         return results
 
     def _load_labels(self, results):
