@@ -201,7 +201,7 @@ if __name__ == '__main__':
         parsed directly from config file and are deprecated and will be \
         removed in future releases.')
     if not args.input_img:
-        args.input_img = osp.join(osp.dirname(__file__), '../demo/demo.jpg')
+        args.input_img = osp.join(osp.dirname(__file__), '../../demo/demo.jpg')
 
     cfg = Config.fromfile(args.config)
 
