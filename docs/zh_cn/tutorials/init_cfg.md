@@ -3,7 +3,7 @@
 在训练过程中，适当的初始化策略有利于加快训练速度或获得更⾼的性能。 [MMCV](https://github.com/open-mmlab/mmcv/blob/master/mmcv/cnn/utils/weight_init.py) 提供了一些常⽤的初始化模块的⽅法，如 `nn.Conv2d`。 MMdetection 中的模型初始化主要使⽤ `init_cfg`。⽤⼾可以通过以下两个步骤来初始化模型：
 
 1. 在 `model_cfg` 中为模型或其组件定义 `init_cfg`，但⼦组件的 `init_cfg` 优先级更⾼，会覆盖⽗模块的 `init_cfg` 。
-2. 像往常一样构建模型，但显式调⽤ `model.init_weights()` ⽅法，并且模型参数将被初始化为配置。
+2. 像往常一样构建模型，然后显式调⽤ `model.init_weights()` ⽅法，此时模型参数将会被按照配置文件写法进行初始化。
 
 
 
