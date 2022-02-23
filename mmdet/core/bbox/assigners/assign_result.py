@@ -164,7 +164,7 @@ class AssignResult(util_mixins.NiceRepr):
             true_idxs = np.arange(num_gts)
             rng.shuffle(true_idxs)
             true_idxs = torch.from_numpy(true_idxs)
-            gt_inds[is_assigned] = true_idxs[:n_assigned]
+            gt_inds[int(is_assigned)] = true_idxs[:n_assigned]
 
             gt_inds = torch.from_numpy(
                 rng.randint(1, num_gts + 1, size=num_preds))
