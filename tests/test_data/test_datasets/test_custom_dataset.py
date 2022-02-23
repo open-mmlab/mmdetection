@@ -113,7 +113,7 @@ class CustomDatasetTests(unittest.TestCase):
 
         self.assertListEqual([{
             'id': '000001',
-            'filename': 'JPEGImages/000001.jpg',
+            'filename': f'JPEGImages{os.sep}000001.jpg',
             'width': 353,
             'height': 500
         }], custom_ds.data_infos)
@@ -133,7 +133,7 @@ class CustomDatasetTests(unittest.TestCase):
 
         self.assertListEqual([{
             'id': '000001',
-            'filename': 'images/000001.jpg',
+            'filename': f'images{os.sep}000001.jpg',
             'width': 353,
             'height': 500
         }], custom_ds.data_infos)
