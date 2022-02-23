@@ -4,12 +4,12 @@ import logging
 import os
 import os.path as osp
 import platform
+import shutil
 import tempfile
 from unittest.mock import MagicMock, patch
 
 import mmcv
 import numpy as np
-import shutil
 import pytest
 import torch
 import torch.nn as nn
