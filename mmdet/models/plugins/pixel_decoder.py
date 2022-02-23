@@ -96,8 +96,8 @@ class PixelDecoder(BaseModule):
         Returns:
             tuple: a tuple containing the following:
 
-                - mask_feature (Tensor): Shape (batch_size, c, h, w).
-                - memory (Tensor): Output of last stage of backbone.\
+            - | ``mask_feature`` (Tensor): Shape (batch_size, c, h, w).
+            - | ``memory`` (Tensor): Output of last stage of backbone.\
                     Shape (batch_size, c, h, w).
         """
         y = self.last_feat_conv(feats[-1])
@@ -201,8 +201,8 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
         Returns:
             tuple: a tuple containing the following:
 
-                - mask_feature (Tensor): shape (batch_size, c, h, w).
-                - memory (Tensor): shape (batch_size, c, h, w).
+            - | ``mask_feature`` (Tensor): shape (batch_size, c, h, w).
+            - | ``memory`` (Tensor): shape (batch_size, c, h, w).
         """
         feat_last = feats[-1]
         bs, c, h, w = feat_last.shape

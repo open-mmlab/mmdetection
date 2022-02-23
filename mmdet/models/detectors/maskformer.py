@@ -7,7 +7,7 @@ from .single_stage import SingleStageDetector
 class MaskFormer(SingleStageDetector):
     r"""Implementation of `Per-Pixel Classification is
     NOT All You Need for Semantic Segmentation
-    <https://arxiv.org/pdf/2107.06278>`_"""
+    <https://arxiv.org/pdf/2107.06278>`_."""
 
     def __init__(self,
                  backbone,
