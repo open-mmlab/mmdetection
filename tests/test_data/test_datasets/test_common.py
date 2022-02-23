@@ -3,11 +3,13 @@ import copy
 import logging
 import os
 import os.path as osp
+import platform
 import tempfile
 from unittest.mock import MagicMock, patch
 
 import mmcv
 import numpy as np
+import shutil
 import pytest
 import torch
 import torch.nn as nn
@@ -107,8 +109,11 @@ def _create_dummy_results():
 def test_dataset_init(config_path):
     use_symlink = False
     if not os.path.exists('./data'):
-        os.symlink('./tests/data', './data')
-        use_symlink = True
+        if platform.system() != 'Windows':
+            os.symlink('./tests/data', './data')
+            use_symlink = True
+        else:
+            shutil.copy('./tests/data', './data')
     data_config = mmcv.Config.fromfile(config_path)
     if 'data' not in data_config:
         return
@@ -119,6 +124,8 @@ def test_dataset_init(config_path):
         dataset[0]
     if use_symlink:
         os.unlink('./data')
+    else:
+        shutil.rmtree('./data')
 
 
 def test_dataset_evaluation():
