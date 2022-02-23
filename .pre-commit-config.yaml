@@ -48,4 +48,4 @@ repos:
     hooks:
       - id: check-algo-readme
       - id: check-copyright
-        args: ["mmdet", "tests", "demo", "tools"]  # replace the dir_to_check with your expected directory to check
+        args: ["mmdet", "tests", "demo", "tools", "--excludes", "tests/data/configs_mmtrack"]  # replace the dir_to_check with your expected directory to check

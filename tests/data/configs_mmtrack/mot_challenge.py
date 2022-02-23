@@ -1,4 +1,3 @@
-# Copyright (c) OpenMMLab. All rights reserved.
 # dataset settings
 dataset_type = 'MOTChallengeDataset'
 img_norm_cfg = dict(
