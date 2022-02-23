@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 _base_ = [
     './faster_rcnn_r50_dc5.py', './mot_challenge.py',
     '../../../configs/_base_/default_runtime.py'

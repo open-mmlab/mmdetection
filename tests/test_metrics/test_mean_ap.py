@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import numpy as np
 
 from mmdet.core.evaluation.mean_ap import eval_map, tpfp_default, tpfp_imagenet

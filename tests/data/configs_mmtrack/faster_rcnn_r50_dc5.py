@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 model = dict(
     detector=dict(
         type='FasterRCNN',
