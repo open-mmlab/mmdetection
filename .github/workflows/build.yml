@@ -249,7 +249,7 @@ jobs:
       - name: Install mmdet dependencies
         run: |
           pip install pycocotools
-          pip install -r requirements/tests.txt -r requirements/optional.txt
+          pip install -r requirements.txt
           pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
           pip install git+https://github.com/cocodataset/panopticapi.git
           python -c 'import mmcv; print(mmcv.__version__)'
