@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import os
+import os.path as osp
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -95,35 +95,34 @@ class CustomDatasetTests(unittest.TestCase):
 
     def setUp(self):
         super().setUp()
-        self.data_dir = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-            'data')
+        self.data_dir = osp.join(
+            osp.dirname(osp.dirname(osp.dirname(__file__))), 'data')
         self.dataset_class = DATASETS.get('XMLDataset')
 
     def test_data_infos__default_db_directories(self):
         """Test correct data read having a Pacal-VOC directory structure."""
-        test_dataset_root = os.path.join(self.data_dir, 'VOCdevkit', 'VOC2007')
+        test_dataset_root = osp.join(self.data_dir, 'VOCdevkit', 'VOC2007')
         custom_ds = self.dataset_class(
             data_root=test_dataset_root,
-            ann_file=os.path.join(test_dataset_root, 'ImageSets', 'Main',
-                                  'trainval.txt'),
+            ann_file=osp.join(test_dataset_root, 'ImageSets', 'Main',
+                              'trainval.txt'),
             pipeline=[],
             classes=('person', 'dog'),
             test_mode=True)
 
         self.assertListEqual([{
             'id': '000001',
-            'filename': f'JPEGImages{os.sep}000001.jpg',
+            'filename': osp.join('JPEGImages', '000001.jpg'),
             'width': 353,
             'height': 500
         }], custom_ds.data_infos)
 
     def test_data_infos__overridden_db_subdirectories(self):
         """Test correct data read having a customized directory structure."""
-        test_dataset_root = os.path.join(self.data_dir, 'custom_dataset')
+        test_dataset_root = osp.join(self.data_dir, 'custom_dataset')
         custom_ds = self.dataset_class(
             data_root=test_dataset_root,
-            ann_file=os.path.join(test_dataset_root, 'trainval.txt'),
+            ann_file=osp.join(test_dataset_root, 'trainval.txt'),
             pipeline=[],
             classes=('person', 'dog'),
             test_mode=True,
@@ -133,7 +132,7 @@ class CustomDatasetTests(unittest.TestCase):
 
         self.assertListEqual([{
             'id': '000001',
-            'filename': f'images{os.sep}000001.jpg',
+            'filename': osp.join('images', '000001.jpg'),
             'width': 353,
             'height': 500
         }], custom_ds.data_infos)
