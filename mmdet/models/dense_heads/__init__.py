@@ -1,3 +1,12 @@
+'''
+Author: Irving.Gao
+Date: 2022-02-11 18:12:06
+LastEditTime: 2022-02-20 21:40:35
+LastEditors: Irving.Gao
+Description: None
+FilePath: /mmdetection/mmdet/models/dense_heads/__init__.py
+可以输入预定的版权声明、个性签名、空行等
+'''
 # Copyright (c) OpenMMLab. All rights reserved.
 from .anchor_free_head import AnchorFreeHead
 from .anchor_head import AnchorHead
@@ -37,6 +46,8 @@ from .yolact_head import YOLACTHead, YOLACTProtonet, YOLACTSegmHead
 from .yolo_head import YOLOV3Head
 from .yolof_head import YOLOFHead
 from .yolox_head import YOLOXHead
+from .ddod_head import DDODHead
+from .ddod_fcos_head import DDODFCOSHead
 
 __all__ = [
     'AnchorFreeHead', 'AnchorHead', 'GuidedAnchorHead', 'FeatureAdaption',
@@ -49,5 +60,5 @@ __all__ = [
     'CascadeRPNHead', 'EmbeddingRPNHead', 'LDHead', 'CascadeRPNHead',
     'AutoAssignHead', 'DETRHead', 'YOLOFHead', 'DeformableDETRHead',
     'SOLOHead', 'DecoupledSOLOHead', 'CenterNetHead', 'YOLOXHead',
-    'DecoupledSOLOLightHead', 'LADHead', 'TOODHead'
+    'DecoupledSOLOLightHead', 'LADHead', 'TOODHead', 'DDODHead', 'DDODFCOSHead'
 ]
