@@ -246,7 +246,14 @@ jobs:
       - name: Install MMCV
         run: pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cpu/torch1.8/index.html --only-binary mmcv-full
       - name: Install unittest dependencies
-        run: pip install -r requirements.txt
+#        run: pip install -r requirements.txt
+        run: |
+          python -V
+          python -m pip install pycocotools matplotlib numpy terminaltables six cython
+          python -m pip install -r requirements/tests.txt -r requirements/optional.txt
+          python -m pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
+          python -m pip install git+https://github.com/cocodataset/panopticapi.git
+          python -c 'import mmcv; print(mmcv.__version__)'
       - name: Show pip list
         run: pip list
       - name: Build and install
