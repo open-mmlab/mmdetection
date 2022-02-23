@@ -249,7 +249,7 @@ jobs:
 #        run: pip install -r requirements.txt
         run: |
           python -V
-          python -m pip install pycocotools matplotlib numpy terminaltables six cython
+          python -m pip install pycocotools
           python -m pip install -r requirements/tests.txt -r requirements/optional.txt
           python -m pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
           python -m pip install git+https://github.com/cocodataset/panopticapi.git
