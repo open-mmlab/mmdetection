@@ -11,6 +11,7 @@ from numpy import random
 
 from mmdet.core import PolygonMasks, find_inside_bboxes
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
+from mmdet.utils import log_img_scale
 from ..builder import PIPELINES
 
 try:
@@ -1979,9 +1980,10 @@ class Mosaic:
 
     Args:
         img_scale (Sequence[int]): Image size after mosaic pipeline of single
-           image. Default to (640, 640).
+            image. The shape order should be (height, width).
+            Default to (640, 640).
         center_ratio_range (Sequence[float]): Center ratio range of mosaic
-           output. Default to (0.5, 1.5).
+            output. Default to (0.5, 1.5).
         min_bbox_size (int | float): The minimum pixel for filtering
             invalid bboxes after the mosaic pipeline. Default to 0.
         bbox_clip_border (bool, optional): Whether to clip the objects outside
@@ -2002,6 +2004,7 @@ class Mosaic:
                  skip_filter=True,
                  pad_val=114):
         assert isinstance(img_scale, tuple)
+        log_img_scale(img_scale, skip_square=True)
         self.img_scale = img_scale
         self.center_ratio_range = center_ratio_range
         self.min_bbox_size = min_bbox_size
@@ -2232,7 +2235,7 @@ class MixUp:
                 |             pad              |
                 +------------------------------+
 
-     The mixup transform steps are as follows::
+     The mixup transform steps are as follows:
 
         1. Another random image is picked by dataset and embedded in
            the top left patch(after padding and resizing)
@@ -2241,15 +2244,15 @@ class MixUp:
 
     Args:
         img_scale (Sequence[int]): Image output size after mixup pipeline.
-           Default: (640, 640).
+            The shape order should be (height, width). Default: (640, 640).
         ratio_range (Sequence[float]): Scale ratio of mixup image.
-           Default: (0.5, 1.5).
+            Default: (0.5, 1.5).
         flip_ratio (float): Horizontal flip ratio of mixup image.
-           Default: 0.5.
+            Default: 0.5.
         pad_val (int): Pad value. Default: 114.
         max_iters (int): The maximum number of iterations. If the number of
-           iterations is greater than `max_iters`, but gt_bbox is still
-           empty, then the iteration is terminated. Default: 15.
+            iterations is greater than `max_iters`, but gt_bbox is still
+            empty, then the iteration is terminated. Default: 15.
         min_bbox_size (float): Width and height threshold to filter bboxes.
             If the height or width of a box is smaller than this value, it
             will be removed. Default: 5.
@@ -2281,6 +2284,7 @@ class MixUp:
                  bbox_clip_border=True,
                  skip_filter=True):
         assert isinstance(img_scale, tuple)
+        log_img_scale(img_scale, skip_square=True)
         self.dynamic_scale = img_scale
         self.ratio_range = ratio_range
         self.flip_ratio = flip_ratio
