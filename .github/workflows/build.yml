@@ -232,13 +232,12 @@ jobs:
         os: [windows-2022]
         python: [3.8]
         platform: [cpu, cu111]
-
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ matrix.python }}
       - name: Upgrade pip
         run: pip install pip --upgrade --user
       - name: Install PyTorch
@@ -246,17 +245,16 @@ jobs:
         run: pip install torch==1.8.2+${{ matrix.platform }} torchvision==0.9.2+${{ matrix.platform }} -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
       - name: Install MMCV
         run: pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cpu/torch1.8/index.html --only-binary mmcv-full
-      - name: Install mmdet dependencies
-        run: |
-          pip install pycocotools
-          pip install -r requirements.txt
-          pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
-          pip install git+https://github.com/cocodataset/panopticapi.git
-          python -c 'import mmcv; print(mmcv.__version__)'
+      - name: Install FaceXLib (with opencv <= 4.5.4.60)
+        run: pip install facexlib "opencv-python<=4.5.4.60"
+      - name: Install unittest dependencies
+        run: pip install -r requirements.txt
+      - name: Show pip list
+        run: pip list
       - name: Build and install
         run: pip install -e .
       - name: Run unittests
-        run: coverage run --branch --source mmdet -m pytest tests/
+        run: coverage run --branch --source mmdet -m pytest tests -sv
       - name: Generate coverage report
         run: |
           coverage xml
@@ -264,7 +262,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
         with:
-          files: ./coverage.xml
+          file: ./coverage.xml
           flags: unittests
           env_vars: OS,PYTHON
           name: codecov-umbrella
