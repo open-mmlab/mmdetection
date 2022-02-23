@@ -75,9 +75,8 @@ def test_custom_classes_override_default(dataset):
 
     # Test sending file path
     import tempfile
-    tmp_file = tempfile.NamedTemporaryFile()
-    with open(tmp_file.name, 'w') as f:
-        f.write('bus\ncar\n')
+    with tempfile.TemporaryDirectory() as tmp_file:
+        tmp_file.write('bus\ncar\n')
     custom_dataset = dataset_class(
         ann_file=MagicMock(),
         pipeline=[],
