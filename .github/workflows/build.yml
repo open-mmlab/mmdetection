@@ -252,10 +252,7 @@ jobs:
           python -m pip install git+https://github.com/cocodataset/panopticapi.git
           python -c 'import mmcv; print(mmcv.__version__)'
       - name: Build and install
-        run: |
-          rm -rf .eggs
-          python setup.py check -m -s
-          TORCH_CUDA_ARCH_LIST=7.0 pip install .
+        run: pip install -e .
       - name: Run unittests and generate coverage report
         run: |
           coverage run --branch --source mmdet -m pytest tests/
