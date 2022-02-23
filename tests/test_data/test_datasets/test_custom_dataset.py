@@ -76,7 +76,7 @@ def test_custom_classes_override_default(dataset):
     # Test sending file path
     import tempfile
     with tempfile.TemporaryDirectory() as tmpdir:
-        path = os.path.join(tmpdir, 'classes.txt')
+        path = tmpdir + 'classes.txt'
         with open(path, 'w') as f:
             f.write('bus\ncar\n')
     custom_dataset = dataset_class(
