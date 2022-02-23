@@ -245,8 +245,6 @@ jobs:
         run: pip install torch==1.8.2+${{ matrix.platform }} torchvision==0.9.2+${{ matrix.platform }} -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
       - name: Install MMCV
         run: pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cpu/torch1.8/index.html --only-binary mmcv-full
-      - name: Install FaceXLib (with opencv <= 4.5.4.60)
-        run: pip install facexlib "opencv-python<=4.5.4.60"
       - name: Install unittest dependencies
         run: pip install -r requirements.txt
       - name: Show pip list
