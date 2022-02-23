@@ -253,9 +253,10 @@ jobs:
           python -c 'import mmcv; print(mmcv.__version__)'
       - name: Build and install
         run: pip install -e .
-      - name: Run unittests and generate coverage report
+      - name: Run unittests
+        run: coverage run --branch --source mmdet -m pytest tests/
+      - name: Generate coverage report
         run: |
-          coverage run --branch --source mmdet -m pytest tests/
           coverage xml
           coverage report -m
       - name: Upload coverage to Codecov
