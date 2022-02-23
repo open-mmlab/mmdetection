@@ -113,7 +113,7 @@ def test_dataset_init(config_path):
             os.symlink('./tests/data', './data')
             use_symlink = True
         else:
-            shutil.copy('./tests/data', './data')
+            shutil.copytree('./tests/data', './data')
     data_config = mmcv.Config.fromfile(config_path)
     if 'data' not in data_config:
         return
