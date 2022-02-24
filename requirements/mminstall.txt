@@ -1,1 +1,1 @@
-mmcv-full>=1.4.4
+mmcv-full>=1.3.17

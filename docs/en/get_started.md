@@ -11,9 +11,9 @@ Compatible MMDetection and MMCV versions are shown as below. Please install the 
 
 | MMDetection version |       MMCV version        |
 |:-------------------:|:-------------------------:|
-|       master        | mmcv-full>=1.4.4, <1.5.0  |
-|       2.22.0        | mmcv-full>=1.4.4, <1.5.0  |
-|       2.21.0        | mmcv-full>=1.4.4, <1.5.0  |
+|       master        | mmcv-full>=1.3.17, <1.5.0 |
+|       2.22.0        | mmcv-full>=1.3.17, <1.5.0 |
+|       2.21.0        | mmcv-full>=1.3.17, <1.5.0 |
 |       2.20.0        | mmcv-full>=1.3.17, <1.5.0 |
 |       2.19.1        | mmcv-full>=1.3.17, <1.5.0 |
 |       2.19.0        | mmcv-full>=1.3.17, <1.5.0 |
@@ -157,7 +157,7 @@ d. If you would like to use `albumentations`, we suggest using
 
 MMDetection can be built for CPU only environment (where CUDA isn't available).
 
-In CPU mode you can run the demo/webcam_demo.py for example.
+In CPU mode you can train (requires MMCV version >= 1.4.4), test or inference a model.
 However some functionality is gone in this mode:
 
 - Deformable Convolution
@@ -173,7 +173,7 @@ However some functionality is gone in this mode:
 - sigmoid_focal_loss_cuda
 - bbox_overlaps
 
-If you try to run inference with a model containing above ops, an error will be raised.
+If you try to train/test/inference a model containing above ops, an error will be raised.
 The following table lists affected algorithms.
 
 |                        Operator                         |                            Model                             |
