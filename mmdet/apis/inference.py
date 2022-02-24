@@ -37,6 +37,8 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
         config.merge_from_dict(cfg_options)
     if 'pretrained' in config.model:
         config.model.pretrained = None
+    elif 'init_cfg' in config.model.backbone:
+        config.model.backbone.init_cfg = None
     config.model.train_cfg = None
     model = build_detector(config.model, test_cfg=config.get('test_cfg'))
     if checkpoint is not None:
