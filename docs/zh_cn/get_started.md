@@ -115,6 +115,13 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
     pip install mmcv-full
     ```
 
+    PyTorch 在 1.x.0 和 1.x.1 之间通常是兼容的，故 mmcv-full 只提供 1.x.0 的编译包。如果你的 PyTorch 版本是 1.x.1，你可以放心地安装在 1.x.0 版本编译的 mmcv-full。
+
+    ```
+    # 我们可以忽略 PyTorch 的小版本号
+    pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7/index.html
+    ```
+
 2. 安装 MMDetection：
 
     你可以直接通过如下命令从 pip 安装使用 mmdetection:

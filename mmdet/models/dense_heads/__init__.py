@@ -1,12 +1,3 @@
-'''
-Author: Irving.Gao
-Date: 2022-02-11 18:12:06
-LastEditTime: 2022-02-20 21:40:35
-LastEditors: Irving.Gao
-Description: None
-FilePath: /mmdetection/mmdet/models/dense_heads/__init__.py
-可以输入预定的版权声明、个性签名、空行等
-'''
 # Copyright (c) OpenMMLab. All rights reserved.
 from .anchor_free_head import AnchorFreeHead
 from .anchor_head import AnchorHead
@@ -29,6 +20,7 @@ from .gfl_head import GFLHead
 from .guided_anchor_head import FeatureAdaption, GuidedAnchorHead
 from .lad_head import LADHead
 from .ld_head import LDHead
+from .maskformer_head import MaskFormerHead
 from .nasfcos_head import NASFCOSHead
 from .paa_head import PAAHead
 from .pisa_retinanet_head import PISARetinaHead
@@ -60,5 +52,5 @@ __all__ = [
     'CascadeRPNHead', 'EmbeddingRPNHead', 'LDHead', 'CascadeRPNHead',
     'AutoAssignHead', 'DETRHead', 'YOLOFHead', 'DeformableDETRHead',
     'SOLOHead', 'DecoupledSOLOHead', 'CenterNetHead', 'YOLOXHead',
-    'DecoupledSOLOLightHead', 'LADHead', 'TOODHead', 'DDODHead', 'DDODFCOSHead'
+    'DecoupledSOLOLightHead', 'LADHead', 'TOODHead', 'MaskFormerHead', 'DDODHead'
 ]
