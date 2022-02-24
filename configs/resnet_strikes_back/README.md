@@ -1,5 +1,7 @@
 # ResNet strikes back
 
+> [ResNet strikes back: An improved training procedure in timm](https://arxiv.org/abs/2110.00476)
+
 <!-- [OTHERS] -->
 
 ## Abstract
@@ -22,6 +24,7 @@ In this paper, we re-evaluate the performance of the vanilla ResNet-50 when trai
 | RetinaNet   |   R-50 rsb      |    1x   |  3.8     |   -            |  39.0 (+2.5)  |    -    | [Config](./retinanet_r50_fpn_rsb-pretrain_1x_coco.py)| [model](https://download.openmmlab.com/mmdetection/v2.0/resnet_strikes_back/retinanet_r50_fpn_rsb-pretrain_1x_coco/retinanet_r50_fpn_rsb-pretrain_1x_coco_20220113_175432-bd24aae9.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/resnet_strikes_back/retinanet_r50_fpn_rsb-pretrain_1x_coco/retinanet_r50_fpn_rsb-pretrain_1x_coco_20220113_175432.log.json)|
 
 **Notes:**
+
 - 'rsb' is short for 'resnet strikes back'
 - We have done some grid searches on learning rate and weight decay and get these optimal hyper-parameters.
 
