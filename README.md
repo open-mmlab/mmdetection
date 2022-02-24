@@ -74,10 +74,13 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-**2.21.0** was released in 8/2/2022:
+**2.22.0** was released in 24/2/2022:
 
-- Support CPU training
-- Allow to set parameters about multi-processing to speed up training and testing
+- Support MaskFormer
+- Support DyHead
+- Support OpenImage Dataset
+- Support visualization for Panoptic Segmentation
+- Support TIMM backbone
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 
@@ -142,6 +145,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/yolox">YOLOX (CVPR'2021)</a></li>
             <li><a href="configs/deformable_detr">Deformable DETR (ICLR'2021)</a></li>
             <li><a href="configs/tood">TOOD (ICCV'2021)</a></li>
+            <li><a href="configs/tood">DyHead (CVPR'2021)</a></li>
       </ul>
       </td>
       <td>
@@ -162,6 +166,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
       <td>
         <ul>
           <li><a href="configs/panoptic_fpn">Panoptic FPN (CVPR'2019)</a></li>
+          <li><a href="configs/panoptic_fpn">MaskFormer (NeurIPS'2019)</a></li>
         </ul>
       </td>
       <td>

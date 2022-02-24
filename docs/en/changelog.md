@@ -1,5 +1,37 @@
 ## Changelog
 
+### v2.22.0 (24/2/2022)
+
+### Breaking Changes
+
+In order to support the visualization for Panoptic Segmentation, the `num_classes` can not be `None` when using the `get_palette` function to determine whether to use the panoptic palette.
+
+#### New Features
+
+- Support MaskFormer (#7212)
+- Support DyHead (#6823)
+- Support OpenImage Dataset (#6331)
+- Support visualization for Panoptic Segmentation (#7041)
+- Support TIMM backbone (#7020)
+
+#### Bug Fixes
+
+- Fix bug for the best checkpoints can not be saved when the `key_score` is None (#7101)
+- Fix MixUp transform filter boxes failing case (#7080)
+- Add missing properties in SABLHead (#7091)
+- Fix bug when NaNs exist in confusion matrix (#7147)
+- Fix PALETTE AttributeError in downstream task (#7230)
+
+#### Improvements
+
+- Speed up SimOTA matching (#7098)
+
+#### Contributors
+
+A total of 17 developers contributed to this release.
+Thanks @ZwwWayne, @hhaAndroid, @RangiLyu, @AronLin, @BIGWangYuDong, @jbwang1997, @chhluo, @shinya7y, @LuooChen, @dvansam, @siatwangmin, @del-zhenwu, @vikashranjan26, @haofanwang, @jamiechoi1995, @HJoonKwon, @zytx121
+
+
 ### v2.21.0 (8/2/2022)
 
 ### Breaking Changes
