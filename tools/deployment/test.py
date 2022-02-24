@@ -141,7 +141,7 @@ def main():
 
 
 if __name__ == '__main__':
-    # main()
+    main()
 
     # Following strings of text style are from colorama package
     bright_style, reset_style = '\x1b[1m', '\x1b[0m'
