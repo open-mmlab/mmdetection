@@ -238,5 +238,5 @@ def show_result_pyplot(model,
         wait_time=wait_time,
         win_name=title,
         bbox_color=palette,
-        text_color=palette,
+        text_color=(200, 200, 200),
         mask_color=palette)

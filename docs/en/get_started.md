@@ -108,6 +108,13 @@ Or you can still install MMDetection manually:
 
     Optionally you can compile mmcv from source if you need to develop both mmcv and mmdet. Refer to the [guide](https://github.com/open-mmlab/mmcv#installation) for details.
 
+    mmcv-full is only compiled on PyTorch 1.x.0 because the compatibility usually holds between 1.x.0 and 1.x.1. If your PyTorch version is 1.x.1, you can install mmcv-full compiled with PyTorch 1.x.0 and it usually works well.
+
+    ```
+    # We can ignore the micro version of PyTorch
+    pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7/index.html
+    ```
+
 2. Install MMDetection.
 
     You can simply install mmdetection with the following command:
@@ -135,7 +142,7 @@ Or you can still install MMDetection manually:
     # for LVIS dataset
     pip install git+https://github.com/lvis-dataset/lvis-api.git
     # for albumentations
-    pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
+    pip install -r requirements/albu.txt
     ```
 
 **Note:**
@@ -149,9 +156,12 @@ you can install it before installing MMCV.
 c. Some dependencies are optional. Simply running `pip install -v -e .` will
  only install the minimum runtime requirements. To use optional dependencies like `albumentations` and `imagecorruptions` either install them manually with `pip install -r requirements/optional.txt` or specify desired extras when calling `pip` (e.g. `pip install -v -e .[optional]`). Valid keys for the extras field are: `all`, `tests`, `build`, and `optional`.
 
-d. If you would like to use `albumentations`, we suggest using
-`pip install albumentations>=0.3.2 --no-binary imgaug,albumentations`. If you simply use
-`pip install albumentations>=0.3.2`, it will install `opencv-python-headless` simultaneously (even though you have already installed `opencv-python`). We should not allow `opencv-python` and `opencv-python-headless` installed at the same time, because it might cause unexpected issues. Please refer to [official documentation](https://albumentations.ai/docs/getting_started/installation/#note-on-opencv-dependencies) for more details.
+d. If you would like to use `albumentations`, we suggest using `pip install -r requirements/albu.txt` or
+`pip install -U albumentations --no-binary qudida,albumentations`. If you simply use `pip install albumentations>=0.3.2`,
+it will install `opencv-python-headless` simultaneously (even though you have already
+installed `opencv-python`). We recommended checking the environment after installing `albumentation` to
+ensure that `opencv-python` and `opencv-python-headless` are not installed at the same time, because it might cause unexpected issues if they both installed. Please refer
+to [official documentation](https://albumentations.ai/docs/getting_started/installation/#note-on-opencv-dependencies) for more details.
 
 ### Install without GPU support
 
