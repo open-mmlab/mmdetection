@@ -177,12 +177,11 @@ class MaskFormerHead(AnchorFreeHead):
 
         Returns:
             tuple: a tuple containing the following targets.
-
-            - | ``labels`` (list[Tensor]): Ground truth class indices\
-                for all images. Each with shape (n, ), n is the sum of\
-                number of stuff type and number of instance in a image.
-            - | ``masks`` (list[Tensor]): Ground truth mask for each\
-                image, each with shape (n, h, w).
+                - labels (list[Tensor]): Ground truth class indices\
+                    for all images. Each with shape (n, ), n is the sum of\
+                    number of stuff type and number of instance in a image.
+                - masks (list[Tensor]): Ground truth mask for each\
+                    image, each with shape (n, h, w).
         """
         num_things_list = [self.num_things_classes] * len(gt_labels_list)
         num_stuff_list = [self.num_stuff_classes] * len(gt_labels_list)
@@ -213,19 +212,18 @@ class MaskFormerHead(AnchorFreeHead):
 
         Returns:
             tuple[list[Tensor]]: a tuple containing the following targets.
-
-            - | ``labels_list`` (list[Tensor]): Labels of all images.\
-                Each with shape (num_queries, ).
-            - | ``label_weights_list`` (list[Tensor]): Label weights\
-                of all images. Each with shape (num_queries, ).
-            - | ``mask_targets_list`` (list[Tensor]): Mask targets of\
-                all images. Each with shape (num_queries, h, w).
-            - | ``mask_weights_list`` (list[Tensor]): Mask weights of\
-                all images. Each with shape (num_queries, ).
-            - | ``num_total_pos`` (int): Number of positive samples in\
-                all images.
-            - | ``num_total_neg`` (int): Number of negative samples in\
-                all images.
+                - labels_list (list[Tensor]): Labels of all images.\
+                    Each with shape (num_queries, ).
+                - label_weights_list (list[Tensor]): Label weights\
+                    of all images. Each with shape (num_queries, ).
+                - mask_targets_list (list[Tensor]): Mask targets of\
+                    all images. Each with shape (num_queries, h, w).
+                - mask_weights_list (list[Tensor]): Mask weights of\
+                    all images. Each with shape (num_queries, ).
+                - num_total_pos (int): Number of positive samples in\
+                    all images.
+                - num_total_neg (int): Number of negative samples in\
+                    all images.
         """
         (labels_list, label_weights_list, mask_targets_list, mask_weights_list,
          pos_inds_list,
@@ -256,17 +254,16 @@ class MaskFormerHead(AnchorFreeHead):
 
         Returns:
             tuple[Tensor]: a tuple containing the following for one image.
-
-            - | ``labels`` (Tensor): Labels of each image.
-                shape (num_queries, ).
-            - | ``label_weights`` (Tensor): Label weights of each image.
-                shape (num_queries, ).
-            - | ``mask_targets`` (Tensor): Mask targets of each image.
-                shape (num_queries, h, w).
-            - | ``mask_weights`` (Tensor): Mask weights of each image.
-                shape (num_queries, ).
-            - | ``pos_inds`` (Tensor): Sampled positive indices for each image.
-            - | ``neg_inds`` (Tensor): Sampled negative indices for each image.
+                - labels (Tensor): Labels of each image.
+                    shape (num_queries, ).
+                - label_weights (Tensor): Label weights of each image.
+                    shape (num_queries, ).
+                - mask_targets (Tensor): Mask targets of each image.
+                    shape (num_queries, h, w).
+                - mask_weights (Tensor): Mask weights of each image.
+                    shape (num_queries, ).
+                - pos_inds (Tensor): Sampled positive indices for each image.
+                - neg_inds (Tensor): Sampled negative indices for each image.
         """
         target_shape = mask_pred.shape[-2:]
         if gt_masks.shape[0] > 0:
@@ -445,14 +442,13 @@ class MaskFormerHead(AnchorFreeHead):
 
         Returns:
             tuple: a tuple contains two elements.
-
-            - | ``all_cls_scores`` (Tensor): Classification scores for each\
-                scale level. Each is a 4D-tensor with shape\
-                (num_decoder, batch_size, num_queries, cls_out_channels).\
-                Note `cls_out_channels` should includes background.
-            - | ``all_mask_preds`` (Tensor): Mask scores for each decoder\
-                layer. Each with shape (num_decoder, batch_size,\
-                num_queries, h, w).
+                - all_cls_scores (Tensor): Classification scores for each\
+                    scale level. Each is a 4D-tensor with shape\
+                    (num_decoder, batch_size, num_queries, cls_out_channels).\
+                    Note `cls_out_channels` should includes background.
+                - all_mask_preds (Tensor): Mask scores for each decoder\
+                    layer. Each with shape (num_decoder, batch_size,\
+                    num_queries, h, w).
         """
         batch_size = len(img_metas)
         input_img_h, input_img_w = img_metas[0]['batch_input_shape']
