@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import csv
 import os.path as osp
 import tempfile
