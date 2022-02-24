@@ -2,17 +2,24 @@
 
 ### v2.22.0 (24/2/2022)
 
-### Breaking Changes
+#### Highlights
 
-In order to support the visualization for Panoptic Segmentation, the `num_classes` can not be `None` when using the `get_palette` function to determine whether to use the panoptic palette.
+- Support MaskFormer: [Per-Pixel Classification is Not All You Need for Semantic Segmentation](https://arxiv.org/abs/2107.06278) (#7212)
+- Support DyHead: [Dynamic Head: Unifying Object Detection Heads with Attentions](https://arxiv.org/abs/2106.08322) (#6823)
+- Support [Open Images Dataset](https://storage.googleapis.com/openimages/web/index.html) (#6331)
+- Support TIMM backbone: [PyTorch Image Models](https://github.com/rwightman/pytorch-image-models) (#7020)
 
 #### New Features
 
-- Support MaskFormer (#7212)
-- Support DyHead (#6823)
-- Support OpenImage Dataset (#6331)
+- Support [MaskFormer](configs/maskformer) (#7212)
+- Support [DyHead](configs/dyhead) (#6823)
+- Support [OpenImages Dataset](configs/openimages) (#6331)
+- Support [TIMM backbone](configs/timm_example) (#7020)
 - Support visualization for Panoptic Segmentation (#7041)
-- Support TIMM backbone (#7020)
+
+#### Breaking Changes
+
+In order to support the visualization for Panoptic Segmentation, the `num_classes` can not be `None` when using the `get_palette` function to determine whether to use the panoptic palette.
 
 #### Bug Fixes
 
@@ -25,11 +32,12 @@ In order to support the visualization for Panoptic Segmentation, the `num_classe
 #### Improvements
 
 - Speed up SimOTA matching (#7098)
+- Add Chinese translation of `docs_zh-CN/tutorials/init_cfg.md` (#7188)
 
 #### Contributors
 
-A total of 17 developers contributed to this release.
-Thanks @ZwwWayne, @hhaAndroid, @RangiLyu, @AronLin, @BIGWangYuDong, @jbwang1997, @chhluo, @shinya7y, @LuooChen, @dvansam, @siatwangmin, @del-zhenwu, @vikashranjan26, @haofanwang, @jamiechoi1995, @HJoonKwon, @zytx121
+A total of 20 developers contributed to this release.
+Thanks @ZwwWayne, @hhaAndroid, @RangiLyu, @AronLin, @BIGWangYuDong, @jbwang1997, @zytx121, @chhluo, @shinya7y, @LuooChen, @dvansam, @siatwangmin, @del-zhenwu, @vikashranjan26, @haofanwang, @jamiechoi1995, @HJoonKwon, @yarkable, @zhijian-liu, @RangeKing
 
 
 ### v2.21.0 (8/2/2022)
