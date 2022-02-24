@@ -28,24 +28,24 @@ class MaskFormerHead(AnchorFreeHead):
         num_things_classes (int): Number of things.
         num_stuff_classes (int): Number of stuff.
         num_queries (int): Number of query in Transformer.
-        pixel_decoder (obj:`mmcv.ConfigDict` | dict): Config for pixel decoder.
-            Defaults to None.
+        pixel_decoder (:obj:`mmcv.ConfigDict` | dict): Config for pixel
+            decoder. Defaults to None.
         enforce_decoder_input_project (bool, optional): Whether to add a layer
             to change the embed_dim of tranformer encoder in pixel decoder to
             the embed_dim of transformer decoder. Defaults to False.
-        transformer_decoder (obj:`mmcv.ConfigDict` | dict): Config for
+        transformer_decoder (:obj:`mmcv.ConfigDict` | dict): Config for
             transformer decoder. Defaults to None.
-        positional_encoding (obj:`mmcv.ConfigDict` | dict): Config for
+        positional_encoding (:obj:`mmcv.ConfigDict` | dict): Config for
             transformer decoder position encoding. Defaults to None.
-        loss_cls (obj:`mmcv.ConfigDict` | dict): Config of the classification
+        loss_cls (:obj:`mmcv.ConfigDict` | dict): Config of the classification
             loss. Defaults to `CrossEntropyLoss`.
-        loss_mask (obj:`mmcv.ConfigDict` | dict): Config of the mask loss.
+        loss_mask (:obj:`mmcv.ConfigDict` | dict): Config of the mask loss.
             Defaults to `FocalLoss`.
-        loss_dice (obj:`mmcv.ConfigDict` | dict): Config of the dice loss.
+        loss_dice (:obj:`mmcv.ConfigDict` | dict): Config of the dice loss.
             Defaults to `DiceLoss`.
-        train_cfg (obj:`mmcv.ConfigDict` | dict): Training config of Maskformer
-            head.
-        test_cfg (obj:`mmcv.ConfigDict` | dict): Testing config of Maskformer
+        train_cfg (:obj:`mmcv.ConfigDict` | dict): Training config of
+            Maskformer head.
+        test_cfg (:obj:`mmcv.ConfigDict` | dict): Testing config of Maskformer
             head.
         init_cfg (dict or list[dict], optional): Initialization config dict.
             Defaults to None.
