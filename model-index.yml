@@ -51,6 +51,7 @@ Import:
   - configs/reppoints/metafile.yml
   - configs/res2net/metafile.yml
   - configs/resnest/metafile.yml
+  - configs/resnet_strikes_back/metafile.yml
   - configs/retinanet/metafile.yml
   - configs/sabl/metafile.yml
   - configs/scnet/metafile.yml

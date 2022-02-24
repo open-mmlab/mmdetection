@@ -252,6 +252,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="configs/gn+ws">Weight Standardization (ArXiv'2019)</a></li>
           <li><a href="configs/pisa">Prime Sample Attention (CVPR'2020)</a></li>
           <li><a href="configs/strong_baselines">Strong Baselines (CVPR'2021)</a></li>
+          <li><a href="configs/resnet_strikes_back">Resnet strikes back (ArXiv'2021)</a></li>
         </ul>
       </td>
     </tr>
