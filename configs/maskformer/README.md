@@ -1,4 +1,8 @@
-# Per-Pixel Classification is Not All You Need for Semantic Segmentation
+# MaskFormer
+
+> [Per-Pixel Classification is Not All You Need for Semantic Segmentation](https://arxiv.org/abs/2107.06278)
+
+<!-- [ALGORITHM] -->
 
 ## Abstract
 
@@ -8,18 +12,7 @@ Modern approaches typically formulate semantic segmentation as a per-pixel class
 <img src="https://camo.githubusercontent.com/29fb22298d506ce176caad3006a7b05ef2603ca12cece6c788b7e73c046e8bc9/68747470733a2f2f626f77656e63303232312e6769746875622e696f2f696d616765732f6d61736b666f726d65722e706e67" height="300"/>
 </div>
 
-## Citation
-
-```
-@inproceedings{cheng2021maskformer,
-  title={Per-Pixel Classification is Not All You Need for Semantic Segmentation},
-  author={Bowen Cheng and Alexander G. Schwing and Alexander Kirillov},
-  journal={NeurIPS},
-  year={2021}
-}
-```
-
-## Dataset
+## Introduction
 
 MaskFormer requires COCO and [COCO-panoptic](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip) dataset for training and evaluation. You need to download and extract it in the COCO dataset path.
 The directory should be like this.
@@ -43,6 +36,17 @@ mmdetection
 
 ## Results and Models
 
-| Backbone |  style  | Lr schd | Mem (GB) | Inf time (fps) |   PQ   |   SQ   |   RQ   | PQ_th | SQ_th | RQ_th | PQ_st | SQ_st | RQ_st |                                                         Config                                                         |                                                                                                                                                                 Download                                                                                                                                                                 |                                                                       detail                                                                       |
-| :------: | :-----: | :-----: | :------: | :------------: | :----: | :----: | :----: | :----: | :----: | :----: | :----: | :----: | :----: | :---------------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------: |
-|   R-50   | pytorch |   75e   |   16.6   |       -       | 46.854 | 80.617 | 57.085 | 51.089 | 81.511 | 61.853 | 40.463 | 79.269 | 49.888 | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/maskformer/maskformer_r50_mstrain_16x1_75e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/maskformer/maskformer_r50_mstrain_16x1_75e_coco/maskformer_r50_mstrain_16x1_75e_coco_20220221_141956-bc2699cb.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/maskformer/maskformer_r50_mstrain_16x1_75e_coco/maskformer_r50_mstrain_16x1_75e_coco_20220221.log.json) | This version was mentioned in Table XI, in paper [Masked-attention Mask Transformer for Universal Image Segmentation](https://arxiv.org/abs/2112.01527) |
+| Backbone |  style  | Lr schd | Mem (GB) | Inf time (fps) |   PQ   |   SQ   |   RQ   | PQ_th  | SQ_th  | RQ_th  | PQ_st  | SQ_st  | RQ_st  |                                                           Config                                                           |                                                                                                                                                                    Download                                                                                                                                                                     |                                                                         detail                                                                          |
+|:--------:|:-------:|:-------:|:--------:|:--------------:|:------:|:------:|:------:|:------:|:------:|:------:|:------:|:------:|:------:|:--------------------------------------------------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------------:|
+|   R-50   | pytorch |   75e   |   16.6   |       -        | 46.854 | 80.617 | 57.085 | 51.089 | 81.511 | 61.853 | 40.463 | 79.269 | 49.888 | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/maskformer/maskformer_r50_mstrain_16x1_75e_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/maskformer/maskformer_r50_mstrain_16x1_75e_coco/maskformer_r50_mstrain_16x1_75e_coco_20220221_141956-bc2699cb.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/maskformer/maskformer_r50_mstrain_16x1_75e_coco/maskformer_r50_mstrain_16x1_75e_coco_20220221.log.json) | This version was mentioned in Table XI, in paper [Masked-attention Mask Transformer for Universal Image Segmentation](https://arxiv.org/abs/2112.01527) |
+
+## Citation
+
+```latex
+@inproceedings{cheng2021maskformer,
+  title={Per-Pixel Classification is Not All You Need for Semantic Segmentation},
+  author={Bowen Cheng and Alexander G. Schwing and Alexander Kirillov},
+  journal={NeurIPS},
+  year={2021}
+}
+```
