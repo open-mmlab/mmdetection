@@ -1,4 +1,6 @@
-# ResNet strikes back: An improved training procedure in timm
+# ResNet strikes back
+
+> [ResNet strikes back: An improved training procedure in timm](https://arxiv.org/abs/2110.00476)
 
 <!-- [OTHERS] -->
 
