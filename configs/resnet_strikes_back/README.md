@@ -23,7 +23,9 @@ In this paper, we re-evaluate the performance of the vanilla ResNet-50 when trai
 | Cascade Mask R-CNN |   R-50 rsb      |    1x   |  6.2     |   -            |  44.8  |   39.9   | [Config](./cascade_mask_rcnn_r50_fpn_rsb-pretrain_1x_coco.py)| [model](https://download.openmmlab.com/mmdetection/v2.0/resnet_strikes_back/cascade_mask_rcnn_r50_fpn_rsb-pretrain_1x_coco/cascade_mask_rcnn_r50_fpn_rsb-pretrain_1x_coco_20220113_193636-8b9ad50f.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/resnet_strikes_back/cascade_mask_rcnn_r50_fpn_rsb-pretrain_1x_coco/cascade_mask_rcnn_r50_fpn_rsb-pretrain_1x_coco_20220113_193636.log.json)|
 | RetinaNet   |   R-50 rsb      |    1x   |  3.8     |   -            |  39.0  |    -    | [Config](./retinanet_r50_fpn_rsb-pretrain_1x_coco.py)| [model](https://download.openmmlab.com/mmdetection/v2.0/resnet_strikes_back/retinanet_r50_fpn_rsb-pretrain_1x_coco/retinanet_r50_fpn_rsb-pretrain_1x_coco_20220113_175432-bd24aae9.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/resnet_strikes_back/retinanet_r50_fpn_rsb-pretrain_1x_coco/retinanet_r50_fpn_rsb-pretrain_1x_coco_20220113_175432.log.json)|
 
-**Notes:** 'rsb' is short for 'resnet strikes back'
+**Notes:** 
+- 'rsb' is short for 'resnet strikes back'
+- We have done some grid searches on learning rate and weight decay and get these optimal hyper-parameters.
 
 ## Citation
 
