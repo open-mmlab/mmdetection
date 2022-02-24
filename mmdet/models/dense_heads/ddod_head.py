@@ -14,7 +14,8 @@ EPS = 1e-12
 
 @HEADS.register_module()
 class DDODHead(AnchorHead):
-    """Bridging the Gap Between Anchor-based and Anchor-free Detection via
+    """
+    Bridging the Gap Between Anchor-based and Anchor-free Detection via
     Adaptive Training Sample Selection.
 
     ATSS head structure is similar with FCOS, however ATSS use anchor boxes

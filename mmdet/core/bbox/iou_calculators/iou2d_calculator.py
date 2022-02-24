@@ -137,7 +137,7 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
             When using FP16, we can reduce:
                 R = 11 x N * 4 / 2 Byte
 
-        So do the 'giou' (large than 'iou').
+        So do the 'giou' or 'diou' (large than 'iou').
 
         Time-wise, FP16 is generally faster than FP32.
 
@@ -155,7 +155,8 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
             B indicates the batch dim, in shape (B1, B2, ..., Bn).
             If ``is_aligned`` is ``True``, then m and n must be equal.
         mode (str): "iou" (intersection over union), "iof" (intersection over
-            foreground) or "giou" (generalized intersection over union).
+            foreground), "giou" (generalized intersection over union) or "diou" 
+            (distance intersection over union).
             Default "iou".
         is_aligned (bool, optional): If True, then m and n must be equal.
             Default False.
@@ -189,7 +190,7 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
         >>> assert tuple(bbox_overlaps(empty, empty).shape) == (0, 0)
     """
 
-    assert mode in ['iou', 'iof', 'giou'], f'Unsupported mode {mode}'
+    assert mode in ['iou', 'iof', 'giou', 'diou'], f'Unsupported mode {mode}'
     # Either the boxes are empty or the length of boxes' last dimension is 4
     assert (bboxes1.size(-1) == 4 or bboxes1.size(0) == 0)
     assert (bboxes2.size(-1) == 4 or bboxes2.size(0) == 0)
@@ -224,9 +225,12 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
 
         if mode in ['iou', 'giou']:
             union = area1 + area2 - overlap
+        elif mode in ['diou']:
+            union = area1 + area2 - overlap + eps
         else:
             union = area1
-        if mode == 'giou':
+        
+        if mode in ['giou', 'diou']:
             enclosed_lt = torch.min(bboxes1[..., :2], bboxes2[..., :2])
             enclosed_rb = torch.max(bboxes1[..., 2:], bboxes2[..., 2:])
     else:
@@ -240,22 +244,49 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
 
         if mode in ['iou', 'giou']:
             union = area1[..., None] + area2[..., None, :] - overlap
+        elif mode in ['diou']:
+            union = area1 + area2 - overlap + eps
         else:
             union = area1[..., None]
-        if mode == 'giou':
+        
+        if mode in ['giou', 'diou']:
             enclosed_lt = torch.min(bboxes1[..., :, None, :2],
                                     bboxes2[..., None, :, :2])
             enclosed_rb = torch.max(bboxes1[..., :, None, 2:],
                                     bboxes2[..., None, :, 2:])
 
-    eps = union.new_tensor([eps])
-    union = torch.max(union, eps)
-    ious = overlap / union
+    if mode in ['iou', 'iof', 'giou']:
+        eps = union.new_tensor([eps])
+        union = torch.max(union, eps)
+        ious = overlap / union
+    elif mode == 'diou':
+        ious = overlap / union
+
     if mode in ['iou', 'iof']:
         return ious
-    # calculate gious
-    enclose_wh = fp16_clamp(enclosed_rb - enclosed_lt, min=0)
-    enclose_area = enclose_wh[..., 0] * enclose_wh[..., 1]
-    enclose_area = torch.max(enclose_area, eps)
-    gious = ious - (enclose_area - union) / enclose_area
-    return gious
+    elif mode == 'giou':
+        # calculate gious
+        enclose_wh = fp16_clamp(enclosed_rb - enclosed_lt, min=0)
+        enclose_area = enclose_wh[..., 0] * enclose_wh[..., 1]
+        enclose_area = torch.max(enclose_area, eps)
+        gious = ious - (enclose_area - union) / enclose_area
+        return gious
+    elif mode == 'diou':
+        # calculate dious
+        enclose_wh = fp16_clamp(enclosed_rb - enclosed_lt, min=0)
+        cw = enclose_wh[..., 0]
+        ch = enclose_wh[..., 1]
+        c2 = cw**2 + ch**2 + eps
+
+        b1_x1, b1_y1 = bboxes1[..., 0], bboxes1[..., 1]
+        b1_x2, b1_y2 = bboxes1[..., 2], bboxes1[..., 3]
+        b2_x1, b2_y1 = bboxes2[..., 0], bboxes2[..., 1]
+        b2_x2, b2_y2 = bboxes2[..., 2], bboxes2[..., 3]
+
+        left = ((b2_x1 + b2_x2) - (b1_x1 + b1_x2))**2 / 4
+        right = ((b2_y1 + b2_y2) - (b1_y1 + b1_y2))**2 / 4
+        rho2 = left + right
+
+        # DIoU
+        dious = 1 - (ious - rho2 / c2)
+        return dious

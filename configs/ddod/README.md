@@ -10,11 +10,12 @@ Deep learning-based dense object detectors have achieved great success in the pa
 
 ## Results and Models
 
-| Model | Backbone | Lr Schd | box mAP | AP50 | AP75 | APs | APm | APl |
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |:---: |
-| ATSS(IoU) | ResNet50 | 1x | 39.4 | 56.6 | 42.6 | 23.9 | 42.5 | 49.6 |
-| DDOD | ResNet50 | 1x | 41.6 | 59.9 | 45.2 | 23.9 | 44.9 | 54.4 |
-| DDOD-FCOS | ResNet50 | 1x | 41.6 | 59.9 | 45.3 | 24.0 | 44.6 | 54.8 |
+|   Model   |  Backbone   |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download  |
+| :-------: | :---------: | :-----: | :-----: | :------: | :------------: | :----: | :------: | :--------: |
+| ATSS(IoU, fp16) |  ResNet50   | pytorch |   1x    |   #TODO  |      #TODO     |  #TODO | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/retinanet/retinanet_r50_caffe_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_caffe_fpn_1x_coco/retinanet_r50_caffe_fpn_1x_coco_20200531-f11027c5.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_caffe_fpn_1x_coco/retinanet_r50_caffe_fpn_1x_coco_20200531_012518.log.json) |
+|   DDOD(fp16)    |  ResNet50   | pytorch |   1x    |   #TODO  |      #TODO     |  #TODO | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/retinanet/retinanet_r50_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130_002941.log.json) |
+
+
 
 
 ## Citing
