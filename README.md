@@ -74,10 +74,11 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-**2.21.0** was released in 8/2/2022:
+**2.22.0** was released in 24/2/2022:
 
-- Support CPU training
-- Allow to set parameters about multi-processing to speed up training and testing
+- Support [MaskFormer](configs/maskformer), [DyHead](configs/dyhead), [OpenImages Dataset](configs/openimages) and [TIMM backbone](configs/timm_example)
+- Support visualization for Panoptic Segmentation
+- Release a good recipe of using ResNet in object detectors pre-trained by [ResNet Strikes Back](https://arxiv.org/abs/2110.00476), which consistently brings about 3~4 mAP improvements over RetinaNet, Faster/Mask/Cascade Mask R-CNN
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 
@@ -162,6 +163,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
       <td>
         <ul>
           <li><a href="configs/panoptic_fpn">Panoptic FPN (CVPR'2019)</a></li>
+          <li><a href="configs/maskformer">MaskFormer (NeurIPS'2019)</a></li>
         </ul>
       </td>
       <td>
@@ -225,6 +227,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         <li><a href="configs/pvt">PVT (ICCV'2021)</a></li>
         <li><a href="configs/swin">Swin (CVPR'2021)</a></li>
         <li><a href="configs/pvt">PVTv2 (ArXiv'2021)</a></li>
+        <li><a href="configs/resnet_strikes_back">ResNet strikes back (ArXiv'2021)</a></li>
       </ul>
       </td>
       <td>

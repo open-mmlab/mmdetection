@@ -1,5 +1,47 @@
 ## Changelog
 
+### v2.22.0 (24/2/2022)
+
+#### Highlights
+
+- Support MaskFormer: [Per-Pixel Classification is Not All You Need for Semantic Segmentation](https://arxiv.org/abs/2107.06278) (#7212)
+- Support DyHead: [Dynamic Head: Unifying Object Detection Heads with Attentions](https://arxiv.org/abs/2106.08322) (#6823)
+- Release a good recipe of using ResNet in object detectors pre-trained by [ResNet Strikes Back](https://arxiv.org/abs/2110.00476), which consistently brings about 3~4 mAP improvements over RetinaNet, Faster/Mask/Cascade Mask R-CNN (#7001)
+- Support [Open Images Dataset](https://storage.googleapis.com/openimages/web/index.html) (#6331)
+- Support TIMM backbone: [PyTorch Image Models](https://github.com/rwightman/pytorch-image-models) (#7020)
+
+#### New Features
+
+- Support [MaskFormer](configs/maskformer) (#7212)
+- Support [DyHead](configs/dyhead) (#6823)
+- Support [ResNet Strikes Back](configs/resnet_strikes_back) (#7001)
+- Support [OpenImages Dataset](configs/openimages) (#6331)
+- Support [TIMM backbone](configs/timm_example) (#7020)
+- Support visualization for Panoptic Segmentation (#7041)
+
+#### Breaking Changes
+
+In order to support the visualization for Panoptic Segmentation, the `num_classes` can not be `None` when using the `get_palette` function to determine whether to use the panoptic palette.
+
+#### Bug Fixes
+
+- Fix bug for the best checkpoints can not be saved when the `key_score` is None (#7101)
+- Fix MixUp transform filter boxes failing case (#7080)
+- Add missing properties in SABLHead (#7091)
+- Fix bug when NaNs exist in confusion matrix (#7147)
+- Fix PALETTE AttributeError in downstream task (#7230)
+
+#### Improvements
+
+- Speed up SimOTA matching (#7098)
+- Add Chinese translation of `docs_zh-CN/tutorials/init_cfg.md` (#7188)
+
+#### Contributors
+
+A total of 20 developers contributed to this release.
+Thanks @ZwwWayne, @hhaAndroid, @RangiLyu, @AronLin, @BIGWangYuDong, @jbwang1997, @zytx121, @chhluo, @shinya7y, @LuooChen, @dvansa, @siatwangmin, @del-zhenwu, @vikashranjan26, @haofanwang, @jamiechoi1995, @HJoonKwon, @yarkable, @zhijian-liu, @RangeKing
+
+
 ### v2.21.0 (8/2/2022)
 
 ### Breaking Changes
