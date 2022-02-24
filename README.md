@@ -78,6 +78,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 - Support [MaskFormer](configs/maskformer), [DyHead](configs/dyhead), [OpenImages Dataset](configs/openimages) and [TIMM backbone](configs/timm_example)
 - Support visualization for Panoptic Segmentation
+- Release a good recipe of using ResNet in object detectors pre-trained by [ResNet Strikes Back](https://arxiv.org/abs/2110.00476), which consistently brings about 3~4 mAP improvements over RetinaNet, Faster/Mask/Cascade Mask R-CNN
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 

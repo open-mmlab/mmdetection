@@ -6,6 +6,7 @@
 
 - Support MaskFormer: [Per-Pixel Classification is Not All You Need for Semantic Segmentation](https://arxiv.org/abs/2107.06278) (#7212)
 - Support DyHead: [Dynamic Head: Unifying Object Detection Heads with Attentions](https://arxiv.org/abs/2106.08322) (#6823)
+- Release a good recipe of using ResNet in object detectors pre-trained by [ResNet Strikes Back](https://arxiv.org/abs/2110.00476), which consistently brings about 3~4 mAP improvements over RetinaNet, Faster/Mask/Cascade Mask R-CNN (#7001)
 - Support [Open Images Dataset](https://storage.googleapis.com/openimages/web/index.html) (#6331)
 - Support TIMM backbone: [PyTorch Image Models](https://github.com/rwightman/pytorch-image-models) (#7020)
 
@@ -13,6 +14,7 @@
 
 - Support [MaskFormer](configs/maskformer) (#7212)
 - Support [DyHead](configs/dyhead) (#6823)
+- Support [ResNet Strikes Back](configs/resnet_strikes_back) (#7001)
 - Support [OpenImages Dataset](configs/openimages) (#6331)
 - Support [TIMM backbone](configs/timm_example) (#7020)
 - Support visualization for Panoptic Segmentation (#7041)
