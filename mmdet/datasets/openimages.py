@@ -286,7 +286,7 @@ class OpenImagesDataset(CustomDataset):
         """Set images original shape into data_infos."""
         assert len(metas) == len(self)
         for i in range(len(metas)):
-            file_name = metas[i].data['filename'].split('/')[-1]
+            file_name = metas[i].data['ori_filename'].split('/')[-1]
             img_info = self.data_infos[i].get('img_info', None)
             if img_info is not None:
                 assert file_name == img_info['filename'].split('/')[-1]
