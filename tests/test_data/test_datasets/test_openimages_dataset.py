@@ -14,7 +14,9 @@ def _create_ids_error_oid_csv(
     fake_csv_file,
 ):
     label_description = ['/m/000002', 'Football']
-    with open(label_file, 'w') as f:
+    # `newline=''` is used to avoid index error of out of bounds
+    # in Windows system
+    with open(label_file, 'w', newline='') as f:
         f_csv = csv.writer(f)
         f_csv.writerow(label_description)
 
@@ -31,7 +33,9 @@ def _create_ids_error_oid_csv(
                        '000595fe6fee6369', 'xclick', '/m/000000', '1', '0',
                        '1', '0', '1', '0', '0', '1', '0', '0'
                    ]]
-    with open(fake_csv_file, 'w') as f:
+    # `newline=''` is used to avoid index error of out of bounds
+    # in Windows system
+    with open(fake_csv_file, 'w', newline='') as f:
         f_csv = csv.writer(f)
         f_csv.writerow(header)
         f_csv.writerows(annotations)
@@ -41,7 +45,7 @@ def _create_oid_style_ann(label_file, csv_file, label_level_file):
     label_description = [['/m/000000', 'Sports equipment'],
                          ['/m/000001', 'Ball'], ['/m/000002', 'Football'],
                          ['/m/000004', 'Bicycle']]
-    with open(label_file, 'w') as f:
+    with open(label_file, 'w', newline='') as f:
         f_csv = csv.writer(f)
         f_csv.writerows(label_description)
 
@@ -60,7 +64,9 @@ def _create_oid_style_ann(label_file, csv_file, label_level_file):
             0, 0, 0, 0
         ],
     ]
-    with open(csv_file, 'w') as f:
+    # `newline=''` is used to avoid index error of out of bounds
+    # in Windows system
+    with open(csv_file, 'w', newline='') as f:
         f_csv = csv.writer(f)
         f_csv.writerow(header)
         f_csv.writerows(annotations)
@@ -68,7 +74,9 @@ def _create_oid_style_ann(label_file, csv_file, label_level_file):
     header = ['ImageID', 'Source', 'LabelName', 'Confidence']
     annotations = [['color', 'xclick', '/m/000002', '1'],
                    ['color', 'xclick', '/m/000004', '0']]
-    with open(label_level_file, 'w') as f:
+    # `newline=''` is used to avoid index error of out of bounds
+    # in Windows system
+    with open(label_level_file, 'w', newline='') as f:
         f_csv = csv.writer(f)
         f_csv.writerow(header)
         f_csv.writerows(annotations)
@@ -129,8 +137,9 @@ def _creat_oid_challenge_style_ann(txt_file, label_file, label_level_file):
         '1 0.0333333 0.1 0.0333333 0.1 1\n',
         '1 0.1 0.166667 0.1 0.166667 0\n',
     ]
-
-    with open(txt_file, 'w') as f:
+    # `newline=''` is used to avoid index error of out of bounds
+    # in Windows system
+    with open(txt_file, 'w', newline='') as f:
         f.writelines(bboxes)
         f.close()
 
@@ -138,13 +147,17 @@ def _creat_oid_challenge_style_ann(txt_file, label_file, label_level_file):
                          ['/m/000001', 'Ball', 2],
                          ['/m/000002', 'Football', 3],
                          ['/m/000004', 'Bicycle', 4]]
-    with open(label_file, 'w') as f:
+    # `newline=''` is used to avoid index error of out of bounds
+    # in Windows system
+    with open(label_file, 'w', newline='') as f:
         f_csv = csv.writer(f)
         f_csv.writerows(label_description)
 
     header = ['ImageID', 'LabelName', 'Confidence']
     annotations = [['color', '/m/000001', '1'], ['color', '/m/000000', '0']]
-    with open(label_level_file, 'w') as f:
+    # `newline=''` is used to avoid index error of out of bounds
+    # in Windows system
+    with open(label_level_file, 'w', newline='') as f:
         f_csv = csv.writer(f)
         f_csv.writerow(header)
         f_csv.writerows(annotations)
