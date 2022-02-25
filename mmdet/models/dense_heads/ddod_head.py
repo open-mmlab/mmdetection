@@ -15,13 +15,15 @@ EPS = 1e-12
 @HEADS.register_module()
 class DDODHead(AnchorHead):
     """
-    Bridging the Gap Between Anchor-based and Anchor-free Detection via
-    Adaptive Training Sample Selection.
+    DDOD head decomposes conjunctions lying in most current one-stage detectors 
+    via label assignment disentanglement, spatial feature disentanglement, and 
+    pyramid supervision disentanglement.
 
-    ATSS head structure is similar with FCOS, however ATSS use anchor boxes
-    and assign label by Adaptive Training Sample Selection instead max-iou.
+    Extensive experiments on MS COCO benchmark show that DDOD can lead to 2.0
+    mAP, 2.4 mAP and 2.2 mAP absolute improvements on RetinaNet, FCOS, and ATSS 
+    baselines with negligible extra overhead.
 
-    https://arxiv.org/abs/1912.02424
+    https://arxiv.org/abs/2107.02963
     """
 
     def __init__(self,
@@ -208,10 +210,7 @@ class DDODHead(AnchorHead):
             pos_bbox_targets = bbox_targets[pos_inds]
             pos_bbox_pred = bbox_pred[pos_inds]
             pos_anchors = anchors[pos_inds]
-            # pos_centerness = centerness[pos_inds]
 
-            # centerness_targets = self.centerness_target(
-            #     pos_anchors, pos_bbox_targets)
             pos_decode_bbox_pred = self.bbox_coder.decode(
                 pos_anchors, pos_bbox_pred)
             pos_decode_bbox_targets = self.bbox_coder.decode(
@@ -231,17 +230,9 @@ class DDODHead(AnchorHead):
                 iou_pred, iou_targets, iou_weights, avg_factor=num_total_samples
             )
 
-            # # centerness loss
-            # loss_centerness = self.loss_centerness(
-            #     pos_centerness,
-            #     centerness_targets,
-            #     avg_factor=num_total_samples)
-
         else:
             loss_bbox = bbox_pred.sum() * 0
             loss_iou = iou_pred.sum() * 0
-            # loss_centerness = centerness.sum() * 0
-            # centerness_targets = bbox_targets.new_tensor(0.)
 
         return reweight_factor * loss_cls, reweight_factor * loss_bbox, reweight_factor * loss_iou
 
@@ -389,34 +380,10 @@ class DDODHead(AnchorHead):
                 reweight_factor_per_level,
                 num_total_samples=num_total_samples)
 
-        # bbox_avg_factor = sum(bbox_avg_factor)
-        # bbox_avg_factor = reduce_mean(bbox_avg_factor).item()
-        # if bbox_avg_factor < EPS:
-        #     bbox_avg_factor = 1
-        # losses_bbox = list(map(lambda x: x / bbox_avg_factor, losses_bbox))
         return dict(
             loss_cls=cls_losses_cls,
             loss_bbox=reg_losses_bbox,
             loss_iou=reg_losses_iou)
-            # loss_centerness=loss_centerness)
-
-    # def centerness_target(self, anchors, bbox_targets):
-    #     # only calculate pos centerness targets, otherwise there may be nan
-    #     gts = self.bbox_coder.decode(anchors, bbox_targets)
-    #     anchors_cx = (anchors[:, 2] + anchors[:, 0]) / 2
-    #     anchors_cy = (anchors[:, 3] + anchors[:, 1]) / 2
-    #     l_ = anchors_cx - gts[:, 0]
-    #     t_ = anchors_cy - gts[:, 1]
-    #     r_ = gts[:, 2] - anchors_cx
-    #     b_ = gts[:, 3] - anchors_cy
-
-    #     left_right = torch.stack([l_, r_], dim=1)
-    #     top_bottom = torch.stack([t_, b_], dim=1)
-    #     centerness = torch.sqrt(
-    #         (left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) *
-    #         (top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0]))
-    #     assert not torch.isnan(centerness).any()
-    #     return centerness
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'iou_preds'))
     def get_bboxes(self,

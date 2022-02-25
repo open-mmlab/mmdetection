@@ -5,57 +5,6 @@ from ..iou_calculators import build_iou_calculator
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
-def diou_loss(pred, target, eps=1e-7):
-    r"""`Implementation of Distance-IoU Loss: Faster and Better
-    Learning for Bounding Box Regression, https://arxiv.org/abs/1911.08287`_.
-
-    Code is modified from https://github.com/Zzh-tju/DIoU.
-
-    Args:
-        pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
-            shape (n, 4).
-        target (Tensor): Corresponding gt bboxes, shape (n, 4).
-        eps (float): Eps to avoid log(0).
-    Return:
-        Tensor: Loss tensor.
-    """
-    # overlap
-    lt = torch.max(pred[:, :2], target[:, :2])
-    rb = torch.min(pred[:, 2:], target[:, 2:])
-    wh = (rb - lt).clamp(min=0)
-    overlap = wh[:, 0] * wh[:, 1]
-
-    # union
-    ap = (pred[:, 2] - pred[:, 0]) * (pred[:, 3] - pred[:, 1])
-    ag = (target[:, 2] - target[:, 0]) * (target[:, 3] - target[:, 1])
-    union = ap + ag - overlap + eps
-
-    # IoU
-    ious = overlap / union
-
-    # enclose area
-    enclose_x1y1 = torch.min(pred[:, :2], target[:, :2])
-    enclose_x2y2 = torch.max(pred[:, 2:], target[:, 2:])
-    enclose_wh = (enclose_x2y2 - enclose_x1y1).clamp(min=0)
-
-    cw = enclose_wh[:, 0]
-    ch = enclose_wh[:, 1]
-
-    c2 = cw**2 + ch**2 + eps
-
-    b1_x1, b1_y1 = pred[:, 0], pred[:, 1]
-    b1_x2, b1_y2 = pred[:, 2], pred[:, 3]
-    b2_x1, b2_y1 = target[:, 0], target[:, 1]
-    b2_x2, b2_y2 = target[:, 2], target[:, 3]
-
-    left = ((b2_x1 + b2_x2) - (b1_x1 + b1_x2))**2 / 4
-    right = ((b2_y1 + b2_y2) - (b1_y1 + b1_y2))**2 / 4
-    rho2 = left + right
-
-    # DIoU
-    dious = ious - rho2 / c2
-    loss = 1 - dious
-    return loss
 
 @BBOX_ASSIGNERS.register_module()
 class ATSSCostAssigner(BaseAssigner):
@@ -83,7 +32,7 @@ class ATSSCostAssigner(BaseAssigner):
 
 
     # https://github.com/sfzhang15/ATSS/blob/master/atss_core/modeling/rpn/atss/loss.py
-
+    @torch.no_grad()
     def assign(self,
                bboxes,
                num_level_bboxes,
@@ -141,37 +90,7 @@ class ATSSCostAssigner(BaseAssigner):
 
         # overlaps is actually is a cost matrix
         overlaps = cls_cost ** (1 - self.alpha) * overlaps ** self.alpha
-        # overlaps = cls_cost + overlaps
 
-        # NOTE Loss style cost function
-        # # compute focal loss
-        # MIN_THRES = 1e-12
-        # gamma = 2.; alpha = 0.25
-        # y_pred = torch.sigmoid(cls_scores[:, gt_labels])        # shape = (num_bboxes, num_gt)
-        # cls_cost = - torch.pow(1 - y_pred, gamma) * torch.log(torch.clamp(y_pred, MIN_THRES))
-        # cls_cost *= alpha
-        # # compute DIoU loss
-        # # extend pred_bbox to (num_bboxes, num_gt, 4)
-        # extend_bbox_preds = bbox_preds.unsqueeze(1)
-        # extend_bbox_preds = extend_bbox_preds.repeat((1, num_gt, 1))
-        # # extend gt_bbox to (num_bboxes, num_gt, 4)
-        # extend_gt_bboxes = gt_bboxes.unsqueeze(0)
-        # extend_gt_bboxes = extend_gt_bboxes.repeat((num_bboxes, 1, 1))
-
-        # assert extend_bbox_preds.shape == extend_gt_bboxes.shape
-        # extend_bbox_preds = extend_bbox_preds.view(-1, 4)
-        # extend_gt_bboxes = extend_gt_bboxes.view(-1, 4)
-
-        # reg_cost = diou_loss(extend_bbox_preds, extend_gt_bboxes)
-        # reg_cost = reg_cost.view(num_bboxes, num_gt)
-
-        # assert reg_cost.shape == cls_cost.shape
-        # overlaps = - (cls_cost + 2 * reg_cost)
-
-        # NOTE OneNet style cost function
-        # cls_cost = -torch.log(torch.sigmoid(cls_scores[:, gt_labels]))
-        # reg_cost = torch.cdist(bbox_preds, gt_bboxes, p=1)
-        # overlaps = - (cls_cost + reg_cost)
 
         # assign 0 by default
         assigned_gt_inds = overlaps.new_full((num_bboxes, ),

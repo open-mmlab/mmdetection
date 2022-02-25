@@ -12,13 +12,13 @@ Deep learning-based dense object detectors have achieved great success in the pa
 
 |   Model   |  Backbone   |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download  |
 | :-------: | :---------: | :-----: | :-----: | :------: | :------------: | :----: | :------: | :--------: |
-| ATSS(IoU, fp16) |  ResNet50   | pytorch |   1x    |   #TODO  |      #TODO     |  #TODO | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/retinanet/retinanet_r50_caffe_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_caffe_fpn_1x_coco/retinanet_r50_caffe_fpn_1x_coco_20200531-f11027c5.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_caffe_fpn_1x_coco/retinanet_r50_caffe_fpn_1x_coco_20200531_012518.log.json) |
+| ATSS(fp16) |  ResNet50   | pytorch |   1x    |   #TODO  |      #TODO     |  #TODO | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/retinanet/retinanet_r50_caffe_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_caffe_fpn_1x_coco/retinanet_r50_caffe_fpn_1x_coco_20200531-f11027c5.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_caffe_fpn_1x_coco/retinanet_r50_caffe_fpn_1x_coco_20200531_012518.log.json) |
 |   DDOD(fp16)    |  ResNet50   | pytorch |   1x    |   #TODO  |      #TODO     |  #TODO | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/retinanet/retinanet_r50_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130_002941.log.json) |
 
 
 
 
-## Citing
+## Citation
 ```
 @misc{chen2021disentangle,
       title={Disentangle Your Dense Object Detector}, 
@@ -29,3 +29,5 @@ Deep learning-based dense object detectors have achieved great success in the pa
       primaryClass={cs.CV}
 }
 ```
+
+python tools/train.py configs/ddod/ddod_r50_1x_coco_fp16.py
