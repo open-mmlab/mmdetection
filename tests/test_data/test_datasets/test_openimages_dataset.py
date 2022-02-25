@@ -14,6 +14,8 @@ def _create_ids_error_oid_csv(
     fake_csv_file,
 ):
     label_description = ['/m/000002', 'Football']
+    # `newline=''` is used to avoid index error of out of bounds
+    # in Windows system
     with open(label_file, 'w', newline='') as f:
         f_csv = csv.writer(f)
         f_csv.writerow(label_description)
