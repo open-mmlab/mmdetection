@@ -98,7 +98,9 @@ def get_dataset_name(config):
         LVISV05Dataset='LVIS v0.5',
         LVISV1Dataset='LVIS v1',
         VOCDataset='Pascal VOC',
-        WIDERFaceDataset='WIDER Face')
+        WIDERFaceDataset='WIDER Face',
+        OpenImagesDataset='OpenImagesDataset',
+        OpenImagesChallengeDataset='OpenImagesChallengeDataset')
     cfg = mmcv.Config.fromfile('./configs/' + config)
     return name_map[cfg.dataset_type]
 

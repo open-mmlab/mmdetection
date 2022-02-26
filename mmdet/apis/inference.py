@@ -35,7 +35,10 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
                         f'but got {type(config)}')
     if cfg_options is not None:
         config.merge_from_dict(cfg_options)
-    config.model.pretrained = None
+    if 'pretrained' in config.model:
+        config.model.pretrained = None
+    elif 'init_cfg' in config.model.backbone:
+        config.model.backbone.init_cfg = None
     config.model.train_cfg = None
     model = build_detector(config.model, test_cfg=config.get('test_cfg'))
     if checkpoint is not None:
@@ -238,5 +241,5 @@ def show_result_pyplot(model,
         wait_time=wait_time,
         win_name=title,
         bbox_color=palette,
-        text_color=palette,
+        text_color=(200, 200, 200),
         mask_color=palette)

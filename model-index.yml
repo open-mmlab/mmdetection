@@ -13,6 +13,7 @@ Import:
   - configs/detectors/metafile.yml
   - configs/detr/metafile.yml
   - configs/double_heads/metafile.yml
+  - configs/dyhead/metafile.yml
   - configs/dynamic_rcnn/metafile.yml
   - configs/empirical_attention/metafile.yml
   - configs/faster_rcnn/metafile.yml
