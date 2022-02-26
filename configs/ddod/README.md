@@ -12,22 +12,18 @@ Deep learning-based dense object detectors have achieved great success in the pa
 
 |   Model   |  Backbone   |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download  |
 | :-------: | :---------: | :-----: | :-----: | :------: | :------------: | :----: | :------: | :--------: |
-| ATSS(fp16) |  ResNet50   | pytorch |   1x    |   #TODO  |      #TODO     |  #TODO | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/retinanet/retinanet_r50_caffe_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_caffe_fpn_1x_coco/retinanet_r50_caffe_fpn_1x_coco_20200531-f11027c5.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_caffe_fpn_1x_coco/retinanet_r50_caffe_fpn_1x_coco_20200531_012518.log.json) |
-|   DDOD(fp16)    |  ResNet50   | pytorch |   1x    |   #TODO  |      #TODO     |  #TODO | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/retinanet/retinanet_r50_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_1x_coco/retinanet_r50_fpn_1x_coco_20200130_002941.log.json) |
+|   DDOD(fp16)    |  ResNet50   | pytorch |   1x    |   #TODO  |      #TODO     |  #TODO | [config](configs/ddod/ddod_r50_1x_coco_fp16.py) | [model](https://download.pytorch.org/models/resnet50-0676ba61.pth)
 
 
 
 
 ## Citation
 ```
-@misc{chen2021disentangle,
-      title={Disentangle Your Dense Object Detector}, 
-      author={Zehui Chen and Chenhongyi Yang and Qiaofei Li and Feng Zhao and Zhengjun Zha and Feng Wu},
-      year={2021},
-      eprint={2107.02963},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV}
+@inproceedings{chen2021disentangle,
+title={Disentangle Your Dense Object Detector},
+author={Chen, Zehui and Yang, Chenhongyi and Li, Qiaofei and Zhao, Feng and Zha, Zheng-Jun and Wu, Feng},
+booktitle={Proceedings of the 29th ACM International Conference on Multimedia},
+pages={4939--4948},
+year={2021}
 }
 ```
-
-python tools/train.py configs/ddod/ddod_r50_1x_coco_fp16.py

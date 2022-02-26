@@ -16,7 +16,7 @@ model = dict(
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
         style='pytorch',
-        init_cfg=dict(type='Pretrained', checkpoint='open-mmlab://resnest50')), # 
+        init_cfg=dict(type='Pretrained', checkpoint='open-mmlab://resnest50')), 
     neck=dict(
         type='FPN',
         in_channels=[256, 512, 1024, 2048],

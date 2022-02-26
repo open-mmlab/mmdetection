@@ -19,10 +19,6 @@ class DDODHead(AnchorHead):
     via label assignment disentanglement, spatial feature disentanglement, and 
     pyramid supervision disentanglement.
 
-    Extensive experiments on MS COCO benchmark show that DDOD can lead to 2.0
-    mAP, 2.4 mAP and 2.2 mAP absolute improvements on RetinaNet, FCOS, and ATSS 
-    baselines with negligible extra overhead.
-
     https://arxiv.org/abs/2107.02963
     """
 
