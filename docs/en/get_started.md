@@ -9,35 +9,36 @@
 
 Compatible MMDetection and MMCV versions are shown as below. Please install the correct version of MMCV to avoid installation issues.
 
-| MMDetection version |    MMCV version     |
-|:-------------------:|:-------------------:|
-| master              | mmcv-full>=1.3.17, <1.5.0 |
-| 2.21.0              | mmcv-full>=1.3.17, <1.5.0 |
-| 2.20.0              | mmcv-full>=1.3.17, <1.5.0 |
-| 2.19.1              | mmcv-full>=1.3.17, <1.5.0 |
-| 2.19.0              | mmcv-full>=1.3.17, <1.5.0 |
-| 2.18.0              | mmcv-full>=1.3.17, <1.4.0 |
-| 2.17.0              | mmcv-full>=1.3.14, <1.4.0 |
-| 2.16.0              | mmcv-full>=1.3.8, <1.4.0 |
-| 2.15.1              | mmcv-full>=1.3.8, <1.4.0 |
-| 2.15.0              | mmcv-full>=1.3.8, <1.4.0 |
-| 2.14.0              | mmcv-full>=1.3.8, <1.4.0 |
-| 2.13.0              | mmcv-full>=1.3.3, <1.4.0 |
-| 2.12.0              | mmcv-full>=1.3.3, <1.4.0 |
-| 2.11.0              | mmcv-full>=1.2.4, <1.4.0 |
-| 2.10.0              | mmcv-full>=1.2.4, <1.4.0 |
-| 2.9.0               | mmcv-full>=1.2.4, <1.4.0 |
-| 2.8.0               | mmcv-full>=1.2.4, <1.4.0 |
-| 2.7.0               | mmcv-full>=1.1.5, <1.4.0 |
-| 2.6.0               | mmcv-full>=1.1.5, <1.4.0 |
-| 2.5.0               | mmcv-full>=1.1.5, <1.4.0 |
-| 2.4.0               | mmcv-full>=1.1.1, <1.4.0 |
-| 2.3.0               | mmcv-full==1.0.5    |
-| 2.3.0rc0            | mmcv-full>=1.0.2    |
-| 2.2.1               | mmcv==0.6.2         |
-| 2.2.0               | mmcv==0.6.2         |
-| 2.1.0               | mmcv>=0.5.9, <=0.6.1|
-| 2.0.0               | mmcv>=0.5.1, <=0.5.8|
+| MMDetection version |       MMCV version        |
+|:-------------------:|:-------------------------:|
+|       master        | mmcv-full>=1.3.17, <1.5.0 |
+|       2.22.0        | mmcv-full>=1.3.17, <1.5.0 |
+|       2.21.0        | mmcv-full>=1.3.17, <1.5.0 |
+|       2.20.0        | mmcv-full>=1.3.17, <1.5.0 |
+|       2.19.1        | mmcv-full>=1.3.17, <1.5.0 |
+|       2.19.0        | mmcv-full>=1.3.17, <1.5.0 |
+|       2.18.0        | mmcv-full>=1.3.17, <1.4.0 |
+|       2.17.0        | mmcv-full>=1.3.14, <1.4.0 |
+|       2.16.0        | mmcv-full>=1.3.8, <1.4.0  |
+|       2.15.1        | mmcv-full>=1.3.8, <1.4.0  |
+|       2.15.0        | mmcv-full>=1.3.8, <1.4.0  |
+|       2.14.0        | mmcv-full>=1.3.8, <1.4.0  |
+|       2.13.0        | mmcv-full>=1.3.3, <1.4.0  |
+|       2.12.0        | mmcv-full>=1.3.3, <1.4.0  |
+|       2.11.0        | mmcv-full>=1.2.4, <1.4.0  |
+|       2.10.0        | mmcv-full>=1.2.4, <1.4.0  |
+|        2.9.0        | mmcv-full>=1.2.4, <1.4.0  |
+|        2.8.0        | mmcv-full>=1.2.4, <1.4.0  |
+|        2.7.0        | mmcv-full>=1.1.5, <1.4.0  |
+|        2.6.0        | mmcv-full>=1.1.5, <1.4.0  |
+|        2.5.0        | mmcv-full>=1.1.5, <1.4.0  |
+|        2.4.0        | mmcv-full>=1.1.1, <1.4.0  |
+|        2.3.0        |     mmcv-full==1.0.5      |
+|      2.3.0rc0       |     mmcv-full>=1.0.2      |
+|        2.2.1        |        mmcv==0.6.2        |
+|        2.2.0        |        mmcv==0.6.2        |
+|        2.1.0        |   mmcv>=0.5.9, <=0.6.1    |
+|        2.0.0        |   mmcv>=0.5.1, <=0.5.8    |
 
 **Note:** You need to run `pip uninstall mmcv` first if you have mmcv installed.
 If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
@@ -107,6 +108,13 @@ Or you can still install MMDetection manually:
 
     Optionally you can compile mmcv from source if you need to develop both mmcv and mmdet. Refer to the [guide](https://github.com/open-mmlab/mmcv#installation) for details.
 
+    mmcv-full is only compiled on PyTorch 1.x.0 because the compatibility usually holds between 1.x.0 and 1.x.1. If your PyTorch version is 1.x.1, you can install mmcv-full compiled with PyTorch 1.x.0 and it usually works well.
+
+    ```
+    # We can ignore the micro version of PyTorch
+    pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7/index.html
+    ```
+
 2. Install MMDetection.
 
     You can simply install mmdetection with the following command:
@@ -159,7 +167,7 @@ to [official documentation](https://albumentations.ai/docs/getting_started/insta
 
 MMDetection can be built for CPU only environment (where CUDA isn't available).
 
-In CPU mode you can run the demo/webcam_demo.py for example.
+In CPU mode you can train (requires MMCV version >= 1.4.4), test or inference a model.
 However some functionality is gone in this mode:
 
 - Deformable Convolution
@@ -175,7 +183,7 @@ However some functionality is gone in this mode:
 - sigmoid_focal_loss_cuda
 - bbox_overlaps
 
-If you try to run inference with a model containing above ops, an error will be raised.
+If you try to train/test/inference a model containing above ops, an error will be raised.
 The following table lists affected algorithms.
 
 |                        Operator                         |                            Model                             |

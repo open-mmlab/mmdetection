@@ -19,6 +19,7 @@ from .kd_one_stage import KnowledgeDistillationSingleStageDetector
 from .lad import LAD
 from .mask_rcnn import MaskRCNN
 from .mask_scoring_rcnn import MaskScoringRCNN
+from .maskformer import MaskFormer
 from .nasfcos import NASFCOS
 from .paa import PAA
 from .panoptic_fpn import PanopticFPN
@@ -49,5 +50,6 @@ __all__ = [
     'NASFCOS', 'PointRend', 'GFL', 'CornerNet', 'PAA', 'YOLOV3', 'YOLACT',
     'VFNet', 'DETR', 'TridentFasterRCNN', 'SparseRCNN', 'SCNet', 'SOLO',
     'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet', 'YOLOX',
-    'TwoStagePanopticSegmentor', 'PanopticFPN', 'QueryInst', 'LAD', 'TOOD'
+    'TwoStagePanopticSegmentor', 'PanopticFPN', 'QueryInst', 'LAD', 'TOOD',
+    'MaskFormer'
 ]

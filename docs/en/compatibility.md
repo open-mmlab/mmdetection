@@ -1,5 +1,10 @@
 # Compatibility of MMDetection 2.x
 
+## MMDetection 2.21.0
+
+In order to support CPU training, the logic of scatter in batch collating has been changed. We recommend to use
+MMCV v1.4.4 or higher. For more details, please refer to [MMCV PR #1621](https://github.com/open-mmlab/mmcv/pull/1621).
+
 ## MMDetection 2.18.1
 
 ### MMCV compatibility
