@@ -52,7 +52,7 @@ jobs:
             mmcv: 1.9
           - torch: 1.10.1
             torchvision: 0.11.2
-            mmcv: 1.10
+            mmcv: "1.10"
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -172,7 +172,7 @@ jobs:
           - torch: 1.10.1+cu102
             torch_version: torch1.10.1
             torchvision: 0.11.2+cu102
-            mmcv: 1.10
+            mmcv: "1.10"
 
     steps:
       - uses: actions/checkout@v2
