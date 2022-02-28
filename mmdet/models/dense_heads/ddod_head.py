@@ -20,6 +20,14 @@ class DDODHead(AnchorHead):
     pyramid supervision disentanglement.
 
     https://arxiv.org/abs/2107.02963
+    
+    Args:
+        num_classes (int): Number of categories excluding the background category.
+        in_channels (int): Number of channels in the input feature map.
+        stacked_convs (dict): the number of stacked convs
+        conv_cfg (dict): conv config of ddod head.
+        norm_cfg (dict): normal config of ddod head.
+        loss_iou (dict): Config of iou loss.
     """
 
     def __init__(self,
@@ -28,10 +36,6 @@ class DDODHead(AnchorHead):
                  stacked_convs=4,
                  conv_cfg=None,
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
-                #  loss_centerness=dict(
-                #      type='CrossEntropyLoss',
-                #      use_sigmoid=True,
-                #      loss_weight=1.0),
                  loss_iou=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
@@ -67,7 +71,6 @@ class DDODHead(AnchorHead):
                     3,
                     stride=1,
                     padding=1,
-                    # conv_cfg=self.conv_cfg,
                     conv_cfg=self.conv_cfg if i != 0 else dict(type='DCN', deform_groups=1),
                     norm_cfg=self.norm_cfg))
             self.reg_convs.append(
@@ -77,7 +80,6 @@ class DDODHead(AnchorHead):
                     3,
                     stride=1,
                     padding=1,
-                    # conv_cfg=self.conv_cfg,
                     conv_cfg=self.conv_cfg if i != 0 else dict(type='DCN', deform_groups=1),
                     norm_cfg=self.norm_cfg))
         self.atss_cls = nn.Conv2d(
@@ -104,7 +106,6 @@ class DDODHead(AnchorHead):
         normal_init(self.atss_cls, std=0.01, bias=bias_cls)
         normal_init(self.atss_reg, std=0.01)
         normal_init(self.atss_iou, std=0.01)
-        # normal_init(self.atss_centerness, std=0.01)
 
     def forward(self, feats):
         """Forward features from the upstream network.
@@ -115,11 +116,11 @@ class DDODHead(AnchorHead):
 
         Returns:
             tuple: Usually a tuple of classification scores and bbox prediction
-                cls_scores (list[Tensor]): Classification scores for all scale
-                    levels, each is a 4D-tensor, the channels number is
+                - cls_scores (list[Tensor]): Classification scores for all scale \
+                    levels, each is a 4D-tensor, the channels number is \
                     num_anchors * num_classes.
-                bbox_preds (list[Tensor]): Box energies / deltas for all scale
-                    levels, each is a 4D-tensor, the channels number is
+                - bbox_preds (list[Tensor]): Box energies / deltas for all scale \
+                    levels, each is a 4D-tensor, the channels number is \
                     num_anchors * 4.
         """
         return multi_apply(self.forward_single, feats, self.scales)
@@ -134,11 +135,11 @@ class DDODHead(AnchorHead):
 
         Returns:
             tuple:
-                cls_score (Tensor): Cls scores for a single scale level
+                - cls_score (Tensor): Cls scores for a single scale level \
                     the channels number is num_anchors * num_classes.
-                bbox_pred (Tensor): Box energies / deltas for a single scale
+                - bbox_pred (Tensor): Box energies / deltas for a single scale \
                     level, the channels number is num_anchors * 4.
-                centerness (Tensor): Centerness for a single scale level, the
+                - centerness (Tensor): Centerness for a single scale level, the \
                     channel number is (N, num_anchors * 1, H, W).
         """
         cls_feat = x
@@ -410,10 +411,10 @@ class DDODHead(AnchorHead):
 
         Returns:
             list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class label of the
+                The first item is an (n, 5) tensor, where the first 4 columns \
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the \
+                5-th column is a score between 0 and 1. The second item is a \
+                (n,) tensor where each item is the predicted class label of the \
                 corresponding box.
         """
         cfg = self.test_cfg if cfg is None else cfg
@@ -484,11 +485,11 @@ class DDODHead(AnchorHead):
 
         Returns:
             tuple(Tensor):
-                det_bboxes (Tensor): BBox predictions in shape (n, 5), where
-                    the first 4 columns are bounding box positions
-                    (tl_x, tl_y, br_x, br_y) and the 5-th column is a score
+                - det_bboxes (Tensor): BBox predictions in shape (n, 5), where \
+                    the first 4 columns are bounding box positions \
+                    (tl_x, tl_y, br_x, br_y) and the 5-th column is a score \
                     between 0 and 1.
-                det_labels (Tensor): A (n,) tensor where each item is the
+                - det_labels (Tensor): A (n,) tensor where each item is the \
                     predicted class label of the corresponding box.
         """
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
@@ -669,17 +670,17 @@ class DDODHead(AnchorHead):
 
         Returns:
             tuple: N is the number of total anchors in the image.
-                labels (Tensor): Labels of all anchors in the image with shape
+                - labels (Tensor): Labels of all anchors in the image with shape \
                     (N,).
-                label_weights (Tensor): Label weights of all anchor in the
+                - label_weights (Tensor): Label weights of all anchor in the \
                     image with shape (N,).
-                bbox_targets (Tensor): BBox targets of all anchors in the
+                - bbox_targets (Tensor): BBox targets of all anchors in the \
                     image with shape (N, 4).
-                bbox_weights (Tensor): BBox weights of all anchors in the
+                - bbox_weights (Tensor): BBox weights of all anchors in the \
                     image with shape (N, 4)
-                pos_inds (Tensor): Indices of postive anchor with shape
+                - pos_inds (Tensor): Indices of postive anchor with shape \
                     (num_pos,).
-                neg_inds (Tensor): Indices of negative anchor with shape
+                - neg_inds (Tensor): Indices of negative anchor with shape \
                     (num_neg,).
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,

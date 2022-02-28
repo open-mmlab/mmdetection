@@ -4,7 +4,6 @@ _base_ = [
 ]
 
 
-fp16 = dict(loss_scale=512.)
 model = dict(
     type='ATSS',
     backbone=dict(
@@ -64,3 +63,5 @@ model = dict(
         max_per_img=100))
 
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+
+fp16 = dict(loss_scale=512.)

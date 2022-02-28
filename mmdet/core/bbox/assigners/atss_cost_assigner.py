@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
 from ..builder import BBOX_ASSIGNERS
@@ -10,6 +11,9 @@ from .base_assigner import BaseAssigner
 class ATSSCostAssigner(BaseAssigner):
     """Assign a corresponding gt bbox or background to each bbox.
 
+    ATSSCostAssigner is similar with ATSSAssigner, however ATSSCostAssigner
+    use a parameter as a cost rate to distinguish each proposals apparently. 
+
     Each proposals will be assigned with `0` or a positive integer
     indicating the ground truth index.
 
@@ -18,6 +22,9 @@ class ATSSCostAssigner(BaseAssigner):
 
     Args:
         topk (float): number of bbox selected in each level
+        alpha (float): param of cost rate for each proposal
+        iou_calculator (dict): builder of IoU calculator
+        ignore_iof_thr (int): whether ignore max overlaps or not(1 or -1)  
     """
 
     def __init__(self,
@@ -38,7 +45,6 @@ class ATSSCostAssigner(BaseAssigner):
                num_level_bboxes,
                cls_scores,
                bbox_preds,
-            #    bbox_coder,
                gt_bboxes,
                gt_bboxes_ignore=None,
                gt_labels=None):
@@ -72,7 +78,7 @@ class ATSSCostAssigner(BaseAssigner):
         INF = 100000000
         # NOTE first convert anchor to prediction bbox
         bboxes = bboxes[:, :4]      # anchor bbox
-        bbox_preds = bbox_preds.detach()
+        # bbox_preds = bbox_preds.detach()
         cls_scores = cls_scores.detach()
 
         # bbox_preds = bbox_coder.decode(bboxes, bbox_preds)      # prediction bbox

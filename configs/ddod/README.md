@@ -12,13 +12,13 @@ Deep learning-based dense object detectors have achieved great success in the pa
 
 |   Model   |  Backbone   |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download  |
 | :-------: | :---------: | :-----: | :-----: | :------: | :------------: | :----: | :------: | :--------: |
-|   DDOD(fp16)    |  ResNet50   | pytorch |   1x    |   #TODO  |      #TODO     |  #TODO | [config](configs/ddod/ddod_r50_1x_coco_fp16.py) | [model](https://download.pytorch.org/models/resnet50-0676ba61.pth) &#124; [log]()
+|   DDOD(FP16)    |  ResNet50   | pytorch |   1x    |   #TODO  |      #TODO     |  #TODO | [config](configs/ddod/ddod_r50_fpn_fp16_1x_coco.py) | [model](https://download.pytorch.org/models/resnet50-0676ba61.pth) &#124; [log]()
 
 
 
 
 ## Citation
-```
+```latex
 @inproceedings{chen2021disentangle,
 title={Disentangle Your Dense Object Detector},
 author={Chen, Zehui and Yang, Chenhongyi and Li, Qiaofei and Zhao, Feng and Zha, Zheng-Jun and Wu, Feng},
