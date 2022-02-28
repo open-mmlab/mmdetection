@@ -18,7 +18,8 @@ model = dict(
         drop_path_rate=0.4,
         layer_scale_init_value=1.0,
         gap_before_final_norm=False,
-        init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
+        init_cfg=dict(
+            type='Pretrained', checkpoint=pretrained, prefix='backbone.')),
     neck=dict(in_channels=[96, 192, 384, 768]))
 
 img_norm_cfg = dict(
