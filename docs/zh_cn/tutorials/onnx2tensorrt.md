@@ -5,14 +5,14 @@
 
 <!-- TOC -->
 
-- [Tutorial 9: ONNX to TensorRT (Experimental)](#tutorial-9-onnx-to-tensorrt-experimental)
-  - [How to convert models from ONNX to TensorRT](#how-to-convert-models-from-onnx-to-tensorrt)
-    - [Prerequisite](#prerequisite)
-    - [Usage](#usage)
-  - [How to evaluate the exported models](#how-to-evaluate-the-exported-models)
-  - [List of supported models convertible to TensorRT](#list-of-supported-models-convertible-to-tensorrt)
-  - [Reminders](#reminders)
-  - [FAQs](#faqs)
+- [教程 9: ONNX 到 TensorRT 的模型转换（实验性支持）](#教程 9: ONNX 到 TensorRT 的模型转换（实验性支持）)
+  - [如何将模型从 ONNX 转换为 TensorRT](#如何将模型从 ONNX 转换为 TensorRT)
+    - [先决条件](#先决条件)
+    - [用法](#用法)
+  - [如何评估导出的模型](#如何评估导出的模型)
+  - [支持转换为 TensorRT 的模型列表](#支持转换为 TensorRT 的模型列表)
+  - [提醒](#提醒)
+  - [常见问题](#常见问题)
 
 <!-- TOC -->
 
@@ -73,8 +73,8 @@ python tools/deployment/onnx2tensorrt.py \
 
 请参阅以下链接以获取更多信息。
 
-- [how-to-evaluate-the-exported-models](pytorch2onnx.md#how-to-evaluate-the-exported-models)
-- [results-and-models](pytorch2onnx.md#results-and-models)
+- [how-to-evaluate-the-exported-models](pytorch2onnx.md#如何评估导出的模型)
+- [results-and-models](pytorch2onnx.md#模型和结果)
 
 ## 支持转换为 TensorRT 的模型列表
 
