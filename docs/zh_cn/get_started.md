@@ -9,36 +9,37 @@
 
 MMDetection 和 MMCV 版本兼容性如下所示，需要安装正确的 MMCV 版本以避免安装出现问题。
 
-| MMDetection 版本 |        MMCV 版本         |
-| :--------------: | :----------------------: |
-|      master      | mmcv-full>=1.3.17, <1.5.0 |
-| 2.21.0           | mmcv-full>=1.3.17, <1.5.0 |
-| 2.20.0           | mmcv-full>=1.3.17, <1.5.0 |
-|      2.19.1      | mmcv-full>=1.3.17, <1.5.0 |
-|      2.19.0      | mmcv-full>=1.3.17, <1.5.0 |
-|      2.18.1      | mmcv-full>=1.3.17, <1.4.0 |
-|      2.18.0      | mmcv-full>=1.3.14, <1.4.0 |
-|      2.17.0      | mmcv-full>=1.3.14, <1.4.0 |
-|      2.16.0      | mmcv-full>=1.3.8, <1.4.0 |
-|      2.15.1      | mmcv-full>=1.3.8, <1.4.0 |
-|      2.15.0      | mmcv-full>=1.3.8, <1.4.0 |
-|      2.14.0      | mmcv-full>=1.3.8, <1.4.0 |
-|      2.13.0      | mmcv-full>=1.3.3, <1.4.0 |
-|      2.12.0      | mmcv-full>=1.3.3, <1.4.0 |
-|      2.11.0      | mmcv-full>=1.2.4, <1.4.0 |
-|      2.10.0      | mmcv-full>=1.2.4, <1.4.0 |
-|      2.9.0       | mmcv-full>=1.2.4, <1.4.0 |
-|      2.8.0       | mmcv-full>=1.2.4, <1.4.0 |
-|      2.7.0       | mmcv-full>=1.1.5, <1.4.0 |
-|      2.6.0       | mmcv-full>=1.1.5, <1.4.0 |
-|      2.5.0       | mmcv-full>=1.1.5, <1.4.0 |
-|      2.4.0       | mmcv-full>=1.1.1, <1.4.0 |
-|      2.3.0       |     mmcv-full==1.0.5     |
-|     2.3.0rc0     |     mmcv-full>=1.0.2     |
-|      2.2.1       |       mmcv==0.6.2        |
-|      2.2.0       |       mmcv==0.6.2        |
-|      2.1.0       |   mmcv>=0.5.9, <=0.6.1   |
-|      2.0.0       |   mmcv>=0.5.1, <=0.5.8   |
+| MMDetection 版本 |          MMCV 版本          |
+|:--------------:|:-------------------------:|
+|     master     | mmcv-full>=1.3.17, <1.5.0 |
+|     2.22.0     | mmcv-full>=1.3.17, <1.5.0 |
+|     2.21.0     | mmcv-full>=1.3.17, <1.5.0 |
+|     2.20.0     | mmcv-full>=1.3.17, <1.5.0 |
+|     2.19.1     | mmcv-full>=1.3.17, <1.5.0 |
+|     2.19.0     | mmcv-full>=1.3.17, <1.5.0 |
+|     2.18.1     | mmcv-full>=1.3.17, <1.4.0 |
+|     2.18.0     | mmcv-full>=1.3.14, <1.4.0 |
+|     2.17.0     | mmcv-full>=1.3.14, <1.4.0 |
+|     2.16.0     | mmcv-full>=1.3.8, <1.4.0  |
+|     2.15.1     | mmcv-full>=1.3.8, <1.4.0  |
+|     2.15.0     | mmcv-full>=1.3.8, <1.4.0  |
+|     2.14.0     | mmcv-full>=1.3.8, <1.4.0  |
+|     2.13.0     | mmcv-full>=1.3.3, <1.4.0  |
+|     2.12.0     | mmcv-full>=1.3.3, <1.4.0  |
+|     2.11.0     | mmcv-full>=1.2.4, <1.4.0  |
+|     2.10.0     | mmcv-full>=1.2.4, <1.4.0  |
+|     2.9.0      | mmcv-full>=1.2.4, <1.4.0  |
+|     2.8.0      | mmcv-full>=1.2.4, <1.4.0  |
+|     2.7.0      | mmcv-full>=1.1.5, <1.4.0  |
+|     2.6.0      | mmcv-full>=1.1.5, <1.4.0  |
+|     2.5.0      | mmcv-full>=1.1.5, <1.4.0  |
+|     2.4.0      | mmcv-full>=1.1.1, <1.4.0  |
+|     2.3.0      |     mmcv-full==1.0.5      |
+|    2.3.0rc0    |     mmcv-full>=1.0.2      |
+|     2.2.1      |        mmcv==0.6.2        |
+|     2.2.0      |        mmcv==0.6.2        |
+|     2.1.0      |   mmcv>=0.5.9, <=0.6.1    |
+|     2.0.0      |   mmcv>=0.5.1, <=0.5.8    |
 
 **注意：**如果已经安装了 mmcv，首先需要使用 `pip uninstall mmcv` 卸载已安装的 mmcv，如果同时安装了 mmcv 和 mmcv-full，将会报 `ModuleNotFoundError` 错误。
 
@@ -149,7 +150,7 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
     # 安装 LVIS 数据集依赖
     pip install git+https://github.com/lvis-dataset/lvis-api.git
     # 安装 albumentations 依赖
-    pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
+    pip install -r requirements/albu.txt
     ```
 
 **注意：**
@@ -160,13 +161,13 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
 
 (3) 一些安装依赖是可以选择的。例如只需要安装最低运行要求的版本，则可以使用 `pip install -v -e .` 命令。如果希望使用可选择的像 `albumentations` 和 `imagecorruptions` 这种依赖项，可以使用 `pip install -r requirements/optional.txt` 进行手动安装，或者在使用 `pip` 时指定所需的附加功能（例如 `pip install -v -e .[optional]`），支持附加功能的有效键值包括  `all`、`tests`、`build` 以及 `optional` 。
 
-(4) 如果希望使用 `albumentations`，我们建议使用 `pip install albumentations>=0.3.2 --no-binary imgaug,albumentations` 进行安装。 如果简单地使用 `pip install albumentations>=0.3.2` 进行安装，则会同时安装 `opencv-python-headless`（即便已经安装了 `opencv-python` 也会再次安装）。我们不允许同时安装 `opencv-python` 和 `opencv-python-headless`，因为这样可能会导致一些问题。更多细节请参考[官方文档](https://albumentations.ai/docs/getting_started/installation/#note-on-opencv-dependencies)。
+(4) 如果希望使用 `albumentations`，我们建议使用 `pip install -r requirements/albu.txt` 或者 `pip install -U albumentations --no-binary qudida,albumentations` 进行安装。 如果简单地使用 `pip install albumentations>=0.3.2` 进行安装，则会同时安装 `opencv-python-headless`（即便已经安装了 `opencv-python` 也会再次安装）。我们建议在安装 `albumentations` 后检查环境，以确保没有同时安装 `opencv-python` 和 `opencv-python-headless`，因为同时安装可能会导致一些问题。更多细节请参考[官方文档](https://albumentations.ai/docs/getting_started/installation/#note-on-opencv-dependencies)。
 
 ### 只在 CPU 安装
 
 我们的代码能够建立在只使用 CPU 的环境（CUDA 不可用）。
 
-在CPU模式下，可以运行 `demo/webcam_demo.py` 示例，然而以下功能将在 CPU 模式下不能使用：
+在CPU模式下，可以进行模型训练（需要 MMCV 版本 >= 1.4.4)、测试或者推理，然而以下功能将在 CPU 模式下不能使用：
 
 - Deformable Convolution
 - Modulated Deformable Convolution
@@ -181,7 +182,7 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
 - sigmoid_focal_loss_cuda
 - bbox_overlaps
 
-因此，如果尝试使用包含上述操作的模型进行推理，将会报错。下表列出了由于依赖上述算子而无法在 CPU 上运行的相关模型：
+因此，如果尝试使用包含上述操作的模型进行训练/测试/推理，将会报错。下表列出了由于依赖上述算子而无法在 CPU 上运行的相关模型：
 
 |                        操作                         |                            模型                             |
 | :-----------------------------------------------------: | :----------------------------------------------------------: |

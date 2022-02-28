@@ -242,9 +242,21 @@ Please refer to [SOLO](https://github.com/open-mmlab/mmdetection/blob/master/con
 
 Please refer to [QueryInst](https://github.com/open-mmlab/mmdetection/blob/master/configs/queryinst) for details.
 
+### PanopticFPN
+
+Please refer to [PanopticFPN](https://github.com/open-mmlab/mmdetection/blob/master/configs/panoptic_fpn) for details.
+
+### MaskFormer
+
+Please refer to [MaskFormer](https://github.com/open-mmlab/mmdetection/blob/master/configs/maskformer) for details.
+
+### DyHead
+
+Please refer to [DyHead](https://github.com/open-mmlab/mmdetection/blob/master/configs/dyhead) for details.
+
 ### Other datasets
 
-We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).
+We also benchmark some methods on [PASCAL VOC](https://github.com/open-mmlab/mmdetection/blob/master/configs/pascal_voc), [Cityscapes](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes), [OpenImages](https://github.com/open-mmlab/mmdetection/blob/master/configs/openimages) and [WIDER FACE](https://github.com/open-mmlab/mmdetection/blob/master/configs/wider_face).
 
 ### Pre-trained Models
 
