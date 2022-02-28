@@ -20,9 +20,9 @@
 
 ### 先决条件
 
-1. 请参考 [get_started.md](https://mmdetection.readthedocs.io/en/latest/get_started.html) 从源码安装 MMCV 和 MMDetection 。
-2. 请参考 [ONNXRuntime in mmcv](https://mmcv.readthedocs.io/en/latest/deployment/onnxruntime_op.html) 和 [TensorRT plugin in mmcv](https://github.com/open-mmlab/mmcv/blob/master/docs/en/deployment/tensorrt_plugin.md/) 安装支持 ONNXRuntime 自定义操作和 TensorRT 插件的 `mmcv-full` 。
-3. 使用工具 [pytorch2onnx](https://mmdetection.readthedocs.io/en/latest/tutorials/pytorch2onnx.html) 将模型从 PyTorch 转换为 ONNX 。
+1. 请参考 [get_started.md](https://mmdetection.readthedocs.io/en/latest/get_started.html) 从源码安装 MMCV 和 MMDetection。
+2. 请参考 [ONNXRuntime in mmcv](https://mmcv.readthedocs.io/en/latest/deployment/onnxruntime_op.html) 和 [TensorRT plugin in mmcv](https://github.com/open-mmlab/mmcv/blob/master/docs/en/deployment/tensorrt_plugin.md/) 安装支持 ONNXRuntime 自定义操作和 TensorRT 插件的 `mmcv-full`。
+3. 使用工具 [pytorch2onnx](https://mmdetection.readthedocs.io/en/latest/tutorials/pytorch2onnx.html) 将模型从 PyTorch 转换为 ONNX。
 
 ### 用法
 
@@ -95,7 +95,7 @@ python tools/deployment/onnx2tensorrt.py \
 
 注意:
 
-- *以上所有模型通过 Pytorch==1.6.0, onnx==1.7.0 and TensorRT-7.2.1.6.Ubuntu-16.04.x86_64-gnu.cuda-10.2.cudnn8.0 测试*
+- *以上所有模型通过 Pytorch==1.6.0, onnx==1.7.0 与 TensorRT-7.2.1.6.Ubuntu-16.04.x86_64-gnu.cuda-10.2.cudnn8.0 测试*
 
 ## 提醒
 
