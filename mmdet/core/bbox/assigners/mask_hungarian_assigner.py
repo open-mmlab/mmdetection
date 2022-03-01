@@ -29,9 +29,9 @@ class MaskHungarianAssigner(BaseAssigner):
     - positive integer: positive sample, index (1-based) of assigned gt
 
     Args:
-        cls_cost (obj:`mmcv.ConfigDict` | dict): Classification cost config.
-        mask_cost (obj:`mmcv.ConfigDict` | dict): Mask cost config.
-        dice_cost (obj:`mmcv.ConfigDict` | dict): Dice cost config.
+        cls_cost (:obj:`mmcv.ConfigDict` | dict): Classification cost config.
+        mask_cost (:obj:`mmcv.ConfigDict` | dict): Mask cost config.
+        dice_cost (:obj:`mmcv.ConfigDict` | dict): Dice cost config.
     """
 
     def __init__(self,

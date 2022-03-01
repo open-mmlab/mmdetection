@@ -231,3 +231,50 @@ jobs:
           env_vars: OS,PYTHON
           name: codecov-umbrella
           fail_ci_if_error: false
+
+  build_windows:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2022]
+        python: [3.8]
+        platform: [cpu, cu111]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Upgrade pip
+        run: pip install pip --upgrade --user
+      - name: Install PyTorch
+        # As a complement to Linux CI, we test on PyTorch LTS version
+        run: pip install torch==1.8.2+${{ matrix.platform }} torchvision==0.9.2+${{ matrix.platform }} -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
+      - name: Install MMCV
+        run: pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cpu/torch1.8/index.html --only-binary mmcv-full
+      - name: Install unittest dependencies
+        run: |
+          python -V
+          python -m pip install pycocotools
+          python -m pip install -r requirements/tests.txt -r requirements/optional.txt
+          python -m pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
+          python -m pip install git+https://github.com/cocodataset/panopticapi.git
+          python -c 'import mmcv; print(mmcv.__version__)'
+      - name: Show pip list
+        run: pip list
+      - name: Build and install
+        run: pip install -e .
+      - name: Run unittests
+        run: coverage run --branch --source mmdet -m pytest tests -sv
+      - name: Generate coverage report
+        run: |
+          coverage xml
+          coverage report -m
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          env_vars: OS,PYTHON
+          name: codecov-umbrella
+          fail_ci_if_error: false

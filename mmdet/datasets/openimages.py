@@ -262,10 +262,10 @@ class OpenImagesDataset(CustomDataset):
         metas = mmcv.load(meta_file)
         assert len(metas) == len(self)
         for i in range(len(metas)):
-            file_name = metas[i]['filename'].split('/')[-1]
+            file_name = osp.split(metas[i]['filename'])[-1]
             img_info = self.data_infos[i].get('img_info', None)
             if img_info is not None:
-                assert file_name == img_info['filename'].split('/')[-1]
+                assert file_name == osp.split(img_info['filename'])[-1]
             else:
                 assert file_name == self.data_infos[i]['filename']
             hw = metas[i]['ori_shape'][:2]
@@ -286,10 +286,10 @@ class OpenImagesDataset(CustomDataset):
         """Set images original shape into data_infos."""
         assert len(metas) == len(self)
         for i in range(len(metas)):
-            file_name = metas[i].data['filename'].split('/')[-1]
+            file_name = osp.split(metas[i].data['ori_filename'])[-1]
             img_info = self.data_infos[i].get('img_info', None)
             if img_info is not None:
-                assert file_name == img_info['filename'].split('/')[-1]
+                assert file_name == osp.split(img_info['filename'])[-1]
             else:
                 assert file_name == self.data_infos[i]['filename']
             hw = metas[i].data['ori_shape'][:2]
@@ -519,7 +519,7 @@ class OpenImagesDataset(CustomDataset):
             img_info = self.data_infos[i].get('img_info', None)
             if img_info is not None:
                 # for Open Images Challenges
-                img_id = img_info['filename'].split('/')[-1][:-4]
+                img_id = osp.split(img_info['filename'])[-1][:-4]
             else:
                 # for Open Images v6
                 img_id = self.data_infos[i]['img_id']
