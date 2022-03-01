@@ -12,7 +12,7 @@ class ATSSCostAssigner(BaseAssigner):
     """Assign a corresponding gt bbox or background to each bbox.
 
     ATSSCostAssigner is similar with ATSSAssigner, however ATSSCostAssigner
-    use a parameter as a cost rate to distinguish each proposals apparently. 
+    use a parameter as a cost rate to distinguish each proposals apparently.
 
     Each proposals will be assigned with `0` or a positive integer
     indicating the ground truth index.
@@ -21,10 +21,10 @@ class ATSSCostAssigner(BaseAssigner):
     - positive integer: positive sample, index (1-based) of assigned gt
 
     Args:
-        topk (float): number of bbox selected in each level
-        alpha (float): param of cost rate for each proposal
-        iou_calculator (dict): builder of IoU calculator
-        ignore_iof_thr (int): whether ignore max overlaps or not(1 or -1)  
+        topk (float): number of bbox selected in each level.
+        alpha (float): param of cost rate for each proposal. Default 0.8.
+        iou_calculator (dict): builder of IoU calculator. Default dict(type='BboxOverlaps2D').
+        ignore_iof_thr (int): whether ignore max overlaps or not. Default -1 (1 or -1).
     """
 
     def __init__(self,
@@ -36,7 +36,6 @@ class ATSSCostAssigner(BaseAssigner):
         self.alpha = alpha
         self.iou_calculator = build_iou_calculator(iou_calculator)
         self.ignore_iof_thr = ignore_iof_thr
-
 
     # https://github.com/sfzhang15/ATSS/blob/master/atss_core/modeling/rpn/atss/loss.py
     @torch.no_grad()
@@ -75,28 +74,36 @@ class ATSSCostAssigner(BaseAssigner):
         Returns:
             :obj:`AssignResult`: The assign result.
         """
+        print(
+            'bboxes: {},\n num_level_bboxes: {},\n cls_scores: {},\n bbox_preds: {},\n gt_bboxes: {} \n'
+            .format(bboxes, num_level_bboxes, cls_scores, bbox_preds,
+                    gt_bboxes))
+        print(
+            'bboxes:{},\nnum_level_bboxes:{},\ncls_scores:{},\nbbox_preds:{},\ngt_bboxes:{}\n'
+            .format(bboxes.shape, len(num_level_bboxes), cls_scores.shape,
+                    bbox_preds.shape, gt_bboxes.shape))
         INF = 100000000
         # NOTE first convert anchor to prediction bbox
-        bboxes = bboxes[:, :4]      # anchor bbox
-        # bbox_preds = bbox_preds.detach()
+        bboxes = bboxes[:, :4]  # anchor bbox
+
+        bbox_preds = bbox_preds.detach()
         cls_scores = cls_scores.detach()
-
-        # bbox_preds = bbox_coder.decode(bboxes, bbox_preds)      # prediction bbox
-
         num_gt, num_bboxes = gt_bboxes.size(0), bboxes.size(0)
 
         # NOTE DeFCN style cost function
         # compute iou between all bbox and gt
         overlaps = self.iou_calculator(bbox_preds, gt_bboxes)
         # compute cls cost for bbox and GT
-        cls_cost = torch.sigmoid(cls_scores[:, gt_labels])
+        cls_cost = torch.sigmoid(cls_scores[:, :])
 
         # make sure that we are in element-wise multiplication
+        print('cls_cost: {}, overlaps: {} '.format(cls_cost, overlaps))
+        print('cls_cost.shape: {}, overlaps.shape: {} '.format(
+            cls_cost.shape, overlaps.shape))
         assert cls_cost.shape == overlaps.shape
 
         # overlaps is actually is a cost matrix
-        overlaps = cls_cost ** (1 - self.alpha) * overlaps ** self.alpha
-
+        overlaps = cls_cost**(1 - self.alpha) * overlaps**self.alpha
 
         # assign 0 by default
         assigned_gt_inds = overlaps.new_full((num_bboxes, ),
@@ -148,6 +155,11 @@ class ATSSCostAssigner(BaseAssigner):
             end_idx = start_idx + bboxes_per_level
             distances_per_level = distances[start_idx:end_idx, :]
             selectable_k = min(self.topk, bboxes_per_level)
+
+            print(
+                'selectable_k: {}, \n distances: {} \n, distances_per_level: {}'
+                .format(selectable_k, distances, distances_per_level))
+
             _, topk_idxs_per_level = distances_per_level.topk(
                 selectable_k, dim=0, largest=False)
             candidate_idxs.append(topk_idxs_per_level + start_idx)

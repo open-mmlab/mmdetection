@@ -8,7 +8,7 @@ CommandLine:
 import pytest
 import torch
 
-from mmdet.core.bbox.assigners import (ApproxMaxIoUAssigner,
+from mmdet.core.bbox.assigners import (ApproxMaxIoUAssigner, ATSSCostAssigner,
                                        CenterRegionAssigner, HungarianAssigner,
                                        MaskHungarianAssigner, MaxIoUAssigner,
                                        PointAssigner, TaskAlignedAssigner,
@@ -402,6 +402,7 @@ def test_hungarian_match_assigner():
     gt_labels = torch.LongTensor([1, 20])
     assign_result = self.assign(bbox_pred, cls_pred, gt_bboxes, gt_labels,
                                 img_meta)
+
     assert torch.all(assign_result.gt_inds > -1)
     assert (assign_result.gt_inds > 0).sum() == gt_bboxes.size(0)
     assert (assign_result.labels > -1).sum() == gt_bboxes.size(0)
@@ -606,3 +607,34 @@ def test_mask_hungarian_match_assigner():
     assert torch.all(assign_result.gt_inds > -1)
     assert (assign_result.gt_inds > 0).sum() == gt_labels.size(0)
     assert (assign_result.labels > -1).sum() == gt_labels.size(0)
+
+
+def atss_cost_assigner():
+    self = ATSSCostAssigner(9)
+
+    bboxes = torch.FloatTensor([
+        [0, 0, 10, 10],
+        [10, 10, 20, 20],
+        [5, 5, 15, 15],
+        [32, 32, 38, 42],
+    ])
+    num_level_bboxes = [1, 0, 0, 1, 1]
+    cls_scores = torch.FloatTensor([[0.1, 0.9], [0.2, 0.8], [0.7, 0.3],
+                                    [0.6, 0.4]])
+    bbox_preds = torch.FloatTensor([
+        [1, 1, 12, 8],
+        [4, 4, 20, 20],
+        [1, 5, 15, 15],
+        [30, 5, 32, 42],
+    ])
+    gt_bboxes = torch.FloatTensor([
+        [0, 0, 10, 9],
+        [0, 10, 10, 19],
+    ])
+    assign_result = self.assign(bboxes, num_level_bboxes, cls_scores,
+                                bbox_preds, gt_bboxes)
+    print(assign_result)
+    # my new
+    assert assign_result.num_gts == 2
+    assert len(assign_result.gt_inds) == 4
+    assert len(assign_result.labels) == 4

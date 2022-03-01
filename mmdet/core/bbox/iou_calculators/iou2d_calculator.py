@@ -155,9 +155,8 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
             B indicates the batch dim, in shape (B1, B2, ..., Bn).
             If ``is_aligned`` is ``True``, then m and n must be equal.
         mode (str): "iou" (intersection over union), "iof" (intersection over
-            foreground), "giou" (generalized intersection over union) or "diou" 
-            (distance intersection over union).
-            Default "iou".
+            foreground), "giou" (generalized intersection over union) or "diou"
+            (distance intersection over union). Default "iou".
         is_aligned (bool, optional): If True, then m and n must be equal.
             Default False.
         eps (float, optional): A value added to the denominator for numerical
@@ -238,7 +237,7 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
             union = area1 + area2 - overlap + eps
         else:
             union = area1
-        
+
         if mode in ['giou', 'diou']:
             enclosed_lt = torch.min(bboxes1[..., :2], bboxes2[..., :2])
             enclosed_rb = torch.max(bboxes1[..., 2:], bboxes2[..., 2:])
@@ -257,7 +256,7 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
             union = area1 + area2 - overlap + eps
         else:
             union = area1[..., None]
-        
+
         if mode in ['giou', 'diou']:
             enclosed_lt = torch.min(bboxes1[..., :, None, :2],
                                     bboxes2[..., None, :, :2])

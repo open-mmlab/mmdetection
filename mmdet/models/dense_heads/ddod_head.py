@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
@@ -6,28 +7,31 @@ from mmcv.runner import force_fp32
 from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
                         images_to_levels, multi_apply, multiclass_nms,
                         reduce_mean, unmap)
+from mmdet.core.bbox import bbox_overlaps
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
-from mmdet.core.bbox import bbox_overlaps
 
 EPS = 1e-12
 
+
 @HEADS.register_module()
 class DDODHead(AnchorHead):
-    """
-    DDOD head decomposes conjunctions lying in most current one-stage detectors 
-    via label assignment disentanglement, spatial feature disentanglement, and 
-    pyramid supervision disentanglement.
+    """DDOD head decomposes conjunctions lying in most current one-stage
+    detectors via label assignment disentanglement, spatial feature
+    disentanglement, and pyramid supervision disentanglement.
 
     https://arxiv.org/abs/2107.02963
-    
+
     Args:
         num_classes (int): Number of categories excluding the background category.
         in_channels (int): Number of channels in the input feature map.
-        stacked_convs (dict): the number of stacked convs
-        conv_cfg (dict): conv config of ddod head.
-        norm_cfg (dict): normal config of ddod head.
-        loss_iou (dict): Config of iou loss.
+        stacked_convs (dict): the number of stacked convs. Default 4.
+        conv_cfg (dict): conv config of ddod head. Default None.
+        norm_cfg (dict): normal config of ddod head. Default dict(type='GN', num_groups=32, requires_grad=True).
+        loss_iou (dict): Config of iou loss. Default dict(type='CrossEntropyLoss',
+                                                          use_sigmoid=True,
+                                                          loss_weight=1.0),
+                                                          **kwargs).
     """
 
     def __init__(self,
@@ -69,7 +73,8 @@ class DDODHead(AnchorHead):
                     3,
                     stride=1,
                     padding=1,
-                    conv_cfg=self.conv_cfg if i != 0 else dict(type='DCN', deform_groups=1),
+                    conv_cfg=self.conv_cfg if i != 0 else dict(
+                        type='DCN', deform_groups=1),
                     norm_cfg=self.norm_cfg))
             self.reg_convs.append(
                 ConvModule(
@@ -78,7 +83,8 @@ class DDODHead(AnchorHead):
                     3,
                     stride=1,
                     padding=1,
-                    conv_cfg=self.conv_cfg if i != 0 else dict(type='DCN', deform_groups=1),
+                    conv_cfg=self.conv_cfg if i != 0 else dict(
+                        type='DCN', deform_groups=1),
                     norm_cfg=self.norm_cfg))
         self.atss_cls = nn.Conv2d(
             self.feat_channels,
@@ -153,7 +159,8 @@ class DDODHead(AnchorHead):
         return cls_score, bbox_pred, iou_pred
 
     def loss_single(self, anchors, cls_score, bbox_pred, iou_pred, labels,
-                    label_weights, bbox_targets, bbox_weights, reweight_factor, num_total_samples):
+                    label_weights, bbox_targets, bbox_weights, reweight_factor,
+                    num_total_samples):
         """Compute loss of a single scale level.
 
         Args:
@@ -180,7 +187,7 @@ class DDODHead(AnchorHead):
         cls_score = cls_score.permute(0, 2, 3, 1).reshape(
             -1, self.cls_out_channels).contiguous()
         bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
-        iou_pred = iou_pred.permute(0, 2, 3, 1).reshape(-1,)
+        iou_pred = iou_pred.permute(0, 2, 3, 1).reshape(-1, )
         bbox_targets = bbox_targets.reshape(-1, 4)
         bbox_weights = bbox_weights.reshape(-1, 4)
         labels = labels.reshape(-1)
@@ -208,18 +215,22 @@ class DDODHead(AnchorHead):
                 pos_anchors, pos_bbox_pred)
             pos_decode_bbox_targets = self.bbox_coder.decode(
                 pos_anchors, pos_bbox_targets)
- 
+
             # regression loss
             loss_bbox = self.loss_bbox(
                 pos_decode_bbox_pred,
                 pos_decode_bbox_targets,
                 avg_factor=num_total_samples)
-            
+
             iou_targets[pos_inds] = bbox_overlaps(
-                pos_decode_bbox_pred.detach(), pos_decode_bbox_targets, is_aligned=True)
+                pos_decode_bbox_pred.detach(),
+                pos_decode_bbox_targets,
+                is_aligned=True)
             loss_iou = self.loss_iou(
-                iou_pred, iou_targets, iou_weights, avg_factor=num_total_samples
-            )
+                iou_pred,
+                iou_targets,
+                iou_weights,
+                avg_factor=num_total_samples)
 
         else:
             loss_bbox = bbox_pred.sum() * 0
@@ -228,15 +239,16 @@ class DDODHead(AnchorHead):
         return reweight_factor * loss_cls, reweight_factor * loss_bbox, reweight_factor * loss_iou
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'iou_preds'))
-    def loss(self,
-             cls_scores,
-             bbox_preds,
+    def loss(
+            self,
+            cls_scores,
+            bbox_preds,
             #  centernesses,
-             iou_preds,
-             gt_bboxes,
-             gt_labels,
-             img_metas,
-             gt_bboxes_ignore=None):
+            iou_preds,
+            gt_bboxes,
+            gt_labels,
+            img_metas,
+            gt_bboxes_ignore=None):
         """Compute losses of the head.
 
         Args:
@@ -291,7 +303,8 @@ class DDODHead(AnchorHead):
         bg_class_ind = self.num_classes
         for ii, each_level_label in enumerate(labels_list):
             pos_inds = ((each_level_label >= 0)
-                        & (each_level_label < bg_class_ind)).nonzero().squeeze(1)
+                        &
+                        (each_level_label < bg_class_ind)).nonzero().squeeze(1)
             # num_pos_samples_per_level.append(len(pos_inds))
             self.cls_num_pos_samples_per_level[ii] += len(pos_inds)
         # get reweight factor from 1 ~ 2 with bilinear interpolation
@@ -304,17 +317,17 @@ class DDODHead(AnchorHead):
             reweight_factor_per_level.append(factor)
 
         cls_losses_cls, cls_losses_bbox, cls_losses_iou = multi_apply(
-                self.loss_single,
-                anchor_list,
-                cls_scores,
-                bbox_preds,
-                iou_preds,
-                labels_list,
-                label_weights_list,
-                bbox_targets_list,
-                bbox_weights_list,
-                reweight_factor_per_level,
-                num_total_samples=num_total_samples)
+            self.loss_single,
+            anchor_list,
+            cls_scores,
+            bbox_preds,
+            iou_preds,
+            labels_list,
+            label_weights_list,
+            bbox_targets_list,
+            bbox_weights_list,
+            reweight_factor_per_level,
+            num_total_samples=num_total_samples)
 
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_metas, device=device)
@@ -344,7 +357,8 @@ class DDODHead(AnchorHead):
         bg_class_ind = self.num_classes
         for ii, each_level_label in enumerate(labels_list):
             pos_inds = ((each_level_label >= 0)
-                        & (each_level_label < bg_class_ind)).nonzero().squeeze(1)
+                        &
+                        (each_level_label < bg_class_ind)).nonzero().squeeze(1)
             # num_pos_samples_per_level.append(len(pos_inds))
             self.reg_num_pos_samples_per_level[ii] += len(pos_inds)
         # get reweight factor from 1 ~ 2 with bilinear interpolation
@@ -357,24 +371,23 @@ class DDODHead(AnchorHead):
             reweight_factor_per_level.append(factor)
 
         reg_losses_cls, reg_losses_bbox, reg_losses_iou = multi_apply(
-                self.loss_single,
-                anchor_list,
-                cls_scores,
-                bbox_preds,
-                iou_preds,
-                labels_list,
-                label_weights_list,
-                bbox_targets_list,
-                bbox_weights_list,
-                reweight_factor_per_level,
-                num_total_samples=num_total_samples)
+            self.loss_single,
+            anchor_list,
+            cls_scores,
+            bbox_preds,
+            iou_preds,
+            labels_list,
+            label_weights_list,
+            bbox_targets_list,
+            bbox_weights_list,
+            reweight_factor_per_level,
+            num_total_samples=num_total_samples)
 
         return dict(
             loss_cls=cls_losses_cls,
             loss_bbox=reg_losses_bbox,
             loss_iou=reg_losses_iou)
 
-    
     def _get_bboxes_single(self,
                            cls_scores,
                            bbox_preds,
@@ -509,13 +522,18 @@ class DDODHead(AnchorHead):
         cls_score_list = []
         bbox_pred_list = []
         for i in range(num_imgs):
-            tmp_cls_list = []; tmp_bbox_list = []
+            tmp_cls_list = []
+            tmp_bbox_list = []
             for j in range(num_levels):
-                cls_score = cls_scores[j][i].permute(1, 2, 0).reshape(-1, self.cls_out_channels)
+                cls_score = cls_scores[j][i].permute(1, 2, 0).reshape(
+                    -1, self.cls_out_channels)
                 bbox_pred = bbox_preds[j][i].permute(1, 2, 0).reshape(-1, 4)
-                tmp_cls_list.append(cls_score); tmp_bbox_list.append(bbox_pred)
-            cat_cls_score = torch.cat(tmp_cls_list, dim=0); cat_bbox_pred = torch.cat(tmp_bbox_list, dim=0)
-            cls_score_list.append(cat_cls_score); bbox_pred_list.append(cat_bbox_pred)
+                tmp_cls_list.append(cls_score)
+                tmp_bbox_list.append(bbox_pred)
+            cat_cls_score = torch.cat(tmp_cls_list, dim=0)
+            cat_bbox_pred = torch.cat(tmp_bbox_list, dim=0)
+            cls_score_list.append(cat_cls_score)
+            bbox_pred_list.append(cat_bbox_pred)
 
         (all_anchors, all_labels, all_label_weights, all_bbox_targets,
          all_bbox_weights, pos_inds_list, neg_inds_list) = multi_apply(
@@ -615,11 +633,15 @@ class DDODHead(AnchorHead):
         assigner = self.assigner if is_cls else self.reg_assigner
         # decode prediction out of assigner
         bbox_preds_valid = self.bbox_coder.decode(anchors, bbox_preds_valid)
-        assign_result = assigner.assign(anchors, num_level_anchors_inside,
-                                            cls_scores_valid, bbox_preds_valid,
-                                            # self.bbox_coder,
-                                            gt_bboxes, gt_bboxes_ignore,
-                                            gt_labels)
+        assign_result = assigner.assign(
+            anchors,
+            num_level_anchors_inside,
+            cls_scores_valid,
+            bbox_preds_valid,
+            # self.bbox_coder,
+            gt_bboxes,
+            gt_bboxes_ignore,
+            gt_labels)
         sampling_result = self.sampler.sample(assign_result, anchors,
                                               gt_bboxes)
 

@@ -22,6 +22,85 @@ def test_bbox_overlaps_2d(eps=1e-7):
         bboxes[:, 1::2] *= img_h
         return bboxes, num_bbox
 
+    # test mode 'diou'
+    # is_aligned is True, bboxes.size(-1) == 5 (include score)
+    self = BboxOverlaps2D()
+    bboxes1, num_bbox = _construct_bbox()
+    bboxes2, _ = _construct_bbox(num_bbox)
+    bboxes1 = torch.cat((bboxes1, torch.rand((num_bbox, 1))), 1)
+    bboxes2 = torch.cat((bboxes2, torch.rand((num_bbox, 1))), 1)
+    dious = self(bboxes1, bboxes2, 'diou', True)
+    assert dious.size() == (num_bbox, ), dious.size()
+    assert torch.all(dious >= -1) and torch.all(dious <= 1)
+
+    # is_aligned is True, bboxes1.size(-2) == 0
+    bboxes1 = torch.empty((0, 4))
+    bboxes2 = torch.empty((0, 4))
+    dious = self(bboxes1, bboxes2, 'diou', True)
+    assert dious.size() == (0, ), dious.size()
+    assert torch.all(dious == torch.empty((0, )))
+    assert torch.all(dious >= -1) and torch.all(dious <= 1)
+
+    # is_aligned is True, and bboxes.ndims > 2
+    bboxes1, num_bbox = _construct_bbox()
+    bboxes2, _ = _construct_bbox(num_bbox)
+    bboxes1 = bboxes1.unsqueeze(0).repeat(2, 1, 1)
+    # test assertion when batch dim is not the same
+    with pytest.raises(AssertionError):
+        self(bboxes1, bboxes2.unsqueeze(0).repeat(3, 1, 1), 'diou', True)
+    bboxes2 = bboxes2.unsqueeze(0).repeat(2, 1, 1)
+    dious = self(bboxes1, bboxes2, 'diou', True)
+    assert torch.all(dious >= -1) and torch.all(dious <= 1)
+    assert dious.size() == (2, num_bbox)
+    bboxes1 = bboxes1.unsqueeze(0).repeat(2, 1, 1, 1)
+    bboxes2 = bboxes2.unsqueeze(0).repeat(2, 1, 1, 1)
+    dious = self(bboxes1, bboxes2, 'diou', True)
+    assert torch.all(dious >= -1) and torch.all(dious <= 1)
+    assert dious.size() == (2, 2, num_bbox)
+
+    # is_aligned is False
+    bboxes1, num_bbox1 = _construct_bbox()
+    bboxes2, num_bbox2 = _construct_bbox()
+    dious = self(bboxes1, bboxes2, 'diou')
+    assert torch.all(dious >= -1) and torch.all(dious <= 1)
+    assert dious.size() == (num_bbox1, num_bbox2)
+
+    # is_aligned is False, and bboxes.ndims > 2
+    bboxes1 = bboxes1.unsqueeze(0).repeat(2, 1, 1)
+    bboxes2 = bboxes2.unsqueeze(0).repeat(2, 1, 1)
+    dious = self(bboxes1, bboxes2, 'diou')
+    assert torch.all(dious >= -1) and torch.all(dious <= 1)
+    assert dious.size() == (2, num_bbox1, num_bbox2)
+    bboxes1 = bboxes1.unsqueeze(0)
+    bboxes2 = bboxes2.unsqueeze(0)
+    dious = self(bboxes1, bboxes2, 'diou')
+    assert torch.all(dious >= -1) and torch.all(dious <= 1)
+    assert dious.size() == (1, 2, num_bbox1, num_bbox2)
+
+    # is_aligned is False, bboxes1.size(-2) == 0
+    dious = self(torch.empty(1, 2, 0, 4), bboxes2, 'diou')
+    assert torch.all(dious == torch.empty(1, 2, 0, bboxes2.size(-2)))
+    assert torch.all(dious >= -1) and torch.all(dious <= 1)
+
+    # test allclose between bbox_overlaps and the original official
+    # implementation.
+    bboxes1 = torch.FloatTensor([
+        [0, 0, 10, 10],
+        [10, 10, 20, 20],
+        [32, 32, 38, 42],
+    ])
+    bboxes2 = torch.FloatTensor([
+        [0, 0, 10, 20],
+        [0, 10, 10, 19],
+        [10, 10, 20, 20],
+    ])
+    dious = bbox_overlaps(bboxes1, bboxes2, 'diou', is_aligned=True, eps=eps)
+    dious = dious.numpy().round(4)
+    # the gt is got with four decimal precision.
+    expected_dious = np.array([0.5000, -0.0500, -0.8214])
+    assert np.allclose(dious, expected_dious, rtol=0, atol=eps)
+
+    # test mode 'giou'
     # is_aligned is True, bboxes.size(-1) == 5 (include score)
     self = BboxOverlaps2D()
     bboxes1, num_bbox = _construct_bbox()
