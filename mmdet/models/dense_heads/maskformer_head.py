@@ -28,24 +28,24 @@ class MaskFormerHead(AnchorFreeHead):
         num_things_classes (int): Number of things.
         num_stuff_classes (int): Number of stuff.
         num_queries (int): Number of query in Transformer.
-        pixel_decoder (obj:`mmcv.ConfigDict`|dict): Config for pixel decoder.
-            Defaults to None.
+        pixel_decoder (:obj:`mmcv.ConfigDict` | dict): Config for pixel
+            decoder. Defaults to None.
         enforce_decoder_input_project (bool, optional): Whether to add a layer
             to change the embed_dim of tranformer encoder in pixel decoder to
             the embed_dim of transformer decoder. Defaults to False.
-        transformer_decoder (obj:`mmcv.ConfigDict`|dict): Config for
+        transformer_decoder (:obj:`mmcv.ConfigDict` | dict): Config for
             transformer decoder. Defaults to None.
-        positional_encoding (obj:`mmcv.ConfigDict`|dict): Config for
+        positional_encoding (:obj:`mmcv.ConfigDict` | dict): Config for
             transformer decoder position encoding. Defaults to None.
-        loss_cls (obj:`mmcv.ConfigDict`|dict): Config of the classification
+        loss_cls (:obj:`mmcv.ConfigDict` | dict): Config of the classification
             loss. Defaults to `CrossEntropyLoss`.
-        loss_mask (obj:`mmcv.ConfigDict`|dict): Config of the mask loss.
+        loss_mask (:obj:`mmcv.ConfigDict` | dict): Config of the mask loss.
             Defaults to `FocalLoss`.
-        loss_dice (obj:`mmcv.ConfigDict`|dict): Config of the dice loss.
+        loss_dice (:obj:`mmcv.ConfigDict` | dict): Config of the dice loss.
             Defaults to `DiceLoss`.
-        train_cfg (obj:`mmcv.ConfigDict`|dict): Training config of Maskformer
-            head.
-        test_cfg (obj:`mmcv.ConfigDict`|dict): Testing config of Maskformer
+        train_cfg (:obj:`mmcv.ConfigDict` | dict): Training config of
+            Maskformer head.
+        test_cfg (:obj:`mmcv.ConfigDict` | dict): Testing config of Maskformer
             head.
         init_cfg (dict or list[dict], optional): Initialization config dict.
             Defaults to None.
@@ -177,12 +177,11 @@ class MaskFormerHead(AnchorFreeHead):
 
         Returns:
             tuple: a tuple containing the following targets.
-
-                - labels (list[Tensor]): Ground truth class indices for all\
-                    images. Each with shape (n, ), n is the sum of number\
-                    of stuff type and number of instance in a image.
-                - masks (list[Tensor]): Ground truth mask for each image, each\
-                    with shape (n, h, w).
+                - labels (list[Tensor]): Ground truth class indices\
+                    for all images. Each with shape (n, ), n is the sum of\
+                    number of stuff type and number of instance in a image.
+                - masks (list[Tensor]): Ground truth mask for each\
+                    image, each with shape (n, h, w).
         """
         num_things_list = [self.num_things_classes] * len(gt_labels_list)
         num_stuff_list = [self.num_stuff_classes] * len(gt_labels_list)
@@ -213,19 +212,18 @@ class MaskFormerHead(AnchorFreeHead):
 
         Returns:
             tuple[list[Tensor]]: a tuple containing the following targets.
-
                 - labels_list (list[Tensor]): Labels of all images.\
                     Each with shape (num_queries, ).
-                - label_weights_list (list[Tensor]): Label weights of all\
-                    images. Each with shape (num_queries, ).
-                - mask_targets_list (list[Tensor]): Mask targets of all\
-                    images. Each with shape (num_queries, h, w).
-                - mask_weights_list (list[Tensor]): Mask weights of all\
-                    images. Each with shape (num_queries, ).
-                - num_total_pos (int): Number of positive samples in all\
-                    images.
-                - num_total_neg (int): Number of negative samples in all\
-                    images.
+                - label_weights_list (list[Tensor]): Label weights\
+                    of all images. Each with shape (num_queries, ).
+                - mask_targets_list (list[Tensor]): Mask targets of\
+                    all images. Each with shape (num_queries, h, w).
+                - mask_weights_list (list[Tensor]): Mask weights of\
+                    all images. Each with shape (num_queries, ).
+                - num_total_pos (int): Number of positive samples in\
+                    all images.
+                - num_total_neg (int): Number of negative samples in\
+                    all images.
         """
         (labels_list, label_weights_list, mask_targets_list, mask_weights_list,
          pos_inds_list,
@@ -256,7 +254,6 @@ class MaskFormerHead(AnchorFreeHead):
 
         Returns:
             tuple[Tensor]: a tuple containing the following for one image.
-
                 - labels (Tensor): Labels of each image.
                     shape (num_queries, ).
                 - label_weights (Tensor): Label weights of each image.
@@ -444,13 +441,14 @@ class MaskFormerHead(AnchorFreeHead):
             img_metas (list[dict]): List of image information.
 
         Returns:
-            all_cls_scores (Tensor): Classification scores for each\
-                scale level. Each is a 4D-tensor with shape\
-                (num_decoder, batch_size, num_queries, cls_out_channels).\
-                Note `cls_out_channels` should includes background.
-            all_mask_preds (Tensor): Mask scores for each decoder\
-                layer. Each with shape (num_decoder, batch_size,\
-                num_queries, h, w).
+            tuple: a tuple contains two elements.
+                - all_cls_scores (Tensor): Classification scores for each\
+                    scale level. Each is a 4D-tensor with shape\
+                    (num_decoder, batch_size, num_queries, cls_out_channels).\
+                    Note `cls_out_channels` should includes background.
+                - all_mask_preds (Tensor): Mask scores for each decoder\
+                    layer. Each with shape (num_decoder, batch_size,\
+                    num_queries, h, w).
         """
         batch_size = len(img_metas)
         input_img_h, input_img_w = img_metas[0]['batch_input_shape']
@@ -528,7 +526,7 @@ class MaskFormerHead(AnchorFreeHead):
                 ignored. Defaults to None.
 
         Returns:
-            losses (dict[str, Tensor]): a dictionary of loss components
+            dict[str, Tensor]: a dictionary of loss components
         """
         # not consider ignoring bboxes
         assert gt_bboxes_ignore is None
@@ -607,8 +605,8 @@ class MaskFormerHead(AnchorFreeHead):
     def post_process(self, mask_cls, mask_pred):
         """Panoptic segmengation inference.
 
-        This implementation is modified from\
-            https://github.com/facebookresearch/MaskFormer
+        This implementation is modified from `MaskFormer
+        <https://github.com/facebookresearch/MaskFormer>`_.
 
         Args:
             mask_cls (Tensor): Classfication outputs for a image.
@@ -617,7 +615,7 @@ class MaskFormerHead(AnchorFreeHead):
                 shape = (num_queries, h, w).
 
         Returns:
-            panoptic_seg (Tensor): panoptic segment result of shape (h, w),\
+            Tensor: panoptic segment result of shape (h, w),\
                 each element in Tensor means:
                 segment_id = _cls + instance_id * INSTANCE_OFFSET.
         """

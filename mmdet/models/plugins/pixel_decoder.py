@@ -17,17 +17,17 @@ class PixelDecoder(BaseModule):
             input feature maps.
         feat_channels (int): Number channels for feature.
         out_channels (int): Number channels for output.
-        norm_cfg (obj:`mmcv.ConfigDict`|dict): Config for normalization.
+        norm_cfg (:obj:`mmcv.ConfigDict` | dict): Config for normalization.
             Defaults to dict(type='GN', num_groups=32).
-        act_cfg (obj:`mmcv.ConfigDict`|dict): Config for activation.
+        act_cfg (:obj:`mmcv.ConfigDict` | dict): Config for activation.
             Defaults to dict(type='ReLU').
-        encoder (obj:`mmcv.ConfigDict`|dict): Config for transorformer
+        encoder (:obj:`mmcv.ConfigDict` | dict): Config for transorformer
             encoder.Defaults to None.
-        positional_encoding (obj:`mmcv.ConfigDict`|dict): Config for
+        positional_encoding (:obj:`mmcv.ConfigDict` | dict): Config for
             transformer encoder position encoding. Defaults to
             dict(type='SinePositionalEncoding', num_feats=128,
             normalize=True).
-        init_cfg (obj:`mmcv.ConfigDict`|dict):  Initialization config dict.
+        init_cfg (:obj:`mmcv.ConfigDict` | dict):  Initialization config dict.
             Default: None
     """
 
@@ -95,10 +95,9 @@ class PixelDecoder(BaseModule):
 
         Returns:
             tuple: a tuple containing the following:
-
                 - mask_feature (Tensor): Shape (batch_size, c, h, w).
                 - memory (Tensor): Output of last stage of backbone.\
-                    Shape (batch_size, c, h, w).
+                        Shape (batch_size, c, h, w).
         """
         y = self.last_feat_conv(feats[-1])
         for i in range(self.num_inputs - 2, -1, -1):
@@ -122,17 +121,17 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
             input feature maps.
         feat_channels (int): Number channels for feature.
         out_channels (int): Number channels for output.
-        norm_cfg (obj:`mmcv.ConfigDict`|dict): Config for normalization.
+        norm_cfg (:obj:`mmcv.ConfigDict` | dict): Config for normalization.
             Defaults to dict(type='GN', num_groups=32).
-        act_cfg (obj:`mmcv.ConfigDict`|dict): Config for activation.
+        act_cfg (:obj:`mmcv.ConfigDict` | dict): Config for activation.
             Defaults to dict(type='ReLU').
-        encoder (obj:`mmcv.ConfigDict`|dict): Config for transorformer
+        encoder (:obj:`mmcv.ConfigDict` | dict): Config for transorformer
             encoder.Defaults to None.
-        positional_encoding (obj:`mmcv.ConfigDict`|dict): Config for
+        positional_encoding (:obj:`mmcv.ConfigDict` | dict): Config for
             transformer encoder position encoding. Defaults to
             dict(type='SinePositionalEncoding', num_feats=128,
             normalize=True).
-        init_cfg (obj:`mmcv.ConfigDict`|dict):  Initialization config dict.
+        init_cfg (:obj:`mmcv.ConfigDict` | dict):  Initialization config dict.
             Default: None
     """
 
@@ -200,7 +199,6 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
 
         Returns:
             tuple: a tuple containing the following:
-
                 - mask_feature (Tensor): shape (batch_size, c, h, w).
                 - memory (Tensor): shape (batch_size, c, h, w).
         """
