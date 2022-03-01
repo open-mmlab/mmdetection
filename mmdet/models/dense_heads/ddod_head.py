@@ -53,7 +53,6 @@ class DDODHead(AnchorHead):
             # SSD sampling=False so use PseudoSampler
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
-        # self.loss_centerness = build_loss(loss_centerness)
         self.loss_iou = build_loss(loss_iou)
 
     def _init_layers(self):
@@ -62,7 +61,6 @@ class DDODHead(AnchorHead):
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
-            # chn = self.in_channels if i == 0 else self.feat_channelsc
             chn = self.in_channels
             self.cls_convs.append(
                 ConvModule(
@@ -151,7 +149,6 @@ class DDODHead(AnchorHead):
         cls_score = self.atss_cls(cls_feat)
         # we just follow atss, not apply exp in bbox_pred
         bbox_pred = scale(self.atss_reg(reg_feat)).float()
-        # centerness = self.atss_centerness(reg_feat)
         iou_pred = self.atss_iou(reg_feat)
         return cls_score, bbox_pred, iou_pred
 
@@ -183,7 +180,6 @@ class DDODHead(AnchorHead):
         cls_score = cls_score.permute(0, 2, 3, 1).reshape(
             -1, self.cls_out_channels).contiguous()
         bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
-        # centerness = centerness.permute(0, 2, 3, 1).reshape(-1)
         iou_pred = iou_pred.permute(0, 2, 3, 1).reshape(-1,)
         bbox_targets = bbox_targets.reshape(-1, 4)
         bbox_weights = bbox_weights.reshape(-1, 4)
@@ -217,12 +213,10 @@ class DDODHead(AnchorHead):
             loss_bbox = self.loss_bbox(
                 pos_decode_bbox_pred,
                 pos_decode_bbox_targets,
-                # weight=centerness_targets,
                 avg_factor=num_total_samples)
             
             iou_targets[pos_inds] = bbox_overlaps(
                 pos_decode_bbox_pred.detach(), pos_decode_bbox_targets, is_aligned=True)
-            # print(iou_weights[pos_inds], iou_pred[pos_inds].sigmoid(), iou_targets[pos_inds])
             loss_iou = self.loss_iou(
                 iou_pred, iou_targets, iou_weights, avg_factor=num_total_samples
             )
@@ -315,7 +309,6 @@ class DDODHead(AnchorHead):
                 cls_scores,
                 bbox_preds,
                 iou_preds,
-                # centernesses,
                 labels_list,
                 label_weights_list,
                 bbox_targets_list,
@@ -369,7 +362,6 @@ class DDODHead(AnchorHead):
                 cls_scores,
                 bbox_preds,
                 iou_preds,
-                # centernesses,
                 labels_list,
                 label_weights_list,
                 bbox_targets_list,
@@ -382,79 +374,11 @@ class DDODHead(AnchorHead):
             loss_bbox=reg_losses_bbox,
             loss_iou=reg_losses_iou)
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'iou_preds'))
-    def get_bboxes(self,
-                   cls_scores,
-                   bbox_preds,
-                   iou_preds,
-                   img_metas,
-                   cfg=None,
-                   rescale=False,
-                   with_nms=True):
-        """Transform network output for a batch into bbox predictions.
-
-        Args:
-            cls_scores (list[Tensor]): Box scores for each scale level
-                with shape (N, num_anchors * num_classes, H, W).
-            bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (N, num_anchors * 4, H, W).
-            centernesses (list[Tensor]): Centerness for each scale level with
-                shape (N, num_anchors * 1, H, W).
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            cfg (mmcv.Config | None): Test / postprocessing configuration,
-                if None, test_cfg would be used. Default: None.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
-
-        Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where the first 4 columns \
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the \
-                5-th column is a score between 0 and 1. The second item is a \
-                (n,) tensor where each item is the predicted class label of the \
-                corresponding box.
-        """
-        cfg = self.test_cfg if cfg is None else cfg
-        assert len(cls_scores) == len(bbox_preds)
-        num_levels = len(cls_scores)
-        device = cls_scores[0].device
-        featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
-        mlvl_anchors = self.anchor_generator.grid_anchors(
-            featmap_sizes, device=device)
-
-        result_list = []
-        for img_id in range(len(img_metas)):
-            cls_score_list = [
-                cls_scores[i][img_id].detach() for i in range(num_levels)
-            ]
-            bbox_pred_list = [
-                bbox_preds[i][img_id].detach() for i in range(num_levels)
-            ]
-            iou_pred_list = [
-                iou_preds[i][img_id].detach() for i in range(num_levels)
-            ]
-            # centerness_pred_list = [
-            #     centernesses[i][img_id].detach() for i in range(num_levels)
-            # ]
-            img_shape = img_metas[img_id]['img_shape']
-            scale_factor = img_metas[img_id]['scale_factor']
-            proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
-                                                iou_pred_list,
-                                                # centerness_pred_list,
-                                                mlvl_anchors, img_shape,
-                                                scale_factor, cfg, rescale,
-                                                with_nms)
-            result_list.append(proposals)
-        return result_list
-
+    
     def _get_bboxes_single(self,
                            cls_scores,
                            bbox_preds,
                            iou_preds,
-                        #    centernesses,
                            mlvl_anchors,
                            img_shape,
                            scale_factor,
@@ -495,7 +419,6 @@ class DDODHead(AnchorHead):
         assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
         mlvl_bboxes = []
         mlvl_scores = []
-        # mlvl_centerness = []
         mlvl_ious = []
         for cls_score, bbox_pred, iou_pred, anchors in zip(
                 cls_scores, bbox_preds, iou_preds, mlvl_anchors):
@@ -505,25 +428,21 @@ class DDODHead(AnchorHead):
                 -1, self.cls_out_channels).sigmoid()
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             iou_pred = iou_pred.permute(1, 2, 0).reshape(-1).sigmoid()
-            # centerness = centerness.permute(1, 2, 0).reshape(-1).sigmoid()
 
             nms_pre = cfg.get('nms_pre', -1)
             if nms_pre > 0 and scores.shape[0] > nms_pre:
-                # max_scores, _ = (scores * centerness[:, None]).max(dim=1)
                 max_scores, _ = scores.max(dim=1)
                 _, topk_inds = max_scores.topk(nms_pre)
                 anchors = anchors[topk_inds, :]
                 bbox_pred = bbox_pred[topk_inds, :]
                 scores = scores[topk_inds, :]
                 iou_pred = iou_pred[topk_inds]
-                # centerness = centerness[topk_inds]
 
             bboxes = self.bbox_coder.decode(
                 anchors, bbox_pred, max_shape=img_shape)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
             mlvl_ious.append(iou_pred)
-            # mlvl_centerness.append(centerness)
 
         mlvl_bboxes = torch.cat(mlvl_bboxes)
         if rescale:
@@ -534,7 +453,6 @@ class DDODHead(AnchorHead):
         # BG cat_id: num_class
         padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
         mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
-        # mlvl_centerness = torch.cat(mlvl_centerness)
         mlvl_ious = torch.cat(mlvl_ious)
 
         if with_nms:
@@ -545,7 +463,6 @@ class DDODHead(AnchorHead):
                 cfg.nms,
                 cfg.max_per_img,
                 score_factors=mlvl_ious)
-                # score_factors=mlvl_centerness)
             return det_bboxes, det_labels
         else:
             return mlvl_bboxes, mlvl_scores

@@ -177,10 +177,19 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
         >>>     [0, 10, 10, 19],
         >>>     [10, 10, 20, 20],
         >>> ])
-        >>> overlaps = bbox_overlaps(bboxes1, bboxes2)
-        >>> assert overlaps.shape == (3, 3)
-        >>> overlaps = bbox_overlaps(bboxes1, bboxes2, is_aligned=True)
-        >>> assert overlaps.shape == (3, )
+        >>> bbox_overlaps(bboxes1, bboxes2)
+        tensor([[0.5000, 0.0000, 0.0000],
+                [0.0000, 0.0000, 1.0000],
+                [0.0000, 0.0000, 0.0000]])
+        >>> bbox_overlaps(bboxes1, bboxes2, mode='giou')
+        tensor([[ 0.5000,  0.0000, -0.5000],
+                [-0.2500, -0.0500,  1.0000],
+                [-0.8371, -0.8766, -0.8214]])
+        >>> bbox_overlaps(bboxes1, bboxes2, mode='diou')
+        tensor([[0.5500, 1.2175, 2.1050],
+                [1.0312, 1.2005, 3.7533],
+                [1.0078, 1.0406, 1.4889]])
+
 
     Example:
         >>> empty = torch.empty(0, 4)
