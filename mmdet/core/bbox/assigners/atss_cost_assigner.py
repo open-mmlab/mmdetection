@@ -74,20 +74,10 @@ class ATSSCostAssigner(BaseAssigner):
         Returns:
             :obj:`AssignResult`: The assign result.
         """
-        print(
-            'bboxes: {},\n num_level_bboxes: {},\n cls_scores: {},\n bbox_preds: {},\n gt_bboxes: {} \n'
-            .format(bboxes, num_level_bboxes, cls_scores, bbox_preds,
-                    gt_bboxes))
-        print(
-            'bboxes:{},\nnum_level_bboxes:{},\ncls_scores:{},\nbbox_preds:{},\ngt_bboxes:{}\n'
-            .format(bboxes.shape, len(num_level_bboxes), cls_scores.shape,
-                    bbox_preds.shape, gt_bboxes.shape))
         INF = 100000000
         # NOTE first convert anchor to prediction bbox
         bboxes = bboxes[:, :4]  # anchor bbox
 
-        bbox_preds = bbox_preds.detach()
-        cls_scores = cls_scores.detach()
         num_gt, num_bboxes = gt_bboxes.size(0), bboxes.size(0)
 
         # NOTE DeFCN style cost function
@@ -97,9 +87,6 @@ class ATSSCostAssigner(BaseAssigner):
         cls_cost = torch.sigmoid(cls_scores[:, :])
 
         # make sure that we are in element-wise multiplication
-        print('cls_cost: {}, overlaps: {} '.format(cls_cost, overlaps))
-        print('cls_cost.shape: {}, overlaps.shape: {} '.format(
-            cls_cost.shape, overlaps.shape))
         assert cls_cost.shape == overlaps.shape
 
         # overlaps is actually is a cost matrix
@@ -155,10 +142,6 @@ class ATSSCostAssigner(BaseAssigner):
             end_idx = start_idx + bboxes_per_level
             distances_per_level = distances[start_idx:end_idx, :]
             selectable_k = min(self.topk, bboxes_per_level)
-
-            print(
-                'selectable_k: {}, \n distances: {} \n, distances_per_level: {}'
-                .format(selectable_k, distances, distances_per_level))
 
             _, topk_idxs_per_level = distances_per_level.topk(
                 selectable_k, dim=0, largest=False)
