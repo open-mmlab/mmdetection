@@ -11,7 +11,7 @@ from .base_assigner import BaseAssigner
 class ATSSCostAssigner(BaseAssigner):
     """Assign a corresponding gt bbox or background to each bbox.
 
-    ATSSCostAssigner is similar with ATSSAssigner, however ATSSCostAssigner
+    ATSSCostAssigner is similar with ATSSAssigner, except that xxx uses a parameter ATSSCostAssigner
     use a parameter as a cost rate to distinguish each proposals apparently.
 
     Each proposals will be assigned with `0` or a positive integer
