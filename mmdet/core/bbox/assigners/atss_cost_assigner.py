@@ -11,8 +11,8 @@ from .base_assigner import BaseAssigner
 class ATSSCostAssigner(BaseAssigner):
     """Assign a corresponding gt bbox or background to each bbox.
 
-    ATSSCostAssigner is similar with ATSSAssigner, except that xxx uses a parameter ATSSCostAssigner
-    use a parameter as a cost rate to distinguish each proposals apparently.
+    ATSSCostAssigner is similar with ATSSAssigner, except that ATSSCostAssigner
+    uses a parameter as a cost rate to distinguish each proposals apparently.
 
     Each proposals will be assigned with `0` or a positive integer
     indicating the ground truth index.
@@ -66,6 +66,8 @@ class ATSSCostAssigner(BaseAssigner):
         Args:
             bboxes (Tensor): Bounding boxes to be assigned, shape(n, 4).
             num_level_bboxes (List): num of bboxes in each level
+            cls_scores (Tensor): Class scores, shape(n, 4).
+            bbox_preds (Tensor): Bounding boxes which are predicted, shape(n, 4).
             gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
             gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
                 labelled as `ignored`, e.g., crowd boxes in COCO.
@@ -84,12 +86,12 @@ class ATSSCostAssigner(BaseAssigner):
         # compute iou between all bbox and gt
         overlaps = self.iou_calculator(bbox_preds, gt_bboxes)
         # compute cls cost for bbox and GT
-        cls_cost = torch.sigmoid(cls_scores[:, :])
+        cls_cost = torch.sigmoid(cls_scores)
 
         # make sure that we are in element-wise multiplication
         assert cls_cost.shape == overlaps.shape
 
-        # overlaps is actually is a cost matrix
+        # overlaps is actually a cost matrix
         overlaps = cls_cost**(1 - self.alpha) * overlaps**self.alpha
 
         # assign 0 by default
@@ -102,7 +104,7 @@ class ATSSCostAssigner(BaseAssigner):
             max_overlaps = overlaps.new_zeros((num_bboxes, ))
             if num_gt == 0:
                 # No truth, assign everything to background
-                assigned_gt_inds[:] = 0
+                pass
             if gt_labels is None:
                 assigned_labels = None
             else:
@@ -113,13 +115,13 @@ class ATSSCostAssigner(BaseAssigner):
                 num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
 
         # compute center distance between all bbox and gt
-        gt_cx = (gt_bboxes[:, 0] + gt_bboxes[:, 2]) / 2.0
-        gt_cy = (gt_bboxes[:, 1] + gt_bboxes[:, 3]) / 2.0
-        gt_points = torch.stack((gt_cx, gt_cy), dim=1)
+        gt_points = (gt_bboxes[:, :2] + gt_bboxes[:, 2:4]) / 2.0
+        gt_cx = gt_points[:, 0]
+        gt_cy = gt_points[:, 1]
 
-        bboxes_cx = (bboxes[:, 0] + bboxes[:, 2]) / 2.0
-        bboxes_cy = (bboxes[:, 1] + bboxes[:, 3]) / 2.0
-        bboxes_points = torch.stack((bboxes_cx, bboxes_cy), dim=1)
+        bboxes_points = (bboxes[:, :2] + bboxes[:, 2:4]) / 2.0
+        bboxes_cx = bboxes_points[:, 0]
+        bboxes_cy = bboxes_points[:, 1]
 
         distances = (bboxes_points[:, None, :] -
                      gt_points[None, :, :]).pow(2).sum(-1).sqrt()
