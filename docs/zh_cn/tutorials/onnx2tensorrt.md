@@ -42,14 +42,14 @@ python tools/deployment/onnx2tensorrt.py \
 
 所有参数的说明：
 
-- `config` : 模型配置文件的路径。
-- `model` : ONNX 模型文件的路径。
-- `--trt-file`: 输出 TensorRT 引擎文件的路径。如果未指定，它将被设置为 `tmp.trt` 。
-- `--input-img` : 用于追踪和转换的输入图像的路径。默认情况下，它将设置为 `demo/demo.jpg` 。
+- `config`: 模型配置文件的路径。
+- `model`: ONNX 模型文件的路径。
+- `--trt-file`: 输出 TensorRT 引擎文件的路径。如果未指定，它将被设置为 `tmp.trt`。
+- `--input-img`: 用于追踪和转换的输入图像的路径。默认情况下，它将设置为 `demo/demo.jpg`。
 - `--shape`: 模型输入的高度和宽度。如果未指定，它将设置为 `400 600`。
 - `--min-shape`: 模型输入的最小高度和宽度。如果未指定，它将被设置为与 `--shape` 相同。
 - `--max-shape`: 模型输入的最大高度和宽度。如果未指定，它将被设置为与 `--shape` 相同。
-- `--workspace-size` : 构建 TensorRT 引擎所需的 GPU 工作空间大小（以 GiB 为单位）。如果未指定，它将设置为 `1` GiB 。
+- `--workspace-size`: 构建 TensorRT 引擎所需的 GPU 工作空间大小（以 GiB 为单位）。如果未指定，它将设置为 `1` GiB。
 - `--show`: 确定是否显示模型的输出。如果未指定，它将设置为 `False`。
 - `--verify`: 确定是否在 ONNXRuntime 和 TensorRT 之间验证模型的正确性。如果未指定，它将设置为 `False`。
 - `--verbose`: 确定是否打印日志消息。它对调试很有用。如果未指定，它将设置为 `False`。
@@ -99,8 +99,8 @@ python tools/deployment/onnx2tensorrt.py \
 
 ## 提醒
 
-- 如果您在上面列出的模型中遇到任何问题，请创建 issue ，我们会尽快处理。对于未包含在列表中的模型，由于资源有限，我们可能无法在此提供太多帮助。请尝试深入挖掘并自行调试。
-- 由于此功能是实验性的，并且可能会快速更改，因此请始终尝试使用最新的 `mmcv` 和 `mmdetecion` 。
+- 如果您在上面列出的模型中遇到任何问题，请创建 issue，我们会尽快处理。对于未包含在列表中的模型，由于资源有限，我们可能无法在此提供太多帮助。请尝试深入挖掘并自行调试。
+- 由于此功能是实验性的，并且可能会快速更改，因此请始终尝试使用最新的 `mmcv` 和 `mmdetecion`。
 
 ## 常见问题
 
