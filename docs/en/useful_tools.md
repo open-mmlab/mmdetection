@@ -10,7 +10,7 @@ Apart from training/testing scripts, We provide lots of useful tools under the
 python tools/analysis_tools/analyze_logs.py plot_curve [--keys ${KEYS}] [--title ${TITLE}] [--legend ${LEGEND}] [--backend ${BACKEND}] [--style ${STYLE}] [--out ${OUT_FILE}]
  ```
 
-![loss curve image](../resources/loss_curve.png)
+![loss curve image](../../resources/loss_curve.png)
 
 Examples:
 
