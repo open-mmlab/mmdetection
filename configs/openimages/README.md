@@ -1,6 +1,9 @@
 # Open Images Dataset
-<!-- [DATASET] -->
 
+> [Open Images Dataset](https://arxiv.org/abs/1811.00982)
+
+<!-- [DATASET] -->
+<!-- [ALGORITHM] -->
 ## Abstract
 
 <!-- [ABSTRACT] -->
@@ -120,6 +123,15 @@ users can should set `data.val.load_image_level_labels=False` and `data.test.loa
 | Architecture | Backbone  | Style   | Lr schd | Sampler | Mem (GB) | Inf time (fps) | box AP | Config | Download |
 |:------------:|:---------:|:-------:|:-------:|:-------:|:--------:|:--------------:|:------:|:------:|:--------:|
 | Faster R-CNN | R-50      | pytorch | 1x      |     Group Sampler    |  7.7   | -          | 51.6 |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_20211130_231159-e87ab7ce.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_20211130_231159.log.json) |
-| Faster R-CNN (Challenge 2019) | R-50  | pytorch | 1x |   Group Sampler  |  7.7  | -          | 54.5 |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge_20211229_071252-46380cde.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge_20211229_071252.log.json) |
+| Faster R-CNN (Challenge 2019) | R-50  | pytorch | 1x |   Group Sampler  |  7.7  | -          | 54.9 |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge_20220114_045100-0e79e5df.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge_20220114_045100.log.json) |
+| Faster R-CNN (Challenge 2019) | R-50  | pytorch | 1x |   Class Aware Sampler  |  7.1  | -          | 65.0 |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/faster_rcnn_r50_fpn_32x2_cas_1x_openimages_challenge.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/openimages/faster_rcnn_r50_fpn_32x2_cas_1x_openimages_challenge/faster_rcnn_r50_fpn_32x2_cas_1x_openimages_challenge_20220221_192021-34c402d9.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/openimages/faster_rcnn_r50_fpn_32x2_cas_1x_openimages_challenge/faster_rcnn_r50_fpn_32x2_cas_1x_openimages_challenge_20220221_192021.log.json) |
 | Retinanet    | R-50      | pytorch | 1x      |    Group Sampler     |  6.6   | -          | 61.5 |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/retinanet_r50_fpn_32x2_1x_openimages.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/openimages/retinanet_r50_fpn_32x2_1x_openimages/retinanet_r50_fpn_32x2_1x_openimages_20211223_071954-d2ae5462.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/openimages/retinanet_r50_fpn_32x2_1x_openimages/retinanet_r50_fpn_32x2_1x_openimages_20211223_071954.log.json) |
 | SSD          | VGG16     | pytorch | 36e     |    Group Sampler     |  10.8  | -          | 35.4 |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/ssd300_32x8_36e_openimages.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/openimages/ssd300_32x8_36e_openimages/ssd300_32x8_36e_openimages_20211224_000232-dce93846.pth) &#124; [log](ttps://download.openmmlab.com/mmdetection/v2.0/openimages/ssd300_32x8_36e_openimages/ssd300_32x8_36e_openimages_20211224_000232.log.json) |
+
+### Results of consider image level labels
+| Architecture | Sampler | Consider Image Level Labels | box AP|
+|:------------:|:-------:|:---------------------------:|:-----:|
+|Faster R-CNN r50 (Challenge 2019)| Group Sampler| w/o | 62.19 |
+|Faster R-CNN r50 (Challenge 2019)| Group Sampler| w/ | 54.87 |
+|Faster R-CNN r50 (Challenge 2019)| Class Aware Sampler| w/o | 71.77 |
+|Faster R-CNN r50 (Challenge 2019)| Class Aware Sampler| w/ | 64.98 |
