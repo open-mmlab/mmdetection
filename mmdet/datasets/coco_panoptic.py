@@ -140,6 +140,28 @@ class CocoPanopticDataset(CocoDataset):
             },
             ...
         ]
+
+    Args:
+        ann_file (str): Annotation file path.
+        pipeline (list[dict]): Processing pipeline.
+        classes (str | Sequence[str], optional): Specify classes to load.
+            If is None, ``cls.CLASSES`` will be used. Default: None.
+        data_root (str, optional): Data root for ``ann_file``,
+            ``img_prefix``, ``seg_prefix``, ``proposal_file`` if specified.
+        img_prefix (str): Path prefix for images. Defaults to ''.
+        seg_prefix (str, optional): Path prefix for segmentation annotations.
+            Defaults to None.
+        proposal_file (str, optional): Path to proposal file. Defaults to None.
+        test_mode (bool, optional): If set True, annotation will not be loaded.
+        filter_empty_gt (bool, optional): If set true, images without bounding
+            boxes of the dataset's classes will be filtered out. This option
+            only works when `test_mode=False`, i.e., we never filter images
+            during tests.
+        file_client_args (dict): Arguments to instantiate a FileClient.
+            See :class:`mmcv.fileio.FileClient` for details.
+            Defaults to ``dict(backend='disk')``.
+        cpu_num (int): Number of cpus for panoptic quality computing.
+            Defaults to -1, which means use all cpus.
     """
     CLASSES = [
         'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
@@ -232,6 +254,24 @@ class CocoPanopticDataset(CocoDataset):
                (96, 96, 96), (64, 170, 64), (152, 251, 152), (208, 229, 228),
                (206, 186, 171), (152, 161, 64), (116, 112, 0), (0, 114, 143),
                (102, 102, 156), (250, 141, 255)]
+
+    def __init__(self,
+                 ann_file,
+                 pipeline,
+                 classes=None,
+                 data_root=None,
+                 img_prefix='',
+                 seg_prefix=None,
+                 proposal_file=None,
+                 test_mode=False,
+                 filter_empty_gt=True,
+                 file_client_args=dict(backend='disk'),
+                 cpu_num=-1):
+        super(CocoDataset,
+              self).__init__(ann_file, pipeline, classes, data_root,
+                             img_prefix, seg_prefix, proposal_file, test_mode,
+                             filter_empty_gt, file_client_args)
+        self.cpu_num = cpu_num
 
     def load_annotations(self, ann_file):
         """Load annotation from COCO Panoptic style annotation file.
@@ -453,7 +493,7 @@ class CocoPanopticDataset(CocoDataset):
 
         pq_stat = pq_compute_multi_core(matched_annotations_list, gt_folder,
                                         pred_folder, self.categories,
-                                        self.file_client)
+                                        self.file_client, self.cpu_num)
 
         metrics = [('All', None), ('Things', True), ('Stuff', False)]
         pq_results = {}

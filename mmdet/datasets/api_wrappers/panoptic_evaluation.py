@@ -170,7 +170,8 @@ def pq_compute_multi_core(matched_annotations_list,
                           gt_folder,
                           pred_folder,
                           categories,
-                          file_client=None):
+                          file_client=None,
+                          cpu_num=-1):
     """Evaluate the metrics of Panoptic Segmentation with multithreading.
 
     Same as the function with the same name in `panopticapi`.
@@ -184,6 +185,8 @@ def pq_compute_multi_core(matched_annotations_list,
         categories (str): The categories of the dataset.
         file_client (object): The file client of the dataset. If None,
             the backend will be set to `disk`.
+        cpu_num (int): Number of cpus for panoptic quality computing.
+            Default to -1, which means use all cpus.
     """
     if PQStat is None:
         raise RuntimeError(
@@ -195,7 +198,11 @@ def pq_compute_multi_core(matched_annotations_list,
         file_client_args = dict(backend='disk')
         file_client = mmcv.FileClient(**file_client_args)
 
-    cpu_num = multiprocessing.cpu_count()
+    if cpu_num == -1:
+        cpu_num = multiprocessing.cpu_count()
+    elif cpu_num <= 0:
+        raise ValueError('cpu_num = %d, which is invalided' % cpu_num)
+
     annotations_split = np.array_split(matched_annotations_list, cpu_num)
     print('Number of cores: {}, images per core: {}'.format(
         cpu_num, len(annotations_split[0])))
