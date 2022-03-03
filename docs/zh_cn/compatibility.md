@@ -1,5 +1,10 @@
 # MMDetection v2.x 兼容性说明
 
+## MMDection 2.21.0
+
+为了支持 CPU 训练，MMCV 中进行批处理的 scatter 的代码逻辑已经被修改。我们推荐使用 MMCV v1.4.4 或更高版本，
+更多信息请参考 [MMCV PR #1621](https://github.com/open-mmlab/mmcv/pull/1621).
+
 ## MMDetection 2.18.1
 
 ### MMCV compatibility

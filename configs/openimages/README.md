@@ -66,7 +66,7 @@ often contain complex scenes with several objects (explore the dataset).
 
 1. You need to download and extract Open Images dataset.
 
-2. The Open Images dataset do not have image metas (width and height of the image),
+2. The Open Images dataset does not have image metas (width and height of the image),
 which will be used during evaluation. We suggest to get test image metas before
 training/testing by using `tools/misc/get_image_metas.py`.
 
@@ -110,16 +110,16 @@ training/testing by using `tools/misc/get_image_metas.py`.
 Open Images v6, but the test images are different.
 2. The Open Images Challenges annotations are obtained from [TSD](https://github.com/Sense-X/TSD).
 You can also download the annotations from [official website](https://storage.googleapis.com/openimages/web/challenge2019_downloads.html),
-and use `OpenImagesDataset` type to train/test.
-3. If do not want to use `validation-annotations-human-imagelabels-boxable.csv` and `challenge-2019-validation-detection-human-imagelabels.csv`
-it should set `load_image_level_labels` to `False`.
+and set data.train.type=OpenImagesDataset, data.val.type=OpenImagesDataset, and data.test.type=OpenImagesDataset in the config
+3. If users do not want to use `validation-annotations-human-imagelabels-boxable.csv` and `challenge-2019-validation-detection-human-imagelabels.csv`
+users can should set `data.val.load_image_level_labels=False` and `data.test.load_image_level_labels=False` in the config .
 
 
 ## Results and Models
 
-| Architecture | Backbone  | Style   | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
-|:------------:|:---------:|:-------:|:-------:|:--------:|:--------------:|:------:|:------:|:--------:|
-| Faster R-CNN | R-50      | pytorch | 1x      |   7.7   | -          | 51.6 |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_20211130_231159-e87ab7ce.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_20211130_231159.log.json) |
-| Faster R-CNN (Challenge 2019) | R-50      | pytorch | 1x      |  7.7  | -          | 54.5 |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge_20211229_071252-46380cde.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge_20211229_071252.log.json) |
-| Retinanet    | R-50      | pytorch | 1x      |  6.6  | -          | 61.5 |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/retinanet_r50_fpn_32x2_1x_openimages.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/openimages/retinanet_r50_fpn_32x2_1x_openimages/retinanet_r50_fpn_32x2_1x_openimages_20211223_071954-d2ae5462.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/openimages/retinanet_r50_fpn_32x2_1x_openimages/retinanet_r50_fpn_32x2_1x_openimages_20211223_071954.log.json) |
-| SSD          | VGG16     | pytorch | 36e      |  10.8  | -          | 35.4 |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/ssd300_32x8_36e_openimages.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/openimages/ssd300_32x8_36e_openimages/ssd300_32x8_36e_openimages_20211224_000232-dce93846.pth) &#124; [log](ttps://download.openmmlab.com/mmdetection/v2.0/openimages/ssd300_32x8_36e_openimages/ssd300_32x8_36e_openimages_20211224_000232.log.json) |
+| Architecture | Backbone  | Style   | Lr schd | Sampler | Mem (GB) | Inf time (fps) | box AP | Config | Download |
+|:------------:|:---------:|:-------:|:-------:|:-------:|:--------:|:--------------:|:------:|:------:|:--------:|
+| Faster R-CNN | R-50      | pytorch | 1x      |     Group Sampler    |  7.7   | -          | 51.6 |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_20211130_231159-e87ab7ce.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_20211130_231159.log.json) |
+| Faster R-CNN (Challenge 2019) | R-50  | pytorch | 1x |   Group Sampler  |  7.7  | -          | 54.5 |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge_20211229_071252-46380cde.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge_20211229_071252.log.json) |
+| Retinanet    | R-50      | pytorch | 1x      |    Group Sampler     |  6.6   | -          | 61.5 |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/retinanet_r50_fpn_32x2_1x_openimages.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/openimages/retinanet_r50_fpn_32x2_1x_openimages/retinanet_r50_fpn_32x2_1x_openimages_20211223_071954-d2ae5462.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/openimages/retinanet_r50_fpn_32x2_1x_openimages/retinanet_r50_fpn_32x2_1x_openimages_20211223_071954.log.json) |
+| SSD          | VGG16     | pytorch | 36e     |    Group Sampler     |  10.8  | -          | 35.4 |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/ssd300_32x8_36e_openimages.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/openimages/ssd300_32x8_36e_openimages/ssd300_32x8_36e_openimages_20211224_000232-dce93846.pth) &#124; [log](ttps://download.openmmlab.com/mmdetection/v2.0/openimages/ssd300_32x8_36e_openimages/ssd300_32x8_36e_openimages_20211224_000232.log.json) |
