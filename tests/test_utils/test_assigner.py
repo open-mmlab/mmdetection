@@ -638,3 +638,10 @@ def atss_cost_assigner():
                                 bbox_preds, gt_bboxes)
     assert assign_result.num_gts == 2
     assert len(assign_result.gt_inds) == 4
+    # test empty gt
+    cls_scores = torch.empty(0, 0)
+    bbox_preds = torch.empty(0, 4)
+    gt_bboxes = torch.empty(0, 4)
+    assign_result = self.assign(bboxes, num_level_bboxes, cls_scores,
+                                bbox_preds, gt_bboxes)
+    assert len(assign_result.gt_inds) == 4

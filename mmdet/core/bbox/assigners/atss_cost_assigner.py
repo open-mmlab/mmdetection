@@ -21,7 +21,7 @@ class ATSSCostAssigner(BaseAssigner):
     - positive integer: positive sample, index (1-based) of assigned gt
 
     Args:
-        topk (float): number of bbox selected in each level.
+        topk (int): number of bbox selected in each level.
         alpha (float): param of cost rate for each proposal. Default 0.8.
         iou_calculator (dict): builder of IoU calculator. Default dict(type='BboxOverlaps2D').
         ignore_iof_thr (int): whether ignore max overlaps or not. Default -1 (1 or -1).
@@ -116,8 +116,6 @@ class ATSSCostAssigner(BaseAssigner):
 
         # compute center distance between all bbox and gt
         gt_points = (gt_bboxes[:, :2] + gt_bboxes[:, 2:4]) / 2.0
-        gt_cx = gt_points[:, 0]
-        gt_cy = gt_points[:, 1]
 
         bboxes_points = (bboxes[:, :2] + bboxes[:, 2:4]) / 2.0
         bboxes_cx = bboxes_points[:, 0]
@@ -163,19 +161,16 @@ class ATSSCostAssigner(BaseAssigner):
         # limit the positive sample's center in gt
         for gt_idx in range(num_gt):
             candidate_idxs[:, gt_idx] += gt_idx * num_bboxes
-        ep_bboxes_cx = bboxes_cx.view(1, -1).expand(
-            num_gt, num_bboxes).contiguous().view(-1)
-        ep_bboxes_cy = bboxes_cy.view(1, -1).expand(
-            num_gt, num_bboxes).contiguous().view(-1)
+        ep_bboxes_center = bboxes_points.view(1, -1, 2).\
+            expand(num_gt, num_bboxes, 2).contiguous().view(-1, 2)
+
         candidate_idxs = candidate_idxs.view(-1)
 
         # calculate the left, top, right, bottom distance between positive
         # bbox center and gt side
-        l_ = ep_bboxes_cx[candidate_idxs].view(-1, num_gt) - gt_bboxes[:, 0]
-        t_ = ep_bboxes_cy[candidate_idxs].view(-1, num_gt) - gt_bboxes[:, 1]
-        r_ = gt_bboxes[:, 2] - ep_bboxes_cx[candidate_idxs].view(-1, num_gt)
-        b_ = gt_bboxes[:, 3] - ep_bboxes_cy[candidate_idxs].view(-1, num_gt)
-        is_in_gts = torch.stack([l_, t_, r_, b_], dim=1).min(dim=1)[0] > 0.01
+        ltrb_ = ep_bboxes_center[candidate_idxs].view(-1, num_gt, 2).repeat(1, 1, 2) - gt_bboxes[None, :]
+        ltrb_[..., 2:4] = - ltrb_[..., 2:4]
+        is_in_gts = ltrb_.min(dim=-1)[0] > 0.01
         is_pos = is_pos & is_in_gts
 
         # if an anchor box is assigned to multiple gts,

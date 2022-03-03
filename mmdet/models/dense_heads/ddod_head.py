@@ -25,9 +25,9 @@ class DDODHead(AnchorHead):
     Args:
         num_classes (int): Number of categories excluding the background category.
         in_channels (int): Number of channels in the input feature map.
-        stacked_convs (dict): the number of stacked convs. Default 4.
-        conv_cfg (dict): conv config of ddod head. Default None.
-        norm_cfg (dict): normal config of ddod head. Default dict(type='GN', num_groups=32, requires_grad=True).
+        stacked_convs (int): The number of stacked Conv. Default 4.
+        conv_cfg (dict): Conv config of ddod head. Default None.
+        norm_cfg (dict): Normal config of ddod head. Default dict(type='GN', num_groups=32, requires_grad=True).
         loss_iou (dict): Config of iou loss. Default dict(type='CrossEntropyLoss',
                                                           use_sigmoid=True,
                                                           loss_weight=1.0),
@@ -176,7 +176,7 @@ class DDODHead(AnchorHead):
                 (N, num_total_anchors)
             bbox_targets (Tensor): BBox regression targets of each anchor wight
                 shape (N, num_total_anchors, 4).
-            num_total_samples (int): Number os positive samples that is
+            num_total_samples (int): Number of positive samples that is
                 reduced over all GPUs.
 
         Returns:
@@ -510,6 +510,7 @@ class DDODHead(AnchorHead):
             label_channels (int): Channel of label.
             unmap_outputs (bool): Whether to map outputs back to the original
                 set of anchors.
+            is_cls(bool): classfication or regression. 
 
         Returns:
             tuple: N is the number of total anchors in the image.
@@ -601,6 +602,17 @@ class DDODHead(AnchorHead):
                 pos_inds, neg_inds)
 
     def get_num_level_anchors_inside(self, num_level_anchors, inside_flags):
+        """Get the anchors of each scale level inside.
+
+        Args:
+            num_level_anchors (Tensor): Number of anchors of each scale level.
+            inside_flags (Tensor): Multi level inside flags of the image,
+                which are concatenated into a single tensor of
+                    shape (num_anchors,).
+
+        Returns:
+            - num_level_anchors_inside(list): Number of anchors of each scale level inside. 
+        """
         split_inside_flags = torch.split(inside_flags, num_level_anchors)
         num_level_anchors_inside = [
             int(flags.sum()) for flags in split_inside_flags
