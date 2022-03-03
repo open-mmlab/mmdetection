@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import os.path as osp
 import warnings
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 
 import mmcv
 import numpy as np
@@ -290,13 +290,14 @@ class CustomDataset(Dataset):
         in :class:`ClassAwareSampler`.
 
         Returns:
-            defaultdict[list]: A defaultdict of per-label image list,
-            the item of the defaultdict indicates a label index,
+            dict[list]: A ddict of per-label image list,
+            the item of the dict indicates a label index,
             corresponds to the image index that contains the label.
         """
-        label_dict = defaultdict(int)
+        label_dict = dict()
         if self.CLASSES is None:
             raise ValueError('CLASSES can not be None')
+        # sort the label index
         for i in range(len(self.CLASSES)):
             label_dict[i] = []
         data_infos = [self.get_ann_info(idx) for idx in range(len(self))]
