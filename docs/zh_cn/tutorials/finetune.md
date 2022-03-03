@@ -16,10 +16,11 @@
 
 ```python
 _base_ = [
-    '../_base_/models/mask_rcnn_r50_fpn.py', 
+    '../_base_/models/mask_rcnn_r50_fpn.py',
     '../_base_/datasets/cityscapes_instance.py', '../_base_/default_runtime.py'
 ]
 ```
+
 
 ##  Head 的修改
 接下来新的配置还需要根据新数据集的类别数量对 Head 进行修改。只需要对 roi_head 中的 `num_classes`进行修改。修改后除了最后的预测模型的 Head 之外，预训练模型的权重的大部分都会被重新使用。
