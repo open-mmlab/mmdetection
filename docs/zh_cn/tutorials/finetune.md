@@ -54,6 +54,8 @@ model = dict(
 ```
 
 ## 数据集的修改
+
+
 用户可能还需要准备数据集并编写有关数据集的配置。目前 MMDetection V2.0 的配置文件已经支持 VOC、WIDER FACE、COCO 和 Cityscapes Dataset 的数据集信息。
 
 ## 训练策略的修改
