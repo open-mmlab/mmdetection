@@ -510,7 +510,7 @@ class DDODHead(AnchorHead):
             label_channels (int): Channel of label.
             unmap_outputs (bool): Whether to map outputs back to the original
                 set of anchors.
-            is_cls(bool): classfication or regression. 
+            is_cls(bool): Classfication or regression. 
 
         Returns:
             tuple: N is the number of total anchors in the image.
@@ -611,7 +611,7 @@ class DDODHead(AnchorHead):
                     shape (num_anchors,).
 
         Returns:
-            - num_level_anchors_inside(list): Number of anchors of each scale level inside. 
+            list[int]: Number of anchors of each scale level inside. 
         """
         split_inside_flags = torch.split(inside_flags, num_level_anchors)
         num_level_anchors_inside = [

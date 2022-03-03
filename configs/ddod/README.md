@@ -2,7 +2,7 @@
 
 > [Disentangle Your Dense Object Detector](https://arxiv.org/pdf/2107.02963.pdf)
 
-<!-- [DATASET] -->
+<!-- [ALGORITHM] -->
 
 ## Abstract
 

@@ -644,4 +644,5 @@ def atss_cost_assigner():
     gt_bboxes = torch.empty(0, 4)
     assign_result = self.assign(bboxes, num_level_bboxes, cls_scores,
                                 bbox_preds, gt_bboxes)
-    assert len(assign_result.gt_inds) == 4
+    expected_gt_inds = torch.LongTensor([0, 0, 0, 0])
+    assert torch.all(assign_result.gt_inds == expected_gt_inds)
