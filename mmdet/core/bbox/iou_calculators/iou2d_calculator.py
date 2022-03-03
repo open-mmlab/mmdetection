@@ -231,10 +231,11 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
         wh = fp16_clamp(rb - lt, min=0)
         overlap = wh[..., 0] * wh[..., 1]
 
-        if mode in ['iou', 'iof', 'giou', 'diou']:
-            eps = union.new_tensor([eps])
-            union = torch.max(union, eps)
-            ious = overlap / union
+        if mode in ['iou', 'giou', 'diou']:
+            union = area1 + area2 - overlap
+        else:
+            union = area1
+
 
         if mode in ['giou', 'diou', 'diou']:
             enclosed_lt = torch.min(bboxes1[..., :2], bboxes2[..., :2])
@@ -258,7 +259,11 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
                                     bboxes2[..., None, :, :2])
             enclosed_rb = torch.max(bboxes1[..., :, None, 2:],
                                     bboxes2[..., None, :, 2:])
-
+    
+    if mode in ['iou', 'iof', 'giou', 'diou']:
+        eps = union.new_tensor([eps])
+        union = torch.max(union, eps)
+        ious = overlap / union
     if mode in ['iou', 'iof']:
         return ious
     elif mode == 'giou':
