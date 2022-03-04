@@ -160,8 +160,8 @@ class CocoPanopticDataset(CocoDataset):
         file_client_args (dict): Arguments to instantiate a FileClient.
             See :class:`mmcv.fileio.FileClient` for details.
             Defaults to ``dict(backend='disk')``.
-        cpu_num (int): Number of cpus for panoptic quality computing.
-            Defaults to -1, which means use all cpus.
+        nproc (int): Number of processes for panoptic quality computing.
+            Defaults to 32.
     """
     CLASSES = [
         'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
@@ -266,12 +266,12 @@ class CocoPanopticDataset(CocoDataset):
                  test_mode=False,
                  filter_empty_gt=True,
                  file_client_args=dict(backend='disk'),
-                 cpu_num=-1):
+                 nproc=32):
         super(CocoDataset,
               self).__init__(ann_file, pipeline, classes, data_root,
                              img_prefix, seg_prefix, proposal_file, test_mode,
                              filter_empty_gt, file_client_args)
-        self.cpu_num = cpu_num
+        self.nproc = nproc
 
     def load_annotations(self, ann_file):
         """Load annotation from COCO Panoptic style annotation file.
@@ -493,7 +493,7 @@ class CocoPanopticDataset(CocoDataset):
 
         pq_stat = pq_compute_multi_core(matched_annotations_list, gt_folder,
                                         pred_folder, self.categories,
-                                        self.file_client, self.cpu_num)
+                                        self.file_client, self.nproc)
 
         metrics = [('All', None), ('Things', True), ('Stuff', False)]
         pq_results = {}
