@@ -33,7 +33,7 @@ class SyncNormHook(Hook):
 
     def before_train_epoch(self, runner):
         epoch = runner.epoch
-        if (epoch + 1) == runner.max_epochs - self.num_last_epochs:
+        if epoch == runner.max_epochs - self.num_last_epochs:
             # Synchronize norm every epoch.
             self.interval = 1
 

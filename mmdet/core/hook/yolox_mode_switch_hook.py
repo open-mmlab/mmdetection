@@ -32,7 +32,7 @@ class YOLOXModeSwitchHook(Hook):
         model = runner.model
         if is_module_wrapper(model):
             model = model.module
-        if (epoch + 1) == runner.max_epochs - self.num_last_epochs:
+        if epoch == runner.max_epochs - self.num_last_epochs:
             runner.logger.info('No mosaic and mixup aug now!')
             # The dataset pipeline cannot be updated when persistent_workers
             # is True, so we need to force the dataloader's multi-process
