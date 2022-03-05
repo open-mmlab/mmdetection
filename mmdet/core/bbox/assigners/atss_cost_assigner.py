@@ -59,7 +59,7 @@ class ATSSCostAssigner(BaseAssigner):
         4. get corresponding iou for the these candidates, and compute the
            mean and std, set mean + std as the iou threshold
         5. select these candidates whose iou are greater than or equal to
-           the threshold as postive
+           the threshold as positive
         6. limit the positive sample's center in gt
 
 
@@ -118,8 +118,6 @@ class ATSSCostAssigner(BaseAssigner):
         gt_points = (gt_bboxes[:, :2] + gt_bboxes[:, 2:4]) / 2.0
 
         bboxes_points = (bboxes[:, :2] + bboxes[:, 2:4]) / 2.0
-        bboxes_cx = bboxes_points[:, 0]
-        bboxes_cy = bboxes_points[:, 1]
 
         distances = (bboxes_points[:, None, :] -
                      gt_points[None, :, :]).pow(2).sum(-1).sqrt()
@@ -168,8 +166,9 @@ class ATSSCostAssigner(BaseAssigner):
 
         # calculate the left, top, right, bottom distance between positive
         # bbox center and gt side
-        ltrb_ = ep_bboxes_center[candidate_idxs].view(-1, num_gt, 2).repeat(1, 1, 2) - gt_bboxes[None, :]
-        ltrb_[..., 2:4] = - ltrb_[..., 2:4]
+        ltrb_ = ep_bboxes_center[candidate_idxs].view(-1, num_gt, 2).repeat(
+            1, 1, 2) - gt_bboxes[None, :]
+        ltrb_[..., 2:4] = -ltrb_[..., 2:4]
         is_in_gts = ltrb_.min(dim=-1)[0] > 0.01
         is_pos = is_pos & is_in_gts
 

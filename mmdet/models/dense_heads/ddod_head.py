@@ -5,13 +5,10 @@ from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
 from mmcv.runner import force_fp32
 
 from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
-                        images_to_levels, multi_apply, multiclass_nms,
-                        reduce_mean, unmap)
+                        images_to_levels, multi_apply, reduce_mean, unmap)
 from mmdet.core.bbox import bbox_overlaps
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
-
-EPS = 1e-12
 
 
 @HEADS.register_module()
@@ -25,13 +22,12 @@ class DDODHead(AnchorHead):
     Args:
         num_classes (int): Number of categories excluding the background category.
         in_channels (int): Number of channels in the input feature map.
-        stacked_convs (int): The number of stacked Conv. Default 4.
-        conv_cfg (dict): Conv config of ddod head. Default None.
-        norm_cfg (dict): Normal config of ddod head. Default dict(type='GN', num_groups=32, requires_grad=True).
-        loss_iou (dict): Config of iou loss. Default dict(type='CrossEntropyLoss',
-                                                          use_sigmoid=True,
-                                                          loss_weight=1.0),
-                                                          **kwargs).
+        stacked_convs (int): The number of stacked Conv. Default: 4.
+        conv_cfg (dict): Conv config of ddod head. Default: None.
+        norm_cfg (dict): Normal config of ddod head. Default:
+            dict(type='GN', num_groups=32, requires_grad=True).
+        loss_iou (dict): Config of IoU loss. Default:
+            dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0).
     """
 
     def __init__(self,
@@ -44,11 +40,21 @@ class DDODHead(AnchorHead):
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
                      loss_weight=1.0),
+                 init_cfg=dict(
+                     type='Normal',
+                     layer='Conv2d',
+                     std=0.01,
+                     override=dict(
+                         type='Normal',
+                         name='atss_cls',
+                         std=0.01,
+                         bias_prob=0.01)),
                  **kwargs):
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        super(DDODHead, self).__init__(num_classes, in_channels, **kwargs)
+        super(DDODHead, self).__init__(
+            num_classes, in_channels, init_cfg=init_cfg, **kwargs)
 
         self.sampling = False
         if self.train_cfg:
@@ -65,7 +71,7 @@ class DDODHead(AnchorHead):
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
-            chn = self.in_channels
+            chn = self.in_channels if i == 0 else self.feat_channels
             self.cls_convs.append(
                 ConvModule(
                     chn,
@@ -96,20 +102,9 @@ class DDODHead(AnchorHead):
         self.atss_iou = nn.Conv2d(
             self.feat_channels, self.num_anchors * 1, 3, padding=1)
         self.scales = nn.ModuleList(
-            [Scale(1.0) for _ in self.anchor_generator.strides])
+            [Scale(1.0) for _ in self.prior_generator.strides])
         self.cls_num_pos_samples_per_level = [0. for ii in range(5)]
         self.reg_num_pos_samples_per_level = [0. for ii in range(5)]
-
-    def init_weights(self):
-        """Initialize weights of the head."""
-        for m in self.cls_convs:
-            normal_init(m.conv, std=0.01)
-        for m in self.reg_convs:
-            normal_init(m.conv, std=0.01)
-        bias_cls = bias_init_with_prob(0.01)
-        normal_init(self.atss_cls, std=0.01, bias=bias_cls)
-        normal_init(self.atss_reg, std=0.01)
-        normal_init(self.atss_iou, std=0.01)
 
     def forward(self, feats):
         """Forward features from the upstream network.
@@ -174,7 +169,7 @@ class DDODHead(AnchorHead):
                 (N, num_total_anchors).
             label_weights (Tensor): Label weights of each anchor with shape
                 (N, num_total_anchors)
-            bbox_targets (Tensor): BBox regression targets of each anchor wight
+            bbox_targets (Tensor): BBox regression targets of each anchor weight
                 shape (N, num_total_anchors, 4).
             num_total_samples (int): Number of positive samples that is
                 reduced over all GPUs.
@@ -239,16 +234,14 @@ class DDODHead(AnchorHead):
         return reweight_factor * loss_cls, reweight_factor * loss_bbox, reweight_factor * loss_iou
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'iou_preds'))
-    def loss(
-            self,
-            cls_scores,
-            bbox_preds,
-            #  centernesses,
-            iou_preds,
-            gt_bboxes,
-            gt_labels,
-            img_metas,
-            gt_bboxes_ignore=None):
+    def loss(self,
+             cls_scores,
+             bbox_preds,
+             iou_preds,
+             gt_bboxes,
+             gt_labels,
+             img_metas,
+             gt_bboxes_ignore=None):
         """Compute losses of the head.
 
         Args:
@@ -256,8 +249,6 @@ class DDODHead(AnchorHead):
                 Has shape (N, num_anchors * num_classes, H, W)
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
                 level with shape (N, num_anchors * 4, H, W)
-            centernesses (list[Tensor]): Centerness for each scale
-                level with shape (N, num_anchors * 1, H, W)
             gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
                 shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
             gt_labels (list[Tensor]): class indices corresponding to each box
@@ -270,7 +261,7 @@ class DDODHead(AnchorHead):
             dict[str, Tensor]: A dictionary of loss components.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
-        assert len(featmap_sizes) == self.anchor_generator.num_levels
+        assert len(featmap_sizes) == self.prior_generator.num_levels
 
         device = cls_scores[0].device
         anchor_list, valid_flag_list = self.get_anchors(
@@ -495,11 +486,11 @@ class DDODHead(AnchorHead):
 
         Args:
             flat_anchors (Tensor): Multi-level anchors of the image, which are
-                concatenated into a single tensor of shape (num_anchors ,4)
+                concatenated into a single tensor of shape (num_anchors, 4).
             valid_flags (Tensor): Multi level valid flags of the image,
                 which are concatenated into a single tensor of
-                    shape (num_anchors,).
-            num_level_anchors Tensor): Number of anchors of each scale level.
+                shape (num_anchors,).
+            num_level_anchors (Tensor): Number of anchors of each scale level.
             gt_bboxes (Tensor): Ground truth bboxes of the image,
                 shape (num_gts, 4).
             gt_bboxes_ignore (Tensor): Ground truth bboxes to be
@@ -510,7 +501,7 @@ class DDODHead(AnchorHead):
             label_channels (int): Channel of label.
             unmap_outputs (bool): Whether to map outputs back to the original
                 set of anchors.
-            is_cls(bool): Classfication or regression. 
+            is_cls (bool): Classification or regression.
 
         Returns:
             tuple: N is the number of total anchors in the image.
@@ -522,7 +513,7 @@ class DDODHead(AnchorHead):
                     image with shape (N, 4).
                 - bbox_weights (Tensor): BBox weights of all anchors in the \
                     image with shape (N, 4)
-                - pos_inds (Tensor): Indices of postive anchor with shape \
+                - pos_inds (Tensor): Indices of positive anchor with shape \
                     (num_pos,).
                 - neg_inds (Tensor): Indices of negative anchor with shape \
                     (num_neg,).
@@ -542,15 +533,9 @@ class DDODHead(AnchorHead):
         assigner = self.assigner if is_cls else self.reg_assigner
         # decode prediction out of assigner
         bbox_preds_valid = self.bbox_coder.decode(anchors, bbox_preds_valid)
-        assign_result = assigner.assign(
-            anchors,
-            num_level_anchors_inside,
-            cls_scores_valid,
-            bbox_preds_valid,
-            # self.bbox_coder,
-            gt_bboxes,
-            gt_bboxes_ignore,
-            gt_labels)
+        assign_result = assigner.assign(anchors, num_level_anchors_inside,
+                                        cls_scores_valid, bbox_preds_valid,
+                                        gt_bboxes, gt_bboxes_ignore, gt_labels)
         sampling_result = self.sampler.sample(assign_result, anchors,
                                               gt_bboxes)
 
@@ -565,12 +550,11 @@ class DDODHead(AnchorHead):
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
         if len(pos_inds) > 0:
-            if hasattr(self, 'bbox_coder'):
-                pos_bbox_targets = self.bbox_coder.encode(
-                    sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes)
-            else:
-                # used in VFNetHead
-                pos_bbox_targets = sampling_result.pos_gt_bboxes
+            pos_bbox_targets = self.bbox_coder.encode(
+                sampling_result.pos_bboxes,
+                sampling_result.pos_gt_bboxes) if hasattr(
+                    self, 'bbox_coder') else sampling_result.pos_gt_bboxes
+
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
             if gt_labels is None:
@@ -608,10 +592,10 @@ class DDODHead(AnchorHead):
             num_level_anchors (Tensor): Number of anchors of each scale level.
             inside_flags (Tensor): Multi level inside flags of the image,
                 which are concatenated into a single tensor of
-                    shape (num_anchors,).
+                shape (num_anchors,).
 
         Returns:
-            list[int]: Number of anchors of each scale level inside. 
+            list[int]: Number of anchors of each scale level inside.
         """
         split_inside_flags = torch.split(inside_flags, num_level_anchors)
         num_level_anchors_inside = [
