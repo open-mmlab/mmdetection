@@ -21,8 +21,7 @@ def test_bbox_overlaps_2d(eps=1e-7):
         bboxes[:, 0::2] *= img_w
         bboxes[:, 1::2] *= img_h
         return bboxes, num_bbox
-    
-    # test mode 'giou'
+
     # is_aligned is True, bboxes.size(-1) == 5 (include score)
     self = BboxOverlaps2D()
     bboxes1, num_bbox = _construct_bbox()
@@ -133,4 +132,3 @@ def test_voc_recall_overlaps():
     ious = recall_overlaps(bboxes1, bboxes2, 'iou', use_legacy_coordinate=True)
     assert ious.shape == (num_bbox, num_bbox)
     assert np.all(ious >= -1) and np.all(ious <= 1)
-    
