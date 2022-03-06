@@ -14,9 +14,6 @@ Deep learning-based dense object detectors have achieved great success in the pa
 | :-------: | :---------: | :-----: | :-----: | :------: | :------------: | :----: | :------: | :--------: |
 |   DDOD(FP16)    |  ResNet50   | pytorch |   1x    |   #TODO  |      #TODO     |  #TODO | [config](configs/ddod/ddod_r50_fpn_fp16_1x_coco.py) | [model](https://download.pytorch.org/models/resnet50-0676ba61.pth) &#124; [log]()
 
-
-
-
 ## Citation
 ```latex
 @inproceedings{chen2021disentangle,
