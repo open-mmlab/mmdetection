@@ -186,7 +186,8 @@ def pq_compute_multi_core(matched_annotations_list,
         file_client (object): The file client of the dataset. If None,
             the backend will be set to `disk`.
         nproc (int): Number of processes for panoptic quality computing.
-            Default to 32.
+            Defaults to 32. When `nproc` exceeds the number of cpu cores,
+            the number of cpu cores is used.
     """
     if PQStat is None:
         raise RuntimeError(
