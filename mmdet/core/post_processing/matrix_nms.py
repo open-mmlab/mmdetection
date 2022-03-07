@@ -64,7 +64,7 @@ def mask_matrix_nms(masks,
     num_masks = len(labels)
     flatten_masks = masks.reshape(num_masks, -1).float()
     # inter.
-    # inter_matrix1 = torch.mm(flatten_masks, flatten_masks.transpose(1, 0))
+    # inter_matrix = torch.mm(flatten_masks, flatten_masks.transpose(1, 0))
     # torch.mm() may cause GPU out of memory error
     inter_matrix = torch.einsum('ik, kj -> ij', flatten_masks,
                                 flatten_masks.transpose(1, 0))
