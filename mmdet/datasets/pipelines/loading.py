@@ -32,16 +32,20 @@ class LoadImageFromFile:
         file_client_args (dict): Arguments to instantiate a FileClient.
             See :class:`mmcv.fileio.FileClient` for details.
             Defaults to ``dict(backend='disk')``.
+        image_backend (str): The backend argument for :func:`mmcv.imfrombytes`.
+            Defaults to None.
     """
 
     def __init__(self,
                  to_float32=False,
                  color_type='color',
-                 file_client_args=dict(backend='disk')):
+                 file_client_args=dict(backend='disk'),
+                 image_backend=None):
         self.to_float32 = to_float32
         self.color_type = color_type
         self.file_client_args = file_client_args.copy()
         self.file_client = None
+        self.image_backend = image_backend
 
     def __call__(self, results):
         """Call functions to load image and get image meta information.
@@ -63,7 +67,8 @@ class LoadImageFromFile:
             filename = results['img_info']['filename']
 
         img_bytes = self.file_client.get(filename)
-        img = mmcv.imfrombytes(img_bytes, flag=self.color_type)
+        img = mmcv.imfrombytes(
+            img_bytes, flag=self.color_type, backend=self.image_backend)
         if self.to_float32:
             img = img.astype(np.float32)
 
