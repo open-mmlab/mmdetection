@@ -619,11 +619,8 @@ def atss_cost_assigner():
         [32, 32, 38, 42],
     ])
     num_level_bboxes = [1, 0, 0, 1, 1]
-    cls_scores = torch.FloatTensor(
-        [[0.1, 0.9], 
-        [0.2, 0.8], 
-        [0.7, 0.3],
-        [0.6, 0.4]])
+    cls_scores = torch.FloatTensor([[0.1, 0.9], [0.2, 0.8], [0.7, 0.3],
+                                    [0.6, 0.4]])
     bbox_preds = torch.FloatTensor([
         [1, 1, 12, 8],
         [4, 4, 20, 20],

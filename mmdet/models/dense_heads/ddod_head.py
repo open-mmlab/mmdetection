@@ -59,7 +59,6 @@ class DDODHead(AnchorHead):
         self.sampling = False
         if self.train_cfg:
             self.assigner = build_assigner(self.train_cfg.assigner)
-            self.reg_assigner = build_assigner(self.train_cfg.reg_assigner)
             # SSD sampling=False so use PseudoSampler
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
@@ -138,7 +137,7 @@ class DDODHead(AnchorHead):
                     the channels number is num_anchors * num_classes.
                 - bbox_pred (Tensor): Box energies / deltas for a single scale \
                     level, the channels number is num_anchors * 4.
-                - centerness (Tensor): Centerness for a single scale level, the \
+                - iou (Tensor): Iou for a single scale level, the \
                     channel number is (N, num_anchors * 1, H, W).
         """
         cls_feat = x
@@ -519,8 +518,7 @@ class DDODHead(AnchorHead):
                     (num_neg,).
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
-                                           img_meta['img_shape'][:2],
-                                           self.train_cfg.allowed_border)
+                                           img_meta['img_shape'][:2])
         if not inside_flags.any():
             return (None, ) * 7
         # assign gt and sample anchors
@@ -530,12 +528,12 @@ class DDODHead(AnchorHead):
             num_level_anchors, inside_flags)
         bbox_preds_valid = bbox_preds[inside_flags, :]
         cls_scores_valid = cls_scores[inside_flags, :]
-        assigner = self.assigner if is_cls else self.reg_assigner
         # decode prediction out of assigner
         bbox_preds_valid = self.bbox_coder.decode(anchors, bbox_preds_valid)
-        assign_result = assigner.assign(anchors, num_level_anchors_inside,
-                                        cls_scores_valid, bbox_preds_valid,
-                                        gt_bboxes, gt_bboxes_ignore, gt_labels)
+        assign_result = self.assigner.assign(anchors, num_level_anchors_inside,
+                                             cls_scores_valid,
+                                             bbox_preds_valid, gt_bboxes,
+                                             gt_bboxes_ignore, gt_labels)
         sampling_result = self.sampler.sample(assign_result, anchors,
                                               gt_bboxes)
 

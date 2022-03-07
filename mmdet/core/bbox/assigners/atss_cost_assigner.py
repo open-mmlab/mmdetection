@@ -86,7 +86,7 @@ class ATSSCostAssigner(BaseAssigner):
         # compute iou between all bbox and gt
         overlaps = self.iou_calculator(bbox_preds, gt_bboxes)
         # compute cls cost for bbox and GT
-        cls_cost = torch.sigmoid(cls_scores)
+        cls_cost = torch.sigmoid(cls_scores[:, gt_labels])
 
         # make sure that we are in element-wise multiplication
         assert cls_cost.shape == overlaps.shape
