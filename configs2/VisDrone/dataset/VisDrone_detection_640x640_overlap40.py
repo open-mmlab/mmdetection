@@ -64,6 +64,7 @@ train_pipeline = [
         },
         update_pad_shape=False,
         skip_img_without_anno=True),
+    dict(type='Mosaic',img_scale=640),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
@@ -99,12 +100,17 @@ data = dict(
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'VisDrone2019_slice640_overlap40/val_640_00625.json',
-        img_prefix=data_root + 'VisDrone2019_slice640_overlap40/val_images_640_00625',
+        # ann_file=data_root + 'VisDrone2019_slice640_overlap40/val_640_00625.json',
+        # img_prefix=data_root + 'VisDrone2019_slice640_overlap40/val_images_640_00625',
+
+        ann_file=data_root + 'val.json',
+        img_prefix=data_root + 'VisDrone2019-DET-val/images',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'VisDrone2019_slice640_overlap40/test-dev_640_00625.json',
-        img_prefix=data_root + 'VisDrone2019_slice640_overlap40/test-dev_images_640_00625',
+        # ann_file=data_root + 'VisDrone2019_slice640_overlap40/test-dev_640_00625.json',
+        # img_prefix=data_root + 'VisDrone2019_slice640_overlap40/test-dev_images_640_00625',
+        ann_file=data_root + 'test-dev.json',
+        img_prefix=data_root + 'VisDrone2019-DET-test-dev/images',
         pipeline=test_pipeline))
-evaluation = dict(interval=1, metric='bbox',save_best='bbox_mAP')
+evaluation = dict(interval=1, metric='bbox',save_best='bbox_mAP_s')
