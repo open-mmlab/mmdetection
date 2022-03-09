@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, bias_init_with_prob
 from mmcv.ops import CornerPool, batched_nms
-from mmcv.runner import BaseModule
+from mmcv.runner import BaseModule, force_fp32
 
 from mmdet.core import multi_apply
 from ..builder import HEADS, build_loss
@@ -152,6 +152,7 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
+        self.fp16_enabled = False
         self._init_layers()
 
     def _make_layers(self, out_channels, in_channels=256, feat_channels=256):
@@ -509,6 +510,7 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
 
         return target_result
 
+    @force_fp32()
     def loss(self,
              tl_heats,
              br_heats,
@@ -649,6 +651,7 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
 
         return det_loss, pull_loss, push_loss, off_loss
 
+    @force_fp32()
     def get_bboxes(self,
                    tl_heats,
                    br_heats,
