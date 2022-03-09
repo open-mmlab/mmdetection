@@ -37,9 +37,11 @@ class LoadImageFromFile:
     def __init__(self,
                  to_float32=False,
                  color_type='color',
+                 channel_order='bgr',
                  file_client_args=dict(backend='disk')):
         self.to_float32 = to_float32
         self.color_type = color_type
+        self.channel_order = channel_order
         self.file_client_args = file_client_args.copy()
         self.file_client = None
 
@@ -63,7 +65,8 @@ class LoadImageFromFile:
             filename = results['img_info']['filename']
 
         img_bytes = self.file_client.get(filename)
-        img = mmcv.imfrombytes(img_bytes, flag=self.color_type)
+        img = mmcv.imfrombytes(
+            img_bytes, flag=self.color_type, channel_order=self.channel_order)
         if self.to_float32:
             img = img.astype(np.float32)
 
@@ -79,6 +82,7 @@ class LoadImageFromFile:
         repr_str = (f'{self.__class__.__name__}('
                     f'to_float32={self.to_float32}, '
                     f"color_type='{self.color_type}', "
+                    f"channel_order='{self.channel_order}', "
                     f'file_client_args={self.file_client_args})')
         return repr_str
 
