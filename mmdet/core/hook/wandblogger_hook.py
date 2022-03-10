@@ -82,6 +82,8 @@ class WandbLogger(WandbLoggerHook):
             self._init_data_table()
             # Add data to the table
             self._add_ground_truth()
+            # Log ground truth data
+            self._log_data_table()
 
     @master_only
     def after_train_epoch(self, runner):
@@ -112,7 +114,7 @@ class WandbLogger(WandbLoggerHook):
                         f'Running inference at epoch {runner.epoch+1} for W&B '
                         f'evaluation table which will be saved as W&B Tables.')
                     from mmdet.apis import single_gpu_test
-                    self.results = single_gpu_test(
+                    results = single_gpu_test(
                         runner.model,
                         self.val_dataloader,
                         show=False,
@@ -120,7 +122,7 @@ class WandbLogger(WandbLoggerHook):
                     # Initialize evaluation table
                     self._init_pred_table()
                     # Log predictions
-                    self._log_predictions(runner.epoch + 1)
+                    self._log_predictions(results, runner.epoch + 1)
                     # Log the table
                     self._log_eval_table()
 
@@ -224,12 +226,12 @@ class WandbLogger(WandbLoggerHook):
                 image_name,
                 self.wandb.Image(image, boxes=boxes, classes=self.class_set))
 
-    def _log_predictions(self, epoch):
-        table_idxs = self.data_table.get_index()
-        assert len(self.results) == len(self.val_dataset) == len(table_idxs)
+    def _log_predictions(self, results, epoch):
+        table_idxs = self.data_table_ref.get_index()
+        assert len(results) == len(self.val_dataset) == len(table_idxs)
 
         for ndx in table_idxs:
-            result = self.results[ndx]
+            result = results[ndx]
             assert len(result) == len(self.class_id_to_label)
 
             box_data = []
@@ -270,17 +272,23 @@ class WandbLogger(WandbLoggerHook):
                 }
             }
             self.eval_table.add_data(
-                epoch, self.data_table.data[ndx][0],
-                self.data_table.data[ndx][1],
+                epoch, self.data_table_ref.data[ndx][0],
+                self.data_table_ref.data[ndx][1],
                 self.wandb.Image(
-                    self.data_table.data[ndx][1],
+                    self.data_table_ref.data[ndx][1],
                     boxes=boxes,
                     classes=self.class_set), *tuple(class_scores))
 
     def _log_data_table(self):
         data_artifact = self.wandb.Artifact('val', type='dataset')
         data_artifact.add(self.data_table, 'val_data')
-        self.wandb.run.log_artifact(self.data_artifact)
+        self.wandb.run.log_artifact(data_artifact)
+        data_artifact.wait()
+
+        self.wandb.run.use_artifact(data_artifact)
+        data_artifact.wait()
+
+        self.data_table_ref = data_artifact.get('val_data')
 
     def _log_eval_table(self):
         pred_artifact = self.wandb.Artifact(
