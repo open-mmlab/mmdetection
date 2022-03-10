@@ -1,6 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import glob
-import os
 import warnings
 
 from mmcv.runner import HOOKS
@@ -13,7 +11,10 @@ from mmdet.core import EvalHook
 
 @HOOKS.register_module()
 class WandbLogger(WandbLoggerHook):
-    """One liner.
+    """WandbLogger logs metrics, saves model checkpoints as W&B Artifact, and
+    logs model prediction as interactive W&B Tables.
+
+    - Metrics: The
 
     Args:
     """
@@ -42,7 +43,7 @@ class WandbLogger(WandbLoggerHook):
         self.log_checkpoint = log_checkpoint
         self.log_checkpoint_metadata = log_checkpoint_metadata
         self.log_evaluation = log_evaluation
-
+        self.log_eval_metrics = True
         self.best_map_score = 0
 
     @master_only
@@ -64,6 +65,8 @@ class WandbLogger(WandbLoggerHook):
             self.ckpt_hook = ckpt_hook
         else:
             self.log_checkpoint = False
+            warnings.warn('To use log_checkpoint turn use '
+                          'CheckpointHook.', UserWarning)
 
         if 'eval_hook' in locals():
             self.eval_hook = eval_hook
@@ -75,11 +78,12 @@ class WandbLogger(WandbLoggerHook):
                 'To use log_evaluation turn validate '
                 'to True in train_detector.', UserWarning)
 
-        if self.log_checkpoint:
-            # Remove model checkpoints from previous run.
-            files = glob.glob(f'{runner.work_dir}/*.pth')
-            for f in files:
-                os.remove(f)
+        if self.priority < self.ckpt_hook.priority:
+            self.log_checkpoint = False
+        if self.priority < self.eval_hook.priority:
+            self.log_evaluation = False
+            self.log_checkpoint_metadata = False
+            self.log_eval_metrics = False
 
         if self.log_evaluation:
             # Initialize data table
@@ -91,8 +95,15 @@ class WandbLogger(WandbLoggerHook):
 
     @master_only
     def after_train_epoch(self, runner):
-        if runner.epoch == 0:
-            pass
+        if self.log_eval_metrics:
+            if self.eval_hook.by_epoch:
+                if self.every_n_epochs(
+                        runner,
+                        self.eval_hook.interval) or self.is_last_epoch(runner):
+                    results = self.eval_hook.results
+                    eval_results = self.val_dataset.evaluate(
+                        results, logger='silent')
+                    print(eval_results)
 
         if self.log_checkpoint:
             if self.ckpt_hook.by_epoch:
@@ -143,10 +154,13 @@ class WandbLogger(WandbLoggerHook):
         runner.logger.info(
             f'Evaluating for model checkpoint at epoch '
             f'{runner.epoch+1} which will be saved as W&B Artifact.')
-        from mmdet.apis import single_gpu_test
-        results = single_gpu_test(
-            runner.model, self.val_dataloader, show=False)
-        eval_results = self.val_dataset.evaluate(results)
+        if self.ckpt_hook.interval == self.eval_hook.interval:
+            results = self.eval_hook.results
+        else:
+            from mmdet.apis import single_gpu_test
+            results = single_gpu_test(
+                runner.model, self.val_dataloader, show=False)
+        eval_results = self.val_dataset.evaluate(results, logger='silent')
         map_score = eval_results.get('mAP', None)
         if map_score:
             metadata = dict(epoch=runner.epoch + 1, map_score=map_score)
