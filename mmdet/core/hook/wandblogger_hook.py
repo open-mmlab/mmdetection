@@ -13,6 +13,10 @@ from mmdet.core import EvalHook
 
 @HOOKS.register_module()
 class WandbLogger(WandbLoggerHook):
+    """One liner.
+
+    Args:
+    """
 
     def __init__(self,
                  init_kwargs=None,
@@ -87,6 +91,9 @@ class WandbLogger(WandbLoggerHook):
 
     @master_only
     def after_train_epoch(self, runner):
+        if runner.epoch == 0:
+            pass
+
         if self.log_checkpoint:
             if self.ckpt_hook.by_epoch:
                 if self.every_n_epochs(runner, self.ckpt_hook.interval) or (
@@ -110,15 +117,7 @@ class WandbLogger(WandbLoggerHook):
                 if self.every_n_epochs(
                         runner,
                         self.eval_hook.interval) or self.is_last_epoch(runner):
-                    runner.logger.info(
-                        f'Running inference at epoch {runner.epoch+1} for W&B '
-                        f'evaluation table which will be saved as W&B Tables.')
-                    from mmdet.apis import single_gpu_test
-                    results = single_gpu_test(
-                        runner.model,
-                        self.val_dataloader,
-                        show=False,
-                        rescale=False)
+                    results = self.eval_hook.results
                     # Initialize evaluation table
                     self._init_pred_table()
                     # Log predictions
@@ -146,7 +145,7 @@ class WandbLogger(WandbLoggerHook):
             f'{runner.epoch+1} which will be saved as W&B Artifact.')
         from mmdet.apis import single_gpu_test
         results = single_gpu_test(
-            runner.model, self.val_dataloader, show=False, rescale=True)
+            runner.model, self.val_dataloader, show=False)
         eval_results = self.val_dataset.evaluate(results)
         map_score = eval_results.get('mAP', None)
         if map_score:
@@ -178,8 +177,6 @@ class WandbLogger(WandbLoggerHook):
 
     def _add_ground_truth(self):
         num_images = len(self.val_dataset)
-        assert num_images == len(self.val_dataset.data_infos)
-
         classes = self.val_dataset.get_classes()
         self.class_id_to_label = {id: name for id, name in enumerate(classes)}
         self.class_set = self.wandb.Classes([{
@@ -204,17 +201,9 @@ class WandbLogger(WandbLoggerHook):
             box_data = []
             assert len(bboxes) == len(labels)
             for bbox, label in zip(bboxes, labels):
-                position = dict(
-                    minX=int(bbox[0] * scale_factor[0]),
-                    minY=int(bbox[1] * scale_factor[1]),
-                    maxX=int(bbox[2] * scale_factor[2]),
-                    maxY=int(bbox[3] * scale_factor[3]))
-                box_data.append({
-                    'position': position,
-                    'class_id': int(label),
-                    'box_caption': classes[label],
-                    'domain': 'pixel'
-                })
+                box_data.append(
+                    self._get_wandb_bbox(bbox, label, classes[label],
+                                         scale_factor))
 
             boxes = {
                 'ground_truth': {
@@ -222,6 +211,7 @@ class WandbLogger(WandbLoggerHook):
                     'class_labels': self.class_id_to_label
                 }
             }
+
             self.data_table.add_data(
                 image_name,
                 self.wandb.Image(image, boxes=boxes, classes=self.class_set))
@@ -233,6 +223,10 @@ class WandbLogger(WandbLoggerHook):
         for ndx in table_idxs:
             result = results[ndx]
             assert len(result) == len(self.class_id_to_label)
+
+            data_sample = self.val_dataset.prepare_test_img(ndx)
+            img_meta = data_sample['img_metas'][0].data
+            scale_factor = img_meta['scale_factor']
 
             box_data = []
             class_scores = []
@@ -246,20 +240,11 @@ class WandbLogger(WandbLoggerHook):
                             class_score += confidence
                             count += 1
                             class_name = self.class_id_to_label[label_id]
-
-                            position = dict(
-                                minX=int(bbox_score[0]),
-                                minY=int(bbox_score[1]),
-                                maxX=int(bbox_score[2]),
-                                maxY=int(bbox_score[3]))
-
-                            box_data.append({
-                                'position': position,
-                                'class_id': label_id,
-                                'box_caption':
-                                f'{class_name}@{confidence:.2f}',
-                                'domain': 'pixel'
-                            })
+                            box_data.append(
+                                self._get_wandb_bbox(
+                                    bbox_score, label_id,
+                                    f'{class_name}@{confidence:.2f}',
+                                    scale_factor))
 
                     class_scores.append(class_score / (count + 1e-6))
                 else:
@@ -271,6 +256,7 @@ class WandbLogger(WandbLoggerHook):
                     'class_labels': self.class_id_to_label
                 }
             }
+
             self.eval_table.add_data(
                 epoch, self.data_table_ref.data[ndx][0],
                 self.data_table_ref.data[ndx][1],
@@ -278,6 +264,26 @@ class WandbLogger(WandbLoggerHook):
                     self.data_table_ref.data[ndx][1],
                     boxes=boxes,
                     classes=self.class_set), *tuple(class_scores))
+
+    def _get_wandb_bbox(self, bbox, label, box_caption, scale_factor):
+        position = dict(
+            minX=int(bbox[0] * scale_factor[0]),
+            minY=int(bbox[1] * scale_factor[1]),
+            maxX=int(bbox[2] * scale_factor[2]),
+            maxY=int(bbox[3] * scale_factor[3]))
+
+        if not isinstance(label, int):
+            label = int(label)
+
+        if not isinstance(box_caption, str):
+            box_caption = str(box_caption)
+
+        return {
+            'position': position,
+            'class_id': label,
+            'box_caption': box_caption,
+            'domain': 'pixel'
+        }
 
     def _log_data_table(self):
         data_artifact = self.wandb.Artifact('val', type='dataset')
