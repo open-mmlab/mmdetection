@@ -9,12 +9,10 @@ from functools import partial
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn.bricks import (NORM_LAYERS, DropPath, build_activation_layer,
-                             build_norm_layer)
 from mmcv.runner import BaseModule
-from mmdet.utils import get_root_logger
 from ..builder import BACKBONES
 
+from timm.models.layers import DropPath
 
 class Block(nn.Module):
     r""" ConvNeXt Block. There are two equivalent implementations:

@@ -6,20 +6,21 @@ _base_ = [
 
 # please install mmcls>=0.20.0
 # import mmcls.models to trigger register_module in mmcls
-custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
-pretrained = 'https://download.openmmlab.com/mmclassification/v0/convnext/convnext-tiny_3rdparty_32xb128-noema_in1k_20220222-2908964a.pth'  # noqa
+# custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
+pretrained = '../convnext-tiny_office.pth'  # noqa
 
 model = dict(
     backbone=dict(
         _delete_=True,
-        type='mmcls.ConvNeXt',
-        arch='tiny',
-        out_indices=[0, 1, 2, 3],
-        drop_path_rate=0.4,
+        type='ConvNeXt',
+        in_chans=3,
+        depths=[3, 3, 9, 3],
+        dims=[96, 192, 384, 768],
+        drop_path_rate=0.2,
         layer_scale_init_value=1.0,
-        gap_before_final_norm=False,
+        out_indices=[0, 1, 2, 3],
         init_cfg=dict(
-            type='Pretrained', checkpoint=pretrained, prefix='backbone.')),
+            type='Pretrained', checkpoint=pretrained)),
     neck=dict(in_channels=[96, 192, 384, 768]))
 
 img_norm_cfg = dict(
@@ -86,4 +87,4 @@ lr_config = dict(warmup_iters=1000, step=[27, 33])
 runner = dict(max_epochs=36)
 
 # you need to set mode='dynamic' if you are using pytorch<=1.5.0
-fp16 = dict(loss_scale=dict(init_scale=512))
+# fp16 = dict(loss_scale=dict(init_scale=512))
