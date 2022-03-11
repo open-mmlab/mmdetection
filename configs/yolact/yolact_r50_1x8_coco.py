@@ -158,3 +158,6 @@ lr_config = dict(
 runner = dict(type='EpochBasedRunner', max_epochs=55)
 cudnn_benchmark = True
 evaluation = dict(metric=['bbox', 'segm'])
+
+# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
+mmdet_official_special_samples_per_gpu = 8

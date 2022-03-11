@@ -103,3 +103,7 @@ lr_config = dict(
     warmup_ratio=1.0 / 3,
     step=[190])
 runner = dict(type='EpochBasedRunner', max_epochs=210)
+
+# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
+mmdet_official_special_gpu_number = 16
+mmdet_official_special_samples_per_gpu = 6

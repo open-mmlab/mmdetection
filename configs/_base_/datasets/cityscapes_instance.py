@@ -54,3 +54,6 @@ data = dict(
         img_prefix=data_root + 'leftImg8bit/test/',
         pipeline=test_pipeline))
 evaluation = dict(metric=['bbox', 'segm'])
+
+# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
+mmdet_official_special_samples_per_gpu = 1

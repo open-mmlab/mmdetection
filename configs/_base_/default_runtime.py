@@ -20,6 +20,6 @@ opencv_num_threads = 0
 # set multi-process start method as `fork` to speed up the training
 mp_start_method = 'fork'
 
-# default number of GPU for mmdet,
-# in order to support automatically scaling LR according to GPU number.
-default_gpu_number = 8
+# In order to support automatically scaling LR.
+default_gpu_number = 8  # default number of GPU for mmdet
+default_samples_per_gpu = 2  # default samples per GPU for mmdet
