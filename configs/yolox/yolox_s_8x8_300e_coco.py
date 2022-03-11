@@ -158,3 +158,6 @@ evaluation = dict(
     dynamic_intervals=[(max_epochs - num_last_epochs, 1)],
     metric='bbox')
 log_config = dict(interval=50)
+
+# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
+mmdet_official_special_samples_per_gpu = 8
