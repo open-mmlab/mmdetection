@@ -125,15 +125,15 @@ def train_detector(model,
     # Automatically scaling LR according to GPU number
     if len(cfg.gpu_ids) != cfg.default_gpu_number:
         # Get original LR from config
-        optimizer_original = cfg.optimizer.get("lr", 0)
-        assert optimizer_original != 0
+        original_lr = cfg.optimizer.get("lr", 0)
+        assert original_lr != 0
 
         # scale LR according to paper [linear scaling rule](https://arxiv.org/abs/1706.02677)
-        scaled_lr = (len(cfg.gpu_ids) * cfg.data.samples_per_gpu) / optimizer_original
+        scaled_lr = (len(cfg.gpu_ids) * cfg.data.samples_per_gpu) / original_lr
         cfg.optimizer.update({"lr": scaled_lr})
 
         logger.info(f'You are using {len(cfg.gpu_ids)} GPU(s), '
-                    f'automatically scaling LR from {optimizer_original} to {scaled_lr}')
+                    f'automatically scaling LR from {original_lr} to {scaled_lr}')
 
     # build optimizer
     optimizer = build_optimizer(model, cfg.optimizer)
