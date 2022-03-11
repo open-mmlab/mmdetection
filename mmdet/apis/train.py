@@ -135,7 +135,7 @@ def train_detector(model,
         logger.info(f'You are using {len(cfg.gpu_ids)} GPU(s), '
                     f'automatically scaling LR from {optimizer_original} to {scaled_lr}')
 
-    # build runner optimizer
+    # build optimizer
     optimizer = build_optimizer(model, cfg.optimizer)
 
     # build runner
