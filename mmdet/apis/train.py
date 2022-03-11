@@ -69,13 +69,25 @@ def set_random_seed(seed, deterministic=False):
 
 
 def scale_lr(cfg, logger):
-    """Automatically scaling LR according to GPU number.
+    """Automatically scaling LR according to GPU number and sample per GPU.
 
     Args:
         cfg (config): training config.
         logger (logging.Logger): logger.
     """
-    if len(cfg.gpu_ids) == cfg.default_gpu_number:
+
+    if "mmdet_official_special_samples_per_gpu" in cfg:
+        original_samples_per_gpu = cfg.mmdet_official_special_samples_per_gpu
+    else:
+        original_samples_per_gpu = cfg.default_samples_per_gpu
+
+    if "mmdet_official_special_gpu_number" in cfg:
+        original_gpu_number = cfg.mmdet_official_special_gpu_number
+    else:
+        original_gpu_number = cfg.default_gpu_number
+
+    if len(cfg.gpu_ids) == original_gpu_number and \
+            cfg.data.samples_per_gpu == original_samples_per_gpu:
         logger.info(f'You are using {len(cfg.gpu_ids)} GPU(s) ,'
                     f'and {cfg.data.samples_per_gpu} samples per gpu, '
                     f'using LR = {cfg.optimizer.get("lr")}')
@@ -86,7 +98,7 @@ def scale_lr(cfg, logger):
 
         # scale LR according to paper [linear scaling rule](https://arxiv.org/abs/1706.02677)
         batch_size = len(cfg.gpu_ids) * cfg.data.samples_per_gpu
-        original_batch_size = cfg.default_gpu_number * cfg.data.samples_per_gpu
+        original_batch_size = original_gpu_number * original_samples_per_gpu
         scaled_lr = (batch_size / original_batch_size) * original_lr
         cfg.optimizer.update({"lr": scaled_lr})
 
