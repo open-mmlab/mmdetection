@@ -122,9 +122,23 @@ def train_detector(model,
     else:
         model = MMDataParallel(model, device_ids=cfg.gpu_ids)
 
-    # build runner
+    # Automatically scaling LR according to GPU number
+    if len(cfg.gpu_ids) != cfg.default_gpu_number:
+        # Get original LR from config
+        optimizer_original = cfg.optimizer.get("lr", 0)
+        assert optimizer_original != 0
+
+        # scale LR according to paper [linear scaling rule](https://arxiv.org/abs/1706.02677)
+        scaled_lr = (len(cfg.gpu_ids) * cfg.data.samples_per_gpu) / optimizer_original
+        cfg.optimizer.update({"lr": scaled_lr})
+
+        logger.info(f'You are using {len(cfg.gpu_ids)} GPU(s), '
+                    f'automatically scaling LR from {optimizer_original} to {scaled_lr}')
+
+    # build runner optimizer
     optimizer = build_optimizer(model, cfg.optimizer)
 
+    # build runner
     if 'runner' not in cfg:
         cfg.runner = {
             'type': 'EpochBasedRunner',
