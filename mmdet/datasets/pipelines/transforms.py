@@ -1994,7 +1994,8 @@ class Mosaic:
             is True, the filter rule will not be applied, and the
             `min_bbox_size` is invalid. Default to True.
         pad_val (int): Pad value. Default to 114.
-        prob (float): probability of applying this transformation.
+        prob (float): Probability of applying this transformation.
+            Default to 1.0.
     """
 
     def __init__(self,
