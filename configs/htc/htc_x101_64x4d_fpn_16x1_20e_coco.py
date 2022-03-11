@@ -17,3 +17,6 @@ data = dict(samples_per_gpu=1, workers_per_gpu=1)
 # learning policy
 lr_config = dict(step=[16, 19])
 runner = dict(type='EpochBasedRunner', max_epochs=20)
+
+# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
+mmdet_official_special_samples_per_gpu = 1
