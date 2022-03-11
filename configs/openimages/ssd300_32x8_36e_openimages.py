@@ -76,3 +76,7 @@ lr_config = dict(
     warmup_iters=20000,
     warmup_ratio=0.001,
     step=[8, 11])
+
+# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
+mmdet_official_special_gpu_number = 32
+mmdet_official_special_samples_per_gpu = 8

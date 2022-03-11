@@ -77,3 +77,6 @@ lr_config = dict(
     step=[30, 40])
 # runtime settings
 runner = dict(type='EpochBasedRunner', max_epochs=50)
+
+# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
+mmdet_official_special_samples_per_gpu = 8
