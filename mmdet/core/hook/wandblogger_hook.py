@@ -45,6 +45,7 @@ class WandbLogger(WandbLoggerHook):
         self.log_evaluation = log_evaluation
         self.log_eval_metrics = True
         self.best_map_score = 0
+        self.val_step = 0
 
     @master_only
     def before_run(self, runner):
@@ -72,6 +73,7 @@ class WandbLogger(WandbLoggerHook):
             self.eval_hook = eval_hook
             self.val_dataloader = eval_hook.dataloader
             self.val_dataset = self.val_dataloader.dataset
+
         else:
             self.log_evaluation = False
             warnings.warn(
@@ -103,7 +105,9 @@ class WandbLogger(WandbLoggerHook):
                     results = self.eval_hook.results
                     eval_results = self.val_dataset.evaluate(
                         results, logger='silent')
-                    print(eval_results)
+                    for key, val in eval_results.items():
+                        self.wandb.log({f'val/{key}': val}, commit=False)
+                    self.wandb.log({})
 
         if self.log_checkpoint:
             if self.ckpt_hook.by_epoch:
@@ -137,6 +141,10 @@ class WandbLogger(WandbLoggerHook):
                     self._log_eval_table()
 
     @master_only
+    def log(self, runner):
+        super(WandbLogger, self).log(runner)
+
+    @master_only
     def after_run(self, runner):
         self.wandb.finish()
 
@@ -161,7 +169,8 @@ class WandbLogger(WandbLoggerHook):
             results = single_gpu_test(
                 runner.model, self.val_dataloader, show=False)
         eval_results = self.val_dataset.evaluate(results, logger='silent')
-        map_score = eval_results.get('mAP', None)
+        map_score = eval_results.get('mAP',
+                                     None)  # TODO: Support for other metrics
         if map_score:
             metadata = dict(epoch=runner.epoch + 1, map_score=map_score)
             return metadata
