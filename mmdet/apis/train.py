@@ -132,7 +132,8 @@ def train_detector(model,
         scaled_lr = (len(cfg.gpu_ids) * cfg.data.samples_per_gpu) / original_lr
         cfg.optimizer.update({"lr": scaled_lr})
 
-        logger.info(f'You are using {len(cfg.gpu_ids)} GPU(s), '
+        logger.info(f'You are using {len(cfg.gpu_ids)} GPU(s) '
+                    f'and {cfg.data.samples_per_gpu} samples per gpu, '
                     f'automatically scaling LR from {original_lr} to {scaled_lr}')
 
     # build optimizer
