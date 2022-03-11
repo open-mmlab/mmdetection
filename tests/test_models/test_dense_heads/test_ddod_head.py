@@ -71,6 +71,3 @@ def test_ddod_head_loss():
     assert onegt_cls_loss.item() > 0, 'cls loss should be non-zero'
     assert onegt_box_loss.item() > 0, 'box loss should be non-zero'
     assert onegt_iou_loss.item() > 0, ('iou loss should be non-zero')
-
-
-test_ddod_head_loss()
