@@ -68,6 +68,33 @@ def set_random_seed(seed, deterministic=False):
         torch.backends.cudnn.benchmark = False
 
 
+def scale_lr(cfg, logger):
+    """Automatically scaling LR according to GPU number.
+
+    Args:
+        cfg (config): training config.
+        logger (logging.Logger): logger.
+    """
+    if len(cfg.gpu_ids) == cfg.default_gpu_number:
+        logger.info(f'You are using {len(cfg.gpu_ids)} GPU(s) ,'
+                    f'and {cfg.data.samples_per_gpu} samples per gpu, '
+                    f'using LR = {cfg.optimizer.get("lr")}')
+    else:
+        # Get original LR from config
+        original_lr = cfg.optimizer.get("lr", 0)
+        assert original_lr != 0
+
+        # scale LR according to paper [linear scaling rule](https://arxiv.org/abs/1706.02677)
+        batch_size = len(cfg.gpu_ids) * cfg.data.samples_per_gpu
+        original_batch_size = cfg.default_gpu_number * cfg.data.samples_per_gpu
+        scaled_lr = (batch_size / original_batch_size) * original_lr
+        cfg.optimizer.update({"lr": scaled_lr})
+
+        logger.info(f'You are using {len(cfg.gpu_ids)} GPU(s) '
+                    f'and {cfg.data.samples_per_gpu} samples per gpu, '
+                    f'automatically scaling LR from {original_lr} to {scaled_lr}')
+
+
 def train_detector(model,
                    dataset,
                    cfg,
@@ -122,23 +149,8 @@ def train_detector(model,
     else:
         model = MMDataParallel(model, device_ids=cfg.gpu_ids)
 
-    # Automatically scaling LR according to GPU number
-    if len(cfg.gpu_ids) != cfg.default_gpu_number:
-        # Get original LR from config
-        original_lr = cfg.optimizer.get("lr", 0)
-        assert original_lr != 0
-
-        # scale LR according to paper [linear scaling rule](https://arxiv.org/abs/1706.02677)
-        batch_size = len(cfg.gpu_ids) * cfg.data.samples_per_gpu
-        original_batch_size = cfg.default_gpu_number * cfg.data.samples_per_gpu
-        scaled_lr = (batch_size / original_batch_size) * original_lr
-        cfg.optimizer.update({"lr": scaled_lr})
-
-        logger.info(f'You are using {len(cfg.gpu_ids)} GPU(s) '
-                    f'and {cfg.data.samples_per_gpu} samples per gpu, '
-                    f'automatically scaling LR from {original_lr} to {scaled_lr}')
-
     # build optimizer
+    scale_lr(cfg, logger)
     optimizer = build_optimizer(model, cfg.optimizer)
 
     # build runner
