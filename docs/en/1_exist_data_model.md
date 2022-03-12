@@ -500,7 +500,8 @@ MMDetection also provides out-of-the-box tools for training detection models.
 This section will show how to train _predefined_ models (under [configs](https://github.com/open-mmlab/mmdetection/tree/master/configs)) on standard datasets i.e. COCO.
 
 ### Learning rate automatically scale
-Before training, the learning rate will be automatically scaled according to the number of GPUs of the machine and the batch size of training. See [linear scaling rule](https://arxiv.org/abs/1706.02677) for details. For example, If there are 4 GPUs and 2 pictures on each GPU, 'lr = 0.01', then if there are 16 GPUs and 4 pictures on each GPU, it will automatically scale to 'lr = 0.08'.  If you need to disable the automatically scaling of learning rate, add `disable_auto_scale_lr = True` at the bottom of the specific config file.
+Before training, the learning rate will be automatically scaled according to the number of GPUs of the machine and the batch size of training. See [linear scaling rule](https://arxiv.org/abs/1706.02677) for details. For example, If there are 4 GPUs and 2 pictures on each GPU, 'lr = 0.01', then if there are 16 GPUs and 4 pictures on each GPU, it will automatically scale to 'lr = 0.08'. 
+If you need to disable the automatically scaling of learning rate, add `disable_auto_scale_lr = True` at the bottom of the specific config file.
 
 ### Prepare datasets
 
