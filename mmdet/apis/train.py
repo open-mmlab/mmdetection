@@ -68,12 +68,11 @@ def set_random_seed(seed, deterministic=False):
         torch.backends.cudnn.benchmark = False
 
 
-def scale_lr(cfg, distributed, logger):
+def scale_lr(cfg, logger):
     """Automatically scaling LR according to GPU number and sample per GPU.
 
     Args:
         cfg (config): training config.
-        distributed (bool): Distributed training or not.
         logger (logging.Logger): logger.
     """
 
@@ -92,11 +91,7 @@ def scale_lr(cfg, distributed, logger):
     else:
         original_samples_per_gpu = cfg.default_samples_per_gpu
 
-    if distributed:
-        gpu_number = len([torch.cuda.current_device()])
-    else:
-        gpu_number = len(cfg.gpu_ids)
-
+    gpu_number = len(cfg.gpu_ids)  # get the gpu number
     if gpu_number == original_gpu_number and \
             cfg.data.samples_per_gpu == original_samples_per_gpu:
         logger.info(f'You are using {gpu_number} GPU(s) ,'
@@ -176,7 +171,7 @@ def train_detector(model,
         model = MMDataParallel(model, device_ids=cfg.gpu_ids)
 
     # build optimizer
-    scale_lr(cfg, distributed, logger)
+    scale_lr(cfg, logger)
     optimizer = build_optimizer(model, cfg.optimizer)
 
     # build runner
