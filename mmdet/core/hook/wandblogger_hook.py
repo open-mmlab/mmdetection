@@ -51,17 +51,20 @@ class WandbLogger(WandbLoggerHook):
     def before_run(self, runner):
         super(WandbLogger, self).before_run(runner)
         self.cfg = self.wandb.config
+        # Check if configuration is passed to wandb.
         if len(dict(self.cfg)) == 0:
             warnings.warn(
                 'To log mmdetection Config,'
                 'pass it to init_kwargs of WandbLogger.', UserWarning)
 
+        # Check if EvalHook and CheckpointHook are available.
         for hook in runner.hooks:
             if isinstance(hook, EvalHook):
                 eval_hook = hook
             if isinstance(hook, CheckpointHook):
                 ckpt_hook = hook
 
+        # If CheckpointHook is not available turn off log_checkpoint.
         if 'ckpt_hook' in locals():
             self.ckpt_hook = ckpt_hook
         else:
@@ -69,17 +72,18 @@ class WandbLogger(WandbLoggerHook):
             warnings.warn('To use log_checkpoint turn use '
                           'CheckpointHook.', UserWarning)
 
+        # If EvalHook is not present turn off log_evaluation.
         if 'eval_hook' in locals():
             self.eval_hook = eval_hook
             self.val_dataloader = eval_hook.dataloader
             self.val_dataset = self.val_dataloader.dataset
-
         else:
             self.log_evaluation = False
             warnings.warn(
                 'To use log_evaluation turn validate '
                 'to True in train_detector.', UserWarning)
 
+        # Check if the priority of both hooks are more than WandbLogger.
         if self.priority < self.ckpt_hook.priority:
             self.log_checkpoint = False
         if self.priority < self.eval_hook.priority:
@@ -87,6 +91,8 @@ class WandbLogger(WandbLoggerHook):
             self.log_checkpoint_metadata = False
             self.log_eval_metrics = False
 
+        # If log_evaluation is True, create
+        # and log W&B table for validation data.
         if self.log_evaluation:
             # Initialize data table
             self._init_data_table()
@@ -94,6 +100,11 @@ class WandbLogger(WandbLoggerHook):
             self._add_ground_truth()
             # Log ground truth data
             self._log_data_table()
+
+        # Define a custom x-axes for validation metrics.
+        if self.log_eval_metrics:
+            self.wandb.define_metric('val/val_step')
+            self.wandb.define_metric('val/*', step_metric='val/val_step')
 
     @master_only
     def after_train_epoch(self, runner):
@@ -106,8 +117,11 @@ class WandbLogger(WandbLoggerHook):
                     eval_results = self.val_dataset.evaluate(
                         results, logger='silent')
                     for key, val in eval_results.items():
+                        if isinstance(val, str):
+                            pass
                         self.wandb.log({f'val/{key}': val}, commit=False)
-                    self.wandb.log({})
+                    self.wandb.log({'val/val_step': self.val_step})
+                    self.val_step += 1
 
         if self.log_checkpoint:
             if self.ckpt_hook.by_epoch:
@@ -153,18 +167,27 @@ class WandbLogger(WandbLoggerHook):
                               epoch,
                               aliases,
                               metadata=None):
+        """Log model checkpoint as  W&B Artifact.
+
+        Args:
+            path_to_model (str): Path where model checkpoints are saved.
+            epoch (int): The current epoch.
+            aliases (list): List of the aliases associated with this artifact.
+            metadata (dict, optional): Metadata associated with this artifact.
+        """
         model_artifact = self.wandb.Artifact(
             f'run_{self.wandb.run.id}_model', type='model', metadata=metadata)
         model_artifact.add_file(f'{path_to_model}/epoch_{epoch+1}.pth')
         self.wandb.log_artifact(model_artifact, aliases=aliases)
 
     def _get_ckpt_metadata(self, runner):
-        runner.logger.info(
-            f'Evaluating for model checkpoint at epoch '
-            f'{runner.epoch+1} which will be saved as W&B Artifact.')
+        """Get model checkpoint metadata."""
         if self.ckpt_hook.interval == self.eval_hook.interval:
             results = self.eval_hook.results
         else:
+            runner.logger.info(
+                f'Evaluating for model checkpoint at epoch '
+                f'{runner.epoch+1} which will be saved as W&B Artifact.')
             from mmdet.apis import single_gpu_test
             results = single_gpu_test(
                 runner.model, self.val_dataloader, show=False)
@@ -181,6 +204,14 @@ class WandbLogger(WandbLoggerHook):
             return {}
 
     def _is_best_ckpt(self, metadata):
+        """Check if the current checkpoint has the best metric score.
+
+        Args:
+            metadata (dict): Metadata associated with the checkpoint.
+
+        Returns:
+            bool: Returns True, if the checkpoint has the best metric score.
+        """
         map_score = metadata.get('map_score', None)
         if map_score:
             if map_score > self.best_map_score:
@@ -190,10 +221,12 @@ class WandbLogger(WandbLoggerHook):
                 return False
 
     def _init_data_table(self):
+        """Initialize the W&B Tables for validation data."""
         columns = ['image_name', 'image']
         self.data_table = self.wandb.Table(columns=columns)
 
     def _init_pred_table(self):
+        """Initialize the W&B Tables for model evaluation."""
         columns = ['epoch', 'image_name', 'ground_truth', 'prediction'] + list(
             self.class_id_to_label.values())
         self.eval_table = self.wandb.Table(columns=columns)
@@ -219,7 +252,8 @@ class WandbLogger(WandbLoggerHook):
 
             image_name = img_meta['ori_filename']
             # permute to get channel last configuration, followed by bgr -> rgb
-            image = image.permute(1, 2, 0).numpy()[..., ::-1]
+            image = image.permute(
+                1, 2, 0).numpy()[..., ::-1]  # Not true for every dataloader
 
             box_data = []
             assert len(bboxes) == len(labels)
@@ -289,6 +323,19 @@ class WandbLogger(WandbLoggerHook):
                     classes=self.class_set), *tuple(class_scores))
 
     def _get_wandb_bbox(self, bbox, label, box_caption, scale_factor):
+        """Get structured dict for logging bounding boxes to W&B.
+
+        Args:
+            bbox (list): Bounding box coordinates in
+                        (minX, minY, maxX, maxY) format.
+            label (int): label id for that bounding box.
+            box_caption (str): Caption for that bounding box.
+            scale_factor (list): List rescaling factor for bounding box values.
+
+        Returns:
+            dict: Structured dict required for logging
+                  that bounding box to W&B.
+        """
         position = dict(
             minX=int(bbox[0] * scale_factor[0]),
             minY=int(bbox[1] * scale_factor[1]),
@@ -309,6 +356,12 @@ class WandbLogger(WandbLoggerHook):
         }
 
     def _log_data_table(self):
+        """Log the W&B Tables for validation data as artifact and calls
+        `use_artifact` on it so that the evaluation table can use the reference
+        of already uploaded images.
+
+        This allows the data to be uploaded just once.
+        """
         data_artifact = self.wandb.Artifact('val', type='dataset')
         data_artifact.add(self.data_table, 'val_data')
         self.wandb.run.log_artifact(data_artifact)
@@ -320,6 +373,11 @@ class WandbLogger(WandbLoggerHook):
         self.data_table_ref = data_artifact.get('val_data')
 
     def _log_eval_table(self):
+        """Log the W&B Tables for model evaluation.
+
+        The table will be logged multiple times creating new version. Use this
+        to compare models at different intervals interactively.
+        """
         pred_artifact = self.wandb.Artifact(
             f'run_{self.wandb.run.id}_pred', type='evaluation')
         pred_artifact.add(self.eval_table, 'eval_data')
