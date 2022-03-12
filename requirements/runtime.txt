@@ -1,8 +1,9 @@
 matplotlib
 numpy
-# python<=3.8 can easily use this platform choise to define which pycocotools to use.
-# however, I can not fix it with python3.9
 pycocotools; platform_system == "Linux"
-pycocotools-windows; platform_system == "Windows"
+# we have a easy way to deal with python<=3.8
+pycocotools-windows; platform_system == "Windows" and python_version <= '3.8'
+# if python>3.8, you have to install Visual C++ 14.0 or greater from "https://visualstudio.microsoft.com/visual-cpp-build-tools" first. Then you can build pycocotools in your computer.
+pycocotools; platform_system == "Windows" and python_version > '3.8'
 six
 terminaltables
