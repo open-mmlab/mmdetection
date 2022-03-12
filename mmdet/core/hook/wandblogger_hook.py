@@ -44,7 +44,7 @@ class WandbLogger(WandbLoggerHook):
         self.log_checkpoint_metadata = log_checkpoint_metadata
         self.log_evaluation = log_evaluation
         self.log_eval_metrics = True
-        self.best_map_score = 0
+        self.best_score = 0
         self.val_step = 0
 
     @master_only
@@ -191,17 +191,10 @@ class WandbLogger(WandbLoggerHook):
             from mmdet.apis import single_gpu_test
             results = single_gpu_test(
                 runner.model, self.val_dataloader, show=False)
+
         eval_results = self.val_dataset.evaluate(results, logger='silent')
-        map_score = eval_results.get('mAP',
-                                     None)  # TODO: Support for other metrics
-        if map_score:
-            metadata = dict(epoch=runner.epoch + 1, map_score=map_score)
-            return metadata
-        else:
-            warnings.warn(
-                'Set eval metric to mAP to get metadata for checkpoint.',
-                UserWarning)
-            return {}
+        metadata = dict(epoch=runner.epoch + 1, **eval_results)
+        return metadata
 
     def _is_best_ckpt(self, metadata):
         """Check if the current checkpoint has the best metric score.
@@ -212,13 +205,28 @@ class WandbLogger(WandbLoggerHook):
         Returns:
             bool: Returns True, if the checkpoint has the best metric score.
         """
-        map_score = metadata.get('map_score', None)
-        if map_score:
-            if map_score > self.best_map_score:
-                self.best_map_score = map_score
-                return True
-            else:
-                return False
+        # map_score = metadata.get('map_score', None)
+        keys = list(metadata.keys())
+        map_metrics = [key for key in keys if 'mAP' in key]
+        ar_metrics = [key for key in keys if 'AR' in key]
+        if len(map_metrics) > 0:
+            map_score = metadata.get(map_metrics[0], None)
+            return self._is_best_score(map_score)
+        elif len(ar_metrics) > 0:
+            ar_score = metadata.get(ar_metrics[0], None)
+            return self._is_best_score(ar_score)
+        else:
+            return False
+
+    def _is_best_score(self, score):
+        if score is None:
+            return
+
+        if score > self.best_score:
+            self.best_score = score
+            return True
+        else:
+            return False
 
     def _init_data_table(self):
         """Initialize the W&B Tables for validation data."""
