@@ -6,13 +6,13 @@ _base_ = [
 
 # please install mmcls>=0.20.0
 # import mmcls.models to trigger register_module in mmcls
-custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
+# custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
 pretrained = 'https://download.openmmlab.com/mmclassification/v0/convnext/downstream/convnext-tiny_3rdparty_32xb128-noema_in1k_20220301-795e9634.pth'  # noqa
 
 model = dict(
     backbone=dict(
         _delete_=True,
-        type='mmcls.ConvNeXt',
+        type='ConvNeXt1',
         arch='tiny',
         out_indices=[0, 1, 2, 3],
         drop_path_rate=0.4,
