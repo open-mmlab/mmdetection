@@ -1,6 +1,8 @@
 matplotlib
 numpy
-pycocotools; platform=="Linux"
-pycocotools-windows; platform=="Windows"
+# python<=3.8 can easily use this platform choise to define which pycocotools to use.
+# however, I can not fix it with python3.9
+pycocotools; platform_system == "Linux"
+pycocotools-windows; platform_system == "Windows"
 six
 terminaltables
