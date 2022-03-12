@@ -77,6 +77,11 @@ def scale_lr(cfg, distributed, logger):
         logger (logging.Logger): logger.
     """
 
+    if "disable_auto_scale_lr" in cfg and \
+            cfg.disable_auto_scale_lr is True:
+        logger.info(f'You disabled scaling LR automatically.')
+        return
+
     if "mmdet_official_special_gpu_number" in cfg:
         original_gpu_number = cfg.mmdet_official_special_gpu_number
     else:
