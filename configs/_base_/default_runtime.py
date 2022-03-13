@@ -22,3 +22,4 @@ mp_start_method = 'fork'
 
 # In order to support automatically scaling LR.
 default_batch_size = 16  # (8 GPUs) x (2 samples per GPU) or (4 GPUs) x (4 samples per GPU)
+enable_auto_scale_lr = False
