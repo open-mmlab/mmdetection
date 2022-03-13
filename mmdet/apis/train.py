@@ -75,6 +75,11 @@ def scale_lr(cfg, logger):
         cfg (config): training config.
         logger (logging.Logger): logger.
     """
+
+    if cfg.enable_auto_scale_lr is False:
+        logger.info(f'You disabled automatically scaling LR.')
+        return
+
     if "mmdet_official_special_batch_size" in cfg:
         original_batch_size = cfg.mmdet_official_special_batch_size
     else:
