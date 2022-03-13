@@ -143,6 +143,3 @@ custom_hooks = [
     dict(type='NumClassCheckHook'),
     dict(type='CheckInvalidLossHook', interval=50, priority='VERY_LOW')
 ]
-
-# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
-default_batch_size = 192  # (8 GPUs) x (24 samples per GPU)

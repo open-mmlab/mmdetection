@@ -77,6 +77,3 @@ data = dict(
 optimizer = dict(type='SGD', lr=2e-3, momentum=0.9, weight_decay=5e-4)
 optimizer_config = dict(_delete_=True)
 dist_params = dict(backend='nccl', port=29555)
-
-# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
-default_batch_size = 64  # (8 GPUs) x (8 samples per GPU)

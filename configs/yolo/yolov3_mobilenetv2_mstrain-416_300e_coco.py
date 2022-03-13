@@ -135,6 +135,3 @@ lr_config = dict(
 runner = dict(type='EpochBasedRunner', max_epochs=30)
 evaluation = dict(interval=1, metric=['bbox'])
 find_unused_parameters = True
-
-# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
-default_batch_size = 192  # (8 GPUs) x (24 samples per GPU)
