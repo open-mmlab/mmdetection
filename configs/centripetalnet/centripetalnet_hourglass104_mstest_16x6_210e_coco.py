@@ -105,4 +105,4 @@ lr_config = dict(
 runner = dict(type='EpochBasedRunner', max_epochs=210)
 
 # NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
-mmdet_official_special_batch_size = 96  # (16 GPUs) x (6 samples per GPU)
+default_batch_size = 96  # (16 GPUs) x (6 samples per GPU)
