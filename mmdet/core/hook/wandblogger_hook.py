@@ -147,7 +147,7 @@ class WandbLogger(WandbLoggerHook):
                         results, logger='silent')
                     for key, val in eval_results.items():
                         if isinstance(val, str):
-                            pass
+                            continue
                         self.wandb.log({f'val/{key}': val}, commit=False)
                     self.wandb.log({'val/val_step': self.val_step})
                     self.val_step += 1
