@@ -84,6 +84,10 @@ def parse_args():
         default='none',
         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument(
+        '--auto-scale-lr',
+        action='store_true',
+        help='enable automatically scaling LR.')
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
@@ -105,6 +109,9 @@ def main():
     cfg = Config.fromfile(args.config)
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
+
+    if args.auto_scale_lr:
+        cfg.update({"enable_auto_scale_lr": True})
 
     # set multi-process settings
     setup_multi_processes(cfg)
