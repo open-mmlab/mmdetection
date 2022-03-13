@@ -160,4 +160,4 @@ evaluation = dict(
 log_config = dict(interval=50)
 
 # NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
-mmdet_official_special_samples_per_gpu = 8
+mmdet_official_special_batch_size = 64  # (8 GPUs) x (8 samples per GPU)

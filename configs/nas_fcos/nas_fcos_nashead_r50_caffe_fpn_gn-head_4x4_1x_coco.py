@@ -97,7 +97,3 @@ data = dict(
 
 optimizer = dict(
     lr=0.01, paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.))
-
-# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
-mmdet_official_special_gpu_number = 4
-mmdet_official_special_samples_per_gpu = 4

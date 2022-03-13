@@ -78,5 +78,4 @@ lr_config = dict(
     step=[8, 11])
 
 # NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
-mmdet_official_special_gpu_number = 32
-mmdet_official_special_samples_per_gpu = 8
+mmdet_official_special_batch_size = 256  # (32 GPUs) x (8 samples per GPU)

@@ -13,4 +13,4 @@ optimizer = dict(
 data = dict(samples_per_gpu=1, workers_per_gpu=1)
 
 # NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
-mmdet_official_special_samples_per_gpu = 1
+mmdet_official_special_batch_size = 8  # (8 GPUs) x (1 samples per GPU)
