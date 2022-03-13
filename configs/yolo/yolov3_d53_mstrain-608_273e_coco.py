@@ -127,4 +127,4 @@ runner = dict(type='EpochBasedRunner', max_epochs=273)
 evaluation = dict(interval=1, metric=['bbox'])
 
 # NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
-mmdet_official_special_batch_size = 64  # (8 GPUs) x (8 samples per GPU)
+default_batch_size = 64  # (8 GPUs) x (8 samples per GPU)
