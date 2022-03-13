@@ -509,7 +509,10 @@ You could download the existing models in advance if the network connection is u
 
 ### Learning rate automatically scale
 
-If you want to enable this feature, you need to add argument `--auto-scale-lr`.
+The default batch size of mmdet is `16` and had already set to `default_batch_size` in `config/_base_/default_runtime.py`. Learning rate automatically scale base on this value. **Note: User must not modify `default_batch_size`.**
+Meanwhile, the `enable_auto_scale_lr` is set to `False` by default. 
+
+If you want to enable this feature, you only need to add argument `--auto-scale-lr`.
 The basic usage is as follows.
 
 ```shell
