@@ -496,7 +496,10 @@ MMDetection 也为训练检测模型提供了开盖即食的工具。本节将�
 
 ### 学习率自动缩放
 
-如果要启用此功能，需要添加参数 `--auto-scale-lr`.
+mmdet的默认批处理大小为'16'，并且已经设置在`config/_base_/default_runtime.py` 中的 `default_batch_size`，学习率自动缩放基于该值。**注意：用户不得修改`default_batch_size`**
+同时，启用自动缩放 `enable_auto_scale_lr` 默认设置为 `False`。
+
+如果要启用此功能，只需在命令添加参数 `--auto-scale-lr`。
 基本用法如下：
 
 ```shell
