@@ -145,4 +145,4 @@ custom_hooks = [
 ]
 
 # NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
-mmdet_official_special_samples_per_gpu = 24
+mmdet_official_special_batch_size = 192  # (8 GPUs) x (24 samples per GPU)

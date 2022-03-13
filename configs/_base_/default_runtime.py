@@ -21,5 +21,4 @@ opencv_num_threads = 0
 mp_start_method = 'fork'
 
 # In order to support automatically scaling LR.
-default_gpu_number = 8  # default number of GPU for mmdet
-default_samples_per_gpu = 2  # default samples per GPU for mmdet
+default_batch_size = 16  # (8 GPUs) x (2 samples per GPU) or (4 GPUs) x (4 samples per GPU)
