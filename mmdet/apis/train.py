@@ -80,10 +80,8 @@ def scale_lr(cfg, logger):
         logger.info(f'You disabled automatically scaling LR.')
         return
 
-    if "mmdet_official_special_batch_size" in cfg:
-        original_batch_size = cfg.mmdet_official_special_batch_size
-    else:
-        original_batch_size = cfg.default_batch_size
+    # default batch size fo pre-train model
+    original_batch_size = cfg.default_batch_size
 
     gpu_number = len(cfg.gpu_ids)  # get the gpu number
     batch_size = gpu_number * cfg.data.samples_per_gpu  # calculate the batch size
