@@ -75,44 +75,34 @@ def scale_lr(cfg, logger):
         cfg (config): training config.
         logger (logging.Logger): logger.
     """
-
-    if "disable_auto_scale_lr" in cfg and \
-            cfg.disable_auto_scale_lr is True:
-        logger.info(f'You disabled scaling LR automatically.')
-        return
-
-    if "mmdet_official_special_gpu_number" in cfg:
-        original_gpu_number = cfg.mmdet_official_special_gpu_number
+    if "mmdet_official_special_batch_size" in cfg:
+        original_batch_size = cfg.mmdet_official_special_batch_size
     else:
-        original_gpu_number = cfg.default_gpu_number
-
-    if "mmdet_official_special_samples_per_gpu" in cfg:
-        original_samples_per_gpu = cfg.mmdet_official_special_samples_per_gpu
-    else:
-        original_samples_per_gpu = cfg.default_samples_per_gpu
+        original_batch_size = cfg.default_batch_size
 
     gpu_number = len(cfg.gpu_ids)  # get the gpu number
-    if gpu_number == original_gpu_number and \
-            cfg.data.samples_per_gpu == original_samples_per_gpu:
+    batch_size = gpu_number * cfg.data.samples_per_gpu  # calculate the batch size
+
+    if batch_size == original_batch_size:
         logger.info(f'You are using {gpu_number} GPU(s) ,'
                     f'and {cfg.data.samples_per_gpu} samples per gpu, '
-                    f'using LR = {cfg.optimizer.get("lr")}')
+                    f'batch size is {batch_size} which '
+                    f'match the original batch size: {original_batch_size}, '
+                    f'won\'t scaling the LR ({cfg.optimizer.get("lr")}).')
     else:
         # Get original LR from config
         original_lr = cfg.optimizer.get("lr", 0)
         assert original_lr != 0
 
         # scale LR according to paper [linear scaling rule](https://arxiv.org/abs/1706.02677)
-        batch_size = gpu_number * cfg.data.samples_per_gpu
-        original_batch_size = original_gpu_number * original_samples_per_gpu
         scaled_lr = (batch_size / original_batch_size) * original_lr
         cfg.optimizer.update({"lr": scaled_lr})
 
         logger.info(f'You are using {gpu_number} GPU(s) '
-                    f'and {cfg.data.samples_per_gpu} samples per gpu, '
-                    f'while mmdet original config of this model '
-                    f'is {original_gpu_number} GPU(s) '
-                    f'and {original_samples_per_gpu} samples per gpu, '
+                    f'and {cfg.data.samples_per_gpu} samples per gpu '
+                    f'means the batch is {batch_size}, '
+                    f'while mmdet original batch size of this model '
+                    f'is {original_batch_size}, '
                     f'automatically scaling LR from {original_lr} to {scaled_lr}')
 
 
