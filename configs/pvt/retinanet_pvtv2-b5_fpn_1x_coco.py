@@ -5,7 +5,7 @@ model = dict(
         num_layers=[3, 6, 40, 3],
         mlp_ratios=(4, 4, 4, 4),
         init_cfg=dict(checkpoint='https://github.com/whai362/PVT/'
-                                 'releases/download/v2/pvt_v2_b5.pth')),
+                      'releases/download/v2/pvt_v2_b5.pth')),
     neck=dict(in_channels=[64, 128, 320, 512]))
 # optimizer
 optimizer = dict(
