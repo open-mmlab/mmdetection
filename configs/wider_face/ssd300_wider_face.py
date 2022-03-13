@@ -16,3 +16,6 @@ lr_config = dict(
 # runtime settings
 runner = dict(type='EpochBasedRunner', max_epochs=24)
 log_config = dict(interval=1)
+
+# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
+default_batch_size = 480  # (8 GPUs) x (60 samples per GPU)

@@ -61,6 +61,3 @@ data = dict(
         ann_file=data_root + 'val.txt',
         img_prefix=data_root + 'WIDER_val/',
         pipeline=test_pipeline))
-
-# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
-default_batch_size = 480  # (8 GPUs) x (60 samples per GPU)
