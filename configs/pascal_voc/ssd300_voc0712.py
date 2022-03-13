@@ -67,6 +67,3 @@ lr_config = dict(
 checkpoint_config = dict(interval=1)
 # runtime settings
 runner = dict(type='EpochBasedRunner', max_epochs=24)
-
-# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
-default_batch_size = 64  # (8 GPUs) x (8 samples per GPU)
