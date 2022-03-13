@@ -103,6 +103,3 @@ data = dict(
     train=dict(pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
-
-# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
-default_batch_size = 64  # (8 GPUs) x (8 samples per GPU)

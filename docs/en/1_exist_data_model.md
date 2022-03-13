@@ -521,7 +521,7 @@ python tools/train.py \
 
 If you enabled this feature, the learning rate will be automatically scaled according to the number of GPUs of the machine and the batch size of training. See [linear scaling rule](https://arxiv.org/abs/1706.02677) for details. For example, If there are 4 GPUs and 2 pictures on each GPU, 'lr = 0.01', then if there are 16 GPUs and 4 pictures on each GPU, it will automatically scale to 'lr = 0.08'. 
 
-If you don't want to use it, then you need to set the learning rate manually according to the training batch size.
+If you don't want to use it, the default learning rate in config files is based on batch size of 16, you need to calculate the learning rate manually according to the practical training batch size and change the learning rate in specific config file. 
 
 ### Training on a single GPU
 
