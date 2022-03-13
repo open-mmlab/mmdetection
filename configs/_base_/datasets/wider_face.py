@@ -63,4 +63,4 @@ data = dict(
         pipeline=test_pipeline))
 
 # NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
-mmdet_official_special_samples_per_gpu = 60
+mmdet_official_special_batch_size = 480  # (8 GPUs) x (60 samples per GPU)

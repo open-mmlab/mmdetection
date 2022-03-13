@@ -65,4 +65,4 @@ model = dict(
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 
 # NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
-mmdet_official_special_gpu_number = 4
+mmdet_official_special_batch_size = 8  # (4 GPUs) x (2 samples per GPU)
