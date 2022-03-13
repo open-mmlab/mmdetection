@@ -121,4 +121,4 @@ optimizer = dict(lr=0.01)
 fp16 = dict(loss_scale=512.)
 
 # NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
-mmdet_official_special_batch_size = 64  # (8 GPUs) x (8 samples per GPU)
+default_batch_size = 64  # (8 GPUs) x (8 samples per GPU)
