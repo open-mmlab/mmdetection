@@ -75,13 +75,13 @@ def scale_lr(cfg, logger):
         cfg (config): training config.
         logger (logging.Logger): logger.
     """
-    enable_auto_scale_lr = cfg.get("enable_auto_scale_lr", False)
+    enable_auto_scale_lr = cfg.get('enable_auto_scale_lr', False)
     if enable_auto_scale_lr is False:
         logger.info(f'You disabled automatically scaling LR.')
         return
 
     # default batch size of pre-train model
-    original_batch_size = cfg.get("default_batch_size", None)
+    original_batch_size = cfg.get('default_batch_size', None)
     assert original_batch_size is not None
 
     # calculate the batch size
