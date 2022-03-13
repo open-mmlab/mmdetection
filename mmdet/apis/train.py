@@ -80,12 +80,13 @@ def scale_lr(cfg, logger):
         logger.info(f'You disabled automatically scaling LR.')
         return
 
-    # default batch size fo pre-train model
+    # default batch size of pre-train model
     original_batch_size = cfg.get("default_batch_size", None)
     assert original_batch_size is not None
 
-    gpu_number = len(cfg.gpu_ids)  # get the gpu number
-    batch_size = gpu_number * cfg.data.samples_per_gpu  # calculate the batch size
+    # calculate the batch size
+    gpu_number = len(cfg.gpu_ids)
+    batch_size = gpu_number * cfg.data.samples_per_gpu
 
     logger.info(f'You are using {gpu_number} GPU(s) '
                 f'and {cfg.data.samples_per_gpu} samples per gpu '
@@ -96,16 +97,19 @@ def scale_lr(cfg, logger):
         original_lr = cfg.optimizer.get("lr", 0)
         assert original_lr != 0
 
-        # scale LR according to paper [linear scaling rule](https://arxiv.org/abs/1706.02677)
+        # scale LR according to paper
+        # [linear scaling rule](https://arxiv.org/abs/1706.02677)
         scaled_lr = (batch_size / original_batch_size) * original_lr
         cfg.optimizer.update({"lr": scaled_lr})
 
         logger.info(f'While default batch size of this model '
                     f'is {original_batch_size}, '
-                    f'automatically scaling LR from {original_lr} to {scaled_lr}')
+                    f'automatically scaling LR '
+                    f'from {original_lr} to {scaled_lr}')
 
     else:
-        logger.info(f'Which match the original batch size: {original_batch_size}, '
+        logger.info(f'Which match the '
+                    f'original batch size: {original_batch_size}, '
                     f'won\'t scaling the LR ({cfg.optimizer.get("lr")}).')
 
 
