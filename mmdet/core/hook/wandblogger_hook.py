@@ -14,31 +14,60 @@ class WandbLogger(WandbLoggerHook):
     """WandbLogger logs metrics, saves model checkpoints as W&B Artifact, and
     logs model prediction as interactive W&B Tables.
 
-    - Metrics: The
+    - Metrics: The WandbLogger will automatically log training
+        and validation metrics.
+
+    - Checkpointing: If log_checkpoint is True, the checkpoint saved at
+        every checkpoint interval will be saved as W&B Artifacts.
+        Please refer to https://docs.wandb.ai/guides/artifacts/model-versioning
+        to learn more about model versioning with W&B Artifacts.
+        Note: This depends on the CheckpointHook whose priority is more
+        than WandbLogger.
+
+    - Checkpoint Metadata: If log_checkpoint_metadata is True, every checkpoint
+        artifact will have a metadata associated with it. The metadata contains
+        the evaluation metrics computed on validation data with that checkpoint
+        along with the current epoch. If True, it also marks the checkpoint
+        version with the best evaluation metric with a 'best' alias. You can
+        choose the best checkpoint in the W&B Artifacts UI using this.
+        Note: It depends on EvalHook whose priority is more than WandbLogger.
+
+    - Evaluation: At every evaluation interval, the WandbLogger logs the
+        model prediction as interactive W&B Tables. Please refer to
+        https://docs.wandb.ai/guides/data-vis to learn more about W&B Tables.
+        Currently, the WandbLogger logs the predicted bounding boxes along with
+        the ground truth at every evaluation interval.
+        Note: This depends on the EvalHook whose priority is more than
+        WandbLogger. Also note that the data is just logged once and subsequent
+        evaluation tables uses reference to the logged data to save
+        memory usage.
 
     Args:
+        init_kwargs (dict): A dict passed to wandb.init to initialize
+            a W&B run. Please refer to https://docs.wandb.ai/ref/python/init
+            for possible key-value pairs.
+        interval (int): Logging interval (every k iterations).
+            Default 10.
+        log_checkpoint (bool): Save the checkpoint at every checkpoint interval
+            as W&B Artifacts. Use this for model versioning where each version
+            is a checkpoint.
+            Default: False
+        log_checkpoint_metadata (bool): Log the evaluation metrics computed
+            on the validation data with the checkpoint, along with current
+            epoch as a metadata to that checkpoint.
+            Default: True
+        log_evaulation (bool): Log the model predictions as interactive
+            W&B Tables.
+            Default: True
     """
 
     def __init__(self,
                  init_kwargs=None,
                  interval=10,
-                 ignore_last=True,
-                 reset_flag=False,
-                 commit=True,
-                 by_epoch=True,
-                 with_step=True,
                  log_checkpoint=False,
                  log_checkpoint_metadata=False,
                  log_evaluation=False):
-        super(WandbLogger, self).__init__(
-            init_kwargs,
-            interval,
-            ignore_last,
-            reset_flag,
-            commit,
-            by_epoch,
-            with_step,
-        )
+        super(WandbLogger, self).__init__(init_kwargs, interval)
 
         self.log_checkpoint = log_checkpoint
         self.log_checkpoint_metadata = log_checkpoint_metadata
