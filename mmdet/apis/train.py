@@ -75,24 +75,23 @@ def scale_lr(cfg, logger):
         cfg (config): training config.
         logger (logging.Logger): logger.
     """
-
-    if cfg.enable_auto_scale_lr is False:
+    enable_auto_scale_lr = cfg.get("enable_auto_scale_lr", False)
+    if enable_auto_scale_lr is False:
         logger.info(f'You disabled automatically scaling LR.')
         return
 
     # default batch size fo pre-train model
-    original_batch_size = cfg.default_batch_size
+    original_batch_size = cfg.get("default_batch_size", None)
+    assert original_batch_size is not None
 
     gpu_number = len(cfg.gpu_ids)  # get the gpu number
     batch_size = gpu_number * cfg.data.samples_per_gpu  # calculate the batch size
 
-    if batch_size == original_batch_size:
-        logger.info(f'You are using {gpu_number} GPU(s) ,'
-                    f'and {cfg.data.samples_per_gpu} samples per gpu, '
-                    f'batch size is {batch_size} which '
-                    f'match the original batch size: {original_batch_size}, '
-                    f'won\'t scaling the LR ({cfg.optimizer.get("lr")}).')
-    else:
+    logger.info(f'You are using {gpu_number} GPU(s) '
+                f'and {cfg.data.samples_per_gpu} samples per gpu '
+                f'means the batch is {batch_size}.')
+
+    if batch_size != original_batch_size:
         # Get original LR from config
         original_lr = cfg.optimizer.get("lr", 0)
         assert original_lr != 0
@@ -101,12 +100,13 @@ def scale_lr(cfg, logger):
         scaled_lr = (batch_size / original_batch_size) * original_lr
         cfg.optimizer.update({"lr": scaled_lr})
 
-        logger.info(f'You are using {gpu_number} GPU(s) '
-                    f'and {cfg.data.samples_per_gpu} samples per gpu '
-                    f'means the batch is {batch_size}, '
-                    f'while mmdet original batch size of this model '
+        logger.info(f'While default batch size of this model '
                     f'is {original_batch_size}, '
                     f'automatically scaling LR from {original_lr} to {scaled_lr}')
+
+    else:
+        logger.info(f'Which match the original batch size: {original_batch_size}, '
+                    f'won\'t scaling the LR ({cfg.optimizer.get("lr")}).')
 
 
 def train_detector(model,
