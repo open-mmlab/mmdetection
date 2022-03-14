@@ -501,7 +501,7 @@ MMDetection 也为训练检测模型提供了开盖即食的工具。本节将�
 如果要启用此功能，需在命令添加参数 `--auto-scale-lr`。并且在启动命令之前，请检查下即将使用的配置文件的名称，因为配置名称指示默认的批处理大小。
 在默认情况下，批次大小是 `8 x 2 = 16`，例如：`faster_rcnn_r50_caffe_fpn_90k_coco.py`；若不是默认批次，你可以看到像 `NxN` 字样的，例如：`faster_rcnn_x101_32x4d_fpn_2x_coco.py` 的 批次大小是 `32 x 4 = 128`。
 
-**请记住：如果不是默认批次大小的配置文件，需要修改 `config/_base_/default_runtime.py` 中的 `default_batch_size` 为你训练时候的批次大小。**
+**请记住：如果不是默认批次大小的配置文件，需要修改 `config/_base_/default_runtime.py` 中的 `default_batch_size` 为你训练时候使用的配置文件名`NxN`得出的批次大小。**
 
 学习率自动缩放基本用法如下：
 
