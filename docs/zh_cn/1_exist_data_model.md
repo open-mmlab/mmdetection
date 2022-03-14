@@ -496,11 +496,14 @@ MMDetection 也为训练检测模型提供了开盖即食的工具。本节将�
 
 ### 学习率自动缩放
 
-mmdet的默认批处理大小为'16'，并且已经设置在`config/_base_/default_runtime.py` 中的 `default_batch_size`，学习率自动缩放基于该值。**注意：用户不得修改`default_batch_size`**
-同时，启用自动缩放 `enable_auto_scale_lr` 默认设置为 `False`。
+重要信息：在配置文件中的学习率是在 8 块 GPU，每块 GPU 有 2 张图像（批大小为 8*2=16）的情况下设置的。其已经设置在`config/_base_/default_runtime.py` 中的 `default_batch_size`。学习率自动缩放基于该值。同时，为了不影响其他基于 mmdet 的 codebase，启用自动缩放标志 `enable_auto_scale_lr` 默认设置为 `False`。
 
-如果要启用此功能，只需在命令添加参数 `--auto-scale-lr`。
-基本用法如下：
+如果要启用此功能，需在命令添加参数 `--auto-scale-lr`。并且在启动命令之前，请检查下即将使用的配置文件的名称，因为配置名称指示默认的批处理大小。
+在默认情况下，批次大小是 `8 x 2 = 16`，例如：`faster_rcnn_r50_caffe_fpn_90k_coco.py`；若不是默认批次，你可以看到像 `NxN` 字样的，例如：`faster_rcnn_x101_32x4d_fpn_2x_coco.py` 的 批次大小是 `32 x 4 = 128`。
+
+**请记住：如果不是默认批次大小的配置文件，需要修改 `config/_base_/default_runtime.py` 中的 `default_batch_size` 为你训练时候的批次大小。**
+
+学习率自动缩放基本用法如下：
 
 ```shell
 python tools/train.py \
@@ -512,7 +515,7 @@ python tools/train.py \
 
 执行命令之后，会根据机器的GPU数量和训练的批次大小对学习率进行自动缩放，缩放方式详见 [线性扩展规则](https://arxiv.org/abs/1706.02677) ，比如：在 4 块 GPU 并且每张 GPU 上有 2 张图片的情况下 `lr=0.01`，那么在 16 块 GPU 并且每张 GPU 上有 4 张图片的情况下, LR 会自动缩放至`lr=0.08`。
 
-如果不启用该功能，则需要根据 训练实际的批次大小 与 默认的批次大小`16` 来手动计算并修改配置文件里面的学习率。
+如果不启用该功能，则需要根据 [线性扩展规则](https://arxiv.org/abs/1706.02677) 来手动计算并修改配置文件里面的学习率。
 
 ### 使用单 GPU 训练
 
