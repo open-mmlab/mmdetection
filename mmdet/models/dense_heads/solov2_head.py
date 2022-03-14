@@ -1,0 +1,563 @@
+# Copyright (c) OpenMMLab. All rights reserved.
+import mmcv
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from mmcv.cnn import ConvModule
+
+from mmdet.core import InstanceData, mask_matrix_nms, multi_apply
+from mmdet.core.utils import center_of_mass, generate_coordinate
+from mmdet.models.builder import HEADS
+from .solo_head import SOLOHead
+from mmcv.runner import BaseModule
+
+
+class MaskFeatModule(BaseModule):
+    def __init__(self,
+                 in_channels,
+                 feat_channels,
+                 start_level,
+                 end_level,
+                 out_channels,
+                 conv_cfg=None,
+                 norm_cfg=None,
+                 init_cfg=[
+                     dict(type='Normal', layer='Conv2d', std=0.01)]):
+        super(MaskFeatModule, self).__init__(init_cfg=init_cfg)
+
+        self.in_channels = in_channels
+        self.feat_channels = feat_channels
+        self.start_level = start_level
+        self.end_level = end_level
+        assert start_level >= 0 and end_level >= start_level
+        self.out_channels = out_channels
+        self.conv_cfg = conv_cfg
+        self.norm_cfg = norm_cfg
+
+        self.convs_all_levels = nn.ModuleList()
+        for i in range(self.start_level, self.end_level + 1):
+            convs_per_level = nn.Sequential()
+            if i == 0:
+                one_conv = ConvModule(
+                    self.in_channels,
+                    self.feat_channels,
+                    3,
+                    padding=1,
+                    conv_cfg=self.conv_cfg,
+                    norm_cfg=self.norm_cfg,
+                    inplace=False)
+                convs_per_level.add_module('conv' + str(i), one_conv)
+                self.convs_all_levels.append(convs_per_level)
+                continue
+
+            for j in range(i):
+                if j == 0:
+                    if i == self.end_level:
+                        chn = self.in_channels + 2
+                    else:
+                        chn = self.in_channels
+                    one_conv = ConvModule(
+                        chn,
+                        self.feat_channels,
+                        3,
+                        padding=1,
+                        conv_cfg=self.conv_cfg,
+                        norm_cfg=self.norm_cfg,
+                        inplace=False)
+                    convs_per_level.add_module('conv' + str(j), one_conv)
+                    one_upsample = nn.Upsample(
+                        scale_factor=2, mode='bilinear', align_corners=False)
+                    convs_per_level.add_module(
+                        'upsample' + str(j), one_upsample)
+                    continue
+
+                one_conv = ConvModule(
+                    self.feat_channels,
+                    self.feat_channels,
+                    3,
+                    padding=1,
+                    conv_cfg=self.conv_cfg,
+                    norm_cfg=self.norm_cfg,
+                    inplace=False)
+                convs_per_level.add_module('conv' + str(j), one_conv)
+                one_upsample = nn.Upsample(
+                    scale_factor=2,
+                    mode='bilinear',
+                    align_corners=False)
+                convs_per_level.add_module('upsample' + str(j), one_upsample)
+
+            self.convs_all_levels.append(convs_per_level)
+
+        self.conv_pred = nn.Sequential(
+            ConvModule(
+                self.feat_channels,
+                self.out_channels,
+                1,
+                padding=0,
+                conv_cfg=self.conv_cfg,
+                norm_cfg=self.norm_cfg),
+        )
+
+    def forward(self, feats):
+        inputs = feats[self.start_level:self.end_level + 1]
+        assert len(inputs) == (self.end_level - self.start_level + 1)
+        feature_add_all_level = self.convs_all_levels[0](inputs[0])
+        for i in range(1, len(inputs)):
+            input_p = inputs[i]
+            if i == len(inputs) - 1:
+                coord_feat = generate_coordinate(input_p.size(),
+                                                 input_p.device)
+                input_p = torch.cat([input_p, coord_feat], 1)
+
+            feature_add_all_level += self.convs_all_levels[i](input_p)
+
+        feature_pred = self.conv_pred(feature_add_all_level)
+        return feature_pred
+
+
+@HEADS.register_module()
+class SOLOV2Head(SOLOHead):
+    def __init__(self,
+                 *args,
+                 mask_feat_channels,
+                 mask_start_level,
+                 mask_end_level,
+                 mask_out_channels,
+                 mask_stride,
+                 dcn_cfg=None,
+                 init_cfg=[
+                     dict(type='Normal', layer='Conv2d', std=0.01),
+                     dict(
+                         type='Normal',
+                         std=0.01,
+                         bias_prob=0.01,
+                         override=dict(name='conv_cls'))
+                 ],
+                 **kwargs):
+        assert dcn_cfg is None or isinstance(dcn_cfg, dict)
+        self.dcn_cfg = dcn_cfg
+        self.kernel_out_channels = mask_out_channels * 1 * 1
+        super(SOLOV2Head, self).__init__(
+            *args, init_cfg=init_cfg, **kwargs)
+
+        self.mask_start_level = mask_start_level
+        self.mask_end_level = mask_end_level
+        self.mask_feat_channels = mask_feat_channels
+        self.mask_out_channels = mask_out_channels
+        self.mask_stride = mask_stride
+
+        self.mask_feature_head = MaskFeatModule(
+            in_channels=self.in_channels,
+            feat_channels=self.mask_feat_channels,
+            start_level=self.mask_start_level,
+            end_level=self.mask_end_level,
+            out_channels=self.mask_out_channels,
+            norm_cfg=self.norm_cfg)
+
+    def _init_layers(self):
+        self.cls_convs = nn.ModuleList()
+        self.kernel_convs = nn.ModuleList()
+        for i in range(self.stacked_convs):
+            if self.dcn_cfg is not None:
+                conv_cfg = self.dcn_cfg
+            else:
+                conv_cfg = None
+
+            chn = self.in_channels + 2 if i == 0 else self.feat_channels
+            self.kernel_convs.append(
+                ConvModule(
+                    chn,
+                    self.feat_channels,
+                    3,
+                    stride=1,
+                    padding=1,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=self.norm_cfg,
+                    bias=self.norm_cfg is None))
+
+            chn = self.in_channels if i == 0 else self.feat_channels
+            self.cls_convs.append(
+                ConvModule(
+                    chn,
+                    self.feat_channels,
+                    3,
+                    stride=1,
+                    padding=1,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=self.norm_cfg,
+                    bias=self.norm_cfg is None))
+
+        self.conv_cls = nn.Conv2d(
+            self.feat_channels, self.cls_out_channels, 3, padding=1)
+
+        self.conv_kernel = nn.Conv2d(
+            self.feat_channels, self.kernel_out_channels, 3, padding=1)
+
+    def forward(self, feats):
+        assert len(feats) == self.num_levels
+        mask_feats = self.mask_feature_head(feats)
+        feats = self.resize_feats(feats)
+        mlvl_kernel_preds = []
+        mlvl_cls_preds = []
+        for i in range(self.num_levels):
+            ins_kernel_feat = feats[i]
+            # ins branch
+            # concat coord
+            coord_feat = generate_coordinate(ins_kernel_feat.size(),
+                                             ins_kernel_feat.device)
+            ins_kernel_feat = torch.cat([ins_kernel_feat, coord_feat], 1)
+
+            # kernel branch
+            kernel_feat = ins_kernel_feat
+            kernel_feat = F.interpolate(kernel_feat, size=self.num_grids[i],
+                                        mode='bilinear', align_corners=False)
+
+            cate_feat = kernel_feat[:, :-2, :, :]
+
+            kernel_feat = kernel_feat.contiguous()
+            for i, kernel_conv in enumerate(self.kernel_convs):
+                kernel_feat = kernel_conv(kernel_feat)
+            kernel_pred = self.conv_kernel(kernel_feat)
+
+            # cate branch
+            cate_feat = cate_feat.contiguous()
+            for i, cls_conv in enumerate(self.cls_convs):
+                cate_feat = cls_conv(cate_feat)
+            cate_pred = self.conv_cls(cate_feat)
+
+            mlvl_kernel_preds.append(kernel_pred)
+            mlvl_cls_preds.append(cate_pred)
+
+        return mlvl_kernel_preds, mlvl_cls_preds, mask_feats
+
+    def _get_targets_single(self,
+                            gt_bboxes,
+                            gt_labels,
+                            gt_masks,
+                            featmap_size=None):
+        device = gt_labels.device
+        gt_areas = torch.sqrt((gt_bboxes[:, 2] - gt_bboxes[:, 0]) *
+                              (gt_bboxes[:, 3] - gt_bboxes[:, 1]))
+
+        mlvl_mask_targets = []
+        mlvl_fg_pos = []
+        mlvl_labels = []
+        mlvl_is_fg = []
+        for (lower_bound, upper_bound), num_grid in zip(self.scale_ranges,
+                                                        self.num_grids):
+            mask_targets = []
+            # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
+            fg_pos = []
+            labels = torch.zeros([num_grid, num_grid],
+                                 dtype=torch.int64,
+                                 device=device) + self.num_classes
+            is_fg = torch.zeros([num_grid ** 2],
+                                dtype=torch.bool,
+                                device=device)
+
+            gt_inds = ((gt_areas >= lower_bound) &
+                       (gt_areas <= upper_bound)).nonzero().flatten()
+            if len(gt_inds) == 0:
+                mlvl_mask_targets.append(
+                    torch.zeros([0, featmap_size[0], featmap_size[1]],
+                                dtype=torch.uint8, device=device))
+                mlvl_labels.append(labels)
+                mlvl_is_fg.append(is_fg)
+                mlvl_fg_pos.append([])
+                continue
+            hit_gt_bboxes = gt_bboxes[gt_inds]
+            hit_gt_labels = gt_labels[gt_inds]
+            hit_gt_masks = gt_masks[gt_inds, ...]
+
+            pos_w_ranges = 0.5 * (hit_gt_bboxes[:, 2] -
+                                  hit_gt_bboxes[:, 0]) * self.pos_scale
+            pos_h_ranges = 0.5 * (hit_gt_bboxes[:, 3] -
+                                  hit_gt_bboxes[:, 1]) * self.pos_scale
+
+            # Make sure hit_gt_masks has a value
+            valid_mask_flags = hit_gt_masks.sum(dim=-1).sum(dim=-1) > 0
+
+            for gt_mask, gt_label, pos_h_range, pos_w_range, \
+                valid_mask_flag in \
+                    zip(hit_gt_masks, hit_gt_labels, pos_h_ranges,
+                        pos_w_ranges, valid_mask_flags):
+                if not valid_mask_flag:
+                    continue
+                upsampled_size = (featmap_size[0] * self.mask_stride,
+                                  featmap_size[1] * self.mask_stride)
+                center_h, center_w = center_of_mass(gt_mask)
+
+                coord_w = int(
+                    (center_w / upsampled_size[1]) // (1. / num_grid))
+                coord_h = int(
+                    (center_h / upsampled_size[0]) // (1. / num_grid))
+
+                # left, top, right, down
+                top_box = max(
+                    0,
+                    int(((center_h - pos_h_range) / upsampled_size[0]) //
+                        (1. / num_grid)))
+                down_box = min(
+                    num_grid - 1,
+                    int(((center_h + pos_h_range) / upsampled_size[0]) //
+                        (1. / num_grid)))
+                left_box = max(
+                    0,
+                    int(((center_w - pos_w_range) / upsampled_size[1]) //
+                        (1. / num_grid)))
+                right_box = min(
+                    num_grid - 1,
+                    int(((center_w + pos_w_range) / upsampled_size[1]) //
+                        (1. / num_grid)))
+
+                top = max(top_box, coord_h - 1)
+                down = min(down_box, coord_h + 1)
+                left = max(coord_w - 1, left_box)
+                right = min(right_box, coord_w + 1)
+
+                labels[top:(down + 1), left:(right + 1)] = gt_label
+                # ins
+                gt_mask = np.uint8(gt_mask.cpu().numpy())
+                # Follow the original implementation, F.interpolate is
+                # different from cv2 and opencv
+                gt_mask = mmcv.imrescale(gt_mask, scale=1. / self.mask_stride)
+                gt_mask = torch.from_numpy(gt_mask).to(device=device)
+
+                for i in range(top, down + 1):
+                    for j in range(left, right + 1):
+                        index = int(i * num_grid + j)
+                        this_mask_target = torch.zeros(
+                            [featmap_size[0], featmap_size[1]],
+                            dtype=torch.uint8,
+                            device=device)
+                        this_mask_target[:gt_mask.shape[0],
+                        :gt_mask.shape[1]] = gt_mask
+                        mask_targets.append(this_mask_target)
+                        is_fg[index] = True
+                        fg_pos.append(index)
+            if len(mask_targets) == 0:
+                mask_targets = torch.zeros(
+                    [0, featmap_size[0], featmap_size[1]], dtype=torch.uint8,
+                    device=device)
+            else:
+                mask_targets = torch.stack(mask_targets, 0)
+            mlvl_mask_targets.append(mask_targets)
+            mlvl_labels.append(labels)
+            mlvl_is_fg.append(is_fg)
+            mlvl_fg_pos.append(fg_pos)
+        return mlvl_mask_targets, mlvl_labels, mlvl_is_fg, mlvl_fg_pos
+
+    def loss(self,
+             mlvl_kernel_preds,
+             mlvl_cls_preds,
+             mask_feats,
+             gt_labels,
+             gt_masks,
+             img_metas,
+             gt_bboxes=None,
+             **kwargs):
+        featmap_size = mask_feats.size()[-2:]
+
+        mimg_mask_targets, mimg_labels, mimg_is_fg, mimg_fg_pos = multi_apply(
+            self._get_targets_single,
+            gt_bboxes,
+            gt_labels,
+            gt_masks,
+            featmap_size=featmap_size)
+
+        mlvl_mask_targets = [torch.cat(lvl_mask_targets, 0) for lvl_mask_targets
+                             in zip(*mimg_mask_targets)]
+
+        mlvl_fg_kernel_preds = []
+        for lvl_kernel_preds, lvl_fg_pos in zip(mlvl_kernel_preds,
+                                                zip(*mimg_fg_pos)):
+            lvl_fg_kernel_preds = []
+            for img_lvl_kernel_preds, img_lvl_fg_pos in zip(lvl_kernel_preds,
+                                                            lvl_fg_pos):
+                img_lvl_fg_kernel_preds = img_lvl_kernel_preds.view(
+                    img_lvl_kernel_preds.shape[0], -1)[:, img_lvl_fg_pos]
+                lvl_fg_kernel_preds.append(img_lvl_fg_kernel_preds)
+            mlvl_fg_kernel_preds.append(lvl_fg_kernel_preds)
+
+        # make multilevel mlvl_mask_pred
+        mlvl_mask_preds = []
+        for lvl_fg_kernel_preds in mlvl_fg_kernel_preds:
+            lvl_mask_preds = []
+            for img_id, img_lvl_fg_kernel_pred in enumerate(
+                    lvl_fg_kernel_preds):
+                if img_lvl_fg_kernel_pred.size()[-1] == 0:
+                    continue
+                img_mask_feats = mask_feats[[img_id]]
+                h, w = img_mask_feats.shape[-2:]
+                fg_num = img_lvl_fg_kernel_pred.shape[1]
+                img_lvl_mask_pred = F.conv2d(
+                    img_mask_feats,
+                    img_lvl_fg_kernel_pred.permute(1, 0).view(fg_num, -1, 1, 1),
+                    stride=1).view(-1, h, w)
+                lvl_mask_preds.append(img_lvl_mask_pred)
+            if len(lvl_mask_preds) == 0:
+                lvl_mask_preds = None
+            else:
+                lvl_mask_preds = torch.cat(lvl_mask_preds, 0)
+            mlvl_mask_preds.append(lvl_mask_preds)
+        # dice loss
+        num_pos = 0
+        for img_is_fg in mimg_is_fg:
+            for lvl_img_is_fg in img_is_fg:
+                num_pos += lvl_img_is_fg.count_nonzero()
+
+        loss_mask = []
+        for lvl_mask_preds, lvl_mask_targets in zip(mlvl_mask_preds,
+                                                    mlvl_mask_targets):
+            if lvl_mask_preds is None:
+                continue
+            loss_mask.append(
+                self.loss_mask(lvl_mask_preds, lvl_mask_targets,
+                               reduction_override='none'))
+        if num_pos > 0:
+            loss_mask = torch.cat(loss_mask).sum() / num_pos
+        else:
+            loss_mask = torch.cat(loss_mask).mean()
+
+        # cate
+        flatten_labels = [torch.cat(
+            [img_lvl_labels.flatten() for img_lvl_labels in lvl_labels]) for
+            lvl_labels in zip(*mimg_labels)]
+        flatten_labels = torch.cat(flatten_labels)
+
+        flatten_cls_preds = [
+            lvl_cls_preds.permute(0, 2, 3, 1).reshape(-1, self.num_classes)
+            for lvl_cls_preds in mlvl_cls_preds
+        ]
+        flatten_cls_preds = torch.cat(flatten_cls_preds)
+
+        loss_cls = self.loss_cls(
+            flatten_cls_preds, flatten_labels, avg_factor=num_pos + 1)
+        return dict(loss_mask=loss_mask, loss_cls=loss_cls)
+
+    def get_results(self, mlvl_kernel_preds, mlvl_cls_scores, mask_feats,
+                    img_metas, **kwargs):
+
+        num_levels = len(mlvl_cls_scores)
+        assert len(mlvl_kernel_preds) == len(mlvl_cls_scores)
+
+        for lvl in range(num_levels):
+            cls_scores = mlvl_cls_scores[lvl]
+            cls_scores = cls_scores.sigmoid()
+            local_max = F.max_pool2d(cls_scores, 2, stride=1, padding=1)
+            keep_mask = local_max[:, :, :-1, :-1] == cls_scores
+            cls_scores = cls_scores * keep_mask
+            mlvl_cls_scores[lvl] = cls_scores.permute(0, 2, 3, 1)
+
+        result_list = []
+        for img_id in range(len(img_metas)):
+            img_cls_pred = [
+                mlvl_cls_scores[lvl][img_id].view(-1, self.cls_out_channels)
+                for lvl in range(num_levels)]
+            img_mask_feats = mask_feats[[img_id]]
+            img_kernel_pred = [
+                mlvl_kernel_preds[lvl][img_id].permute(1, 2, 0).view(
+                    -1, self.kernel_out_channels)
+                for lvl in range(num_levels)]
+            img_cls_pred = torch.cat(img_cls_pred, dim=0)
+            img_kernel_pred = torch.cat(img_kernel_pred, dim=0)
+            result = self._get_results_single(
+                img_kernel_pred, img_cls_pred, img_mask_feats,
+                img_meta=img_metas[img_id])
+            result_list.append(result)
+        return result_list
+
+    def _get_results_single(self,
+                            kernel_preds,
+                            cls_scores,
+                            mask_feats,
+                            img_meta,
+                            cfg=None):
+
+        def empty_results(results, cls_scores):
+            """Generate a empty results."""
+            results.scores = cls_scores.new_ones(0)
+            results.masks = cls_scores.new_zeros(0, *results.ori_shape[:2])
+            results.labels = cls_scores.new_ones(0)
+            return results
+
+        cfg = self.test_cfg if cfg is None else cfg
+        assert len(kernel_preds) == len(cls_scores)
+        results = InstanceData(img_meta)
+
+        featmap_size = mask_feats.size()[-2:]
+
+        img_shape = results.img_shape
+        ori_shape = results.ori_shape
+
+        # overall info
+        h, w, _ = img_shape
+        upsampled_size = (featmap_size[0] * self.mask_stride,
+                          featmap_size[1] * self.mask_stride)
+
+        # process.
+        score_mask = (cls_scores > cfg.score_thr)
+        cls_scores = cls_scores[score_mask]
+        if len(cls_scores) == 0:
+            return empty_results(results, cls_scores)
+
+        # cate_labels & kernel_preds
+        inds = score_mask.nonzero()
+        cls_labels = inds[:, 1]
+        kernel_preds = kernel_preds[inds[:, 0]]
+
+        # trans vector.
+        lvl_interval = cls_labels.new_tensor(self.num_grids).pow(2).cumsum(0)
+        strides = kernel_preds.new_ones(lvl_interval[-1])
+
+        strides[:lvl_interval[0]] *= self.strides[0]
+        for lvl in range(1, self.num_levels):
+            strides[lvl_interval[lvl -
+                                 1]:lvl_interval[lvl]] *= self.strides[lvl]
+        strides = strides[inds[:, 0]]
+
+        # mask encoding.
+        kernel_preds = kernel_preds.view(kernel_preds.size(0), -1, 1, 1)
+        mask_preds = F.conv2d(mask_feats, kernel_preds, stride=1).squeeze(
+            0).sigmoid()
+        # mask.
+        masks = mask_preds > cfg.mask_thr
+        sum_masks = masks.sum((1, 2)).float()
+        keep = sum_masks > strides
+        if keep.sum() == 0:
+            return empty_results(results, cls_scores)
+        masks = masks[keep]
+        mask_preds = mask_preds[keep]
+        sum_masks = sum_masks[keep]
+        cls_scores = cls_scores[keep]
+        cls_labels = cls_labels[keep]
+
+        # maskness.
+        mask_scores = (mask_preds * masks).sum((1, 2)) / sum_masks
+        cls_scores *= mask_scores
+
+        scores, labels, _, keep_inds = mask_matrix_nms(
+            masks,
+            cls_labels,
+            cls_scores,
+            mask_area=sum_masks,
+            nms_pre=cfg.nms_pre,
+            max_num=cfg.max_per_img,
+            kernel=cfg.kernel,
+            sigma=cfg.sigma,
+            filter_thr=cfg.filter_thr)
+        mask_preds = mask_preds[keep_inds]
+        mask_preds = F.interpolate(
+            mask_preds.unsqueeze(0), size=upsampled_size,
+            mode='bilinear', align_corners=False)[:, :, :h, :w]
+        mask_preds = F.interpolate(
+            mask_preds, size=ori_shape[:2], mode='bilinear',
+            align_corners=False).squeeze(0)
+        masks = mask_preds > cfg.mask_thr
+
+        results.masks = masks
+        results.labels = labels
+        results.scores = scores
+
+        return results
