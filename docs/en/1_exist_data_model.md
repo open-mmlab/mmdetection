@@ -514,7 +514,7 @@ You could download the existing models in advance if the network connection is u
 If you want to enable this feature, you need to add argument `--auto-scale-lr`. And you need to check the config name which you want to use before you process the command, because the config name indicates the default batch size.
 By default, it is `8 x 2 = 16 batch size`, like `faster_rcnn_r50_caffe_fpn_90k_coco.py`. If it is other, you will see like `NxN` in the config name, like `faster_rcnn_x101_32x4d_fpn_2x_coco.py` which batch size is `32 x 4 = 128`.
 
-**Please remember to change the value of `default_batch_size` in `config/_base_/default_runtime.py` to the correct batch size when using the config file which default batch size is not `16`.**
+**Please remember to change the value of `default_batch_size` in `config/_base_/default_runtime.py` to the correct batch size, calculated from `NxN`, when using the config file which default batch size is not `16`.**
 
 Learning rate automatically scale basic usage is as follows.
 
