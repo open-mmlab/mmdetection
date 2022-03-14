@@ -1,12 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from .dist_utils import (DistOptimizerHook, all_reduce_dict, allreduce_grads,
                          reduce_mean)
+from .layer_decay_optimizer_constructor import \
+    LearningRateDecayOptimizerConstructor
 from .misc import (center_of_mass, filter_scores_and_topk, flip_tensor,
                    generate_coordinate, mask2ndarray, multi_apply,
                    select_single_mlvl, unmap)
-# from .optimizer_constructor import LearningRateDecayOptimizerConstructor
-from .layer_decay_optimizer_constructor import LearningRateDecayOptimizerConstructor
-from .customized_text import CustomizedTextLoggerHook
 
 __all__ = [
     'allreduce_grads', 'DistOptimizerHook', 'reduce_mean', 'multi_apply',
