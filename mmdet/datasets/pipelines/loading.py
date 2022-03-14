@@ -442,9 +442,14 @@ class LoadPanopticAnnotations(LoadAnnotations):
                 'pip install git+https://github.com/cocodataset/'
                 'panopticapi.git.')
 
-        super(LoadPanopticAnnotations,
-              self).__init__(with_bbox, with_label, with_mask, with_seg, True,
-                             file_client_args)
+        super(LoadPanopticAnnotations, self).__init__(
+            with_bbox=with_bbox,
+            with_label=with_label,
+            with_mask=with_mask,
+            with_seg=with_seg,
+            poly2mask=True,
+            denorm_bbox=False,
+            file_client_args=file_client_args)
 
     def _load_masks_and_semantic_segs(self, results):
         """Private function to load mask and semantic segmentation annotations.
