@@ -98,6 +98,17 @@ def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
+
+    # update data root according to environment variable
+    if os.environ.get('MMDET_DATASETS', None) is not None:
+        def update_data_root(cfg, str_o, str_n):
+            for k, v in cfg.items():
+                if isinstance(v, mmcv.ConfigDict):
+                    update_data_root(cfg[k], str_o, str_n)
+                if isinstance(v, str):
+                    cfg[k] = v.replace(str_o, str_n)
+        update_data_root(cfg, cfg.data_root, os.environ['MMDET_DATASETS'])
+    
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
 
