@@ -178,7 +178,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><b>Distillation</b></li>
         <ul>
         <ul>
-          <li><a href="configs/ld">Localization Distillation (CVPR'2022)</a></li>
+          <li><a href="configs/ld">Localization Distillation (ArXiv'2021)</a></li>
           <li><a href="configs/lad">Label Assignment Distillation (WACV'2022)</a></li>
         </ul>
         </ul>
