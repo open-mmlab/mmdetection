@@ -900,6 +900,11 @@ def test_mosaic():
         transform = dict(type='Mosaic', img_scale=640)
         build_from_cfg(transform, PIPELINES)
 
+    # test assertion for invalid probability
+    with pytest.raises(AssertionError):
+        transform = dict(type='Mosaic', prob=1.5)
+        build_from_cfg(transform, PIPELINES)
+
     results = dict()
     img = mmcv.imread(
         osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
@@ -913,7 +918,7 @@ def test_mosaic():
     results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
     results['gt_bboxes'] = gt_bboxes
     results['gt_bboxes_ignore'] = gt_bboxes_ignore
-    transform = dict(type='Mosaic', img_scale=(10, 12))
+    transform = dict(type='Mosaic', img_scale=(10, 12), prob=1.)
     mosaic_module = build_from_cfg(transform, PIPELINES)
 
     # test assertion for invalid mix_results
