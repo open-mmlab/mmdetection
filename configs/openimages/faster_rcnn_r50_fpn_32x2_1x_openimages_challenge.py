@@ -40,3 +40,6 @@ data = dict(
         'challenge2019/challenge-2019-validation-detection-'
         'human-imagelabels.csv'))
 evaluation = dict(interval=1, metric='mAP')
+
+# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
+default_batch_size = 64  # (32 GPUs) x (2 samples per GPU)

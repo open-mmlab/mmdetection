@@ -15,3 +15,6 @@ lr_config = dict(
     warmup_iters=26000,
     warmup_ratio=1.0 / 64,
     step=[8, 11])
+
+# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
+default_batch_size = 64  # (32 GPUs) x (2 samples per GPU)
