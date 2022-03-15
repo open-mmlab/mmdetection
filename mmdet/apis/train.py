@@ -94,13 +94,13 @@ def scale_lr(cfg, logger):
 
     if batch_size != original_batch_size:
         # Get original LR from config
-        original_lr = cfg.optimizer.get("lr", 0)
+        original_lr = cfg.optimizer.get('lr', 0)
         assert original_lr != 0
 
         # scale LR according to paper
         # [linear scaling rule](https://arxiv.org/abs/1706.02677)
         scaled_lr = (batch_size / original_batch_size) * original_lr
-        cfg.optimizer.update({"lr": scaled_lr})
+        cfg.optimizer.update({'lr': scaled_lr})
 
         logger.info('While default batch size of this model '
                     f'is {original_batch_size}, '
