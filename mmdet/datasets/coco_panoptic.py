@@ -426,7 +426,8 @@ class CocoPanopticDataset(CocoDataset):
                           result_files,
                           outfile_prefix,
                           logger=None,
-                          classwise=False):
+                          classwise=False,
+                          nproc=32):
         """Evaluate PQ according to the panoptic results json file."""
         imgs = self.coco.imgs
         gt_json = self.coco.img_ann_map  # image to annotations
@@ -451,9 +452,13 @@ class CocoPanopticDataset(CocoDataset):
         gt_folder = self.seg_prefix
         pred_folder = os.path.join(os.path.dirname(outfile_prefix), 'panoptic')
 
-        pq_stat = pq_compute_multi_core(matched_annotations_list, gt_folder,
-                                        pred_folder, self.categories,
-                                        self.file_client)
+        pq_stat = pq_compute_multi_core(
+            matched_annotations_list,
+            gt_folder,
+            pred_folder,
+            self.categories,
+            self.file_client,
+            nproc=nproc)
 
         metrics = [('All', None), ('Things', True), ('Stuff', False)]
         pq_results = {}
@@ -480,6 +485,7 @@ class CocoPanopticDataset(CocoDataset):
                  logger=None,
                  jsonfile_prefix=None,
                  classwise=False,
+                 nproc=32,
                  **kwargs):
         """Evaluation in COCO Panoptic protocol.
 
@@ -494,6 +500,9 @@ class CocoPanopticDataset(CocoDataset):
                 If not specified, a temp file will be created. Default: None.
             classwise (bool): Whether to print classwise evaluation results.
                 Default: False.
+            nproc (int): Number of processes for panoptic quality computing.
+                Defaults to 32. When `nproc` exceeds the number of cpu cores,
+                the number of cpu cores is used.
 
         Returns:
             dict[str, float]: COCO Panoptic style evaluation metric.
@@ -512,9 +521,8 @@ class CocoPanopticDataset(CocoDataset):
         outfile_prefix = os.path.join(tmp_dir.name, 'results') \
             if tmp_dir is not None else jsonfile_prefix
         if 'PQ' in metrics:
-            eval_pan_results = self.evaluate_pan_json(result_files,
-                                                      outfile_prefix, logger,
-                                                      classwise)
+            eval_pan_results = self.evaluate_pan_json(
+                result_files, outfile_prefix, logger, classwise, nproc=nproc)
             eval_results.update(eval_pan_results)
 
         if tmp_dir is not None:
