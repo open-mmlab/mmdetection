@@ -17,36 +17,55 @@ class WandbLogger(WandbLoggerHook):
     - Metrics: The WandbLogger will automatically log training
         and validation metrics.
 
-    - Checkpointing: If log_checkpoint is True, the checkpoint saved at
+    - Checkpointing: If `log_checkpoint` is True, the checkpoint saved at
         every checkpoint interval will be saved as W&B Artifacts.
         Please refer to https://docs.wandb.ai/guides/artifacts/model-versioning
         to learn more about model versioning with W&B Artifacts.
-        Note: This depends on the CheckpointHook whose priority is more
-        than WandbLogger.
+        Note: This depends on the `CheckpointHook` whose priority is more
+        than `WandbLogger`.
 
-    - Checkpoint Metadata: If log_checkpoint_metadata is True, every checkpoint
-        artifact will have a metadata associated with it. The metadata contains
-        the evaluation metrics computed on validation data with that checkpoint
-        along with the current epoch. If True, it also marks the checkpoint
-        version with the best evaluation metric with a 'best' alias. You can
-        choose the best checkpoint in the W&B Artifacts UI using this.
-        Note: It depends on EvalHook whose priority is more than WandbLogger.
+    - Checkpoint Metadata: If `log_checkpoint_metadata` is True, every
+        checkpoint artifact will have a metadata associated with it.
+        The metadata contains the evaluation metrics computed on validation
+        data with that checkpoint along with the current epoch. If True, it
+        also marks the checkpoint version with the best evaluation metric with
+        a 'best' alias. You can choose the best checkpoint in the W&B Artifacts
+        UI using this.
+        Note: It depends on `EvalHook` whose priority is more than WandbLogger.
 
-    - Evaluation: At every evaluation interval, the WandbLogger logs the
-        model prediction as interactive W&B Tables. Please refer to
+    - Evaluation: At every evaluation interval, the `WandbLogger` logs the
+        model prediction as interactive W&B Tables. The number of samples
+        logged is given by `num_eval_images`. Please refer to
         https://docs.wandb.ai/guides/data-vis to learn more about W&B Tables.
-        Currently, the WandbLogger logs the predicted bounding boxes along with
-        the ground truth at every evaluation interval.
-        Note: This depends on the EvalHook whose priority is more than
-        WandbLogger. Also note that the data is just logged once and subsequent
-        evaluation tables uses reference to the logged data to save
+        Currently, the `WandbLogger` logs the predicted bounding boxes along
+        with the ground truth at every evaluation interval.
+        Note: This depends on the `EvalHook` whose priority is more than
+        `WandbLogger`. Also note that the data is just logged once and
+        subsequent evaluation tables uses reference to the logged data to save
         memory usage.
 
+    ```
+    Example:
+        log_config = dict(
+            interval=10,
+            hooks=[
+                dict(type='WandbLogger',
+                     wandb_init_kwargs={
+                         'entity': WANDB_ENTITY,
+                         'project': WANDB_PROJECT_NAME
+                     },
+                     logging_interval=10,
+                     log_checkpoint=True,
+                     log_checkpoint_metadata=True,
+                     num_eval_images=100)
+            ])
+    ```
+
     Args:
-        init_kwargs (dict): A dict passed to wandb.init to initialize
+        wandb_init_kwargs (dict): A dict passed to wandb.init to initialize
             a W&B run. Please refer to https://docs.wandb.ai/ref/python/init
             for possible key-value pairs.
-        interval (int): Logging interval (every k iterations).
+        logging_interval (int): Logging interval (every k iterations).
             Default 10.
         log_checkpoint (bool): Save the checkpoint at every checkpoint interval
             as W&B Artifacts. Use this for model versioning where each version
@@ -56,22 +75,21 @@ class WandbLogger(WandbLoggerHook):
             on the validation data with the checkpoint, along with current
             epoch as a metadata to that checkpoint.
             Default: True
-        log_evaulation (bool): Log the model predictions as interactive
-            W&B Tables.
-            Default: True
+        num_eval_images (int): Number of validation images to be logged.
+            Default: 100
     """
 
     def __init__(self,
-                 init_kwargs=None,
+                 wandb_init_kwargs=None,
                  interval=10,
                  log_checkpoint=False,
                  log_checkpoint_metadata=False,
-                 log_evaluation=False):
-        super(WandbLogger, self).__init__(init_kwargs, interval)
+                 num_eval_images=100):
+        super(WandbLogger, self).__init__(wandb_init_kwargs, interval)
 
         self.log_checkpoint = log_checkpoint
         self.log_checkpoint_metadata = log_checkpoint_metadata
-        self.log_evaluation = log_evaluation
+        self.num_eval_images = num_eval_images
         self.log_eval_metrics = True
         self.best_score = 0
         self.val_step = 0
@@ -83,7 +101,7 @@ class WandbLogger(WandbLoggerHook):
         # Check if configuration is passed to wandb.
         if len(dict(self.cfg)) == 0:
             warnings.warn(
-                'To log mmdetection Config,'
+                'To log mmdetection Config, '
                 'pass it to init_kwargs of WandbLogger.', UserWarning)
 
         # Check if EvalHook and CheckpointHook are available.
@@ -101,28 +119,34 @@ class WandbLogger(WandbLoggerHook):
             warnings.warn('To use log_checkpoint turn use '
                           'CheckpointHook.', UserWarning)
 
-        # If EvalHook is not present turn off log_evaluation.
+        # If EvalHook is not present set num_eval_images to zero.
         if 'eval_hook' in locals():
             self.eval_hook = eval_hook
             self.val_dataloader = eval_hook.dataloader
             self.val_dataset = self.val_dataloader.dataset
         else:
-            self.log_evaluation = False
+            self.num_eval_images = 0
             warnings.warn(
-                'To use log_evaluation turn validate '
+                'To log num_eval_images turn validate '
                 'to True in train_detector.', UserWarning)
 
         # Check if the priority of both hooks are more than WandbLogger.
         if self.priority < self.ckpt_hook.priority:
             self.log_checkpoint = False
+            warnings.warn(
+                'The priority of CheckpointHook should '
+                'be more than WandbLogger to use log_checkpoint.', UserWarning)
         if self.priority < self.eval_hook.priority:
-            self.log_evaluation = False
+            self.num_eval_images = 0
             self.log_checkpoint_metadata = False
             self.log_eval_metrics = False
+            warnings.warn(
+                'The priority of EvalHook should be more than '
+                'WandbLogger to log num_eval_images', UserWarning)
 
-        # If log_evaluation is True, create
+        # If num_eval_images is greater than zero, create
         # and log W&B table for validation data.
-        if self.log_evaluation:
+        if self.num_eval_images > 0:
             # Initialize data table
             self._init_data_table()
             # Add data to the table
@@ -170,7 +194,7 @@ class WandbLogger(WandbLoggerHook):
                         self._log_ckpt_as_artifact(self.ckpt_hook.out_dir,
                                                    runner.epoch, aliases)
 
-        if self.log_evaluation:
+        if self.num_eval_images > 0:
             if self.eval_hook.by_epoch:
                 if self.every_n_epochs(
                         runner,
@@ -269,7 +293,14 @@ class WandbLogger(WandbLoggerHook):
         self.eval_table = self.wandb.Table(columns=columns)
 
     def _add_ground_truth(self):
-        num_images = len(self.val_dataset)
+        num_total_images = len(self.val_dataset)
+        if self.num_eval_images > num_total_images:
+            warnings.warn(
+                'The num_eval_images is greater than the total number '
+                'of validation samples. The complete validation set '
+                'will be logged.', UserWarning)
+        self.num_eval_images = min(self.num_eval_images, num_total_images)
+
         classes = self.val_dataset.get_classes()
         self.class_id_to_label = {id: name for id, name in enumerate(classes)}
         self.class_set = self.wandb.Classes([{
@@ -277,7 +308,7 @@ class WandbLogger(WandbLoggerHook):
             'name': name
         } for id, name in self.class_id_to_label.items()])
 
-        for idx in range(num_images):
+        for idx in range(self.num_eval_images):
             data_sample = self.val_dataset.prepare_test_img(idx)
             data_ann = self.val_dataset.get_ann_info(idx)
 
@@ -312,7 +343,7 @@ class WandbLogger(WandbLoggerHook):
 
     def _log_predictions(self, results, epoch):
         table_idxs = self.data_table_ref.get_index()
-        assert len(results) == len(self.val_dataset) == len(table_idxs)
+        assert len(table_idxs) == self.num_eval_images
 
         for ndx in table_idxs:
             result = results[ndx]
@@ -337,7 +368,7 @@ class WandbLogger(WandbLoggerHook):
                             box_data.append(
                                 self._get_wandb_bbox(
                                     bbox_score, label_id,
-                                    f'{class_name}@{confidence:.2f}',
+                                    f'{class_name} {confidence:.2f}',
                                     scale_factor))
 
                     class_scores.append(class_score / (count + 1e-6))
@@ -401,8 +432,6 @@ class WandbLogger(WandbLoggerHook):
         """
         data_artifact = self.wandb.Artifact('val', type='dataset')
         data_artifact.add(self.data_table, 'val_data')
-        self.wandb.run.log_artifact(data_artifact)
-        data_artifact.wait()
 
         self.wandb.run.use_artifact(data_artifact)
         data_artifact.wait()
