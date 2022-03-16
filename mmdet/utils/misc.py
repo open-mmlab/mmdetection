@@ -1,8 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import os
 import glob
 import os.path as osp
 import warnings
 
+import mmcv
+from mmcv.utils import print_log
 
 def find_latest_checkpoint(path, suffix='pth'):
     """Find the latest checkpoint from the working directory.
@@ -36,3 +39,40 @@ def find_latest_checkpoint(path, suffix='pth'):
             latest = count
             latest_path = checkpoint
     return latest_path
+
+
+def update_data_root(cfg, logger=None):
+    """Update data root according to environmental variable MMDET_DATASETS.
+
+    If set env MMDET_DATASETS, update cfg.data_root according to MMDET_DATASETS.
+    Otherwise, using cfg.data_root as default.
+
+    Args:
+        cfg (mmcv.Config): The model config need to modify
+        data_root_n (str): The data root set 
+        logger (logging.Logger | str | None): the way to print msg
+
+    """
+    if 'MMDET_DATASETS' not in os.environ:
+        print_log(
+            f"Not set env MMDET_DATASETS, using {cfg.data_root} as data root.",
+            logger)
+        return None
+    else:
+        dst_root = os.environ['MMDET_DATASETS']
+        print_log(
+            f"Set env MMDET_DATASETS={dst_root}, using MMDET_DATASETS as data root.",
+            logger)
+
+    assert isinstance(cfg, mmcv.Config), \
+        f"cfg got wrong type: {type(cfg)}, expected mmcv.Config"
+    
+    def update(cfg, src_str, dst_str):
+        for k, v in cfg.items():
+            if isinstance(v, mmcv.ConfigDict):
+                update(cfg[k], src_str, dst_str)
+            if isinstance(v, str) and src_str in v:
+                cfg[k] = v.replace(src_str, dst_str)
+
+    update(cfg.data, cfg.data_root, dst_root)
+    cfg.data_root = dst_root
