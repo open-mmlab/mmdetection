@@ -4,6 +4,8 @@ import math
 import torch
 from torch.utils.data import DistributedSampler as _DistributedSampler
 
+from mmdet.core.utils import sync_random_seed
+
 
 class DistributedSampler(_DistributedSampler):
 
@@ -15,8 +17,10 @@ class DistributedSampler(_DistributedSampler):
                  seed=0):
         super().__init__(
             dataset, num_replicas=num_replicas, rank=rank, shuffle=shuffle)
-        # for the compatibility from PyTorch 1.3+
-        self.seed = seed if seed is not None else 0
+        #  Must be the same across all workers. If None, will use a
+        #  random seed shared among workers
+        #  (require synchronization among all workers)
+        self.seed = sync_random_seed(seed)
 
     def __iter__(self):
         # deterministically shuffle based on epoch
