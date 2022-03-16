@@ -81,35 +81,35 @@ def scale_lr(cfg, logger):
         return
 
     # default batch size of pre-train model
-    original_batch_size = cfg.get('default_batch_size', None)
-    assert original_batch_size is not None
+    default_batch_size = cfg.get('default_batch_size', None)
+    assert default_batch_size is not None
 
     # calculate the batch size
-    gpu_number = len(cfg.gpu_ids)
-    batch_size = gpu_number * cfg.data.samples_per_gpu
+    num_gpus = len(cfg.gpu_ids)
+    batch_size = num_gpus * cfg.data.samples_per_gpu
 
-    logger.info(f'You are using {gpu_number} GPU(s) '
-                f'and {cfg.data.samples_per_gpu} samples per gpu '
-                f'means the batch is {batch_size}.')
+    logger.info(f'You are using {num_gpus} GPU(s) '
+                f'and {cfg.data.samples_per_gpu} samples per GPU. '
+                f'Total batch size is {batch_size}.')
 
-    if batch_size != original_batch_size:
+    if batch_size != default_batch_size:
         # Get original LR from config
         original_lr = cfg.optimizer.get('lr', 0)
         assert original_lr != 0
 
-        # scale LR according to paper
+        # scale LR with
         # [linear scaling rule](https://arxiv.org/abs/1706.02677)
-        scaled_lr = (batch_size / original_batch_size) * original_lr
+        scaled_lr = (batch_size / default_batch_size) * original_lr
         cfg.optimizer.update({'lr': scaled_lr})
 
-        logger.info('While default batch size of this model '
-                    f'is {original_batch_size}, '
+        logger.info('Since default batch size of this model '
+                    f'is {default_batch_size}, '
                     'automatically scaling LR '
                     f'from {original_lr} to {scaled_lr}')
 
     else:
-        logger.info('Which match the '
-                    f'original batch size: {original_batch_size}, '
+        logger.info('The batch size match the '
+                    f'default batch size: {default_batch_size}, '
                     f'won\'t scaling the LR ({cfg.optimizer.get("lr")}).')
 
 
