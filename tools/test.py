@@ -19,6 +19,7 @@ from mmdet.datasets import (build_dataloader, build_dataset,
 from mmdet.models import build_detector
 from mmdet.utils import setup_multi_processes
 
+from tools.utils import update_data_root
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -133,6 +134,11 @@ def main():
         raise ValueError('The output file must be a pkl file.')
 
     cfg = Config.fromfile(args.config)
+
+    # update data root according to MMDET_DATASETS
+    if os.environ.get('MMDET_DATASETS', None) is not None:
+        update_data_root(cfg, os.environ['MMDET_DATASETS'])
+
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
 

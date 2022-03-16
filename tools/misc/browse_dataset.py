@@ -12,6 +12,7 @@ from mmdet.core.utils import mask2ndarray
 from mmdet.core.visualization import imshow_det_bboxes
 from mmdet.datasets.builder import build_dataset
 
+from tools.utils import update_data_root
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Browse a dataset')
@@ -55,6 +56,11 @@ def retrieve_data_cfg(config_path, skip_type, cfg_options):
         ]
 
     cfg = Config.fromfile(config_path)
+
+    # update data root according to MMDET_DATASETS
+    if os.environ.get('MMDET_DATASETS', None) is not None:
+        update_data_root(cfg, os.environ['MMDET_DATASETS'])
+
     if cfg_options is not None:
         cfg.merge_from_dict(cfg_options)
     train_data_cfg = cfg.data.train
