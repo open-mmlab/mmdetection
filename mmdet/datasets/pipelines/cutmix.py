@@ -1,13 +1,17 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import torch
 import numpy as np
-from ..builder import PIPELINES
+import torch
 import torch.nn.functional as F
+
+from ..builder import PIPELINES
+
 
 @PIPELINES.register_module()
 class CutMix():
     """
-    CutMix: Regularization Strategy to Train Strong Classifiers with Localizable Features, see https://arxiv.org/abs/1905.04899
+    CutMix:
+    Regularization Strategy to Train Strong Classifiers with
+    Localizable Features, see https://arxiv.org/abs/1905.04899
     Cutmix image and gt_bbbox/gt_score
 
     Args:
@@ -111,6 +115,7 @@ class CutMix():
 
     def one_hot_encoding(self, gt, num_classes):
         """Change gt_label to one_hot encoding.
+
         If the shape has 2 or more
         dimensions, return it without encoding.
         Args:
@@ -149,8 +154,8 @@ class CutMix():
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'(alpha={self.alpha}, '
-        repr_str += f'num_classes={self.num_classes}, ' 
-        repr_str += f'prob={self.prob}, ' 
+        repr_str += f'num_classes={self.num_classes},'
+        repr_str += f'prob={self.prob},'
         repr_str += f'cutmix_minmax={self.cutmix_minmax},'
         repr_str += f'correct_lam={self.correct_lam})'
         return repr_str
