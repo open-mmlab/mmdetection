@@ -512,7 +512,7 @@ You could download the existing models in advance if the network connection is u
 **Important**: The default learning rate in config files is for 8 GPUs and 2 sample per gpu (batch size = 8 * 2 = 16). And it had been set to `default_batch_size` in `config/_base_/default_runtime.py`. Learning rate automatically scale base on this value when the batch size is `16`. Meanwhile, in order not to affect other codebase which based on mmdet, the flag `enable_auto_scale_lr` is set to `False` by default.
 
 If you want to enable this feature, you need to add argument `--auto-scale-lr`. And you need to check the config name which you want to use before you process the command, because the config name indicates the default batch size.
-By default, it is `8 x 2 = 16 batch size`, like `faster_rcnn_r50_caffe_fpn_90k_coco.py` or `pisa_faster_rcnn_x101_32x4d_fpn_1x_coco.py`. If it is other, you will see like `_NxN_` at the end of the config name, like `cornernet_hourglass104_mstest_32x3_210e_coco.py` which batch size is `32 x 3 = 128`, or `scnet_x101_64x4d_fpn_8x1_20e_coco.py` which batch size is `8 x 1 = 8`.
+By default, it is `8 x 2 = 16 batch size`, like `faster_rcnn_r50_caffe_fpn_90k_coco.py` or `pisa_faster_rcnn_x101_32x4d_fpn_1x_coco.py`. If it is other, you will see like `_NxN_` at the end of the config name, like `cornernet_hourglass104_mstest_32x3_210e_coco.py` which batch size is `32 x 3 = 96`, or `scnet_x101_64x4d_fpn_8x1_20e_coco.py` which batch size is `8 x 1 = 8`.
 
 **Please remember to check the bottom of the specific config file you want to use, it will have `default_batch_size` if the batch size is not `16` and please do not modify it.**
 
