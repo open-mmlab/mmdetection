@@ -77,7 +77,7 @@ def multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     This method tests model with multiple gpus and collects the results
     under two different modes: gpu and cpu modes. By setting 'gpu_collect=True'
     it encodes results to gpu tensors and use gpu communication for results
-    collection. On cpu mode it saves the results on different gpus to 'tmpdir'
+    collection. On cpu mode it saves the results of different gpus to 'tmpdir'
     and collects them by the rank 0 worker.
 
     Args:

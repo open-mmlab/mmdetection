@@ -115,7 +115,7 @@ class DistEvalHook(BaseDistEvalHook):
             tmpdir = osp.join(runner.work_dir, '.eval_hook')
 
         from mmdet.apis import multi_gpu_test
-        results = multi_gpu_test(
+        self.results = multi_gpu_test(
             runner.model,
             self.dataloader,
             tmpdir=tmpdir,
@@ -123,7 +123,7 @@ class DistEvalHook(BaseDistEvalHook):
         if runner.rank == 0:
             print('\n')
             runner.log_buffer.output['eval_iter_num'] = len(self.dataloader)
-            key_score = self.evaluate(runner, results)
+            key_score = self.evaluate(runner, self.results)
 
             # the key_score may be `None` so it needs to skip
             # the action to save the best checkpoint

@@ -6,7 +6,7 @@ from mmcv.runner.dist_utils import master_only
 from mmcv.runner.hooks.checkpoint import CheckpointHook
 from mmcv.runner.hooks.logger.wandb import WandbLoggerHook
 
-from mmdet.core import EvalHook
+from mmdet.core import DistEvalHook, EvalHook
 
 
 @HOOKS.register_module()
@@ -108,43 +108,32 @@ class WandbLogger(WandbLoggerHook):
 
         # Check if EvalHook and CheckpointHook are available.
         for hook in runner.hooks:
-            if isinstance(hook, EvalHook):
-                eval_hook = hook
             if isinstance(hook, CheckpointHook):
-                ckpt_hook = hook
+                self.ckpt_hook = hook
+            if isinstance(hook, (EvalHook, DistEvalHook)):
+                self.eval_hook = hook
 
         # If CheckpointHook is not available turn off log_checkpoint.
-        if 'ckpt_hook' in locals():
-            self.ckpt_hook = ckpt_hook
-        else:
+        try:
+            self._check_priority(self.ckpt_hook)
+        except AttributeError:
             self.log_checkpoint = False
             warnings.warn('To use log_checkpoint turn use '
                           'CheckpointHook.', UserWarning)
 
-        # If EvalHook is not present set num_eval_images to zero.
-        if 'eval_hook' in locals():
-            self.eval_hook = eval_hook
-            self.val_dataloader = eval_hook.dataloader
+        # If EvalHook/DistEvalHook is not present set
+        # num_eval_images to zero.
+        try:
+            self.val_dataloader = self.eval_hook.dataloader
             self.val_dataset = self.val_dataloader.dataset
-        else:
-            self.num_eval_images = 0
-            warnings.warn(
-                'To log num_eval_images turn validate '
-                'to True in train_detector.', UserWarning)
-
-        # Check if the priority of both hooks are more than WandbLogger.
-        if self.priority < self.ckpt_hook.priority:
-            self.log_checkpoint = False
-            warnings.warn(
-                'The priority of CheckpointHook should '
-                'be more than WandbLogger to use log_checkpoint.', UserWarning)
-        if self.priority < self.eval_hook.priority:
+            self._check_priority(self.eval_hook)
+        except AttributeError:
             self.num_eval_images = 0
             self.log_checkpoint_metadata = False
             self.log_eval_metrics = False
             warnings.warn(
-                'The priority of EvalHook should be more than '
-                'WandbLogger to log num_eval_images', UserWarning)
+                'To log num_eval_images turn validate '
+                'to True in train_detector.', UserWarning)
 
         # If num_eval_images is greater than zero, create
         # and log W&B table for validation data.
@@ -210,12 +199,33 @@ class WandbLogger(WandbLoggerHook):
                     self._log_eval_table()
 
     @master_only
-    def log(self, runner):
-        super(WandbLogger, self).log(runner)
-
-    @master_only
     def after_run(self, runner):
         self.wandb.finish()
+
+    def _check_priority(self, hook):
+        """Check the if the priority of the hook is more than WandbLogger.
+
+        Note that, a smaller priority will have bigger integer value and vice
+        versa.
+        """
+        if isinstance(hook, CheckpointHook):
+            if self.priority < hook.priority:
+                self.log_checkpoint = False
+                warnings.warn(
+                    'The priority of CheckpointHook should '
+                    'be more than WandbLogger to use log_checkpoint.',
+                    UserWarning)
+        elif isinstance(hook, (EvalHook, DistEvalHook)):
+            if self.priority < hook.priority:
+                self.num_eval_images = 0
+                self.log_checkpoint_metadata = False
+                self.log_eval_metrics = False
+                warnings.warn(
+                    'The priority of EvalHook should be more than '
+                    'WandbLogger to log num_eval_images', UserWarning)
+        else:
+            print(f'The {hook.__name__} doesn\'t belong to CheckpointHook or '
+                  'EvalHook.')
 
     def _log_ckpt_as_artifact(self,
                               path_to_model,
@@ -243,9 +253,14 @@ class WandbLogger(WandbLoggerHook):
             runner.logger.info(
                 f'Evaluating for model checkpoint at epoch '
                 f'{runner.epoch+1} which will be saved as W&B Artifact.')
-            from mmdet.apis import single_gpu_test
-            results = single_gpu_test(
-                runner.model, self.val_dataloader, show=False)
+            if isinstance(self.eval_hook, EvalHook):
+                from mmdet.apis import single_gpu_test
+                results = single_gpu_test(
+                    runner.model, self.val_dataloader, show=False)
+            elif isinstance(self.eval_hook, DistEvalHook):
+                from mmdet.apis import multi_gpu_test
+                results = multi_gpu_test(
+                    runner.model, self.val_dataloader, gpu_collect=True)
 
         eval_results = self.val_dataset.evaluate(results, logger='silent')
         metadata = dict(epoch=runner.epoch + 1, **eval_results)
