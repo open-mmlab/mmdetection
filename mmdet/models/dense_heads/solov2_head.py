@@ -126,6 +126,7 @@ class SOLOV2Head(SOLOHead):
                  mask_out_channels,
                  mask_stride,
                  dcn_cfg=None,
+                 dcn_apply_to_all_conv=True,
                  init_cfg=[
                      dict(type='Normal', layer='Conv2d', std=0.01),
                      dict(
@@ -137,6 +138,7 @@ class SOLOV2Head(SOLOHead):
                  **kwargs):
         assert dcn_cfg is None or isinstance(dcn_cfg, dict)
         self.dcn_cfg = dcn_cfg
+        self.dcn_apply_to_all_conv = dcn_apply_to_all_conv
         self.kernel_out_channels = mask_out_channels * 1 * 1
         super(SOLOV2Head, self).__init__(
             *args, init_cfg=init_cfg, **kwargs)
@@ -158,11 +160,11 @@ class SOLOV2Head(SOLOHead):
     def _init_layers(self):
         self.cls_convs = nn.ModuleList()
         self.kernel_convs = nn.ModuleList()
+        conv_cfg = None
         for i in range(self.stacked_convs):
             if self.dcn_cfg is not None:
-                conv_cfg = self.dcn_cfg
-            else:
-                conv_cfg = None
+                if self.dcn_apply_to_all_conv or i == self.stacked_convs - 1:
+                    conv_cfg = self.dcn_cfg
 
             chn = self.in_channels + 2 if i == 0 else self.feat_channels
             self.kernel_convs.append(
