@@ -84,8 +84,10 @@ class WandbLogger(WandbLoggerHook):
                  interval=10,
                  log_checkpoint=False,
                  log_checkpoint_metadata=False,
-                 num_eval_images=100):
-        super(WandbLogger, self).__init__(wandb_init_kwargs, interval)
+                 num_eval_images=100,
+                 **kwargs):
+        super(WandbLogger, self).__init__(wandb_init_kwargs, interval,
+                                          **kwargs)
 
         self.log_checkpoint = log_checkpoint
         self.log_checkpoint_metadata = log_checkpoint_metadata
@@ -258,7 +260,6 @@ class WandbLogger(WandbLoggerHook):
         Returns:
             bool: Returns True, if the checkpoint has the best metric score.
         """
-        # map_score = metadata.get('map_score', None)
         keys = list(metadata.keys())
         map_metrics = [key for key in keys if 'mAP' in key]
         ar_metrics = [key for key in keys if 'AR' in key]
