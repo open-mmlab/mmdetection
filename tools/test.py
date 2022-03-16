@@ -17,9 +17,8 @@ from mmdet.apis import multi_gpu_test, single_gpu_test
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
 from mmdet.models import build_detector
-from mmdet.utils import setup_multi_processes
+from mmdet.utils import setup_multi_processes, update_data_root
 
-from mmdet.utils import update_data_root
 
 def parse_args():
     parser = argparse.ArgumentParser(

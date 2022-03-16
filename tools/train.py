@@ -16,9 +16,9 @@ from mmdet import __version__
 from mmdet.apis import init_random_seed, set_random_seed, train_detector
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
-from mmdet.utils import collect_env, get_root_logger, setup_multi_processes
+from mmdet.utils import (collect_env, get_root_logger, setup_multi_processes,
+                         update_data_root)
 
-from mmdet.utils import update_data_root
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
@@ -102,7 +102,7 @@ def main():
 
     # update data root according to MMDET_DATASETS
     update_data_root(cfg)
-    
+
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
 

@@ -11,8 +11,8 @@ from mmcv import Config, DictAction
 from mmdet.core.utils import mask2ndarray
 from mmdet.core.visualization import imshow_det_bboxes
 from mmdet.datasets.builder import build_dataset
-
 from mmdet.utils import update_data_root
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Browse a dataset')
