@@ -6,6 +6,8 @@ import torch
 from mmcv.runner import get_dist_info
 from torch.utils.data.sampler import Sampler
 
+from mmdet.core.utils import sync_random_seed
+
 
 class InfiniteGroupBatchSampler(Sampler):
     """Similar to `BatchSampler` warping a `GroupSampler. It is designed for
@@ -48,7 +50,10 @@ class InfiniteGroupBatchSampler(Sampler):
         self.world_size = world_size
         self.dataset = dataset
         self.batch_size = batch_size
-        self.seed = seed if seed is not None else 0
+        #  Must be the same across all workers. If None, will use a
+        #  random seed shared among workers
+        #  (require synchronization among all workers)
+        self.seed = sync_random_seed(seed)
         self.shuffle = shuffle
 
         assert hasattr(self.dataset, 'flag')
@@ -133,7 +138,10 @@ class InfiniteBatchSampler(Sampler):
         self.world_size = world_size
         self.dataset = dataset
         self.batch_size = batch_size
-        self.seed = seed if seed is not None else 0
+        #  Must be the same across all workers. If None, will use a
+        #  random seed shared among workers
+        #  (require synchronization among all workers)
+        self.seed = sync_random_seed(seed)
         self.shuffle = shuffle
         self.size = len(dataset)
         self.indices = self._indices_of_rank()
