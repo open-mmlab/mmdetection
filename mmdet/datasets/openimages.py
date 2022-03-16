@@ -22,38 +22,41 @@ class OpenImagesDataset(CustomDataset):
     """Open Images dataset for detection.
 
     Args:
-            label_file (str): File path of the label description file that
-                maps the classes names in MID format to their short
-                descriptions.
-            image_level_ann_file (str): Image level annotation, which is used
-                in evaluation.
-            get_supercategory (bool): Whether to get parent class of the
-                current class. Default: True.
-            hierarchy_file (str): The file path of the class hierarchy.
-                Default: None.
-            get_metas (bool): Whether to get image metas in testing or
-                validation time. This should be `True` during evaluation.
-                Default: True. The OpenImages annotations do not have image
-                metas (width and height of the image), which will be used
-                during evaluation. We provide two ways to get image metas
-                in `OpenImagesDataset`:
+        label_file (str): File path of the label description file that
+            maps the classes names in MID format to their short
+            descriptions.
+        image_level_ann_file (str): Image level annotation, which is used
+            in evaluation.
+        get_supercategory (bool): Whether to get parent class of the
+            current class. Default: True.
+        hierarchy_file (str): The file path of the class hierarchy.
+            Default: None.
+        get_metas (bool): Whether to get image metas in testing or
+            validation time. This should be `True` during evaluation.
+            Default: True. The OpenImages annotations do not have image
+            metas (width and height of the image), which will be used
+            during evaluation. We provide two ways to get image metas
+            in `OpenImagesDataset`:
 
-                - 1. `load from file`: Load image metas from pkl file, which
-                  is suggested to use. We provided a script to get image metas:
-                  `tools/misc/get_image_metas.py`, which need to run
-                  this script before training/testing. Please refer to
-                  `config/openimages/README.md` for more details.
+            - 1. `load from file`: Load image metas from pkl file, which
+              is suggested to use. We provided a script to get image metas:
+              `tools/misc/get_image_metas.py`, which need to run
+              this script before training/testing. Please refer to
+              `config/openimages/README.md` for more details.
 
-                - 2. `load from pipeline`, which will get image metas during
-                  test time. However, this may reduce the inference speed,
-                  especially when using distribution.
+            - 2. `load from pipeline`, which will get image metas during
+              test time. However, this may reduce the inference speed,
+              especially when using distribution.
 
-            load_from_file (bool): Whether to get image metas from pkl file.
-            meta_file (str): File path to get image metas.
-            filter_labels (bool): Whether filter unannotated classes.
-                Default: True.
-            load_image_level_labels (bool): Whether load and consider image
-                level labels during evaluation. Default: True.
+        load_from_file (bool): Whether to get image metas from pkl file.
+        meta_file (str): File path to get image metas.
+        filter_labels (bool): Whether filter unannotated classes.
+            Default: True.
+        load_image_level_labels (bool): Whether load and consider image
+            level labels during evaluation. Default: True.
+        file_client_args (dict): Arguments to instantiate a FileClient.
+            See :class:`mmcv.fileio.FileClient` for details.
+            Defaults to ``dict(backend='disk')``.
     """
 
     def __init__(self,
@@ -66,18 +69,42 @@ class OpenImagesDataset(CustomDataset):
                  meta_file='',
                  filter_labels=True,
                  load_image_level_labels=True,
+                 file_client_args=dict(backend='disk'),
                  **kwargs):
+        # may get error if use other file_client
+        self.assert_suffix = False
+        self.file_client_args = file_client_args
+        if 'backend' in file_client_args:
+            if file_client_args['backend'] == 'disk':
+                self.assert_suffix = True
+
         self.cat2label = defaultdict(str)
         self.index_dict = {}
+
+        # Although it will init file_client in `CustomDataset`,
+        # it needs to be init here.
+        file_client = mmcv.FileClient(**file_client_args)
         # need get `index_dict` before load annotations
-        class_names = self.get_classes_from_csv(label_file)
-        super(OpenImagesDataset, self).__init__(**kwargs)
+        if hasattr(file_client, 'get_local_path'):
+            with file_client.get_local_path(label_file) as local_path:
+                class_names = self.get_classes_from_csv(local_path)
+        else:
+            class_names = self.get_classes_from_csv(label_file)
+        super(OpenImagesDataset, self).__init__(
+            file_client_args=file_client_args, **kwargs)
         self.CLASSES = class_names
         self.image_level_ann_file = image_level_ann_file
         self.load_image_level_labels = load_image_level_labels
         if get_supercategory is True:
             assert hierarchy_file is not None
-            self.class_label_tree = self.get_relation_matrix(hierarchy_file)
+            if hasattr(self.file_client, 'get_local_path'):
+                with self.file_client.get_local_path(
+                        hierarchy_file) as local_path:
+                    self.class_label_tree = self.get_relation_matrix(
+                        local_path)
+            else:
+                self.class_label_tree = self.get_relation_matrix(
+                    hierarchy_file)
         self.get_supercategory = get_supercategory
         self.get_metas = get_metas
         self.load_from_file = load_from_file
@@ -258,8 +285,13 @@ class OpenImagesDataset(CustomDataset):
 
     def get_meta_from_file(self, meta_file=''):
         """Get image metas from pkl file."""
-        assert meta_file.endswith('pkl'), 'File name must be pkl suffix'
-        metas = mmcv.load(meta_file)
+        if self.assert_suffix:
+            assert meta_file.endswith('pkl'), 'File name must be pkl suffix'
+
+        metas = mmcv.load(
+            meta_file,
+            file_format='pkl',
+            file_client_args=self.file_client_args)
         assert len(metas) == len(self)
         for i in range(len(metas)):
             file_name = osp.split(metas[i]['filename'])[-1]
@@ -332,7 +364,8 @@ class OpenImagesDataset(CustomDataset):
             (class_num, class_num).
         """
 
-        assert hierarchy_file.endswith('json')
+        if self.assert_suffix:
+            assert hierarchy_file.endswith('json')
         if self.data_root is not None:
             if not osp.isabs(hierarchy_file):
                 hierarchy_file = osp.join(self.data_root, hierarchy_file)
@@ -513,7 +546,12 @@ class OpenImagesDataset(CustomDataset):
             dict: Annotation info of specified index.
         """
 
-        item_lists = self.load_image_label_from_csv(image_level_ann_file)
+        if hasattr(self.file_client, 'get_local_path'):
+            with self.file_client.get_local_path(image_level_ann_file) \
+                    as local_path:
+                item_lists = self.load_image_label_from_csv(local_path)
+        else:
+            item_lists = self.load_image_label_from_csv(image_level_ann_file)
         image_level_annotations = []
         for i in range(len(self)):
             img_info = self.data_infos[i].get('img_info', None)
@@ -711,7 +749,8 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
 
     def load_annotations(self, ann_file):
         """Load annotation from annotation file."""
-        assert ann_file.endswith('txt')
+        if self.assert_suffix:
+            assert ann_file.endswith('txt')
         with open(ann_file) as f:
             lines = f.readlines()
         i = 0
@@ -786,8 +825,8 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
             relationship between the parent class and the child class,
             of shape (class_num, class_num).
         """
-
-        assert hierarchy_file.endswith('np')
+        if self.assert_suffix:
+            assert hierarchy_file.endswith('np')
         class_label_tree = np.load(hierarchy_file, allow_pickle=True)
         return class_label_tree[1:, 1:]
 
