@@ -3,6 +3,9 @@ _base_ = [
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
+# data
+data = dict(samples_per_gpu=8)
+
 # optimizer
 model = dict(
     backbone=dict(

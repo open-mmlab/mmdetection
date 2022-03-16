@@ -19,6 +19,46 @@ Collections:
       Version: v2.0.0
 
 Models:
+  - Name: retinanet_r18_fpn_1x_coco
+    In Collection: RetinaNet
+    Config: configs/retinanet/retinanet_r18_fpn_1x_coco.py
+    Metadata:
+      Training Memory (GB): 8.0
+      inference time (ms/im):
+        - value: 114.94
+          hardware: RTX2080Ti
+          backend: PyTorch
+          batch size: 8
+          mode: FP32
+          resolution: (800, 1333)
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 32.4
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_caffe_fpn_1x_coco/retinanet_r50_caffe_fpn_1x_coco_20200531-f11027c5.pth
+
+  - Name: RetinaNet
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - Focal Loss
+        - FPN
+        - ResNet
+    Paper:
+      URL: https://arxiv.org/abs/1708.02002
+      Title: "Focal Loss for Dense Object Detection"
+    README: configs/retinanet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/detectors/retinanet.py#L6
+      Version: v2.0.0
+
+Models:
   - Name: retinanet_r50_caffe_fpn_1x_coco
     In Collection: RetinaNet
     Config: configs/retinanet/retinanet_r50_caffe_fpn_1x_coco.py
