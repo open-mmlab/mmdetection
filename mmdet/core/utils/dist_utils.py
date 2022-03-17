@@ -162,6 +162,12 @@ def sync_random_seed(seed=None, device='cuda'):
     because the seed should be identical across all processes
     in the distributed group.
 
+    In distributed sampling, different ranks only need to
+    sample some non-overlapping data in the dataset.
+    It is necessary to synchronize the seeds of different
+    ranks through `sync_random_seed` to ensure that the dataset
+    indexes sampled by different ranks are exactly the same.
+
     Args:
         seed (int, Optional): The seed. Default to None.
         device (str): The device where the seed will be put on.

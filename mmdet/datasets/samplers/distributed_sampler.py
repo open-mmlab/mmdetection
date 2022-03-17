@@ -17,9 +17,12 @@ class DistributedSampler(_DistributedSampler):
                  seed=0):
         super().__init__(
             dataset, num_replicas=num_replicas, rank=rank, shuffle=shuffle)
-        #  Must be the same across all workers. If None, will use a
-        #  random seed shared among workers
-        #  (require synchronization among all workers)
+
+        #  In distributed sampling, different ranks only need to
+        #  sample some non-overlapping data in the dataset.
+        #  It is necessary to synchronize the seeds of different
+        #  ranks through `sync_random_seed` to ensure that the dataset
+        #  indexes sampled by different ranks are exactly the same.
         self.seed = sync_random_seed(seed)
 
     def __iter__(self):
