@@ -41,6 +41,9 @@ def cross_entropy(pred,
         reduction='none',
         ignore_index=ignore_index)
 
+    if reduction == 'mean' and avg_factor is None:
+        avg_factor = max(1, (label != ignore_index).sum())
+
     # apply weights and do the reduction
     if weight is not None:
         weight = weight.float()
@@ -101,13 +104,23 @@ def binary_cross_entropy(pred,
     """
     # The default value of ignore_index is the same as F.cross_entropy
     ignore_index = -100 if ignore_index is None else ignore_index
+    if reduction == 'mean' and avg_factor is None:
+        avg_factor = max(1,
+                         label.numel() - (label == ignore_index).sum().item())
+
     if pred.dim() != label.dim():
         label, weight = _expand_onehot_labels(label, weight, pred.size(-1),
                                               ignore_index)
+    else:
+        # should mask out the ignored elements
+        valid_mask = ((label >= 0) & (label != ignore_index)).float()
+        if weight is not None:
+            weight *= valid_mask
+        else:
+            weight = valid_mask
 
     # weighted element-wise losses
-    if weight is not None:
-        weight = weight.float()
+    weight = weight.float()
     loss = F.binary_cross_entropy_with_logits(
         pred, label.float(), pos_weight=class_weight, reduction='none')
     # do the reduction for the weighted loss

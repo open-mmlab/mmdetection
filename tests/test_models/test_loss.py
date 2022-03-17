@@ -135,7 +135,8 @@ def test_GHMR_loss(loss_class, input_shape):
 
 
 @pytest.mark.parametrize('use_sigmoid', [True, False])
-def test_loss_with_ignore_index(use_sigmoid):
+@pytest.mark.parametrize('reduction', ['sum', 'mean', None])
+def test_loss_with_ignore_index(use_sigmoid, reduction):
     # Test cross_entropy loss
     loss_class = CrossEntropyLoss(
         use_sigmoid=use_sigmoid, use_mask=False, ignore_index=255)
@@ -146,20 +147,20 @@ def test_loss_with_ignore_index(use_sigmoid):
     target[ignored_indices] = 255
 
     # Test loss forward with default ignore
-    loss_with_ignore = loss_class(pred, target, reduction_override='sum')
+    loss_with_ignore = loss_class(pred, target, reduction_override=reduction)
     assert isinstance(loss_with_ignore, torch.Tensor)
 
     # Test loss forward with forward ignore
-    target[ignored_indices] = 250
+    target[ignored_indices] = 255
     loss_with_forward_ignore = loss_class(
-        pred, target, ignore_index=250, reduction_override='sum')
+        pred, target, ignore_index=255, reduction_override=reduction)
     assert isinstance(loss_with_forward_ignore, torch.Tensor)
 
     # Verify correctness
-    not_ignored_indices = (target != 250)
+    not_ignored_indices = (target != 255)
     pred = pred[not_ignored_indices]
     target = target[not_ignored_indices]
-    loss = loss_class(pred, target, reduction_override='sum')
+    loss = loss_class(pred, target, reduction_override=reduction)
 
     assert torch.allclose(loss, loss_with_ignore)
     assert torch.allclose(loss, loss_with_forward_ignore)
