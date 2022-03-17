@@ -1,11 +1,11 @@
-# 教程 11: 常见用法集合
-本教程主要是收集 MMDetection 中常见用法
+# 教程 11: How to xxx
+本教程收集了任何如何使用 MMDetection 进行 xxx 的答案。 如果您遇到有关`如何做`的问题及答案，请随时更新此文档！
 
 ## 使用 MMClassification 的骨干网络 
 
 归功于 MMCV 中所提的层次注册器 (Hierarchy Registry) 功能，允许 OpenMMLab 的各个算法库中的模块相互调用。用户可以在 MMDetection 中使用 MMClassification 中的骨干网络，而无需为 MMDetection 也实现一个 MMClassification 中已经存在的网络。
 
-假设想将 `MobileNetV3-small` 作为 `RetinaNet` 的骨干网络，则示例代码如下
+假设想将 `MobileNetV3-small` 作为 `RetinaNet` 的骨干网络，则示例代码如下。
 
 ```python
 _base_ = [
@@ -19,7 +19,7 @@ custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
 pretrained = 'https://download.openmmlab.com/mmclassification/v0/mobilenet_v3/convert/mobilenet_v3_small-8427ecf0.pth'
 model = dict(
     backbone=dict(
-        _delete_=True,
+        _delete_=True, # 将 _base_ 中关于 backbone 的字段删除
         type='mmcls.MobileNetV3', # 使用 mmcls 中的 MobileNetV3
         arch='small',
         out_indices=(3, 8, 11), # 修改 out_indices
@@ -31,7 +31,7 @@ model = dict(
     neck=dict(in_channels=[24, 48, 96], start_level=0))
 ```
 
-由于 MMClassification 提供了 Py**T**orch **Im**age **M**odels (`timm`) 骨干网络的封装，用户可以通过 MMClassification 直接使用 `timm` 中的骨干网络。假设想将 [`EfficientNet-B1`](https://github.com/open-mmlab/mmdetection/blob/master/configs/timm_example/retinanet_timm_efficientnet_b1_fpn_1x_coco.py) 作为 `RetinaNet` 的骨干网络，则示例代码如下
+由于 MMClassification 提供了 Py**T**orch **Im**age **M**odels (`timm`) 骨干网络的封装，用户也可以通过 MMClassification 直接使用 `timm` 中的骨干网络。假设想将 [`EfficientNet-B1`](https://github.com/open-mmlab/mmdetection/blob/master/configs/timm_example/retinanet_timm_efficientnet_b1_fpn_1x_coco.py) 作为 `RetinaNet` 的骨干网络，则示例代码如下。
 
 ```python
 # https://github.com/open-mmlab/mmdetection/blob/master/configs/timm_example/retinanet_timm_efficientnet_b1_fpn_1x_coco.py
@@ -46,7 +46,7 @@ _base_ = [
 custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
 model = dict(
     backbone=dict(
-        _delete_=True,
+        _delete_=True, # 将 _base_ 中关于 backbone 的字段删除
         type='mmcls.TIMMBackbone', # 使用 mmcls 中 timm 骨干网络
         model_name='efficientnet_b1',
         features_only=True,
@@ -56,3 +56,7 @@ model = dict(
 
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 ```
+
+`type='mmcls.TIMMBackbone'` 表示在 MMDetection 中使用 MMClassification 中的 `TIMMBackbone` 类，并且使用的模型为` EfficientNet-B1`，其中 `mmcls` 表示 MMClassification 库，而 `TIMMBackbone ` 表示 MMClassification 中实现的 TIMMBackbone 包装器。
+
+关于层次注册器的具体原理可以参考 [MMCV 文档](https://github.com/open-mmlab/mmcv/blob/master/docs/zh_cn/understand_mmcv/registry.md#%E6%B3%A8%E5%86%8C%E5%99%A8%E5%B1%82%E7%BB%93%E6%9E%84)，关于如何使用 MMClassification 中的其他 backbone，可以参考 [MMClassification 文档](https://github.com/open-mmlab/mmclassification/blob/master/docs/zh_CN/tutorials/config.md)。
