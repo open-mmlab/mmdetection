@@ -30,6 +30,10 @@ class DistributedSampler(_DistributedSampler):
         # deterministically shuffle based on epoch
         if self.shuffle:
             g = torch.Generator()
+            # When :attr:`shuffle=True`, this ensures all replicas
+            # use a different random ordering for each epoch.
+            # Otherwise, the next iteration of this sampler will
+            # yield the same ordering.
             g.manual_seed(self.epoch + self.seed)
             indices = torch.randperm(len(self.dataset), generator=g).tolist()
         else:
