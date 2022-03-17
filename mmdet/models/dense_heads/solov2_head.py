@@ -5,15 +5,35 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
+from mmcv.runner import BaseModule
 
 from mmdet.core import InstanceData, mask_matrix_nms, multi_apply
 from mmdet.core.utils import center_of_mass, generate_coordinate
 from mmdet.models.builder import HEADS
 from .solo_head import SOLOHead
-from mmcv.runner import BaseModule
 
 
 class MaskFeatModule(BaseModule):
+    """SOLOv2 mask feature map branch used in `SOLOv2: Dynamic and Fast
+    Instance Segmentation. <https://arxiv.org/pdf/2003.10152>`_
+
+    Args:
+        in_channels (int): Number of channels in the input feature map.
+        feat_channels (int): Number of hidden channels of the mask feature
+             map branch.
+        start_level (int): The starting feature map level from RPN that
+             will be used to predict the mask feature map. Default: 0.
+        end_level (int): The ending feature map level from rpn that
+             will be used to predict the mask feature map. Default: 3.
+        out_channels (int): Number of output channels of the mask feature
+             map branch. This is the channel count of the mask
+             feature map that to be dynamically convolved with the predicted
+             kernel. Default: 256.
+        conv_cfg (dict): Config dict for convolution layer. Default: None.
+        norm_cfg (dict): Config dict for normalization layer. Default: None.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+    """
+
     def __init__(self,
                  in_channels,
                  feat_channels,
@@ -22,8 +42,7 @@ class MaskFeatModule(BaseModule):
                  out_channels,
                  conv_cfg=None,
                  norm_cfg=None,
-                 init_cfg=[
-                     dict(type='Normal', layer='Conv2d', std=0.01)]):
+                 init_cfg=[dict(type='Normal', layer='Conv2d', std=0.01)]):
         super(MaskFeatModule, self).__init__(init_cfg=init_cfg)
 
         self.in_channels = in_channels
@@ -68,8 +87,8 @@ class MaskFeatModule(BaseModule):
                     convs_per_level.add_module('conv' + str(j), one_conv)
                     one_upsample = nn.Upsample(
                         scale_factor=2, mode='bilinear', align_corners=False)
-                    convs_per_level.add_module(
-                        'upsample' + str(j), one_upsample)
+                    convs_per_level.add_module('upsample' + str(j),
+                                               one_upsample)
                     continue
 
                 one_conv = ConvModule(
@@ -82,9 +101,7 @@ class MaskFeatModule(BaseModule):
                     inplace=False)
                 convs_per_level.add_module('conv' + str(j), one_conv)
                 one_upsample = nn.Upsample(
-                    scale_factor=2,
-                    mode='bilinear',
-                    align_corners=False)
+                    scale_factor=2, mode='bilinear', align_corners=False)
                 convs_per_level.add_module('upsample' + str(j), one_upsample)
 
             self.convs_all_levels.append(convs_per_level)
@@ -96,8 +113,7 @@ class MaskFeatModule(BaseModule):
                 1,
                 padding=0,
                 conv_cfg=self.conv_cfg,
-                norm_cfg=self.norm_cfg),
-        )
+                norm_cfg=self.norm_cfg), )
 
     def forward(self, feats):
         inputs = feats[self.start_level:self.end_level + 1]
@@ -118,13 +134,38 @@ class MaskFeatModule(BaseModule):
 
 @HEADS.register_module()
 class SOLOV2Head(SOLOHead):
+    """SOLOv2 mask head used in `SOLOv2: Dynamic and Fast Instance
+    Segmentation. <https://arxiv.org/pdf/2003.10152>`_
+
+    Args:
+        mask_feat_channels (int): Number of hidden channels of the mask feature
+             map branch `MaskFeatModule`. Default: 128.
+        mask_start_level (int): The starting feature map level from rpn that
+             will be used to predict the mask feature map. Default: 0.
+        mask_end_level (int): The ending feature map level from RPN that
+             will be used to predict the mask feature map. Default: 3.
+        mask_out_channels (int): Number of output channels of the mask feature
+             map branch `MaskFeatModule`. This is the channel count of the mask
+             feature map that to be dynamically convolved with the predicted
+             kernel. Default: 256.
+        mask_stride (int): Downsample factor of the mask feature map output by
+             `MaskFeatModule`. Default: 4.
+        with_dcn (bool): Whether to use dcn in kernel_convs and cls_convs,
+            default: False.
+        dcn_apply_to_all_conv (bool): Whether to use dcn in every layer of
+            kernel_convs and cls_convs, or only the last layer. It shall be set
+            `True` for the normal version of SOLOv2 and `False` for the
+            light-weight version. default: True.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+    """
+
     def __init__(self,
                  *args,
-                 mask_feat_channels,
-                 mask_start_level,
-                 mask_end_level,
-                 mask_out_channels,
-                 mask_stride,
+                 mask_feat_channels=128,
+                 mask_start_level=0,
+                 mask_end_level=3,
+                 mask_out_channels=256,
+                 mask_stride=4,
                  dcn_cfg=None,
                  dcn_apply_to_all_conv=True,
                  init_cfg=[
@@ -140,8 +181,7 @@ class SOLOV2Head(SOLOHead):
         self.dcn_cfg = dcn_cfg
         self.dcn_apply_to_all_conv = dcn_apply_to_all_conv
         self.kernel_out_channels = mask_out_channels * 1 * 1
-        super(SOLOV2Head, self).__init__(
-            *args, init_cfg=init_cfg, **kwargs)
+        super(SOLOV2Head, self).__init__(*args, init_cfg=init_cfg, **kwargs)
 
         self.mask_start_level = mask_start_level
         self.mask_end_level = mask_end_level
@@ -212,8 +252,11 @@ class SOLOV2Head(SOLOHead):
 
             # kernel branch
             kernel_feat = ins_kernel_feat
-            kernel_feat = F.interpolate(kernel_feat, size=self.num_grids[i],
-                                        mode='bilinear', align_corners=False)
+            kernel_feat = F.interpolate(
+                kernel_feat,
+                size=self.num_grids[i],
+                mode='bilinear',
+                align_corners=False)
 
             cate_feat = kernel_feat[:, :-2, :, :]
 
@@ -246,24 +289,23 @@ class SOLOV2Head(SOLOHead):
         mlvl_fg_pos = []
         mlvl_labels = []
         mlvl_is_fg = []
-        for (lower_bound, upper_bound), num_grid in zip(self.scale_ranges,
-                                                        self.num_grids):
+        for (lower_bound,
+             upper_bound), num_grid in zip(self.scale_ranges, self.num_grids):
             mask_targets = []
             # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
             fg_pos = []
             labels = torch.zeros([num_grid, num_grid],
                                  dtype=torch.int64,
                                  device=device) + self.num_classes
-            is_fg = torch.zeros([num_grid ** 2],
-                                dtype=torch.bool,
-                                device=device)
+            is_fg = torch.zeros([num_grid**2], dtype=torch.bool, device=device)
 
             gt_inds = ((gt_areas >= lower_bound) &
                        (gt_areas <= upper_bound)).nonzero().flatten()
             if len(gt_inds) == 0:
                 mlvl_mask_targets.append(
                     torch.zeros([0, featmap_size[0], featmap_size[1]],
-                                dtype=torch.uint8, device=device))
+                                dtype=torch.uint8,
+                                device=device))
                 mlvl_labels.append(labels)
                 mlvl_is_fg.append(is_fg)
                 mlvl_fg_pos.append([])
@@ -333,14 +375,15 @@ class SOLOV2Head(SOLOHead):
                             [featmap_size[0], featmap_size[1]],
                             dtype=torch.uint8,
                             device=device)
-                        this_mask_target[:gt_mask.shape[0],
-                        :gt_mask.shape[1]] = gt_mask
+                        this_mask_target[:gt_mask.shape[0], :gt_mask.
+                                         shape[1]] = gt_mask
                         mask_targets.append(this_mask_target)
                         is_fg[index] = True
                         fg_pos.append(index)
             if len(mask_targets) == 0:
                 mask_targets = torch.zeros(
-                    [0, featmap_size[0], featmap_size[1]], dtype=torch.uint8,
+                    [0, featmap_size[0], featmap_size[1]],
+                    dtype=torch.uint8,
                     device=device)
             else:
                 mask_targets = torch.stack(mask_targets, 0)
@@ -368,15 +411,17 @@ class SOLOV2Head(SOLOHead):
             gt_masks,
             featmap_size=featmap_size)
 
-        mlvl_mask_targets = [torch.cat(lvl_mask_targets, 0) for lvl_mask_targets
-                             in zip(*mimg_mask_targets)]
+        mlvl_mask_targets = [
+            torch.cat(lvl_mask_targets, 0)
+            for lvl_mask_targets in zip(*mimg_mask_targets)
+        ]
 
         mlvl_fg_kernel_preds = []
         for lvl_kernel_preds, lvl_fg_pos in zip(mlvl_kernel_preds,
                                                 zip(*mimg_fg_pos)):
             lvl_fg_kernel_preds = []
-            for img_lvl_kernel_preds, img_lvl_fg_pos in zip(lvl_kernel_preds,
-                                                            lvl_fg_pos):
+            for img_lvl_kernel_preds, img_lvl_fg_pos in zip(
+                    lvl_kernel_preds, lvl_fg_pos):
                 img_lvl_fg_kernel_preds = img_lvl_kernel_preds.view(
                     img_lvl_kernel_preds.shape[0], -1)[:, img_lvl_fg_pos]
                 lvl_fg_kernel_preds.append(img_lvl_fg_kernel_preds)
@@ -395,7 +440,8 @@ class SOLOV2Head(SOLOHead):
                 fg_num = img_lvl_fg_kernel_pred.shape[1]
                 img_lvl_mask_pred = F.conv2d(
                     img_mask_feats,
-                    img_lvl_fg_kernel_pred.permute(1, 0).view(fg_num, -1, 1, 1),
+                    img_lvl_fg_kernel_pred.permute(1,
+                                                   0).view(fg_num, -1, 1, 1),
                     stride=1).view(-1, h, w)
                 lvl_mask_preds.append(img_lvl_mask_pred)
             if len(lvl_mask_preds) == 0:
@@ -415,17 +461,21 @@ class SOLOV2Head(SOLOHead):
             if lvl_mask_preds is None:
                 continue
             loss_mask.append(
-                self.loss_mask(lvl_mask_preds, lvl_mask_targets,
-                               reduction_override='none'))
+                self.loss_mask(
+                    lvl_mask_preds,
+                    lvl_mask_targets,
+                    reduction_override='none'))
         if num_pos > 0:
             loss_mask = torch.cat(loss_mask).sum() / num_pos
         else:
             loss_mask = torch.cat(loss_mask).mean()
 
         # cate
-        flatten_labels = [torch.cat(
-            [img_lvl_labels.flatten() for img_lvl_labels in lvl_labels]) for
-            lvl_labels in zip(*mimg_labels)]
+        flatten_labels = [
+            torch.cat(
+                [img_lvl_labels.flatten() for img_lvl_labels in lvl_labels])
+            for lvl_labels in zip(*mimg_labels)
+        ]
         flatten_labels = torch.cat(flatten_labels)
 
         flatten_cls_preds = [
@@ -456,16 +506,19 @@ class SOLOV2Head(SOLOHead):
         for img_id in range(len(img_metas)):
             img_cls_pred = [
                 mlvl_cls_scores[lvl][img_id].view(-1, self.cls_out_channels)
-                for lvl in range(num_levels)]
+                for lvl in range(num_levels)
+            ]
             img_mask_feats = mask_feats[[img_id]]
             img_kernel_pred = [
                 mlvl_kernel_preds[lvl][img_id].permute(1, 2, 0).view(
-                    -1, self.kernel_out_channels)
-                for lvl in range(num_levels)]
+                    -1, self.kernel_out_channels) for lvl in range(num_levels)
+            ]
             img_cls_pred = torch.cat(img_cls_pred, dim=0)
             img_kernel_pred = torch.cat(img_kernel_pred, dim=0)
             result = self._get_results_single(
-                img_kernel_pred, img_cls_pred, img_mask_feats,
+                img_kernel_pred,
+                img_cls_pred,
+                img_mask_feats,
                 img_meta=img_metas[img_id])
             result_list.append(result)
         return result_list
@@ -521,8 +574,8 @@ class SOLOV2Head(SOLOHead):
 
         # mask encoding.
         kernel_preds = kernel_preds.view(kernel_preds.size(0), -1, 1, 1)
-        mask_preds = F.conv2d(mask_feats, kernel_preds, stride=1).squeeze(
-            0).sigmoid()
+        mask_preds = F.conv2d(
+            mask_feats, kernel_preds, stride=1).squeeze(0).sigmoid()
         # mask.
         masks = mask_preds > cfg.mask_thr
         sum_masks = masks.sum((1, 2)).float()
@@ -551,10 +604,14 @@ class SOLOV2Head(SOLOHead):
             filter_thr=cfg.filter_thr)
         mask_preds = mask_preds[keep_inds]
         mask_preds = F.interpolate(
-            mask_preds.unsqueeze(0), size=upsampled_size,
-            mode='bilinear', align_corners=False)[:, :, :h, :w]
+            mask_preds.unsqueeze(0),
+            size=upsampled_size,
+            mode='bilinear',
+            align_corners=False)[:, :, :h, :w]
         mask_preds = F.interpolate(
-            mask_preds, size=ori_shape[:2], mode='bilinear',
+            mask_preds,
+            size=ori_shape[:2],
+            mode='bilinear',
             align_corners=False).squeeze(0)
         masks = mask_preds > cfg.mask_thr
 
