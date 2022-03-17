@@ -402,6 +402,30 @@ class SOLOV2Head(SOLOHead):
              img_metas,
              gt_bboxes=None,
              **kwargs):
+        """Calculate the loss of total batch.
+
+        Args:
+            mlvl_kernel_preds (list[Tensor]): Multi-level dynamic kernel
+                prediction. The kernel is used to generate instance
+                segmentation masks by dynamic convolution. Each element in the
+                list has shape
+                (batch_size, kernel_out_channels, num_grids, num_grids).
+            mlvl_cls_preds (list[Tensor]): Multi-level scores. Each element
+                in the list has shape
+                (batch_size, num_classes, num_grids, num_grids).
+            mask_feats (Tensor): Unified mask feature map used to generate
+                instance segmentation masks by dynamic convolution. Has shape
+                (batch_size, mask_out_channels, h, w).
+            gt_labels (list[Tensor]): Labels of multiple images.
+            gt_masks (list[Tensor]): Ground truth masks of multiple images.
+                Each has shape (num_instances, h, w).
+            img_metas (list[dict]): Meta information of multiple images.
+            gt_bboxes (list[Tensor]): Ground truth bboxes of multiple
+                images. Default: None.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         featmap_size = mask_feats.size()[-2:]
 
         mimg_mask_targets, mimg_labels, mimg_is_fg, mimg_fg_pos = multi_apply(
@@ -490,7 +514,33 @@ class SOLOV2Head(SOLOHead):
 
     def get_results(self, mlvl_kernel_preds, mlvl_cls_scores, mask_feats,
                     img_metas, **kwargs):
+        """Get multi-image mask results.
 
+        Args:
+            mlvl_kernel_preds (list[Tensor]): Multi-level dynamic kernel
+                prediction. The kernel is used to generate instance
+                segmentation masks by dynamic convolution. Each element in the
+                list has shape
+                (batch_size, kernel_out_channels, num_grids, num_grids).
+            mlvl_cls_scores (list[Tensor]): Multi-level scores. Each element
+                in the list has shape
+                (batch_size, num_classes, num_grids, num_grids).
+            mask_feats (Tensor): Unified mask feature map used to generate
+                instance segmentation masks by dynamic convolution. Has shape
+                (batch_size, mask_out_channels, h, w).
+            img_metas (list[dict]): Meta information of all images.
+
+        Returns:
+            list[:obj:`InstanceData`]: Processed results of multiple
+            images.Each :obj:`InstanceData` usually contains
+            following keys.
+
+                - scores (Tensor): Classification scores, has shape
+                  (num_instance,).
+                - labels (Tensor): Has shape (num_instances,).
+                - masks (Tensor): Processed mask results, has
+                  shape (num_instances, h, w).
+        """
         num_levels = len(mlvl_cls_scores)
         assert len(mlvl_kernel_preds) == len(mlvl_cls_scores)
 
