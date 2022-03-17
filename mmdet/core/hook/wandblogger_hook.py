@@ -324,27 +324,28 @@ class WandbLogger(WandbLoggerHook):
             'name': name
         } for id, name in self.class_id_to_label.items()])
 
-        for idx in range(self.num_eval_images):
-            data_sample = self.val_dataset.prepare_test_img(idx)
-            data_ann = self.val_dataset.get_ann_info(idx)
+        from mmdet.datasets.pipelines import LoadImageFromFile
+        img_loader = LoadImageFromFile()
+        img_prefix = self.val_dataset.img_prefix
 
-            img_meta = data_sample['img_metas'][0].data
-            image = data_sample['img'][0].data
+        for idx in range(self.num_eval_images):
+            img_info = self.val_dataset.data_infos[idx]
+            img_meta = img_loader(
+                dict(img_info=img_info, img_prefix=img_prefix))
+
+            # Get image and convert from BGR to RGB
+            image = img_meta['img'][..., ::-1]
+            image_name = img_info['filename']
+
+            data_ann = self.val_dataset.get_ann_info(idx)
             bboxes = data_ann['bboxes']
             labels = data_ann['labels']
-            scale_factor = img_meta['scale_factor']
-
-            image_name = img_meta['ori_filename']
-            # permute to get channel last configuration, followed by bgr -> rgb
-            image = image.permute(
-                1, 2, 0).numpy()[..., ::-1]  # Not true for every dataloader
 
             box_data = []
             assert len(bboxes) == len(labels)
             for bbox, label in zip(bboxes, labels):
                 box_data.append(
-                    self._get_wandb_bbox(bbox, label, classes[label],
-                                         scale_factor))
+                    self._get_wandb_bbox(bbox, label, classes[label]))
 
             boxes = {
                 'ground_truth': {
@@ -365,10 +366,6 @@ class WandbLogger(WandbLoggerHook):
             result = results[ndx]
             assert len(result) == len(self.class_id_to_label)
 
-            data_sample = self.val_dataset.prepare_test_img(ndx)
-            img_meta = data_sample['img_metas'][0].data
-            scale_factor = img_meta['scale_factor']
-
             box_data = []
             class_scores = []
             for label_id, bbox_scores in enumerate(result):
@@ -384,8 +381,7 @@ class WandbLogger(WandbLoggerHook):
                             box_data.append(
                                 self._get_wandb_bbox(
                                     bbox_score, label_id,
-                                    f'{class_name} {confidence:.2f}',
-                                    scale_factor))
+                                    f'{class_name} {confidence:.2f}'))
 
                     class_scores.append(class_score / (count + 1e-6))
                 else:
@@ -406,7 +402,7 @@ class WandbLogger(WandbLoggerHook):
                     boxes=boxes,
                     classes=self.class_set), *tuple(class_scores))
 
-    def _get_wandb_bbox(self, bbox, label, box_caption, scale_factor):
+    def _get_wandb_bbox(self, bbox, label, box_caption):
         """Get structured dict for logging bounding boxes to W&B.
 
         Args:
@@ -421,10 +417,10 @@ class WandbLogger(WandbLoggerHook):
                   that bounding box to W&B.
         """
         position = dict(
-            minX=int(bbox[0] * scale_factor[0]),
-            minY=int(bbox[1] * scale_factor[1]),
-            maxX=int(bbox[2] * scale_factor[2]),
-            maxY=int(bbox[3] * scale_factor[3]))
+            minX=int(bbox[0]),
+            minY=int(bbox[1]),
+            maxX=int(bbox[2]),
+            maxY=int(bbox[3]))
 
         if not isinstance(label, int):
             label = int(label)
