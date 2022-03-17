@@ -160,7 +160,7 @@ d. If you would like to use `albumentations`, we suggest using `pip install -r r
 `pip install -U albumentations --no-binary qudida,albumentations`. If you simply use `pip install albumentations>=0.3.2`,
 it will install `opencv-python-headless` simultaneously (even though you have already
 installed `opencv-python`). We recommended checking the environment after installing `albumentation` to
-ensure that `opencv-python` and `opencv-python-headless` are not installed at the same time, because it might cause unexpected issues if they both installed. Please refer
+ensure that `opencv-python` and `opencv-python-headless` are not installed at the same time, because it might cause unexpected issues if they both are installed. Please refer
 to [official documentation](https://albumentations.ai/docs/getting_started/installation/#note-on-opencv-dependencies) for more details.
 
 ### Install without GPU support
