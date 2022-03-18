@@ -19,10 +19,10 @@ class MMDetWandbHook(WandbLoggerHook):
 
     - Checkpointing: If `log_checkpoint` is True, the checkpoint saved at
         every checkpoint interval will be saved as W&B Artifacts.
-        Please refer to https://docs.wandb.ai/guides/artifacts/model-versioning
+        This depends on the `CheckpointHook` whose priority is more
+        than `MMDetWandbHook`. Please refer to
+        https://docs.wandb.ai/guides/artifacts/model-versioning
         to learn more about model versioning with W&B Artifacts.
-        Note: This depends on the `CheckpointHook` whose priority is more
-        than `MMDetWandbHook`.
 
     - Checkpoint Metadata: If `log_checkpoint_metadata` is True, every
         checkpoint artifact will have a metadata associated with it.
@@ -30,20 +30,21 @@ class MMDetWandbHook(WandbLoggerHook):
         data with that checkpoint along with the current epoch. If True, it
         also marks the checkpoint version with the best evaluation metric with
         a 'best' alias. You can choose the best checkpoint in the W&B Artifacts
-        UI using this.
-        Note: It depends on `EvalHook` whose priority is more
+        UI using this. It depends on `EvalHook` whose priority is more
         than MMDetWandbHook.
 
     - Evaluation: At every evaluation interval, the `MMDetWandbHook` logs the
         model prediction as interactive W&B Tables. The number of samples
-        logged is given by `num_eval_images`. Please refer to
+        logged is given by `num_eval_images`. Currently, the `MMDetWandbHook`
+        logs the predicted bounding boxes along with the ground truth at every
+        evaluation interval. This depends on the `EvalHook` whose priority is
+        more than `MMDetWandbHook`. Also note that the data is just logged once
+        and subsequent evaluation tables uses reference to the logged data
+        to save memory usage. Please refer to
         https://docs.wandb.ai/guides/data-vis to learn more about W&B Tables.
-        Currently, the `MMDetWandbHook` logs the predicted bounding boxes along
-        with the ground truth at every evaluation interval.
-        Note: This depends on the `EvalHook` whose priority is more than
-        `MMDetWandbHook`. Also note that the data is just logged once and
-        subsequent evaluation tables uses reference to the logged data to save
-        memory usage.
+
+    For more details check out W&B's MMDetection docs:
+    https://docs.wandb.ai/guides/integrations/mmdetection
 
     ```
     Example:
