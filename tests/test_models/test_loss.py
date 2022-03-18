@@ -165,6 +165,12 @@ def test_loss_with_ignore_index(use_sigmoid, reduction):
     assert torch.allclose(loss, loss_with_ignore)
     assert torch.allclose(loss, loss_with_forward_ignore)
 
+    # test ignore all target
+    pred = torch.rand((10, 5))
+    target = torch.ones((10, ), dtype=torch.long) * 255
+    loss = loss_class(pred, target, reduction_override=reduction)
+    assert loss == 0
+
 
 @pytest.mark.parametrize('naive_dice', [True, False])
 def test_dice_loss(naive_dice):
