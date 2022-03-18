@@ -2008,7 +2008,8 @@ class Mosaic:
                  prob=0.5):
         assert isinstance(img_scale, tuple)
         assert 0 <= prob <= 1.0, 'The probability should be in range [0,1]. '\
-            'got {prob}.'
+            f'got {prob}.'
+
         log_img_scale(img_scale, skip_square=True)
         self.img_scale = img_scale
         self.center_ratio_range = center_ratio_range

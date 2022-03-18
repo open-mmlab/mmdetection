@@ -566,11 +566,25 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 PORT=29500 ./tools/dist_train.sh ${CONFIG_FILE} 4
 CUDA_VISIBLE_DEVICES=4,5,6,7 PORT=29501 ./tools/dist_train.sh ${CONFIG_FILE} 4
 ```
 
-#### 在多个节点上训练
+### 使用多台机器训练
 
-MMDetection 是依赖 `torch.distributed` 包进行分布式训练的。因此，我们可以通过 PyTorch 的 [启动工具](https://pytorch.org/docs/stable/distributed.html#launch-utility) 来进行基本地使用。
+如果您想使用由 ethernet 连接起来的多台机器， 您可以使用以下命令:
 
-#### 使用 Slurm 来管理任务
+在第一台机器上:
+
+```shell
+NNODES=2 NODE_RANK=0 PORT=$MASTER_PORT MASTER_ADDR=$MASTER_ADDR sh tools/dist_train.sh $CONFIG $GPUS
+```
+
+在第二台机器上:
+
+```shell
+NNODES=2 NODE_RANK=1 PORT=$MASTER_PORT MASTER_ADDR=$MASTER_ADDR sh tools/dist_train.sh $CONFIG $GPUS
+```
+
+但是，如果您不使用高速网路连接这几台机器的话，训练将会非常慢。
+
+### 使用 Slurm 来管理任务
 
 Slurm 是一个常见的计算集群调度系统。在 Slurm 管理的集群上，你可以使用 `slurm.sh` 来开启训练任务。它既支持单节点训练也支持多节点训练。
 
