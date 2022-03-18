@@ -2,11 +2,13 @@
 
 This tutorial collects answers to any `How to xxx with MMDetection`. Feel free to update this doc if you meet new questions about `How to` and find the answers!
 
-## Backbone network using MMClassification
+## Use backbone network through MMClassification
 
-The Hierarchy Registry function proposed in MMCV allows modules in various algorithm libraries of OpenMMLab to call each other. Users can use backbone networks from MMClassification in MMDetection without implementing a network that already exists in MMClassification.
+The model registry in MMDet, MMCls, MMSeg all inherit from the root registry in MMCV. This allows these repositories to directly use the modules already implemented by each other. Therefore, users can use backbone networks from MMClassification in MMDetection without implementing a network that already exists in MMClassification.
 
-Suppose you want to use `MobileNetV3-small` as the backbone network of `RetinaNet`, the sample code is as the following.
+### Use backbone network implemented in MMClassification
+
+Suppose you want to use `MobileNetV3-small` as the backbone network of `RetinaNet`, the example config is as the following.
 
 ```python
 _base_ = [
@@ -27,12 +29,14 @@ model = dict(
         init_cfg=dict(
             type='Pretrained',
             checkpoint=pretrained,
-            prefix='backbone.')), # Need to add prefix to ensure that pre-training weights can be loaded normally
+            prefix='backbone.')), # The pre-trained weights of backbone network in MMCls have prefix='backbone.'. The prefix in the keys will be removed so that these weights can be normally loaded.
     # Modify in_channels
     neck=dict(in_channels=[24, 48, 96], start_level=0))
 ```
 
-Since MMClassification provides a wrapper for the Py**T**orch **Im**age **M**odels (`timm`) backbone network, users can directly use the backbone network in `timm` through MMClassification. Suppose you want to use [`EfficientNet-B1`](https://github.com/open-mmlab/mmdetection/blob/master/configs/timm_example/retinanet_timm_efficientnet_b1_fpn_1x_coco.py) as the backbone network of `RetinaNet`, the sample code is as the following.
+### Use backbone network in TIMM through MMClassification
+
+MMClassification also provides a wrapper for the PyTorch Image Models (timm) backbone network, users can directly use the backbone network in timm through MMClassification. Suppose you want to use EfficientNet-B1 as the backbone network of RetinaNet, the example config is as the following.
 
 ```python
 # https://github.com/open-mmlab/mmdetection/blob/master/configs/timm_example/retinanet_timm_efficientnet_b1_fpn_1x_coco.py
