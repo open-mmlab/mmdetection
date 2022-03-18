@@ -41,6 +41,7 @@ def cross_entropy(pred,
         reduction='none',
         ignore_index=ignore_index)
 
+    # loss is averaged over non-ignored targets
     if reduction == 'mean' and avg_factor is None:
         avg_factor = max(1, (label != ignore_index).sum())
 
@@ -104,9 +105,10 @@ def binary_cross_entropy(pred,
     """
     # The default value of ignore_index is the same as F.cross_entropy
     ignore_index = -100 if ignore_index is None else ignore_index
+
+    # loss is averaged over non-ignored targets
     if reduction == 'mean' and avg_factor is None:
-        avg_factor = max(1,
-                         label.numel() - (label == ignore_index).sum().item())
+        avg_factor = max(1, ((label >= 0) & (label != ignore_index)).sum())
 
     if pred.dim() != label.dim():
         label, weight = _expand_onehot_labels(label, weight, pred.size(-1),
