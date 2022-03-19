@@ -40,21 +40,12 @@ class DDODHead(AnchorHead):
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
                      loss_weight=1.0),
-                 init_cfg=dict(
-                     type='Normal',
-                     layer='Conv2d',
-                     std=0.01,
-                     override=dict(
-                         type='Normal',
-                         name='atss_cls',
-                         std=0.01,
-                         bias_prob=0.01)),
                  **kwargs):
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         super(DDODHead, self).__init__(
-            num_classes, in_channels, init_cfg=init_cfg, **kwargs)
+            num_classes, in_channels, **kwargs)
 
         self.sampling = False
         if self.train_cfg:
@@ -104,6 +95,17 @@ class DDODHead(AnchorHead):
             [Scale(1.0) for _ in self.prior_generator.strides])
         self.cls_num_pos_samples_per_level = [0. for ii in range(5)]
         self.reg_num_pos_samples_per_level = [0. for ii in range(5)]
+
+    def init_weights(self):
+        """Initialize weights of the head."""
+        for m in self.cls_convs:
+            normal_init(m.conv, std=0.01)
+        for m in self.reg_convs:
+            normal_init(m.conv, std=0.01)
+        bias_cls = bias_init_with_prob(0.01)
+        normal_init(self.atss_cls, std=0.01, bias=bias_cls)
+        normal_init(self.atss_reg, std=0.01)
+        normal_init(self.atss_iou, std=0.01)
 
     def forward(self, feats):
         """Forward features from the upstream network.
