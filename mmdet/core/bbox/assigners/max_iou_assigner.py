@@ -196,7 +196,7 @@ class MaxIoUAssigner(BaseAssigner):
                     # `min_pos_iou` is set to avoid assigning bboxes with
                     # extremely small iou as positive, which is different from
                     # the behavior of detectron2. Comparison experiments can be
-                    # referred to URL.
+                    # referred to https://github.com/open-mmlab/mmdetection/pull/7464 # noqa
                     if self.gt_max_assign_all:
                         max_iou_inds = overlaps[i, :] == gt_max_overlaps[i]
                         assigned_gt_inds[max_iou_inds] = i + 1
