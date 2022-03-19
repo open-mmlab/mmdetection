@@ -193,6 +193,10 @@ class MaxIoUAssigner(BaseAssigner):
             # This might be the reason that it is not used in ROI Heads.
             for i in range(num_gts):
                 if gt_max_overlaps[i] >= self.min_pos_iou:
+                    # `min_pos_iou` is set to avoid assigning bboxes with
+                    # extremely small iou as positive, which is different from
+                    # the behavior of detectron2. Comparison experiments can be
+                    # referred to URL.
                     if self.gt_max_assign_all:
                         max_iou_inds = overlaps[i, :] == gt_max_overlaps[i]
                         assigned_gt_inds[max_iou_inds] = i + 1
