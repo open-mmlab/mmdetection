@@ -1,33 +1,26 @@
-# Copyright (c) OpenMMLab. All rights reserved.
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
 from mmcv.runner import force_fp32
 
 from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
-                        images_to_levels, multi_apply, reduce_mean, unmap)
-from mmdet.core.bbox import bbox_overlaps
+                        images_to_levels, multi_apply, multiclass_nms,
+                        reduce_mean, unmap)
 from ..builder import HEADS, build_loss
 from .anchor_head import AnchorHead
+from mmdet.core.bbox import bbox_overlaps
 
+EPS = 1e-12
 
 @HEADS.register_module()
 class DDODHead(AnchorHead):
-    """DDOD head decomposes conjunctions lying in most current one-stage
-    detectors via label assignment disentanglement, spatial feature
-    disentanglement, and pyramid supervision disentanglement.
+    """Bridging the Gap Between Anchor-based and Anchor-free Detection via
+    Adaptive Training Sample Selection.
 
-    https://arxiv.org/abs/2107.02963
+    ATSS head structure is similar with FCOS, however ATSS use anchor boxes
+    and assign label by Adaptive Training Sample Selection instead max-iou.
 
-    Args:
-        num_classes (int): Number of categories excluding the background category.
-        in_channels (int): Number of channels in the input feature map.
-        stacked_convs (int): The number of stacked Conv. Default: 4.
-        conv_cfg (dict): Conv config of ddod head. Default: None.
-        norm_cfg (dict): Normal config of ddod head. Default:
-            dict(type='GN', num_groups=32, requires_grad=True).
-        loss_iou (dict): Config of IoU loss. Default:
-            dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0).
+    https://arxiv.org/abs/1912.02424
     """
 
     def __init__(self,
@@ -40,25 +33,17 @@ class DDODHead(AnchorHead):
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
                      loss_weight=1.0),
-                 init_cfg=dict(
-                     type='Normal',
-                     layer='Conv2d',
-                     std=0.01,
-                     override=dict(
-                         type='Normal',
-                         name='atss_cls',
-                         std=0.01,
-                         bias_prob=0.01)),
                  **kwargs):
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         super(DDODHead, self).__init__(
-            num_classes, in_channels, init_cfg=init_cfg, **kwargs)
+            num_classes, in_channels, **kwargs)
 
         self.sampling = False
         if self.train_cfg:
             self.assigner = build_assigner(self.train_cfg.assigner)
+            self.reg_assigner = build_assigner(self.train_cfg.reg_assigner)
             # SSD sampling=False so use PseudoSampler
             sampler_cfg = dict(type='PseudoSampler')
             self.sampler = build_sampler(sampler_cfg, context=self)
@@ -70,7 +55,7 @@ class DDODHead(AnchorHead):
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
-            chn = self.in_channels if i == 0 else self.feat_channels
+            chn = self.in_channels
             self.cls_convs.append(
                 ConvModule(
                     chn,
@@ -105,6 +90,17 @@ class DDODHead(AnchorHead):
         self.cls_num_pos_samples_per_level = [0. for ii in range(5)]
         self.reg_num_pos_samples_per_level = [0. for ii in range(5)]
 
+    def init_weights(self):
+        """Initialize weights of the head."""
+        for m in self.cls_convs:
+            normal_init(m.conv, std=0.01)
+        for m in self.reg_convs:
+            normal_init(m.conv, std=0.01)
+        bias_cls = bias_init_with_prob(0.01)
+        normal_init(self.atss_cls, std=0.01, bias=bias_cls)
+        normal_init(self.atss_reg, std=0.01)
+        normal_init(self.atss_iou, std=0.01)
+
     def forward(self, feats):
         """Forward features from the upstream network.
 
@@ -138,7 +134,7 @@ class DDODHead(AnchorHead):
                 - bbox_pred (Tensor): Box energies / deltas for a single scale \
                     level, the channels number is num_anchors * 4.
                 - iou (Tensor): Iou for a single scale level, the \
-                    channel number is (N, num_anchors * 1, H, W).
+                    channel number is (N, num_anchors * 1, H, W).        
         """
         cls_feat = x
         reg_feat = x
@@ -153,7 +149,7 @@ class DDODHead(AnchorHead):
         return cls_score, bbox_pred, iou_pred
 
     def loss_single(self, anchors, cls_score, bbox_pred, iou_pred, labels,
-                    label_weights, bbox_targets, bbox_weights, reweight_factor,
+                    label_weights, bbox_targets, bbox_weights, reweight_factor, 
                     num_total_samples):
         """Compute loss of a single scale level.
 
@@ -209,21 +205,21 @@ class DDODHead(AnchorHead):
                 pos_anchors, pos_bbox_pred)
             pos_decode_bbox_targets = self.bbox_coder.decode(
                 pos_anchors, pos_bbox_targets)
-
+ 
             # regression loss
             loss_bbox = self.loss_bbox(
                 pos_decode_bbox_pred,
                 pos_decode_bbox_targets,
                 avg_factor=num_total_samples)
-
+            
             iou_targets[pos_inds] = bbox_overlaps(
-                pos_decode_bbox_pred.detach(),
-                pos_decode_bbox_targets,
+                pos_decode_bbox_pred.detach(), 
+                pos_decode_bbox_targets, 
                 is_aligned=True)
             loss_iou = self.loss_iou(
-                iou_pred,
-                iou_targets,
-                iou_weights,
+                iou_pred, 
+                iou_targets, 
+                iou_weights, 
                 avg_factor=num_total_samples)
 
         else:
@@ -293,9 +289,8 @@ class DDODHead(AnchorHead):
         bg_class_ind = self.num_classes
         for ii, each_level_label in enumerate(labels_list):
             pos_inds = ((each_level_label >= 0)
-                        &
+                        & 
                         (each_level_label < bg_class_ind)).nonzero().squeeze(1)
-            # num_pos_samples_per_level.append(len(pos_inds))
             self.cls_num_pos_samples_per_level[ii] += len(pos_inds)
         # get reweight factor from 1 ~ 2 with bilinear interpolation
         min_pos_samples = min(self.cls_num_pos_samples_per_level)
@@ -307,17 +302,17 @@ class DDODHead(AnchorHead):
             reweight_factor_per_level.append(factor)
 
         cls_losses_cls, cls_losses_bbox, cls_losses_iou = multi_apply(
-            self.loss_single,
-            anchor_list,
-            cls_scores,
-            bbox_preds,
-            iou_preds,
-            labels_list,
-            label_weights_list,
-            bbox_targets_list,
-            bbox_weights_list,
-            reweight_factor_per_level,
-            num_total_samples=num_total_samples)
+                self.loss_single,
+                anchor_list,
+                cls_scores,
+                bbox_preds,
+                iou_preds,
+                labels_list,
+                label_weights_list,
+                bbox_targets_list,
+                bbox_weights_list,
+                reweight_factor_per_level,
+                num_total_samples=num_total_samples)
 
         anchor_list, valid_flag_list = self.get_anchors(
             featmap_sizes, img_metas, device=device)
@@ -347,7 +342,7 @@ class DDODHead(AnchorHead):
         bg_class_ind = self.num_classes
         for ii, each_level_label in enumerate(labels_list):
             pos_inds = ((each_level_label >= 0)
-                        &
+                        & 
                         (each_level_label < bg_class_ind)).nonzero().squeeze(1)
             # num_pos_samples_per_level.append(len(pos_inds))
             self.reg_num_pos_samples_per_level[ii] += len(pos_inds)
@@ -361,22 +356,181 @@ class DDODHead(AnchorHead):
             reweight_factor_per_level.append(factor)
 
         reg_losses_cls, reg_losses_bbox, reg_losses_iou = multi_apply(
-            self.loss_single,
-            anchor_list,
-            cls_scores,
-            bbox_preds,
-            iou_preds,
-            labels_list,
-            label_weights_list,
-            bbox_targets_list,
-            bbox_weights_list,
-            reweight_factor_per_level,
-            num_total_samples=num_total_samples)
+                self.loss_single,
+                anchor_list,
+                cls_scores,
+                bbox_preds,
+                iou_preds,
+                labels_list,
+                label_weights_list,
+                bbox_targets_list,
+                bbox_weights_list,
+                reweight_factor_per_level,
+                num_total_samples=num_total_samples)
 
         return dict(
             loss_cls=cls_losses_cls,
             loss_bbox=reg_losses_bbox,
             loss_iou=reg_losses_iou)
+
+
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'iou_preds'))
+    def get_bboxes(self,
+                   cls_scores,
+                   bbox_preds,
+                   iou_preds,
+                   img_metas,
+                   cfg=None,
+                   rescale=False,
+                   with_nms=True):
+        """Transform network output for a batch into bbox predictions.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for each scale level
+                with shape (N, num_anchors * num_classes, H, W).
+            bbox_preds (list[Tensor]): Box energies / deltas for each scale
+                level with shape (N, num_anchors * 4, H, W).
+            centernesses (list[Tensor]): Centerness for each scale level with
+                shape (N, num_anchors * 1, H, W).
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            cfg (mmcv.Config | None): Test / postprocessing configuration,
+                if None, test_cfg would be used. Default: None.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
+
+        Returns:
+            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
+                The first item is an (n, 5) tensor, where the first 4 columns
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
+                5-th column is a score between 0 and 1. The second item is a
+                (n,) tensor where each item is the predicted class label of the
+                corresponding box.
+        """
+        cfg = self.test_cfg if cfg is None else cfg
+        assert len(cls_scores) == len(bbox_preds)
+        num_levels = len(cls_scores)
+        device = cls_scores[0].device
+        featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
+        mlvl_anchors = self.prior_generator.grid_anchors(
+            featmap_sizes, device=device)
+
+        result_list = []
+        for img_id in range(len(img_metas)):
+            cls_score_list = [
+                cls_scores[i][img_id].detach() for i in range(num_levels)
+            ]
+            bbox_pred_list = [
+                bbox_preds[i][img_id].detach() for i in range(num_levels)
+            ]
+            iou_pred_list = [
+                iou_preds[i][img_id].detach() for i in range(num_levels)
+            ]
+
+            img_shape = img_metas[img_id]['img_shape']
+            scale_factor = img_metas[img_id]['scale_factor']
+            proposals = self._get_bboxes_single(cls_score_list, bbox_pred_list,
+                                                iou_pred_list,
+                                                mlvl_anchors, img_shape,
+                                                scale_factor, cfg, rescale,
+                                                with_nms)
+            result_list.append(proposals)
+        return result_list
+
+    def _get_bboxes_single(self,
+                           cls_scores,
+                           bbox_preds,
+                           iou_preds,
+                        #    centernesses,
+                           mlvl_anchors,
+                           img_shape,
+                           scale_factor,
+                           cfg,
+                           rescale=False,
+                           with_nms=True):
+        """Transform outputs for a single batch item into labeled boxes.
+
+        Args:
+            cls_scores (list[Tensor]): Box scores for a single scale level
+                with shape (num_anchors * num_classes, H, W).
+            bbox_preds (list[Tensor]): Box energies / deltas for a single
+                scale level with shape (num_anchors * 4, H, W).
+            centernesses (list[Tensor]): Centerness for a single scale level
+                with shape (num_anchors * 1, H, W).
+            mlvl_anchors (list[Tensor]): Box reference for a single scale level
+                with shape (num_total_anchors, 4).
+            img_shape (tuple[int]): Shape of the input image,
+                (height, width, 3).
+            scale_factor (ndarray): Scale factor of the image arrange as
+                (w_scale, h_scale, w_scale, h_scale).
+            cfg (mmcv.Config | None): Test / postprocessing configuration,
+                if None, test_cfg would be used.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
+
+        Returns:
+            tuple(Tensor):
+                det_bboxes (Tensor): BBox predictions in shape (n, 5), where
+                    the first 4 columns are bounding box positions
+                    (tl_x, tl_y, br_x, br_y) and the 5-th column is a score
+                    between 0 and 1.
+                det_labels (Tensor): A (n,) tensor where each item is the
+                    predicted class label of the corresponding box.
+        """
+        assert len(cls_scores) == len(bbox_preds) == len(mlvl_anchors)
+        mlvl_bboxes = []
+        mlvl_scores = []
+        mlvl_ious = []
+        for cls_score, bbox_pred, iou_pred, anchors in zip(
+                cls_scores, bbox_preds, iou_preds, mlvl_anchors):
+            assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
+
+            scores = cls_score.permute(1, 2, 0).reshape(
+                -1, self.cls_out_channels).sigmoid()
+            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
+            iou_pred = iou_pred.permute(1, 2, 0).reshape(-1).sigmoid()
+
+            nms_pre = cfg.get('nms_pre', -1)
+            if nms_pre > 0 and scores.shape[0] > nms_pre:
+                max_scores, _ = scores.max(dim=1)
+                _, topk_inds = max_scores.topk(nms_pre)
+                anchors = anchors[topk_inds, :]
+                bbox_pred = bbox_pred[topk_inds, :]
+                scores = scores[topk_inds, :]
+                iou_pred = iou_pred[topk_inds]
+
+            bboxes = self.bbox_coder.decode(
+                anchors, bbox_pred, max_shape=img_shape)
+            mlvl_bboxes.append(bboxes)
+            mlvl_scores.append(scores)
+            mlvl_ious.append(iou_pred)
+
+        mlvl_bboxes = torch.cat(mlvl_bboxes)
+        if rescale:
+            mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
+        mlvl_scores = torch.cat(mlvl_scores)
+        # Add a dummy background class to the backend when using sigmoid
+        # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
+        # BG cat_id: num_class
+        padding = mlvl_scores.new_zeros(mlvl_scores.shape[0], 1)
+        mlvl_scores = torch.cat([mlvl_scores, padding], dim=1)
+        mlvl_ious = torch.cat(mlvl_ious)
+
+        if with_nms:
+            det_bboxes, det_labels = multiclass_nms(
+                mlvl_bboxes,
+                mlvl_scores,
+                cfg.score_thr,
+                cfg.nms,
+                cfg.max_per_img,
+                score_factors=mlvl_ious)
+            return det_bboxes, det_labels
+        else:
+            return mlvl_bboxes, mlvl_scores
 
     def get_targets(self,
                     anchor_list,
@@ -518,7 +672,8 @@ class DDODHead(AnchorHead):
                     (num_neg,).
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
-                                           img_meta['img_shape'][:2])
+                                           img_meta['img_shape'][:2],
+                                           self.train_cfg.allowed_border)
         if not inside_flags.any():
             return (None, ) * 7
         # assign gt and sample anchors
@@ -528,12 +683,13 @@ class DDODHead(AnchorHead):
             num_level_anchors, inside_flags)
         bbox_preds_valid = bbox_preds[inside_flags, :]
         cls_scores_valid = cls_scores[inside_flags, :]
+        assigner = self.assigner if is_cls else self.reg_assigner
         # decode prediction out of assigner
         bbox_preds_valid = self.bbox_coder.decode(anchors, bbox_preds_valid)
-        assign_result = self.assigner.assign(anchors, num_level_anchors_inside,
-                                             cls_scores_valid,
-                                             bbox_preds_valid, gt_bboxes,
-                                             gt_bboxes_ignore, gt_labels)
+        assign_result = assigner.assign(anchors, num_level_anchors_inside,
+                                        cls_scores_valid, 
+                                        bbox_preds_valid, gt_bboxes, 
+                                        gt_bboxes_ignore, gt_labels)
         sampling_result = self.sampler.sample(assign_result, anchors,
                                               gt_bboxes)
 
@@ -548,11 +704,12 @@ class DDODHead(AnchorHead):
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
         if len(pos_inds) > 0:
-            pos_bbox_targets = self.bbox_coder.encode(
-                sampling_result.pos_bboxes,
-                sampling_result.pos_gt_bboxes) if hasattr(
-                    self, 'bbox_coder') else sampling_result.pos_gt_bboxes
-
+            if hasattr(self, 'bbox_coder'):
+                pos_bbox_targets = self.bbox_coder.encode(
+                    sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes)
+            else:
+                # used in VFNetHead
+                pos_bbox_targets = sampling_result.pos_gt_bboxes
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
             if gt_labels is None:
