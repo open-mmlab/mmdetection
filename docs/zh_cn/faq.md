@@ -107,6 +107,45 @@
         ]
     ```
 
+- "How to use Mosaic augmentation"
+
+   如果你想在训练中使用 `Mosaic`，那么请确保你同时使用 `MultiImageMixDatasetresume`。以 `Faster R-CNN` 算法为例，你可以通过如下做法实现：
+   ```python
+    # 直接打开 configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py ,增添如下字段
+    data_root = 'data/coco/'
+    dataset_type = 'CocoDataset'
+    ​
+    img_norm_cfg = dict(
+        mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+
+    train_pipeline = [
+        dict(type='Mosaic', img_scale=(1333, 800), pad_val=114.0),
+        dict(type='RandomFlip', flip_ratio=0.5),
+        dict(type='Normalize', **img_norm_cfg),
+        dict(type='Pad', size_divisor=32),
+        dict(type='DefaultFormatBundle'),
+        dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
+    ]
+
+    train_dataset = dict(
+        type='MultiImageMixDataset',
+        dataset=dict(
+            type=dataset_type,
+            ann_file=data_root + 'annotations/instances_train2017.json',
+            img_prefix=data_root + 'train2017/',
+            pipeline=[
+                dict(type='LoadImageFromFile'),
+                dict(type='LoadAnnotations', with_bbox=True)
+            ],
+            filter_empty_gt=False,
+        ),
+        pipeline=train_pipeline)
+    ​
+    data = dict(
+        train=train_dataset
+        )
+    ```
+
 ## Evaluation 相关
 
 - 使用 COCO Dataset 的测评接口时, 测评结果中 AP 或者 AR = -1
