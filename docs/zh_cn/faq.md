@@ -77,7 +77,7 @@
     3. 延长 warm up 的时间：一些模型在训练初始时对学习率很敏感，您可以把 `warmup_iters` 从 500 更改为 1000 或 2000。
     4. 添加 gradient clipping: 一些模型需要梯度裁剪来稳定训练过程。 默认的 `grad_clip` 是 `None`,  你可以在 config 设置 `optimizer_config=dict(_delete_=True, grad_clip=dict(max_norm=35, norm_type=2))`  如果你的 config 没有继承任何包含 `optimizer_config=dict(grad_clip=None)`,  你可以直接设置`optimizer_config=dict(grad_clip=dict(max_norm=35, norm_type=2))`.
 
-- ’GPU out of memory"
+- "GPU out of memory"
     1. 存在大量 ground truth boxes 或者大量 anchor 的场景，可能在 assigner 会 OOM。 您可以在 assigner 的配置中设置 `gpu_assign_thr=N`，这样当超过 N 个 GT boxes 时，assigner 会通过 CPU 计算 IOU。
     2. 在 backbone 中设置 `with_cp=True`。 这使用 PyTorch 中的 `sublinear strategy` 来降低 backbone 占用的 GPU 显存。
     3. 使用 `config/fp16` 中的示例尝试混合精度训练。`loss_scale` 可能需要针对不同模型进行调整。
@@ -105,6 +105,45 @@
             momentum=0.0001,
             priority=49)
         ]
+    ```
+
+- "How to use Mosaic augmentation"
+
+   如果你想在训练中使用 `Mosaic`，那么请确保你同时使用 `MultiImageMixDatasetresume`。以 `Faster R-CNN` 算法为例，你可以通过如下做法实现：
+   ```python
+    # 直接打开 configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py ,增添如下字段
+    data_root = 'data/coco/'
+    dataset_type = 'CocoDataset'
+    ​
+    img_norm_cfg = dict(
+        mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+
+    train_pipeline = [
+        dict(type='Mosaic', img_scale=(1333, 800), pad_val=114.0),
+        dict(type='RandomFlip', flip_ratio=0.5),
+        dict(type='Normalize', **img_norm_cfg),
+        dict(type='Pad', size_divisor=32),
+        dict(type='DefaultFormatBundle'),
+        dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
+    ]
+
+    train_dataset = dict(
+        type='MultiImageMixDataset',
+        dataset=dict(
+            type=dataset_type,
+            ann_file=data_root + 'annotations/instances_train2017.json',
+            img_prefix=data_root + 'train2017/',
+            pipeline=[
+                dict(type='LoadImageFromFile'),
+                dict(type='LoadAnnotations', with_bbox=True)
+            ],
+            filter_empty_gt=False,
+        ),
+        pipeline=train_pipeline)
+    ​
+    data = dict(
+        train=train_dataset
+        )
     ```
 
 ## Evaluation 相关
