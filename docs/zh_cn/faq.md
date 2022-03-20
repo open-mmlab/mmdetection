@@ -81,6 +81,17 @@
     1. 存在大量 ground truth boxes 或者大量 anchor 的场景，可能在 assigner 会 OOM。 您可以在 assigner 的配置中设置 `gpu_assign_thr=N`，这样当超过 N 个 GT boxes 时，assigner 会通过 CPU 计算 IOU。
     2. 在 backbone 中设置 `with_cp=True`。 这使用 PyTorch 中的 `sublinear strategy` 来降低 backbone 占用的 GPU 显存。
     3. 使用 `config/fp16` 中的示例尝试混合精度训练。`loss_scale` 可能需要针对不同模型进行调整。
+    4. 你也可以尝试使用 `AvoidOOM` 来避免该问题。首先它将尝试调用 `torch.cuda.empty_cache()`。如果失败，将会尝试把输入转换到 FP16。如果仍然失败，将会把输入转换到 CPU 进行计算。这里有一个使用的例子：
+
+    ```python
+    from mmdet.utils import AvoidOOM
+
+    AvoidOOM = AvoidOOM()
+    # GPU OOM 错误
+    # outputs = some_torch_function(input1, input2)
+     output = AvoidOOM.retry_if_cuda_oom(some_torch_function)(input1, input2)
+    ```
+
 
 - "RuntimeError: Expected to have finished reduction in the prior iteration before starting a new one"
     1. 这个错误出现在存在参数没有在 forward 中使用，容易在 DDP 中运行不同分支时发生。
