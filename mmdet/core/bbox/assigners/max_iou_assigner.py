@@ -23,6 +23,10 @@ class MaxIoUAssigner(BaseAssigner):
         min_pos_iou (float): Minimum iou for a bbox to be considered as a
             positive bbox. Positive samples can have smaller IoU than
             pos_iou_thr due to the 4th step (assign max IoU sample to each gt).
+            `min_pos_iou` is set to avoid assigning bboxes that have extremely
+            small iou with GT as positive samples. It brings about 0.3 mAP
+            improvements and more comparisons can be found in
+            https://github.com/open-mmlab/mmdetection/pull/7464.
         gt_max_assign_all (bool): Whether to assign all bboxes with the same
             highest overlap with some gt to that gt.
         ignore_iof_thr (float): IoF threshold for ignoring bboxes (if
@@ -193,10 +197,6 @@ class MaxIoUAssigner(BaseAssigner):
             # This might be the reason that it is not used in ROI Heads.
             for i in range(num_gts):
                 if gt_max_overlaps[i] >= self.min_pos_iou:
-                    # `min_pos_iou` is set to avoid assigning bboxes with
-                    # extremely small iou as positive, which is different from
-                    # the behavior of detectron2. Comparison experiments can be
-                    # referred to https://github.com/open-mmlab/mmdetection/pull/7464 # noqa
                     if self.gt_max_assign_all:
                         max_iou_inds = overlaps[i, :] == gt_max_overlaps[i]
                         assigned_gt_inds[max_iou_inds] = i + 1
