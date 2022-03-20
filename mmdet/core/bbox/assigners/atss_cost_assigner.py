@@ -23,8 +23,10 @@ class ATSSCostAssigner(BaseAssigner):
     Args:
         topk (int): number of bbox selected in each level.
         alpha (float): param of cost rate for each proposal. Default 0.8.
-        iou_calculator (dict): builder of IoU calculator. Default dict(type='BboxOverlaps2D').
-        ignore_iof_thr (int): whether ignore max overlaps or not. Default -1 (1 or -1).
+        iou_calculator (dict): builder of IoU calculator.
+            Default dict(type='BboxOverlaps2D').
+        ignore_iof_thr (int): whether ignore max overlaps or not.
+            Default -1 (1 or -1).
     """
 
     def __init__(self,
@@ -62,12 +64,12 @@ class ATSSCostAssigner(BaseAssigner):
            the threshold as positive
         6. limit the positive sample's center in gt
 
-
         Args:
             bboxes (Tensor): Bounding boxes to be assigned, shape(n, 4).
             num_level_bboxes (List): num of bboxes in each level
             cls_scores (Tensor): Class scores, shape(n, 4).
-            bbox_preds (Tensor): Bounding boxes which are predicted, shape(n, 4).
+            bbox_preds (Tensor): Bounding boxes which are predicted,
+                shape(n, 4).
             gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
             gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
                 labelled as `ignored`, e.g., crowd boxes in COCO.
