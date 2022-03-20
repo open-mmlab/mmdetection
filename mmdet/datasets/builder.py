@@ -92,7 +92,7 @@ def build_dataloader(dataset,
                      seed=None,
                      runner_type='EpochBasedRunner',
                      persistent_workers=False,
-                     use_class_aware_sampler=None,
+                     class_aware_sampler=None,
                      **kwargs):
     """Build PyTorch DataLoader.
 
@@ -115,7 +115,7 @@ def build_dataloader(dataset,
             the worker processes after a dataset has been consumed once.
             This allows to maintain the workers `Dataset` instances alive.
             This argument is only valid when PyTorch>=1.7.0. Default: False.
-        use_class_aware_sampler (dict): Whether to use `ClassAwareSampler`
+        class_aware_sampler (dict): Whether to use `ClassAwareSampler`
             during training. Default: None.
         kwargs: any keyword argument to be used to initialize DataLoader
 
@@ -155,11 +155,10 @@ def build_dataloader(dataset,
         batch_size = 1
         sampler = None
     else:
-        if use_class_aware_sampler is not None:
+        if class_aware_sampler is not None:
             # ClassAwareSampler can be used in both distributed and
             # non-distributed training.
-            num_sample_class = use_class_aware_sampler.get(
-                'num_sample_class', 1)
+            num_sample_class = class_aware_sampler.get('num_sample_class', 1)
             sampler = ClassAwareSampler(
                 dataset,
                 samples_per_gpu,

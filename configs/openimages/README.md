@@ -93,7 +93,7 @@ training/testing by using `tools/misc/get_image_metas.py`.
     │   │   │   ├── class-descriptions-boxable.csv
     │   │   │   ├── oidv6-train-annotations-bbox.scv
     │   │   │   ├── validation-annotations-bbox.csv
-    │   │   │   ├── validation-annotations-human-imagelabels-boxable.csv    # should set `load_image_level_labels=False` if not use
+    │   │   │   ├── validation-annotations-human-imagelabels-boxable.csv
     │   │   │   ├── validation-image-metas.pkl      # get from script
     │   │   ├── challenge2019
     │   │   │   ├── challenge-2019-train-detection-bbox.txt
@@ -115,7 +115,11 @@ Open Images v6, but the test images are different.
 You can also download the annotations from [official website](https://storage.googleapis.com/openimages/web/challenge2019_downloads.html),
 and set data.train.type=OpenImagesDataset, data.val.type=OpenImagesDataset, and data.test.type=OpenImagesDataset in the config
 3. If users do not want to use `validation-annotations-human-imagelabels-boxable.csv` and `challenge-2019-validation-detection-human-imagelabels.csv`
-users can should set `data.val.load_image_level_labels=False` and `data.test.load_image_level_labels=False` in the config .
+users can set `data.val.load_image_level_labels=False` and `data.test.load_image_level_labels=False` in the config. Loading image-levels label is the
+Open Images [evaluation metric](https://storage.googleapis.com/openimages/web/evaluation.html). If the images are annotated with positive image-level labels, indicating certain object classes are present, and with negative image-level labels, indicating certain classes are absent.
+All other classes are unannotated.
+
+
 
 
 ## Results and Models

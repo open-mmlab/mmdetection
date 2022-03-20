@@ -7,13 +7,13 @@ from torch.utils.data import Sampler
 
 
 class ClassAwareSampler(Sampler):
-    r"""A class-aware sampling strategy to effectively tackle the
-    non-uniform class distribution. The length of the training data is
-    consistent with source data.
+    r"""Sampler that restricts data loading to the label of the dataset.
 
-    Simple improvements based on `Relay Backpropagation for Effective
-    Learning of Deep Convolutional Neural Networks
-    <https://arxiv.org/abs/1512.05830>`_
+    A class-aware sampling strategy to effectively tackle the
+    non-uniform class distribution. The length of the training data is
+    consistent with source data. Simple improvements based on `Relay
+    Backpropagation for Effective Learning of Deep Convolutional
+    Neural Networks <https://arxiv.org/abs/1512.05830>`_
 
     The implementation logic is referred to
     https://github.com/Sense-X/TSD/blob/master/mmdet/datasets/samplers/distributed_classaware_sampler.py
