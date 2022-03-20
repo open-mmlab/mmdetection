@@ -75,7 +75,7 @@ We list some common troubles faced by many users and their corresponding solutio
     3. Extend the warmup iterations: some models are sensitive to the learning rate at the start of the training. You can extend the warmup iterations, e.g., change the `warmup_iters` from 500 to 1000 or 2000.
     4. Add gradient clipping: some models requires gradient clipping to stabilize the training process. The default of `grad_clip` is `None`, you can add gradient clippint to avoid gradients that are too large, i.e., set `optimizer_config=dict(_delete_=True, grad_clip=dict(max_norm=35, norm_type=2))` in your config file. If your config does not inherits from any basic config that contains `optimizer_config=dict(grad_clip=None)`, you can simply add `optimizer_config=dict(grad_clip=dict(max_norm=35, norm_type=2))`.
 
-- ’GPU out of memory"
+'- "GPU out of memory"
     1. There are some scenarios when there are large amount of ground truth boxes, which may cause OOM during target assignment. You can set `gpu_assign_thr=N` in the config of assigner thus the assigner will calculate box overlaps through CPU when there are more than N GT boxes.
     2. Set `with_cp=True` in the backbone. This uses the sublinear strategy in PyTorch to reduce GPU memory cost in the backbone.
     3. Try mixed precision training using following the examples in `config/fp16`. The `loss_scale` might need further tuning for different models.
@@ -105,6 +105,44 @@ We list some common troubles faced by many users and their corresponding solutio
         ]
     ```
 
+- "How to use Mosaic augmentation"
+
+    If you want to use `Mosaic` in training , please make sure that you use `MultiImageMixDatasetresume` at the same time. Taking the 'Faster R-CNN' algorithm as an example, you should modify the values of `train_pipeline` and `train_dataset`:
+    ```python
+    # Open configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py and add the following fields
+    data_root = 'data/coco/'
+    dataset_type = 'CocoDataset'
+
+    img_norm_cfg = dict(
+        mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+
+    train_pipeline = [
+        dict(type='Mosaic', img_scale=(1333, 800), pad_val=114.0),
+        dict(type='RandomFlip', flip_ratio=0.5),
+        dict(type='Normalize', **img_norm_cfg),
+        dict(type='Pad', size_divisor=32),
+        dict(type='DefaultFormatBundle'),
+        dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
+    ]
+
+    train_dataset = dict(
+        type='MultiImageMixDataset',
+        dataset=dict(
+            type=dataset_type,
+            ann_file=data_root + 'annotations/instances_train2017.json',
+            img_prefix=data_root + 'train2017/',
+            pipeline=[
+                dict(type='LoadImageFromFile'),
+                dict(type='LoadAnnotations', with_bbox=True)
+            ],
+            filter_empty_gt=False,
+        ),
+        pipeline=train_pipeline)
+
+    data = dict(
+        train=train_dataset
+    )
+   ```
 ## Evaluation
 
 - COCO Dataset, AP or AR = -1
