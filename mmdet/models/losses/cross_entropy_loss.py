@@ -81,7 +81,10 @@ def binary_cross_entropy(pred,
     """Calculate the binary CrossEntropy loss.
 
     Args:
-        pred (torch.Tensor): The prediction with shape (N, 1).
+        pred (torch.Tensor): The prediction with shape (N, 1) or (N, ).
+            When pred is of shape (N, 1) it will be expanded to one-hot
+            format, while for pred of shape (N, ) it will not be expanded
+            to one-hot format.
         label (torch.Tensor): The learning label of the prediction.
         weight (torch.Tensor, optional): Sample-wise loss weight.
         reduction (str, optional): The method used to reduce the loss.
