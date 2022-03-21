@@ -1,19 +1,22 @@
-from mmcls.models import VisionTransformer as _VisionTransformer
-from mmcls.models.backbones.vision_transformer import TransformerEncoderLayer as _TransformerEncoderLayer
-from torch import nn
-from mmcv.cnn.bricks.transformer import FFN
-import torch
-from ..builder import BACKBONES
-from mmcv.cnn import build_norm_layer
-from mmcls.models.utils import MultiheadAttention as _MultiheadAttention
-from mmcv.cnn.bricks.registry import DROPOUT_LAYERS
-from mmcv.runner.base_module import ModuleList
-from mmcv.cnn.utils.weight_init import trunc_normal_
-from mmcls.models.utils import resize_pos_embed
-
+# Copyright (c) OpenMMLab. All rights reserved.
 import math
-import torch.nn.functional as F
+
 import numpy as np
+import torch
+import torch.nn.functional as F
+from mmcls.models import VisionTransformer as _VisionTransformer
+from mmcls.models.backbones.vision_transformer import \
+    TransformerEncoderLayer as _TransformerEncoderLayer
+from mmcls.models.utils import MultiheadAttention as _MultiheadAttention
+from mmcls.models.utils import resize_pos_embed
+from mmcv.cnn import build_norm_layer
+from mmcv.cnn.bricks.registry import DROPOUT_LAYERS
+from mmcv.cnn.bricks.transformer import FFN
+from mmcv.cnn.utils.weight_init import trunc_normal_
+from mmcv.runner.base_module import ModuleList
+from torch import nn
+
+from ..builder import BACKBONES
 
 
 class TransformerEncoderLayer(_TransformerEncoderLayer):
@@ -31,6 +34,10 @@ class TransformerEncoderLayer(_TransformerEncoderLayer):
         num_fcs (int): The number of fully-connected layers for FFNs.
             Defaults to 2.
         qkv_bias (bool): enable bias for qkv if True. Defaults to True.
+        window_size (int): The window size of local window to do local
+            attention. Defaults to 14.
+        use_window (bool): Whether or not use local attention. Defaults to 
+            False.
         act_cfg (dict): The activation config for FFNs.
             Defaluts to ``dict(type='GELU')``.
         norm_cfg (dict): Config dict for normalization layer.
@@ -112,8 +119,8 @@ class TransformerEncoderLayer(_TransformerEncoderLayer):
 class WindowMultiheadAttention(_MultiheadAttention):
     """Window Multi-head Attention Module.
 
-    This module implements window multi-head attention that supports different 
-    input dims and embed dims. And it also supports a shortcut from ``value``, 
+    This module implements window multi-head attention that supports different
+    input dims and embed dims. And it also supports a shortcut from ``value``,
     which is useful if input dims is not the same with embed dims.
 
     Args:
@@ -136,6 +143,8 @@ class WindowMultiheadAttention(_MultiheadAttention):
         v_shortcut (bool): Add a shortcut from value to output. It's usually
             used if ``input_dims`` is different from ``embed_dims``.
             Defaults to False.
+        window_size (int): The window size of local window to do local
+            attention. Defaults to 14.
         init_cfg (dict, optional): The Config for initialization.
             Defaults to None.
     """
@@ -224,6 +233,10 @@ class WindowMultiheadAttention(_MultiheadAttention):
 
 
 class MultiheadAttention(_MultiheadAttention):
+    """Rewrite the MultiheadAttention from MMCls.
+    
+    We rewrite the forward function to accept ``H`` and ``W``.
+    """
 
     def forward(self, x, H, W):
         B, N, _ = x.shape
@@ -248,8 +261,8 @@ class MultiheadAttention(_MultiheadAttention):
 class VisionTransformer(_VisionTransformer):
     """Vision Transformer.
 
-    A PyTorch implement of : `Benchmarking Detection Transfer Learning with 
-    Vision Transformers <https://arxiv.org/pdf/2111.11429.pdf>`_. 
+    A PyTorch implement of : `Benchmarking Detection Transfer Learning with
+    Vision Transformers <https://arxiv.org/pdf/2111.11429.pdf>`_.
 
     Args:
         arch (str | dict): Vision Transformer architecture. If use string,
@@ -268,7 +281,7 @@ class VisionTransformer(_VisionTransformer):
             common input image shape. Defaults to 224.
         patch_size (int | tuple): The patch size in patch embedding.
             Defaults to 16.
-        num_groups (int): The num of channels for group normalization in 
+        num_groups (int): The num of channels for group normalization in
             resolution modification module. Defaults to 32.
         out_indices (Sequence | int): Output from which stages.
             Defaults to -1, means the last stage.

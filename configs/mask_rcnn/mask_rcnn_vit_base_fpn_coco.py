@@ -28,9 +28,8 @@ model = dict(
         ],
         init_cfg=dict(
             type='Pretrained',
-            checkpoint=
-            '/mnt/lustre/share_data/liuyuan/work_dirs/mae_fp16_1600/epoch_1600_20220321-c2a7f905.pth'
-        )),
+            checkpoint='/mnt/lustre/share_data/liuyuan/work_dirs/mae_fp16_1600/ \
+            epoch_1600_20220321-c2a7f905.pth')),
     neck=dict(
         type='FPN',
         in_channels=[768, 768, 768, 768],
