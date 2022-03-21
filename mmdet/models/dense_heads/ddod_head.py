@@ -22,7 +22,8 @@ class DDODHead(AnchorHead):
     https://arxiv.org/abs/2107.02963
 
     Args:
-        num_classes (int): Number of categories excluding the background category.
+        num_classes (int): Number of categories excluding the
+            background category.
         in_channels (int): Number of channels in the input feature map.
         stacked_convs (int): The number of stacked Conv. Default: 4.
         use_dcn (bool): Use dcn. Default: True.
@@ -517,8 +518,9 @@ class DDODHead(AnchorHead):
         image.
 
         Args:
-            flat_anchors (Tensor): Multi-level anchors of the image, which are
-                concatenated into a single tensor of shape (num_base_priors, 4).
+            flat_anchors (Tensor): Multi-level anchors of the image,
+                which are concatenated into a single tensor of shape
+                (num_base_priors, 4).
             valid_flags (Tensor): Multi level valid flags of the image,
                 which are concatenated into a single tensor of
                 shape (num_base_priors,).
