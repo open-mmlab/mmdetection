@@ -131,7 +131,7 @@ We list some common troubles faced by many users and their corresponding solutio
     ]
 
     train_dataset = dict(
-        _delete_ = True,
+        _delete_ = True, #remove unnecessary Settings
         type='MultiImageMixDataset',
         dataset=dict(
             type=dataset_type,
