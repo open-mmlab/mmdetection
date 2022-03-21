@@ -36,7 +36,7 @@ class TransformerEncoderLayer(_TransformerEncoderLayer):
         qkv_bias (bool): enable bias for qkv if True. Defaults to True.
         window_size (int): The window size of local window to do local
             attention. Defaults to 14.
-        use_window (bool): Whether or not use local attention. Defaults to 
+        use_window (bool): Whether or not use local attention. Defaults to
             False.
         act_cfg (dict): The activation config for FFNs.
             Defaluts to ``dict(type='GELU')``.
@@ -234,7 +234,7 @@ class WindowMultiheadAttention(_MultiheadAttention):
 
 class MultiheadAttention(_MultiheadAttention):
     """Rewrite the MultiheadAttention from MMCls.
-    
+
     We rewrite the forward function to accept ``H`` and ``W``.
     """
 
