@@ -132,7 +132,7 @@
     ]
 
     train_dataset = dict(
-        _delete_ = True, #删除
+        _delete_ = True, #删除不必要的设置
         type='MultiImageMixDataset',
         dataset=dict(
             type=dataset_type,
