@@ -52,7 +52,7 @@ def main():
         h, w = args.shape
     else:
         raise ValueError('invalid input shape')
-    orig_shape = (3, h, w)
+    ori_shape = (3, h, w)
     divisor = args.size_divisor
     if divisor > 0:
         h = int(np.ceil(h / divisor)) * divisor
@@ -83,9 +83,9 @@ def main():
     split_line = '=' * 30
 
     if divisor > 0 and \
-            input_shape != orig_shape:
+            input_shape != ori_shape:
         print(f'{split_line}\nUse size divisor set input shape '
-              f'from {orig_shape} to {input_shape}\n')
+              f'from {ori_shape} to {input_shape}\n')
     print(f'{split_line}\nInput shape: {input_shape}\n'
           f'Flops: {flops}\nParams: {params}\n{split_line}')
     print('!!!Please be cautious if you use the results in papers. '
