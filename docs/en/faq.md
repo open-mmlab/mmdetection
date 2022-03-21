@@ -107,18 +107,22 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - "How to use Mosaic augmentation"
 
-   If you want to use `Mosaic` in training, please make sure that you use `MultiImageMixDatasetresume` at the same time. Taking the 'Faster R-CNN' algorithm as an example, you should modify the values of `train_pipeline` and `train_dataset` in the config as below:
+   If you want to use `Mosaic` in training, please make sure that you use `MultiImageMixDataset` at the same time. Taking the 'Faster R-CNN' algorithm as an example, you should modify the values of `train_pipeline` and `train_dataset` in the config as below:
 
-   ```python
+    ```python
     # Open configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py directly and add the following fields
     data_root = 'data/coco/'
     dataset_type = 'CocoDataset'
-    ​
+    img_scale=(1333, 800)​
     img_norm_cfg = dict(
         mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
     train_pipeline = [
-        dict(type='Mosaic', img_scale=(1333, 800), pad_val=114.0),
+        dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
+        dict(
+            type='RandomAffine',
+            scaling_ratio_range=(0.1, 2),
+            border=(-img_scale[0] // 2, -img_scale[1] // 2)),#The image will be enlarged by 4 times after Mosaic processing,so we use affine transformation to restore the image size.
         dict(type='RandomFlip', flip_ratio=0.5),
         dict(type='Normalize', **img_norm_cfg),
         dict(type='Pad', size_divisor=32),
@@ -127,6 +131,7 @@ We list some common troubles faced by many users and their corresponding solutio
     ]
 
     train_dataset = dict(
+        _delete_ = True,
         type='MultiImageMixDataset',
         dataset=dict(
             type=dataset_type,
