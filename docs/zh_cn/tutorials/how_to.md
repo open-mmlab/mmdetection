@@ -1,7 +1,7 @@
 # 教程 11: How to xxx
 本教程收集了任何如何使用 MMDetection 进行 xxx 的答案。 如果您遇到有关`如何做`的问题及答案，请随时更新此文档！
 
-## 使用 MMClassification 的骨干网络 
+## 使用 MMClassification 的骨干网络
 
 MMDet、MMCls、MMSeg 中的模型注册表都继承自 MMCV 中的根注册表，允许这些存储库直接使用彼此已经实现的模块。 因此用户可以在 MMDetection 中使用来自 MMClassification 的骨干网络，而无需实现MMClassification 中已经存在的网络。
 
