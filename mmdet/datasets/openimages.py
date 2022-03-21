@@ -22,6 +22,7 @@ class OpenImagesDataset(CustomDataset):
     """Open Images dataset for detection.
 
     Args:
+        ann_file (str): Annotation file path.
         label_file (str): File path of the label description file that
             maps the classes names in MID format to their short
             descriptions.
@@ -60,6 +61,7 @@ class OpenImagesDataset(CustomDataset):
     """
 
     def __init__(self,
+                 ann_file,
                  label_file='',
                  image_level_ann_file='',
                  get_supercategory=True,
@@ -72,11 +74,7 @@ class OpenImagesDataset(CustomDataset):
                  file_client_args=dict(backend='disk'),
                  **kwargs):
         # may get error if use other file_client
-        self.assert_suffix = False
         self.file_client_args = file_client_args
-        if 'backend' in file_client_args:
-            if file_client_args['backend'] == 'disk':
-                self.assert_suffix = True
 
         self.cat2label = defaultdict(str)
         self.index_dict = {}
@@ -85,18 +83,21 @@ class OpenImagesDataset(CustomDataset):
         # it needs to be init here.
         file_client = mmcv.FileClient(**file_client_args)
         # need get `index_dict` before load annotations
+        assert label_file.endswith('csv')
         if hasattr(file_client, 'get_local_path'):
             with file_client.get_local_path(label_file) as local_path:
                 class_names = self.get_classes_from_csv(local_path)
         else:
             class_names = self.get_classes_from_csv(label_file)
         super(OpenImagesDataset, self).__init__(
-            file_client_args=file_client_args, **kwargs)
+            ann_file=ann_file, file_client_args=file_client_args, **kwargs)
         self.CLASSES = class_names
         self.image_level_ann_file = image_level_ann_file
         self.load_image_level_labels = load_image_level_labels
         if get_supercategory is True:
-            assert hierarchy_file is not None
+            assert hierarchy_file is not None and \
+                   hierarchy_file.endswith('json') or \
+                   hierarchy_file.endswith('np')
             if hasattr(self.file_client, 'get_local_path'):
                 with self.file_client.get_local_path(
                         hierarchy_file) as local_path:
@@ -285,9 +286,6 @@ class OpenImagesDataset(CustomDataset):
 
     def get_meta_from_file(self, meta_file=''):
         """Get image metas from pkl file."""
-        if self.assert_suffix:
-            assert meta_file.endswith('pkl'), 'File name must be pkl suffix'
-
         metas = mmcv.load(
             meta_file,
             file_format='pkl',
@@ -364,8 +362,6 @@ class OpenImagesDataset(CustomDataset):
             (class_num, class_num).
         """
 
-        if self.assert_suffix:
-            assert hierarchy_file.endswith('json')
         if self.data_root is not None:
             if not osp.isabs(hierarchy_file):
                 hierarchy_file = osp.join(self.data_root, hierarchy_file)
@@ -648,6 +644,8 @@ class OpenImagesDataset(CustomDataset):
 
         # load metas from file
         if self.get_metas and self.load_from_file:
+            assert self.mmeta_file.endswith(
+                'pkl'), 'File name must be pkl suffix'
             self.get_meta_from_file(self.meta_file)
         # load metas from pipeline
         else:
@@ -714,8 +712,10 @@ class OpenImagesDataset(CustomDataset):
 class OpenImagesChallengeDataset(OpenImagesDataset):
     """Open Images Challenge dataset for detection."""
 
-    def __init__(self, **kwargs):
-        super(OpenImagesChallengeDataset, self).__init__(**kwargs)
+    def __init__(self, ann_file, **kwargs):
+        assert ann_file.endswith('txt')
+        super(OpenImagesChallengeDataset, self).__init__(
+            ann_file=ann_file, **kwargs)
 
     def get_classes_from_csv(self, label_file):
         """Get classes name from file.
@@ -749,8 +749,6 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
 
     def load_annotations(self, ann_file):
         """Load annotation from annotation file."""
-        if self.assert_suffix:
-            assert ann_file.endswith('txt')
         with open(ann_file) as f:
             lines = f.readlines()
         i = 0
@@ -825,8 +823,6 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
             relationship between the parent class and the child class,
             of shape (class_num, class_num).
         """
-        if self.assert_suffix:
-            assert hierarchy_file.endswith('np')
         class_label_tree = np.load(hierarchy_file, allow_pickle=True)
         return class_label_tree[1:, 1:]
 
