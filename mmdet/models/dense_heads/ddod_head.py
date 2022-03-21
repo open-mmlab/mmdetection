@@ -15,7 +15,23 @@ EPS = 1e-12
 
 @HEADS.register_module()
 class DDODHead(AnchorHead):
-    """"""
+    """DDOD head decomposes conjunctions lying in most current one-stage
+    detectors via label assignment disentanglement, spatial feature
+    disentanglement, and pyramid supervision disentanglement.
+
+    https://arxiv.org/abs/2107.02963
+
+    Args:
+        num_classes (int): Number of categories excluding the background category.
+        in_channels (int): Number of channels in the input feature map.
+        stacked_convs (int): The number of stacked Conv. Default: 4.
+        use_dcn (bool): Use dcn. Default: True.
+        conv_cfg (dict): Conv config of ddod head. Default: None.
+        norm_cfg (dict): Normal config of ddod head. Default:
+            dict(type='GN', num_groups=32, requires_grad=True).
+        loss_iou (dict): Config of IoU loss. Default:
+            dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0).
+    """
 
     def __init__(self,
                  num_classes,
@@ -82,6 +98,7 @@ class DDODHead(AnchorHead):
             self.feat_channels, self.num_base_priors * 1, 3, padding=1)
         self.scales = nn.ModuleList(
             [Scale(1.0) for _ in self.prior_generator.strides])
+        # we use the global list in loss
         self.cls_num_pos_samples_per_level = [
             0. for _ in range(len(self.prior_generator.strides))
         ]
@@ -152,14 +169,14 @@ class DDODHead(AnchorHead):
 
     def loss_single(self, anchors, cls_score, bbox_pred, iou_pred, labels,
                     label_weights, bbox_targets, bbox_weights, reweight_factor,
-                    num_total_samples, is_cls):
+                    num_total_samples, is_cls_assigner):
         """Compute loss of a single scale level.
 
         Args:
             cls_score (Tensor): Box scores for each scale level
-                Has shape (N, num_anchors * num_classes, H, W).
+                Has shape (N, num_base_priors * num_classes, H, W).
             bbox_pred (Tensor): Box energies / deltas for each scale
-                level with shape (N, num_anchors * 4, H, W).
+                level with shape (N, num_base_priors * 4, H, W).
             anchors (Tensor): Box reference for each scale level with shape
                 (N, num_total_anchors, 4).
             labels (Tensor): Labels of each anchors with shape
@@ -170,11 +187,12 @@ class DDODHead(AnchorHead):
                 weight shape (N, num_total_anchors, 4).
             num_total_samples (int): Number of positive samples that is
                 reduced over all GPUs.
+            is_cls_assigner (bool): Classification or regression.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        if is_cls:
+        if is_cls_assigner:
             cls_score = cls_score.permute(0, 2, 3, 1).reshape(
                 -1, self.cls_out_channels).contiguous()
             labels = labels.reshape(-1)
@@ -246,9 +264,9 @@ class DDODHead(AnchorHead):
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (N, num_anchors * num_classes, H, W)
+                Has shape (N, num_base_priors * num_classes, H, W)
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (N, num_anchors * 4, H, W)
+                level with shape (N, num_base_priors * 4, H, W)
             iou_preds (list[Tensor]): Score factor for all scale level,
                 each is a 4D-tensor, has shape (batch_size, 1, H, W).
             gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
@@ -281,7 +299,7 @@ class DDODHead(AnchorHead):
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
-            is_cls=True)
+            is_cls_assigner=True)
         if cls_reg_targets is None:
             return None
 
@@ -321,7 +339,7 @@ class DDODHead(AnchorHead):
             bbox_weights_list,
             reweight_factor_per_level,
             num_total_samples=num_total_samples,
-            is_cls=True)
+            is_cls_assigner=True)
 
         # regression branch assigner
         cls_reg_targets = self.get_targets(
@@ -334,7 +352,7 @@ class DDODHead(AnchorHead):
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
-            is_cls=False)
+            is_cls_assigner=False)
         if cls_reg_targets is None:
             return None
 
@@ -374,7 +392,7 @@ class DDODHead(AnchorHead):
             bbox_weights_list,
             reweight_factor_per_level,
             num_total_samples=num_total_samples,
-            is_cls=False)
+            is_cls_assigner=False)
 
         return dict(
             loss_cls=cls_losses_cls,
@@ -392,7 +410,7 @@ class DDODHead(AnchorHead):
                     gt_labels_list=None,
                     label_channels=1,
                     unmap_outputs=True,
-                    is_cls=True):
+                    is_cls_assigner=True):
         """Get targets for DDOD head.
 
         This method is almost the same as `AnchorHead.get_targets()`. Besides
@@ -462,7 +480,7 @@ class DDODHead(AnchorHead):
              img_metas,
              label_channels=label_channels,
              unmap_outputs=unmap_outputs,
-             is_cls=is_cls)
+             is_cls_assigner=is_cls_assigner)
         # no valid anchors
         if any([labels is None for labels in all_labels]):
             return None
@@ -494,16 +512,16 @@ class DDODHead(AnchorHead):
                            img_meta,
                            label_channels=1,
                            unmap_outputs=True,
-                           is_cls=True):
+                           is_cls_assigner=True):
         """Compute regression, classification targets for anchors in a single
         image.
 
         Args:
             flat_anchors (Tensor): Multi-level anchors of the image, which are
-                concatenated into a single tensor of shape (num_anchors, 4).
+                concatenated into a single tensor of shape (num_base_priors, 4).
             valid_flags (Tensor): Multi level valid flags of the image,
                 which are concatenated into a single tensor of
-                shape (num_anchors,).
+                shape (num_base_priors,).
             num_level_anchors (Tensor): Number of anchors of each scale level.
             gt_bboxes (Tensor): Ground truth bboxes of the image,
                 shape (num_gts, 4).
@@ -515,7 +533,7 @@ class DDODHead(AnchorHead):
             label_channels (int): Channel of label.
             unmap_outputs (bool): Whether to map outputs back to the original
                 set of anchors.
-            is_cls (bool): Classification or regression.
+            is_cls_assigner (bool): Classification or regression.
 
         Returns:
             tuple: N is the number of total anchors in the image.
@@ -545,7 +563,7 @@ class DDODHead(AnchorHead):
         bbox_preds_valid = bbox_preds[inside_flags, :]
         cls_scores_valid = cls_scores[inside_flags, :]
 
-        assigner = self.cls_assigner if is_cls else self.reg_assigner
+        assigner = self.cls_assigner if is_cls_assigner else self.reg_assigner
 
         # decode prediction out of assigner
         bbox_preds_valid = self.bbox_coder.decode(anchors, bbox_preds_valid)
@@ -609,7 +627,7 @@ class DDODHead(AnchorHead):
             num_level_anchors (Tensor): Number of anchors of each scale level.
             inside_flags (Tensor): Multi level inside flags of the image,
                 which are concatenated into a single tensor of
-                shape (num_anchors,).
+                shape (num_base_priors,).
 
         Returns:
             list[int]: Number of anchors of each scale level inside.
