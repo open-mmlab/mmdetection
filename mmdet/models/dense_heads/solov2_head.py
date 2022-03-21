@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
-from mmcv.runner import BaseModule
+from mmcv.runner import BaseModule, auto_fp16, force_fp32
 
 from mmdet.core import InstanceData, mask_matrix_nms, multi_apply
 from mmdet.core.utils import center_of_mass, generate_coordinate
@@ -114,7 +114,9 @@ class MaskFeatModule(BaseModule):
                 padding=0,
                 conv_cfg=self.conv_cfg,
                 norm_cfg=self.norm_cfg), )
+        self.fp16_enabled = False
 
+    @auto_fp16()
     def forward(self, feats):
         inputs = feats[self.start_level:self.end_level + 1]
         assert len(inputs) == (self.end_level - self.start_level + 1)
@@ -150,8 +152,10 @@ class SOLOV2Head(SOLOHead):
              kernel. Default: 256.
         mask_stride (int): Downsample factor of the mask feature map output by
              `MaskFeatModule`. Default: 4.
-        with_dcn (bool): Whether to use dcn in kernel_convs and cls_convs,
-            default: False.
+        mask_conv_cfg (dict): Conv configuration for the mask feature map
+            branch `MaskFeatModule`. Default: None.
+        dcn_cfg (dict): Dcn conv configurations in kernel_convs and cls_conv.
+            default: None.
         dcn_apply_to_all_conv (bool): Whether to use dcn in every layer of
             kernel_convs and cls_convs, or only the last layer. It shall be set
             `True` for the normal version of SOLOv2 and `False` for the
@@ -166,6 +170,7 @@ class SOLOV2Head(SOLOHead):
                  mask_end_level=3,
                  mask_out_channels=256,
                  mask_stride=4,
+                 mask_conv_cfg=None,
                  dcn_cfg=None,
                  dcn_apply_to_all_conv=True,
                  init_cfg=[
@@ -188,6 +193,7 @@ class SOLOV2Head(SOLOHead):
         self.mask_feat_channels = mask_feat_channels
         self.mask_out_channels = mask_out_channels
         self.mask_stride = mask_stride
+        self.mask_conv_cfg = mask_conv_cfg
 
         self.mask_feature_head = MaskFeatModule(
             in_channels=self.in_channels,
@@ -195,7 +201,9 @@ class SOLOV2Head(SOLOHead):
             start_level=self.mask_start_level,
             end_level=self.mask_end_level,
             out_channels=self.mask_out_channels,
+            conv_cfg=self.mask_conv_cfg,
             norm_cfg=self.norm_cfg)
+        self.fp16_enabled = False
 
     def _init_layers(self):
         self.cls_convs = nn.ModuleList()
@@ -236,6 +244,7 @@ class SOLOV2Head(SOLOHead):
         self.conv_kernel = nn.Conv2d(
             self.feat_channels, self.kernel_out_channels, 3, padding=1)
 
+    @auto_fp16()
     def forward(self, feats):
         assert len(feats) == self.num_levels
         mask_feats = self.mask_feature_head(feats)
@@ -393,6 +402,7 @@ class SOLOV2Head(SOLOHead):
             mlvl_fg_pos.append(fg_pos)
         return mlvl_mask_targets, mlvl_labels, mlvl_is_fg, mlvl_fg_pos
 
+    @force_fp32(apply_to=('mlvl_kernel_preds', 'mlvl_cls_preds', 'mask_feats'))
     def loss(self,
              mlvl_kernel_preds,
              mlvl_cls_preds,
@@ -512,6 +522,8 @@ class SOLOV2Head(SOLOHead):
             flatten_cls_preds, flatten_labels, avg_factor=num_pos + 1)
         return dict(loss_mask=loss_mask, loss_cls=loss_cls)
 
+    @force_fp32(
+        apply_to=('mlvl_kernel_preds', 'mlvl_cls_scores', 'mask_feats'))
     def get_results(self, mlvl_kernel_preds, mlvl_cls_scores, mask_feats,
                     img_metas, **kwargs):
         """Get multi-image mask results.
