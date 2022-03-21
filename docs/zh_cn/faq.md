@@ -109,17 +109,21 @@
 
 - "How to use Mosaic augmentation"
 
-   如果你想在训练中使用 `Mosaic`，那么请确保你同时使用 `MultiImageMixDatasetresume`。以 `Faster R-CNN` 算法为例，你可以通过如下做法实现：
-   ```python
+   如果你想在训练中使用 `Mosaic`，那么请确保你同时使用 `MultiImageMixDataset`。以 `Faster R-CNN` 算法为例，你可以通过如下做法实现：
+    ```python
     # 直接打开 configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py ,增添如下字段
     data_root = 'data/coco/'
     dataset_type = 'CocoDataset'
-    ​
+    img_scale=(1333, 800)​
     img_norm_cfg = dict(
         mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
     train_pipeline = [
-        dict(type='Mosaic', img_scale=(1333, 800), pad_val=114.0),
+        dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
+        dict(
+            type='RandomAffine',
+            scaling_ratio_range=(0.1, 2),
+            border=(-img_scale[0] // 2, -img_scale[1] // 2)),#图像经过马赛克处理后会放大4倍，所以我们使用仿射变换来恢复图像的大小。
         dict(type='RandomFlip', flip_ratio=0.5),
         dict(type='Normalize', **img_norm_cfg),
         dict(type='Pad', size_divisor=32),
@@ -128,6 +132,7 @@
     ]
 
     train_dataset = dict(
+        _delete_ = True, #删除
         type='MultiImageMixDataset',
         dataset=dict(
             type=dataset_type,
