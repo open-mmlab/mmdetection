@@ -123,7 +123,7 @@
         dict(
             type='RandomAffine',
             scaling_ratio_range=(0.1, 2),
-            border=(-img_scale[0] // 2, -img_scale[1] // 2)),#图像经过马赛克处理后会放大4倍，所以我们使用仿射变换来恢复图像的大小。
+            border=(-img_scale[0] // 2, -img_scale[1] // 2)), # 图像经过马赛克处理后会放大4倍，所以我们使用仿射变换来恢复图像的大小。
         dict(type='RandomFlip', flip_ratio=0.5),
         dict(type='Normalize', **img_norm_cfg),
         dict(type='Pad', size_divisor=32),
@@ -132,7 +132,7 @@
     ]
 
     train_dataset = dict(
-        _delete_ = True, #删除不必要的设置
+        _delete_ = True, # 删除不必要的设置
         type='MultiImageMixDataset',
         dataset=dict(
             type=dataset_type,
