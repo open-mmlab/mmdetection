@@ -82,10 +82,11 @@ def binary_cross_entropy(pred,
 
     Args:
         pred (torch.Tensor): The prediction with shape (N, 1) or (N, ).
-            When pred is of shape (N, 1) it will be expanded to one-hot
-            format, while for pred of shape (N, ) it will not be expanded
-            to one-hot format.
-        label (torch.Tensor): The learning label of the prediction.
+            When the shape of pred is (N, 1), label will be expanded to
+            one-hot format, and when the shape of pred is (N, ), label
+            will not be expanded to one-hot format.
+        label (torch.Tensor): The learning label of the prediction,
+            with shape (N, ).
         weight (torch.Tensor, optional): Sample-wise loss weight.
         reduction (str, optional): The method used to reduce the loss.
             Options are "none", "mean" and "sum".
