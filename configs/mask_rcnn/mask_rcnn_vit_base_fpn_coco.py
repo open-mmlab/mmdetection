@@ -28,8 +28,8 @@ model = dict(
         ],
         init_cfg=dict(
             type='Pretrained',
-            checkpoint='/mnt/lustre/share_data/liuyuan/work_dirs/mae_fp16_1600/ \
-            epoch_1600_20220321-c2a7f905.pth')),
+            checkpoint=
+            'ckpt/deit-base_3rdparty_pt-16xb64_in1k_20211124-6f40c188.pth')),
     neck=dict(
         type='FPN',
         in_channels=[768, 768, 768, 768],
@@ -70,7 +70,25 @@ train_pipeline = [
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks']),
 ]
-data = dict(train=dict(pipeline=train_pipeline), samples_per_gpu=1)
+test_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(
+        type='MultiScaleFlipAug',
+        img_scale=(1024, 1024),
+        flip=False,
+        transforms=[
+            dict(type='Resize', keep_ratio=True),
+            dict(type='RandomFlip'),
+            dict(type='Normalize', **img_norm_cfg),
+            dict(type='Pad', size=(1024, 1024)),
+            dict(type='ImageToTensor', keys=['img']),
+            dict(type='Collect', keys=['img']),
+        ])
+]
+data = dict(
+    train=dict(pipeline=train_pipeline),
+    val=dict(pipeline=test_pipeline),
+    test=dict(pipeline=test_pipeline))
 
 # optimizer
 optimizer = dict(
