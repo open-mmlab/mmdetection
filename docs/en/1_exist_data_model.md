@@ -507,7 +507,7 @@ Training requires preparing datasets too. See section [Prepare datasets](#prepar
 Currently, the config files under `configs/cityscapes` use COCO pretrained weights to initialize.
 You could download the existing models in advance if the network connection is unavailable or slow. Otherwise, it would cause errors at the beginning of training.
 
-### Learning rate automatically scale
+### Learning rate will be automatically scaled
 
 **Important**: The default learning rate in config files is for 8 GPUs and 2 sample per gpu (batch size = 8 * 2 = 16). And it had been set to `default_batch_size` in `config/_base_/default_runtime.py`. Learning rate automatically scale base on this value when the batch size is `16`. Meanwhile, in order not to affect other codebase which based on mmdet, the flag `enable_auto_scale_lr` is set to `False` by default.
 
