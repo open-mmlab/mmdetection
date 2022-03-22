@@ -8,6 +8,7 @@ checkpoint = 'https://download.pytorch.org/models/resnet50-11ad3fa6.pth'
 model = dict(
     backbone=dict(init_cfg=dict(type='Pretrained', checkpoint=checkpoint)))
 
+# `lr` and `weight_decay` have been searched to be optimal.
 optimizer = dict(
     _delete_=True,
     type='AdamW',
