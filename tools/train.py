@@ -17,7 +17,8 @@ from mmdet import __version__
 from mmdet.apis import init_random_seed, set_random_seed, train_detector
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
-from mmdet.utils import collect_env, get_root_logger, setup_multi_processes
+from mmdet.utils import (collect_env, get_root_logger, replace_config,
+                         setup_multi_processes)
 
 
 def parse_args():
@@ -121,6 +122,10 @@ def main():
         # use config filename as default work_dir if cfg.work_dir is None
         cfg.work_dir = osp.join('./work_dirs',
                                 osp.splitext(osp.basename(args.config))[0])
+
+    # replace the ${key} with the value of cfg.key
+    cfg = replace_config(cfg)
+
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
     cfg.auto_resume = args.auto_resume
