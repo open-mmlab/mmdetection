@@ -10,22 +10,9 @@ model = dict(
         _delete_=True,
         type='VisionTransformer',
         arch='b',
+        img_size=1024,
         drop_path_rate=0.1,
         out_indices=(2, 5, 8, 11),
-        layer_cfgs=[
-            dict(use_window=True, window_size=14),
-            dict(use_window=True, window_size=14),
-            dict(use_window=False, window_size=14),
-            dict(use_window=True, window_size=14),
-            dict(use_window=True, window_size=14),
-            dict(use_window=False, window_size=14),
-            dict(use_window=True, window_size=14),
-            dict(use_window=True, window_size=14),
-            dict(use_window=False, window_size=14),
-            dict(use_window=True, window_size=14),
-            dict(use_window=True, window_size=14),
-            dict(use_window=False, window_size=14),
-        ],
         init_cfg=dict(
             type='Pretrained',
             checkpoint=
@@ -94,8 +81,8 @@ data = dict(
 optimizer = dict(
     _delete_=True,
     type='AdamW',
-    lr=0.0001,
-    weight_decay=0.05,
+    lr=0.00016,
+    weight_decay=0.1,
     paramwise_cfg=dict(
         custom_keys={
             'pos_embed': dict(decay_mult=0.),

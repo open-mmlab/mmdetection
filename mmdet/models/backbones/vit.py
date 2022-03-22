@@ -110,8 +110,8 @@ class TransformerEncoderLayer(_TransformerEncoderLayer):
             dropout_layer=dict(type='DropPath', drop_prob=drop_path_rate),
             act_cfg=act_cfg)
 
-    def forward(self, x, H, W):
-        x = x + self.attn(self.norm1(x), H, W)
+    def forward(self, x, H, W, rel_pos_bias):
+        x = x + self.attn(self.norm1(x), H, W, rel_pos_bias)
         x = self.ffn(self.norm2(x), identity=x)
         return x
 
@@ -193,7 +193,7 @@ class WindowMultiheadAttention(_MultiheadAttention):
         self.pad_mode = pad_mode
         self.window_size = window_size
 
-    def forward(self, x, H, W):
+    def forward(self, x, H, W, rel_pos_bias):
         B, N, C = x.shape
         N_ = self.window_size * self.window_size
         H_ = math.ceil(H / self.window_size) * self.window_size
@@ -214,6 +214,7 @@ class WindowMultiheadAttention(_MultiheadAttention):
         q, k, v = qkv[0], qkv[1], qkv[2]
 
         attn = (q @ k.transpose(-2, -1)) * self.scale
+        attn = attn + rel_pos_bias
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
 
@@ -238,13 +239,14 @@ class MultiheadAttention(_MultiheadAttention):
     We rewrite the forward function to accept ``H`` and ``W``.
     """
 
-    def forward(self, x, H, W):
+    def forward(self, x, H, W, rel_pos_bias):
         B, N, _ = x.shape
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads,
                                   self.head_dims).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]
 
         attn = (q @ k.transpose(-2, -1)) * self.scale
+        attn = attn + rel_pos_bias
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
 
@@ -255,6 +257,55 @@ class MultiheadAttention(_MultiheadAttention):
         if self.v_shortcut:
             x = v.squeeze(1) + x
         return x
+
+
+class RelativePositionBias(nn.Module):
+    """Relative Position Embedding.
+    
+    Args:
+        window_size (tuple): The size of window, in which to apply attention.
+        num_heads (int): Number of heads to apply attention.
+    """
+
+    def __init__(self, window_size, num_heads):
+        super().__init__()
+        window_size = window_size if isinstance(
+            window_size, tuple) else (window_size, window_size)
+        self.window_size = window_size
+        self.num_relative_distance = (2 * window_size[0] -
+                                      1) * (2 * window_size[1] - 1) + 3
+        self.relative_position_bias_table = nn.Parameter(
+            torch.zeros(self.num_relative_distance, num_heads))
+
+        coords_h = torch.arange(window_size[0])
+        coords_w = torch.arange(window_size[1])
+        coords = torch.stack(torch.meshgrid([coords_h, coords_w]))  # 2, Wh, Ww
+        coords_flatten = torch.flatten(coords, 1)  # 2, Wh*Ww
+        relative_coords = coords_flatten[:, :, None] - coords_flatten[:,
+                                                                      None, :]
+        relative_coords = relative_coords.permute(
+            1, 2, 0).contiguous()  # Wh*Ww, Wh*Ww, 2
+        relative_coords[:, :, 0] += window_size[0] - 1  # shift to start from 0
+        relative_coords[:, :, 1] += window_size[1] - 1
+        relative_coords[:, :, 0] *= 2 * window_size[1] - 1
+        relative_position_index = torch.zeros(
+            size=(window_size[0] * window_size[1] + 1, ) * 2,
+            dtype=relative_coords.dtype)
+        relative_position_index[1:,
+                                1:] = relative_coords.sum(-1)  # Wh*Ww, Wh*Ww
+        relative_position_index[0, 0:] = self.num_relative_distance - 3
+        relative_position_index[0:, 0] = self.num_relative_distance - 2
+        relative_position_index[0, 0] = self.num_relative_distance - 1
+
+        self.register_buffer("relative_position_index",
+                             relative_position_index)
+
+    def forward(self):
+        relative_position_bias = self.relative_position_bias_table[
+            self.relative_position_index.view(-1)].view(
+                self.window_size[0] * self.window_size[1] + 1,
+                self.window_size[0] * self.window_size[1] + 1, -1)
+        return relative_position_bias.permute(2, 0, 1).contiguous()
 
 
 @BACKBONES.register_module()
@@ -337,9 +388,9 @@ class VisionTransformer(_VisionTransformer):
             interpolate_mode=interpolate_mode,
             patch_cfg=patch_cfg,
             init_cfg=init_cfg)
-
         # stochastic depth decay rule
-        dpr = np.linspace(0, drop_path_rate, self.arch_settings['num_layers'])
+        drop_path_rate = np.linspace(0, drop_path_rate,
+                                     self.arch_settings['num_layers'])
 
         self.layers = ModuleList()
         if isinstance(layer_cfgs, dict):
@@ -351,9 +402,10 @@ class VisionTransformer(_VisionTransformer):
                 feedforward_channels=self.
                 arch_settings['feedforward_channels'],
                 drop_rate=drop_rate,
-                drop_path_rate=dpr[i],
+                drop_path_rate=drop_path_rate[i],
                 qkv_bias=self.arch_settings.get('qkv_bias', True),
-                norm_cfg=norm_cfg)
+                norm_cfg=norm_cfg,
+                use_window=i not in out_indices)
             _layer_cfg.update(layer_cfgs[i])
             self.layers.append(TransformerEncoderLayer(**_layer_cfg))
 
@@ -376,6 +428,11 @@ class VisionTransformer(_VisionTransformer):
         self.res_modify_block_1.apply(self._init_weights)
         self.res_modify_block_2.apply(self._init_weights)
         self.res_modify_block_3.apply(self._init_weights)
+
+        self.local_share_rel_pos_bias = RelativePositionBias(
+            14, self.arch_settings['num_heads'])
+        self.global_share_rel_pos_bias = RelativePositionBias(
+            img_size // patch_size, self.arch_settings['num_heads'])
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
@@ -413,7 +470,10 @@ class VisionTransformer(_VisionTransformer):
 
         outs = []
         for i, layer in enumerate(self.layers):
-            x = layer(x, patch_resolution[0], patch_resolution[1])
+            rel_pos_bias = self.local_share_rel_pos_bias() if i not in \
+                    self.out_indices else self.global_share_rel_pos_bias()
+            x = layer(x, patch_resolution[0], patch_resolution[1],
+                      rel_pos_bias[:, 1:, 1:])
 
             if i == len(self.layers) - 1 and self.final_norm:
                 x = self.norm1(x)
