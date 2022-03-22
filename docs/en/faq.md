@@ -122,7 +122,7 @@ We list some common troubles faced by many users and their corresponding solutio
         dict(
             type='RandomAffine',
             scaling_ratio_range=(0.1, 2),
-            border=(-img_scale[0] // 2, -img_scale[1] // 2)),#The image will be enlarged by 4 times after Mosaic processing,so we use affine transformation to restore the image size.
+            border=(-img_scale[0] // 2, -img_scale[1] // 2)), # The image will be enlarged by 4 times after Mosaic processing,so we use affine transformation to restore the image size.
         dict(type='RandomFlip', flip_ratio=0.5),
         dict(type='Normalize', **img_norm_cfg),
         dict(type='Pad', size_divisor=32),
@@ -131,7 +131,7 @@ We list some common troubles faced by many users and their corresponding solutio
     ]
 
     train_dataset = dict(
-        _delete_ = True, #remove unnecessary Settings
+        _delete_ = True, # remove unnecessary Settings
         type='MultiImageMixDataset',
         dataset=dict(
             type=dataset_type,
