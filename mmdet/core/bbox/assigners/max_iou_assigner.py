@@ -25,7 +25,8 @@ class MaxIoUAssigner(BaseAssigner):
             pos_iou_thr due to the 4th step (assign max IoU sample to each gt).
             `min_pos_iou` is set to avoid assigning bboxes that have extremely
             small iou with GT as positive samples. It brings about 0.3 mAP
-            improvements and more comparisons can be found in
+            improvements in 1x schedule but does not affect the performance of
+            3x schedule. More comparisons can be found in
             `PR #7464 <https://github.com/open-mmlab/mmdetection/pull/7464>`_.
         gt_max_assign_all (bool): Whether to assign all bboxes with the same
             highest overlap with some gt to that gt.
