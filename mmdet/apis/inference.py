@@ -35,12 +35,14 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
                         f'but got {type(config)}')
     if cfg_options is not None:
         config.merge_from_dict(cfg_options)
-    config.model.pretrained = None
+    if 'pretrained' in config.model:
+        config.model.pretrained = None
+    elif 'init_cfg' in config.model.backbone:
+        config.model.backbone.init_cfg = None
     config.model.train_cfg = None
     model = build_detector(config.model, test_cfg=config.get('test_cfg'))
     if checkpoint is not None:
-        map_loc = 'cpu' if device == 'cpu' else None
-        checkpoint = load_checkpoint(model, checkpoint, map_location=map_loc)
+        checkpoint = load_checkpoint(model, checkpoint, map_location='cpu')
         if 'CLASSES' in checkpoint.get('meta', {}):
             model.CLASSES = checkpoint['meta']['CLASSES']
         else:
@@ -215,7 +217,8 @@ def show_result_pyplot(model,
                        result,
                        score_thr=0.3,
                        title='result',
-                       wait_time=0):
+                       wait_time=0,
+                       palette=None):
     """Visualize the detection results on the image.
 
     Args:
@@ -237,5 +240,6 @@ def show_result_pyplot(model,
         show=True,
         wait_time=wait_time,
         win_name=title,
-        bbox_color=(72, 101, 241),
-        text_color=(72, 101, 241))
+        bbox_color=palette,
+        text_color=(200, 200, 200),
+        mask_color=palette)

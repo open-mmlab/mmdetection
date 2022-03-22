@@ -1,6 +1,18 @@
-# WIDER Face Dataset
+# WIDER FACE
+
+> [WIDER FACE: A Face Detection Benchmark](https://arxiv.org/abs/1511.06523)
 
 <!-- [DATASET] -->
+
+## Abstract
+
+Face detection is one of the most studied topics in the computer vision community. Much of the progresses have been made by the availability of face detection benchmark datasets. We show that there is a gap between current face detection performance and the real world requirements. To facilitate future face detection research, we introduce the WIDER FACE dataset, which is 10 times larger than existing datasets. The dataset contains rich annotations, including occlusions, poses, event categories, and face bounding boxes. Faces in the proposed dataset are extremely challenging due to large variations in scale, pose and occlusion, as shown in Fig. 1. Furthermore, we show that WIDER FACE dataset is an effective training source for face detection. We benchmark several representative detection systems, providing an overview of state-of-the-art performance and propose a solution to deal with large scale variation. Finally, we discuss common failure cases that worth to be further investigated.
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/144000364-3320de79-34fc-40a6-938f-bb512f05a4bb.png" height="400"/>
+</div>
+
+## Introduction
 
 To use the WIDER Face dataset you need to download it
 and extract to the `data/WIDERFace` folder. Annotation in the VOC format
@@ -33,7 +45,9 @@ mmdetection
 After that you can train the SSD300 on WIDER by launching training with the `ssd300_wider_face.py` config or
 create your own config based on the presented one.
 
-```
+## Citation
+
+```latex
 @inproceedings{yang2016wider,
    Author = {Yang, Shuo and Luo, Ping and Loy, Chen Change and Tang, Xiaoou},
    Booktitle = {IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},

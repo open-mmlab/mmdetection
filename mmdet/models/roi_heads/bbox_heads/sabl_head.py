@@ -44,7 +44,7 @@ class SABLHead(BaseModule):
             of reg cls branch. Defaults to 256.
         num_cls_fcs (int): Number of fcs for cls branch. Defaults to 1.
         num_reg_fcs (int): Number of fcs for reg branch.. Defaults to 0.
-        reg_class_agnostic (bool): Class agnostic regresion or not. \
+        reg_class_agnostic (bool): Class agnostic regression or not. \
             Defaults to True.
         norm_cfg (dict): Config of norm layers. Defaults to None.
         bbox_coder (dict): Config of bbox coder. Defaults 'BucketingBBoxCoder'.
@@ -205,6 +205,18 @@ class SABLHead(BaseModule):
                             dict(name='upsample_y')
                         ])
                 ]
+
+    @property
+    def custom_cls_channels(self):
+        return getattr(self.loss_cls, 'custom_cls_channels', False)
+
+    @property
+    def custom_activation(self):
+        return getattr(self.loss_cls, 'custom_activation', False)
+
+    @property
+    def custom_accuracy(self):
+        return getattr(self.loss_cls, 'custom_accuracy', False)
 
     def _add_fc_branch(self, num_branch_fcs, in_channels, roi_feat_size,
                        fc_out_channels):
@@ -483,11 +495,11 @@ class SABLHead(BaseModule):
         scores = F.softmax(cls_score, dim=1) if cls_score is not None else None
 
         if bbox_pred is not None:
-            bboxes, confids = self.bbox_coder.decode(rois[:, 1:], bbox_pred,
-                                                     img_shape)
+            bboxes, confidences = self.bbox_coder.decode(
+                rois[:, 1:], bbox_pred, img_shape)
         else:
             bboxes = rois[:, 1:].clone()
-            confids = None
+            confidences = None
             if img_shape is not None:
                 bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1] - 1)
                 bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0] - 1)
@@ -507,7 +519,7 @@ class SABLHead(BaseModule):
                 cfg.score_thr,
                 cfg.nms,
                 cfg.max_per_img,
-                score_factors=confids)
+                score_factors=confidences)
 
             return det_bboxes, det_labels
 

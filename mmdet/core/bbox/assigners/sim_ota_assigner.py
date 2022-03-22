@@ -127,7 +127,13 @@ class SimOTAAssigner(BaseAssigner):
         assigned_gt_inds = decoded_bboxes.new_full((num_bboxes, ),
                                                    0,
                                                    dtype=torch.long)
-        if num_gt == 0 or num_bboxes == 0:
+        valid_mask, is_in_boxes_and_center = self.get_in_gt_and_in_center_info(
+            priors, gt_bboxes)
+        valid_decoded_bbox = decoded_bboxes[valid_mask]
+        valid_pred_scores = pred_scores[valid_mask]
+        num_valid = valid_decoded_bbox.size(0)
+
+        if num_gt == 0 or num_bboxes == 0 or num_valid == 0:
             # No ground truth or boxes, return empty assignment
             max_overlaps = decoded_bboxes.new_zeros((num_bboxes, ))
             if num_gt == 0:
@@ -141,13 +147,6 @@ class SimOTAAssigner(BaseAssigner):
                                                           dtype=torch.long)
             return AssignResult(
                 num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
-
-        valid_mask, is_in_boxes_and_center = self.get_in_gt_and_in_center_info(
-            priors, gt_bboxes)
-
-        valid_decoded_bbox = decoded_bboxes[valid_mask]
-        valid_pred_scores = pred_scores[valid_mask]
-        num_valid = valid_decoded_bbox.size(0)
 
         pairwise_ious = bbox_overlaps(valid_decoded_bbox, gt_bboxes)
         iou_cost = -torch.log(pairwise_ious + eps)
@@ -226,15 +225,16 @@ class SimOTAAssigner(BaseAssigner):
         return is_in_gts_or_centers, is_in_boxes_and_centers
 
     def dynamic_k_matching(self, cost, pairwise_ious, num_gt, valid_mask):
-        matching_matrix = torch.zeros_like(cost)
+        matching_matrix = torch.zeros_like(cost, dtype=torch.uint8)
         # select candidate topk ious for dynamic-k calculation
-        topk_ious, _ = torch.topk(pairwise_ious, self.candidate_topk, dim=0)
+        candidate_topk = min(self.candidate_topk, pairwise_ious.size(0))
+        topk_ious, _ = torch.topk(pairwise_ious, candidate_topk, dim=0)
         # calculate dynamic k for each gt
         dynamic_ks = torch.clamp(topk_ious.sum(0).int(), min=1)
         for gt_idx in range(num_gt):
             _, pos_idx = torch.topk(
-                cost[:, gt_idx], k=dynamic_ks[gt_idx].item(), largest=False)
-            matching_matrix[:, gt_idx][pos_idx] = 1.0
+                cost[:, gt_idx], k=dynamic_ks[gt_idx], largest=False)
+            matching_matrix[:, gt_idx][pos_idx] = 1
 
         del topk_ious, dynamic_ks, pos_idx
 
@@ -242,10 +242,10 @@ class SimOTAAssigner(BaseAssigner):
         if prior_match_gt_mask.sum() > 0:
             cost_min, cost_argmin = torch.min(
                 cost[prior_match_gt_mask, :], dim=1)
-            matching_matrix[prior_match_gt_mask, :] *= 0.0
-            matching_matrix[prior_match_gt_mask, cost_argmin] = 1.0
+            matching_matrix[prior_match_gt_mask, :] *= 0
+            matching_matrix[prior_match_gt_mask, cost_argmin] = 1
         # get foreground mask inside box and center prior
-        fg_mask_inboxes = matching_matrix.sum(1) > 0.0
+        fg_mask_inboxes = matching_matrix.sum(1) > 0
         valid_mask[valid_mask.clone()] = fg_mask_inboxes
 
         matched_gt_inds = matching_matrix[fg_mask_inboxes, :].argmax(1)

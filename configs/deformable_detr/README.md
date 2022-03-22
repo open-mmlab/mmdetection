@@ -1,21 +1,16 @@
 # Deformable DETR
 
-## Introduction
+> [Deformable DETR: Deformable Transformers for End-to-End Object Detection](https://arxiv.org/abs/2010.04159)
 
 <!-- [ALGORITHM] -->
 
-We provide the config files for Deformable DETR: [Deformable DETR: Deformable Transformers for End-to-End Object Detection](https://arxiv.org/abs/2010.04159).
+## Abstract
 
-```
-@inproceedings{
-zhu2021deformable,
-title={Deformable DETR: Deformable Transformers for End-to-End Object Detection},
-author={Xizhou Zhu and Weijie Su and Lewei Lu and Bin Li and Xiaogang Wang and Jifeng Dai},
-booktitle={International Conference on Learning Representations},
-year={2021},
-url={https://openreview.net/forum?id=gZ9hCDWe6ke}
-}
-```
+DETR has been recently proposed to eliminate the need for many hand-designed components in object detection while demonstrating good performance. However, it suffers from slow convergence and limited feature spatial resolution, due to the limitation of Transformer attention modules in processing image feature maps. To mitigate these issues, we proposed Deformable DETR, whose attention modules only attend to a small set of key sampling points around a reference. Deformable DETR can achieve better performance than DETR (especially on small objects) with 10 times less training epochs. Extensive experiments on the COCO benchmark demonstrate the effectiveness of our approach.
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143877617-ad9b24fd-77ce-46aa-9689-1a44b5594132.png"/>
+</div>
 
 ## Results and Models
 
@@ -29,3 +24,18 @@ url={https://openreview.net/forum?id=gZ9hCDWe6ke}
 
 1. All models are trained with batch size 32.
 2. The performance is unstable. `Deformable DETR` and `iterative bounding box refinement` may fluctuate about 0.3 mAP. `two-stage Deformable DETR` may fluctuate about 0.2 mAP.
+
+## Citation
+
+We provide the config files for Deformable DETR: [Deformable DETR: Deformable Transformers for End-to-End Object Detection](https://arxiv.org/abs/2010.04159).
+
+```latex
+@inproceedings{
+zhu2021deformable,
+title={Deformable DETR: Deformable Transformers for End-to-End Object Detection},
+author={Xizhou Zhu and Weijie Su and Lewei Lu and Bin Li and Xiaogang Wang and Jifeng Dai},
+booktitle={International Conference on Learning Representations},
+year={2021},
+url={https://openreview.net/forum?id=gZ9hCDWe6ke}
+}
+```

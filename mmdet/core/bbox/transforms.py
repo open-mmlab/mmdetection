@@ -3,6 +3,22 @@ import numpy as np
 import torch
 
 
+def find_inside_bboxes(bboxes, img_h, img_w):
+    """Find bboxes as long as a part of bboxes is inside the image.
+
+    Args:
+        bboxes (Tensor): Shape (N, 4).
+        img_h (int): Image height.
+        img_w (int): Image width.
+
+    Returns:
+        Tensor: Index of the remaining bboxes.
+    """
+    inside_inds = (bboxes[:, 0] < img_w) & (bboxes[:, 2] > 0) \
+        & (bboxes[:, 1] < img_h) & (bboxes[:, 3] > 0)
+    return inside_inds
+
+
 def bbox_flip(bboxes, img_shape, direction='horizontal'):
     """Flip bboxes horizontally or vertically.
 
@@ -133,6 +149,7 @@ def distance2bbox(points, distance, max_shape=None):
     Returns:
         Tensor: Boxes with shape (N, 4) or (B, N, 4)
     """
+
     x1 = points[..., 0] - distance[..., 0]
     y1 = points[..., 1] - distance[..., 1]
     x2 = points[..., 0] + distance[..., 2]
@@ -141,6 +158,12 @@ def distance2bbox(points, distance, max_shape=None):
     bboxes = torch.stack([x1, y1, x2, y2], -1)
 
     if max_shape is not None:
+        if bboxes.dim() == 2 and not torch.onnx.is_in_onnx_export():
+            # speed up
+            bboxes[:, 0::2].clamp_(min=0, max=max_shape[1])
+            bboxes[:, 1::2].clamp_(min=0, max=max_shape[0])
+            return bboxes
+
         # clip bboxes with dynamic `min` and `max` for onnx
         if torch.onnx.is_in_onnx_export():
             from mmdet.core.export import dynamic_clip_for_onnx

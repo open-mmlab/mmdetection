@@ -131,11 +131,12 @@ class BBoxHead(BaseModule):
             neg_bboxes (Tensor): Contains all the negative boxes,
                 has shape (num_neg, 4), the last dimension 4
                 represents [tl_x, tl_y, br_x, br_y].
-            pos_gt_bboxes (Tensor): Contains all the gt_boxes,
-                has shape (num_gt, 4), the last dimension 4
+            pos_gt_bboxes (Tensor): Contains gt_boxes for
+                all positive samples, has shape (num_pos, 4),
+                the last dimension 4
                 represents [tl_x, tl_y, br_x, br_y].
-            pos_gt_labels (Tensor): Contains all the gt_labels,
-                has shape (num_gt).
+            pos_gt_labels (Tensor): Contains gt_labels for
+                all positive samples, has shape (num_pos, ).
             cfg (obj:`ConfigDict`): `train_cfg` of R-CNN.
 
         Returns:
@@ -339,7 +340,7 @@ class BBoxHead(BaseModule):
 
         Returns:
             tuple[Tensor, Tensor]:
-                Fisrt tensor is `det_bboxes`, has the shape
+                First tensor is `det_bboxes`, has the shape
                 (num_boxes, 5) and last
                 dimension 5 represent (tl_x, tl_y, br_x, br_y, score).
                 Second tensor is the labels with shape (num_boxes, ).

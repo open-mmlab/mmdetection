@@ -1,11 +1,23 @@
-# FoveaBox: Beyond Anchor-based Object Detector
+# FoveaBox
+
+> [FoveaBox: Beyond Anchor-based Object Detector](https://arxiv.org/abs/1904.03797)
 
 <!-- [ALGORITHM] -->
+
+## Abstract
+
+We present FoveaBox, an accurate, flexible, and completely anchor-free framework for object detection. While almost all state-of-the-art object detectors utilize predefined anchors to enumerate possible locations, scales and aspect ratios for the search of the objects, their performance and generalization ability are also limited to the design of anchors. Instead, FoveaBox directly learns the object existing possibility and the bounding box coordinates without anchor reference. This is achieved by: (a) predicting category-sensitive semantic maps for the object existing possibility, and (b) producing category-agnostic bounding box for each position that potentially contains an object. The scales of target boxes are naturally associated with feature pyramid representations. In FoveaBox, an instance is assigned to adjacent feature levels to make the model more accurate.We demonstrate its effectiveness on standard benchmarks and report extensive experimental analysis. Without bells and whistles, FoveaBox achieves state-of-the-art single model performance on the standard COCO and Pascal VOC object detection benchmark. More importantly, FoveaBox avoids all computation and hyper-parameters related to anchor boxes, which are often sensitive to the final detection performance. We believe the simple and effective approach will serve as a solid baseline and help ease future research for object detection.
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143885497-332d38a7-b492-4f51-b9d2-ef9d4ad4412a.png"/>
+</div>
+
+## Introduction
 
 FoveaBox is an accurate, flexible and completely anchor-free object detection system for object detection framework, as presented in our paper [https://arxiv.org/abs/1904.03797](https://arxiv.org/abs/1904.03797):
 Different from previous anchor-based methods, FoveaBox directly learns the object existing possibility and the bounding box coordinates without anchor reference. This is achieved by: (a) predicting category-sensitive semantic maps for the object existing possibility, and (b) producing category-agnostic bounding box for each position that potentially contains an object.
 
-## Main Results
+## Results and Models
 
 ### Results on R50/101-FPN
 
@@ -27,7 +39,7 @@ Different from previous anchor-based methods, FoveaBox directly learns the objec
 
 Any pull requests or issues are welcome.
 
-## Citations
+## Citation
 
 Please consider citing our paper in your publications if the project helps your research. BibTeX reference is as follows.
 

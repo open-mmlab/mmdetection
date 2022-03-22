@@ -63,7 +63,7 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
     def forward_train(self, imgs, img_metas, **kwargs):
         """
         Args:
-            img (list[Tensor]): List of tensors of shape (1, C, H, W).
+            img (Tensor): of shape (N, C, H, W) encoding input images.
                 Typically these should be mean centered and std scaled.
             img_metas (list[dict]): List of image info dict where each dict
                 has: 'img_shape', 'scale_factor', 'flip', and may also contain
@@ -178,7 +178,7 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
 
         Args:
             losses (dict): Raw output of the network, which usually contain
-                losses and other necessary infomation.
+                losses and other necessary information.
 
         Returns:
             tuple[Tensor, dict]: (loss, log_vars), loss is the loss tensor \
@@ -197,6 +197,16 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
 
         loss = sum(_value for _key, _value in log_vars.items()
                    if 'loss' in _key)
+
+        # If the loss_vars has different length, GPUs will wait infinitely
+        if dist.is_available() and dist.is_initialized():
+            log_var_length = torch.tensor(len(log_vars), device=loss.device)
+            dist.all_reduce(log_var_length)
+            message = (f'rank {dist.get_rank()}' +
+                       f' len(log_vars): {len(log_vars)}' + ' keys: ' +
+                       ','.join(log_vars.keys()))
+            assert log_var_length == len(log_vars) * dist.get_world_size(), \
+                'loss log variables are different across GPUs!\n' + message
 
         log_vars['loss'] = loss
         for loss_name, loss_value in log_vars.items():

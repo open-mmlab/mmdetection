@@ -97,10 +97,17 @@ class ConvFCBBoxHead(BBoxHead):
                 out_features=out_dim_reg)
 
         if init_cfg is None:
+            # when init_cfg is None,
+            # It has been set to
+            # [[dict(type='Normal', std=0.01, override=dict(name='fc_cls'))],
+            #  [dict(type='Normal', std=0.001, override=dict(name='fc_reg'))]
+            # after `super(ConvFCBBoxHead, self).__init__()`
+            # we only need to append additional configuration
+            # for `shared_fcs`, `cls_fcs` and `reg_fcs`
             self.init_cfg += [
                 dict(
                     type='Xavier',
-                    layer='Linear',
+                    distribution='uniform',
                     override=[
                         dict(name='shared_fcs'),
                         dict(name='cls_fcs'),

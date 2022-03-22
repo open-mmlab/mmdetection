@@ -1,6 +1,18 @@
-# Feature Selective Anchor-Free Module for Single-Shot Object Detection
+# FSAF
+
+> [Feature Selective Anchor-Free Module for Single-Shot Object Detection](https://arxiv.org/abs/1903.00621)
 
 <!-- [ALGORITHM] -->
+
+## Abstract
+
+We motivate and present feature selective anchor-free (FSAF) module, a simple and effective building block for single-shot object detectors. It can be plugged into single-shot detectors with feature pyramid structure. The FSAF module addresses two limitations brought up by the conventional anchor-based detection: 1) heuristic-guided feature selection; 2) overlap-based anchor sampling. The general concept of the FSAF module is online feature selection applied to the training of multi-level anchor-free branches. Specifically, an anchor-free branch is attached to each level of the feature pyramid, allowing box encoding and decoding in the anchor-free manner at an arbitrary level. During training, we dynamically assign each instance to the most suitable feature level. At the time of inference, the FSAF module can work jointly with anchor-based branches by outputting predictions in parallel. We instantiate this concept with simple implementations of anchor-free branches and online feature selection strategy. Experimental results on the COCO detection track show that our FSAF module performs better than anchor-based counterparts while being faster. When working jointly with anchor-based branches, the FSAF module robustly improves the baseline RetinaNet by a large margin under various settings, while introducing nearly free inference overhead. And the resulting best model can achieve a state-of-the-art 44.6% mAP, outperforming all existing single-shot detectors on COCO.
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143887228-c790b542-c0f7-4113-8597-12250c50fe8f.png"/>
+</div>
+
+## Introduction
 
 FSAF is an anchor-free method published in CVPR2019 ([https://arxiv.org/pdf/1903.00621.pdf](https://arxiv.org/pdf/1903.00621.pdf)).
 Actually it is equivalent to the anchor-based method with only one anchor at each feature map position in each FPN level.
@@ -10,7 +22,7 @@ Only the anchor-free branch is released for its better compatibility with the cu
 In the original paper, feature maps within the central 0.2-0.5 area of a gt box are tagged as ignored. However,
 it is empirically found that a hard threshold (0.2-0.2) gives a further gain on the performance. (see the table below)
 
-## Main Results
+## Results and Models
 
 ### Results on R50/R101/X101-FPN
 
@@ -30,7 +42,7 @@ it is empirically found that a hard threshold (0.2-0.2) gives a further gain on 
 - *All pretrained backbones use pytorch style.*
 - *All models are trained on 8 Titan-XP gpus and tested on a single gpu.*
 
-## Citations
+## Citation
 
 BibTeX reference is as follows.
 
