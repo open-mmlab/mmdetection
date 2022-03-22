@@ -20,7 +20,7 @@ opencv_num_threads = 0
 # set multi-process start method as `fork` to speed up the training
 mp_start_method = 'fork'
 
-# In order to support automatically scaling LR. Default batch size
-# (8 GPUs) x (2 samples per GPU)
+# The default batch size of configs in MMDet.
 default_batch_size = 16
+# This key allows scaling LR automatically or not.
 enable_auto_scale_lr = False

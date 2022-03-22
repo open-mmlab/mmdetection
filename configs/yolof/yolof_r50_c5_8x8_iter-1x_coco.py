@@ -13,5 +13,5 @@ checkpoint_config = dict(interval=2500)
 evaluation = dict(interval=4500)
 log_config = dict(interval=20)
 
-# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
+# NOTE: This is for automatically scaling LR, USER SHOULD NOT CHANGE THIS VALUE.
 default_batch_size = 64  # (8 GPUs) x (8 samples per GPU)

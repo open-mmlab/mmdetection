@@ -159,5 +159,5 @@ runner = dict(type='EpochBasedRunner', max_epochs=55)
 cudnn_benchmark = True
 evaluation = dict(metric=['bbox', 'segm'])
 
-# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
+# NOTE: This is for automatically scaling LR, USER SHOULD NOT CHANGE THIS VALUE.
 default_batch_size = 8  # (1 GPUs) x (8 samples per GPU)

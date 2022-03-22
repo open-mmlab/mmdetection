@@ -10,5 +10,5 @@ model = dict(
         use_depthwise=True),
     bbox_head=dict(in_channels=64, feat_channels=64, use_depthwise=True))
 
-# NOTE: This is for automatically scaling LR, USER CAN'T CHANGE THIS VALUE
+# NOTE: This is for automatically scaling LR, USER SHOULD NOT CHANGE THIS VALUE.
 default_batch_size = 64  # (8 GPUs) x (8 samples per GPU)
