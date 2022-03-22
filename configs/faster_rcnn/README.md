@@ -66,7 +66,7 @@ We further finetune some pre-trained models on the COCO subsets, which only cont
 
 ## Torchvision New Receipe (TNR)
 
-Torchvision has released their high-precision pretrain ResNet model. The training details can be found in the [Pytorch website](https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/). Here, we have done grid searches on learning rate and weight decay and found the optimal hyper-parameter when using Torchvision high-precision ResNet as the pretrain model.
+Torchvision released its high-precision ResNet models. The training details can be found on the [Pytorch website](https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/). Here, we have done grid searches on learning rate and weight decay and found the optimal hyper-parameter on the detection task.
 
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: | :--------: |
