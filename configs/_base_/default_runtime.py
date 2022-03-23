@@ -23,4 +23,4 @@ mp_start_method = 'fork'
 # The default batch size of configs in MMDet.
 default_batch_size = 16
 # This key allows scaling LR automatically or not.
-enable_auto_scale_lr = False
+auto_scale_lr = False

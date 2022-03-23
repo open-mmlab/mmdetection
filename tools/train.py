@@ -111,7 +111,7 @@ def main():
         cfg.merge_from_dict(args.cfg_options)
 
     if args.auto_scale_lr:
-        cfg.update({'enable_auto_scale_lr': True})
+        cfg.update({'auto_scale_lr': True})
 
     # set multi-process settings
     setup_multi_processes(cfg)

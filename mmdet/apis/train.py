@@ -75,8 +75,8 @@ def autoscale_lr(cfg, logger):
         cfg (config): training config.
         logger (logging.Logger): logger.
     """
-    enable_auto_scale_lr = cfg.get('enable_auto_scale_lr', False)
-    if enable_auto_scale_lr is False:
+    auto_scale_lr_flag = cfg.get('auto_scale_lr', False)
+    if auto_scale_lr_flag is False:
         logger.info('Automatic scaling of learning rate (LR)'
                     ' has been disabled.')
         return
