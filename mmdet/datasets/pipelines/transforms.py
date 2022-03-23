@@ -1995,7 +1995,7 @@ class Mosaic:
             `min_bbox_size` is invalid. Default to True.
         pad_val (int): Pad value. Default to 114.
         prob (float): Probability of applying this transformation.
-            Default to 0.5.
+            Default to 1.0.
     """
 
     def __init__(self,
@@ -2005,7 +2005,7 @@ class Mosaic:
                  bbox_clip_border=True,
                  skip_filter=True,
                  pad_val=114,
-                 prob=0.5):
+                 prob=1.0):
         assert isinstance(img_scale, tuple)
         assert 0 <= prob <= 1.0, 'The probability should be in range [0,1]. '\
             f'got {prob}.'
