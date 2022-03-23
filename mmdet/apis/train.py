@@ -83,7 +83,11 @@ def autoscale_lr(cfg, logger):
 
     # default batch size of pre-train model
     default_batch_size = cfg.get('default_batch_size', None)
-    assert default_batch_size is not None
+    if default_batch_size is None:
+        logger.warning('Can not find default_batch_size in config file, '
+                       'please check if it existed. '
+                       'Disable automatic scaling of learning rate.')
+        return
 
     # calculate the batch size
     num_gpus = len(cfg.gpu_ids)
