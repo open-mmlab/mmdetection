@@ -68,7 +68,7 @@ def set_random_seed(seed, deterministic=False):
         torch.backends.cudnn.benchmark = False
 
 
-def autoscale_lr(cfg, distributed, logger):
+def auto_scale_lr(cfg, distributed, logger):
     """Automatically scaling LR according to GPU number and sample per GPU.
 
     Args:
@@ -120,7 +120,7 @@ def autoscale_lr(cfg, distributed, logger):
     else:
         logger.info('The batch size match the '
                     f'default batch size: {default_batch_size}, '
-                    f'won\'t scaling the LR ({cfg.optimizer.get("lr")}).')
+                    f'will not scaling the LR ({cfg.optimizer.get("lr")}).')
 
 
 def train_detector(model,
@@ -178,7 +178,7 @@ def train_detector(model,
         model = MMDataParallel(model, device_ids=cfg.gpu_ids)
 
     # build optimizer
-    autoscale_lr(cfg, distributed, logger)
+    auto_scale_lr(cfg, distributed, logger)
     optimizer = build_optimizer(model, cfg.optimizer)
 
     # build runner
