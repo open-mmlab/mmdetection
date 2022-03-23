@@ -51,7 +51,8 @@ class EdgeResidual(BaseModule):
                  act_cfg=dict(type='ReLU'),
                  drop_path_rate=0.,
                  with_cp=False,
-                 init_cfg=None):
+                 init_cfg=None,
+                 **kwargs):
         super(EdgeResidual, self).__init__(init_cfg=init_cfg)
         assert stride in [1, 2]
         self.with_cp = with_cp
@@ -373,6 +374,7 @@ class EfficientNet(BaseModule):
                         kernel_size=kernel_size,
                         stride=stride,
                         se_cfg=se_cfg,
+                        with_expand_conv=(mid_channels != self.in_channels),
                         conv_cfg=self.conv_cfg,
                         norm_cfg=self.norm_cfg,
                         act_cfg=self.act_cfg,

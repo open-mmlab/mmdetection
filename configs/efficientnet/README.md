@@ -1,12 +1,24 @@
-# EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks
+# EfficientNet
+
+> [EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks](https://arxiv.org/abs/1905.11946v5)
+
+<!-- [BACKBONE] -->
 
 ## Introduction
 
-<!-- [ALGORITHM] -->
+Convolutional Neural Networks (ConvNets) are commonly developed at a fixed resource budget, and then scaled up for better accuracy if more resources are available. In this paper, we systematically study model scaling and identify that carefully balancing network depth, width, and resolution can lead to better performance. Based on this observation, we propose a new scaling method that uniformly scales all dimensions of depth/width/resolution using a simple yet highly effective compound coefficient. We demonstrate the effectiveness of this method on scaling up MobileNets and ResNet.
 
-We implement EfficientNet models in detection systems.
+To go even further, we use neural architecture search to design a new baseline network and scale it up to obtain a family of models, called EfficientNets, which achieve much better accuracy and efficiency than previous ConvNets. In particular, our EfficientNet-B7 achieves state-of-the-art 84.3% top-1 accuracy on ImageNet, while being 8.4x smaller and 6.1x faster on inference than the best existing ConvNet. Our EfficientNets also transfer well and achieve state-of-the-art accuracy on CIFAR-100 (91.7%), Flowers (98.8%), and 3 other transfer learning datasets, with an order of magnitude fewer parameters.
 
-The pre-trained modles are converted from [model zoo of pycls](https://github.com/facebookresearch/pycls/blob/master/MODEL_ZOO.md).
+## Results and Models
+
+### RetinaNet
+
+|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
+| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: | :--------: |
+|Efficientnet-b3  | pytorch |   1x    |   -      |   -           |  40.5  |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/efficientnet/retinanet_effb3_fpn_crop896_8x4_1x_coco.py) | [model]() &#124; [log]() |
+
+## Citation
 
 ```latex
 @article{tan2019efficientnet,
@@ -16,33 +28,3 @@ The pre-trained modles are converted from [model zoo of pycls](https://github.co
   year={2019}
 }
 ```
-
-## Usage
-
-To use a efficientnet model, there are two steps to do:
-
-1. Convert the model to EfficientNet-style supported by MMDetection
-
-2. Modify backbone and neck in config accordingly
-
-### Convert model
-
-We already prepare models of FLOPs from B0 to B5 in our model zoo.
-
-For more general usage, we also provide script `efficientnet2mmdet.py` in the tools/model_converters directory to convert the key of models pretrained by [pycls](https://github.com/facebookresearch/pycls/) to
-EfficientNet-style checkpoints used in MMDetection.
-
-```bash
-python -u tools/model_converters/efficientnet2mmedet.py ${PRETRAIN_PATH} ${STORE_PATH}
-```
-
-This script convert model from `PRETRAIN_PATH` and store the converted model in `STORE_PATH`.
-
-## Results
-
-### Results on EfficientNet-B0/B3
-
-| Backbone  | Style   |  Lr schd | Epoch | box AP | config | model |
-|:---------:|:-------:|:-------:|:--------------:|:------:|:------:|:------:|
-| efficientNet-b0 | pytorch | 0.800      | 300      | 33.6    | -     | - |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/foveabox/fovea_r50_fpn_4x4_1x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_r50_fpn_4x4_1x_coco/fovea_r50_fpn_4x4_1x_coco_20200219-ee4d5303.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_r50_fpn_4x4_1x_coco/fovea_r50_fpn_4x4_1x_coco_20200219_223025.log.json) |
-| efficientNet-b3| pytorch | 0.875       | 300       | 40.0     | -      | - |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/foveabox/fovea_r50_fpn_4x4_2x_coco.py) | [model](http://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_r50_fpn_4x4_2x_coco/fovea_r50_fpn_4x4_2x_coco_20200203-2df792b1.pth) &#124; [log](http://download.openmmlab.com/mmdetection/v2.0/foveabox/fovea_r50_fpn_4x4_2x_coco/fovea_r50_fpn_4x4_2x_coco_20200203_112043.log.json) |
