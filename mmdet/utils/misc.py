@@ -53,15 +53,11 @@ def update_data_root(cfg, logger=None):
         logger (logging.Logger | str | None): the way to print msg
     """
     if 'MMDET_DATASETS' not in os.environ:
-        print_log(
-            f'Not set env MMDET_DATASETS, using {cfg.data_root} as data root.',
-            logger)
-        return None
+        return
     else:
         dst_root = os.environ['MMDET_DATASETS']
-        print_log(
-            f'Set env MMDET_DATASETS={dst_root}, \
-                using MMDET_DATASETS as data root.', logger)
+        print_log(f'MMDET_DATASETS has been set to be {dst_root}. \
+                Using {dst_root} as datat root.')
 
     assert isinstance(cfg, mmcv.Config), \
         f'cfg got wrong type: {type(cfg)}, expected mmcv.Config'
