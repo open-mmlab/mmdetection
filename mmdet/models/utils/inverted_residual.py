@@ -1,6 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import torch.nn as nn
 import torch.utils.checkpoint as cp
 from mmcv.cnn import ConvModule
+from mmcv.cnn.bricks import DropPath
 from mmcv.runner import BaseModule
 
 from .se_layer import SELayer

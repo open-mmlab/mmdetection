@@ -15,10 +15,7 @@ model = dict(
         scale=3,
         with_cp=True,
         dropout=0.3,
-        init_cfg=dict(
-            type='Pretrained',
-            checkpoint='/efficientNet_B3.pth'
-        )),
+        init_cfg=dict(type='Pretrained', checkpoint='/efficientNet_B3.pth')),
     neck=dict(
         type='FPN',
         in_channels=[48, 136, 384],

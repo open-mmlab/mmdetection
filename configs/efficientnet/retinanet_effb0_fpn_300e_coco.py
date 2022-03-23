@@ -14,10 +14,7 @@ model = dict(
         scale=0,
         with_cp=True,
         dropout=0.2,
-        init_cfg=dict(
-            type='Pretrained',
-            checkpoint='converted_b0_2.pyth'
-        )),
+        init_cfg=dict(type='Pretrained', checkpoint='converted_b0_2.pyth')),
     neck=dict(
         type='FPN',
         in_channels=[40, 112, 320],

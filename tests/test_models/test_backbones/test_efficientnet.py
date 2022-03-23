@@ -23,8 +23,8 @@ def test_efficientnet_backbone():
     assert check_norm_state(model.modules(), False)
 
     # Test EfficientNet with torchvision pretrained weight
-    model = EfficientNet(scale=3, norm_eval=True,
-                         pretrained='/checkpoints/converted_b3_2.pyth')
+    model = EfficientNet(
+        scale=3, norm_eval=True, pretrained='/checkpoints/converted_b3_2.pyth')
     model.train()
     assert check_norm_state(model.modules(), False)
 
