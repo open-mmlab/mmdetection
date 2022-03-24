@@ -4,11 +4,14 @@ import math
 import numpy as np
 import torch
 import torch.nn.functional as F
-from mmcls.models import VisionTransformer as _VisionTransformer
-from mmcls.models.backbones.vision_transformer import \
-    TransformerEncoderLayer as _TransformerEncoderLayer
-from mmcls.models.utils import MultiheadAttention as _MultiheadAttention
-from mmcls.models.utils import resize_pos_embed
+try:
+    from mmcls.models import VisionTransformer as _VisionTransformer
+    from mmcls.models.backbones.vision_transformer import \
+        TransformerEncoderLayer as _TransformerEncoderLayer
+    from mmcls.models.utils import MultiheadAttention as _MultiheadAttention
+    from mmcls.models.utils import resize_pos_embed
+except ImportError:
+    raise ImportError(f'MMClassification should be installed.')
 from mmcv.cnn import build_norm_layer
 from mmcv.cnn.bricks.registry import DROPOUT_LAYERS
 from mmcv.cnn.bricks.transformer import FFN
@@ -21,6 +24,10 @@ from ..builder import BACKBONES
 
 class TransformerEncoderLayer(_TransformerEncoderLayer):
     """Implements one encoder layer in Vision Transformer.
+
+    Since we need extra params, e.g. H, W, and shared relative position bias 
+    in the ``forward`` function, we rewrite the ``TransformerEncoderLayer``
+    in MMClassification.
 
     Args:
         embed_dims (int): The feature dimension
@@ -261,6 +268,9 @@ class MultiheadAttention(_MultiheadAttention):
 
 class RelativePositionBias(nn.Module):
     """Relative Position Embedding.
+    
+    This module creates the relative position bias for the window, whose size 
+    is specified by ``window_size``.
     
     Args:
         window_size (tuple): The size of window, in which to apply attention.
