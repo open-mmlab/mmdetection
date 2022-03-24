@@ -6,23 +6,41 @@ img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 image_size = (1024, 1024)
 
+file_client_args = dict(backend='disk')
+
+# Standard Scale Jittering (SSJ) resizes and crops an image 
+# with a resize range of 0.8 to 1.25 of the original image size.
 
 load_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', with_bbox=True, with_mask=True)
-]
-
-train_pipeline = [
-    dict(type='SimpleCopyPaste', output_size=image_size, ratio_range=(0.8, 1.25), max_paste_objects=100),
+    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
+    dict(
+        type='Resize',
+        img_scale=image_size,
+        ratio_range=(0.8, 1.25),
+        multiscale_mode='range',
+        keep_ratio=True),
+    dict(
+        type='RandomCrop',
+        crop_type='absolute_range',
+        crop_size=image_size,
+        recompute_bbox=True,
+        allow_negative_crop=True),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
     dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='Pad', size=image_size),
+]
+
+# Simple Copy-Paste (SCP) is a Strong Data Augmentation Method
+
+train_pipeline = [
+    dict(type='CopyPaste', max_paste_objects=100),
     dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size=image_size),  # padding to image_size leads 0.5+ mAP
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks']),
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(
         type='MultiScaleFlipAug',
         img_scale=(1333, 800),
@@ -37,6 +55,8 @@ test_pipeline = [
         ])
 ]
 
+
+# Use RepeatDataset to speed up training
 data = dict(
     samples_per_gpu=2,
     workers_per_gpu=2,
@@ -68,9 +88,9 @@ optimizer_config = dict(grad_clip=None)
 lr_config = dict(
     policy='step',
     warmup='linear',
-    warmup_iters=500,
-    warmup_ratio=0.067,
-    step=[81000, 85500, 87750])
+    warmup_iters=1000,
+    warmup_ratio=0.001,
+    step=[243000, 256500, 263250])
     
 checkpoint_config = dict(interval=6000)
-runner = dict(type="IterBasedRunner", max_iters=90000)
+runner = dict(type="IterBasedRunner", max_iters=270000)

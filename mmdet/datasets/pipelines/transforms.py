@@ -2742,32 +2742,22 @@ class YOLOXHSVRandomAug:
 
 
 @PIPELINES.register_module()
-class SimpleCopyPaste:
-    """Simple Copy-Paste is a Strong Data Augmentation Method for Instance
-    Segmentation The simple copy-paste transform steps are as follows:
-
-    1. The image_dest is resized keaping ratio and cropped and padded.
-    2. Randomly select an image_src, which is resized and cropped
-       and padded similarly.
-    3. Randomly select some objects from the image_src.
-    4. Paste those objects to image_dest directly, for image_dest
-       and image_src have the same size.
-    5. Update object masks of image_dest, for some origin objects
+class CopyPaste:
+    """Simple Copy-Paste is a Strong Data Augmentation Method
+       for Instance Segmentation
+    The simple copy-paste transform steps are as follows:
+    1. The destination image is already keeping ratio resized, cropped and padded.
+    2. Randomly select a source image, which is also already keeping ratio resized,
+       cropped and padded in a similar way as image_dst.
+    3. Randomly select some objects from the source image.
+    4. Paste these source objects to the destination image directly, for the source
+       and destination image have the same size.
+    5. Update object masks of the destination image, for some origin objects
        may be occluded.
-    6. Generate bboxes from the updated masks and filter some objects
+    6. Generate bboxes from the updated destination masks and filter some objects
        which are totally occluded, and adjust bboxes which are partly occluded.
-    7. Append selected bboxes, selected masks, and selected labels,
-       and update results.
-
+    7. Append selected source bboxes, masks, and labels.
     Args:
-        output_size (Sequence[int, int]): [height, width] of output image.
-            Default: [1024, 1024].
-        ratio_range (Sequence[float]): (min_ratio, max_ratio).
-            Default: [0.1, 2.0].
-        flip_ratio (float): The flipping probability.
-            Default: 0.5.
-        min_gt_bbox_wh (tuple[float]): The minimum width and height of bbox.
-            Default: (1e-2, 1e-2)
         max_paste_objects (int): The maximum number of pasted objects.
             Default: 100.
         bbox_occluded_thresh (int): The threshold of occluded bbox.
@@ -2776,27 +2766,17 @@ class SimpleCopyPaste:
             Default: 300.
     """
 
-    def __init__(
-        self,
-        output_size=[1024, 1024],
-        ratio_range=[0.1, 2.0],
-        flip_ratio=0.5,
-        min_gt_bbox_wh=(1e-2, 1e-2),
-        max_paste_objects=100,
-        bbox_occluded_thresh=10,
-        mask_occluded_thresh=300,
-    ):
-
-        self.output_size = output_size
-        self.ratio_range = ratio_range
-        self.flip_ratio = flip_ratio
-        self.min_gt_bbox_wh = min_gt_bbox_wh
+    def __init__(self,
+                 max_paste_objects=100,
+                 bbox_occluded_thresh=10,
+                 mask_occluded_thresh=300,
+                 ):
         self.max_paste_objects = max_paste_objects
         self.bbox_occluded_thresh = bbox_occluded_thresh
         self.mask_occluded_thresh = mask_occluded_thresh
 
     def get_indexes(self, dataset):
-        """Call function to collect indexes.
+        """Call function to collect indexes.s
 
         Args:
             dataset (:obj:`MultiImageMixDataset`): The dataset.
@@ -2815,81 +2795,11 @@ class SimpleCopyPaste:
         """
 
         assert 'mix_results' in results
-        assert len(results['mix_results']
-                   ) == 1, 'Copy-paste only support 2 images now !'
+        assert len(
+            results['mix_results']) == 1, 'Copy-paste only support 2 images now !'
 
-        dest_results = self._scale_jitter(results)
-        src_results = self._scale_jitter(results['mix_results'][0])
-        selected_results = self._select_object(src_results)
-        results = self._copy_paste(dest_results, selected_results)
-        return results
-
-    def _scale_jitter(self, results):
-        img = results['img']
-        bboxes = results['gt_bboxes']
-        labels = results['gt_labels']
-        masks = results['gt_masks']
-
-        # rescale image keeping ratio, bboxes, and masks
-        ratio = np.random.uniform(self.ratio_range[0], self.ratio_range[1])
-        h, w, _ = img.shape
-        h_new, w_new = int(self.output_size[0] * ratio), int(
-            self.output_size[1] * ratio)
-        ratio_rescaled = min(h_new / h, w_new / w)
-        rescaled_img = mmcv.imrescale(img, ratio_rescaled, return_scale=False)
-        h_rescaled, w_rescaled, _ = rescaled_img.shape
-        rescaled_bboxes = bboxes * ratio_rescaled
-        rescaled_masks = masks.rescale(ratio_rescaled)
-
-        # flip image, bboxes, and masks
-        if np.random.random() < self.flip_ratio:
-            rescaled_img = mmcv.imflip(rescaled_img, direction='horizontal')
-            rescaled_bboxes = self.bbox_flip(rescaled_bboxes,
-                                             rescaled_img.shape)
-            rescaled_masks = rescaled_masks.flip('horizontal')
-
-        # crop image, bboxes, and masks
-        x_offset = w_rescaled - self.output_size[1]
-        y_offset = h_rescaled - self.output_size[0]
-        x_offset = x_offset if x_offset > 0 else 0
-        y_offset = y_offset if y_offset > 0 else 0
-        x, y = int(np.random.uniform(0, x_offset)), int(
-            np.random.uniform(0, y_offset))
-        cropped_img = rescaled_img[y:y + self.output_size[0],
-                                   x:x + self.output_size[1], :]
-        h_cropped, w_cropped, _ = cropped_img.shape
-
-        offset = np.array([x, y, x, y], dtype=np.float32)
-        cropped_bboxes = rescaled_bboxes - offset
-        cropped_bboxes[:, 0::2] = np.clip(cropped_bboxes[:, 0::2], 0,
-                                          w_cropped)
-        cropped_bboxes[:, 1::2] = np.clip(cropped_bboxes[:, 1::2], 0,
-                                          h_cropped)
-        cropped_masks = rescaled_masks.crop(
-            np.array([x, y, x + w_cropped, y + h_cropped]))
-
-        # filter bboxes, labels and masks
-        w_filtered = cropped_bboxes[:, 2] - cropped_bboxes[:, 0]
-        h_filtered = cropped_bboxes[:, 3] - cropped_bboxes[:, 1]
-        filtered_inds = (w_filtered > self.min_gt_bbox_wh[0]) & (
-            h_filtered > self.min_gt_bbox_wh[1])
-        filtered_bboxes = cropped_bboxes[filtered_inds]
-        filtered_labels = labels[filtered_inds]
-        filtered_masks = self.get_bitmapmasks(
-            cropped_masks.masks[filtered_inds])
-
-        # pad image and masks
-        padded_img = mmcv.impad(
-            cropped_img, shape=self.output_size, pad_val=(100, 100, 100))
-        padded_masks = filtered_masks.pad(self.output_size)
-
-        # update results
-        results['img'] = padded_img
-        results['img_shape'] = padded_img.shape
-        results['gt_bboxes'] = filtered_bboxes
-        results['gt_labels'] = filtered_labels
-        results['gt_masks'] = padded_masks
-        return results
+        selected_results = self._select_object(results['mix_results'][0])
+        return self._copy_paste(results, selected_results)
 
     def _select_object(self, results):
         bboxes = results['gt_bboxes']
@@ -2897,59 +2807,55 @@ class SimpleCopyPaste:
         masks = results['gt_masks']
         max_paste_objects = min(bboxes.shape[0] + 1, self.max_paste_objects)
         num_paste_objects = np.random.randint(0, max_paste_objects)
-        selected_inds = np.random.choice(
-            bboxes.shape[0], size=num_paste_objects, replace=False)
+        selected_inds = np.random.choice(bboxes.shape[0], size=num_paste_objects, replace=False)
 
-        bboxes_selected = bboxes[selected_inds]
-        labels_selected = labels[selected_inds]
-        masks_selected = self.get_bitmapmasks(masks.masks[selected_inds])
+        selected_bboxes = bboxes[selected_inds]
+        selected_labels = labels[selected_inds]
+        selected_masks = self.get_bitmapmasks(masks.masks[selected_inds])
 
-        results['gt_bboxes'] = bboxes_selected
-        results['gt_labels'] = labels_selected
-        results['gt_masks'] = masks_selected
+        results['gt_bboxes'] = selected_bboxes
+        results['gt_labels'] = selected_labels
+        results['gt_masks'] = selected_masks
         return results
 
-    def _copy_paste(self, dest_results, selected_results):
-        dest_img = dest_results['img']
-        dest_bboxes = dest_results['gt_bboxes']
-        dest_labels = dest_results['gt_labels']
-        dest_masks = dest_results['gt_masks']
+    def _copy_paste(self, dst_results, src_results):
+        dst_img = dst_results['img']
+        dst_bboxes = dst_results['gt_bboxes']
+        dst_labels = dst_results['gt_labels']
+        dst_masks = dst_results['gt_masks']
 
-        selected_img = selected_results['img']
-        selected_bboxes = selected_results['gt_bboxes']
-        selected_labels = selected_results['gt_labels']
-        selected_masks = selected_results['gt_masks']
+        src_img = src_results['img']
+        src_bboxes = src_results['gt_bboxes']
+        src_labels = src_results['gt_labels']
+        src_masks = src_results['gt_masks']
 
-        # update masks and genetate bboxes from updated masks
-        compose_mask = np.where(np.any(selected_masks.masks, axis=0), 1, 0)
-        updated_dest_masks = self.get_updated_masks(dest_masks, compose_mask)
-        updated_dest_bboxes = self.get_bboxes_from_masks(updated_dest_masks)
+        if len(src_bboxes) == 0:
+            return dst_results
 
-        included_bboxes_inds = np.all(
-            np.abs((updated_dest_bboxes - dest_bboxes)) <=
-            self.bbox_occluded_thresh,
-            axis=-1)
-        included_masks_inds = updated_dest_masks.masks.sum(
-            axis=(1, 2)) > self.mask_occluded_thresh
+        # update masks and generate bboxes from updated masks
+        compose_mask = np.where(np.any(src_masks.masks, axis=0), 1, 0)
+        updated_dst_masks = self.get_updated_masks(dst_masks, compose_mask)
+        updated_dst_bboxes = updated_dst_masks.get_bboxes()
+        assert len(updated_dst_bboxes) == len(updated_dst_masks)
+
+        # filter some objects which are totally occluded
+        included_bboxes_inds = np.all(np.abs((updated_dst_bboxes - dst_bboxes)) <= self.bbox_occluded_thresh, axis=-1)
+        included_masks_inds = updated_dst_masks.masks.sum(axis=(1, 2)) > self.mask_occluded_thresh
         included_inds = included_bboxes_inds | included_masks_inds
 
-        included_img = dest_img * (1 - compose_mask[
-            ..., np.newaxis]) + selected_img * compose_mask[..., np.newaxis]
-        included_bboxes = np.concatenate(
-            [updated_dest_bboxes[included_inds], selected_bboxes])
-        included_labels = np.concatenate(
-            [dest_labels[included_inds], selected_labels])
+        # Paste source objects to destination image directly
+        included_img = dst_img * (1 - compose_mask[..., np.newaxis]) + src_img * compose_mask[..., np.newaxis]
+        included_bboxes = np.concatenate([updated_dst_bboxes[included_inds], src_bboxes])
+        included_labels = np.concatenate([dst_labels[included_inds], src_labels])
         included_masks = self.get_bitmapmasks(
-            np.concatenate([
-                updated_dest_masks.masks[included_inds], selected_masks.masks
-            ]))
+            np.concatenate([updated_dst_masks.masks[included_inds], src_masks.masks]))
 
-        dest_results['img'] = included_img
-        dest_results['gt_bboxes'] = included_bboxes
-        dest_results['gt_labels'] = included_labels
-        dest_results['gt_masks'] = included_masks
+        dst_results['img'] = included_img
+        dst_results['gt_bboxes'] = included_bboxes
+        dst_results['gt_labels'] = included_labels
+        dst_results['gt_masks'] = included_masks
 
-        return dest_results
+        return dst_results
 
     def get_updated_masks(self, masks, compose_mask):
         assert masks.masks.shape[-2:] == compose_mask.shape[-2:], \
@@ -2957,49 +2863,12 @@ class SimpleCopyPaste:
         masks.masks = np.where(compose_mask, 0, masks.masks)
         return masks
 
-    def get_bboxes_from_masks(self, masks):
-        """Convert mask Y to a bounding box, assumes 0 as background nonzero
-        object."""
-        yx = [np.nonzero(mask) for mask in masks.masks]
-        bboxes = [
-            [np.min(x), np.min(y), np.max(x),
-             np.max(y)] if len(y) > 0 else np.zeros(4, dtype=np.float32)
-            for y, x in yx
-        ]
-        bboxes = np.array(
-            bboxes, dtype=np.float32) if len(bboxes) > 0 else np.empty(
-                (0, 4), dtype=np.float32)
-        return bboxes
-
-    def get_bitmapmasks(self, masks_list):
+    def get_bitmapmasks(self, masks):
         from mmdet.core import BitmapMasks
-        masks_ndarray = np.array(masks_list)
-        return BitmapMasks(masks_ndarray, masks_ndarray.shape[1],
-                           masks_ndarray.shape[2])
-
-    def bbox_flip(self, bboxes, img_shape):
-        """Flip bboxes horizontally.
-
-        Args:
-            bboxes (numpy.ndarray): Bounding boxes, shape (..., 4*k)
-            img_shape (tuple[int]): Image shape (height, width)
-        Returns:
-            numpy.ndarray: Flipped bounding boxes.
-        """
-
-        assert bboxes.shape[-1] % 4 == 0
-        flipped = bboxes.copy()
-        w = img_shape[1]
-        flipped[..., 0::4] = w - bboxes[..., 2::4]
-        flipped[..., 2::4] = w - bboxes[..., 0::4]
-        return flipped
+        return BitmapMasks(masks, masks.shape[1], masks.shape[2])
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += f'output_size={self.output_size}, '
-        repr_str += f'ratio_range={self.ratio_range}, '
-        repr_str += f'flip_ratio={self.flip_ratio}, '
-        repr_str += f'min_gt_bbox_wh={self.min_gt_bbox_wh}, '
         repr_str += f'max_paste_objects={self.max_paste_objects}, '
         repr_str += f'bbox_occluded_thresh={self.bbox_occluded_thresh}, '
         repr_str += f'mask_occluded_thresh={self.mask_occluded_thresh}, '

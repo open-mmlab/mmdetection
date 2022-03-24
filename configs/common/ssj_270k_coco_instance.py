@@ -8,6 +8,8 @@ image_size = (1024, 1024)
 
 file_client_args = dict(backend='disk')
 
+# Standard Scale Jittering (SSJ) resizes and crops an image 
+# with a resize range of 0.8 to 1.25 of the original image size.
 train_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
@@ -74,9 +76,9 @@ optimizer_config = dict(grad_clip=None)
 lr_config = dict(
     policy='step',
     warmup='linear',
-    warmup_iters=500,
-    warmup_ratio=0.067,
-    step=[81000, 85500, 87750])
+    warmup_iters=1000,
+    warmup_ratio=0.001,
+    step=[243000, 256500, 263250])
     
 checkpoint_config = dict(interval=6000)
-runner = dict(type="IterBasedRunner", max_iters=90000)
+runner = dict(type="IterBasedRunner", max_iters=270000)
