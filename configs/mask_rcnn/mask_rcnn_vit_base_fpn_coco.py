@@ -15,8 +15,11 @@ model = dict(
         out_indices=(2, 5, 8, 11),
         init_cfg=dict(
             type='Pretrained',
-            checkpoint=
-            'ckpt/deit-base_3rdparty_pt-16xb64_in1k_20211124-6f40c188.pth')),
+            prefix='backbone.',
+            checkpoint='https://download.openmmlab.com/mmclassification/'
+            'v0/deit/deit-base_3rdparty_pt-16xb64_in1k_20211124-6f40c188.pth',
+        ),
+    ),
     neck=dict(
         type='FPN',
         in_channels=[768, 768, 768, 768],
