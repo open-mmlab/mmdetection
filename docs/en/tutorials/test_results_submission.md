@@ -6,7 +6,7 @@ The following sections introduce how to produce the prediction results of panopt
 
 ### Prerequisites
 
-- Download [COCO test dataset images](http://images.cocodataset.org/zips/test2017.zip), [testing image info](http://images.cocodataset.org/annotations/image_info_test2017.zip), and [panoptic train/val annotations](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip), then unzip them, put 'test2017' to `data/coco/`, put 'panoptic_val2017.json', 'image_info_test-dev2017.json' and 'image_info_test2017.json' to `data/coco/annotations/`.
+- Download [COCO test dataset images](http://images.cocodataset.org/zips/test2017.zip), [testing image info](http://images.cocodataset.org/annotations/image_info_test2017.zip), and [panoptic train/val annotations](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip), then unzip them, put 'test2017' to `data/coco/`, put json files and annotation files to `data/coco/annotations/`.
 
 - Run the following code to update category information in testing image info. Since the attribute `isthing` is missing in category information of 'image_info_test-dev2017.json', we need to update it with the category information in 'panoptic_val2017.json'.
 
@@ -14,9 +14,9 @@ The following sections introduce how to produce the prediction results of panopt
 python tools/misc/gen_coco_panoptic_test_info.py data/coco/annotations
 ```
 
-After completing the above preparations, your `data` directory structure should look like this:
+After completing the above preparations, your directory structure of `data` should be like this:
 
-```shell
+```text
 data
 `-- coco
     |-- annotations
@@ -32,7 +32,7 @@ data
 
 ### Inference on coco test-dev
 
-This script performs inference on `test2017`.
+Three ways to perform inference on `test2017`.
 
 ```shell
 # test with single gpu
