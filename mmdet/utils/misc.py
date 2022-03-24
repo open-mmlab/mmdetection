@@ -52,7 +52,13 @@ def update_data_root(cfg, logger=None):
         cfg (mmcv.Config): The model config need to modify
         logger (logging.Logger | str | None): the way to print msg
     """
-    if 'MMDET_DATASETS' not in os.environ:
+   assert isinstance(cfg, mmcv.Config), \
+        f'cfg got wrong type: {type(cfg)}, expected mmcv.Config'
+        
+    if 'MMDET_DATASETS'  in os.environ:
+         dst_root = os.environ['MMDET_DATASETS']
+         print_log(f'MMDET_DATASETS has been set to be {dst_root}. \
+                Using {dst_root} as data root.')
         return
     else:
         dst_root = os.environ['MMDET_DATASETS']
