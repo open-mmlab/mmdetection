@@ -918,7 +918,7 @@ def test_mosaic():
     results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
     results['gt_bboxes'] = gt_bboxes
     results['gt_bboxes_ignore'] = gt_bboxes_ignore
-    transform = dict(type='Mosaic', img_scale=(10, 12), prob=1.)
+    transform = dict(type='Mosaic', img_scale=(10, 12))
     mosaic_module = build_from_cfg(transform, PIPELINES)
 
     # test assertion for invalid mix_results
