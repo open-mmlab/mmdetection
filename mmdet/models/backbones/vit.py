@@ -4,6 +4,7 @@ import math
 import numpy as np
 import torch
 import torch.nn.functional as F
+
 try:
     from mmcls.models import VisionTransformer as _VisionTransformer
     from mmcls.models.backbones.vision_transformer import \
@@ -11,7 +12,7 @@ try:
     from mmcls.models.utils import MultiheadAttention as _MultiheadAttention
     from mmcls.models.utils import resize_pos_embed
 except ImportError:
-    raise ImportError(f'MMClassification should be installed.')
+    raise ImportError('MMClassification should be installed.')
 from mmcv.cnn import build_norm_layer
 from mmcv.cnn.bricks.registry import DROPOUT_LAYERS
 from mmcv.cnn.bricks.transformer import FFN
@@ -25,7 +26,7 @@ from ..builder import BACKBONES
 class TransformerEncoderLayer(_TransformerEncoderLayer):
     """Implements one encoder layer in Vision Transformer.
 
-    Since we need extra params, e.g. H, W, and shared relative position bias 
+    Since we need extra params, e.g. H, W, and shared relative position bias
     in the ``forward`` function, we rewrite the ``TransformerEncoderLayer``
     in MMClassification.
 
@@ -268,10 +269,10 @@ class MultiheadAttention(_MultiheadAttention):
 
 class RelativePositionBias(nn.Module):
     """Relative Position Embedding.
-    
-    This module creates the relative position bias for the window, whose size 
+
+    This module creates the relative position bias for the window, whose size
     is specified by ``window_size``.
-    
+
     Args:
         window_size (tuple): The size of window, in which to apply attention.
         num_heads (int): Number of heads to apply attention.
@@ -307,7 +308,7 @@ class RelativePositionBias(nn.Module):
         relative_position_index[0:, 0] = self.num_relative_distance - 2
         relative_position_index[0, 0] = self.num_relative_distance - 1
 
-        self.register_buffer("relative_position_index",
+        self.register_buffer('relative_position_index',
                              relative_position_index)
 
     def forward(self):
