@@ -60,9 +60,9 @@ class ClassAwareSampler(Sampler):
         assert num_sample_class > 0 and isinstance(num_sample_class, int)
         self.num_sample_class = num_sample_class
         # Get per-label image list from dataset
-        assert hasattr(dataset, 'get_label_dict'), \
-            'dataset must have `get_label_dict` function'
-        self.class_dict = dataset.get_label_dict()
+        assert hasattr(dataset, 'get_index_dict'), \
+            'dataset must have `get_index_dict` function'
+        self.class_dict = dataset.get_index_dict()
 
         self.num_samples = int(
             math.ceil(

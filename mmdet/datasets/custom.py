@@ -285,9 +285,9 @@ class CustomDataset(Dataset):
 
         return class_names
 
-    def get_label_dict(self):
-        """Get per-label image list in the current dataset, which will be used
-        in :class:`ClassAwareSampler`.
+    def get_index_dict(self):
+        """Get a dict with class as key and img_ids as values, which will be
+        used in :class:`ClassAwareSampler`.
 
         Returns:
             dict[list]: A ddict of per-label image list,
