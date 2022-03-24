@@ -691,8 +691,8 @@ def test_polygon_mask_iter():
 
 def test_mask2bbox():
     # no instance
-    masks = torch.zeros((1, 20, 15), dtype=torch.bool).float()
-    bboxes_empty_gt = torch.tensor([[0, 0, 0, 0]])
+    masks = torch.zeros((1, 20, 15), dtype=torch.bool)
+    bboxes_empty_gt = torch.tensor([[0, 0, 0, 0]]).float()
     bboxes = mask2bbox(masks)
     assert torch.allclose(bboxes_empty_gt.float(), bboxes)
 
