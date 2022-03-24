@@ -95,9 +95,13 @@ class OpenImagesDataset(CustomDataset):
         self.image_level_ann_file = image_level_ann_file
         self.load_image_level_labels = load_image_level_labels
         if get_supercategory is True:
-            assert hierarchy_file is not None and \
-                   hierarchy_file.endswith('json') or \
-                   hierarchy_file.endswith('np')
+            assert hierarchy_file is not None
+            if self.__class__ == OpenImagesDataset:
+                assert hierarchy_file.endswith('json')
+            elif self.__class__ == OpenImagesChallengeDataset:
+                assert hierarchy_file.endswith('np')
+            else:
+                raise NotImplementedError
             if hasattr(self.file_client, 'get_local_path'):
                 with self.file_client.get_local_path(
                         hierarchy_file) as local_path:
@@ -644,7 +648,7 @@ class OpenImagesDataset(CustomDataset):
 
         # load metas from file
         if self.get_metas and self.load_from_file:
-            assert self.mmeta_file.endswith(
+            assert self.meta_file.endswith(
                 'pkl'), 'File name must be pkl suffix'
             self.get_meta_from_file(self.meta_file)
         # load metas from pipeline
