@@ -2743,19 +2743,21 @@ class YOLOXHSVRandomAug:
 
 @PIPELINES.register_module()
 class CopyPaste:
-    """Simple Copy-Paste is a Strong Data Augmentation Method
-       for Instance Segmentation
-    The simple copy-paste transform steps are as follows:
-    1. The destination image is already keeping ratio resized, cropped and padded.
-    2. Randomly select a source image, which is also already keeping ratio resized,
-       cropped and padded in a similar way as image_dst.
+    """Simple Copy-Paste is a Strong Data Augmentation Method for Instance
+    Segmentation The simple copy-paste transform steps are as follows:
+
+    1. The destination image is already keeping ratio resized,
+       cropped and padded.
+    2. Randomly select a source image, which is also already keeping ratio
+       resized, cropped and padded in a similar way as image_dst.
     3. Randomly select some objects from the source image.
-    4. Paste these source objects to the destination image directly, for the source
-       and destination image have the same size.
+    4. Paste these source objects to the destination image directly,
+       for the source and destination image have the same size.
     5. Update object masks of the destination image, for some origin objects
        may be occluded.
-    6. Generate bboxes from the updated destination masks and filter some objects
-       which are totally occluded, and adjust bboxes which are partly occluded.
+    6. Generate bboxes from the updated destination masks and
+       filter some objects which are totally occluded, and adjust bboxes
+       which are partly occluded.
     7. Append selected source bboxes, masks, and labels.
     Args:
         max_paste_objects (int): The maximum number of pasted objects.
@@ -2766,17 +2768,18 @@ class CopyPaste:
             Default: 300.
     """
 
-    def __init__(self,
-                 max_paste_objects=100,
-                 bbox_occluded_thresh=10,
-                 mask_occluded_thresh=300,
-                 ):
+    def __init__(
+        self,
+        max_paste_objects=100,
+        bbox_occluded_thresh=10,
+        mask_occluded_thresh=300,
+    ):
         self.max_paste_objects = max_paste_objects
         self.bbox_occluded_thresh = bbox_occluded_thresh
         self.mask_occluded_thresh = mask_occluded_thresh
 
     def get_indexes(self, dataset):
-        """Call function to collect indexes.s
+        """Call function to collect indexes.s.
 
         Args:
             dataset (:obj:`MultiImageMixDataset`): The dataset.
@@ -2795,8 +2798,8 @@ class CopyPaste:
         """
 
         assert 'mix_results' in results
-        assert len(
-            results['mix_results']) == 1, 'Copy-paste only support 2 images now !'
+        assert len(results['mix_results']
+                   ) == 1, 'Copy-paste only support 2 images now !'
 
         selected_results = self._select_object(results['mix_results'][0])
         return self._copy_paste(results, selected_results)
@@ -2807,7 +2810,8 @@ class CopyPaste:
         masks = results['gt_masks']
         max_paste_objects = min(bboxes.shape[0] + 1, self.max_paste_objects)
         num_paste_objects = np.random.randint(0, max_paste_objects)
-        selected_inds = np.random.choice(bboxes.shape[0], size=num_paste_objects, replace=False)
+        selected_inds = np.random.choice(
+            bboxes.shape[0], size=num_paste_objects, replace=False)
 
         selected_bboxes = bboxes[selected_inds]
         selected_labels = labels[selected_inds]
@@ -2839,16 +2843,24 @@ class CopyPaste:
         assert len(updated_dst_bboxes) == len(updated_dst_masks)
 
         # filter some objects which are totally occluded
-        included_bboxes_inds = np.all(np.abs((updated_dst_bboxes - dst_bboxes)) <= self.bbox_occluded_thresh, axis=-1)
-        included_masks_inds = updated_dst_masks.masks.sum(axis=(1, 2)) > self.mask_occluded_thresh
+        included_bboxes_inds = np.all(
+            np.abs((updated_dst_bboxes - dst_bboxes)) <=
+            self.bbox_occluded_thresh,
+            axis=-1)
+        included_masks_inds = updated_dst_masks.masks.sum(
+            axis=(1, 2)) > self.mask_occluded_thresh
         included_inds = included_bboxes_inds | included_masks_inds
 
         # Paste source objects to destination image directly
-        included_img = dst_img * (1 - compose_mask[..., np.newaxis]) + src_img * compose_mask[..., np.newaxis]
-        included_bboxes = np.concatenate([updated_dst_bboxes[included_inds], src_bboxes])
-        included_labels = np.concatenate([dst_labels[included_inds], src_labels])
+        included_img = dst_img * (1 - compose_mask[..., np.newaxis]
+                                  ) + src_img * compose_mask[..., np.newaxis]
+        included_bboxes = np.concatenate(
+            [updated_dst_bboxes[included_inds], src_bboxes])
+        included_labels = np.concatenate(
+            [dst_labels[included_inds], src_labels])
         included_masks = self.get_bitmapmasks(
-            np.concatenate([updated_dst_masks.masks[included_inds], src_masks.masks]))
+            np.concatenate(
+                [updated_dst_masks.masks[included_inds], src_masks.masks]))
 
         dst_results['img'] = included_img
         dst_results['gt_bboxes'] = included_bboxes
