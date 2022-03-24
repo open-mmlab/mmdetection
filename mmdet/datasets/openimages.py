@@ -96,9 +96,9 @@ class OpenImagesDataset(CustomDataset):
         self.load_image_level_labels = load_image_level_labels
         if get_supercategory is True:
             assert hierarchy_file is not None
-            if self.__class__ == OpenImagesDataset:
+            if self.__class__.__name__ == 'OpenImagesDataset':
                 assert hierarchy_file.endswith('json')
-            elif self.__class__ == OpenImagesChallengeDataset:
+            elif self.__class__.__name__ == 'OpenImagesChallengeDataset':
                 assert hierarchy_file.endswith('np')
             else:
                 raise NotImplementedError
