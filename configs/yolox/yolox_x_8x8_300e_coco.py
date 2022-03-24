@@ -7,5 +7,6 @@ model = dict(
         in_channels=[320, 640, 1280], out_channels=320, num_csp_blocks=4),
     bbox_head=dict(in_channels=320, feat_channels=320))
 
-# This is for automatically scaling LR. USER SHOULD NOT CHANGE THIS VALUE.
+# NOTE: This variable is for automatically scaling LR,
+# USER SHOULD NOT CHANGE THIS VALUE.
 default_batch_size = 64  # (8 GPUs) x (8 samples per GPU)
