@@ -311,6 +311,7 @@ class EfficientNet(BaseModule):
                 norm_cfg=self.norm_cfg,
                 act_cfg=self.act_cfg))
         self.make_layer()
+        # Avoid building unused layers in mmdetection.
         if len(self.layers) < max(self.out_indices) + 1:
             self.layers.append(
                 ConvModule(
@@ -335,6 +336,7 @@ class EfficientNet(BaseModule):
         ]  # stochastic depth decay rule
 
         for i, layer_cfg in enumerate(layer_setting):
+            # Avoid building unused layers in mmdetection.
             if i > max(self.out_indices) - 1:
                 break
             layer = []
@@ -347,6 +349,8 @@ class EfficientNet(BaseModule):
                 if se_ratio <= 0:
                     se_cfg = None
                 else:
+                    # In mmdetection, the `divisor` is deleted to align
+                    # the logic of SELayer with mmcls.
                     se_cfg = dict(
                         channels=mid_channels,
                         ratio=expand_ratio * se_ratio,
@@ -359,6 +363,8 @@ class EfficientNet(BaseModule):
                         with_residual = True
                     mid_channels = int(self.in_channels * expand_ratio)
                     if se_cfg is not None:
+                        # In mmdetection, the `divisor` is deleted to align
+                        # the logic of SELayer with mmcls.
                         se_cfg = dict(
                             channels=mid_channels,
                             ratio=se_ratio * expand_ratio,
@@ -374,12 +380,14 @@ class EfficientNet(BaseModule):
                         kernel_size=kernel_size,
                         stride=stride,
                         se_cfg=se_cfg,
-                        with_expand_conv=(mid_channels != self.in_channels),
                         conv_cfg=self.conv_cfg,
                         norm_cfg=self.norm_cfg,
                         act_cfg=self.act_cfg,
                         drop_path_rate=dpr[block_idx],
-                        with_cp=self.with_cp))
+                        with_cp=self.with_cp,
+                        # In mmdetection, `with_expand_conv` is set to align
+                        # the logic of InvertedResidual with mmcls.
+                        with_expand_conv=(mid_channels != self.in_channels)))
                 self.in_channels = out_channels
                 block_idx += 1
             self.layers.append(Sequential(*layer))

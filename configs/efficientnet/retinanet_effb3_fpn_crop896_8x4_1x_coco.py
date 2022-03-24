@@ -29,21 +29,23 @@ model = dict(
     bbox_head=dict(type='RetinaSepBNHead', num_ins=5, norm_cfg=norm_cfg),
     # training and testing settings
     train_cfg=dict(assigner=dict(neg_iou_thr=0.5)))
+
 # dataset settings
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+img_size = (896, 896)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='Resize',
-        img_scale=(896, 896),
+        img_scale=img_size,
         ratio_range=(0.8, 1.2),
         keep_ratio=True),
-    dict(type='RandomCrop', crop_size=(896, 896)),
+    dict(type='RandomCrop', crop_size=img_size),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size=(896, 896)),
+    dict(type='Pad', size=img_size),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
 ]
@@ -51,13 +53,13 @@ test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(896, 896),
+        img_scale=img_size,
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
             dict(type='RandomFlip'),
             dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size=(896, 896)),
+            dict(type='Pad', size=img_size),
             dict(type='ImageToTensor', keys=['img']),
             dict(type='Collect', keys=['img']),
         ])
@@ -85,3 +87,7 @@ lr_config = dict(
     step=[8, 11])
 # runtime settings
 runner = dict(type='EpochBasedRunner', max_epochs=12)
+
+# NOTE: This variable is for automatically scaling LR,
+# USER SHOULD NOT CHANGE THIS VALUE.
+default_batch_size = 32  # (8 GPUs) x (4 samples per GPU)
