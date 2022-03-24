@@ -2,23 +2,37 @@
 
 ## Panoptic segmentation test results submission
 
-The following sections introduce how to produce the prediction results of panoptic segmentation models on the COCO test-dev set and submit the predictions to [COCO's evaluation server](https://competitions.codalab.org/competitions/19507).
+The following sections introduce how to produce the prediction results of panoptic segmentation models on the COCO test-dev set and submit the predictions to [COCO evaluation server](https://competitions.codalab.org/competitions/19507).
 
 ### Prerequisites
 
 - Download [COCO test dataset images](http://images.cocodataset.org/zips/test2017.zip), [testing image info](http://images.cocodataset.org/annotations/image_info_test2017.zip), and [panoptic train/val annotations](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip), then unzip them, put 'test2017' to `data/coco/`, put 'panoptic_val2017.json', 'image_info_test-dev2017.json' and 'image_info_test2017.json' to `data/coco/annotations/`.
 
-- Run following code to update category information in testing image info. Since the attribute `isthing` is missing in category information of 'image_info_test-dev2017.json', we need to update it with the category information in 'panoptic_val2017.json'.
+- Run the following code to update category information in testing image info. Since the attribute `isthing` is missing in category information of 'image_info_test-dev2017.json', we need to update it with the category information in 'panoptic_val2017.json'.
 
 ```shell
-python tools/misc/update_coco_panoptic_test_image_info.py data/coco/annotations
+python tools/misc/gen_coco_panoptic_test_info.py data/coco/annotations
 ```
 
-- A checkopint and a config file of panoptic model in mmdetection. Such as the [config file](https://download.openmmlab.com/mmdetection/v2.0/maskformer/maskformer_r50_mstrain_16x1_75e_coco/maskformer_r50_mstrain_16x1_75e_coco.py) of maskformer_r50 and its [checkpoint](https://download.openmmlab.com/mmdetection/v2.0/maskformer/maskformer_r50_mstrain_16x1_75e_coco/maskformer_r50_mstrain_16x1_75e_coco_20220221_141956-bc2699cb.pth).
+After completing the above preparations, your `data` directory structure should look like this:
+
+```shell
+data
+`-- coco
+    |-- annotations
+    |   |-- image_info_test-dev2017.json
+    |   |-- image_info_test2017.json
+    |   |-- panoptic_image_info_test-dev2017.json
+    |   |-- panoptic_train2017
+    |   |-- panoptic_train2017.json
+    |   |-- panoptic_val2017
+    |   `-- panoptic_val2017.json
+    `-- test2017
+```
 
 ### Inference on coco test-dev
 
-Example
+This script performs inference on `test2017`.
 
 ```shell
 # test with single gpu
@@ -50,16 +64,21 @@ GPUS=8 tools/slurm_test.sh \
 
 ```
 
+Example
+
+Suppose we perform inference on `test2017` with maskformer-r50.
+
+```shell
+# test with single gpu
+CUDA_VISIBLE_DEVICES=0 python tools/test.py \
+    configs/maskformer/maskformer_r50_mstrain_16x1_75e_coco.py \
+    checkpoints/maskformer_r50_mstrain_16x1_75e_coco_20220221_141956-bc2699cb.pth \
+    --format-only \
+    --cfg-options data.test.ann_file=data/coco/annotations/panoptic_image_info_test-dev2017.json data.test.img_prefix=data/coco/test2017 \
+    --eval-options jsonfile_prefix=work_dirs/maskformer/results
+
+```
+
 ### Rename files and zip results
 
 After inference, we will get panoptic segmentation results (a json file and a directory where the masks are stored) in `WORK_DIR`. We rename them according to naming convention described on [COCO's Website](https://cocodataset.org/#upload). Finally, we need to compress the json and the directory where the masks are stored into a zip file, and rename the zip file according to the naming convention. Note that the zip file should **directly** contains the above two files.
-
-Example
-
-```shell
-# In WORK_DIR, we have a directory (panoptic) and a json file (results.panoptic.json) of maskformer_r50
-cd ${WORK_DIR}
-mv ./panoptic ./panoptic_test_dev2017_maskformer-r50_results
-mv ./results.panoptic.json ./panoptic_test_dev2017_maskformer-r50_results.json
-zip panoptic_test_dev2017_maskformer-r50_results.zip -ur panoptic_test_dev2017_maskformer-r50_results panoptic_test_dev2017_maskformer-r50_results.json
-```
