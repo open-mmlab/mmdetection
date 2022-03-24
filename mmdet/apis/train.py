@@ -85,8 +85,9 @@ def auto_scale_lr(cfg, distributed, logger):
     # default batch size of pre-train model
     default_batch_size = cfg.get('default_batch_size', None)
     if default_batch_size is None:
-        logger.warning('Can not find "default_batch_size" in your config file. '
-                       'Please update all the config files to mmdet >= 2.23.0. '
+        logger.warning('Can not find "default_batch_size" in your '
+                       'configuration file. Please update all the '
+                       'configuration files to mmdet >= 2.23.0. '
                        'Disable automatic scaling of learning rate.')
         return
 
