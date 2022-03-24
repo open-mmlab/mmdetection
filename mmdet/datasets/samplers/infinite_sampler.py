@@ -6,6 +6,8 @@ import torch
 from mmcv.runner import get_dist_info
 from torch.utils.data.sampler import Sampler
 
+from mmdet.core.utils import sync_random_seed
+
 
 class InfiniteGroupBatchSampler(Sampler):
     """Similar to `BatchSampler` warping a `GroupSampler. It is designed for
@@ -48,7 +50,13 @@ class InfiniteGroupBatchSampler(Sampler):
         self.world_size = world_size
         self.dataset = dataset
         self.batch_size = batch_size
-        self.seed = seed if seed is not None else 0
+        # In distributed sampling, different ranks should sample
+        # non-overlapped data in the dataset. Therefore, this function
+        # is used to make sure that each rank shuffles the data indices
+        # in the same order based on the same seed. Then different ranks
+        # could use different indices to select non-overlapped data from the
+        # same data list.
+        self.seed = sync_random_seed(seed)
         self.shuffle = shuffle
 
         assert hasattr(self.dataset, 'flag')
@@ -133,7 +141,13 @@ class InfiniteBatchSampler(Sampler):
         self.world_size = world_size
         self.dataset = dataset
         self.batch_size = batch_size
-        self.seed = seed if seed is not None else 0
+        # In distributed sampling, different ranks should sample
+        # non-overlapped data in the dataset. Therefore, this function
+        # is used to make sure that each rank shuffles the data indices
+        # in the same order based on the same seed. Then different ranks
+        # could use different indices to select non-overlapped data from the
+        # same data list.
+        self.seed = sync_random_seed(seed)
         self.shuffle = shuffle
         self.size = len(dataset)
         self.indices = self._indices_of_rank()

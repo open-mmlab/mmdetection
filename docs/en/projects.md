@@ -50,7 +50,6 @@ Methods already supported and maintained by MMDetection are not listed.
 - A Ranking-based, Balanced Loss Function Unifying Classification and Localisation in Object Detection, NeurIPS2020 [[paper]](https://arxiv.org/abs/2009.13592)[[github]](https://github.com/kemaloksuz/aLRPLoss)
 - RelationNet++: Bridging Visual Representations for Object Detection via Transformer Decoder, NeurIPS2020 [[paper]](https://arxiv.org/abs/2010.15831)[[github]](https://github.com/microsoft/RelationNet2)
 - Generalized Focal Loss V2: Learning Reliable Localization Quality Estimation for Dense Object Detection, CVPR2021[[paper]](https://arxiv.org/abs/2011.12885)[[github]](https://github.com/implus/GFocalV2)
-- Instances as Queries, ICCV2021[[paper]](http://arxiv.org/abs/2105.01928)[[github]](https://github.com/hustvl/QueryInst)
 - Swin Transformer: Hierarchical Vision Transformer using Shifted Windows, ICCV2021[[paper]](https://arxiv.org/abs/2103.14030)[[github]](https://github.com/SwinTransformer/)
 - Focal Transformer: Focal Self-attention for Local-Global Interactions in Vision Transformers, NeurIPS2021[[paper]](https://arxiv.org/abs/2107.00641)[[github]](https://github.com/microsoft/Focal-Transformer)
 - End-to-End Semi-Supervised Object Detection with Soft Teacher, ICCV2021[[paper]](https://arxiv.org/abs/2106.09018)[[github]](https://github.com/microsoft/SoftTeacher)
