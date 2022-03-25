@@ -96,14 +96,18 @@ class Objects365V1Dataset(CocoDataset):
         """
 
         self.coco = COCO(ann_file)
+        # train and val cat_ids are not match, need sorted before get cat_ids.
+        cats = self.coco.cats
+        sorted_cats = {i: cats[i] for i in sorted(cats)}
+        self.coco.cats = sorted_cats
+
         # The order of returned `cat_ids` will not
         # change with the order of the CLASSES
         self.cat_ids = self.coco.get_cat_ids(cat_names=self.CLASSES)
 
         # 'categories' list in objects365_train.json an objects365_val.
         # json is inconsistent.
-        self.cat2label = \
-            {cat_id: i for i, cat_id in enumerate(sorted(self.cat_ids))}
+        self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
         self.img_ids = self.coco.get_img_ids()
         data_infos = []
         total_ann_ids = []
