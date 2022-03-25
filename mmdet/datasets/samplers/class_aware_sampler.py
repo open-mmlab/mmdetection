@@ -5,6 +5,8 @@ import torch
 from mmcv.runner import get_dist_info
 from torch.utils.data import Sampler
 
+from mmdet.core.utils import sync_random_seed
+
 
 class ClassAwareSampler(Sampler):
     r"""Sampler that restricts data loading to the label of the dataset.
@@ -54,30 +56,33 @@ class ClassAwareSampler(Sampler):
         self.samples_per_gpu = samples_per_gpu
         self.rank = rank
         self.epoch = 0
-        self.seed = seed if seed is not None else 0
+        # Must be the same across all workers. If None, will use a
+        # random seed shared among workers
+        # (require synchronization among all workers)
+        self.seed = sync_random_seed(seed)
 
         # The number of samples taken from each per-label list
         assert num_sample_class > 0 and isinstance(num_sample_class, int)
         self.num_sample_class = num_sample_class
         # Get per-label image list from dataset
-        assert hasattr(dataset, 'get_index_dict'), \
-            'dataset must have `get_index_dict` function'
-        self.class_dict = dataset.get_index_dict()
+        assert hasattr(dataset, 'get_cat2imgs'), \
+            'dataset must have `get_cat2imgs` function'
+        self.cat_dict = dataset.get_cat2imgs()
 
         self.num_samples = int(
             math.ceil(
                 len(self.dataset) * 1.0 / self.num_replicas /
                 self.samples_per_gpu)) * self.samples_per_gpu
         self.total_size = self.num_samples * self.num_replicas
-        self.class_num = len(self.class_dict.keys())
-        self.class_num_list = [
-            len(self.class_dict[i]) for i in range(self.class_num)
+        self.cat_num = len(self.cat_dict.keys())
+        self.cat_num_list = [
+            len(self.cat_dict[i]) for i in range(self.cat_num)
         ]
         # filter labels without images
-        self.class_index = [
-            i for i, length in enumerate(self.class_num_list) if length != 0
+        self.cat_index = [
+            i for i, length in enumerate(self.cat_num_list) if length != 0
         ]
-        self.class_num = len(self.class_index)
+        self.cat_num = len(self.cat_index)
 
     def __iter__(self):
         # deterministically shuffle based on epoch
@@ -85,14 +90,13 @@ class ClassAwareSampler(Sampler):
         g.manual_seed(self.epoch + self.seed)
 
         # initialize label list
-        label_iter_list = RandomCycleIter(self.class_index, generator=g)
+        label_iter_list = RandomCycleIter(self.cat_index, generator=g)
         # initialize each per-label image list
         data_iter_dict = dict()
-        for i in self.class_index:
-            data_iter_dict[i] = RandomCycleIter(
-                self.class_dict[i], generator=g)
+        for i in self.cat_index:
+            data_iter_dict[i] = RandomCycleIter(self.cat_dict[i], generator=g)
 
-        def gen_class_num_indices(cls_list, data_dict, num_sample_cls):
+        def gen_cat_num_indices(cls_list, data_dict, num_sample_cls):
             id_indices = []
             for _ in range(len(cls_list)):
                 cls_idx = next(cls_list)
@@ -103,12 +107,12 @@ class ClassAwareSampler(Sampler):
 
         # deterministically shuffle based on epoch
         num_bins = int(
-            math.ceil(self.total_size * 1.0 / self.class_num /
+            math.ceil(self.total_size * 1.0 / self.cat_num /
                       self.num_sample_class))
         indices = []
         for i in range(num_bins):
-            indices += gen_class_num_indices(label_iter_list, data_iter_dict,
-                                             self.num_sample_class)
+            indices += gen_cat_num_indices(label_iter_list, data_iter_dict,
+                                           self.num_sample_class)
 
         # fix extra samples to make it evenly divisible
         if len(indices) >= self.total_size:

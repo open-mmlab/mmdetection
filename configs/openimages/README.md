@@ -115,12 +115,9 @@ Open Images v6, but the test images are different.
 You can also download the annotations from [official website](https://storage.googleapis.com/openimages/web/challenge2019_downloads.html),
 and set data.train.type=OpenImagesDataset, data.val.type=OpenImagesDataset, and data.test.type=OpenImagesDataset in the config
 3. If users do not want to use `validation-annotations-human-imagelabels-boxable.csv` and `challenge-2019-validation-detection-human-imagelabels.csv`
-users can set `data.val.load_image_level_labels=False` and `data.test.load_image_level_labels=False` in the config. Loading image-levels label is the
-Open Images [evaluation metric](https://storage.googleapis.com/openimages/web/evaluation.html). If the images are annotated with positive image-level labels, indicating certain object classes are present, and with negative image-level labels, indicating certain classes are absent.
-All other classes are unannotated.
-
-
-
+users can set `data.val.load_image_level_labels=False` and `data.test.load_image_level_labels=False` in the config.
+Please note that loading image-levels label is the default of Open Images evaluation metric.
+More details please refer to the [official website](https://storage.googleapis.com/openimages/web/evaluation.html)
 
 ## Results and Models
 

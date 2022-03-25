@@ -106,8 +106,8 @@ def train_detector(model,
             seed=cfg.seed,
             runner_type=runner_type,
             persistent_workers=cfg.data.get('persistent_workers', False),
-            use_class_aware_sampler=cfg.data.get('use_class_aware_sampler',
-                                                 None)) for ds in dataset
+            class_aware_sampler=cfg.data.get('class_aware_sampler', None))
+        for ds in dataset
     ]
 
     # put model on gpus
