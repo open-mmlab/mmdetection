@@ -79,7 +79,7 @@ def _expand_onehot_labels(labels, label_weights, label_channels, ignore_index):
         bin_label_weights = label_weights.view(-1, 1).repeat(1, label_channels)
         bin_label_weights *= valid_mask
 
-    return bin_labels, bin_label_weights
+    return bin_labels, bin_label_weights, valid_mask
 
 
 def binary_cross_entropy(pred,
@@ -116,14 +116,9 @@ def binary_cross_entropy(pred,
     # The default value of ignore_index is the same as F.cross_entropy
     ignore_index = -100 if ignore_index is None else ignore_index
 
-    # average loss over non-ignored elements
-    if (avg_factor is None) and avg_non_ignore and reduction == 'mean':
-        avg_factor = label.numel() - ((label >= 0) &
-                                      (label == ignore_index)).sum().item()
-
     if pred.dim() != label.dim():
-        label, weight = _expand_onehot_labels(label, weight, pred.size(-1),
-                                              ignore_index)
+        label, weight, valid_mask = _expand_onehot_labels(
+            label, weight, pred.size(-1), ignore_index)
     else:
         # should mask out the ignored elements
         valid_mask = ((label >= 0) & (label != ignore_index)).float()
@@ -131,6 +126,10 @@ def binary_cross_entropy(pred,
             weight *= valid_mask
         else:
             weight = valid_mask
+
+    # average loss over non-ignored elements
+    if (avg_factor is None) and avg_non_ignore and reduction == 'mean':
+        avg_factor = valid_mask.sum().item()
 
     # weighted element-wise losses
     weight = weight.float()
