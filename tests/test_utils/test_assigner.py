@@ -620,13 +620,11 @@ def test_mask_hungarian_match_assigner():
     assert (assign_result.gt_inds > 0).sum() == gt_labels.size(0)
     assert (assign_result.labels > -1).sum() == gt_labels.size(0)
 
-    # test with mask ce mode
+    # test with ce mode of CrossEntropyLossCost which is not supported yet
     assigner_cfg = dict(
         cls_cost=dict(type='ClassificationCost', weight=0.0),
         mask_cost=dict(
             type='CrossEntropyLossCost', weight=1.0, use_sigmoid=False),
         dice_cost=dict(type='DiceCost', weight=0.0, pred_act=True, eps=1.0))
-    self = MaskHungarianAssigner(**assigner_cfg)
-    with pytest.raises(NotImplementedError):
-        assign_result = self.assign(cls_pred, mask_pred, gt_labels, gt_masks,
-                                    img_meta)
+    with pytest.raises(AssertionError):
+        self = MaskHungarianAssigner(**assigner_cfg)
