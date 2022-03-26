@@ -626,7 +626,5 @@ def test_mask_hungarian_match_assigner():
         mask_cost=dict(
             type='CrossEntropyLossCost', weight=1.0, use_sigmoid=False),
         dice_cost=dict(type='DiceCost', weight=0.0, pred_act=True, eps=1.0))
-    self = MaskHungarianAssigner(**assigner_cfg)
-    with pytest.raises(NotImplementedError):
-        assign_result = self.assign(cls_pred, mask_pred, gt_labels, gt_masks,
-                                    img_meta)
+    with pytest.raises(AssertionError):
+        self = MaskHungarianAssigner(**assigner_cfg)
