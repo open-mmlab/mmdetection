@@ -457,8 +457,20 @@ class CocoPanopticDataset(CocoDataset):
         different data types. This method will automatically recognize
         the type, and dump them to json files.
 
+        .. code-block:: none
+
+            [
+                {
+                    'pan_results': np.array, # shape (h, w)
+                    # ins_results which includes bboxes and RLE encoded masks
+                    # is optional.
+                    'ins_results': (list[np.array], list[list[str]])
+                },
+                ...
+            ]
+
         Args:
-            results (dict): Testing results of the dataset.
+            results (list[dict]): Testing results of the dataset.
             outfile_prefix (str): The filename prefix of the json files. If the
                 prefix is "somepath/xxx", the json files will be named
                 "somepath/xxx.panoptic.json", "somepath/xxx.bbox.json",
@@ -597,6 +609,7 @@ class CocoPanopticDataset(CocoDataset):
         if 'PQ' in metrics:
             eval_pan_results = self.evaluate_pan_json(
                 result_files, outfile_prefix, logger, classwise, nproc=nproc)
+
             eval_results.update(eval_pan_results)
             metrics.remove('PQ')
 
@@ -611,11 +624,13 @@ class CocoPanopticDataset(CocoDataset):
                 'shuold not be None'
 
             coco_gt = COCO(self.ins_ann_file)
+            panoptic_cat_ids = self.cat_ids
             self.cat_ids = coco_gt.get_cat_ids(cat_names=self.THING_CLASSES)
 
             eval_ins_results = self.evaluate_det_segm(results, result_files,
                                                       coco_gt, metrics, logger,
                                                       classwise, **kwargs)
+            self.cat_ids = panoptic_cat_ids
             eval_results.update(eval_ins_results)
 
         if tmp_dir is not None:
