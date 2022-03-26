@@ -160,7 +160,8 @@ class SimOTAAssigner(BaseAssigner):
         cls_cost = F.binary_cross_entropy(
             valid_pred_scores.to(dtype=torch.float32).sqrt_(),
             gt_onehot_label,
-            reduction='none').sum(-1)
+            reduction='none',
+        ).sum(-1)
         cls_cost.to(dtype=valid_pred_scores.dtype)
 
         cost_matrix = (
