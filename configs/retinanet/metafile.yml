@@ -26,7 +26,7 @@ Models:
       Training Memory (GB): 8.0
       Training Resources: 1x RTX2080Ti GPUs
       inference time (ms/im):
-        - value: 114.94
+        - value:
           hardware: RTX2080Ti
           backend: PyTorch
           batch size: 8
@@ -38,7 +38,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 32.4
-    Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_caffe_fpn_1x_coco/retinanet_r50_caffe_fpn_1x8_1x_coco_20220311-d325f4ae.pth
+    Weights:
 
   - Name: retinanet_r50_caffe_fpn_1x_coco
     In Collection: RetinaNet
