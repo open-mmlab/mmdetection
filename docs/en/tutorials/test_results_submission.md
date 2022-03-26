@@ -79,7 +79,6 @@ GPUS=8 tools/slurm_test.sh \
     --format-only \
     --cfg-options data.test.ann_file=data/coco/annotations/panoptic_image_info_test-dev2017.json data.test.img_prefix=data/coco/test2017 \
     --eval-options jsonfile_prefix=${WORK_DIR}/results
-
 ```
 
 Example
@@ -94,7 +93,6 @@ CUDA_VISIBLE_DEVICES=0 python tools/test.py \
     --format-only \
     --cfg-options data.test.ann_file=data/coco/annotations/panoptic_image_info_test-dev2017.json data.test.img_prefix=data/coco/test2017 \
     --eval-options jsonfile_prefix=work_dirs/maskformer/results
-
 ```
 
 ### Rename files and zip results
