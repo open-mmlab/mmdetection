@@ -248,4 +248,6 @@ checkpoint_config = dict(
 # which means that we do evaluation at the end of training.
 dynamic_intervals = [(max_iters // interval * interval + 1, max_iters)]
 evaluation = dict(
-    interval=interval, dynamic_intervals=dynamic_intervals, metric='PQ')
+    interval=interval,
+    dynamic_intervals=dynamic_intervals,
+    metric=['PQ', 'bbox', 'segm'])
