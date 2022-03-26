@@ -620,7 +620,7 @@ def test_mask_hungarian_match_assigner():
     assert (assign_result.gt_inds > 0).sum() == gt_labels.size(0)
     assert (assign_result.labels > -1).sum() == gt_labels.size(0)
 
-    # test with mask ce mode
+    # test with ce mode of CrossEntropyLossCost which is not supported yet
     assigner_cfg = dict(
         cls_cost=dict(type='ClassificationCost', weight=0.0),
         mask_cost=dict(
