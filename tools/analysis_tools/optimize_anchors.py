@@ -29,7 +29,7 @@ from scipy.optimize import differential_evolution
 
 from mmdet.core import bbox_cxcywh_to_xyxy, bbox_overlaps, bbox_xyxy_to_cxcywh
 from mmdet.datasets import build_dataset
-from mmdet.utils import get_root_logger
+from mmdet.utils import get_root_logger, update_data_root
 
 
 def parse_args():
@@ -324,6 +324,9 @@ def main():
     args = parse_args()
     cfg = args.config
     cfg = Config.fromfile(cfg)
+
+    # update data root according to MMDET_DATASETS
+    update_data_root(cfg)
 
     input_shape = args.input_shape
     assert len(input_shape) == 2

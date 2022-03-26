@@ -3,13 +3,12 @@ import torch
 from mmcv import ConfigDict
 
 from mmdet.core.mask import BitmapMasks
-from mmdet.models.dense_heads import MaskFormerHead
+from mmdet.models.dense_heads import Mask2FormerHead
 
 
-def test_maskformer_head_loss():
+def test_mask2former_head_loss():
     """Tests head loss when truth is empty and non-empty."""
     base_channels = 64
-    # batch_input_shape = (128, 160)
     img_metas = [{
         'batch_input_shape': (128, 160),
         'img_shape': (126, 160, 3),
@@ -28,15 +27,17 @@ def test_maskformer_head_loss():
     num_classes = num_things_classes + num_stuff_classes
     config = ConfigDict(
         dict(
-            type='MaskFormerHead',
+            type='Mask2FormerHead',
             in_channels=[base_channels * 2**i for i in range(4)],
             feat_channels=base_channels,
             out_channels=base_channels,
             num_things_classes=num_things_classes,
             num_stuff_classes=num_stuff_classes,
             num_queries=100,
+            num_transformer_feat_level=3,
             pixel_decoder=dict(
-                type='TransformerEncoderPixelDecoder',
+                type='MSDeformAttnPixelDecoder',
+                num_outs=3,
                 norm_cfg=dict(type='GN', num_groups=32),
                 act_cfg=dict(type='ReLU'),
                 encoder=dict(
@@ -45,30 +46,32 @@ def test_maskformer_head_loss():
                     transformerlayers=dict(
                         type='BaseTransformerLayer',
                         attn_cfgs=dict(
-                            type='MultiheadAttention',
+                            type='MultiScaleDeformableAttention',
                             embed_dims=base_channels,
                             num_heads=8,
-                            attn_drop=0.1,
-                            proj_drop=0.1,
-                            dropout_layer=None,
-                            batch_first=False),
+                            num_levels=3,
+                            num_points=4,
+                            im2col_step=64,
+                            dropout=0.0,
+                            batch_first=False,
+                            norm_cfg=None,
+                            init_cfg=None),
                         ffn_cfgs=dict(
+                            type='FFN',
                             embed_dims=base_channels,
-                            feedforward_channels=base_channels * 8,
+                            feedforward_channels=base_channels * 4,
                             num_fcs=2,
-                            act_cfg=dict(type='ReLU', inplace=True),
-                            ffn_drop=0.1,
-                            dropout_layer=None,
-                            add_identity=True),
-                        operation_order=('self_attn', 'norm', 'ffn', 'norm'),
-                        norm_cfg=dict(type='LN'),
-                        init_cfg=None,
-                        batch_first=False),
+                            ffn_drop=0.0,
+                            act_cfg=dict(type='ReLU', inplace=True)),
+                        feedforward_channels=base_channels * 4,
+                        ffn_dropout=0.0,
+                        operation_order=('self_attn', 'norm', 'ffn', 'norm')),
                     init_cfg=None),
                 positional_encoding=dict(
                     type='SinePositionalEncoding',
                     num_feats=base_channels // 2,
-                    normalize=True)),
+                    normalize=True),
+                init_cfg=None),
             enforce_decoder_input_project=False,
             positional_encoding=dict(
                 type='SinePositionalEncoding',
@@ -77,15 +80,15 @@ def test_maskformer_head_loss():
             transformer_decoder=dict(
                 type='DetrTransformerDecoder',
                 return_intermediate=True,
-                num_layers=6,
+                num_layers=9,
                 transformerlayers=dict(
                     type='DetrTransformerDecoderLayer',
                     attn_cfgs=dict(
                         type='MultiheadAttention',
                         embed_dims=base_channels,
                         num_heads=8,
-                        attn_drop=0.1,
-                        proj_drop=0.1,
+                        attn_drop=0.0,
+                        proj_drop=0.0,
                         dropout_layer=None,
                         batch_first=False),
                     ffn_cfgs=dict(
@@ -93,28 +96,26 @@ def test_maskformer_head_loss():
                         feedforward_channels=base_channels * 8,
                         num_fcs=2,
                         act_cfg=dict(type='ReLU', inplace=True),
-                        ffn_drop=0.1,
+                        ffn_drop=0.0,
                         dropout_layer=None,
                         add_identity=True),
                     # the following parameter was not used,
                     # just make current api happy
                     feedforward_channels=base_channels * 8,
-                    operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
+                    operation_order=('cross_attn', 'norm', 'self_attn', 'norm',
                                      'ffn', 'norm')),
                 init_cfg=None),
             loss_cls=dict(
                 type='CrossEntropyLoss',
                 use_sigmoid=False,
-                loss_weight=1.0,
+                loss_weight=2.0,
                 reduction='mean',
                 class_weight=[1.0] * num_classes + [0.1]),
             loss_mask=dict(
-                type='FocalLoss',
+                type='CrossEntropyLoss',
                 use_sigmoid=True,
-                gamma=2.0,
-                alpha=0.25,
                 reduction='mean',
-                loss_weight=20.0),
+                loss_weight=5.0),
             loss_dice=dict(
                 type='DiceLoss',
                 use_sigmoid=True,
@@ -122,18 +123,29 @@ def test_maskformer_head_loss():
                 reduction='mean',
                 naive_dice=True,
                 eps=1.0,
-                loss_weight=1.0),
+                loss_weight=5.0),
             train_cfg=dict(
+                num_points=256,
+                oversample_ratio=3.0,
+                importance_sample_ratio=0.75,
                 assigner=dict(
                     type='MaskHungarianAssigner',
-                    cls_cost=dict(type='ClassificationCost', weight=1.0),
+                    cls_cost=dict(type='ClassificationCost', weight=2.0),
                     mask_cost=dict(
-                        type='FocalLossCost', weight=20.0, binary_input=True),
+                        type='CrossEntropyLossCost',
+                        weight=5.0,
+                        use_sigmoid=True),
                     dice_cost=dict(
-                        type='DiceCost', weight=1.0, pred_act=True, eps=1.0)),
+                        type='DiceCost', weight=5.0, pred_act=True, eps=1.0)),
                 sampler=dict(type='MaskPseudoSampler')),
-            test_cfg=dict(object_mask_thr=0.8, iou_thr=0.8)))
-    self = MaskFormerHead(**config)
+            test_cfg=dict(
+                panoptic_on=True,
+                semantic_on=False,
+                instance_on=True,
+                max_dets_per_image=100,
+                object_mask_thr=0.8,
+                iou_thr=0.8)))
+    self = Mask2FormerHead(**config)
     self.init_weights()
     all_cls_scores, all_mask_preds = self.forward(feats, img_metas)
     # Test that empty ground truth encourages the network to predict background
