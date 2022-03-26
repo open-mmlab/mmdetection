@@ -238,16 +238,16 @@ log_config = dict(
         dict(type='TextLoggerHook', by_epoch=False),
         dict(type='TensorboardLoggerHook', by_epoch=False)
     ])
-interval = 200000
+interval = 5000
 workflow = [('train', interval)]
 checkpoint_config = dict(
     by_epoch=False, interval=interval, save_last=True, max_keep_ckpts=3)
 
-# Before 365001th iteration, we do evaluation every 200000 iterations.
+# Before 365001th iteration, we do evaluation every 5000 iterations.
 # After 365000th iteration, we do evaluation every 368750 iterations,
-# which means do evaluation at the end of training.
-# In all, we do evaluation at the 200000th iteration and the
-# last iteratoin.
+# which means that we do evaluation at the end of training.
 dynamic_intervals = [(max_iters // interval * interval + 1, max_iters)]
 evaluation = dict(
-    interval=interval, dynamic_intervals=dynamic_intervals, metric='PQ')
+    interval=interval,
+    dynamic_intervals=dynamic_intervals,
+    metric=['PQ', 'bbox', 'segm'])
