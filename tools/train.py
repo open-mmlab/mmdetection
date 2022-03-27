@@ -111,12 +111,14 @@ def main():
         cfg.merge_from_dict(args.cfg_options)
 
     if args.auto_scale_lr:
-        if 'auto_scale_lr_config' in cfg:
-            cfg.auto_scale_lr_config.update({'auto_scale_lr': True})
+        if 'auto_scale_lr_config' in cfg and \
+                'auto_scale_lr' in cfg.auto_scale_lr_config:
+            cfg.auto_scale_lr_config.auto_scale_lr = True
         else:
-            warnings.warn('Can not find "auto_scale_lr_config" '
-                          'in your configuration file. Please update all '
-                          'the configuration files to mmdet >= 2.23.0. '
+            warnings.warn('Can not find "auto_scale_lr_config" or '
+                          '"auto_scale_lr" in your configuration file. '
+                          'Please update all the configuration files '
+                          'to mmdet >= 2.23.0. '
                           'Disable automatic scaling of learning rate.')
 
     # set multi-process settings
