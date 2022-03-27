@@ -514,7 +514,7 @@ You could download the existing models in advance if the network connection is u
 If you want to enable this feature, you need to add argument `--auto-scale-lr`. And you need to check the config name which you want to use before you process the command, because the config name indicates the default batch size.
 By default, it is `8 x 2 = 16 batch size`, like `faster_rcnn_r50_caffe_fpn_90k_coco.py` or `pisa_faster_rcnn_x101_32x4d_fpn_1x_coco.py`. In other cases, you will see the config file name have `_NxM_` in dictating, like `cornernet_hourglass104_mstest_32x3_210e_coco.py` which batch size is `32 x 3 = 96`, or `scnet_x101_64x4d_fpn_8x1_20e_coco.py` which batch size is `8 x 1 = 8`.
 
-**Please remember to check the bottom of the specific config file you want to use, it will have `auto_scale_lr_config.default_batch_size` if the batch size is not `16` and `auto_scale_lr_config.default_initial_lr` if the batch size is not `0.01`. If you can't find those value, check the config file which in `_base_=[xxx]` and you will find it. What's more please do not modify its values if you want to automatically scale the LR.**
+**Please remember to check the bottom of the specific config file you want to use, it will have `auto_scale_lr_config.default_batch_size` if the batch size is not `16` and `auto_scale_lr_config.default_initial_lr` if the batch size is not `0.01`. If you can't find those values, check the config file which in `_base_=[xxx]` and you will find it. What's more please do not modify its values if you want to automatically scale the LR.**
 
 Learning rate automatically scale basic usage is as follows.
 
