@@ -207,7 +207,10 @@ def plot_confusion_matrix(confusion_matrix,
             ax.text(
                 j,
                 i,
-                '{}%'.format(int(confusion_matrix[i, j])),
+                '{}%'.format(
+                    int(confusion_matrix[
+                        i,
+                        j]) if not np.isnan(confusion_matrix[i, j]) else -1),
                 ha='center',
                 va='center',
                 color='w',
