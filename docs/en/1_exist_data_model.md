@@ -509,12 +509,12 @@ You could download the existing models in advance if the network connection is u
 
 ### Learning rate automatically scale
 
-**Important**: The default learning rate in config files is for 8 GPUs and 2 sample per gpu (batch size = 8 * 2 = 16). And it had been set to `default_batch_size` in `config/_base_/default_runtime.py`. Learning rate will be automatically scaled base on this value when the batch size is `16`. Meanwhile, in order not to affect other codebase which based on mmdet, the flag `auto_scale_lr` is set to `False` by default.
+**Important**: The default learning rate in config files is for 8 GPUs and 2 sample per gpu (batch size = 8 * 2 = 16). And it had been set to `auto_scale_lr_config.default_batch_size` in `config/_base_/default_runtime.py`. Learning rate will be automatically scaled base on this value when the batch size is `16`. Meanwhile, in order not to affect other codebase which based on mmdet, the flag `auto_scale_lr_config.auto_scale_lr` is set to `False` by default.
 
 If you want to enable this feature, you need to add argument `--auto-scale-lr`. And you need to check the config name which you want to use before you process the command, because the config name indicates the default batch size.
 By default, it is `8 x 2 = 16 batch size`, like `faster_rcnn_r50_caffe_fpn_90k_coco.py` or `pisa_faster_rcnn_x101_32x4d_fpn_1x_coco.py`. In other cases, you will see the config file name have `_NxM_` in dictating, like `cornernet_hourglass104_mstest_32x3_210e_coco.py` which batch size is `32 x 3 = 96`, or `scnet_x101_64x4d_fpn_8x1_20e_coco.py` which batch size is `8 x 1 = 8`.
 
-**Please remember to check the bottom of the specific config file you want to use, it will have `default_batch_size` if the batch size is not `16`  and please do not modify it if you want to automatically scale the LR.**
+**Please remember to check the bottom of the specific config file you want to use, it will have `auto_scale_lr_config.default_batch_size` if the batch size is not `16` and `auto_scale_lr_config.default_initial_lr` if the batch size is not `0.01`. If you can't find those value, check the config file which in `_base_=[xxx]` and you will find it. What's more please do not modify its values if you want to automatically scale the LR.**
 
 Learning rate automatically scale basic usage is as follows.
 
