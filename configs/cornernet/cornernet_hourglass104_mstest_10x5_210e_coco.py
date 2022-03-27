@@ -104,6 +104,8 @@ lr_config = dict(
     step=[180])
 runner = dict(type='EpochBasedRunner', max_epochs=210)
 
-# NOTE: This variable is for automatically scaling LR,
-# USER SHOULD NOT CHANGE THIS VALUE.
-default_batch_size = 50  # (10 GPUs) x (5 samples per GPU)
+# NOTE: `auto_scale_lr_config` is for automatically scaling LR,
+# USER SHOULD NOT CHANGE ITS VALUES.
+# default_batch_size = (10 GPUs) x (5 samples per GPU)
+auto_scale_lr_config = dict(default_batch_size=50,
+                            default_initial_lr=0.0005)

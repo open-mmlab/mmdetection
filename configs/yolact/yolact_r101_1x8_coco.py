@@ -5,7 +5,3 @@ model = dict(
         depth=101,
         init_cfg=dict(type='Pretrained',
                       checkpoint='torchvision://resnet101')))
-
-# NOTE: This variable is for automatically scaling LR,
-# USER SHOULD NOT CHANGE THIS VALUE.
-default_batch_size = 8  # (1 GPUs) x (8 samples per GPU)

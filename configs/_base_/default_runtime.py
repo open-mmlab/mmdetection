@@ -20,7 +20,11 @@ opencv_num_threads = 0
 # set multi-process start method as `fork` to speed up the training
 mp_start_method = 'fork'
 
-# The default batch size of configs in MMDet.
-default_batch_size = 16
-# This key allows scaling LR automatically or not.
-auto_scale_lr = False
+# Default setting for scaling LR automatically
+#   - The flag `auto_scale_lr` means enable scaling LR automatically
+#       or not by default.
+#   - `default_batch_size` = (8 GPUs) x (2 samples per GPU).
+#   - `default_initial_lr` = The LR by default.
+auto_scale_lr_config = dict(auto_scale_lr=False,
+                            default_batch_size=16,
+                            default_initial_lr=0.01)

@@ -38,6 +38,7 @@ log_config = dict(interval=100)
 # For better, more stable performance initialize from COCO
 load_from = 'https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'  # noqa
 
-# NOTE: This variable is for automatically scaling LR,
-# USER SHOULD NOT CHANGE THIS VALUE.
-default_batch_size = 8  # (8 GPUs) x (1 samples per GPU)
+# NOTE: `auto_scale_lr_config` is for automatically scaling LR,
+# USER SHOULD NOT CHANGE ITS VALUES.
+# default_batch_size = (8 GPUs) x (1 samples per GPU)
+auto_scale_lr_config = dict(default_batch_size=8)

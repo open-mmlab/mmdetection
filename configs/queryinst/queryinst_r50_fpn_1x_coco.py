@@ -136,3 +136,7 @@ optimizer_config = dict(
 # learning policy
 lr_config = dict(policy='step', step=[8, 11], warmup_iters=1000)
 runner = dict(type='EpochBasedRunner', max_epochs=12)
+
+# NOTE: `auto_scale_lr_config` is for automatically scaling LR,
+# USER SHOULD NOT CHANGE ITS VALUES.
+auto_scale_lr_config = dict(default_initial_lr=0.0001)

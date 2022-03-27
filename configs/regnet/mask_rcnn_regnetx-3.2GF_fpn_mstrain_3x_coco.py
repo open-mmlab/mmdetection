@@ -64,3 +64,7 @@ lr_config = dict(step=[28, 34])
 runner = dict(type='EpochBasedRunner', max_epochs=36)
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
+
+# NOTE: `auto_scale_lr_config` is for automatically scaling LR,
+# USER SHOULD NOT CHANGE ITS VALUES.
+auto_scale_lr_config = dict(default_initial_lr=0.02)

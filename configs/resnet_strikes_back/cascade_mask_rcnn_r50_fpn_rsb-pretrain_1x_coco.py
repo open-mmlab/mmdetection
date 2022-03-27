@@ -16,3 +16,7 @@ optimizer = dict(
     lr=0.0002,
     weight_decay=0.05,
     paramwise_cfg=dict(norm_decay_mult=0., bypass_duplicate=True))
+
+# NOTE: `auto_scale_lr_config` is for automatically scaling LR,
+# USER SHOULD NOT CHANGE ITS VALUES.
+auto_scale_lr_config = dict(default_initial_lr=0.0002)

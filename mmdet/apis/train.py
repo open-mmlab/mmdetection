@@ -76,19 +76,34 @@ def auto_scale_lr(cfg, distributed, logger):
         distributed (bool): Using distributed or not.
         logger (logging.Logger): Logger.
     """
-    auto_scale_lr_flag = cfg.get('auto_scale_lr', False)
+    warning_msg = 'in your configuration file. Please update all the ' \
+                  'configuration files to mmdet >= 2.23.0. ' \
+                  'Disable automatic scaling of learning rate.'
+
+    # default config of auto scale lr
+    if 'auto_scale_lr_config' not in cfg:
+        logger.warning(f'Can not find "auto_scale_lr_config" {warning_msg}')
+        return
+
+    # Get flag from config
+    auto_scale_lr_flag = cfg.auto_scale_lr_config.get('auto_scale_lr', False)
     if auto_scale_lr_flag is False:
         logger.info('Automatic scaling of learning rate (LR)'
                     ' has been disabled.')
         return
 
-    # default batch size of pre-train model
-    default_batch_size = cfg.get('default_batch_size', None)
-    if default_batch_size is None:
-        logger.warning('Can not find "default_batch_size" in your '
-                       'configuration file. Please update all the '
-                       'configuration files to mmdet >= 2.23.0. '
-                       'Disable automatic scaling of learning rate.')
+    # Get default batch size from config
+    default_batch_size = cfg.auto_scale_lr_config.get('default_batch_size', 0)
+    if default_batch_size == 0:
+        logger.warning('Can not find "default_batch_size" '
+                       f'{warning_msg}')
+        return
+
+    # Get default initial LR from config
+    default_initial_lr = cfg.auto_scale_lr_config.get('default_initial_lr', 0)
+    if default_initial_lr == 0:
+        logger.warning('Can not find "default_initial_lr" '
+                       f'{warning_msg}')
         return
 
     # Get gpu number
@@ -106,17 +121,13 @@ def auto_scale_lr(cfg, distributed, logger):
                 f'Total batch size is {batch_size}.')
 
     if batch_size != default_batch_size:
-        # Get original LR from config
-        original_lr = cfg.optimizer.get('lr', 0)
-        assert original_lr != 0
-
         # scale LR with
         # [linear scaling rule](https://arxiv.org/abs/1706.02677)
-        scaled_lr = (batch_size / default_batch_size) * original_lr
+        scaled_lr = (batch_size / default_batch_size) * default_initial_lr
         cfg.optimizer.update({'lr': scaled_lr})
 
         logger.info('LR has been automatically scaled '
-                    f'from {original_lr} to {scaled_lr}')
+                    f'from {default_initial_lr} to {scaled_lr}')
 
     else:
         logger.info('The batch size match the '

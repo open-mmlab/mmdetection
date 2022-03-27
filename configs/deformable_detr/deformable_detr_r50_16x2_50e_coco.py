@@ -171,6 +171,8 @@ optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
 lr_config = dict(policy='step', step=[40])
 runner = dict(type='EpochBasedRunner', max_epochs=50)
 
-# NOTE: This variable is for automatically scaling LR,
-# USER SHOULD NOT CHANGE THIS VALUE.
-default_batch_size = 32  # (16 GPUs) x (2 samples per GPU)
+# NOTE: `auto_scale_lr_config` is for automatically scaling LR,
+# USER SHOULD NOT CHANGE ITS VALUES.
+# default_batch_size = (16 GPUs) x (2 samples per GPU)
+auto_scale_lr_config = dict(default_batch_size=32,
+                            default_initial_lr=2e-4)

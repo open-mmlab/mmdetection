@@ -6,7 +6,3 @@ model = dict(
     neck=dict(in_channels=[192, 384, 768], out_channels=192, num_csp_blocks=2),
     bbox_head=dict(in_channels=192, feat_channels=192),
 )
-
-# NOTE: This variable is for automatically scaling LR,
-# USER SHOULD NOT CHANGE THIS VALUE.
-default_batch_size = 64  # (8 GPUs) x (8 samples per GPU)
