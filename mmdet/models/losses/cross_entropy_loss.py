@@ -13,7 +13,8 @@ def cross_entropy(pred,
                   reduction='mean',
                   avg_factor=None,
                   class_weight=None,
-                  ignore_index=-100):
+                  ignore_index=-100,
+                  label_smoothing=0.0):
     """Calculate the CrossEntropy loss.
 
     Args:
@@ -27,7 +28,9 @@ def cross_entropy(pred,
         class_weight (list[float], optional): The weight for each class.
         ignore_index (int | None): The label index to be ignored.
             If None, it will be set to default value. Default: -100.
-
+        label_smoothing (float, optional): A float in range [0.0, 1.0]. 
+            Specifies the amount of smoothing when computing the loss, where
+            0.0 means no smoothing. Defaults to 0.0.
     Returns:
         torch.Tensor: The calculated loss
     """
@@ -39,7 +42,8 @@ def cross_entropy(pred,
         label,
         weight=class_weight,
         reduction='none',
-        ignore_index=ignore_index)
+        ignore_index=ignore_index,
+        label_smoothing=label_smoothing)
 
     # apply weights and do the reduction
     if weight is not None:
@@ -77,7 +81,8 @@ def binary_cross_entropy(pred,
                          reduction='mean',
                          avg_factor=None,
                          class_weight=None,
-                         ignore_index=-100):
+                         ignore_index=-100,
+                         label_smoothing=0.0):
     """Calculate the binary CrossEntropy loss.
 
     Args:
@@ -91,7 +96,7 @@ def binary_cross_entropy(pred,
         class_weight (list[float], optional): The weight for each class.
         ignore_index (int | None): The label index to be ignored.
             If None, it will be set to default value. Default: -100.
-
+        label_smoothing (float, optional): IGNORED
     Returns:
         torch.Tensor: The calculated loss.
     """
@@ -119,7 +124,8 @@ def mask_cross_entropy(pred,
                        reduction='mean',
                        avg_factor=None,
                        class_weight=None,
-                       ignore_index=None):
+                       ignore_index=None,
+                       label_smoothing=0.0):
     """Calculate the CrossEntropy loss for masks.
 
     Args:
@@ -137,7 +143,7 @@ def mask_cross_entropy(pred,
         class_weight (list[float], optional): The weight for each class.
         ignore_index (None): Placeholder, to be consistent with other loss.
             Default: None.
-
+        label_smoothing (float, optional): IGNORED
     Returns:
         torch.Tensor: The calculated loss
 
@@ -173,7 +179,8 @@ class CrossEntropyLoss(nn.Module):
                  reduction='mean',
                  class_weight=None,
                  ignore_index=None,
-                 loss_weight=1.0):
+                 loss_weight=1.0,
+                 label_smoothing=0.0):
         """CrossEntropyLoss.
 
         Args:
@@ -188,6 +195,9 @@ class CrossEntropyLoss(nn.Module):
             ignore_index (int | None): The label index to be ignored.
                 Defaults to None.
             loss_weight (float, optional): Weight of the loss. Defaults to 1.0.
+            label_smoothing (float, optional): A float in range [0.0, 1.0]. 
+                Specifies the amount of smoothing when computing the loss, where
+                0.0 means no smoothing. Defaults to 0.0.
         """
         super(CrossEntropyLoss, self).__init__()
         assert (use_sigmoid is False) or (use_mask is False)
@@ -197,6 +207,7 @@ class CrossEntropyLoss(nn.Module):
         self.loss_weight = loss_weight
         self.class_weight = class_weight
         self.ignore_index = ignore_index
+        self.label_smoothing = label_smoothing
 
         if self.use_sigmoid:
             self.cls_criterion = binary_cross_entropy
@@ -247,5 +258,6 @@ class CrossEntropyLoss(nn.Module):
             reduction=reduction,
             avg_factor=avg_factor,
             ignore_index=ignore_index,
+            label_smoothing=self.label_smoothing
             **kwargs)
         return loss_cls
