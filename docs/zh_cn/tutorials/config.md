@@ -93,7 +93,7 @@ model = dict(
             requires_grad=True),  # 是否训练归一化里的 gamma 和 beta。
         norm_eval=True,  # 是否冻结 BN 里的统计项。
         style='pytorch',  # 主干网络的风格，'pytorch' 意思是步长为2的层为 3x3 卷积， 'caffe' 意思是步长为2的层为 1x1 卷积。
-       init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),  # 加载通过 ImageNet 与训练的模型
+       init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),  # 加载通过 ImageNet 预训练的模型
     neck=dict(
         type='FPN',  # 检测器的 neck 是 FPN，我们同样支持 'NASFPN', 'PAFPN' 等，更多细节可以参考 https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/necks/fpn.py#L10。
         in_channels=[256, 512, 1024, 2048],  # 输入通道数，这与主干网络的输出通道一致
@@ -111,7 +111,7 @@ model = dict(
         bbox_coder=dict(  # 在训练和测试期间对框进行编码和解码。
             type='DeltaXYWHBBoxCoder',  # 框编码器的类别，'DeltaXYWHBBoxCoder' 是最常用的，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/bbox/coder/delta_xywh_bbox_coder.py#L9。
             target_means=[0.0, 0.0, 0.0, 0.0],  # 用于编码和解码框的目标均值
-            target_stds=[1.0, 1.0, 1.0, 1.0]),  # 用于编码和解码框的标准方差
+            target_stds=[1.0, 1.0, 1.0, 1.0]),  # 用于编码和解码框的标准差
         loss_cls=dict(  # 分类分支的损失函数配置
             type='CrossEntropyLoss',  # 分类分支的损失类型，我们也支持 FocalLoss 等。
             use_sigmoid=True,  # RPN通常进行二分类，所以通常使用sigmoid函数。
@@ -138,7 +138,7 @@ model = dict(
             bbox_coder=dict(  # 第二阶段使用的框编码器。
                 type='DeltaXYWHBBoxCoder',  # 框编码器的类别，大多数情况使用 'DeltaXYWHBBoxCoder'。
                 target_means=[0.0, 0.0, 0.0, 0.0],  # 用于编码和解码框的均值
-                target_stds=[0.1, 0.1, 0.2, 0.2]),  # 编码和解码的标准方差。因为框更准确，所以值更小，常规设置时 [0.1, 0.1, 0.2, 0.2]。
+                target_stds=[0.1, 0.1, 0.2, 0.2]),  # 编码和解码的标准差。因为框更准确，所以值更小，常规设置时 [0.1, 0.1, 0.2, 0.2]。
             reg_class_agnostic=False,  # 回归是否与类别无关。
             loss_cls=dict(  # 分类分支的损失函数配置
                 type='CrossEntropyLoss',  # 分类分支的损失类型，我们也支持 FocalLoss 等。
@@ -211,7 +211,7 @@ model = dict(
             mask_size=28,  # mask 的大小
             pos_weight=-1,  # 训练期间正样本的权重。
             debug=False))  # 是否设置调试模式。
-    test_cfg = dict(  # 用于测试 rnn 和 rnn 超参数的配置
+    test_cfg = dict(  # 用于测试 rpn 和 rcnn 超参数的配置
         rpn=dict(  # 测试阶段生成 proposals 的配置
             nms_across_levels=False,  # 是否对跨层的 box 做 NMS。仅适用于`GARPNHead`，naive rpn 不支持做 NMS cross levels。
             nms_pre=1000,  # NMS 前的 box 数
@@ -231,7 +231,7 @@ model = dict(
             mask_thr_binary=0.5))  # mask 预处的阈值
 dataset_type = 'CocoDataset'  # 数据集类型，这将被用来定义数据集。
 data_root = 'data/coco/'  # 数据的根路径。
-img_norm_cfg = dict(  #图像归一化配置，用来归一化输入的图像。
+img_norm_cfg = dict(  # 图像归一化配置，用来归一化输入的图像。
     mean=[123.675, 116.28, 103.53],  # 预训练里用于预训练主干网络模型的平均值。
     std=[58.395, 57.12, 57.375],  # 预训练里用于预训练主干网络模型的标准差。
     to_rgb=True
@@ -398,7 +398,7 @@ log_level = 'INFO'  # 日志的级别。
 load_from = None  # 从一个给定路径里加载模型作为预训练模型，它并不会消耗训练时间。
 resume_from = None  # 从给定路径里恢复检查点(checkpoints)，训练模式将从检查点保存的轮次开始恢复训练。
 workflow = [('train', 1)]  # runner 的工作流程，[('train', 1)] 表示只有一个工作流且工作流仅执行一次。根据 total_epochs 工作流训练 12个回合。
-work_dir = 'work_dir'  # 用于保存当前实验的模型检查点和日志的目录文件地址。
+work_dir = 'work_dir'  # 用于保存当前实验的模型检查点和日志的目录。
 ```
 
 ## 常问问题 (FAQ)
@@ -466,7 +466,7 @@ model = dict(
 
 ### 使用配置文件里的中间变量
 
-配置文件里会使用一些中间变量，例如数据集里的 `train_pipeline/test_pipeline`。我们在定义新的 `train_pipeline/test_pipeline` 之后，需要将它们传递到 `data` 里。例如，我们想在训练或测试时，改变 Mask R-CNN 的多尺度策略 (multi scale strategy)，`train_pipeline/test_pipeline` 是我们想要修改的中间变量。
+配置文件里会使用一些中间变量，例如数据集里的 `train_pipeline`/`test_pipeline`。我们在定义新的 `train_pipeline`/`test_pipeline` 之后，需要将它们传递到 `data` 里。例如，我们想在训练或测试时，改变 Mask R-CNN 的多尺度策略 (multi scale strategy)，`train_pipeline`/`test_pipeline` 是我们想要修改的中间变量。
 
 ```python
 _base_ = './mask_rcnn_r50_fpn_1x_coco.py'
