@@ -9,7 +9,7 @@
 
 #### New Features
 
-- Support [Mask2Former](configs/mask2former)(#6938)
+- Support [Mask2Former](configs/mask2former)(#6938)(#7466)(#7471)
 - Support [EfficientNet](configs/efficientnet) (#7514)
 - Support setting data root through commands, so you don't have to modify the corresponding path in config files (#7386) 
 - Support setting different seeds to different ranks, so it can introduce more randomness into the training process (#7432)
@@ -46,7 +46,6 @@
 - Enhance the robustness of analyze_logs.py (#7407)
 - Supplementary notes of sync_random_seed (#7440)
 - Update docstring of cross entropy loss (#7472)
-- Refactor MaskFormer (#7466)(#7471)
 - Update pascal voc result (#7503)
 - We create How-to documentation to record any questions about How to xxx. In this version, we added
   - How to use Mosaic augmentation (#7507)
