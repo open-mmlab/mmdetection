@@ -22,7 +22,6 @@
 - Adjust the order of `get_classes` and `FileClient` (#7276)
 - Force the inputs of `get_bboxes` in yolox_head to float32 (#7324)
 - Fix misplaced arguments in LoadPanopticAnnotations (#7388)
-- Adding comments for MaxIoUAssigner (#7464)
 - Fix reduction=mean in CELoss. (#7449)
 - Update unit test of CrossEntropyCost (#7537)
 - Fix memory leaking in panpotic segmentation evaluation (#7538)
