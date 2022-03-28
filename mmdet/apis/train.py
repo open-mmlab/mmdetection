@@ -121,6 +121,18 @@ def auto_scale_lr(cfg, distributed, logger):
                 f'Total batch size is {batch_size}.')
 
     if batch_size != default_batch_size:
+
+        if cfg.optimizer.lr != default_initial_lr:
+            logger.warning(
+                'It seems that you changed '
+                f'"cfg.optimizer.lr" to {cfg.optimizer.lr}. The '
+                'automatically scaling learning rate base on '
+                '"cfg.auto_scale_lr_config.default_initial_lr" = '
+                f'{cfg.auto_scale_lr_config.default_initial_lr}. '
+                'If you want to use the "cfg.optimizer.lr" as '
+                'your learning rate, please disable the '
+                'automatically scaling learning rate.')
+
         # scale LR with
         # [linear scaling rule](https://arxiv.org/abs/1706.02677)
         scaled_lr = (batch_size / default_batch_size) * default_initial_lr
