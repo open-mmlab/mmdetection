@@ -10,11 +10,11 @@
 #### New Features
 
 - Support [Mask2Former](configs/mask2former)(#6938)
-- Support [Efficientnet](configs/efficientnet) (#7514)
-- Support setting data root through commands (#7386) 
-- Support setting diff seeds to diff ranks (#7432)
-- Support multi machine dist_train (#7415)
-- Support Torchvision high-precision ResNet model (#7489) 
+- Support [EfficientNet](configs/efficientnet) (#7514)
+- Support setting data root through commands, so you don't have to modify the corresponding path in config files (#7386) 
+- Support setting different seeds to different ranks, so it can introduce more randomness into the training process (#7432)
+- Support training model with multiple machines, so you can train a model by launching with multiple machines simply connected with ethernet (#7415)
+- Support loading Torchvision high precision ResNet model, so you can change the config to load the new backbone model (#7489) 
 
 #### Bug Fixes
 
@@ -22,12 +22,8 @@
 - Fix VOC unit test not to remove data directory (#7270)
 - Adjust the order of get_classes and FileClient. (#7276)
 - Force the inputs of get_bboxes in yolox_head to float32. (#7324)
-- Fix typo in FPN neck (#7347)
 - Fix misplaced arguments in LoadPanopticAnnotations (#7388)
-- Remove duplicate link (#7480)
 - Adding comments for MaxIoUAssigner (#7464)
-- Fix typos (#7510)
-- Fix fpg link (#7478)
 - Fix reduction=mean in CELoss. (#7449)
 - Update unit test of CrossEntropyCost (#7537)
 - Fix memory leaking in panpotic segmentation evaluation (#7538)
@@ -37,12 +33,9 @@
 
 #### Improvements
 
-- Update readme and pretrained related (#7301)
 - Add Chinese version of onnx2tensorrt.md (#7219)
-- Update useful_tools.md (#7180)
 - Update colab tutorials (#7310)
 - Update information about Localization Distillation (#7350)
-- Update get_started.md (#7398)
 - Add Chinese version of finetune (#7178)
 - Set unmap_results=True in ssd_head (#7328)
 - Update YOLOX log for non square input (#7235)
@@ -52,15 +45,13 @@
 - Add instance evalutation for coco_panoptic (#7313)
 - Enhance the robustness of analyze_logs.py (#7407)
 - Supplementary notes of sync_random_seed (#7440)
-- Unified name of orig as ori (#7456)
 - Update docstring of cross entropy loss (#7472)
-- Added documentation on mmdet using mmcls‘s backbone (#7438)
-- Update README.md (#7498)
-- Update mosaic to how-to (#7507)
-- Mosaic documentation enhancements (#7470)
-- Add msdeformattn pixel decoder (#7466)
-- Refactor MaskFormer (#7471)
+- Refactor MaskFormer (#7466)(#7471)
 - Update pascal voc result (#7503)
+- We create How-to documentation to record any questions about How to xxx. In this version, we added
+  - How to use Mosaic augmentation (#7507)
+  - How to use backbone in mmcls (#7438)
+  - how to produce the prediction results of panoptic segmentation models on the COCO test-dev set and submit the predictions to [COCO evaluation server](https://competitions.codalab.org/competitions/19507) (#7430))
 
 #### Contributors
 

@@ -76,11 +76,11 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 **2.23.0** was released in 28/3/2022:
 
-- Support [Efficientnet](configs/efficientnet), [Efficientnet](configs/efficientnet)
-- Support setting data root through commands
-- Support setting diff seeds to diff ranks
-- Support multi machine dist_train
-- Support Torchvision high-precision ResNet model
+- Support [Mask2Former](configs/mask2former) and [EfficientNet](configs/efficientnet)
+- Support setting data root through commands, so you don't have to modify the corresponding path in config files.
+- Support setting different seeds to different ranks, so it can introduce more randomness into the training process.
+- Support training model with multiple machines, so you can train a model by launching with multiple machines simply connected with ethernet. 
+- Support loading Torchvision high precision ResNet model, so you can change the config to load the new backbone model. 
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 
@@ -166,6 +166,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         <ul>
           <li><a href="configs/panoptic_fpn">Panoptic FPN (CVPR'2019)</a></li>
           <li><a href="configs/maskformer">MaskFormer (NeurIPS'2021)</a></li>
+          <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
         </ul>
       </td>
       <td>
