@@ -231,6 +231,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         <li><a href="configs/swin">Swin (CVPR'2021)</a></li>
         <li><a href="configs/pvt">PVTv2 (ArXiv'2021)</a></li>
         <li><a href="configs/resnet_strikes_back">ResNet strikes back (ArXiv'2021)</a></li>
+        <li><a href="configs/efficientnet">EfficientNet (ArXiv'2021)</a></li>
       </ul>
       </td>
       <td>
