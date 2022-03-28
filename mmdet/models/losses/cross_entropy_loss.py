@@ -28,7 +28,7 @@ def cross_entropy(pred,
         class_weight (list[float], optional): The weight for each class.
         ignore_index (int | None): The label index to be ignored.
             If None, it will be set to default value. Default: -100.
-        label_smoothing (float, optional): A float in range [0.0, 1.0]. 
+        label_smoothing (float, optional): A float in range [0.0, 1.0].
             Specifies the amount of smoothing when computing the loss, where
             0.0 means no smoothing. Defaults to 0.0.
     Returns:
@@ -195,9 +195,9 @@ class CrossEntropyLoss(nn.Module):
             ignore_index (int | None): The label index to be ignored.
                 Defaults to None.
             loss_weight (float, optional): Weight of the loss. Defaults to 1.0.
-            label_smoothing (float, optional): A float in range [0.0, 1.0]. 
-                Specifies the amount of smoothing when computing the loss, where
-                0.0 means no smoothing. Defaults to 0.0.
+            label_smoothing (float, optional): A float in range [0.0, 1.0].
+                Specifies the amount of smoothing when computing the loss,
+                where 0.0 means no smoothing. Defaults to 0.0.
         """
         super(CrossEntropyLoss, self).__init__()
         assert (use_sigmoid is False) or (use_mask is False)
@@ -258,6 +258,6 @@ class CrossEntropyLoss(nn.Module):
             reduction=reduction,
             avg_factor=avg_factor,
             ignore_index=ignore_index,
-            label_smoothing=self.label_smoothing
+            label_smoothing=self.label_smoothing,
             **kwargs)
         return loss_cls
