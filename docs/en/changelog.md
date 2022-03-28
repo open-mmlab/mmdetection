@@ -5,39 +5,37 @@
 #### Highlights
 
 - Support Mask2Former: [Masked-attention Mask Transformer for Universal Image Segmentation](https://arxiv.org/abs/2112.01527)
-- Support efficientnet: [EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks](https://arxiv.org/abs/1905.11946)
+- Support EfficientNet: [EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks](https://arxiv.org/abs/1905.11946)
 
 #### New Features
 
 - Support [Mask2Former](configs/mask2former)(#6938)(#7466)(#7471)
 - Support [EfficientNet](configs/efficientnet) (#7514)
-- Support setting data root through commands, so you don't have to modify the corresponding path in config files (#7386) 
-- Support setting different seeds to different ranks, so it can introduce more randomness into the training process (#7432)
-- Support training model with multiple machines, so you can train a model by launching with multiple machines simply connected with ethernet (#7415)
-- Support loading Torchvision high precision ResNet model, so you can change the config to load the new backbone model (#7489) 
+- Support setting data root through commands (#7386) 
+- Support setting different seeds to different ranks (#7432)
+- Update the `dist_train.sh` so that the script can be used to support launching multi-node training on machines without slurm (#7415)
+- Find a good recipe for fine-tuning high precision ResNet backbone pre-trained by Torchvision (#7489) 
 
 #### Bug Fixes
 
-- Fix broken doc link (#7293)
-- Fix VOC unit test not to remove data directory (#7270)
-- Adjust the order of get_classes and FileClient. (#7276)
-- Force the inputs of get_bboxes in yolox_head to float32. (#7324)
+- Fix bug in VOC unit test which removes the data directory (#7270)
+- Adjust the order of `get_classes` and `FileClient` (#7276)
+- Force the inputs of `get_bboxes` in yolox_head to float32 (#7324)
 - Fix misplaced arguments in LoadPanopticAnnotations (#7388)
 - Adding comments for MaxIoUAssigner (#7464)
 - Fix reduction=mean in CELoss. (#7449)
 - Update unit test of CrossEntropyCost (#7537)
 - Fix memory leaking in panpotic segmentation evaluation (#7538)
-- Fix broadcast shape bug in yolov3 (#7551)
-- Fix pointrend missing get_uncertainty function bug (#7550)
-- Fix docstring in bbox_nms.py (#7547)
+- Fix broadcast shape bug in YOLOv3 (#7551)
+- Fix docstring of `nms_cfg` in bbox_nms (#7547)
+- `unmap_results=True` fixes a bug (#7328)
 
 #### Improvements
 
 - Add Chinese version of onnx2tensorrt.md (#7219)
 - Update colab tutorials (#7310)
 - Update information about Localization Distillation (#7350)
-- Add Chinese version of finetune (#7178)
-- Set unmap_results=True in ssd_head (#7328)
+- Add Chinese version of `finetune.md` (#7178)
 - Update YOLOX log for non square input (#7235)
 - Add cpu_num in cocopanoptic for pq computing (#7315)
 - Allow to set channel_order in LoadImageFromFile (#7258)
