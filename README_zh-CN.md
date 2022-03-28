@@ -73,11 +73,13 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 更新日志
 
-最新的 **2.22.0** 版本已经在 2022.02.24 发布:
+最新的 **2.23.0** 版本已经在 2022.03.28 发布:
 
-- 支持 [MaskFormer](configs/maskformer)，[DyHead](configs/dyhead)，[OpenImages Dataset](configs/openimages) 和 [TIMM backbone](configs/timm_example)
-- 支持全景分割可视化
-- 发布了一个在目标检测任务中使用 ResNet 的好方法，它是由 [ResNet Strikes Back](https://arxiv.org/abs/2110.00476) 预训练的，并且能稳定的在 RetinaNet, Faster/Mask/Cascade Mask R-CNN 上带来约 3-4 mAP 的提升
+- 支持 [Efficientnet](configs/efficientnet), [Efficientnet](configs/efficientnet)
+- 支持通过命令设置数据路径
+- 支持为不同进程设置不同的随机种子
+- 支持多机分布式训练
+- 支持 Torchvision 的高精度 ResNet 模型
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/changelog.md)。
 

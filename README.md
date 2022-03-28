@@ -74,11 +74,13 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-**2.22.0** was released in 24/2/2022:
+**2.23.0** was released in 28/3/2022:
 
-- Support [MaskFormer](configs/maskformer), [DyHead](configs/dyhead), [OpenImages Dataset](configs/openimages) and [TIMM backbone](configs/timm_example)
-- Support visualization for Panoptic Segmentation
-- Release a good recipe of using ResNet in object detectors pre-trained by [ResNet Strikes Back](https://arxiv.org/abs/2110.00476), which consistently brings about 3~4 mAP improvements over RetinaNet, Faster/Mask/Cascade Mask R-CNN
+- Support [Efficientnet](configs/efficientnet), [Efficientnet](configs/efficientnet)
+- Support setting data root through commands
+- Support setting diff seeds to diff ranks
+- Support multi machine dist_train
+- Support Torchvision high-precision ResNet model
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 

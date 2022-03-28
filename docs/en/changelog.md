@@ -1,5 +1,74 @@
 ## Changelog
 
+### v2.23.0 (28/3/2022)
+
+#### Highlights
+
+- Support Mask2Former: [Masked-attention Mask Transformer for Universal Image Segmentation](https://arxiv.org/abs/2112.01527)
+- Support efficientnet: [EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks](https://arxiv.org/abs/1905.11946)
+
+#### New Features
+
+- Support [Mask2Former](configs/mask2former)(#6938)
+- Support [Efficientnet](configs/efficientnet) (#7514)
+- Support setting data root through commands (#7386) 
+- Support setting diff seeds to diff ranks (#7432)
+- Support multi machine dist_train (#7415)
+- Support Torchvision high-precision ResNet model (#7489) 
+
+#### Bug Fixes
+
+- Fix broken doc link (#7293)
+- Fix VOC unit test not to remove data directory (#7270)
+- Adjust the order of get_classes and FileClient. (#7276)
+- Force the inputs of get_bboxes in yolox_head to float32. (#7324)
+- Fix typo in FPN neck (#7347)
+- Fix misplaced arguments in LoadPanopticAnnotations (#7388)
+- Remove duplicate link (#7480)
+- Adding comments for MaxIoUAssigner (#7464)
+- Fix typos (#7510)
+- Fix fpg link (#7478)
+- Fix reduction=mean in CELoss. (#7449)
+- Update unit test of CrossEntropyCost (#7537)
+- Fix memory leaking in panpotic segmentation evaluation (#7538)
+- Fix broadcast shape bug in yolov3 (#7551)
+- Fix pointrend missing get_uncertainty function bug (#7550)
+- Fix docstring in bbox_nms.py (#7547)
+
+#### Improvements
+
+- Update readme and pretrained related (#7301)
+- Add Chinese version of onnx2tensorrt.md (#7219)
+- Update useful_tools.md (#7180)
+- Update colab tutorials (#7310)
+- Update information about Localization Distillation (#7350)
+- Update get_started.md (#7398)
+- Add Chinese version of finetune (#7178)
+- Set unmap_results=True in ssd_head (#7328)
+- Update YOLOX log for non square input (#7235)
+- Add cpu_num in cocopanoptic for pq computing (#7315)
+- Allow to set channel_order in LoadImageFromFile (#7258)
+- Take point sample related functions out of mask_point_head (#7353)
+- Add instance evalutation for coco_panoptic (#7313)
+- Enhance the robustness of analyze_logs.py (#7407)
+- Supplementary notes of sync_random_seed (#7440)
+- Unified name of orig as ori (#7456)
+- Update docstring of cross entropy loss (#7472)
+- Added documentation on mmdet using mmcls‘s backbone (#7438)
+- Update README.md (#7498)
+- Update mosaic to how-to (#7507)
+- Mosaic documentation enhancements (#7470)
+- Add msdeformattn pixel decoder (#7466)
+- Refactor MaskFormer (#7471)
+- Update pascal voc result (#7503)
+
+#### Contributors
+
+A total of 27 developers contributed to this release.
+Thanks @ZwwWayne, @haofanwang, @shinya7y, @chhluo, @yangrisheng, @triple-Mu, @jbwang1997, @HikariTJU, @imflash217, @274869388, @zytx121, @matrixgame2018, @jamiechoi1995, @BIGWangYuDong, @JingweiZhang12, @Xiangxu-0103, @hhaAndroid, @jshilong, @osbm, @ceroytres, @bunge-bedstraw-herb, @Youth-Got, @daavoo, @jiangyitong, @RangiLyu, @CCODING04, @yarkable
+
+
+
 ### v2.22.0 (24/2/2022)
 
 #### Highlights
