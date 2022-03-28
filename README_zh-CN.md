@@ -75,7 +75,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 最新的 **2.23.0** 版本已经在 2022.03.28 发布:
 
-- 支持 [EfficientNet](configs/efficientnet) 和 [Efficientnet](configs/efficientnet)
+- 支持 [Mask2Former](configs/mask2former) 和 [Efficientnet](configs/efficientnet)
 - 支持通过命令设置数据根目录，因此无需修改配置文件中对应的路径。
 - 支持为不同进程设置不同的随机种子，这样可以在训练过程中引入更多的随机性。
 - 支持多机分布式训练模型，因此只需连接以太网即可启动多台机器训练模型。
