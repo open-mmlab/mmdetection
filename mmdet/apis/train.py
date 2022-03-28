@@ -124,27 +124,26 @@ def auto_scale_lr(cfg, distributed, logger):
 
         if cfg.optimizer.lr != default_initial_lr:
             logger.warning(
-                'It seems that you changed '
-                f'"cfg.optimizer.lr" to {cfg.optimizer.lr}. The '
-                'automatically scaling learning rate base on '
-                '"cfg.auto_scale_lr_config.default_initial_lr" = '
-                f'{cfg.auto_scale_lr_config.default_initial_lr}. '
-                'If you want to use the "cfg.optimizer.lr" as '
-                'your learning rate, please disable the '
-                'automatically scaling learning rate.')
+                'It seems that you changed "cfg.optimizer.lr" to '
+                f'{cfg.optimizer.lr} which is not the default initial lr '
+                f'({default_initial_lr}) from the config file. The '
+                f'automatically scaling LR will use the "cfg.optimizer.lr" to'
+                f' calculate the new LR. This may not lead to a best result of'
+                f' the training. If you know what are you doing, ignore this '
+                f'warning message.')
 
         # scale LR with
         # [linear scaling rule](https://arxiv.org/abs/1706.02677)
-        scaled_lr = (batch_size / default_batch_size) * default_initial_lr
+        scaled_lr = (batch_size / default_batch_size) * cfg.optimizer.lr
         cfg.optimizer.lr = scaled_lr
 
         logger.info('LR has been automatically scaled '
-                    f'from {default_initial_lr} to {scaled_lr}')
+                    f'from {cfg.optimizer.lr} to {scaled_lr}')
 
     else:
         logger.info('The batch size match the '
                     f'default batch size: {default_batch_size}, '
-                    f'will not scaling the LR ({cfg.optimizer.get("lr")}).')
+                    f'will not scaling the LR ({cfg.optimizer.lr}).')
 
 
 def train_detector(model,
