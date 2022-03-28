@@ -127,10 +127,10 @@ def auto_scale_lr(cfg, distributed, logger):
                 'It seems that you changed "cfg.optimizer.lr" to '
                 f'{cfg.optimizer.lr} which is not the default initial lr '
                 f'({default_initial_lr}) from the config file. The '
-                f'automatically scaling LR will use the "cfg.optimizer.lr" to'
-                f' calculate the new LR. This may not lead to a best result of'
-                f' the training. If you know what are you doing, ignore this '
-                f'warning message.')
+                'automatically scaling LR will use the "cfg.optimizer.lr" to'
+                ' calculate the new LR. This may not lead to a best result of'
+                ' the training. If you know what are you doing, ignore this '
+                'warning message.')
 
         # scale LR with
         # [linear scaling rule](https://arxiv.org/abs/1706.02677)
