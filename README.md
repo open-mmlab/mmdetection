@@ -2,17 +2,17 @@
   <img src="resources/mmdet-logo.png" width="600"/>
   <div>&nbsp;</div>
   <div align="center">
-    <b><font size="5">OpenMMLab website</font></b>
+    <b>OpenMMLab website</b>
     <sup>
       <a href="https://openmmlab.com">
-        <i><font size="4">HOT</font></i>
+        <i>HOT</i>
       </a>
     </sup>
     &nbsp;&nbsp;&nbsp;&nbsp;
-    <b><font size="5">OpenMMLab platform</font></b>
+    <b>OpenMMLab platform</b>
     <sup>
       <a href="https://platform.openmmlab.com">
-        <i><font size="4">TRY IT OUT</font></i>
+        <i>TRY IT OUT</i>
       </a>
     </sup>
   </div>
