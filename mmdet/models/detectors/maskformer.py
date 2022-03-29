@@ -43,6 +43,9 @@ class MaskFormer(SingleStageDetector):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
+        if self.num_stuff_classes > 0:
+            self.show_result = self._show_pan_result
+
     def forward_dummy(self, img, img_metas):
         """Used for computing network flops. See
         `mmdetection/tools/analysis_tools/get_flops.py`
@@ -67,7 +70,7 @@ class MaskFormer(SingleStageDetector):
                       gt_bboxes,
                       gt_labels,
                       gt_masks,
-                      gt_semantic_seg,
+                      gt_semantic_seg=None,
                       gt_bboxes_ignore=None,
                       **kargs):
         """
@@ -86,6 +89,7 @@ class MaskFormer(SingleStageDetector):
                 used if the architecture supports a segmentation task.
             gt_semantic_seg (list[tensor]): semantic segmentation mask for
                 images.
+                Defaults to None.
             gt_bboxes_ignore (list[Tensor]): specify which bounding
                 boxes can be ignored when computing the loss.
                 Defaults to None.
@@ -126,6 +130,9 @@ class MaskFormer(SingleStageDetector):
                     },
                     ...
                 ]
+
+            | list(tuple): Formatted bbox and mask results of multiple \
+                images when no panoptic segmentation classes exist.
         """
         feats = self.extract_feat(imgs)
         mask_cls_results, mask_pred_results = self.panoptic_head.simple_test(
@@ -151,6 +158,9 @@ class MaskFormer(SingleStageDetector):
             assert 'sem_results' not in results[i], 'segmantic segmentation '\
                 'results are not supported yet.'
 
+        if self.num_stuff_classes == 0:
+            results = [res['ins_results'] for res in results]
+
         return results
 
     def aug_test(self, imgs, img_metas, **kwargs):
@@ -159,20 +169,20 @@ class MaskFormer(SingleStageDetector):
     def onnx_export(self, img, img_metas):
         raise NotImplementedError
 
-    def show_result(self,
-                    img,
-                    result,
-                    score_thr=0.3,
-                    bbox_color=(72, 101, 241),
-                    text_color=(72, 101, 241),
-                    mask_color=None,
-                    thickness=2,
-                    font_size=13,
-                    win_name='',
-                    show=False,
-                    wait_time=0,
-                    out_file=None):
-        """Draw `result` over `img`.
+    def _show_pan_result(self,
+                         img,
+                         result,
+                         score_thr=0.3,
+                         bbox_color=(72, 101, 241),
+                         text_color=(72, 101, 241),
+                         mask_color=None,
+                         thickness=2,
+                         font_size=13,
+                         win_name='',
+                         show=False,
+                         wait_time=0,
+                         out_file=None):
+        """Draw `panoptic result` over `img`.
 
         Args:
             img (str or Tensor): The image to be displayed.
