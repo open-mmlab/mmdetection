@@ -8,7 +8,8 @@ from mmcv.utils import Config
 def replace_config(ori_cfg):
     """Replace the ${key} with the value of ori_cfg.key in the config. And
     support replacing the chained ${key}. Such as, replace ${key0.key1} with
-    the value of cfg.key0.key1.
+    the value of cfg.key0.key1. Code is modified from `vars.py
+    https://github.com/microsoft/SoftTeacher/blob/main/ssod/utils/vars.py`
 
     Args:
         ori_cfg(mmcv.utils.config.Config):
@@ -37,14 +38,9 @@ def replace_config(ori_cfg):
             # replace the ${key} with cfg.key
             keys = pattern_key.findall(cfg)
             values = [get_value(ori_cfg_dict, key[2:-1]) for key in keys]
+            # only support replacing one ${key} for dict, list, or tuple
             for key, value in zip(keys, values):
-                if not isinstance(value, (dict, list, tuple)):
-                    cfg = cfg.replace(key, str(value))
-                else:
-                    # only support replacing one ${key}
-                    # for dict, list, or tuple
-                    assert len(keys) == 1
-                    cfg = value
+                cfg = value if len(keys) == 1 else cfg.replace(key, str(value))
             return cfg
         else:
             return cfg

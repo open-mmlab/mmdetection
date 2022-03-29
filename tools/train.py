@@ -17,9 +17,8 @@ from mmdet import __version__
 from mmdet.apis import init_random_seed, set_random_seed, train_detector
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
-from mmdet.utils import (collect_env, get_root_logger, setup_multi_processes,
-                         update_data_root)
-
+from mmdet.utils import (collect_env, get_root_logger, replace_config,
+                         setup_multi_processes, update_data_root)
 
 
 def parse_args():
