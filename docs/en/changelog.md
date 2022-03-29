@@ -11,10 +11,10 @@
 
 - Support [Mask2Former](configs/mask2former)(#6938)(#7466)(#7471)
 - Support [EfficientNet](configs/efficientnet) (#7514)
-- Support setting data root through commands (#7386) 
+- Support setting data root through environment variable `MMDET_DATASETS`, users don't have to modify the corresponding path in config files anymore. (#7386)
 - Support setting different seeds to different ranks (#7432)
 - Update the `dist_train.sh` so that the script can be used to support launching multi-node training on machines without slurm (#7415)
-- Find a good recipe for fine-tuning high precision ResNet backbone pre-trained by Torchvision (#7489) 
+- Find a good recipe for fine-tuning high precision ResNet backbone pre-trained by Torchvision (#7489)
 
 #### Bug Fixes
 
@@ -25,9 +25,7 @@
 - Fix reduction=mean in CELoss. (#7449)
 - Update unit test of CrossEntropyCost (#7537)
 - Fix memory leaking in panpotic segmentation evaluation (#7538)
-- Fix broadcast shape bug in YOLOv3 (#7551)
-- Fix docstring of `nms_cfg` in bbox_nms (#7547)
-- `unmap_results=True` fixes a bug (#7328)
+- Fix the bug of shape broadcast in YOLOv3 (#7551)
 
 #### Improvements
 
@@ -36,10 +34,10 @@
 - Update information about Localization Distillation (#7350)
 - Add Chinese version of `finetune.md` (#7178)
 - Update YOLOX log for non square input (#7235)
-- Add cpu_num in cocopanoptic for pq computing (#7315)
+- Add `nproc` in `coco_panoptic.py` for panoptic quality computing (#7315)
 - Allow to set channel_order in LoadImageFromFile (#7258)
 - Take point sample related functions out of mask_point_head (#7353)
-- Add instance evalutation for coco_panoptic (#7313)
+- Add instance evaluation for coco_panoptic (#7313)
 - Enhance the robustness of analyze_logs.py (#7407)
 - Supplementary notes of sync_random_seed (#7440)
 - Update docstring of cross entropy loss (#7472)
@@ -47,7 +45,7 @@
 - We create How-to documentation to record any questions about How to xxx. In this version, we added
   - How to use Mosaic augmentation (#7507)
   - How to use backbone in mmcls (#7438)
-  - how to produce the prediction results of panoptic segmentation models on the COCO test-dev set and submit the predictions to [COCO evaluation server](https://competitions.codalab.org/competitions/19507) (#7430))
+  - How to produce and submit the prediction results of panoptic segmentation models on COCO test-dev set (#7430))
 
 #### Contributors
 

@@ -76,7 +76,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 最新的 **2.23.0** 版本已经在 2022.03.28 发布:
 
 - 支持 [Mask2Former](configs/mask2former) 和 [Efficientnet](configs/efficientnet)
-- 支持通过命令设置数据根目录，因此无需修改配置文件中对应的路径。
+- 支持通环境变量 `MMDET_DATASETS` 设置数据根目录，因此无需修改配置文件中对应的路径。
 - 支持加载 Torchvision 的高精度 ResNet 模型。
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/en/changelog.md)。

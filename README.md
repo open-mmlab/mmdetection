@@ -77,7 +77,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 **2.23.0** was released in 28/3/2022:
 
 - Support [Mask2Former](configs/mask2former) and [EfficientNet](configs/efficientnet)
-- Support setting data root through commands, users don't have to modify the corresponding path in config files anymore.
+- Support setting data root through environment variable `MMDET_DATASETS`, users don't have to modify the corresponding path in config files anymore.
 - Find a good recipe for fine-tuning high precision ResNet backbone pre-trained by Torchvision.
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
