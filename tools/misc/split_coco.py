@@ -6,7 +6,7 @@ import mmcv
 import numpy as np
 
 
-def split_coco(data_root, fold, percent):
+def split_coco(data_root, out_dir, fold, percent):
     """Split COCO data for Semi-supervised object detection.
 
     Args:
@@ -25,11 +25,9 @@ def split_coco(data_root, fold, percent):
         sub_annos['licenses'] = annos['licenses']
         sub_annos['categories'] = annos['categories']
         sub_annos['info'] = annos['info']
-        # the path of semi-supervised annotations is ./data/coco_semi_annos,
-        # because ./data/coco may be a soft link
-        path = '/'.join(ann_file.split('/')[:-3] + ['coco_semi_annos'])
-        mmcv.mkdir_or_exist(path)
-        mmcv.dump(sub_annos, f'{path}/{name}.json')
+
+        mmcv.mkdir_or_exist(out_dir)
+        mmcv.dump(sub_annos, f'{out_dir}/{name}.json')
 
         print(f'Finishing to split data {name}.json '
               f'saved {len(images)} images and {len(annotations)} annotations')
@@ -77,7 +75,16 @@ if __name__ == '__main__':
         type=str,
         help='data root of coco dataset',
         default='./data/coco/')
-    parser.add_argument('--k-fold', type=int, help='k-fold', default=5)
+    parser.add_argument(
+        '--out-dir',
+        type=str,
+        help='the output directory of coco semi-supervised annotations',
+        default='./data/coco_semi_annos/')
+    parser.add_argument(
+        '--fold',
+        type=int,
+        help='k-fold cross validation for semi-supervised object detection',
+        default=5)
     parser.add_argument(
         '--percent',
         type=float,
@@ -87,6 +94,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    for fold in range(1, args.k_fold + 1):
+    for fold in range(1, args.fold + 1):
         for percent in args.percent:
-            split_coco(args.data_root, fold, percent)
+            split_coco(args.data_root, args.out_dir, fold, percent)
