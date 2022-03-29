@@ -163,9 +163,7 @@ train_pipeline = [
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size=image_size),
     dict(type='DefaultFormatBundle', img_to_float=True),
-    dict(
-        type='Collect',
-        keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks']),
+    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks']),
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile'),
