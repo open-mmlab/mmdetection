@@ -6,6 +6,8 @@
 
 - Support Mask2Former: [Masked-attention Mask Transformer for Universal Image Segmentation](https://arxiv.org/abs/2112.01527)
 - Support EfficientNet: [EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks](https://arxiv.org/abs/1905.11946)
+- Support setting data root through environment variable `MMDET_DATASETS`, users don't have to modify the corresponding path in config files anymore.
+- Find a good recipe for fine-tuning high precision ResNet backbone pre-trained by Torchvision.
 
 #### New Features
 
