@@ -813,7 +813,7 @@ def test_maskformer_forward():
 
 def test_mask2former_forward():
     model_cfg = _get_detector_cfg(
-        'mask2former/mask2former_r50_lsj_8x2_50e_coco.py')
+        'mask2former/mask2former_r50_lsj_8x2_50e_coco_pan.py')
     base_channels = 32
     model_cfg.backbone.depth = 18
     model_cfg.backbone.init_cfg = None
