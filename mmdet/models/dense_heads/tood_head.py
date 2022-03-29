@@ -273,7 +273,7 @@ class TOODHead(ATSSHead):
             invalid_bbox_idx = (bbox_pred[:, [0]] > bbox_pred[:, [2]]) | \
                                (bbox_pred[:, [1]] > bbox_pred[:, [3]])
             invalid_bbox_idx = invalid_bbox_idx.expand_as(bbox_pred)
-            bbox_pred[invalid_bbox_idx] = reg_bbox[invalid_bbox_idx]
+            bbox_pred = torch.where(invalid_bbox_idx, reg_bbox, bbox_pred)
 
             cls_scores.append(cls_score)
             bbox_preds.append(bbox_pred)
@@ -284,7 +284,7 @@ class TOODHead(ATSSHead):
 
         Args:
             feat (Tensor): Feature
-            offset (Tensor): Spatial offset for for feature sampliing
+            offset (Tensor): Spatial offset for feature sampling
         """
         # it is an equivalent implementation of bilinear interpolation
         b, c, h, w = feat.shape
