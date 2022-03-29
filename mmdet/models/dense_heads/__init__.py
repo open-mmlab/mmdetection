@@ -20,6 +20,7 @@ from .gfl_head import GFLHead
 from .guided_anchor_head import FeatureAdaption, GuidedAnchorHead
 from .lad_head import LADHead
 from .ld_head import LDHead
+from .mask2former_head import Mask2FormerHead
 from .maskformer_head import MaskFormerHead
 from .nasfcos_head import NASFCOSHead
 from .paa_head import PAAHead
@@ -52,5 +53,5 @@ __all__ = [
     'AutoAssignHead', 'DETRHead', 'YOLOFHead', 'DeformableDETRHead',
     'SOLOHead', 'DecoupledSOLOHead', 'CenterNetHead', 'YOLOXHead',
     'DecoupledSOLOLightHead', 'LADHead', 'TOODHead', 'MaskFormerHead',
-    'SOLOV2Head'
+    'Mask2FormerHead', 'SOLOV2Head'
 ]

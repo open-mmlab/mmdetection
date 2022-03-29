@@ -6,6 +6,7 @@ import torch.distributed as dist
 import torch.nn.functional as F
 from mmcv.runner import get_dist_info
 
+from ...utils import log_img_scale
 from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
 
@@ -29,8 +30,8 @@ class YOLOX(SingleStageDetector):
             of YOLOX. Default: None.
         pretrained (str, optional): model pretrained path.
             Default: None.
-        input_size (tuple): The model default input image size.
-            Default: (640, 640).
+        input_size (tuple): The model default input image size. The shape
+            order should be (height, width). Default: (640, 640).
         size_multiplier (int): Image size multiplication factor.
             Default: 32.
         random_size_range (tuple): The multi-scale random range during
@@ -56,6 +57,7 @@ class YOLOX(SingleStageDetector):
                  init_cfg=None):
         super(YOLOX, self).__init__(backbone, neck, bbox_head, train_cfg,
                                     test_cfg, pretrained, init_cfg)
+        log_img_scale(input_size, skip_square=True)
         self.rank, self.world_size = get_dist_info()
         self._default_input_size = input_size
         self._input_size = input_size
