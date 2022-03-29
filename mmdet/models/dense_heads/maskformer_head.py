@@ -496,7 +496,7 @@ class MaskFormerHead(AnchorFreeHead):
                 each box, shape (num_gts,).
             gt_masks (list[BitmapMasks]): Each element is masks of instances
                 of a image, shape (num_gts, h, w).
-            gt_semantic_seg (list[tensor] | None): Each element is the ground 
+            gt_semantic_seg (list[tensor] | None): Each element is the ground
                 truth of semantic segmentation with the shape (N, H, W).
                 [0, num_thing_class - 1] means things,
                 [num_thing_class, num_class-1] means stuff,
