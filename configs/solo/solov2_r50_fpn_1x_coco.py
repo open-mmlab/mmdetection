@@ -54,8 +54,10 @@ model = dict(
         sigma=2.0,
         max_per_img=100))
 
-log_config = dict(hooks=[dict(type='TextLoggerHook'),
-                         dict(type='TensorboardLoggerHook')])
+log_config = dict(
+    hooks=[dict(type='TextLoggerHook'),
+           dict(type='TensorboardLoggerHook')])
 # optimizer
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
-optimizer_config = dict(_delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
+optimizer_config = dict(
+    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
