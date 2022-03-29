@@ -268,6 +268,13 @@ class TOODHead(ATSSHead):
             reg_offset = self.reg_offset_module(feat)
             bbox_pred = self.deform_sampling(reg_bbox.contiguous(),
                                              reg_offset.contiguous())
+
+            # Avoid invalid bboxes after deform_sampling
+            invalid_bbox_idx = (bbox_pred[:, [0]] > bbox_pred[:, [2]]) | \
+                               (bbox_pred[:, [1]] > bbox_pred[:, [3]])
+            invalid_bbox_idx = invalid_bbox_idx.expand_as(bbox_pred)
+            bbox_pred[invalid_bbox_idx] = reg_bbox[invalid_bbox_idx]
+
             cls_scores.append(cls_score)
             bbox_preds.append(bbox_pred)
         return tuple(cls_scores), tuple(bbox_preds)
