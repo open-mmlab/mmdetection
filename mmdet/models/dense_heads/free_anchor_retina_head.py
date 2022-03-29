@@ -78,8 +78,9 @@ class FreeAnchorRetinaHead(RetinaHead):
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == self.prior_generator.num_levels
-
-        anchor_list, _ = self.get_anchors(featmap_sizes, img_metas)
+        device = cls_scores[0].device
+        anchor_list, _ = self.get_anchors(
+            featmap_sizes, img_metas, device=device)
         anchors = [torch.cat(anchor) for anchor in anchor_list]
 
         # concatenate each level

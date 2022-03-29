@@ -520,9 +520,9 @@ class RandomShift:
             random_shift_y = random.randint(-self.max_shift_px,
                                             self.max_shift_px)
             new_x = max(0, random_shift_x)
-            orig_x = max(0, -random_shift_x)
+            ori_x = max(0, -random_shift_x)
             new_y = max(0, random_shift_y)
-            orig_y = max(0, -random_shift_y)
+            ori_y = max(0, -random_shift_y)
 
             # TODO: support mask and semantic segmentation maps.
             for key in results.get('bbox_fields', []):
@@ -558,7 +558,7 @@ class RandomShift:
                 new_h = img_h - np.abs(random_shift_y)
                 new_w = img_w - np.abs(random_shift_x)
                 new_img[new_y:new_y + new_h, new_x:new_x + new_w] \
-                    = img[orig_y:orig_y + new_h, orig_x:orig_x + new_w]
+                    = img[ori_y:ori_y + new_h, ori_x:ori_x + new_w]
                 results[key] = new_img
 
         return results

@@ -64,6 +64,14 @@ We further finetune some pre-trained models on the COCO subsets, which only cont
 | [R-50-FPN](./faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-person.py)          | caffe | person             | [R-50-FPN-Caffe-3x](./faster_rcnn_r50_caffe_fpn_mstrain_3x_coco.py) | 3.7      | 55.8   | [config](./faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-person.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco-person/faster_rcnn_r50_fpn_1x_coco-person_20201216_175929-d022e227.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco-person/faster_rcnn_r50_fpn_1x_coco-person_20201216_175929.log.json)                                                 |
 | [R-50-FPN](./faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-person-bicycle-car.py) | caffe | person-bicycle-car | [R-50-FPN-Caffe-3x](./faster_rcnn_r50_caffe_fpn_mstrain_3x_coco.py) | 3.7      | 44.1   | [config](./faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-person-bicycle-car.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco-person-bicycle-car/faster_rcnn_r50_fpn_1x_coco-person-bicycle-car_20201216_173117-6eda6d92.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco-person-bicycle-car/faster_rcnn_r50_fpn_1x_coco-person-bicycle-car_20201216_173117.log.json) |
 
+## Torchvision New Receipe (TNR)
+
+Torchvision released its high-precision ResNet models. The training details can be found on the [Pytorch website](https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/). Here, we have done grid searches on learning rate and weight decay and found the optimal hyper-parameter on the detection task.
+
+|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
+| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: | :--------: |
+|    [R-50-TNR](./faster_rcnn_r50_fpn_tnr-pretrain_1x_coco.py)    |  pytorch  |   1x    | -        |                | 40.2 | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco_20220320_085147-efedfda4.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco_20220320_085147-efedfda4.log.json) |
+
 ## Citation
 
 ```latex
