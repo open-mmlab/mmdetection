@@ -127,7 +127,7 @@ model = dict(
     # freeze one stage of the backbone network.
     backbone=dict(frozen_stages=1),
 )
-custom_hooks = dict(type="UnfreezeBackboneEpochBasedHook", unfreeze_epoch=1)
+custom_hooks = [dict(type="UnfreezeBackboneEpochBasedHook", unfreeze_epoch=1)]
 ```
 
 Meanwhile write the hook class `UnfreezeBackboneEpochBasedHook` in `mmdet/core/hook/unfreeze_backbone_epoch_based_hook.py`
