@@ -84,23 +84,6 @@ Please refer to [changelog.md](docs/en/changelog.md) for details and release his
 
 For compatibility changes between different versions of MMDetection, please refer to [compatibility.md](docs/en/compatibility.md).
 
-## Installation
-
-MMRotate depends on [PyTorch](https://pytorch.org/) and [MMCV](https://github.com/open-mmlab/mmcv).
-Below are quick steps for installation.
-Please refer to [install.md](docs/en/get_started.md) for more detailed instruction.
-
-```shell
-conda create -n openmmlab python=3.7 pytorch==1.6.0 torchvision==0.7.0 cudatoolkit=10.1 -c pytorch -y
-conda activate openmmlab
-pip3 install openmim
-mim install mmcv-full
-git clone https://github.com/open-mmlab/mmdetection.git
-cd mmdetection
-pip install -r requirements/build.txt
-pip install -e .
-```
-
 ## Overview of Benchmark and Model Zoo
 
 Results and models are available in the [model zoo](docs/en/model_zoo.md).
@@ -285,6 +268,10 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
 </table>
 
 Some other methods are also supported in [projects using MMDetection](./docs/en/projects.md).
+
+## Installation
+
+Please refer to [get_started.md](docs/en/get_started.md) for installation.
 
 ## Getting Started
 
