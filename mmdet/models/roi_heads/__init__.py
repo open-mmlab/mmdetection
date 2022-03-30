@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from .base_roi_head import BaseRoIHead
 from .bbox_heads import (BBoxHead, ConvFCBBoxHead, DIIHead,
-                         DoubleConvFCBBoxHead, SABLHead, SCNetBBoxHead,
+                         DoubleConvFCBBoxHead, DoubleConvFCBBoxHeadExt, SABLHead, SCNetBBoxHead,
                          Shared2FCBBoxHead, Shared4Conv1FCBBoxHead)
 from .cascade_roi_head import CascadeRoIHead
 from .double_roi_head import DoubleHeadRoIHead
