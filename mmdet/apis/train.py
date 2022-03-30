@@ -93,15 +93,15 @@ def auto_scale_lr(cfg, distributed, logger):
         return
 
     # Get default batch size from config
-    default_batch_size = cfg.auto_scale_lr_config.get('default_batch_size', 0)
-    if default_batch_size == 0:
+    default_batch_size = cfg.auto_scale_lr_config.get('default_batch_size', None)
+    if default_batch_size is None:
         logger.warning('Can not find "default_batch_size" '
                        f'{warning_msg}')
         return
 
     # Get default initial LR from config
-    default_initial_lr = cfg.auto_scale_lr_config.get('default_initial_lr', 0)
-    if default_initial_lr == 0:
+    default_initial_lr = cfg.auto_scale_lr_config.get('default_initial_lr', None)
+    if default_initial_lr is None:
         logger.warning('Can not find "default_initial_lr" '
                        f'{warning_msg}')
         return
