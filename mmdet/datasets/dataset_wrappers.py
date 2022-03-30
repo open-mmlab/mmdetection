@@ -410,9 +410,9 @@ class MultiImageMixDataset:
                     ]
                     if None not in mix_results:
                         results['mix_results'] = mix_results
-                        break
-
-            results = transform(results)
+                        results = transform(results)
+                        if results is not None:
+                            break
 
             if 'mix_results' in results:
                 results.pop('mix_results')
