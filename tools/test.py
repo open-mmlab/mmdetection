@@ -18,7 +18,7 @@ from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
 from mmdet.models import build_detector
 from mmdet.utils import compat_cfg, setup_multi_processes, update_data_root
-
+                         build_ddp, build_dp, select_device)
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -172,7 +172,7 @@ def main():
                       'in `gpu_ids` now.')
     else:
         cfg.gpu_ids = [args.gpu_id]
-
+    cfg.device = select_device()
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':
         distributed = False
@@ -230,14 +230,15 @@ def main():
         model.CLASSES = dataset.CLASSES
 
     if not distributed:
-        model = MMDataParallel(model, device_ids=cfg.gpu_ids)
+        model, DP = build_dp(model, cfg.device)
+        model = DP(model, device_ids=cfg.gpu_ids)
         outputs = single_gpu_test(model, data_loader, args.show, args.show_dir,
                                   args.show_score_thr)
     else:
-        model = MMDistributedDataParallel(
-            model.cuda(),
-            device_ids=[torch.cuda.current_device()],
-            broadcast_buffers=False)
+        model, DDP = build_ddp(model, cfg.device)
+        model = DDP(model,
+                   device_ids=[LOCAL_RANK],
+                   broadcast_buffers=False)
         outputs = multi_gpu_test(model, data_loader, args.tmpdir,
                                  args.gpu_collect)
 
