@@ -136,15 +136,17 @@ Meanwhile write the hook class `UnfreezeBackboneEpochBasedHook` in `mmdet/core/h
 from mmcv.parallel import is_module_wrapper
 from mmcv.runner.hooks import HOOKS, Hook
 
+
 @HOOKS.register_module()
 class UnfreezeBackboneEpochBasedHook(Hook):
     """Unfreeze backbone network Hook.
+
     Args:
         unfreeze_epoch (int): The epoch unfreezing the backbone network.
     """
 
     def __init__(self, unfreeze_epoch=1):
-        self.unfreeze_epoch=unfreeze_epoch
+        self.unfreeze_epoch = unfreeze_epoch
 
     def before_train_epoch(self, runner):
         # Unfreeze the backbone network.
@@ -169,6 +171,4 @@ class UnfreezeBackboneEpochBasedHook(Hook):
                 m.train()
                 for param in m.parameters():
                     param.requires_grad = True
-
-
 ```
