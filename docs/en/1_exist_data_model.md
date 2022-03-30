@@ -529,6 +529,10 @@ If you enabled this feature, the learning rate will be automatically scaled acco
 
 If you don't want to use it, you need to calculate the learning rate according to the [linear scaling rule](https://arxiv.org/abs/1706.02677) manually then change `optimizer.lr` in specific config file.
 
+Something about the `optimizer.lr` and `auto_scale_lr_config.auto_scale_lr`:
+- `optimizer.lr`: It will be the base learning rate to calculate the new LR if you enable the `--auto-scale-lr`. On the contrary, it will be the LR directly. And you can change it if you know what you are doing.
+- `auto_scale_lr_config.auto_scale_lr`: It is the LR when mmdet release the config file, it will give a warning message when your `optimizer.lr` is not as same as `auto_scale_lr_config.auto_scale_lr`. **The most thing is that it CAN NOT be changed**.
+
 ### Training on a single GPU
 
 We provide `tools/train.py` to launch training jobs on a single GPU.

@@ -516,6 +516,10 @@ python tools/train.py \
 
 如果不启用该功能，则需要根据 [线性扩展规则](https://arxiv.org/abs/1706.02677) 来手动计算并修改配置文件里面 `optimizer.lr` 的值。
 
+一些有关 `optimizer.lr` 和 `auto_scale_lr_config.auto_scale_lr` 的信息:
+- `optimizer.lr`: 无论是否启动 `--auto-scale-lr`, 该值都是训练时候的基础学习率。如果启动 `--auto-scale-lr` 的话，会对其进行缩放；反之，直接使用其作为学习率。如果您知道您修该值的后果在做什么，那么您可以随便修改它。
+- `auto_scale_lr_config.auto_scale_lr`：该值是 mmdet 官方发布配置文件的学习率初始值。程序会在`optimizer.lr` 和 `auto_scale_lr_config.auto_scale_lr` 不一致的时候抛出警告信息。**重要的是，您不可以修改该值**。
+
 ### 使用单 GPU 训练
 
 我们提供了 `tools/train.py` 来开启在单张 GPU 上的训练任务。基本使用如下：
