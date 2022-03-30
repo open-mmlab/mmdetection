@@ -48,7 +48,7 @@ MMDetection 和 MMCV 版本兼容性如下所示，需要安装正确的 MMCV �
 
 ### 从零开始设置脚本
 
-假设当前已经成功安装 CUDA 10.1，这里提供了一个完整的基于 conda 安装 MMDetection 的脚本：
+假设当前已经成功安装 CUDA 10.1，这里提供了一个完整的基于 conda 安装 MMDetection 的脚本。您可以参考下一节中的分步安装说明。
 
 ```shell
 conda create -n openmmlab python=3.7 pytorch==1.6.0 cudatoolkit=10.1 torchvision -c pytorch -y
