@@ -135,10 +135,10 @@ def auto_scale_lr(cfg, distributed, logger):
         # scale LR with
         # [linear scaling rule](https://arxiv.org/abs/1706.02677)
         scaled_lr = (batch_size / default_batch_size) * cfg.optimizer.lr
-        cfg.optimizer.lr = scaled_lr
-
         logger.info('LR has been automatically scaled '
                     f'from {cfg.optimizer.lr} to {scaled_lr}')
+
+        cfg.optimizer.lr = scaled_lr
 
     else:
         logger.info('The batch size match the '
