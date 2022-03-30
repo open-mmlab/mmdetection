@@ -15,8 +15,16 @@ def test_fpn():
     out_channels = 8
 
     # end_level=-1 is equal to end_level=3
-    FPN(in_channels=in_channels,out_channels=out_channels,start_level=0, end_level=-1, num_outs=5)
-    FPN(in_channels=in_channels,out_channels=out_channels,start_level=0, end_level=3, num_outs=5)
+    FPN(in_channels=in_channels,
+        out_channels=out_channels,
+        start_level=0,
+        end_level=-1,
+        num_outs=5)
+    FPN(in_channels=in_channels,
+        out_channels=out_channels,
+        start_level=0,
+        end_level=3,
+        num_outs=5)
     # `num_outs` is not equal to len(in_channels) - start_level
     with pytest.raises(AssertionError):
         FPN(in_channels=in_channels,
