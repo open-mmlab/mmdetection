@@ -62,6 +62,8 @@ class Resize:
         backend (str): Image resize backend, choices are 'cv2' and 'pillow'.
             These two backends generates slightly different results. Defaults
             to 'cv2'.
+        interpolation (str): Algorithm used for interpolation:
+            "nearest" | "bilinear". Default: "bilinear".
         override (bool, optional): Whether to override `scale` and
             `scale_factor` so as to call resize twice. Default False. If True,
             after the first resizing, the existed `scale` and `scale_factor`
@@ -77,6 +79,7 @@ class Resize:
                  keep_ratio=True,
                  bbox_clip_border=True,
                  backend='cv2',
+                 interpolation='bilinear',
                  override=False):
         if img_scale is None:
             self.img_scale = None
@@ -99,6 +102,7 @@ class Resize:
         self.ratio_range = ratio_range
         self.keep_ratio = keep_ratio
         # TODO: refactor the override option in Resize
+        self.interpolation = interpolation
         self.override = override
         self.bbox_clip_border = bbox_clip_border
 
@@ -215,6 +219,7 @@ class Resize:
                     results[key],
                     results['scale'],
                     return_scale=True,
+                    interpolation=self.interpolation,
                     backend=self.backend)
                 # the w_scale and h_scale has minor difference
                 # a real fix should be done in the mmcv.imrescale in the future
@@ -227,6 +232,7 @@ class Resize:
                     results[key],
                     results['scale'],
                     return_scale=True,
+                    interpolation=self.interpolation,
                     backend=self.backend)
             results[key] = img
 
