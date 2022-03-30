@@ -2,6 +2,7 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule, normal_init
 from mmcv.ops import DeformConv2d
+from mmcv.runner import force_fp32
 
 from mmdet.core import multi_apply
 from ..builder import HEADS, build_loss
@@ -203,6 +204,7 @@ class CentripetalHead(CornerHead):
         ]
         return result_list
 
+    @force_fp32()
     def loss(self,
              tl_heats,
              br_heats,
@@ -361,6 +363,7 @@ class CentripetalHead(CornerHead):
 
         return det_loss, off_loss, guiding_loss, centripetal_loss
 
+    @force_fp32()
     def get_bboxes(self,
                    tl_heats,
                    br_heats,

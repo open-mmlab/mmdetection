@@ -2,17 +2,17 @@
   <img src="resources/mmdet-logo.png" width="600"/>
   <div>&nbsp;</div>
   <div align="center">
-    <b><font size="5">OpenMMLab website</font></b>
+    <b>OpenMMLab website</b>
     <sup>
       <a href="https://openmmlab.com">
-        <i><font size="4">HOT</font></i>
+        <i>HOT</i>
       </a>
     </sup>
     &nbsp;&nbsp;&nbsp;&nbsp;
-    <b><font size="5">OpenMMLab platform</font></b>
+    <b>OpenMMLab platform</b>
     <sup>
       <a href="https://platform.openmmlab.com">
-        <i><font size="4">TRY IT OUT</font></i>
+        <i>TRY IT OUT</i>
       </a>
     </sup>
   </div>
@@ -74,11 +74,11 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-**2.22.0** was released in 24/2/2022:
+**2.23.0** was released in 28/3/2022:
 
-- Support [MaskFormer](configs/maskformer), [DyHead](configs/dyhead), [OpenImages Dataset](configs/openimages) and [TIMM backbone](configs/timm_example)
-- Support visualization for Panoptic Segmentation
-- Release a good recipe of using ResNet in object detectors pre-trained by [ResNet Strikes Back](https://arxiv.org/abs/2110.00476), which consistently brings about 3~4 mAP improvements over RetinaNet, Faster/Mask/Cascade Mask R-CNN
+- Support [Mask2Former](configs/mask2former) and [EfficientNet](configs/efficientnet)
+- Support setting data root through environment variable `MMDET_DATASETS`, users don't have to modify the corresponding path in config files anymore.
+- Find a good recipe for fine-tuning high precision ResNet backbone pre-trained by Torchvision.
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 
@@ -164,6 +164,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         <ul>
           <li><a href="configs/panoptic_fpn">Panoptic FPN (CVPR'2019)</a></li>
           <li><a href="configs/maskformer">MaskFormer (NeurIPS'2021)</a></li>
+          <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
         </ul>
       </td>
       <td>
@@ -228,6 +229,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         <li><a href="configs/swin">Swin (CVPR'2021)</a></li>
         <li><a href="configs/pvt">PVTv2 (ArXiv'2021)</a></li>
         <li><a href="configs/resnet_strikes_back">ResNet strikes back (ArXiv'2021)</a></li>
+        <li><a href="configs/efficientnet">EfficientNet (ArXiv'2021)</a></li>
       </ul>
       </td>
       <td>

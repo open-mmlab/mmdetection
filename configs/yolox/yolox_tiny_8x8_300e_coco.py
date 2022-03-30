@@ -7,7 +7,7 @@ model = dict(
     neck=dict(in_channels=[96, 192, 384], out_channels=96),
     bbox_head=dict(in_channels=96, feat_channels=96))
 
-img_scale = (640, 640)
+img_scale = (640, 640)  # height, width
 
 train_pipeline = [
     dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
