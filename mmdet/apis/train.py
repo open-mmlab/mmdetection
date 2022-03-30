@@ -77,7 +77,7 @@ def auto_scale_lr(cfg, distributed, logger):
         logger (logging.Logger): Logger.
     """
     warning_msg = 'in your configuration file. Please update all the ' \
-                  'configuration files to mmdet >= 2.23.0. ' \
+                  'configuration files to mmdet >= 2.24.0. ' \
                   'Disable automatic scaling of learning rate.'
 
     # default config of auto scale lr
