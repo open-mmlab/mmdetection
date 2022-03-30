@@ -53,12 +53,12 @@ Assuming that you already have CUDA 10.1 installed, here is a full script for se
 ```shell
 conda create -n openmmlab python=3.7 pytorch==1.6.0 cudatoolkit=10.1 torchvision -c pytorch -y
 conda activate openmmlab
-pip3 install openmim
+pip install openmim
 mim install mmcv-full
 git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 pip install -r requirements/build.txt
-pip install -e .
+pip install -v -e .
 ```
 
 ### Prepare environment
