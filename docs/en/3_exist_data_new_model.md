@@ -41,6 +41,12 @@ mmdetection
 
 ```
 
+Or you can set your dataset root through
+```bash
+export MMDET_DATASETS=$data_root
+```
+We will replace dataset root with `$MMDET_DATASETS`, so you don't have to modify the corresponding path in config files.
+
 The cityscapes annotations have to be converted into the coco format using `tools/dataset_converters/cityscapes.py`:
 
 ```shell
