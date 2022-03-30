@@ -109,7 +109,7 @@ def auto_scale_lr(cfg, distributed, logger):
     # Get gpu number
     if distributed:
         _, world_size = get_dist_info()
-        num_gpus = range(world_size)
+        num_gpus = len(range(world_size))
     else:
         num_gpus = len(cfg.gpu_ids)
 
