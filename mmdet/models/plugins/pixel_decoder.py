@@ -45,14 +45,14 @@ class PixelDecoder(BaseModule):
         self.output_convs = ModuleList()
         self.use_bias = norm_cfg is None
         for i in range(0, self.num_inputs - 1):
-            l_conv = ConvModule(
+            lateral_conv = ConvModule(
                 in_channels[i],
                 feat_channels,
                 kernel_size=1,
                 bias=self.use_bias,
                 norm_cfg=norm_cfg,
                 act_cfg=None)
-            o_conv = ConvModule(
+            output_conv = ConvModule(
                 feat_channels,
                 feat_channels,
                 kernel_size=3,
@@ -61,8 +61,8 @@ class PixelDecoder(BaseModule):
                 bias=self.use_bias,
                 norm_cfg=norm_cfg,
                 act_cfg=act_cfg)
-            self.lateral_convs.append(l_conv)
-            self.output_convs.append(o_conv)
+            self.lateral_convs.append(lateral_conv)
+            self.output_convs.append(output_conv)
 
         self.last_feat_conv = ConvModule(
             in_channels[-1],
@@ -102,9 +102,9 @@ class PixelDecoder(BaseModule):
         y = self.last_feat_conv(feats[-1])
         for i in range(self.num_inputs - 2, -1, -1):
             x = feats[i]
-            cur_fpn = self.lateral_convs[i](x)
-            y = cur_fpn + \
-                F.interpolate(y, size=cur_fpn.shape[-2:], mode='nearest')
+            cur_feat = self.lateral_convs[i](x)
+            y = cur_feat + \
+                F.interpolate(y, size=cur_feat.shape[-2:], mode='nearest')
             y = self.output_convs[i](y)
 
         mask_feature = self.mask_feature(y)
@@ -234,9 +234,9 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
         y = self.encoder_out_proj(memory)
         for i in range(self.num_inputs - 2, -1, -1):
             x = feats[i]
-            cur_fpn = self.lateral_convs[i](x)
-            y = cur_fpn + \
-                F.interpolate(y, size=cur_fpn.shape[-2:], mode='nearest')
+            cur_feat = self.lateral_convs[i](x)
+            y = cur_feat + \
+                F.interpolate(y, size=cur_feat.shape[-2:], mode='nearest')
             y = self.output_convs[i](y)
 
         mask_feature = self.mask_feature(y)

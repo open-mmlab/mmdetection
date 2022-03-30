@@ -73,13 +73,13 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 更新日志
 
-最新的 **2.22.0** 版本已经在 2022.02.24 发布:
+最新的 **2.23.0** 版本已经在 2022.03.28 发布:
 
-- 支持 [MaskFormer](configs/maskformer)，[DyHead](configs/dyhead)，[OpenImages Dataset](configs/openimages) 和 [TIMM backbone](configs/timm_example)
-- 支持全景分割可视化
-- 发布了一个在目标检测任务中使用 ResNet 的好方法，它是由 [ResNet Strikes Back](https://arxiv.org/abs/2110.00476) 预训练的，并且能稳定的在 RetinaNet, Faster/Mask/Cascade Mask R-CNN 上带来约 3-4 mAP 的提升
+- 支持 [Mask2Former](configs/mask2former) 和 [Efficientnet](configs/efficientnet)
+- 支持通环境变量 `MMDET_DATASETS` 设置数据根目录，因此无需修改配置文件中对应的路径。
+- 发现一个很好的方法来微调由 Torchvision 预训练的高精度 ResNet 主干。
 
-如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/changelog.md)。
+如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/en/changelog.md)。
 
 如果想了解 MMDetection 不同版本之间的兼容性, 请参考[兼容性说明文档](docs/zh_cn/compatibility.md)。
 
@@ -162,6 +162,8 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
       <td>
         <ul>
           <li><a href="configs/panoptic_fpn">Panoptic FPN (CVPR'2019)</a></li>
+          <li><a href="configs/maskformer">MaskFormer (NeurIPS'2021)</a></li>
+          <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
         </ul>
       </td>
       <td>
@@ -226,6 +228,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
         <li><a href="configs/swin">Swin (CVPR'2021)</a></li>
         <li><a href="configs/pvt">PVTv2 (ArXiv'2021)</a></li>
         <li><a href="configs/resnet_strikes_back">ResNet strikes back (ArXiv'2021)</a></li>
+        <li><a href="configs/efficientnet">EfficientNet (ArXiv'2021)</a></li>
       </ul>
       </td>
       <td>
