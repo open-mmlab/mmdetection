@@ -7,6 +7,7 @@ from .efficientnet import EfficientNet
 from .hourglass import HourglassNet
 from .hrnet import HRNet
 from .mobilenet_v2 import MobileNetV2
+from .mobilenet_v3 import MobileNetV3
 from .pvt import PyramidVisionTransformer, PyramidVisionTransformerV2
 from .regnet import RegNet
 from .res2net import Res2Net
@@ -19,7 +20,7 @@ from .trident_resnet import TridentResNet
 
 __all__ = [
     'RegNet', 'ResNet', 'ResNetV1d', 'ResNeXt', 'SSDVGG', 'HRNet',
-    'MobileNetV2', 'Res2Net', 'HourglassNet', 'DetectoRS_ResNet',
+    'MobileNetV2', 'MobileNetV3', 'Res2Net', 'HourglassNet', 'DetectoRS_ResNet',
     'DetectoRS_ResNeXt', 'Darknet', 'ResNeSt', 'TridentResNet', 'CSPDarknet',
     'SwinTransformer', 'PyramidVisionTransformer',
     'PyramidVisionTransformerV2', 'EfficientNet'
