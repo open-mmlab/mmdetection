@@ -16,13 +16,13 @@ This paper proposes a Fast Region-based Convolutional Network method (Fast R-CNN
 
 Before training the Fast R-CNN, users should first train an [RPN](../rpn/README.md), and use the RPN to extract the region proposals.
 
-- Firstly, extract the region proposals of the test set by this command as below:
+- Firstly, extract the region proposals of the val set by this command as below:
 ```bash
 ./tools/dist_test.sh \
     configs/rpn_r50_fpn_1x_coco.py \
     checkpoints/rpn_r50_fpn_1x_coco_20200218-5525fa2e.pth \
     8 \
-    --out proposals/rpn_r50_fpn_1x_test2017.pkl
+    --out proposals/rpn_r50_fpn_1x_val2017.pkl
 ```
 
 - Then, change the `ann_file` and `img_prefix` of `data.test` in the RPN config to train set as below:
@@ -44,7 +44,6 @@ data = dict(
     --out proposals/rpn_r50_fpn_1x_train2017.pkl
 ```
 
-- Repeat the above two steps to extract the region proposals of the val set.
 - Modify the path of `proposal_file` in Fast R-CNN config as below:
 
 ```python
