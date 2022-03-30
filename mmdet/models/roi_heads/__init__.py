@@ -5,6 +5,7 @@ from .bbox_heads import (BBoxHead, ConvFCBBoxHead, DIIHead,
                          Shared2FCBBoxHead, Shared4Conv1FCBBoxHead)
 from .cascade_roi_head import CascadeRoIHead
 from .double_roi_head import DoubleHeadRoIHead
+from .double_roi_head_ext import DoubleHeadRoIHeadExt
 from .dynamic_roi_head import DynamicRoIHead
 from .grid_roi_head import GridRoIHead
 from .htc_roi_head import HybridTaskCascadeRoIHead
@@ -24,10 +25,10 @@ from .standard_roi_head import StandardRoIHead
 from .trident_roi_head import TridentRoIHead
 
 __all__ = [
-    'BaseRoIHead', 'CascadeRoIHead', 'DoubleHeadRoIHead', 'MaskScoringRoIHead',
+    'BaseRoIHead', 'CascadeRoIHead', 'DoubleHeadRoIHead', 'DoubleHeadRoIHeadExt', 'MaskScoringRoIHead',
     'HybridTaskCascadeRoIHead', 'GridRoIHead', 'ResLayer', 'BBoxHead',
     'ConvFCBBoxHead', 'DIIHead', 'SABLHead', 'Shared2FCBBoxHead',
-    'StandardRoIHead', 'Shared4Conv1FCBBoxHead', 'DoubleConvFCBBoxHead',
+    'StandardRoIHead', 'Shared4Conv1FCBBoxHead', 'DoubleConvFCBBoxHead', 'DoubleConvFCBBoxHeadExt',
     'FCNMaskHead', 'HTCMaskHead', 'FusedSemanticHead', 'GridHead',
     'MaskIoUHead', 'BaseRoIExtractor', 'GenericRoIExtractor',
     'SingleRoIExtractor', 'PISARoIHead', 'PointRendRoIHead', 'MaskPointHead',
