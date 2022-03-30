@@ -83,6 +83,23 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 如果想了解 MMDetection 不同版本之间的兼容性, 请参考[兼容性说明文档](docs/zh_cn/compatibility.md)。
 
+## 安装
+
+MMRotate 依赖 [PyTorch](https://pytorch.org/) 和 [MMCV](https://github.com/open-mmlab/mmcv)
+，以下是安装的简要步骤。
+更详细的安装指南请参考 [install.md](docs/zh_cn/get_started.md)。
+
+```shell
+conda create -n openmmlab python=3.7 pytorch==1.6.0 torchvision==0.7.0 cudatoolkit=10.1 -c pytorch -y
+conda activate openmmlab
+pip3 install openmim
+mim install mmcv-full
+git clone https://github.com/open-mmlab/mmdetection.git
+cd mmdetection
+pip install -r requirements/build.txt
+pip install -e .
+```
+
 ## 基准测试和模型库
 
 测试结果和模型可以在[模型库](docs/zh_cn/model_zoo.md)中找到。
@@ -267,10 +284,6 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 </table>
 
 我们在[基于 MMDetection 的项目](./docs/zh_cn/projects.md)中列举了一些其他的支持的算法。
-
-## 安装
-
-请参考[快速入门文档](docs/zh_cn/get_started.md)进行安装。
 
 ## 快速入门
 
