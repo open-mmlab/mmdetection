@@ -11,6 +11,7 @@ checkpoint_file = 'https://download.openmmlab.com/mmclassification/v0/convnext/d
 
 model = dict(
     backbone=dict(
+        _delete_=True,
         type='mmcls.ConvNeXt',
         arch='tiny',
         out_indices=[0, 1, 2, 3],
