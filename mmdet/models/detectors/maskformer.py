@@ -43,6 +43,7 @@ class MaskFormer(SingleStageDetector):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
+        # SingleStageDetector.show_result default for instance segmentation
         if self.num_stuff_classes > 0:
             self.show_result = self._show_pan_result
 
