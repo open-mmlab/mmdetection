@@ -115,10 +115,11 @@ def main():
                 'enable' in cfg.auto_scale_lr:
             cfg.auto_scale_lr.enable = True
         else:
-            warnings.warn('Can not find "auto_scale_lr" in your '
-                          'configuration file. Please update all '
-                          'the configuration files to mmdet >= 2.23.1. '
-                          'Disable automatic scaling of learning rate.')
+            warnings.warn('Can not find "auto_scale_lr" or '
+                          '"auto_scale_lr.enable" in your configuration '
+                          'file. Please update all the configuration files '
+                          'to mmdet >= 2.23.1. Disable automatic scaling of'
+                          ' learning rate.')
 
     # set multi-process settings
     setup_multi_processes(cfg)
