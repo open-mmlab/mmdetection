@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import os.path as osp
 import random
 import warnings
 
@@ -76,6 +77,10 @@ def train_detector(model,
                    timestamp=None,
                    meta=None):
     logger = get_root_logger(log_level=cfg.log_level)
+
+    # write config to work_dir
+    save_config_path = osp.join(cfg.work_dir, 'config.py')
+    cfg.dump(save_config_path)
 
     # prepare data loaders
     dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]

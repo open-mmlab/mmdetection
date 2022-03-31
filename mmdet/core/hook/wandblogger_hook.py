@@ -1,6 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import os.path as osp
 import warnings
 
+from mmcv import Config
 from mmcv.runner import HOOKS
 from mmcv.runner.dist_utils import master_only
 from mmcv.runner.hooks.checkpoint import CheckpointHook
@@ -101,12 +103,11 @@ class MMDetWandbHook(WandbLoggerHook):
     @master_only
     def before_run(self, runner):
         super(MMDetWandbHook, self).before_run(runner)
-        self.cfg = self.wandb.config
-        # Check if configuration is passed to wandb.
-        if len(dict(self.cfg)) == 0:
-            warnings.warn(
-                'To log mmdetection Config, '
-                'pass it to init_kwargs of MMDetWandbHook.', UserWarning)
+
+        # Load config.json file from work_dir
+        load_config_path = osp.join(runner.work_dir, 'config.py')
+        cfg = Config.fromfile(load_config_path)
+        self.wandb.config.update(cfg._cfg_dict.to_dict())
 
         # Check if EvalHook and CheckpointHook are available.
         for hook in runner.hooks:
@@ -303,7 +304,7 @@ class MMDetWandbHook(WandbLoggerHook):
                 'will be logged.', UserWarning)
         self.num_eval_images = min(self.num_eval_images, num_total_images)
 
-        classes = self.val_dataset.get_classes()
+        classes = self.val_dataset.CLASSES
         self.class_id_to_label = {id: name for id, name in enumerate(classes)}
         self.class_set = self.wandb.Classes([{
             'id': id,
@@ -345,11 +346,17 @@ class MMDetWandbHook(WandbLoggerHook):
 
         for ndx in table_idxs:
             result = results[ndx]
-            assert len(result) == len(self.class_id_to_label)
+
+            # TODO: Support Instance Segmentation in future
+            if isinstance(result, tuple):
+                bbox_result, _ = result
+            else:
+                bbox_result = result
+            assert len(bbox_result) == len(self.class_id_to_label)
 
             result_box_data = []
             class_scores = []
-            for label_id, bboxes in enumerate(result):
+            for label_id, bboxes in enumerate(bbox_result):
                 if len(bboxes) != 0:
                     labels = [label_id] * len(bboxes)
                     box_data, class_score, count = self._get_wandb_bboxes(
