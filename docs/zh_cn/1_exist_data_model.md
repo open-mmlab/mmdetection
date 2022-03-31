@@ -496,12 +496,12 @@ MMDetection 也为训练检测模型提供了开盖即食的工具。本节将�
 
 ### 学习率自动缩放
 
-**注意**：在配置文件中的学习率是在 8 块 GPU，每块 GPU 有 2 张图像（批大小为 8*2=16）的情况下设置的。其已经设置在`config/_base_/default_runtime.py` 中的 `auto_scale_lr_config.default_batch_size`。当配置文件的批次大小为`16`时，学习率会基于该值进行自动缩放。同时，为了不影响其他基于 mmdet 的 codebase，启用自动缩放标志 `auto_scale_lr` 默认设置为 `False`。
+**注意**：在配置文件中的学习率是在 8 块 GPU，每块 GPU 有 2 张图像（批大小为 8*2=16）的情况下设置的。其已经设置在`config/_base_/default_runtime.py` 中的 `auto_scale_lr.base_batch_size`。当配置文件的批次大小为`16`时，学习率会基于该值进行自动缩放。同时，为了不影响其他基于 mmdet 的 codebase，启用自动缩放标志 `auto_scale_lr.enable` 默认设置为 `False`。
 
 如果要启用此功能，需在命令添加参数 `--auto-scale-lr`。并且在启动命令之前，请检查下即将使用的配置文件的名称，因为配置名称指示默认的批处理大小。
 在默认情况下，批次大小是 `8 x 2 = 16`，例如：`faster_rcnn_r50_caffe_fpn_90k_coco.py` 或者 `pisa_faster_rcnn_x101_32x4d_fpn_1x_coco.py`；若不是默认批次，你可以在配置文件看到像 `_NxM_` 字样的，例如：`cornernet_hourglass104_mstest_32x3_210e_coco.py` 的批次大小是 `32 x 3 = 96`, 或者 `scnet_x101_64x4d_fpn_8x1_20e_coco.py` 的批次大小是 `8 x 1 = 8`。
 
-**请记住：如果使用不是默认批次大小为`16`的配置文件，请检查配置文件中的底部，会有 `auto_scale_lr_config.default_batch_size`，并且当默认初始学习率不是 `0.01` 的配置文件中还可以找到`auto_scale_lr_config.default_initial_lr`。如果找不到，可以在其继承的 `_base_=[xxx]` 文件中找到。另外，如果想使用自动缩放学习率的功能，请不要修改这些值。**
+**请记住：如果使用不是默认批次大小为`16`的配置文件，请检查配置文件中的底部，会有 `auto_scale_lr.base_batch_size`。如果找不到，可以在其继承的 `_base_=[xxx]` 文件中找到。另外，如果想使用自动缩放学习率的功能，请不要修改这些值。**
 
 学习率自动缩放基本用法如下：
 
@@ -515,10 +515,6 @@ python tools/train.py \
 执行命令之后，会根据机器的GPU数量和训练的批次大小对学习率进行自动缩放，缩放方式详见 [线性扩展规则](https://arxiv.org/abs/1706.02677) ，比如：在 4 块 GPU 并且每张 GPU 上有 2 张图片的情况下 `lr=0.01`，那么在 16 块 GPU 并且每张 GPU 上有 4 张图片的情况下, LR 会自动缩放至`lr=0.08`。
 
 如果不启用该功能，则需要根据 [线性扩展规则](https://arxiv.org/abs/1706.02677) 来手动计算并修改配置文件里面 `optimizer.lr` 的值。
-
-一些有关 `optimizer.lr` 和 `auto_scale_lr_config.auto_scale_lr` 的信息:
-- `optimizer.lr`: 无论是否启动 `--auto-scale-lr`, 该值都是训练时候的基础学习率。如果启动 `--auto-scale-lr` 的话，会对其进行缩放；反之，直接使用其作为学习率。如果您知道您修该值的后果在做什么，那么您可以随便修改它。
-- `auto_scale_lr_config.auto_scale_lr`：该值是 mmdet 官方发布配置文件的学习率初始值。程序会在`optimizer.lr` 和 `auto_scale_lr_config.auto_scale_lr` 不一致的时候抛出警告信息。**重要的是，您不可以修改该值**。
 
 ### 使用单 GPU 训练
 
