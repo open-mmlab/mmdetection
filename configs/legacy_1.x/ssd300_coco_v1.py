@@ -77,7 +77,3 @@ data = dict(
 optimizer = dict(type='SGD', lr=2e-3, momentum=0.9, weight_decay=5e-4)
 optimizer_config = dict(_delete_=True)
 dist_params = dict(backend='nccl', port=29555)
-
-# NOTE: `auto_scale_lr_config` is for automatically scaling LR,
-# USER SHOULD NOT CHANGE ITS VALUES.
-auto_scale_lr_config = dict(default_initial_lr=2e-3)

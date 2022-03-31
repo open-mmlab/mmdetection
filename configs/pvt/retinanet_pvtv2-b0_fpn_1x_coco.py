@@ -15,7 +15,3 @@ model = dict(
     neck=dict(in_channels=[32, 64, 160, 256]))
 # optimizer
 optimizer = dict(_delete_=True, type='AdamW', lr=0.0001, weight_decay=0.0001)
-
-# NOTE: `auto_scale_lr_config` is for automatically scaling LR,
-# USER SHOULD NOT CHANGE ITS VALUES.
-auto_scale_lr_config = dict(default_initial_lr=0.0001)

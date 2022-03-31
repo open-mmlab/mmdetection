@@ -21,10 +21,7 @@ opencv_num_threads = 0
 mp_start_method = 'fork'
 
 # Default setting for scaling LR automatically
-#   - The flag `auto_scale_lr` means enable scaling LR automatically
+#   - `enable` means enable scaling LR automatically
 #       or not by default.
-#   - `default_batch_size` = (8 GPUs) x (2 samples per GPU).
-#   - `default_initial_lr` = The LR by default.
-auto_scale_lr_config = dict(auto_scale_lr=False,
-                            default_batch_size=16,
-                            default_initial_lr=0.01)
+#   - `base_batch_size` = (8 GPUs) x (2 samples per GPU).
+auto_scale_lr = dict(enable=False, base_batch_size=16)

@@ -66,7 +66,3 @@ lr_config = dict(
 # runtime settings
 runner = dict(max_epochs=50)
 evaluation = dict(interval=2)
-
-# NOTE: `auto_scale_lr_config` is for automatically scaling LR,
-# USER SHOULD NOT CHANGE ITS VALUES.
-auto_scale_lr_config = dict(default_initial_lr=0.08)

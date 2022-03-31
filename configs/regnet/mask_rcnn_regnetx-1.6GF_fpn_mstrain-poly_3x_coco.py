@@ -24,7 +24,3 @@ model = dict(
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.00005)
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
-
-# NOTE: `auto_scale_lr_config` is for automatically scaling LR,
-# USER SHOULD NOT CHANGE ITS VALUES.
-auto_scale_lr_config = dict(default_initial_lr=0.02)

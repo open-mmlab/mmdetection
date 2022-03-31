@@ -88,7 +88,3 @@ lr_config = dict(
     warmup_ratio=0.067,
     step=[22, 24])
 runner = dict(type='EpochBasedRunner', max_epochs=25)
-
-# NOTE: `auto_scale_lr_config` is for automatically scaling LR,
-# USER SHOULD NOT CHANGE ITS VALUES.
-auto_scale_lr_config = dict(default_initial_lr=0.1)

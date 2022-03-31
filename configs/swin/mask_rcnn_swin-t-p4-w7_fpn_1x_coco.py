@@ -40,7 +40,3 @@ optimizer = dict(
         }))
 lr_config = dict(warmup_iters=1000, step=[8, 11])
 runner = dict(max_epochs=12)
-
-# NOTE: `auto_scale_lr_config` is for automatically scaling LR,
-# USER SHOULD NOT CHANGE ITS VALUES.
-auto_scale_lr_config = dict(default_initial_lr=0.0001)

@@ -41,7 +41,7 @@ data = dict(
         'human-imagelabels.csv'))
 evaluation = dict(interval=1, metric='mAP')
 
-# NOTE: `auto_scale_lr_config` is for automatically scaling LR,
+# NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
-# default_batch_size = (32 GPUs) x (2 samples per GPU)
-auto_scale_lr_config = dict(default_batch_size=64)
+# base_batch_size = (32 GPUs) x (2 samples per GPU)
+auto_scale_lr = dict(base_batch_size=64)

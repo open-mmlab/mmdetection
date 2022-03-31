@@ -135,7 +135,3 @@ lr_config = dict(
 runner = dict(type='EpochBasedRunner', max_epochs=30)
 evaluation = dict(interval=1, metric=['bbox'])
 find_unused_parameters = True
-
-# NOTE: `auto_scale_lr_config` is for automatically scaling LR,
-# USER SHOULD NOT CHANGE ITS VALUES.
-auto_scale_lr_config = dict(default_initial_lr=0.003)
