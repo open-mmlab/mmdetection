@@ -269,7 +269,9 @@ class TOODHead(ATSSHead):
             bbox_pred = self.deform_sampling(reg_bbox.contiguous(),
                                              reg_offset.contiguous())
 
-            # Avoid invalid bboxes after deform_sampling
+            # After deform_sampling, some boxes will become invalid (The
+            # left-top point is at the right or bottom of the right-bottom
+            # point), which will make the GIoULoss negative.
             invalid_bbox_idx = (bbox_pred[:, [0]] > bbox_pred[:, [2]]) | \
                                (bbox_pred[:, [1]] > bbox_pred[:, [3]])
             invalid_bbox_idx = invalid_bbox_idx.expand_as(bbox_pred)
