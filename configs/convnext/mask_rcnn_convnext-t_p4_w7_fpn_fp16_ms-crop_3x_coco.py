@@ -67,8 +67,7 @@ train_pipeline = [
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks']),
 ]
-data = dict(train=dict(pipeline=train_pipeline),
-            persistent_workers=True)
+data = dict(train=dict(pipeline=train_pipeline), persistent_workers=True)
 
 optimizer = dict(
     _delete_=True,
