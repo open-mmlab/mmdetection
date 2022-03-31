@@ -1,6 +1,6 @@
 # LD
 
-> [Localization Distillation for Object Detection](https://arxiv.org/abs/2102.12252)
+> [Localization Distillation for Dense Object Detection](https://arxiv.org/abs/2102.12252)
 
 <!-- [ALGORITHM] -->
 
@@ -34,10 +34,10 @@ Knowledge distillation (KD) has witnessed its powerful capability in learning co
 ## Citation
 
 ```latex
-@Article{zheng2021LD,
-  title={Localization Distillation for Object Detection},
-  author= {Zhaohui Zheng, Rongguang Ye, Ping Wang, Jun Wang, Dongwei Ren, Wangmeng Zuo},
-  journal={arXiv:2102.12252},
-  year={2021}
+@Inproceedings{zheng2022LD,
+  title={Localization Distillation for Dense Object Detection},
+  author= {Zheng, Zhaohui and Ye, Rongguang and Wang, Ping and Ren, Dongwei and Zuo, Wangmeng and Hou, Qibin and Cheng, Mingming},
+  booktitle={CVPR},
+  year={2022}
 }
 ```

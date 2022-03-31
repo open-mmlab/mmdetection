@@ -11,6 +11,7 @@ from numpy import random
 
 from mmdet.core import PolygonMasks, find_inside_bboxes
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
+from mmdet.utils import log_img_scale
 from ..builder import PIPELINES
 
 try:
@@ -61,6 +62,9 @@ class Resize:
         backend (str): Image resize backend, choices are 'cv2' and 'pillow'.
             These two backends generates slightly different results. Defaults
             to 'cv2'.
+        interpolation (str): Interpolation method, accepted values are
+            "nearest", "bilinear", "bicubic", "area", "lanczos" for 'cv2'
+            backend, "nearest", "bilinear" for 'pillow' backend.
         override (bool, optional): Whether to override `scale` and
             `scale_factor` so as to call resize twice. Default False. If True,
             after the first resizing, the existed `scale` and `scale_factor`
@@ -76,6 +80,7 @@ class Resize:
                  keep_ratio=True,
                  bbox_clip_border=True,
                  backend='cv2',
+                 interpolation='bilinear',
                  override=False):
         if img_scale is None:
             self.img_scale = None
@@ -98,6 +103,7 @@ class Resize:
         self.ratio_range = ratio_range
         self.keep_ratio = keep_ratio
         # TODO: refactor the override option in Resize
+        self.interpolation = interpolation
         self.override = override
         self.bbox_clip_border = bbox_clip_border
 
@@ -214,6 +220,7 @@ class Resize:
                     results[key],
                     results['scale'],
                     return_scale=True,
+                    interpolation=self.interpolation,
                     backend=self.backend)
                 # the w_scale and h_scale has minor difference
                 # a real fix should be done in the mmcv.imrescale in the future
@@ -226,6 +233,7 @@ class Resize:
                     results[key],
                     results['scale'],
                     return_scale=True,
+                    interpolation=self.interpolation,
                     backend=self.backend)
             results[key] = img
 
@@ -519,9 +527,9 @@ class RandomShift:
             random_shift_y = random.randint(-self.max_shift_px,
                                             self.max_shift_px)
             new_x = max(0, random_shift_x)
-            orig_x = max(0, -random_shift_x)
+            ori_x = max(0, -random_shift_x)
             new_y = max(0, random_shift_y)
-            orig_y = max(0, -random_shift_y)
+            ori_y = max(0, -random_shift_y)
 
             # TODO: support mask and semantic segmentation maps.
             for key in results.get('bbox_fields', []):
@@ -557,7 +565,7 @@ class RandomShift:
                 new_h = img_h - np.abs(random_shift_y)
                 new_w = img_w - np.abs(random_shift_x)
                 new_img[new_y:new_y + new_h, new_x:new_x + new_w] \
-                    = img[orig_y:orig_y + new_h, orig_x:orig_x + new_w]
+                    = img[ori_y:ori_y + new_h, ori_x:ori_x + new_w]
                 results[key] = new_img
 
         return results
@@ -1979,9 +1987,10 @@ class Mosaic:
 
     Args:
         img_scale (Sequence[int]): Image size after mosaic pipeline of single
-           image. Default to (640, 640).
+            image. The shape order should be (height, width).
+            Default to (640, 640).
         center_ratio_range (Sequence[float]): Center ratio range of mosaic
-           output. Default to (0.5, 1.5).
+            output. Default to (0.5, 1.5).
         min_bbox_size (int | float): The minimum pixel for filtering
             invalid bboxes after the mosaic pipeline. Default to 0.
         bbox_clip_border (bool, optional): Whether to clip the objects outside
@@ -2002,6 +2011,7 @@ class Mosaic:
                  skip_filter=True,
                  pad_val=114):
         assert isinstance(img_scale, tuple)
+        log_img_scale(img_scale, skip_square=True)
         self.img_scale = img_scale
         self.center_ratio_range = center_ratio_range
         self.min_bbox_size = min_bbox_size
@@ -2232,7 +2242,7 @@ class MixUp:
                 |             pad              |
                 +------------------------------+
 
-     The mixup transform steps are as follows::
+     The mixup transform steps are as follows:
 
         1. Another random image is picked by dataset and embedded in
            the top left patch(after padding and resizing)
@@ -2241,15 +2251,15 @@ class MixUp:
 
     Args:
         img_scale (Sequence[int]): Image output size after mixup pipeline.
-           Default: (640, 640).
+            The shape order should be (height, width). Default: (640, 640).
         ratio_range (Sequence[float]): Scale ratio of mixup image.
-           Default: (0.5, 1.5).
+            Default: (0.5, 1.5).
         flip_ratio (float): Horizontal flip ratio of mixup image.
-           Default: 0.5.
+            Default: 0.5.
         pad_val (int): Pad value. Default: 114.
         max_iters (int): The maximum number of iterations. If the number of
-           iterations is greater than `max_iters`, but gt_bbox is still
-           empty, then the iteration is terminated. Default: 15.
+            iterations is greater than `max_iters`, but gt_bbox is still
+            empty, then the iteration is terminated. Default: 15.
         min_bbox_size (float): Width and height threshold to filter bboxes.
             If the height or width of a box is smaller than this value, it
             will be removed. Default: 5.
@@ -2281,6 +2291,7 @@ class MixUp:
                  bbox_clip_border=True,
                  skip_filter=True):
         assert isinstance(img_scale, tuple)
+        log_img_scale(img_scale, skip_square=True)
         self.dynamic_scale = img_scale
         self.ratio_range = ratio_range
         self.flip_ratio = flip_ratio

@@ -140,6 +140,29 @@ class CocoPanopticDataset(CocoDataset):
             },
             ...
         ]
+
+    Args:
+        ann_file (str): Panoptic segmentation annotation file path.
+        pipeline (list[dict]): Processing pipeline.
+        ins_ann_file (str): Instance segmentation annotation file path.
+            Defaults to None.
+        classes (str | Sequence[str], optional): Specify classes to load.
+            If is None, ``cls.CLASSES`` will be used. Defaults to None.
+        data_root (str, optional): Data root for ``ann_file``,
+            ``ins_ann_file`` ``img_prefix``, ``seg_prefix``, ``proposal_file``
+            if specified. Defaults to None.
+        img_prefix (str, optional): Prefix of path to images. Defaults to ''.
+        seg_prefix (str, optional): Prefix of path to segmentation files.
+            Defaults to None.
+        proposal_file (str, optional): Path to proposal file. Defaults to None.
+        test_mode (bool, optional): If set True, annotation will not be loaded.
+            Defaults to False.
+        filter_empty_gt (bool, optional): If set true, images without bounding
+            boxes of the dataset's classes will be filtered out. This option
+            only works when `test_mode=False`, i.e., we never filter images
+            during tests. Defaults to True.
+        file_client_args (:obj:`mmcv.ConfigDict` | dict): file client args.
+            Defaults to dict(backend='disk').
     """
     CLASSES = [
         'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
@@ -232,6 +255,31 @@ class CocoPanopticDataset(CocoDataset):
                (96, 96, 96), (64, 170, 64), (152, 251, 152), (208, 229, 228),
                (206, 186, 171), (152, 161, 64), (116, 112, 0), (0, 114, 143),
                (102, 102, 156), (250, 141, 255)]
+
+    def __init__(self,
+                 ann_file,
+                 pipeline,
+                 ins_ann_file=None,
+                 classes=None,
+                 data_root=None,
+                 img_prefix='',
+                 seg_prefix=None,
+                 proposal_file=None,
+                 test_mode=False,
+                 filter_empty_gt=True,
+                 file_client_args=dict(backend='disk')):
+        super().__init__(
+            ann_file,
+            pipeline,
+            classes=classes,
+            data_root=data_root,
+            img_prefix=img_prefix,
+            seg_prefix=seg_prefix,
+            proposal_file=proposal_file,
+            test_mode=test_mode,
+            filter_empty_gt=filter_empty_gt,
+            file_client_args=file_client_args)
+        self.ins_ann_file = ins_ann_file
 
     def load_annotations(self, ann_file):
         """Load annotation from COCO Panoptic style annotation file.
@@ -402,23 +450,53 @@ class CocoPanopticDataset(CocoDataset):
         return pan_json_results
 
     def results2json(self, results, outfile_prefix):
-        """Dump the panoptic results to a COCO panoptic style json file.
+        """Dump the results to a COCO style json file.
+
+        There are 4 types of results: proposals, bbox predictions, mask
+        predictions, panoptic segmentation predictions, and they have
+        different data types. This method will automatically recognize
+        the type, and dump them to json files.
+
+        .. code-block:: none
+
+            [
+                {
+                    'pan_results': np.array, # shape (h, w)
+                    # ins_results which includes bboxes and RLE encoded masks
+                    # is optional.
+                    'ins_results': (list[np.array], list[list[str]])
+                },
+                ...
+            ]
 
         Args:
-            results (dict): Testing results of the dataset.
+            results (list[dict]): Testing results of the dataset.
             outfile_prefix (str): The filename prefix of the json files. If the
                 prefix is "somepath/xxx", the json files will be named
-                "somepath/xxx.panoptic.json"
+                "somepath/xxx.panoptic.json", "somepath/xxx.bbox.json",
+                "somepath/xxx.segm.json"
 
         Returns:
-            dict[str: str]: The key is 'panoptic' and the value is
-                corresponding filename.
+            dict[str: str]: Possible keys are "panoptic", "bbox", "segm", \
+                "proposal", and values are corresponding filenames.
         """
         result_files = dict()
-        pan_results = [result['pan_results'] for result in results]
-        pan_json_results = self._pan2json(pan_results, outfile_prefix)
-        result_files['panoptic'] = f'{outfile_prefix}.panoptic.json'
-        mmcv.dump(pan_json_results, result_files['panoptic'])
+        # panoptic segmentation results
+        if 'pan_results' in results[0]:
+            pan_results = [result['pan_results'] for result in results]
+            pan_json_results = self._pan2json(pan_results, outfile_prefix)
+            result_files['panoptic'] = f'{outfile_prefix}.panoptic.json'
+            mmcv.dump(pan_json_results, result_files['panoptic'])
+
+        # instance segmentation results
+        if 'ins_results' in results[0]:
+            ins_results = [result['ins_results'] for result in results]
+            bbox_json_results, segm_json_results = self._segm2json(ins_results)
+            result_files['bbox'] = f'{outfile_prefix}.bbox.json'
+            result_files['proposal'] = f'{outfile_prefix}.bbox.json'
+            result_files['segm'] = f'{outfile_prefix}.segm.json'
+            mmcv.dump(bbox_json_results, result_files['bbox'])
+            mmcv.dump(segm_json_results, result_files['segm'])
 
         return result_files
 
@@ -426,7 +504,8 @@ class CocoPanopticDataset(CocoDataset):
                           result_files,
                           outfile_prefix,
                           logger=None,
-                          classwise=False):
+                          classwise=False,
+                          nproc=32):
         """Evaluate PQ according to the panoptic results json file."""
         imgs = self.coco.imgs
         gt_json = self.coco.img_ann_map  # image to annotations
@@ -451,9 +530,13 @@ class CocoPanopticDataset(CocoDataset):
         gt_folder = self.seg_prefix
         pred_folder = os.path.join(os.path.dirname(outfile_prefix), 'panoptic')
 
-        pq_stat = pq_compute_multi_core(matched_annotations_list, gt_folder,
-                                        pred_folder, self.categories,
-                                        self.file_client)
+        pq_stat = pq_compute_multi_core(
+            matched_annotations_list,
+            gt_folder,
+            pred_folder,
+            self.categories,
+            self.file_client,
+            nproc=nproc)
 
         metrics = [('All', None), ('Things', True), ('Stuff', False)]
         pq_results = {}
@@ -471,8 +554,16 @@ class CocoPanopticDataset(CocoDataset):
                 for k, v in zip(self.CLASSES, pq_results['classwise'].values())
             }
         print_panoptic_table(pq_results, classwise_results, logger=logger)
+        results = parse_pq_results(pq_results)
+        results['PQ_copypaste'] = (
+            f'{results["PQ"]:.3f} {results["SQ"]:.3f} '
+            f'{results["RQ"]:.3f} '
+            f'{results["PQ_th"]:.3f} {results["SQ_th"]:.3f} '
+            f'{results["RQ_th"]:.3f} '
+            f'{results["PQ_st"]:.3f} {results["SQ_st"]:.3f} '
+            f'{results["RQ_st"]:.3f}')
 
-        return parse_pq_results(pq_results)
+        return results
 
     def evaluate(self,
                  results,
@@ -480,13 +571,14 @@ class CocoPanopticDataset(CocoDataset):
                  logger=None,
                  jsonfile_prefix=None,
                  classwise=False,
+                 nproc=32,
                  **kwargs):
         """Evaluation in COCO Panoptic protocol.
 
         Args:
             results (list[dict]): Testing results of the dataset.
-            metric (str | list[str]): Metrics to be evaluated. Only
-                support 'PQ' at present. 'pq' will be regarded as 'PQ.
+            metric (str | list[str]): Metrics to be evaluated. 'PQ', 'bbox',
+                'segm', 'proposal' are supported. 'pq' will be regarded as 'PQ.
             logger (logging.Logger | str | None): Logger used for printing
                 related information during evaluation. Default: None.
             jsonfile_prefix (str | None): The prefix of json files. It includes
@@ -494,6 +586,9 @@ class CocoPanopticDataset(CocoDataset):
                 If not specified, a temp file will be created. Default: None.
             classwise (bool): Whether to print classwise evaluation results.
                 Default: False.
+            nproc (int): Number of processes for panoptic quality computing.
+                Defaults to 32. When `nproc` exceeds the number of cpu cores,
+                the number of cpu cores is used.
 
         Returns:
             dict[str, float]: COCO Panoptic style evaluation metric.
@@ -501,7 +596,7 @@ class CocoPanopticDataset(CocoDataset):
         metrics = metric if isinstance(metric, list) else [metric]
         # Compatible with lowercase 'pq'
         metrics = ['PQ' if metric == 'pq' else metric for metric in metrics]
-        allowed_metrics = ['PQ']  # todo: support other metrics like 'bbox'
+        allowed_metrics = ['PQ', 'bbox', 'segm', 'proposal']
         for metric in metrics:
             if metric not in allowed_metrics:
                 raise KeyError(f'metric {metric} is not supported')
@@ -512,10 +607,31 @@ class CocoPanopticDataset(CocoDataset):
         outfile_prefix = os.path.join(tmp_dir.name, 'results') \
             if tmp_dir is not None else jsonfile_prefix
         if 'PQ' in metrics:
-            eval_pan_results = self.evaluate_pan_json(result_files,
-                                                      outfile_prefix, logger,
-                                                      classwise)
+            eval_pan_results = self.evaluate_pan_json(
+                result_files, outfile_prefix, logger, classwise, nproc=nproc)
+
             eval_results.update(eval_pan_results)
+            metrics.remove('PQ')
+
+        if (('bbox' in metrics) or ('segm' in metrics)
+                or ('proposal' in metrics)):
+
+            assert 'ins_results' in results[0], 'instance segmentation' \
+                'results are absent from results'
+
+            assert self.ins_ann_file is not None, 'Annotation '\
+                'file for instance segmentation or object detection ' \
+                'shuold not be None'
+
+            coco_gt = COCO(self.ins_ann_file)
+            panoptic_cat_ids = self.cat_ids
+            self.cat_ids = coco_gt.get_cat_ids(cat_names=self.THING_CLASSES)
+
+            eval_ins_results = self.evaluate_det_segm(results, result_files,
+                                                      coco_gt, metrics, logger,
+                                                      classwise, **kwargs)
+            self.cat_ids = panoptic_cat_ids
+            eval_results.update(eval_ins_results)
 
         if tmp_dir is not None:
             tmp_dir.cleanup()

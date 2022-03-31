@@ -17,7 +17,7 @@ from mmdet.apis import multi_gpu_test, single_gpu_test
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
 from mmdet.models import build_detector
-from mmdet.utils import setup_multi_processes
+from mmdet.utils import setup_multi_processes, update_data_root
 
 
 def parse_args():
@@ -133,6 +133,10 @@ def main():
         raise ValueError('The output file must be a pkl file.')
 
     cfg = Config.fromfile(args.config)
+
+    # update data root according to MMDET_DATASETS
+    update_data_root(cfg)
+
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
 
@@ -143,7 +147,11 @@ def main():
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
 
-    cfg.model.pretrained = None
+    if 'pretrained' in cfg.model:
+        cfg.model.pretrained = None
+    elif 'init_cfg' in cfg.model.backbone:
+        cfg.model.backbone.init_cfg = None
+
     if cfg.model.get('neck'):
         if isinstance(cfg.model.neck, list):
             for neck_cfg in cfg.model.neck:
