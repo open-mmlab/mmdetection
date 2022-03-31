@@ -14,7 +14,7 @@ from mmcv.runner import get_dist_info, init_dist
 from mmcv.utils import get_git_hash
 
 from mmdet import __version__
-from mmdet.apis import init_random_seed, set_random_seed, train_detector
+from mmdet.apis import init_random_seed, set_random_seed, train_model
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
 from mmdet.utils import (collect_env, get_root_logger, setup_multi_processes,
@@ -206,7 +206,7 @@ def main():
             CLASSES=datasets[0].CLASSES)
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
-    train_detector(
+    train_model(
         model,
         datasets,
         cfg,
