@@ -15,7 +15,7 @@ def preprocess_panoptic_gt(gt_labels, gt_masks, gt_semantic_seg, num_things,
             segmentation with the shape (1, h, w).
             [0, num_thing_class - 1] means things,
             [num_thing_class, num_class-1] means stuff,
-            255 means VOID.
+            255 means VOID. Is None when training instance segmentation.
         img_metas (dict): List of image meta information.
 
     Returns:
@@ -25,7 +25,9 @@ def preprocess_panoptic_gt(gt_labels, gt_masks, gt_semantic_seg, num_things,
                 image, with shape (n, ), n is the sum of number
                 of stuff type and number of instance in a image.
             - masks (Tensor): Ground truth mask for a image, with
-                shape (n, h, w).
+                shape (n, h, w). Contains stuff and things when training
+                panoptic segmentation, and things only when training
+                instance segmentation.
     """
     num_classes = num_things + num_stuff
 

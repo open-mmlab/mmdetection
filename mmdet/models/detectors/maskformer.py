@@ -88,8 +88,8 @@ class MaskFormer(SingleStageDetector):
             gt_masks (list[BitmapMasks]): true segmentation masks for each box
                 used if the architecture supports a segmentation task.
             gt_semantic_seg (list[tensor]): semantic segmentation mask for
-                images.
-                Defaults to None.
+                images for panoptic segmentation.
+                Defaults to None for instance segmentation.
             gt_bboxes_ignore (list[Tensor]): specify which bounding
                 boxes can be ignored when computing the loss.
                 Defaults to None.

@@ -148,7 +148,7 @@ class MaskFormerHead(AnchorFreeHead):
                 segmentation with the shape (batch_size, n, h, w).
                 [0, num_thing_class - 1] means things,
                 [num_thing_class, num_class-1] means stuff,
-                255 means VOID.
+                255 means VOID. Is None when training instance segmentation.
             img_metas (list[dict]): List of image meta information.
 
         Returns:
@@ -500,7 +500,7 @@ class MaskFormerHead(AnchorFreeHead):
                 truth of semantic segmentation with the shape (N, H, W).
                 [0, num_thing_class - 1] means things,
                 [num_thing_class, num_class-1] means stuff,
-                255 means VOID.
+                255 means VOID. Is None when training instance segmentation.
             gt_bboxes_ignore (list[Tensor]): Ground truth bboxes to be
                 ignored. Defaults to None.
 
