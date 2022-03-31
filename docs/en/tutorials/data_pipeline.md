@@ -193,7 +193,7 @@ For each operation, we list the related dict fields that are added/updated/remov
 
 3. Visualize the output of your augmentation pipeline
 
-   To visualize the output of your agmentation pipeline, `tools/misc/browse_dataset.py`
+   To visualize the output of your augmentation pipeline, `tools/misc/browse_dataset.py`
    can help the user to browse a detection dataset (both images and bounding box annotations)
    visually, or save the image to a designated directory. More detials can refer to
    [useful_tools](../useful_tools.md)

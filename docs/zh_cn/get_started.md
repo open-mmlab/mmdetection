@@ -12,6 +12,7 @@ MMDetection 和 MMCV 版本兼容性如下所示，需要安装正确的 MMCV �
 | MMDetection 版本 |          MMCV 版本          |
 |:--------------:|:-------------------------:|
 |     master     | mmcv-full>=1.3.17, <1.5.0 |
+|     2.23.0     | mmcv-full>=1.3.17, <1.5.0 |
 |     2.22.0     | mmcv-full>=1.3.17, <1.5.0 |
 |     2.21.0     | mmcv-full>=1.3.17, <1.5.0 |
 |     2.20.0     | mmcv-full>=1.3.17, <1.5.0 |
@@ -44,6 +45,21 @@ MMDetection 和 MMCV 版本兼容性如下所示，需要安装正确的 MMCV �
 **注意：**如果已经安装了 mmcv，首先需要使用 `pip uninstall mmcv` 卸载已安装的 mmcv，如果同时安装了 mmcv 和 mmcv-full，将会报 `ModuleNotFoundError` 错误。
 
 ## 安装流程
+
+### 从零开始设置脚本
+
+假设当前已经成功安装 CUDA 10.1，这里提供了一个完整的基于 conda 安装 MMDetection 的脚本。您可以参考下一节中的分步安装说明。
+
+```shell
+conda create -n openmmlab python=3.7 pytorch==1.6.0 cudatoolkit=10.1 torchvision -c pytorch -y
+conda activate openmmlab
+pip install openmim
+mim install mmcv-full
+git clone https://github.com/open-mmlab/mmdetection.git
+cd mmdetection
+pip install -r requirements/build.txt
+pip install -v -e .
+```
 
 ### 准备环境
 
@@ -204,26 +220,6 @@ docker build -t mmdetection docker/
 
 ```shell
 docker run --gpus all --shm-size=8g -it -v {DATA_DIR}:/mmdetection/data mmdetection
-```
-
-### 从零开始设置脚本
-
-假设当前已经成功安装 CUDA 10.1，这里提供了一个完整的基于 conda 安装 MMDetection 的脚本：
-
-```shell
-conda create -n open-mmlab python=3.7 -y
-conda activate open-mmlab
-
-conda install pytorch==1.6.0 torchvision==0.7.0 cudatoolkit=10.1 -c pytorch -y
-
-# 安装最新版本的 mmcv
-pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.6.0/index.html
-
-# 安装 MMDetection
-git clone https://github.com/open-mmlab/mmdetection.git
-cd mmdetection
-pip install -r requirements/build.txt
-pip install -v -e .
 ```
 
 ### 使用多个 MMDetection 版本进行开发
