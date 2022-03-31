@@ -15,4 +15,3 @@ lr_config = dict(
 # default_batch_size = (8 GPUs) x (8 samples per GPU)
 auto_scale_lr_config = dict(default_batch_size=64,
                             default_initial_lr=8e-3)
-
