@@ -100,12 +100,8 @@ def _mask2former_head_loss(self, label_num):
     self.forward_train(feats, img_metas, gt_bboxes, gt_labels, gt_masks,
                        gt_semantic_seg)
 
-    # test inference mode
-    self.simple_test(feats, img_metas)
-
     # test when gt_semantic_seg is None
     gt_semantic_seg = None
-
     self.forward_train(feats, img_metas, gt_bboxes, gt_labels, gt_masks,
                        gt_semantic_seg)
 
