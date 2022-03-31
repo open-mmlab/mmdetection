@@ -76,18 +76,9 @@ def auto_scale_lr(cfg, distributed, logger):
         distributed (bool): Using distributed or not.
         logger (logging.Logger): Logger.
     """
-    warning_msg = 'in your configuration file. Please update all the ' \
-                  'configuration files to mmdet >= 2.23.1. ' \
-                  'Disable automatic scaling of learning rate.'
-
-    # Get the config of auto-scale-lr
-    if 'auto_scale_lr' not in cfg:
-        logger.warning(f'Can not find "auto_scale_lr" {warning_msg}')
-        return
-
     # Get flag from config
-    auto_scale_lr_flag = cfg.auto_scale_lr.get('enable', False)
-    if auto_scale_lr_flag is False:
+    if ('auto_scale_lr' not in cfg) or \
+            (not cfg.auto_scale_lr.get('enable', False)):
         logger.info('Automatic scaling of learning rate (LR)'
                     ' has been disabled.')
         return
@@ -95,8 +86,6 @@ def auto_scale_lr(cfg, distributed, logger):
     # Get base batch size from config
     base_batch_size = cfg.auto_scale_lr.get('base_batch_size', None)
     if base_batch_size is None:
-        logger.warning('Can not find "base_batch_size" '
-                       f'{warning_msg}')
         return
 
     # Get gpu number

@@ -112,14 +112,15 @@ def main():
 
     if args.auto_scale_lr:
         if 'auto_scale_lr' in cfg and \
-                'enable' in cfg.auto_scale_lr:
+                'enable' in cfg.auto_scale_lr and \
+                'base_batch_size' in cfg.auto_scale_lr:
             cfg.auto_scale_lr.enable = True
         else:
             warnings.warn('Can not find "auto_scale_lr" or '
-                          '"auto_scale_lr.enable" in your configuration '
-                          'file. Please update all the configuration files '
-                          'to mmdet >= 2.23.1. Disable automatic scaling of'
-                          ' learning rate.')
+                          '"auto_scale_lr.enable" or '
+                          '"auto_scale_lr.base_batch_size" in your'
+                          ' configuration file. Please update all the '
+                          'configuration files to mmdet >= 2.23.1.')
 
     # set multi-process settings
     setup_multi_processes(cfg)
