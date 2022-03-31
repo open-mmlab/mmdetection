@@ -125,7 +125,7 @@ def auto_scale_lr(cfg, distributed, logger):
 
     else:
         logger.info('The batch size match the '
-                    f'default batch size: {base_batch_size}, '
+                    f'base batch size: {base_batch_size}, '
                     f'will not scaling the LR ({cfg.optimizer.lr}).')
 
 
