@@ -108,21 +108,17 @@ def auto_scale_lr(cfg, distributed, logger):
 
     # calculate the batch size
     batch_size = num_gpus * cfg.data.samples_per_gpu
-
     logger.info(f'You are using {num_gpus} GPU(s) '
                 f'and {cfg.data.samples_per_gpu} samples per GPU. '
                 f'Total batch size is {batch_size}.')
 
     if batch_size != base_batch_size:
-
         # scale LR with
         # [linear scaling rule](https://arxiv.org/abs/1706.02677)
         scaled_lr = (batch_size / base_batch_size) * cfg.optimizer.lr
         logger.info('LR has been automatically scaled '
                     f'from {cfg.optimizer.lr} to {scaled_lr}')
-
         cfg.optimizer.lr = scaled_lr
-
     else:
         logger.info('The batch size match the '
                     f'base batch size: {base_batch_size}, '
