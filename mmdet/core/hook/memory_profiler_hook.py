@@ -11,7 +11,8 @@ except ImportError:
 
 @HOOKS.register_module()
 class MemoryProfilerHook(Hook):
-    """Memory profiler.
+    """Memory profiler hook recording memory information: virtual memory, swap
+    memory and memory of current process.
 
     Args:
         interval (int): Checking interval (every k iterations).
