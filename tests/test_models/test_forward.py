@@ -811,14 +811,13 @@ def test_maskformer_forward():
         batch_results.append(result)
 
 
-def test_mask2former_forward():
+@pytest.mark.parametrize('cfg_file', [
+    'mask2former/mask2former_r50_lsj_8x2_50e_coco.py',
+    'mask2former/mask2former_r50_lsj_8x2_50e_coco_ins.py'
+])
+def test_mask2former_forward(cfg_file):
     # Test Panoptic Segmentation and Instance Segmentation
-    _mask2former_forward('mask2former/mask2former_r50_lsj_8x2_50e_coco.py')
-    _mask2former_forward('mask2former/mask2former_r50_lsj_8x2_50e_coco_ins.py')
-
-
-def _mask2former_forward(config):
-    model_cfg = _get_detector_cfg(config)
+    model_cfg = _get_detector_cfg(cfg_file)
     base_channels = 32
     model_cfg.backbone.depth = 18
     model_cfg.backbone.init_cfg = None

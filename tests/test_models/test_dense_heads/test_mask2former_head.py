@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 import torch
 from mmcv import ConfigDict
 
@@ -6,20 +7,15 @@ from mmdet.core.mask import BitmapMasks
 from mmdet.models.dense_heads import Mask2FormerHead
 
 
-def test_mask2former_head_loss():
+@pytest.mark.parametrize('num_stuff_classes, \
+     label_num', [(53, 100), (0, 80)])
+def test_mask2former_head_loss(num_stuff_classes, label_num):
     """Tests head loss when truth is empty and non-empty.
 
     Tests head loss as Panoptic Segmentation and Instance Segmentation. Tests
     forward_train and simple_test with masks and None as gt_semantic_seg
     """
-    self = _init_model(num_stuff_classes=53)
-    _mask2former_head_loss(self, label_num=100)
-
-    self = _init_model(num_stuff_classes=0)
-    _mask2former_head_loss(self, label_num=80)
-
-
-def _mask2former_head_loss(self, label_num):
+    self = _init_model(num_stuff_classes)
     img_metas = [{
         'batch_input_shape': (128, 160),
         'pad_shape': (128, 160, 3),
