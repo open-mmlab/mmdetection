@@ -116,13 +116,12 @@ class MaskFormer(SingleStageDetector):
             img_metas (list[dict]): List of image information.
 
         Returns:
-            list[dict[str, np.array | tuple]]: Semantic segmentation \
-                results and panoptic segmentation results for each \
-                image.
-
+            list[dict[str, np.array | tuple[list]] | tuple[list]]:
+                Semantic segmentation results and panoptic segmentation \
+                results of each image for panoptic segmentation, or formatted \
+                bbox and mask results of each image for instance segmentation.
             .. code-block:: none
-
-                [
+                [# panoptic segmentation
                     {
                         'pan_results': np.array, # shape = [h, w]
                         'ins_results': tuple[list],
@@ -131,9 +130,14 @@ class MaskFormer(SingleStageDetector):
                     },
                     ...
                 ]
-
-            | list(tuple): Formatted bbox and mask results of multiple \
-                images when no panoptic segmentation classes exist.
+                # or
+                [# instance segmentation
+                   (
+                    bboxes, # list[np.array]
+                    masks # list[[np.array]]
+                    ),
+                   ...
+                ]
         """
         feats = self.extract_feat(imgs)
         mask_cls_results, mask_pred_results = self.panoptic_head.simple_test(
