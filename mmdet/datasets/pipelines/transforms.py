@@ -2001,6 +2001,8 @@ class Mosaic:
             is True, the filter rule will not be applied, and the
             `min_bbox_size` is invalid. Default to True.
         pad_val (int): Pad value. Default to 114.
+        prob (float): Probability of applying this transformation.
+            Default to 1.0.
     """
 
     def __init__(self,
@@ -2009,8 +2011,12 @@ class Mosaic:
                  min_bbox_size=0,
                  bbox_clip_border=True,
                  skip_filter=True,
-                 pad_val=114):
+                 pad_val=114,
+                 prob=1.0):
         assert isinstance(img_scale, tuple)
+        assert 0 <= prob <= 1.0, 'The probability should be in range [0,1]. '\
+            f'got {prob}.'
+
         log_img_scale(img_scale, skip_square=True)
         self.img_scale = img_scale
         self.center_ratio_range = center_ratio_range
@@ -2018,6 +2024,7 @@ class Mosaic:
         self.bbox_clip_border = bbox_clip_border
         self.skip_filter = skip_filter
         self.pad_val = pad_val
+        self.prob = prob
 
     def __call__(self, results):
         """Call function to make a mosaic of image.
@@ -2028,6 +2035,9 @@ class Mosaic:
         Returns:
             dict: Result dict with mosaic transformed.
         """
+
+        if random.uniform(0, 1) > self.prob:
+            return results
 
         results = self._mosaic_transform(results)
         return results
