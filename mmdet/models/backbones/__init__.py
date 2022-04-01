@@ -20,8 +20,8 @@ from .trident_resnet import TridentResNet
 
 __all__ = [
     'RegNet', 'ResNet', 'ResNetV1d', 'ResNeXt', 'SSDVGG', 'HRNet',
-    'MobileNetV2', 'MobileNetV3', 'Res2Net', 'HourglassNet', 'DetectoRS_ResNet',
-    'DetectoRS_ResNeXt', 'Darknet', 'ResNeSt', 'TridentResNet', 'CSPDarknet',
-    'SwinTransformer', 'PyramidVisionTransformer',
-    'PyramidVisionTransformerV2', 'EfficientNet'
+    'MobileNetV2', 'MobileNetV3', 'Res2Net', 'HourglassNet',
+    'DetectoRS_ResNet', 'DetectoRS_ResNeXt', 'Darknet', 'ResNeSt',
+    'TridentResNet', 'CSPDarknet', 'SwinTransformer',
+    'PyramidVisionTransformer', 'PyramidVisionTransformerV2', 'EfficientNet'
 ]
