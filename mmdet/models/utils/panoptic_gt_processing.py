@@ -15,7 +15,7 @@ def preprocess_panoptic_gt(gt_labels, gt_masks, gt_semantic_seg, num_things,
             segmentation with the shape (1, h, w).
             [0, num_thing_class - 1] means things,
             [num_thing_class, num_class-1] means stuff,
-            255 means VOID. Is None when training instance segmentation.
+            255 means VOID. It's None when training instance segmentation.
         img_metas (dict): List of image meta information.
 
     Returns:
