@@ -33,6 +33,7 @@ train_pipeline = [
         crop_type='absolute',
         recompute_bbox=True,
         allow_negative_crop=True),
+    dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size=image_size),
     dict(type='DefaultFormatBundle', img_to_float=True),
