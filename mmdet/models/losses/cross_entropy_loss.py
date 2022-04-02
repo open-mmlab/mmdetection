@@ -257,8 +257,8 @@ class CrossEntropyLoss(nn.Module):
         self.loss_weight = loss_weight
         self.class_weight = class_weight
         self.ignore_index = ignore_index
-        self.label_smoothing = label_smoothing
         self.avg_non_ignore = avg_non_ignore
+        self.label_smoothing = label_smoothing
         if ((ignore_index is not None) and not self.avg_non_ignore
                 and self.reduction == 'mean'):
             warnings.warn(
