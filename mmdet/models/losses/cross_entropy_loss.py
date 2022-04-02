@@ -37,13 +37,23 @@ def cross_entropy(pred,
     # The default value of ignore_index is the same as F.cross_entropy
     ignore_index = -100 if ignore_index is None else ignore_index
     # element-wise losses
-    loss = F.cross_entropy(
-        pred,
-        label,
-        weight=class_weight,
-        reduction='none',
-        ignore_index=ignore_index,
-        label_smoothing=label_smoothing)
+
+    if torch.__version__ < '1.10':
+        loss = F.cross_entropy(
+            pred,
+            label,
+            weight=class_weight,
+            reduction='none',
+            ignore_index=ignore_index)
+    else:
+        # use label smoothing, added in torch 1.10
+        loss = F.cross_entropy(
+            pred,
+            label,
+            weight=class_weight,
+            reduction='none',
+            ignore_index=ignore_index,
+            label_smoothing=label_smoothing)
 
     # apply weights and do the reduction
     if weight is not None:
@@ -96,7 +106,9 @@ def binary_cross_entropy(pred,
         class_weight (list[float], optional): The weight for each class.
         ignore_index (int | None): The label index to be ignored.
             If None, it will be set to default value. Default: -100.
-        label_smoothing (float, optional): IGNORED
+        label_smoothing (float, optional): A float in range [0.0, 1.0].
+            Specifies the amount of smoothing when computing the loss,
+            where 0.0 means no smoothing. Defaults to 0.0.
     Returns:
         torch.Tensor: The calculated loss.
     """
@@ -143,7 +155,9 @@ def mask_cross_entropy(pred,
         class_weight (list[float], optional): The weight for each class.
         ignore_index (None): Placeholder, to be consistent with other loss.
             Default: None.
-        label_smoothing (float, optional): IGNORED
+        label_smoothing (float, optional): A float in range [0.0, 1.0].
+            Specifies the amount of smoothing when computing the loss,
+            where 0.0 means no smoothing. Defaults to 0.0.
     Returns:
         torch.Tensor: The calculated loss
 
