@@ -120,9 +120,9 @@ class MaskFormer(SingleStageDetector):
                 Semantic segmentation results and panoptic segmentation \
                 results of each image for panoptic segmentation, or formatted \
                 bbox and mask results of each image for instance segmentation.
-            
+
             .. code-block:: none
-                
+
                 [
                     # panoptic segmentation
                     {
@@ -137,7 +137,7 @@ class MaskFormer(SingleStageDetector):
             or
 
             .. code-block:: none
-            
+
                 [
                     # instance segmentation
                     (
