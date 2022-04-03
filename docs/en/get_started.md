@@ -51,7 +51,7 @@ If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
 1. Create a conda virtual environment and activate it.
 
     ```shell
-    conda create -n openmmlab python=3.7 -y
+    conda create -n openmmlab python=3.10 -y
     conda activate openmmlab
     ```
 
@@ -64,11 +64,11 @@ If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
     Note: Make sure that your compilation CUDA version and runtime CUDA version match.
     You can check the supported CUDA version for precompiled packages on the [PyTorch website](https://pytorch.org/).
 
-    `E.g.1` If you have CUDA 10.1 installed under `/usr/local/cuda` and would like to install
-    PyTorch 1.5, you need to install the prebuilt PyTorch with CUDA 10.1.
+    `E.g.1` If you have CUDA 11.3 installed under `/usr/local/cuda` and would like to install
+    PyTorch 1.11.0, you need to install the prebuilt PyTorch with CUDA 11.3.
 
     ```shell
-    conda install pytorch cudatoolkit=10.1 torchvision -c pytorch
+    conda install pytorch cudatoolkit=11.3 torchvision -c pytorch
     ```
 
     `E.g. 2` If you have CUDA 9.2 installed under `/usr/local/cuda` and would like to install
@@ -99,10 +99,10 @@ Or you can still install MMDetection manually:
     pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/{cu_version}/{torch_version}/index.html
     ```
 
-    Please replace `{cu_version}` and `{torch_version}` in the url to your desired one. For example, to install the latest `mmcv-full` with `CUDA 11.0` and `PyTorch 1.7.0`, use the following command:
+    Please replace `{cu_version}` and `{torch_version}` in the url to your desired one. For example, to install the latest `mmcv-full` with `CUDA 11.3` and `PyTorch 1.11.0`, use the following command:
 
     ```shell
-    pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7.0/index.html
+    pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu113/torch1.11.0/index.html
     ```
 
     See [here](https://github.com/open-mmlab/mmcv#installation) for different versions of MMCV compatible to different PyTorch and CUDA versions.
@@ -113,7 +113,7 @@ Or you can still install MMDetection manually:
 
     ```
     # We can ignore the micro version of PyTorch
-    pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7/index.html
+    pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu113/torch1.11/index.html
     ```
 
 2. Install MMDetection.
@@ -199,7 +199,7 @@ The following table lists affected algorithms.
 We provide a [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) to build an image. Ensure that you are using [docker version](https://docs.docker.com/engine/install/) >=19.03.
 
 ```shell
-# build an image with PyTorch 1.6, CUDA 10.1
+# build an image with PyTorch 1.11, CUDA 11.3
 docker build -t mmdetection docker/
 ```
 
@@ -214,13 +214,13 @@ docker run --gpus all --shm-size=8g -it -v {DATA_DIR}:/mmdetection/data mmdetect
 Assuming that you already have CUDA 10.1 installed, here is a full script for setting up MMDetection with conda.
 
 ```shell
-conda create -n openmmlab python=3.7 -y
+conda create -n openmmlab python=3.10 -y
 conda activate openmmlab
 
-conda install pytorch==1.6.0 torchvision==0.7.0 cudatoolkit=10.1 -c pytorch -y
+conda install pytorch==1.11.0 torchvision==0.12.0 cudatoolkit=11.3 -c pytorch -y
 
 # install the latest mmcv
-pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.6.0/index.html
+pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu113/torch1.11.0/index.html
 
 # install mmdetection
 git clone https://github.com/open-mmlab/mmdetection.git
