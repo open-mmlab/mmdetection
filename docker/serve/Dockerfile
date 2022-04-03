@@ -26,8 +26,8 @@ RUN ["/bin/bash", "-c", "pip install --no-cache-dir torchserve torch-model-archi
 # MMLAB
 ARG PYTORCH
 ARG CUDA
-RUN ["/bin/bash", "-c", "pip install mmcv-full==${MMCV} -f https://download.openmmlab.com/mmcv/dist/cu${CUDA//./}/torch${PYTORCH}/index.html"]
-RUN ["/bin/bash", "-c", "pip install mmdet==${MMDET}"]
+RUN ["/bin/bash", "-c", "pip install --no-cache-dir mmcv-full==${MMCV} -f https://download.openmmlab.com/mmcv/dist/cu${CUDA//./}/torch${PYTORCH}/index.html"]
+RUN ["/bin/bash", "-c", "pip install --no-cache-dir mmdet==${MMDET}"]
 
 RUN useradd -m model-server \
     && mkdir -p /home/model-server/tmp
