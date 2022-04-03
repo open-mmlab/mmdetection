@@ -51,7 +51,7 @@ MMDetection 和 MMCV 版本兼容性如下所示，需要安装正确的 MMCV �
 1. 使用 conda 新建虚拟环境，并进入该虚拟环境；
 
    ```shell
-   conda create -n open-mmlab python=3.7 -y
+   conda create -n open-mmlab python=3.10 -y
    conda activate open-mmlab
    ```
 
@@ -63,10 +63,10 @@ MMDetection 和 MMCV 版本兼容性如下所示，需要安装正确的 MMCV �
 
    **注意**：需要确保 CUDA 的编译版本和运行版本匹配。可以在 [PyTorch 官网](https://pytorch.org/)查看预编译包所支持的 CUDA 版本。
 
-   `例 1` 例如在 `/usr/local/cuda` 下安装了 CUDA 10.1， 并想安装 PyTorch 1.5，则需要安装支持 CUDA 10.1 的预构建 PyTorch：
+   `例 1` 例如在 `/usr/local/cuda` 下安装了 CUDA 11.3， 并想安装 PyTorch 1.11，则需要安装支持 CUDA 11.3 的预构建 PyTorch：
 
    ```shell
-   conda install pytorch cudatoolkit=10.1 torchvision -c pytorch
+   conda install pytorch cudatoolkit=11.3 torchvision -c pytorch
    ```
 
    `例 2` 例如在 `/usr/local/cuda` 下安装了 CUDA 9.2， 并想安装 PyTorch 1.3.1，则需要安装支持 CUDA 9.2  的预构建 PyTorch：
@@ -96,10 +96,10 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
     pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/{cu_version}/{torch_version}/index.html
     ```
 
-    需要把命令行中的 `{cu_version}` 和 `{torch_version}` 替换成对应的版本。例如：在 CUDA 11 和 PyTorch 1.7.0 的环境下，可以使用下面命令安装最新版本的 MMCV：
+    需要把命令行中的 `{cu_version}` 和 `{torch_version}` 替换成对应的版本。例如：在 CUDA 11.3 和 PyTorch 1.11.0 的环境下，可以使用下面命令安装最新版本的 MMCV：
 
     ```shell
-    pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7.0/index.html
+    pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu113/torch1.11.0/index.html
     ```
 
     请参考 [MMCV](https://mmcv.readthedocs.io/en/latest/#installation) 获取不同版本的 MMCV 所兼容的的不同的 PyTorch 和 CUDA 版本。同时，也可以通过以下命令行从源码编译 MMCV：
@@ -121,7 +121,7 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
 
     ```
     # 我们可以忽略 PyTorch 的小版本号
-    pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7/index.html
+    pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu113/torch1.11/index.html
     ```
 
 2. 安装 MMDetection：
@@ -197,7 +197,7 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
 我们提供了 [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) 来生成镜像，请确保 [docker](https://docs.docker.com/engine/install/)  的版本  >= 19.03。
 
 ```shell
-# 基于 PyTorch 1.6, CUDA 10.1 生成镜像
+# 基于 PyTorch 1.11, CUDA 11.3 生成镜像
 docker build -t mmdetection docker/
 ```
 
@@ -212,13 +212,13 @@ docker run --gpus all --shm-size=8g -it -v {DATA_DIR}:/mmdetection/data mmdetect
 假设当前已经成功安装 CUDA 10.1，这里提供了一个完整的基于 conda 安装 MMDetection 的脚本：
 
 ```shell
-conda create -n open-mmlab python=3.7 -y
+conda create -n open-mmlab python=3.10 -y
 conda activate open-mmlab
 
-conda install pytorch==1.6.0 torchvision==0.7.0 cudatoolkit=10.1 -c pytorch -y
+conda install pytorch==1.11.0 torchvision==0.12.0 cudatoolkit=11.3 -c pytorch -y
 
 # 安装最新版本的 mmcv
-pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.6.0/index.html
+pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu113/torch1.11.0/index.html
 
 # 安装 MMDetection
 git clone https://github.com/open-mmlab/mmdetection.git
