@@ -246,11 +246,11 @@ class DiceCost:
         eps (float, optional): default 1e-12.
     """
 
-    def __init__(self, weight=1., pred_act=False, eps=1e-3, solo_style_dice_loss=False):
+    def __init__(self, weight=1., pred_act=False, eps=1e-3, solo_style=False):
         self.weight = weight
         self.pred_act = pred_act
         self.eps = eps
-        self.naive_dice_loss = solo_style_dice_loss
+        self.solo_style = solo_style
 
     def binary_mask_dice_loss(self, mask_preds, gt_masks):
         """
@@ -269,6 +269,7 @@ class DiceCost:
         denominator = mask_preds.sum(-1)[:, None] + gt_masks.sum(-1)[None, :]
         loss = 1 - (numerator + self.eps) / (denominator + self.eps)
         return loss
+
     def solo_style_dice_loss(self, mask_preds, gt_masks):
         """
         Args:
@@ -298,7 +299,7 @@ class DiceCost:
         """
         if self.pred_act:
             mask_preds = mask_preds.sigmoid()
-        if self.naive_dice_loss:
+        if self.solo_style:
             dice_cost = self.solo_style_dice_loss(mask_preds, gt_masks)
         else:
             dice_cost = self.binary_mask_dice_loss(mask_preds, gt_masks)

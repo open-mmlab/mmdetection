@@ -628,3 +628,15 @@ def test_mask_hungarian_match_assigner():
         dice_cost=dict(type='DiceCost', weight=0.0, pred_act=True, eps=1.0))
     with pytest.raises(AssertionError):
         self = MaskHungarianAssigner(**assigner_cfg)
+
+    # test with solo_style mode of DiceLossCost which is not supported yet
+    assigner_cfg = dict(
+        cls_cost=dict(type='ClassificationCost', weight=0.0),
+        dice_cost=dict(
+            type='DiceCost',
+            weight=0.0,
+            pred_act=True,
+            eps=1.0,
+            solo_style=True))
+    with pytest.raises(AssertionError):
+        self = MaskHungarianAssigner(**assigner_cfg)
