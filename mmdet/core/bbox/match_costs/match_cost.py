@@ -246,12 +246,30 @@ class DiceCost:
         eps (float, optional): default 1e-12.
     """
 
-    def __init__(self, weight=1., pred_act=False, eps=1e-3):
+    def __init__(self, weight=1., pred_act=False, eps=1e-3, solo_style_dice_loss=False):
         self.weight = weight
         self.pred_act = pred_act
         self.eps = eps
+        self.naive_dice_loss = solo_style_dice_loss
 
     def binary_mask_dice_loss(self, mask_preds, gt_masks):
+        """
+        Args:
+            mask_preds (Tensor): Mask prediction in shape (num_query, *).
+            gt_masks (Tensor): Ground truth in shape (num_gt, *)
+                store 0 or 1, 0 for negative class and 1 for
+                positive class.
+
+        Returns:
+            Tensor: Dice cost matrix in shape (num_query, num_gt).
+        """
+        mask_preds = mask_preds.flatten(1)
+        gt_masks = gt_masks.flatten(1).float()
+        numerator = 2 * torch.einsum('nc,mc->nm', mask_preds, gt_masks)
+        denominator = mask_preds.sum(-1)[:, None] + gt_masks.sum(-1)[None, :]
+        loss = 1 - (numerator + self.eps) / (denominator + self.eps)
+        return loss
+    def solo_style_dice_loss(self, mask_preds, gt_masks):
         """
         Args:
             mask_preds (Tensor): Mask prediction in shape (num_query, *).
@@ -280,7 +298,10 @@ class DiceCost:
         """
         if self.pred_act:
             mask_preds = mask_preds.sigmoid()
-        dice_cost = self.binary_mask_dice_loss(mask_preds, gt_masks)
+        if self.naive_dice_loss:
+            dice_cost = self.solo_style_dice_loss(mask_preds, gt_masks)
+        else:
+            dice_cost = self.binary_mask_dice_loss(mask_preds, gt_masks)
         return dice_cost * self.weight
 
 
