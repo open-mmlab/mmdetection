@@ -98,7 +98,6 @@ class MMDetWandbHook(WandbLoggerHook):
         self.log_evaluation = True
         self.log_eval_metrics = True
         self.best_score = 0
-        self.val_step = 0
 
     @master_only
     def before_run(self, runner):
@@ -146,27 +145,9 @@ class MMDetWandbHook(WandbLoggerHook):
             if self.log_evaluation:
                 self._log_data_table()
 
-        # Define a custom x-axes for validation metrics.
-        if self.log_eval_metrics:
-            self.wandb.define_metric('val/val_step')
-            self.wandb.define_metric('val/*', step_metric='val/val_step')
-
     @master_only
     def after_train_epoch(self, runner):
-        if self.log_eval_metrics:
-            if self.eval_hook.by_epoch:
-                if self.every_n_epochs(
-                        runner,
-                        self.eval_hook.interval) or self.is_last_epoch(runner):
-                    results = self.eval_hook.results
-                    eval_results = self.val_dataset.evaluate(
-                        results, logger='silent')
-                    for key, val in eval_results.items():
-                        if isinstance(val, str):
-                            continue
-                        self.wandb.log({f'val/{key}': val}, commit=False)
-                    self.wandb.log({'val/val_step': self.val_step})
-                    self.val_step += 1
+        super(MMDetWandbHook, self).after_train_epoch(runner)
 
         if self.log_checkpoint:
             if self.ckpt_hook.by_epoch:
