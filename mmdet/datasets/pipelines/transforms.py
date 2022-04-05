@@ -62,6 +62,9 @@ class Resize:
         backend (str): Image resize backend, choices are 'cv2' and 'pillow'.
             These two backends generates slightly different results. Defaults
             to 'cv2'.
+        interpolation (str): Interpolation method, accepted values are
+            "nearest", "bilinear", "bicubic", "area", "lanczos" for 'cv2'
+            backend, "nearest", "bilinear" for 'pillow' backend.
         override (bool, optional): Whether to override `scale` and
             `scale_factor` so as to call resize twice. Default False. If True,
             after the first resizing, the existed `scale` and `scale_factor`
@@ -77,6 +80,7 @@ class Resize:
                  keep_ratio=True,
                  bbox_clip_border=True,
                  backend='cv2',
+                 interpolation='bilinear',
                  override=False):
         if img_scale is None:
             self.img_scale = None
@@ -99,6 +103,7 @@ class Resize:
         self.ratio_range = ratio_range
         self.keep_ratio = keep_ratio
         # TODO: refactor the override option in Resize
+        self.interpolation = interpolation
         self.override = override
         self.bbox_clip_border = bbox_clip_border
 
@@ -215,6 +220,7 @@ class Resize:
                     results[key],
                     results['scale'],
                     return_scale=True,
+                    interpolation=self.interpolation,
                     backend=self.backend)
                 # the w_scale and h_scale has minor difference
                 # a real fix should be done in the mmcv.imrescale in the future
@@ -227,6 +233,7 @@ class Resize:
                     results[key],
                     results['scale'],
                     return_scale=True,
+                    interpolation=self.interpolation,
                     backend=self.backend)
             results[key] = img
 
@@ -1994,6 +2001,8 @@ class Mosaic:
             is True, the filter rule will not be applied, and the
             `min_bbox_size` is invalid. Default to True.
         pad_val (int): Pad value. Default to 114.
+        prob (float): Probability of applying this transformation.
+            Default to 1.0.
     """
 
     def __init__(self,
@@ -2002,8 +2011,12 @@ class Mosaic:
                  min_bbox_size=0,
                  bbox_clip_border=True,
                  skip_filter=True,
-                 pad_val=114):
+                 pad_val=114,
+                 prob=1.0):
         assert isinstance(img_scale, tuple)
+        assert 0 <= prob <= 1.0, 'The probability should be in range [0,1]. '\
+            f'got {prob}.'
+
         log_img_scale(img_scale, skip_square=True)
         self.img_scale = img_scale
         self.center_ratio_range = center_ratio_range
@@ -2011,6 +2024,7 @@ class Mosaic:
         self.bbox_clip_border = bbox_clip_border
         self.skip_filter = skip_filter
         self.pad_val = pad_val
+        self.prob = prob
 
     def __call__(self, results):
         """Call function to make a mosaic of image.
@@ -2021,6 +2035,9 @@ class Mosaic:
         Returns:
             dict: Result dict with mosaic transformed.
         """
+
+        if random.uniform(0, 1) > self.prob:
+            return results
 
         results = self._mosaic_transform(results)
         return results

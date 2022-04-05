@@ -900,6 +900,11 @@ def test_mosaic():
         transform = dict(type='Mosaic', img_scale=640)
         build_from_cfg(transform, PIPELINES)
 
+    # test assertion for invalid probability
+    with pytest.raises(AssertionError):
+        transform = dict(type='Mosaic', prob=1.5)
+        build_from_cfg(transform, PIPELINES)
+
     results = dict()
     img = mmcv.imread(
         osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
