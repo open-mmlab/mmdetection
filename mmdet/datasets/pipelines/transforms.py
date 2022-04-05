@@ -957,17 +957,25 @@ class PhotoMetricDistortion:
         contrast_range (tuple): range of contrast.
         saturation_range (tuple): range of saturation.
         hue_delta (int): delta of hue.
+        saturate (bool): whether to keep img pixel value within 0 to 255
     """
 
     def __init__(self,
                  brightness_delta=32,
                  contrast_range=(0.5, 1.5),
                  saturation_range=(0.5, 1.5),
-                 hue_delta=18):
+                 hue_delta=18,
+                 saturate=False):
         self.brightness_delta = brightness_delta
         self.contrast_lower, self.contrast_upper = contrast_range
         self.saturation_lower, self.saturation_upper = saturation_range
         self.hue_delta = hue_delta
+        self.saturate = saturate
+
+    def _saturate(self, img):
+        img[img < 0] = 0
+        img[img > 255] = 255
+        return img
 
     def __call__(self, results):
         """Call function to perform photometric distortion on images.
@@ -989,6 +997,8 @@ class PhotoMetricDistortion:
             delta = random.uniform(-self.brightness_delta,
                                    self.brightness_delta)
             img += delta
+            if self.saturate:
+                img = self._saturate(img)
 
         # mode == 0 --> do random contrast first
         # mode == 1 --> do random contrast last
@@ -998,6 +1008,8 @@ class PhotoMetricDistortion:
                 alpha = random.uniform(self.contrast_lower,
                                        self.contrast_upper)
                 img *= alpha
+                if self.saturate:
+                    img = self._saturate(img)
 
         # convert color from BGR to HSV
         img = mmcv.bgr2hsv(img)
@@ -1015,6 +1027,8 @@ class PhotoMetricDistortion:
 
         # convert color from HSV to BGR
         img = mmcv.hsv2bgr(img)
+        if self.saturate:
+            img = self._saturate(img)
 
         # random contrast
         if mode == 0:
@@ -1022,6 +1036,8 @@ class PhotoMetricDistortion:
                 alpha = random.uniform(self.contrast_lower,
                                        self.contrast_upper)
                 img *= alpha
+                if self.saturate:
+                    img = self._saturate(img)
 
         # randomly swap channels
         if random.randint(2):
@@ -1037,7 +1053,8 @@ class PhotoMetricDistortion:
         repr_str += f'{(self.contrast_lower, self.contrast_upper)},\n'
         repr_str += 'saturation_range='
         repr_str += f'{(self.saturation_lower, self.saturation_upper)},\n'
-        repr_str += f'hue_delta={self.hue_delta})'
+        repr_str += f'hue_delta={self.hue_delta},\n'
+        repr_str += f'saturate={self.saturate})'
         return repr_str
 
 
