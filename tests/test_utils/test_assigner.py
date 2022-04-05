@@ -640,3 +640,10 @@ def test_mask_hungarian_match_assigner():
             solo_style=True))
     with pytest.raises(AssertionError):
         self = MaskHungarianAssigner(**assigner_cfg)
+
+    # test with MaskCost which used in K-Net
+    assigner_cfg = dict(
+        cls_cost=dict(type='ClassificationCost', weight=0.0),
+        dice_cost=dict(type='MaskCost', weight=1.0, pred_act=True))
+    with pytest.raises(AssertionError):
+        self = MaskHungarianAssigner(**assigner_cfg)
