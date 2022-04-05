@@ -35,7 +35,6 @@ class SemanticFPNWrapper(BaseModule):
                  positional_encoding=None,
                  cat_coors_level=3,
                  fuse_by_cat=False,
-                 return_list=False,
                  upsample_times=3,
                  with_pred=True,
                  num_aux_convs=0,
@@ -57,7 +56,6 @@ class SemanticFPNWrapper(BaseModule):
         self.cat_coors = cat_coors
         self.cat_coors_level = cat_coors_level
         self.fuse_by_cat = fuse_by_cat
-        self.return_list = return_list
         self.upsample_times = upsample_times
         self.with_pred = with_pred
         if positional_encoding is not None:
@@ -222,8 +220,13 @@ class SemanticFPNWrapper(BaseModule):
             out = self.conv_pred(feature_add_all_level)
         else:
             out = feature_add_all_level
-
         outs = [out]
-        for conv in self.aux_convs:
-            outs.append(conv(feature_add_all_level))
+        if self.num_aux_convs > 0:
+            for conv in self.aux_convs:
+                outs.append(conv(feature_add_all_level))
         return outs
+
+        # if self.return_list:
+        #     return [out]
+        # else:
+        #     return out
