@@ -5,7 +5,7 @@ from mmcv.cnn import ConvModule, normal_init
 from mmcv.cnn.bricks.transformer import build_positional_encoding
 from mmcv.runner import BaseModule
 
-from mmdet.models.builder import NECKS
+from ..builder import NECKS
 
 
 @NECKS.register_module()
