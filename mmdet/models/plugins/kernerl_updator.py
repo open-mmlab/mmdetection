@@ -1,11 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch.nn as nn
 from mmcv.cnn import build_activation_layer, build_norm_layer
-from mmcv.cnn.bricks.transformer import TRANSFORMER_LAYER
+from mmcv.cnn.bricks.transformer import ATTENTION
 from mmcv.runner import BaseModule
 
 
-@TRANSFORMER_LAYER.register_module()
+@ATTENTION.register_module()
 class KernelUpdator(BaseModule):
 
     def __init__(self,

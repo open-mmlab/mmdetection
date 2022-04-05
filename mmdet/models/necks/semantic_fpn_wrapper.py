@@ -6,7 +6,6 @@ from mmcv.cnn.bricks.transformer import build_positional_encoding
 from mmcv.runner import BaseModule
 
 from mmdet.models.builder import NECKS
-from mmdet.utils import get_root_logger
 
 
 @NECKS.register_module()
@@ -20,7 +19,6 @@ class SemanticFPNWrapper(BaseModule):
         start_level ([type]): [description]
         end_level ([type]): [description]
         cat_coors (bool, optional): [description]. Defaults to False.
-        fuse_by_cat (bool, optional): [description]. Defaults to False.
         conv_cfg ([type], optional): [description]. Defaults to None.
         norm_cfg ([type], optional): [description]. Defaults to None.
     """
@@ -34,7 +32,6 @@ class SemanticFPNWrapper(BaseModule):
                  cat_coors=False,
                  positional_encoding=None,
                  cat_coors_level=3,
-                 fuse_by_cat=False,
                  upsample_times=3,
                  with_pred=True,
                  num_aux_convs=0,
@@ -55,7 +52,6 @@ class SemanticFPNWrapper(BaseModule):
         self.act_cfg = act_cfg
         self.cat_coors = cat_coors
         self.cat_coors_level = cat_coors_level
-        self.fuse_by_cat = fuse_by_cat
         self.upsample_times = upsample_times
         self.with_pred = with_pred
         if positional_encoding is not None:
@@ -141,11 +137,7 @@ class SemanticFPNWrapper(BaseModule):
                                                one_upsample)
 
             self.convs_all_levels.append(convs_per_level)
-
-        if fuse_by_cat:
-            in_channels = self.feat_channels * len(self.convs_all_levels)
-        else:
-            in_channels = self.feat_channels
+        in_channels = self.feat_channels
 
         if self.with_pred:
             self.conv_pred = ConvModule(
@@ -171,8 +163,6 @@ class SemanticFPNWrapper(BaseModule):
                     norm_cfg=self.norm_cfg))
 
     def init_weights(self):
-        logger = get_root_logger()
-        logger.info('Use normal initialization for semantic FPN')
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 normal_init(m, std=0.01)
@@ -211,22 +201,14 @@ class SemanticFPNWrapper(BaseModule):
 
             mlvl_feats.append(self.convs_all_levels[i](input_p))
 
-        if self.fuse_by_cat:
-            feature_add_all_level = torch.cat(mlvl_feats, dim=1)
-        else:
-            feature_add_all_level = sum(mlvl_feats)
+        out_features = sum(mlvl_feats)
 
         if self.with_pred:
-            out = self.conv_pred(feature_add_all_level)
+            out = self.conv_pred(out_features)
         else:
-            out = feature_add_all_level
+            out = out_features
         outs = [out]
         if self.num_aux_convs > 0:
             for conv in self.aux_convs:
-                outs.append(conv(feature_add_all_level))
+                outs.append(conv(out_features))
         return outs
-
-        # if self.return_list:
-        #     return [out]
-        # else:
-        #     return out

@@ -2,9 +2,8 @@
 import torch
 import torch.nn.functional as F
 
-from mmdet.models.builder import DETECTORS
-from mmdet.models.detectors import TwoStageDetector
-from mmdet.utils import get_root_logger
+from ..builder import DETECTORS
+from .two_stage import TwoStageDetector
 
 
 def sem2ins_masks(gt_sem_seg, num_thing_classes=80):
@@ -63,8 +62,6 @@ class KNet(TwoStageDetector):
         self.num_stuff_classes = num_stuff_classes
         self.mask_assign_stride = mask_assign_stride
         self.thing_label_in_seg = thing_label_in_seg
-        logger = get_root_logger()
-        logger.info(f'Model: \n{self}')
 
     def forward_train(self,
                       img,
