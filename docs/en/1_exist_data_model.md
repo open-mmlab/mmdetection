@@ -499,9 +499,6 @@ pipelines = [
 MMDetection also provides out-of-the-box tools for training detection models.
 This section will show how to train _predefined_ models (under [configs](https://github.com/open-mmlab/mmdetection/tree/master/configs)) on standard datasets i.e. COCO.
 
-**Important**: The default learning rate in config files is for 8 GPUs and 2 img/gpu (batch size = 8\*2 = 16).
-According to the [linear scaling rule](https://arxiv.org/abs/1706.02677), you need to set the learning rate proportional to the batch size if you use different GPUs or images per GPU, e.g., `lr=0.01` for 4 GPUs \* 2 imgs/gpu and `lr=0.08` for 16 GPUs \* 4 imgs/gpu.
-
 ### Prepare datasets
 
 Training requires preparing datasets too. See section [Prepare datasets](#prepare-datasets) above for details.
@@ -509,6 +506,28 @@ Training requires preparing datasets too. See section [Prepare datasets](#prepar
 **Note**:
 Currently, the config files under `configs/cityscapes` use COCO pretrained weights to initialize.
 You could download the existing models in advance if the network connection is unavailable or slow. Otherwise, it would cause errors at the beginning of training.
+
+### Learning rate automatically scale
+
+**Important**: The default learning rate in config files is for 8 GPUs and 2 sample per gpu (batch size = 8 * 2 = 16). And it had been set to `auto_scale_lr.base_batch_size` in `config/_base_/default_runtime.py`. Learning rate will be automatically scaled base on this value when the batch size is `16`. Meanwhile, in order not to affect other codebase which based on mmdet, the flag `auto_scale_lr.enable` is set to `False` by default.
+
+If you want to enable this feature, you need to add argument `--auto-scale-lr`. And you need to check the config name which you want to use before you process the command, because the config name indicates the default batch size.
+By default, it is `8 x 2 = 16 batch size`, like `faster_rcnn_r50_caffe_fpn_90k_coco.py` or `pisa_faster_rcnn_x101_32x4d_fpn_1x_coco.py`. In other cases, you will see the config file name have `_NxM_` in dictating, like `cornernet_hourglass104_mstest_32x3_210e_coco.py` which batch size is `32 x 3 = 96`, or `scnet_x101_64x4d_fpn_8x1_20e_coco.py` which batch size is `8 x 1 = 8`.
+
+**Please remember to check the bottom of the specific config file you want to use, it will have `auto_scale_lr.base_batch_size` if the batch size is not `16`. If you can't find those values, check the config file which in `_base_=[xxx]` and you will find it. Please do not modify its values if you want to automatically scale the LR.**
+
+Learning rate automatically scale basic usage is as follows.
+
+```shell
+python tools/train.py \
+    ${CONFIG_FILE} \
+    --auto-scale-lr \
+    [optional arguments]
+```
+
+If you enabled this feature, the learning rate will be automatically scaled according to the number of GPUs of the machine and the batch size of training. See [linear scaling rule](https://arxiv.org/abs/1706.02677) for details. For example, If there are 4 GPUs and 2 pictures on each GPU, `lr = 0.01`, then if there are 16 GPUs and 4 pictures on each GPU, it will automatically scale to `lr = 0.08`.
+
+If you don't want to use it, you need to calculate the learning rate according to the [linear scaling rule](https://arxiv.org/abs/1706.02677) manually then change `optimizer.lr` in specific config file.
 
 ### Training on a single GPU
 
