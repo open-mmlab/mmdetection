@@ -223,8 +223,7 @@ class SemanticFPNWrapper(BaseModule):
         else:
             out = feature_add_all_level
 
-        if self.num_aux_convs > 0:
-            outs = [out]
-            for conv in self.aux_convs:
-                outs.append(conv(feature_add_all_level))
-            return outs
+        outs = [out]
+        for conv in self.aux_convs:
+            outs.append(conv(feature_add_all_level))
+        return outs
