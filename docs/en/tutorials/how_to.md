@@ -115,7 +115,7 @@ data = dict(
 
 ## Unfreeze backbone network after freezing the backbone in the config
 
-If you have freezed the backbone network in the config and want to unfreeze it after some epoches, you can write a hook function to do it.  Taking the 'Faster R-CNN' algorithm as an example, you can freeze one stage of the backbone network and  add a `custom_hooks` in the config as below:
+If you have freezed the backbone network in the config and want to unfreeze it after some epoches, you can write a hook function to do it.  Taking the Faster R-CNN with the resnet backbone as an example, you can freeze one stage of the backbone network and  add a `custom_hooks` in the config as below:
 
 ```python
 _base_ = [
@@ -150,6 +150,7 @@ class UnfreezeBackboneEpochBasedHook(Hook):
 
     def before_train_epoch(self, runner):
         # Unfreeze the backbone network.
+        # Only valid for resnet.
         if runner.epoch == self.unfreeze_epoch:
             model = runner.model
             if is_module_wrapper(model):
