@@ -3,7 +3,8 @@ import pytest
 import torch
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.models.necks import (FPN, YOLOXPAFPN, ChannelMapper, CTResNetNeck,
+from mmdet.models.necks import (FPG, FPN, FPN_CARAFE, NASFCOS_FPN, NASFPN,
+                                YOLOXPAFPN, ChannelMapper, CTResNetNeck,
                                 DilatedEncoder, DyHead, SSDNeck, YOLOV3Neck)
 
 
@@ -25,6 +26,15 @@ def test_fpn():
         start_level=0,
         end_level=3,
         num_outs=5)
+
+    # `num_outs` is not equal to end_level - start_level + 1
+    with pytest.raises(AssertionError):
+        FPN(in_channels=in_channels,
+            out_channels=out_channels,
+            start_level=1,
+            end_level=2,
+            num_outs=2)
+
     # `num_outs` is not equal to len(in_channels) - start_level
     with pytest.raises(AssertionError):
         FPN(in_channels=in_channels,
@@ -439,3 +449,89 @@ def test_dyhead():
     # input feat must be tuple or list
     with pytest.raises(AssertionError):
         neck(feat)
+
+
+def test_fpg():
+    # `end_level` is larger than len(in_channels) - 1
+    with pytest.raises(AssertionError):
+        FPG(in_channels=[8, 16, 32, 64],
+            out_channels=8,
+            stack_times=9,
+            paths=['bu'] * 9,
+            start_level=1,
+            end_level=4,
+            num_outs=2)
+
+    # `num_outs` is not equal to end_level - start_level + 1
+    with pytest.raises(AssertionError):
+        FPG(in_channels=[8, 16, 32, 64],
+            out_channels=8,
+            stack_times=9,
+            paths=['bu'] * 9,
+            start_level=1,
+            end_level=2,
+            num_outs=2)
+
+
+def test_fpn_carafe():
+    # `end_level` is larger than len(in_channels) - 1
+    with pytest.raises(AssertionError):
+        FPN_CARAFE(
+            in_channels=[8, 16, 32, 64],
+            out_channels=8,
+            start_level=1,
+            end_level=4,
+            num_outs=2)
+
+    # `num_outs` is not equal to end_level - start_level + 1
+    with pytest.raises(AssertionError):
+        FPN_CARAFE(
+            in_channels=[8, 16, 32, 64],
+            out_channels=8,
+            start_level=1,
+            end_level=2,
+            num_outs=2)
+
+
+def test_nas_fpn():
+    # `end_level` is larger than len(in_channels) - 1
+    with pytest.raises(AssertionError):
+        NASFPN(
+            in_channels=[8, 16, 32, 64],
+            out_channels=8,
+            stack_times=9,
+            start_level=1,
+            end_level=4,
+            num_outs=2)
+
+    # `num_outs` is not equal to end_level - start_level + 1
+    with pytest.raises(AssertionError):
+        NASFPN(
+            in_channels=[8, 16, 32, 64],
+            out_channels=8,
+            stack_times=9,
+            start_level=1,
+            end_level=2,
+            num_outs=2)
+
+
+def test_nasfcos_fpn():
+    # `end_level` is larger than len(in_channels) - 1
+    with pytest.raises(AssertionError):
+        NASFCOS_FPN(
+            in_channels=[8, 16, 32, 64],
+            out_channels=8,
+            stack_times=9,
+            start_level=1,
+            end_level=4,
+            num_outs=2)
+
+    # `num_outs` is not equal to end_level - start_level + 1
+    with pytest.raises(AssertionError):
+        NASFCOS_FPN(
+            in_channels=[8, 16, 32, 64],
+            out_channels=8,
+            stack_times=9,
+            start_level=1,
+            end_level=2,
+            num_outs=2)
