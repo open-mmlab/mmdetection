@@ -5,6 +5,9 @@ import torch
 def batch_resplit(img, img_metas, kwargs):
     """Resplit data_batch.
 
+    Code is modified from
+    <https://github.com/microsoft/SoftTeacher/blob/main/ssod/utils/structure_utils.py> # noqa: E501
+
     Args:
         img (Tensor): of shape (N, C, H, W) encoding input images.
             Typically these should be mean centered and std scaled.
