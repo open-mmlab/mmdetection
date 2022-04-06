@@ -110,3 +110,32 @@ data = dict(
     train=train_dataset
     )
 ```
+
+## 获得新的骨干网络的通道数
+
+如果你想获得一个新骨干网络的通道数，你可以单独构建这个骨干网络并输入一个伪造的图片来获取每一个阶段的输出。
+
+以 `ResNet` 为例：
+
+```python
+from mmdet.models import ResNet
+import torch
+self = ResNet(depth=18)
+self.eval()
+inputs = torch.rand(1, 3, 32, 32)
+level_outputs = self.forward(inputs)
+for level_out in level_outputs:
+    print(tuple(level_out.shape))
+
+```
+
+以上脚本的输出为:
+
+```python
+(1, 64, 8, 8)
+(1, 128, 4, 4)
+(1, 256, 2, 2)
+(1, 512, 1, 1)
+```
+
+将脚本中的 `ResNet(depth=18)` 替换为你需要测量的骨干网络与相应的设置, 就可以得到新的主干网络的通道数。
