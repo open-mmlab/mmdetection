@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from atexit import register
 import math
 import warnings
 
@@ -257,7 +256,7 @@ def alphaiou_loss(pred, target, alpha=3, eps=1e-7, mode='iou'):
     union = ap + ag - overlap + eps
 
     # change conventional iou to alpha pow
-    ious = torch.pow(overlap/union + eps, alpha)
+    ious = torch.pow(overlap / union + eps, alpha)
 
     # calculate alpha-iou according mode
     if mode == 'iou':
@@ -272,12 +271,12 @@ def alphaiou_loss(pred, target, alpha=3, eps=1e-7, mode='iou'):
         ch = enclose_wh[:, 1]
 
         if mode == 'giou':
-            c_area = torch.max(cw*ch + eps, union)
-            gious = ious - torch.pow((c_area - union)/c_area + eps, alpha)
+            c_area = torch.max(cw * ch + eps, union)
+            gious = ious - torch.pow((c_area - union) / c_area + eps, alpha)
             loss = 1 - gious
             return loss
 
-        c2 = (cw**2 + ch**2) ** alpha + eps
+        c2 = (cw**2 + ch**2)**alpha + eps
 
         b1_x1, b1_y1 = pred[:, 0], pred[:, 1]
         b1_x2, b1_y2 = pred[:, 2], pred[:, 3]
@@ -286,7 +285,7 @@ def alphaiou_loss(pred, target, alpha=3, eps=1e-7, mode='iou'):
 
         left = ((b2_x1 + b2_x2) - (b1_x1 + b1_x2))**2 / 4
         right = ((b2_y1 + b2_y2) - (b1_y1 + b1_y2))**2 / 4
-        rho2 = (left + right) ** alpha
+        rho2 = (left + right)**alpha
 
         # DIoU
         if mode == 'diou':
@@ -298,13 +297,14 @@ def alphaiou_loss(pred, target, alpha=3, eps=1e-7, mode='iou'):
             w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1 + eps
 
             factor = 4 / math.pi**2
-            v = factor * torch.pow(torch.atan(w2 / h2) - torch.atan(w1 / h1), 2)
+            v = factor * torch.pow(
+                torch.atan(w2 / h2) - torch.atan(w1 / h1), 2)
 
             with torch.no_grad():
                 alpha_ciou = (ious > 0.5).float() * v / (1 - ious + v)
 
             # CIoU
-            cious = ious - (rho2 / c2 + torch.pow(alpha_ciou * v+eps, alpha) )
+            cious = ious - (rho2 / c2 + torch.pow(alpha_ciou * v + eps, alpha))
             loss = 1 - cious
             return loss
 
@@ -549,7 +549,11 @@ class CIoULoss(nn.Module):
 @LOSSES.register_module()
 class AlphaIoULoss(nn.Module):
 
-    def __init__(self, eps=1e-6, reduction='mean', loss_weight=1.0, mode='iou'):
+    def __init__(self,
+                 eps=1e-6,
+                 reduction='mean',
+                 loss_weight=1.0,
+                 mode='iou'):
         super(AlphaIoULoss, self).__init__()
         self.eps = eps
         self.reduction = reduction

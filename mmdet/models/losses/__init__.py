@@ -10,7 +10,7 @@ from .gaussian_focal_loss import GaussianFocalLoss
 from .gfocal_loss import DistributionFocalLoss, QualityFocalLoss
 from .ghm_loss import GHMC, GHMR
 from .iou_loss import (BoundedIoULoss, CIoULoss, DIoULoss, GIoULoss, IoULoss,
-                       bounded_iou_loss, iou_loss, alphaiou_loss)
+                       bounded_iou_loss, iou_loss)
 from .kd_loss import KnowledgeDistillationKLDivLoss
 from .mse_loss import MSELoss, mse_loss
 from .pisa_loss import carl_loss, isr_p
