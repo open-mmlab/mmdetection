@@ -11,11 +11,11 @@ from mmdet.models.losses import (BalancedL1Loss, CrossEntropyLoss, DiceLoss,
                                  SmoothL1Loss, VarifocalLoss)
 from mmdet.models.losses.ghm_loss import GHMC, GHMR
 from mmdet.models.losses.iou_loss import (BoundedIoULoss, CIoULoss, DIoULoss,
-                                          GIoULoss, IoULoss)
+                                          GIoULoss, IoULoss, AlphaIoULoss)
 
 
 @pytest.mark.parametrize(
-    'loss_class', [IoULoss, BoundedIoULoss, GIoULoss, DIoULoss, CIoULoss])
+    'loss_class', [IoULoss, BoundedIoULoss, GIoULoss, DIoULoss, CIoULoss, AlphaIoULoss])
 def test_iou_type_loss_zeros_weight(loss_class):
     pred = torch.rand((10, 4))
     target = torch.rand((10, 4))
@@ -29,7 +29,7 @@ def test_iou_type_loss_zeros_weight(loss_class):
     BalancedL1Loss, BoundedIoULoss, CIoULoss, CrossEntropyLoss, DIoULoss,
     FocalLoss, DistributionFocalLoss, MSELoss, SeesawLoss, GaussianFocalLoss,
     GIoULoss, IoULoss, L1Loss, QualityFocalLoss, VarifocalLoss, GHMR, GHMC,
-    SmoothL1Loss, KnowledgeDistillationKLDivLoss, DiceLoss
+    SmoothL1Loss, KnowledgeDistillationKLDivLoss, DiceLoss, AlphaIoULoss
 ])
 def test_loss_with_reduction_override(loss_class):
     pred = torch.rand((10, 4))
@@ -43,10 +43,19 @@ def test_loss_with_reduction_override(loss_class):
         loss_class()(
             pred, target, weight, reduction_override=reduction_override)
 
+@pytest.mark.parametrize('loss_class', [AlphaIoULoss])
+@pytest.mark.parametrize('mode', ['iou', 'diou', 'ciou', 'giou'])
+def test_alphaiouloss_with_mode(loss_class, mode):
+    pred = torch.rand((10, 4))
+    target = torch.rand((10, 4))
+
+    loss = loss_class(mode=mode)(pred, target)
+    assert isinstance(loss, torch.Tensor)
+
 
 @pytest.mark.parametrize('loss_class', [
     IoULoss, BoundedIoULoss, GIoULoss, DIoULoss, CIoULoss, MSELoss, L1Loss,
-    SmoothL1Loss, BalancedL1Loss
+    SmoothL1Loss, BalancedL1Loss, AlphaIoULoss
 ])
 @pytest.mark.parametrize('input_shape', [(10, 4), (0, 4)])
 def test_regression_losses(loss_class, input_shape):
