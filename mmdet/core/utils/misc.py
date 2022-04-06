@@ -1,5 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from collections import Counter, Mapping, Sequence
 from functools import partial
+from numbers import Number
 
 import numpy as np
 import torch
@@ -206,3 +208,55 @@ def generate_coordinate(featmap_sizes, device='cuda'):
     coord_feat = torch.cat([x, y], 1)
 
     return coord_feat
+
+
+_step_counter = Counter()
+
+
+def weighted_loss(loss, weight, ignore_keys=[], warmup_iters=0):
+    """Weight the loss.
+
+    Code is modified from
+    <https://github.com/microsoft/SoftTeacher/blob/main/ssod/utils/structure_utils.py> # noqa: E501
+
+    Args:
+        loss (dict[str, Tensor]): A dictionary of loss components.
+        weight (dict | float): The weight for each loss.
+        ignore_keys (list(str)): Specify which loss can be ignored.
+        warmup_iters (int): The number of iterations or epochs
+            that warmup lasts.
+    Returns:
+        loss (dict[str, Tensor]): A dictionary of weighted loss components
+    """
+
+    def sequence_mul(obj, multiplier):
+        if isinstance(obj, Sequence):
+            return [o * multiplier for o in obj]
+        else:
+            return obj * multiplier
+
+    def is_match(word, word_list):
+        for keyword in word_list:
+            if keyword in word:
+                return True
+        return False
+
+    _step_counter['weight'] += 1
+    lambda_weight = (lambda x: x * (_step_counter['weight'] - 1) / warmup_iters
+                     if _step_counter['weight'] <= warmup_iters else x)
+    if isinstance(weight, Mapping):
+        for k, v in weight.items():
+            for name, loss_item in loss.items():
+                if (k in name) and ('loss' in name):
+                    loss[name] = sequence_mul(loss[name], lambda_weight(v))
+    elif isinstance(weight, Number):
+        for name, loss_item in loss.items():
+            if 'loss' in name:
+                if not is_match(name, ignore_keys):
+                    loss[name] = sequence_mul(loss[name],
+                                              lambda_weight(weight))
+                else:
+                    loss[name] = sequence_mul(loss[name], 0.0)
+    else:
+        raise NotImplementedError()
+    return loss
