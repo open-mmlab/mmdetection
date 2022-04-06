@@ -629,7 +629,7 @@ def test_mask_hungarian_match_assigner():
     with pytest.raises(AssertionError):
         self = MaskHungarianAssigner(**assigner_cfg)
 
-    # test with solo_style mode of DiceLossCost which is not supported yet
+    # test with dicecost used in K-Net
     assigner_cfg = dict(
         cls_cost=dict(type='ClassificationCost', weight=0.0),
         dice_cost=dict(
@@ -637,6 +637,6 @@ def test_mask_hungarian_match_assigner():
             weight=0.0,
             pred_act=True,
             eps=1.0,
-            solo_style=True))
+            naive_dice=False))
     with pytest.raises(AssertionError):
         self = MaskHungarianAssigner(**assigner_cfg)
