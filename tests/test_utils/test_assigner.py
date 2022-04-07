@@ -616,7 +616,7 @@ def test_mask_hungarian_match_assigner():
             weight=1.0,
             pred_act=True,
             eps=1.0,
-            naive_dice=True))
+            naive_dice=False))
     self = MaskHungarianAssigner(**assigner_cfg)
     assign_result = self.assign(cls_pred, mask_pred, gt_labels, gt_masks,
                                 img_meta)
