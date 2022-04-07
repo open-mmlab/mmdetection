@@ -9,7 +9,10 @@ OPTIMIZER_BUILDERS = Registry(
 
 
 def build_optimizer_constructor(cfg):
-    return build_from_cfg(cfg, OPTIMIZER_BUILDERS)
+    if cfg['type'] == 'DefaultOptimizerConstructor':
+        return build_from_cfg(cfg, MMCV_OPTIMIZER_BUILDERS)
+    else:
+        return build_from_cfg(cfg, OPTIMIZER_BUILDERS)
 
 
 def build_optimizer(model, cfg):
