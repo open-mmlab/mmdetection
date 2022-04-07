@@ -595,7 +595,7 @@ def test_mask_hungarian_match_assigner():
     assert (assign_result.gt_inds > 0).sum() == gt_labels.size(0)
     assert (assign_result.labels > -1).sum() == gt_labels.size(0)
 
-    # test with mask dice mode that naive_dice is True
+    # test with mask dice mode
     assigner_cfg = dict(
         cls_cost=dict(type='ClassificationCost', weight=0.0),
         mask_cost=dict(type='FocalLossCost', weight=0.0, binary_input=True),
