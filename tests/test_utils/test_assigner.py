@@ -11,8 +11,8 @@ import torch
 from mmdet.core.bbox.assigners import (ApproxMaxIoUAssigner,
                                        CenterRegionAssigner, HungarianAssigner,
                                        MaskHungarianAssigner, MaxIoUAssigner,
-                                       PointAssigner, TaskAlignedAssigner,
-                                       UniformAssigner)
+                                       PointAssigner, SimOTAAssigner,
+                                       TaskAlignedAssigner, UniformAssigner)
 
 
 def test_max_iou_assigner():
@@ -498,6 +498,21 @@ def test_uniform_assigner_with_empty_boxes():
     # Test without gt_labels
     assign_result = self.assign(pred_bbox, anchor, gt_bboxes, gt_labels=None)
     assert len(assign_result.gt_inds) == 0
+
+
+def test_sim_ota_assigner():
+    self = SimOTAAssigner(
+        center_radius=2.5, candidate_topk=1, iou_weight=3.0, cls_weight=1.0)
+    pred_scores = torch.FloatTensor([[0.2], [0.8]])
+    priors = torch.Tensor([[0, 12, 23, 34], [4, 5, 6, 7]])
+    decoded_bboxes = torch.Tensor([[[30, 40, 50, 60]], [[4, 5, 6, 7]]])
+    gt_bboxes = torch.Tensor([[23.6667, 23.8757, 238.6326, 151.8874]])
+    gt_labels = torch.LongTensor([2])
+    assign_result = self.assign(pred_scores, priors, decoded_bboxes, gt_bboxes,
+                                gt_labels)
+
+    expected_gt_inds = torch.LongTensor([0, 0])
+    assert torch.all(assign_result.gt_inds == expected_gt_inds)
 
 
 def test_task_aligned_assigner():

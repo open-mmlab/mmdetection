@@ -112,3 +112,64 @@ data = dict(
     train=train_dataset
     )
 ```
+
+## Unfreeze backbone network after freezing the backbone in the config
+
+If you have freezed the backbone network in the config and want to unfreeze it after some epoches, you can write a hook function to do it.  Taking the Faster R-CNN with the resnet backbone as an example, you can freeze one stage of the backbone network and  add a `custom_hooks` in the config as below:
+
+```python
+_base_ = [
+    '../_base_/models/faster_rcnn_r50_fpn.py',
+    '../_base_/datasets/coco_detection.py',
+    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
+]
+model = dict(
+    # freeze one stage of the backbone network.
+    backbone=dict(frozen_stages=1),
+)
+custom_hooks = [dict(type="UnfreezeBackboneEpochBasedHook", unfreeze_epoch=1)]
+```
+
+Meanwhile write the hook class `UnfreezeBackboneEpochBasedHook` in `mmdet/core/hook/unfreeze_backbone_epoch_based_hook.py`
+
+```python
+from mmcv.parallel import is_module_wrapper
+from mmcv.runner.hooks import HOOKS, Hook
+
+
+@HOOKS.register_module()
+class UnfreezeBackboneEpochBasedHook(Hook):
+    """Unfreeze backbone network Hook.
+
+    Args:
+        unfreeze_epoch (int): The epoch unfreezing the backbone network.
+    """
+
+    def __init__(self, unfreeze_epoch=1):
+        self.unfreeze_epoch = unfreeze_epoch
+
+    def before_train_epoch(self, runner):
+        # Unfreeze the backbone network.
+        # Only valid for resnet.
+        if runner.epoch == self.unfreeze_epoch:
+            model = runner.model
+            if is_module_wrapper(model):
+                model = model.module
+            backbone = model.backbone
+            if backbone.frozen_stages >= 0:
+                if backbone.deep_stem:
+                    backbone.stem.train()
+                    for param in backbone.stem.parameters():
+                        param.requires_grad = True
+                else:
+                    backbone.norm1.train()
+                    for m in [backbone.conv1, backbone.norm1]:
+                        for param in m.parameters():
+                            param.requires_grad = True
+
+            for i in range(1, backbone.frozen_stages + 1):
+                m = getattr(backbone, f'layer{i}')
+                m.train()
+                for param in m.parameters():
+                    param.requires_grad = True
+```
