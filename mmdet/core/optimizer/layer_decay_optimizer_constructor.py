@@ -1,14 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import json
 
-from mmcv import Registry
-from mmcv.runner import OPTIMIZER_BUILDERS as MMCV_OPTIMIZER_BUILDERS
 from mmcv.runner import DefaultOptimizerConstructor, get_dist_info
 
 from ...utils import get_root_logger
-
-OPTIMIZER_BUILDERS = Registry(
-    'optimizer builder', parent=MMCV_OPTIMIZER_BUILDERS)
+from .build import OPTIMIZER_BUILDERS
 
 
 # Modified from
