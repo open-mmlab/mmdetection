@@ -8,57 +8,6 @@ from .builder import MATCH_COST
 
 
 @MATCH_COST.register_module()
-class MaskCost:
-    """MaskCost.
-
-     Args:
-         weight (int | float, optional): loss_weight.
-         pred_act (bool): used for sigmoid.
-         act_mode (str): sigmoid for binary predict,\
-                            other for multi classes predict.
-
-     Examples:
-         >>> from mmdet.core.bbox.match_costs.match_cost import MaskCost
-         >>> import torch
-         >>> self = MaskCost()
-         >>> cls_pred = torch.rand(3, 2, 3)
-         >>> target = torch.rand(2, 2, 3)
-         >>> self(bbox_pred, gt_bboxes)
-         tensor([[-0.5636, -0.4881],
-                [-0.5146, -0.4170],
-                [-0.4547, -0.5371]])
-    """
-
-    def __init__(self, weight=1., pred_act=False, act_mode='sigmoid'):
-        self.weight = weight
-        self.pred_act = pred_act
-        self.act_mode = act_mode
-
-    def __call__(self, cls_pred, target):
-        """
-        Args:
-            cls_pred (Tensor): Predicted classification logits, shape
-                [num_query, num_class].
-            gt_labels (Tensor): Label of `gt_bboxes`, shape (num_gt,).
-
-        Returns:
-            torch.Tensor: cls_cost value with weight.
-        """
-        if self.pred_act and self.act_mode == 'sigmoid':
-            cls_pred = cls_pred.sigmoid()
-        elif self.pred_act:
-            cls_pred = cls_pred.softmax(dim=0)
-
-        _, H, W = target.shape
-        # flatten_cls_pred = cls_pred.view(num_proposals, -1)
-        # eingum is ~10 times faster than matmul
-        pos_cost = torch.einsum('nhw,mhw->nm', cls_pred, target)
-        neg_cost = torch.einsum('nhw,mhw->nm', 1 - cls_pred, 1 - target)
-        cls_cost = -(pos_cost + neg_cost) / (H * W)
-        return cls_cost * self.weight
-
-
-@MATCH_COST.register_module()
 class BBoxL1Cost:
     """BBoxL1Cost.
 
@@ -295,7 +244,11 @@ class DiceCost:
         pred_act (bool, optional): Whether to apply sigmoid to mask_pred.
             Defaults to False.
         eps (float, optional): default 1e-12.
-        naive_dice (bool, optional): default True.
+        naive_dice (bool, optional): If false, use the dice \
+                loss defined in the V-Net paper, otherwise, use the \
+                naive dice loss in which the power of the number in the
+                denominator is the first power instead of the second
+                power. Defaults to True.
     """
 
     def __init__(self, weight=1., pred_act=False, eps=1e-3, naive_dice=True):
