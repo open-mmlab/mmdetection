@@ -33,7 +33,7 @@ def test_fpn():
             out_channels=out_channels,
             start_level=1,
             end_level=2,
-            num_outs=2)
+            num_outs=3)
 
     # `num_outs` is not equal to len(in_channels) - start_level
     with pytest.raises(AssertionError):
@@ -460,7 +460,8 @@ def test_fpg():
             paths=['bu'] * 9,
             start_level=1,
             end_level=4,
-            num_outs=2)
+            num_outs=2,
+            skip_inds=[(0, 1, 2, 3), (0, 1, 2), (0, 1), (0, ), ()])
 
     # `num_outs` is not equal to end_level - start_level + 1
     with pytest.raises(AssertionError):
@@ -470,7 +471,8 @@ def test_fpg():
             paths=['bu'] * 9,
             start_level=1,
             end_level=2,
-            num_outs=2)
+            num_outs=3,
+            skip_inds=[(0, 1, 2, 3), (0, 1, 2), (0, 1), (0, ), ()])
 
 
 def test_fpn_carafe():
@@ -490,7 +492,7 @@ def test_fpn_carafe():
             out_channels=8,
             start_level=1,
             end_level=2,
-            num_outs=2)
+            num_outs=3)
 
 
 def test_nas_fpn():
@@ -512,7 +514,7 @@ def test_nas_fpn():
             stack_times=9,
             start_level=1,
             end_level=2,
-            num_outs=2)
+            num_outs=3)
 
 
 def test_nasfcos_fpn():
@@ -521,7 +523,6 @@ def test_nasfcos_fpn():
         NASFCOS_FPN(
             in_channels=[8, 16, 32, 64],
             out_channels=8,
-            stack_times=9,
             start_level=1,
             end_level=4,
             num_outs=2)
@@ -531,7 +532,6 @@ def test_nasfcos_fpn():
         NASFCOS_FPN(
             in_channels=[8, 16, 32, 64],
             out_channels=8,
-            stack_times=9,
             start_level=1,
             end_level=2,
-            num_outs=2)
+            num_outs=3)
