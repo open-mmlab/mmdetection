@@ -629,14 +629,30 @@ def test_mask_hungarian_match_assigner():
     with pytest.raises(AssertionError):
         self = MaskHungarianAssigner(**assigner_cfg)
 
-    # test with dicecost used in K-Net
+    # test no gt masks that naive_dice is False
     assigner_cfg = dict(
-        cls_cost=dict(type='ClassificationCost', weight=0.0),
-        dice_cost=dict(
-            type='DiceCost',
-            weight=0.0,
-            pred_act=True,
-            eps=1.0,
-            naive_dice=False))
-    with pytest.raises(AssertionError):
-        self = MaskHungarianAssigner(**assigner_cfg)
+        cls_cost=dict(type='ClassificationCost', weight=1.0),
+        mask_cost=dict(type='FocalLossCost', weight=20.0, binary_input=True),
+        dice_cost=dict(type='DiceCost', weight=1.0, pred_act=True, eps=1.0))
+    self = MaskHungarianAssigner(**assigner_cfg)
+    cls_pred = torch.rand((10, 133))
+    mask_pred = torch.rand((10, 50, 50))
+
+    gt_labels = torch.empty((0, )).long()
+    gt_masks = torch.empty((0, 50, 50)).float()
+    img_meta = None
+    assign_result = self.assign(cls_pred, mask_pred, gt_labels, gt_masks,
+                                img_meta)
+    assert torch.all(assign_result.gt_inds == 0)
+    assert torch.all(assign_result.labels == -1)
+
+    # test with gt masks that naive_dice is False
+    gt_labels = torch.LongTensor([10, 100])
+    gt_masks = torch.zeros((2, 50, 50)).long()
+    gt_masks[0, :25] = 1
+    gt_masks[0, 25:] = 1
+    assign_result = self.assign(cls_pred, mask_pred, gt_labels, gt_masks,
+                                img_meta)
+    assert torch.all(assign_result.gt_inds > -1)
+    assert (assign_result.gt_inds > 0).sum() == gt_labels.size(0)
+    assert (assign_result.labels > -1).sum() == gt_labels.size(0)

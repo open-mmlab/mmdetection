@@ -244,10 +244,11 @@ class DiceCost:
         pred_act (bool, optional): Whether to apply sigmoid to mask_pred.
             Defaults to False.
         eps (float, optional): default 1e-12.
-        naive_dice (bool, optional): If True, use the dice \
-                loss which use the naive dice loss in which the power \
-                of the number in the denominator is the first power,
-                if Flase, use the second power. Defaults to True.
+        naive_dice (bool, optional): If True, use the naive dice loss
+            in which the power of the number in the denominator is
+            the first power. If Flase, use the second power that
+            is adopted by K-Net and SOLO.
+            Defaults to True.
     """
 
     def __init__(self, weight=1., pred_act=False, eps=1e-3, naive_dice=True):
