@@ -26,7 +26,6 @@ class ConvKernelHead(BaseModule):
                  norm_cfg=dict(type='GN', num_groups=32),
                  semantic_fpn=True,
                  train_cfg=None,
-                 num_classes=80,
                  xavier_init_kernel=False,
                  kernel_init_std=0.01,
                  proposal_feats_with_obj=False,
@@ -36,13 +35,8 @@ class ConvKernelHead(BaseModule):
                  loss_dice=None,
                  loss_rank=None,
                  feat_downsample_stride=1,
-                 feat_refine_stride=1,
                  feat_refine=True,
-                 with_embed=False,
-                 feat_embed_only=False,
                  conv_normal_init=False,
-                 mask_out_stride=4,
-                 hard_target=False,
                  num_thing_classes=80,
                  num_stuff_classes=53,
                  ignore_label=255,
@@ -54,8 +48,6 @@ class ConvKernelHead(BaseModule):
         self.num_cls_fcs = num_cls_fcs
         self.train_cfg = train_cfg
         self.in_channels = in_channels
-        self.out_channels = out_channels
-        self.num_classes = num_classes
         self.proposal_feats_with_obj = proposal_feats_with_obj
         self.sampling = False
         self.localization_fpn = build_neck(localization_fpn)
@@ -63,21 +55,21 @@ class ConvKernelHead(BaseModule):
         self.norm_cfg = norm_cfg
         self.num_heads = num_heads
         self.att_dropout = att_dropout
-        self.mask_out_stride = mask_out_stride
-        self.hard_target = hard_target
         self.conv_kernel_size = conv_kernel_size
         self.xavier_init_kernel = xavier_init_kernel
         self.kernel_init_std = kernel_init_std
         self.feat_downsample_stride = feat_downsample_stride
-        self.feat_refine_stride = feat_refine_stride
         self.conv_normal_init = conv_normal_init
         self.feat_refine = feat_refine
-        self.with_embed = with_embed
-        self.feat_embed_only = feat_embed_only
         self.num_loc_convs = num_loc_convs
         self.num_seg_convs = num_seg_convs
         self.num_thing_classes = num_thing_classes
         self.num_stuff_classes = num_stuff_classes
+        self.out_channels = out_channels
+        if cat_stuff_mask:
+            self.num_classes = num_thing_classes + num_stuff_classes
+        else:
+            self.num_classes = num_thing_classes
         self.ignore_label = ignore_label
         self.thing_label_in_seg = thing_label_in_seg
         self.cat_stuff_mask = cat_stuff_mask
@@ -138,14 +130,12 @@ class ConvKernelHead(BaseModule):
                 self.in_channels,
                 self.out_channels,
                 3,
-                stride=self.feat_refine_stride,
                 padding=1,
                 norm_cfg=self.norm_cfg)
             self.seg_downsample = ConvModule(
                 self.in_channels,
                 self.out_channels,
                 3,
-                stride=self.feat_refine_stride,
                 padding=1,
                 norm_cfg=self.norm_cfg)
 
@@ -228,13 +218,13 @@ class ConvKernelHead(BaseModule):
                 semantic_feats = conv(semantic_feats)
             if self.feat_downsample_stride > 1 and self.feat_refine:
                 semantic_feats = self.seg_downsample(
-                    semantic_feats)  # (N,C,H/8,W/8)
+                    semantic_feats)  # (N, C, H/8, W/8)
         else:
             semantic_feats = None
 
         if semantic_feats is not None:
             seg_preds = self.conv_seg(
-                semantic_feats)  # (N,thing+stuff,H,W). predict for seg
+                semantic_feats)  # (N, thing+stuff, H, W). predict for seg
         else:
             seg_preds = None
 
@@ -250,19 +240,19 @@ class ConvKernelHead(BaseModule):
             x_feats = loc_feats
 
         if self.proposal_feats_with_obj:  # True for panoptic
-            sigmoid_masks = mask_preds.sigmoid()  # (b,num_proposal,h,w)
+            sigmoid_masks = mask_preds.sigmoid()  # (N, num_proposal, H, W)
             nonzero_inds = sigmoid_masks > 0.5
             sigmoid_masks = nonzero_inds.float()
             obj_feats = torch.einsum(
                 'bnhw,bchw->bnc', sigmoid_masks,
-                x_feats)  # (b,num_proposal,c) Group Feature Assembling
+                x_feats)  # (N, num_proposal, C) Group Feature Assembling
 
         cls_scores = None
 
         if self.proposal_feats_with_obj:
             proposal_feats = proposal_feats + obj_feats.view(
                 num_imgs, self.num_proposals, self.out_channels, 1,
-                1)  # (b,num_proposal,c,1,1)
+                1)  # (, num_proposal, C, 1, 1)
 
         if self.cat_stuff_mask and not self.training:
             mask_preds = torch.cat(
@@ -284,8 +274,8 @@ class ConvKernelHead(BaseModule):
                       gt_sem_cls=None):
         """
         Args:
-            x (List[Tensor]): each of shape (N, C, H_i, W_i) \
-                encoding input images. Typically these should be \
+            x (List[Tensor]): each of shape (N, C, H_i, W_i) 
+                encoding input images. Typically these should be 
                 mean centered and std scaled.
             img_metas (list[Dict]): list of image info dict where each dict
                 has: 'img_shape', 'scale_factor', 'flip', and may also contain
@@ -294,27 +284,27 @@ class ConvKernelHead(BaseModule):
                 `mmdet/datasets/pipelines/formatting.py:Collect`.
             gt_masks (list[BitmapMasks]): true segmentation masks for each mask
                 used if the architecture supports a segmentation task.
-            gt_labels (list[Tensor]): classes indices \
+            gt_labels (list[Tensor]): classes indices 
                 corresponding to each mask.
-            gt_semantic_seg (list[tensor]): semantic segmentation mask \
+            gt_semantic_seg (list[tensor]): semantic segmentation mask 
                 of stuff for images.
             gt_sem_cls (list[Tensor]): classes of each semantic_seg mask
 
         Returns:
             Tuple: a tuple containing the following targets.
-            - losses (Dict): loss of this head
-            - proposal_feats (Tensor): Kernel weight of predict , \
+             - losses (Dict): loss of this head
+             - proposal_feats (Tensor): Kernel weight of predict , 
                 shape (N,num_proposal+num_stuff,C,K,K).
-            - x_feats (Tensor): Feature map, shape (N,C,H/8,W/8).
-            - mask_preds (Tensor): predict mask, \
+             - x_feats (Tensor): Feature map, shape (N,C,H/8,W/8).
+             - mask_preds (Tensor): predict mask, 
                 shape (N,num_proposal+num_stuff,H/8,W/8)
-            - cls_scores (None)
+             - cls_scores (None)
         """
         num_imgs = len(img_metas)
         results = self._decode_init_proposals(feats, img_metas)
         (proposal_feats, x_feats, mask_preds, cls_scores, seg_preds) = results
-        # proposal_feats:(N,C,H,W),x_feats:(N,C,H/8.W/8),
-        # mask_preds(N,num_proposal,H/8,W/8),
+        # proposal_feats:(N, C, H, W),x_feats:(N, C, H/8, W/8),
+        # mask_preds(N, num_proposal, H/8, W/8),
         # cls_scores:None
         # seg_preds:(N,classes,H/8,W/8)
         if self.feat_downsample_stride > 1:
