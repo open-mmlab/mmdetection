@@ -633,7 +633,12 @@ def test_mask_hungarian_match_assigner():
     assigner_cfg = dict(
         cls_cost=dict(type='ClassificationCost', weight=1.0),
         mask_cost=dict(type='FocalLossCost', weight=20.0, binary_input=True),
-        dice_cost=dict(type='DiceCost', weight=1.0, pred_act=True, eps=1.0))
+        dice_cost=dict(
+            type='DiceCost',
+            weight=1.0,
+            pred_act=True,
+            eps=1.0,
+            naive_dice=False))
     self = MaskHungarianAssigner(**assigner_cfg)
     cls_pred = torch.rand((10, 133))
     mask_pred = torch.rand((10, 50, 50))
