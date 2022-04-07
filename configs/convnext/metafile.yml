@@ -1,0 +1,90 @@
+Models:
+  - Name: mask_rcnn_convnext-t_p4_w7_fpn_fp16_ms-crop_3x_coco
+    In Collection: Mask R-CNN
+    Config: configs/convnext/mask_rcnn_convnext-t_p4_w7_fpn_fp16_ms-crop_3x_coco
+    Metadata:
+      Training Memory (GB): xxx
+      Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - AdamW
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - ConvNeXt
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: xxx
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: xxx
+    Weights: xxx
+    Paper:
+      URL: https://arxiv.org/abs/2201.03545
+      Title: 'A ConvNet for the 2020s'
+    README: configs/convnext/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.16.0/mmdet/models/backbones/swin.py#L465
+      Version: v2.24.0
+
+  - Name: cascade_mask_rcnn_convnext-t_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco
+    In Collection: Cascade Mask R-CNN
+    Config: configs/convnext/cascade_mask_rcnn_convnext-t_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco.py
+    Metadata:
+      Training Memory (GB): xxx
+      Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - AdamW
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - ConvNeXt
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: xxx
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: xxx
+    Weights: xxx
+    Paper:
+      URL: https://arxiv.org/abs/2201.03545
+      Title: 'A ConvNet for the 2020s'
+    README: configs/convnext/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.16.0/mmdet/models/backbones/swin.py#L465
+      Version: v2.24.0
+
+  - Name: cascade_mask_rcnn_convnext-s_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco
+    In Collection: Cascade Mask R-CNN
+    Config: configs/convnext/cascade_mask_rcnn_convnext-s_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco.py
+    Metadata:
+      Training Memory (GB): xxx
+      Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - AdamW
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - ConvNeXt
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: xxx
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: xxx
+    Weights: xxx
+    Paper:
+      URL: https://arxiv.org/abs/2201.03545
+      Title: 'A ConvNet for the 2020s'
+    README: configs/convnext/README.md
+    Code:
+      URL: xxx
+      Version: v2.24.0
