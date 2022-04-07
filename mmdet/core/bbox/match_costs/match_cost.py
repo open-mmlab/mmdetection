@@ -244,11 +244,10 @@ class DiceCost:
         pred_act (bool, optional): Whether to apply sigmoid to mask_pred.
             Defaults to False.
         eps (float, optional): default 1e-12.
-        naive_dice (bool, optional): If false, use the dice \
-                loss defined in the V-Net paper, otherwise, use the \
-                naive dice loss in which the power of the number in the
-                denominator is the first power instead of the second
-                power. Defaults to True.
+        naive_dice (bool, optional): If True, use the dice \
+                loss which use the naive dice loss in which the power \
+                of the number in the denominator is the first power,
+                if Flase, use the second power. Defaults to True.
     """
 
     def __init__(self, weight=1., pred_act=False, eps=1e-3, naive_dice=True):
@@ -275,8 +274,8 @@ class DiceCost:
             denominator = mask_preds.sum(-1)[:, None] + \
                 gt_masks.sum(-1)[None, :]
         else:
-            denominator = torch.sum(mask_preds * mask_preds, 1)[:, None] + \
-                torch.sum(gt_masks * gt_masks, 1)[None, :]
+            denominator = mask_preds.pow(2).sum(1)[:, None] + \
+                gt_masks.pow(2).sum(1)[None, :]
         loss = 1 - (numerator + self.eps) / (denominator + self.eps)
         return loss
 
