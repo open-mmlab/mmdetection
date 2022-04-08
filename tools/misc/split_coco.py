@@ -43,10 +43,11 @@ def split_coco(data_root, out_dir, percent, fold):
     """Split COCO data for Semi-supervised object detection.
 
     Args:
-        data_root(str): The data root of coco dataset.
-        out_dir(str): The output directory of coco semi-supervised annotations.
-        percent(float): The percentage of labeled data in the training set.
-        fold(int): The fold of dataset and set as random seed for data split.
+        data_root (str): The data root of coco dataset.
+        out_dir (str): The output directory of coco semi-supervised
+            annotations.
+        percent (float): The percentage of labeled data in the training set.
+        fold (int): The fold of dataset and set as random seed for data split.
     """
 
     def save_anns(name, images, annotations):
@@ -102,6 +103,7 @@ def multi_wrapper(args):
 
 if __name__ == '__main__':
     args = parse_args()
-    pf = [(args.data_root, args.out_dir, p, f)
-          for f in range(1, args.fold + 1) for p in args.labeled_percent]
-    mmcv.track_parallel_progress(multi_wrapper, pf, args.fold)
+    arguments_list = [(args.data_root, args.out_dir, p, f)
+                      for f in range(1, args.fold + 1)
+                      for p in args.labeled_percent]
+    mmcv.track_parallel_progress(multi_wrapper, arguments_list, args.fold)
