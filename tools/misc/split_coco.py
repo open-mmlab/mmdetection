@@ -66,24 +66,24 @@ def split_coco(data_root, out_dir, percent, fold):
     anns = mmcv.load(ann_file)
 
     image_list = anns['images']
-    labeled_tot = int(percent / 100. * len(image_list))
-    labeled_ind = set(
-        np.random.choice(range(len(image_list)), size=labeled_tot))
-    labeled_id, labeled_images, unlabeled_images = [], [], []
+    labeled_total = int(percent / 100. * len(image_list))
+    labeled_inds = set(
+        np.random.choice(range(len(image_list)), size=labeled_total))
+    labeled_ids, labeled_images, unlabeled_images = [], [], []
 
     for i in range(len(image_list)):
-        if i in labeled_ind:
+        if i in labeled_inds:
             labeled_images.append(image_list[i])
-            labeled_id.append(image_list[i]['id'])
+            labeled_ids.append(image_list[i]['id'])
         else:
             unlabeled_images.append(image_list[i])
 
     # get all annotations of labeled images
-    labeled_id = set(labeled_id)
+    labeled_ids = set(labeled_ids)
     labeled_annotations, unlabeled_annotations = [], []
 
     for ann in anns['annotations']:
-        if ann['image_id'] in labeled_id:
+        if ann['image_id'] in labeled_ids:
             labeled_annotations.append(ann)
         else:
             unlabeled_annotations.append(ann)
