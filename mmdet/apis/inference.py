@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import warnings
+from pathlib import Path
 
 import mmcv
 import numpy as np
@@ -18,8 +19,8 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
     """Initialize a detector from config file.
 
     Args:
-        config (str or :obj:`mmcv.Config`): Config file path or the config
-            object.
+        config (str or Path or :obj:`mmcv.Config`): Config file path or 
+            :obj:`Path` or the config object.
         checkpoint (str, optional): Checkpoint path. If left as None, the model
             will not load any weights.
         cfg_options (dict): Options to override some settings in the used
@@ -28,7 +29,7 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
     Returns:
         nn.Module: The constructed detector.
     """
-    if isinstance(config, str):
+    if isinstance(config, (str, Path)):
         config = mmcv.Config.fromfile(config)
     elif not isinstance(config, mmcv.Config):
         raise TypeError('config must be a filename or Config object, '
