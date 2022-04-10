@@ -356,7 +356,18 @@ def test_set_epoch_info_hook():
 
 def test_memory_profiler_hook():
     from collections import namedtuple
+
+    # test ImportError without psutil and memory_profiler
+    with pytest.raises(ImportError):
+        from mmdet.core.hook import MemoryProfilerHook
+        MemoryProfilerHook(1)
+
+    # test ImportError without memory_profiler
     sys.modules['psutil'] = MagicMock()
+    with pytest.raises(ImportError):
+        from mmdet.core.hook import MemoryProfilerHook
+        MemoryProfilerHook(1)
+
     sys.modules['memory_profiler'] = MagicMock()
 
     def _mock_virtual_memory():
