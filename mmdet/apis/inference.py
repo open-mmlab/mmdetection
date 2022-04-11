@@ -19,7 +19,7 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
     """Initialize a detector from config file.
 
     Args:
-        config (str or :obj:`Path` or :obj:`mmcv.Config`): Config file path,
+        config (str, :obj:`Path`, or :obj:`mmcv.Config`): Config file path,
             :obj:`Path`, or the config object.
         checkpoint (str, optional): Checkpoint path. If left as None, the model
             will not load any weights.
