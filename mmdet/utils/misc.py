@@ -66,11 +66,15 @@ def update_data_root(cfg, logger=None):
         f'cfg got wrong type: {type(cfg)}, expected mmcv.Config'
 
     def update(cfg, src_str, dst_str):
-        for k, v in cfg.items():
-            if isinstance(v, mmcv.ConfigDict):
-                update(cfg[k], src_str, dst_str)
-            if isinstance(v, str) and src_str in v:
-                cfg[k] = v.replace(src_str, dst_str)
+        if isinstance(cfg, list):
+            for it in cfg:
+                update(it, src_str, dst_str)
+        elif isinstance(cfg, (dict, mmcv.ConfigDict)):
+            for k, v in cfg.items():
+                if isinstance(v, (list, mmcv.ConfigDict)):
+                    update(cfg[k], src_str, dst_str)
+                if isinstance(v, str) and src_str in v:
+                    cfg[k] = v.replace(src_str, dst_str)
 
     update(cfg.data, cfg.data_root, dst_root)
     cfg.data_root = dst_root
