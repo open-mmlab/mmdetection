@@ -574,23 +574,45 @@ class FilterAnnotations:
     Args:
         min_gt_bbox_wh (tuple[int]): Minimum width and height of ground truth
             boxes.
+        min_gt_mask_area (int): Minimum foreground area of ground truth masks.
+        by_box (bool): Keep instances with bounding boxes meeting the
+            min_gt_bbox_wh threshold.
+        by_mask (bool): Keep instances with masks meeting min_gt_mask_area
+        threshold.
         keep_empty (bool): Whether to return None when it
             becomes an empty bbox after filtering. Default: True
     """
 
-    def __init__(self, min_gt_bbox_wh, keep_empty=True):
+    def __init__(self,
+                 min_gt_bbox_wh,
+                 min_gt_mask_area=1,
+                 by_box=True,
+                 by_mask=False,
+                 keep_empty=True):
         # TODO: add more filter options
+        assert by_box or by_mask
         self.min_gt_bbox_wh = min_gt_bbox_wh
+        self.min_gt_mask_area = min_gt_mask_area
+        self.by_box = by_box
+        self.by_mask = by_mask
         self.keep_empty = keep_empty
 
     def __call__(self, results):
         assert 'gt_bboxes' in results
+        if self.by_mask:
+            assert 'gt_masks' in results
         gt_bboxes = results['gt_bboxes']
-        if gt_bboxes.shape[0] == 0:
+        instance_num = gt_bboxes.shape[0]
+        if instance_num == 0:
             return results
-        w = gt_bboxes[:, 2] - gt_bboxes[:, 0]
-        h = gt_bboxes[:, 3] - gt_bboxes[:, 1]
-        keep = (w > self.min_gt_bbox_wh[0]) & (h > self.min_gt_bbox_wh[1])
+        keep = np.zeros(instance_num, dtype=bool)
+        if self.by_box:
+            w = gt_bboxes[:, 2] - gt_bboxes[:, 0]
+            h = gt_bboxes[:, 3] - gt_bboxes[:, 1]
+            keep += (w > self.min_gt_bbox_wh[0]) & (h > self.min_gt_bbox_wh[1])
+        if self.by_mask:
+            gt_masks = results['gt_masks']
+            keep += gt_masks.areas >= self.min_gt_mask_area
         if not keep.any():
             if self.keep_empty:
                 return None
@@ -606,4 +628,7 @@ class FilterAnnotations:
     def __repr__(self):
         return self.__class__.__name__ + \
                f'(min_gt_bbox_wh={self.min_gt_bbox_wh},' \
+               f'(min_gt_mask_area={self.min_gt_mask_area},' \
+               f'(by_box={self.by_box},' \
+               f'(by_mask={self.by_mask},' \
                f'always_keep={self.always_keep})'
