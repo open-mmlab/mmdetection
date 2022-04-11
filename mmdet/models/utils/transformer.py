@@ -1007,6 +1007,10 @@ class DeformableDetrTransformer(Transformer):
                     self.decoder.num_layers](output_memory) + output_proposals
 
             topk = self.two_stage_num_proposals
+            # We only use the first class in enc_outputs_class as foreground,
+            # the other (num_classes - 1) classes are not used.
+            # See https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/dense_heads/deformable_detr_head.py#L241 # noqa
+            # we set classification target to 0s for proposals.
             topk_proposals = torch.topk(
                 enc_outputs_class[..., 0], topk, dim=1)[1]
             topk_coords_unact = torch.gather(
