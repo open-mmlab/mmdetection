@@ -294,30 +294,32 @@ class SOLOV2Head(SOLOHead):
         gt_areas = torch.sqrt((gt_bboxes[:, 2] - gt_bboxes[:, 0]) *
                               (gt_bboxes[:, 3] - gt_bboxes[:, 1]))
 
-        mlvl_mask_targets = []
-        mlvl_fg_pos = []
+        mlvl_pos_mask_targets = []
+        mlvl_pos_indexes = []
         mlvl_labels = []
-        mlvl_is_fg = []
+        mlvl_pos_masks = []
         for (lower_bound,
              upper_bound), num_grid in zip(self.scale_ranges, self.num_grids):
-            mask_targets = []
+            mask_target = []
             # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
-            fg_pos = []
+            pos_index = []
             labels = torch.zeros([num_grid, num_grid],
                                  dtype=torch.int64,
                                  device=device) + self.num_classes
-            is_fg = torch.zeros([num_grid**2], dtype=torch.bool, device=device)
+            pos_mask = torch.zeros([num_grid**2],
+                                   dtype=torch.bool,
+                                   device=device)
 
             gt_inds = ((gt_areas >= lower_bound) &
                        (gt_areas <= upper_bound)).nonzero().flatten()
             if len(gt_inds) == 0:
-                mlvl_mask_targets.append(
+                mlvl_pos_mask_targets.append(
                     torch.zeros([0, featmap_size[0], featmap_size[1]],
                                 dtype=torch.uint8,
                                 device=device))
                 mlvl_labels.append(labels)
-                mlvl_is_fg.append(is_fg)
-                mlvl_fg_pos.append([])
+                mlvl_pos_masks.append(pos_mask)
+                mlvl_pos_indexes.append([])
                 continue
             hit_gt_bboxes = gt_bboxes[gt_inds]
             hit_gt_labels = gt_labels[gt_inds]
@@ -386,21 +388,22 @@ class SOLOV2Head(SOLOHead):
                             device=device)
                         this_mask_target[:gt_mask.shape[0], :gt_mask.
                                          shape[1]] = gt_mask
-                        mask_targets.append(this_mask_target)
-                        is_fg[index] = True
-                        fg_pos.append(index)
-            if len(mask_targets) == 0:
-                mask_targets = torch.zeros(
+                        mask_target.append(this_mask_target)
+                        pos_mask[index] = True
+                        pos_index.append(index)
+            if len(mask_target) == 0:
+                mask_target = torch.zeros(
                     [0, featmap_size[0], featmap_size[1]],
                     dtype=torch.uint8,
                     device=device)
             else:
-                mask_targets = torch.stack(mask_targets, 0)
-            mlvl_mask_targets.append(mask_targets)
+                mask_target = torch.stack(mask_target, 0)
+            mlvl_pos_mask_targets.append(mask_target)
             mlvl_labels.append(labels)
-            mlvl_is_fg.append(is_fg)
-            mlvl_fg_pos.append(fg_pos)
-        return mlvl_mask_targets, mlvl_labels, mlvl_is_fg, mlvl_fg_pos
+            mlvl_pos_masks.append(pos_mask)
+            mlvl_pos_indexes.append(pos_index)
+        return (mlvl_pos_mask_targets, mlvl_labels, mlvl_pos_masks,
+                mlvl_pos_indexes)
 
     @force_fp32(apply_to=('mlvl_kernel_preds', 'mlvl_cls_preds', 'mask_feats'))
     def loss(self,
@@ -438,7 +441,7 @@ class SOLOV2Head(SOLOHead):
         """
         featmap_size = mask_feats.size()[-2:]
 
-        mimg_mask_targets, mimg_labels, mimg_is_fg, mimg_fg_pos = multi_apply(
+        pos_mask_targets, labels, pos_masks, pos_indexes = multi_apply(
             self._get_targets_single,
             gt_bboxes,
             gt_labels,
@@ -447,35 +450,35 @@ class SOLOV2Head(SOLOHead):
 
         mlvl_mask_targets = [
             torch.cat(lvl_mask_targets, 0)
-            for lvl_mask_targets in zip(*mimg_mask_targets)
+            for lvl_mask_targets in zip(*pos_mask_targets)
         ]
 
-        mlvl_fg_kernel_preds = []
-        for lvl_kernel_preds, lvl_fg_pos in zip(mlvl_kernel_preds,
-                                                zip(*mimg_fg_pos)):
-            lvl_fg_kernel_preds = []
-            for img_lvl_kernel_preds, img_lvl_fg_pos in zip(
-                    lvl_kernel_preds, lvl_fg_pos):
-                img_lvl_fg_kernel_preds = img_lvl_kernel_preds.view(
-                    img_lvl_kernel_preds.shape[0], -1)[:, img_lvl_fg_pos]
-                lvl_fg_kernel_preds.append(img_lvl_fg_kernel_preds)
-            mlvl_fg_kernel_preds.append(lvl_fg_kernel_preds)
+        mlvl_pos_kernel_preds = []
+        for lvl_kernel_preds, lvl_pos_indexes in zip(mlvl_kernel_preds,
+                                                     zip(*pos_indexes)):
+            lvl_pos_kernel_preds = []
+            for img_lvl_kernel_preds, img_lvl_pos_indexes in zip(
+                    lvl_kernel_preds, lvl_pos_indexes):
+                img_lvl_pos_kernel_preds = img_lvl_kernel_preds.view(
+                    img_lvl_kernel_preds.shape[0], -1)[:, img_lvl_pos_indexes]
+                lvl_pos_kernel_preds.append(img_lvl_pos_kernel_preds)
+            mlvl_pos_kernel_preds.append(lvl_pos_kernel_preds)
 
         # make multilevel mlvl_mask_pred
         mlvl_mask_preds = []
-        for lvl_fg_kernel_preds in mlvl_fg_kernel_preds:
+        for lvl_pos_kernel_preds in mlvl_pos_kernel_preds:
             lvl_mask_preds = []
-            for img_id, img_lvl_fg_kernel_pred in enumerate(
-                    lvl_fg_kernel_preds):
-                if img_lvl_fg_kernel_pred.size()[-1] == 0:
+            for img_id, img_lvl_pos_kernel_pred in enumerate(
+                    lvl_pos_kernel_preds):
+                if img_lvl_pos_kernel_pred.size()[-1] == 0:
                     continue
                 img_mask_feats = mask_feats[[img_id]]
                 h, w = img_mask_feats.shape[-2:]
-                fg_num = img_lvl_fg_kernel_pred.shape[1]
+                num_kernel = img_lvl_pos_kernel_pred.shape[1]
                 img_lvl_mask_pred = F.conv2d(
                     img_mask_feats,
-                    img_lvl_fg_kernel_pred.permute(1,
-                                                   0).view(fg_num, -1, 1, 1),
+                    img_lvl_pos_kernel_pred.permute(1, 0).view(
+                        num_kernel, -1, 1, 1),
                     stride=1).view(-1, h, w)
                 lvl_mask_preds.append(img_lvl_mask_pred)
             if len(lvl_mask_preds) == 0:
@@ -485,9 +488,9 @@ class SOLOV2Head(SOLOHead):
             mlvl_mask_preds.append(lvl_mask_preds)
         # dice loss
         num_pos = 0
-        for img_is_fg in mimg_is_fg:
-            for lvl_img_is_fg in img_is_fg:
-                num_pos += lvl_img_is_fg.count_nonzero()
+        for img_pos_masks in pos_masks:
+            for lvl_img_pos_masks in img_pos_masks:
+                num_pos += lvl_img_pos_masks.count_nonzero()
 
         loss_mask = []
         for lvl_mask_preds, lvl_mask_targets in zip(mlvl_mask_preds,
@@ -508,7 +511,7 @@ class SOLOV2Head(SOLOHead):
         flatten_labels = [
             torch.cat(
                 [img_lvl_labels.flatten() for img_lvl_labels in lvl_labels])
-            for lvl_labels in zip(*mimg_labels)
+            for lvl_labels in zip(*labels)
         ]
         flatten_labels = torch.cat(flatten_labels)
 
