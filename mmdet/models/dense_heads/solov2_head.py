@@ -22,13 +22,13 @@ class MaskFeatModule(BaseModule):
         feat_channels (int): Number of hidden channels of the mask feature
              map branch.
         start_level (int): The starting feature map level from RPN that
-             will be used to predict the mask feature map. Default: 0.
+             will be used to predict the mask feature map.
         end_level (int): The ending feature map level from rpn that
-             will be used to predict the mask feature map. Default: 3.
+             will be used to predict the mask feature map.
         out_channels (int): Number of output channels of the mask feature
              map branch. This is the channel count of the mask
              feature map that to be dynamically convolved with the predicted
-             kernel. Default: 256.
+             kernel.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Config dict for normalization layer. Default: None.
         init_cfg (dict or list[dict], optional): Initialization config dict.
