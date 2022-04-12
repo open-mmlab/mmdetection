@@ -16,7 +16,7 @@ To go even further, we use neural architecture search to design a new baseline n
 
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: | :--------: |
-|Efficientnet-b3  | pytorch |   1x    |   -      |   -           |  40.5  |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/efficientnet/retinanet_effb3_fpn_crop896_8x4_1x_coco.py) | [model]() &#124; [log]() |
+|Efficientnet-b3  | pytorch |   1x    |   -      |   -           |  40.5  |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/efficientnet/retinanet_effb3_fpn_crop896_8x4_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/efficientnet/retinanet_effb3_fpn_crop896_8x4_1x_coco/retinanet_effb3_fpn_crop896_8x4_1x_coco_20220322_234806-615a0dda.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/efficientnet/retinanet_effb3_fpn_crop896_8x4_1x_coco/retinanet_effb3_fpn_crop896_8x4_1x_coco_20220322_234806.log.json) |
 
 ## Citation
 
