@@ -178,7 +178,7 @@ class UnfreezeBackboneEpochBasedHook(Hook):
 
 If you want to get the channels of a new backbone, you can build this backbone alone and input a pseudo image to get each stage output.
 
-Take `ResNet` for an example:
+Take `ResNet` as an example:
 
 ```python
 from mmdet.models import ResNet
@@ -192,7 +192,7 @@ for level_out in level_outputs:
 
 ```
 
-The outputs of above script is:
+Output of the above script is as below:
 
 ```python
 (1, 64, 8, 8)
@@ -201,4 +201,4 @@ The outputs of above script is:
 (1, 512, 1, 1)
 ```
 
-Replacing the `ResNet(depth=18)` in this script with your backbone and its setting, and you can get the channels of the new backbone.
+Users can get the channels of the new backbone by Replacing the `ResNet(depth=18)` in this script with their customized backbone.
