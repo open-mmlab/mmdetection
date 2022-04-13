@@ -272,7 +272,7 @@ MMdetection 常用到的主干网络细节如下表所示：
 我们提供 [benchmark.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/analysis_tools/benchmark.py) 对推理时间进行基准测试。此脚本将推理 2000 张图片并计算忽略前 5 次推理的平均推理时间。可以通过设置 `LOG-INTERVAL` 来改变 log 输出间隔（默认为 50）。
 
 ```shell
-python toools/benchmark.py ${CONFIG} ${CHECKPOINT} [--log-interval $[LOG-INTERVAL]] [--fuse-conv-bn]
+python tools/benchmark.py ${CONFIG} ${CHECKPOINT} [--log-interval $[LOG-INTERVAL]] [--fuse-conv-bn]
 ```
 
 模型库中，所有模型在基准测量推理时间时都没设置 `fuse-conv-bn`, 此设置可以使推理时间更短。
