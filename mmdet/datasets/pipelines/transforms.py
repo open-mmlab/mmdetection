@@ -2865,28 +2865,27 @@ class CopyPaste:
             return dst_results
 
         # update masks and generate bboxes from updated masks
-        compose_mask = np.where(np.any(src_masks.masks, axis=0), 1, 0)
-        updated_dst_masks = self.get_updated_masks(dst_masks, compose_mask)
+        composed_mask = np.where(np.any(src_masks.masks, axis=0), 1, 0)
+        updated_dst_masks = self.get_updated_masks(dst_masks, composed_mask)
         updated_dst_bboxes = updated_dst_masks.get_bboxes()
         assert len(updated_dst_bboxes) == len(updated_dst_masks)
 
         # filter totally occluded objects
-        included_bboxes_inds = np.all(
+        bboxes_inds = np.all(
             np.abs(
                 (updated_dst_bboxes - dst_bboxes)) <= self.bbox_occluded_thr,
             axis=-1)
-        included_masks_inds = updated_dst_masks.masks.sum(
+        masks_inds = updated_dst_masks.masks.sum(
             axis=(1, 2)) > self.mask_occluded_thr
-        included_inds = included_bboxes_inds | included_masks_inds
+        valid_inds = bboxes_inds | masks_inds
 
         # Paste source objects to destination image directly
-        img = dst_img * (1 - compose_mask[..., np.newaxis]
-                         ) + src_img * compose_mask[..., np.newaxis]
-        bboxes = np.concatenate(
-            [updated_dst_bboxes[included_inds], src_bboxes])
-        labels = np.concatenate([dst_labels[included_inds], src_labels])
+        img = dst_img * (1 - composed_mask[..., np.newaxis]
+                         ) + src_img * composed_mask[..., np.newaxis]
+        bboxes = np.concatenate([updated_dst_bboxes[valid_inds], src_bboxes])
+        labels = np.concatenate([dst_labels[valid_inds], src_labels])
         masks = np.concatenate(
-            [updated_dst_masks.masks[included_inds], src_masks.masks])
+            [updated_dst_masks.masks[valid_inds], src_masks.masks])
 
         dst_results['img'] = img
         dst_results['gt_bboxes'] = bboxes
