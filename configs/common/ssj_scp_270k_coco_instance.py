@@ -34,7 +34,7 @@ load_pipeline = [
 # Simple Copy-Paste (SCP) is a Strong Data Augmentation Method
 
 train_pipeline = [
-    dict(type='CopyPaste', max_paste_objects=100),
+    dict(type='CopyPaste', max_num_pasted=100),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks']),
