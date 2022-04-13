@@ -2789,9 +2789,6 @@ class CopyPaste:
             all objects of the source image will be pasted to the
             destination image.
             Default: True.
-        blend_fn (function): The function to blend the destination image
-            and the source image.
-            Default: None.
     """
 
     def __init__(
@@ -2800,13 +2797,11 @@ class CopyPaste:
         bbox_occluded_thr=10,
         mask_occluded_thr=300,
         selected=True,
-        blend_fn=None,
     ):
         self.max_num_pasted = max_num_pasted
         self.bbox_occluded_thr = bbox_occluded_thr
         self.mask_occluded_thr = mask_occluded_thr
         self.selected = selected
-        self.blend_fn = blend_fn
 
     def get_indexes(self, dataset):
         """Call function to collect indexes.s.
@@ -2894,12 +2889,8 @@ class CopyPaste:
         valid_inds = bboxes_inds | masks_inds
 
         # Paste source objects to destination image directly
-        if self.blend_fn is None:
-            img = dst_img * (1 - composed_mask[..., np.newaxis]
-                             ) + src_img * composed_mask[..., np.newaxis]
-        else:
-            img = self.blend_fn(dst_img, src_img, composed_mask[...,
-                                                                np.newaxis])
+        img = dst_img * (1 - composed_mask[..., np.newaxis]
+                         ) + src_img * composed_mask[..., np.newaxis]
         bboxes = np.concatenate([updated_dst_bboxes[valid_inds], src_bboxes])
         labels = np.concatenate([dst_labels[valid_inds], src_labels])
         masks = np.concatenate(
@@ -2925,5 +2916,4 @@ class CopyPaste:
         repr_str += f'bbox_occluded_thr={self.bbox_occluded_thr}, '
         repr_str += f'mask_occluded_thr={self.mask_occluded_thr}, '
         repr_str += f'selected={self.selected}, '
-        repr_str += f'blend_fn={self.blend_fn}, '
         return repr_str
