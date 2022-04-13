@@ -6,18 +6,20 @@ from mmcv.utils import Config
 
 
 def replace_config(ori_cfg):
-    """Replace the ${key} with the value of ori_cfg.key in the config. And
+    """Replace the ${key} with the value.
+
+    Replace the ${key} with the value of ori_cfg.key in the config. And
     support replacing the chained ${key}. Such as, replace ${key0.key1} with
     the value of cfg.key0.key1. Code is modified from `vars.py
     https://github.com/microsoft/SoftTeacher/blob/main/ssod/utils/vars.py`
 
     Args:
-        ori_cfg(mmcv.utils.config.Config):
-        The origin config with ${key} generated from a file.
+        ori_cfg (mmcv.utils.config.Config):
+            The origin config with ${key} generated from a file.
 
     Returns:
-        replaced_cfg(mmcv.utils.config.Config):
-        The config with ${key} replaced by the corresponding value.
+        replaced_cfg (mmcv.utils.config.Config):
+            The config with ${key} replaced by the corresponding value.
     """
 
     def get_value(cfg, key):
