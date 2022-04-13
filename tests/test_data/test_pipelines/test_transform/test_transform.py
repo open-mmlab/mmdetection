@@ -1054,32 +1054,48 @@ def test_copypaste():
     dst_results['gt_masks'] = copy.deepcopy(dst_masks)
     src_results['gt_masks'] = copy.deepcopy(src_masks)
 
+    results = copy.deepcopy(dst_results)
+
     transform = dict(type='CopyPaste', selected=False)
     copypaste_module = build_from_cfg(transform, PIPELINES)
 
     # test assertion for invalid mix_results
     with pytest.raises(AssertionError):
-        copypaste_module(dst_results)
+        copypaste_module(results)
 
-    dst_results['mix_results'] = [copy.deepcopy(src_results)]
-    dst_results = copypaste_module(dst_results)
-    assert dst_results['img'].shape[:2] == (h, w)
+    results['mix_results'] = [copy.deepcopy(src_results)]
+    results = copypaste_module(results)
+    assert results['img'].shape[:2] == (h, w)
     # one object of destination image is totally occluded
-    assert dst_results['gt_bboxes'].shape[0] == \
+    assert results['gt_bboxes'].shape[0] == \
            dst_bboxes.shape[0] + src_bboxes.shape[0] - 1
-    assert dst_results['gt_labels'].shape[0] == \
+    assert results['gt_labels'].shape[0] == \
            dst_labels.shape[0] + src_labels.shape[0] - 1
-    assert dst_results['gt_masks'].masks.shape[0] == \
+    assert results['gt_masks'].masks.shape[0] == \
            dst_masks.masks.shape[0] + src_masks.masks.shape[0] - 1
 
-    assert dst_results['gt_labels'].dtype == np.int64
-    assert dst_results['gt_bboxes'].dtype == np.float32
+    assert results['gt_labels'].dtype == np.int64
+    assert results['gt_bboxes'].dtype == np.float32
     # the object of destination image is partially occluded
     ori_bbox = dst_bboxes[0]
-    occ_bbox = dst_results['gt_bboxes'][0]
+    occ_bbox = results['gt_bboxes'][0]
     ori_mask = dst_masks.masks[0]
-    occ_mask = dst_results['gt_masks'].masks[0]
+    occ_mask = results['gt_masks'].masks[0]
     assert ori_mask.sum() > occ_mask.sum()
     assert np.all(np.abs(occ_bbox - ori_bbox) <=
                   copypaste_module.bbox_occluded_thr) or \
         occ_mask.sum() > copypaste_module.mask_occluded_thr
+    # test copypaste with selected objects
+    transform = dict(type='CopyPaste')
+    copypaste_module = build_from_cfg(transform, PIPELINES)
+    results = copy.deepcopy(dst_results)
+    results['mix_results'] = [copy.deepcopy(src_results)]
+    copypaste_module(results)
+    # test copypaste with an empty source image
+    results = copy.deepcopy(dst_results)
+    valid_inds = [False] * src_bboxes.shape[0]
+    src_results['gt_bboxes'] = src_bboxes[valid_inds]
+    src_results['gt_labels'] = src_labels[valid_inds]
+    src_results['gt_masks'] = src_masks[valid_inds]
+    results['mix_results'] = [copy.deepcopy(src_results)]
+    copypaste_module(results)
