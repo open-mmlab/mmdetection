@@ -5,6 +5,7 @@ import tempfile
 import mmcv
 import numpy as np
 
+from mmdet.core import encode_mask_results
 from mmdet.datasets.api_wrappers import pq_compute_single_core
 from mmdet.datasets.coco_panoptic import INSTANCE_OFFSET, CocoPanopticDataset
 
@@ -337,3 +338,119 @@ def test_panoptic_evaluation():
     assert np.isclose(pq_all['sq'] * 100, 80.898)
     assert np.isclose(pq_all['rq'] * 100, 83.333)
     assert pq_all['n'] == 3
+
+
+def _create_instance_segmentation_gt_annotations(ann_file):
+    categories = [{
+        'id': 0,
+        'name': 'person',
+        'supercategory': 'person',
+        'isthing': 1
+    }, {
+        'id': 1,
+        'name': 'dog',
+        'supercategory': 'dog',
+        'isthing': 1
+    }, {
+        'id': 2,
+        'name': 'wall',
+        'supercategory': 'wall',
+        'isthing': 0
+    }]
+
+    images = [{
+        'id': 0,
+        'width': 80,
+        'height': 60,
+        'file_name': 'fake_name1.jpg',
+    }]
+
+    person1_polygon = [10, 10, 20, 10, 20, 50, 10, 50, 10, 10]
+    person2_polygon = [30, 10, 40, 10, 40, 50, 30, 50, 30, 10]
+    dog_polygon = [50, 10, 60, 10, 60, 15, 50, 15, 50, 10]
+
+    annotations = [
+        {
+            'id': 0,
+            'image_id': 0,
+            'category_id': 0,
+            'segmentation': [person1_polygon],
+            'area': 400,
+            'bbox': [10, 10, 10, 40],
+            'iscrowd': 0
+        },
+        {
+            'id': 1,
+            'image_id': 0,
+            'category_id': 0,
+            'segmentation': [person2_polygon],
+            'area': 400,
+            'bbox': [30, 10, 10, 40],
+            'iscrowd': 0
+        },
+        {
+            'id': 2,
+            'image_id': 0,
+            'category_id': 1,
+            'segmentation': [dog_polygon],
+            'area': 50,
+            'bbox': [50, 10, 10, 5],
+            'iscrowd': 0
+        },
+    ]
+
+    gt_json = {
+        'images': images,
+        'annotations': annotations,
+        'categories': categories
+    }
+
+    mmcv.dump(gt_json, ann_file)
+
+
+def test_instance_segmentation_evaluation():
+    pred_bbox = [
+        np.array([[11, 10, 20, 50, 0.8], [31, 10, 40, 50, 0.8]]),
+        np.array([[51, 10, 60, 15, 0.7]])
+    ]
+
+    person1_mask = np.zeros((60, 80), dtype=bool)
+    person1_mask[20:50, 11:20] = True
+    person2_mask = np.zeros((60, 80), dtype=bool)
+    person2_mask[20:50, 31:40] = True
+    dog_mask = np.zeros((60, 80), dtype=bool)
+    dog_mask[10:15, 51:60] = True
+
+    pred_mask = [[person1_mask, person2_mask], [
+        dog_mask,
+    ]]
+    results = [{'ins_results': (pred_bbox, encode_mask_results(pred_mask))}]
+
+    tmp_dir = tempfile.TemporaryDirectory()
+    pan_ann_file = osp.join(tmp_dir.name, 'panoptic.json')
+    ins_ann_file = osp.join(tmp_dir.name, 'instance.json')
+    _create_panoptic_gt_annotations(pan_ann_file)
+    _create_instance_segmentation_gt_annotations(ins_ann_file)
+
+    dataset = CocoPanopticDataset(
+        ann_file=pan_ann_file,
+        ins_ann_file=ins_ann_file,
+        seg_prefix=tmp_dir.name,
+        pipeline=[])
+    dataset.THING_CLASSES = ['person', 'dog']
+    dataset.STUFF_CLASSES = ['wall']
+    dataset.CLASSES = dataset.THING_CLASSES + dataset.STUFF_CLASSES
+    parsed_results = dataset.evaluate(results, metric=['segm', 'bbox'])
+
+    # Here is the results for instance segmentation:
+    # {
+    #     'segm_mAP': 0.5, 'segm_mAP_50': 0.626, 'segm_mAP_75': 0.5,
+    #     'segm_mAP_s': 0.5, 'segm_mAP_m': -1.0, 'segm_mAP_l': -1.0,
+    #     'segm_mAP_copypaste': '0.500 0.626 0.500 0.500 -1.000 -1.000',
+    #     'bbox_mAP': 0.564, 'bbox_mAP_50': 0.626, 'bbox_mAP_75': 0.626,
+    #     'bbox_mAP_s': 0.564, 'bbox_mAP_m': -1.0, 'bbox_mAP_l': -1.0,
+    #     'bbox_mAP_copypaste': '0.564 0.626 0.626 0.564 -1.000 -1.000'
+    # }
+
+    assert np.isclose(parsed_results['segm_mAP'], 0.5)
+    assert np.isclose(parsed_results['bbox_mAP'], 0.564)

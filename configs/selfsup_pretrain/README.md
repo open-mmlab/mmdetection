@@ -43,7 +43,7 @@ To use the ResNet-50 backbone released by SwAV, you can download it from [here](
 
 ### Modify config
 
-The backbone requires SyncBN and the `fronzen_stages` need to be changed. A config that use the moco backbone is as below
+The backbone requires SyncBN and the `frozen_stages` need to be changed. A config that use the moco backbone is as below
 
 ```python
 _base_ = [
