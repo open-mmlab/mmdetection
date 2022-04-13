@@ -16,13 +16,14 @@ Building instance segmentation models that are data-efficient and can handle rar
 
 ### Mask R-CNN with Standard Scale Jittering (SSJ) and Simple Copy-Paste(SCP)
 
+Standard Scale Jittering(SSJ) resizes and crops an image with a resize range of 0.8 to 1.25 of the original image size, and Simple Copy-Paste(SCP) selects a random subset of objects from one of the images and pastes them onto the other image.
 
 | Backbone | Training schedule | Augmentation | batch size | box AP | mask AP |                                                                       Config                                                                        |
 |:--------:|:-----------------:|:------------:|:----------:|:------:|:-------:|:---------------------------------------------------------------------------------------------------------------------------------------------------:|
-|   R-50   |        90k        |     SSJ      |    64     |  43.3  |  39.2   |   [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_90k_coco.py)    |
-|   R-50   |        90k        |   SSJ+SCP    |    64     |  43.9  |  39.2   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_90k_coco.py)  |
-|   R-50   |       270k        |     SSJ      |    64     |  43.5  |  39.1   |   [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_270k_coco.py)   |
-|   R-50   |       270k        |   SSJ+SCP    |    64     |  45.1  |  40.3   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_270k_coco.py) |
+|   R-50   |        90k        |     SSJ      |    64     |  43.3  |  39.2   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_90k_coco.py) |
+|   R-50   |        90k        |   SSJ+SCP    |    64     |  43.9  |  39.2   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_90k_coco.py)  |
+|   R-50   |       270k        |     SSJ      |    64     |  43.5  |  39.1   |   [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_270k_coco.py)   |
+|   R-50   |       270k        |   SSJ+SCP    |    64     |  45.1  |  40.3   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco.py) |
 
 ## Citation
 

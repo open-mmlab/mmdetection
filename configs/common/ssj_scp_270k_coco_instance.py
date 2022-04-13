@@ -10,7 +10,6 @@ file_client_args = dict(backend='disk')
 
 # Standard Scale Jittering (SSJ) resizes and crops an image
 # with a resize range of 0.8 to 1.25 of the original image size.
-
 load_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
@@ -30,9 +29,6 @@ load_pipeline = [
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Pad', size=image_size),
 ]
-
-# Simple Copy-Paste (SCP) is a Strong Data Augmentation Method
-
 train_pipeline = [
     dict(type='CopyPaste', max_num_pasted=100),
     dict(type='Normalize', **img_norm_cfg),
@@ -55,7 +51,6 @@ test_pipeline = [
         ])
 ]
 
-# Use RepeatDataset to speed up training
 data = dict(
     samples_per_gpu=2,
     workers_per_gpu=2,
@@ -80,16 +75,21 @@ data = dict(
 
 evaluation = dict(interval=6000, metric=['bbox', 'segm'])
 
-# optimizer assumes bs=64
+# optimizer assumes batch_size = (32 GPUs) x (2 samples per GPU)
 optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0.00004)
 optimizer_config = dict(grad_clip=None)
 
+# For coco train2017 dataset,
+# 1 epoch = batch_size16 * iterations7330
+# 12 epoch ~ batch_size16 * iterations90k
+# batch_size16 * iterations270k ~ epoch36
+# batch_size64 * iterations270k ~ epoch144
+# lr steps at [0.9, 0.95, 0.975] of the maximum iterations
 lr_config = dict(
     policy='step',
     warmup='linear',
     warmup_iters=1000,
     warmup_ratio=0.001,
     step=[243000, 256500, 263250])
-
 checkpoint_config = dict(interval=6000)
 runner = dict(type='IterBasedRunner', max_iters=270000)

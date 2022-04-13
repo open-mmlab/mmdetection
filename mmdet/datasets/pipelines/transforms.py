@@ -2814,7 +2814,7 @@ class CopyPaste:
         Args:
             dataset (:obj:`MultiImageMixDataset`): The dataset.
         Returns:
-            list: indexes.
+            list: Indexes.
         """
         return random.randint(0, len(dataset))
 
@@ -2828,9 +2828,9 @@ class CopyPaste:
         """
 
         assert 'mix_results' in results
-        assert len(
-            results['mix_results']
-        ) == 1, 'CopyPaste only supports processing 2 images, got {}'
+        num_images = len(results['mix_results'])
+        assert num_images == 1, \
+            f'CopyPaste only supports processing 2 images, got {num_images}'
         if self.selected:
             selected_results = self._select_object(results['mix_results'][0])
         else:
@@ -2838,6 +2838,7 @@ class CopyPaste:
         return self._copy_paste(results, selected_results)
 
     def _select_object(self, results):
+        """Select some objects from the source results."""
         bboxes = results['gt_bboxes']
         labels = results['gt_labels']
         masks = results['gt_masks']
@@ -2856,6 +2857,14 @@ class CopyPaste:
         return results
 
     def _copy_paste(self, dst_results, src_results):
+        """CopyPaste transform function.
+
+        Args:
+            dst_results (dict): Result dict of the destination image.
+            src_results (dict): Result dict of the source image.
+        Returns:
+            dict: Updated result dict.
+        """
         dst_img = dst_results['img']
         dst_bboxes = dst_results['gt_bboxes']
         dst_labels = dst_results['gt_labels']
@@ -2904,10 +2913,10 @@ class CopyPaste:
 
         return dst_results
 
-    def get_updated_masks(self, masks, compose_mask):
-        assert masks.masks.shape[-2:] == compose_mask.shape[-2:], \
+    def get_updated_masks(self, masks, composed_mask):
+        assert masks.masks.shape[-2:] == composed_mask.shape[-2:], \
             'Cannot compare two arrays of different size'
-        masks.masks = np.where(compose_mask, 0, masks.masks)
+        masks.masks = np.where(composed_mask, 0, masks.masks)
         return masks
 
     def __repr__(self):
@@ -2915,4 +2924,6 @@ class CopyPaste:
         repr_str += f'max_num_pasted={self.max_num_pasted}, '
         repr_str += f'bbox_occluded_thr={self.bbox_occluded_thr}, '
         repr_str += f'mask_occluded_thr={self.mask_occluded_thr}, '
+        repr_str += f'selected={self.selected}, '
+        repr_str += f'blend_fn={self.blend_fn}, '
         return repr_str

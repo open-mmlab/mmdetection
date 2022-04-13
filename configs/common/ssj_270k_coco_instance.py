@@ -69,16 +69,21 @@ data = dict(
 
 evaluation = dict(interval=6000, metric=['bbox', 'segm'])
 
-# optimizer assumes bs=64
+# optimizer assumes batch_size = (32 GPUs) x (2 samples per GPU)
 optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0.00004)
 optimizer_config = dict(grad_clip=None)
 
+# For coco train2017 dataset,
+# 1 epoch = batch_size16 * iterations7330
+# 12 epoch ~ batch_size16 * iterations90k
+# batch_size16 * iterations270k ~ epoch36
+# batch_size64 * iterations270k ~ epoch144
+# lr steps at [0.9, 0.95, 0.975] of the maximum iterations
 lr_config = dict(
     policy='step',
     warmup='linear',
     warmup_iters=1000,
     warmup_ratio=0.001,
     step=[243000, 256500, 263250])
-
 checkpoint_config = dict(interval=6000)
 runner = dict(type='IterBasedRunner', max_iters=270000)
