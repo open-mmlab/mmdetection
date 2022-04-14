@@ -257,7 +257,14 @@ def test_openimages_dataset():
     # test with hierarchy file wrong suffix
     with pytest.raises(AssertionError):
         fake_path = osp.join(tmp_dir.name, 'hierarchy.csv')
-        dataset.get_relation_matrix(fake_path)
+        OpenImagesDataset(
+            ann_file=ann_file,
+            img_prefix='tests/data',
+            label_file=label_file,
+            image_level_ann_file=label_level_file,
+            load_from_file=False,
+            hierarchy_file=fake_path,
+            pipeline=test_pipeline)
 
     # test load hierarchy file succseefully
     hierarchy = dataset.get_relation_matrix(hierarchy_json)
@@ -339,14 +346,13 @@ def test_openimages_challenge_dataset():
     result = _create_dummy_results()
     with pytest.raises(AssertionError):
         fake_json = osp.join(tmp_dir.name, 'hierarchy.json')
-        dataset = OpenImagesChallengeDataset(
+        OpenImagesChallengeDataset(
             ann_file=ann_file,
             label_file=label_file,
             image_level_ann_file=label_level_file,
             hierarchy_file=fake_json,
             meta_file=meta_file,
             pipeline=[])
-        dataset.evaluate(result)
 
     hierarchy_file = osp.join(tmp_dir.name, 'hierarchy.np')
     _create_hierarchy_np(hierarchy_file)

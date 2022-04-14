@@ -9,7 +9,7 @@ Models:
         Dataset: COCO
         Metrics:
           box AP: 40.5
-    Weights: url
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/efficientnet/retinanet_effb3_fpn_crop896_8x4_1x_coco/retinanet_effb3_fpn_crop896_8x4_1x_coco_20220322_234806-615a0dda.pth
     Paper:
       URL: https://arxiv.org/abs/1905.11946v5
       Title: 'EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks'

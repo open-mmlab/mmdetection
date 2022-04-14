@@ -268,6 +268,15 @@ class TOODHead(ATSSHead):
             reg_offset = self.reg_offset_module(feat)
             bbox_pred = self.deform_sampling(reg_bbox.contiguous(),
                                              reg_offset.contiguous())
+
+            # After deform_sampling, some boxes will become invalid (The
+            # left-top point is at the right or bottom of the right-bottom
+            # point), which will make the GIoULoss negative.
+            invalid_bbox_idx = (bbox_pred[:, [0]] > bbox_pred[:, [2]]) | \
+                               (bbox_pred[:, [1]] > bbox_pred[:, [3]])
+            invalid_bbox_idx = invalid_bbox_idx.expand_as(bbox_pred)
+            bbox_pred = torch.where(invalid_bbox_idx, reg_bbox, bbox_pred)
+
             cls_scores.append(cls_score)
             bbox_preds.append(bbox_pred)
         return tuple(cls_scores), tuple(bbox_preds)
@@ -277,7 +286,7 @@ class TOODHead(ATSSHead):
 
         Args:
             feat (Tensor): Feature
-            offset (Tensor): Spatial offset for for feature sampliing
+            offset (Tensor): Spatial offset for feature sampling
         """
         # it is an equivalent implementation of bilinear interpolation
         b, c, h, w = feat.shape

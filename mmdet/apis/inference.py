@@ -218,7 +218,8 @@ def show_result_pyplot(model,
                        score_thr=0.3,
                        title='result',
                        wait_time=0,
-                       palette=None):
+                       palette=None,
+                       out_file=None):
     """Visualize the detection results on the image.
 
     Args:
@@ -228,8 +229,11 @@ def show_result_pyplot(model,
             (bbox, segm) or just bbox.
         score_thr (float): The threshold to visualize the bboxes and masks.
         title (str): Title of the pyplot figure.
-        wait_time (float): Value of waitKey param.
-                Default: 0.
+        wait_time (float): Value of waitKey param. Default: 0.
+        palette (str or tuple(int) or :obj:`Color`): Color.
+            The tuple of color should be in BGR order.
+        out_file (str or None): The path to write the image.
+            Default: None.
     """
     if hasattr(model, 'module'):
         model = model.module
@@ -242,4 +246,5 @@ def show_result_pyplot(model,
         win_name=title,
         bbox_color=palette,
         text_color=(200, 200, 200),
-        mask_color=palette)
+        mask_color=palette,
+        out_file=out_file)
