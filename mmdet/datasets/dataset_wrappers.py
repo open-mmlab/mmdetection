@@ -402,6 +402,8 @@ class MultiImageMixDataset:
 
             if hasattr(transform, 'get_indexes'):
                 while True:
+                    # RandomCrop and Albu may return None.
+                    # To confirm the results passed load pipeline is not None.
                     indexes = transform.get_indexes(self.dataset)
                     if not isinstance(indexes, collections.abc.Sequence):
                         indexes = [indexes]
@@ -410,9 +412,15 @@ class MultiImageMixDataset:
                     ]
                     if None not in mix_results:
                         results['mix_results'] = mix_results
-                        results = transform(results)
-                        if results is not None:
-                            break
+                        break
+
+            while True:
+                # To confirm the results passed Mosaic, MixUp
+                # or CopyPaste is not None.
+                updated_results = transform(copy.deepcopy(results))
+                if updated_results is not None:
+                    results = updated_results
+                    break
 
             if 'mix_results' in results:
                 results.pop('mix_results')
