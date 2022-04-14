@@ -65,7 +65,8 @@ class MMDetWandbHook(WandbLoggerHook):
                      interval=50,
                      log_checkpoint=True,
                      log_checkpoint_metadata=True,
-                     num_eval_images=100)
+                     num_eval_images=100,
+                     bbox_score_thr=0.3)
             ])
     ```
 
@@ -85,6 +86,7 @@ class MMDetWandbHook(WandbLoggerHook):
             Default: True
         num_eval_images (int): Number of validation images to be logged.
             Default: 100
+        bbox_score_thr (float): Threshold for bounding box scores.
     """
 
     def __init__(self,
@@ -123,8 +125,10 @@ class MMDetWandbHook(WandbLoggerHook):
         # If CheckpointHook is not available turn off log_checkpoint.
         if getattr(self, 'ckpt_hook', None) is None:
             self.log_checkpoint = False
-            warnings.warn('To use log_checkpoint turn use '
-                          'CheckpointHook.', UserWarning)
+            warnings.warn(
+                'If you want to save model checkpoints as '
+                'W&B Artifacts for version control use the '
+                'CheckpointHook', UserWarning)
 
         # If EvalHook/DistEvalHook is not present set
         # num_eval_images to zero.
@@ -135,8 +139,8 @@ class MMDetWandbHook(WandbLoggerHook):
             self.num_eval_images = 0
             self.log_checkpoint_metadata = False
             warnings.warn(
-                'To log num_eval_images turn validate '
-                'to True in train_detector.', UserWarning)
+                'To log the validation dataset to a W&B Tables, '
+                'use EvalHook or DistEvalHook.', UserWarning)
 
         # If num_eval_images is greater than zero, create
         # and log W&B table for validation data.
@@ -161,8 +165,8 @@ class MMDetWandbHook(WandbLoggerHook):
                     if self.log_checkpoint_metadata and self.eval_hook:
                         metadata = self._get_ckpt_metadata(runner)
                         aliases = [f'epoch_{runner.epoch+1}', 'latest']
-                        if self._is_best_ckpt(metadata):
-                            aliases.append('best')
+                        if len(metadata) > 0:
+                            aliases.append(f'metadata_{runner.epoch+1}')
                         self._log_ckpt_as_artifact(self.ckpt_hook.out_dir,
                                                    runner.epoch, aliases,
                                                    metadata)
@@ -206,55 +210,17 @@ class MMDetWandbHook(WandbLoggerHook):
 
     def _get_ckpt_metadata(self, runner):
         """Get model checkpoint metadata."""
-        if self.ckpt_hook.interval == self.eval_hook.interval:
+        current_epoch = runner.epoch + 1
+
+        if (current_epoch % self.ckpt_hook.interval
+                == 0) and (current_epoch % self.eval_hook.interval == 0):
             results = self.eval_hook.results
+
+            eval_results = self.val_dataset.evaluate(results, logger='silent')
+            metadata = dict(epoch=runner.epoch + 1, **eval_results)
+            return metadata
         else:
-            runner.logger.info(
-                f'Evaluating for model checkpoint at epoch '
-                f'{runner.epoch+1} which will be saved as W&B Artifact.')
-            if isinstance(self.eval_hook, EvalHook):
-                from mmdet.apis import single_gpu_test
-                results = single_gpu_test(
-                    runner.model, self.val_dataloader, show=False)
-            elif isinstance(self.eval_hook, DistEvalHook):
-                from mmdet.apis import multi_gpu_test
-                results = multi_gpu_test(
-                    runner.model, self.val_dataloader, gpu_collect=True)
-
-        eval_results = self.val_dataset.evaluate(results, logger='silent')
-        metadata = dict(epoch=runner.epoch + 1, **eval_results)
-        return metadata
-
-    def _is_best_ckpt(self, metadata):
-        """Check if the current checkpoint has the best metric score.
-
-        Args:
-            metadata (dict): Metadata associated with the checkpoint.
-
-        Returns:
-            bool: Returns True, if the checkpoint has the best metric score.
-        """
-        keys = list(metadata.keys())
-        map_metrics = [key for key in keys if 'mAP' in key]
-        ar_metrics = [key for key in keys if 'AR' in key]
-        if len(map_metrics) > 0:
-            map_score = metadata.get(map_metrics[0], None)
-            return self._is_best_score(map_score)
-        elif len(ar_metrics) > 0:
-            ar_score = metadata.get(ar_metrics[0], None)
-            return self._is_best_score(ar_score)
-        else:
-            return False
-
-    def _is_best_score(self, score):
-        if score is None:
-            return
-
-        if score > self.best_score:
-            self.best_score = score
-            return True
-        else:
-            return False
+            return {}
 
     def _init_data_table(self):
         """Initialize the W&B Tables for validation data."""
@@ -284,7 +250,7 @@ class MMDetWandbHook(WandbLoggerHook):
         if self.num_eval_images > num_total_images:
             warnings.warn(
                 'The num_eval_images is greater than the total number '
-                'of validation samples. The complete validation set '
+                'of validation samples. Complete validation set '
                 'will be logged.', UserWarning)
         self.num_eval_images = min(self.num_eval_images, num_total_images)
 
