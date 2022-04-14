@@ -2,6 +2,9 @@
 import os.path as osp
 import warnings
 
+import mmcv
+import numpy as np
+import pycocotools.mask as mask_util
 from mmcv import Config
 from mmcv.runner import HOOKS
 from mmcv.runner.dist_utils import master_only
@@ -9,6 +12,7 @@ from mmcv.runner.hooks.checkpoint import CheckpointHook
 from mmcv.runner.hooks.logger.wandb import WandbLoggerHook
 
 from mmdet.core import DistEvalHook, EvalHook
+from mmdet.core.mask.structures import polygon_to_bitmap
 
 
 @HOOKS.register_module()
@@ -58,7 +62,7 @@ class MMDetWandbHook(WandbLoggerHook):
                          'entity': WANDB_ENTITY,
                          'project': WANDB_PROJECT_NAME
                      },
-                     interval=10,
+                     interval=50,
                      log_checkpoint=True,
                      log_checkpoint_metadata=True,
                      num_eval_images=100)
@@ -85,18 +89,19 @@ class MMDetWandbHook(WandbLoggerHook):
 
     def __init__(self,
                  init_kwargs=None,
-                 interval=10,
+                 interval=50,
                  log_checkpoint=False,
                  log_checkpoint_metadata=False,
                  num_eval_images=100,
+                 bbox_score_thr=0.3,
                  **kwargs):
         super(MMDetWandbHook, self).__init__(init_kwargs, interval, **kwargs)
 
         self.log_checkpoint = log_checkpoint
         self.log_checkpoint_metadata = log_checkpoint_metadata
         self.num_eval_images = num_eval_images
+        self.bbox_score_thr = bbox_score_thr
         self.log_evaluation = True
-        self.log_eval_metrics = True
         self.best_score = 0
 
     @master_only
@@ -129,7 +134,6 @@ class MMDetWandbHook(WandbLoggerHook):
         except AttributeError:
             self.num_eval_images = 0
             self.log_checkpoint_metadata = False
-            self.log_eval_metrics = False
             warnings.warn(
                 'To log num_eval_images turn validate '
                 'to True in train_detector.', UserWarning)
@@ -259,8 +263,7 @@ class MMDetWandbHook(WandbLoggerHook):
 
     def _init_pred_table(self):
         """Initialize the W&B Tables for model evaluation."""
-        columns = ['epoch', 'image_name', 'ground_truth', 'prediction'] + list(
-            self.class_id_to_label.values())
+        columns = ['epoch', 'image_name', 'ground_truth', 'prediction']
         self.eval_table = self.wandb.Table(columns=columns)
 
     def _add_ground_truth(self):
@@ -286,7 +289,10 @@ class MMDetWandbHook(WandbLoggerHook):
         self.num_eval_images = min(self.num_eval_images, num_total_images)
 
         classes = self.val_dataset.CLASSES
-        self.class_id_to_label = {id: name for id, name in enumerate(classes)}
+        self.class_id_to_label = {
+            id + 1: name
+            for id, name in enumerate(classes)
+        }
         self.class_set = self.wandb.Classes([{
             'id': id,
             'name': name
@@ -296,102 +302,127 @@ class MMDetWandbHook(WandbLoggerHook):
 
         for idx in range(self.num_eval_images):
             img_info = self.val_dataset.data_infos[idx]
+            image_name = img_info['filename']
+            img_height, img_width = img_info['height'], img_info['width']
+
             img_meta = img_loader(
                 dict(img_info=img_info, img_prefix=img_prefix))
 
             # Get image and convert from BGR to RGB
-            image = img_meta['img'][..., ::-1]
-            image_name = img_info['filename']
+            image = mmcv.bgr2rgb(img_meta['img'])
 
             data_ann = self.val_dataset.get_ann_info(idx)
             bboxes = data_ann['bboxes']
             labels = data_ann['labels']
+            masks = data_ann.get('masks', None)
 
+            # Get dict of bounding boxes to be logged.
             assert len(bboxes) == len(labels)
-            box_data = self._get_wandb_bboxes(bboxes, labels, mode='gt')
+            wandb_boxes = self._get_wandb_bboxes(bboxes, labels)
 
-            boxes = {
-                'ground_truth': {
-                    'box_data': box_data,
-                    'class_labels': self.class_id_to_label
-                }
-            }
+            # Get dict of masks to be logged.
+            if masks is not None:
+                wandb_masks = self._get_wandb_masks(
+                    masks,
+                    labels,
+                    is_poly_mask=True,
+                    height=img_height,
+                    width=img_width)
+            else:
+                wandb_masks = None
 
+            # Log a row to the data table.
             self.data_table.add_data(
                 image_name,
-                self.wandb.Image(image, boxes=boxes, classes=self.class_set))
+                self.wandb.Image(
+                    image,
+                    boxes=wandb_boxes,
+                    masks=wandb_masks,
+                    classes=self.class_set))
 
     def _log_predictions(self, results, epoch):
         table_idxs = self.data_table_ref.get_index()
         assert len(table_idxs) == self.num_eval_images
 
         for ndx in table_idxs:
+            # Get the result
             result = results[ndx]
-
-            # TODO: Support Instance Segmentation in future
             if isinstance(result, tuple):
-                bbox_result, _ = result
+                bbox_result, segm_result = result
+                if isinstance(segm_result, tuple):
+                    segm_result = segm_result[0]  # ms rcnn
             else:
-                bbox_result = result
+                bbox_result, segm_result = result, None
             assert len(bbox_result) == len(self.class_id_to_label)
 
-            result_box_data = []
-            class_scores = []
-            for label_id, bboxes in enumerate(bbox_result):
-                if len(bboxes) != 0:
-                    labels = [label_id] * len(bboxes)
-                    box_data, class_score, count = self._get_wandb_bboxes(
-                        bboxes, labels, mode='pred')
-                    result_box_data.extend(box_data)
-                    class_scores.append(class_score / (count + 1e-6))
-                else:
-                    class_scores.append(0)
+            # Get labels
+            bboxes = np.vstack(bbox_result)
+            labels = [
+                np.full(bbox.shape[0], i, dtype=np.int32)
+                for i, bbox in enumerate(bbox_result)
+            ]
+            labels = np.concatenate(labels)
 
-            boxes = {
-                'predictions': {
-                    'box_data': result_box_data,
-                    'class_labels': self.class_id_to_label
-                }
-            }
+            # Get segmentation mask if available.
+            segms = None
+            if segm_result is not None and len(labels) > 0:
+                segms = mmcv.concat_list(segm_result)
+                segms = mask_util.decode(segms)
+                segms = segms.transpose(2, 0, 1)
+                assert len(segms) == len(labels)
 
+            # Remove bounding boxes and masks with score lower than threshold.
+            if self.bbox_score_thr > 0:
+                assert bboxes is not None and bboxes.shape[1] == 5
+                scores = bboxes[:, -1]
+                inds = scores > self.bbox_score_thr
+                bboxes = bboxes[inds, :]
+                labels = labels[inds]
+                if segms is not None:
+                    segms = segms[inds, ...]
+
+            # Get dict of bounding boxes to be logged.
+            wandb_boxes = self._get_wandb_bboxes(bboxes, labels, mode='pred')
+            # Get dict of masks to be logged.
+            if segms is not None:
+                wandb_masks = self._get_wandb_masks(segms, labels)
+            else:
+                wandb_masks = None
+
+            # Log a row to the eval table.
             self.eval_table.add_data(
                 epoch, self.data_table_ref.data[ndx][0],
                 self.data_table_ref.data[ndx][1],
                 self.wandb.Image(
                     self.data_table_ref.data[ndx][1],
-                    boxes=boxes,
-                    classes=self.class_set), *tuple(class_scores))
+                    boxes=wandb_boxes,
+                    masks=wandb_masks,
+                    classes=self.class_set))
 
-    def _get_wandb_bboxes(self, bboxes, labels, mode='gt'):  # pred
+    def _get_wandb_bboxes(self, bboxes, labels, mode='gt'):
         """Get list of structured dict for logging bounding boxes to W&B.
 
         Args:
             bboxes (list): List of bounding box coordinates in
                         (minX, minY, maxX, maxY) format.
             labels (int): List of label ids.
-            mode (str): Set it to 'gt' for ground truth and 'pred'
-                for logging prediction results.
+            mode (str): Whether to log ground truth or prediction boxes.
 
         Returns:
-            List[dict]: List of structured dict required for
-                logging that bounding boxes to W&B.
+            Dictionary of bounding boxes to be logged.
         """
+        wandb_boxes = {}
+
         box_data = []
-
-        if mode == 'pred':
-            class_score = 0
-            count = 0
-
         for bbox, label in zip(bboxes, labels):
-            if len(bbox) == 5 and mode == 'pred':
+            if not isinstance(label, int):
+                label = int(label)
+            label = label + 1
+
+            if len(bbox) == 5:
                 confidence = float(bbox[4])
-                if confidence > 0.3:
-                    class_score += confidence
-                    count += 1
-                    class_name = self.class_id_to_label[label]
-                    box_caption = f'{class_name} {confidence:.2f}'
-                else:
-                    continue
+                class_name = self.class_id_to_label[label]
+                box_caption = f'{class_name} {confidence:.2f}'
             else:
                 box_caption = str(self.class_id_to_label[label])
 
@@ -401,9 +432,6 @@ class MMDetWandbHook(WandbLoggerHook):
                 maxX=int(bbox[2]),
                 maxY=int(bbox[3]))
 
-            if not isinstance(label, int):
-                label = int(label)
-
             box_data.append({
                 'position': position,
                 'class_id': label,
@@ -411,10 +439,65 @@ class MMDetWandbHook(WandbLoggerHook):
                 'domain': 'pixel'
             })
 
-        if len(bboxes[0]) == 5 and mode == 'pred':
-            return box_data, class_score, count
+        wandb_bbox_dict = {
+            'box_data': box_data,
+            'class_labels': self.class_id_to_label
+        }
 
-        return box_data
+        if mode == 'gt':
+            wandb_boxes['ground_truth'] = wandb_bbox_dict
+        else:
+            wandb_boxes['predictions'] = wandb_bbox_dict
+
+        return wandb_boxes
+
+    def _get_wandb_masks(self,
+                         masks,
+                         labels,
+                         is_poly_mask=False,
+                         height=None,
+                         width=None):
+        """Get list of structured dict for logging masks to W&B.
+
+        Args:
+            masks (list): List of masks.
+            labels (int): List of label ids.
+            is_poly_mask (bool): Whether the mask is polygonal or not.
+                This is true for CocoDataset.
+            height (int): Height of the image.
+            width (int): Width of the image.
+
+        Returns:
+            Dictionary of masks to be logged.
+        """
+        mask_label_dict = dict()
+        for mask, label in zip(masks, labels):
+            label = label + 1
+            # Get bitmap mask from polygon.
+            if is_poly_mask:
+                if height is not None and width is not None:
+                    mask = polygon_to_bitmap(mask, height, width)
+            # Create composite masks for each class.
+            if label not in mask_label_dict.keys():
+                mask_label_dict[label] = mask
+            else:
+                mask_label_dict[label] = np.logical_or(mask_label_dict[label],
+                                                       mask)
+
+        wandb_masks = dict()
+        for key, value in mask_label_dict.items():
+            # Create mask for that class.
+            value = value.astype(np.uint8)
+            value[value > 0] = key
+
+            # Create dict of masks for logging.
+            class_name = self.class_id_to_label[key]
+            wandb_masks[class_name] = {
+                'mask_data': value,
+                'class_labels': self.class_id_to_label
+            }
+
+        return wandb_masks
 
     def _log_data_table(self):
         """Log the W&B Tables for validation data as artifact and calls
