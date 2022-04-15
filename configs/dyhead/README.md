@@ -18,6 +18,7 @@ The complex nature of combining localization and classification in object detect
 |:------:|:--------:|:-------:|:------------:|:-------:|:--------:|:--------------:|:------:|:------:|:--------:|
 | ATSS   | R-50     | caffe   | reproduction | 1x      | 5.4      | 13.2           | 42.5   | [config](./atss_r50_caffe_fpn_dyhead_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/dyhead/atss_r50_fpn_dyhead_for_reproduction_1x_coco/atss_r50_fpn_dyhead_for_reproduction_4x4_1x_coco_20220107_213939-162888e6.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/dyhead/atss_r50_fpn_dyhead_for_reproduction_1x_coco/atss_r50_fpn_dyhead_for_reproduction_4x4_1x_coco_20220107_213939.log.json) |
 | ATSS   | R-50     | pytorch | simple       | 1x      | 4.9      | 13.7           | 43.3   | [config](./atss_r50_fpn_dyhead_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/dyhead/atss_r50_fpn_dyhead_4x4_1x_coco/atss_r50_fpn_dyhead_4x4_1x_coco_20211219_023314-eaa620c6.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/dyhead/atss_r50_fpn_dyhead_4x4_1x_coco/atss_r50_fpn_dyhead_4x4_1x_coco_20211219_023314.log.json) |
+| ATSS   | Swin-L   | pytorch | simple       | 1x      | 4.9      | -              | -      | [config](./atss-swin-l-p4-w12_fpn_dyhead_mstrain_3x_coco.py) | [model]() &#124; [log]() |
 
 - We trained the above models with 4 GPUs and 4 `samples_per_gpu`.
 - The `reproduction` setting aims to reproduce the official implementation based on Detectron2.
