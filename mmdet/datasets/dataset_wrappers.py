@@ -407,7 +407,6 @@ class MultiImageMixDataset:
                 continue
 
             if hasattr(transform, 'get_indexes'):
-                # while True:
                 for i in range(self.max_iters):
                     # Make sure the results passed the loading pipeline
                     # of the original dataset is not None.
