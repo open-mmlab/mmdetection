@@ -353,13 +353,18 @@ class MultiImageMixDataset:
             dynamically. Default to None. It is deprecated.
         skip_type_keys (list[str], optional): Sequence of type string to
             be skip pipeline. Default to None.
+        max_iters (int): The maximum number of iterations for calling a
+            transform. If the number of iterations is greater than
+            `max_iters`, but results is stillNone, then the iteration is
+            terminated and raise the error. Default: 15.
     """
 
     def __init__(self,
                  dataset,
                  pipeline,
                  dynamic_scale=None,
-                 skip_type_keys=None):
+                 skip_type_keys=None,
+                 max_iters=15):
         if dynamic_scale is not None:
             raise RuntimeError(
                 'dynamic_scale is deprecated. Please use Resize pipeline '
@@ -388,6 +393,7 @@ class MultiImageMixDataset:
         if hasattr(self.dataset, 'flag'):
             self.flag = dataset.flag
         self.num_samples = len(dataset)
+        self.max_iters = max_iters
 
     def __len__(self):
         return self.num_samples
@@ -401,8 +407,9 @@ class MultiImageMixDataset:
                 continue
 
             if hasattr(transform, 'get_indexes'):
-                while True:
-                    # Make sure the results passed the pipeline
+                # while True:
+                for i in range(self.max_iters):
+                    # Make sure the results passed the loading pipeline
                     # of the original dataset is not None.
                     indexes = transform.get_indexes(self.dataset)
                     if not isinstance(indexes, collections.abc.Sequence):
@@ -413,14 +420,22 @@ class MultiImageMixDataset:
                     if None not in mix_results:
                         results['mix_results'] = mix_results
                         break
+                else:
+                    raise RuntimeError(
+                        'the loading pipeline of the original dataset'
+                        ' always return None.')
 
-            while True:
-                # To confirm the results passed the pipeline
+            for i in range(self.max_iters):
+                # To confirm the results passed the training pipeline
                 # of the wrapper is not None.
                 updated_results = transform(copy.deepcopy(results))
                 if updated_results is not None:
                     results = updated_results
                     break
+            else:
+                raise RuntimeError(
+                    'the training pipeline of the dataset wrapper'
+                    ' always return None.')
 
             if 'mix_results' in results:
                 results.pop('mix_results')
