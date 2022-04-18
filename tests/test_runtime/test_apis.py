@@ -42,7 +42,7 @@ def test_init_detector():
                 depth=101,
                 init_cfg=dict(
                     type='Pretrained', checkpoint='torchvision://resnet101'))))
-    model = init_detector(config_file, cfg_options=cfg_options)
+    model = init_detector(config_file, device='cpu', cfg_options=cfg_options)
 
     # test init_detector with :obj:`Path`
     config_path_object = Path(config_file)
@@ -51,4 +51,4 @@ def test_init_detector():
     # test init_detector with undesirable type
     with pytest.raises(TypeError):
         config_int = 45678
-        model = init_detector(config_int)  # noqa: F841
+        model = init_detector(config_int, device='cpu')  # noqa: F841
