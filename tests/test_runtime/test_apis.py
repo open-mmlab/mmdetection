@@ -46,9 +46,9 @@ def test_init_detector():
 
     # test init_detector with :obj:`Path`
     config_path_object = Path(config_file)
-    model = init_detector(config_path_object)
+    model = init_detector(config_path_object, device='cpu')
 
     # test init_detector with undesirable type
     with pytest.raises(TypeError):
         config_int = 45678
-        model = init_detector(config_int, device='cpu')  # noqa: F841
+        model = init_detector(config_int)  # noqa: F841
