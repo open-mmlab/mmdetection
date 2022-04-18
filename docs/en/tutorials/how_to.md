@@ -173,3 +173,32 @@ class UnfreezeBackboneEpochBasedHook(Hook):
                 for param in m.parameters():
                     param.requires_grad = True
 ```
+
+## Get the channels of a new backbone
+
+If you want to get the channels of a new backbone, you can build this backbone alone and input a pseudo image to get each stage output.
+
+Take `ResNet` as an example:
+
+```python
+from mmdet.models import ResNet
+import torch
+self = ResNet(depth=18)
+self.eval()
+inputs = torch.rand(1, 3, 32, 32)
+level_outputs = self.forward(inputs)
+for level_out in level_outputs:
+    print(tuple(level_out.shape))
+
+```
+
+Output of the above script is as below:
+
+```python
+(1, 64, 8, 8)
+(1, 128, 4, 4)
+(1, 256, 2, 2)
+(1, 512, 1, 1)
+```
+
+Users can get the channels of the new backbone by Replacing the `ResNet(depth=18)` in this script with their customized backbone.
