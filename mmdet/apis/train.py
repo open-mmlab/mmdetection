@@ -168,6 +168,10 @@ def train_detector(model,
         cfg.get('momentum_config', None),
         custom_hooks_config=cfg.get('custom_hooks', None))
 
+
+    # register profiler hook
+    runner.register_profiler_hook(cfg.get('profiler_config',None))
+
     if distributed:
         if isinstance(runner, EpochBasedRunner):
             runner.register_hook(DistSamplerSeedHook())
