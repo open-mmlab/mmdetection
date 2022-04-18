@@ -598,7 +598,6 @@ class FilterAnnotations:
         self.keep_empty = keep_empty
 
     def __call__(self, results):
-        assert self.by_box or self.by_mask
         if self.by_box:
             assert 'gt_bboxes' in results
             gt_bboxes = results['gt_bboxes']
