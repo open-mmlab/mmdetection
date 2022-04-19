@@ -3,7 +3,7 @@ import logging
 import shutil
 import sys
 import tempfile
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock, Mock, call, patch
 
 import numpy as np
 import pytest
@@ -352,3 +352,64 @@ def test_set_epoch_info_hook():
     runner.register_hook_from_cfg(dict(type='SetEpochInfoHook'))
     runner.run([loader], [('train', 1)])
     assert demo_model.epoch == 2
+
+
+def test_memory_profiler_hook():
+    from collections import namedtuple
+
+    # test ImportError without psutil and memory_profiler
+    with pytest.raises(ImportError):
+        from mmdet.core.hook import MemoryProfilerHook
+        MemoryProfilerHook(1)
+
+    # test ImportError without memory_profiler
+    sys.modules['psutil'] = MagicMock()
+    with pytest.raises(ImportError):
+        from mmdet.core.hook import MemoryProfilerHook
+        MemoryProfilerHook(1)
+
+    sys.modules['memory_profiler'] = MagicMock()
+
+    def _mock_virtual_memory():
+        virtual_memory_type = namedtuple(
+            'virtual_memory', ['total', 'available', 'percent', 'used'])
+        return virtual_memory_type(
+            total=270109085696,
+            available=250416816128,
+            percent=7.3,
+            used=17840881664)
+
+    def _mock_swap_memory():
+        swap_memory_type = namedtuple('swap_memory', [
+            'total',
+            'used',
+            'percent',
+        ])
+        return swap_memory_type(total=8589930496, used=0, percent=0.0)
+
+    def _mock_memory_usage():
+        return [40.22265625]
+
+    mock_virtual_memory = Mock(return_value=_mock_virtual_memory())
+    mock_swap_memory = Mock(return_value=_mock_swap_memory())
+    mock_memory_usage = Mock(return_value=_mock_memory_usage())
+
+    @patch('psutil.swap_memory', mock_swap_memory)
+    @patch('psutil.virtual_memory', mock_virtual_memory)
+    @patch('memory_profiler.memory_usage', mock_memory_usage)
+    def _test_memory_profiler_hook():
+        from mmdet.core.hook import MemoryProfilerHook
+        hook = MemoryProfilerHook(1)
+        runner = _build_demo_runner()
+
+        assert not mock_memory_usage.called
+        assert not mock_swap_memory.called
+        assert not mock_memory_usage.called
+
+        hook.after_iter(runner)
+
+        assert mock_memory_usage.called
+        assert mock_swap_memory.called
+        assert mock_memory_usage.called
+
+    _test_memory_profiler_hook()
