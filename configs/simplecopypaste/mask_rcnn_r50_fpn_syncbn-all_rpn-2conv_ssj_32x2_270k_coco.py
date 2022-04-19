@@ -1,11 +1,9 @@
 _base_ = [
     '../_base_/models/mask_rcnn_r50_fpn.py',
-    '../common/ssj_270k_coco_instance.py'
+    # 270k iterations with batch_size 64 is roughly equivalent to 144 epochs
+    '../common/ssj_270k_coco_instance.py',
 ]
 
-# For coco train2017 dataset,
-# 1 epoch = batch_size16 * iterations7330
-# batch_size64 * iterations270k ~ epoch144
 norm_cfg = dict(type='SyncBN', requires_grad=True)
 # Use MMSyncBN that handles empty tensor in head. It can be changed to
 # SyncBN after https://github.com/pytorch/pytorch/issues/36530 is fixed.
