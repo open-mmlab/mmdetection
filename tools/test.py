@@ -17,8 +17,7 @@ from mmdet.apis import multi_gpu_test, single_gpu_test
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
 from mmdet.models import build_detector
-from mmdet.utils import (cfg_compatibility, setup_multi_processes,
-                         update_data_root)
+from mmdet.utils import compat_cfg, setup_multi_processes, update_data_root
 
 
 def parse_args():
@@ -141,7 +140,7 @@ def main():
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
 
-    cfg = cfg_compatibility(cfg)
+    cfg = compat_cfg(cfg)
 
     # set multi-process settings
     setup_multi_processes(cfg)
