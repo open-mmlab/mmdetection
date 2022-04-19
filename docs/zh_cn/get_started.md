@@ -51,7 +51,7 @@ MMDetection 和 MMCV 版本兼容性如下所示，需要安装正确的 MMCV �
 1. 使用 conda 新建虚拟环境，并进入该虚拟环境；
 
    ```shell
-   conda create -n open-mmlab python=3.10 -y
+   conda create -n open-mmlab python=3.9 -y
    conda activate open-mmlab
    ```
 
@@ -212,7 +212,7 @@ docker run --gpus all --shm-size=8g -it -v {DATA_DIR}:/mmdetection/data mmdetect
 假设当前已经成功安装 CUDA 10.1，这里提供了一个完整的基于 conda 安装 MMDetection 的脚本：
 
 ```shell
-conda create -n open-mmlab python=3.10 -y
+conda create -n open-mmlab python=3.9 -y
 conda activate open-mmlab
 
 conda install pytorch==1.11.0 torchvision==0.12.0 cudatoolkit=11.3 -c pytorch -y
