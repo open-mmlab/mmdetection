@@ -28,5 +28,5 @@ def test_init_detector():
 
     # test init_detector with undesirable type
     with pytest.raises(TypeError):
-        config_int = 45678
-        model = init_detector(config_int)  # noqa: F841
+        config_list = [config_file]
+        model = init_detector(config_list)  # noqa: F841
