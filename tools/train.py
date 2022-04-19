@@ -18,7 +18,7 @@ from mmdet.apis import init_random_seed, set_random_seed, train_detector
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
 from mmdet.utils import (collect_env, get_root_logger, setup_multi_processes,
-                         update_data_root, select_device)
+                         update_data_root, get_device)
 
 
 def parse_args():
@@ -193,7 +193,7 @@ def main():
     logger.info(f'Distributed training: {distributed}')
     logger.info(f'Config:\n{cfg.pretty_text}')
 
-    cfg.device = select_device()
+    cfg.device = get_device()
     # set random seeds
     seed = init_random_seed(args.seed, device=cfg.device)
     seed = seed + dist.get_rank() if args.diff_seed else seed
