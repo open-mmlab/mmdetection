@@ -2,6 +2,8 @@
 import copy
 import warnings
 
+from mmcv import ConfigDict
+
 
 def compat_cfg(cfg):
     """This function would modify some filed to keep the compatibility of
@@ -19,10 +21,10 @@ def compat_cfg(cfg):
 
 def compat_runner_args(cfg):
     if 'runner' not in cfg:
-        cfg.runner = {
+        cfg.runner = ConfigDict({
             'type': 'EpochBasedRunner',
             'max_epochs': cfg.total_epochs
-        }
+        })
         warnings.warn(
             'config is now expected to have a `runner` section, '
             'please set `runner` in your config.', UserWarning)
@@ -54,11 +56,11 @@ def compat_loader_args(cfg):
 
     cfg = copy.deepcopy(cfg)
     if 'train_dataloader' not in cfg.data:
-        cfg.data['train_dataloader'] = dict()
+        cfg.data['train_dataloader'] = ConfigDict()
     if 'val_dataloader' not in cfg.data:
-        cfg.data['val_dataloader'] = dict()
+        cfg.data['val_dataloader'] = ConfigDict()
     if 'test_dataloader' not in cfg.data:
-        cfg.data['test_dataloader'] = dict()
+        cfg.data['test_dataloader'] = ConfigDict()
 
     # special process for train_dataloader
     if 'samples_per_gpu' in cfg.data:
