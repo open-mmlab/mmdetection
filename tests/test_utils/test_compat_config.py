@@ -80,6 +80,8 @@ def test_compat_loader_args():
                 test=dict(samples_per_gpu=2),
                 train=dict(),
                 train_dataloader=dict(samples_per_gpu=2))))
+    # samples_per_gpu can not be set in `train_dataloader`
+    # and data field at the same time
     with pytest.raises(AssertionError):
         compat_loader_args(cfg)
     cfg = ConfigDict(
@@ -92,6 +94,8 @@ def test_compat_loader_args():
                 test=dict(samples_per_gpu=2),
                 train=dict(),
                 val_dataloader=dict(samples_per_gpu=2))))
+    # samples_per_gpu can not be set in `val_dataloader`
+    # and data field at the same time
     with pytest.raises(AssertionError):
         compat_loader_args(cfg)
     cfg = ConfigDict(
@@ -103,6 +107,8 @@ def test_compat_loader_args():
                 val=dict(samples_per_gpu=3),
                 test=dict(samples_per_gpu=2),
                 test_dataloader=dict(samples_per_gpu=2))))
+    # samples_per_gpu can not be set in `test_dataloader`
+    # and data field at the same time
     with pytest.raises(AssertionError):
         compat_loader_args(cfg)
 
