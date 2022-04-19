@@ -32,17 +32,9 @@ def test_compat_loader_args():
                 val=dict(samples_per_gpu=3),
                 test=dict(samples_per_gpu=2),
                 train=dict())))
-    with pytest.warns(None) as record:
-        cfg = compat_loader_args(cfg)
-    # 5 warning
-    assert len(record) == 5
-    # assert the warning message
-    assert 'train_dataloader' in record.list[0].message.args[0]
-    assert 'samples_per_gpu' in record.list[0].message.args[0]
-    assert 'persistent_workers' in record.list[1].message.args[0]
-    assert 'train_dataloader' in record.list[1].message.args[0]
-    assert 'workers_per_gpu' in record.list[2].message.args[0]
-    assert 'train_dataloader' in record.list[2].message.args[0]
+
+    cfg = compat_loader_args(cfg)
+
     assert cfg.data.train_dataloader.workers_per_gpu == 1
     assert cfg.data.train_dataloader.samples_per_gpu == 1
     assert cfg.data.train_dataloader.persistent_workers
@@ -63,10 +55,7 @@ def test_compat_loader_args():
                       dict(samples_per_gpu=3)],
                 train=dict())))
 
-    with pytest.warns(None) as record:
-        cfg = compat_loader_args(cfg)
-    # 6 warning
-    assert len(record) == 6
+    cfg = compat_loader_args(cfg)
     assert cfg.data.test_dataloader.samples_per_gpu == 3
 
     # assert can not set args at the same time

@@ -64,12 +64,7 @@ def compat_loader_args(cfg):
 
     # special process for train_dataloader
     if 'samples_per_gpu' in cfg.data:
-        warnings.warn('Setting `samples_per_gpu` directly '
-                      'in the filed of data will be deprecated. '
-                      'Users should specify them in '
-                      '`*dataloader` field. For now, '
-                      'this `samples_per_gpu` takes effect '
-                      'in `train_dataloader`.')
+
         samples_per_gpu = cfg.data.pop('samples_per_gpu')
         assert 'samples_per_gpu' not in \
                cfg.data.train_dataloader, ('`samples_per_gpu` are set '
@@ -81,12 +76,7 @@ def compat_loader_args(cfg):
         cfg.data.train_dataloader['samples_per_gpu'] = samples_per_gpu
 
     if 'persistent_workers' in cfg.data:
-        warnings.warn('Setting `persistent_workers` directly '
-                      'in the filed of data will be deprecated. '
-                      'Users should specify them in '
-                      '`*dataloader` field. For now, '
-                      'this `persistent_workers` takes effect '
-                      'in `train_dataloader`.')
+
         persistent_workers = cfg.data.pop('persistent_workers')
         assert 'persistent_workers' not in \
                cfg.data.train_dataloader, ('`persistent_workers` are set '
@@ -98,12 +88,7 @@ def compat_loader_args(cfg):
         cfg.data.train_dataloader['persistent_workers'] = persistent_workers
 
     if 'workers_per_gpu' in cfg.data:
-        warnings.warn('Setting `workers_per_gpu` directly '
-                      'in the filed of data will be deprecated. '
-                      'Users should specify them in '
-                      '`*dataloader` field. For now, '
-                      'this `samples_per_gpu` takes effect '
-                      'in `train_dataloader`.')
+
         workers_per_gpu = cfg.data.pop('workers_per_gpu')
         cfg.data.train_dataloader['workers_per_gpu'] = workers_per_gpu
         cfg.data.val_dataloader['workers_per_gpu'] = workers_per_gpu
@@ -111,13 +96,6 @@ def compat_loader_args(cfg):
 
     # special process for val_dataloader
     if 'samples_per_gpu' in cfg.data.val:
-        warnings.warn('Setting `samples_per_gpu`  '
-                      'in the filed of `data.val` will'
-                      ' be deprecated. '
-                      'Users should specify them in '
-                      '`*dataloader` field. For now, '
-                      'this `samples_per_gpu` takes effect '
-                      'in `val_dataloader`.')
         # keep default value of `sample_per_gpu` is 1
         assert 'samples_per_gpu' not in \
                cfg.data.val_dataloader, ('`samples_per_gpu` are set '
@@ -133,13 +111,6 @@ def compat_loader_args(cfg):
     # in case the test dataset is concatenated
     if isinstance(cfg.data.test, dict):
         if 'samples_per_gpu' in cfg.data.test:
-            warnings.warn('Setting `samples_per_gpu`  '
-                          'in the filed of `data.test` will'
-                          ' be deprecated. '
-                          'Users should specify them in '
-                          '`*dataloader` field. For now, '
-                          'this `samples_per_gpu` takes effect '
-                          'in `test_dataloader`.')
             assert 'samples_per_gpu' not in \
                    cfg.data.test_dataloader, ('`samples_per_gpu` are set '
                                               'in `data.test` field and ` '
@@ -154,13 +125,6 @@ def compat_loader_args(cfg):
     elif isinstance(cfg.data.test, list):
         for ds_cfg in cfg.data.test:
             if 'samples_per_gpu' in ds_cfg:
-                warnings.warn('Setting `samples_per_gpu`  '
-                              'in the filed of `data.test` will'
-                              ' be deprecated. '
-                              'Users should specify them in '
-                              '`*dataloader` field. For now, '
-                              'this `samples_per_gpu` takes effect '
-                              'in `test_dataloader`.')
                 assert 'samples_per_gpu' not in \
                        cfg.data.test_dataloader, ('`samples_per_gpu` are set '
                                                   'in `data.test` field and ` '
