@@ -21,6 +21,7 @@ ENV PATH="/opt/conda/bin:$PATH"
 RUN export FORCE_CUDA=1
 
 # TORCHSEVER
+# Using '--no-cache-dir' to delete the downloaded files after installation to reduce the final size of the Docker file.
 RUN ["/bin/bash", "-c", "pip install --no-cache-dir torchserve torch-model-archiver"]
 
 # MMLAB
