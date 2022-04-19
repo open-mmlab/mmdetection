@@ -51,7 +51,7 @@ If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
 1. Create a conda virtual environment and activate it.
 
     ```shell
-    conda create -n openmmlab python=3.10 -y
+    conda create -n openmmlab python=3.9 -y
     conda activate openmmlab
     ```
 
@@ -214,7 +214,7 @@ docker run --gpus all --shm-size=8g -it -v {DATA_DIR}:/mmdetection/data mmdetect
 Assuming that you already have CUDA 10.1 installed, here is a full script for setting up MMDetection with conda.
 
 ```shell
-conda create -n openmmlab python=3.10 -y
+conda create -n openmmlab python=3.9 -y
 conda activate openmmlab
 
 conda install pytorch==1.11.0 torchvision==0.12.0 cudatoolkit=11.3 -c pytorch -y
