@@ -1,6 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import random
-import warnings
 
 import numpy as np
 import torch
@@ -13,7 +12,7 @@ from mmcv.runner import (DistSamplerSeedHook, EpochBasedRunner,
 from mmdet.core import DistEvalHook, EvalHook
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
-from mmdet.utils import find_latest_checkpoint, get_root_logger
+from mmdet.utils import compat_cfg, find_latest_checkpoint, get_root_logger
 
 
 def init_random_seed(seed=None, device='cuda'):
@@ -121,39 +120,32 @@ def train_detector(model,
                    validate=False,
                    timestamp=None,
                    meta=None):
+
+    cfg = compat_cfg(cfg)
     logger = get_root_logger(log_level=cfg.log_level)
 
     # prepare data loaders
     dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
-    if 'imgs_per_gpu' in cfg.data:
-        logger.warning('"imgs_per_gpu" is deprecated in MMDet V2.0. '
-                       'Please use "samples_per_gpu" instead')
-        if 'samples_per_gpu' in cfg.data:
-            logger.warning(
-                f'Got "imgs_per_gpu"={cfg.data.imgs_per_gpu} and '
-                f'"samples_per_gpu"={cfg.data.samples_per_gpu}, "imgs_per_gpu"'
-                f'={cfg.data.imgs_per_gpu} is used in this experiments')
-        else:
-            logger.warning(
-                'Automatically set "samples_per_gpu"="imgs_per_gpu"='
-                f'{cfg.data.imgs_per_gpu} in this experiments')
-        cfg.data.samples_per_gpu = cfg.data.imgs_per_gpu
 
     runner_type = 'EpochBasedRunner' if 'runner' not in cfg else cfg.runner[
         'type']
-    data_loaders = [
-        build_dataloader(
-            ds,
-            cfg.data.samples_per_gpu,
-            cfg.data.workers_per_gpu,
-            # `num_gpus` will be ignored if distributed
-            num_gpus=len(cfg.gpu_ids),
-            dist=distributed,
-            seed=cfg.seed,
-            runner_type=runner_type,
-            persistent_workers=cfg.data.get('persistent_workers', False))
-        for ds in dataset
-    ]
+
+    train_dataloader_default_args = dict(
+        samples_per_gpu=2,
+        workers_per_gpu=2,
+        # `num_gpus` will be ignored if distributed
+        num_gpus=len(cfg.gpu_ids),
+        dist=distributed,
+        seed=cfg.seed,
+        runner_type=runner_type,
+        persistent_workers=False)
+
+    train_loader_cfg = {
+        **train_dataloader_default_args,
+        **cfg.data.get('train_dataloader', {})
+    }
+
+    data_loaders = [build_dataloader(ds, **train_loader_cfg) for ds in dataset]
 
     # put model on gpus
     if distributed:
@@ -171,19 +163,6 @@ def train_detector(model,
     # build optimizer
     auto_scale_lr(cfg, distributed, logger)
     optimizer = build_optimizer(model, cfg.optimizer)
-
-    # build runner
-    if 'runner' not in cfg:
-        cfg.runner = {
-            'type': 'EpochBasedRunner',
-            'max_epochs': cfg.total_epochs
-        }
-        warnings.warn(
-            'config is now expected to have a `runner` section, '
-            'please set `runner` in your config.', UserWarning)
-    else:
-        if 'total_epochs' in cfg:
-            assert cfg.total_epochs == cfg.runner.max_epochs
 
     runner = build_runner(
         cfg.runner,
@@ -222,19 +201,26 @@ def train_detector(model,
 
     # register eval hooks
     if validate:
+        val_dataloader_default_args = dict(
+            samples_per_gpu=1,
+            workers_per_gpu=2,
+            dist=distributed,
+            shuffle=False,
+            persistent_workers=False)
+
+        val_dataloader_args = {
+            **val_dataloader_default_args,
+            **cfg.data.get('val_dataloader', {})
+        }
         # Support batch_size > 1 in validation
-        val_samples_per_gpu = cfg.data.val.pop('samples_per_gpu', 1)
-        if val_samples_per_gpu > 1:
+
+        if val_dataloader_args['samples_per_gpu'] > 1:
             # Replace 'ImageToTensor' to 'DefaultFormatBundle'
             cfg.data.val.pipeline = replace_ImageToTensor(
                 cfg.data.val.pipeline)
         val_dataset = build_dataset(cfg.data.val, dict(test_mode=True))
-        val_dataloader = build_dataloader(
-            val_dataset,
-            samples_per_gpu=val_samples_per_gpu,
-            workers_per_gpu=cfg.data.workers_per_gpu,
-            dist=distributed,
-            shuffle=False)
+
+        val_dataloader = build_dataloader(val_dataset, **val_dataloader_args)
         eval_cfg = cfg.get('evaluation', {})
         eval_cfg['by_epoch'] = cfg.runner['type'] != 'IterBasedRunner'
         eval_hook = DistEvalHook if distributed else EvalHook
