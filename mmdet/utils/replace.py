@@ -6,20 +6,20 @@ from mmcv.utils import Config
 
 
 def replace_config(ori_cfg):
-    """Replace the ${key} with the value.
+    """Replace the string "${key}" with the corresponding value.
 
-    Replace the ${key} with the value of ori_cfg.key in the config. And
-    support replacing the chained ${key}. Such as, replace ${key0.key1} with
-    the value of cfg.key0.key1. Code is modified from `vars.py
-    https://github.com/microsoft/SoftTeacher/blob/main/ssod/utils/vars.py`
+    Replace the "${key}" with the value of ori_cfg.key in the config. And
+    support replacing the chained ${key}. Such as, replace "${key0.key1}"
+    with the value of cfg.key0.key1. Code is modified from `vars.py
+    < https://github.com/microsoft/SoftTeacher/blob/main/ssod/utils/vars.py>`_  # noqa: E501
 
     Args:
         ori_cfg (mmcv.utils.config.Config):
-            The origin config with ${key} generated from a file.
+            The origin config with "${key}" generated from a file.
 
     Returns:
         replaced_cfg (mmcv.utils.config.Config):
-            The config with ${key} replaced by the corresponding value.
+            The config with "${key}" replaced by the corresponding value.
     """
 
     def get_value(cfg, key):
@@ -37,20 +37,22 @@ def replace_config(ori_cfg):
         elif isinstance(cfg, tuple):
             return tuple([replace_value(item) for item in cfg])
         elif isinstance(cfg, str):
-            # replace the ${key} with cfg.key
+            # replace the "${key}" with cfg.key
             keys = pattern_key.findall(cfg)
             values = [get_value(ori_cfg_dict, key[2:-1]) for key in keys]
-            # only support replacing one ${key} for dict, list, or tuple
+            # only support replacing one "${key}" for dict, list, or tuple
             for key, value in zip(keys, values):
                 cfg = value if len(keys) == 1 else cfg.replace(key, str(value))
             return cfg
         else:
             return cfg
 
-    # the pattern of key, which will be replaced by its value, such as ${model}
+    # the pattern of string "${key}",
+    # which will be replaced by its value, such as "${model}"
     pattern_key = re.compile(r'\$\{[a-zA-Z\d_.]*\}')
     # ori_cfg is the cfg before being replaced
     ori_cfg_dict = ori_cfg._cfg_dict.to_dict()
+    # cfg_name is part of the default working path
     # work_dirs/${cfg_name}/${percent}/${fold}
     ori_cfg_dict['cfg_name'] = osp.splitext(osp.basename(ori_cfg.filename))[0]
     replaced_cfg = Config(
