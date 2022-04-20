@@ -77,7 +77,7 @@
     3. 延长 warm up 的时间：一些模型在训练初始时对学习率很敏感，您可以把 `warmup_iters` 从 500 更改为 1000 或 2000。
     4. 添加 gradient clipping: 一些模型需要梯度裁剪来稳定训练过程。 默认的 `grad_clip` 是 `None`,  你可以在 config 设置 `optimizer_config=dict(_delete_=True, grad_clip=dict(max_norm=35, norm_type=2))`  如果你的 config 没有继承任何包含 `optimizer_config=dict(grad_clip=None)`,  你可以直接设置`optimizer_config=dict(grad_clip=dict(max_norm=35, norm_type=2))`.
 
-- ’GPU out of memory"
+- "GPU out of memory"
     1. 存在大量 ground truth boxes 或者大量 anchor 的场景，可能在 assigner 会 OOM。 您可以在 assigner 的配置中设置 `gpu_assign_thr=N`，这样当超过 N 个 GT boxes 时，assigner 会通过 CPU 计算 IOU。
     2. 在 backbone 中设置 `with_cp=True`。 这使用 PyTorch 中的 `sublinear strategy` 来降低 backbone 占用的 GPU 显存。
     3. 使用 `config/fp16` 中的示例尝试混合精度训练。`loss_scale` 可能需要针对不同模型进行调整。

@@ -31,7 +31,7 @@ def test_dropblock():
         DropBlock(0.5, 3, -1)
 
 
-def test_pixeldecoder():
+def test_pixel_decoder():
     base_channels = 64
     pixel_decoder_cfg = ConfigDict(
         dict(
@@ -53,7 +53,7 @@ def test_pixeldecoder():
     assert mask_feature.shape == feats[0].shape
 
 
-def test_transformerencoderpixeldecoer():
+def test_transformer_encoder_pixel_decoder():
     base_channels = 64
     pixel_decoder_cfg = ConfigDict(
         dict(
@@ -109,3 +109,59 @@ def test_transformerencoderpixeldecoer():
 
     assert memory.shape[-2:] == feats[-1].shape[-2:]
     assert mask_feature.shape == feats[0].shape
+
+
+def test_msdeformattn_pixel_decoder():
+    base_channels = 64
+    pixel_decoder_cfg = ConfigDict(
+        dict(
+            type='MSDeformAttnPixelDecoder',
+            in_channels=[base_channels * 2**i for i in range(4)],
+            strides=[4, 8, 16, 32],
+            feat_channels=base_channels,
+            out_channels=base_channels,
+            num_outs=3,
+            norm_cfg=dict(type='GN', num_groups=32),
+            act_cfg=dict(type='ReLU'),
+            encoder=dict(
+                type='DetrTransformerEncoder',
+                num_layers=6,
+                transformerlayers=dict(
+                    type='BaseTransformerLayer',
+                    attn_cfgs=dict(
+                        type='MultiScaleDeformableAttention',
+                        embed_dims=base_channels,
+                        num_heads=8,
+                        num_levels=3,
+                        num_points=4,
+                        im2col_step=64,
+                        dropout=0.0,
+                        batch_first=False,
+                        norm_cfg=None,
+                        init_cfg=None),
+                    ffn_cfgs=dict(
+                        type='FFN',
+                        embed_dims=base_channels,
+                        feedforward_channels=base_channels * 4,
+                        num_fcs=2,
+                        ffn_drop=0.0,
+                        act_cfg=dict(type='ReLU', inplace=True)),
+                    operation_order=('self_attn', 'norm', 'ffn', 'norm')),
+                init_cfg=None),
+            positional_encoding=dict(
+                type='SinePositionalEncoding',
+                num_feats=base_channels // 2,
+                normalize=True),
+            init_cfg=None), )
+    self = build_plugin_layer(pixel_decoder_cfg)[1]
+    feats = [
+        torch.rand((2, base_channels * 2**i, 4 * 2**(3 - i), 5 * 2**(3 - i)))
+        for i in range(4)
+    ]
+    mask_feature, multi_scale_features = self(feats)
+
+    assert mask_feature.shape == feats[0].shape
+    assert len(multi_scale_features) == 3
+    multi_scale_features = multi_scale_features[::-1]
+    for i in range(3):
+        assert multi_scale_features[i].shape[-2:] == feats[i + 1].shape[-2:]
