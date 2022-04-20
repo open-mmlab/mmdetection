@@ -27,7 +27,13 @@ def setup_multi_processes(cfg):
 
     # setup OMP threads
     # This code is referred from https://github.com/pytorch/pytorch/blob/master/torch/distributed/run.py  # noqa
-    if 'OMP_NUM_THREADS' not in os.environ and cfg.data.workers_per_gpu > 1:
+    workers_per_gpu = cfg.data.get('workers_per_gpu', 1)
+    if 'train_dataloader' in cfg.data:
+        workers_per_gpu = \
+            max(cfg.data.train_dataloader.get('workers_per_gpu', 1),
+                workers_per_gpu)
+
+    if 'OMP_NUM_THREADS' not in os.environ and workers_per_gpu > 1:
         omp_num_threads = 1
         warnings.warn(
             f'Setting OMP_NUM_THREADS environment variable for each process '
@@ -37,7 +43,7 @@ def setup_multi_processes(cfg):
         os.environ['OMP_NUM_THREADS'] = str(omp_num_threads)
 
     # setup MKL threads
-    if 'MKL_NUM_THREADS' not in os.environ and cfg.data.workers_per_gpu > 1:
+    if 'MKL_NUM_THREADS' not in os.environ and workers_per_gpu > 1:
         mkl_num_threads = 1
         warnings.warn(
             f'Setting MKL_NUM_THREADS environment variable for each process '
