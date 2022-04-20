@@ -4,10 +4,10 @@ from copy import deepcopy
 
 from mmcv.utils import Config
 
-from mmdet.utils import replace_config
+from mmdet.utils import replace_cfg_vals
 
 
-def test_replace_config():
+def test_replace_cfg_vals():
     temp_file = tempfile.NamedTemporaryFile()
     config_path = f'{temp_file.name}.py'
     with open(config_path, 'w') as f:
@@ -47,10 +47,10 @@ def test_replace_config():
     )
 
     ori_cfg = Config(ori_cfg_dict, filename=config_path)
-    replaced_cfg = replace_config(deepcopy(ori_cfg))
+    updated_cfg = replace_cfg_vals(deepcopy(ori_cfg))
 
-    assert replaced_cfg.work_dir \
+    assert updated_cfg.work_dir \
         == f'work_dirs/{osp.basename(temp_file.name)}/5/1'
-    assert replaced_cfg.model.model == ori_cfg.model
-    assert replaced_cfg.iou_threshold.rpn_proposal_nms \
+    assert updated_cfg.model.model == ori_cfg.model
+    assert updated_cfg.iou_threshold.rpn_proposal_nms \
         == ori_cfg.model.train_cfg.rpn_proposal.nms.iou_threshold

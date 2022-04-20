@@ -17,7 +17,7 @@ from mmdet import __version__
 from mmdet.apis import init_random_seed, set_random_seed, train_detector
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
-from mmdet.utils import (collect_env, get_root_logger, replace_config,
+from mmdet.utils import (collect_env, get_root_logger, replace_cfg_vals,
                          setup_multi_processes, update_data_root)
 
 
@@ -144,7 +144,7 @@ def main():
                                 osp.splitext(osp.basename(args.config))[0])
 
     # replace the ${key} with the value of cfg.key
-    cfg = replace_config(cfg)
+    cfg = replace_cfg_vals(cfg)
 
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from

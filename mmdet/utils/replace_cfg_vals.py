@@ -5,7 +5,7 @@ import re
 from mmcv.utils import Config
 
 
-def replace_config(ori_cfg):
+def replace_cfg_vals(ori_cfg):
     """Replace the string "${key}" with the corresponding value.
 
     Replace the "${key}" with the value of ori_cfg.key in the config. And
@@ -18,7 +18,7 @@ def replace_config(ori_cfg):
             The origin config with "${key}" generated from a file.
 
     Returns:
-        replaced_cfg (mmcv.utils.config.Config):
+        updated_cfg [mmcv.utils.config.Config]:
             The config with "${key}" replaced by the corresponding value.
     """
 
@@ -55,11 +55,11 @@ def replace_config(ori_cfg):
     # cfg_name is part of the default working path
     # work_dirs/${cfg_name}/${percent}/${fold}
     ori_cfg_dict['cfg_name'] = osp.splitext(osp.basename(ori_cfg.filename))[0]
-    replaced_cfg = Config(
+    updated_cfg = Config(
         replace_value(ori_cfg_dict), filename=ori_cfg.filename)
     # replace the model with semi_wrapper
-    if replaced_cfg.get('semi_wrapper', None) is not None:
-        replaced_cfg.model = replaced_cfg.semi_wrapper
-        replaced_cfg.pop('semi_wrapper')
+    if updated_cfg.get('semi_wrapper', None) is not None:
+        updated_cfg.model = updated_cfg.semi_wrapper
+        updated_cfg.pop('semi_wrapper')
 
-    return replaced_cfg
+    return updated_cfg
