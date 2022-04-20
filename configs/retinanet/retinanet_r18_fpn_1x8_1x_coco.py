@@ -13,7 +13,9 @@ model = dict(
         depth=18,
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet18')),
     neck=dict(in_channels=[64, 128, 256, 512]))
-optimizer = dict(type='SGD', lr=0.0025, momentum=0.9, weight_decay=0.0001)
+
+# Note: If the learning rate is set to 0.0025, the mAP will be 32.4.
+optimizer = dict(type='SGD', lr=0.005, momentum=0.9, weight_decay=0.0001)
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
