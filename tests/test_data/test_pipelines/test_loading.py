@@ -94,15 +94,19 @@ class TestLoading:
         assert results['ori_shape'] == (288, 512, 3)
 
 
-kwargs = (dict(min_gt_bbox_wh=(100, 100)),
-          dict(min_gt_bbox_wh=(100, 100), keep_empty=False),
-          dict(min_gt_bbox_wh=(1, 1)), dict(min_gt_bbox_wh=(.01, .01)),
-          dict(min_gt_bbox_wh=(.01, .01), by_mask=True), dict(by_mask=True),
-          dict(by_box=False, by_mask=True))
-targets = (None, 0, 1, 2, 1, 1, 1)
+def _build_filter_annotations_args():
+    kwargs = (dict(min_gt_bbox_wh=(100, 100)),
+              dict(min_gt_bbox_wh=(100, 100), keep_empty=False),
+              dict(min_gt_bbox_wh=(1, 1)), dict(min_gt_bbox_wh=(.01, .01)),
+              dict(min_gt_bbox_wh=(.01, .01),
+                   by_mask=True), dict(by_mask=True),
+              dict(by_box=False, by_mask=True))
+    targets = (None, 0, 1, 2, 1, 1, 1)
+
+    return list(zip(targets, kwargs))
 
 
-@pytest.mark.parametrize('target, kwargs', list(zip(targets, kwargs)))
+@pytest.mark.parametrize('target, kwargs', _build_filter_annotations_args())
 def test_filter_annotations(target, kwargs):
     filter_ann = FilterAnnotations(**kwargs)
     bboxes = np.array([[2., 10., 4., 14.], [2., 10., 2.1, 10.1]])

@@ -573,12 +573,13 @@ class FilterAnnotations:
 
     Args:
         min_gt_bbox_wh (tuple[float]): Minimum width and height of ground truth
-            boxes.
+            boxes. Default: (1., 1.)
         min_gt_mask_area (int): Minimum foreground area of ground truth masks.
+            Default: 1
         by_box (bool): Filter instances with bounding boxes not meeting the
-            min_gt_bbox_wh threshold.
+            min_gt_bbox_wh threshold. Default: True
         by_mask (bool): Filter instances with masks not meeting
-        min_gt_mask_area threshold.
+        min_gt_mask_area threshold. Default: False
         keep_empty (bool): Whether to return None when it
             becomes an empty bbox after filtering. Default: True
     """
@@ -628,7 +629,7 @@ class FilterAnnotations:
         for key in keys:
             if key in results:
                 results[key] = results[key][keep]
-        if not tests[0].any():
+        if not keep.any():
             if self.keep_empty:
                 return None
         return results
