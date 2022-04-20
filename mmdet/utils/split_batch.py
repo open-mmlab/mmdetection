@@ -2,8 +2,8 @@
 import torch
 
 
-def batch_resplit(img, img_metas, kwargs):
-    """Resplit data_batch.
+def split_batch(img, img_metas, kwargs):
+    """Split data_batch by tags.
 
     Code is modified from
     <https://github.com/microsoft/SoftTeacher/blob/main/ssod/utils/structure_utils.py> # noqa: E501
@@ -19,27 +19,27 @@ def batch_resplit(img, img_metas, kwargs):
         kwargs (dict): Specific to concrete implementation.
 
     Returns:
-        data_groups (dict): a dict that data_batch resplited by tags,
+        data_groups (dict): a dict that data_batch splited by tags,
             such as 'sup', 'unsup_teacher', and 'unsup_student'.
     """
 
     # only stack img in the batch
-    def list_fuse(obj_list, obj):
+    def fuse_list(obj_list, obj):
         return torch.stack(obj_list) if isinstance(obj,
                                                    torch.Tensor) else obj_list
 
     # select data with tag from data_batch
-    def group_select(data_batch, current_tag):
+    def select_group(data_batch, current_tag):
         group_flag = [tag == current_tag for tag in data_batch['tag']]
         return {
-            k: list_fuse([vv for vv, gf in zip(v, group_flag) if gf], v)
+            k: fuse_list([vv for vv, gf in zip(v, group_flag) if gf], v)
             for k, v in data_batch.items()
         }
 
     kwargs.update({'img': img, 'img_metas': img_metas})
     kwargs.update({'tag': [meta['tag'] for meta in img_metas]})
     tags = list(set(kwargs['tag']))
-    data_groups = {tag: group_select(kwargs, tag) for tag in tags}
+    data_groups = {tag: select_group(kwargs, tag) for tag in tags}
     for tag, group in data_groups.items():
         group.pop('tag')
     return data_groups
