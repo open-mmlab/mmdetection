@@ -72,7 +72,7 @@ Torchvision released its high-precision ResNet models. The training details can 
 
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: | :--------: |
-|    [R-50-TNR](./faster_rcnn_r50_fpn_tnr-pretrain_1x_coco.py)    |  pytorch  |   1x    | -        |                | 40.2 | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco_20220320_085147-efedfda4.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco_20220320_085147-efedfda4.log.json) |
+|    [R-50-TNR](./faster_rcnn_r50_fpn_tnr-pretrain_1x_coco.py)    |  pytorch  |   1x    | -        |                | 40.2 | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco_20220320_085147-efedfda4.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco_20220320_085147.log.json) |
 
 ## Citation
 
