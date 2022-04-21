@@ -22,11 +22,9 @@ def replace_cfg_vals(ori_cfg):
     """
 
     def get_value(cfg, key):
-        chained_key = key.split('.')
-        if len(chained_key) == 1:
-            return cfg[chained_key[0]]
-        else:
-            return get_value(cfg[chained_key[0]], '.'.join(chained_key[1:]))
+        for k in key.split('.'):
+            cfg = cfg[k]
+        return cfg
 
     def replace_value(cfg):
         if isinstance(cfg, dict):
@@ -40,9 +38,11 @@ def replace_cfg_vals(ori_cfg):
             keys = pattern_key.findall(cfg)
             values = [get_value(ori_cfg, key[2:-1]) for key in keys]
             # only support replacing one "${key}" for dict, list, or tuple
-            for key, value in zip(keys, values):
-                cfg = value if len(keys) == 1 and len(
-                    keys[0]) == len(cfg) else cfg.replace(key, str(value))
+            if len(keys) == 1 and keys[0] == cfg:
+                cfg = values[0]
+            else:
+                for key, value in zip(keys, values):
+                    cfg = cfg.replace(key, str(value))
             return cfg
         else:
             return cfg
