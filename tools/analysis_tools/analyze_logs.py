@@ -174,8 +174,11 @@ def load_json_logs(json_logs):
     log_dicts = [dict() for _ in json_logs]
     for json_log, log_dict in zip(json_logs, log_dicts):
         with open(json_log, 'r') as log_file:
-            for line in log_file:
+            for i, line in enumerate(log_file):
                 log = json.loads(line.strip())
+                # skip the first training info line
+                if i == 0:
+                    continue
                 # skip lines without `epoch` field
                 if 'epoch' not in log:
                     continue
