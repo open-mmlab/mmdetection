@@ -5,7 +5,6 @@ from mmdet.utils import AvoidOOM
 
 
 def test_avoidoom():
-
     tensor = torch.from_numpy(np.random.random((20, 20)))
     if torch.cuda.is_available():
         tensor = tensor.cuda()

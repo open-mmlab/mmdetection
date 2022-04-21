@@ -89,7 +89,7 @@
     AvoidOOM = AvoidOOM()
     # GPU OOM 错误
     # outputs = some_torch_function(input1, input2)
-     output = AvoidOOM.retry_if_cuda_oom(some_torch_function)(input1, input2)
+    output = AvoidOOM.retry_if_cuda_oom(some_torch_function)(input1, input2)
     ```
 
 

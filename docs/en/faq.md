@@ -87,7 +87,7 @@ We list some common troubles faced by many users and their corresponding solutio
     AvoidOOM = AvoidOOM()
     # GPU OOM error
     # outputs = some_torch_function(input1, input2)
-     output = AvoidOOM.retry_if_cuda_oom(some_torch_function)(input1, input2)
+    output = AvoidOOM.retry_if_cuda_oom(some_torch_function)(input1, input2)
     ```
 
 - "RuntimeError: Expected to have finished reduction in the prior iteration before starting a new one"
