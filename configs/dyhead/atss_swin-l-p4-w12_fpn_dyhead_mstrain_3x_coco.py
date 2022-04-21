@@ -1,4 +1,7 @@
-_base_ = '../common/mstrain_3x_coco.py'
+_base_ = [
+    '../_base_/datasets/coco_detection.py',
+    '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
+]
 pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth'  # noqa
 model = dict(
     type='ATSS',
@@ -30,12 +33,19 @@ model = dict(
             start_level=0,
             add_extra_convs='on_output',
             num_outs=5),
-        dict(type='DyHead', in_channels=256, out_channels=256, num_blocks=6)
+        dict(
+            type='DyHead',
+            in_channels=256,
+            out_channels=256,
+            num_blocks=6,
+            # disable zero_init_offset to follow official implementation
+            zero_init_offset=False)
     ],
     bbox_head=dict(
         type='ATSSHead',
         num_classes=80,
         in_channels=256,
+        pred_kernel_size=1,  # follow DyHead official implementation
         stacked_convs=0,
         feat_channels=256,
         anchor_generator=dict(
@@ -43,7 +53,8 @@ model = dict(
             ratios=[1.0],
             octave_base_scale=8,
             scales_per_octave=1,
-            strides=[8, 16, 32, 64, 128]),
+            strides=[8, 16, 32, 64, 128],
+            center_offset=0.5),  # follow DyHead official implementation
         bbox_coder=dict(
             type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
@@ -75,6 +86,43 @@ optimizer_config = dict(grad_clip=None)
 optimizer = dict(
     _delete_=True,
     type='AdamW',
-    lr=0.0001,
+    lr=0.00005,
     betas=(0.9, 0.999),
     weight_decay=0.05)
+
+img_norm_cfg = dict(
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+train_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(type='LoadAnnotations', with_bbox=True),
+    dict(
+        type='Resize',
+        img_scale=[(2000, 480), (2000, 1200)],
+        multiscale_mode='range',
+        keep_ratio=True,
+        backend='pillow'),
+    dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='Normalize', **img_norm_cfg),
+    dict(type='Pad', size_divisor=128),
+    dict(type='DefaultFormatBundle'),
+    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
+]
+test_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(
+        type='MultiScaleFlipAug',
+        img_scale=(2000, 1200),
+        flip=False,
+        transforms=[
+            dict(type='Resize', keep_ratio=True, backend='pillow'),
+            dict(type='RandomFlip'),
+            dict(type='Normalize', **img_norm_cfg),
+            dict(type='Pad', size_divisor=128),
+            dict(type='ImageToTensor', keys=['img']),
+            dict(type='Collect', keys=['img']),
+        ])
+]
+data = dict(
+    train=dict(pipeline=train_pipeline),
+    val=dict(pipeline=test_pipeline),
+    test=dict(pipeline=test_pipeline))
