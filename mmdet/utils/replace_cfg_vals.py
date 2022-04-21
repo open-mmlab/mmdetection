@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import os.path as osp
 import re
 
 from mmcv.utils import Config
@@ -39,7 +38,7 @@ def replace_cfg_vals(ori_cfg):
         elif isinstance(cfg, str):
             # replace the "${key}" with cfg.key
             keys = pattern_key.findall(cfg)
-            values = [get_value(ori_cfg_dict, key[2:-1]) for key in keys]
+            values = [get_value(ori_cfg, key[2:-1]) for key in keys]
             # only support replacing one "${key}" for dict, list, or tuple
             for key, value in zip(keys, values):
                 cfg = value if len(keys) == 1 and len(
@@ -48,19 +47,13 @@ def replace_cfg_vals(ori_cfg):
         else:
             return cfg
 
-    # the pattern of string "${key}",
-    # which will be replaced by its value, such as "${model}"
+    # the pattern of string "${key}"
     pattern_key = re.compile(r'\$\{[a-zA-Z\d_.]*\}')
-    # ori_cfg is the cfg before being replaced
-    ori_cfg_dict = ori_cfg._cfg_dict.to_dict()
-    # cfg_name is part of the default working path
-    # work_dirs/${cfg_name}/${percent}/${fold}
-    ori_cfg_dict['cfg_name'] = osp.splitext(osp.basename(ori_cfg.filename))[0]
+    # the type of ori_cfg._cfg_dict is mmcv.utils.config.ConfigDict
     updated_cfg = Config(
-        replace_value(ori_cfg_dict), filename=ori_cfg.filename)
-    # replace the model with semi_wrapper
-    if updated_cfg.get('semi_wrapper', None) is not None:
-        updated_cfg.model = updated_cfg.semi_wrapper
-        updated_cfg.pop('semi_wrapper')
-
+        replace_value(ori_cfg._cfg_dict), filename=ori_cfg.filename)
+    # replace the model with model_wrapper
+    if updated_cfg.get('model_wrapper', None) is not None:
+        updated_cfg.model = updated_cfg.model_wrapper
+        updated_cfg.pop('model_wrapper')
     return updated_cfg
