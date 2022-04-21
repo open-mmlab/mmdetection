@@ -4,8 +4,8 @@ from mmcv.runner.hooks import HOOKS, Hook
 
 @HOOKS.register_module()
 class MemoryProfilerHook(Hook):
-    """Memory profiler hook recording memory information: virtual memory, swap
-    memory and memory of current process.
+    """Memory profiler hook recording memory information including virtual
+    memory, swap memory, and the memory of the current process.
 
     Args:
         interval (int): Checking interval (every k iterations).
