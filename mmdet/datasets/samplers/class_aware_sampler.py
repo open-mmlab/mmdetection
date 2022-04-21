@@ -167,13 +167,11 @@ class RandomCycleIter:
         return len(self.data)
 
     def __next__(self):
-        if self.i < self.length:
-            idx = self.data[self.index[self.i]]
-            self.i += 1
-            return idx
-        else:
+        self.i %= (self.length + 1)
+        if self.i == self.length:
             self.index = torch.randperm(
                 self.length, generator=self.generator).numpy()
-            self.i = 1
-            idx = self.data[self.index[self.i - 1]]
-            return idx
+            self.i = 0
+        idx = self.data[self.index[self.i]]
+        self.i += 1
+        return idx

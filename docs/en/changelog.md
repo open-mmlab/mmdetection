@@ -1,5 +1,61 @@
 ## Changelog
 
+### v2.23.0 (28/3/2022)
+
+#### Highlights
+
+- Support Mask2Former: [Masked-attention Mask Transformer for Universal Image Segmentation](https://arxiv.org/abs/2112.01527)
+- Support EfficientNet: [EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks](https://arxiv.org/abs/1905.11946)
+- Support setting data root through environment variable `MMDET_DATASETS`, users don't have to modify the corresponding path in config files anymore.
+- Find a good recipe for fine-tuning high precision ResNet backbone pre-trained by Torchvision.
+
+#### New Features
+
+- Support [Mask2Former](configs/mask2former)(#6938)(#7466)(#7471)
+- Support [EfficientNet](configs/efficientnet) (#7514)
+- Support setting data root through environment variable `MMDET_DATASETS`, users don't have to modify the corresponding path in config files anymore. (#7386)
+- Support setting different seeds to different ranks (#7432)
+- Update the `dist_train.sh` so that the script can be used to support launching multi-node training on machines without slurm (#7415)
+- Find a good recipe for fine-tuning high precision ResNet backbone pre-trained by Torchvision (#7489)
+
+#### Bug Fixes
+
+- Fix bug in VOC unit test which removes the data directory (#7270)
+- Adjust the order of `get_classes` and `FileClient` (#7276)
+- Force the inputs of `get_bboxes` in yolox_head to float32 (#7324)
+- Fix misplaced arguments in LoadPanopticAnnotations (#7388)
+- Fix reduction=mean in CELoss. (#7449)
+- Update unit test of CrossEntropyCost (#7537)
+- Fix memory leaking in panpotic segmentation evaluation (#7538)
+- Fix the bug of shape broadcast in YOLOv3 (#7551)
+
+#### Improvements
+
+- Add Chinese version of onnx2tensorrt.md (#7219)
+- Update colab tutorials (#7310)
+- Update information about Localization Distillation (#7350)
+- Add Chinese version of `finetune.md` (#7178)
+- Update YOLOX log for non square input (#7235)
+- Add `nproc` in `coco_panoptic.py` for panoptic quality computing (#7315)
+- Allow to set channel_order in LoadImageFromFile (#7258)
+- Take point sample related functions out of mask_point_head (#7353)
+- Add instance evaluation for coco_panoptic (#7313)
+- Enhance the robustness of analyze_logs.py (#7407)
+- Supplementary notes of sync_random_seed (#7440)
+- Update docstring of cross entropy loss (#7472)
+- Update pascal voc result (#7503)
+- We create How-to documentation to record any questions about How to xxx. In this version, we added
+  - How to use Mosaic augmentation (#7507)
+  - How to use backbone in mmcls (#7438)
+  - How to produce and submit the prediction results of panoptic segmentation models on COCO test-dev set (#7430))
+
+#### Contributors
+
+A total of 27 developers contributed to this release.
+Thanks @ZwwWayne, @haofanwang, @shinya7y, @chhluo, @yangrisheng, @triple-Mu, @jbwang1997, @HikariTJU, @imflash217, @274869388, @zytx121, @matrixgame2018, @jamiechoi1995, @BIGWangYuDong, @JingweiZhang12, @Xiangxu-0103, @hhaAndroid, @jshilong, @osbm, @ceroytres, @bunge-bedstraw-herb, @Youth-Got, @daavoo, @jiangyitong, @RangiLyu, @CCODING04, @yarkable
+
+
+
 ### v2.22.0 (24/2/2022)
 
 #### Highlights

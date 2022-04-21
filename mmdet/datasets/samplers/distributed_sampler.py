@@ -17,15 +17,23 @@ class DistributedSampler(_DistributedSampler):
                  seed=0):
         super().__init__(
             dataset, num_replicas=num_replicas, rank=rank, shuffle=shuffle)
-        #  Must be the same across all workers. If None, will use a
-        #  random seed shared among workers
-        #  (require synchronization among all workers)
+
+        # In distributed sampling, different ranks should sample
+        # non-overlapped data in the dataset. Therefore, this function
+        # is used to make sure that each rank shuffles the data indices
+        # in the same order based on the same seed. Then different ranks
+        # could use different indices to select non-overlapped data from the
+        # same data list.
         self.seed = sync_random_seed(seed)
 
     def __iter__(self):
         # deterministically shuffle based on epoch
         if self.shuffle:
             g = torch.Generator()
+            # When :attr:`shuffle=True`, this ensures all replicas
+            # use a different random ordering for each epoch.
+            # Otherwise, the next iteration of this sampler will
+            # yield the same ordering.
             g.manual_seed(self.epoch + self.seed)
             indices = torch.randperm(len(self.dataset), generator=g).tolist()
         else:

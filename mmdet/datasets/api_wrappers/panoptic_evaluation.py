@@ -211,7 +211,14 @@ def pq_compute_multi_core(matched_annotations_list,
                                 (proc_id, annotation_set, gt_folder,
                                  pred_folder, categories, file_client))
         processes.append(p)
+
+    # Close the process pool, otherwise it will lead to memory
+    # leaking problems.
+    workers.close()
+    workers.join()
+
     pq_stat = PQStat()
     for p in processes:
         pq_stat += p.get()
+
     return pq_stat

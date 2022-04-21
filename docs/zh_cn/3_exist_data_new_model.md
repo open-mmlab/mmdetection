@@ -40,6 +40,13 @@ mmdetection
 │   │   ├── VOC2012
 ```
 
+你也可以通过如下方式设定数据集根路径
+```bash
+export MMDET_DATASETS=$data_root
+```
+我们将会使用环境便变量 `$MMDET_DATASETS` 作为数据集的根目录，因此你无需再修改相应配置文件的路径信息。
+
+
 你需要使用脚本 `tools/dataset_converters/cityscapes.py` 将 cityscapes 标注转化为 coco 标注格式。
 
 ```shell

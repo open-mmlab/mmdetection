@@ -119,3 +119,8 @@ model = dict(
 data = dict(samples_per_gpu=8, workers_per_gpu=4)
 optimizer = dict(lr=0.01)
 fp16 = dict(loss_scale=512.)
+
+# NOTE: `auto_scale_lr` is for automatically scaling LR,
+# USER SHOULD NOT CHANGE ITS VALUES.
+# base_batch_size = (8 GPUs) x (8 samples per GPU)
+auto_scale_lr = dict(base_batch_size=64)
