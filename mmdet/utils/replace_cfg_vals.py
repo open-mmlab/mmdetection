@@ -42,7 +42,8 @@ def replace_cfg_vals(ori_cfg):
             values = [get_value(ori_cfg_dict, key[2:-1]) for key in keys]
             # only support replacing one "${key}" for dict, list, or tuple
             for key, value in zip(keys, values):
-                cfg = value if len(keys) == 1 else cfg.replace(key, str(value))
+                cfg = value if len(keys) == 1 and len(
+                    keys[0]) == len(cfg) else cfg.replace(key, str(value))
             return cfg
         else:
             return cfg

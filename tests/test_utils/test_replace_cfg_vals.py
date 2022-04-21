@@ -45,6 +45,8 @@ def test_replace_cfg_vals():
         test_rpn_nms='${model.test_cfg.rpn.nms.iou_threshold}',
         test_rcnn_nms='${model.test_cfg.rcnn.nms.iou_threshold}',
     )
+    ori_cfg_dict['a'] = 'xxxxxx${b}xxxxx'
+    ori_cfg_dict['b'] = 'Hello, world!'
 
     ori_cfg = Config(ori_cfg_dict, filename=config_path)
     updated_cfg = replace_cfg_vals(deepcopy(ori_cfg))
@@ -54,3 +56,5 @@ def test_replace_cfg_vals():
     assert updated_cfg.model.model == ori_cfg.model
     assert updated_cfg.iou_threshold.rpn_proposal_nms \
         == ori_cfg.model.train_cfg.rpn_proposal.nms.iou_threshold
+
+    assert updated_cfg.a == 'xxxxxxHello, world!xxxxx'
