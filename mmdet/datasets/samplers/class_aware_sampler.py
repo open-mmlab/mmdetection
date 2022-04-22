@@ -73,17 +73,14 @@ class ClassAwareSampler(Sampler):
                 len(self.dataset) * 1.0 / self.num_replicas /
                 self.samples_per_gpu)) * self.samples_per_gpu
         self.total_size = self.num_samples * self.num_replicas
-        self.cat_num = len(self.cat_dict.keys())
 
         # get number of images containing each category
-        self.num_cat_imgs = [
-            len(self.cat_dict[i]) for i in range(self.cat_num)
-        ]
+        self.num_cat_imgs = [len(x) for x in self.cat_dict.values()]
         # filter labels without images
         self.valid_cat_inds = [
             i for i, length in enumerate(self.num_cat_imgs) if length != 0
         ]
-        self.cat_num = len(self.valid_cat_inds)
+        self.num_classes = len(self.valid_cat_inds)
 
     def __iter__(self):
         # deterministically shuffle based on epoch
@@ -110,7 +107,7 @@ class ClassAwareSampler(Sampler):
 
         # deterministically shuffle based on epoch
         num_bins = int(
-            math.ceil(self.total_size * 1.0 / self.cat_num /
+            math.ceil(self.total_size * 1.0 / self.num_classes /
                       self.num_sample_class))
         indices = []
         for i in range(num_bins):
