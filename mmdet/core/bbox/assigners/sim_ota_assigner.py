@@ -119,7 +119,7 @@ class SimOTAAssigner(BaseAssigner):
         Returns:
             :obj:`AssignResult`: The assigned result.
         """
-        INF = 100000000
+        INF = 100000.0
         num_gt = gt_bboxes.size(0)
         num_bboxes = decoded_bboxes.size(0)
 
