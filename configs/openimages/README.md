@@ -3,7 +3,6 @@
 > [Open Images Dataset](https://arxiv.org/abs/1811.00982)
 
 <!-- [DATASET] -->
-<!-- [ALGORITHM] -->
 ## Abstract
 
 <!-- [ABSTRACT] -->
