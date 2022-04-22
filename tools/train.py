@@ -109,6 +109,9 @@ def main():
 
     cfg = Config.fromfile(args.config)
 
+    # replace the ${key} with the value of cfg.key
+    cfg = replace_cfg_vals(cfg)
+
     # update data root according to MMDET_DATASETS
     update_data_root(cfg)
 
@@ -142,9 +145,6 @@ def main():
         # use config filename as default work_dir if cfg.work_dir is None
         cfg.work_dir = osp.join('./work_dirs',
                                 osp.splitext(osp.basename(args.config))[0])
-
-    # replace the ${key} with the value of cfg.key
-    cfg = replace_cfg_vals(cfg)
 
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
