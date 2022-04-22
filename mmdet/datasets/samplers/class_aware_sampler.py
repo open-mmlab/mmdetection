@@ -34,8 +34,7 @@ class ClassAwareSampler(Sampler):
             ``shuffle=True``. This number should be identical across all
             processes in the distributed group. Default: 0.
         num_sample_class (int): The number of samples taken from each
-            per-label list, which is used in :class:`ClassAwareSampler`.
-            Default: 1
+            per-label list. Default: 1
     """
 
     def __init__(self,
@@ -75,14 +74,16 @@ class ClassAwareSampler(Sampler):
                 self.samples_per_gpu)) * self.samples_per_gpu
         self.total_size = self.num_samples * self.num_replicas
         self.cat_num = len(self.cat_dict.keys())
-        self.cat_num_list = [
+
+        # get number of images containing each category
+        self.num_cat_imgs = [
             len(self.cat_dict[i]) for i in range(self.cat_num)
         ]
         # filter labels without images
-        self.cat_index = [
-            i for i, length in enumerate(self.cat_num_list) if length != 0
+        self.valid_cat_inds = [
+            i for i, length in enumerate(self.num_cat_imgs) if length != 0
         ]
-        self.cat_num = len(self.cat_index)
+        self.cat_num = len(self.valid_cat_inds)
 
     def __iter__(self):
         # deterministically shuffle based on epoch
@@ -90,13 +91,15 @@ class ClassAwareSampler(Sampler):
         g.manual_seed(self.epoch + self.seed)
 
         # initialize label list
-        label_iter_list = RandomCycleIter(self.cat_index, generator=g)
+        label_iter_list = RandomCycleIter(self.valid_cat_inds, generator=g)
         # initialize each per-label image list
         data_iter_dict = dict()
-        for i in self.cat_index:
+        for i in self.valid_cat_inds:
             data_iter_dict[i] = RandomCycleIter(self.cat_dict[i], generator=g)
 
-        def gen_cat_num_indices(cls_list, data_dict, num_sample_cls):
+        def gen_cat_img_inds(cls_list, data_dict, num_sample_cls):
+            """Traverse the categories and extract `num_sample_cls` image
+            indexes of the corresponding categories one by one."""
             id_indices = []
             for _ in range(len(cls_list)):
                 cls_idx = next(cls_list)
@@ -111,8 +114,8 @@ class ClassAwareSampler(Sampler):
                       self.num_sample_class))
         indices = []
         for i in range(num_bins):
-            indices += gen_cat_num_indices(label_iter_list, data_iter_dict,
-                                           self.num_sample_class)
+            indices += gen_cat_img_inds(label_iter_list, data_iter_dict,
+                                        self.num_sample_class)
 
         # fix extra samples to make it evenly divisible
         if len(indices) >= self.total_size:
