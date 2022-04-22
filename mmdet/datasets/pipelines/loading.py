@@ -265,12 +265,6 @@ class LoadAnnotations:
         gt_bboxes_ignore = ann_info.get('bboxes_ignore', None)
         if gt_bboxes_ignore is not None:
             results['gt_bboxes_ignore'] = gt_bboxes_ignore.copy()
-            if self.denorm_bbox:
-                ignore_bbox_num = results['gt_bboxes_ignore'].shape[0]
-                if ignore_bbox_num != 0:
-                    h, w = results['img_shape'][:2]
-                    results['gt_bboxes_ignore'][:, 0::2] *= w
-                    results['gt_bboxes_ignore'][:, 1::2] *= h
             results['bbox_fields'].append('gt_bboxes_ignore')
         results['bbox_fields'].append('gt_bboxes')
 

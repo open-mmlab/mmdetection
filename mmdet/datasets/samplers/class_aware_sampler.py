@@ -167,7 +167,6 @@ class RandomCycleIter:
         return len(self.data)
 
     def __next__(self):
-        self.i %= (self.length + 1)
         if self.i == self.length:
             self.index = torch.randperm(
                 self.length, generator=self.generator).numpy()
