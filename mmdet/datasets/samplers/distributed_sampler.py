@@ -7,6 +7,7 @@ from torch.utils.data import DistributedSampler as _DistributedSampler
 from mmdet.core.utils import sync_random_seed
 from mmdet.utils import get_device
 
+
 class DistributedSampler(_DistributedSampler):
 
     def __init__(self,
@@ -23,7 +24,7 @@ class DistributedSampler(_DistributedSampler):
         # is used to make sure that each rank shuffles the data indices
         # in the same order based on the same seed. Then different ranks
         # could use different indices to select non-overlapped data from the
-        # same data list.        
+        # same data list.
         device = get_device()
         self.seed = sync_random_seed(seed, device)
 
