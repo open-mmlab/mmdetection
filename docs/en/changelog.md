@@ -10,14 +10,14 @@
 
 #### New Features
 
-- Support [Simple Copy-Paste is a Strong Data Augmentation Method for Instance Segmentation](https://arxiv.org/abs/2012.07177), see [example configs](configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco.py). (#7501)
+- Support [Simple Copy-Paste is a Strong Data Augmentation Method for Instance Segmentation](https://arxiv.org/abs/2012.07177), see [example configs](configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco.py) (#7501)
 - Support Class Aware Sampler, users can set
 
   ```python
   data=dict(train_dataloader=dict(class_aware_sampler=dict(num_sample_class=1))))
   ```
 
-  in the config to use `ClassAwareSampler`. Examples can be found in [the configs of OpenImages Dataset](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/faster_rcnn_r50_fpn_32x2_cas_1x_openimages.py)  (#7436)
+  in the config to use `ClassAwareSampler`. Examples can be found in [the configs of OpenImages Dataset](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/faster_rcnn_r50_fpn_32x2_cas_1x_openimages.py).  (#7436)
 
 - Support automatically scaling LR according to GPU number and samples per GPU. In each config, there is a corresponding config of auto-scaling LR as below,
 
@@ -26,14 +26,20 @@
    ```
 
   where `N` is the batch size used for the current learning rate in the config (also equals to `samples_per_gpu` * gpu number to train this config).
-  By default, we set `enable=False` so that the original usages will not be affected. Users can set `enable=True` in each config to enable this feature and should check the correctness of `base_batch_size` in customized configs. (#7482)
+  By default, we set `enable=False` so that the original usages will not be affected. Users can set `enable=True` in each config or add `--auto-scale-lr` after the command line to enable this feature and should check the correctness of `base_batch_size` in customized configs. (#7482)
 
 - Support setting dataloader arguments in config and add functions to handle config compatibility. The comparison between the old and new usages is as below.
  (#7668)
 
   <table align="center">
-    <tbody><tr><th> Before v2.24.0 </th><th> Since v2.24.0 </th></tr>
-    <tr><th>
+    <thead>
+        <tr align='center'>
+            <td>Before v2.24.0</td>
+            <td>Since v2.24.0 </td>
+        </tr>
+    </thead>
+    <tbody><tr valign='top'>
+    <th>
 
     ```python
     data = dict(
@@ -44,7 +50,8 @@
     )
     ```
 
-    </th><th>
+    </th>
+    <th>
   
     ```python
     # A recommended config that is clear
@@ -71,7 +78,6 @@
     )
     ```
 
-    </code>
     </th></tr>
   </tbody></table>
 
@@ -86,11 +92,11 @@
 - Support to run on PyTorch with MLU chip (#7578)
 - Support re-spliting data batch with tag (#7641)
 - Support the `DiceCost` used by [K-Net](https://arxiv.org/abs/2106.14855) in `MaskHungarianAssigner` (#7716)
-- Support splitting COCO data for Semi-supervised object detection. (#7431)
+- Support splitting COCO data for Semi-supervised object detection (#7431)
 - Support Pathlib for Config.fromfile (#7685)
 - Support to use file client in OpenImages dataset (#7433)
 - Add a probability parameter to Mosaic transformation (#7371)
-- Support specifying interpolation mode of resize in transforms.py (#7585)
+- Support specifying interpolation mode in `Resize` pipeline (#7585)
 
 #### Bug Fixes
 
@@ -109,7 +115,7 @@
 - Add documentations of:
   - how to get channels of a new backbone (#7642)
   - how to unfreeze the backbone network (#7570)
-  - how to train fast_rcnn model. (#7549)
+  - how to train fast_rcnn model (#7549)
   - proposals in Deformable DETR (#7690)
   - from-scratch install script in get_started.md (#7575)
 - Release pre-trained models of
