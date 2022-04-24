@@ -26,8 +26,7 @@
    ```
 
   where `N` is the batch size used for the current learning rate in the config (also equals to `samples_per_gpu` * gpu number to train this config).
-  By default, we set `enable=False` so that the original usages will not be affected. Users can set `enable=True` in each config to enable this feature.
-  Users should to check the correctness of `base_batch_size` in their own configs. (#7482)
+  By default, we set `enable=False` so that the original usages will not be affected. Users can set `enable=True` in each config to enable this feature and should check the correctness of `base_batch_size` in customized configs. (#7482)
 
 - Support setting dataloader arguments in config and add functions to handle config compatibility. The comparison between the old and new usages is as below.
  (#7668)
@@ -75,6 +74,7 @@
     </code>
     </th></tr>
   </tbody></table>
+
 - Support memory profile hook. Users can use it to monitor the memory usages during training as below (#7560)
 
     ```python
