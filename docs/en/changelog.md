@@ -11,12 +11,78 @@
 #### New Features
 
 - Support [Simple Copy-Paste is a Strong Data Augmentation Method for Instance Segmentation](https://arxiv.org/abs/2012.07177), see [example configs](configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco.py). (#7501)
-- Support Class Aware Sampler, users can use `train_dataloader=dict(class_aware_sampler=dict(num_sample_class=1)))` in the config of `data` to use `ClassAwareSampler`. Examples can be found in [the configs of OpenImages Dataset](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/faster_rcnn_r50_fpn_32x2_cas_1x_openimages.py)  (#7436)
-- Support seting dataloader argments in config and add functions to handle config compatibility (#7668)
+- Support Class Aware Sampler, users can set
 
-- Support automatically scaling LR according to GPU number and samples per GPU (#7482)
+  ```python
+  data=dict(train_dataloader=dict(class_aware_sampler=dict(num_sample_class=1))))
+  ```
 
-- Support memory profile hook (#7560)
+  in the config to use `ClassAwareSampler`. Examples can be found in [the configs of OpenImages Dataset](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/faster_rcnn_r50_fpn_32x2_cas_1x_openimages.py)  (#7436)
+
+- Support automatically scaling LR according to GPU number and samples per GPU. In each config, there is a corresponding config of auto-scaling LR as below,
+
+   ```python
+   auto_scale_lr = dict(enable=True, base_batch_size=N)
+   ```
+
+  where `N` is the batch size used for the current learning rate in the config (also equals to `samples_per_gpu` * gpu number to train this config).
+  By default, we set `enable=False` so that the original usages will not be affected. Users can set `enable=True` in each config to enable this feature.
+  Users should to check the correctness of `base_batch_size` in their own configs. (#7482)
+
+- Support setting dataloader arguments in config and add functions to handle config compatibility. The comparison between the old and new usages is as below.
+ (#7668)
+
+  <table align="center">
+    <tbody><tr><th> Before v2.24.0 </th><th> Since v2.24.0 </th></tr>
+    <tr><th>
+
+    ```python
+    data = dict(
+        samples_per_gpu=64, workers_per_gpu=4,
+        train=dict(type='xxx', ...),
+        val=dict(type='xxx', samples_per_gpu=4, ...),
+        test=dict(type='xxx', ...),
+    )
+    ```
+
+    </th><th>
+  
+    ```python
+    # A recommended config that is clear
+    data = dict(
+        train=dict(type='xxx', ...),
+        val=dict(type='xxx', ...),
+        test=dict(type='xxx', ...),
+        # Use different batch size during inference.
+        train_dataloader=dict(samples_per_gpu=64, workers_per_gpu=4),
+        val_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+        test_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+    )
+
+    # Old style still works but allows to set more arguments about data loaders
+    data = dict(
+        samples_per_gpu=64,  # only works for train_dataloader
+        workers_per_gpu=4,  # only works for train_dataloader
+        train=dict(type='xxx', ...),
+        val=dict(type='xxx', ...),
+        test=dict(type='xxx', ...),
+        # Use different batch size during inference.
+        val_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+        test_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+    )
+    ```
+
+    </code>
+    </th></tr>
+  </tbody></table>
+- Support memory profile hook. Users can use it to monitor the memory usages during training as below (#7560)
+
+    ```python
+    custom_hooks = [
+        dict(type='MemoryProfilerHook', interval=50)
+    ]
+    ```
+
 - Support to run on PyTorch with MLU chip (#7578)
 - Support re-spliting data batch with tag (#7641)
 - Support the `DiceCost` used by [K-Net](https://arxiv.org/abs/2106.14855) in `MaskHungarianAssigner` (#7716)
@@ -32,6 +98,7 @@
 - Fix the issue that argument color_theme does not take effect when exporting confusion matrix (#7701)
 - Fix the `end_level` in Necks, which should be the index of the end input backbone level (#7502)
 - Fix the bug that `mix_results` may be None in `MultiImageMixDataset` (#7530)
+- Fix the bug in ResNet plugin when two plugins are used (#7797)
 
 #### Improvements
 
