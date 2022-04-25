@@ -66,7 +66,7 @@ class DilatedEncoder(nn.Module):
     """
 
     def __init__(self, in_channels, out_channels, block_mid_channels,
-                 num_residual_blocks, block_dilations=[2, 4, 6, 8]):
+                 num_residual_blocks, block_dilations):
         super(DilatedEncoder, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
