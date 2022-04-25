@@ -62,10 +62,11 @@ class DilatedEncoder(nn.Module):
         out_channels (int): The number of output channels.
         block_mid_channels (int): The number of middle block output channels
         num_residual_blocks (int): The number of residual blocks.
+        block_dilations (list): The list of residual blocks dilation.
     """
 
     def __init__(self, in_channels, out_channels, block_mid_channels,
-                 num_residual_blocks, block_dilations):
+                 num_residual_blocks, block_dilations=[2, 4, 6, 8]):
         super(DilatedEncoder, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
