@@ -44,7 +44,7 @@ The following is the result of `MemoryProfilerHook`.
 
 ## TensorboardLoggerHook
 
-## WandbLogger
+## MMDetWandbHook
 
 ## YOLOXLrUpdaterHook
 
