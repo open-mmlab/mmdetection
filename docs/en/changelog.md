@@ -19,17 +19,18 @@
 
   in the config to use `ClassAwareSampler`. Examples can be found in [the configs of OpenImages Dataset](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/faster_rcnn_r50_fpn_32x2_cas_1x_openimages.py).  (#7436)
 
-- Support automatically scaling LR according to GPU number and samples per GPU. In each config, there is a corresponding config of auto-scaling LR as below,
+- Support automatically scaling LR according to GPU number and samples per GPU. (#7482)
+  In each config, there is a corresponding config of auto-scaling LR as below,
 
    ```python
    auto_scale_lr = dict(enable=True, base_batch_size=N)
    ```
 
   where `N` is the batch size used for the current learning rate in the config (also equals to `samples_per_gpu` * gpu number to train this config).
-  By default, we set `enable=False` so that the original usages will not be affected. Users can set `enable=True` in each config or add `--auto-scale-lr` after the command line to enable this feature and should check the correctness of `base_batch_size` in customized configs. (#7482)
+  By default, we set `enable=False` so that the original usages will not be affected. Users can set `enable=True` in each config or add `--auto-scale-lr` after the command line to enable this feature and should check the correctness of `base_batch_size` in customized configs.
 
-- Support setting dataloader arguments in config and add functions to handle config compatibility. The comparison between the old and new usages is as below.
- (#7668)
+- Support setting dataloader arguments in config and add functions to handle config compatibility. (#7668)
+  The comparison between the old and new usages is as below.
 
   <table align="center">
     <thead>
@@ -52,7 +53,7 @@
 
     </th>
     <th>
-  
+
     ```python
     # A recommended config that is clear
     data = dict(
