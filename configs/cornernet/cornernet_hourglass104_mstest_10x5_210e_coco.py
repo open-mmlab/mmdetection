@@ -103,3 +103,8 @@ lr_config = dict(
     warmup_ratio=1.0 / 3,
     step=[180])
 runner = dict(type='EpochBasedRunner', max_epochs=210)
+
+# NOTE: `auto_scale_lr` is for automatically scaling LR,
+# USER SHOULD NOT CHANGE ITS VALUES.
+# base_batch_size = (10 GPUs) x (5 samples per GPU)
+auto_scale_lr = dict(base_batch_size=50)
