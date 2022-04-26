@@ -601,6 +601,17 @@ class OpenImagesDataset(CustomDataset):
             annotations[i]['bboxes'][:, 1::2] *= h
         return annotations
 
+    def get_cat_ids(self, idx):
+        """Get category ids by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            list[int]: All categories in the image of specified index.
+        """
+        return self.get_ann_info(idx)['labels'].astype(np.int).tolist()
+
     def evaluate(self,
                  results,
                  metric='mAP',

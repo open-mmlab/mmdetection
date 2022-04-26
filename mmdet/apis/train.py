@@ -1,10 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import os
 import random
 
 import numpy as np
 import torch
 import torch.distributed as dist
-from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import (DistSamplerSeedHook, EpochBasedRunner,
                          Fp16OptimizerHook, OptimizerHook, build_optimizer,
                          build_runner, get_dist_info)
@@ -12,7 +12,8 @@ from mmcv.runner import (DistSamplerSeedHook, EpochBasedRunner,
 from mmdet.core import DistEvalHook, EvalHook
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
-from mmdet.utils import compat_cfg, find_latest_checkpoint, get_root_logger
+from mmdet.utils import (build_ddp, build_dp, compat_cfg,
+                         find_latest_checkpoint, get_root_logger)
 
 
 def init_random_seed(seed=None, device='cuda'):
@@ -152,13 +153,14 @@ def train_detector(model,
         find_unused_parameters = cfg.get('find_unused_parameters', False)
         # Sets the `find_unused_parameters` parameter in
         # torch.nn.parallel.DistributedDataParallel
-        model = MMDistributedDataParallel(
-            model.cuda(),
-            device_ids=[torch.cuda.current_device()],
+        model = build_ddp(
+            model,
+            cfg.device,
+            device_ids=[int(os.environ['LOCAL_RANK'])],
             broadcast_buffers=False,
             find_unused_parameters=find_unused_parameters)
     else:
-        model = MMDataParallel(model, device_ids=cfg.gpu_ids)
+        model = build_dp(model, cfg.device, device_ids=cfg.gpu_ids)
 
     # build optimizer
     auto_scale_lr(cfg, distributed, logger)

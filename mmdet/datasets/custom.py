@@ -285,6 +285,25 @@ class CustomDataset(Dataset):
 
         return class_names
 
+    def get_cat2imgs(self):
+        """Get a dict with class as key and img_ids as values, which will be
+        used in :class:`ClassAwareSampler`.
+
+        Returns:
+            dict[list]: A dict of per-label image list,
+            the item of the dict indicates a label index,
+            corresponds to the image index that contains the label.
+        """
+        if self.CLASSES is None:
+            raise ValueError('self.CLASSES can not be None')
+        # sort the label index
+        cat2imgs = {i: [] for i in range(len(self.CLASSES))}
+        for i in range(len(self)):
+            cat_ids = set(self.get_cat_ids(i))
+            for cat in cat_ids:
+                cat2imgs[cat].append(i)
+        return cat2imgs
+
     def format_results(self, results, **kwargs):
         """Place holder to format result to dataset specific output."""
 

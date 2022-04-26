@@ -256,12 +256,11 @@ class LoadAnnotations:
         results['gt_bboxes'] = ann_info['bboxes'].copy()
 
         if self.denorm_bbox:
-            h, w = results['img_shape'][:2]
             bbox_num = results['gt_bboxes'].shape[0]
             if bbox_num != 0:
+                h, w = results['img_shape'][:2]
                 results['gt_bboxes'][:, 0::2] *= w
                 results['gt_bboxes'][:, 1::2] *= h
-            results['gt_bboxes'] = results['gt_bboxes'].astype(np.float32)
 
         gt_bboxes_ignore = ann_info.get('bboxes_ignore', None)
         if gt_bboxes_ignore is not None:
