@@ -9,6 +9,7 @@ from mmcv.parallel import MMDataParallel
 from mmdet.apis import single_gpu_test
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
+from mmdet.utils import compat_cfg
 
 
 def parse_args():
@@ -81,7 +82,7 @@ def main():
     cfg = Config.fromfile(args.config)
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
-
+    cfg = compat_cfg(cfg)
     # in case the test dataset is concatenated
     samples_per_gpu = 1
     if isinstance(cfg.data.test, dict):

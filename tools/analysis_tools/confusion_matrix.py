@@ -262,7 +262,8 @@ def main():
         confusion_matrix,
         dataset.CLASSES + ('background', ),
         save_dir=args.save_dir,
-        show=args.show)
+        show=args.show,
+        color_theme=args.color_theme)
 
 
 if __name__ == '__main__':
