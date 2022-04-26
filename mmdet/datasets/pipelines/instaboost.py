@@ -98,7 +98,7 @@ class InstaBoost:
 
     def __call__(self, results):
         img = results['img']
-        orig_type = img.dtype
+        ori_type = img.dtype
         anns = self._load_anns(results)
         if np.random.choice([0, 1], p=[1 - self.aug_ratio, self.aug_ratio]):
             try:
@@ -109,7 +109,7 @@ class InstaBoost:
             anns, img = instaboost.get_new_data(
                 anns, img.astype(np.uint8), self.cfg, background=None)
 
-        results = self._parse_anns(results, anns, img.astype(orig_type))
+        results = self._parse_anns(results, anns, img.astype(ori_type))
         return results
 
     def __repr__(self):

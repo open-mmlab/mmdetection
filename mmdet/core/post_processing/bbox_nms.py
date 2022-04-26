@@ -20,7 +20,7 @@ def multiclass_nms(multi_bboxes,
             contains scores of the background class, but this will be ignored.
         score_thr (float): bbox threshold, bboxes with scores lower than it
             will not be considered.
-        nms_thr (float): NMS IoU threshold
+        nms_cfg (dict): a dict that contains the arguments of nms operations
         max_num (int, optional): if there are more than max_num bboxes after
             NMS, only top max_num will be kept. Default to -1.
         score_factors (Tensor, optional): The factors multiplied to scores

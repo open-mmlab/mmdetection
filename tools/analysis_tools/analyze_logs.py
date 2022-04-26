@@ -17,6 +17,10 @@ def cal_train_time(log_dicts, args):
                 all_times.append(log_dict[epoch]['time'])
             else:
                 all_times.append(log_dict[epoch]['time'][1:])
+        if not all_times:
+            raise KeyError(
+                'Please reduce the log interval in the config so that'
+                'interval is less than iterations of one epoch.')
         all_times = np.array(all_times)
         epoch_ave_time = all_times.mean(-1)
         slowest_epoch = epoch_ave_time.argmax()
@@ -50,12 +54,21 @@ def plot_curve(log_dicts, args):
         epochs = list(log_dict.keys())
         for j, metric in enumerate(metrics):
             print(f'plot curve of {args.json_logs[i]}, metric is {metric}')
-            if metric not in log_dict[epochs[0]]:
+            if metric not in log_dict[epochs[int(args.start_epoch) - 1]]:
+                if 'mAP' in metric:
+                    raise KeyError(
+                        f'{args.json_logs[i]} does not contain metric '
+                        f'{metric}. Please check if "--no-validate" is '
+                        'specified when you trained the model.')
                 raise KeyError(
-                    f'{args.json_logs[i]} does not contain metric {metric}')
+                    f'{args.json_logs[i]} does not contain metric {metric}. '
+                    'Please reduce the log interval in the config so that '
+                    'interval is less than iterations of one epoch.')
 
             if 'mAP' in metric:
-                xs = np.arange(1, max(epochs) + 1)
+                xs = np.arange(
+                    int(args.start_epoch),
+                    max(epochs) + 1, int(args.eval_interval))
                 ys = []
                 for epoch in epochs:
                     ys += log_dict[epoch][metric]
@@ -104,6 +117,16 @@ def add_plot_parser(subparsers):
         nargs='+',
         default=['bbox_mAP'],
         help='the metric that you want to plot')
+    parser_plt.add_argument(
+        '--start-epoch',
+        type=str,
+        default='1',
+        help='the epoch that you want to start')
+    parser_plt.add_argument(
+        '--eval-interval',
+        type=str,
+        default='1',
+        help='the eval interval when training')
     parser_plt.add_argument('--title', type=str, help='title of figure')
     parser_plt.add_argument(
         '--legend',
@@ -151,8 +174,11 @@ def load_json_logs(json_logs):
     log_dicts = [dict() for _ in json_logs]
     for json_log, log_dict in zip(json_logs, log_dicts):
         with open(json_log, 'r') as log_file:
-            for line in log_file:
+            for i, line in enumerate(log_file):
                 log = json.loads(line.strip())
+                # skip the first training info line
+                if i == 0:
+                    continue
                 # skip lines without `epoch` field
                 if 'epoch' not in log:
                     continue
