@@ -30,14 +30,11 @@ class MMDetWandbHook(WandbLoggerHook):
         https://docs.wandb.ai/guides/artifacts/model-versioning
         to learn more about model versioning with W&B Artifacts.
 
-    - Checkpoint Metadata: If `log_checkpoint_metadata` is True, every
-        checkpoint artifact will have a metadata associated with it.
+    - Checkpoint Metadata: If evaluation results are available for a given
+        checkpoint artifact, it will have a metadata associated with it.
         The metadata contains the evaluation metrics computed on validation
-        data with that checkpoint along with the current epoch. If True, it
-        also marks the checkpoint version with the best evaluation metric with
-        a 'best' alias. You can choose the best checkpoint in the W&B Artifacts
-        UI using this. It depends on `EvalHook` whose priority is more
-        than MMDetWandbHook.
+        data with that checkpoint along with the current epoch. It depends
+        on `EvalHook` whose priority is more than MMDetWandbHook.
 
     - Evaluation: At every evaluation interval, the `MMDetWandbHook` logs the
         model prediction as interactive W&B Tables. The number of samples
@@ -64,7 +61,6 @@ class MMDetWandbHook(WandbLoggerHook):
                      },
                      interval=50,
                      log_checkpoint=True,
-                     log_checkpoint_metadata=True,
                      num_eval_images=100,
                      bbox_score_thr=0.3)
             ])
@@ -80,10 +76,6 @@ class MMDetWandbHook(WandbLoggerHook):
             as W&B Artifacts. Use this for model versioning where each version
             is a checkpoint.
             Default: False
-        log_checkpoint_metadata (bool): Log the evaluation metrics computed
-            on the validation data with the checkpoint, along with current
-            epoch as a metadata to that checkpoint.
-            Default: True
         num_eval_images (int): Number of validation images to be logged.
             Default: 100
         bbox_score_thr (float): Threshold for bounding box scores.
@@ -93,14 +85,12 @@ class MMDetWandbHook(WandbLoggerHook):
                  init_kwargs=None,
                  interval=50,
                  log_checkpoint=False,
-                 log_checkpoint_metadata=False,
                  num_eval_images=100,
                  bbox_score_thr=0.3,
                  **kwargs):
         super(MMDetWandbHook, self).__init__(init_kwargs, interval, **kwargs)
 
         self.log_checkpoint = log_checkpoint
-        self.log_checkpoint_metadata = log_checkpoint_metadata
         self.num_eval_images = num_eval_images
         self.bbox_score_thr = bbox_score_thr
         self.log_evaluation = True
@@ -137,7 +127,6 @@ class MMDetWandbHook(WandbLoggerHook):
             self.val_dataset = self.val_dataloader.dataset
         except AttributeError:
             self.num_eval_images = 0
-            self.log_checkpoint_metadata = False
             warnings.warn(
                 'To log the validation dataset to a W&B Tables, '
                 'use EvalHook or DistEvalHook.', UserWarning)
@@ -162,7 +151,7 @@ class MMDetWandbHook(WandbLoggerHook):
                 if self.every_n_epochs(runner, self.ckpt_hook.interval) or (
                         self.ckpt_hook.save_last
                         and self.is_last_epoch(runner)):
-                    if self.log_checkpoint_metadata and self.eval_hook:
+                    if self.eval_hook:
                         metadata = self._get_ckpt_metadata(runner)
                         aliases = [f'epoch_{runner.epoch+1}', 'latest']
                         if len(metadata) > 0:
@@ -184,7 +173,7 @@ class MMDetWandbHook(WandbLoggerHook):
                 # Log predictions
                 self._log_predictions(results, runner.epoch + 1)
                 # Log the table
-                self._log_eval_table()
+                self._log_eval_table(runner.epoch + 1)
 
     @master_only
     def after_run(self, runner):
@@ -480,7 +469,7 @@ class MMDetWandbHook(WandbLoggerHook):
 
         self.data_table_ref = data_artifact.get('val_data')
 
-    def _log_eval_table(self):
+    def _log_eval_table(self, epoch):
         """Log the W&B Tables for model evaluation.
 
         The table will be logged multiple times creating new version. Use this
@@ -489,4 +478,5 @@ class MMDetWandbHook(WandbLoggerHook):
         pred_artifact = self.wandb.Artifact(
             f'run_{self.wandb.run.id}_pred', type='evaluation')
         pred_artifact.add(self.eval_table, 'eval_data')
-        self.wandb.run.log_artifact(pred_artifact)
+        self.wandb.run.log_artifact(
+            pred_artifact, aliases=['latest', f'epoch_{epoch}'])
