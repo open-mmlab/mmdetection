@@ -3,7 +3,7 @@ Models:
     In Collection: Mask R-CNN
     Config: configs/convnext/mask_rcnn_convnext-t_p4_w7_fpn_fp16_ms-crop_3x_coco
     Metadata:
-      Training Memory (GB): xxx
+      Training Memory (GB):
       Epochs: 36
       Training Data: COCO
       Training Techniques:
@@ -15,12 +15,12 @@ Models:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
-          box AP: xxx
+          box AP:
       - Task: Instance Segmentation
         Dataset: COCO
         Metrics:
-          mask AP: xxx
-    Weights: xxx
+          mask AP:
+    Weights:
     Paper:
       URL: https://arxiv.org/abs/2201.03545
       Title: 'A ConvNet for the 2020s'
@@ -33,7 +33,7 @@ Models:
     In Collection: Cascade Mask R-CNN
     Config: configs/convnext/cascade_mask_rcnn_convnext-t_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco.py
     Metadata:
-      Training Memory (GB): xxx
+      Training Memory (GB):
       Epochs: 36
       Training Data: COCO
       Training Techniques:
@@ -49,8 +49,8 @@ Models:
       - Task: Instance Segmentation
         Dataset: COCO
         Metrics:
-          mask AP: xxx
-    Weights: xxx
+          mask AP:
+    Weights:
     Paper:
       URL: https://arxiv.org/abs/2201.03545
       Title: 'A ConvNet for the 2020s'
@@ -63,7 +63,7 @@ Models:
     In Collection: Cascade Mask R-CNN
     Config: configs/convnext/cascade_mask_rcnn_convnext-s_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco.py
     Metadata:
-      Training Memory (GB): xxx
+      Training Memory (GB):
       Epochs: 36
       Training Data: COCO
       Training Techniques:
@@ -79,12 +79,12 @@ Models:
       - Task: Instance Segmentation
         Dataset: COCO
         Metrics:
-          mask AP: xxx
-    Weights: xxx
+          mask AP:
+    Weights:
     Paper:
       URL: https://arxiv.org/abs/2201.03545
       Title: 'A ConvNet for the 2020s'
     README: configs/convnext/README.md
     Code:
-      URL: xxx
+      URL:
       Version: v2.24.0

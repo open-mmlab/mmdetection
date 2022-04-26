@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from .build import OPTIMIZER_BUILDERS, build_optimizer
+from .builder import OPTIMIZER_BUILDERS, build_optimizer
 from .layer_decay_optimizer_constructor import \
     LearningRateDecayOptimizerConstructor
 
