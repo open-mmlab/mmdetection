@@ -1,14 +1,19 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 
 import cv2
 import mmcv
-import ffmpegcv
 import torch
 import tqdm
 import numpy as np
 from torchvision.transforms import functional as F
 from mmdet.apis import init_detector
 from mmdet.datasets.pipelines import Compose
+
+try:
+    import ffmpegcv
+except ImportError:
+    raise ImportError('Please install ffmpegcv with:\n\n    pip install ffmpegcv')
 
 
 def parse_args():
@@ -32,27 +37,27 @@ def parse_args():
     return args
 
 
-def prepare_cfg(model, ori_wh):
+def prefetch_img_metas(model, ori_wh):
     cfg = model.cfg
     w, h = ori_wh
     cfg.data.test.pipeline[0].type = 'LoadImageFromWebcam'
     test_pipeline = Compose(cfg.data.test.pipeline)
     data = {'img':np.zeros((h, w, 3), dtype=np.uint8)}
     data = test_pipeline(data)
-    data_template = data['img_metas'][0].data
-    mean = torch.tensor(data_template['img_norm_cfg']['mean'])
-    std = torch.tensor(data_template['img_norm_cfg']['std'])
-    return data_template, mean, std
+    img_metas = data['img_metas'][0].data
+    return img_metas
 
 
-def prepare_img(data_template, mean, std, frame):
-    assert frame.shape==data_template['pad_shape']
-    frame_cuda = torch.from_numpy(frame.astype(np.float32)).cuda()
+def process_img(frame_resize, img_metas):
+    assert frame_resize.shape==img_metas['pad_shape']
+    frame_cuda = torch.from_numpy(frame_resize.astype(np.float32)).cuda()
     frame_cuda = frame_cuda.permute(2, 0, 1) # HWC to CHW
+    mean = torch.from_numpy(img_metas['img_norm_cfg']['mean']).cuda()
+    std = torch.from_numpy(img_metas['img_norm_cfg']['std']).cuda()
     frame_cuda = F.normalize(
             frame_cuda, mean=mean, std=std, inplace=True)
     frame_cuda = frame_cuda[None, :, :, :]    # NCHW
-    data = {'img': [frame_cuda], 'img_metas': [[data_template]]}
+    data = {'img': [frame_cuda], 'img_metas': [[img_metas]]}
     return data
 
 
@@ -66,21 +71,20 @@ def main():
 
     VideoCapture = ffmpegcv.VideoCaptureNV if args.nvdecode else ffmpegcv.VideoCapture
     video_origin = VideoCapture(args.video)
-    data_template, mean, std = prepare_cfg(model, 
-                                           (video_origin.width, video_origin.height))
-    resize_wh = data_template['pad_shape'][1::-1]
-    video_reader = VideoCapture(args.video,
+    img_metas = prefetch_img_metas(model, (video_origin.width, video_origin.height))
+    resize_wh = img_metas['pad_shape'][1::-1]
+    video_resize = VideoCapture(args.video,
                                 resize = resize_wh,
                                 resize_keepratio = True,
                                 resize_keepratioalign = 'topleft',
                                 pix_fmt='rgb24')
     video_writer = None
     if args.out:
-        video_writer = ffmpegcv.VideoWriter(args.out, fps=video_reader.fps)
+        video_writer = ffmpegcv.VideoWriter(args.out, fps=video_origin.fps)
 
     with torch.cuda.device(args.device), torch.no_grad():
-        for frame, frame_origin in zip(tqdm.tqdm(video_reader), video_origin):
-            data = prepare_img(data_template, mean, std, frame)
+        for frame_resize, frame_origin in zip(tqdm.tqdm(video_resize), video_origin):
+            data = process_img(frame_resize, img_metas)
             result = model(return_loss=False, rescale=True, **data)[0]
             frame_mask = model.show_result(frame_origin, result, score_thr=args.score_thr)
             if args.show:
@@ -92,7 +96,7 @@ def main():
     if video_writer:
         video_writer.release()
     video_origin.release()
-    video_reader.release()
+    video_resize.release()
 
     cv2.destroyAllWindows()
 
