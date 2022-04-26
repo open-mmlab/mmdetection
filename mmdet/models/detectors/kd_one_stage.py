@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from pathlib import Path
+
 import mmcv
 import torch
 from mmcv.runner import load_checkpoint
@@ -34,7 +36,7 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
                          pretrained)
         self.eval_teacher = eval_teacher
         # Build teacher model
-        if isinstance(teacher_config, str):
+        if isinstance(teacher_config, (str, Path)):
             teacher_config = mmcv.Config.fromfile(teacher_config)
         self.teacher_model = build_detector(teacher_config['model'])
         if teacher_ckpt is not None:

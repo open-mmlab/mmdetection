@@ -333,7 +333,7 @@ dataset_A_train = dict(
     )
 ```
 
-You may refer to [source code](../../mmdet/datasets/dataset_wrappers.py) for details.
+You may refer to [source code](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/dataset_wrappers.py#L211) for details.
 
 ### Concatenate dataset
 
