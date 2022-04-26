@@ -15,5 +15,6 @@ __all__ = [
     'DistEvalHook', 'EvalHook', 'average_precision', 'eval_map',
     'print_map_summary', 'eval_recalls', 'print_recall_summary',
     'plot_num_recall', 'plot_iou_recall', 'oid_v6_classes',
-    'oid_challenge_classes', 'INSTANCE_OFFSET'
+    'oid_challenge_classes', 'INSTANCE_OFFSET', 'MultiEvalHook',
+    'DistMultiEvalHook'
 ]
