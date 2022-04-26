@@ -73,11 +73,11 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 更新日志
 
-最新的 **2.23.0** 版本已经在 2022.03.28 发布:
+最新的 **2.24.0** 版本已经在 2022.03.28 发布:
 
-- 支持 [Mask2Former](configs/mask2former) 和 [Efficientnet](configs/efficientnet)
-- 支持通环境变量 `MMDET_DATASETS` 设置数据根目录，因此无需修改配置文件中对应的路径。
-- 发现一个很好的方法来微调由 Torchvision 预训练的高精度 ResNet 主干。
+- 支持算法 [Simple Copy Paste](configs/simple_copy_paste)
+- 支持训练时根据总 batch 数自动缩放学习率
+- 支持类别可知的采样器来提高算法在 OpenImages 数据集上的性能
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/en/changelog.md)。
 
