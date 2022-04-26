@@ -30,6 +30,7 @@ def test_mask_head_loss():
 
     # create dummy mask
     import numpy as np
+
     from mmdet.core import BitmapMasks
     dummy_mask = np.random.randint(0, 2, (1, 160, 240), dtype=np.uint8)
     gt_masks = [BitmapMasks(dummy_mask, 160, 240)]

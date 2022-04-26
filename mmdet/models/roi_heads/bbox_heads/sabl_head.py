@@ -206,6 +206,18 @@ class SABLHead(BaseModule):
                         ])
                 ]
 
+    @property
+    def custom_cls_channels(self):
+        return getattr(self.loss_cls, 'custom_cls_channels', False)
+
+    @property
+    def custom_activation(self):
+        return getattr(self.loss_cls, 'custom_activation', False)
+
+    @property
+    def custom_accuracy(self):
+        return getattr(self.loss_cls, 'custom_accuracy', False)
+
     def _add_fc_branch(self, num_branch_fcs, in_channels, roi_feat_size,
                        fc_out_channels):
         in_channels = in_channels * roi_feat_size * roi_feat_size

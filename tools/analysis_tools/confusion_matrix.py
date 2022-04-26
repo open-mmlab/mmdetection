@@ -10,6 +10,7 @@ from mmcv.ops import nms
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.datasets import build_dataset
+from mmdet.utils import update_data_root
 
 
 def parse_args():
@@ -207,7 +208,10 @@ def plot_confusion_matrix(confusion_matrix,
             ax.text(
                 j,
                 i,
-                '{}%'.format(int(confusion_matrix[i, j])),
+                '{}%'.format(
+                    int(confusion_matrix[
+                        i,
+                        j]) if not np.isnan(confusion_matrix[i, j]) else -1),
                 ha='center',
                 va='center',
                 color='w',
@@ -227,6 +231,10 @@ def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
+
+    # update data root according to MMDET_DATASETS
+    update_data_root(cfg)
+
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
 

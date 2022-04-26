@@ -1,0 +1,116 @@
+Models:
+  - Name: faster_rcnn_r50_fpn_rsb-pretrain_1x_coco
+    In Collection: Faster R-CNN
+    Config: configs/resnet_strikes_back/faster_rcnn_r50_fpn_rsb-pretrain_1x_coco.py
+    Metadata:
+      Training Memory (GB): 3.9
+      Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - ResNet
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.8
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/resnet_strikes_back/faster_rcnn_r50_fpn_rsb-pretrain_1x_coco/faster_rcnn_r50_fpn_rsb-pretrain_1x_coco_20220113_162229-32ae82a9.pth
+    Paper:
+      URL: https://arxiv.org/abs/2110.00476
+      Title: 'ResNet strikes back: An improved training procedure in timm'
+    README: configs/resnet_strikes_back/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.22.0/configs/resnet_strikes_back/README.md
+      Version: v2.22.0
+
+  - Name: cascade_mask_rcnn_r50_fpn_rsb-pretrain_1x_coco
+    In Collection: Cascade R-CNN
+    Config: configs/resnet_strikes_back/cascade_mask_rcnn_r50_fpn_rsb-pretrain_1x_coco.py
+    Metadata:
+      Training Memory (GB): 6.2
+      Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - ResNet
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 44.8
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 39.9
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/resnet_strikes_back/cascade_mask_rcnn_r50_fpn_rsb-pretrain_1x_coco/cascade_mask_rcnn_r50_fpn_rsb-pretrain_1x_coco_20220113_193636-8b9ad50f.pth
+    Paper:
+      URL: https://arxiv.org/abs/2110.00476
+      Title: 'ResNet strikes back: An improved training procedure in timm'
+    README: configs/resnet_strikes_back/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.22.0/configs/resnet_strikes_back/README.md
+      Version: v2.22.0
+
+  - Name: retinanet_r50_fpn_rsb-pretrain_1x_coco
+    In Collection: RetinaNet
+    Config: configs/resnet_strikes_back/retinanet_r50_fpn_rsb-pretrain_1x_coco.py
+    Metadata:
+      Training Memory (GB): 3.8
+      Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - ResNet
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 39.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/resnet_strikes_back/retinanet_r50_fpn_rsb-pretrain_1x_coco/retinanet_r50_fpn_rsb-pretrain_1x_coco_20220113_175432-bd24aae9.pth
+    Paper:
+      URL: https://arxiv.org/abs/2110.00476
+      Title: 'ResNet strikes back: An improved training procedure in timm'
+    README: configs/resnet_strikes_back/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.22.0/configs/resnet_strikes_back/README.md
+      Version: v2.22.0
+
+  - Name: mask_rcnn_r50_fpn_rsb-pretrain_1x_coco
+    In Collection: Mask R-CNN
+    Config: configs/resnet_strikes_back/mask_rcnn_r50_fpn_rsb-pretrain_1x_coco.py
+    Metadata:
+      Training Memory (GB): 4.5
+      Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - ResNet
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 41.2
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 38.2
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/resnet_strikes_back/mask_rcnn_r50_fpn_rsb-pretrain_1x_coco/mask_rcnn_r50_fpn_rsb-pretrain_1x_coco_20220113_174054-06ce8ba0.pth
+    Paper:
+      URL: https://arxiv.org/abs/2110.00476
+      Title: 'ResNet strikes back: An improved training procedure in timm'
+    README: configs/resnet_strikes_back/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.22.0/configs/resnet_strikes_back/README.md
+      Version: v2.22.0

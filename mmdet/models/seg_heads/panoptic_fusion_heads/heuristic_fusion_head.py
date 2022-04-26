@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
-from mmdet.datasets.coco_panoptic import INSTANCE_OFFSET
+from mmdet.core.evaluation.panoptic_utils import INSTANCE_OFFSET
 from mmdet.models.builder import HEADS
 from .base_panoptic_fusion_head import BasePanopticFusionHead
 

@@ -46,5 +46,7 @@ class SyncNormHook(Hook):
             if world_size == 1:
                 return
             norm_states = get_norm_states(module)
+            if len(norm_states) == 0:
+                return
             norm_states = all_reduce_dict(norm_states, op='mean')
             module.load_state_dict(norm_states, strict=False)

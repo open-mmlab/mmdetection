@@ -12,7 +12,7 @@ Collections:
         - ResNet
     Paper:
       URL: https://arxiv.org/abs/2102.12252
-      Title: 'Localization Distillation for Object Detection'
+      Title: 'Localization Distillation for Dense Object Detection'
     README: configs/ld/README.md
     Code:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.11.0/mmdet/models/dense_heads/ld_head.py#L11

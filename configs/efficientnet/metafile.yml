@@ -1,0 +1,19 @@
+Models:
+  - Name: retinanet_effb3_fpn_crop896_8x4_1x_coco
+    In Collection: RetinaNet
+    Config: configs/efficientnet/retinanet_effb3_fpn_crop896_8x4_1x_coco.py
+    Metadata:
+      Epochs: 12
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.5
+    Weights: url
+    Paper:
+      URL: https://arxiv.org/abs/1905.11946v5
+      Title: 'EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks'
+    README: configs/efficientnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.23.0/mmdet/models/backbones/efficientnet.py#L159
+      Version: v2.23.0

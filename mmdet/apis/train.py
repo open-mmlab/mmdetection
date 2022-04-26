@@ -13,7 +13,7 @@ from mmcv.runner import (DistSamplerSeedHook, EpochBasedRunner,
 from mmdet.core import DistEvalHook, EvalHook
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
-from mmdet.utils import get_root_logger
+from mmdet.utils import find_latest_checkpoint, get_root_logger
 
 
 def init_random_seed(seed=None, device='cuda'):
@@ -120,8 +120,7 @@ def train_detector(model,
             broadcast_buffers=False,
             find_unused_parameters=find_unused_parameters)
     else:
-        model = MMDataParallel(
-            model.cuda(cfg.gpu_ids[0]), device_ids=cfg.gpu_ids)
+        model = MMDataParallel(model, device_ids=cfg.gpu_ids)
 
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
@@ -195,6 +194,12 @@ def train_detector(model,
         # priority of IterTimerHook has been modified from 'NORMAL' to 'LOW'.
         runner.register_hook(
             eval_hook(val_dataloader, **eval_cfg), priority='LOW')
+
+    resume_from = None
+    if cfg.resume_from is None and cfg.get('auto_resume'):
+        resume_from = find_latest_checkpoint(cfg.work_dir)
+    if resume_from is not None:
+        cfg.resume_from = resume_from
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from)

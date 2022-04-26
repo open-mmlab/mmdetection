@@ -70,3 +70,19 @@ def test_yolox_head_loss():
     assert onegt_box_loss.item() > 0, 'box loss should be non-zero'
     assert onegt_obj_loss.item() > 0, 'obj loss should be non-zero'
     assert onegt_l1_loss.item() > 0, 'l1 loss should be non-zero'
+
+    # Test groud truth out of bound
+    gt_bboxes = [torch.Tensor([[s * 4, s * 4, s * 4 + 10, s * 4 + 10]])]
+    gt_labels = [torch.LongTensor([2])]
+    empty_gt_losses = self.loss(cls_scores, bbox_preds, objectnesses,
+                                gt_bboxes, gt_labels, img_metas)
+    # When gt_bboxes out of bound, the assign results should be empty,
+    # so the cls and bbox loss should be zero.
+    empty_cls_loss = empty_gt_losses['loss_cls'].sum()
+    empty_box_loss = empty_gt_losses['loss_bbox'].sum()
+    empty_obj_loss = empty_gt_losses['loss_obj'].sum()
+    assert empty_cls_loss.item() == 0, (
+        'there should be no cls loss when gt_bboxes out of bound')
+    assert empty_box_loss.item() == 0, (
+        'there should be no box loss when gt_bboxes out of bound')
+    assert empty_obj_loss.item() > 0, 'objectness loss should be non-zero'

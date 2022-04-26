@@ -323,3 +323,32 @@ def test_check_invalid_loss_hook(set_loss):
         with pytest.raises(AssertionError):
             runner.run([loader], [('train', 1)])
     shutil.rmtree(runner.work_dir)
+
+
+def test_set_epoch_info_hook():
+    """Test SetEpochInfoHook."""
+
+    class DemoModel(nn.Module):
+
+        def __init__(self):
+            super().__init__()
+            self.epoch = 0
+            self.linear = nn.Linear(2, 1)
+
+        def forward(self, x):
+            return self.linear(x)
+
+        def train_step(self, x, optimizer, **kwargs):
+            return dict(loss=self(x))
+
+        def set_epoch(self, epoch):
+            self.epoch = epoch
+
+    loader = DataLoader(torch.ones((5, 2)))
+    runner = _build_demo_runner(max_epochs=3)
+
+    demo_model = DemoModel()
+    runner.model = demo_model
+    runner.register_hook_from_cfg(dict(type='SetEpochInfoHook'))
+    runner.run([loader], [('train', 1)])
+    assert demo_model.epoch == 2

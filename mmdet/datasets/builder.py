@@ -6,6 +6,7 @@ import warnings
 from functools import partial
 
 import numpy as np
+import torch
 from mmcv.parallel import collate
 from mmcv.runner import get_dist_info
 from mmcv.utils import TORCH_VERSION, Registry, build_from_cfg, digit_version
@@ -56,8 +57,8 @@ def _concat_dataset(cfg, default_args=None):
 
 
 def build_dataset(cfg, default_args=None):
-    from .dataset_wrappers import (ConcatDataset, RepeatDataset,
-                                   ClassBalancedDataset, MultiImageMixDataset)
+    from .dataset_wrappers import (ClassBalancedDataset, ConcatDataset,
+                                   MultiImageMixDataset, RepeatDataset)
     if isinstance(cfg, (list, tuple)):
         dataset = ConcatDataset([build_dataset(c, default_args) for c in cfg])
     elif cfg['type'] == 'ConcatDataset':
@@ -197,3 +198,4 @@ def worker_init_fn(worker_id, num_workers, rank, seed):
     worker_seed = num_workers * rank + worker_id + seed
     np.random.seed(worker_seed)
     random.seed(worker_seed)
+    torch.manual_seed(worker_seed)

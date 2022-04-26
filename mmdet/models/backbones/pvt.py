@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import math
 import warnings
 
@@ -157,7 +158,7 @@ class SpatialReductionAttention(MultiheadAttention):
             self.norm = build_norm_layer(norm_cfg, embed_dims)[1]
 
         # handle the BC-breaking from https://github.com/open-mmlab/mmcv/pull/1418 # noqa
-        from mmdet import mmcv_version, digit_version
+        from mmdet import digit_version, mmcv_version
         if mmcv_version < digit_version('1.3.17'):
             warnings.warn('The legacy version of forward function in'
                           'SpatialReductionAttention is deprecated in'
@@ -529,15 +530,12 @@ class PyramidVisionTransformer(BaseModule):
                 if isinstance(m, nn.Linear):
                     trunc_normal_init(m, std=.02, bias=0.)
                 elif isinstance(m, nn.LayerNorm):
-                    constant_init(m.bias, 0)
-                    constant_init(m.weight, 1.0)
+                    constant_init(m, 1.0)
                 elif isinstance(m, nn.Conv2d):
                     fan_out = m.kernel_size[0] * m.kernel_size[
                         1] * m.out_channels
                     fan_out //= m.groups
-                    normal_init(m.weight, 0, math.sqrt(2.0 / fan_out))
-                    if m.bias is not None:
-                        constant_init(m.bias, 0)
+                    normal_init(m, 0, math.sqrt(2.0 / fan_out))
                 elif isinstance(m, AbsolutePositionEmbedding):
                     m.init_weights()
         else:

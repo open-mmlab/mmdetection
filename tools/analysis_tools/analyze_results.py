@@ -9,6 +9,7 @@ from mmcv import Config, DictAction
 from mmdet.core.evaluation import eval_map
 from mmdet.core.visualization import imshow_gt_det_bboxes
 from mmdet.datasets import build_dataset, get_loading_pipeline
+from mmdet.utils import update_data_root
 
 
 def bbox_map_eval(det_result, annotation):
@@ -82,6 +83,12 @@ class ResultVisualizer:
                 data_info,
                 results[index],
                 dataset.CLASSES,
+                gt_bbox_color=dataset.PALETTE,
+                gt_text_color=(200, 200, 200),
+                gt_mask_color=dataset.PALETTE,
+                det_bbox_color=dataset.PALETTE,
+                det_text_color=(200, 200, 200),
+                det_mask_color=dataset.PALETTE,
                 show=self.show,
                 score_thr=self.score_thr,
                 wait_time=self.wait_time,
@@ -180,6 +187,10 @@ def main():
     mmcv.check_file_exist(args.prediction_path)
 
     cfg = Config.fromfile(args.config)
+
+    # update data root according to MMDET_DATASETS
+    update_data_root(cfg)
+
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
     cfg.data.test.test_mode = True

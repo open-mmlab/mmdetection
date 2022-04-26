@@ -42,7 +42,7 @@ class SamplingResult(util_mixins.NiceRepr):
             if len(gt_bboxes.shape) < 2:
                 gt_bboxes = gt_bboxes.view(-1, 4)
 
-            self.pos_gt_bboxes = gt_bboxes[self.pos_assigned_gt_inds, :]
+            self.pos_gt_bboxes = gt_bboxes[self.pos_assigned_gt_inds.long(), :]
 
         if assign_result.labels is not None:
             self.pos_gt_labels = assign_result.labels[pos_inds]
@@ -112,9 +112,9 @@ class SamplingResult(util_mixins.NiceRepr):
             >>> self = SamplingResult.random()
             >>> print(self.__dict__)
         """
-        from mmdet.core.bbox.samplers.random_sampler import RandomSampler
-        from mmdet.core.bbox.assigners.assign_result import AssignResult
         from mmdet.core.bbox import demodata
+        from mmdet.core.bbox.assigners.assign_result import AssignResult
+        from mmdet.core.bbox.samplers.random_sampler import RandomSampler
         rng = demodata.ensure_rng(rng)
 
         # make probabalistic?

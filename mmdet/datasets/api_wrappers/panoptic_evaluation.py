@@ -11,7 +11,7 @@ import mmcv
 import numpy as np
 
 try:
-    from panopticapi.evaluation import PQStat, VOID, OFFSET
+    from panopticapi.evaluation import OFFSET, VOID, PQStat
     from panopticapi.utils import rgb2id
 except ImportError:
     PQStat = None
@@ -170,7 +170,8 @@ def pq_compute_multi_core(matched_annotations_list,
                           gt_folder,
                           pred_folder,
                           categories,
-                          file_client=None):
+                          file_client=None,
+                          nproc=32):
     """Evaluate the metrics of Panoptic Segmentation with multithreading.
 
     Same as the function with the same name in `panopticapi`.
@@ -184,6 +185,9 @@ def pq_compute_multi_core(matched_annotations_list,
         categories (str): The categories of the dataset.
         file_client (object): The file client of the dataset. If None,
             the backend will be set to `disk`.
+        nproc (int): Number of processes for panoptic quality computing.
+            Defaults to 32. When `nproc` exceeds the number of cpu cores,
+            the number of cpu cores is used.
     """
     if PQStat is None:
         raise RuntimeError(
@@ -195,7 +199,8 @@ def pq_compute_multi_core(matched_annotations_list,
         file_client_args = dict(backend='disk')
         file_client = mmcv.FileClient(**file_client_args)
 
-    cpu_num = multiprocessing.cpu_count()
+    cpu_num = min(nproc, multiprocessing.cpu_count())
+
     annotations_split = np.array_split(matched_annotations_list, cpu_num)
     print('Number of cores: {}, images per core: {}'.format(
         cpu_num, len(annotations_split[0])))
@@ -206,7 +211,14 @@ def pq_compute_multi_core(matched_annotations_list,
                                 (proc_id, annotation_set, gt_folder,
                                  pred_folder, categories, file_client))
         processes.append(p)
+
+    # Close the process pool, otherwise it will lead to memory
+    # leaking problems.
+    workers.close()
+    workers.join()
+
     pq_stat = PQStat()
     for p in processes:
         pq_stat += p.get()
+
     return pq_stat

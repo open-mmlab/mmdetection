@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 import torch
 
-from mmdet.core import BitmapMasks, PolygonMasks
+from mmdet.core import BitmapMasks, PolygonMasks, mask2bbox
 
 
 def dummy_raw_bitmap_masks(size):
@@ -687,3 +687,27 @@ def test_polygon_mask_iter():
     polygon_masks = PolygonMasks(raw_masks, 28, 28)
     for i, polygon_mask in enumerate(polygon_masks):
         assert np.equal(polygon_mask, raw_masks[i]).all()
+
+
+def test_mask2bbox():
+    # no instance
+    masks = torch.zeros((1, 20, 15), dtype=torch.bool)
+    bboxes_empty_gt = torch.tensor([[0, 0, 0, 0]]).float()
+    bboxes = mask2bbox(masks)
+    assert torch.allclose(bboxes_empty_gt.float(), bboxes)
+
+    # the entire mask is an instance
+    bboxes_full_gt = torch.tensor([[0, 0, 15, 20]]).float()
+    masks = torch.ones((1, 20, 15), dtype=torch.bool)
+    bboxes = mask2bbox(masks)
+    assert torch.allclose(bboxes_full_gt, bboxes)
+
+    # a pentagon-shaped instance
+    bboxes_gt = torch.tensor([[2, 2, 7, 6]]).float()
+    masks = torch.zeros((1, 20, 15), dtype=torch.bool)
+    masks[0, 2, 4] = True
+    masks[0, 3, 3:6] = True
+    masks[0, 4, 2:7] = True
+    masks[0, 5, 2:7] = True
+    bboxes = mask2bbox(masks)
+    assert torch.allclose(bboxes_gt, bboxes)

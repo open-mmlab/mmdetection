@@ -3,6 +3,22 @@ import numpy as np
 import torch
 
 
+def find_inside_bboxes(bboxes, img_h, img_w):
+    """Find bboxes as long as a part of bboxes is inside the image.
+
+    Args:
+        bboxes (Tensor): Shape (N, 4).
+        img_h (int): Image height.
+        img_w (int): Image width.
+
+    Returns:
+        Tensor: Index of the remaining bboxes.
+    """
+    inside_inds = (bboxes[:, 0] < img_w) & (bboxes[:, 2] > 0) \
+        & (bboxes[:, 1] < img_h) & (bboxes[:, 3] > 0)
+    return inside_inds
+
+
 def bbox_flip(bboxes, img_shape, direction='horizontal'):
     """Flip bboxes horizontally or vertically.
 

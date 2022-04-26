@@ -190,13 +190,12 @@ class RPNHead(AnchorHead):
                            level_ids, cfg, img_shape, **kwargs):
         """bbox post-processing method.
 
-        The boxes would be rescaled to the original image scale and do
-        the nms operation. Usually with_nms is False is used for aug test.
+        Do the nms operation for bboxes in same level.
 
         Args:
             mlvl_scores (list[Tensor]): Box scores from all scale
                 levels of a single image, each item has shape
-                (num_bboxes, num_class).
+                (num_bboxes, ).
             mlvl_bboxes (list[Tensor]): Decoded bboxes from all scale
                 levels of a single image, each item has shape (num_bboxes, 4).
             mlvl_valid_anchors (list[Tensor]): Anchors of all scale level
@@ -204,8 +203,8 @@ class RPNHead(AnchorHead):
             level_ids (list[Tensor]): Indexes from all scale levels of a
                 single image, each item has shape (num_bboxes, ).
             cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used.
-            img_shape (tuple(int)): Shape of current image.
+                if None, `self.test_cfg` would be used.
+            img_shape (tuple(int)): The shape of model's input image.
 
         Returns:
             Tensor: Labeled boxes in shape (n, 5), where the first 4 columns
