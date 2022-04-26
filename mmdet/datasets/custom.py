@@ -74,8 +74,8 @@ class CustomDataset(Dataset):
         self.proposal_file = proposal_file
         self.test_mode = test_mode
         self.filter_empty_gt = filter_empty_gt
-        self.CLASSES = self.get_classes(classes)
         self.file_client = mmcv.FileClient(**file_client_args)
+        self.CLASSES = self.get_classes(classes)
 
         # join paths if data_root is specified
         if self.data_root is not None:
