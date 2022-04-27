@@ -49,7 +49,7 @@ def prefetch_img_metas(cfg, ori_wh):
 
 def process_img(frame_resize, img_metas):
     assert frame_resize.shape==img_metas['pad_shape']
-    frame_cuda = torch.from_numpy(frame_resize.astype(np.float32)).cuda()
+    frame_cuda = torch.from_numpy(frame_resize).cuda().float()
     frame_cuda = frame_cuda.permute(2, 0, 1) # HWC to CHW
     mean = torch.from_numpy(img_metas['img_norm_cfg']['mean']).cuda()
     std = torch.from_numpy(img_metas['img_norm_cfg']['std']).cuda()
