@@ -48,7 +48,7 @@ class MemoryProfilerHook(Hook):
                 f'memory_utilization: {virtual_memory.percent} %, '
                 'available_swap_memory: '
                 f'{round((swap_memory.total - swap_memory.used) / factor)}'
-                'MB, '
+                ' MB, '
                 f'used_swap_memory: {round(swap_memory.used / factor)} MB, '
                 f'swap_memory_utilization: {swap_memory.percent} %, '
                 'current_process_memory: '
