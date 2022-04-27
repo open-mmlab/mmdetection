@@ -122,3 +122,8 @@ work_dirs/
 *.pth
 *.py~
 *.sh~
+project/LogDetMini/workdir/autoassign/r50dcn/test.bbox.json
+project/LogDetMini/workdir/fcos/baseline3_2x/test_result/.bbox.json
+project/LogDetMini/workdir/fcos/r50dcn/test_result/.bbox.json
+project/LogDetMini/workdir/fcos/r50dcn-2/test_result/.bbox.json
+project/LogDetMini/workdir/fcos/r50gndcn-astt/test_result/.bbox.json
