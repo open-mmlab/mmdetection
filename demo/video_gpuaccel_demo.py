@@ -17,7 +17,8 @@ except ImportError:
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='MMDetection video demo')
+    parser = argparse.ArgumentParser(
+        description='MMDetection video demo with GPU acceleration')
     parser.add_argument('video', help='Video file')
     parser.add_argument('config', help='Config file')
     parser.add_argument('checkpoint', help='Checkpoint file')
@@ -28,7 +29,7 @@ def parse_args():
     parser.add_argument('--out', type=str, help='Output video file')
     parser.add_argument('--show', action='store_true', help='Show video')
     parser.add_argument(
-        '--nvdecode', action='store_true', help='Use NVIDIA decorder')
+        '--nvdecode', action='store_true', help='Use NVIDIA decoder')
     parser.add_argument(
         '--wait-time',
         type=float,
