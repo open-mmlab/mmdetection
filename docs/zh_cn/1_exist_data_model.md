@@ -181,7 +181,7 @@ asyncio.run(main())
 运行样例：
 
    ```shell
-   python demo/video_demo.py demo/demo.mp4 \
+   python demo/video_gpuaccel_demo.py demo/demo.mp4 \
        configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
        checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
        --nvdecode --out result.mp4
