@@ -4,7 +4,6 @@ import argparse
 import cv2
 import mmcv
 import torch
-import tqdm
 import numpy as np
 from torchvision.transforms import functional as F
 from mmdet.apis import init_detector
@@ -13,7 +12,8 @@ from mmdet.datasets.pipelines import Compose
 try:
     import ffmpegcv
 except ImportError:
-    raise ImportError('Please install ffmpegcv with:\n\n    pip install ffmpegcv')
+    raise ImportError(
+        'Please install ffmpegcv with:\n\n    pip install ffmpegcv')
 
 
 def parse_args():
@@ -27,7 +27,8 @@ def parse_args():
         '--score-thr', type=float, default=0.3, help='Bbox score threshold')
     parser.add_argument('--out', type=str, help='Output video file')
     parser.add_argument('--show', action='store_true', help='Show video')
-    parser.add_argument('--nvdecode', action='store_true', help='Use NVIDIA decorder')
+    parser.add_argument(
+        '--nvdecode', action='store_true', help='Use NVIDIA decorder')
     parser.add_argument(
         '--wait-time',
         type=float,
@@ -41,21 +42,20 @@ def prefetch_img_metas(cfg, ori_wh):
     w, h = ori_wh
     cfg.data.test.pipeline[0].type = 'LoadImageFromWebcam'
     test_pipeline = Compose(cfg.data.test.pipeline)
-    data = {'img':np.zeros((h, w, 3), dtype=np.uint8)}
+    data = {'img': np.zeros((h, w, 3), dtype=np.uint8)}
     data = test_pipeline(data)
     img_metas = data['img_metas'][0].data
     return img_metas
 
 
-def process_img(frame_resize, img_metas):
-    assert frame_resize.shape==img_metas['pad_shape']
-    frame_cuda = torch.from_numpy(frame_resize).cuda().float()
-    frame_cuda = frame_cuda.permute(2, 0, 1) # HWC to CHW
-    mean = torch.from_numpy(img_metas['img_norm_cfg']['mean']).cuda()
-    std = torch.from_numpy(img_metas['img_norm_cfg']['std']).cuda()
-    frame_cuda = F.normalize(
-            frame_cuda, mean=mean, std=std, inplace=True)
-    frame_cuda = frame_cuda[None, :, :, :]    # NCHW
+def process_img(frame_resize, img_metas, device):
+    assert frame_resize.shape == img_metas['pad_shape']
+    frame_cuda = torch.from_numpy(frame_resize).to(device).float()
+    frame_cuda = frame_cuda.permute(2, 0, 1)  # HWC to CHW
+    mean = torch.from_numpy(img_metas['img_norm_cfg']['mean']).to(device)
+    std = torch.from_numpy(img_metas['img_norm_cfg']['std']).to(device)
+    frame_cuda = F.normalize(frame_cuda, mean=mean, std=std, inplace=True)
+    frame_cuda = frame_cuda[None, :, :, :]  # NCHW
     data = {'img': [frame_cuda], 'img_metas': [[img_metas]]}
     return data
 
@@ -70,22 +70,26 @@ def main():
 
     VideoCapture = ffmpegcv.VideoCaptureNV if args.nvdecode else ffmpegcv.VideoCapture
     video_origin = VideoCapture(args.video)
-    img_metas = prefetch_img_metas(model.cfg, (video_origin.width, video_origin.height))
+    img_metas = prefetch_img_metas(model.cfg,
+                                   (video_origin.width, video_origin.height))
     resize_wh = img_metas['pad_shape'][1::-1]
-    video_resize = VideoCapture(args.video,
-                                resize = resize_wh,
-                                resize_keepratio = True,
-                                resize_keepratioalign = 'topleft',
-                                pix_fmt='rgb24')
+    video_resize = VideoCapture(
+        args.video,
+        resize=resize_wh,
+        resize_keepratio=True,
+        resize_keepratioalign='topleft',
+        pix_fmt='rgb24')
     video_writer = None
     if args.out:
         video_writer = ffmpegcv.VideoWriter(args.out, fps=video_origin.fps)
 
-    with torch.cuda.device(args.device), torch.no_grad():
-        for frame_resize, frame_origin in zip(tqdm.tqdm(video_resize), video_origin):
-            data = process_img(frame_resize, img_metas)
+    with torch.no_grad():
+        for frame_resize, frame_origin in zip(
+                mmcv.track_iter_progress(video_resize), video_origin):
+            data = process_img(frame_resize, img_metas, args.device)
             result = model(return_loss=False, rescale=True, **data)[0]
-            frame_mask = model.show_result(frame_origin, result, score_thr=args.score_thr)
+            frame_mask = model.show_result(
+                frame_origin, result, score_thr=args.score_thr)
             if args.show:
                 cv2.namedWindow('video', 0)
                 mmcv.imshow(frame_mask, 'video', args.wait_time)
