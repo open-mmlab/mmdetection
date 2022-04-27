@@ -197,6 +197,7 @@ def main():
         init_dist(args.launcher, **cfg.dist_params)
 
     rank, _ = get_dist_info()
+    print('rank:{}'.format(rank))
     # allows not to create
     if args.work_dir is not None and rank == 0:
         mmcv.mkdir_or_exist(osp.abspath(args.work_dir))
@@ -239,7 +240,7 @@ def main():
             broadcast_buffers=False)
         outputs = multi_gpu_test(model, data_loader, args.tmpdir,
                                  args.gpu_collect)
-
+    
     rank, _ = get_dist_info()
     if rank == 0:
         if args.out:
