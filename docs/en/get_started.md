@@ -11,7 +11,8 @@ Compatible MMDetection and MMCV versions are shown as below. Please install the 
 
 | MMDetection version |       MMCV version        |
 |:-------------------:|:-------------------------:|
-|       master        | mmcv-full>=1.3.17, <1.5.0 |
+|       master        | mmcv-full>=1.3.17, <1.6.0 |
+|       2.24.0        | mmcv-full>=1.3.17, <1.6.0 |
 |       2.23.0        | mmcv-full>=1.3.17, <1.5.0 |
 |       2.22.0        | mmcv-full>=1.3.17, <1.5.0 |
 |       2.21.0        | mmcv-full>=1.3.17, <1.5.0 |

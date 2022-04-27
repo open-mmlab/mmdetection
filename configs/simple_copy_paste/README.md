@@ -20,10 +20,10 @@ Standard Scale Jittering(SSJ) resizes and crops an image with a resize range of 
 
 | Backbone | Training schedule | Augmentation | batch size | box AP | mask AP |                                                                       Config                                                                        |
 |:--------:|:-----------------:|:------------:|:----------:|:------:|:-------:|:---------------------------------------------------------------------------------------------------------------------------------------------------:|
-|   R-50   |        90k        |     SSJ      |    64     |  43.3  |  39.2   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_90k_coco.py) |
-|   R-50   |        90k        |   SSJ+SCP    |    64     |  43.9  |  39.2   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_90k_coco.py)  |
-|   R-50   |       270k        |     SSJ      |    64     |  43.5  |  39.1   |   [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_270k_coco.py)   |
-|   R-50   |       270k        |   SSJ+SCP    |    64     |  45.1  |  40.3   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco.py) |
+|   R-50   |        90k        |     SSJ      |    64     |  43.3  |  39.2   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/simple_copy_paste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_90k_coco.py) |
+|   R-50   |        90k        |   SSJ+SCP    |    64     |  43.9  |  39.2   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/simple_copy_paste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_90k_coco.py)  |
+|   R-50   |       270k        |     SSJ      |    64     |  43.5  |  39.1   |   [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/simple_copy_paste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_270k_coco.py)   |
+|   R-50   |       270k        |   SSJ+SCP    |    64     |  45.1  |  40.3   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/simple_copy_paste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco.py) |
 
 ## Citation
 

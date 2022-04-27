@@ -41,6 +41,7 @@ Import:
   - configs/ms_rcnn/metafile.yml
   - configs/nas_fcos/metafile.yml
   - configs/nas_fpn/metafile.yml
+  - configs/openimages/metafile.yml
   - configs/paa/metafile.yml
   - configs/pafpn/metafile.yml
   - configs/panoptic_fpn/metafile.yml
