@@ -37,8 +37,7 @@ def parse_args():
     return args
 
 
-def prefetch_img_metas(model, ori_wh):
-    cfg = model.cfg
+def prefetch_img_metas(cfg, ori_wh):
     w, h = ori_wh
     cfg.data.test.pipeline[0].type = 'LoadImageFromWebcam'
     test_pipeline = Compose(cfg.data.test.pipeline)
@@ -71,7 +70,7 @@ def main():
 
     VideoCapture = ffmpegcv.VideoCaptureNV if args.nvdecode else ffmpegcv.VideoCapture
     video_origin = VideoCapture(args.video)
-    img_metas = prefetch_img_metas(model, (video_origin.width, video_origin.height))
+    img_metas = prefetch_img_metas(model.cfg, (video_origin.width, video_origin.height))
     resize_wh = img_metas['pad_shape'][1::-1]
     video_resize = VideoCapture(args.video,
                                 resize = resize_wh,
