@@ -98,9 +98,8 @@ def auto_scale_lr(cfg, distributed, logger):
     # calculate the batch size
     samples_per_gpu = cfg.data.train_dataloader.samples_per_gpu
     batch_size = num_gpus * samples_per_gpu
-    logger.info(f'You are using {num_gpus} GPU(s) '
-                f'and {samples_per_gpu} samples per GPU. '
-                f'Total batch size is {batch_size}.')
+    logger.info(f'Training with {num_gpus} GPU(s) with {samples_per_gpu} '
+                f'samples per GPU. The total batch size is {batch_size}.')
 
     if batch_size != base_batch_size:
         # scale LR with
