@@ -2,6 +2,7 @@
 import warnings
 
 from mmcv.cnn import MODELS as MMCV_MODELS
+from mmcv.cnn import RFSearch
 from mmcv.utils import Registry
 
 MODELS = Registry('models', parent=MMCV_MODELS)
@@ -55,5 +56,21 @@ def build_detector(cfg, train_cfg=None, test_cfg=None):
         'train_cfg specified in both outer field and model field '
     assert cfg.get('test_cfg') is None or test_cfg is None, \
         'test_cfg specified in both outer field and model field '
-    return DETECTORS.build(
+
+    try:
+        rfsearch_cfg = cfg.pop('rfsearch_cfg')
+    except rfsearch_cfg.DoesNotExist:
+        rfsearch_cfg = None
+
+    detector = DETECTORS.build(
         cfg, default_args=dict(train_cfg=train_cfg, test_cfg=test_cfg))
+    if rfsearch_cfg is not None:
+        rfsearch_warp = RFSearch(
+            logdir=rfsearch_cfg.get('logdir', None),
+            mode=rfsearch_cfg.get('mode', 'train'),
+            config=rfsearch_cfg.get('config', None),
+            rfstructure_file=rfsearch_cfg.get('rfstructure_file', None),
+        )
+        rfsearch_warp.model_init(detector)
+
+    return detector
