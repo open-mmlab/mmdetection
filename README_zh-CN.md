@@ -142,6 +142,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
             <li><a href="configs/yolox">YOLOX (CVPR'2021)</a></li>
             <li><a href="configs/deformable_detr">Deformable DETR (ICLR'2021)</a></li>
             <li><a href="configs/tood">TOOD (ICCV'2021)</a></li>
+            <li><a href="configs/centripetalnet">CentripetalNet (CVPR'2020)</a></li>
       </ul>
       </td>
       <td>
