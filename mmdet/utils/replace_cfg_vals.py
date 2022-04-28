@@ -34,14 +34,25 @@ def replace_cfg_vals(ori_cfg):
         elif isinstance(cfg, tuple):
             return tuple([replace_value(item) for item in cfg])
         elif isinstance(cfg, str):
-            # replace the "${key}" with cfg.key
+            # the format of string cfg may be:
+            # 1) "${key}", which will be replaced with cfg.key directly
+            # 2) "xxx${key}xxx" or "xxx${key1}xxx${key2}xxx",
+            # which will be replaced with the string of the cfg.key
             keys = pattern_key.findall(cfg)
             values = [get_value(ori_cfg, key[2:-1]) for key in keys]
-            # only support replacing one "${key}" for dict, list, or tuple
             if len(keys) == 1 and keys[0] == cfg:
+                # the format of string cfg is "${key}"
                 cfg = values[0]
             else:
                 for key, value in zip(keys, values):
+                    # the format of string cfg is
+                    # "xxx${key}xxx" or "xxx${key1}xxx${key2}xxx"
+                    assert not isinstance(value, (dict, list, tuple)), \
+                        f'for the format of string cfg is ' \
+                        f"'xxxxx${key}xxxxx' or 'xxx${key}xxx${key}xxx', " \
+                        f"the type of the value of '${key}' " \
+                        f'can not be dict, list, or tuple' \
+                        f'but you input {type(value)} in {cfg}'
                     cfg = cfg.replace(key, str(value))
             return cfg
         else:
