@@ -1,65 +1,83 @@
 _base_ = [
-    '../_base_/datasets/wider_face.py',
     '../_base_/default_runtime.py',
 ]
 
+dataset_type = 'WIDERFaceDataset'
+data_root = 'data/WIDERFace/'
 img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
-train_pipeline = [
-    dict(type='LoadImageFromFile', to_float32=True),
-    dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='RandomSquareCrop', crop_ratio_range=[0.3, 1.0]),
-    dict(
-        type='PhotoMetricDistortion',
-        brightness_delta=32,
-        contrast_range=(0.5, 1.5),
-        saturation_range=(0.5, 1.5),
-        hue_delta=18,
-        saturate=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Resize', img_scale=(640, 640), keep_ratio=False),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='DefaultFormatBundle'),
-    dict(
-        type='Collect',
-        keys=['img', 'gt_bboxes', 'gt_labels', 'gt_bboxes_ignore']),
-]
-val_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(
-        type='MultiScaleFlipAug',
-        img_scale=(640, 640),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32, pad_val=0),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img'])
-        ])
-]
-
-test_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(
-        type='MultiScaleFlipAug',
-        img_scale=[(500, 750), (800, 1200), (1100, 1650), (1400, 2100),
-                   (1700, 2550)],  # (1100, 1650) for single scale
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32, pad_val=0),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img'])
-        ])
-]
-
 data = dict(
-    samples_per_gpu=8,
+    samples_per_gpu=1,
+    workers_per_gpu=1,
     train=dict(
-        times=1, dataset=dict(min_size=1, offset=0, pipeline=train_pipeline)),
-    val=dict(min_size=1, offset=0, pipeline=val_pipeline),
-    test=dict(min_size=1, offset=0, pipeline=test_pipeline))
+        type=dataset_type,
+        ann_file=data_root + 'WIDER_train/train.txt',
+        img_prefix=data_root + 'WIDER_train/',
+        min_size=1,
+        offset=0,
+        pipeline=[
+            dict(type='LoadImageFromFile', to_float32=True),
+            dict(type='LoadAnnotations', with_bbox=True),
+            dict(type='RandomSquareCrop', crop_ratio_range=[0.3, 1.0]),
+            dict(
+                type='PhotoMetricDistortion',
+                brightness_delta=32,
+                contrast_range=(0.5, 1.5),
+                saturation_range=(0.5, 1.5),
+                hue_delta=18,
+                saturate=True),
+            dict(type='RandomFlip', flip_ratio=0.5),
+            dict(type='Resize', img_scale=(640, 640), keep_ratio=False),
+            dict(type='Normalize', **img_norm_cfg),
+            dict(type='DefaultFormatBundle'),
+            dict(
+                type='Collect',
+                keys=['img', 'gt_bboxes', 'gt_labels', 'gt_bboxes_ignore']),
+        ]),
+    val=dict(
+        type=dataset_type,
+        ann_file=data_root + 'WIDER_val/val.txt',
+        img_prefix=data_root + 'WIDER_val/',
+        min_size=1,
+        offset=0,
+        pipeline=[
+            dict(type='LoadImageFromFile'),
+            dict(
+                type='MultiScaleFlipAug',
+                img_scale=(640, 640),
+                flip=False,
+                transforms=[
+                    dict(type='Resize', keep_ratio=True),
+                    dict(type='RandomFlip', flip_ratio=0.0),
+                    dict(type='Normalize', **img_norm_cfg),
+                    dict(type='Pad', size_divisor=32, pad_val=0),
+                    dict(type='ImageToTensor', keys=['img']),
+                    dict(type='Collect', keys=['img'])
+                ])
+        ]),
+    test=dict(
+        type=dataset_type,
+        ann_file=data_root + 'WIDER_val/val.txt',
+        img_prefix=data_root + 'WIDER_val/',
+        # min_size=1,
+        offset=0,
+        pipeline=[
+            dict(type='LoadImageFromFile'),
+            dict(
+                type='MultiScaleFlipAug',
+                img_scale=[(500, 750), (800, 1200), (1100, 1650), (1400, 2100),
+                           (1700, 2550)],
+                # for single scale (1100, 1650)
+                flip=False,
+                transforms=[
+                    dict(type='Resize', keep_ratio=True),
+                    dict(type='RandomFlip', flip_ratio=0.0),
+                    dict(type='Normalize', **img_norm_cfg),
+                    dict(type='Pad', size_divisor=32, pad_val=0),
+                    dict(type='ImageToTensor', keys=['img']),
+                    dict(type='Collect', keys=['img'])
+                ])
+        ]),
+)
 
 model = dict(
     type='SingleStageDetector',
@@ -145,10 +163,3 @@ lr_config = dict(
     warmup_by_epoch=True)
 
 runner = dict(type='EpochBasedRunner', max_epochs=max_epochs)
-checkpoint_config = dict(interval=10)
-dist_params = dict(backend='nccl')
-log_level = 'INFO'
-load_from = None
-resume_from = None
-
-workflow = [('train', 1)]

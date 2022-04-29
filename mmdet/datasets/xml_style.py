@@ -126,7 +126,7 @@ class XMLDataset(CustomDataset):
             ]
             ignore = False
             if self.min_size:
-                # assert not self.test_mode
+                assert not self.test_mode
                 w = bbox[2] - bbox[0]
                 h = bbox[3] - bbox[1]
                 if w < self.min_size or h < self.min_size:
