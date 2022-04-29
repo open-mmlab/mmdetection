@@ -390,7 +390,7 @@ class Rotate:
             'all elements of img_fill_val should between range [0,255]. '\
             f'got {img_fill_val}.'
         assert 0 <= prob <= 1.0, 'The probability should be in range [0,1]. '\
-            'got {prob}.'
+            f'got {prob}.'
         assert isinstance(max_rotate_angle, (int, float)), 'max_rotate_angle '\
             f'should be type int or float. got type {type(max_rotate_angle)}.'
         self.level = level

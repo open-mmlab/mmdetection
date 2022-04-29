@@ -1,5 +1,134 @@
 ## Changelog
 
+### v2.24.0 (26/4/2022)
+
+#### Highlights
+
+- Support [Simple Copy-Paste is a Strong Data Augmentation Method for Instance Segmentation](https://arxiv.org/abs/2012.07177)
+- Support automatically scaling LR according to GPU number and samples per GPU
+- Support Class Aware Sampler that improves performance on OpenImages Dataset
+
+#### New Features
+
+- Support [Simple Copy-Paste is a Strong Data Augmentation Method for Instance Segmentation](https://arxiv.org/abs/2012.07177), see [example configs](configs/simple_copy_paste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco.py) (#7501)
+- Support Class Aware Sampler, users can set
+
+  ```python
+  data=dict(train_dataloader=dict(class_aware_sampler=dict(num_sample_class=1))))
+  ```
+
+  in the config to use `ClassAwareSampler`. Examples can be found in [the configs of OpenImages Dataset](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/faster_rcnn_r50_fpn_32x2_cas_1x_openimages.py).  (#7436)
+
+- Support automatically scaling LR according to GPU number and samples per GPU. (#7482)
+  In each config, there is a corresponding config of auto-scaling LR as below,
+
+   ```python
+   auto_scale_lr = dict(enable=True, base_batch_size=N)
+   ```
+
+  where `N` is the batch size used for the current learning rate in the config (also equals to `samples_per_gpu` * gpu number to train this config).
+  By default, we set `enable=False` so that the original usages will not be affected. Users can set `enable=True` in each config or add `--auto-scale-lr` after the command line to enable this feature and should check the correctness of `base_batch_size` in customized configs.
+
+- Support setting dataloader arguments in config and add functions to handle config compatibility. (#7668)
+  The comparison between the old and new usages is as below.
+
+  <table align="center">
+    <thead>
+        <tr align='center'>
+            <td>Before v2.24.0</td>
+            <td>Since v2.24.0 </td>
+        </tr>
+    </thead>
+    <tbody><tr valign='top'>
+    <th>
+
+    ```python
+    data = dict(
+        samples_per_gpu=64, workers_per_gpu=4,
+        train=dict(type='xxx', ...),
+        val=dict(type='xxx', samples_per_gpu=4, ...),
+        test=dict(type='xxx', ...),
+    )
+    ```
+
+    </th>
+    <th>
+
+    ```python
+    # A recommended config that is clear
+    data = dict(
+        train=dict(type='xxx', ...),
+        val=dict(type='xxx', ...),
+        test=dict(type='xxx', ...),
+        # Use different batch size during inference.
+        train_dataloader=dict(samples_per_gpu=64, workers_per_gpu=4),
+        val_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+        test_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+    )
+
+    # Old style still works but allows to set more arguments about data loaders
+    data = dict(
+        samples_per_gpu=64,  # only works for train_dataloader
+        workers_per_gpu=4,  # only works for train_dataloader
+        train=dict(type='xxx', ...),
+        val=dict(type='xxx', ...),
+        test=dict(type='xxx', ...),
+        # Use different batch size during inference.
+        val_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+        test_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+    )
+    ```
+
+    </th></tr>
+  </tbody></table>
+
+- Support memory profile hook. Users can use it to monitor the memory usages during training as below (#7560)
+
+    ```python
+    custom_hooks = [
+        dict(type='MemoryProfilerHook', interval=50)
+    ]
+    ```
+
+- Support to run on PyTorch with MLU chip (#7578)
+- Support re-spliting data batch with tag (#7641)
+- Support the `DiceCost` used by [K-Net](https://arxiv.org/abs/2106.14855) in `MaskHungarianAssigner` (#7716)
+- Support splitting COCO data for Semi-supervised object detection (#7431)
+- Support Pathlib for Config.fromfile (#7685)
+- Support to use file client in OpenImages dataset (#7433)
+- Add a probability parameter to Mosaic transformation (#7371)
+- Support specifying interpolation mode in `Resize` pipeline (#7585)
+
+#### Bug Fixes
+
+- Avoid invalid bbox after deform_sampling (#7567)
+- Fix the issue that argument color_theme does not take effect when exporting confusion matrix (#7701)
+- Fix the `end_level` in Necks, which should be the index of the end input backbone level (#7502)
+- Fix the bug that `mix_results` may be None in `MultiImageMixDataset` (#7530)
+- Fix the bug in ResNet plugin when two plugins are used (#7797)
+
+#### Improvements
+
+- Enhance `load_json_logs` of analyze_logs.py for resumed training logs (#7732)
+- Add argument `out_file` in image_demo.py (#7676)
+- Allow mixed precision training with `SimOTAAssigner` (#7516)
+- Updated INF to 100000.0 to be the same as that in the official YOLOX (#7778)
+- Add documentations of:
+  - how to get channels of a new backbone (#7642)
+  - how to unfreeze the backbone network (#7570)
+  - how to train fast_rcnn model (#7549)
+  - proposals in Deformable DETR (#7690)
+  - from-scratch install script in get_started.md (#7575)
+- Release pre-trained models of
+  - [Mask2Former](configs/mask2former) (#7595, #7709)
+  - RetinaNet with ResNet-18 and release models (#7387)
+  - RetinaNet with EfficientNet backbone (#7646)
+
+#### Contributors
+
+A total of 27 developers contributed to this release.
+Thanks @jovialio, @zhangsanfeng2022, @HarryZJ, @jamiechoi1995, @nestiank, @PeterH0323, @RangeKing, @Y-M-Y, @mattcasey02, @weiji14, @Yulv-git, @xiefeifeihu, @FANG-MING, @meng976537406, @nijkah, @sudz123, @CCODING04, @SheffieldCao, @Czm369, @BIGWangYuDong, @zytx121, @jbwang1997, @chhluo, @jshilong, @RangiLyu, @hhaAndroid, @ZwwWayne
+
 ### v2.23.0 (28/3/2022)
 
 #### Highlights
@@ -54,8 +183,6 @@
 A total of 27 developers contributed to this release.
 Thanks @ZwwWayne, @haofanwang, @shinya7y, @chhluo, @yangrisheng, @triple-Mu, @jbwang1997, @HikariTJU, @imflash217, @274869388, @zytx121, @matrixgame2018, @jamiechoi1995, @BIGWangYuDong, @JingweiZhang12, @Xiangxu-0103, @hhaAndroid, @jshilong, @osbm, @ceroytres, @bunge-bedstraw-herb, @Youth-Got, @daavoo, @jiangyitong, @RangiLyu, @CCODING04, @yarkable
 
-
-
 ### v2.22.0 (24/2/2022)
 
 #### Highlights
@@ -96,7 +223,6 @@ In order to support the visualization for Panoptic Segmentation, the `num_classe
 
 A total of 20 developers contributed to this release.
 Thanks @ZwwWayne, @hhaAndroid, @RangiLyu, @AronLin, @BIGWangYuDong, @jbwang1997, @zytx121, @chhluo, @shinya7y, @LuooChen, @dvansa, @siatwangmin, @del-zhenwu, @vikashranjan26, @haofanwang, @jamiechoi1995, @HJoonKwon, @yarkable, @zhijian-liu, @RangeKing
-
 
 ### v2.21.0 (8/2/2022)
 
