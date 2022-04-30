@@ -73,7 +73,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 更新日志
 
-最新的 **2.24.0** 版本已经在 2022.03.28 发布:
+最新的 **2.24.1** 版本已经在 2022.04.30 发布:
 
 - 支持算法 [Simple Copy Paste](configs/simple_copy_paste)
 - 支持训练时根据总 batch 数自动缩放学习率
