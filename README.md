@@ -74,7 +74,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-**2.24.0** was released in 26/4/2022:
+**2.24.1** was released in 30/4/2022:
 
 - Support [Simple Copy Paste](configs/simple_copy_paste)
 - Support automatically scaling LR according to GPU number and samples per GPU

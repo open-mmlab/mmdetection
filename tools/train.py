@@ -125,7 +125,7 @@ def main():
                           '"auto_scale_lr.enable" or '
                           '"auto_scale_lr.base_batch_size" in your'
                           ' configuration file. Please update all the '
-                          'configuration files to mmdet >= 2.24.0.')
+                          'configuration files to mmdet >= 2.24.1.')
 
     # set multi-process settings
     setup_multi_processes(cfg)
