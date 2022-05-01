@@ -3,9 +3,10 @@ import argparse
 
 import cv2
 import mmcv
-import torch
 import numpy as np
+import torch
 from torchvision.transforms import functional as F
+
 from mmdet.apis import init_detector
 from mmdet.datasets.pipelines import Compose
 
