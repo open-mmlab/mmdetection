@@ -6,6 +6,7 @@ import re
 
 import numpy as np
 
+
 files = sorted(glob.glob('../../configs/*/README.md'))
 
 stats = []
@@ -13,7 +14,7 @@ titles = []
 num_ckpts = 0
 
 for f in files:
-    url = osp.dirname(f)
+    url = osp.dirname(f.replace('../../configs', 'configs'))
 
     with open(f, 'r') as content_file:
         content = content_file.read()
