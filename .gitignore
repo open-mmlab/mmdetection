@@ -122,3 +122,6 @@ work_dirs/
 *.pth
 *.py~
 *.sh~
+
+# test
+./configs/_base_/datasets/coco_detection.py

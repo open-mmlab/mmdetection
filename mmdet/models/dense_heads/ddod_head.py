@@ -26,7 +26,7 @@ class DDODHead(AnchorHead):
             background category.
         in_channels (int): Number of channels in the input feature map.
         stacked_convs (int): The number of stacked Conv. Default: 4.
-        use_dcn (bool): Use dcn. Default: True.
+        use_dcn (bool): Use dcn, Same as ATSS when False. Default: True.
         conv_cfg (dict): Conv config of ddod head. Default: None.
         norm_cfg (dict): Normal config of ddod head. Default:
             dict(type='GN', num_groups=32, requires_grad=True).
@@ -289,6 +289,15 @@ class DDODHead(AnchorHead):
             featmap_sizes, img_metas, device=device)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
 
+        # calculate common vars for cls and reg assigners at once
+        targets_com = self.common_vars_cal(anchor_list,
+                                            valid_flag_list,
+                                            cls_scores,
+                                            bbox_preds,
+                                            gt_bboxes,
+                                            img_metas,
+                                            gt_bboxes_ignore)
+
         # classification branch assigner
         cls_reg_targets = self.get_targets(
             anchor_list,
@@ -300,6 +309,7 @@ class DDODHead(AnchorHead):
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
+            common_vars=targets_com,
             is_cls_assigner=True)
         if cls_reg_targets is None:
             return None
@@ -353,6 +363,7 @@ class DDODHead(AnchorHead):
             gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
+            common_vars=targets_com,
             is_cls_assigner=False)
         if cls_reg_targets is None:
             return None
@@ -400,23 +411,16 @@ class DDODHead(AnchorHead):
             loss_bbox=reg_losses_bbox,
             loss_iou=reg_losses_iou)
 
-    def get_targets(self,
-                    anchor_list,
-                    valid_flag_list,
-                    cls_scores,
-                    bbox_preds,
-                    gt_bboxes_list,
-                    img_metas,
-                    gt_bboxes_ignore_list=None,
-                    gt_labels_list=None,
-                    label_channels=1,
-                    unmap_outputs=True,
-                    is_cls_assigner=True):
-        """Get targets for DDOD head.
-
-        This method is almost the same as `AnchorHead.get_targets()`. Besides
-        returning the targets as the parent method does, it also returns the
-        anchors as the first element of the returned tuple.
+    def common_vars_cal(self,                     
+                        anchor_list,
+                        valid_flag_list,
+                        cls_scores,
+                        bbox_preds,
+                        gt_labels_list,
+                        img_metas,
+                        gt_bboxes_ignore_list):
+        """
+        Compute common vars for regression and classification targets.
         """
         num_imgs = len(img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs
@@ -466,7 +470,34 @@ class DDODHead(AnchorHead):
             cat_mlvl_bbox_pred = torch.cat(mlvl_bbox_tensor_list, dim=0)
             cls_score_list.append(cat_mlvl_cls_score)
             bbox_pred_list.append(cat_mlvl_bbox_pred)
+        return (anchor_list_, valid_flag_list_, num_level_anchors, 
+                num_level_anchors_list, cls_score_list, 
+                bbox_pred_list, gt_bboxes_ignore_list)
+             
+    def get_targets(self,
+                    anchor_list,
+                    valid_flag_list,
+                    cls_scores,
+                    bbox_preds,
+                    gt_bboxes_list,
+                    img_metas,
+                    gt_bboxes_ignore_list=None,
+                    gt_labels_list=None,
+                    label_channels=1,
+                    unmap_outputs=True,
+                    common_vars=None,
+                    is_cls_assigner=True):
+        """Get targets for DDOD head.
 
+        This method is almost the same as `AnchorHead.get_targets()`. Besides
+        returning the targets as the parent method does, it also returns the
+        anchors as the first element of the returned tuple.
+        """ 
+        # get common vars
+        (anchor_list_, valid_flag_list_, num_level_anchors, 
+        num_level_anchors_list, cls_score_list, 
+        bbox_pred_list, gt_bboxes_ignore_list) = common_vars
+        
         (all_anchors, all_labels, all_label_weights, all_bbox_targets,
          all_bbox_weights, pos_inds_list, neg_inds_list) = multi_apply(
              self._get_target_single,
