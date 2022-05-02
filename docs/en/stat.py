@@ -8,7 +8,7 @@ import numpy as np
 
 url_prefix = 'https://github.com/open-mmlab/mmdetection/blob/master/'
 
-files = sorted(glob.glob('../configs/*/README.md'))
+files = sorted(glob.glob('../../configs/*/README.md'))
 
 stats = []
 titles = []
