@@ -51,3 +51,8 @@ data = dict(
     train=train_dataset,
     val=dict(pipeline=test_pipeline),
     test=dict(pipeline=test_pipeline))
+
+# NOTE: `auto_scale_lr` is for automatically scaling LR,
+# USER SHOULD NOT CHANGE ITS VALUES.
+# base_batch_size = (8 GPUs) x (8 samples per GPU)
+auto_scale_lr = dict(base_batch_size=64)
