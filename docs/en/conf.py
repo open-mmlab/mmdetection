@@ -49,6 +49,8 @@ extensions = [
     'sphinx_copybutton',
 ]
 
+myst_enable_extensions = ['colon_fence']
+
 autodoc_mock_imports = [
     'matplotlib', 'pycocotools', 'terminaltables', 'mmdet.version', 'mmcv.ops'
 ]
