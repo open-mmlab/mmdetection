@@ -1,8 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
-import multiprocessing
 import os.path as osp
-import time
+from multiprocessing import Pool
 
 import mmcv
 import numpy as np
@@ -14,7 +13,7 @@ from mmdet.datasets import build_dataset, get_loading_pipeline
 from mmdet.utils import update_data_root
 
 
-def bbox_map_eval(det_result, annotation):
+def bbox_map_eval(det_result, annotation, nproc=4):
     """Evaluate mAP of single image det result.
 
     Args:
@@ -29,6 +28,9 @@ def bbox_map_eval(det_result, annotation):
             - bboxes_ignore (optional): numpy array of shape (k, 4)
             - labels_ignore (optional): numpy array of shape (k, )
 
+        nproc (int): Processes used for computing mAP.
+            Default: 4.
+
     Returns:
         float: mAP
     """
@@ -41,33 +43,24 @@ def bbox_map_eval(det_result, annotation):
     # mAP
     iou_thrs = np.linspace(
         .5, 0.95, int(np.round((0.95 - .5) / .05)) + 1, endpoint=True)
-    mean_aps = []
-    # for thr in iou_thrs:
-    #     mean_ap, _ = eval_map(
-    #         bbox_det_result, [annotation],
-    #         iou_thr=thr,
-    #         logger='silent',
-    #         nproc=1)
-    #     mean_aps.append(mean_ap)
-    cpu_num = 6
-    workers = multiprocessing.Pool(processes=cpu_num)
-    processes = []
 
+    processes = []
+    workers = Pool(processes=nproc)
     for thr in iou_thrs:
         p = workers.apply_async(eval_map, (bbox_det_result, [annotation]), {
             'iou_thr': thr,
             'logger': 'silent',
             'nproc': 1
         })
-        # print(p, type(p))
         processes.append(p)
 
     workers.close()
     workers.join()
 
+    mean_aps = []
     for p in processes:
         mean_aps.append(p.get()[0])
-    # print(mean_aps, "yyyyyyyyyyyyyyy")
+
     return sum(mean_aps) / len(mean_aps)
 
 
@@ -147,22 +140,13 @@ class ResultVisualizer:
 
         prog_bar = mmcv.ProgressBar(len(results))
         _mAPs = {}
-        t1_list = []
-        t2_list = []
         for i, (result, ) in enumerate(zip(results)):
             # self.dataset[i] should not call directly
             # because there is a risk of mismatch
-            # ! 只需要加载原始的标注信息即可
-            t1 = time.time()
             data_info = dataset.prepare_train_img(i)
-            t2 = time.time()
             mAP = eval_fn(result, data_info['ann_info'])
-            t3 = time.time()
-            t1_list.append(t2 - t1)
-            t2_list.append(t3 - t2)
             _mAPs[i] = mAP
             prog_bar.update()
-        print(np.mean(t1_list), np.mean(t2_list))
         # descending select topk image
         _mAPs = list(sorted(_mAPs.items(), key=lambda kv: kv[1]))
         good_mAPs = _mAPs[-topk:]
