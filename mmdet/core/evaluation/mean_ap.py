@@ -585,7 +585,13 @@ def eval_map(det_results,
     area_ranges = ([(rg[0]**2, rg[1]**2) for rg in scale_ranges]
                    if scale_ranges is not None else None)
 
-    pool = Pool(nproc)
+    # There is no need to use multi processes to process
+    # when num_imgs = 1 .
+    if num_imgs > 1:
+        assert nproc > 0, 'nproc must be at least one.'
+        nproc = min(nproc, num_imgs)
+        pool = Pool(nproc)
+
     eval_results = []
     for i in range(num_classes):
         # get gt and det bboxes of this class
@@ -611,13 +617,22 @@ def eval_map(det_results,
             args.append([use_group_of for _ in range(num_imgs)])
         if ioa_thr is not None:
             args.append([ioa_thr for _ in range(num_imgs)])
-        # compute tp and fp for each image with multiple processes
-        tpfp = pool.starmap(
-            tpfp_fn,
-            zip(cls_dets, cls_gts, cls_gts_ignore,
-                [iou_thr for _ in range(num_imgs)],
-                [area_ranges for _ in range(num_imgs)],
-                [use_legacy_coordinate for _ in range(num_imgs)], *args))
+
+        if num_imgs > 1:
+            # compute tp and fp for each image with multiple processes
+            tpfp = pool.starmap(
+                tpfp_fn,
+                zip(cls_dets, cls_gts, cls_gts_ignore,
+                    [iou_thr for _ in range(num_imgs)],
+                    [area_ranges for _ in range(num_imgs)],
+                    [use_legacy_coordinate for _ in range(num_imgs)], *args))
+        else:
+            tpfp = tpfp_fn(cls_dets[0], cls_gts[0], cls_gts_ignore[0], iou_thr,
+                           area_ranges, use_legacy_coordinate)
+            tpfp = [
+                tpfp,
+            ]
+
         if use_group_of:
             tp, fp, cls_dets = tuple(zip(*tpfp))
         else:
@@ -660,7 +675,10 @@ def eval_map(det_results,
             'precision': precisions,
             'ap': ap
         })
-    pool.close()
+
+    if num_imgs > 1:
+        pool.close()
+
     if scale_ranges is not None:
         # shape (num_classes, num_scales)
         all_ap = np.vstack([cls_result['ap'] for cls_result in eval_results])
