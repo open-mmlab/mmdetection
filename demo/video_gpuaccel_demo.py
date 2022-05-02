@@ -93,7 +93,6 @@ def main():
                 mmcv.track_iter_progress(video_resize), video_origin):
             data = process_img(frame_resize, img_metas, args.device)
             result = model(return_loss=False, rescale=True, **data)[0]
-            continue
             frame_mask = model.show_result(
                 frame_origin, result, score_thr=args.score_thr)
             if args.show:
