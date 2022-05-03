@@ -11,19 +11,19 @@ from mmdet.utils import get_root_logger
 
 
 def convert_tensor_type(inputs, src_type=None, dst_type=None):
-    """Recursively convert Tensor in inputs from src_device to dst_device.
+    """Recursively convert Tensor in inputs from src_type to dst_type.
 
     Args:
         inputs: Inputs that to be casted.
-        src_type (torch.dtype or torch.device): Source type.
-        dst_type (torch.dtype or torch.device): Destination type.
+        src_type (torch.dtype | torch.device): Source type.
+        dst_type (torch.dtype | torch.device): Destination type.
 
     Returns:
         The same type with inputs, but all contained Tensors have been cast.
     """
     assert dst_type is not None
     if isinstance(inputs, torch.Tensor):
-        if hasattr(dst_type, 'type'):
+        if isinstance(inputs, torch.device):
             # convert Tensor to dst_device
             if hasattr(inputs, 'to') and \
                     hasattr(inputs, 'device') and \
@@ -81,9 +81,9 @@ class AvoidOOM(object):
         return_gpu (bool): Whether convert outputs back to GPU, which will
             used in when `convert_cpu` is True. Default: True.
         test (bool): Whether skip torch.cuda.empty_cache(), only used in
-            test unit. Default: False
+            test unit. Default: False.
         return_fp16 (bool): Whether return torch.half, only used in test unit.
-            Default: True
+            Default: True.
 
     Examples:
         >>> from mmdet.utils.memory import AvoidOOM
@@ -127,7 +127,7 @@ class AvoidOOM(object):
 
         Args:
             func: a stateless callable that takes tensor-like objects
-                as arguments
+                as arguments.
         Returns:
             func: a callable which retries `func` if OOM is encountered.
         """
