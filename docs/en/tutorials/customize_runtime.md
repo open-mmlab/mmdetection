@@ -266,7 +266,7 @@ If the hook is already implemented in MMCV, you can directly modify the config t
 
 #### 4. Example: `NumClassCheckHook`
 
-We implement a customized hook named  [NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/utils.py) to check whether the `num_classes` in head matches the length of `CLASSSES` in `dataset`.
+We implement a customized hook named  [NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/utils.py) to check whether the `num_classes` in head matches the length of `CLASSES` in `dataset`.
 
 We set it in [default_runtime.py](https://github.com/open-mmlab/mmdetection/blob/master/configs/_base_/default_runtime.py).
 

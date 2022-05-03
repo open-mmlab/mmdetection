@@ -244,12 +244,18 @@ class DiceCost:
         pred_act (bool, optional): Whether to apply sigmoid to mask_pred.
             Defaults to False.
         eps (float, optional): default 1e-12.
+        naive_dice (bool, optional): If True, use the naive dice loss
+            in which the power of the number in the denominator is
+            the first power. If Flase, use the second power that
+            is adopted by K-Net and SOLO.
+            Defaults to True.
     """
 
-    def __init__(self, weight=1., pred_act=False, eps=1e-3):
+    def __init__(self, weight=1., pred_act=False, eps=1e-3, naive_dice=True):
         self.weight = weight
         self.pred_act = pred_act
         self.eps = eps
+        self.naive_dice = naive_dice
 
     def binary_mask_dice_loss(self, mask_preds, gt_masks):
         """
@@ -265,7 +271,12 @@ class DiceCost:
         mask_preds = mask_preds.flatten(1)
         gt_masks = gt_masks.flatten(1).float()
         numerator = 2 * torch.einsum('nc,mc->nm', mask_preds, gt_masks)
-        denominator = mask_preds.sum(-1)[:, None] + gt_masks.sum(-1)[None, :]
+        if self.naive_dice:
+            denominator = mask_preds.sum(-1)[:, None] + \
+                gt_masks.sum(-1)[None, :]
+        else:
+            denominator = mask_preds.pow(2).sum(1)[:, None] + \
+                gt_masks.pow(2).sum(1)[None, :]
         loss = 1 - (numerator + self.eps) / (denominator + self.eps)
         return loss
 
