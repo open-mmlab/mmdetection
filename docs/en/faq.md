@@ -79,7 +79,7 @@ We list some common troubles faced by many users and their corresponding solutio
     1. There are some scenarios when there are large amount of ground truth boxes, which may cause OOM during target assignment. You can set `gpu_assign_thr=N` in the config of assigner thus the assigner will calculate box overlaps through CPU when there are more than N GT boxes.
     2. Set `with_cp=True` in the backbone. This uses the sublinear strategy in PyTorch to reduce GPU memory cost in the backbone.
     3. Try mixed precision training using following the examples in `config/fp16`. The `loss_scale` might need further tuning for different models.
-    4. Try to use `AvoidOOM` to avoid GPU out of memory. It will first retry after calling `torch.cuda.empty_cache()`. If it still fails, it will then retry by trying to convert inputs to FP16. If it still fails, it will trying to convert inputs to CPUS. Here is an example to use `AvoidOOM`:
+    4. Try to use `AvoidOOM` to avoid GPU out of memory. It will first retry after calling `torch.cuda.empty_cache()`. If it still fails, it will then retry by trying to convert the dtype of inputs to FP16. If it still fails, it will try to copy inputs from GPUs to CPUs to continue computing. Here is an example to use `AvoidOOM`:
 
     ```python
     from mmdet.utils import AvoidOOM
