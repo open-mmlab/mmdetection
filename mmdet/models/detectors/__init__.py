@@ -33,6 +33,7 @@ from .rpn import RPN
 from .scnet import SCNet
 from .single_stage import SingleStageDetector
 from .solo import SOLO
+from .solov2 import SOLOv2
 from .sparse_rcnn import SparseRCNN
 from .tood import TOOD
 from .trident_faster_rcnn import TridentFasterRCNN
@@ -50,7 +51,7 @@ __all__ = [
     'GridRCNN', 'MaskScoringRCNN', 'RepPointsDetector', 'FOVEA', 'FSAF',
     'NASFCOS', 'PointRend', 'GFL', 'CornerNet', 'PAA', 'YOLOV3', 'YOLACT',
     'VFNet', 'DETR', 'TridentFasterRCNN', 'SparseRCNN', 'SCNet', 'SOLO',
-    'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet', 'YOLOX',
+    'SOLOv2', 'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet', 'YOLOX',
     'TwoStagePanopticSegmentor', 'PanopticFPN', 'QueryInst', 'LAD', 'TOOD',
     'MaskFormer', 'Mask2Former'
 ]

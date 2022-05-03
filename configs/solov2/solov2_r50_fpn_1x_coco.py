@@ -5,7 +5,7 @@ _base_ = [
 
 # model settings
 model = dict(
-    type='SOLO',
+    type='SOLOv2',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -24,18 +24,19 @@ model = dict(
         type='SOLOV2Head',
         num_classes=80,
         in_channels=256,
-        stacked_convs=4,
         feat_channels=512,
+        stacked_convs=4,
         strides=[8, 8, 16, 32, 32],
         scale_ranges=((1, 96), (48, 192), (96, 384), (192, 768), (384, 2048)),
         pos_scale=0.2,
         num_grids=[40, 36, 24, 16, 12],
         cls_down_index=0,
-        mask_start_level=0,
-        mask_end_level=3,
-        mask_feat_channels=128,
-        mask_out_channels=256,
-        mask_stride=4,
+        mask_feature_head=dict(
+            feat_channels=128,
+            start_level=0,
+            end_level=3,
+            out_channels=256,
+            mask_stride=4),
         loss_mask=dict(type='DiceLoss', use_sigmoid=True, loss_weight=3.0),
         loss_cls=dict(
             type='FocalLoss',

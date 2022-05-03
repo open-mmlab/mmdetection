@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
+
 import mmcv
 import numpy as np
 import torch
@@ -29,6 +31,8 @@ class MaskFeatModule(BaseModule):
              map branch. This is the channel count of the mask
              feature map that to be dynamically convolved with the predicted
              kernel.
+        mask_stride (int): Downsample factor of the mask feature map output.
+            Default: 4.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Config dict for normalization layer. Default: None.
         init_cfg (dict or list[dict], optional): Initialization config dict.
@@ -40,6 +44,7 @@ class MaskFeatModule(BaseModule):
                  start_level,
                  end_level,
                  out_channels,
+                 mask_stride=4,
                  conv_cfg=None,
                  norm_cfg=None,
                  init_cfg=[dict(type='Normal', layer='Conv2d', std=0.01)]):
@@ -49,24 +54,29 @@ class MaskFeatModule(BaseModule):
         self.feat_channels = feat_channels
         self.start_level = start_level
         self.end_level = end_level
+        self.mask_stride = mask_stride
         assert start_level >= 0 and end_level >= start_level
         self.out_channels = out_channels
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
+        self._init_layers()
+        self.fp16_enabled = False
 
+    def _init_layers(self):
         self.convs_all_levels = nn.ModuleList()
         for i in range(self.start_level, self.end_level + 1):
             convs_per_level = nn.Sequential()
             if i == 0:
-                one_conv = ConvModule(
-                    self.in_channels,
-                    self.feat_channels,
-                    3,
-                    padding=1,
-                    conv_cfg=self.conv_cfg,
-                    norm_cfg=self.norm_cfg,
-                    inplace=False)
-                convs_per_level.add_module('conv' + str(i), one_conv)
+                convs_per_level.add_module(
+                    f'conv{i}',
+                    ConvModule(
+                        self.in_channels,
+                        self.feat_channels,
+                        3,
+                        padding=1,
+                        conv_cfg=self.conv_cfg,
+                        norm_cfg=self.norm_cfg,
+                        inplace=False))
                 self.convs_all_levels.append(convs_per_level)
                 continue
 
@@ -76,45 +86,48 @@ class MaskFeatModule(BaseModule):
                         chn = self.in_channels + 2
                     else:
                         chn = self.in_channels
-                    one_conv = ConvModule(
-                        chn,
+                    convs_per_level.add_module(
+                        f'conv{j}',
+                        ConvModule(
+                            chn,
+                            self.feat_channels,
+                            3,
+                            padding=1,
+                            conv_cfg=self.conv_cfg,
+                            norm_cfg=self.norm_cfg,
+                            inplace=False))
+                    convs_per_level.add_module(
+                        f'upsample{j}',
+                        nn.Upsample(
+                            scale_factor=2,
+                            mode='bilinear',
+                            align_corners=False))
+                    continue
+
+                convs_per_level.add_module(
+                    f'conv{j}',
+                    ConvModule(
+                        self.feat_channels,
                         self.feat_channels,
                         3,
                         padding=1,
                         conv_cfg=self.conv_cfg,
                         norm_cfg=self.norm_cfg,
-                        inplace=False)
-                    convs_per_level.add_module('conv' + str(j), one_conv)
-                    one_upsample = nn.Upsample(
-                        scale_factor=2, mode='bilinear', align_corners=False)
-                    convs_per_level.add_module('upsample' + str(j),
-                                               one_upsample)
-                    continue
-
-                one_conv = ConvModule(
-                    self.feat_channels,
-                    self.feat_channels,
-                    3,
-                    padding=1,
-                    conv_cfg=self.conv_cfg,
-                    norm_cfg=self.norm_cfg,
-                    inplace=False)
-                convs_per_level.add_module('conv' + str(j), one_conv)
-                one_upsample = nn.Upsample(
-                    scale_factor=2, mode='bilinear', align_corners=False)
-                convs_per_level.add_module('upsample' + str(j), one_upsample)
+                        inplace=False))
+                convs_per_level.add_module(
+                    f'upsample{j}',
+                    nn.Upsample(
+                        scale_factor=2, mode='bilinear', align_corners=False))
 
             self.convs_all_levels.append(convs_per_level)
 
-        self.conv_pred = nn.Sequential(
-            ConvModule(
-                self.feat_channels,
-                self.out_channels,
-                1,
-                padding=0,
-                conv_cfg=self.conv_cfg,
-                norm_cfg=self.norm_cfg), )
-        self.fp16_enabled = False
+        self.conv_pred = ConvModule(
+            self.feat_channels,
+            self.out_channels,
+            1,
+            padding=0,
+            conv_cfg=self.conv_cfg,
+            norm_cfg=self.norm_cfg)
 
     @auto_fp16()
     def forward(self, feats):
@@ -140,20 +153,8 @@ class SOLOV2Head(SOLOHead):
     Segmentation. <https://arxiv.org/pdf/2003.10152>`_
 
     Args:
-        mask_feat_channels (int): Number of hidden channels of the mask feature
-             map branch `MaskFeatModule`. Default: 128.
-        mask_start_level (int): The starting feature map level from rpn that
-             will be used to predict the mask feature map. Default: 0.
-        mask_end_level (int): The ending feature map level from RPN that
-             will be used to predict the mask feature map. Default: 3.
-        mask_out_channels (int): Number of output channels of the mask feature
-             map branch `MaskFeatModule`. This is the channel count of the mask
-             feature map that to be dynamically convolved with the predicted
-             kernel. Default: 256.
-        mask_stride (int): Downsample factor of the mask feature map output by
-             `MaskFeatModule`. Default: 4.
-        mask_conv_cfg (dict): Conv configuration for the mask feature map
-            branch `MaskFeatModule`. Default: None.
+        mask_feature_head (dict): Config of SOLOv2MaskFeatHead.
+        dynamic_conv_size (int): Dynamic Conv kernel size. Default: 1.
         dcn_cfg (dict): Dcn conv configurations in kernel_convs and cls_conv.
             default: None.
         dcn_apply_to_all_conv (bool): Whether to use dcn in every layer of
@@ -165,12 +166,8 @@ class SOLOV2Head(SOLOHead):
 
     def __init__(self,
                  *args,
-                 mask_feat_channels=128,
-                 mask_start_level=0,
-                 mask_end_level=3,
-                 mask_out_channels=256,
-                 mask_stride=4,
-                 mask_conv_cfg=None,
+                 mask_feature_head,
+                 dynamic_conv_size=1,
                  dcn_cfg=None,
                  dcn_apply_to_all_conv=True,
                  init_cfg=[
@@ -184,25 +181,32 @@ class SOLOV2Head(SOLOHead):
                  **kwargs):
         assert dcn_cfg is None or isinstance(dcn_cfg, dict)
         self.dcn_cfg = dcn_cfg
+        self.with_dcn = dcn_cfg is not None
         self.dcn_apply_to_all_conv = dcn_apply_to_all_conv
-        self.kernel_out_channels = mask_out_channels * 1 * 1
+        self.dynamic_conv_size = dynamic_conv_size
+        mask_out_channels = mask_feature_head.get('out_channels')
+        self.kernel_out_channels = \
+            mask_out_channels * self.dynamic_conv_size * self.dynamic_conv_size
+
         super(SOLOV2Head, self).__init__(*args, init_cfg=init_cfg, **kwargs)
 
-        self.mask_start_level = mask_start_level
-        self.mask_end_level = mask_end_level
-        self.mask_feat_channels = mask_feat_channels
-        self.mask_out_channels = mask_out_channels
-        self.mask_stride = mask_stride
-        self.mask_conv_cfg = mask_conv_cfg
+        # update the in_channels of mask_feature_head
+        if mask_feature_head.get('in_channels', None) is not None:
+            if mask_feature_head.in_channels != self.in_channels:
+                warnings.warn('The `in_channels` of SOLOv2MaskFeatHead and '
+                              'SOLOv2Head should be same, changing '
+                              'mask_feature_head.in_channels to '
+                              f'{self.in_channels}')
+                mask_feature_head.update(in_channels=self.in_channels)
+        else:
+            mask_feature_head.update(in_channels=self.in_channels)
 
-        self.mask_feature_head = MaskFeatModule(
-            in_channels=self.in_channels,
-            feat_channels=self.mask_feat_channels,
-            start_level=self.mask_start_level,
-            end_level=self.mask_end_level,
-            out_channels=self.mask_out_channels,
-            conv_cfg=self.mask_conv_cfg,
-            norm_cfg=self.norm_cfg)
+        # update the norm_cfg of mask_feature_head
+        if mask_feature_head.get('norm_cfg', None) is None:
+            mask_feature_head.update(norm_cfg=self.norm_cfg)
+
+        self.mask_feature_head = MaskFeatModule(**mask_feature_head)
+        self.mask_stride = self.mask_feature_head.mask_stride
         self.fp16_enabled = False
 
     def _init_layers(self):
@@ -210,8 +214,11 @@ class SOLOV2Head(SOLOHead):
         self.kernel_convs = nn.ModuleList()
         conv_cfg = None
         for i in range(self.stacked_convs):
-            if self.dcn_cfg is not None:
-                if self.dcn_apply_to_all_conv or i == self.stacked_convs - 1:
+            if self.with_dcn:
+                if self.dcn_apply_to_all_conv:
+                    conv_cfg = self.dcn_cfg
+                elif i == self.stacked_convs - 1:
+                    # light head
                     conv_cfg = self.dcn_cfg
 
             chn = self.in_channels + 2 if i == 0 else self.feat_channels
@@ -298,8 +305,8 @@ class SOLOV2Head(SOLOHead):
         mlvl_pos_indexes = []
         mlvl_labels = []
         mlvl_pos_masks = []
-        for (lower_bound,
-             upper_bound), num_grid in zip(self.scale_ranges, self.num_grids):
+        for (lower_bound, upper_bound), num_grid \
+                in zip(self.scale_ranges, self.num_grids):
             mask_target = []
             # FG cat_id: [0, num_classes -1], BG cat_id: num_classes
             pos_index = []
@@ -478,7 +485,8 @@ class SOLOV2Head(SOLOHead):
                 img_lvl_mask_pred = F.conv2d(
                     img_mask_feats,
                     img_lvl_pos_kernel_pred.permute(1, 0).view(
-                        num_kernel, -1, 1, 1),
+                        num_kernel, -1, self.dynamic_conv_size,
+                        self.dynamic_conv_size),
                     stride=1).view(-1, h, w)
                 lvl_mask_preds.append(img_lvl_mask_pred)
             if len(lvl_mask_preds) == 0:
@@ -638,7 +646,9 @@ class SOLOV2Head(SOLOHead):
         strides = strides[inds[:, 0]]
 
         # mask encoding.
-        kernel_preds = kernel_preds.view(kernel_preds.size(0), -1, 1, 1)
+        kernel_preds = kernel_preds.view(
+            kernel_preds.size(0), -1, self.dynamic_conv_size,
+            self.dynamic_conv_size)
         mask_preds = F.conv2d(
             mask_feats, kernel_preds, stride=1).squeeze(0).sigmoid()
         # mask.

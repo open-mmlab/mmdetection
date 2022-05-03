@@ -2,24 +2,15 @@ _base_ = './solov2_r50_fpn_1x_coco.py'
 
 # model settings
 model = dict(
-    type='SOLO',
+    type='SOLOv2',
     backbone=dict(
-        type='ResNeXt',
-        depth=101,
-        groups=64,
-        base_width=4,
-        num_stages=4,
-        out_indices=(0, 1, 2, 3),
-        frozen_stages=1,
-        dcn=dict(type='DCNv2', deformable_groups=1, fallback_on_stride=False),
-        stage_with_dcn=(False, True, True, True),
-        init_cfg=dict(
-            type='Pretrained', checkpoint='open-mmlab://resnext101_64x4d'),
-        style='pytorch'),
+        depth=18, init_cfg=dict(checkpoint='torchvision://resnet18')),
+    neck=dict(in_channels=[64, 128, 256, 512]),
     mask_head=dict(
-        mask_conv_cfg=dict(type='DCNv2'),
-        dcn_cfg=dict(type='DCNv2'),
-        dcn_apply_to_all_conv=True))
+        stacked_convs=2,
+        feat_channels=256,
+        scale_ranges=((1, 56), (28, 112), (56, 224), (112, 448), (224, 896)),
+        mask_feature_head=dict(out_channels=128)))
 
 # learning policy
 lr_config = dict(
@@ -38,8 +29,8 @@ train_pipeline = [
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
         type='Resize',
-        img_scale=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
-                   (1333, 768), (1333, 800)],
+        img_scale=[(352, 768), (384, 768), (416, 768), (448, 768), (480, 768),
+                   (512, 768)],
         multiscale_mode='value',
         keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
@@ -52,7 +43,7 @@ test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(1333, 800),
+        img_scale=(448, 768),
         flip=False,
         transforms=[
             dict(type='Resize', keep_ratio=True),
