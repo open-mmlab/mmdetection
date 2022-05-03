@@ -1,11 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import os.path as osp
 import warnings
 
 import mmcv
 import numpy as np
 import pycocotools.mask as mask_util
-from mmcv import Config
 from mmcv.runner import HOOKS
 from mmcv.runner.dist_utils import master_only
 from mmcv.runner.hooks.checkpoint import CheckpointHook
@@ -100,10 +98,7 @@ class MMDetWandbHook(WandbLoggerHook):
     def before_run(self, runner):
         super(MMDetWandbHook, self).before_run(runner)
 
-        # Load config.json file from work_dir
-        load_config_path = osp.join(runner.work_dir, 'config.py')
-        cfg = Config.fromfile(load_config_path)
-        self.wandb.config.update(cfg._cfg_dict.to_dict())
+        # TODO: Config
 
         # Check if EvalHook and CheckpointHook are available.
         for hook in runner.hooks:
@@ -233,6 +228,7 @@ class MMDetWandbHook(WandbLoggerHook):
                 'LoadImageFromFile is required to add images '
                 'to W&B Tables.', UserWarning)
             self.log_evaluation = False
+            return
 
         # Determine the number of samples to be logged.
         num_total_images = len(self.val_dataset)
@@ -255,7 +251,12 @@ class MMDetWandbHook(WandbLoggerHook):
 
         img_prefix = self.val_dataset.img_prefix
 
-        for idx in range(self.num_eval_images):
+        self.eval_image_indexs = np.arange(self.num_eval_images)
+        # Set seed so that same validation set is logged each time.
+        np.random.seed(42)
+        np.random.shuffle(self.eval_image_indexs)
+
+        for idx in self.eval_image_indexs:
             img_info = self.val_dataset.data_infos[idx]
             image_name = img_info['filename']
             img_height, img_width = img_info['height'], img_info['width']
@@ -285,6 +286,7 @@ class MMDetWandbHook(WandbLoggerHook):
                     width=img_width)
             else:
                 wandb_masks = None
+            # TODO: Panoramic segmentation visualization.
 
             # Log a row to the data table.
             self.data_table.add_data(
@@ -297,11 +299,11 @@ class MMDetWandbHook(WandbLoggerHook):
 
     def _log_predictions(self, results, epoch):
         table_idxs = self.data_table_ref.get_index()
-        assert len(table_idxs) == self.num_eval_images
+        assert len(table_idxs) == len(self.eval_image_indexs)
 
-        for ndx in table_idxs:
+        for ndx, eval_image_index in enumerate(self.eval_image_indexs):
             # Get the result
-            result = results[ndx]
+            result = results[eval_image_index]
             if isinstance(result, tuple):
                 bbox_result, segm_result = result
                 if isinstance(segm_result, tuple):
@@ -325,6 +327,7 @@ class MMDetWandbHook(WandbLoggerHook):
                 segms = mask_util.decode(segms)
                 segms = segms.transpose(2, 0, 1)
                 assert len(segms) == len(labels)
+            # TODO: Panoramic segmentation visualization.
 
             # Remove bounding boxes and masks with score lower than threshold.
             if self.bbox_score_thr > 0:

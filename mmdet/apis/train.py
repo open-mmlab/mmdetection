@@ -125,10 +125,6 @@ def train_detector(model,
     cfg = compat_cfg(cfg)
     logger = get_root_logger(log_level=cfg.log_level)
 
-    # write config to work_dir
-    save_config_path = os.path.join(cfg.work_dir, 'config.py')
-    cfg.dump(save_config_path)
-
     # prepare data loaders
     dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
 
