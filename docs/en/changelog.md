@@ -35,8 +35,8 @@
   <table align="center">
     <thead>
         <tr align='center'>
-            <td>Before v2.24.0</td>
-            <td>Since v2.24.0 </td>
+            <td>v2.23.0</td>
+            <td>v2.24.0</td>
         </tr>
     </thead>
     <tbody><tr valign='top'>

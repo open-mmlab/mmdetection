@@ -6,16 +6,16 @@ import re
 
 import numpy as np
 
-url_prefix = 'https://github.com/open-mmlab/mmdetection/blob/master/'
+url_prefix = 'https://github.com/open-mmlab/mmdetection/blob/master/configs'
 
-files = sorted(glob.glob('../configs/*/README.md'))
+files = sorted(glob.glob('../../configs/*/README.md'))
 
 stats = []
 titles = []
 num_ckpts = 0
 
 for f in files:
-    url = osp.dirname(f.replace('../', url_prefix))
+    url = osp.dirname(f.replace('../../configs', url_prefix))
 
     with open(f, 'r') as content_file:
         content = content_file.read()

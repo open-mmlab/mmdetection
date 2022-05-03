@@ -74,7 +74,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-**2.24.0** was released in 26/4/2022:
+**2.24.1** was released in 30/4/2022:
 
 - Support [Simple Copy Paste](configs/simple_copy_paste)
 - Support automatically scaling LR according to GPU number and samples per GPU
@@ -143,6 +143,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/yolox">YOLOX (CVPR'2021)</a></li>
             <li><a href="configs/deformable_detr">Deformable DETR (ICLR'2021)</a></li>
             <li><a href="configs/tood">TOOD (ICCV'2021)</a></li>
+            <li><a href="configs/centripetalnet">CentripetalNet (CVPR'2020)</a></li>
       </ul>
       </td>
       <td>
