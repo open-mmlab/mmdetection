@@ -626,8 +626,16 @@ def eval_map(det_results,
         else:
             # There is no need to use multi processes to process
             # when num_imgs = 1 .
-            tpfp = tpfp_fn(cls_dets[0], cls_gts[0], cls_gts_ignore[0], iou_thr,
-                           area_ranges, use_legacy_coordinate)
+            tpfp = tpfp_fn(
+                cls_dets[0],
+                cls_gts[0],
+                cls_gts_ignore[0],
+                iou_thr,
+                area_ranges,
+                use_legacy_coordinate,
+                gt_bboxes_group_of=args[0][0],
+                use_group_of=args[1][0],
+                ioa_thr=args[2][0])
             tpfp = [tpfp]
 
         if use_group_of:
