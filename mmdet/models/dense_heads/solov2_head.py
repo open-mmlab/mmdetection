@@ -297,6 +297,39 @@ class SOLOV2Head(SOLOHead):
                             gt_labels,
                             gt_masks,
                             featmap_size=None):
+        """Compute targets for predictions of single image.
+
+        Args:
+            gt_bboxes (Tensor): Ground truth bbox of each instance,
+                shape (num_gts, 4).
+            gt_labels (Tensor): Ground truth label of each instance,
+                shape (num_gts,).
+            gt_masks (Tensor): Ground truth mask of each instance,
+                shape (num_gts, h, w).
+            featmap_sizes (:obj:`torch.size`): Size of UNified mask
+                feature map used to generate instance segmentation
+                masks by dynamic convolution, each element means
+                (feat_h, feat_w). Default: None.
+
+        Returns:
+            Tuple: Usually returns a tuple containing targets for predictions.
+
+                - mlvl_pos_mask_targets (list[Tensor]): Each element represent
+                  the binary mask targets for positive points in this
+                  level, has shape (num_pos, out_h, out_w).
+                - mlvl_labels (list[Tensor]): Each element is
+                  classification labels for all
+                  points in this level, has shape
+                  (num_grid, num_grid).
+                - mlvl_pos_masks  (list[Tensor]): Each element is
+                  a `BoolTensor` to represent whether the
+                  corresponding point in single level
+                  is positive, has shape (num_grid **2).
+                - mlvl_pos_indexes  (list[list]): Each element
+                  in the list contains the positive index in
+                  corresponding level, has shape (num_pos).
+        """
+
         device = gt_labels.device
         gt_areas = torch.sqrt((gt_bboxes[:, 2] - gt_bboxes[:, 0]) *
                               (gt_bboxes[:, 3] - gt_bboxes[:, 1]))
@@ -602,6 +635,29 @@ class SOLOV2Head(SOLOHead):
                             mask_feats,
                             img_meta,
                             cfg=None):
+        """Get processed mask related results of single image.
+
+        Args:
+            kernel_preds (Tensor): Dynamic kernel prediction of all points
+                in single image, has shape
+                (num_points, kernel_out_channels).
+            cls_scores (Tensor): Classification score of all points
+                in single image, has shape (num_points, num_classes).
+            mask_preds (Tensor): Mask prediction of all points in
+                single image, has shape (num_points, feat_h, feat_w).
+            img_meta (dict): Meta information of corresponding image.
+            cfg (dict, optional): Config used in test phase.
+                Default: None.
+
+        Returns:
+            :obj:`InstanceData`: Processed results of single image.
+             it usually contains following keys.
+                - scores (Tensor): Classification scores, has shape
+                  (num_instance,).
+                - labels (Tensor): Has shape (num_instances,).
+                - masks (Tensor): Processed mask results, has
+                  shape (num_instances, h, w).
+        """
 
         def empty_results(results, cls_scores):
             """Generate a empty results."""
