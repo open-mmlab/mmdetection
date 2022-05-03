@@ -23,7 +23,7 @@ def convert_tensor_type(inputs, src_type=None, dst_type=None):
     """
     assert dst_type is not None
     if isinstance(inputs, torch.Tensor):
-        if isinstance(inputs, torch.device):
+        if isinstance(dst_type, torch.device):
             # convert Tensor to dst_device
             if hasattr(inputs, 'to') and \
                     hasattr(inputs, 'device') and \
