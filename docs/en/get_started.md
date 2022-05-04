@@ -83,7 +83,7 @@ Option (a). If you install mmdetection from source, just run the following comma
 python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_320_300e_coco.py yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu --out-file result.jpg
 ```
 
-You will see a new image `result.jpg` on your current folder, where a bounding box will be shown on the cat.
+You will see a new image `result.jpg` on your current folder, where bounding boxes are plotted on cars, benches, etc.
 
 Option (b). If you install mmdetection with pip, open you python interpreter and copy&paste the following codes.
 
@@ -189,7 +189,7 @@ Within Jupyter, the exclamation mark `!` is used to call external executables an
 
 ### Using MMDetection with Docker
 
-We provide a [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) to build an image. Ensure that you are using [docker version](https://docs.docker.com/engine/install/) >=19.03.
+We provide a [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) to build an image. Ensure that your [docker version](https://docs.docker.com/engine/install/) >=19.03.
 
 ```shell
 # build an image with PyTorch 1.6, CUDA 10.1
