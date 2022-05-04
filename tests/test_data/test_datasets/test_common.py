@@ -1,7 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import logging
-import os
 import os.path as osp
 import tempfile
 from unittest.mock import MagicMock, patch
@@ -104,21 +103,17 @@ def _create_dummy_results():
 
 @pytest.mark.parametrize('config_path',
                          ['./configs/_base_/datasets/voc0712.py'])
-def test_dataset_init(config_path):
-    use_symlink = False
-    if not os.path.exists('./data'):
-        os.symlink('./tests/data', './data')
-        use_symlink = True
+def test_dataset_init(config_path, monkeypatch):
     data_config = mmcv.Config.fromfile(config_path)
     if 'data' not in data_config:
         return
+
+    monkeypatch.chdir('./tests/')  # to use ./tests/data
     stage_names = ['train', 'val', 'test']
     for stage_name in stage_names:
         dataset_config = copy.deepcopy(data_config.data.get(stage_name))
         dataset = build_dataset(dataset_config)
         dataset[0]
-    if use_symlink:
-        os.unlink('./data')
 
 
 def test_dataset_evaluation():
@@ -277,6 +272,16 @@ def test_evaluation_hook(EvalHookParam):
     runner.register_hook(evalhook)
     runner.run([dataloader], [('train', 1)], 2)
     assert evalhook.evaluate.call_count == 3  # before epoch1 and after e1 & e2
+
+    # 6. start=0, interval=2, dynamic_intervals=[(3, 1)]: the evaluation
+    # interval is 2 when it is less than 3 epoch, otherwise it is 1.
+    runner = _build_demo_runner()
+    evalhook = EvalHookParam(
+        dataloader, start=0, interval=2, dynamic_intervals=[(3, 1)])
+    evalhook.evaluate = MagicMock()
+    runner.register_hook(evalhook)
+    runner.run([dataloader], [('train', 1)], 4)
+    assert evalhook.evaluate.call_count == 3
 
     # the evaluation start epoch cannot be less than 0
     runner = _build_demo_runner()

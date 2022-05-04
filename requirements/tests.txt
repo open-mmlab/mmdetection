@@ -5,7 +5,7 @@ interrogate
 isort==4.3.21
 # Note: used for kwarray.group_items, this may be ported to mmcv in the future.
 kwarray
-mmtrack
+-e git+https://github.com/open-mmlab/mmtracking#egg=mmtrack
 onnx==1.7.0
 onnxruntime>=1.8.0
 pytest

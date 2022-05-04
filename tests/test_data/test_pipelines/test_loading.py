@@ -27,7 +27,7 @@ class TestLoading:
         assert results['img_shape'] == (288, 512, 3)
         assert results['ori_shape'] == (288, 512, 3)
         assert repr(transform) == transform.__class__.__name__ + \
-            "(to_float32=False, color_type='color', " + \
+            "(to_float32=False, color_type='color', channel_order='bgr', " + \
             "file_client_args={'backend': 'disk'})"
 
         # no img_prefix

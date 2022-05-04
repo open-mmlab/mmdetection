@@ -4,6 +4,7 @@ import pickle
 import warnings
 from collections import OrderedDict
 
+import numpy as np
 import torch
 import torch.distributed as dist
 from mmcv.runner import OptimizerHook, get_dist_info
@@ -101,7 +102,8 @@ def all_reduce_dict(py_dict, op='sum', group=None, to_float=True):
     BaseDetection/YOLOX/blob/main/yolox/utils/allreduce_norm.py.
 
     NOTE: make sure that py_dict in different ranks has the same keys and
-    the values should be in the same shape.
+    the values should be in the same shape. Currently only supports
+    nccl backend.
 
     Args:
         py_dict (dict): Dict to be applied all reduce op.
@@ -114,25 +116,25 @@ def all_reduce_dict(py_dict, op='sum', group=None, to_float=True):
     Returns:
         OrderedDict: reduced python dict object.
     """
+    warnings.warn(
+        'group` is deprecated. Currently only supports NCCL backend.')
     _, world_size = get_dist_info()
     if world_size == 1:
-        return py_dict
-    if group is None:
-        # TODO: May try not to use gloo in the future
-        group = _get_global_gloo_group()
-    if dist.get_world_size(group) == 1:
         return py_dict
 
     # all reduce logic across different devices.
     py_key = list(py_dict.keys())
-    py_key_tensor = obj2tensor(py_key)
-    dist.broadcast(py_key_tensor, src=0)
-    py_key = tensor2obj(py_key_tensor)
+    if not isinstance(py_dict, OrderedDict):
+        py_key_tensor = obj2tensor(py_key)
+        dist.broadcast(py_key_tensor, src=0)
+        py_key = tensor2obj(py_key_tensor)
 
     tensor_shapes = [py_dict[k].shape for k in py_key]
     tensor_numels = [py_dict[k].numel() for k in py_key]
 
     if to_float:
+        warnings.warn('Note: the "to_float" is True, you need to '
+                      'ensure that the behavior is reasonable.')
         flatten_tensor = torch.cat(
             [py_dict[k].flatten().float() for k in py_key])
     else:
@@ -146,4 +148,46 @@ def all_reduce_dict(py_dict, op='sum', group=None, to_float=True):
         x.reshape(shape) for x, shape in zip(
             torch.split(flatten_tensor, tensor_numels), tensor_shapes)
     ]
-    return OrderedDict({k: v for k, v in zip(py_key, split_tensors)})
+    out_dict = {k: v for k, v in zip(py_key, split_tensors)}
+    if isinstance(py_dict, OrderedDict):
+        out_dict = OrderedDict(out_dict)
+    return out_dict
+
+
+def sync_random_seed(seed=None, device='cuda'):
+    """Make sure different ranks share the same seed.
+
+    All workers must call this function, otherwise it will deadlock.
+    This method is generally used in `DistributedSampler`,
+    because the seed should be identical across all processes
+    in the distributed group.
+
+    In distributed sampling, different ranks should sample non-overlapped
+    data in the dataset. Therefore, this function is used to make sure that
+    each rank shuffles the data indices in the same order based
+    on the same seed. Then different ranks could use different indices
+    to select non-overlapped data from the same data list.
+
+    Args:
+        seed (int, Optional): The seed. Default to None.
+        device (str): The device where the seed will be put on.
+            Default to 'cuda'.
+
+    Returns:
+        int: Seed to be used.
+    """
+    if seed is None:
+        seed = np.random.randint(2**31)
+    assert isinstance(seed, int)
+
+    rank, world_size = get_dist_info()
+
+    if world_size == 1:
+        return seed
+
+    if rank == 0:
+        random_num = torch.tensor(seed, dtype=torch.int32, device=device)
+    else:
+        random_num = torch.tensor(0, dtype=torch.int32, device=device)
+    dist.broadcast(random_num, src=0)
+    return random_num.item()

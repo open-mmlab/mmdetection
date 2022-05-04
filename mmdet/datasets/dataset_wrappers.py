@@ -30,6 +30,7 @@ class ConcatDataset(_ConcatDataset):
     def __init__(self, datasets, separate_eval=True):
         super(ConcatDataset, self).__init__(datasets)
         self.CLASSES = datasets[0].CLASSES
+        self.PALETTE = getattr(datasets[0], 'PALETTE', None)
         self.separate_eval = separate_eval
         if not separate_eval:
             if any([isinstance(ds, CocoDataset) for ds in datasets]):
@@ -67,6 +68,28 @@ class ConcatDataset(_ConcatDataset):
         else:
             sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
         return self.datasets[dataset_idx].get_cat_ids(sample_idx)
+
+    def get_ann_info(self, idx):
+        """Get annotation of concatenated dataset by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            dict: Annotation info of specified index.
+        """
+
+        if idx < 0:
+            if -idx > len(self):
+                raise ValueError(
+                    'absolute value of index should not exceed dataset length')
+            idx = len(self) + idx
+        dataset_idx = bisect.bisect_right(self.cumulative_sizes, idx)
+        if dataset_idx == 0:
+            sample_idx = idx
+        else:
+            sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
+        return self.datasets[dataset_idx].get_ann_info(sample_idx)
 
     def evaluate(self, results, logger=None, **kwargs):
         """Evaluate the results.
@@ -145,6 +168,7 @@ class RepeatDataset:
         self.dataset = dataset
         self.times = times
         self.CLASSES = dataset.CLASSES
+        self.PALETTE = getattr(dataset, 'PALETTE', None)
         if hasattr(self.dataset, 'flag'):
             self.flag = np.tile(self.dataset.flag, times)
 
@@ -164,6 +188,18 @@ class RepeatDataset:
         """
 
         return self.dataset.get_cat_ids(idx % self._ori_len)
+
+    def get_ann_info(self, idx):
+        """Get annotation of repeat dataset by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            dict: Annotation info of specified index.
+        """
+
+        return self.dataset.get_ann_info(idx % self._ori_len)
 
     def __len__(self):
         """Length after repetition."""
@@ -213,6 +249,7 @@ class ClassBalancedDataset:
         self.oversample_thr = oversample_thr
         self.filter_empty_gt = filter_empty_gt
         self.CLASSES = dataset.CLASSES
+        self.PALETTE = getattr(dataset, 'PALETTE', None)
 
         repeat_factors = self._get_repeat_factors(dataset, oversample_thr)
         repeat_indices = []
@@ -280,6 +317,18 @@ class ClassBalancedDataset:
         ori_index = self.repeat_indices[idx]
         return self.dataset[ori_index]
 
+    def get_ann_info(self, idx):
+        """Get annotation of dataset by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            dict: Annotation info of specified index.
+        """
+        ori_index = self.repeat_indices[idx]
+        return self.dataset.get_ann_info(ori_index)
+
     def __len__(self):
         """Length after repetition."""
         return len(self.repeat_indices)
@@ -301,16 +350,25 @@ class MultiImageMixDataset:
         pipeline (Sequence[dict]): Sequence of transform object or
             config dict to be composed.
         dynamic_scale (tuple[int], optional): The image scale can be changed
-            dynamically. Default to None.
+            dynamically. Default to None. It is deprecated.
         skip_type_keys (list[str], optional): Sequence of type string to
             be skip pipeline. Default to None.
+        max_refetch (int): The maximum number of retry iterations for getting
+            valid results from the pipeline. If the number of iterations is
+            greater than `max_refetch`, but results is still None, then the
+            iteration is terminated and raise the error. Default: 15.
     """
 
     def __init__(self,
                  dataset,
                  pipeline,
                  dynamic_scale=None,
-                 skip_type_keys=None):
+                 skip_type_keys=None,
+                 max_refetch=15):
+        if dynamic_scale is not None:
+            raise RuntimeError(
+                'dynamic_scale is deprecated. Please use Resize pipeline '
+                'to achieve similar functions')
         assert isinstance(pipeline, collections.abc.Sequence)
         if skip_type_keys is not None:
             assert all([
@@ -331,13 +389,11 @@ class MultiImageMixDataset:
 
         self.dataset = dataset
         self.CLASSES = dataset.CLASSES
+        self.PALETTE = getattr(dataset, 'PALETTE', None)
         if hasattr(self.dataset, 'flag'):
             self.flag = dataset.flag
         self.num_samples = len(dataset)
-
-        if dynamic_scale is not None:
-            assert isinstance(dynamic_scale, tuple)
-        self._dynamic_scale = dynamic_scale
+        self.max_refetch = max_refetch
 
     def __len__(self):
         return self.num_samples
@@ -351,20 +407,36 @@ class MultiImageMixDataset:
                 continue
 
             if hasattr(transform, 'get_indexes'):
-                indexes = transform.get_indexes(self.dataset)
-                if not isinstance(indexes, collections.abc.Sequence):
-                    indexes = [indexes]
-                mix_results = [
-                    copy.deepcopy(self.dataset[index]) for index in indexes
-                ]
-                results['mix_results'] = mix_results
+                for i in range(self.max_refetch):
+                    # Make sure the results passed the loading pipeline
+                    # of the original dataset is not None.
+                    indexes = transform.get_indexes(self.dataset)
+                    if not isinstance(indexes, collections.abc.Sequence):
+                        indexes = [indexes]
+                    mix_results = [
+                        copy.deepcopy(self.dataset[index]) for index in indexes
+                    ]
+                    if None not in mix_results:
+                        results['mix_results'] = mix_results
+                        break
+                else:
+                    raise RuntimeError(
+                        'The loading pipeline of the original dataset'
+                        ' always return None. Please check the correctness '
+                        'of the dataset and its pipeline.')
 
-            if self._dynamic_scale is not None:
-                # Used for subsequent pipeline to automatically change
-                # the output image size. E.g MixUp, Resize.
-                results['scale'] = self._dynamic_scale
-
-            results = transform(results)
+            for i in range(self.max_refetch):
+                # To confirm the results passed the training pipeline
+                # of the wrapper is not None.
+                updated_results = transform(copy.deepcopy(results))
+                if updated_results is not None:
+                    results = updated_results
+                    break
+            else:
+                raise RuntimeError(
+                    'The training pipeline of the dataset wrapper'
+                    ' always return None.Please check the correctness '
+                    'of the dataset and its pipeline.')
 
             if 'mix_results' in results:
                 results.pop('mix_results')
@@ -382,13 +454,3 @@ class MultiImageMixDataset:
             isinstance(skip_type_key, str) for skip_type_key in skip_type_keys
         ])
         self._skip_type_keys = skip_type_keys
-
-    def update_dynamic_scale(self, dynamic_scale):
-        """Update dynamic_scale. It is called by an external hook.
-
-        Args:
-            dynamic_scale (tuple[int]): The image scale can be
-               changed dynamically.
-        """
-        assert isinstance(dynamic_scale, tuple)
-        self._dynamic_scale = dynamic_scale

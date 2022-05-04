@@ -11,10 +11,16 @@ def dice_loss(pred,
               weight=None,
               eps=1e-3,
               reduction='mean',
+              naive_dice=False,
               avg_factor=None):
-    """Calculate dice loss, which is proposed in
-    `V-Net: Fully Convolutional Neural Networks for Volumetric
-    Medical Image Segmentation <https://arxiv.org/abs/1606.04797>`_.
+    """Calculate dice loss, there are two forms of dice loss is supported:
+
+        - the one proposed in `V-Net: Fully Convolutional Neural
+            Networks for Volumetric Medical Image Segmentation
+            <https://arxiv.org/abs/1606.04797>`_.
+        - the dice loss in which the power of the number in the
+            denominator is the first power instead of the second
+            power.
 
     Args:
         pred (torch.Tensor): The prediction, has a shape (n, *)
@@ -26,6 +32,11 @@ def dice_loss(pred,
         reduction (str, optional): The method used to reduce the loss into
             a scalar. Defaults to 'mean'.
             Options are "none", "mean" and "sum".
+        naive_dice (bool, optional): If false, use the dice
+                loss defined in the V-Net paper, otherwise, use the
+                naive dice loss in which the power of the number in the
+                denominator is the first power instead of the second
+                power.Defaults to False.
         avg_factor (int, optional): Average factor that is used to average
             the loss. Defaults to None.
     """
@@ -34,9 +45,15 @@ def dice_loss(pred,
     target = target.flatten(1).float()
 
     a = torch.sum(input * target, 1)
-    b = torch.sum(input * input, 1) + eps
-    c = torch.sum(target * target, 1) + eps
-    d = (2 * a) / (b + c)
+    if naive_dice:
+        b = torch.sum(input, 1)
+        c = torch.sum(target, 1)
+        d = (2 * a + eps) / (b + c + eps)
+    else:
+        b = torch.sum(input * input, 1) + eps
+        c = torch.sum(target * target, 1) + eps
+        d = (2 * a) / (b + c)
+
     loss = 1 - d
     if weight is not None:
         assert weight.ndim == loss.ndim
@@ -52,11 +69,10 @@ class DiceLoss(nn.Module):
                  use_sigmoid=True,
                  activate=True,
                  reduction='mean',
+                 naive_dice=False,
                  loss_weight=1.0,
                  eps=1e-3):
-        """`Dice Loss, which is proposed in
-        `V-Net: Fully Convolutional Neural Networks for Volumetric
-         Medical Image Segmentation <https://arxiv.org/abs/1606.04797>`_.
+        """Compute dice loss.
 
         Args:
             use_sigmoid (bool, optional): Whether to the prediction is
@@ -67,6 +83,11 @@ class DiceLoss(nn.Module):
             reduction (str, optional): The method used
                 to reduce the loss. Options are "none",
                 "mean" and "sum". Defaults to 'mean'.
+            naive_dice (bool, optional): If false, use the dice
+                loss defined in the V-Net paper, otherwise, use the
+                naive dice loss in which the power of the number in the
+                denominator is the first power instead of the second
+                power. Defaults to False.
             loss_weight (float, optional): Weight of loss. Defaults to 1.0.
             eps (float): Avoid dividing by zero. Defaults to 1e-3.
         """
@@ -74,6 +95,7 @@ class DiceLoss(nn.Module):
         super(DiceLoss, self).__init__()
         self.use_sigmoid = use_sigmoid
         self.reduction = reduction
+        self.naive_dice = naive_dice
         self.loss_weight = loss_weight
         self.eps = eps
         self.activate = activate
@@ -118,6 +140,7 @@ class DiceLoss(nn.Module):
             weight,
             eps=self.eps,
             reduction=reduction,
+            naive_dice=self.naive_dice,
             avg_factor=avg_factor)
 
         return loss

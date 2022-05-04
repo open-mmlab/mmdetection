@@ -5,6 +5,7 @@ import mmcv
 from mmcv import Config, DictAction
 
 from mmdet.datasets import build_dataset
+from mmdet.utils import update_data_root
 
 
 def parse_args():
@@ -48,6 +49,10 @@ def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
+
+    # update data root according to MMDET_DATASETS
+    update_data_root(cfg)
+
     assert args.eval or args.format_only, (
         'Please specify at least one operation (eval/format the results) with '
         'the argument "--eval", "--format-only"')
@@ -56,10 +61,6 @@ def main():
 
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
-    # import modules from string list.
-    if cfg.get('custom_imports', None):
-        from mmcv.utils import import_modules_from_strings
-        import_modules_from_strings(**cfg['custom_imports'])
     cfg.data.test.test_mode = True
 
     dataset = build_dataset(cfg.data.test)

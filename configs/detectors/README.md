@@ -1,21 +1,18 @@
 # DetectoRS
 
-## Introduction
+> [DetectoRS: Detecting Objects with Recursive Feature Pyramid and Switchable Atrous Convolution](https://arxiv.org/abs/2006.02334)
 
 <!-- [ALGORITHM] -->
 
-We provide the config files for [DetectoRS: Detecting Objects with Recursive Feature Pyramid and Switchable Atrous Convolution](https://arxiv.org/pdf/2006.02334.pdf).
+## Abstract
 
-```BibTeX
-@article{qiao2020detectors,
-  title={DetectoRS: Detecting Objects with Recursive Feature Pyramid and Switchable Atrous Convolution},
-  author={Qiao, Siyuan and Chen, Liang-Chieh and Yuille, Alan},
-  journal={arXiv preprint arXiv:2006.02334},
-  year={2020}
-}
-```
+Many modern object detectors demonstrate outstanding performances by using the mechanism of looking and thinking twice. In this paper, we explore this mechanism in the backbone design for object detection. At the macro level, we propose Recursive Feature Pyramid, which incorporates extra feedback connections from Feature Pyramid Networks into the bottom-up backbone layers. At the micro level, we propose Switchable Atrous Convolution, which convolves the features with different atrous rates and gathers the results using switch functions. Combining them results in DetectoRS, which significantly improves the performances of object detection. On COCO test-dev, DetectoRS achieves state-of-the-art 55.7% box AP for object detection, 48.5% mask AP for instance segmentation, and 50.0% PQ for panoptic segmentation.
 
-## Dataset
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143877901-24451581-2c50-4a54-b000-c4cb111e29ad.png"/>
+</div>
+
+## Introduction
 
 DetectoRS requires COCO and [COCO-stuff](http://calvin.inf.ed.ac.uk/wp-content/uploads/data/cocostuffdataset/stuffthingmaps_trainval2017.zip) dataset for training. You need to download and extract it in the COCO dataset path.
 The directory should be like this.
@@ -57,3 +54,16 @@ The results on COCO 2017 val are shown in the below table.
 
 *Note*: This is a re-implementation based on MMDetection-V2.
 The original implementation is based on MMDetection-V1.
+
+## Citation
+
+We provide the config files for [DetectoRS: Detecting Objects with Recursive Feature Pyramid and Switchable Atrous Convolution](https://arxiv.org/pdf/2006.02334.pdf).
+
+```latex
+@article{qiao2020detectors,
+  title={DetectoRS: Detecting Objects with Recursive Feature Pyramid and Switchable Atrous Convolution},
+  author={Qiao, Siyuan and Chen, Liang-Chieh and Yuille, Alan},
+  journal={arXiv preprint arXiv:2006.02334},
+  year={2020}
+}
+```

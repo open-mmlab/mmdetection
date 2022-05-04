@@ -4,6 +4,7 @@ from abc import ABCMeta, abstractmethod
 from inspect import signature
 
 import torch
+from mmcv.cnn.utils.weight_init import constant_init
 from mmcv.ops import batched_nms
 from mmcv.runner import BaseModule, force_fp32
 
@@ -17,6 +18,14 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
     def __init__(self, init_cfg=None):
         super(BaseDenseHead, self).__init__(init_cfg)
+
+    def init_weights(self):
+        super(BaseDenseHead, self).init_weights()
+        # avoid init_cfg overwrite the initialization of `conv_offset`
+        for m in self.modules():
+            # DeformConv2dPack, ModulatedDeformConv2dPack
+            if hasattr(m, 'conv_offset'):
+                constant_init(m.conv_offset, 0)
 
     @abstractmethod
     def loss(self, **kwargs):
@@ -89,7 +98,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
         mlvl_priors = self.prior_generator.grid_priors(
             featmap_sizes,
-            dtype=cls_scores[0].device,
+            dtype=cls_scores[0].dtype,
             device=cls_scores[0].device)
 
         result_list = []
@@ -242,7 +251,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         """bbox post-processing method.
 
         The boxes would be rescaled to the original image scale and do
-        the nms operation. Usually with_nms is False is used for aug test.
+        the nms operation. Usually `with_nms` is False is used for aug test.
 
         Args:
             results (obj: InstanceData): Detection instance results,

@@ -1,21 +1,18 @@
 # CornerNet
 
-## Introduction
+> [Cornernet: Detecting objects as paired keypoints](https://arxiv.org/abs/1808.01244)
 
 <!-- [ALGORITHM] -->
 
-```latex
-@inproceedings{law2018cornernet,
-  title={Cornernet: Detecting objects as paired keypoints},
-  author={Law, Hei and Deng, Jia},
-  booktitle={15th European Conference on Computer Vision, ECCV 2018},
-  pages={765--781},
-  year={2018},
-  organization={Springer Verlag}
-}
-```
+## Abstract
 
-## Results and models
+We propose CornerNet, a new approach to object detection where we detect an object bounding box as a pair of keypoints, the top-left corner and the bottom-right corner, using a single convolution neural network. By detecting objects as paired keypoints, we eliminate the need for designing a set of anchor boxes commonly used in prior single-stage detectors. In addition to our novel formulation, we introduce corner pooling, a new type of pooling layer that helps the network better localize corners. Experiments show that CornerNet achieves a 42.2% AP on MS COCO, outperforming all existing one-stage detectors.
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143876061-4de20768-c812-4b97-b089-944d8db91ca2.png"/>
+</div>
+
+## Results and Models
 
 | Backbone        | Batch Size | Step/Total Epochs | Mem (GB) | Inf time (fps) | box AP | Config | Download |
 | :-------------: | :--------: |:----------------: | :------: | :------------: | :----: | :------: | :--------: |
@@ -31,3 +28,16 @@ Note:
   - 10 x 5: 10 GPUs with 5 images per gpu. This is the same setting as that reported in the original paper.
   - 8 x 6: 8 GPUs with 6 images per gpu. The total batchsize is similar to paper and only need 1 node to train.
   - 32 x 3: 32 GPUs with 3 images per gpu. The default setting for 1080TI and need 4 nodes to train.
+
+## Citation
+
+```latex
+@inproceedings{law2018cornernet,
+  title={Cornernet: Detecting objects as paired keypoints},
+  author={Law, Hei and Deng, Jia},
+  booktitle={15th European Conference on Computer Vision, ECCV 2018},
+  pages={765--781},
+  year={2018},
+  organization={Springer Verlag}
+}
+```

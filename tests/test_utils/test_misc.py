@@ -1,4 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import os.path as osp
+import tempfile
+
 import numpy as np
 import pytest
 import torch
@@ -8,6 +11,7 @@ from mmdet.core.mask.structures import BitmapMasks, PolygonMasks
 from mmdet.core.utils import (center_of_mass, filter_scores_and_topk,
                               flip_tensor, mask2ndarray, select_single_mlvl,
                               stack_batch)
+from mmdet.utils import find_latest_checkpoint
 
 
 def dummy_raw_polygon_masks(size):
@@ -182,3 +186,41 @@ def test_padding_stacking_to_max_shape():
     input_tensor = [torch.rand((3, 10, 10)), torch.rand((3, 8, 7))]
     result_tensor = stack_batch(input_tensor)
     assert result_tensor.shape == (2, 3, 10, 10)
+
+
+def test_find_latest_checkpoint():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = tmpdir
+        latest = find_latest_checkpoint(path)
+        # There are no checkpoints in the path.
+        assert latest is None
+
+        path = osp.join(tmpdir, 'none')
+        latest = find_latest_checkpoint(path)
+        # The path does not exist.
+        assert latest is None
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with open(osp.join(tmpdir, 'latest.pth'), 'w') as f:
+            f.write('latest')
+        path = tmpdir
+        latest = find_latest_checkpoint(path)
+        assert latest == osp.join(tmpdir, 'latest.pth')
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with open(osp.join(tmpdir, 'iter_4000.pth'), 'w') as f:
+            f.write('iter_4000')
+        with open(osp.join(tmpdir, 'iter_8000.pth'), 'w') as f:
+            f.write('iter_8000')
+        path = tmpdir
+        latest = find_latest_checkpoint(path)
+        assert latest == osp.join(tmpdir, 'iter_8000.pth')
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with open(osp.join(tmpdir, 'epoch_1.pth'), 'w') as f:
+            f.write('epoch_1')
+        with open(osp.join(tmpdir, 'epoch_2.pth'), 'w') as f:
+            f.write('epoch_2')
+        path = tmpdir
+        latest = find_latest_checkpoint(path)
+        assert latest == osp.join(tmpdir, 'epoch_2.pth')

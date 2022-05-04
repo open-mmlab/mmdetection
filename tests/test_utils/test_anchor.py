@@ -11,6 +11,7 @@ import torch
 
 def test_standard_points_generator():
     from mmdet.core.anchor import build_prior_generator
+
     # teat init
     anchor_generator_cfg = dict(
         type='MlvlPointGenerator', strides=[4, 8], offset=0)
@@ -286,6 +287,7 @@ def test_standard_anchor_generator():
 
 def test_strides():
     from mmdet.core import AnchorGenerator
+
     # Square strides
     self = AnchorGenerator([10], [1.], [1.], [10])
     anchors = self.grid_anchors([(2, 2)], device='cpu')

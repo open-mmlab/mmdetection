@@ -1,27 +1,26 @@
-# Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks
+# Faster R-CNN
 
-## Introduction
+> [Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks](https://arxiv.org/abs/1506.01497)
 
 <!-- [ALGORITHM] -->
 
-```latex
-@article{Ren_2017,
-   title={Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks},
-   journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
-   publisher={Institute of Electrical and Electronics Engineers (IEEE)},
-   author={Ren, Shaoqing and He, Kaiming and Girshick, Ross and Sun, Jian},
-   year={2017},
-   month={Jun},
-}
-```
+## Abstract
 
-## Results and models
+State-of-the-art object detection networks depend on region proposal algorithms to hypothesize object locations. Advances like SPPnet and Fast R-CNN have reduced the running time of these detection networks, exposing region proposal computation as a bottleneck. In this work, we introduce a Region Proposal Network (RPN) that shares full-image convolutional features with the detection network, thus enabling nearly cost-free region proposals. An RPN is a fully convolutional network that simultaneously predicts object bounds and objectness scores at each position. The RPN is trained end-to-end to generate high-quality region proposals, which are used by Fast R-CNN for detection. We further merge RPN and Fast R-CNN into a single network by sharing their convolutional features---using the recently popular terminology of neural networks with 'attention' mechanisms, the RPN component tells the unified network where to look. For the very deep VGG-16 model, our detection system has a frame rate of 5fps (including all steps) on a GPU, while achieving state-of-the-art object detection accuracy on PASCAL VOC 2007, 2012, and MS COCO datasets with only 300 proposals per image. In ILSVRC and COCO 2015 competitions, Faster R-CNN and RPN are the foundations of the 1st-place winning entries in several tracks.
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143881188-ab87720f-5059-4b4e-a928-b540fb8fb84d.png" height="300"/>
+</div>
+
+## Results and Models
 
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: | :--------: |
+|    R-50-C4     |  caffe  |   1x    | -        | -              |  35.6  | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_caffe_c4_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_c4_1x_coco/faster_rcnn_r50_caffe_c4_1x_coco_20220316_150152-3f885b85.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_c4_1x_coco/faster_rcnn_r50_caffe_c4_1x_coco_20220316_150152.log.json)  |
 |    R-50-DC5     |  caffe  |   1x    | -        | -              | 37.2   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_caffe_dc5_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_dc5_1x_coco/faster_rcnn_r50_caffe_dc5_1x_coco_20201030_151909-531f0f43.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_dc5_1x_coco/faster_rcnn_r50_caffe_dc5_1x_coco_20201030_151909.log.json) |
 |    R-50-FPN     |  caffe  |   1x    | 3.8      |                | 37.8   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn/faster_rcnn_r50_caffe_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_fpn_1x_coco/faster_rcnn_r50_caffe_fpn_1x_coco_bbox_mAP-0.378_20200504_180032-c5925ee5.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_fpn_1x_coco/faster_rcnn_r50_caffe_fpn_1x_coco_20200504_180032.log.json) |
 |    R-50-FPN     | pytorch |   1x    | 4.0      | 21.4           | 37.4   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130_204655.log.json) |
+| R-50-FPN (FP16)     | pytorch | 1x      | 3.4      | 28.8           | 37.5   |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/fp16/faster_rcnn_r50_fpn_fp16_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/fp16/faster_rcnn_r50_fpn_fp16_1x_coco/faster_rcnn_r50_fpn_fp16_1x_coco_20200204-d4dc1471.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/fp16/faster_rcnn_r50_fpn_fp16_1x_coco/faster_rcnn_r50_fpn_fp16_1x_coco_20200204_143530.log.json) |
 |    R-50-FPN     | pytorch |   2x    | -        | -              | 38.4   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn/faster_rcnn_r50_fpn_2x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_2x_coco/faster_rcnn_r50_fpn_2x_coco_bbox_mAP-0.384_20200504_210434-a5d8aa15.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_2x_coco/faster_rcnn_r50_fpn_2x_coco_20200504_210434.log.json) |
 |    R-101-FPN    |  caffe  |   1x    | 5.7      |                | 39.8   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn/faster_rcnn_r101_caffe_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r101_caffe_fpn_1x_coco/faster_rcnn_r101_caffe_fpn_1x_coco_bbox_mAP-0.398_20200504_180057-b269e9dd.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r101_caffe_fpn_1x_coco/faster_rcnn_r101_caffe_fpn_1x_coco_20200504_180057.log.json) |
 |    R-101-FPN    | pytorch |   1x    | 6.0      | 15.6           | 39.4   | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn/faster_rcnn_r101_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r101_fpn_1x_coco/faster_rcnn_r101_fpn_1x_coco_20200130-f513f705.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r101_fpn_1x_coco/faster_rcnn_r101_fpn_1x_coco_20200130_204655.log.json) |
@@ -48,6 +47,7 @@ We also train some models with longer schedules and multi-scale training. The us
 
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: | :--------: |
+|    [R-50-C4](./faster_rcnn_r50_caffe_c4_mstrain_1x_coco.py)          |  caffe  |   1x    | -        |                | 35.9   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_caffe_c4_mstrain_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_c4_mstrain_1x_coco/faster_rcnn_r50_caffe_c4_mstrain_1x_coco_20220316_150527-db276fed.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_c4_mstrain_1x_coco/faster_rcnn_r50_caffe_c4_mstrain_1x_coco_20220316_150527.log.json) |
 |    [R-50-DC5](./faster_rcnn_r50_caffe_dc5_mstrain_1x_coco.py)          |  caffe  |   1x    | -        |                | 37.4   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_caffe_dc5_mstrain_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_dc5_mstrain_1x_coco/faster_rcnn_r50_caffe_dc5_mstrain_1x_coco_20201028_233851-b33d21b9.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_dc5_mstrain_1x_coco/faster_rcnn_r50_caffe_dc5_mstrain_1x_coco_20201028_233851.log.json) |
 |    [R-50-DC5](./faster_rcnn_r50_caffe_dc5_mstrain_3x_coco.py)          |  caffe  |   3x    | -        |                | 38.7   | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_caffe_dc5_mstrain_3x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_dc5_mstrain_3x_coco/faster_rcnn_r50_caffe_dc5_mstrain_3x_coco_20201028_002107-34a53b2c.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_dc5_mstrain_3x_coco/faster_rcnn_r50_caffe_dc5_mstrain_3x_coco_20201028_002107.log.json) |
 |    [R-50-FPN](./faster_rcnn_r50_caffe_fpn_mstrain_2x_coco.py)     |  caffe  |   2x    | 3.7      |                | 39.7   |[config](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn/faster_rcnn_r50_caffe_fpn_mstrain_2x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_fpn_mstrain_2x_coco/faster_rcnn_r50_caffe_fpn_mstrain_2x_coco_bbox_mAP-0.397_20200504_231813-10b2de58.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_caffe_fpn_mstrain_2x_coco/faster_rcnn_r50_caffe_fpn_mstrain_2x_coco_20200504_231813.log.json) |
@@ -65,3 +65,24 @@ We further finetune some pre-trained models on the COCO subsets, which only cont
 | ------------------------------------------------------------ | ----- | ------------------ | ------------------------------------------------------------ | -------- | ------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | [R-50-FPN](./faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-person.py)          | caffe | person             | [R-50-FPN-Caffe-3x](./faster_rcnn_r50_caffe_fpn_mstrain_3x_coco.py) | 3.7      | 55.8   | [config](./faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-person.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco-person/faster_rcnn_r50_fpn_1x_coco-person_20201216_175929-d022e227.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco-person/faster_rcnn_r50_fpn_1x_coco-person_20201216_175929.log.json)                                                 |
 | [R-50-FPN](./faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-person-bicycle-car.py) | caffe | person-bicycle-car | [R-50-FPN-Caffe-3x](./faster_rcnn_r50_caffe_fpn_mstrain_3x_coco.py) | 3.7      | 44.1   | [config](./faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-person-bicycle-car.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco-person-bicycle-car/faster_rcnn_r50_fpn_1x_coco-person-bicycle-car_20201216_173117-6eda6d92.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco-person-bicycle-car/faster_rcnn_r50_fpn_1x_coco-person-bicycle-car_20201216_173117.log.json) |
+
+## Torchvision New Receipe (TNR)
+
+Torchvision released its high-precision ResNet models. The training details can be found on the [Pytorch website](https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/). Here, we have done grid searches on learning rate and weight decay and found the optimal hyper-parameter on the detection task.
+
+|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
+| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :------: | :--------: |
+|    [R-50-TNR](./faster_rcnn_r50_fpn_tnr-pretrain_1x_coco.py)    |  pytorch  |   1x    | -        |                | 40.2 | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco_20220320_085147-efedfda4.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco/faster_rcnn_r50_fpn_tnr-pretrain_1x_coco_20220320_085147.log.json) |
+
+## Citation
+
+```latex
+@article{Ren_2017,
+   title={Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks},
+   journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
+   publisher={Institute of Electrical and Electronics Engineers (IEEE)},
+   author={Ren, Shaoqing and He, Kaiming and Girshick, Ross and Sun, Jian},
+   year={2017},
+   month={Jun},
+}
+```

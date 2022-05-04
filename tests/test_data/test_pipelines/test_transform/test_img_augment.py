@@ -45,7 +45,7 @@ def test_imequalize(nb_rand_test=100):
 
     def _imequalize(img):
         # equalize the image using PIL.ImageOps.equalize
-        from PIL import ImageOps, Image
+        from PIL import Image, ImageOps
         img = Image.fromarray(img)
         equalized_img = np.asarray(ImageOps.equalize(img))
         return equalized_img
@@ -81,8 +81,8 @@ def test_adjust_brightness(nb_rand_test=100):
     def _adjust_brightness(img, factor):
         # adjust the brightness of image using
         # PIL.ImageEnhance.Brightness
-        from PIL.ImageEnhance import Brightness
         from PIL import Image
+        from PIL.ImageEnhance import Brightness
         img = Image.fromarray(img)
         brightened_img = Brightness(img).enhance(factor)
         return np.asarray(brightened_img)
@@ -124,8 +124,9 @@ def test_adjust_brightness(nb_rand_test=100):
 def test_adjust_contrast(nb_rand_test=100):
 
     def _adjust_contrast(img, factor):
-        from PIL.ImageEnhance import Contrast
         from PIL import Image
+        from PIL.ImageEnhance import Contrast
+
         # Image.fromarray defaultly supports RGB, not BGR.
         # convert from BGR to RGB
         img = Image.fromarray(img[..., ::-1], mode='RGB')

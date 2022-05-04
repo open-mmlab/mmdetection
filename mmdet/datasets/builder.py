@@ -2,15 +2,17 @@
 import copy
 import platform
 import random
+import warnings
 from functools import partial
 
 import numpy as np
+import torch
 from mmcv.runner import get_dist_info
-from mmcv.utils import Registry, build_from_cfg
+from mmcv.utils import TORCH_VERSION, Registry, build_from_cfg, digit_version
 from torch.utils.data import DataLoader
 
-from .samplers import (DistributedGroupSampler, DistributedSampler,
-                       GroupSampler, InfiniteBatchSampler,
+from .samplers import (ClassAwareSampler, DistributedGroupSampler,
+                       DistributedSampler, GroupSampler, InfiniteBatchSampler,
                        InfiniteGroupBatchSampler)
 
 if platform.system() != 'Windows':
@@ -54,8 +56,8 @@ def _concat_dataset(cfg, default_args=None):
 
 
 def build_dataset(cfg, default_args=None):
-    from .dataset_wrappers import (ConcatDataset, RepeatDataset,
-                                   ClassBalancedDataset, MultiImageMixDataset)
+    from .dataset_wrappers import (ClassBalancedDataset, ConcatDataset,
+                                   MultiImageMixDataset, RepeatDataset)
     if isinstance(cfg, (list, tuple)):
         dataset = ConcatDataset([build_dataset(c, default_args) for c in cfg])
     elif cfg['type'] == 'ConcatDataset':
@@ -89,6 +91,8 @@ def build_dataloader(dataset,
                      shuffle=True,
                      seed=None,
                      runner_type='EpochBasedRunner',
+                     persistent_workers=False,
+                     class_aware_sampler=None,
                      **kwargs):
     """Build PyTorch DataLoader.
 
@@ -105,7 +109,14 @@ def build_dataloader(dataset,
         dist (bool): Distributed training/test or not. Default: True.
         shuffle (bool): Whether to shuffle the data at every epoch.
             Default: True.
+        seed (int, Optional): Seed to be used. Default: None.
         runner_type (str): Type of runner. Default: `EpochBasedRunner`
+        persistent_workers (bool): If True, the data loader will not shutdown
+            the worker processes after a dataset has been consumed once.
+            This allows to maintain the workers `Dataset` instances alive.
+            This argument is only valid when PyTorch>=1.7.0. Default: False.
+        class_aware_sampler (dict): Whether to use `ClassAwareSampler`
+            during training. Default: None.
         kwargs: any keyword argument to be used to initialize DataLoader
 
     Returns:
@@ -144,7 +155,18 @@ def build_dataloader(dataset,
         batch_size = 1
         sampler = None
     else:
-        if dist:
+        if class_aware_sampler is not None:
+            # ClassAwareSampler can be used in both distributed and
+            # non-distributed training.
+            num_sample_class = class_aware_sampler.get('num_sample_class', 1)
+            sampler = ClassAwareSampler(
+                dataset,
+                samples_per_gpu,
+                world_size,
+                rank,
+                seed=seed,
+                num_sample_class=num_sample_class)
+        elif dist:
             # DistributedGroupSampler will definitely shuffle the data to
             # satisfy that images on each GPU are in the same group
             if shuffle:
@@ -162,6 +184,13 @@ def build_dataloader(dataset,
         worker_init_fn, num_workers=num_workers, rank=rank,
         seed=seed) if seed is not None else None
 
+    if (TORCH_VERSION != 'parrots'
+            and digit_version(TORCH_VERSION) >= digit_version('1.7.0')):
+        kwargs['persistent_workers'] = persistent_workers
+    elif persistent_workers is True:
+        warnings.warn('persistent_workers is invalid because your pytorch '
+                      'version is lower than 1.7.0')
+
     data_loader = DataLoader(
         dataset,
         batch_size=batch_size,
@@ -169,7 +198,7 @@ def build_dataloader(dataset,
         num_workers=num_workers,
         batch_sampler=batch_sampler,
         collate_fn=lambda batch: batch,
-        pin_memory=False,
+        pin_memory=kwargs.pop('pin_memory', False),
         worker_init_fn=init_fn,
         **kwargs)
 
@@ -182,3 +211,4 @@ def worker_init_fn(worker_id, num_workers, rank, seed):
     worker_seed = num_workers * rank + worker_id + seed
     np.random.seed(worker_seed)
     random.seed(worker_seed)
+    torch.manual_seed(worker_seed)

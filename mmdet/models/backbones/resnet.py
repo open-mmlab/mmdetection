@@ -242,7 +242,7 @@ class Bottleneck(BaseModule):
     def forward_plugin(self, x, plugin_names):
         out = x
         for name in plugin_names:
-            out = getattr(self, name)(x)
+            out = getattr(self, name)(out)
         return out
 
     @property

@@ -1,26 +1,19 @@
-# High-resolution networks (HRNets) for object detection
+# HRNet
 
-## Introduction
+> [Deep High-Resolution Representation Learning for Human Pose Estimation](https://arxiv.org/abs/1902.09212)
 
-<!-- [ALGORITHM] -->
+<!-- [BACKBONE] -->
 
-```latex
-@inproceedings{SunXLW19,
-  title={Deep High-Resolution Representation Learning for Human Pose Estimation},
-  author={Ke Sun and Bin Xiao and Dong Liu and Jingdong Wang},
-  booktitle={CVPR},
-  year={2019}
-}
+## Abstract
 
-@article{SunZJCXLMWLW19,
-  title={High-Resolution Representations for Labeling Pixels and Regions},
-  author={Ke Sun and Yang Zhao and Borui Jiang and Tianheng Cheng and Bin Xiao
-  and Dong Liu and Yadong Mu and Xinggang Wang and Wenyu Liu and Jingdong Wang},
-  journal   = {CoRR},
-  volume    = {abs/1904.04514},
-  year={2019}
-}
-```
+This is an official pytorch implementation of Deep High-Resolution Representation Learning for Human Pose Estimation. In this work, we are interested in the human pose estimation problem with a focus on learning reliable high-resolution representations. Most existing methods recover high-resolution representations from low-resolution representations produced by a high-to-low resolution network. Instead, our proposed network maintains high-resolution representations through the whole process. We start from a high-resolution subnetwork as the first stage, gradually add high-to-low resolution subnetworks one by one to form more stages, and connect the mutli-resolution subnetworks in parallel. We conduct repeated multi-scale fusions such that each of the high-to-low resolution representations receives information from other parallel representations over and over, leading to rich high-resolution representations. As a result, the predicted keypoint heatmap is potentially more accurate and spatially more precise. We empirically demonstrate the effectiveness of our network through the superior pose estimation results over two benchmark datasets: the COCO keypoint detection dataset and the MPII Human Pose dataset.
+
+High-resolution representation learning plays an essential role in many vision problems, e.g., pose estimation and semantic segmentation. The high-resolution network (HRNet), recently developed for human pose estimation, maintains high-resolution representations through the whole process by connecting high-to-low resolution convolutions in parallel and produces strong high-resolution representations by repeatedly conducting fusions across parallel convolutions.
+In this paper, we conduct a further study on high-resolution representations by introducing a simple yet effective modification and apply it to a wide range of vision tasks. We augment the high-resolution representation by aggregating the (upsampled) representations from all the parallel convolutions rather than only the representation from the high-resolution convolution as done in HRNet. This simple modification leads to stronger representations, evidenced by superior results. We show top results in semantic segmentation on Cityscapes, LIP, and PASCAL Context, and facial landmark detection on AFLW, COFW, 300W, and WFLW. In addition, we build a multi-level representation from the high-resolution representation and apply it to the Faster R-CNN object detection framework and the extended frameworks. The proposed approach achieves superior results to existing single-model networks on COCO object detection.
+
+<div align=center>
+<img src="https://user-images.githubusercontent.com/40661020/143892740-a4e9743e-a323-4ace-8025-50e251ef43ff.png"/>
+</div>
 
 ## Results and Models
 
@@ -86,3 +79,23 @@
 
 - The `28e` schedule in HTC indicates decreasing the lr at 24 and 27 epochs, with a total of 28 epochs.
 - HRNetV2 ImageNet pretrained models are in [HRNets for Image Classification](https://github.com/HRNet/HRNet-Image-Classification).
+
+## Citation
+
+```latex
+@inproceedings{SunXLW19,
+  title={Deep High-Resolution Representation Learning for Human Pose Estimation},
+  author={Ke Sun and Bin Xiao and Dong Liu and Jingdong Wang},
+  booktitle={CVPR},
+  year={2019}
+}
+
+@article{SunZJCXLMWLW19,
+  title={High-Resolution Representations for Labeling Pixels and Regions},
+  author={Ke Sun and Yang Zhao and Borui Jiang and Tianheng Cheng and Bin Xiao
+  and Dong Liu and Yadong Mu and Xinggang Wang and Wenyu Liu and Jingdong Wang},
+  journal   = {CoRR},
+  volume    = {abs/1904.04514},
+  year={2019}
+}
+```
