@@ -588,6 +588,8 @@ def eval_map(det_results,
     area_ranges = ([(rg[0]**2, rg[1]**2) for rg in scale_ranges]
                    if scale_ranges is not None else None)
 
+    # There is no need to use multi processes to process
+    # when num_imgs = 1 .
     if num_imgs > 1:
         assert nproc > 0, 'nproc must be at least one.'
         nproc = min(nproc, num_imgs)
@@ -629,8 +631,6 @@ def eval_map(det_results,
                     [area_ranges for _ in range(num_imgs)],
                     [use_legacy_coordinate for _ in range(num_imgs)], *args))
         else:
-            # There is no need to use multi processes to process
-            # when num_imgs = 1 .
             tpfp = tpfp_fn(
                 cls_dets[0],
                 cls_gts[0],
