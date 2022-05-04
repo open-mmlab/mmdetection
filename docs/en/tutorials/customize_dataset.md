@@ -276,7 +276,22 @@ class MyDataset(CustomDataset):
 
     def get_ann_info(self, idx):
         return self.data_infos[idx]['ann']
+```
+Add MyDataset to `mmdet/datasets/__init__.py`
+```python
+from .my_datasets import MyDataset
 
+__all__ = [
+    # ......
+    'OpenImagesDataset', 'OpenImagesChallengeDataset',
+    # add class name in the end
+    'MyDataset'
+]
+```
+last step, recompile source code
+```shell
+pip install -r requirements/build.txt
+pip install -v -e .  # or "python setup.py develop"
 ```
 
 Then in the config, to use `MyDataset` you can modify the config as the following
