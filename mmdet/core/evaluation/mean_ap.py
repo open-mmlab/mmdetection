@@ -588,6 +588,11 @@ def eval_map(det_results,
     area_ranges = ([(rg[0]**2, rg[1]**2) for rg in scale_ranges]
                    if scale_ranges is not None else None)
 
+    if num_imgs > 1:
+        assert nproc > 0, 'nproc must be at least one.'
+        nproc = min(nproc, num_imgs)
+        pool = Pool(nproc)
+
     eval_results = []
     for i in range(num_classes):
         # get gt and det bboxes of this class
@@ -617,16 +622,12 @@ def eval_map(det_results,
             if ioa_thr is not None:
                 args.append([ioa_thr for _ in range(num_imgs)])
 
-            assert nproc > 0, 'nproc must be at least one.'
-            nproc = min(nproc, num_imgs)
-            pool = Pool(nproc)
             tpfp = pool.starmap(
                 tpfp_fn,
                 zip(cls_dets, cls_gts, cls_gts_ignore,
                     [iou_thr for _ in range(num_imgs)],
                     [area_ranges for _ in range(num_imgs)],
                     [use_legacy_coordinate for _ in range(num_imgs)], *args))
-            pool.close()
         else:
             # There is no need to use multi processes to process
             # when num_imgs = 1 .
@@ -685,6 +686,9 @@ def eval_map(det_results,
             'precision': precisions,
             'ap': ap
         })
+
+    if num_imgs > 1:
+        pool.close()
 
     if scale_ranges is not None:
         # shape (num_classes, num_scales)
