@@ -67,7 +67,7 @@ class DDODHead(AnchorHead):
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
-            chn = self.in_channels
+            chn = self.in_channels if i == 0 else self.feat_channels
             self.cls_convs.append(
                 ConvModule(
                     chn,
@@ -153,7 +153,7 @@ class DDODHead(AnchorHead):
                     the channels number is num_base_priors * num_classes.
                 - bbox_pred (Tensor): Box energies / deltas for a single \
                     scale level, the channels number is num_base_priors * 4.
-                - iou (Tensor): Iou for a single scale level, the \
+                - iou_pred (Tensor): Iou for a single scale level, the \
                     channel number is (N, num_base_priors * 1, H, W).
         """
         cls_feat = x
@@ -174,18 +174,24 @@ class DDODHead(AnchorHead):
         """Compute loss of a single scale level.
 
         Args:
+            anchors (Tensor): Box reference for each scale level with shape
+                (N, num_total_anchors, 4).
             cls_score (Tensor): Box scores for each scale level
                 Has shape (N, num_base_priors * num_classes, H, W).
             bbox_pred (Tensor): Box energies / deltas for each scale
                 level with shape (N, num_base_priors * 4, H, W).
-            anchors (Tensor): Box reference for each scale level with shape
-                (N, num_total_anchors, 4).
+            iou_pred (Tensor): Iou for a single scale level, the 
+                channel number is (N, num_base_priors * 1, H, W).
             labels (Tensor): Labels of each anchors with shape
                 (N, num_total_anchors).
             label_weights (Tensor): Label weights of each anchor with shape
                 (N, num_total_anchors)
             bbox_targets (Tensor): BBox regression targets of each anchor
                 weight shape (N, num_total_anchors, 4).
+            bbox_weights (Tensor): BBox weights of all anchors in the
+                image with shape (N, 4)
+            reweight_factor (list[int]): Reweight factor for cls and reg 
+                loss.
             num_total_samples (int): Number of positive samples that is
                 reduced over all GPUs.
             is_cls_assigner (bool): Classification or regression.
@@ -297,19 +303,24 @@ class DDODHead(AnchorHead):
                                             gt_bboxes,
                                             img_metas,
                                             gt_bboxes_ignore)
+        # get common vars
+        (anchor_list, valid_flag_list, num_level_anchors, 
+        num_level_anchors_list, cls_score_list, 
+        bbox_pred_list, gt_bboxes_ignore_list) = targets_com
 
         # classification branch assigner
         cls_reg_targets = self.get_targets(
             anchor_list,
             valid_flag_list,
-            cls_scores,
-            bbox_preds,
+            num_level_anchors,
+            num_level_anchors_list,
+            cls_score_list,
+            bbox_pred_list,
             gt_bboxes,
             img_metas,
-            gt_bboxes_ignore_list=gt_bboxes_ignore,
+            gt_bboxes_ignore_list=gt_bboxes_ignore_list,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
-            common_vars=targets_com,
             is_cls_assigner=True)
         if cls_reg_targets is None:
             return None
@@ -356,14 +367,15 @@ class DDODHead(AnchorHead):
         cls_reg_targets = self.get_targets(
             anchor_list,
             valid_flag_list,
-            cls_scores,
-            bbox_preds,
+            num_level_anchors,
+            num_level_anchors_list,
+            cls_score_list,
+            bbox_pred_list,
             gt_bboxes,
             img_metas,
-            gt_bboxes_ignore_list=gt_bboxes_ignore,
+            gt_bboxes_ignore_list=gt_bboxes_ignore_list,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
-            common_vars=targets_com,
             is_cls_assigner=False)
         if cls_reg_targets is None:
             return None
@@ -421,6 +433,22 @@ class DDODHead(AnchorHead):
                         gt_bboxes_ignore_list):
         """
         Compute common vars for regression and classification targets.
+        
+        Args:
+            anchor_list (list[Tensor]): anchors of each image.
+            valid_flag_list (list[Tensor]): Valid flags of each image.
+            cls_scores (list[Tensor]): Classification scores for all scale
+                levels, each is a 4D-tensor, the channels number is
+                num_base_priors * num_classes.
+            bbox_preds (list[Tensor]): Box energies / deltas for all scale
+                levels, each is a 4D-tensor, the channels number is
+                num_base_priors * 4.
+            gt_labels_list (list[Tensor]): class indices corresponding to 
+                each box.
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore_list (list[Tensor] | None): specify which bounding
+                boxes can be ignored when computing the loss.
         """
         num_imgs = len(img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs
@@ -440,8 +468,6 @@ class DDODHead(AnchorHead):
         # compute targets for each image
         if gt_bboxes_ignore_list is None:
             gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
-        if gt_labels_list is None:
-            gt_labels_list = [None for _ in range(num_imgs)]
 
         # NOTE compute predicted bbox location for atss_cost_assigner
         num_levels = len(cls_scores)
@@ -477,32 +503,44 @@ class DDODHead(AnchorHead):
     def get_targets(self,
                     anchor_list,
                     valid_flag_list,
-                    cls_scores,
-                    bbox_preds,
+                    num_level_anchors,
+                    num_level_anchors_list,
+                    cls_score_list,
+                    bbox_pred_list,
                     gt_bboxes_list,
                     img_metas,
                     gt_bboxes_ignore_list=None,
                     gt_labels_list=None,
                     label_channels=1,
                     unmap_outputs=True,
-                    common_vars=None,
                     is_cls_assigner=True):
         """Get targets for DDOD head.
 
         This method is almost the same as `AnchorHead.get_targets()`. Besides
         returning the targets as the parent method does, it also returns the
         anchors as the first element of the returned tuple.
-        """ 
-        # get common vars
-        (anchor_list_, valid_flag_list_, num_level_anchors, 
-        num_level_anchors_list, cls_score_list, 
-        bbox_pred_list, gt_bboxes_ignore_list) = common_vars
         
+        Args:
+            anchor_list (list[Tensor]): anchors of each image.
+            valid_flag_list (list[Tensor]): Valid flags of each image.
+            cls_scores (list[Tensor]): Classification scores for all scale
+                levels, each is a 4D-tensor, the channels number is
+                num_base_priors * num_classes.
+            bbox_preds (list[Tensor]): Box energies / deltas for all scale
+                levels, each is a 4D-tensor, the channels number is
+                num_base_priors * 4.
+            gt_labels_list (list[Tensor]): class indices corresponding to 
+                each box.
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            gt_bboxes_ignore_list (list[Tensor] | None): specify which bounding
+                boxes can be ignored when computing the loss.
+        """ 
         (all_anchors, all_labels, all_label_weights, all_bbox_targets,
          all_bbox_weights, pos_inds_list, neg_inds_list) = multi_apply(
              self._get_target_single,
-             anchor_list_,
-             valid_flag_list_,
+             anchor_list,
+             valid_flag_list,
              cls_score_list,
              bbox_pred_list,
              num_level_anchors_list,
@@ -555,18 +593,18 @@ class DDODHead(AnchorHead):
             valid_flags (Tensor): Multi level valid flags of the image,
                 which are concatenated into a single tensor of
                 shape (num_base_priors,).
-            num_level_anchors (Tensor): Number of anchors of each scale level.
+            num_level_anchors (int): Number of anchors of each scale level.
             gt_bboxes (Tensor): Ground truth bboxes of the image,
                 shape (num_gts, 4).
             gt_bboxes_ignore (Tensor): Ground truth bboxes to be
-                ignored, shape (num_ignored_gts, 4).
+                ignored, shape (num_ignored_gts,).
             gt_labels (Tensor): Ground truth labels of each box,
                 shape (num_gts,).
             img_meta (dict): Meta info of the image.
             label_channels (int): Channel of label.
             unmap_outputs (bool): Whether to map outputs back to the original
                 set of anchors.
-            is_cls_assigner (bool): Classification or regression.
+            is_cls_assigner (bool): Classification or regression. Default: True.
 
         Returns:
             tuple: N is the number of total anchors in the image.
@@ -657,7 +695,7 @@ class DDODHead(AnchorHead):
         """Get the anchors of each scale level inside.
 
         Args:
-            num_level_anchors (Tensor): Number of anchors of each scale level.
+            num_level_anchors (list[int]): Number of anchors of each scale level.
             inside_flags (Tensor): Multi level inside flags of the image,
                 which are concatenated into a single tensor of
                 shape (num_base_priors,).
