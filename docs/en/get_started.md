@@ -157,16 +157,14 @@ The following table lists affected algorithms.
 [Google Colab](https://research.google.com/) usually has PyTorch installed,
 thus we only need to install MMCV and MMDetection with the following commands.
 
-**Step 1.**
-Install [MMCV](https://github.com/open-mmlab/mmcv) using [MIM](https://github.com/open-mmlab/mim).
+**Step 1.** Install [MMCV](https://github.com/open-mmlab/mmcv) using [MIM](https://github.com/open-mmlab/mim).
 
 ```shell
 !pip3 install openmim
 !mim install mmcv-full
 ```
 
-**Step 2.**
-Install MMDetection from the source.
+**Step 2.** Install MMDetection from the source.
 
 ```shell
 !git clone https://github.com/open-mmlab/mmdetection.git
@@ -174,8 +172,7 @@ Install MMDetection from the source.
 !pip install -e .
 ```
 
-**Step 3.**
-Verification.
+**Step 3.** Verification.
 
 ```python
 import mmdet
