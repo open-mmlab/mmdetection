@@ -1,0 +1,20 @@
+_base_ = [
+    '../_base_/models/mask_rcnn_r50_fpn.py',
+    '../_base_/datasets/coco_instance.py',
+    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
+]
+
+# yapf:disable
+log_config = dict(
+    interval=50,
+    hooks=[
+        dict(type='TextLoggerHook'),
+        dict(type='MMDetWandbHook',
+             init_kwargs={
+                'project': 'mmdetection',
+                'group': 'maskrcnn-r50-fpn-1x-coco'
+             },
+             interval=10,
+             log_checkpoint=True,
+             num_eval_images=10)
+        ])
