@@ -553,12 +553,14 @@ class AlphaIoULoss(nn.Module):
                  eps=1e-6,
                  reduction='mean',
                  loss_weight=1.0,
-                 mode='iou'):
+                 mode='iou',
+                 alpha=3):
         super(AlphaIoULoss, self).__init__()
         self.eps = eps
         self.reduction = reduction
         self.loss_weight = loss_weight
         self.mode = mode
+        self.alpha = alpha
 
     def forward(self,
                 pred,
@@ -584,6 +586,7 @@ class AlphaIoULoss(nn.Module):
             pred,
             target,
             weight,
+            alpha=self.alpha,
             eps=self.eps,
             reduction=reduction,
             avg_factor=avg_factor,
