@@ -10,7 +10,7 @@ MMDetection and MMCV provide users with various useful hooks including log hooks
 
 ## NumClassCheckHook
 
-## [MemoryProfilerHook](https://github.com/open-mmlab/mmdetection/blob/dev/mmdet/core/hook/memory_profiler_hook.py)
+## [MemoryProfilerHook](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/hook/memory_profiler_hook.py)
 
 Memory profiler hook records memory information including virtual memory, swap memory, and the memory of the current process. This hook can help us grasp the memory usage of the system and discover potential memory leak bugs. To use this hook, we must install `memory_profiler` and `psutil` by `pip install memory_profiler psutil` first.
 
