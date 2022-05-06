@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import warnings
+import os.path as osp
 
 import mmcv
 import numpy as np
@@ -15,16 +15,20 @@ from mmdet.core.mask.structures import polygon_to_bitmap
 
 @HOOKS.register_module()
 class MMDetWandbHook(WandbLoggerHook):
-    """MMDetWandbHook logs metrics, saves model checkpoints as W&B Artifact,
-    and logs model prediction as interactive W&B Tables.
+    """Enhanced Wandb logger hook for MMDetection.
+
+    Comparing with the :cls:`mmcv.runner.WandbLoggerHook`, this hook can not
+    only automatically log all the metrics but also log the following extra
+    information - logs metrics, saves model checkpoints as W&B Artifact, and
+    logs model prediction as interactive W&B Tables.
 
     - Metrics: The MMDetWandbHook will automatically log training
-        and validation metrics.
+        and validation metrics along with system metrics (CPU/GPU).
 
     - Checkpointing: If `log_checkpoint` is True, the checkpoint saved at
         every checkpoint interval will be saved as W&B Artifacts.
-        This depends on the `CheckpointHook` whose priority is more
-        than `MMDetWandbHook`. Please refer to
+        This depends on the : class:`mmcv.runner.CheckpointHook` whose priority
+        is higher than this hook. Please refer to
         https://docs.wandb.ai/guides/artifacts/model-versioning
         to learn more about model versioning with W&B Artifacts.
 
@@ -50,15 +54,17 @@ class MMDetWandbHook(WandbLoggerHook):
     ```
     Example:
         log_config = dict(
-            interval=10,
+            ...
             hooks=[
+                ...,
                 dict(type='MMDetWandbHook',
                      init_kwargs={
-                         'entity': WANDB_ENTITY,
-                         'project': WANDB_PROJECT_NAME
+                         'entity': "YOUR_ENTITY",
+                         'project': "YOUR_PROJECT_NAME"
                      },
                      interval=50,
                      log_checkpoint=True,
+                     log_checkpoint_metadata=True,
                      num_eval_images=100,
                      bbox_score_thr=0.3)
             ])
@@ -68,14 +74,16 @@ class MMDetWandbHook(WandbLoggerHook):
         init_kwargs (dict): A dict passed to wandb.init to initialize
             a W&B run. Please refer to https://docs.wandb.ai/ref/python/init
             for possible key-value pairs.
-        interval (int): Logging interval (every k iterations).
-            Default 10.
+        interval (int): Logging interval (every k iterations). Defaults to 10.
         log_checkpoint (bool): Save the checkpoint at every checkpoint interval
             as W&B Artifacts. Use this for model versioning where each version
-            is a checkpoint.
-            Default: False
-        num_eval_images (int): Number of validation images to be logged.
-            Default: 100
+            is a checkpoint. Defaults to False.
+        log_checkpoint_metadata (bool): Log the evaluation metrics computed
+            on the validation data with the checkpoint, along with current
+            epoch as a metadata to that checkpoint.
+            Defaults to True.
+        num_eval_images (int): The number of validation images to be logged.
+            If zero, the evaluation won't be logged. Defaults to 100.
         bbox_score_thr (float): Threshold for bounding box scores.
     """
 
@@ -83,128 +91,178 @@ class MMDetWandbHook(WandbLoggerHook):
                  init_kwargs=None,
                  interval=50,
                  log_checkpoint=False,
+                 log_checkpoint_metadata=False,
                  num_eval_images=100,
                  bbox_score_thr=0.3,
                  **kwargs):
         super(MMDetWandbHook, self).__init__(init_kwargs, interval, **kwargs)
 
         self.log_checkpoint = log_checkpoint
+        self.log_checkpoint_metadata = (
+            log_checkpoint and log_checkpoint_metadata)
         self.num_eval_images = num_eval_images
         self.bbox_score_thr = bbox_score_thr
-        self.log_evaluation = True
-        self.best_score = 0
+        self.log_evaluation = (num_eval_images > 0)
+        self.ckpt_hook: CheckpointHook = None
+        self.eval_hook: EvalHook = None
 
     @master_only
     def before_run(self, runner):
         super(MMDetWandbHook, self).before_run(runner)
 
-        # TODO: Config
-
-        # Check if EvalHook and CheckpointHook are available.
+        # Inspect CheckpointHook and EvalHook
         for hook in runner.hooks:
             if isinstance(hook, CheckpointHook):
                 self.ckpt_hook = hook
             if isinstance(hook, (EvalHook, DistEvalHook)):
                 self.eval_hook = hook
 
-        # If CheckpointHook is not available turn off log_checkpoint.
-        if getattr(self, 'ckpt_hook', None) is None:
-            self.log_checkpoint = False
-            warnings.warn(
-                'If you want to save model checkpoints as '
-                'W&B Artifacts for version control use the '
-                'CheckpointHook', UserWarning)
+        # Check conditions to log checkpoint
+        if self.log_checkpoint:
+            if self.ckpt_hook is None:
+                self.log_checkpoint = False
+                self.log_checkpoint_metadata = False
+                runner.logger.warning(
+                    'To log checkpoint in MMDetWandbHook, `CheckpointHook` is'
+                    'required, please check hooks in the runner.')
+            else:
+                self.ckpt_interval = self.ckpt_hook.interval
 
-        # If EvalHook/DistEvalHook is not present set
-        # num_eval_images to zero.
-        try:
-            self.val_dataloader = self.eval_hook.dataloader
-            self.val_dataset = self.val_dataloader.dataset
-        except AttributeError:
-            self.num_eval_images = 0
-            warnings.warn(
-                'To log the validation dataset to a W&B Tables, '
-                'use EvalHook or DistEvalHook.', UserWarning)
+        # Check conditions to log evaluation
+        if self.log_evaluation or self.log_checkpoint_metadata:
+            if self.eval_hook is None:
+                self.log_evaluation = False
+                self.log_checkpoint_metadata = False
+                runner.logger.warning(
+                    'To log evaluation or checkpoint metadata in '
+                    'MMDetWandbHook, `EvalHook` or `DistEvalHook` in mmdet '
+                    'is required, please check whether the validation '
+                    'is enabled.')
+            else:
+                self.eval_interval = self.eval_hook.interval
+                self.val_dataset = self.eval_hook.dataloader.dataset
+                # Determine the number of samples to be logged.
+                if self.num_eval_images > len(self.val_dataset):
+                    self.num_eval_images = len(self.val_dataset)
+                    runner.logger.warning(
+                        f'The num_eval_images ({self.num_eval_images}) is '
+                        'greater than the total number of validation samples '
+                        f'({len(self.val_dataset)}). The complete validation '
+                        'dataset will be logged.')
 
-        # If num_eval_images is greater than zero, create
-        # and log W&B table for validation data.
-        if self.num_eval_images > 0:
+        # Check conditions to log checkpoint metadata
+        if self.log_checkpoint_metadata:
+            assert self.ckpt_interval % self.eval_interval == 0, \
+                'To log checkpoint metadata in MMDetWandbHook, the interval ' \
+                f'of checkpoint saving ({self.ckpt_interval}) should be ' \
+                'divisible by the interval of evaluation ' \
+                f'({self.eval_interval}).'
+
+        # Initialize evaluation table
+        if self.log_evaluation:
             # Initialize data table
             self._init_data_table()
-            # Add data to the table
-            self._add_ground_truth()
+            # Add data to the data table
+            self._add_ground_truth(runner)
             # Log ground truth data
-            if self.log_evaluation:
-                self._log_data_table()
+            self._log_data_table()
 
     @master_only
     def after_train_epoch(self, runner):
         super(MMDetWandbHook, self).after_train_epoch(runner)
 
-        if self.log_checkpoint:
-            if self.ckpt_hook.by_epoch:
-                if self.every_n_epochs(runner, self.ckpt_hook.interval) or (
-                        self.ckpt_hook.save_last
-                        and self.is_last_epoch(runner)):
-                    if self.eval_hook:
-                        metadata = self._get_ckpt_metadata(runner)
-                        aliases = [f'epoch_{runner.epoch+1}', 'latest']
-                        if len(metadata) > 0:
-                            aliases.append(f'metadata_{runner.epoch+1}')
-                        self._log_ckpt_as_artifact(self.ckpt_hook.out_dir,
-                                                   runner.epoch, aliases,
-                                                   metadata)
-                    else:
-                        aliases = [f'epoch_{runner.epoch+1}', 'latest']
-                        self._log_ckpt_as_artifact(self.ckpt_hook.out_dir,
-                                                   runner.epoch, aliases)
+        if not self.by_epoch:
+            return
 
-        if self.num_eval_images > 0 and self.log_evaluation:
-            if self.eval_hook.by_epoch and self.eval_hook._should_evaluate(
-                    runner):
-                results = self.eval_hook.results
-                # Initialize evaluation table
-                self._init_pred_table()
-                # Log predictions
-                self._log_predictions(results, runner.epoch + 1)
-                # Log the table
-                self._log_eval_table(runner.epoch + 1)
+        # Log checkpoint and metadata.
+        if (self.log_checkpoint
+                and self.every_n_epochs(runner, self.ckpt_interval)
+                or (self.ckpt_hook.save_last and self.is_last_epoch(runner))):
+            if self.log_checkpoint_metadata and self.eval_hook:
+                metadata = {
+                    'epoch': runner.epoch + 1,
+                    **self._get_eval_results()
+                }
+            else:
+                metadata = None
+            aliases = [f'epoch_{runner.epoch+1}', 'latest']
+            model_path = osp.join(self.ckpt_hook.out_dir,
+                                  f'epoch_{runner.epoch+1}.pth')
+            self._log_ckpt_as_artifact(model_path, aliases, metadata)
+
+        # Save prediction table
+        if self.log_evaluation and self.eval_hook._should_evaluate(runner):
+            results = self.eval_hook.latest_results
+            # Initialize evaluation table
+            self._init_pred_table()
+            # Log predictions
+            self._log_predictions(results, runner.epoch + 1)
+            # Log the table
+            self._log_eval_table(runner.epoch + 1)
+
+    @master_only
+    def after_train_iter(self, runner):
+        if self.get_mode(runner) == 'train':
+            # An ugly patch. The iter-based eval hook will call the
+            # `after_train_iter` method of all logger hooks before evaluation.
+            # Use this trick to skip that call.
+            # Don't call super method at first, it will clear the log_buffer
+            return super(MMDetWandbHook, self).after_train_iter(runner)
+        else:
+            super(MMDetWandbHook, self).after_train_iter(runner)
+
+        if self.by_epoch:
+            return
+
+        # Save checkpoint and metadata
+        if (self.log_checkpoint
+                and self.every_n_iters(runner, self.ckpt_interval)
+                or (self.ckpt_hook.save_last and self.is_last_iter(runner))):
+            if self.log_checkpoint_metadata and self.eval_hook:
+                metadata = {
+                    'iter': runner.iter + 1,
+                    **self._get_eval_results()
+                }
+            else:
+                metadata = None
+            aliases = [f'iter_{runner.iter+1}', 'latest']
+            model_path = osp.join(self.ckpt_hook.out_dir,
+                                  f'iter_{runner.iter+1}.pth')
+            self._log_ckpt_as_artifact(model_path, aliases, metadata)
+
+        # Save prediction table
+        if self.log_evaluation and self.eval_hook._should_evaluate(runner):
+            results = self.eval_hook.latest_results
+            # Initialize evaluation table
+            self._init_pred_table()
+            # Log predictions
+            self._log_predictions(results, runner.iter + 1)
+            # Log the table
+            self._log_eval_table(runner.iter + 1)
 
     @master_only
     def after_run(self, runner):
         self.wandb.finish()
 
-    def _log_ckpt_as_artifact(self,
-                              path_to_model,
-                              epoch,
-                              aliases,
-                              metadata=None):
+    def _log_ckpt_as_artifact(self, model_path, aliases, metadata=None):
         """Log model checkpoint as  W&B Artifact.
 
         Args:
-            path_to_model (str): Path where model checkpoints are saved.
-            epoch (int): The current epoch.
+            model_path (str): Path of the checkpoint to log.
             aliases (list): List of the aliases associated with this artifact.
             metadata (dict, optional): Metadata associated with this artifact.
         """
         model_artifact = self.wandb.Artifact(
             f'run_{self.wandb.run.id}_model', type='model', metadata=metadata)
-        model_artifact.add_file(f'{path_to_model}/epoch_{epoch+1}.pth')
+        model_artifact.add_file(model_path)
         self.wandb.log_artifact(model_artifact, aliases=aliases)
 
-    def _get_ckpt_metadata(self, runner):
-        """Get model checkpoint metadata."""
-        current_epoch = runner.epoch + 1
-
-        if (current_epoch % self.ckpt_hook.interval
-                == 0) and (current_epoch % self.eval_hook.interval == 0):
-            results = self.eval_hook.results
-
-            eval_results = self.val_dataset.evaluate(results, logger='silent')
-            metadata = dict(epoch=runner.epoch + 1, **eval_results)
-            return metadata
-        else:
-            return {}
+    def _get_eval_results(self):
+        """Get model evaluation results."""
+        results = self.eval_hook.latest_results
+        eval_results = self.val_dataset.evaluate(
+            results, logger='silent', **self.eval_hook.eval_kwargs)
+        return eval_results
 
     def _init_data_table(self):
         """Initialize the W&B Tables for validation data."""
@@ -213,36 +271,35 @@ class MMDetWandbHook(WandbLoggerHook):
 
     def _init_pred_table(self):
         """Initialize the W&B Tables for model evaluation."""
-        columns = ['epoch', 'image_name', 'ground_truth', 'prediction']
+        columns = ['image_name', 'ground_truth', 'prediction']
         self.eval_table = self.wandb.Table(columns=columns)
 
-    def _add_ground_truth(self):
+    def _add_ground_truth(self, runner):
         # Get image loading pipeline
         from mmdet.datasets.pipelines import LoadImageFromFile
-        transforms = self.val_dataset.pipeline.transforms
-        for transform in transforms:
-            if isinstance(transform, LoadImageFromFile):
-                img_loader = transform
-        if 'img_loader' not in locals():
-            warnings.warn(
-                'LoadImageFromFile is required to add images '
-                'to W&B Tables.', UserWarning)
+        img_loader = None
+        for t in self.val_dataset.pipeline.transforms:
+            if isinstance(t, LoadImageFromFile):
+                img_loader = t
+
+        if img_loader is None:
             self.log_evaluation = False
+            runner.logger.warning(
+                'LoadImageFromFile is required to add images '
+                'to W&B Tables.')
             return
 
-        # Determine the number of samples to be logged.
-        num_total_images = len(self.val_dataset)
-        if self.num_eval_images > num_total_images:
-            warnings.warn(
-                'The num_eval_images is greater than the total number '
-                'of validation samples. Complete validation set '
-                'will be logged.', UserWarning)
-        self.num_eval_images = min(self.num_eval_images, num_total_images)
+        # Select the images to be logged.
+        self.eval_image_indexs = np.arange(len(self.val_dataset))
+        # Set seed so that same validation set is logged each time.
+        np.random.seed(42)
+        np.random.shuffle(self.eval_image_indexs)
+        self.eval_image_indexs = self.eval_image_indexs[:self.num_eval_images]
 
-        classes = self.val_dataset.CLASSES
+        CLASSES = self.val_dataset.CLASSES
         self.class_id_to_label = {
             id + 1: name
-            for id, name in enumerate(classes)
+            for id, name in enumerate(CLASSES)
         }
         self.class_set = self.wandb.Classes([{
             'id': id,
@@ -251,14 +308,9 @@ class MMDetWandbHook(WandbLoggerHook):
 
         img_prefix = self.val_dataset.img_prefix
 
-        self.eval_image_indexs = np.arange(self.num_eval_images)
-        # Set seed so that same validation set is logged each time.
-        np.random.seed(42)
-        np.random.shuffle(self.eval_image_indexs)
-
         for idx in self.eval_image_indexs:
             img_info = self.val_dataset.data_infos[idx]
-            image_name = img_info['filename']
+            image_name = img_info.get('filename', f'img_{idx}')
             img_height, img_width = img_info['height'], img_info['width']
 
             img_meta = img_loader(
@@ -340,7 +392,7 @@ class MMDetWandbHook(WandbLoggerHook):
                     segms = segms[inds, ...]
 
             # Get dict of bounding boxes to be logged.
-            wandb_boxes = self._get_wandb_bboxes(bboxes, labels, mode='pred')
+            wandb_boxes = self._get_wandb_bboxes(bboxes, labels, log_gt=False)
             # Get dict of masks to be logged.
             if segms is not None:
                 wandb_masks = self._get_wandb_masks(segms, labels)
@@ -349,7 +401,7 @@ class MMDetWandbHook(WandbLoggerHook):
 
             # Log a row to the eval table.
             self.eval_table.add_data(
-                epoch, self.data_table_ref.data[ndx][0],
+                self.data_table_ref.data[ndx][0],
                 self.data_table_ref.data[ndx][1],
                 self.wandb.Image(
                     self.data_table_ref.data[ndx][1],
@@ -357,14 +409,14 @@ class MMDetWandbHook(WandbLoggerHook):
                     masks=wandb_masks,
                     classes=self.class_set))
 
-    def _get_wandb_bboxes(self, bboxes, labels, mode='gt'):
+    def _get_wandb_bboxes(self, bboxes, labels, log_gt=True):
         """Get list of structured dict for logging bounding boxes to W&B.
 
         Args:
             bboxes (list): List of bounding box coordinates in
                         (minX, minY, maxX, maxY) format.
             labels (int): List of label ids.
-            mode (str): Whether to log ground truth or prediction boxes.
+            log_gt (bool): Whether to log ground truth or prediction boxes.
 
         Returns:
             Dictionary of bounding boxes to be logged.
@@ -402,7 +454,7 @@ class MMDetWandbHook(WandbLoggerHook):
             'class_labels': self.class_id_to_label
         }
 
-        if mode == 'gt':
+        if log_gt:
             wandb_boxes['ground_truth'] = wandb_bbox_dict
         else:
             wandb_boxes['predictions'] = wandb_bbox_dict

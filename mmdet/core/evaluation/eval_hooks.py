@@ -25,6 +25,7 @@ class EvalHook(BaseEvalHook):
 
     def __init__(self, *args, dynamic_intervals=None, **kwargs):
         super(EvalHook, self).__init__(*args, **kwargs)
+        self.latest_results = None
 
         self.use_dynamic_intervals = dynamic_intervals is not None
         if self.use_dynamic_intervals:
@@ -56,10 +57,10 @@ class EvalHook(BaseEvalHook):
 
         # Changed results to self.results so that MMDetWandbHook can access
         # the evaluation results and log them to wandb.
-        self.results = single_gpu_test(
-            runner.model, self.dataloader, show=False)
+        results = single_gpu_test(runner.model, self.dataloader, show=False)
+        self.latest_results = results
         runner.log_buffer.output['eval_iter_num'] = len(self.dataloader)
-        key_score = self.evaluate(runner, self.results)
+        key_score = self.evaluate(runner, results)
         # the key_score may be `None` so it needs to skip the action to save
         # the best checkpoint
         if self.save_best and key_score:
@@ -73,6 +74,7 @@ class DistEvalHook(BaseDistEvalHook):
 
     def __init__(self, *args, dynamic_intervals=None, **kwargs):
         super(DistEvalHook, self).__init__(*args, **kwargs)
+        self.latest_results = None
 
         self.use_dynamic_intervals = dynamic_intervals is not None
         if self.use_dynamic_intervals:
@@ -121,15 +123,16 @@ class DistEvalHook(BaseDistEvalHook):
 
         # Changed results to self.results so that MMDetWandbHook can access
         # the evaluation results and log them to wandb.
-        self.results = multi_gpu_test(
+        results = multi_gpu_test(
             runner.model,
             self.dataloader,
             tmpdir=tmpdir,
             gpu_collect=self.gpu_collect)
+        self.latest_results = results
         if runner.rank == 0:
             print('\n')
             runner.log_buffer.output['eval_iter_num'] = len(self.dataloader)
-            key_score = self.evaluate(runner, self.results)
+            key_score = self.evaluate(runner, results)
 
             # the key_score may be `None` so it needs to skip
             # the action to save the best checkpoint
