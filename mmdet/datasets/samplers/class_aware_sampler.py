@@ -1,11 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
+from typing import Optional
 
 import torch
-from mmcv.runner import get_dist_info
+from mmengine.dist import get_dist_info, sync_random_seed
 from torch.utils.data import Sampler
 
-from mmdet.core.utils import sync_random_seed
 from mmdet.registry import DATA_SAMPLERS
 
 
@@ -28,39 +28,36 @@ class ClassAwareSampler(Sampler):
             it is the number of training samples on each GPU.
             When model is :obj:`DataParallel`, it is
             `num_gpus * samples_per_gpu`.
-            Default : 1.
-        num_replicas (optional): Number of processes participating in
-            distributed training.
-        rank (optional): Rank of the current process within num_replicas.
+            Defaults to 1.
         seed (int, optional): random seed used to shuffle the sampler if
             ``shuffle=True``. This number should be identical across all
-            processes in the distributed group. Default: 0.
+            processes in the distributed group. Defaults to None.
         num_sample_class (int): The number of samples taken from each
-            per-label list. Default: 1
+            per-label list. Defaults to 1.
+        round_up (bool): Whether to add extra samples to make the number of
+            samples evenly divisible by the world size. Defaults to True.
     """
 
     def __init__(self,
                  dataset,
-                 samples_per_gpu=1,
-                 num_replicas=None,
-                 rank=None,
-                 seed=0,
-                 num_sample_class=1):
-        _rank, _num_replicas = get_dist_info()
-        if num_replicas is None:
-            num_replicas = _num_replicas
-        if rank is None:
-            rank = _rank
+                 samples_per_gpu: int = 1,
+                 seed: Optional[int] = None,
+                 num_sample_class=1,
+                 round_up: bool = True) -> None:
+        self.samples_per_gpu = samples_per_gpu  # TODO: consider to remove?
+        rank, world_size = get_dist_info()
+        self.rank = rank
+        self.world_size = world_size
 
         self.dataset = dataset
-        self.num_replicas = num_replicas
-        self.samples_per_gpu = samples_per_gpu
-        self.rank = rank
         self.epoch = 0
         # Must be the same across all workers. If None, will use a
         # random seed shared among workers
         # (require synchronization among all workers)
-        self.seed = sync_random_seed(seed)
+        if seed is None:
+            seed = sync_random_seed()
+        self.seed = seed
+        self.round_up = round_up
 
         # The number of samples taken from each per-label list
         assert num_sample_class > 0 and isinstance(num_sample_class, int)
@@ -72,9 +69,9 @@ class ClassAwareSampler(Sampler):
 
         self.num_samples = int(
             math.ceil(
-                len(self.dataset) * 1.0 / self.num_replicas /
+                len(self.dataset) * 1.0 / world_size /
                 self.samples_per_gpu)) * self.samples_per_gpu
-        self.total_size = self.num_samples * self.num_replicas
+        self.total_size = self.num_samples * self.world_size
 
         # get number of images containing each category
         self.num_cat_imgs = [len(x) for x in self.cat_dict.values()]
