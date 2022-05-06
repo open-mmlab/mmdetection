@@ -1,10 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import warnings
 
-from mmcv.cnn import MODELS as MMCV_MODELS
-from mmcv.utils import Registry
-
-MODELS = Registry('models', parent=MMCV_MODELS)
+from mmdet.registry import MODELS
 
 BACKBONES = MODELS
 NECKS = MODELS
@@ -17,31 +14,44 @@ DETECTORS = MODELS
 
 def build_backbone(cfg):
     """Build backbone."""
+    warnings.warn('``build_backbone`` would be deprecated soon, please use '
+                  '``mmdet.registry.MODELS.build()`` ')
     return BACKBONES.build(cfg)
 
 
 def build_neck(cfg):
     """Build neck."""
+    warnings.warn('``build_neck`` would be deprecated soon, please use '
+                  '``mmdet.registry.MODELS.build()`` ')
     return NECKS.build(cfg)
 
 
 def build_roi_extractor(cfg):
     """Build roi extractor."""
+    warnings.warn(
+        '``build_roi_extractor`` would be deprecated soon, please use '
+        '``mmdet.registry.MODELS.build()`` ')
     return ROI_EXTRACTORS.build(cfg)
 
 
 def build_shared_head(cfg):
     """Build shared head."""
+    warnings.warn('``build_shared_head`` would be deprecated soon, please use '
+                  '``mmdet.registry.MODELS.build()`` ')
     return SHARED_HEADS.build(cfg)
 
 
 def build_head(cfg):
     """Build head."""
+    warnings.warn('``build_head`` would be deprecated soon, please use '
+                  '``mmdet.registry.MODELS.build()`` ')
     return HEADS.build(cfg)
 
 
 def build_loss(cfg):
     """Build loss."""
+    warnings.warn('``build_loss`` would be deprecated soon, please use '
+                  '``mmdet.registry.MODELS.build()`` ')
     return LOSSES.build(cfg)
 
 

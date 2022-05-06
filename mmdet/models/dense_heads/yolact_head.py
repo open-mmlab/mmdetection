@@ -8,11 +8,12 @@ from mmcv.runner import BaseModule, ModuleList, force_fp32
 
 from mmdet.core import build_sampler, fast_nms, images_to_levels, multi_apply
 from mmdet.core.utils import select_single_mlvl
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS
+from ..builder import build_loss
 from .anchor_head import AnchorHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class YOLACTHead(AnchorHead):
     """YOLACT box head used in https://arxiv.org/abs/1904.02689.
 
@@ -453,7 +454,7 @@ class YOLACTHead(AnchorHead):
         return det_bboxes, det_labels, det_coeffs
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class YOLACTSegmHead(BaseModule):
     """YOLACT segmentation head used in https://arxiv.org/abs/1904.02689.
 
@@ -576,7 +577,7 @@ class YOLACTSegmHead(BaseModule):
             'because this head is only evaluated during training')
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class YOLACTProtonet(BaseModule):
     """YOLACT mask head used in https://arxiv.org/abs/1904.02689.
 

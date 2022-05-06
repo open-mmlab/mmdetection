@@ -9,7 +9,7 @@ from mmcv.runner import BaseModule
 
 from mmdet.core import multi_apply
 from mmdet.core.utils import filter_scores_and_topk
-from ..builder import HEADS
+from mmdet.registry import MODELS
 from .anchor_free_head import AnchorFreeHead
 
 INF = 1e8
@@ -46,7 +46,7 @@ class FeatureAlign(BaseModule):
         return x
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class FoveaHead(AnchorFreeHead):
     """FoveaBox: Beyond Anchor-based Object Detector
     https://arxiv.org/abs/1904.03797

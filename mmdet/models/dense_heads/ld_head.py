@@ -3,11 +3,12 @@ import torch
 from mmcv.runner import force_fp32
 
 from mmdet.core import bbox_overlaps, multi_apply, reduce_mean
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS
+from ..builder import build_loss
 from .gfl_head import GFLHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class LDHead(GFLHead):
     """Localization distillation Head. (Short description)
 

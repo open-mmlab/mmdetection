@@ -10,7 +10,7 @@ from terminaltables import AsciiTable
 from torch.utils.data import Dataset
 
 from mmdet.core import eval_map, eval_recalls
-from .builder import DATASETS
+from mmdet.registry import DATASETS
 from .pipelines import Compose
 
 

@@ -6,10 +6,11 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmcv.runner import BaseModule
 
-from mmdet.models.builder import HEADS, build_loss
+from mmdet.models.builder import build_loss
+from mmdet.registry import MODELS
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class GridHead(BaseModule):
 
     def __init__(self,

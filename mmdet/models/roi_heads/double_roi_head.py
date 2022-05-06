@@ -1,9 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from ..builder import HEADS
+from mmdet.registry import MODELS
 from .standard_roi_head import StandardRoIHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class DoubleHeadRoIHead(StandardRoIHead):
     """RoI head for Double Head RCNN.
 

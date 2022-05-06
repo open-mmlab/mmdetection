@@ -8,9 +8,10 @@ from functools import partial
 import numpy as np
 import torch
 from mmcv.runner import get_dist_info
-from mmcv.utils import TORCH_VERSION, Registry, build_from_cfg, digit_version
+from mmcv.utils import TORCH_VERSION, digit_version
 from torch.utils.data import DataLoader
 
+from mmdet.registry import DATASETS, TRANSFORMS
 from .samplers import (ClassAwareSampler, DistributedGroupSampler,
                        DistributedSampler, GroupSampler, InfiniteBatchSampler,
                        InfiniteGroupBatchSampler)
@@ -24,8 +25,7 @@ if platform.system() != 'Windows':
     soft_limit = min(max(4096, base_soft_limit), hard_limit)
     resource.setrlimit(resource.RLIMIT_NOFILE, (soft_limit, hard_limit))
 
-DATASETS = Registry('dataset')
-PIPELINES = Registry('pipeline')
+PIPELINES = TRANSFORMS
 
 
 def _concat_dataset(cfg, default_args=None):
@@ -78,7 +78,7 @@ def build_dataset(cfg, default_args=None):
     elif isinstance(cfg.get('ann_file'), (list, tuple)):
         dataset = _concat_dataset(cfg, default_args)
     else:
-        dataset = build_from_cfg(cfg, DATASETS, default_args)
+        dataset = DATASETS.build(cfg, default_args=default_args)
 
     return dataset
 

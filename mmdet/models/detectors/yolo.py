@@ -2,11 +2,11 @@
 # Copyright (c) 2019 Western Digital Corporation or its affiliates.
 import torch
 
-from ..builder import DETECTORS
+from mmdet.registry import MODELS
 from .single_stage import SingleStageDetector
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class YOLOV3(SingleStageDetector):
 
     def __init__(self,

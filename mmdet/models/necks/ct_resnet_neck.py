@@ -5,10 +5,10 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmcv.runner import BaseModule, auto_fp16
 
-from mmdet.models.builder import NECKS
+from mmdet.registry import MODELS
 
 
-@NECKS.register_module()
+@MODELS.register_module()
 class CTResNetNeck(BaseModule):
     """The neck used in `CenterNet <https://arxiv.org/abs/1904.07850>`_ for
     object classification and box regression.

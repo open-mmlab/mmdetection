@@ -7,14 +7,15 @@ from mmcv.cnn.bricks.transformer import FFN, MultiheadAttention
 from mmcv.runner import auto_fp16, force_fp32
 
 from mmdet.core import multi_apply
-from mmdet.models.builder import HEADS, build_loss
+from mmdet.models.builder import build_loss
 from mmdet.models.dense_heads.atss_head import reduce_mean
 from mmdet.models.losses import accuracy
 from mmdet.models.utils import build_transformer
+from mmdet.registry import MODELS
 from .bbox_head import BBoxHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class DIIHead(BBoxHead):
     r"""Dynamic Instance Interactive Head for `Sparse R-CNN: End-to-End Object
     Detection with Learnable Proposals <https://arxiv.org/abs/2011.12450>`_

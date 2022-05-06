@@ -5,11 +5,11 @@ import torch.nn as nn
 from mmcv.runner import BaseModule, auto_fp16
 
 from mmdet.models.backbones import ResNet
-from mmdet.models.builder import SHARED_HEADS
 from mmdet.models.utils import ResLayer as _ResLayer
+from mmdet.registry import MODELS
 
 
-@SHARED_HEADS.register_module()
+@MODELS.register_module()
 class ResLayer(BaseModule):
 
     def __init__(self,

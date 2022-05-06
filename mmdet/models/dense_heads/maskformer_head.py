@@ -9,11 +9,12 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import build_assigner, build_sampler, multi_apply, reduce_mean
 from mmdet.models.utils import preprocess_panoptic_gt
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS
+from ..builder import build_loss
 from .anchor_free_head import AnchorFreeHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class MaskFormerHead(AnchorFreeHead):
     """Implements the MaskFormer head.
 

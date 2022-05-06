@@ -4,10 +4,10 @@ from mmcv.cnn import ConvModule
 from mmcv.cnn.bricks import NonLocal2d
 from mmcv.runner import BaseModule
 
-from ..builder import NECKS
+from mmdet.registry import MODELS
 
 
-@NECKS.register_module()
+@MODELS.register_module()
 class BFP(BaseModule):
     """BFP (Balanced Feature Pyramids)
 

@@ -1,12 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
-from ..builder import BBOX_ASSIGNERS
+from mmdet.registry import TASK_UTILS
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
 
-@BBOX_ASSIGNERS.register_module()
+@TASK_UTILS.register_module()
 class PointAssigner(BaseAssigner):
     """Assign a corresponding gt bbox or background to each point.
 

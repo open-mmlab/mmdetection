@@ -7,13 +7,14 @@ from mmcv.cnn import Scale
 from mmcv.runner import force_fp32
 
 from mmdet.core import multi_apply, reduce_mean
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS
+from ..builder import build_loss
 from .anchor_free_head import AnchorFreeHead
 
 INF = 1e8
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class FCOSHead(AnchorFreeHead):
     """Anchor-free head used in `FCOS <https://arxiv.org/abs/1904.01355>`_.
 

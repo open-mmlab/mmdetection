@@ -5,12 +5,12 @@ import torch
 import torch.nn as nn
 from mmcv.runner import ModuleList
 
-from ..builder import HEADS
+from mmdet.registry import MODELS
 from ..utils import ConvUpsample
 from .base_semantic_head import BaseSemanticHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class PanopticFPNHead(BaseSemanticHead):
     """PanopticFPNHead used in Panoptic FPN.
 

@@ -1,11 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from mmdet.core import bbox2roi
-from ..builder import HEADS
+from mmdet.registry import MODELS
 from ..losses.pisa_loss import carl_loss, isr_p
 from .standard_roi_head import StandardRoIHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class PISARoIHead(StandardRoIHead):
     r"""The RoI head for `Prime Sample Attention in Object Detection
     <https://arxiv.org/abs/1904.04821>`_."""

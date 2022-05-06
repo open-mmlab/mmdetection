@@ -11,8 +11,8 @@ from numpy import random
 
 from mmdet.core import BitmapMasks, PolygonMasks, find_inside_bboxes
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
+from mmdet.registry import TRANSFORMS
 from mmdet.utils import log_img_scale
-from ..builder import PIPELINES
 
 try:
     from imagecorruptions import corrupt
@@ -27,7 +27,7 @@ except ImportError:
     Compose = None
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class Resize:
     """Resize images & bbox & mask.
 
@@ -329,7 +329,7 @@ class Resize:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class RandomFlip:
     """Flip the image & bbox & mask.
 
@@ -486,7 +486,7 @@ class RandomFlip:
         return self.__class__.__name__ + f'(flip_ratio={self.flip_ratio})'
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class RandomShift:
     """Shift the image and box given shift pixels and probability.
 
@@ -576,7 +576,7 @@ class RandomShift:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class Pad:
     """Pad the image & masks & segmentation map.
 
@@ -675,7 +675,7 @@ class Pad:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class Normalize:
     """Normalize the image.
 
@@ -716,7 +716,7 @@ class Normalize:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class RandomCrop:
     """Random crop the image & bboxes & masks.
 
@@ -906,7 +906,7 @@ class RandomCrop:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class SegRescale:
     """Rescale semantic segmentation maps.
 
@@ -944,7 +944,7 @@ class SegRescale:
         return self.__class__.__name__ + f'(scale_factor={self.scale_factor})'
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class PhotoMetricDistortion:
     """Apply photometric distortion to image sequentially, every transformation
     is applied with a probability of 0.5. The position of random contrast is in
@@ -1048,7 +1048,7 @@ class PhotoMetricDistortion:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class Expand:
     """Random expand the image & bboxes.
 
@@ -1140,7 +1140,7 @@ class Expand:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class MinIoURandomCrop:
     """Random crop the image & bboxes, the cropped patches have minimum IoU
     requirement with original image & bboxes, the IoU threshold is randomly
@@ -1280,7 +1280,7 @@ class MinIoURandomCrop:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class Corrupt:
     """Corruption augmentation.
 
@@ -1324,7 +1324,7 @@ class Corrupt:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class Albu:
     """Albumentation augmentation.
 
@@ -1528,7 +1528,7 @@ class Albu:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class RandomCenterCropPad:
     """Random center crop and random around padding for CornerNet.
 
@@ -1877,7 +1877,7 @@ class RandomCenterCropPad:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class CutOut:
     """CutOut operation.
 
@@ -1951,7 +1951,7 @@ class CutOut:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class Mosaic:
     """Mosaic augmentation.
 
@@ -2232,7 +2232,7 @@ class Mosaic:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class MixUp:
     """MixUp data augmentation.
 
@@ -2496,7 +2496,7 @@ class MixUp:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class RandomAffine:
     """Random affine transform data augmentation.
 
@@ -2714,7 +2714,7 @@ class RandomAffine:
         return translation_matrix
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class YOLOXHSVRandomAug:
     """Apply HSV augmentation to image sequentially. It is referenced from
     https://github.com/Megvii-
@@ -2758,7 +2758,7 @@ class YOLOXHSVRandomAug:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class CopyPaste:
     """Simple Copy-Paste is a Strong Data Augmentation Method for Instance
     Segmentation The simple copy-paste transform steps are as follows:

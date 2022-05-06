@@ -10,7 +10,8 @@ from mmdet.core import (anchor_inside_flags, build_assigner, distance2bbox,
                         images_to_levels, multi_apply, reduce_mean, unmap)
 from mmdet.core.utils import filter_scores_and_topk
 from mmdet.models.utils import sigmoid_geometric_mean
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS
+from ..builder import build_loss
 from .atss_head import ATSSHead
 
 
@@ -86,7 +87,7 @@ class TaskDecomposition(nn.Module):
         return feat
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class TOODHead(ATSSHead):
     """TOODHead used in `TOOD: Task-aligned One-stage Object Detection.
 

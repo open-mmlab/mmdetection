@@ -4,11 +4,11 @@ import torch
 
 from mmdet.core import bbox2result, bbox2roi, bbox_xyxy_to_cxcywh
 from mmdet.core.bbox.samplers import PseudoSampler
-from ..builder import HEADS
+from mmdet.registry import MODELS
 from .cascade_roi_head import CascadeRoIHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class SparseRoIHead(CascadeRoIHead):
     r"""The RoIHead for `Sparse R-CNN: End-to-End Object Detection with
     Learnable Proposals <https://arxiv.org/abs/2011.12450>`_

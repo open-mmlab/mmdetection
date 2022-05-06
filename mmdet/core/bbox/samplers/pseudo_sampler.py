@@ -1,12 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
-from ..builder import BBOX_SAMPLERS
+from mmdet.registry import TASK_UTILS
 from .base_sampler import BaseSampler
 from .sampling_result import SamplingResult
 
 
-@BBOX_SAMPLERS.register_module()
+@TASK_UTILS.register_module()
 class PseudoSampler(BaseSampler):
     """A pseudo sampler that does not do sampling actually."""
 

@@ -5,8 +5,8 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import multi_apply, multiclass_nms
 from mmdet.core.bbox.iou_calculators import bbox_overlaps
-from mmdet.models import HEADS
 from mmdet.models.dense_heads import ATSSHead
+from mmdet.registry import MODELS
 
 EPS = 1e-12
 try:
@@ -42,7 +42,7 @@ def levels_to_images(mlvl_tensor):
     return [torch.cat(item, 0) for item in batch_list]
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class PAAHead(ATSSHead):
     """Head of PAAAssignment: Probabilistic Anchor Assignment with IoU
     Prediction for Object Detection.

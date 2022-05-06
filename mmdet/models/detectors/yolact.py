@@ -2,11 +2,11 @@
 import torch
 
 from mmdet.core import bbox2result
-from ..builder import DETECTORS, build_head
+from mmdet.registry import MODELS
 from .single_stage import SingleStageDetector
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class YOLACT(SingleStageDetector):
     """Implementation of `YOLACT <https://arxiv.org/abs/1904.02689>`_"""
 
@@ -22,8 +22,8 @@ class YOLACT(SingleStageDetector):
                  init_cfg=None):
         super(YOLACT, self).__init__(backbone, neck, bbox_head, train_cfg,
                                      test_cfg, pretrained, init_cfg)
-        self.segm_head = build_head(segm_head)
-        self.mask_head = build_head(mask_head)
+        self.segm_head = MODELS.build(segm_head)
+        self.mask_head = MODELS.build(mask_head)
 
     def forward_dummy(self, img):
         """Used for computing network flops.

@@ -5,10 +5,10 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule, Scale
 
 from mmdet.models.dense_heads.fcos_head import FCOSHead
-from ..builder import HEADS
+from mmdet.registry import MODELS
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class NASFCOSHead(FCOSHead):
     """Anchor-free head used in `NASFCOS <https://arxiv.org/abs/1906.04423>`_.
 

@@ -4,7 +4,7 @@ from mmcv.cnn import ConvModule
 from mmcv.runner import BaseModule, ModuleList
 
 from mmdet.models.backbones.resnet import Bottleneck
-from mmdet.models.builder import HEADS
+from mmdet.registry import MODELS
 from .bbox_head import BBoxHead
 
 
@@ -73,7 +73,7 @@ class BasicResBlock(BaseModule):
         return out
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class DoubleConvFCBBoxHead(BBoxHead):
     r"""Bbox head used in Double-Head R-CNN
 

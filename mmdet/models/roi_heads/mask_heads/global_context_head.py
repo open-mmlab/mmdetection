@@ -3,11 +3,11 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmcv.runner import BaseModule, auto_fp16, force_fp32
 
-from mmdet.models.builder import HEADS
 from mmdet.models.utils import ResLayer, SimplifiedBasicBlock
+from mmdet.registry import MODELS
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class GlobalContextHead(BaseModule):
     """Global context head used in `SCNet <https://arxiv.org/abs/2012.10150>`_.
 

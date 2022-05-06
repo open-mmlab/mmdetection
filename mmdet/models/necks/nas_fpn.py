@@ -4,10 +4,10 @@ from mmcv.cnn import ConvModule
 from mmcv.ops.merge_cells import GlobalPoolingCell, SumCell
 from mmcv.runner import BaseModule, ModuleList
 
-from ..builder import NECKS
+from mmdet.registry import MODELS
 
 
-@NECKS.register_module()
+@MODELS.register_module()
 class NASFPN(BaseModule):
     """NAS-FPN.
 

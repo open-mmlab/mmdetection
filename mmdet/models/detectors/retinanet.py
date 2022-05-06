@@ -1,9 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from ..builder import DETECTORS
+from mmdet.registry import MODELS
 from .single_stage import SingleStageDetector
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class RetinaNet(SingleStageDetector):
     """Implementation of `RetinaNet <https://arxiv.org/abs/1708.02002>`_"""
 

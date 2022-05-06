@@ -1,9 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from ..builder import DETECTORS
+from mmdet.registry import MODELS
 from .two_stage import TwoStageDetector
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class MaskScoringRCNN(TwoStageDetector):
     """Mask Scoring RCNN.
 

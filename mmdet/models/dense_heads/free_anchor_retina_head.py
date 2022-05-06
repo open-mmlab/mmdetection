@@ -3,13 +3,13 @@ import torch
 import torch.nn.functional as F
 
 from mmdet.core import bbox_overlaps
-from ..builder import HEADS
+from mmdet.registry import MODELS
 from .retina_head import RetinaHead
 
 EPS = 1e-12
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class FreeAnchorRetinaHead(RetinaHead):
     """FreeAnchor RetinaHead used in https://arxiv.org/abs/1909.02466.
 

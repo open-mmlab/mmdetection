@@ -13,7 +13,7 @@ from mmcv.runner import get_dist_info
 from mmcv.utils import print_log
 
 from mmdet.core import eval_map
-from .builder import DATASETS
+from mmdet.registry import DATASETS
 from .custom import CustomDataset
 
 

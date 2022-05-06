@@ -2,7 +2,7 @@
 import mmcv
 import torch.nn as nn
 
-from ..builder import LOSSES
+from mmdet.registry import MODELS
 from .utils import weighted_loss
 
 
@@ -29,7 +29,7 @@ def gaussian_focal_loss(pred, gaussian_target, alpha=2.0, gamma=4.0):
     return pos_loss + neg_loss
 
 
-@LOSSES.register_module()
+@MODELS.register_module()
 class GaussianFocalLoss(nn.Module):
     """GaussianFocalLoss is a variant of focal loss.
 

@@ -1,19 +1,22 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import warnings
 
-from mmcv.utils import Registry, build_from_cfg
+from mmdet.registry import TASK_UTILS
 
-PRIOR_GENERATORS = Registry('Generator for anchors and points')
+PRIOR_GENERATORS = TASK_UTILS
 
-ANCHOR_GENERATORS = PRIOR_GENERATORS
+ANCHOR_GENERATORS = TASK_UTILS
 
 
 def build_prior_generator(cfg, default_args=None):
-    return build_from_cfg(cfg, PRIOR_GENERATORS, default_args)
+    warnings.warn(
+        '``build_prior_generator`` would be deprecated soon, please use '
+        '``mmdet.registry.TASK_UTILS.build()`` ')
+    return TASK_UTILS.build(cfg, default_args=default_args)
 
 
 def build_anchor_generator(cfg, default_args=None):
     warnings.warn(
         '``build_anchor_generator`` would be deprecated soon, please use '
-        '``build_prior_generator`` ')
-    return build_prior_generator(cfg, default_args=default_args)
+        '``mmdet.registry.TASK_UTILS.build()`` ')
+    return TASK_UTILS.build(cfg, default_args=default_args)

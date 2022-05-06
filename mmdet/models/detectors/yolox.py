@@ -6,12 +6,12 @@ import torch.distributed as dist
 import torch.nn.functional as F
 from mmcv.runner import get_dist_info
 
+from mmdet.registry import MODELS
 from ...utils import log_img_scale
-from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class YOLOX(SingleStageDetector):
     r"""Implementation of `YOLOX: Exceeding YOLO Series in 2021
     <https://arxiv.org/abs/2107.08430>`_

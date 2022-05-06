@@ -9,13 +9,13 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import (build_assigner, build_bbox_coder,
                         build_prior_generator, build_sampler, multi_apply)
-from ..builder import HEADS
+from mmdet.registry import MODELS
 from ..losses import smooth_l1_loss
 from .anchor_head import AnchorHead
 
 
 # TODO: add loss evaluator for SSD
-@HEADS.register_module()
+@MODELS.register_module()
 class SSDHead(AnchorHead):
     """SSD head used in https://arxiv.org/abs/1512.02325.
 

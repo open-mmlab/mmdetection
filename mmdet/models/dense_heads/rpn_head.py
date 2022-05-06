@@ -8,11 +8,11 @@ from mmcv.cnn import ConvModule
 from mmcv.ops import batched_nms
 
 from mmdet.core import InstanceData
-from ..builder import HEADS
+from mmdet.registry import MODELS
 from .anchor_head import AnchorHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class RPNHead(AnchorHead):
     """RPN head.
 

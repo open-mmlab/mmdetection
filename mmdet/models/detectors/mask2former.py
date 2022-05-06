@@ -1,9 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from ..builder import DETECTORS
+from mmdet.registry import MODELS
 from .maskformer import MaskFormer
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class Mask2Former(MaskFormer):
     r"""Implementation of `Masked-attention Mask
     Transformer for Universal Image Segmentation

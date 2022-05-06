@@ -1,15 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
-from ..builder import BBOX_ASSIGNERS
-from ..iou_calculators import build_iou_calculator
+from mmdet.registry import TASK_UTILS
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
 INF = 100000000
 
 
-@BBOX_ASSIGNERS.register_module()
+@TASK_UTILS.register_module()
 class TaskAlignedAssigner(BaseAssigner):
     """Task aligned assigner used in the paper:
     `TOOD: Task-aligned One-stage Object Detection.
@@ -31,7 +30,7 @@ class TaskAlignedAssigner(BaseAssigner):
     def __init__(self, topk, iou_calculator=dict(type='BboxOverlaps2D')):
         assert topk >= 1
         self.topk = topk
-        self.iou_calculator = build_iou_calculator(iou_calculator)
+        self.iou_calculator = TASK_UTILS.build(iou_calculator)
 
     def assign(self,
                pred_scores,

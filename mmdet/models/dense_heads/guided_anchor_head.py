@@ -9,7 +9,8 @@ from mmcv.runner import BaseModule, force_fp32
 from mmdet.core import (anchor_inside_flags, build_assigner, build_bbox_coder,
                         build_prior_generator, build_sampler, calc_region,
                         images_to_levels, multi_apply, multiclass_nms, unmap)
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS
+from ..builder import build_loss
 from .anchor_head import AnchorHead
 
 
@@ -57,7 +58,7 @@ class FeatureAdaption(BaseModule):
         return x
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class GuidedAnchorHead(AnchorHead):
     """Guided-Anchor-based head (GA-RPN, GA-RetinaNet, etc.).
 

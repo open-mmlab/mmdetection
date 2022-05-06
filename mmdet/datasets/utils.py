@@ -3,13 +3,13 @@ import copy
 import warnings
 
 from mmcv.cnn import VGG
-from mmcv.runner.hooks import HOOKS, Hook
+from mmcv.runner.hooks import Hook
 
-from mmdet.datasets.builder import PIPELINES
 from mmdet.datasets.pipelines import (LoadAnnotations, LoadImageFromFile,
                                       LoadPanopticAnnotations)
 from mmdet.models.dense_heads import GARPNHead, RPNHead
 from mmdet.models.roi_heads.mask_heads import FusedSemanticHead
+from mmdet.registry import HOOKS, TRANSFORMS
 
 
 def replace_ImageToTensor(pipelines):
@@ -102,7 +102,7 @@ def get_loading_pipeline(pipeline):
     """
     loading_pipeline_cfg = []
     for cfg in pipeline:
-        obj_cls = PIPELINES.get(cfg['type'])
+        obj_cls = TRANSFORMS.get(cfg['type'])
         # TODO：use more elegant way to distinguish loading modules
         if obj_cls is not None and obj_cls in (LoadImageFromFile,
                                                LoadAnnotations,

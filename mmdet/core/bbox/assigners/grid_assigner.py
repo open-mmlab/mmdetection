@@ -1,13 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
-from ..builder import BBOX_ASSIGNERS
-from ..iou_calculators import build_iou_calculator
+from mmdet.registry import TASK_UTILS
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
 
-@BBOX_ASSIGNERS.register_module()
+@TASK_UTILS.register_module()
 class GridAssigner(BaseAssigner):
     """Assign a corresponding gt bbox or background to each bbox.
 
@@ -38,7 +37,7 @@ class GridAssigner(BaseAssigner):
         self.neg_iou_thr = neg_iou_thr
         self.min_pos_iou = min_pos_iou
         self.gt_max_assign_all = gt_max_assign_all
-        self.iou_calculator = build_iou_calculator(iou_calculator)
+        self.iou_calculator = TASK_UTILS.build(iou_calculator)
 
     def assign(self, bboxes, box_responsible_flags, gt_bboxes, gt_labels=None):
         """Assign gt to bboxes. The process is very much like the max iou

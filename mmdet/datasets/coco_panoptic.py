@@ -9,8 +9,8 @@ from mmcv.utils import print_log
 from terminaltables import AsciiTable
 
 from mmdet.core import INSTANCE_OFFSET
+from mmdet.registry import DATASETS
 from .api_wrappers import COCO, pq_compute_multi_core
-from .builder import DATASETS
 from .coco import CocoDataset
 
 try:

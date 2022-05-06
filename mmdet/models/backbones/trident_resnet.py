@@ -8,7 +8,7 @@ from mmcv.runner import BaseModule
 from torch.nn.modules.utils import _pair
 
 from mmdet.models.backbones.resnet import Bottleneck, ResNet
-from mmdet.models.builder import BACKBONES
+from mmdet.registry import MODELS
 
 
 class TridentConv(BaseModule):
@@ -231,7 +231,7 @@ def make_trident_res_layer(block,
     return nn.Sequential(*layers)
 
 
-@BACKBONES.register_module()
+@MODELS.register_module()
 class TridentResNet(ResNet):
     """The stem layer, stage 1 and stage 2 in Trident ResNet are identical to
     ResNet, while in stage 3, Trident BottleBlock is utilized to replace the

@@ -6,7 +6,7 @@ from mmcv.cnn import (build_activation_layer, build_norm_layer, constant_init,
 from mmcv.ops.modulated_deform_conv import ModulatedDeformConv2d
 from mmcv.runner import BaseModule
 
-from ..builder import NECKS
+from mmdet.registry import MODELS
 from ..utils import DyReLU
 
 # Reference:
@@ -126,7 +126,7 @@ class DyHeadBlock(nn.Module):
         return outs
 
 
-@NECKS.register_module()
+@MODELS.register_module()
 class DyHead(BaseModule):
     """DyHead neck consisting of multiple DyHead Blocks.
 

@@ -2,11 +2,11 @@
 import numpy as np
 import torch
 
-from ..builder import BBOX_SAMPLERS
+from mmdet.registry import TASK_UTILS
 from .random_sampler import RandomSampler
 
 
-@BBOX_SAMPLERS.register_module()
+@TASK_UTILS.register_module()
 class IoUBalancedNegSampler(RandomSampler):
     """IoU Balanced Sampling.
 

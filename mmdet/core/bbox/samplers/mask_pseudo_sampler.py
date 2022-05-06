@@ -4,12 +4,12 @@ https://github.com/ZwwWayne/K-Net/blob/main/knet/det/mask_pseudo_sampler.py."""
 
 import torch
 
-from mmdet.core.bbox.builder import BBOX_SAMPLERS
+from mmdet.registry import TASK_UTILS
 from .base_sampler import BaseSampler
 from .mask_sampling_result import MaskSamplingResult
 
 
-@BBOX_SAMPLERS.register_module()
+@TASK_UTILS.register_module()
 class MaskPseudoSampler(BaseSampler):
     """A pseudo sampler that does not do sampling actually."""
 

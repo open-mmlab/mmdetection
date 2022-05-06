@@ -5,13 +5,13 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import (anchor_inside_flags, images_to_levels, multi_apply,
                         unmap)
-from ..builder import HEADS
+from mmdet.registry import MODELS
 from ..losses.accuracy import accuracy
 from ..losses.utils import weight_reduce_loss
 from .retina_head import RetinaHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class FSAFHead(RetinaHead):
     """Anchor-free head used in `FSAF <https://arxiv.org/abs/1903.00621>`_.
 
