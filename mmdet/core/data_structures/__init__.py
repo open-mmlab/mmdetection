@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from .general_data import GeneralData
-from .instance_data import InstanceData
+from .det_data_sample import DetDataSample
 
-__all__ = ['GeneralData', 'InstanceData']
+__all__ = ['DetDataSample']
