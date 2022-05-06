@@ -1,9 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from ..builder import DETECTORS
+from mmdet.registry import MODELS
 from .two_stage import TwoStageDetector
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class MaskRCNN(TwoStageDetector):
     """Implementation of `Mask R-CNN <https://arxiv.org/abs/1703.06870>`_"""
 

@@ -2,11 +2,11 @@
 import torch
 
 from mmdet.core.evaluation.panoptic_utils import INSTANCE_OFFSET
-from mmdet.models.builder import HEADS
+from mmdet.registry import MODELS
 from .base_panoptic_fusion_head import BasePanopticFusionHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class HeuristicFusionHead(BasePanopticFusionHead):
     """Fusion Head with Heuristic method."""
 

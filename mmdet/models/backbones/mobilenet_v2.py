@@ -6,11 +6,11 @@ from mmcv.cnn import ConvModule
 from mmcv.runner import BaseModule
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from ..builder import BACKBONES
+from mmdet.registry import MODELS
 from ..utils import InvertedResidual, make_divisible
 
 
-@BACKBONES.register_module()
+@MODELS.register_module()
 class MobileNetV2(BaseModule):
     """MobileNetV2 backbone.
 

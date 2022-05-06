@@ -2,11 +2,11 @@
 import torch
 
 from mmdet.core import bbox2result, bbox_mapping_back
-from ..builder import DETECTORS
+from mmdet.registry import MODELS
 from .single_stage import SingleStageDetector
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class CornerNet(SingleStageDetector):
     """CornerNet.
 

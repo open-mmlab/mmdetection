@@ -3,11 +3,11 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmcv.ops import MaskedConv2d
 
-from ..builder import HEADS
+from mmdet.registry import MODELS
 from .guided_anchor_head import FeatureAdaption, GuidedAnchorHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class GARetinaHead(GuidedAnchorHead):
     """Guided-Anchor-based RetinaNet head."""
 

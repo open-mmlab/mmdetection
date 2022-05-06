@@ -11,7 +11,8 @@ from mmcv.runner import BaseModule, ModuleList, auto_fp16, force_fp32
 from torch.nn.modules.utils import _pair
 
 from mmdet.core import mask_target
-from mmdet.models.builder import HEADS, build_loss
+from mmdet.models.builder import build_loss
+from mmdet.registry import MODELS
 
 BYTES_PER_FLOAT = 4
 # TODO: This memory limit may be too much or too little. It would be better to
@@ -19,7 +20,7 @@ BYTES_PER_FLOAT = 4
 GPU_MEM_LIMIT = 1024**3  # 1 GB memory limit
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class FCNMaskHead(BaseModule):
 
     def __init__(self,

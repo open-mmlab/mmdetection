@@ -2,11 +2,11 @@
 from mmcv.cnn import ConvModule, Linear
 from mmcv.runner import ModuleList, auto_fp16
 
-from mmdet.models.builder import HEADS
+from mmdet.registry import MODELS
 from .fcn_mask_head import FCNMaskHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CoarseMaskHead(FCNMaskHead):
     """Coarse mask head used in PointRend.
 

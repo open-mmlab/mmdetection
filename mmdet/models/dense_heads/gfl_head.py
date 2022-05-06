@@ -9,7 +9,8 @@ from mmdet.core import (anchor_inside_flags, bbox_overlaps, build_assigner,
                         build_sampler, images_to_levels, multi_apply,
                         reduce_mean, unmap)
 from mmdet.core.utils import filter_scores_and_topk
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS
+from ..builder import build_loss
 from .anchor_head import AnchorHead
 
 
@@ -49,7 +50,7 @@ class Integral(nn.Module):
         return x
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class GFLHead(AnchorHead):
     """Generalized Focal Loss: Learning Qualified and Distributed Bounding
     Boxes for Dense Object Detection.

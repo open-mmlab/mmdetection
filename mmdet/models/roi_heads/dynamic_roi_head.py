@@ -4,13 +4,13 @@ import torch
 
 from mmdet.core import bbox2roi
 from mmdet.models.losses import SmoothL1Loss
-from ..builder import HEADS
+from mmdet.registry import MODELS
 from .standard_roi_head import StandardRoIHead
 
 EPS = 1e-15
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class DynamicRoIHead(StandardRoIHead):
     """RoI head for `Dynamic R-CNN <https://arxiv.org/abs/2004.06002>`_."""
 

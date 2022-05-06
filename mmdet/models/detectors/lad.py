@@ -3,11 +3,11 @@ import torch
 import torch.nn as nn
 from mmcv.runner import load_checkpoint
 
-from ..builder import DETECTORS, build_backbone, build_head, build_neck
+from mmdet.registry import MODELS
 from .kd_one_stage import KnowledgeDistillationSingleStageDetector
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class LAD(KnowledgeDistillationSingleStageDetector):
     """Implementation of `LAD <https://arxiv.org/pdf/2108.10520.pdf>`_."""
 
@@ -28,12 +28,12 @@ class LAD(KnowledgeDistillationSingleStageDetector):
                              pretrained)
         self.eval_teacher = eval_teacher
         self.teacher_model = nn.Module()
-        self.teacher_model.backbone = build_backbone(teacher_backbone)
+        self.teacher_model.backbone = MODELS.build(teacher_backbone)
         if teacher_neck is not None:
-            self.teacher_model.neck = build_neck(teacher_neck)
+            self.teacher_model.neck = MODELS.build(teacher_neck)
         teacher_bbox_head.update(train_cfg=train_cfg)
         teacher_bbox_head.update(test_cfg=test_cfg)
-        self.teacher_model.bbox_head = build_head(teacher_bbox_head)
+        self.teacher_model.bbox_head = MODELS.build(teacher_bbox_head)
         if teacher_ckpt is not None:
             load_checkpoint(
                 self.teacher_model, teacher_ckpt, map_location='cpu')

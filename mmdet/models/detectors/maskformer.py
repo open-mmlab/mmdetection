@@ -4,11 +4,11 @@ import numpy as np
 
 from mmdet.core import INSTANCE_OFFSET, bbox2result
 from mmdet.core.visualization import imshow_det_bboxes
-from ..builder import DETECTORS, build_backbone, build_head, build_neck
+from mmdet.registry import MODELS
 from .single_stage import SingleStageDetector
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class MaskFormer(SingleStageDetector):
     r"""Implementation of `Per-Pixel Classification is
     NOT All You Need for Semantic Segmentation
@@ -23,18 +23,18 @@ class MaskFormer(SingleStageDetector):
                  test_cfg=None,
                  init_cfg=None):
         super(SingleStageDetector, self).__init__(init_cfg=init_cfg)
-        self.backbone = build_backbone(backbone)
+        self.backbone = MODELS.build(backbone)
         if neck is not None:
-            self.neck = build_neck(neck)
+            self.neck = MODELS.build(neck)
 
         panoptic_head_ = panoptic_head.deepcopy()
         panoptic_head_.update(train_cfg=train_cfg)
         panoptic_head_.update(test_cfg=test_cfg)
-        self.panoptic_head = build_head(panoptic_head_)
+        self.panoptic_head = MODELS.build(panoptic_head_)
 
         panoptic_fusion_head_ = panoptic_fusion_head.deepcopy()
         panoptic_fusion_head_.update(test_cfg=test_cfg)
-        self.panoptic_fusion_head = build_head(panoptic_fusion_head_)
+        self.panoptic_fusion_head = MODELS.build(panoptic_fusion_head_)
 
         self.num_things_classes = self.panoptic_head.num_things_classes
         self.num_stuff_classes = self.panoptic_head.num_stuff_classes

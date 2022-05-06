@@ -12,12 +12,13 @@ from mmcv.runner import ModuleList
 
 from mmdet.core import build_assigner, build_sampler, reduce_mean
 from mmdet.models.utils import get_uncertain_point_coords_with_randomness
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS
+from ..builder import build_loss
 from .anchor_free_head import AnchorFreeHead
 from .maskformer_head import MaskFormerHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class Mask2FormerHead(MaskFormerHead):
     """Implements the Mask2Former head.
 

@@ -9,11 +9,11 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import multi_apply
 from mmdet.models.utils.transformer import inverse_sigmoid
-from ..builder import HEADS
+from mmdet.registry import MODELS
 from .detr_head import DETRHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class DeformableDETRHead(DETRHead):
     """Head of DeformDETR: Deformable DETR: Deformable Transformers for End-to-
     End Object Detection.

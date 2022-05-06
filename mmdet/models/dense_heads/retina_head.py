@@ -2,11 +2,11 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 
-from ..builder import HEADS
+from mmdet.registry import MODELS
 from .anchor_head import AnchorHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class RetinaHead(AnchorHead):
     r"""An anchor-based head used in `RetinaNet
     <https://arxiv.org/pdf/1708.02002.pdf>`_.

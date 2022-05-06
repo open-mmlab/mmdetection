@@ -3,11 +3,11 @@ import torch
 import torch.nn as nn
 from mmcv.runner import BaseModule
 
-from mmdet.models.builder import HEADS
+from mmdet.registry import MODELS
 from ...core import bbox_cxcywh_to_xyxy
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class EmbeddingRPNHead(BaseModule):
     """RPNHead in the `Sparse R-CNN <https://arxiv.org/abs/2011.12450>`_ .
 

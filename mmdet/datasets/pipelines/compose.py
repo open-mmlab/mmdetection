@@ -1,12 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import collections
 
-from mmcv.utils import build_from_cfg
-
-from ..builder import PIPELINES
+from mmdet.registry import TRANSFORMS
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class Compose:
     """Compose multiple transforms sequentially.
 
@@ -20,7 +18,7 @@ class Compose:
         self.transforms = []
         for transform in transforms:
             if isinstance(transform, dict):
-                transform = build_from_cfg(transform, PIPELINES)
+                transform = TRANSFORMS.build(transform)
                 self.transforms.append(transform)
             elif callable(transform):
                 self.transforms.append(transform)

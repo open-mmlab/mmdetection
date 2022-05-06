@@ -6,7 +6,7 @@ from mmcv.cnn import build_conv_layer, build_norm_layer
 from mmcv.runner import BaseModule, ModuleList, Sequential
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from ..builder import BACKBONES
+from mmdet.registry import MODELS
 from .resnet import BasicBlock, Bottleneck
 
 
@@ -200,7 +200,7 @@ class HRModule(BaseModule):
         return x_fuse
 
 
-@BACKBONES.register_module()
+@MODELS.register_module()
 class HRNet(BaseModule):
     """HRNet backbone.
 

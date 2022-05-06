@@ -3,7 +3,7 @@ import mmcv
 import torch
 import torch.nn as nn
 
-from ..builder import LOSSES
+from mmdet.registry import MODELS
 from .utils import weighted_loss
 
 
@@ -52,7 +52,7 @@ def l1_loss(pred, target):
     return loss
 
 
-@LOSSES.register_module()
+@MODELS.register_module()
 class SmoothL1Loss(nn.Module):
     """Smooth L1 loss.
 
@@ -104,7 +104,7 @@ class SmoothL1Loss(nn.Module):
         return loss_bbox
 
 
-@LOSSES.register_module()
+@MODELS.register_module()
 class L1Loss(nn.Module):
     """L1 loss.
 

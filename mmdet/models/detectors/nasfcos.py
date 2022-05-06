@@ -1,9 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from ..builder import DETECTORS
+from mmdet.registry import MODELS
 from .single_stage import SingleStageDetector
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class NASFCOS(SingleStageDetector):
     """NAS-FCOS: Fast Neural Architecture Search for Object Detection.
 

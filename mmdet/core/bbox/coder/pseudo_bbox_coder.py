@@ -1,9 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from ..builder import BBOX_CODERS
+from mmdet.registry import TASK_UTILS
 from .base_bbox_coder import BaseBBoxCoder
 
 
-@BBOX_CODERS.register_module()
+@TASK_UTILS.register_module()
 class PseudoBBoxCoder(BaseBBoxCoder):
     """Pseudo bounding box coder."""
 

@@ -9,11 +9,12 @@ from mmdet.core import (build_assigner, build_sampler, images_to_levels,
                         multi_apply, unmap)
 from mmdet.core.anchor.point_generator import MlvlPointGenerator
 from mmdet.core.utils import filter_scores_and_topk
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS
+from ..builder import build_loss
 from .anchor_free_head import AnchorFreeHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class RepPointsHead(AnchorFreeHead):
     """RepPoint head.
 

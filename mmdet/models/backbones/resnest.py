@@ -8,7 +8,7 @@ import torch.utils.checkpoint as cp
 from mmcv.cnn import build_conv_layer, build_norm_layer
 from mmcv.runner import BaseModule
 
-from ..builder import BACKBONES
+from mmdet.registry import MODELS
 from ..utils import ResLayer
 from .resnet import Bottleneck as _Bottleneck
 from .resnet import ResNetV1d
@@ -274,7 +274,7 @@ class Bottleneck(_Bottleneck):
         return out
 
 
-@BACKBONES.register_module()
+@MODELS.register_module()
 class ResNeSt(ResNetV1d):
     """ResNeSt backbone.
 

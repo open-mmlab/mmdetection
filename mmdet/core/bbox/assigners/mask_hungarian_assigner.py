@@ -1,8 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
-from mmdet.core.bbox.builder import BBOX_ASSIGNERS
-from mmdet.core.bbox.match_costs.builder import build_match_cost
+from mmdet.registry import TASK_UTILS
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
@@ -12,7 +11,7 @@ except ImportError:
     linear_sum_assignment = None
 
 
-@BBOX_ASSIGNERS.register_module()
+@TASK_UTILS.register_module()
 class MaskHungarianAssigner(BaseAssigner):
     """Computes one-to-one matching between predictions and ground truth for
     mask.
@@ -39,9 +38,9 @@ class MaskHungarianAssigner(BaseAssigner):
                  mask_cost=dict(
                      type='FocalLossCost', weight=1.0, binary_input=True),
                  dice_cost=dict(type='DiceCost', weight=1.0)):
-        self.cls_cost = build_match_cost(cls_cost)
-        self.mask_cost = build_match_cost(mask_cost)
-        self.dice_cost = build_match_cost(dice_cost)
+        self.cls_cost = TASK_UTILS.build(cls_cost)
+        self.mask_cost = TASK_UTILS.build(mask_cost)
+        self.dice_cost = TASK_UTILS.build(dice_cost)
 
     def assign(self,
                cls_pred,

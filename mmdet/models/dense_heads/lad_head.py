@@ -3,11 +3,11 @@ import torch
 from mmcv.runner import force_fp32
 
 from mmdet.core import bbox_overlaps, multi_apply
-from ..builder import HEADS
+from mmdet.registry import MODELS
 from .paa_head import PAAHead, levels_to_images
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class LADHead(PAAHead):
     """Label Assignment Head from the paper: `Improving Object Detection by
     Label Assignment Distillation <https://arxiv.org/pdf/2108.10520.pdf>`_"""

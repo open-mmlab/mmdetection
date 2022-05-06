@@ -1,10 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import numpy as np
 
-from ..builder import PIPELINES
+from mmdet.registry import TRANSFORMS
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class InstaBoost:
     r"""Data augmentation method in `InstaBoost: Boosting Instance
     Segmentation Via Probability Map Guided Copy-Pasting

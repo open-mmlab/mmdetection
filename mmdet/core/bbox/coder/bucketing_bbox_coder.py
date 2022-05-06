@@ -4,12 +4,12 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from ..builder import BBOX_CODERS
+from mmdet.registry import TASK_UTILS
 from ..transforms import bbox_rescale
 from .base_bbox_coder import BaseBBoxCoder
 
 
-@BBOX_CODERS.register_module()
+@TASK_UTILS.register_module()
 class BucketingBBoxCoder(BaseBBoxCoder):
     """Bucketing BBox Coder for Side-Aware Boundary Localization (SABL).
 

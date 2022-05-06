@@ -9,12 +9,12 @@ import torch.nn.functional as F
 from mmcv.ops import point_sample, rel_roi_point_to_rel_img_point
 
 from mmdet.core import bbox2roi, bbox_mapping, merge_aug_masks
+from mmdet.registry import MODELS
 from .. import builder
-from ..builder import HEADS
 from .standard_roi_head import StandardRoIHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class PointRendRoIHead(StandardRoIHead):
     """`PointRend <https://arxiv.org/abs/1912.08193>`_."""
 

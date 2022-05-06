@@ -1,12 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
-from ..builder import BBOX_ASSIGNERS
+from mmdet.registry import TASK_UTILS
 from ..iou_calculators import build_iou_calculator
 from .max_iou_assigner import MaxIoUAssigner
 
 
-@BBOX_ASSIGNERS.register_module()
+@TASK_UTILS.register_module()
 class ApproxMaxIoUAssigner(MaxIoUAssigner):
     """Assign a corresponding gt bbox or background to each bbox.
 

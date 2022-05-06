@@ -11,14 +11,15 @@ from mmcv.runner import force_fp32
 from mmdet.core import (MlvlPointGenerator, bbox_overlaps, build_assigner,
                         build_prior_generator, build_sampler, multi_apply,
                         reduce_mean)
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS
+from ..builder import build_loss
 from .atss_head import ATSSHead
 from .fcos_head import FCOSHead
 
 INF = 1e8
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class VFNetHead(ATSSHead, FCOSHead):
     """Head of `VarifocalNet (VFNet): An IoU-aware Dense Object
     Detector.<https://arxiv.org/abs/2008.13367>`_.

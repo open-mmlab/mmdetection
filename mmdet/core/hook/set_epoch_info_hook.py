@@ -1,6 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from mmcv.parallel import is_module_wrapper
-from mmcv.runner import HOOKS, Hook
+from mmcv.runner import Hook
+
+from mmdet.registry import HOOKS
 
 
 @HOOKS.register_module()

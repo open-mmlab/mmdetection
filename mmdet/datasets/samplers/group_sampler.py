@@ -6,7 +6,10 @@ import torch
 from mmcv.runner import get_dist_info
 from torch.utils.data import Sampler
 
+from mmdet.registry import DATA_SAMPLERS
 
+
+@DATA_SAMPLERS.register_module()
 class GroupSampler(Sampler):
 
     def __init__(self, dataset, samples_per_gpu=1):
@@ -48,6 +51,7 @@ class GroupSampler(Sampler):
         return self.num_samples
 
 
+@DATA_SAMPLERS.register_module()
 class DistributedGroupSampler(Sampler):
     """Sampler that restricts data loading to a subset of the dataset.
 

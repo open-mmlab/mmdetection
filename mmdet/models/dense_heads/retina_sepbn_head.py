@@ -2,11 +2,11 @@
 import torch.nn as nn
 from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
 
-from ..builder import HEADS
+from mmdet.registry import MODELS
 from .anchor_head import AnchorHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class RetinaSepBNHead(AnchorHead):
     """"RetinaHead with separate BN.
 

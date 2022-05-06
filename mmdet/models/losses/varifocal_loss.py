@@ -3,7 +3,7 @@ import mmcv
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..builder import LOSSES
+from mmdet.registry import MODELS
 from .utils import weight_reduce_loss
 
 
@@ -56,7 +56,7 @@ def varifocal_loss(pred,
     return loss
 
 
-@LOSSES.register_module()
+@MODELS.register_module()
 class VarifocalLoss(nn.Module):
 
     def __init__(self,

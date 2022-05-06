@@ -4,11 +4,11 @@ import torch.nn.functional as F
 
 from mmdet.core.evaluation.panoptic_utils import INSTANCE_OFFSET
 from mmdet.core.mask import mask2bbox
-from mmdet.models.builder import HEADS
+from mmdet.registry import MODELS
 from .base_panoptic_fusion_head import BasePanopticFusionHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class MaskFormerFusionHead(BasePanopticFusionHead):
 
     def __init__(self,

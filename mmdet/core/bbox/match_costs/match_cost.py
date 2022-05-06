@@ -4,10 +4,10 @@ import torch.nn.functional as F
 
 from mmdet.core.bbox.iou_calculators import bbox_overlaps
 from mmdet.core.bbox.transforms import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
-from .builder import MATCH_COST
+from mmdet.registry import TASK_UTILS
 
 
-@MATCH_COST.register_module()
+@TASK_UTILS.register_module()
 class BBoxL1Cost:
     """BBoxL1Cost.
 
@@ -51,7 +51,7 @@ class BBoxL1Cost:
         return bbox_cost * self.weight
 
 
-@MATCH_COST.register_module()
+@TASK_UTILS.register_module()
 class FocalLossCost:
     """FocalLossCost.
 
@@ -149,7 +149,7 @@ class FocalLossCost:
             return self._focal_loss_cost(cls_pred, gt_labels)
 
 
-@MATCH_COST.register_module()
+@TASK_UTILS.register_module()
 class ClassificationCost:
     """ClsSoftmaxCost.
 
@@ -193,7 +193,7 @@ class ClassificationCost:
         return cls_cost * self.weight
 
 
-@MATCH_COST.register_module()
+@TASK_UTILS.register_module()
 class IoUCost:
     """IoUCost.
 
@@ -235,7 +235,7 @@ class IoUCost:
         return iou_cost * self.weight
 
 
-@MATCH_COST.register_module()
+@TASK_UTILS.register_module()
 class DiceCost:
     """Cost of mask assignments based on dice losses.
 
@@ -295,7 +295,7 @@ class DiceCost:
         return dice_cost * self.weight
 
 
-@MATCH_COST.register_module()
+@TASK_UTILS.register_module()
 class CrossEntropyLossCost:
     """CrossEntropyLossCost.
 

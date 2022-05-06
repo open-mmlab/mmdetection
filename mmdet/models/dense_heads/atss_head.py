@@ -6,11 +6,12 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
                         images_to_levels, multi_apply, reduce_mean, unmap)
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS
+from ..builder import build_loss
 from .anchor_head import AnchorHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class ATSSHead(AnchorHead):
     """Bridging the Gap Between Anchor-based and Anchor-free Detection via
     Adaptive Training Sample Selection.

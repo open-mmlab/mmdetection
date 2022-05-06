@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
-from .builder import IOU_CALCULATORS
+from mmdet.registry import TASK_UTILS
 
 
 def cast_tensor_type(x, scale=1., dtype=None):
@@ -19,7 +19,7 @@ def fp16_clamp(x, min=None, max=None):
     return x.clamp(min, max)
 
 
-@IOU_CALCULATORS.register_module()
+@TASK_UTILS.register_module()
 class BboxOverlaps2D:
     """2D Overlaps (e.g. IoUs, GIoUs) Calculator."""
 

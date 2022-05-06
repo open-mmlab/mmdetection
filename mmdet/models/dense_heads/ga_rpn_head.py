@@ -8,11 +8,11 @@ import torch.nn.functional as F
 from mmcv import ConfigDict
 from mmcv.ops import nms
 
-from ..builder import HEADS
+from mmdet.registry import MODELS
 from .guided_anchor_head import GuidedAnchorHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class GARPNHead(GuidedAnchorHead):
     """Guided-Anchor-based RPN head."""
 

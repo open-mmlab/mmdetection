@@ -1,9 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from mmdet.models.builder import HEADS
+from mmdet.registry import MODELS
 from .convfc_bbox_head import ConvFCBBoxHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class SCNetBBoxHead(ConvFCBBoxHead):
     """BBox head for `SCNet <https://arxiv.org/abs/2012.10150>`_.
 

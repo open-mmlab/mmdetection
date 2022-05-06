@@ -2,7 +2,7 @@
 import torch
 
 from mmdet.core import anchor_inside_flags
-from ..builder import BBOX_ASSIGNERS
+from mmdet.registry import TASK_UTILS
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
@@ -34,7 +34,7 @@ def anchor_ctr_inside_region_flags(anchors, stride, region):
     return flags
 
 
-@BBOX_ASSIGNERS.register_module()
+@TASK_UTILS.register_module()
 class RegionAssigner(BaseAssigner):
     """Assign a corresponding gt bbox or background to each bbox.
 

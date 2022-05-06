@@ -4,13 +4,13 @@ import warnings
 import torch
 import torch.nn.functional as F
 
-from ..builder import BBOX_ASSIGNERS
+from mmdet.registry import TASK_UTILS
 from ..iou_calculators import bbox_overlaps
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
 
-@BBOX_ASSIGNERS.register_module()
+@TASK_UTILS.register_module()
 class SimOTAAssigner(BaseAssigner):
     """Computes matching between predictions and ground truth.
 

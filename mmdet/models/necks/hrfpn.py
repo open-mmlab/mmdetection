@@ -6,10 +6,10 @@ from mmcv.cnn import ConvModule
 from mmcv.runner import BaseModule
 from torch.utils.checkpoint import checkpoint
 
-from ..builder import NECKS
+from mmdet.registry import MODELS
 
 
-@NECKS.register_module()
+@MODELS.register_module()
 class HRFPN(BaseModule):
     """HRFPN (High Resolution Feature Pyramids)
 

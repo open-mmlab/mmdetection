@@ -5,10 +5,10 @@ from mmcv.ops import batched_nms
 from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, merge_aug_bboxes,
                         multiclass_nms)
 from mmdet.models.roi_heads.standard_roi_head import StandardRoIHead
-from ..builder import HEADS
+from mmdet.registry import MODELS
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class TridentRoIHead(StandardRoIHead):
     """Trident roi head.
 
