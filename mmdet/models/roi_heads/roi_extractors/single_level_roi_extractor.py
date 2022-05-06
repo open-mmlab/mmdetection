@@ -2,11 +2,11 @@
 import torch
 from mmcv.runner import force_fp32
 
-from mmdet.models.builder import ROI_EXTRACTORS
+from mmdet.registry import MODELS
 from .base_roi_extractor import BaseRoIExtractor
 
 
-@ROI_EXTRACTORS.register_module()
+@MODELS.register_module()
 class SingleRoIExtractor(BaseRoIExtractor):
     """Extract RoI features from a single level feature map.
 

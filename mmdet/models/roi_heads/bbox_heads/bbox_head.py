@@ -6,12 +6,13 @@ from mmcv.runner import BaseModule, auto_fp16, force_fp32
 from torch.nn.modules.utils import _pair
 
 from mmdet.core import build_bbox_coder, multi_apply, multiclass_nms
-from mmdet.models.builder import HEADS, build_loss
+from mmdet.models.builder import build_loss
 from mmdet.models.losses import accuracy
 from mmdet.models.utils import build_linear_layer
+from mmdet.registry import MODELS
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class BBoxHead(BaseModule):
     """Simplest RoI head, with only two fc layers for classification and
     regression respectively."""

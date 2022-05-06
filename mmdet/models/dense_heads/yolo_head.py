@@ -14,12 +14,13 @@ from mmcv.runner import force_fp32
 from mmdet.core import (build_assigner, build_bbox_coder,
                         build_prior_generator, build_sampler, images_to_levels,
                         multi_apply, multiclass_nms)
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS
+from ..builder import build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
     """YOLOV3Head Paper link: https://arxiv.org/abs/1804.02767.
 

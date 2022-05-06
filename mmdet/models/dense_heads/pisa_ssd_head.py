@@ -2,13 +2,13 @@
 import torch
 
 from mmdet.core import multi_apply
-from ..builder import HEADS
+from mmdet.registry import MODELS
 from ..losses import CrossEntropyLoss, SmoothL1Loss, carl_loss, isr_p
 from .ssd_head import SSDHead
 
 
 # TODO: add loss evaluator for SSD
-@HEADS.register_module()
+@MODELS.register_module()
 class PISASSDHead(SSDHead):
 
     def loss(self,

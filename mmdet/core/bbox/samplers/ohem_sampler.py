@@ -1,12 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
-from ..builder import BBOX_SAMPLERS
+from mmdet.registry import TASK_UTILS
 from ..transforms import bbox2roi
 from .base_sampler import BaseSampler
 
 
-@BBOX_SAMPLERS.register_module()
+@TASK_UTILS.register_module()
 class OHEMSampler(BaseSampler):
     r"""Online Hard Example Mining Sampler described in `Training Region-based
     Object Detectors with Online Hard Example Mining

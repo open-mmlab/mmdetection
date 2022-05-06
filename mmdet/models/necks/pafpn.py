@@ -4,11 +4,11 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmcv.runner import auto_fp16
 
-from ..builder import NECKS
+from mmdet.registry import MODELS
 from .fpn import FPN
 
 
-@NECKS.register_module()
+@MODELS.register_module()
 class PAFPN(FPN):
     """Path Aggregation Network for Instance Segmentation.
 

@@ -5,11 +5,12 @@ from mmcv.ops import DeformConv2d
 from mmcv.runner import force_fp32
 
 from mmdet.core import multi_apply
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS
+from ..builder import build_loss
 from .corner_head import CornerHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CentripetalHead(CornerHead):
     """Head of CentripetalNet: Pursuing High-quality Keypoint Pairs for Object
     Detection.

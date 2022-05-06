@@ -10,11 +10,12 @@ from mmdet.core import (bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh,
                         build_assigner, build_sampler, multi_apply,
                         reduce_mean)
 from mmdet.models.utils import build_transformer
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS
+from ..builder import build_loss
 from .anchor_free_head import AnchorFreeHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class DETRHead(AnchorFreeHead):
     """Implements the DETR transformer head.
 

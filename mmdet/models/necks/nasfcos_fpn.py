@@ -5,10 +5,10 @@ from mmcv.cnn import ConvModule, caffe2_xavier_init
 from mmcv.ops.merge_cells import ConcatCell
 from mmcv.runner import BaseModule
 
-from ..builder import NECKS
+from mmdet.registry import MODELS
 
 
-@NECKS.register_module()
+@MODELS.register_module()
 class NASFCOS_FPN(BaseModule):
     """FPN structure in NASFPN.
 

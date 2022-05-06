@@ -1,9 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from ..builder import DETECTORS
+from mmdet.registry import MODELS
 from .faster_rcnn import FasterRCNN
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class TridentFasterRCNN(FasterRCNN):
     """Implementation of `TridentNet <https://arxiv.org/abs/1901.01892>`_"""
 

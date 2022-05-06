@@ -4,8 +4,10 @@ import warnings
 
 import torch
 from mmcv.runner import get_dist_info
-from mmcv.runner.hooks import HOOKS, Hook
+from mmcv.runner.hooks import Hook
 from torch import distributed as dist
+
+from mmdet.registry import HOOKS
 
 
 @HOOKS.register_module()

@@ -6,8 +6,10 @@ from mmcv.runner import get_dist_info
 from torch.utils.data import Sampler
 
 from mmdet.core.utils import sync_random_seed
+from mmdet.registry import DATA_SAMPLERS
 
 
+@DATA_SAMPLERS.register_module()
 class ClassAwareSampler(Sampler):
     r"""Sampler that restricts data loading to the label of the dataset.
 

@@ -1,8 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
-from ..builder import BBOX_ASSIGNERS
-from ..iou_calculators import build_iou_calculator
+from mmdet.registry import TASK_UTILS
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
@@ -68,7 +67,7 @@ def bboxes_area(bboxes):
     return areas
 
 
-@BBOX_ASSIGNERS.register_module()
+@TASK_UTILS.register_module()
 class CenterRegionAssigner(BaseAssigner):
     """Assign pixels at the center region of a bbox as positive.
 
@@ -103,7 +102,7 @@ class CenterRegionAssigner(BaseAssigner):
         self.min_pos_iof = min_pos_iof
         self.ignore_gt_scale = ignore_gt_scale
         self.foreground_dominate = foreground_dominate
-        self.iou_calculator = build_iou_calculator(iou_calculator)
+        self.iou_calculator = TASK_UTILS.build(iou_calculator)
 
     def get_gt_priorities(self, gt_bboxes):
         """Get gt priorities according to their areas.

@@ -4,10 +4,10 @@ from mmcv.cnn import ConvModule, build_upsample_layer, xavier_init
 from mmcv.ops.carafe import CARAFEPack
 from mmcv.runner import BaseModule, ModuleList
 
-from ..builder import NECKS
+from mmdet.registry import MODELS
 
 
-@NECKS.register_module()
+@MODELS.register_module()
 class FPN_CARAFE(BaseModule):
     """FPN_CARAFE is a more flexible implementation of FPN. It allows more
     choice for upsample methods during the top-down pathway.

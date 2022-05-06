@@ -6,7 +6,7 @@ import numpy as np
 import pycocotools.mask as maskUtils
 
 from mmdet.core import BitmapMasks, PolygonMasks
-from ..builder import PIPELINES
+from mmdet.registry import TRANSFORMS
 
 try:
     from panopticapi.utils import rgb2id
@@ -14,7 +14,7 @@ except ImportError:
     rgb2id = None
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class LoadImageFromFile:
     """Load an image from file.
 
@@ -87,7 +87,7 @@ class LoadImageFromFile:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class LoadImageFromWebcam(LoadImageFromFile):
     """Load an image from webcam.
 
@@ -119,7 +119,7 @@ class LoadImageFromWebcam(LoadImageFromFile):
         return results
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class LoadMultiChannelImageFromFiles:
     """Load multi-channel images from a list of separate channel files.
 
@@ -202,7 +202,7 @@ class LoadMultiChannelImageFromFiles:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class LoadAnnotations:
     """Load multiple types of annotations.
 
@@ -411,7 +411,7 @@ class LoadAnnotations:
         return repr_str
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class LoadPanopticAnnotations(LoadAnnotations):
     """Load multiple types of panoptic annotations.
 
@@ -522,7 +522,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
         return results
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class LoadProposals:
     """Load proposal pipeline.
 
@@ -567,7 +567,7 @@ class LoadProposals:
                f'(num_max_proposals={self.num_max_proposals})'
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class FilterAnnotations:
     """Filter invalid annotations.
 

@@ -13,12 +13,13 @@ from mmcv.runner import force_fp32
 from mmdet.core import (MlvlPointGenerator, bbox_xyxy_to_cxcywh,
                         build_assigner, build_sampler, multi_apply,
                         reduce_mean)
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS
+from ..builder import build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class YOLOXHead(BaseDenseHead, BBoxTestMixin):
     """YOLOXHead head used in `YOLOX <https://arxiv.org/abs/2107.08430>`_.
 

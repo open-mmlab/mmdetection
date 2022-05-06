@@ -1,10 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from mmdet.models.builder import HEADS
 from mmdet.models.utils import ResLayer, SimplifiedBasicBlock
+from mmdet.registry import MODELS
 from .fused_semantic_head import FusedSemanticHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class SCNetSemanticHead(FusedSemanticHead):
     """Mask head for `SCNet <https://arxiv.org/abs/2012.10150>`_.
 

@@ -2,10 +2,10 @@
 import torch.nn as nn
 from mmcv.runner import BaseModule, auto_fp16
 
-from mmdet.models.builder import HEADS
+from mmdet.registry import MODELS
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class FeatureRelayHead(BaseModule):
     """Feature Relay Head used in `SCNet <https://arxiv.org/abs/2012.10150>`_.
 

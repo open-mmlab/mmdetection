@@ -1,8 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
-from ..builder import BBOX_ASSIGNERS
-from ..match_costs import build_match_cost
+from mmdet.registry import TASK_UTILS
 from ..transforms import bbox_cxcywh_to_xyxy
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
@@ -13,7 +12,7 @@ except ImportError:
     linear_sum_assignment = None
 
 
-@BBOX_ASSIGNERS.register_module()
+@TASK_UTILS.register_module()
 class HungarianAssigner(BaseAssigner):
     """Computes one-to-one matching between predictions and ground truth.
 
@@ -46,9 +45,9 @@ class HungarianAssigner(BaseAssigner):
                  cls_cost=dict(type='ClassificationCost', weight=1.),
                  reg_cost=dict(type='BBoxL1Cost', weight=1.0),
                  iou_cost=dict(type='IoUCost', iou_mode='giou', weight=1.0)):
-        self.cls_cost = build_match_cost(cls_cost)
-        self.reg_cost = build_match_cost(reg_cost)
-        self.iou_cost = build_match_cost(iou_cost)
+        self.cls_cost = TASK_UTILS.build(cls_cost)
+        self.reg_cost = TASK_UTILS.build(reg_cost)
+        self.iou_cost = TASK_UTILS.build(iou_cost)
 
     def assign(self,
                bbox_pred,

@@ -1,9 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from ..builder import DETECTORS
+from mmdet.registry import MODELS
 from .panoptic_two_stage_segmentor import TwoStagePanopticSegmentor
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class PanopticFPN(TwoStagePanopticSegmentor):
     r"""Implementation of `Panoptic feature pyramid
     networks <https://arxiv.org/pdf/1901.02446>`_"""

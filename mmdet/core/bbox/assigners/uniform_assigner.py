@@ -1,14 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
-from ..builder import BBOX_ASSIGNERS
-from ..iou_calculators import build_iou_calculator
+from mmdet.registry import TASK_UTILS
 from ..transforms import bbox_xyxy_to_cxcywh
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
 
-@BBOX_ASSIGNERS.register_module()
+@TASK_UTILS.register_module()
 class UniformAssigner(BaseAssigner):
     """Uniform Matching between the anchors and gt boxes, which can achieve
     balance in positive anchors, and gt_bboxes_ignore was not considered for
@@ -30,7 +29,7 @@ class UniformAssigner(BaseAssigner):
         self.match_times = match_times
         self.pos_ignore_thr = pos_ignore_thr
         self.neg_ignore_thr = neg_ignore_thr
-        self.iou_calculator = build_iou_calculator(iou_calculator)
+        self.iou_calculator = TASK_UTILS.build(iou_calculator)
 
     def assign(self,
                bbox_pred,

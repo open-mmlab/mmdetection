@@ -13,8 +13,8 @@ from mmcv.cnn.utils.weight_init import trunc_normal_
 from mmcv.runner import BaseModule, ModuleList, _load_checkpoint
 from mmcv.utils import to_2tuple
 
+from mmdet.registry import MODELS
 from ...utils import get_root_logger
-from ..builder import BACKBONES
 from ..utils.ckpt_convert import swin_converter
 from ..utils.transformer import PatchEmbed, PatchMerging
 
@@ -463,7 +463,7 @@ class SwinBlockSequence(BaseModule):
             return x, hw_shape, x, hw_shape
 
 
-@BACKBONES.register_module()
+@MODELS.register_module()
 class SwinTransformer(BaseModule):
     """ Swin Transformer
     A PyTorch implement of : `Swin Transformer:

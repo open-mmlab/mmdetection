@@ -13,7 +13,7 @@ import numpy as np
 import pycocotools.mask as maskUtils
 from mmcv.utils import print_log
 
-from .builder import DATASETS
+from mmdet.registry import DATASETS
 from .coco import CocoDataset
 
 

@@ -6,7 +6,7 @@ from mmcv.cnn import (ConvModule, bias_init_with_prob, constant_init, is_norm,
 from mmcv.runner import force_fp32
 
 from mmdet.core import anchor_inside_flags, multi_apply, reduce_mean, unmap
-from ..builder import HEADS
+from mmdet.registry import MODELS
 from .anchor_head import AnchorHead
 
 INF = 1e8
@@ -39,7 +39,7 @@ def levels_to_images(mlvl_tensor):
     return [torch.cat(item, 0) for item in batch_list]
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class YOLOFHead(AnchorHead):
     """YOLOFHead Paper link: https://arxiv.org/abs/2103.09460.
 

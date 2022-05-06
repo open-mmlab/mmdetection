@@ -3,13 +3,13 @@ import warnings
 
 import torch
 
-from ..builder import BBOX_ASSIGNERS
+from mmdet.registry import TASK_UTILS
 from ..iou_calculators import build_iou_calculator
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
 
-@BBOX_ASSIGNERS.register_module()
+@TASK_UTILS.register_module()
 class ATSSAssigner(BaseAssigner):
     """Assign a corresponding gt bbox or background to each bbox.
 

@@ -12,7 +12,7 @@ from mmcv.runner import BaseModule, ModuleList
 from mmdet.core import (RegionAssigner, build_assigner, build_sampler,
                         images_to_levels, multi_apply)
 from mmdet.core.utils import select_single_mlvl
-from ..builder import HEADS, build_head
+from mmdet.registry import MODELS
 from .base_dense_head import BaseDenseHead
 from .rpn_head import RPNHead
 
@@ -92,7 +92,7 @@ class AdaptiveConv(BaseModule):
         return x
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class StageCascadeRPNHead(RPNHead):
     """Stage of CascadeRPNHead.
 
@@ -686,7 +686,7 @@ class StageCascadeRPNHead(RPNHead):
         return new_anchor_list
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CascadeRPNHead(BaseDenseHead):
     """The CascadeRPNHead will predict more accurate region proposals, which is
     required for two-stage detectors (such as Fast/Faster R-CNN). CascadeRPN
@@ -713,7 +713,7 @@ class CascadeRPNHead(BaseDenseHead):
             train_cfg_i = train_cfg[i] if train_cfg is not None else None
             stages[i].update(train_cfg=train_cfg_i)
             stages[i].update(test_cfg=test_cfg)
-            self.stages.append(build_head(stages[i]))
+            self.stages.append(MODELS.build(stages[i]))
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 

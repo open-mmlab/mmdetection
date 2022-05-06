@@ -9,7 +9,8 @@ from mmcv.ops import CornerPool, batched_nms
 from mmcv.runner import BaseModule, force_fp32
 
 from mmdet.core import multi_apply
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS
+from ..builder import build_loss
 from ..utils import gaussian_radius, gen_gaussian_target
 from ..utils.gaussian_target import (gather_feat, get_local_maximum,
                                      get_topk_from_heatmap,
@@ -81,7 +82,7 @@ class BiCornerPool(BaseModule):
         return conv2
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class CornerHead(BaseDenseHead, BBoxTestMixin):
     """Head of CornerNet: Detecting Objects as Paired Keypoints.
 

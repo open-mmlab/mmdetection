@@ -2,7 +2,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..builder import LOSSES
+from mmdet.registry import MODELS
 from .utils import weighted_loss
 
 
@@ -12,7 +12,7 @@ def mse_loss(pred, target):
     return F.mse_loss(pred, target, reduction='none')
 
 
-@LOSSES.register_module()
+@MODELS.register_module()
 class MSELoss(nn.Module):
     """MSELoss.
 

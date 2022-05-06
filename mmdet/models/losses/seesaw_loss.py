@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..builder import LOSSES
+from mmdet.registry import MODELS
 from .accuracy import accuracy
 from .cross_entropy_loss import cross_entropy
 from .utils import weight_reduce_loss
@@ -76,7 +76,7 @@ def seesaw_ce_loss(cls_score,
     return loss
 
 
-@LOSSES.register_module()
+@MODELS.register_module()
 class SeesawLoss(nn.Module):
     """
     Seesaw Loss for Long-Tailed Instance Segmentation (CVPR 2021)

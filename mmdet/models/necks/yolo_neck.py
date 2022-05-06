@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmcv.runner import BaseModule
 
-from ..builder import NECKS
+from mmdet.registry import MODELS
 
 
 class DetectionBlock(BaseModule):
@@ -61,7 +61,7 @@ class DetectionBlock(BaseModule):
         return out
 
 
-@NECKS.register_module()
+@MODELS.register_module()
 class YOLOV3Neck(BaseModule):
     """The neck of YOLOV3.
 

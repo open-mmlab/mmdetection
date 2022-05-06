@@ -6,11 +6,11 @@ import torch
 from mmcv.image import tensor2imgs
 
 from mmdet.core import bbox_mapping
-from ..builder import DETECTORS, build_backbone, build_head, build_neck
+from mmdet.registry import MODELS
 from .base import BaseDetector
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class RPN(BaseDetector):
     """Implementation of Region Proposal Network."""
 
@@ -27,12 +27,12 @@ class RPN(BaseDetector):
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')
             backbone.pretrained = pretrained
-        self.backbone = build_backbone(backbone)
-        self.neck = build_neck(neck) if neck is not None else None
+        self.backbone = MODELS.build(backbone)
+        self.neck = MODELS.build(neck) if neck is not None else None
         rpn_train_cfg = train_cfg.rpn if train_cfg is not None else None
         rpn_head.update(train_cfg=rpn_train_cfg)
         rpn_head.update(test_cfg=test_cfg.rpn)
-        self.rpn_head = build_head(rpn_head)
+        self.rpn_head = MODELS.build(rpn_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 

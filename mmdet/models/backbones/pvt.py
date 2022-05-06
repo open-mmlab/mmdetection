@@ -15,8 +15,8 @@ from mmcv.runner import (BaseModule, ModuleList, Sequential, _load_checkpoint,
                          load_state_dict)
 from torch.nn.modules.utils import _pair as to_2tuple
 
+from mmdet.registry import MODELS
 from ...utils import get_root_logger
-from ..builder import BACKBONES
 from ..utils import PatchEmbed, nchw_to_nlc, nlc_to_nchw, pvt_convert
 
 
@@ -353,7 +353,7 @@ class AbsolutePositionEmbedding(BaseModule):
         return self.drop(x + pos_embed)
 
 
-@BACKBONES.register_module()
+@MODELS.register_module()
 class PyramidVisionTransformer(BaseModule):
     """Pyramid Vision Transformer (PVT)
 
@@ -576,7 +576,7 @@ class PyramidVisionTransformer(BaseModule):
         return outs
 
 
-@BACKBONES.register_module()
+@MODELS.register_module()
 class PyramidVisionTransformerV2(PyramidVisionTransformer):
     """Implementation of `PVTv2: Improved Baselines with Pyramid Vision
     Transformer <https://arxiv.org/pdf/2106.13797.pdf>`_."""

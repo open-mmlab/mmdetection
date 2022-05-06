@@ -4,13 +4,13 @@ import torch.nn as nn
 from mmcv.runner import auto_fp16, force_fp32
 
 from mmdet.core import mask_target
-from mmdet.models.builder import HEADS
 from mmdet.models.dense_heads.atss_head import reduce_mean
 from mmdet.models.utils import build_transformer
+from mmdet.registry import MODELS
 from .fcn_mask_head import FCNMaskHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class DynamicMaskHead(FCNMaskHead):
     r"""Dynamic Mask Head for
     `Instances as Queries <http://arxiv.org/abs/2105.01928>`_

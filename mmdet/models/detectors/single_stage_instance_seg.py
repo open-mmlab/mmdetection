@@ -7,13 +7,13 @@ import numpy as np
 import torch
 
 from mmdet.core.visualization.image import imshow_det_bboxes
-from ..builder import DETECTORS, build_backbone, build_head, build_neck
+from mmdet.registry import MODELS
 from .base import BaseDetector
 
 INF = 1e8
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class SingleStageInstanceSegmentor(BaseDetector):
     """Base class for single-stage instance segmentors."""
 
@@ -32,15 +32,15 @@ class SingleStageInstanceSegmentor(BaseDetector):
                           'please use "init_cfg" instead')
             backbone.pretrained = pretrained
         super(SingleStageInstanceSegmentor, self).__init__(init_cfg=init_cfg)
-        self.backbone = build_backbone(backbone)
+        self.backbone = MODELS.build(backbone)
         if neck is not None:
-            self.neck = build_neck(neck)
+            self.neck = MODELS.build(neck)
         else:
             self.neck = None
         if bbox_head is not None:
             bbox_head.update(train_cfg=copy.deepcopy(train_cfg))
             bbox_head.update(test_cfg=copy.deepcopy(test_cfg))
-            self.bbox_head = build_head(bbox_head)
+            self.bbox_head = MODELS.build(bbox_head)
         else:
             self.bbox_head = None
 
@@ -48,7 +48,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
                           f'be implemented in {self.__class__.__name__}'
         mask_head.update(train_cfg=copy.deepcopy(train_cfg))
         mask_head.update(test_cfg=copy.deepcopy(test_cfg))
-        self.mask_head = build_head(mask_head)
+        self.mask_head = MODELS.build(mask_head)
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg

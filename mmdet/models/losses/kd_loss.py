@@ -3,7 +3,7 @@ import mmcv
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..builder import LOSSES
+from mmdet.registry import MODELS
 from .utils import weighted_loss
 
 
@@ -36,7 +36,7 @@ def knowledge_distillation_kl_div_loss(pred,
     return kd_loss
 
 
-@LOSSES.register_module()
+@MODELS.register_module()
 class KnowledgeDistillationKLDivLoss(nn.Module):
     """Loss function for knowledge distilling using KL divergence.
 

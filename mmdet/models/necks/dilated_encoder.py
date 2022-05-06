@@ -4,7 +4,7 @@ from mmcv.cnn import (ConvModule, caffe2_xavier_init, constant_init, is_norm,
                       normal_init)
 from torch.nn import BatchNorm2d
 
-from ..builder import NECKS
+from mmdet.registry import MODELS
 
 
 class Bottleneck(nn.Module):
@@ -48,7 +48,7 @@ class Bottleneck(nn.Module):
         return out
 
 
-@NECKS.register_module()
+@MODELS.register_module()
 class DilatedEncoder(nn.Module):
     """Dilated Encoder for YOLOF <https://arxiv.org/abs/2103.09460>`.
 

@@ -1,10 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from mmdet.models.builder import HEADS
 from mmdet.models.utils import ResLayer, SimplifiedBasicBlock
+from mmdet.registry import MODELS
 from .fcn_mask_head import FCNMaskHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class SCNetMaskHead(FCNMaskHead):
     """Mask head for `SCNet <https://arxiv.org/abs/2012.10150>`_.
 

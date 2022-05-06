@@ -8,11 +8,12 @@ from mmcv.cnn import ConvModule
 
 from mmdet.core import InstanceData, mask_matrix_nms, multi_apply
 from mmdet.core.utils import center_of_mass, generate_coordinate
-from mmdet.models.builder import HEADS, build_loss
+from mmdet.models.builder import build_loss
+from mmdet.registry import MODELS
 from .base_mask_head import BaseMaskHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class SOLOHead(BaseMaskHead):
     """SOLO mask head used in `SOLO: Segmenting Objects by Locations.
 
@@ -571,7 +572,7 @@ class SOLOHead(BaseMaskHead):
         return results
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class DecoupledSOLOHead(SOLOHead):
     """Decoupled SOLO mask head used in `SOLO: Segmenting Objects by Locations.
 
@@ -1044,7 +1045,7 @@ class DecoupledSOLOHead(SOLOHead):
         return results
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class DecoupledSOLOLightHead(DecoupledSOLOHead):
     """Decoupled Light SOLO mask head used in `SOLO: Segmenting Objects by
     Locations <https://arxiv.org/abs/1912.04488>`_

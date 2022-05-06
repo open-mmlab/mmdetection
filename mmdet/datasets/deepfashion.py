@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from .builder import DATASETS
+from mmdet.registry import DATASETS
 from .coco import CocoDataset
 
 

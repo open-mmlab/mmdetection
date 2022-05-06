@@ -1,9 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from mmcv.utils import Registry, build_from_cfg
+import warnings
 
-IOU_CALCULATORS = Registry('IoU calculator')
+from mmdet.registry import TASK_UTILS
+
+IOU_CALCULATORS = TASK_UTILS
 
 
 def build_iou_calculator(cfg, default_args=None):
     """Builder of IoU calculator."""
-    return build_from_cfg(cfg, IOU_CALCULATORS, default_args)
+    warnings.warn(
+        '``build_iou_calculator`` would be deprecated soon, please use '
+        '``mmdet.registry.TASK_UTILS.build()`` ')
+    return TASK_UTILS.build(cfg, default_args=default_args)

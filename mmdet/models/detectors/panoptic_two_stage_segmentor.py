@@ -7,12 +7,12 @@ import torch
 
 from mmdet.core import INSTANCE_OFFSET, bbox2roi, multiclass_nms
 from mmdet.core.visualization import imshow_det_bboxes
-from ..builder import DETECTORS, build_head
+from mmdet.registry import MODELS
 from ..roi_heads.mask_heads.fcn_mask_head import _do_paste_mask
 from .two_stage import TwoStageDetector, results2proposal
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class TwoStagePanopticSegmentor(TwoStageDetector):
     """Base class of Two-stage Panoptic Segmentor.
 
@@ -38,12 +38,12 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
               self).__init__(backbone, neck, rpn_head, roi_head, train_cfg,
                              test_cfg, pretrained, init_cfg, img_norm_cfg)
         if semantic_head is not None:
-            self.semantic_head = build_head(semantic_head)
+            self.semantic_head = MODELS.build(semantic_head)
         if panoptic_fusion_head is not None:
             panoptic_cfg = test_cfg.panoptic if test_cfg is not None else None
             panoptic_fusion_head_ = panoptic_fusion_head.deepcopy()
             panoptic_fusion_head_.update(test_cfg=panoptic_cfg)
-            self.panoptic_fusion_head = build_head(panoptic_fusion_head_)
+            self.panoptic_fusion_head = MODELS.build(panoptic_fusion_head_)
 
             self.num_things_classes = self.panoptic_fusion_head.\
                 num_things_classes

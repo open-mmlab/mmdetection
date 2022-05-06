@@ -2,13 +2,13 @@
 import torch
 from mmcv.ops import nms_match
 
-from ..builder import BBOX_SAMPLERS
+from mmdet.registry import TASK_UTILS
 from ..transforms import bbox2roi
 from .base_sampler import BaseSampler
 from .sampling_result import SamplingResult
 
 
-@BBOX_SAMPLERS.register_module()
+@TASK_UTILS.register_module()
 class ScoreHLRSampler(BaseSampler):
     r"""Importance-based Sample Reweighting (ISR_N), described in `Prime Sample
     Attention in Object Detection <https://arxiv.org/abs/1904.04821>`_.

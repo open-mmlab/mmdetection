@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from ..builder import LOSSES
+from mmdet.registry import MODELS
 from .utils import weighted_loss
 
 
@@ -53,7 +53,7 @@ def balanced_l1_loss(pred,
     return loss
 
 
-@LOSSES.register_module()
+@MODELS.register_module()
 class BalancedL1Loss(nn.Module):
     """Balanced L1 Loss.
 

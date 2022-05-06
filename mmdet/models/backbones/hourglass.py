@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmcv.runner import BaseModule
 
-from ..builder import BACKBONES
+from mmdet.registry import MODELS
 from ..utils import ResLayer
 from .resnet import BasicBlock
 
@@ -93,7 +93,7 @@ class HourglassModule(BaseModule):
         return up1 + up2
 
 
-@BACKBONES.register_module()
+@MODELS.register_module()
 class HourglassNet(BaseModule):
     """HourglassNet backbone.
 

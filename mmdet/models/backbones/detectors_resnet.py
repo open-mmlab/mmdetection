@@ -6,8 +6,8 @@ from mmcv.cnn import (build_conv_layer, build_norm_layer, constant_init,
 from mmcv.runner import Sequential, load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
 
+from mmdet.registry import MODELS
 from mmdet.utils import get_root_logger
-from ..builder import BACKBONES
 from .resnet import BasicBlock
 from .resnet import Bottleneck as _Bottleneck
 from .resnet import ResNet
@@ -208,7 +208,7 @@ class ResLayer(Sequential):
         super(ResLayer, self).__init__(*layers)
 
 
-@BACKBONES.register_module()
+@MODELS.register_module()
 class DetectoRS_ResNet(ResNet):
     """ResNet backbone for DetectoRS.
 

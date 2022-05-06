@@ -7,8 +7,10 @@ from mmcv.runner import get_dist_info
 from torch.utils.data.sampler import Sampler
 
 from mmdet.core.utils import sync_random_seed
+from mmdet.registry import DATA_SAMPLERS
 
 
+@DATA_SAMPLERS.register_module()
 class InfiniteGroupBatchSampler(Sampler):
     """Similar to `BatchSampler` warping a `GroupSampler. It is designed for
     iteration-based runners like `IterBasedRunner` and yields a mini-batch
@@ -103,6 +105,7 @@ class InfiniteGroupBatchSampler(Sampler):
         raise NotImplementedError
 
 
+@DATA_SAMPLERS.register_module()
 class InfiniteBatchSampler(Sampler):
     """Similar to `BatchSampler` warping a `DistributedSampler. It is designed
     iteration-based runners like `IterBasedRunner` and yields a mini-batch

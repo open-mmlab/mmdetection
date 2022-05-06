@@ -1,9 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from ..builder import DETECTORS
+from mmdet.registry import MODELS
 from .sparse_rcnn import SparseRCNN
 
 
-@DETECTORS.register_module()
+@MODELS.register_module()
 class QueryInst(SparseRCNN):
     r"""Implementation of
     `Instances as Queries <http://arxiv.org/abs/2105.01928>`_"""

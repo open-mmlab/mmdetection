@@ -3,7 +3,7 @@ import mmcv
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..builder import LOSSES
+from mmdet.registry import MODELS
 from .utils import weighted_loss
 
 
@@ -124,7 +124,7 @@ def distribution_focal_loss(pred, label):
     return loss
 
 
-@LOSSES.register_module()
+@MODELS.register_module()
 class QualityFocalLoss(nn.Module):
     r"""Quality Focal Loss (QFL) is a variant of `Generalized Focal Loss:
     Learning Qualified and Distributed Bounding Boxes for Dense Object
@@ -199,7 +199,7 @@ class QualityFocalLoss(nn.Module):
         return loss_cls
 
 
-@LOSSES.register_module()
+@MODELS.register_module()
 class DistributionFocalLoss(nn.Module):
     r"""Distribution Focal Loss (DFL) is a variant of `Generalized Focal Loss:
     Learning Qualified and Distributed Bounding Boxes for Dense Object
