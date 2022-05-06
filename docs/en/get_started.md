@@ -65,7 +65,7 @@ pip install mmdet
 
 ## Verify the installation
 
-To verify whether MMDetection is installed correctly, we provide some sample codes to run a inference demo.
+To verify whether MMDetection is installed correctly, we provide some sample codes to run an inference demo.
 
 **Step 1.** We need to download config and checkpoint files.
 
@@ -107,9 +107,11 @@ When installing PyTorch, you need to specify the version of CUDA. If you are not
 - For Ampere-based NVIDIA GPUs, such as GeForce 30 series and NVIDIA A100, CUDA 11 is a must.
 - For older NVIDIA GPUs, CUDA 11 is backward compatible, but CUDA 10.2 offers better compatibility and is more lightweight.
 
-Please Note that there is no need to install the complete CUDA toolkit if you follow our best practices, because no CUDA code will be compiled. However if you hope to compile MMCV or other CUDA operators, you need to install the complete CUDA toolkit from NVIDIA's [website](https://developer.nvidia.com/cuda-downloads), and its version should match the CUDA version of PyTorch. i.e., the specified version of cudatoolkit in `conda install` command.
+Please make sure the GPU driver satisfies the minimum version requirements. See [this table](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions) for more information.
 
-Please also make sure the GPU driver satisfies the minimum version requirements. See [this table](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions) for more information.
+```{note}
+Installing CUDA runtime libraries is enough if you follow our best practices, because no CUDA code will be compiled locally. However if you hope to compile MMCV from source or develop other CUDA operators, you need to install the complete CUDA toolkit from NVIDIA's [website](https://developer.nvidia.com/cuda-downloads), and its version should match the CUDA version of PyTorch. i.e., the specified version of cudatoolkit in `conda install` command.
+```
 
 ### Install MMCV without MIM
 
