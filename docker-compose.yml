@@ -1,0 +1,21 @@
+version: "3"
+
+services:
+  mmdetection:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: mmdetection
+    container_name: mmdetection
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./notebook:/notebook
+    command: jupyter lab --port=8888 --ip=0.0.0.0 --NotebookApp.token='' --allow-root
+    # tty: true
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           capabilities: [utility, compute, video]
