@@ -5,6 +5,7 @@ import warnings
 
 import cv2
 import torch.multiprocessing as mp
+from mmengine import DefaultScope
 
 
 def setup_multi_processes(cfg):
@@ -51,3 +52,23 @@ def setup_multi_processes(cfg):
             f'overloaded, please further tune the variable for optimal '
             f'performance in your application as needed.')
         os.environ['MKL_NUM_THREADS'] = str(mkl_num_threads)
+
+
+def register_all_modules(init_default_scope: bool = True) -> None:
+    """Register all modules in mmdet into the registries.
+
+    Args:
+        init_default_scope (bool): Whether initialize the mmdet default scope.
+            When `init_default_scope=True`, the global default scope will be
+            set to `mmdet`, and all registries will build modules from mmdet's
+            registry node. To understand more about the registry, please refer
+            to https://github.com/open-mmlab/mmengine/blob/main/docs/en/tutorials/registry.md
+            Defaults to True.
+    """  # noqa
+    import mmdet.core  # noqa: F401,F403
+    import mmdet.datasets  # noqa: F401,F403
+    import mmdet.metrics  # noqa: F401,F403
+    import mmdet.models  # noqa: F401,F403
+
+    if init_default_scope:
+        DefaultScope.get_instance('mmdet', scope_name='mmdet')
