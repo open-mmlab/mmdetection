@@ -1,6 +1,12 @@
 # model settings
+preprocess_cfg = dict(
+    mean=[103.530, 116.280, 123.675],
+    std=[1.0, 1.0, 1.0],
+    to_rgb=False,
+    pad_size_divisor=32)
 norm_cfg = dict(type='BN', requires_grad=False)
 model = dict(
+    preprocess_cfg=preprocess_cfg,
     type='FasterRCNN',
     backbone=dict(
         type='ResNet',
