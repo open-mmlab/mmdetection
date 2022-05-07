@@ -2,8 +2,9 @@
 import warnings
 
 import torch
+from mmengine.data import InstanceData
 
-from mmdet.core import InstanceData, bbox2result
+from mmdet.core import bbox2result
 from mmdet.registry import MODELS
 from .base import BaseDetector
 
