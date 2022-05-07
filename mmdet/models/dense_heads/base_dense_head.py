@@ -7,8 +7,8 @@ import torch
 from mmcv.cnn.utils.weight_init import constant_init
 from mmcv.ops import batched_nms
 from mmcv.runner import BaseModule, force_fp32
+from mmengine.data import InstanceData
 
-from mmdet.core import InstanceData
 from mmdet.core.post_processing.merge_augs import merge_aug_results
 from mmdet.core.utils import filter_scores_and_topk, select_single_mlvl
 

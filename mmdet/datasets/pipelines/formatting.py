@@ -5,8 +5,9 @@ import mmcv
 import numpy as np
 import torch
 from mmcv.parallel import DataContainer as DC
+from mmengine.data import InstanceData
 
-from mmdet.core.data_structures import GeneralData, InstanceData
+from mmdet.core.data_structures import DetDataSample
 from mmdet.registry import TRANSFORMS
 
 
@@ -216,7 +217,7 @@ class DefaultFormatBundle:
             img = np.ascontiguousarray(img.transpose(2, 0, 1))
             results['img'] = to_tensor(img)
 
-        data_sample = GeneralData()
+        data_sample = DetDataSample()
         instance_data = InstanceData()
         for key in self.mapping_table.keys():
             if key not in results:
