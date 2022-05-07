@@ -1,0 +1,47 @@
+{
+    "images": [
+        {
+            "file_name": "fake1.jpg",
+            "height": 800,
+            "width": 800,
+            "id": 0
+        }
+    ],
+    "annotations": [
+        {
+            "bbox": [
+                0,
+                0,
+                20,
+                20
+            ],
+            "area": 400.00,
+            "score": 1.0,
+            "category_id": 1,
+            "id": 1,
+            "image_id": 0
+        },
+        {
+            "bbox": [
+                0,
+                0,
+                20,
+                20
+            ],
+            "area": 400.00,
+            "score": 1.0,
+            "category_id": 1,
+            "id": 1,
+            "image_id": 0
+        }
+    ],
+    "categories": [
+        {
+            "id": 1,
+            "name": "car",
+            "supercategory": "none"
+        }
+    ],
+    "licenses": [],
+    "info": null
+}
