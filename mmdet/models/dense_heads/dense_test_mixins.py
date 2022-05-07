@@ -5,8 +5,9 @@ from inspect import signature
 
 import torch
 from mmcv.ops import batched_nms
+from mmengine.data import InstanceData
 
-from mmdet.core import InstanceData, bbox_mapping_back, merge_aug_proposals
+from mmdet.core import bbox_mapping_back, merge_aug_proposals
 
 if sys.version_info >= (3, 7):
     from mmdet.utils.contextmanagers import completed

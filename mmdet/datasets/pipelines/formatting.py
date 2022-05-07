@@ -5,8 +5,9 @@ import mmcv
 import numpy as np
 import torch
 from mmcv.parallel import DataContainer as DC
+from mmengine.data import InstanceData
 
-from mmdet.core.data_structures import GeneralData, InstanceData
+from mmdet.core.data_structures import DetDataSample
 from mmdet.registry import TRANSFORMS
 
 
@@ -228,9 +229,11 @@ class DefaultFormatBundle:
             if len(img.shape) < 3:
                 img = np.expand_dims(img, -1)
             img = np.ascontiguousarray(img.transpose(2, 0, 1))
-            results['img'] = DC(
-                to_tensor(img), padding_value=self.pad_val['img'], stack=True)
-        for key in ['proposals', 'gt_bboxes', 'gt_bboxes_ignore', 'gt_labels']:
+            results['img'] = to_tensor(img)
+
+        data_sample = DetDataSample()
+        instance_data = InstanceData()
+        for key in self.mapping_table.keys():
             if key not in results:
                 continue
             results[key] = DC(to_tensor(results[key]))

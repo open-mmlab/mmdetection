@@ -6,8 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmcv.ops import batched_nms
+from mmengine.data import InstanceData
 
-from mmdet.core import InstanceData
 from mmdet.registry import MODELS
 from .anchor_head import AnchorHead
 

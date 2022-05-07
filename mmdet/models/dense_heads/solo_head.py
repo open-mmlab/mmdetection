@@ -5,8 +5,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
+from mmengine.data import InstanceData
 
-from mmdet.core import InstanceData, mask_matrix_nms, multi_apply
+from mmdet.core import mask_matrix_nms, multi_apply
 from mmdet.core.utils import center_of_mass, generate_coordinate
 from mmdet.models.builder import build_loss
 from mmdet.registry import MODELS
