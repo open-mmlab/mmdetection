@@ -1,5 +1,5 @@
 variables:
-  PYTORCH_IMAGE: registry.sensetime.com/eig-research/pytorch:1.3.1-cuda10.1-cudnn7-devel
+  PYTORCH_IMAGE: registry.sensetime.com/openmmlab/pytorch18-cu102-mmcv-transforms:latest
 
 stages:
   - linting
@@ -13,29 +13,25 @@ before_script:
   - python --version
   - pip --version
   - python -c "import torch; print(torch.__version__)"
+  - python -c "import mmcv; print(mmcv.__version__)"
 
 linting:
   image: $PYTORCH_IMAGE
   stage: linting
   script:
-    - pip install flake8==3.8.3 yapf==0.30.0 isort==5.10.1
-    - flake8 .
-    - isort --check-only --diff -rc mmdet/ tools/ tests/
-    - yapf -r -d mmdet/ tools/ tests/ configs/
+    - pre-commit run --all-files
 
 .test_template: &test_template_def
   stage: test
   script:
     - echo "Start building..."
-    - pip install mmpycocotools
-    - pip install mmcv-full==1.3.12 -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.3.0/index.html
-    - pip install -e .[all]
+    - pip install -e .[all] -i https://pypi.tuna.tsinghua.edu.cn/simple/
     - python -c "import mmdet; print(mmdet.__version__)"
     - echo "Start testing..."
     - coverage run --branch --source mmdet -m pytest tests/
     - coverage report -m
     - interrogate -v --ignore-init-method --ignore-module --ignore-nested-functions --ignore-regex "__repr__" --fail-under 60
 
-test:pytorch1.3-cuda10:
+test:pytorch1.8-cuda10:
   image: $PYTORCH_IMAGE
   <<: *test_template_def
