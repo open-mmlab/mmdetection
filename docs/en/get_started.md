@@ -1,6 +1,6 @@
 # Prerequisites
 
-In this section we desmonstrate how to prepare an environment with PyTorch.
+In this section we demonstrate how to prepare an environment with PyTorch.
 
 MMDetection works on Linux, Windows and macOS. It requires Python 3.6+, CUDA 9.2+ and PyTorch 1.5+.
 
