@@ -201,10 +201,6 @@ class SOLOV2Head(SOLOHead):
         else:
             mask_feature_head.update(in_channels=self.in_channels)
 
-        # update the norm_cfg of mask_feature_head
-        if mask_feature_head.get('norm_cfg', None) is None:
-            mask_feature_head.update(norm_cfg=self.norm_cfg)
-
         self.mask_feature_head = MaskFeatModule(**mask_feature_head)
         self.mask_stride = self.mask_feature_head.mask_stride
         self.fp16_enabled = False

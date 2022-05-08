@@ -36,15 +36,15 @@ model = dict(
             start_level=0,
             end_level=3,
             out_channels=256,
-            mask_stride=4),
+            mask_stride=4,
+            norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)),
         loss_mask=dict(type='DiceLoss', use_sigmoid=True, loss_weight=3.0),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
             gamma=2.0,
             alpha=0.25,
-            loss_weight=1.0),
-        norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)),
+            loss_weight=1.0)),
     # model training and testing settings
     test_cfg=dict(
         nms_pre=500,
