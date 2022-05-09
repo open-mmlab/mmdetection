@@ -27,7 +27,7 @@ Models:
     README: configs/convnext/README.md
     Code:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.16.0/mmdet/models/backbones/swin.py#L465
-      Version: v2.24.0
+      Version: v2.24.1
 
   - Name: cascade_mask_rcnn_convnext-t_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco
     In Collection: Cascade Mask R-CNN
@@ -57,7 +57,7 @@ Models:
     README: configs/convnext/README.md
     Code:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.16.0/mmdet/models/backbones/swin.py#L465
-      Version: v2.24.0
+      Version: v2.24.1
 
   - Name: cascade_mask_rcnn_convnext-s_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco
     In Collection: Cascade Mask R-CNN
@@ -87,4 +87,4 @@ Models:
     README: configs/convnext/README.md
     Code:
       URL:
-      Version: v2.24.0
+      Version: v2.24.1
