@@ -239,8 +239,9 @@ def main():
             cfg.device,
             device_ids=[int(os.environ['LOCAL_RANK'])],
             broadcast_buffers=False)
-        outputs = multi_gpu_test(model, data_loader, args.tmpdir,
-                                 args.gpu_collect)
+        outputs = multi_gpu_test(
+            model, data_loader, args.tmpdir, args.gpu_collect
+            or cfg.evaluation.get('gpu_collect', False))
 
     rank, _ = get_dist_info()
     if rank == 0:

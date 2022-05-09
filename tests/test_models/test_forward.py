@@ -673,8 +673,6 @@ def test_inference_detector():
     assert len(result) == 2 and len(result[0]) == num_class
 
 
-@pytest.mark.skipif(
-    not torch.cuda.is_available(), reason='requires CUDA support')
 def test_yolox_random_size():
     from mmdet.models import build_detector
     model = _get_detector_cfg('yolox/yolox_tiny_8x8_300e_coco.py')
