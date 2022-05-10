@@ -128,16 +128,13 @@ class CocoDataset(BaseDataset):
             bbox = [x1, y1, x1 + w, y1 + h]
 
             if ann.get('iscrowd', False):
-                # TODO: Don't process
-                instance['bbox_ignore'] = bbox
-                # TODO
-                instance['bbox'] = []
-                instance['bbox_label'] = -1
+                instance['ignore_flag'] = 1
             else:
-                instance['bbox'] = bbox
-                instance['bbox_label'] = self.cat2label[ann['category_id']]
-                if ann.get('segmentation', None):
-                    instance['mask'] = ann['segmentation']
+                instance['ignore_flag'] = 0
+            instance['bbox'] = bbox
+            instance['bbox_label'] = self.cat2label[ann['category_id']]
+            if ann.get('segmentation', None):
+                instance['mask'] = ann['segmentation']
             if len(instance) > 0:
                 instances.append(instance)
         data_info['instances'] = instances
