@@ -6,7 +6,7 @@ This tutorial first elaborate the computation pipeline of losses, then give some
 
 ## Computation pipeline of a loss
 
-Given the input prediction and target, as well as the weights, a loss function maps the input tensor to the final loss scalar. The mapping can be divided into four steps:
+Given the input prediction and target, as well as the weights, a loss function maps the input tensor to the final loss scalar. The mapping can be divided into five steps:
 
 1. Set the sampling method to sample positive and negative samples.
 
