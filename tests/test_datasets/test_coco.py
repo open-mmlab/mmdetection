@@ -1,10 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import pytest
+import unittest
 
 from mmdet.datasets import CocoDataset
 
 
-class TestCocoDataset:
+class TestCocoDataset(unittest.TestCase):
 
     def test_coco_dataset(self):
         # test CocoDataset
@@ -15,8 +15,8 @@ class TestCocoDataset:
             metainfo=metainfo,
             filter_cfg=dict(filter_empty_gt=True, min_size=32),
             pipeline=[])
-        assert dataset.metainfo['CLASSES'] == ('bus', 'car')
-        assert dataset.metainfo['task_name'] == 'new_task'
+        self.assertEqual(dataset.metainfo['CLASSES'], ('bus', 'car'))
+        self.assertEqual(dataset.metainfo['task_name'], 'new_task')
 
     def test_coco_dataset_without_filter_cfg(self):
         # test CocoDataset without filter_cfg
@@ -24,12 +24,12 @@ class TestCocoDataset:
             data_prefix=dict(img='imgs'),
             ann_file='tests/data/coco_sample.json',
             pipeline=[])
-        assert len(dataset) == 2
+        self.assertEqual(len(dataset), 2)
 
     def test_coco_annotation_ids_unique(self):
         # test annotation ids not unique error
         metainfo = dict(CLASSES=('car', ), task_name='new_task')
-        with pytest.raises(AssertionError):
+        with self.assertRaisesRegex(AssertionError, 'are not unique!'):
             CocoDataset(
                 data_prefix=dict(img='imgs'),
                 ann_file='tests/data/coco_wrong_format_sample.json',

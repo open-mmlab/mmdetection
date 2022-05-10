@@ -3,25 +3,24 @@ from .auto_augment import (AutoAugment, BrightnessTransform, ColorTransform,
                            ContrastTransform, EqualizeTransform, Rotate, Shear,
                            Translate)
 from .compose import Compose
-from .formatting import (Collect, DefaultFormatBundle, ImageToTensor,
-                         ToDataContainer, ToTensor, Transpose, to_tensor)
+from .formatting import (ImageToTensor, PackDetInputs, ToDataContainer,
+                         ToTensor, Transpose)
 from .instaboost import InstaBoost
-from .loading import (FilterAnnotations, LoadAnnotations, LoadImageFromFile,
-                      LoadImageFromWebcam, LoadMultiChannelImageFromFiles,
-                      LoadPanopticAnnotations, LoadProposals)
+from .loading import (LoadAnnotations, LoadImageFromWebcam,
+                      LoadMultiChannelImageFromFiles, LoadPanopticAnnotations,
+                      LoadProposals)
 from .test_time_aug import MultiScaleFlipAug
 from .transforms import (Albu, CopyPaste, CutOut, Expand, MinIoURandomCrop,
-                         MixUp, Mosaic, Normalize, Pad, PhotoMetricDistortion,
+                         MixUp, Mosaic, Normalize, PhotoMetricDistortion,
                          RandomAffine, RandomCenterCropPad, RandomCrop,
                          RandomFlip, RandomShift, Resize, SegRescale,
                          YOLOXHSVRandomAug)
 
 __all__ = [
-    'Compose', 'to_tensor', 'ToTensor', 'ImageToTensor', 'ToDataContainer',
-    'Transpose', 'Collect', 'DefaultFormatBundle', 'LoadAnnotations',
-    'LoadImageFromFile', 'LoadImageFromWebcam', 'LoadPanopticAnnotations',
-    'LoadMultiChannelImageFromFiles', 'LoadProposals', 'FilterAnnotations',
-    'MultiScaleFlipAug', 'Resize', 'RandomFlip', 'Pad', 'RandomCrop',
+    'PackDetInputs', 'Compose', 'ToTensor', 'ImageToTensor', 'ToDataContainer',
+    'Transpose', 'LoadImageFromWebcam', 'LoadAnnotations',
+    'LoadPanopticAnnotations', 'LoadMultiChannelImageFromFiles',
+    'LoadProposals', 'MultiScaleFlipAug', 'Resize', 'RandomFlip', 'RandomCrop',
     'Normalize', 'SegRescale', 'MinIoURandomCrop', 'Expand',
     'PhotoMetricDistortion', 'Albu', 'InstaBoost', 'RandomCenterCropPad',
     'AutoAugment', 'CutOut', 'Shear', 'Rotate', 'ColorTransform',
