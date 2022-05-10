@@ -10,6 +10,8 @@ before_script:
   - echo $PATH
   - gcc --version
   - nvcc --version
+  - export PATH="/usr/share/rvm/rubies/ruby-2.7.1/bin:$PATH"
+  - ruby --version
   - python --version
   - pip --version
   - python -c "import torch; print(torch.__version__)"
