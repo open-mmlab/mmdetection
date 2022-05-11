@@ -91,10 +91,7 @@ We list some common troubles faced by many users and their corresponding solutio
     output = AvoidCUDAOOM.retry_if_cuda_oom(some_torch_function)(input1, input2)
 
     # To use as a decorator
-    from mmdet.utils import AvoidCUDAOOM
-    # or
-    # from mmdet.utils import AvoidOOM
-    # AvoidCUDAOOM = AvoidOOM(**kwargs)
+    # from mmdet.utils import AvoidCUDAOOM
 
     @AvoidCUDAOOM.retry_if_cuda_oom
     def function(*args, **kwargs):
