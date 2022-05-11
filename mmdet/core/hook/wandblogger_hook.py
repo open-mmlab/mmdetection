@@ -74,7 +74,7 @@ class MMDetWandbHook(WandbLoggerHook):
         init_kwargs (dict): A dict passed to wandb.init to initialize
             a W&B run. Please refer to https://docs.wandb.ai/ref/python/init
             for possible key-value pairs.
-        interval (int): Logging interval (every k iterations). Defaults to 10.
+        interval (int): Logging interval (every k iterations). Defaults to 50.
         log_checkpoint (bool): Save the checkpoint at every checkpoint interval
             as W&B Artifacts. Use this for model versioning where each version
             is a checkpoint. Defaults to False.
@@ -85,6 +85,7 @@ class MMDetWandbHook(WandbLoggerHook):
         num_eval_images (int): The number of validation images to be logged.
             If zero, the evaluation won't be logged. Defaults to 100.
         bbox_score_thr (float): Threshold for bounding box scores.
+            Defaults to 0.3.
     """
 
     def __init__(self,
