@@ -89,7 +89,7 @@ class TestLoadAnnotations(unittest.TestCase):
         self.assertIn('gt_bboxes_labels', results)
         self.assertTrue((results['gt_bboxes_labels'] == np.array([1, 2,
                                                                   2])).all())
-        self.assertEqual(results['gt_bboxes_labels'].dtype, np.int32)
+        self.assertEqual(results['gt_bboxes_labels'].dtype, np.int64)
 
     def test_load_mask(self):
         transform = LoadAnnotations(

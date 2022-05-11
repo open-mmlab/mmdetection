@@ -4,6 +4,7 @@ import warnings
 import torch
 import torch.nn as nn
 from mmcv.runner import force_fp32
+from mmengine.data import InstanceData
 
 from mmdet.core import (anchor_inside_flags, build_assigner, build_bbox_coder,
                         build_prior_generator, build_sampler, images_to_levels,
@@ -169,20 +170,21 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         """
         return multi_apply(self.forward_single, feats)
 
-    def get_anchors(self, featmap_sizes, img_metas, device='cuda'):
+    def get_anchors(self, featmap_sizes, batch_img_metas, device='cuda'):
         """Get anchors according to feature map sizes.
 
         Args:
             featmap_sizes (list[tuple]): Multi-level feature map sizes.
-            img_metas (list[dict]): Image meta info.
-            device (torch.device | str): Device for returned tensors
+            batch_img_metas (list[dict]): Image meta info.
+            device (torch.device | str): Device for returned tensors.
+                Defaults to cuda.
 
         Returns:
             tuple:
                 anchor_list (list[Tensor]): Anchors of each image.
                 valid_flag_list (list[Tensor]): Valid flags of each image.
         """
-        num_imgs = len(img_metas)
+        num_imgs = len(batch_img_metas)
 
         # since feature map sizes of all images are the same, we only compute
         # anchors for one time
@@ -192,9 +194,9 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         # for each image, we compute valid flags of multi level anchors
         valid_flag_list = []
-        for img_id, img_meta in enumerate(img_metas):
+        for img_id, img_meta in enumerate(batch_img_metas):
             multi_level_flags = self.prior_generator.valid_flags(
-                featmap_sizes, img_meta['pad_shape'], device)
+                featmap_sizes, img_meta['img_shape'], device)
             valid_flag_list.append(multi_level_flags)
 
         return anchor_list, valid_flag_list
@@ -202,10 +204,9 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
     def _get_targets_single(self,
                             flat_anchors,
                             valid_flags,
-                            gt_bboxes,
-                            gt_bboxes_ignore,
-                            gt_labels,
+                            gt_instances,
                             img_meta,
+                            gt_instances_ignore=None,
                             label_channels=1,
                             unmap_outputs=True):
         """Compute regression and classification targets for anchors in a
@@ -213,29 +214,30 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         Args:
             flat_anchors (Tensor): Multi-level anchors of the image, which are
-                concatenated into a single tensor of shape (num_anchors ,4)
+                concatenated into a single tensor of shape (num_anchors, 4)
             valid_flags (Tensor): Multi level valid flags of the image,
                 which are concatenated into a single tensor of
-                    shape (num_anchors,).
-            gt_bboxes (Tensor): Ground truth bboxes of the image,
-                shape (num_gts, 4).
-            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
-                ignored, shape (num_ignored_gts, 4).
-            img_meta (dict): Meta info of the image.
-            gt_labels (Tensor): Ground truth labels of each box,
-                shape (num_gts,).
-            label_channels (int): Channel of label.
+                    shape (num_anchors, ).
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            img_meta (dict): Meta information for current image.
+            gt_instances_ignore (:obj:`InstanceData`, optional): Instances
+                to be ignored during training. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
+            label_channels (int): Channel of label. Defaults to 1.
             unmap_outputs (bool): Whether to map outputs back to the original
-                set of anchors.
+                set of anchors.  Defaults to True.
 
         Returns:
             tuple:
-                labels_list (list[Tensor]): Labels of each level
-                label_weights_list (list[Tensor]): Label weights of each level
-                bbox_targets_list (list[Tensor]): BBox targets of each level
-                bbox_weights_list (list[Tensor]): BBox weights of each level
-                num_total_pos (int): Number of positive samples in all images
-                num_total_neg (int): Number of negative samples in all images
+                labels_list (list[Tensor]): Labels of each level.
+                label_weights_list (list[Tensor]): Label weights of each level.
+                bbox_targets_list (list[Tensor]): BBox targets of each level.
+                bbox_weights_list (list[Tensor]): BBox weights of each level.
+                num_total_pos (int): Number of positive samples in all images.
+                num_total_neg (int): Number of negative samples in all images.
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
@@ -245,20 +247,25 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         # assign gt and sample anchors
         anchors = flat_anchors[inside_flags, :]
 
-        assign_result = self.assigner.assign(
-            anchors, gt_bboxes, gt_bboxes_ignore,
-            None if self.sampling else gt_labels)
+        pred_instances = InstanceData(bboxes=anchors)
+        assign_result = self.assigner.assign(pred_instances, gt_instances,
+                                             gt_instances_ignore)
+        # No sampling is required except for RPN and
+        # Guided Anchoring algorithms
         sampling_result = self.sampler.sample(assign_result, anchors,
-                                              gt_bboxes)
+                                              gt_instances.bboxes)
 
         num_valid_anchors = anchors.shape[0]
         bbox_targets = torch.zeros_like(anchors)
         bbox_weights = torch.zeros_like(anchors)
+
+        # TODO: Considering saving memory, is it necessary to be long?
         labels = anchors.new_full((num_valid_anchors, ),
                                   self.num_classes,
                                   dtype=torch.long)
         label_weights = anchors.new_zeros(num_valid_anchors, dtype=torch.float)
 
+        gt_labels = gt_instances.get('labels', None)
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
         if len(pos_inds) > 0:
@@ -300,10 +307,9 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
     def get_targets(self,
                     anchor_list,
                     valid_flag_list,
-                    gt_bboxes_list,
-                    img_metas,
-                    gt_bboxes_ignore_list=None,
-                    gt_labels_list=None,
+                    batch_gt_instances,
+                    batch_img_metas,
+                    batch_gt_instances_ignore=None,
                     label_channels=1,
                     unmap_outputs=True,
                     return_sampling_results=False):
@@ -319,14 +325,20 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 each image. The outer list indicates images, and the inner list
                 corresponds to feature levels of the image. Each element of
                 the inner list is a tensor of shape (num_anchors, )
-            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
-            img_metas (list[dict]): Meta info of each image.
-            gt_bboxes_ignore_list (list[Tensor]): Ground truth bboxes to be
-                ignored.
-            gt_labels_list (list[Tensor]): Ground truth labels of each box.
-            label_channels (int): Channel of label.
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
+            label_channels (int): Channel of label. Defaults to 1.
             unmap_outputs (bool): Whether to map outputs back to the original
-                set of anchors.
+                set of anchors. Defaults to True.
+            return_sampling_results (bool): Whether to return the sampling
+                results. Defaults to False.
 
         Returns:
             tuple: Usually returns a tuple containing learning targets.
@@ -346,8 +358,11 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 to properties at each feature map (i.e. having HxW dimension).
                 The results will be concatenated after the end
         """
-        num_imgs = len(img_metas)
+        num_imgs = len(batch_img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs
+
+        if batch_gt_instances_ignore is None:
+            batch_gt_instances_ignore = [None] * num_imgs
 
         # anchor number of multi levels
         num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
@@ -360,18 +375,13 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             concat_valid_flag_list.append(torch.cat(valid_flag_list[i]))
 
         # compute targets for each image
-        if gt_bboxes_ignore_list is None:
-            gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
-        if gt_labels_list is None:
-            gt_labels_list = [None for _ in range(num_imgs)]
         results = multi_apply(
             self._get_targets_single,
             concat_anchor_list,
             concat_valid_flag_list,
-            gt_bboxes_list,
-            gt_bboxes_ignore_list,
-            gt_labels_list,
-            img_metas,
+            batch_gt_instances,
+            batch_img_metas,
+            batch_gt_instances_ignore,
             label_channels=label_channels,
             unmap_outputs=unmap_outputs)
         (all_labels, all_label_weights, all_bbox_targets, all_bbox_weights,
@@ -454,24 +464,24 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
     def loss(self,
              cls_scores,
              bbox_preds,
-             gt_bboxes,
-             gt_labels,
-             img_metas,
-             gt_bboxes_ignore=None):
+             batch_gt_instances,
+             batch_img_metas,
+             batch_gt_instances_ignore=None):
         """Compute losses of the head.
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (N, num_anchors * num_classes, H, W)
+                has shape (N, num_anchors * num_classes, H, W).
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (N, num_anchors * 4, H, W)
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box
-            img_metas (list[dict]): Meta information of each image, e.g.,
+                level with shape (N, num_anchors * 4, H, W).
+            batch_gt_instances (list[obj:InstanceData]): Batch of gt_instance.
+                It usually includes ``bboxes`` and ``labels`` attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss. Default: None
+            batch_gt_instances_ignore (list[obj:InstanceData], optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -482,15 +492,14 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         device = cls_scores[0].device
 
         anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, img_metas, device=device)
+            featmap_sizes, batch_img_metas, device=device)
         label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
         cls_reg_targets = self.get_targets(
             anchor_list,
             valid_flag_list,
-            gt_bboxes,
-            img_metas,
-            gt_bboxes_ignore_list=gt_bboxes_ignore,
-            gt_labels_list=gt_labels,
+            batch_gt_instances,
+            batch_img_metas,
+            batch_gt_instances_ignore=batch_gt_instances_ignore,
             label_channels=label_channels)
         if cls_reg_targets is None:
             return None

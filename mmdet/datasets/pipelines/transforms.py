@@ -88,7 +88,7 @@ class Resize(MMCV_Resize):
                     results['scale'])
             else:
                 results['gt_masks'] = results['gt_masks'].resize(
-                    (results['height'], results['width']))
+                    results['img_shape'])
 
     def _resize_bboxes(self, results: dict) -> None:
         """Resize bounding boxes with ``results['scale_factor']``."""
@@ -96,9 +96,10 @@ class Resize(MMCV_Resize):
             bboxes = results['gt_bboxes'] * np.tile(
                 np.array(results['scale_factor']), 2)
             if self.clip_object_border:
-                bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, results['width'])
+                bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0,
+                                          results['img_shape'][1])
                 bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0,
-                                          results['height'])
+                                          results['img_shape'][0])
             results['gt_bboxes'] = bboxes.astype(np.float32)
 
     def _resize_seg(self, results: dict) -> None:
