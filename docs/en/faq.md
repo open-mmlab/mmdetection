@@ -82,12 +82,24 @@ We list some common troubles faced by many users and their corresponding solutio
     4. Try to use `AvoidOOM` to avoid GPU out of memory. It will first retry after calling `torch.cuda.empty_cache()`. If it still fails, it will then retry by trying to convert the dtype of inputs to FP16. If it still fails, it will try to copy inputs from GPUs to CPUs to continue computing. Here is an example to use `AvoidOOM`:
 
     ```python
+    # To use as a function
     from mmdet.utils import AvoidOOM
 
-    AvoidOOM = AvoidOOM()
+    AvoidCUDAOOM = AvoidOOM()
     # GPU OOM error
     # outputs = some_torch_function(input1, input2)
-    output = AvoidOOM.retry_if_cuda_oom(some_torch_function)(input1, input2)
+    output = AvoidCUDAOOM.retry_if_cuda_oom(some_torch_function)(input1, input2)
+
+    # To use as a decorator
+    from mmdet.utils import AvoidCUDAOOM
+    # or
+    # from mmdet.utils import AvoidOOM
+    # AvoidCUDAOOM = AvoidOOM(**kwargs)
+
+    @AvoidCUDAOOM.retry_if_cuda_oom
+    def function(*args, **kwargs):
+        ...
+        return xxx
     ```
 
 - "RuntimeError: Expected to have finished reduction in the prior iteration before starting a new one"

@@ -84,14 +84,25 @@
     4. 你也可以尝试使用 `AvoidOOM` 来避免该问题。首先它将尝试调用 `torch.cuda.empty_cache()`。如果失败，将会尝试把输入类型转换到 FP16。如果仍然失败，将会把输入从 GPUs 转换到 CPUs 进行计算。这里有一个使用的例子：
 
     ```python
+    # 作为函数使用
     from mmdet.utils import AvoidOOM
 
-    AvoidOOM = AvoidOOM()
+    AvoidCUDAOOM = AvoidOOM()
     # GPU OOM 错误
     # outputs = some_torch_function(input1, input2)
-    output = AvoidOOM.retry_if_cuda_oom(some_torch_function)(input1, input2)
-    ```
+    output = AvoidCUDAOOM.retry_if_cuda_oom(some_torch_function)(input1, input2)
 
+    # 作为装饰器使用
+    from mmdet.utils import AvoidCUDAOOM
+    # 或者
+    # from mmdet.utils import AvoidOOM
+    # AvoidCUDAOOM = AvoidOOM(**kwargs)
+
+    @AvoidCUDAOOM.retry_if_cuda_oom
+    def function(*args, **kwargs):
+        ...
+        return xxx
+    ```
 
 - "RuntimeError: Expected to have finished reduction in the prior iteration before starting a new one"
     1. 这个错误出现在存在参数没有在 forward 中使用，容易在 DDP 中运行不同分支时发生。

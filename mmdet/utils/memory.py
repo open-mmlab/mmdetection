@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-# Modified from https://github.com/facebookresearch/detectron2/blob/main/detectron2/utils/memory.py  # noqa
 import warnings
 from collections import abc
 from contextlib import contextmanager
@@ -56,7 +55,11 @@ def convert_tensor_type(inputs, src_type=None, dst_type=None):
 
 @contextmanager
 def _ignore_torch_cuda_oom():
-    """A context which ignores CUDA OOM exception from pytorch."""
+    """A context which ignores CUDA OOM exception from pytorch.
+
+    Code is modified from
+    <https://github.com/facebookresearch/detectron2/blob/main/detectron2/utils/memory.py>  # noqa: E501
+    """
     try:
         yield
     except RuntimeError as e:
@@ -69,7 +72,14 @@ def _ignore_torch_cuda_oom():
 
 class AvoidOOM(object):
     """Try to convert inputs to FP16 and CPU if got a PyTorch's CUDA Out of
-    Memory error.
+    Memory error. It will do the following steps:
+
+        1. First retry after calling `torch.cuda.empty_cache()`.
+        2. If that still fails, it will then retry by trying to
+            convert inputs to FP16.
+        3. If that still fails trying to convert inputs to CPUs.
+          In this case, it expects the function to dispatch to
+          CPU implementation.
 
     Args:
         keep_type (bool): Whether to ensure that tensors have the same type
@@ -116,21 +126,17 @@ class AvoidOOM(object):
 
     def retry_if_cuda_oom(self, func):
         """Makes a function retry itself after encountering pytorch's CUDA OOM
-        error. It will do the following steps:
+        error.
 
-            1. first retry after calling `torch.cuda.empty_cache()`.
-            2. If that still fails, it will then retry by trying to
-              convert inputs to FP16.
-            3. If that still fails trying to convert inputs to CPUs.
-              In this case, it expects the function to dispatch to
-              CPU implementation.
+        The implementation logic is referred to
+        https://github.com/facebookresearch/detectron2/blob/main/detectron2/utils/memory.py
 
         Args:
             func: a stateless callable that takes tensor-like objects
                 as arguments.
         Returns:
             func: a callable which retries `func` if OOM is encountered.
-        """
+        """  # noqa: W605
 
         @wraps(func)
         def wrapped(*args, **kwargs):
@@ -215,3 +221,7 @@ class AvoidOOM(object):
                 return func(*fp16_args, **fp16_kwargs)
 
         return wrapped
+
+
+# To use AvoidOOM as a decorator
+AvoidCUDAOOM = AvoidOOM()
