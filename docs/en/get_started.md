@@ -9,39 +9,39 @@
 
 Compatible MMDetection and MMCV versions are shown as below. Please install the correct version of MMCV to avoid installation issues.
 
-| MMDetection version |       MMCV version        |
-|:-------------------:|:-------------------------:|
-|       master        | mmcv-full>=1.3.17, <1.6.0 |
-|       2.24.1        | mmcv-full>=1.3.17, <1.6.0 |
-|       2.24.0        | mmcv-full>=1.3.17, <1.6.0 |
-|       2.23.0        | mmcv-full>=1.3.17, <1.5.0 |
-|       2.22.0        | mmcv-full>=1.3.17, <1.5.0 |
-|       2.21.0        | mmcv-full>=1.3.17, <1.5.0 |
-|       2.20.0        | mmcv-full>=1.3.17, <1.5.0 |
-|       2.19.1        | mmcv-full>=1.3.17, <1.5.0 |
-|       2.19.0        | mmcv-full>=1.3.17, <1.5.0 |
-|       2.18.0        | mmcv-full>=1.3.17, <1.4.0 |
-|       2.17.0        | mmcv-full>=1.3.14, <1.4.0 |
-|       2.16.0        | mmcv-full>=1.3.8, <1.4.0  |
-|       2.15.1        | mmcv-full>=1.3.8, <1.4.0  |
-|       2.15.0        | mmcv-full>=1.3.8, <1.4.0  |
-|       2.14.0        | mmcv-full>=1.3.8, <1.4.0  |
-|       2.13.0        | mmcv-full>=1.3.3, <1.4.0  |
-|       2.12.0        | mmcv-full>=1.3.3, <1.4.0  |
-|       2.11.0        | mmcv-full>=1.2.4, <1.4.0  |
-|       2.10.0        | mmcv-full>=1.2.4, <1.4.0  |
-|        2.9.0        | mmcv-full>=1.2.4, <1.4.0  |
-|        2.8.0        | mmcv-full>=1.2.4, <1.4.0  |
-|        2.7.0        | mmcv-full>=1.1.5, <1.4.0  |
-|        2.6.0        | mmcv-full>=1.1.5, <1.4.0  |
-|        2.5.0        | mmcv-full>=1.1.5, <1.4.0  |
-|        2.4.0        | mmcv-full>=1.1.1, <1.4.0  |
-|        2.3.0        |     mmcv-full==1.0.5      |
-|      2.3.0rc0       |     mmcv-full>=1.0.2      |
-|        2.2.1        |        mmcv==0.6.2        |
-|        2.2.0        |        mmcv==0.6.2        |
-|        2.1.0        |   mmcv>=0.5.9, <=0.6.1    |
-|        2.0.0        |   mmcv>=0.5.1, <=0.5.8    |
+| MMDetection version |        MMCV version        |
+| :-----------------: | :------------------------: |
+|       master        | mmcv-full>=1.3.17, \<1.6.0 |
+|       2.24.1        | mmcv-full>=1.3.17, \<1.6.0 |
+|       2.24.0        | mmcv-full>=1.3.17, \<1.6.0 |
+|       2.23.0        | mmcv-full>=1.3.17, \<1.5.0 |
+|       2.22.0        | mmcv-full>=1.3.17, \<1.5.0 |
+|       2.21.0        | mmcv-full>=1.3.17, \<1.5.0 |
+|       2.20.0        | mmcv-full>=1.3.17, \<1.5.0 |
+|       2.19.1        | mmcv-full>=1.3.17, \<1.5.0 |
+|       2.19.0        | mmcv-full>=1.3.17, \<1.5.0 |
+|       2.18.0        | mmcv-full>=1.3.17, \<1.4.0 |
+|       2.17.0        | mmcv-full>=1.3.14, \<1.4.0 |
+|       2.16.0        | mmcv-full>=1.3.8, \<1.4.0  |
+|       2.15.1        | mmcv-full>=1.3.8, \<1.4.0  |
+|       2.15.0        | mmcv-full>=1.3.8, \<1.4.0  |
+|       2.14.0        | mmcv-full>=1.3.8, \<1.4.0  |
+|       2.13.0        | mmcv-full>=1.3.3, \<1.4.0  |
+|       2.12.0        | mmcv-full>=1.3.3, \<1.4.0  |
+|       2.11.0        | mmcv-full>=1.2.4, \<1.4.0  |
+|       2.10.0        | mmcv-full>=1.2.4, \<1.4.0  |
+|        2.9.0        | mmcv-full>=1.2.4, \<1.4.0  |
+|        2.8.0        | mmcv-full>=1.2.4, \<1.4.0  |
+|        2.7.0        | mmcv-full>=1.1.5, \<1.4.0  |
+|        2.6.0        | mmcv-full>=1.1.5, \<1.4.0  |
+|        2.5.0        | mmcv-full>=1.1.5, \<1.4.0  |
+|        2.4.0        | mmcv-full>=1.1.1, \<1.4.0  |
+|        2.3.0        |      mmcv-full==1.0.5      |
+|      2.3.0rc0       |      mmcv-full>=1.0.2      |
+|        2.2.1        |        mmcv==0.6.2         |
+|        2.2.0        |        mmcv==0.6.2         |
+|        2.1.0        |   mmcv>=0.5.9, \<=0.6.1    |
+|        2.0.0        |   mmcv>=0.5.1, \<=0.5.8    |
 
 **Note:** You need to run `pip uninstall mmcv` first if you have mmcv installed.
 If mmcv and mmcv-full are both installed, there will be `ModuleNotFoundError`.
@@ -68,36 +68,36 @@ pip install -v -e .
 
 1. Create a conda virtual environment and activate it.
 
-    ```shell
-    conda create -n openmmlab python=3.7 -y
-    conda activate openmmlab
-    ```
+   ```shell
+   conda create -n openmmlab python=3.7 -y
+   conda activate openmmlab
+   ```
 
 2. Install PyTorch and torchvision following the [official instructions](https://pytorch.org/), e.g.,
 
-    ```shell
-    conda install pytorch torchvision -c pytorch
-    ```
+   ```shell
+   conda install pytorch torchvision -c pytorch
+   ```
 
-    Note: Make sure that your compilation CUDA version and runtime CUDA version match.
-    You can check the supported CUDA version for precompiled packages on the [PyTorch website](https://pytorch.org/).
+   Note: Make sure that your compilation CUDA version and runtime CUDA version match.
+   You can check the supported CUDA version for precompiled packages on the [PyTorch website](https://pytorch.org/).
 
-    `E.g.1` If you have CUDA 10.1 installed under `/usr/local/cuda` and would like to install
-    PyTorch 1.5, you need to install the prebuilt PyTorch with CUDA 10.1.
+   `E.g.1` If you have CUDA 10.1 installed under `/usr/local/cuda` and would like to install
+   PyTorch 1.5, you need to install the prebuilt PyTorch with CUDA 10.1.
 
-    ```shell
-    conda install pytorch cudatoolkit=10.1 torchvision -c pytorch
-    ```
+   ```shell
+   conda install pytorch cudatoolkit=10.1 torchvision -c pytorch
+   ```
 
-    `E.g. 2` If you have CUDA 9.2 installed under `/usr/local/cuda` and would like to install
-    PyTorch 1.3.1., you need to install the prebuilt PyTorch with CUDA 9.2.
+   `E.g. 2` If you have CUDA 9.2 installed under `/usr/local/cuda` and would like to install
+   PyTorch 1.3.1., you need to install the prebuilt PyTorch with CUDA 9.2.
 
-    ```shell
-    conda install pytorch=1.3.1 cudatoolkit=9.2 torchvision=0.4.2 -c pytorch
-    ```
+   ```shell
+   conda install pytorch=1.3.1 cudatoolkit=9.2 torchvision=0.4.2 -c pytorch
+   ```
 
-    If you build PyTorch from source instead of installing the prebuilt package,
-    you can use more CUDA versions such as 9.0.
+   If you build PyTorch from source instead of installing the prebuilt package,
+   you can use more CUDA versions such as 9.0.
 
 ### Install MMDetection
 
@@ -113,56 +113,56 @@ Or you can still install MMDetection manually:
 
 1. Install mmcv-full.
 
-    ```shell
-    pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/{cu_version}/{torch_version}/index.html
-    ```
+   ```shell
+   pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/{cu_version}/{torch_version}/index.html
+   ```
 
-    Please replace `{cu_version}` and `{torch_version}` in the url to your desired one. For example, to install the latest `mmcv-full` with `CUDA 11.0` and `PyTorch 1.7.0`, use the following command:
+   Please replace `{cu_version}` and `{torch_version}` in the url to your desired one. For example, to install the latest `mmcv-full` with `CUDA 11.0` and `PyTorch 1.7.0`, use the following command:
 
-    ```shell
-    pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7.0/index.html
-    ```
+   ```shell
+   pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7.0/index.html
+   ```
 
-    See [here](https://github.com/open-mmlab/mmcv#installation) for different versions of MMCV compatible to different PyTorch and CUDA versions.
+   See [here](https://github.com/open-mmlab/mmcv#installation) for different versions of MMCV compatible to different PyTorch and CUDA versions.
 
-    Optionally you can compile mmcv from source if you need to develop both mmcv and mmdet. Refer to the [guide](https://github.com/open-mmlab/mmcv#installation) for details.
+   Optionally you can compile mmcv from source if you need to develop both mmcv and mmdet. Refer to the [guide](https://github.com/open-mmlab/mmcv#installation) for details.
 
-    mmcv-full is only compiled on PyTorch 1.x.0 because the compatibility usually holds between 1.x.0 and 1.x.1. If your PyTorch version is 1.x.1, you can install mmcv-full compiled with PyTorch 1.x.0 and it usually works well.
+   mmcv-full is only compiled on PyTorch 1.x.0 because the compatibility usually holds between 1.x.0 and 1.x.1. If your PyTorch version is 1.x.1, you can install mmcv-full compiled with PyTorch 1.x.0 and it usually works well.
 
-    ```
-    # We can ignore the micro version of PyTorch
-    pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7/index.html
-    ```
+   ```
+   # We can ignore the micro version of PyTorch
+   pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7/index.html
+   ```
 
 2. Install MMDetection.
 
-    You can simply install mmdetection with the following command:
+   You can simply install mmdetection with the following command:
 
-    ```shell
-    pip install mmdet
-    ```
+   ```shell
+   pip install mmdet
+   ```
 
-    or clone the repository and then install it:
+   or clone the repository and then install it:
 
-    ```shell
-    git clone https://github.com/open-mmlab/mmdetection.git
-    cd mmdetection
-    pip install -r requirements/build.txt
-    pip install -v -e .  # or "python setup.py develop"
-    ```
+   ```shell
+   git clone https://github.com/open-mmlab/mmdetection.git
+   cd mmdetection
+   pip install -r requirements/build.txt
+   pip install -v -e .  # or "python setup.py develop"
+   ```
 
 3. Install extra dependencies for Instaboost, Panoptic Segmentation, LVIS dataset, or Albumentations.
 
-    ```shell
-    # for instaboost
-    pip install instaboostfast
-    # for panoptic segmentation
-    pip install git+https://github.com/cocodataset/panopticapi.git
-    # for LVIS dataset
-    pip install git+https://github.com/lvis-dataset/lvis-api.git
-    # for albumentations
-    pip install -r requirements/albu.txt
-    ```
+   ```shell
+   # for instaboost
+   pip install instaboostfast
+   # for panoptic segmentation
+   pip install git+https://github.com/cocodataset/panopticapi.git
+   # for LVIS dataset
+   pip install git+https://github.com/lvis-dataset/lvis-api.git
+   # for albumentations
+   pip install -r requirements/albu.txt
+   ```
 
 **Note:**
 
@@ -173,7 +173,7 @@ b. If you would like to use `opencv-python-headless` instead of `opencv-python`,
 you can install it before installing MMCV.
 
 c. Some dependencies are optional. Simply running `pip install -v -e .` will
- only install the minimum runtime requirements. To use optional dependencies like `albumentations` and `imagecorruptions` either install them manually with `pip install -r requirements/optional.txt` or specify desired extras when calling `pip` (e.g. `pip install -v -e .[optional]`). Valid keys for the extras field are: `all`, `tests`, `build`, and `optional`.
+only install the minimum runtime requirements. To use optional dependencies like `albumentations` and `imagecorruptions` either install them manually with `pip install -r requirements/optional.txt` or specify desired extras when calling `pip` (e.g. `pip install -v -e .[optional]`). Valid keys for the extras field are: `all`, `tests`, `build`, and `optional`.
 
 d. If you would like to use `albumentations`, we suggest using `pip install -r requirements/albu.txt` or
 `pip install -U albumentations --no-binary qudida,albumentations`. If you simply use `pip install albumentations>=0.3.2`,
@@ -205,12 +205,12 @@ However some functionality is gone in this mode:
 If you try to train/test/inference a model containing above ops, an error will be raised.
 The following table lists affected algorithms.
 
-|                        Operator                         |                            Model                             |
-| :-----------------------------------------------------: | :----------------------------------------------------------: |
+|                        Operator                         |                                       Model                                       |
+| :-----------------------------------------------------: | :-------------------------------------------------------------------------------: |
 | Deformable Convolution/Modulated Deformable Convolution | DCN、Guided Anchoring、RepPoints、CentripetalNet、VFNet、CascadeRPN、NAS-FCOS、DetectoRS |
-|                      MaskedConv2d                       |                       Guided Anchoring                       |
-|                         CARAFE                          |                            CARAFE                            |
-|                      SyncBatchNorm                      |                           ResNeSt                            |
+|                      MaskedConv2d                       |                                 Guided Anchoring                                  |
+|                         CARAFE                          |                                      CARAFE                                       |
+|                      SyncBatchNorm                      |                                      ResNeSt                                      |
 
 ### Another option: Docker Image
 

@@ -11,6 +11,7 @@
 #### New Features
 
 - Support [Simple Copy-Paste is a Strong Data Augmentation Method for Instance Segmentation](https://arxiv.org/abs/2012.07177), see [example configs](configs/simple_copy_paste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco.py) (#7501)
+
 - Support Class Aware Sampler, users can set
 
   ```python
@@ -22,9 +23,9 @@
 - Support automatically scaling LR according to GPU number and samples per GPU. (#7482)
   In each config, there is a corresponding config of auto-scaling LR as below,
 
-   ```python
-   auto_scale_lr = dict(enable=True, base_batch_size=N)
-   ```
+  ```python
+  auto_scale_lr = dict(enable=True, base_batch_size=N)
+  ```
 
   where `N` is the batch size used for the current learning rate in the config (also equals to `samples_per_gpu` * gpu number to train this config).
   By default, we set `enable=False` so that the original usages will not be affected. Users can set `enable=True` in each config or add `--auto-scale-lr` after the command line to enable this feature and should check the correctness of `base_batch_size` in customized configs.
@@ -42,61 +43,68 @@
     <tbody><tr valign='top'>
     <th>
 
-    ```python
-    data = dict(
-        samples_per_gpu=64, workers_per_gpu=4,
-        train=dict(type='xxx', ...),
-        val=dict(type='xxx', samples_per_gpu=4, ...),
-        test=dict(type='xxx', ...),
-    )
-    ```
+  ```python
+  data = dict(
+      samples_per_gpu=64, workers_per_gpu=4,
+      train=dict(type='xxx', ...),
+      val=dict(type='xxx', samples_per_gpu=4, ...),
+      test=dict(type='xxx', ...),
+  )
+  ```
 
-    </th>
+  </th>
     <th>
 
-    ```python
-    # A recommended config that is clear
-    data = dict(
-        train=dict(type='xxx', ...),
-        val=dict(type='xxx', ...),
-        test=dict(type='xxx', ...),
-        # Use different batch size during inference.
-        train_dataloader=dict(samples_per_gpu=64, workers_per_gpu=4),
-        val_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
-        test_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
-    )
+  ```python
+  # A recommended config that is clear
+  data = dict(
+      train=dict(type='xxx', ...),
+      val=dict(type='xxx', ...),
+      test=dict(type='xxx', ...),
+      # Use different batch size during inference.
+      train_dataloader=dict(samples_per_gpu=64, workers_per_gpu=4),
+      val_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+      test_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+  )
 
-    # Old style still works but allows to set more arguments about data loaders
-    data = dict(
-        samples_per_gpu=64,  # only works for train_dataloader
-        workers_per_gpu=4,  # only works for train_dataloader
-        train=dict(type='xxx', ...),
-        val=dict(type='xxx', ...),
-        test=dict(type='xxx', ...),
-        # Use different batch size during inference.
-        val_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
-        test_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
-    )
-    ```
+  # Old style still works but allows to set more arguments about data loaders
+  data = dict(
+      samples_per_gpu=64,  # only works for train_dataloader
+      workers_per_gpu=4,  # only works for train_dataloader
+      train=dict(type='xxx', ...),
+      val=dict(type='xxx', ...),
+      test=dict(type='xxx', ...),
+      # Use different batch size during inference.
+      val_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+      test_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+  )
+  ```
 
-    </th></tr>
+  </th></tr>
   </tbody></table>
 
 - Support memory profile hook. Users can use it to monitor the memory usages during training as below (#7560)
 
-    ```python
-    custom_hooks = [
-        dict(type='MemoryProfilerHook', interval=50)
-    ]
-    ```
+  ```python
+  custom_hooks = [
+      dict(type='MemoryProfilerHook', interval=50)
+  ]
+  ```
 
 - Support to run on PyTorch with MLU chip (#7578)
+
 - Support re-spliting data batch with tag (#7641)
+
 - Support the `DiceCost` used by [K-Net](https://arxiv.org/abs/2106.14855) in `MaskHungarianAssigner` (#7716)
+
 - Support splitting COCO data for Semi-supervised object detection (#7431)
+
 - Support Pathlib for Config.fromfile (#7685)
+
 - Support to use file client in OpenImages dataset (#7433)
+
 - Add a probability parameter to Mosaic transformation (#7371)
+
 - Support specifying interpolation mode in `Resize` pipeline (#7585)
 
 #### Bug Fixes
@@ -239,7 +247,7 @@ To standardize the contents in config READMEs and meta files of OpenMMLab projec
 #### Bug Fixes
 
 - Fix weight conversion issue of RetinaNet with Swin-S (#6973)
-- Update ``__repr__`` of ``Compose`` (#6951)
+- Update `__repr__` of `Compose` (#6951)
 - Fix BadZipFile Error when build docker (#6966)
 - Fix bug in non-distributed multi-gpu training/testing (#7019)
 - Fix bbox clamp in PyTorch 1.10 (#7074)
@@ -254,7 +262,7 @@ To standardize the contents in config READMEs and meta files of OpenMMLab projec
 - Disable cv2 multiprocessing by default for acceleration (#6867)
 - Deprecate the support for "python setup.py test" (#6998)
 - Re-organize metafiles and config readmes (#7051)
-- Fix None grad problem during training TOOD by adding ``SigmoidGeometricMean`` (#7090)
+- Fix None grad problem during training TOOD by adding `SigmoidGeometricMean` (#7090)
 
 #### Contributors
 
@@ -998,13 +1006,13 @@ __Bug Fixes__
 __FP16 related methods are imported from mmcv instead of mmdet. (#3766, #3822)__
 Mixed precision training utils in `mmdet.core.fp16` are moved to `mmcv.runner`, including `force_fp32`, `auto_fp16`, `wrap_fp16_model`, and `Fp16OptimizerHook`. A deprecation warning will be raised if users attempt to import those methods from `mmdet.core.fp16`, and will be finally removed in V2.10.0.
 
-__[0, N-1] represents foreground classes and N indicates background classes for all models. (#3221)__
+__\[0, N-1\] represents foreground classes and N indicates background classes for all models. (#3221)__
 Before v2.5.0, the background label for RPN is 0, and N for other heads. Now the behavior is consistent for all models. Thus `self.background_labels` in `dense_heads` is removed and all heads use `self.num_classes` to indicate the class index of background labels.
 This change has no effect on the pre-trained models in the v2.x model zoo, but will affect the training of all models with RPN heads. Two-stage detectors whose RPN head uses softmax will be affected because the order of categories is changed.
 
 **Only call `get_subset_by_classes` when `test_mode=True` and `self.filter_empty_gt=True` (#3695)**
 Function `get_subset_by_classes` in dataset is refactored and only filters out images when `test_mode=True` and `self.filter_empty_gt=True`.
-    In the original implementation, `get_subset_by_classes` is not related to the flag `self.filter_empty_gt` and will only be called when the classes is set during initialization no matter `test_mode` is `True` or `False`. This brings ambiguous behavior and potential bugs in many cases. After v2.5.0, if `filter_empty_gt=False`, no matter whether the classes are specified in a dataset, the dataset will use all the images in the annotations. If `filter_empty_gt=True` and `test_mode=True`, no matter whether the classes are specified, the dataset will call ``get_subset_by_classes` to check the images and filter out images containing no GT boxes. Therefore, the users should be responsible for the data filtering/cleaning process for the test dataset.
+In the original implementation, `get_subset_by_classes` is not related to the flag `self.filter_empty_gt` and will only be called when the classes is set during initialization no matter `test_mode` is `True` or `False`. This brings ambiguous behavior and potential bugs in many cases. After v2.5.0, if `filter_empty_gt=False`, no matter whether the classes are specified in a dataset, the dataset will use all the images in the annotations. If `filter_empty_gt=True` and `test_mode=True`, no matter whether the classes are specified, the dataset will call \`\`get_subset_by_classes\` to check the images and filter out images containing no GT boxes. Therefore, the users should be responsible for the data filtering/cleaning process for the test dataset.
 
 #### New Features
 
