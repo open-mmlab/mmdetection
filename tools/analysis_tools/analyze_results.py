@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 import os.path as osp
+from multiprocessing import Pool
 
 import mmcv
 import numpy as np
@@ -12,7 +13,7 @@ from mmdet.datasets import build_dataset, get_loading_pipeline
 from mmdet.utils import replace_cfg_vals, update_data_root
 
 
-def bbox_map_eval(det_result, annotation):
+def bbox_map_eval(det_result, annotation, nproc=4):
     """Evaluate mAP of single image det result.
 
     Args:
@@ -27,6 +28,9 @@ def bbox_map_eval(det_result, annotation):
             - bboxes_ignore (optional): numpy array of shape (k, 4)
             - labels_ignore (optional): numpy array of shape (k, )
 
+        nproc (int): Processes used for computing mAP.
+            Default: 4.
+
     Returns:
         float: mAP
     """
@@ -39,11 +43,24 @@ def bbox_map_eval(det_result, annotation):
     # mAP
     iou_thrs = np.linspace(
         .5, 0.95, int(np.round((0.95 - .5) / .05)) + 1, endpoint=True)
-    mean_aps = []
+
+    processes = []
+    workers = Pool(processes=nproc)
     for thr in iou_thrs:
-        mean_ap, _ = eval_map(
-            bbox_det_result, [annotation], iou_thr=thr, logger='silent')
-        mean_aps.append(mean_ap)
+        p = workers.apply_async(eval_map, (bbox_det_result, [annotation]), {
+            'iou_thr': thr,
+            'logger': 'silent',
+            'nproc': 1
+        })
+        processes.append(p)
+
+    workers.close()
+    workers.join()
+
+    mean_aps = []
+    for p in processes:
+        mean_aps.append(p.get()[0])
+
     return sum(mean_aps) / len(mean_aps)
 
 
@@ -130,7 +147,6 @@ class ResultVisualizer:
             mAP = eval_fn(result, data_info['ann_info'])
             _mAPs[i] = mAP
             prog_bar.update()
-
         # descending select topk image
         _mAPs = list(sorted(_mAPs.items(), key=lambda kv: kv[1]))
         good_mAPs = _mAPs[-topk:]
