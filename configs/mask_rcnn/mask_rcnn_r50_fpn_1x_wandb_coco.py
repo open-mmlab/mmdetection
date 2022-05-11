@@ -14,7 +14,7 @@ log_config = dict(
                 'project': 'mmdetection',
                 'group': 'maskrcnn-r50-fpn-1x-coco'
              },
-             interval=10,
+             interval=50,
              log_checkpoint=True,
-             num_eval_images=10)
+             num_eval_images=100)
         ])
