@@ -73,7 +73,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 更新日志
 
-最新的 **2.24.0** 版本已经在 2022.03.28 发布:
+最新的 **2.24.1** 版本已经在 2022.04.30 发布:
 
 - 支持算法 [Simple Copy Paste](configs/simple_copy_paste)
 - 支持训练时根据总 batch 数自动缩放学习率
@@ -142,6 +142,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
             <li><a href="configs/yolox">YOLOX (CVPR'2021)</a></li>
             <li><a href="configs/deformable_detr">Deformable DETR (ICLR'2021)</a></li>
             <li><a href="configs/tood">TOOD (ICCV'2021)</a></li>
+            <li><a href="configs/centripetalnet">CentripetalNet (CVPR'2020)</a></li>
       </ul>
       </td>
       <td>
