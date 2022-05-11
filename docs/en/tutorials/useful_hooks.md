@@ -1,6 +1,6 @@
 # Tutorial 13: Useful Hooks
 
-MMDetection and MMCV provide users with various useful hooks including log hooks, evaluation hooks, NumClassCheckHook, etc. . This tutorial introduces the functionalities and usages of hooks implemented in MMDetection. For using hooks in MMCV, please read the [API documentation in MMCV](https://github.com/open-mmlab/mmcv/blob/master/docs/en/understand_mmcv/runner.md).
+MMDetection and MMCV provide users with various useful hooks including log hooks, evaluation hooks, NumClassCheckHook, etc. This tutorial introduces the functionalities and usages of hooks implemented in MMDetection. For using hooks in MMCV, please read the [API documentation in MMCV](https://github.com/open-mmlab/mmcv/blob/master/docs/en/understand_mmcv/runner.md).
 
 
 ## CheckInvalidLossHook
