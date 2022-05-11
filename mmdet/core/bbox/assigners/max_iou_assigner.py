@@ -62,7 +62,11 @@ class MaxIoUAssigner(BaseAssigner):
         self.match_low_quality = match_low_quality
         self.iou_calculator = TASK_UTILS.build(iou_calculator)
 
-    def assign(self, bboxes, gt_bboxes, gt_bboxes_ignore=None, gt_labels=None):
+    def assign(self,
+               pred_instances,
+               gt_instances,
+               gt_instances_ignore=None,
+               **kwargs):
         """Assign gt to bboxes.
 
         This method assign a gt bbox to every bbox (proposal/anchor), each bbox
@@ -78,23 +82,41 @@ class MaxIoUAssigner(BaseAssigner):
            one) to itself
 
         Args:
-            bboxes (Tensor): Bounding boxes to be assigned, shape(n, 4).
-            gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
-            gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
-                labelled as `ignored`, e.g., crowd boxes in COCO.
-            gt_labels (Tensor, optional): Label of gt_bboxes, shape (k, ).
+            pred_instances (:obj:`InstaceData`): Instances of model
+                predictions. It includes bboxes, and the bboxes can
+                be anchors, points, or bboxes predicted by the model,
+                shape(n, 4).
+            gt_instances (:obj:`InstaceData`): Ground truth of instance
+                annotations. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            gt_instances_ignore (:obj:`InstaceData`, optional): Instances
+                to be ignored during training. It includes ``bboxes``
+                attribute data that is ignored during training and testing.
+                Defaults to None.
 
         Returns:
             :obj:`AssignResult`: The assign result.
 
         Example:
+            >>> from mmengine.data import InstanceData
             >>> self = MaxIoUAssigner(0.5, 0.5)
-            >>> bboxes = torch.Tensor([[0, 0, 10, 10], [10, 10, 20, 20]])
-            >>> gt_bboxes = torch.Tensor([[0, 0, 10, 9]])
-            >>> assign_result = self.assign(bboxes, gt_bboxes)
+            >>> pred_instances = InstanceData()
+            >>> pred_instances.bboxes = torch.Tensor([[0, 0, 10, 10],
+            ...                                      [10, 10, 20, 20]])
+            >>> gt_instances = InstanceData()
+            >>> gt_instances.bboxes = torch.Tensor([[0, 0, 10, 9]])
+            >>> assign_result = self.assign(pred_instances, gt_instances)
             >>> expected_gt_inds = torch.LongTensor([1, 0])
             >>> assert torch.all(assign_result.gt_inds == expected_gt_inds)
         """
+        gt_bboxes = gt_instances.bboxes
+        bboxes = pred_instances.bboxes
+        gt_labels = gt_instances.get('labels', None)
+        if gt_instances_ignore is not None:
+            gt_bboxes_ignore = gt_instances_ignore.bboxes
+        else:
+            gt_bboxes_ignore = None
+
         assign_on_cpu = True if (self.gpu_assign_thr > 0) and (
             gt_bboxes.shape[0] > self.gpu_assign_thr) else False
         # compute overlap and assign gt on CPU when number of GT is large
@@ -136,6 +158,7 @@ class MaxIoUAssigner(BaseAssigner):
             overlaps (Tensor): Overlaps between k gt_bboxes and n bboxes,
                 shape(k, n).
             gt_labels (Tensor, optional): Labels of k gt_bboxes, shape (k, ).
+                Defaults to None.
 
         Returns:
             :obj:`AssignResult`: The assign result.

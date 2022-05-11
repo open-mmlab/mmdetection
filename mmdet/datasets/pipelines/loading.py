@@ -273,8 +273,9 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         gt_bboxes_labels = []
         for instance in results['instances']:
             gt_bboxes_labels.append(instance['bbox_label'])
+        # TODO: Inconsistent with mmcv, consider how to deal with it later.
         results['gt_bboxes_labels'] = np.array(
-            gt_bboxes_labels, dtype=np.int32)
+            gt_bboxes_labels, dtype=np.int64)
 
     def _poly2mask(self, mask_ann, img_h, img_w):
         """Private function to convert masks represented with polygon to

@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from functools import partial
+from typing import List, Union
 
 import numpy as np
 import torch
@@ -209,27 +210,46 @@ def generate_coordinate(featmap_sizes, device='cuda'):
     return coord_feat
 
 
-def stack_batch(tensors, pad_value=0):
+def stack_batch(tensors: List[torch.Tensor],
+                pad_size_divisor: int = 0,
+                pad_value: Union[int, float] = 0) -> torch.Tensor:
     """Stack multiple tensors to form a batch and pad the images to the max
-    shape use the right bottom padding mode in these images.
+    shape use the right bottom padding mode in these images. If
+    ``pad_size_divisor > 0``, add padding to ensure the common height and width
+    is divisible by ``pad_size_divisor``.
 
     Args:
-        tensors (Tensor, List[Tensor]): The input multiple tensors.
-            each is a CHW 3D-tensor.
-        pad_value: The padding value. Default: 0
+        tensors (List[Tensor]): The input multiple tensors. each is a
+            CHW 3D-tensor.
+        pad_size_divisor (int): If ``pad_size_divisor > 0``, add padding
+            to ensure the common height and width is divisible by
+            ``pad_size_divisor``. This depends on the model, and many
+            models need a divisibility of 32. Defaults to 0
+        pad_value (int, float): The padding value. Defaults to 0
 
     Returns:
        Tensor: The 4D-tensor.
     """
-    assert isinstance(tensors, list)
-    if len(tensors) == 1:
-        return tensors[0][None]
-
-    assert len(set([tensor.ndim for tensor in tensors])) == 1
-    assert len(set([tensor.shape[:-2] for tensor in tensors])) == 1
+    assert isinstance(tensors, list), \
+        f'Expected input type to be list, but got {type(tensors)}'
+    assert len(set([tensor.ndim for tensor in tensors])) == 1, \
+        f'Expected the dimensions of all tensors must be the same, ' \
+        f'but got {[tensor.ndim for tensor in tensors]}'
+    assert tensors[0].ndim == 3, f'Expected tensor dimension to be 3, ' \
+                                 f'but got {tensors[0].ndim}'
+    assert len(set([tensor.shape[0] for tensor in tensors])) == 1, \
+        f'Expected the channels of all tensors must be the same, ' \
+        f'but got {[tensor.shape[0] for tensor in tensors]}'
 
     tensor_sizes = [(tensor.shape[-2], tensor.shape[-1]) for tensor in tensors]
     max_size = np.stack(tensor_sizes).max(0)
+
+    if pad_size_divisor > 1:
+        # the last two dims are H,W, both subject to divisibility requirement
+        max_size = (
+            max_size +
+            (pad_size_divisor - 1)) // pad_size_divisor * pad_size_divisor
+
     padded_samples = []
     for tensor in tensors:
         padding_size = [

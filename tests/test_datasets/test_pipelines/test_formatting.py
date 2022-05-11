@@ -54,8 +54,8 @@ class TestPackDetInputs(unittest.TestCase):
             BitmapMasks(rng.rand(3, 300, 400), height=300, width=400),
             'gt_bboxes_labels': rng.rand(3, )
         }
-        self.meta_keys = ('img_id', 'img_path', 'ori_shape', 'img_shape',
-                          'scale_factor', 'flip')
+        self.meta_keys = ('img_id', 'img_path', 'ori_shape', 'scale_factor',
+                          'flip')
 
     def test_transform(self):
         transform = PackDetInputs(meta_keys=self.meta_keys)

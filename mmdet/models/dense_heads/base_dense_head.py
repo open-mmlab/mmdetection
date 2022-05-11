@@ -42,7 +42,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                     cls_scores,
                     bbox_preds,
                     score_factors=None,
-                    img_metas=None,
+                    batch_img_metas=None,
                     cfg=None,
                     rescale=False,
                     with_nms=True,
@@ -60,16 +60,18 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             bbox_preds (list[Tensor]): Box energies / deltas for all
                 scale levels, each is a 4D-tensor, has shape
                 (batch_size, num_priors * 4, H, W).
-            score_factors (list[Tensor], Optional): Score factor for
+            score_factors (list[Tensor], optional): Score factor for
                 all scale level, each is a 4D-tensor, has shape
-                (batch_size, num_priors * 1, H, W). Default None.
-            img_metas (list[dict], Optional): Image meta info. Default None.
-            cfg (mmcv.Config, Optional): Test / postprocessing configuration,
-                if None, test_cfg would be used.  Default None.
+                (batch_size, num_priors * 1, H, W). Default to None.
+            batch_img_metas (list[dict], Optional): Batch image meta info.
+                Default to None.
+            cfg (mmengine.Config, optional): Test / postprocessing
+                configuration, if None, test_cfg would be used.
+                Default to None.
             rescale (bool): If True, return boxes in original image space.
-                Default False.
+                Default to False.
             with_nms (bool): If True, do nms before return boxes.
-                Default True.
+                Default to True.
 
         Returns:
             list[:obj:`InstanceData`]: Instance segmentation
@@ -77,9 +79,9 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             Each item usually contains following keys.
 
             - scores (Tensor): Classification scores, has a shape
-              (num_instance,)
+              (num_instance, )
             - labels (Tensor): Labels of bboxes, has a shape
-              (num_instances,).
+              (num_instances, ).
             - bboxes (Tensor): Has a shape (num_instances, 4),
               the last dimension 4 arrange as (x1, y1, x2, y2).
         """
@@ -103,8 +105,8 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
         result_list = []
 
-        for img_id in range(len(img_metas)):
-            img_meta = img_metas[img_id]
+        for img_id in range(len(batch_img_metas)):
+            img_meta = batch_img_metas[img_id]
             cls_score_list = select_single_mlvl(cls_scores, img_id)
             bbox_pred_list = select_single_mlvl(bbox_preds, img_id)
             if with_score_factors:
@@ -148,12 +150,12 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 when `with_stride=True`, otherwise it still has shape
                 (num_priors, 4).
             img_meta (dict): Image meta info.
-            cfg (mmcv.Config): Test / postprocessing configuration,
+            cfg (mmengine.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
-                Default: False.
+                Default to False.
             with_nms (bool): If True, do nms before return boxes.
-                Default: True.
+                Default to True.
 
         Returns:
             :obj:`InstanceData`: Detection results of each image
@@ -161,9 +163,9 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             Each item usually contains following keys.
 
             - scores (Tensor): Classification scores, has a shape
-              (num_instance,)
+              (num_instance, )
             - labels (Tensor): Labels of bboxes, has a shape
-              (num_instances,).
+              (num_instances, ).
             - bboxes (Tensor): Has a shape (num_instances, 4),
               the last dimension 4 arrange as (x1, y1, x2, y2).
         """
@@ -229,7 +231,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             mlvl_labels.append(labels)
             if with_score_factors:
                 mlvl_score_factors.append(score_factor)
-        results = InstanceData(img_meta)
+        results = InstanceData(metainfo=img_meta)
         results.bboxes = torch.cat(mlvl_bboxes)
         results.scores = torch.cat(mlvl_scores)
         results.labels = torch.cat(mlvl_labels)
@@ -239,7 +241,6 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         return self._bbox_post_process(results, img_meta['scale_factor'], cfg,
                                        rescale, with_nms, img_meta, **kwargs)
 
-    # TODO fix the doc and explain the item in results
     def _bbox_post_process(self,
                            results,
                            scale_factor,
@@ -254,17 +255,17 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         the nms operation. Usually `with_nms` is False is used for aug test.
 
         Args:
-            results (obj: InstanceData): Detection instance results,
+            results (:obj:`InstaceData`): Detection instance results,
                 each item has shape (num_bboxes, ).
-            scale_factor (ndarray, optional): Scale factor of the image arange
-                as (w_scale, h_scale, w_scale, h_scale).
-            cfg (mmcv.Config): Test / postprocessing configuration,
+            scale_factor (ndarray, optional): Scale factor of the image
+                arrange as (w_scale, h_scale).
+            cfg (mmengine.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
-                Default: False.
+                Default to False.
             with_nms (bool): If True, do nms before return boxes.
-                Default: True.
-            img_meta (dict, optional): Image meta info. Default: None.
+                Default to True.
+            img_meta (dict, optional): Image meta info. Defaults to None.
 
         Returns:
             :obj:`InstanceData`: Detection results of each image
@@ -272,15 +273,16 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             Each item usually contains following keys.
 
             - scores (Tensor): Classification scores, has a shape
-              (num_instance,)
+              (num_instance, )
             - labels (Tensor): Labels of bboxes, has a shape
-              (num_instances,).
+              (num_instances, ).
             - bboxes (Tensor): Has a shape (num_instances, 4),
               the last dimension 4 arrange as (x1, y1, x2, y2).
         """
 
         if rescale:
-            results.bboxes /= results.bboxes.new_tensor(scale_factor)
+            results.bboxes /= results.bboxes.new_tensor(scale_factor).repeat(
+                (1, 2))
 
         if hasattr(results, 'score_factors'):
             # TODO： Add sqrt operation in order to be consistent with
@@ -299,15 +301,20 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         else:
             return results
 
-    def forward_train(self, x, data_samples, proposal_cfg=None, **kwargs):
+    def forward_train(self,
+                      feats,
+                      batch_data_samples,
+                      proposal_cfg=None,
+                      **kwargs):
         """
         Args:
-            x (list[Tensor]): Features from FPN.
-            data_samples (list[:obj:`GeneralData`]): Each item contains
+            feats (list[Tensor]): Features from FPN.
+            batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
                 the meta information of each image and corresponding
                 annotations.
-            proposal_cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used
+            proposal_cfg (mmengine.Config, optional): Test / postprocessing
+                configuration, if None, test_cfg would be used.
+                Defaults to None.
 
         Returns:
             tuple or Tensor: When `proposal_cfg` is None, the detector is a \
@@ -324,53 +331,48 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
               Each item usually contains following keys.
 
                 - scores (Tensor): Classification scores, has a shape
-                  (num_instance,)
+                  (num_instance, )
                 - labels (Tensor): Labels of bboxes, has a shape
-                  (num_instances,).
+                  (num_instances, ).
                 - bboxes (Tensor): Has a shape (num_instances, 4),
                   the last dimension 4 arrange as (x1, y1, x2, y2).
         """
-        img_metas = [data_sample['meta'] for data_sample in data_samples]
-        outs = self(x)
-        gt_bboxes = [
-            data_sample.gt_instances.bboxes for data_sample in data_samples
-        ]
+        outs = self(feats)
 
-        if hasattr(data_samples[0].gt_instances, 'labels'):
-            gt_labels = [
-                data_sample.gt_instances.labels for data_sample in data_samples
-            ]
-        else:
-            # RPN
-            gt_labels = None
+        batch_gt_instances = []
+        batch_gt_instances_ignore = []
+        batch_img_metas = []
+        for data_sample in batch_data_samples:
+            batch_img_metas.append(data_sample.metainfo)
+            batch_gt_instances.append(data_sample.gt_instances)
+            if 'ignored_instances' in data_sample:
+                batch_gt_instances_ignore.append(data_sample.ignored_instances)
+            else:
+                batch_gt_instances_ignore.append(None)
 
-        if hasattr(data_samples[0], 'instances_ignore'):
-            gt_bboxes_ignore = [
-                data_sample.ignored_instances.bboxes
-                for data_sample in data_samples
-            ]
-        else:
-            gt_bboxes_ignore = None
+        loss_inputs = outs + (batch_gt_instances, batch_img_metas,
+                              batch_gt_instances_ignore)
+        losses = self.loss(*loss_inputs)
 
-        if gt_labels is None:
-            loss_inputs = outs + (gt_bboxes, img_metas)
-        else:
-            loss_inputs = outs + (gt_bboxes, gt_labels, img_metas)
-        losses = self.loss(*loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
         if proposal_cfg is None:
             return losses
         else:
+            # TODO: Since roi_head.get_results might need batch_data_sample,
+            #  may need to pass batch_data_sample directly into get_results.
+            batch_img_metas = [
+                data_sample.metainfo for data_sample in batch_data_samples
+            ]
             results_list = self.get_results(
-                *outs, img_metas=img_metas, cfg=proposal_cfg)
+                *outs, batch_img_metas=batch_img_metas, cfg=proposal_cfg)
             return losses, results_list
 
-    def simple_test(self, feats, img_metas, rescale=False):
+    def simple_test(self, feats, batch_img_metas, rescale=False):
         """Test function without test-time augmentation.
 
         Args:
             feats (tuple[torch.Tensor]): Multi-level features from the
                 upstream network, each is a 4D-tensor.
-            img_metas (list[dict]): List of image information.
+            batch_img_metas (list[dict]): List of image information.
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
 
@@ -380,15 +382,15 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             Each item usually contains following keys.
 
             - scores (Tensor): Classification scores, has a shape
-              (num_instance,)
+              (num_instance, )
             - labels (Tensor): Labels of bboxes, has a shape
-              (num_instances,).
+              (num_instances, ).
             - bboxes (Tensor): Has a shape (num_instances, 4),
               the last dimension 4 arrange as (x1, y1, x2, y2).
         """
         outs = self.forward(feats)
         results_list = self.get_results(
-            *outs, img_metas=img_metas, rescale=rescale)
+            *outs, batch_img_metas=batch_img_metas, rescale=rescale)
         return results_list
 
     def aug_test(self,
@@ -411,7 +413,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
             with_ori_nms (bool): Whether execute the nms in original head.
-                Default: False. It will be `True` when the head is
+                Defaults to False. It will be `True` when the head is
                 adopted as `rpn_head`.
 
         Returns:
@@ -482,6 +484,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
         return final_results
 
+    # TODO: Is it possible to delete?
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def onnx_export(self,
                     cls_scores,
@@ -498,10 +501,10 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 level with shape (N, num_points * 4, H, W).
             score_factors (list[Tensor]): score_factors for each s
                 cale level with shape (N, num_points * 1, H, W).
-                Default: None.
+                Defaults to None.
             img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc. Default: None.
-            with_nms (bool): Whether apply nms to the bboxes. Default: True.
+                image size, scaling factor, etc. Defaults to None.
+            with_nms (bool): Whether apply nms to the bboxes. Defaults to True.
 
         Returns:
             tuple[Tensor, Tensor] | list[tuple]: When `with_nms` is True,
