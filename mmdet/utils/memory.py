@@ -86,7 +86,7 @@ class AvoidOOM(object):
             when they are passed in and processed out. If False, the output
             type will be fp16. Default: True.
         convert_cpu (bool): Whether to convert outputs to CPU if get an OOM
-            error. This will slows down the code significantly.
+            error. This will slow down the code significantly.
             Default: True.
         return_gpu (bool): Whether convert outputs back to GPU, which will
             used in when `convert_cpu` is True. Default: True.
@@ -109,7 +109,7 @@ class AvoidOOM(object):
 
     Note:
         1. The output may be on CPU even if inputs are on GPU. Processing
-            on CPU will slows down the code significantly.
+            on CPU will slow down the code significantly.
         2. When converting inputs to CPU, it will only look at each argument
             and check if it has `.device` and `.to` for conversion. Nested
             structures of tensors are not supported.
@@ -196,7 +196,7 @@ class AvoidOOM(object):
                 self.logger.info('Cannot convert output to fp16 due to '
                                  'CUDA OOM.')
 
-            # Try on CPU. This slows down the code significantly,
+            # Try on CPU. This will slow down the code significantly,
             # therefore print a notice.
             if self.convert_cpu:
                 self.logger.info(f'Attempting to copy inputs of {str(func)} '
