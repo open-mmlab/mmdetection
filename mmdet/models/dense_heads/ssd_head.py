@@ -279,10 +279,9 @@ class SSDHead(AnchorHead):
     def loss(self,
              cls_scores,
              bbox_preds,
-             gt_bboxes,
-             gt_labels,
-             img_metas,
-             gt_bboxes_ignore=None):
+             batch_gt_instances,
+             batch_img_metas,
+             batch_gt_instances_ignore=None):
         """Compute losses of the head.
 
         Args:
@@ -290,13 +289,15 @@ class SSDHead(AnchorHead):
                 Has shape (N, num_anchors * num_classes, H, W)
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
                 level with shape (N, num_anchors * 4, H, W)
-            gt_bboxes (list[Tensor]): each item are the truth boxes for each
-                image in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box
-            img_metas (list[dict]): Meta information of each image, e.g.,
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance.  It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], Optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -307,14 +308,13 @@ class SSDHead(AnchorHead):
         device = cls_scores[0].device
 
         anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, img_metas, device=device)
+            featmap_sizes, batch_img_metas, device=device)
         cls_reg_targets = self.get_targets(
             anchor_list,
             valid_flag_list,
-            gt_bboxes,
-            img_metas,
-            gt_bboxes_ignore_list=gt_bboxes_ignore,
-            gt_labels_list=gt_labels,
+            batch_gt_instances,
+            batch_img_metas,
+            batch_gt_instances_ignore=batch_gt_instances_ignore,
             label_channels=1,
             unmap_outputs=True)
         if cls_reg_targets is None:
@@ -322,7 +322,7 @@ class SSDHead(AnchorHead):
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          num_total_pos, num_total_neg) = cls_reg_targets
 
-        num_images = len(img_metas)
+        num_images = len(batch_img_metas)
         all_cls_scores = torch.cat([
             s.permute(0, 2, 3, 1).reshape(
                 num_images, -1, self.cls_out_channels) for s in cls_scores
