@@ -43,20 +43,20 @@ DATASETS = Registry('dataset', parent=MMENGINE_DATASETS)
 DATA_SAMPLERS = Registry('data sampler', parent=MMENGINE_DATA_SAMPLERS)
 TRANSFORMS = Registry('transform', parent=MMENGINE_TRANSFORMS)
 
-# mangage all kinds of modules inheriting `nn.Module`
+# manage all kinds of modules inheriting `nn.Module`
 MODELS = Registry('model', parent=MMENGINE_MODELS)
-# mangage all kinds of model wrappers like 'MMDistributedDataParallel'
+# manage all kinds of model wrappers like 'MMDistributedDataParallel'
 MODEL_WRAPPERS = Registry('model_wrapper', parent=MMENGINE_MODEL_WRAPPERS)
-# mangage all kinds of weight initialization modules like `Uniform`
+# manage all kinds of weight initialization modules like `Uniform`
 WEIGHT_INITIALIZERS = Registry(
     'weight initializer', parent=MMENGINE_WEIGHT_INITIALIZERS)
 
-# mangage all kinds of optimizers like `SGD` and `Adam`
+# manage all kinds of optimizers like `SGD` and `Adam`
 OPTIMIZERS = Registry('optimizer', parent=MMENGINE_OPTIMIZERS)
 # manage constructors that customize the optimization hyperparameters.
 OPTIMIZER_CONSTRUCTORS = Registry(
     'optimizer constructor', parent=MMENGINE_OPTIMIZER_CONSTRUCTORS)
-# mangage all kinds of parameter schedulers like `MultiStepLR`
+# manage all kinds of parameter schedulers like `MultiStepLR`
 PARAM_SCHEDULERS = Registry(
     'parameter scheduler', parent=MMENGINE_PARAM_SCHEDULERS)
 # manage all kinds of metrics
