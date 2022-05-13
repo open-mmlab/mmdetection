@@ -1,3 +1,4 @@
+import datetime
 import sys
 from unittest import TestCase
 
@@ -28,3 +29,10 @@ class TestSetupEnv(TestCase):
         self.assertTrue('CocoDataset' in DATASETS.module_dict)
         self.assertEqual(DefaultScope.get_current_instance().scope_name,
                          'mmdet')
+
+        # init default scope when another scope is init
+        name = f'test-{datetime.datetime.now()}'
+        DefaultScope.get_instance(name, scope_name='test')
+        with self.assertWarnsRegex(
+                Warning, 'The current default scope "test" is not "mmdet"'):
+            register_all_modules(init_default_scope=True)
