@@ -1,9 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import datetime
 import itertools
 import os.path as osp
 import tempfile
 from collections import OrderedDict
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Union
 
 import numpy as np
 from mmengine.evaluator import BaseMetric
@@ -26,7 +27,9 @@ class CocoMetric(BaseMetric):
     https://cocodataset.org/#detection-eval for more details.
 
     Args:
-        ann_file (str): Path to the coco format annotation file.
+        ann_file (str, optional): Path to the coco format annotation file.
+            If not specified, ground truth annotations from the dataset will
+            be converted to coco format. Defaults to None.
         metric (str | List[str]): Metrics to be evaluated. Valid metrics
             include 'bbox', 'segm', 'proposal', and 'proposal_fast'.
             Defaults to 'bbox'.
@@ -53,7 +56,7 @@ class CocoMetric(BaseMetric):
     default_prefix: Optional[str] = 'coco'
 
     def __init__(self,
-                 ann_file: str,
+                 ann_file: Optional[str] = None,
                  metric: Union[str, List[str]] = 'bbox',
                  classwise: bool = False,
                  proposal_nums: Sequence[int] = (100, 300, 1000),
@@ -86,12 +89,13 @@ class CocoMetric(BaseMetric):
         self.metric_items = metric_items
         self.outfile_prefix = outfile_prefix
 
-        # TODO: support convert dataset to coco instead of load json
-        self._coco_api = COCO(ann_file)
-        self.img_ids = self._coco_api.get_img_ids()
+        # if ann_file is not specified,
+        # initialize coco api with the converted dataset
+        self._coco_api = COCO(ann_file) if ann_file else None
 
         # handle dataset lazy init
         self.cat_ids = None
+        self.img_ids = None
 
     def fast_eval_recall(self,
                          results: List[dict],
@@ -176,8 +180,8 @@ class CocoMetric(BaseMetric):
         """
         bbox_json_results = []
         segm_json_results = [] if 'masks' in results[0] else None
-        for result in results:
-            image_id = result['img_id']
+        for idx, result in enumerate(results):
+            image_id = result.get('img_id', idx)
             labels = result['labels']
             bboxes = result['bboxes']
             scores = result['scores']
@@ -218,34 +222,75 @@ class CocoMetric(BaseMetric):
 
         return result_files
 
-    def format_results(
-            self,
-            results: List[dict],
-            outfile_prefix=None,
-            **kwargs) -> Tuple[dict, Optional[tempfile.TemporaryDirectory]]:
-        """Format the results to json (standard format for COCO evaluation).
+    def gt_to_coco_json(self, gt_dicts: Sequence[dict],
+                        outfile_prefix: str) -> str:
+        """Convert ground truth to coco format json file.
 
         Args:
-            results (list[dict]): Testing results of the dataset.
-            outfile_prefix (str | None): The prefix of json files. It includes
-                the file path and the prefix of filename, e.g., "a/b/prefix".
-                If not specified, a temp file will be created.
-                Defaults to None.
-
+            gt_dicts (Sequence[dict]): Ground truth of the dataset.
+            outfile_prefix (str): The filename prefix of the json files. If the
+                prefix is "somepath/xxx", the json file will be named
+                "somepath/xxx.gt.json".
         Returns:
-            tuple: (result_files, tmp_dir), result_files is a dict containing
-            the json filepaths, tmp_dir is the temporal directory created
-            for saving json files when outfile_prefix is not specified.
+            str: The filename of the json file.
         """
-        assert isinstance(results, list), 'results must be a list'
+        categories = [
+            dict(id=id, name=name)
+            for id, name in enumerate(self.dataset_meta['CLASSES'])
+        ]
+        image_infos = []
+        annotations = []
 
-        if outfile_prefix is None:
-            tmp_dir = tempfile.TemporaryDirectory()
-            outfile_prefix = osp.join(tmp_dir.name, 'results')
-        else:
-            tmp_dir = None
-        result_files = self.results2json(results, outfile_prefix)
-        return result_files, tmp_dir
+        for idx, gt_dict in enumerate(gt_dicts):
+            img_id = gt_dict.get('img_id', idx)
+            image_info = dict(
+                id=img_id,
+                width=gt_dict['width'],
+                height=gt_dict['height'],
+                file_name='')
+            image_infos.append(image_info)
+            for ann in gt_dict['anns']:
+                label = ann['bbox_label']
+                bbox = ann['bbox']
+                coco_bbox = [
+                    bbox[0],
+                    bbox[1],
+                    bbox[2] - bbox[0],
+                    bbox[3] - bbox[1],
+                ]
+
+                annotation = dict(
+                    id=len(annotations) +
+                    1,  # coco api requires id starts with 1
+                    image_id=img_id,
+                    bbox=coco_bbox,
+                    iscrowd=ann.get('ignore_flag', 0),
+                    category_id=int(label),
+                    area=coco_bbox[2] * coco_bbox[3])
+                if ann.get('mask', None):
+                    mask = ann['mask']
+                    # area = mask_util.area(mask)
+                    if isinstance(mask, dict) and isinstance(
+                            mask['counts'], bytes):
+                        mask['counts'] = mask['counts'].decode()
+                    annotation['segmentation'] = mask
+                    # annotation['area'] = float(area)
+                annotations.append(annotation)
+
+        info = dict(
+            date_created=str(datetime.datetime.now()),
+            description='Coco json file converted by mmdet CocoMetric.')
+        coco_json = dict(
+            info=info,
+            images=image_infos,
+            categories=categories,
+            licenses=None,
+        )
+        if len(annotations) > 0:
+            coco_json['annotations'] = annotations
+        converted_json_path = f'{outfile_prefix}.gt.json'
+        dump(coco_json, converted_json_path)
+        return converted_json_path
 
     def process(self, data_batch: Sequence[dict],
                 predictions: Sequence[dict]) -> None:
@@ -273,8 +318,19 @@ class CocoMetric(BaseMetric):
             # some detectors use different scores for bbox and mask
             if 'mask_scores' in pred:
                 result['mask_scores'] = pred['mask_scores'].cpu().numpy()
+
+            # parse gt
+            gt = dict()
+            gt['width'] = data['data_sample']['ori_shape'][1]
+            gt['height'] = data['data_sample']['ori_shape'][0]
+            gt['img_id'] = data['data_sample']['img_id']
+            if self._coco_api is None:
+                assert 'instances' in data['data_sample'], \
+                    'ground truth is required for evaluation when ' \
+                    '`ann_file` is not provided'
+                gt['anns'] = data['data_sample']['instances']
             # add converted result to the results list
-            self.results.append(result)
+            self.results.append((gt, result))
 
     def compute_metrics(self, results: list) -> Dict[str, float]:
         """Compute the metrics from processed results.
@@ -288,14 +344,32 @@ class CocoMetric(BaseMetric):
         """
         logger: MMLogger = MMLogger.get_current_instance()
 
-        # handle dataset lazy init
+        # split gt and prediction list
+        gts, preds = zip(*results)
+
+        tmp_dir = None
+        if self.outfile_prefix is None:
+            tmp_dir = tempfile.TemporaryDirectory()
+            outfile_prefix = osp.join(tmp_dir.name, 'results')
+        else:
+            outfile_prefix = self.outfile_prefix
+
+        if self._coco_api is None:
+            # use converted gt json file to initialize coco api
+            logger.info('Converting ground truth to coco format...')
+            coco_json_path = self.gt_to_coco_json(
+                gt_dicts=gts, outfile_prefix=outfile_prefix)
+            self._coco_api = COCO(coco_json_path)
+
+        # handle lazy init
         if self.cat_ids is None:
             self.cat_ids = self._coco_api.get_cat_ids(
                 cat_names=self.dataset_meta['CLASSES'])
+        if self.img_ids is None:
+            self.img_ids = self._coco_api.get_img_ids()
 
-        # convert results to coco format and dump to json file
-        result_files, tmp_dir = self.format_results(results,
-                                                    self.outfile_prefix)
+        # convert predictions to coco format and dump to json file
+        result_files = self.results2json(preds, outfile_prefix)
 
         eval_results = OrderedDict()
 
@@ -306,7 +380,7 @@ class CocoMetric(BaseMetric):
             # fast eval recall
             if metric == 'proposal_fast':
                 ar = self.fast_eval_recall(
-                    results, self.proposal_nums, self.iou_thrs, logger=logger)
+                    preds, self.proposal_nums, self.iou_thrs, logger=logger)
                 log_msg = []
                 for i, num in enumerate(self.proposal_nums):
                     eval_results[f'AR@{num}'] = ar[i]
