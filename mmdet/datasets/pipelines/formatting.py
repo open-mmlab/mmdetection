@@ -41,7 +41,6 @@ class PackDetInputs(BaseTransform):
             'scale_factor', 'flip', 'flip_direction')``
     """
     mapping_table = {
-        'proposals': 'proposals',
         'gt_bboxes': 'bboxes',
         'gt_bboxes_labels': 'labels',
         'gt_masks': 'masks'
@@ -103,6 +102,10 @@ class PackDetInputs(BaseTransform):
                         results[key])
         data_sample.gt_instances = instance_data
         data_sample.ignored_instances = ignore_instance_data
+
+        if 'proposals' in results:
+            data_sample.proposals = InstanceData('bboxes',
+                                                 results['proposals'])
 
         if 'gt_seg_map' in results:
             gt_sem_seg_data = dict(sem_seg=results['gt_seg_map'][None, ...])
