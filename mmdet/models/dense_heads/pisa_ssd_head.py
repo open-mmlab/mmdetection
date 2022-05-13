@@ -10,14 +10,42 @@ from .ssd_head import SSDHead
 # TODO: add loss evaluator for SSD
 @MODELS.register_module()
 class PISASSDHead(SSDHead):
+    """SSD head with PISA used in https://arxiv.org/abs/1904.04821.
+
+    Args:
+        num_classes (int): Number of categories excluding the background
+            category.
+        in_channels (int): Number of channels in the input feature map.
+        stacked_convs (int): Number of conv layers in cls and reg tower.
+            Default: 0.
+        feat_channels (int): Number of hidden channels when stacked_convs
+            > 0. Default: 256.
+        use_depthwise (bool): Whether to use DepthwiseSeparableConv.
+            Default: False.
+        conv_cfg (dict): Dictionary to construct and config conv layer.
+            Default: None.
+        norm_cfg (dict): Dictionary to construct and config norm layer.
+            Default: None.
+        act_cfg (dict): Dictionary to construct and config activation layer.
+            Default: None.
+        anchor_generator (dict): Config dict for anchor generator
+        bbox_coder (dict): Config of bounding box coder.
+        reg_decoded_bbox (bool): If true, the regression loss would be
+            applied directly on decoded bounding boxes, converting both
+            the predicted boxes and regression targets to absolute
+            coordinates format. Default False. It should be `True` when
+            using `IoULoss`, `GIoULoss`, or `DIoULoss` in the bbox head.
+        train_cfg (dict): Training config of anchor head.
+        test_cfg (dict): Testing config of anchor head.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+    """  # noqa: W605
 
     def loss(self,
              cls_scores,
              bbox_preds,
-             gt_bboxes,
-             gt_labels,
-             img_metas,
-             gt_bboxes_ignore=None):
+             batch_gt_instances,
+             batch_img_metas,
+             batch_gt_instances_ignore=None):
         """Compute losses of the head.
 
         Args:
@@ -25,14 +53,15 @@ class PISASSDHead(SSDHead):
                 Has shape (N, num_anchors * num_classes, H, W)
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
                 level with shape (N, num_anchors * 4, H, W)
-            gt_bboxes (list[Tensor]): Ground truth bboxes of each image
-                with shape (num_obj, 4).
-            gt_labels (list[Tensor]): Ground truth labels of each image
-                with shape (num_obj, 4).
-            img_metas (list[dict]): Meta information of each image, e.g.,
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance.  It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            gt_bboxes_ignore (list[Tensor]): Ignored gt bboxes of each image.
-                Default: None.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], Optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
 
         Returns:
             dict: Loss dict, comprise classification loss regression loss and
@@ -44,14 +73,13 @@ class PISASSDHead(SSDHead):
         device = cls_scores[0].device
 
         anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, img_metas, device=device)
+            featmap_sizes, batch_img_metas, device=device)
         cls_reg_targets = self.get_targets(
             anchor_list,
             valid_flag_list,
-            gt_bboxes,
-            img_metas,
-            gt_bboxes_ignore_list=gt_bboxes_ignore,
-            gt_labels_list=gt_labels,
+            batch_gt_instances,
+            batch_img_metas,
+            batch_gt_instances_ignore=batch_gt_instances_ignore,
             label_channels=1,
             unmap_outputs=False,
             return_sampling_results=True)
@@ -60,7 +88,7 @@ class PISASSDHead(SSDHead):
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          num_total_pos, num_total_neg, sampling_results_list) = cls_reg_targets
 
-        num_images = len(img_metas)
+        num_images = len(batch_img_metas)
         all_cls_scores = torch.cat([
             s.permute(0, 2, 3, 1).reshape(
                 num_images, -1, self.cls_out_channels) for s in cls_scores
