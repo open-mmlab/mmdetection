@@ -7,7 +7,7 @@ Apart from training/testing scripts, We provide lots of useful tools under the
  log file. Run `pip install seaborn` first to install the dependency.
 
  ```shell
-python tools/analysis_tools/analyze_logs.py plot_curve [--keys ${KEYS}] [--title ${TITLE}] [--legend ${LEGEND}] [--backend ${BACKEND}] [--style ${STYLE}] [--out ${OUT_FILE}]
+python tools/analysis_tools/analyze_logs.py plot_curve [--keys ${KEYS}] [--eval-interval ${EVALUATION_INTERVAL}] [--title ${TITLE}] [--legend ${LEGEND}] [--backend ${BACKEND}] [--style ${STYLE}] [--out ${OUT_FILE}]
  ```
 
 ![loss curve image](../../resources/loss_curve.png)
