@@ -2,16 +2,86 @@
 
 We list some common troubles faced by many users and their corresponding solutions here. Feel free to enrich the list if you find any frequent issues and have ways to help others to solve them. If the contents here do not cover your issue, please create an issue using the [provided templates](https://github.com/open-mmlab/mmdetection/blob/master/.github/ISSUE_TEMPLATE/error-report.md/) and make sure you fill in all required information in the template.
 
-## MMCV Installation
+## Installation
 
 - Compatibility issue between MMCV and MMDetection; "ConvWS is already registered in conv layer"; "AssertionError: MMCV==xxx is used but incompatible. Please install mmcv>=xxx, <=xxx."
 
-  Please install the correct version of MMCV for the version of your MMDetection following the [installation instruction](https://mmdetection.readthedocs.io/en/latest/get_started.html#installation).
+    Compatible MMDetection and MMCV versions are shown as below. Please choose the correct version of MMCV to avoid installation issues.
+
+| MMDetection version |       MMCV version        |
+|:-------------------:|:-------------------------:|
+|       master        | mmcv-full>=1.3.17, <1.6.0 |
+|       2.24.0        | mmcv-full>=1.3.17, <1.6.0 |
+|       2.23.0        | mmcv-full>=1.3.17, <1.5.0 |
+|       2.22.0        | mmcv-full>=1.3.17, <1.5.0 |
+|       2.21.0        | mmcv-full>=1.3.17, <1.5.0 |
+|       2.20.0        | mmcv-full>=1.3.17, <1.5.0 |
+|       2.19.1        | mmcv-full>=1.3.17, <1.5.0 |
+|       2.19.0        | mmcv-full>=1.3.17, <1.5.0 |
+|       2.18.0        | mmcv-full>=1.3.17, <1.4.0 |
+|       2.17.0        | mmcv-full>=1.3.14, <1.4.0 |
+|       2.16.0        | mmcv-full>=1.3.8, <1.4.0  |
+|       2.15.1        | mmcv-full>=1.3.8, <1.4.0  |
+|       2.15.0        | mmcv-full>=1.3.8, <1.4.0  |
+|       2.14.0        | mmcv-full>=1.3.8, <1.4.0  |
+|       2.13.0        | mmcv-full>=1.3.3, <1.4.0  |
+|       2.12.0        | mmcv-full>=1.3.3, <1.4.0  |
+|       2.11.0        | mmcv-full>=1.2.4, <1.4.0  |
+|       2.10.0        | mmcv-full>=1.2.4, <1.4.0  |
+|        2.9.0        | mmcv-full>=1.2.4, <1.4.0  |
+|        2.8.0        | mmcv-full>=1.2.4, <1.4.0  |
+|        2.7.0        | mmcv-full>=1.1.5, <1.4.0  |
+|        2.6.0        | mmcv-full>=1.1.5, <1.4.0  |
+|        2.5.0        | mmcv-full>=1.1.5, <1.4.0  |
+|        2.4.0        | mmcv-full>=1.1.1, <1.4.0  |
+|        2.3.0        |     mmcv-full==1.0.5      |
+|      2.3.0rc0       |     mmcv-full>=1.0.2      |
+|        2.2.1        |        mmcv==0.6.2        |
+|        2.2.0        |        mmcv==0.6.2        |
+|        2.1.0        |   mmcv>=0.5.9, <=0.6.1    |
+|        2.0.0        |   mmcv>=0.5.1, <=0.5.8    |
 
 - "No module named 'mmcv.ops'"; "No module named 'mmcv._ext'".
 
     1. Uninstall existing mmcv in the environment using `pip uninstall mmcv`.
-    2. Install mmcv-full following the [installation instruction](https://mmcv.readthedocs.io/en/latest/#installation).
+    2. Install mmcv-full following the [installation instruction](get_started#best-practices).
+
+- Using albumentations
+
+    If you would like to use `albumentations`, we suggest using `pip install -r requirements/albu.txt` or
+    `pip install -U albumentations --no-binary qudida,albumentations`.
+    If you simply use `pip install albumentations>=0.3.2`, it will install `opencv-python-headless` simultaneously (even though you have already installed `opencv-python`).
+    Please refer to the [official documentation](https://albumentations.ai/docs/getting_started/installation/#note-on-opencv-dependencies) for details.
+
+- ModuleNotFoundError is raised when using some algorithms
+
+    Some extra dependencies are required for Instaboost, Panoptic Segmentation, LVIS dataset, etc. Please note the error message and install corresponding packages, e.g.,
+
+    ```shell
+    # for instaboost
+    pip install instaboostfast
+    # for panoptic segmentation
+    pip install git+https://github.com/cocodataset/panopticapi.git
+    # for LVIS dataset
+    pip install git+https://github.com/lvis-dataset/lvis-api.git
+    ```
+
+## Coding
+
+- Do I need to reinstall mmdet after some code modifications
+
+    If you follow the best practice and install mmdet with `pip install -e .`, any local modifications made to the code will take effect without reinstallation.
+
+- How to develop with multiple MMDetection versions
+
+    You can have multiple folders like mmdet-2.21, mmdet-2.22.
+    When you run the train or test script, it will adopt the mmdet package in the current folder.
+
+    To use the default MMDetection installed in the environment rather than the one you are working with, you can remove the following line in those scripts:
+
+    ```shell
+    PYTHONPATH="$(dirname $0)/..":$PYTHONPATH
+    ```
 
 ## PyTorch/CUDA Environment
 
@@ -82,7 +152,7 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - "RuntimeError: Expected to have finished reduction in the prior iteration before starting a new one"
     1. This error indicates that your module has parameters that were not used in producing loss. This phenomenon may be caused by running different branches in your code in DDP mode.
-    2. You can set ` find_unused_parameters = True` in the config to solve the above problems(but this will slow down the training speed.
+    2. You can set `find_unused_parameters = True` in the config to solve the above problems(but this will slow down the training speed.
     3. If the version of your MMCV >= 1.4.1, you can get the name of those unused parameters with `detect_anomalous_params=True` in `optimizer_config` of config.
 
 - Save the best model
@@ -91,7 +161,7 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - Resume training with `ExpMomentumEMAHook`
 
-    If you use `ExpMomentumEMAHook` in training, you can't just use command line parameters  `--resume-from` nor `--cfg-options resume_from` to restore model parameters during resume, i.e., the command `python tools/train.py configs/yolox/yolox_s_8x8_300e_coco.py --resume-from ./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth ` will not work. Since `ExpMomentumEMAHook` needs to reload the weights, taking the `yolox_s` algorithm as an example, you should modify the values of `resume_from` in two places of the config as below:
+    If you use `ExpMomentumEMAHook` in training, you can't just use command line parameters  `--resume-from` nor `--cfg-options resume_from` to restore model parameters during resume, i.e., the command `python tools/train.py configs/yolox/yolox_s_8x8_300e_coco.py --resume-from ./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth` will not work. Since `ExpMomentumEMAHook` needs to reload the weights, taking the `yolox_s` algorithm as an example, you should modify the values of `resume_from` in two places of the config as below:
 
     ```python
     # Open configs/yolox/yolox_s_8x8_300e_coco.py directly and modify all resume_from fields
@@ -130,6 +200,6 @@ We list some common troubles faced by many users and their corresponding solutio
 
     ResNeXt comes from the paper [`Aggregated Residual Transformations for Deep Neural Networks`](https://arxiv.org/abs/1611.05431). It introduces  group and uses “cardinality” to control the number of groups to achieve a balance between accuracy and complexity. It controls the basic width and grouping parameters of the internal Bottleneck module through two hyperparameters `baseWidth` and `cardinality`. An example configuration name in MMDetection is `mask_rcnn_x101_64x4d_fpn_mstrain-poly_3x_coco.py`, where `mask_rcnn` represents the algorithm using Mask R-CNN, `x101` represents the backbone network using ResNeXt-101, and `64x4d` represents that the bottleneck block has 64 group and each group has basic width of 4.
 
--  `norm_eval` in backbone
+- `norm_eval` in backbone
 
     Since the detection model is usually large and the input image resolution is high, this will result in a small batch of the detection model, which will make the variance of the statistics calculated by BatchNorm during the training process very large and not as stable as the statistics obtained during the pre-training of the backbone network . Therefore, the `norm_eval=True` mode is generally used in training, and the BatchNorm statistics in the pre-trained backbone network are directly used. The few algorithms that use large batches are the `norm_eval=False` mode, such as NASFPN. For the backbone network without ImageNet pre-training and the batch is relatively small, you can consider using `SyncBN`.
