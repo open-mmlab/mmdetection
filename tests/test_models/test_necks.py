@@ -234,7 +234,8 @@ def test_dilated_encoder():
     in_channels = 16
     out_channels = 32
     out_shape = 34
-    dilated_encoder = DilatedEncoder(in_channels, out_channels, 16, 2)
+    dilated_encoder = DilatedEncoder(in_channels, out_channels, 16, 2, 
+                                     [2, 4, 6, 8])
     feat = [torch.rand(1, in_channels, 34, 34)]
     out_feat = dilated_encoder(feat)[0]
     assert out_feat.shape == (1, out_channels, out_shape, out_shape)

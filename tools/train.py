@@ -18,7 +18,8 @@ from mmdet.apis import init_random_seed, set_random_seed, train_detector
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
 from mmdet.utils import (collect_env, get_device, get_root_logger,
-                         setup_multi_processes, update_data_root)
+                         replace_cfg_vals, setup_multi_processes,
+                         update_data_root)
 
 
 def parse_args():
@@ -109,6 +110,9 @@ def main():
 
     cfg = Config.fromfile(args.config)
 
+    # replace the ${key} with the value of cfg.key
+    cfg = replace_cfg_vals(cfg)
+
     # update data root according to MMDET_DATASETS
     update_data_root(cfg)
 
@@ -142,6 +146,7 @@ def main():
         # use config filename as default work_dir if cfg.work_dir is None
         cfg.work_dir = osp.join('./work_dirs',
                                 osp.splitext(osp.basename(args.config))[0])
+
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
     cfg.auto_resume = args.auto_resume

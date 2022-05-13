@@ -160,6 +160,33 @@ asyncio.run(main())
        --out result.mp4
    ```
 
+#### 视频样例，显卡加速版本
+
+这是在视频样例上进行推理的脚本，使用显卡加速。
+
+   ```shell
+   python demo/video_gpuaccel_demo.py \
+        ${VIDEO_FILE} \
+        ${CONFIG_FILE} \
+        ${CHECKPOINT_FILE} \
+        [--device ${GPU_ID}] \
+        [--score-thr ${SCORE_THR}] \
+        [--nvdecode] \
+        [--out ${OUT_FILE}] \
+        [--show] \
+        [--wait-time ${WAIT_TIME}]
+
+   ```
+
+运行样例：
+
+   ```shell
+   python demo/video_gpuaccel_demo.py demo/demo.mp4 \
+       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+       checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+       --nvdecode --out result.mp4
+   ```
+
 ## 在标准数据集上测试现有模型
 
 为了测试一个模型的精度，我们通常会在标准数据集上对其进行测试。MMDetection 支持多个公共数据集，包括 [COCO](https://cocodataset.org/) ，
