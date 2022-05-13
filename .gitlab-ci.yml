@@ -1,5 +1,5 @@
 variables:
-  PYTORCH_IMAGE: registry.sensetime.com/openmmlab/pytorch18-cu102-mmcv-transforms:latest
+  PYTORCH_IMAGE: registry.sensetime.com/openmmlab/pytorch18-cu102-mmcv-transforms:update-repo
 
 stages:
   - linting
@@ -7,6 +7,7 @@ stages:
   - deploy
 
 before_script:
+  - . /root/scripts/set_envs.sh
   - echo $PATH
   - gcc --version
   - nvcc --version
@@ -27,12 +28,15 @@ linting:
   stage: test
   script:
     - echo "Start building..."
-    - pip install -e .[all] -i https://pypi.tuna.tsinghua.edu.cn/simple/
+    - http_proxy= https_proxy= HTTP_PROXY= HTTPS_PROXY= pip install -e .[all] -i https://pypi.tuna.tsinghua.edu.cn/simple/
     - python -c "import mmdet; print(mmdet.__version__)"
     - echo "Start testing..."
     - coverage run --branch --source mmdet -m pytest tests/
+    # Test if python files being added or modified meet our unittest and docstring coverage requirements
+    - REUSE_COVERAGE_REPORT=1 .dev_scripts/diff_coverage_test.sh
+    # Report global unittest and docstring coverages
     - coverage report -m
-    - interrogate -v --ignore-init-method --ignore-module --ignore-nested-functions --ignore-regex "__repr__" --fail-under 60
+    - interrogate -v --ignore-init-method --ignore-module --ignore-nested-functions --ignore-regex "__repr__" --fail-under 60 mmdet
 
 test:pytorch1.8-cuda10:
   image: $PYTORCH_IMAGE
