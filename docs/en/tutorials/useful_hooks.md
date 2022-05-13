@@ -46,14 +46,16 @@ During training, you can see the messages in the log recorded by `MemoryProfiler
 
 ## How to implement a custom hook
 
-In general, there are 10 sites where hooks can be inserted from the beginning to the end of model training. The users can implement custom hooks and inserted them in different sites in the process of training to do what they want.
+In general, there are 10 points where hooks can be inserted from the beginning to the end of model training. The users can implement custom hooks and insert them at different points in the process of training to do what they want.
 
-- global sites: `before_run`, `after_run`
-- sites in training: `before_train_epoch`, `before_train_iter`, `after_train_iter`, `after_train_epoch`
-- sites in validation: `before_val_epoch`, `before_val_iter`, `after_val_iter`, `after_val_epoch`
+- global points: `before_run`, `after_run`
+- points in training: `before_train_epoch`, `before_train_iter`, `after_train_iter`, `after_train_epoch`
+- points in validation: `before_val_epoch`, `before_val_iter`, `after_val_iter`, `after_val_epoch`
 
-Loss going NaN is a common penomenon, users can implement a hook to help check loss and terminate training when loss goes NaN. To implement such a hook, the users should base on Hook provided in MMCV, and implement `after_train_iter` method which checks that whether loss goes NaN after every n training iterations. After that,  register it in `HOOKS`. At Last, add `custom_hooks = [dict(type='MemoryProfilerHook', interval=50)]` in the config file. Please read [customize_runtime](https://mmdetection.readthedocs.io/en/latest/tutorials/customize_runtime.html#customize-self-implemented-hooks) for more about implementing a custom hook.
-
+For example, users can implement a hook to check loss and terminate training when loss goes NaN. To achieve that, there are three steps to go:
+1. Implement a new hook that inherits the `Hook` class in MMCV, and implement `after_train_iter` method which checks whether loss goes NaN after every `n` training iterations.
+2. The implemented hook should be registered in `HOOKS` by `@HOOKS.register_module()` as shown in the code below.
+3. Add `custom_hooks = [dict(type='MemoryProfilerHook', interval=50)]` in the config file.
 
 ```python
 import torch
@@ -78,3 +80,5 @@ class CheckInvalidLossHook(Hook):
             assert torch.isfinite(runner.outputs['loss']), \
                 runner.logger.info('loss become infinite or NaN!')
 ```
+
+Please read [customize_runtime](https://mmdetection.readthedocs.io/en/latest/tutorials/customize_runtime.html#customize-self-implemented-hooks) for more about implementing a custom hook.
