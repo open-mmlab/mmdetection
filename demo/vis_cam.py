@@ -8,8 +8,10 @@ import mmcv
 import numpy as np
 from mmcv import Config, DictAction
 
-from mmdet.utils import (DetAblationLayer, DetBoxScoreTarget, DetCAMModel,
-                         DetCAMVisualizer, FeatmapAM, reshape_transform)
+from mmdet.utils.det_cam_visualizer import (DetAblationLayer,
+                                            DetBoxScoreTarget, DetCAMModel,
+                                            DetCAMVisualizer, FeatmapAM,
+                                            reshape_transform)
 
 try:
     from pytorch_grad_cam import AblationCAM, EigenCAM
@@ -31,7 +33,7 @@ def parse_args():
     parser.add_argument('checkpoint', help='Checkpoint file')
     parser.add_argument(
         '--method',
-        default='ablationcam',
+        default='featmapam',
         help='Type of method to use, supports '
         f'{", ".join(list(METHOD_MAP.keys()))}.')
     parser.add_argument(
