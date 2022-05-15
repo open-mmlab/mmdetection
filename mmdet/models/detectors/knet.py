@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 from ..builder import DETECTORS
 from .two_stage import TwoStageDetector
-
+from ..builder import DETECTORS, build_backbone, build_head, build_neck
 
 def sem2ins_masks(gt_sem_seg, num_thing_classes=80):
     """Convert semantic segmentation mask to binary masks.
@@ -55,6 +55,7 @@ class KNet(TwoStageDetector):
                  num_stuff_classes=53,
                  mask_assign_stride=4,
                  thing_label_in_seg=0,
+                 panoptic_fusion_head=None,
                  **kwargs):
         super(KNet, self).__init__(*args, **kwargs)
         assert self.with_rpn, 'KNet does not support external proposals'
@@ -62,7 +63,9 @@ class KNet(TwoStageDetector):
         self.num_stuff_classes = num_stuff_classes
         self.mask_assign_stride = mask_assign_stride
         self.thing_label_in_seg = thing_label_in_seg
-
+        panoptic_fusion_head_ = panoptic_fusion_head.deepcopy()
+        panoptic_fusion_head_.update(test_cfg=kwargs['test_cfg'])
+        self.panoptic_fusion_head = build_head(panoptic_fusion_head_)
     def forward_train(self,
                       img,
                       img_metas,
@@ -175,14 +178,17 @@ class KNet(TwoStageDetector):
         rpn_results = self.rpn_head.simple_test_rpn(x, img_metas)
         (proposal_feats, x_feats, mask_preds, cls_scores,
          seg_preds) = rpn_results
-        segm_results = self.roi_head.simple_test(
+        cls_score, scaled_mask_preds = self.roi_head.simple_test(
             x_feats,
             proposal_feats,
             mask_preds,
             cls_scores,
             img_metas,
             rescale=rescale)
-        return segm_results
+        results = self.panoptic_fusion_head.simple_test(
+            cls_score, scaled_mask_preds, img_metas
+        )
+        return results
 
     def forward_dummy(self, img):
         """Used for computing network flops.
