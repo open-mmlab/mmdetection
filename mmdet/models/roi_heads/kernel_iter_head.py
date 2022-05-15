@@ -467,7 +467,6 @@ class KernelUpdateHead(BaseModule):
             segm_result[det_labels[idx]].append(mask_preds[idx])
         return bbox_result, segm_result
 
-
 @HEADS.register_module()
 class KernelIterHead(BaseRoIHead):
 
@@ -587,7 +586,7 @@ class KernelIterHead(BaseRoIHead):
         mask_head = self.mask_head[stage]
         cls_score, mask_preds, object_feats = mask_head(
             x, object_feats, mask_preds)
-        if mask_head.mask_upsample_stride > 1 and (stage == self.num_stages - 1
+        if (stage == self.num_stages - 1 # mask_head.mask_upsample_stride==2
                                                    or self.training):
             scaled_mask_preds = F.interpolate(
                 mask_preds,
@@ -634,19 +633,19 @@ class KernelIterHead(BaseRoIHead):
 
         """
         num_imgs = len(img_metas)
-        if self.mask_head[0].mask_upsample_stride > 1:
-            prev_mask_preds = F.interpolate(
-                mask_preds.detach(),
-                scale_factor=self.mask_head[0].mask_upsample_stride,
-                mode='bilinear',
-                align_corners=False)
-        else:
-            prev_mask_preds = mask_preds.detach()
+        # if self.mask_head[0].mask_upsample_stride > 1: # True
+        prev_mask_preds = F.interpolate(
+            mask_preds.detach(),
+            scale_factor=self.mask_head[0].mask_upsample_stride, # equal to 2
+            mode='bilinear',
+            align_corners=False)
+        # else:
+        #     prev_mask_preds = mask_preds.detach()
 
-        if cls_score is not None:
-            prev_cls_score = cls_score.detach()
-        else:
-            prev_cls_score = [None] * num_imgs
+        # if cls_score is not None:
+        #     prev_cls_score = cls_score.detach()
+        # else:
+        prev_cls_score = [None] * num_imgs
 
         object_feats = proposal_feats
         all_stage_loss = {}
@@ -721,35 +720,13 @@ class KernelIterHead(BaseRoIHead):
             mask_preds = mask_results['mask_preds']
             scaled_mask_preds = mask_results['scaled_mask_preds']
 
-        num_classes = self.mask_head[-1].num_classes
-        results = []
-
         if self.mask_head[-1].loss_cls.use_sigmoid:
-            cls_score = cls_score.sigmoid()
+            cls_score = cls_score.sigmoid()     # using sigmoid
         else:
             cls_score = cls_score.softmax(-1)[..., :-1]
+            
+        return cls_score, scaled_mask_preds
 
-        if self.do_panoptic:
-            for img_id in range(num_imgs):
-                single_result = self.get_panoptic(cls_score[img_id],
-                                                  scaled_mask_preds[img_id],
-                                                  self.test_cfg,
-                                                  img_metas[img_id])
-                results.append(single_result)
-        else:
-            for img_id in range(num_imgs):
-                cls_score_per_img = cls_score[img_id]
-                scores_per_img, topk_indices = cls_score_per_img.flatten(
-                    0, 1).topk(
-                        self.test_cfg.max_per_img, sorted=True)
-                mask_indices = topk_indices // num_classes
-                labels_per_img = topk_indices % num_classes
-                masks_per_img = scaled_mask_preds[img_id][mask_indices]
-                single_result = self.mask_head[-1].get_seg_masks(
-                    masks_per_img, labels_per_img, scores_per_img,
-                    self.test_cfg, img_metas[img_id])
-                results.append(single_result)
-        return results
 
     def aug_test(self, features, proposal_list, img_metas, rescale=False):
         raise NotImplementedError('SparseMask does not support `aug_test`')
@@ -770,18 +747,18 @@ class KernelIterHead(BaseRoIHead):
         return all_stage_mask_results
 
     def get_panoptic(self, cls_scores, mask_preds, test_cfg, img_meta):
-        # resize mask predictions back
-        scores = cls_scores[:self.num_proposals][:, :self.num_thing_classes]
+        # resize mask predictions back cls_scores shape: (num_proposal + num_stuff_classes,num_classes)
+        scores = cls_scores[:self.num_proposals][:, :self.num_thing_classes] # (num_proposal, num_things_classes)
         thing_scores, thing_labels = scores.max(dim=1)
         stuff_scores = cls_scores[
-            self.num_proposals:][:, self.num_thing_classes:].diag()
+            self.num_proposals:][:, self.num_thing_classes:].diag() # (num_stuff_classes)
         stuff_labels = torch.arange(
             0, self.num_stuff_classes) + self.num_thing_classes
         stuff_labels = stuff_labels.to(thing_labels.device)
 
         total_masks = self.mask_head[-1].rescale_masks(mask_preds, img_meta)
-        total_scores = torch.cat([thing_scores, stuff_scores], dim=0)
-        total_labels = torch.cat([thing_labels, stuff_labels], dim=0)
+        total_scores = torch.cat([thing_scores, stuff_scores], dim=0) # (num_proposal + num_stuff,)
+        total_labels = torch.cat([thing_labels, stuff_labels], dim=0) # (num_proposal + num_stuff,)
 
         panoptic_result = self.merge_stuff_thing(total_masks, total_labels,
                                                  total_scores,
@@ -799,11 +776,11 @@ class KernelIterHead(BaseRoIHead):
                                             self.num_classes,
                                             dtype=torch.long)
 
-        cur_prob_masks = total_scores.view(-1, 1, 1) * total_masks
-        cur_mask_ids = cur_prob_masks.argmax(0)
+        cur_prob_masks = total_scores.view(-1, 1, 1) * total_masks # (num_proposal+num_stuff,h,w)
+        cur_mask_ids = cur_prob_masks.argmax(0) #(h,w)
 
         # sort instance outputs by scores
-        sorted_inds = torch.argsort(-total_scores)
+        sorted_inds = torch.argsort(-total_scores) # (num_proposal+num_stuff)
         current_segment_id = 0
 
         for k in sorted_inds:
@@ -824,4 +801,4 @@ class KernelIterHead(BaseRoIHead):
                     + current_segment_id * INSTANCE_OFFSET
                 current_segment_id += 1
 
-        return panoptic_seg.cpu().numpy()
+        return panoptic_seg.cpu().numpy() #(h,w)
