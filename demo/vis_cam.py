@@ -10,20 +10,32 @@ from mmcv import Config, DictAction
 
 from mmdet.utils.det_cam_visualizer import (DetAblationLayer,
                                             DetBoxScoreTarget, DetCAMModel,
-                                            DetCAMVisualizer, FeatmapAM,
-                                            reshape_transform)
+                                            DetCAMVisualizer, EigenCAM,
+                                            FeatmapAM, reshape_transform)
 
 try:
-    from pytorch_grad_cam import AblationCAM, EigenCAM
+    from pytorch_grad_cam import (AblationCAM, EigenGradCAM, GradCAM,
+                                  GradCAMPlusPlus, LayerCAM, XGradCAM)
 except ImportError:
     raise ImportError('Please run `pip install "grad-cam"` to install '
                       '3rd party package pytorch_grad_cam.')
 
-METHOD_MAP = {
+GRAD_FREE_METHOD_MAP = {
     'ablationcam': AblationCAM,
     'eigencam': EigenCAM,
+    # 'scorecam': ScoreCAM, # consumes too much memory
     'featmapam': FeatmapAM
 }
+
+GRAD_BASE_METHOD_MAP = {
+    'gradcam': GradCAM,
+    'gradcam++': GradCAMPlusPlus,
+    'xgradcam': XGradCAM,
+    'eigengradcam': EigenGradCAM,
+    'layercam': LayerCAM
+}
+
+ALL_METHODS = list(GRAD_FREE_METHOD_MAP.keys() | GRAD_BASE_METHOD_MAP.keys())
 
 
 def parse_args():
@@ -33,16 +45,16 @@ def parse_args():
     parser.add_argument('checkpoint', help='Checkpoint file')
     parser.add_argument(
         '--method',
-        default='featmapam',
+        default='gradcam',
         help='Type of method to use, supports '
-        f'{", ".join(list(METHOD_MAP.keys()))}.')
+        f'{", ".join(ALL_METHODS)}.')
     parser.add_argument(
         '--target-layers',
-        default=['neck'],
+        default=['backbone.layer3'],
         nargs='+',
         type=str,
         help='The target layers to get CAM, if not set, the tool will '
-        'specify the neck')
+        'specify the backbone.layer3')
     parser.add_argument(
         '--preview-model',
         default=False,
@@ -65,9 +77,9 @@ def parse_args():
         'The activation map is scaled and then evaluated. '
         'If set to (-1, -1), it means no scaling.')
     parser.add_argument(
-        '--norm-in-bbox',
+        '--no-norm-in-bbox',
         action='store_true',
-        help='No norm in bbox of cam image')
+        help='Norm in bbox of cam image')
     parser.add_argument(
         '--aug-smooth',
         default=False,
@@ -105,15 +117,15 @@ def parse_args():
         'Note that the quotation marks are necessary and that no white space '
         'is allowed.')
     args = parser.parse_args()
-    if args.method.lower() not in METHOD_MAP.keys():
+    if args.method.lower() not in (GRAD_FREE_METHOD_MAP.keys()
+                                   | GRAD_BASE_METHOD_MAP.keys()):
         raise ValueError(f'invalid CAM type {args.method},'
-                         f' supports {", ".join(list(METHOD_MAP.keys()))}.')
+                         f' supports {", ".join(ALL_METHODS)}.')
 
     return args
 
 
 def init_model_cam(args, cfg):
-    # build the model from a config file and a checkpoint file
     model = DetCAMModel(
         cfg, args.checkpoint, args.score_thr, device=args.device)
     if args.preview_model:
@@ -129,15 +141,32 @@ def init_model_cam(args, cfg):
             print(model.detector)
             raise RuntimeError('layer does not exist', e)
 
+    extra_params = {
+        'batch_size': args.batch_size,
+        'ablation_layer': DetAblationLayer(),
+        'ratio_channels_to_ablate': args.ratio_channels_to_ablate
+    }
+
+    if args.method in GRAD_BASE_METHOD_MAP:
+        method_class = GRAD_BASE_METHOD_MAP[args.method]
+        is_need_grad = True
+        assert args.no_norm_in_bbox is False, 'If not norm in bbox, the ' \
+                                              'visualization result ' \
+                                              'may not be reasonable.'
+    else:
+        method_class = GRAD_FREE_METHOD_MAP[args.method]
+        is_need_grad = False
+
     det_cam_visualizer = DetCAMVisualizer(
-        args.method,
+        method_class,
         model,
         target_layers,
-        batch_size=args.batch_size,
         reshape_transform=partial(
-            reshape_transform, max_shape=args.max_reshape_shape),
-        ablation_layer=DetAblationLayer(),
-        ratio_channels_to_ablate=args.ratio_channels_to_ablate)
+            reshape_transform,
+            max_shape=args.max_reshape_shape,
+            is_need_grad=is_need_grad),
+        is_need_grad=is_need_grad,
+        extra_params=extra_params)
     return model, det_cam_visualizer
 
 
@@ -172,13 +201,19 @@ def main():
         targets = [
             DetBoxScoreTarget(bboxes=bboxes, labels=labels, segms=segms)
         ]
+
+        if args.method in GRAD_BASE_METHOD_MAP:
+            model.set_return_loss(True)
+            model.set_input_data(image, bboxes=bboxes, labels=labels)
+            det_cam_visualizer.switch_activations_and_grads(model)
+
         grayscale_cam = det_cam_visualizer(
             image,
             targets=targets,
             aug_smooth=args.aug_smooth,
             eigen_smooth=args.eigen_smooth)
         image_with_bounding_boxes = det_cam_visualizer.show_cam(
-            image, bboxes, labels, grayscale_cam, args.norm_in_bbox)
+            image, bboxes, labels, grayscale_cam, not args.no_norm_in_bbox)
 
         if args.out_dir:
             mmcv.mkdir_or_exist(args.out_dir)
@@ -188,6 +223,10 @@ def main():
             cv2.namedWindow(os.path.basename(image_path), 0)
             cv2.imshow(os.path.basename(image_path), image_with_bounding_boxes)
             cv2.waitKey(0)
+
+        if args.method in GRAD_BASE_METHOD_MAP:
+            model.set_return_loss(False)
+            det_cam_visualizer.switch_activations_and_grads(model)
 
 
 if __name__ == '__main__':
