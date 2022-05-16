@@ -87,9 +87,10 @@ class BBoxTestMixin(object):
                 aug_labels.append(bbox_outputs[2])
 
         # after merging, bboxes will be rescaled to the original image size
-        merged_bboxes, merged_scores = self.merge_aug_bboxes(
+        merged_bboxes, merged_scores, keep_mask = self.merge_aug_bboxes(
             aug_bboxes, aug_scores, img_metas)
-        merged_labels = torch.cat(aug_labels, dim=0) if aug_labels else None
+        merged_labels = torch.cat(aug_labels, dim=0)[keep_mask] \
+            if aug_labels else None
 
         if merged_bboxes.numel() == 0:
             det_bboxes = torch.cat([merged_bboxes, merged_scores[:, None]], -1)
@@ -190,6 +191,7 @@ class BBoxTestMixin(object):
             and ``scores`` with shape (n,).
         """
         recovered_bboxes = []
+        scale_masks = []
         for bboxes, img_info in zip(aug_bboxes, img_metas):
             img_shape = img_info[0]['img_shape']
             scale_factor = img_info[0]['scale_factor']
@@ -197,10 +199,24 @@ class BBoxTestMixin(object):
             flip_direction = img_info[0]['flip_direction']
             bboxes = bbox_mapping_back(bboxes, img_shape, scale_factor, flip,
                                        flip_direction)
+            # filter out bboxes according to `obj_range`
+            if img_info[0].get('obj_range', None) is not None:
+                min_area = min(img_info[0]['obj_range'])**2
+                max_area = max(img_info[0]['obj_range'])**2
+                bbox_areas = (bboxes[:, 2] - bboxes[:, 0]) * (
+                    bboxes[:, 3] - bboxes[:, 1])
+                scale_mask = (bbox_areas > min_area) & (bbox_areas < max_area)
+            else:
+                scale_mask = bboxes.new_ones((bboxes.size(0), ),
+                                             dtype=torch.bool)
+            bboxes = bboxes[scale_mask]
+            scale_masks.append(scale_mask)
             recovered_bboxes.append(bboxes)
         bboxes = torch.cat(recovered_bboxes, dim=0)
+        scale_masks = torch.cat(scale_masks, dim=0)
         if aug_scores is None:
-            return bboxes
+            return bboxes, scale_masks
         else:
             scores = torch.cat(aug_scores, dim=0)
-            return bboxes, scores
+            scores = scores[scale_masks]
+            return bboxes, scores, scale_masks
