@@ -1,4 +1,4 @@
-# Tutorial 11: Test Results Submission
+# Tutorial 12: Test Results Submission
 
 ## Panoptic segmentation test results submission
 
@@ -97,7 +97,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/test.py \
 
 ### Rename files and zip results
 
-After inference, the panoptic segmentation results (a json file and a directory where the masks are stored) will be in `WORK_DIR`. We should rename them according to the naming convention described on [COCO's Website](https://cocodataset.org/#upload). Finally, we need to compress the json and the directory where the masks are stored into a zip file, and rename the zip file according to the naming convention. Note that the zip file should **directly** contains the above two files.
+After inference, the panoptic segmentation results (a json file and a directory where the masks are stored) will be in `WORK_DIR`. We should rename them according to the naming convention described on [COCO&#39;s Website](https://cocodataset.org/#upload). Finally, we need to compress the json and the directory where the masks are stored into a zip file, and rename the zip file according to the naming convention. Note that the zip file should **directly** contains the above two files.
 
 The commands to rename files and zip results:
 

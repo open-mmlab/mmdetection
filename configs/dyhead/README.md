@@ -28,6 +28,12 @@ The complex nature of combining localization and classification in object detect
   We have not conduct ablation study between the two settings.
   `dict(type='Pad', size_divisor=128)` may further improve AP by prefer spatial alignment across pyramid levels, although large padding reduces efficiency.
 
+We also trained the model with Swin-L backbone. Results are as below.
+
+| Method | Backbone | Style   | Setting      | Lr schd | mstrain | box AP | Config | Download |
+|:------:|:--------:|:-------:|:------------:|:-------:|:-------:|:------:|:------:|:--------:|
+| ATSS   | Swin-L   | caffe   | reproduction | 2x      | 480~1200| 56.2   | [config](./atss_swin-l-p4-w12_fpn_dyhead_mstrain_2x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/dyhead/atss_swin-l-p4-w12_fpn_dyhead_mstrain_2x_coco/atss_swin-l-p4-w12_fpn_dyhead_mstrain_2x_coco_20220509_100315-bc5b6516.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/dyhead/atss_swin-l-p4-w12_fpn_dyhead_mstrain_2x_coco/atss_swin-l-p4-w12_fpn_dyhead_mstrain_2x_coco_20220509_100315.log.json) |
+
 ## Relation to Other Methods
 
 - DyHead can be regarded as an improved [SEPC](https://arxiv.org/abs/2005.03101) with [DyReLU modules](https://arxiv.org/abs/2003.10027) and simplified [SE blocks](https://arxiv.org/abs/1709.01507).
