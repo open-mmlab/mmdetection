@@ -84,7 +84,27 @@ def test_eval_map():
     mean_ap, eval_results = eval_map(
         det_results, annotations, use_legacy_coordinate=True)
     assert 0.291 < mean_ap < 0.293
-    eval_map(det_results, annotations, use_legacy_coordinate=False)
+    mean_ap, eval_results = eval_map(
+        det_results, annotations, use_legacy_coordinate=False)
+    assert 0.291 < mean_ap < 0.293
+
+    # 1 image and 2 classes
+    det_results = [[det_bboxes, det_bboxes]]
+
+    labels = np.array([0, 1, 1])
+    labels_ignore = np.array([0, 1])
+    gt_info = {
+        'bboxes': gt_bboxes,
+        'bboxes_ignore': gt_ignore,
+        'labels': labels,
+        'labels_ignore': labels_ignore
+    }
+    annotations = [gt_info]
+    mean_ap, eval_results = eval_map(
+        det_results, annotations, use_legacy_coordinate=True)
+    assert 0.291 < mean_ap < 0.293
+    mean_ap, eval_results = eval_map(
+        det_results, annotations, use_legacy_coordinate=False)
     assert 0.291 < mean_ap < 0.293
 
 
