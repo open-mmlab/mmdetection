@@ -7,6 +7,7 @@ Import:
   - configs/centernet/metafile.yml
   - configs/centripetalnet/metafile.yml
   - configs/cornernet/metafile.yml
+  - configs/convnext/metafile.yml
   - configs/dcn/metafile.yml
   - configs/dcnv2/metafile.yml
   - configs/deformable_detr/metafile.yml
