@@ -237,30 +237,33 @@ def ciou_loss(pred, target, eps=1e-7):
     return loss
 
 
-@mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
-def alphaiou_loss(pred, target, alpha=3, eps=1e-7, mode='iou'):
+def alphaiou_loss(pred, target, alpha=3, eps=1e-9, mode='iou'):
     # iou mode
     mode = mode.lower()
     assert mode in ('iou', 'ciou', 'giou', 'diou')
 
+    b1_x1, b1_y1 = pred[:, 0], pred[:, 1]
+    b1_x2, b1_y2 = pred[:, 2], pred[:, 3]
+    b2_x1, b2_y1 = target[:, 0], target[:, 1]
+    b2_x2, b2_y2 = target[:, 2], target[:, 3]
+
     # overlap
-    lt = torch.max(pred[:, :2], target[:, :2])
-    rb = torch.min(pred[:, 2:], target[:, 2:])
-    wh = (rb - lt).clamp(min=0)
-    overlap = wh[:, 0] * wh[:, 1]
+    overlap = (torch.min(b1_x2, b2_x2) - torch.max(b1_x1, b2_x1)).clamp(0) *\
+              (torch.min(b1_y2, b2_y2) - torch.max(b1_y1, b2_y1)).clamp(0)
 
     # union
-    ap = (pred[:, 2] - pred[:, 0]) * (pred[:, 3] - pred[:, 1])
-    ag = (target[:, 2] - target[:, 0]) * (target[:, 3] - target[:, 1])
-    union = ap + ag - overlap + eps
+
+    w1, h1 = b1_x2 - b1_x1, b1_y2 - b1_y1 + eps
+    w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1 + eps
+    union = w1 * h1 + w2 * h2 - overlap + eps
 
     # change conventional iou to alpha pow
-    ious = torch.pow(overlap / union, alpha)
+    ious = torch.pow(overlap / union + eps, alpha)
 
     # calculate alpha-iou according mode
     if mode == 'iou':
-        loss = 1 - ious
+        loss = 1 - torch.log(ious + eps)
         return loss
 
     # enclose area
@@ -273,16 +276,11 @@ def alphaiou_loss(pred, target, alpha=3, eps=1e-7, mode='iou'):
 
     if mode == 'giou':
         c_area = torch.max(cw * ch + eps, union)
-        gious = ious - torch.pow((c_area - union) / c_area, alpha)
+        gious = ious - torch.pow((c_area - union) / c_area + eps, alpha)
         loss = 1 - gious
         return loss
 
     c2 = (cw**2 + ch**2)**alpha + eps
-
-    b1_x1, b1_y1 = pred[:, 0], pred[:, 1]
-    b1_x2, b1_y2 = pred[:, 2], pred[:, 3]
-    b2_x1, b2_y1 = target[:, 0], target[:, 1]
-    b2_x2, b2_y2 = target[:, 2], target[:, 3]
 
     left = ((b2_x1 + b2_x2) - (b1_x1 + b1_x2))**2 / 4
     right = ((b2_y1 + b2_y2) - (b1_y1 + b1_y2))**2 / 4
