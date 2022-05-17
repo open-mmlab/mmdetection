@@ -76,7 +76,8 @@ class ResultVisualizer:
         overlay_gt_pred (bool): Whether to plot gts and predictions on the
             same image. If False, predictions and gts will be plotted on two
             same image which will be concatenated in vertical direction.
-            Default: False.
+            The image above is drawn with gt, and the image below is drawn
+            with the prediction result. Default: False.
     """
 
     def __init__(self,
@@ -308,7 +309,9 @@ def parse_args():
         action='store_true',
         help='whether to plot gts and predictions on the same image.'
         'If False, predictions and gts will be plotted on two same'
-        'image which will be concatenated in vertical direction.')
+        'image which will be concatenated in vertical direction.'
+        'The image above is drawn with gt, and the image below is'
+        'drawn with the prediction result.')
     parser.add_argument(
         '--cfg-options',
         nargs='+',
