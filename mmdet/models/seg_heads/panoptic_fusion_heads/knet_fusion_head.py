@@ -35,15 +35,15 @@ class KNetFusionHead(BasePanopticFusionHead):
 
         Args:
             mask_cls (Tensor): Classfication outputs of shape
-                (num_queries, cls_out_channels) for a image.
+                (num_proposal, cls_out_channels) for a image.
                 Note `cls_out_channels` should includes
                 background.
             mask_pred (Tensor): Mask outputs of shape
-                (num_queries, h, w) for a image.
+                (num_queries, H, W) for a image.
 
         Returns:
             np.array: Panoptic segment result of shape \
-                (h, w), each element in Tensor means: \
+                (H, W), each element in Tensor means: \
                 ``segment_id = _cls + instance_id * INSTANCE_OFFSET``.
         """
         
@@ -120,11 +120,11 @@ class KNetFusionHead(BasePanopticFusionHead):
 
         Args:
             mask_cls (Tensor): Classfication outputs of shape
-                (num_queries, cls_out_channels) for a image.
+                (num_proposal, cls_out_channels) for a image.
                 Note `cls_out_channels` should includes
                 background.
             mask_pred (Tensor): Mask outputs of shape
-                (num_queries, h, w) for a image.
+                (num_proposal, h, w) for a image.
 
         Returns:
             Tensor: Semantic segment result of shape \
@@ -138,11 +138,9 @@ class KNetFusionHead(BasePanopticFusionHead):
 
         Args:
             mask_cls (Tensor): Classfication outputs of shape
-                (num_queries, cls_out_channels) for a image.
-                Note `cls_out_channels` should includes
-                background.
+                (num_proposal, cls_out_channels) for a image.
             mask_pred (Tensor): Mask outputs of shape
-                (num_queries, h, w) for a image.
+                (num_proposal, H, W) for a image.
 
         Returns:
             tuple[Tensor]: Instance segmentation results.
@@ -152,13 +150,9 @@ class KNetFusionHead(BasePanopticFusionHead):
             - bboxes (Tensor): Bboxes and scores with shape (n, 5) of \
                 positive region in binary mask, the last column is scores.
             - mask_pred_binary (Tensor): Instance masks of \
-                shape (n, h, w).
+                shape (n, H, W).
         """
         max_per_image = self.test_cfg.get('max_per_image', 100)
-        num_queries = mask_cls.shape[0]
-        # shape (num_queries, num_class)
-        # scores = F.softmax(mask_cls, dim=-1)[:, :-1] # cls_score_per_img
-        # shape (num_queries * num_class, )
         scores_per_image, top_indices = mask_cls.flatten(0, 1).topk(
             max_per_image, sorted=True)
         mask_indices = top_indices // self.num_classes 
@@ -172,15 +166,43 @@ class KNetFusionHead(BasePanopticFusionHead):
 
     def get_seg_masks(self, masks_per_img, labels_per_img, scores_per_img,
                       mask_thr,img_meta):
+        """Get predict segmentation result
+        Args:
+            masks_per_img (Tensor): Mask classification logits,
+                shape (num_proposal, H, W).
+            labels_per_img (Tensor): Mask logits, shape
+                (num_proposal,).
+            scores_per_img (Tensor): Classfication scores.
+            mask_thr (float): Threshold of predict score.
+            img_meta (dict): Information if image.
+        Returns:
+            bbox_result (list[numpy.array]): Predict bboxes,
+                each with shape (predict_instance, 5).
+            segm_result (list(tensor)): Predict instance mask,
+                each with shape (H,W).         
+        """
         # resize mask predictions back
         seg_masks = self.rescale_masks(masks_per_img, img_meta)
-        seg_masks = masks_per_img
+        # seg_masks = masks_per_img
         seg_masks = seg_masks > mask_thr
         bbox_result, segm_result = self.segm2result(seg_masks, labels_per_img,
                                                     scores_per_img)
         return bbox_result, segm_result
 
     def segm2result(self, mask_preds, det_labels, cls_scores):
+        """Get predict result
+        Args:
+            mask_preds (Tensor): Mask classification logits,
+                shape (num_proposal, H, W).
+            det_labels (Tensor): Mask logits, shape
+                (num_proposal,).
+            cls_scores (Tensor): Classfication scores.
+        Returns:
+            bbox_result (list[numpy.array]): Predict bboxes,
+                each with shape (predict_instance, 5).
+            segm_result (list(tensor)): Predict instance mask,
+                each with shape (H,W).         
+        """
         num_classes = self.num_classes
         bbox_result = None
         segm_result = [[] for _ in range(num_classes)]
@@ -211,7 +233,7 @@ class KNetFusionHead(BasePanopticFusionHead):
                 shape (batch_size, num_queries, cls_out_channels).
                 Note `cls_out_channels` should includes background.
             mask_pred_results (Tensor): Mask logits, shape
-                (batch_size, num_queries, h, w).
+                (batch_size, num_queries, H, W).
             img_metas (list[dict]): List of image information.
             rescale (bool, optional): If True, return boxes in
                 original image space. Default False.
@@ -225,7 +247,7 @@ class KNetFusionHead(BasePanopticFusionHead):
 
                 [
                     {
-                        'pan_results': np.array, # shape = [h, w]
+                        'pan_results': np.array, # shape = [H, W]
                         'ins_results': tuple[Tensor],
                         # semantic segmentation results are not supported yet
                         'sem_results': Tensor
@@ -243,22 +265,6 @@ class KNetFusionHead(BasePanopticFusionHead):
         
         for mask_cls_result, mask_pred_result, meta in zip(
                 mask_cls_results, mask_pred_results, img_metas):
-            # remove padding
-            # img_height, img_width = meta['img_shape'][:2]
-            # mask_pred_result = F.interpolate(
-            #     mask_pred_result.unsqueeze(0).sigmoid(),
-            #     size=meta['batch_input_shape'],
-            #     mode='bilinear',
-            #     align_corners=False)
-            # mask_pred_result = mask_pred_result[:, :img_height, :img_width]
-
-            # if self.rescale:
-            #     ori_height, ori_width = meta['ori_shape'][:2]
-            #     mask_pred_result = F.interpolate(
-            #         mask_pred_result,
-            #         size=(ori_height, ori_width),
-            #         mode='bilinear',
-            #         align_corners=False)[0]
             result = dict()
             if panoptic_on:
                 pan_results = self.panoptic_postprocess(
@@ -268,7 +274,7 @@ class KNetFusionHead(BasePanopticFusionHead):
             if instance_on:
                 ins_results = self.instance_postprocess(
                     mask_cls_result, mask_pred_result,meta)
-                result = ins_results
+                result = ins_results   # TODO: there should be change
 
             if semantic_on:
                 sem_results = self.semantic_postprocess(
@@ -280,6 +286,15 @@ class KNetFusionHead(BasePanopticFusionHead):
         return results
 
     def rescale_masks(self, masks_per_img, img_meta):
+        """rescale mask size for input shape
+        Args:
+            masks_per_img (Tensor): Predict mask with shape
+                (num_proposal, down_sampled_H, down_sampled_W).
+            img_meta (dict): List of image information.
+        Return:
+            seg_masks: resized mask with shape
+                (num_proposal, H, W).
+        """
         h, w, _ = img_meta['img_shape']
         masks_per_img = F.interpolate(
             masks_per_img.unsqueeze(0).sigmoid(),
