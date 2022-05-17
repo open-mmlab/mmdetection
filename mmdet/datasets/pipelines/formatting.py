@@ -104,8 +104,7 @@ class PackDetInputs(BaseTransform):
         data_sample.ignored_instances = ignore_instance_data
 
         if 'proposals' in results:
-            data_sample.proposals = InstanceData('bboxes',
-                                                 results['proposals'])
+            data_sample.proposals = InstanceData(bboxes=results['proposals'])
 
         if 'gt_seg_map' in results:
             gt_sem_seg_data = dict(sem_seg=results['gt_seg_map'][None, ...])

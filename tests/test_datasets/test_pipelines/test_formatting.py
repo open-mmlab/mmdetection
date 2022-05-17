@@ -37,7 +37,8 @@ class TestPackDetInputs(unittest.TestCase):
             'gt_masks':
             BitmapMasks(rng.rand(3, 300, 400), height=300, width=400),
             'gt_bboxes_labels': rng.rand(3, ),
-            'gt_ignore_flags': np.array([0, 0, 1], dtype=np.bool)
+            'gt_ignore_flags': np.array([0, 0, 1], dtype=np.bool),
+            'proposals': rng.rand(2, 4)
         }
         self.results2 = {
             'img_id': 1,
@@ -52,7 +53,8 @@ class TestPackDetInputs(unittest.TestCase):
             'gt_seg_map': rng.rand(300, 400),
             'gt_masks':
             BitmapMasks(rng.rand(3, 300, 400), height=300, width=400),
-            'gt_bboxes_labels': rng.rand(3, )
+            'gt_bboxes_labels': rng.rand(3, ),
+            'proposals': rng.rand(2, 4)
         }
         self.meta_keys = ('img_id', 'img_path', 'ori_shape', 'scale_factor',
                           'flip')
@@ -69,6 +71,10 @@ class TestPackDetInputs(unittest.TestCase):
         self.assertEqual(len(results['data_sample'].gt_instances), 2)
         self.assertEqual(len(results['data_sample'].ignored_instances), 1)
         self.assertIsInstance(results['data_sample'].gt_sem_seg, PixelData)
+        self.assertIsInstance(results['data_sample'].proposals, InstanceData)
+        self.assertEqual(len(results['data_sample'].proposals), 2)
+        self.assertIsInstance(results['data_sample'].proposals.bboxes,
+                              np.ndarray)
 
     def test_transform_without_ignore(self):
         transform = PackDetInputs(meta_keys=self.meta_keys)
@@ -82,6 +88,10 @@ class TestPackDetInputs(unittest.TestCase):
         self.assertEqual(len(results['data_sample'].gt_instances), 3)
         self.assertEqual(len(results['data_sample'].ignored_instances), 0)
         self.assertIsInstance(results['data_sample'].gt_sem_seg, PixelData)
+        self.assertIsInstance(results['data_sample'].proposals, InstanceData)
+        self.assertEqual(len(results['data_sample'].proposals), 2)
+        self.assertIsInstance(results['data_sample'].proposals.bboxes,
+                              np.ndarray)
 
     def test_repr(self):
         transform = PackDetInputs(meta_keys=self.meta_keys)
