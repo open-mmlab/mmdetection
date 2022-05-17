@@ -263,7 +263,6 @@ class KernelUpdateHead(BaseModule):
 
     @force_fp32(apply_to=('cls_score', 'mask_pred'))
     def loss(self,
-             object_feats,
              cls_score,
              mask_pred,
              labels,
@@ -273,7 +272,24 @@ class KernelUpdateHead(BaseModule):
              imgs_whwh=None,
              reduction_override=None,
              **kwargs):
+        """Loss function.
+        Args:
+            cls_score (Tensor): Classification scores for all decoder
+                layers with shape (batch_size, num_proposal,
+                cls_out_channels). Note `cls_out_channels` should includes
+                background.
+            mask_pred (Tensor): Mask scores for all decoder layers with
+                shape (batch_size, num_proposal, h, w).
+            labels (Tensor): Ground truth class indices for each
+                image with shape (n, ). n is the sum of number of stuff type
+                and number of instance in a image.
+            mask_targets (Tensor): Ground truth mask for each image with
+                shape (n, h, w).
+            img_metas (list[dict]): List of image meta information.
 
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
         losses = dict()
         bg_class_ind = self.num_classes
         # note in spare rcnn num_gt == num_pos
@@ -336,7 +352,29 @@ class KernelUpdateHead(BaseModule):
     def _get_target_single(self, pos_inds, neg_inds, pos_mask, neg_mask,
                            pos_gt_mask, pos_gt_labels, gt_sem_seg, gt_sem_cls,
                            cfg):
-
+        """
+        Get label of each prediction.
+        Args:
+            tuple[Tensor]: a tuple containing the following for one image.
+                - pos_inds (Tensor): Sampled positive indices for each image.
+                - neg_inds (Tensor): Sampled negative indices for each image.
+                - pos_mask (Tensor): Positive pridict masks of each image.
+                - neg_mask (Tensor): Negative pridict mask.
+                - pos_gt_mask (Tensor): Gt mask of each pridict positive mask.
+                - pos_gt_labels (Tensor): Gt labels of each pridict positive label.
+                - gt_sem_seg (Tensor): Gt mask of segmentation.
+                - gt_sem_cls (Tensor): Gt label of segmentation.
+        Returns:
+            tuple[list[Tensor]]: a tuple containing the following targets.
+                - labels_list (list[Tensor]): Labels of all images.\
+                    Each with shape (num_queries, ).
+                - label_weights_list (list[Tensor]): Label weights\
+                    of all images. Each with shape (num_queries, ).
+                - mask_targets_list (list[Tensor]): Mask targets of\
+                    all images. Each with shape (num_queries, h, w).
+                - mask_weights_list (list[Tensor]): Mask weights of\
+                    all images. Each with shape (num_queries, ).
+        """
         num_pos = pos_mask.size(0)
         num_neg = neg_mask.size(0)
         num_samples = num_pos + num_neg
@@ -396,7 +434,30 @@ class KernelUpdateHead(BaseModule):
                     concat=True,
                     gt_sem_seg=None,
                     gt_sem_cls=None):
+        """Compute classification and mask targets for all images.
 
+        Args:
+            sampling_results (List(Assigner)): Assignmer of each gt.
+            mask_preds (Tensor): Mask logits from a single decoder
+                layer for all images. Each with shape (num_queries, h, w).
+            gt_labels (Tensor): Ground truth class indices for all
+                images. Each with shape (n, ), n is the sum of number of stuff
+                type and number of instance in a image.
+            gt_masks (Tensor): Ground truth mask for each image,
+                each with shape (n, h, w).
+            img_metas (dict): List of image meta information.
+
+        Returns:
+            tuple[list[Tensor]]: a tuple containing the following targets.
+                - labels_list (list[Tensor]): Labels of all images.\
+                    Each with shape (num_queries, ).
+                - label_weights_list (list[Tensor]): Label weights\
+                    of all images. Each with shape (num_queries, ).
+                - mask_targets_list (list[Tensor]): Mask targets of\
+                    all images. Each with shape (num_queries, h, w).
+                - mask_weights_list (list[Tensor]): Mask weights of\
+                    all images. Each with shape (num_queries, ).
+        """
         pos_inds_list = [res.pos_inds for res in sampling_results]
         neg_inds_list = [res.neg_inds for res in sampling_results]
         pos_mask_list = [res.pos_masks for res in sampling_results]
@@ -633,18 +694,11 @@ class KernelIterHead(BaseRoIHead):
 
         """
         num_imgs = len(img_metas)
-        # if self.mask_head[0].mask_upsample_stride > 1: # True
         prev_mask_preds = F.interpolate(
             mask_preds.detach(),
             scale_factor=self.mask_head[0].mask_upsample_stride, # equal to 2
             mode='bilinear',
             align_corners=False)
-        # else:
-        #     prev_mask_preds = mask_preds.detach()
-
-        # if cls_score is not None:
-        #     prev_cls_score = cls_score.detach()
-        # else:
         prev_cls_score = [None] * num_imgs
 
         object_feats = proposal_feats
@@ -685,7 +739,6 @@ class KernelIterHead(BaseRoIHead):
                 gt_sem_cls=gt_sem_cls)
 
             single_stage_loss = self.mask_head[stage].loss(
-                object_feats,
                 cls_score,
                 scaled_mask_preds,
                 *mask_targets,
@@ -704,13 +757,30 @@ class KernelIterHead(BaseRoIHead):
                     proposal_feats,
                     mask_preds,
                     cls_score,
-                    img_metas,
-                    rescale=False):
+                    img_metas):
+        """Forward function.
 
+        Args:
+            x (Tensor): Features from the upstream network, with
+                shape (batch_size, num_proposal, H/8, W/8)
+            proposal_feats (Tensor): Kernel weight, \
+                with shape(N,num_proposal+stuff,C,K,K)
+            mask_preds (Tensor): predict mask,\
+                with shape (N, num_proposal+stuff, C, H/8, W/8)
+            cls_score (NoneType)
+            img_metas (list[dict]): List of image information.
+
+        Returns:
+            tuple: a tuple contains two elements.
+                - all_cls_scores (Tensor): Classification scores for each\
+                    scale level. Each is a 4D-tensor with shape\
+                    (num_decoder, batch_size, num_proposal, cls_out_channels).\
+                    Note `cls_out_channels` should includes background.
+                - all_mask_preds (Tensor): Mask scores for each decoder\
+                    layer. Each with shape (num_decoder, batch_size,\
+                    num_proposal, h, w).
+        """
         # Decode initial proposals
-        num_imgs = len(img_metas)
-        # num_proposals = proposal_feats.size(1)
-
         object_feats = proposal_feats
         for stage in range(self.num_stages):
             mask_results = self._mask_forward(stage, x, object_feats,
@@ -745,60 +815,3 @@ class KernelIterHead(BaseRoIHead):
                                               mask_preds)
             all_stage_mask_results.append(mask_results)
         return all_stage_mask_results
-
-    def get_panoptic(self, cls_scores, mask_preds, test_cfg, img_meta):
-        # resize mask predictions back cls_scores shape: (num_proposal + num_stuff_classes,num_classes)
-        scores = cls_scores[:self.num_proposals][:, :self.num_thing_classes] # (num_proposal, num_things_classes)
-        thing_scores, thing_labels = scores.max(dim=1)
-        stuff_scores = cls_scores[
-            self.num_proposals:][:, self.num_thing_classes:].diag() # (num_stuff_classes)
-        stuff_labels = torch.arange(
-            0, self.num_stuff_classes) + self.num_thing_classes
-        stuff_labels = stuff_labels.to(thing_labels.device)
-
-        total_masks = self.mask_head[-1].rescale_masks(mask_preds, img_meta)
-        total_scores = torch.cat([thing_scores, stuff_scores], dim=0) # (num_proposal + num_stuff,)
-        total_labels = torch.cat([thing_labels, stuff_labels], dim=0) # (num_proposal + num_stuff,)
-
-        panoptic_result = self.merge_stuff_thing(total_masks, total_labels,
-                                                 total_scores,
-                                                 test_cfg.merge_stuff_thing)
-        return dict(pan_results=panoptic_result)
-
-    def merge_stuff_thing(self,
-                          total_masks,
-                          total_labels,
-                          total_scores,
-                          merge_cfg=None):
-
-        H, W = total_masks.shape[-2:]
-        panoptic_seg = total_masks.new_full((H, W),
-                                            self.num_classes,
-                                            dtype=torch.long)
-
-        cur_prob_masks = total_scores.view(-1, 1, 1) * total_masks # (num_proposal+num_stuff,h,w)
-        cur_mask_ids = cur_prob_masks.argmax(0) #(h,w)
-
-        # sort instance outputs by scores
-        sorted_inds = torch.argsort(-total_scores) # (num_proposal+num_stuff)
-        current_segment_id = 0
-
-        for k in sorted_inds:
-            pred_class = total_labels[k].item()
-            isthing = pred_class < self.num_thing_classes
-            if isthing and total_scores[k] < merge_cfg.instance_score_thr:
-                continue
-
-            mask = cur_mask_ids == k
-            mask_area = mask.sum().item()
-            original_area = (total_masks[k] >= 0.5).sum().item()
-
-            if mask_area > 0 and original_area > 0:
-                if mask_area / original_area < merge_cfg.overlap_thr:
-                    continue
-
-                panoptic_seg[mask] = total_labels[k] \
-                    + current_segment_id * INSTANCE_OFFSET
-                current_segment_id += 1
-
-        return panoptic_seg.cpu().numpy() #(h,w)
