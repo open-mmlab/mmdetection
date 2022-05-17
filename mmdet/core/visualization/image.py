@@ -427,7 +427,8 @@ def imshow_gt_det_bboxes(img,
       out_file (str, optional): The filename to write the image.
           Default: None.
       overlay_gt_pred (bool): Whether to plot gts and predictions on the
-       same image. Default: True.
+       same image. If False, predictions and gts will be plotted on two same
+       image which will be concatenated in vertical direction. Default: True.
 
     Returns:
         ndarray: The image with bboxes or masks drawn on it.

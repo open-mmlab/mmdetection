@@ -73,8 +73,10 @@ class ResultVisualizer:
         wait_time (float): Value of waitKey param. Default: 0.
         score_thr (float): Minimum score of bboxes to be shown.
            Default: 0.
-        overlay_gt_pred (bool): Whether to plot gts and
-            predictions on the same image. Default: False.
+        overlay_gt_pred (bool): Whether to plot gts and predictions on the
+            same image. If False, predictions and gts will be plotted on two
+            same image which will be concatenated in vertical direction.
+            Default: False.
     """
 
     def __init__(self,
@@ -97,11 +99,12 @@ class ResultVisualizer:
 
         Args:
             dataset (Dataset): A PyTorch dataset.
-            results (list): Results from test results pkl file.
+            results (list): Object detection or panoptic segmentation
+                results from test results pkl file.
             performances (dict): A dict contains samples's indices
                 in dataset and model's performance on them.
             out_dir (str, optional): The filename to write the image.
-                Defaults to None.
+                Defaults: None.
         """
         mmcv.mkdir_or_exist(out_dir)
 
@@ -303,8 +306,9 @@ def parse_args():
     parser.add_argument(
         '--overlay-gt-pred',
         action='store_true',
-        help='whether to plot gts and predictions'
-        ' on the same image')
+        help='whether to plot gts and predictions on the same image.'
+        'If False, predictions and gts will be plotted on two same'
+        'image which will be concatenated in vertical direction.')
     parser.add_argument(
         '--cfg-options',
         nargs='+',
