@@ -72,15 +72,15 @@ class KNetFusionHead(BasePanopticFusionHead):
 
         Args:
             total_masks (Tensor): Predict mask of each proposal.
-                (num_queries, h, w) for a image
+                (num_proposal, H, W) for a image
             total_labels (Tensor): Predict labels of each proposal.
-                (num_queries,) for a image.
+                (num_proposal,) for a image.
             total_scores (Tensor): Predict scores of each proposal.
-                (num_queries, )
+                (num_proposal, )
 
         Returns:
             np.array: Panoptic segment result of shape \
-                (h, w), each element in Tensor means: \
+                (H, W), each element in Tensor means: \
                 ``segment_id = _cls + instance_id * INSTANCE_OFFSET``.
         """
         H, W = total_masks.shape[-2:]
@@ -124,11 +124,11 @@ class KNetFusionHead(BasePanopticFusionHead):
                 Note `cls_out_channels` should includes
                 background.
             mask_pred (Tensor): Mask outputs of shape
-                (num_proposal, h, w) for a image.
+                (num_proposal, H, W) for a image.
 
         Returns:
             Tensor: Semantic segment result of shape \
-                (cls_out_channels, h, w).
+                (cls_out_channels, H, W).
         """
         # TODO add semantic segmentation result
         raise NotImplementedError
@@ -146,11 +146,11 @@ class KNetFusionHead(BasePanopticFusionHead):
             tuple[Tensor]: Instance segmentation results.
 
             - labels_per_image (Tensor): Predicted labels,\
-                shape (n, ).
+                shape (N, ).
             - bboxes (Tensor): Bboxes and scores with shape (n, 5) of \
                 positive region in binary mask, the last column is scores.
             - mask_pred_binary (Tensor): Instance masks of \
-                shape (n, H, W).
+                shape (N, H, W).
         """
         max_per_image = self.test_cfg.get('max_per_image', 100)
         scores_per_image, top_indices = mask_cls.flatten(0, 1).topk(
