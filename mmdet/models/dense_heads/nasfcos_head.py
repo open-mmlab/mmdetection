@@ -15,7 +15,32 @@ class NASFCOSHead(FCOSHead):
     It is quite similar with FCOS head, except for the searched structure of
     classification branch and bbox regression branch, where a structure of
     "dconv3x3, conv3x3, dconv3x3, conv1x1" is utilized instead.
-    """
+
+    Args:
+        num_classes (int): Number of categories excluding the background
+            category.
+        in_channels (int): Number of channels in the input feature map.
+        strides (list[int] | list[tuple[int, int]]): Strides of points
+            in multiple feature levels. Default: (4, 8, 16, 32, 64).
+        regress_ranges (tuple[tuple[int, int]]): Regress range of multiple
+            level points.
+        center_sampling (bool): If true, use center sampling. Default: False.
+        center_sample_radius (float): Radius of center sampling. Default: 1.5.
+        norm_on_bbox (bool): If true, normalize the regression targets
+            with FPN strides. Default: False.
+        centerness_on_reg (bool): If true, position centerness on the
+            regress branch. Please refer to https://github.com/tianzhi0549/FCOS/issues/89#issuecomment-516877042.
+            Default: False.
+        conv_bias (bool | str): If specified as `auto`, it will be decided by the
+            norm_cfg. Bias of conv will be set as True if `norm_cfg` is None, otherwise
+            False. Default: "auto".
+        loss_cls (dict): Config of classification loss.
+        loss_bbox (dict): Config of localization loss.
+        loss_centerness (dict): Config of centerness loss.
+        norm_cfg (dict): dictionary to construct and config norm layer.
+            Default: norm_cfg=dict(type='GN', num_groups=32, requires_grad=True).
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+    """  # noqa: E501
 
     def __init__(self, *args, init_cfg=None, **kwargs):
         if init_cfg is None:
