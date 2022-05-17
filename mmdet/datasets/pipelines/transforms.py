@@ -2,13 +2,16 @@
 import copy
 import inspect
 import math
+from typing import Sequence, Tuple, Union
 
 import cv2
 import mmcv
 import numpy as np
 from mmcv.image.geometric import _scale_size
+from mmcv.transforms import BaseTransform
 from mmcv.transforms import RandomFlip as MMCV_RandomFlip
 from mmcv.transforms import Resize as MMCV_Resize
+from mmcv.transforms.utils import cache_randomness
 from numpy import random
 
 from mmdet.core import BitmapMasks, PolygonMasks, find_inside_bboxes
@@ -28,6 +31,8 @@ except ImportError:
     albumentations = None
     Compose = None
 
+Number = Union[int, float]
+
 
 @TRANSFORMS.register_module()
 class Resize(MMCV_Resize):
@@ -42,18 +47,18 @@ class Resize(MMCV_Resize):
     Required Keys:
 
     - img
-    - gt_bboxes (optional)
-    - gt_masks (optional)
-    - gt_seg_map (optional)
+    - gt_bboxes (np.float32) (optional)
+    - gt_masks (BitmapMasks | PolygonMasks) (optional)
+    - gt_seg_map (np.uint8) (optional)
 
     Modified Keys:
 
     - img
+    - img_shape
     - gt_bboxes
     - gt_masks
     - gt_seg_map
-    - height
-    - width
+
 
     Added Keys:
 
@@ -80,7 +85,7 @@ class Resize(MMCV_Resize):
             to 'bilinear'.
     """
 
-    def _resize_masks(self, results):
+    def _resize_masks(self, results: dict) -> None:
         """Resize masks with ``results['scale']``"""
         if results.get('gt_masks', None) is not None:
             if self.keep_ratio:
@@ -142,7 +147,7 @@ class Resize(MMCV_Resize):
         self._resize_seg(results)
         return results
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         repr_str = self.__class__.__name__
         repr_str += f'(scale={self.scale}, '
         repr_str += f'scale_factor={self.scale_factor}, '
@@ -178,20 +183,25 @@ class RandomFlip(MMCV_RandomFlip):
 
 
     Required Keys:
-        - img
-        - gt_bboxes (optional)
-        - gt_masks (optional)
-        - gt_seg_map (optional)
+
+    - img
+    - gt_bboxes (np.float32) (optional)
+    - gt_masks (BitmapMasks | PolygonMasks) (optional)
+    - gt_seg_map (np.uint8) (optional)
 
     Modified Keys:
-        - img
-        - gt_bboxes (optional)
-        - gt_masks (optional)
-        - gt_seg_map (optional)
+
+    - img
+    - gt_bboxes
+    - gt_masks
+    - gt_seg_map
 
     Added Keys:
-        - flip
-        - flip_direction
+
+    - flip
+    - flip_direction
+
+
     Args:
          prob (float | list[float], optional): The flipping probability.
              Defaults to None.
@@ -586,7 +596,7 @@ class SegRescale:
 
 
 @TRANSFORMS.register_module()
-class PhotoMetricDistortion:
+class PhotoMetricDistortion(BaseTransform):
     """Apply photometric distortion to image sequentially, every transformation
     is applied with a probability of 0.5. The position of random contrast is in
     second or second to last.
@@ -600,25 +610,53 @@ class PhotoMetricDistortion:
     7. random contrast (mode 1)
     8. randomly swap channels
 
+    Required Keys:
+
+    - img
+
+    Modified Keys:
+
+    - img
+
     Args:
         brightness_delta (int): delta of brightness.
-        contrast_range (tuple): range of contrast.
-        saturation_range (tuple): range of saturation.
+        contrast_range (sequence): range of contrast.
+        saturation_range (sequence): range of saturation.
         hue_delta (int): delta of hue.
     """
 
     def __init__(self,
-                 brightness_delta=32,
-                 contrast_range=(0.5, 1.5),
-                 saturation_range=(0.5, 1.5),
-                 hue_delta=18):
+                 brightness_delta: int = 32,
+                 contrast_range: Sequence[Number] = (0.5, 1.5),
+                 saturation_range: Sequence[Number] = (0.5, 1.5),
+                 hue_delta: int = 18) -> None:
         self.brightness_delta = brightness_delta
         self.contrast_lower, self.contrast_upper = contrast_range
         self.saturation_lower, self.saturation_upper = saturation_range
         self.hue_delta = hue_delta
 
-    def __call__(self, results):
-        """Call function to perform photometric distortion on images.
+    @cache_randomness
+    def _random_flags(self) -> Sequence[Number]:
+        mode = random.randint(2)
+        brightness_flag = random.randint(2)
+        contrast_flag = random.randint(2)
+        saturation_flag = random.randint(2)
+        hue_flag = random.randint(2)
+        swap_flag = random.randint(2)
+        delta_value = random.uniform(-self.brightness_delta,
+                                     self.brightness_delta)
+        alpha_value = random.uniform(self.contrast_lower, self.contrast_upper)
+        saturation_value = random.uniform(self.saturation_lower,
+                                          self.saturation_upper)
+        hue_value = random.uniform(-self.hue_delta, self.hue_delta)
+        swap_value = random.permutation(3)
+
+        return (mode, brightness_flag, contrast_flag, saturation_flag,
+                hue_flag, swap_flag, delta_value, alpha_value,
+                saturation_value, hue_value, swap_value)
+
+    def transform(self, results: dict) -> dict:
+        """Transform function to perform photometric distortion on images.
 
         Args:
             results (dict): Result dict from loading pipeline.
@@ -626,38 +664,34 @@ class PhotoMetricDistortion:
         Returns:
             dict: Result dict with images distorted.
         """
-
-        if 'img_fields' in results:
-            assert results['img_fields'] == ['img'], \
-                'Only single img_fields is allowed'
+        assert 'img' in results, '`img` is not found in results'
         img = results['img']
         img = img.astype(np.float32)
+
+        (mode, brightness_flag, contrast_flag, saturation_flag, hue_flag,
+         swap_flag, delta_value, alpha_value, saturation_value, hue_value,
+         swap_value) = self._random_flags()
+
         # random brightness
-        if random.randint(2):
-            delta = random.uniform(-self.brightness_delta,
-                                   self.brightness_delta)
-            img += delta
+        if brightness_flag:
+            img += delta_value
 
         # mode == 0 --> do random contrast first
         # mode == 1 --> do random contrast last
-        mode = random.randint(2)
         if mode == 1:
-            if random.randint(2):
-                alpha = random.uniform(self.contrast_lower,
-                                       self.contrast_upper)
-                img *= alpha
+            if contrast_flag:
+                img *= alpha_value
 
         # convert color from BGR to HSV
         img = mmcv.bgr2hsv(img)
 
         # random saturation
-        if random.randint(2):
-            img[..., 1] *= random.uniform(self.saturation_lower,
-                                          self.saturation_upper)
+        if saturation_flag:
+            img[..., 1] *= saturation_value
 
         # random hue
-        if random.randint(2):
-            img[..., 0] += random.uniform(-self.hue_delta, self.hue_delta)
+        if hue_flag:
+            img[..., 0] += hue_value
             img[..., 0][img[..., 0] > 360] -= 360
             img[..., 0][img[..., 0] < 0] += 360
 
@@ -666,49 +700,65 @@ class PhotoMetricDistortion:
 
         # random contrast
         if mode == 0:
-            if random.randint(2):
-                alpha = random.uniform(self.contrast_lower,
-                                       self.contrast_upper)
-                img *= alpha
+            if contrast_flag:
+                img *= alpha_value
 
         # randomly swap channels
-        if random.randint(2):
-            img = img[..., random.permutation(3)]
+        if swap_flag:
+            img = img[..., swap_value]
 
         results['img'] = img
         return results
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         repr_str = self.__class__.__name__
-        repr_str += f'(\nbrightness_delta={self.brightness_delta},\n'
+        repr_str += f'(brightness_delta={self.brightness_delta}, '
         repr_str += 'contrast_range='
-        repr_str += f'{(self.contrast_lower, self.contrast_upper)},\n'
+        repr_str += f'{(self.contrast_lower, self.contrast_upper)}, '
         repr_str += 'saturation_range='
-        repr_str += f'{(self.saturation_lower, self.saturation_upper)},\n'
+        repr_str += f'{(self.saturation_lower, self.saturation_upper)}, '
         repr_str += f'hue_delta={self.hue_delta})'
         return repr_str
 
 
 @TRANSFORMS.register_module()
-class Expand:
-    """Random expand the image & bboxes.
+class Expand(BaseTransform):
+    """Random expand the image & bboxes & masks & segmentation map.
 
-    Randomly place the original image on a canvas of 'ratio' x original image
+    Randomly place the original image on a canvas of ``ratio`` x original image
     size filled with mean values. The ratio is in the range of ratio_range.
 
+    Required Keys:
+
+    - img
+    - img_shape
+    - gt_bboxes (np.float32) (optional)
+    - gt_masks (BitmapMasks | PolygonMasks) (optional)
+    - gt_seg_map (np.uint8) (optional)
+
+    Modified Keys:
+
+    - img
+    - img_shape
+    - gt_bboxes
+    - gt_masks
+    - gt_seg_map
+
+
     Args:
-        mean (tuple): mean value of dataset.
+        mean (sequence): mean value of dataset.
         to_rgb (bool): if need to convert the order of mean to align with RGB.
-        ratio_range (tuple): range of expand ratio.
+        ratio_range (sequence)): range of expand ratio.
+        seg_ignore_label (int): label of ignore segmentation map.
         prob (float): probability of applying this transformation
     """
 
     def __init__(self,
-                 mean=(0, 0, 0),
-                 to_rgb=True,
-                 ratio_range=(1, 4),
-                 seg_ignore_label=None,
-                 prob=0.5):
+                 mean: Sequence[Number] = (0, 0, 0),
+                 to_rgb: bool = True,
+                 ratio_range: Sequence[Number] = (1, 4),
+                 seg_ignore_label: int = None,
+                 prob: float = 0.5) -> None:
         self.to_rgb = to_rgb
         self.ratio_range = ratio_range
         if to_rgb:
@@ -719,26 +769,38 @@ class Expand:
         self.seg_ignore_label = seg_ignore_label
         self.prob = prob
 
-    def __call__(self, results):
-        """Call function to expand images, bounding boxes.
+    @cache_randomness
+    def _random_prob(self) -> float:
+        return random.uniform(0, 1)
+
+    @cache_randomness
+    def _random_ratio(self) -> float:
+        return random.uniform(self.min_ratio, self.max_ratio)
+
+    @cache_randomness
+    def _random_left_top(self, ratio: float, h: int,
+                         w: int) -> Tuple[int, int]:
+        left = int(random.uniform(0, w * ratio - w))
+        top = int(random.uniform(0, h * ratio - h))
+        return left, top
+
+    def transform(self, results: dict) -> dict:
+        """Transform function to expand images, bounding boxes, masks,
+        segmentation map.
 
         Args:
             results (dict): Result dict from loading pipeline.
 
         Returns:
-            dict: Result dict with images, bounding boxes expanded
+            dict: Result dict with images, bounding boxes, masks, segmentation
+                map expanded.
         """
-
-        if random.uniform(0, 1) > self.prob:
+        if self._random_prob() > self.prob:
             return results
-
-        if 'img_fields' in results:
-            assert results['img_fields'] == ['img'], \
-                'Only single img_fields is allowed'
+        assert 'img' in results, '`img` is not found in results'
         img = results['img']
-
         h, w, c = img.shape
-        ratio = random.uniform(self.min_ratio, self.max_ratio)
+        ratio = self._random_ratio()
         # speedup expand when meets large image
         if np.all(self.mean == self.mean[0]):
             expand_img = np.empty((int(h * ratio), int(w * ratio), c),
@@ -748,80 +810,96 @@ class Expand:
             expand_img = np.full((int(h * ratio), int(w * ratio), c),
                                  self.mean,
                                  dtype=img.dtype)
-        left = int(random.uniform(0, w * ratio - w))
-        top = int(random.uniform(0, h * ratio - h))
+        left, top = self._random_left_top(ratio, h, w)
         expand_img[top:top + h, left:left + w] = img
-
         results['img'] = expand_img
+        results['img_shape'] = expand_img.shape[:2]
+
         # expand bboxes
-        for key in results.get('bbox_fields', []):
-            results[key] = results[key] + np.tile(
-                (left, top), 2).astype(results[key].dtype)
+        if results.get('gt_bboxes', None) is not None:
+            results['gt_bboxes'] = results['gt_bboxes'] + np.tile(
+                (left, top), 2).astype(results['gt_bboxes'].dtype)
 
         # expand masks
-        for key in results.get('mask_fields', []):
-            results[key] = results[key].expand(
+        if results.get('gt_masks', None) is not None:
+            results['gt_masks'] = results['gt_masks'].expand(
                 int(h * ratio), int(w * ratio), top, left)
 
-        # expand segs
-        for key in results.get('seg_fields', []):
-            gt_seg = results[key]
+        # expand segmentation map
+        if results.get('gt_seg_map', None) is not None:
+            gt_seg = results['gt_seg_map']
             expand_gt_seg = np.full((int(h * ratio), int(w * ratio)),
                                     self.seg_ignore_label,
                                     dtype=gt_seg.dtype)
             expand_gt_seg[top:top + h, left:left + w] = gt_seg
-            results[key] = expand_gt_seg
+            results['gt_seg_map'] = expand_gt_seg
+
         return results
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         repr_str = self.__class__.__name__
         repr_str += f'(mean={self.mean}, to_rgb={self.to_rgb}, '
         repr_str += f'ratio_range={self.ratio_range}, '
-        repr_str += f'seg_ignore_label={self.seg_ignore_label})'
+        repr_str += f'seg_ignore_label={self.seg_ignore_label}, '
+        repr_str += f'prob={self.prob})'
         return repr_str
 
 
 @TRANSFORMS.register_module()
-class MinIoURandomCrop:
-    """Random crop the image & bboxes, the cropped patches have minimum IoU
-    requirement with original image & bboxes, the IoU threshold is randomly
-    selected from min_ious.
+class MinIoURandomCrop(BaseTransform):
+    """Random crop the image & bboxes & masks & segmentation map, the cropped
+    patches have minimum IoU requirement with original image & bboxes & masks.
+
+    & segmentation map, the IoU threshold is randomly selected from min_ious.
+
+
+    Required Keys:
+
+    - img
+    - img_shape
+    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes_labels (np.int32) (optional)
+    - gt_masks (BitmapMasks | PolygonMasks) (optional)
+    - gt_ignore_flags (np.bool) (optional)
+    - gt_seg_map (np.uint8) (optional)
+
+    Modified Keys:
+
+    - img
+    - img_shape
+    - gt_bboxes
+    - gt_bboxes_labels
+    - gt_masks
+    - gt_ignore_flags
+    - gt_seg_map
+
 
     Args:
-        min_ious (tuple): minimum IoU threshold for all intersections with
-        bounding boxes
+        min_ious (Sequence[float]): minimum IoU threshold for all intersections
+            with bounding boxes.
         min_crop_size (float): minimum crop's size (i.e. h,w := a*h, a*w,
         where a >= min_crop_size).
         bbox_clip_border (bool, optional): Whether clip the objects outside
             the border of the image. Defaults to True.
-
-    Note:
-        The keys for bboxes, labels and masks should be paired. That is, \
-        `gt_bboxes` corresponds to `gt_labels` and `gt_masks`, and \
-        `gt_bboxes_ignore` to `gt_labels_ignore` and `gt_masks_ignore`.
     """
 
     def __init__(self,
-                 min_ious=(0.1, 0.3, 0.5, 0.7, 0.9),
-                 min_crop_size=0.3,
-                 bbox_clip_border=True):
-        # 1: return ori img
+                 min_ious: Sequence[float] = (0.1, 0.3, 0.5, 0.7, 0.9),
+                 min_crop_size: float = 0.3,
+                 bbox_clip_border: bool = True) -> None:
+
         self.min_ious = min_ious
         self.sample_mode = (1, *min_ious, 0)
         self.min_crop_size = min_crop_size
         self.bbox_clip_border = bbox_clip_border
-        self.bbox2label = {
-            'gt_bboxes': 'gt_labels',
-            'gt_bboxes_ignore': 'gt_labels_ignore'
-        }
-        self.bbox2mask = {
-            'gt_bboxes': 'gt_masks',
-            'gt_bboxes_ignore': 'gt_masks_ignore'
-        }
 
-    def __call__(self, results):
-        """Call function to crop images and bounding boxes with minimum IoU
-        constraint.
+    @cache_randomness
+    def _random_mode(self) -> Number:
+        return random.choice(self.sample_mode)
+
+    def transform(self, results: dict) -> dict:
+        """Transform function to crop images and bounding boxes with minimum
+        IoU constraint.
 
         Args:
             results (dict): Result dict from loading pipeline.
@@ -830,22 +908,18 @@ class MinIoURandomCrop:
             dict: Result dict with images and bounding boxes cropped, \
                 'img_shape' key is updated.
         """
-
-        if 'img_fields' in results:
-            assert results['img_fields'] == ['img'], \
-                'Only single img_fields is allowed'
+        assert 'img' in results, '`img` is not found in results'
+        assert 'gt_bboxes' in results, '`gt_bboxes` is not found in results'
         img = results['img']
-        assert 'bbox_fields' in results
-        boxes = [results[key] for key in results['bbox_fields']]
-        boxes = np.concatenate(boxes, 0)
+        boxes = results['gt_bboxes']
         h, w, c = img.shape
         while True:
-            mode = random.choice(self.sample_mode)
+            mode = self._random_mode()
             self.mode = mode
             if mode == 1:
                 return results
 
-            min_iou = mode
+            min_iou = self.mode
             for i in range(50):
                 new_w = random.uniform(self.min_crop_size * w, w)
                 new_h = random.uniform(self.min_crop_size * h, h)
@@ -882,8 +956,8 @@ class MinIoURandomCrop:
                     mask = is_center_of_bboxes_in_patch(boxes, patch)
                     if not mask.any():
                         continue
-                    for key in results.get('bbox_fields', []):
-                        boxes = results[key].copy()
+                    if results.get('gt_bboxes', None) is not None:
+                        boxes = results['gt_bboxes'].copy()
                         mask = is_center_of_bboxes_in_patch(boxes, patch)
                         boxes = boxes[mask]
                         if self.bbox_clip_border:
@@ -891,29 +965,33 @@ class MinIoURandomCrop:
                             boxes[:, :2] = boxes[:, :2].clip(min=patch[:2])
                         boxes -= np.tile(patch[:2], 2)
 
-                        results[key] = boxes
+                        results['gt_bboxes'] = boxes
+
+                        # ignore_flags
+                        if results.get('gt_ignore_flags', None) is not None:
+                            results['gt_ignore_flags'] = \
+                                results['gt_ignore_flags'][mask]
+
                         # labels
-                        label_key = self.bbox2label.get(key)
-                        if label_key in results:
-                            results[label_key] = results[label_key][mask]
+                        if results.get('gt_labels', None) is not None:
+                            results['gt_labels'] = results['gt_labels'][mask]
 
                         # mask fields
-                        mask_key = self.bbox2mask.get(key)
-                        if mask_key in results:
-                            results[mask_key] = results[mask_key][
+                        if results.get('gt_masks', None) is not None:
+                            results['gt_masks'] = results['gt_masks'][
                                 mask.nonzero()[0]].crop(patch)
                 # adjust the img no matter whether the gt is empty before crop
                 img = img[patch[1]:patch[3], patch[0]:patch[2]]
                 results['img'] = img
-                results['img_shape'] = img.shape
+                results['img_shape'] = img.shape[:2]
 
                 # seg fields
-                for key in results.get('seg_fields', []):
-                    results[key] = results[key][patch[1]:patch[3],
-                                                patch[0]:patch[2]]
+                if results.get('gt_seg_map', None) is not None:
+                    results['gt_seg_map'] = results['gt_seg_map'][
+                        patch[1]:patch[3], patch[0]:patch[2]]
                 return results
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         repr_str = self.__class__.__name__
         repr_str += f'(min_ious={self.min_ious}, '
         repr_str += f'min_crop_size={self.min_crop_size}, '
