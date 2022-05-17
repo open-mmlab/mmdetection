@@ -368,16 +368,35 @@ class Normalize:
 
 
 @TRANSFORMS.register_module()
-class RandomCrop:
+class RandomCrop(BaseTransform):
     """Random crop the image & bboxes & masks.
 
-    The absolute `crop_size` is sampled based on `crop_type` and `image_size`,
-    then the cropped results are generated.
+    The absolute ``crop_size`` is sampled based on ``crop_type`` and
+    ``image_size``, then the cropped results are generated.
+
+    Required Keys:
+
+    - img
+    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes_labels (np.int64) (optional)
+    - gt_masks (BitmapMasks | PolygonMasks) (optional)
+    - gt_ignore_flags (np.bool) (optional)
+    - gt_seg_map (np.uint8) (optional)
+
+    Modified Keys:
+
+    - img
+    - img_shape
+    - gt_bboxes (optional)
+    - gt_bboxes_labels (optional)
+    - gt_masks (optional)
+    - gt_ignore_flags (optional)
+    - gt_seg_map (optional)
 
     Args:
         crop_size (tuple): The relative ratio or absolute pixels of
             height and width.
-        crop_type (str, optional): one of "relative_range", "relative",
+        crop_type (str, optional): One of "relative_range", "relative",
             "absolute", "absolute_range". "relative" randomly crops
             (h * crop_size[0], w * crop_size[1]) part from an input of size
             (h, w). "relative_range" uniformly samples relative crop size from
@@ -385,11 +404,12 @@ class RandomCrop:
             respectively. "absolute" crops from an input with absolute size
             (crop_size[0], crop_size[1]). "absolute_range" uniformly samples
             crop_h in range [crop_size[0], min(h, crop_size[1])] and crop_w
-            in range [crop_size[0], min(w, crop_size[1])]. Default "absolute".
+            in range [crop_size[0], min(w, crop_size[1])].
+            Defaults to "absolute".
         allow_negative_crop (bool, optional): Whether to allow a crop that does
-            not contain any bbox area. Default False.
+            not contain any bbox area. Defaults to False.
         recompute_bbox (bool, optional): Whether to re-compute the boxes based
-            on cropped instance masks. Default False.
+            on cropped instance masks. Defaults to False.
         bbox_clip_border (bool, optional): Whether clip the objects outside
             the border of the image. Defaults to True.
 
@@ -397,19 +417,19 @@ class RandomCrop:
         - If the image is smaller than the absolute crop size, return the
             original image.
         - The keys for bboxes, labels and masks must be aligned. That is,
-          `gt_bboxes` corresponds to `gt_labels` and `gt_masks`, and
-          `gt_bboxes_ignore` corresponds to `gt_labels_ignore` and
-          `gt_masks_ignore`.
+          ``gt_bboxes`` corresponds to ``gt_labels`` and ``gt_masks``, and
+          ``gt_bboxes_ignore`` corresponds to ``gt_labels_ignore`` and
+          ``gt_masks_ignore``.
         - If the crop does not contain any gt-bbox region and
-          `allow_negative_crop` is set to False, skip this image.
+          ``allow_negative_crop`` is set to False, skip this image.
     """
 
     def __init__(self,
-                 crop_size,
-                 crop_type='absolute',
-                 allow_negative_crop=False,
-                 recompute_bbox=False,
-                 bbox_clip_border=True):
+                 crop_size: tuple,
+                 crop_type: str = 'absolute',
+                 allow_negative_crop: bool = False,
+                 recompute_bbox: bool = False,
+                 bbox_clip_border: bool = True) -> None:
         if crop_type not in [
                 'relative_range', 'relative', 'absolute', 'absolute_range'
         ]:
@@ -418,6 +438,8 @@ class RandomCrop:
             assert crop_size[0] > 0 and crop_size[1] > 0
             assert isinstance(crop_size[0], int) and isinstance(
                 crop_size[1], int)
+            if crop_type == 'absolute_range':
+                assert crop_size[0] <= crop_size[1]
         else:
             assert 0 < crop_size[0] <= 1 and 0 < crop_size[1] <= 1
         self.crop_size = crop_size
@@ -425,52 +447,43 @@ class RandomCrop:
         self.allow_negative_crop = allow_negative_crop
         self.bbox_clip_border = bbox_clip_border
         self.recompute_bbox = recompute_bbox
-        # The key correspondence from bboxes to labels and masks.
-        self.bbox2label = {
-            'gt_bboxes': 'gt_labels',
-            'gt_bboxes_ignore': 'gt_labels_ignore'
-        }
-        self.bbox2mask = {
-            'gt_bboxes': 'gt_masks',
-            'gt_bboxes_ignore': 'gt_masks_ignore'
-        }
 
-    def _crop_data(self, results, crop_size, allow_negative_crop):
+    def _crop_data(self, results: dict, crop_size: Tuple[int, int],
+                   allow_negative_crop: bool) -> Union[dict, None]:
         """Function to randomly crop images, bounding boxes, masks, semantic
         segmentation maps.
 
         Args:
             results (dict): Result dict from loading pipeline.
-            crop_size (tuple): Expected absolute size after cropping, (h, w).
+            crop_size (Tuple[int, int]): Expected absolute size after
+                cropping, (h, w).
             allow_negative_crop (bool): Whether to allow a crop that does not
-                contain any bbox area. Default to False.
+                contain any bbox area.
 
         Returns:
-            dict: Randomly cropped results, 'img_shape' key in result dict is
-                updated according to crop size.
+            results (Union[dict, None]): Randomly cropped results, 'img_shape'
+                key in result dict is updated according to crop size. None will
+                be returned when there is no valid bbox after cropping.
         """
         assert crop_size[0] > 0 and crop_size[1] > 0
-        for key in results.get('img_fields', ['img']):
-            img = results[key]
-            margin_h = max(img.shape[0] - crop_size[0], 0)
-            margin_w = max(img.shape[1] - crop_size[1], 0)
-            offset_h = np.random.randint(0, margin_h + 1)
-            offset_w = np.random.randint(0, margin_w + 1)
-            crop_y1, crop_y2 = offset_h, offset_h + crop_size[0]
-            crop_x1, crop_x2 = offset_w, offset_w + crop_size[1]
+        img = results['img']
+        margin_h = max(img.shape[0] - crop_size[0], 0)
+        margin_w = max(img.shape[1] - crop_size[1], 0)
+        offset_h, offset_w = self._rand_offset((margin_h, margin_w))
+        crop_y1, crop_y2 = offset_h, offset_h + crop_size[0]
+        crop_x1, crop_x2 = offset_w, offset_w + crop_size[1]
 
-            # crop the image
-            img = img[crop_y1:crop_y2, crop_x1:crop_x2, ...]
-            img_shape = img.shape
-            results[key] = img
+        # crop the image
+        img = img[crop_y1:crop_y2, crop_x1:crop_x2, ...]
+        img_shape = img.shape
+        results['img'] = img
         results['img_shape'] = img_shape
 
         # crop bboxes accordingly and clip to the image boundary
-        for key in results.get('bbox_fields', []):
-            # e.g. gt_bboxes and gt_bboxes_ignore
+        if results.get('gt_bboxes', None) is not None:
             bbox_offset = np.array([offset_w, offset_h, offset_w, offset_h],
                                    dtype=np.float32)
-            bboxes = results[key] - bbox_offset
+            bboxes = results['gt_bboxes'] - bbox_offset
             if self.bbox_clip_border:
                 bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1])
                 bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0])
@@ -478,45 +491,65 @@ class RandomCrop:
                 bboxes[:, 3] > bboxes[:, 1])
             # If the crop does not contain any gt-bbox area and
             # allow_negative_crop is False, skip this image.
-            if (key == 'gt_bboxes' and not valid_inds.any()
-                    and not allow_negative_crop):
+            if (not valid_inds.any() and not allow_negative_crop):
                 return None
-            results[key] = bboxes[valid_inds, :]
-            # label fields. e.g. gt_labels and gt_labels_ignore
-            label_key = self.bbox2label.get(key)
-            if label_key in results:
-                results[label_key] = results[label_key][valid_inds]
 
-            # mask fields, e.g. gt_masks and gt_masks_ignore
-            mask_key = self.bbox2mask.get(key)
-            if mask_key in results:
-                results[mask_key] = results[mask_key][
+            results['gt_bboxes'] = bboxes[valid_inds, :]
+
+            if results.get('gt_ignore_flags', None) is not None:
+                results['gt_ignore_flags'] = \
+                    results['gt_ignore_flags'][valid_inds]
+
+            if results.get('gt_bboxes_labels', None) is not None:
+                results['gt_bboxes_labels'] = \
+                    results['gt_bboxes_labels'][valid_inds]
+
+            if results.get('gt_masks', None) is not None:
+                results['gt_masks'] = results['gt_masks'][
                     valid_inds.nonzero()[0]].crop(
                         np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
                 if self.recompute_bbox:
-                    results[key] = results[mask_key].get_bboxes()
+                    results['gt_bboxes'] = results['gt_masks'].get_bboxes()
 
         # crop semantic seg
-        for key in results.get('seg_fields', []):
-            results[key] = results[key][crop_y1:crop_y2, crop_x1:crop_x2]
+        if results.get('gt_seg_map', None) is not None:
+            results['gt_seg_map'] = results['gt_seg_map'][crop_y1:crop_y2,
+                                                          crop_x1:crop_x2]
 
         return results
 
-    def _get_crop_size(self, image_size):
+    @cache_randomness
+    def _rand_offset(self, margin: Tuple[int, int]) -> Tuple[int, int]:
+        """Randomly generate crop offset.
+
+        Args:
+            margin (Tuple[int, int]): The upper bound for the offset generated
+                randomly.
+
+        Returns:
+            Tuple[int, int]: The random offset for the crop.
+        """
+        margin_h, margin_w = margin
+        offset_h = np.random.randint(0, margin_h + 1)
+        offset_w = np.random.randint(0, margin_w + 1)
+
+        return (offset_h, offset_w)
+
+    @cache_randomness
+    def _get_crop_size(self, image_size: Tuple[int, int]) -> Tuple[int, int]:
         """Randomly generates the absolute crop size based on `crop_type` and
         `image_size`.
 
         Args:
-            image_size (tuple): (h, w).
+            image_size (Tuple[int, int]): (h, w).
 
         Returns:
-            crop_size (tuple): (crop_h, crop_w) in absolute pixels.
+            crop_size (Tuple[int, int]): (crop_h, crop_w) in absolute pixels.
         """
         h, w = image_size
         if self.crop_type == 'absolute':
             return (min(self.crop_size[0], h), min(self.crop_size[1], w))
         elif self.crop_type == 'absolute_range':
-            assert self.crop_size[0] <= self.crop_size[1]
             crop_h = np.random.randint(
                 min(h, self.crop_size[0]),
                 min(h, self.crop_size[1]) + 1)
@@ -527,53 +560,67 @@ class RandomCrop:
         elif self.crop_type == 'relative':
             crop_h, crop_w = self.crop_size
             return int(h * crop_h + 0.5), int(w * crop_w + 0.5)
-        elif self.crop_type == 'relative_range':
+        else:
+            # 'relative_range'
             crop_size = np.asarray(self.crop_size, dtype=np.float32)
             crop_h, crop_w = crop_size + np.random.rand(2) * (1 - crop_size)
             return int(h * crop_h + 0.5), int(w * crop_w + 0.5)
 
-    def __call__(self, results):
-        """Call function to randomly crop images, bounding boxes, masks,
+    def transform(self, results: dict) -> Union[dict, None]:
+        """Transform function to randomly crop images, bounding boxes, masks,
         semantic segmentation maps.
 
         Args:
             results (dict): Result dict from loading pipeline.
 
         Returns:
-            dict: Randomly cropped results, 'img_shape' key in result dict is
-                updated according to crop size.
+            results (Union[dict, None]): Randomly cropped results, 'img_shape'
+                key in result dict is updated according to crop size. None will
+                be returned when there is no valid bbox after cropping.
         """
         image_size = results['img'].shape[:2]
         crop_size = self._get_crop_size(image_size)
         results = self._crop_data(results, crop_size, self.allow_negative_crop)
         return results
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         repr_str = self.__class__.__name__
         repr_str += f'(crop_size={self.crop_size}, '
         repr_str += f'crop_type={self.crop_type}, '
         repr_str += f'allow_negative_crop={self.allow_negative_crop}, '
+        repr_str += f'recompute_bbox={self.recompute_bbox}, '
         repr_str += f'bbox_clip_border={self.bbox_clip_border})'
         return repr_str
 
 
 @TRANSFORMS.register_module()
-class SegRescale:
+class SegRescale(BaseTransform):
     """Rescale semantic segmentation maps.
 
+    This transform rescale the ``gt_seg_map`` according to ``scale_factor``.
+
+    Required Keys:
+
+    - gt_seg_map
+
+    Modified Keys:
+
+    - gt_seg_map
+
     Args:
-        scale_factor (float): The scale factor of the final output.
+        scale_factor (float): The scale factor of the final output. Defaults
+            to 1.
         backend (str): Image rescale backend, choices are 'cv2' and 'pillow'.
             These two backends generates slightly different results. Defaults
             to 'cv2'.
     """
 
-    def __init__(self, scale_factor=1, backend='cv2'):
+    def __init__(self, scale_factor: float = 1, backend: str = 'cv2') -> None:
         self.scale_factor = scale_factor
         self.backend = backend
 
-    def __call__(self, results):
-        """Call function to scale the semantic segmentation map.
+    def transform(self, results: dict) -> dict:
+        """Transform function to scale the semantic segmentation map.
 
         Args:
             results (dict): Result dict from loading pipeline.
@@ -581,18 +628,20 @@ class SegRescale:
         Returns:
             dict: Result dict with semantic segmentation map scaled.
         """
+        if self.scale_factor != 1:
+            results['gt_seg_map'] = mmcv.imrescale(
+                results['gt_seg_map'],
+                self.scale_factor,
+                interpolation='nearest',
+                backend=self.backend)
 
-        for key in results.get('seg_fields', []):
-            if self.scale_factor != 1:
-                results[key] = mmcv.imrescale(
-                    results[key],
-                    self.scale_factor,
-                    interpolation='nearest',
-                    backend=self.backend)
         return results
 
-    def __repr__(self):
-        return self.__class__.__name__ + f'(scale_factor={self.scale_factor})'
+    def __repr__(self) -> str:
+        repr_str = self.__class__.__name__
+        repr_str += f'(scale_factor={self.scale_factor}, '
+        repr_str += f'backend={self.backend})'
+        return repr_str
 
 
 @TRANSFORMS.register_module()
@@ -1892,40 +1941,40 @@ class Mosaic:
         if loc == 'top_left':
             # index0 to top left part of image
             x1, y1, x2, y2 = max(center_position_xy[0] - img_shape_wh[0], 0), \
-                             max(center_position_xy[1] - img_shape_wh[1], 0), \
-                             center_position_xy[0], \
-                             center_position_xy[1]
+                max(center_position_xy[1] - img_shape_wh[1], 0), \
+                center_position_xy[0], \
+                center_position_xy[1]
             crop_coord = img_shape_wh[0] - (x2 - x1), img_shape_wh[1] - (
                 y2 - y1), img_shape_wh[0], img_shape_wh[1]
 
         elif loc == 'top_right':
             # index1 to top right part of image
             x1, y1, x2, y2 = center_position_xy[0], \
-                             max(center_position_xy[1] - img_shape_wh[1], 0), \
-                             min(center_position_xy[0] + img_shape_wh[0],
-                                 self.img_scale[1] * 2), \
-                             center_position_xy[1]
+                max(center_position_xy[1] - img_shape_wh[1], 0), \
+                min(center_position_xy[0] + img_shape_wh[0],
+                    self.img_scale[1] * 2), \
+                center_position_xy[1]
             crop_coord = 0, img_shape_wh[1] - (y2 - y1), min(
                 img_shape_wh[0], x2 - x1), img_shape_wh[1]
 
         elif loc == 'bottom_left':
             # index2 to bottom left part of image
             x1, y1, x2, y2 = max(center_position_xy[0] - img_shape_wh[0], 0), \
-                             center_position_xy[1], \
-                             center_position_xy[0], \
-                             min(self.img_scale[0] * 2, center_position_xy[1] +
-                                 img_shape_wh[1])
+                center_position_xy[1], \
+                center_position_xy[0], \
+                min(self.img_scale[0] * 2, center_position_xy[1] +
+                    img_shape_wh[1])
             crop_coord = img_shape_wh[0] - (x2 - x1), 0, img_shape_wh[0], min(
                 y2 - y1, img_shape_wh[1])
 
         else:
             # index3 to bottom right part of image
             x1, y1, x2, y2 = center_position_xy[0], \
-                             center_position_xy[1], \
-                             min(center_position_xy[0] + img_shape_wh[0],
-                                 self.img_scale[1] * 2), \
-                             min(self.img_scale[0] * 2, center_position_xy[1] +
-                                 img_shape_wh[1])
+                center_position_xy[1], \
+                min(center_position_xy[0] + img_shape_wh[0],
+                    self.img_scale[1] * 2), \
+                min(self.img_scale[0] * 2, center_position_xy[1] +
+                    img_shape_wh[1])
             crop_coord = 0, 0, min(img_shape_wh[0],
                                    x2 - x1), min(y2 - y1, img_shape_wh[1])
 

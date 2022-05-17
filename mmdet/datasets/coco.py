@@ -135,8 +135,8 @@ class CocoDataset(BaseDataset):
             instance['bbox_label'] = self.cat2label[ann['category_id']]
             if ann.get('segmentation', None):
                 instance['mask'] = ann['segmentation']
-            if len(instance) > 0:
-                instances.append(instance)
+
+            instances.append(instance)
         data_info['instances'] = instances
         return data_info
 
