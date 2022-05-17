@@ -41,17 +41,7 @@ model = dict(
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
-    # training and testing settings
-    train_cfg=dict(
-        assigner=dict(
-            type='MaxIoUAssigner',
-            pos_iou_thr=0.5,
-            neg_iou_thr=0.4,
-            min_pos_iou=0,
-            ignore_iof_thr=-1),
-        allowed_border=-1,
-        pos_weight=-1,
-        debug=False),
+    # testing settings
     test_cfg=dict(
         nms_pre=1000,
         min_bbox_size=0,

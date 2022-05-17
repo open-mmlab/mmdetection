@@ -95,8 +95,8 @@ class FCOSHead(AnchorFreeHead):
         self.norm_on_bbox = norm_on_bbox
         self.centerness_on_reg = centerness_on_reg
         super().__init__(
-            num_classes,
-            in_channels,
+            num_classes=num_classes,
+            in_channels=in_channels,
             loss_cls=loss_cls,
             loss_bbox=loss_bbox,
             norm_cfg=norm_cfg,
@@ -170,10 +170,9 @@ class FCOSHead(AnchorFreeHead):
              cls_scores,
              bbox_preds,
              centernesses,
-             gt_bboxes,
-             gt_labels,
-             img_metas,
-             gt_bboxes_ignore=None):
+             batch_gt_instances,
+             batch_img_metas,
+             batch_gt_instances_ignore=None):
         """Compute loss of the head.
 
         Args:
@@ -185,13 +184,15 @@ class FCOSHead(AnchorFreeHead):
                 num_points * 4.
             centernesses (list[Tensor]): centerness for each scale level, each
                 is a 4D-tensor, the channel number is num_points * 1.
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box
-            img_metas (list[dict]): Meta information of each image, e.g.,
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance.  It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], Optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -202,8 +203,8 @@ class FCOSHead(AnchorFreeHead):
             featmap_sizes,
             dtype=bbox_preds[0].dtype,
             device=bbox_preds[0].device)
-        labels, bbox_targets = self.get_targets(all_level_points, gt_bboxes,
-                                                gt_labels)
+        labels, bbox_targets = self.get_targets(all_level_points,
+                                                batch_gt_instances)
 
         num_imgs = cls_scores[0].size(0)
         # flatten cls_scores, bbox_preds and centerness
@@ -268,17 +269,16 @@ class FCOSHead(AnchorFreeHead):
             loss_bbox=loss_bbox,
             loss_centerness=loss_centerness)
 
-    def get_targets(self, points, gt_bboxes_list, gt_labels_list):
+    def get_targets(self, points, batch_gt_instances):
         """Compute regression, classification and centerness targets for points
         in multiple images.
 
         Args:
             points (list[Tensor]): Points of each fpn level, each has shape
                 (num_points, 2).
-            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image,
-                each has shape (num_gt, 4).
-            gt_labels_list (list[Tensor]): Ground truth labels of each box,
-                each has shape (num_gt,).
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance.  It usually includes ``bboxes`` and ``labels``
+                attributes.
 
         Returns:
             tuple:
@@ -303,8 +303,7 @@ class FCOSHead(AnchorFreeHead):
         # get labels and bbox_targets of each image
         labels_list, bbox_targets_list = multi_apply(
             self._get_target_single,
-            gt_bboxes_list,
-            gt_labels_list,
+            batch_gt_instances,
             points=concat_points,
             regress_ranges=concat_regress_ranges,
             num_points_per_lvl=num_points)
@@ -329,11 +328,14 @@ class FCOSHead(AnchorFreeHead):
             concat_lvl_bbox_targets.append(bbox_targets)
         return concat_lvl_labels, concat_lvl_bbox_targets
 
-    def _get_target_single(self, gt_bboxes, gt_labels, points, regress_ranges,
+    def _get_target_single(self, gt_instances, points, regress_ranges,
                            num_points_per_lvl):
         """Compute regression and classification targets for a single image."""
         num_points = points.size(0)
-        num_gts = gt_labels.size(0)
+        num_gts = len(gt_instances)
+        gt_bboxes = gt_instances.bboxes
+        gt_labels = gt_instances.labels
+
         if num_gts == 0:
             return gt_labels.new_full((num_points,), self.num_classes), \
                    gt_bboxes.new_zeros((num_points, 4))

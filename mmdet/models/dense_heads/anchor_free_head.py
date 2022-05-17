@@ -73,7 +73,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                          name='conv_cls',
                          std=0.01,
                          bias_prob=0.01))):
-        super(AnchorFreeHead, self).__init__(init_cfg)
+        super(AnchorFreeHead, self).__init__(init_cfg=init_cfg)
         self.num_classes = num_classes
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
         if self.use_sigmoid_cls:
@@ -241,10 +241,9 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
     def loss(self,
              cls_scores,
              bbox_preds,
-             gt_bboxes,
-             gt_labels,
-             img_metas,
-             gt_bboxes_ignore=None):
+             batch_gt_instances,
+             batch_img_metas,
+             batch_gt_instances_ignore=None):
         """Compute loss of the head.
 
         Args:
@@ -254,29 +253,30 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
                 level, each is a 4D-tensor, the channel number is
                 num_points * 4.
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box
-            img_metas (list[dict]): Meta information of each image, e.g.,
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance.  It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], Optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
         """
 
         raise NotImplementedError
 
     @abstractmethod
-    def get_targets(self, points, gt_bboxes_list, gt_labels_list):
+    def get_targets(self, points, batch_gt_instances):
         """Compute regression, classification and centerness targets for points
         in multiple images.
 
         Args:
             points (list[Tensor]): Points of each fpn level, each has shape
                 (num_points, 2).
-            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image,
-                each has shape (num_gt, 4).
-            gt_labels_list (list[Tensor]): Ground truth labels of each box,
-                each has shape (num_gt,).
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance.  It usually includes ``bboxes`` and ``labels``
+                attributes.
         """
         raise NotImplementedError
 
@@ -332,20 +332,21 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                                         dtype, device, flatten))
         return mlvl_points
 
-    def aug_test(self, feats, img_metas, rescale=False):
+    def aug_test(self, aug_batch_feats, aug_batch_img_metas, rescale=False):
         """Test function with test time augmentation.
 
         Args:
-            feats (list[Tensor]): the outer list indicates test-time
+            aug_batch_feats (list[Tensor]): the outer list indicates test-time
                 augmentations and inner Tensor should have a shape NxCxHxW,
                 which contains features for all images in the batch.
-            img_metas (list[list[dict]]): the outer list indicates test-time
-                augs (multiscale, flip, etc.) and the inner list indicates
-                images in a batch. each dict has image information.
+            aug_batch_img_metas (list[list[dict]]): the outer list indicates
+                test-time augs (multiscale, flip, etc.) and the inner list
+                indicates images in a batch. each dict has image information.
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
 
         Returns:
             list[ndarray]: bbox results of each class
         """
-        return self.aug_test_bboxes(feats, img_metas, rescale=rescale)
+        return self.aug_test_bboxes(
+            aug_batch_feats, aug_batch_img_metas, rescale=rescale)
