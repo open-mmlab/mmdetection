@@ -9,8 +9,8 @@ import numpy as np
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.core.mask import BitmapMasks
 from mmdet.datasets.pipelines import (Expand, MinIoURandomCrop,
-                                      PhotoMetricDistortion, RandomFlip,
-                                      Resize)
+                                      PhotoMetricDistortion, RandomCrop,
+                                      RandomFlip, Resize, SegRescale)
 from .utils import create_random_bboxes
 
 
@@ -32,6 +32,7 @@ class TestResize(unittest.TestCase):
         self.data_info2 = dict(
             img=np.random.random((300, 400, 3)),
             gt_bboxes=np.array([[200, 150, 600, 450]]))
+        self.data_info3 = dict(img=np.random.random((300, 400, 3)))
 
     def test_resize(self):
         # test keep_ratio is True
@@ -56,6 +57,11 @@ class TestResize(unittest.TestCase):
         self.assertTrue((results['gt_bboxes'] == np.array([100, 75, 300,
                                                            225])).all())
 
+        # test only with image
+        transform = Resize(scale=(200, 150), clip_object_border=False)
+        results = transform(self.data_info3)
+        self.assertTupleEqual(results['img'].shape[:2], (150, 200))
+
     def test_repr(self):
         transform = Resize(scale=(2000, 2000), keep_ratio=True)
         self.assertEqual(
@@ -74,7 +80,7 @@ class TestRandomFlip(unittest.TestCase):
         tearDown() -> cleanUp()
         """
         rng = np.random.RandomState(0)
-        self.results = {
+        self.results1 = {
             'img': np.random.random((224, 224, 3)),
             'gt_bboxes': np.array([[0, 1, 100, 101]]),
             'gt_masks':
@@ -82,12 +88,20 @@ class TestRandomFlip(unittest.TestCase):
             'gt_seg_map': np.random.random((224, 224))
         }
 
+        self.results2 = {'img': self.results1['img']}
+
     def test_transform(self):
+        # test with image, gt_bboxes, gt_masks, gt_seg_map
         transform = RandomFlip(1.0)
-        results_update = transform.transform(copy.deepcopy(self.results))
+        results_update = transform.transform(copy.deepcopy(self.results1))
         self.assertTrue(
             (results_update['gt_bboxes'] == np.array([[124, 1, 224,
                                                        101]])).all())
+        # test only with image
+        transform = RandomFlip(1.0)
+        results_update = transform.transform(copy.deepcopy(self.results2))
+        self.assertTrue(
+            (results_update['img'] == self.results2['img'][:, ::-1]).all())
 
     def test_repr(self):
         transform = RandomFlip(0.1)
@@ -198,3 +212,179 @@ class TestExpand(unittest.TestCase):
                               'ratio_range=(1, 4), '
                               'seg_ignore_label=None, '
                               'prob=0.5)'))
+
+
+class TestSegRescale(unittest.TestCase):
+
+    def setUp(self) -> None:
+        seg_map = np.random.randint(0, 255, size=(32, 32), dtype=np.int32)
+        self.results = {'gt_seg_map': seg_map}
+
+    def test_transform(self):
+        # test scale_factor != 1
+        transform = SegRescale(scale_factor=2)
+        results = transform(copy.deepcopy(self.results))
+        self.assertEqual(results['gt_seg_map'].shape[:2], (64, 64))
+        # test scale_factor = 1
+        transform = SegRescale(scale_factor=1)
+        results = transform(copy.deepcopy(self.results))
+        self.assertEqual(results['gt_seg_map'].shape[:2], (32, 32))
+
+    def test_repr(self):
+        transform = SegRescale(scale_factor=2)
+        self.assertEqual(
+            repr(transform), ('SegRescale(scale_factor=2, backend=cv2)'))
+
+
+class TestRandomCrop(unittest.TestCase):
+
+    def test_init(self):
+        # test invalid crop_type
+        with self.assertRaisesRegex(ValueError, 'Invalid crop_type'):
+            RandomCrop(crop_size=(10, 10), crop_type='unknown')
+
+        crop_type_list = ['absolute', 'absolute_range']
+        for crop_type in crop_type_list:
+            # test h > 0 and w > 0
+            for crop_size in [(0, 0), (0, 1), (1, 0)]:
+                with self.assertRaises(AssertionError):
+                    RandomCrop(crop_size=crop_size, crop_type=crop_type)
+            # test type(h) = int and type(w) = int
+            for crop_size in [(1.0, 1), (1, 1.0), (1.0, 1.0)]:
+                with self.assertRaises(AssertionError):
+                    RandomCrop(crop_size=crop_size, crop_type=crop_type)
+
+        # test crop_size[0] <= crop_size[1]
+        with self.assertRaises(AssertionError):
+            RandomCrop(crop_size=(10, 5), crop_type='absolute_range')
+
+        # test h in (0, 1] and w in (0, 1]
+        crop_type_list = ['relative_range', 'relative']
+        for crop_type in crop_type_list:
+            for crop_size in [(0, 1), (1, 0), (1.1, 0.5), (0.5, 1.1)]:
+                with self.assertRaises(AssertionError):
+                    RandomCrop(crop_size=crop_size, crop_type=crop_type)
+
+    def test_transform(self):
+        # test relative and absolute crop
+        src_results = {
+            'img': np.random.randint(0, 255, size=(32, 24), dtype=np.int32)
+        }
+        target_shape = (16, 12)
+        for crop_type, crop_size in zip(['relative', 'absolute'], [(0.5, 0.5),
+                                                                   (16, 12)]):
+            transform = RandomCrop(crop_size=crop_size, crop_type=crop_type)
+            results = transform(copy.deepcopy(src_results))
+            self.assertEqual(results['img'].shape[:2], target_shape)
+
+        # test absolute_range crop
+        transform = RandomCrop(crop_size=(10, 20), crop_type='absolute_range')
+        results = transform(copy.deepcopy(src_results))
+        h, w = results['img'].shape
+        self.assertTrue(10 <= h <= 20)
+        self.assertTrue(10 <= w <= 20)
+        # test relative_range crop
+        transform = RandomCrop(
+            crop_size=(0.5, 0.5), crop_type='relative_range')
+        results = transform(copy.deepcopy(src_results))
+        h, w = results['img'].shape
+        self.assertTrue(16 <= h <= 32)
+        self.assertTrue(12 <= w <= 24)
+
+        # test with gt_bboxes, gt_bboxes_labels, gt_ignore_flags,
+        # gt_masks, gt_seg_map
+        img = np.random.randint(0, 255, size=(10, 10), dtype=np.uint8)
+        gt_bboxes = np.array([[0, 0, 7, 7], [2, 3, 9, 9]], dtype=np.float32)
+        gt_bboxes_labels = np.array([0, 1], dtype=np.int64)
+        gt_ignore_flags = np.array([0, 1], dtype=np.bool8)
+        gt_masks_ = np.zeros((2, 10, 10), np.uint8)
+        gt_masks_[0, 0:7, 0:7] = 1
+        gt_masks_[1, 2:7, 3:8] = 1
+        gt_masks = BitmapMasks(gt_masks_.copy(), height=10, width=10)
+        gt_seg_map = np.random.randint(0, 255, size=(10, 10), dtype=np.uint8)
+        src_results = {
+            'img': img,
+            'gt_bboxes': gt_bboxes,
+            'gt_bboxes_labels': gt_bboxes_labels,
+            'gt_ignore_flags': gt_ignore_flags,
+            'gt_masks': gt_masks,
+            'gt_seg_map': gt_seg_map
+        }
+        transform = RandomCrop(
+            crop_size=(5, 5),
+            allow_negative_crop=False,
+            recompute_bbox=False,
+            bbox_clip_border=True)
+        results = transform(copy.deepcopy(src_results))
+        h, w = results['img'].shape
+        self.assertEqual(h, 5)
+        self.assertEqual(w, 5)
+        self.assertEqual(results['gt_bboxes'].shape[0], 2)
+        self.assertEqual(results['gt_bboxes_labels'].shape[0], 2)
+        self.assertEqual(results['gt_ignore_flags'].shape[0], 2)
+        self.assertTupleEqual(results['gt_seg_map'].shape[:2], (5, 5))
+
+        # test recompute_bbox = True
+        gt_masks_ = np.zeros((2, 10, 10), np.uint8)
+        gt_masks = BitmapMasks(gt_masks_.copy(), height=10, width=10)
+        gt_bboxes = np.array([[0.1, 0.1, 0.2, 0.2]])
+        src_results = {
+            'img': img,
+            'gt_bboxes': gt_bboxes,
+            'gt_masks': gt_masks
+        }
+        target_gt_bboxes = np.zeros((1, 4), dtype=np.float32)
+        transform = RandomCrop(
+            crop_size=(10, 10),
+            allow_negative_crop=False,
+            recompute_bbox=True,
+            bbox_clip_border=True)
+        results = transform(copy.deepcopy(src_results))
+        self.assertTrue((results['gt_bboxes'] == target_gt_bboxes).all())
+
+        # test bbox_clip_border = False
+        src_results = {'img': img, 'gt_bboxes': gt_bboxes}
+        transform = RandomCrop(
+            crop_size=(10, 10),
+            allow_negative_crop=False,
+            recompute_bbox=True,
+            bbox_clip_border=False)
+        results = transform(copy.deepcopy(src_results))
+        self.assertTrue(
+            (results['gt_bboxes'] == src_results['gt_bboxes']).all())
+
+        # test the crop does not contain any gt-bbox
+        # allow_negative_crop = False
+        img = np.random.randint(0, 255, size=(10, 10), dtype=np.uint8)
+        gt_bboxes = np.zeros((0, 4), dtype=np.float32)
+        src_results = {'img': img, 'gt_bboxes': gt_bboxes}
+        transform = RandomCrop(crop_size=(5, 5), allow_negative_crop=False)
+        results = transform(copy.deepcopy(src_results))
+        self.assertIsNone(results)
+
+        # allow_negative_crop = True
+        img = np.random.randint(0, 255, size=(10, 10), dtype=np.uint8)
+        gt_bboxes = np.zeros((0, 4), dtype=np.float32)
+        src_results = {'img': img, 'gt_bboxes': gt_bboxes}
+        transform = RandomCrop(crop_size=(5, 5), allow_negative_crop=True)
+        results = transform(copy.deepcopy(src_results))
+        self.assertTrue(isinstance(results, dict))
+
+    def test_repr(self):
+        crop_type = 'absolute'
+        crop_size = (10, 10)
+        allow_negative_crop = False
+        recompute_bbox = True
+        bbox_clip_border = False
+        transform = RandomCrop(
+            crop_size=crop_size,
+            crop_type=crop_type,
+            allow_negative_crop=allow_negative_crop,
+            recompute_bbox=recompute_bbox,
+            bbox_clip_border=bbox_clip_border)
+        self.assertEqual(
+            repr(transform),
+            f'RandomCrop(crop_size={crop_size}, crop_type={crop_type}, '
+            f'allow_negative_crop={allow_negative_crop}, '
+            f'recompute_bbox={recompute_bbox}, '
+            f'bbox_clip_border={bbox_clip_border})')
