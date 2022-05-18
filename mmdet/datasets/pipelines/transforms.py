@@ -964,17 +964,25 @@ class PhotoMetricDistortion:
         contrast_range (tuple): range of contrast.
         saturation_range (tuple): range of saturation.
         hue_delta (int): delta of hue.
+        saturate (bool): whether to keep img pixel value within 0 to 255
     """
 
     def __init__(self,
                  brightness_delta=32,
                  contrast_range=(0.5, 1.5),
                  saturation_range=(0.5, 1.5),
-                 hue_delta=18):
+                 hue_delta=18,
+                 saturate=False):
         self.brightness_delta = brightness_delta
         self.contrast_lower, self.contrast_upper = contrast_range
         self.saturation_lower, self.saturation_upper = saturation_range
         self.hue_delta = hue_delta
+        self.saturate = saturate
+
+    def _saturate(self, img):
+        img[img < 0] = 0
+        img[img > 255] = 255
+        return img
 
     def __call__(self, results):
         """Call function to perform photometric distortion on images.
@@ -996,6 +1004,8 @@ class PhotoMetricDistortion:
             delta = random.uniform(-self.brightness_delta,
                                    self.brightness_delta)
             img += delta
+            if self.saturate:
+                img = self._saturate(img)
 
         # mode == 0 --> do random contrast first
         # mode == 1 --> do random contrast last
@@ -1005,6 +1015,8 @@ class PhotoMetricDistortion:
                 alpha = random.uniform(self.contrast_lower,
                                        self.contrast_upper)
                 img *= alpha
+                if self.saturate:
+                    img = self._saturate(img)
 
         # convert color from BGR to HSV
         img = mmcv.bgr2hsv(img)
@@ -1022,6 +1034,8 @@ class PhotoMetricDistortion:
 
         # convert color from HSV to BGR
         img = mmcv.hsv2bgr(img)
+        if self.saturate:
+            img = self._saturate(img)
 
         # random contrast
         if mode == 0:
@@ -1029,6 +1043,8 @@ class PhotoMetricDistortion:
                 alpha = random.uniform(self.contrast_lower,
                                        self.contrast_upper)
                 img *= alpha
+                if self.saturate:
+                    img = self._saturate(img)
 
         # randomly swap channels
         if random.randint(2):
@@ -1044,7 +1060,8 @@ class PhotoMetricDistortion:
         repr_str += f'{(self.contrast_lower, self.contrast_upper)},\n'
         repr_str += 'saturation_range='
         repr_str += f'{(self.saturation_lower, self.saturation_upper)},\n'
-        repr_str += f'hue_delta={self.hue_delta})'
+        repr_str += f'hue_delta={self.hue_delta},\n'
+        repr_str += f'saturate={self.saturate})'
         return repr_str
 
 
@@ -2758,7 +2775,6 @@ class YOLOXHSVRandomAug:
         return repr_str
 
 
-@PIPELINES.register_module()
 class CopyPaste:
     """Simple Copy-Paste is a Strong Data Augmentation Method for Instance
     Segmentation The simple copy-paste transform steps are as follows:
@@ -2916,4 +2932,133 @@ class CopyPaste:
         repr_str += f'bbox_occluded_thr={self.bbox_occluded_thr}, '
         repr_str += f'mask_occluded_thr={self.mask_occluded_thr}, '
         repr_str += f'selected={self.selected}, '
+        return repr_str
+
+
+@PIPELINES.register_module()
+class RandomSquareCrop:
+    """Random crop the square patch of image.
+
+    Random crop the square patch of image & bboxes with a size from
+    crop_ratio_range or crop_choice of the short edge of image and keep
+    the overlapped part of box if its center is within the cropped patch.
+
+    Args:
+        crop_ratio_range (list): a list of two elements (min, max)
+        crop_choice (list): a list of crop ratio.
+        max_try (int): max number of tries to keep box center in cropped image
+
+    Note:
+        The keys for bboxes, labels and masks should be paired. That is,
+        `gt_bboxes` corresponds to `gt_labels` and `gt_masks`, and
+        `gt_bboxes_ignore` to `gt_labels_ignore` and `gt_masks_ignore`.
+    """
+
+    def __init__(self, crop_ratio_range=None, crop_choice=None, max_try=250):
+
+        self.crop_ratio_range = crop_ratio_range
+        self.crop_choice = crop_choice
+        self.max_try = max_try
+
+        assert (self.crop_ratio_range is None) ^ (self.crop_choice is None)
+        if self.crop_ratio_range is not None:
+            self.crop_ratio_min, self.crop_ratio_max = self.crop_ratio_range
+
+        self.bbox2label = {
+            'gt_bboxes': 'gt_labels',
+            'gt_bboxes_ignore': 'gt_labels_ignore'
+        }
+        self.bbox2mask = {
+            'gt_bboxes': 'gt_masks',
+            'gt_bboxes_ignore': 'gt_masks_ignore'
+        }
+
+    def __call__(self, results):
+        """Call function to crop images and bounding boxes with minimum IoU
+        constraint.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Result dict with images and bounding boxes cropped, \
+                'img_shape' key is updated.
+        """
+
+        if 'img_fields' in results:
+            assert results['img_fields'] == ['img'], \
+                'Only single img_fields is allowed'
+        img = results['img']
+        assert 'bbox_fields' in results
+        boxes = [results[key] for key in results['bbox_fields']]
+        boxes = np.concatenate(boxes, 0)
+        h, w, c = img.shape
+
+        if self.crop_ratio_range is not None:
+            scale = np.random.uniform(
+                self.crop_ratio_min,
+                self.crop_ratio_max,
+            )
+        else:
+            assert self.crop_choice is not None
+            scale = np.random.choice(self.crop_choice)
+
+        for i in range(self.max_try):
+            short_side = min(w, h)
+            cw = int(scale * short_side)
+            ch = cw
+            left = random.uniform(0, w - cw)
+            top = random.uniform(0, h - ch)
+
+            patch = np.array(
+                (int(left), int(top), int(left + cw), int(top + ch)))
+
+            # center of boxes should inside the crop img
+            # only adjust boxes and instance masks when the gt is not empty
+            # adjust boxes
+            def is_center_of_bboxes_in_patch(boxes, patch):
+                center = (boxes[:, :2] + boxes[:, 2:]) / 2
+                mask = ((center[:, 0] > patch[0]) * (center[:, 1] > patch[1]) *
+                        (center[:, 0] < patch[2]) * (center[:, 1] < patch[3]))
+                return mask
+
+            mask = is_center_of_bboxes_in_patch(boxes, patch)
+            if not mask.any() and not i == self.max_try - 1:
+                continue
+            for key in results.get('bbox_fields', []):
+                boxes = results[key].copy()
+                mask = is_center_of_bboxes_in_patch(boxes, patch)
+                boxes = boxes[mask]
+                boxes[:, 2:] = boxes[:, 2:].clip(max=patch[2:])
+                boxes[:, :2] = boxes[:, :2].clip(min=patch[:2])
+                boxes -= np.tile(patch[:2], 2)
+
+                results[key] = boxes
+                # labels
+                label_key = self.bbox2label.get(key)
+                if label_key in results:
+                    results[label_key] = results[label_key][mask]
+
+                # mask fields
+                mask_key = self.bbox2mask.get(key)
+                if mask_key in results:
+                    ind = mask.nonzero(as_tuple=False)[0]
+                    results[mask_key] = results[mask_key][ind].crop(patch)
+
+            # adjust the img no matter whether the gt is empty before crop
+            img = img[patch[1]:patch[3], patch[0]:patch[2]]
+            results['img'] = img
+            results['img_shape'] = img.shape
+
+            # seg fields
+            for key in results.get('seg_fields', []):
+                results[key] = results[key][patch[1]:patch[3],
+                                            patch[0]:patch[2]]
+            return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(crop_ratio_range={self.crop_ratio_range}, '
+        repr_str += f'crop_choice={self.crop_choice}, '
+        repr_str += f'max_try={self.max_try}) '
         return repr_str
