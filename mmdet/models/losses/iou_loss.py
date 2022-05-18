@@ -263,7 +263,7 @@ def alphaiou_loss(pred, target, alpha=3, eps=1e-9, mode='iou'):
 
     # calculate alpha-iou according mode
     if mode == 'iou':
-        loss = 1 - torch.log(ious + eps)
+        loss = 1 - ious
         return loss
 
     # enclose area
