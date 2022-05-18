@@ -10,6 +10,7 @@ from mmcv.ops import nms
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.datasets import build_dataset
+from mmdet.utils import replace_cfg_vals, update_data_root
 
 
 def parse_args():
@@ -230,6 +231,13 @@ def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
+
+    # replace the ${key} with the value of cfg.key
+    cfg = replace_cfg_vals(cfg)
+
+    # update data root according to MMDET_DATASETS
+    update_data_root(cfg)
+
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
 
@@ -257,7 +265,8 @@ def main():
         confusion_matrix,
         dataset.CLASSES + ('background', ),
         save_dir=args.save_dir,
-        show=args.show)
+        show=args.show,
+        color_theme=args.color_theme)
 
 
 if __name__ == '__main__':

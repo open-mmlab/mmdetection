@@ -2,17 +2,17 @@
   <img src="resources/mmdet-logo.png" width="600"/>
   <div>&nbsp;</div>
   <div align="center">
-    <b><font size="5">OpenMMLab website</font></b>
+    <b>OpenMMLab website</b>
     <sup>
       <a href="https://openmmlab.com">
-        <i><font size="4">HOT</font></i>
+        <i>HOT</i>
       </a>
     </sup>
     &nbsp;&nbsp;&nbsp;&nbsp;
-    <b><font size="5">OpenMMLab platform</font></b>
+    <b>OpenMMLab platform</b>
     <sup>
       <a href="https://platform.openmmlab.com">
-        <i><font size="4">TRY IT OUT</font></i>
+        <i>TRY IT OUT</i>
       </a>
     </sup>
   </div>
@@ -74,11 +74,11 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-**2.22.0** was released in 24/2/2022:
+**2.24.1** was released in 30/4/2022:
 
-- Support [MaskFormer](configs/maskformer), [DyHead](configs/dyhead), [OpenImages Dataset](configs/openimages) and [TIMM backbone](configs/timm_example)
-- Support visualization for Panoptic Segmentation
-- Release a good recipe of using ResNet in object detectors pre-trained by [ResNet Strikes Back](https://arxiv.org/abs/2110.00476), which consistently brings about 3~4 mAP improvements over RetinaNet, Faster/Mask/Cascade Mask R-CNN
+- Support [Simple Copy Paste](configs/simple_copy_paste)
+- Support automatically scaling LR according to GPU number and samples per GPU
+- Support Class Aware Sampler that improves performance on OpenImages Dataset
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 
@@ -143,6 +143,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/yolox">YOLOX (CVPR'2021)</a></li>
             <li><a href="configs/deformable_detr">Deformable DETR (ICLR'2021)</a></li>
             <li><a href="configs/tood">TOOD (ICCV'2021)</a></li>
+            <li><a href="configs/centripetalnet">CentripetalNet (CVPR'2020)</a></li>
       </ul>
       </td>
       <td>
@@ -163,7 +164,8 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
       <td>
         <ul>
           <li><a href="configs/panoptic_fpn">Panoptic FPN (CVPR'2019)</a></li>
-          <li><a href="configs/maskformer">MaskFormer (NeurIPS'2019)</a></li>
+          <li><a href="configs/maskformer">MaskFormer (NeurIPS'2021)</a></li>
+          <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
         </ul>
       </td>
       <td>
@@ -180,7 +182,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><b>Distillation</b></li>
         <ul>
         <ul>
-          <li><a href="configs/ld">Localization Distillation (ArXiv'2021)</a></li>
+          <li><a href="configs/ld">Localization Distillation (CVPR'2022)</a></li>
           <li><a href="configs/lad">Label Assignment Distillation (WACV'2022)</a></li>
         </ul>
         </ul>
@@ -228,6 +230,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         <li><a href="configs/swin">Swin (CVPR'2021)</a></li>
         <li><a href="configs/pvt">PVTv2 (ArXiv'2021)</a></li>
         <li><a href="configs/resnet_strikes_back">ResNet strikes back (ArXiv'2021)</a></li>
+        <li><a href="configs/efficientnet">EfficientNet (ArXiv'2021)</a></li>
       </ul>
       </td>
       <td>
@@ -274,7 +277,7 @@ Please refer to [get_started.md](docs/en/get_started.md) for installation.
 ## Getting Started
 
 Please see [get_started.md](docs/en/get_started.md) for the basic usage of MMDetection.
-We provide [colab tutorial](demo/MMDet_Tutorial.ipynb), and full guidance for quick run [with existing dataset](docs/en/1_exist_data_model.md) and [with new dataset](docs/en/2_new_data_model.md) for beginners.
+We provide [detection colab tutorial](demo/MMDet_Tutorial.ipynb) and [instance segmentation colab tutorial](demo/MMDet_InstanceSeg_Tutorial.ipynb), and full guidance for quick run [with existing dataset](docs/en/1_exist_data_model.md) and [with new dataset](docs/en/2_new_data_model.md) for beginners.
 There are also tutorials for [finetuning models](docs/en/tutorials/finetune.md), [adding new dataset](docs/en/tutorials/customize_dataset.md), [designing data pipeline](docs/en/tutorials/data_pipeline.md), [customizing models](docs/en/tutorials/customize_models.md), [customizing runtime settings](docs/en/tutorials/customize_runtime.md) and [useful tools](docs/en/useful_tools.md).
 
 Please refer to [FAQ](docs/en/faq.md) for frequently asked questions.

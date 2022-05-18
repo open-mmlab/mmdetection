@@ -45,7 +45,7 @@ All the aforementioned models are trained with a single GPU. It typically takes 
 
 ## Testing
 
-Please refer to [mmdetection/docs/getting_started.md](https://github.com/open-mmlab/mmdetection/blob/master/docs/getting_started.md#inference-with-pretrained-models).
+Please refer to [mmdetection/docs/getting_started.md](https://mmdetection.readthedocs.io/en/latest/1_exist_data_model.html#test-existing-models).
 
 ## Citation
 

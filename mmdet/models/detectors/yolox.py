@@ -6,6 +6,7 @@ import torch.distributed as dist
 import torch.nn.functional as F
 from mmcv.runner import get_dist_info
 
+from ...utils import log_img_scale
 from ..builder import DETECTORS
 from .single_stage import SingleStageDetector
 
@@ -29,8 +30,8 @@ class YOLOX(SingleStageDetector):
             of YOLOX. Default: None.
         pretrained (str, optional): model pretrained path.
             Default: None.
-        input_size (tuple): The model default input image size.
-            Default: (640, 640).
+        input_size (tuple): The model default input image size. The shape
+            order should be (height, width). Default: (640, 640).
         size_multiplier (int): Image size multiplication factor.
             Default: 32.
         random_size_range (tuple): The multi-scale random range during
@@ -56,6 +57,7 @@ class YOLOX(SingleStageDetector):
                  init_cfg=None):
         super(YOLOX, self).__init__(backbone, neck, bbox_head, train_cfg,
                                     test_cfg, pretrained, init_cfg)
+        log_img_scale(input_size, skip_square=True)
         self.rank, self.world_size = get_dist_info()
         self._default_input_size = input_size
         self._input_size = input_size
@@ -95,7 +97,7 @@ class YOLOX(SingleStageDetector):
 
         # random resizing
         if (self._progress_in_iter + 1) % self._random_size_interval == 0:
-            self._input_size = self._random_resize()
+            self._input_size = self._random_resize(device=img.device)
         self._progress_in_iter += 1
 
         return losses
@@ -114,8 +116,8 @@ class YOLOX(SingleStageDetector):
                 gt_bbox[..., 1::2] = gt_bbox[..., 1::2] * scale_y
         return img, gt_bboxes
 
-    def _random_resize(self):
-        tensor = torch.LongTensor(2).cuda()
+    def _random_resize(self, device):
+        tensor = torch.LongTensor(2).to(device)
 
         if self.rank == 0:
             size = random.randint(*self._random_size_range)

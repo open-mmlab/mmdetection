@@ -212,6 +212,7 @@ class YOLOXHead(BaseDenseHead, BBoxTestMixin):
                            self.multi_level_conv_reg,
                            self.multi_level_conv_obj)
 
+    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'objectnesses'))
     def get_bboxes(self,
                    cls_scores,
                    bbox_preds,
