@@ -39,12 +39,13 @@ class LoadImageFromWebcam(LoadImageFromFile):
         if self.to_float32:
             img = img.astype(np.float32)
 
-        results['filename'] = None
-        results['ori_filename'] = None
+        results['img_path'] = None
         results['img'] = img
-        results['img_shape'] = img.shape
-        results['ori_shape'] = img.shape
-        results['img_fields'] = ['img']
+        height, width = img.shape[:2]
+        results['height'] = height
+        results['width'] = width
+        results['ori_height'] = height
+        results['ori_width'] = width
         return results
 
 

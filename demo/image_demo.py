@@ -2,8 +2,12 @@
 import asyncio
 from argparse import ArgumentParser
 
+import mmcv
+
 from mmdet.apis import (async_inference_detector, inference_detector,
-                        init_detector, show_result_pyplot)
+                        init_detector)
+from mmdet.registry import VISUALIZERS
+from mmdet.utils import register_all_modules
 
 
 def parse_args():
@@ -30,34 +34,61 @@ def parse_args():
 
 
 def main(args):
+    # register all modules in mmdet into the registries
+    register_all_modules()
+
+    # TODO: Support inference of image directory.
     # build the model from a config file and a checkpoint file
     model = init_detector(args.config, args.checkpoint, device=args.device)
+
+    # init visualizer
+    visualizer = VISUALIZERS.build(model.cfg.visualizer)
+    visualizer.dataset_meta = {
+        'CLASSES': model.CLASSES,
+        'PALETTE': args.palette
+    }
+
     # test a single image
     result = inference_detector(model, args.img)
+
     # show the results
-    show_result_pyplot(
-        model,
-        args.img,
-        result,
-        palette=args.palette,
-        score_thr=args.score_thr,
-        out_file=args.out_file)
+    img = mmcv.imread(args.img)
+    img = mmcv.imconvert(img, 'bgr', 'rgb')
+    visualizer.add_datasample(
+        'result',
+        img,
+        pred_sample=result,
+        show=True,
+        wait_time=0,
+        out_file=args.out_file,
+        pred_score_thr=args.score_thr)
 
 
 async def async_main(args):
     # build the model from a config file and a checkpoint file
     model = init_detector(args.config, args.checkpoint, device=args.device)
+
+    # init visualizer
+    visualizer = VISUALIZERS.build(model.cfg.visualizer)
+    visualizer.dataset_meta = {
+        'CLASSES': model.CLASSES,
+        'PALETTE': args.palette
+    }
+
     # test a single image
     tasks = asyncio.create_task(async_inference_detector(model, args.img))
     result = await asyncio.gather(tasks)
     # show the results
-    show_result_pyplot(
-        model,
-        args.img,
-        result[0],
-        palette=args.palette,
-        score_thr=args.score_thr,
-        out_file=args.out_file)
+    img = mmcv.imread(args.img)
+    img = mmcv.imconvert(img, 'bgr', 'rgb')
+    visualizer.add_datasample(
+        'result',
+        img,
+        pred_sample=result[0],
+        show=True,
+        wait_time=0,
+        out_file=args.out_file,
+        pred_score_thr=args.score_thr)
 
 
 if __name__ == '__main__':

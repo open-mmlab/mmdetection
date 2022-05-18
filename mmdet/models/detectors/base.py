@@ -3,14 +3,11 @@ import copy
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 
-import mmcv
-import numpy as np
 import torch
 import torch.distributed as dist
 from mmcv.runner import BaseModule, auto_fp16
 
 from mmdet.core.utils import stack_batch
-from mmdet.core.visualization import imshow_det_bboxes
 
 
 class BaseDetector(BaseModule, metaclass=ABCMeta):
@@ -416,93 +413,6 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
             log_vars[loss_name] = loss_value.item()
 
         return loss, log_vars
-
-    def show_result(self,
-                    img,
-                    result,
-                    score_thr=0.3,
-                    bbox_color=(72, 101, 241),
-                    text_color=(72, 101, 241),
-                    mask_color=None,
-                    thickness=2,
-                    font_size=13,
-                    win_name='',
-                    show=False,
-                    wait_time=0,
-                    out_file=None):
-        """Draw `result` over `img`.
-
-        Args:
-            img (str or Tensor): The image to be displayed.
-            result (Tensor or tuple): The results to draw over `img`
-                bbox_result or (bbox_result, segm_result).
-            score_thr (float, optional): Minimum score of bboxes to be shown.
-                Defaults to 0.3.
-            bbox_color (str or tuple(int) or :obj:`Color`):Color of bbox lines.
-               The tuple of color should be in BGR order. Defaults to 'green'
-            text_color (str or tuple(int) or :obj:`Color`):Color of texts.
-               The tuple of color should be in BGR order. Defaults to 'green'
-            mask_color (None or str or tuple(int) or :obj:`Color`):
-               Color of masks. The tuple of color should be in BGR order.
-               Defaults to None
-            thickness (int): Thickness of lines. Defaults to  2
-            font_size (int): Font size of texts. Defaults to 13
-            win_name (str): The window name. Defaults to ''
-            wait_time (float): Value of waitKey param.
-                Defaults to 0.
-            show (bool): Whether to show the image.
-                Defaults to False.
-            out_file (str or None): The filename to write the image.
-                Defaults to None.
-
-        Returns:
-            img (Tensor): Only if not `show` or `out_file`
-        """
-        img = mmcv.imread(img)
-        img = img.copy()
-        if isinstance(result, tuple):
-            bbox_result, segm_result = result
-            if isinstance(segm_result, tuple):
-                segm_result = segm_result[0]  # ms rcnn
-        else:
-            bbox_result, segm_result = result, None
-        bboxes = np.vstack(bbox_result)
-        labels = [
-            np.full(bbox.shape[0], i, dtype=np.int32)
-            for i, bbox in enumerate(bbox_result)
-        ]
-        labels = np.concatenate(labels)
-        # draw segmentation masks
-        segms = None
-        if segm_result is not None and len(labels) > 0:  # non empty
-            segms = mmcv.concat_list(segm_result)
-            if isinstance(segms[0], torch.Tensor):
-                segms = torch.stack(segms, dim=0).detach().cpu().numpy()
-            else:
-                segms = np.stack(segms, axis=0)
-        # if out_file specified, do not show image in window
-        if out_file is not None:
-            show = False
-        # draw bounding boxes
-        img = imshow_det_bboxes(
-            img,
-            bboxes,
-            labels,
-            segms,
-            class_names=self.CLASSES,
-            score_thr=score_thr,
-            bbox_color=bbox_color,
-            text_color=text_color,
-            mask_color=mask_color,
-            thickness=thickness,
-            font_size=font_size,
-            win_name=win_name,
-            show=show,
-            wait_time=wait_time,
-            out_file=out_file)
-
-        if not (show or out_file):
-            return img
 
     # TODO
     def onnx_export(self, img, data_sample):
