@@ -324,5 +324,5 @@ def transform_bbox(bboxes, homography_matrix, img_shape):
     points = torch.matmul(homography_matrix, points.t()).t()
     # Convert to homogeneous coordinates by normalization
     points = points[:, :2] / points[:, 2:3]
-    bbox = point2bbox(points, img_shape)
-    return bbox
+    bboxes = point2bbox(points, img_shape)
+    return bboxes,
