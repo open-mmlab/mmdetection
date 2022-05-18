@@ -8,64 +8,11 @@ from .builder import MATCH_COST
 
 
 @MATCH_COST.register_module()
-class MaskCost:
-    """MaskCost.
-
-     Args:
-         weight (int | float, optional): loss_weight.
-         pred_act (bool): used for sigmoid.
-         act_mode (str): sigmoid for binary predict,\
-                            other for multi classes predict.
-
-     Examples:
-         >>> from mmdet.core.bbox.match_costs.match_cost import MaskCost
-         >>> import torch
-         >>> self = MaskCost()
-         >>> cls_pred = torch.rand(3, 2, 3)
-         >>> target = torch.rand(2, 2, 3)
-         >>> self(bbox_pred, gt_bboxes)
-         tensor([[-0.5636, -0.4881],
-                [-0.5146, -0.4170],
-                [-0.4547, -0.5371]])
-    """
-
-    def __init__(self, weight=1., pred_act=False, act_mode='sigmoid'):
-        self.weight = weight
-        self.pred_act = pred_act
-        self.act_mode = act_mode
-
-    def __call__(self, cls_pred, target):
-        """
-        Args:
-            cls_pred (Tensor): Predicted classification logits, shape
-                [num_query, num_class].
-            gt_labels (Tensor): Label of `gt_bboxes`, shape (num_gt,).
-
-        Returns:
-            torch.Tensor: cls_cost value with weight.
-        """
-        if self.pred_act and self.act_mode == 'sigmoid':
-            cls_pred = cls_pred.sigmoid()
-        elif self.pred_act:
-            cls_pred = cls_pred.softmax(dim=0)
-
-        _, H, W = target.shape
-        # flatten_cls_pred = cls_pred.view(num_proposals, -1)
-        # eingum is ~10 times faster than matmul
-        pos_cost = torch.einsum('nhw,mhw->nm', cls_pred, target)
-        neg_cost = torch.einsum('nhw,mhw->nm', 1 - cls_pred, 1 - target)
-        cls_cost = -(pos_cost + neg_cost) / (H * W)
-        return cls_cost * self.weight
-
-
-@MATCH_COST.register_module()
 class BBoxL1Cost:
     """BBoxL1Cost.
-
      Args:
          weight (int | float, optional): loss_weight
          box_format (str, optional): 'xyxy' for DETR, 'xywh' for Sparse_RCNN
-
      Examples:
          >>> from mmdet.core.bbox.match_costs.match_cost import BBoxL1Cost
          >>> import torch
@@ -90,7 +37,6 @@ class BBoxL1Cost:
                 (num_query, 4).
             gt_bboxes (Tensor): Ground truth boxes with normalized
                 coordinates (x1, y1, x2, y2). Shape (num_gt, 4).
-
         Returns:
             torch.Tensor: bbox_cost value with weight
         """
@@ -105,7 +51,6 @@ class BBoxL1Cost:
 @MATCH_COST.register_module()
 class FocalLossCost:
     """FocalLossCost.
-
      Args:
          weight (int | float, optional): loss_weight
          alpha (int | float, optional): focal_loss alpha
@@ -113,7 +58,6 @@ class FocalLossCost:
          eps (float, optional): default 1e-12
          binary_input (bool, optional): Whether the input is binary,
             default False.
-
      Examples:
          >>> from mmdet.core.bbox.match_costs.match_cost import FocalLossCost
          >>> import torch
@@ -146,7 +90,6 @@ class FocalLossCost:
             cls_pred (Tensor): Predicted classification logits, shape
                 (num_query, num_class).
             gt_labels (Tensor): Label of `gt_bboxes`, shape (num_gt,).
-
         Returns:
             torch.Tensor: cls_cost value with weight
         """
@@ -166,7 +109,6 @@ class FocalLossCost:
                 in shape (num_query, d1, ..., dn), dtype=torch.float32.
             gt_labels (Tensor): Ground truth in shape (num_gt, d1, ..., dn),
                 dtype=torch.long. Labels should be binary.
-
         Returns:
             Tensor: Focal cost matrix with weight in shape\
                 (num_query, num_gt).
@@ -189,7 +131,6 @@ class FocalLossCost:
         Args:
             cls_pred (Tensor): Predicted classfication logits.
             gt_labels (Tensor)): Labels.
-
         Returns:
             Tensor: Focal cost matrix with weight in shape\
                 (num_query, num_gt).
@@ -203,10 +144,8 @@ class FocalLossCost:
 @MATCH_COST.register_module()
 class ClassificationCost:
     """ClsSoftmaxCost.
-
      Args:
          weight (int | float, optional): loss_weight
-
      Examples:
          >>> from mmdet.core.bbox.match_costs.match_cost import \
          ... ClassificationCost
@@ -231,7 +170,6 @@ class ClassificationCost:
             cls_pred (Tensor): Predicted classification logits, shape
                 (num_query, num_class).
             gt_labels (Tensor): Label of `gt_bboxes`, shape (num_gt,).
-
         Returns:
             torch.Tensor: cls_cost value with weight
         """
@@ -247,11 +185,9 @@ class ClassificationCost:
 @MATCH_COST.register_module()
 class IoUCost:
     """IoUCost.
-
      Args:
          iou_mode (str, optional): iou mode such as 'iou' | 'giou'
          weight (int | float, optional): loss weight
-
      Examples:
          >>> from mmdet.core.bbox.match_costs.match_cost import IoUCost
          >>> import torch
@@ -274,7 +210,6 @@ class IoUCost:
                 (x1, y1, x2, y2). Shape (num_query, 4).
             gt_bboxes (Tensor): Ground truth boxes with unnormalized
                 coordinates (x1, y1, x2, y2). Shape (num_gt, 4).
-
         Returns:
             torch.Tensor: iou_cost value with weight
         """
@@ -289,19 +224,23 @@ class IoUCost:
 @MATCH_COST.register_module()
 class DiceCost:
     """Cost of mask assignments based on dice losses.
-
     Args:
         weight (int | float, optional): loss_weight. Defaults to 1.
         pred_act (bool, optional): Whether to apply sigmoid to mask_pred.
             Defaults to False.
         eps (float, optional): default 1e-12.
+        naive_dice (bool, optional): If True, use the naive dice loss
+            in which the power of the number in the denominator is
+            the first power. If Flase, use the second power that
+            is adopted by K-Net and SOLO.
+            Defaults to True.
     """
 
-    def __init__(self, weight=1., pred_act=False, eps=1e-3, solo_style=False):
+    def __init__(self, weight=1., pred_act=False, eps=1e-3, naive_dice=True):
         self.weight = weight
         self.pred_act = pred_act
         self.eps = eps
-        self.solo_style = solo_style
+        self.naive_dice = naive_dice
 
     def binary_mask_dice_loss(self, mask_preds, gt_masks):
         """
@@ -310,32 +249,18 @@ class DiceCost:
             gt_masks (Tensor): Ground truth in shape (num_gt, *)
                 store 0 or 1, 0 for negative class and 1 for
                 positive class.
-
         Returns:
             Tensor: Dice cost matrix in shape (num_query, num_gt).
         """
         mask_preds = mask_preds.flatten(1)
         gt_masks = gt_masks.flatten(1).float()
         numerator = 2 * torch.einsum('nc,mc->nm', mask_preds, gt_masks)
-        denominator = mask_preds.sum(-1)[:, None] + gt_masks.sum(-1)[None, :]
-        loss = 1 - (numerator + self.eps) / (denominator + self.eps)
-        return loss
-
-    def solo_style_dice_loss(self, mask_preds, gt_masks):
-        """
-        Args:
-            mask_preds (Tensor): Mask prediction in shape (num_query, *).
-            gt_masks (Tensor): Ground truth in shape (num_gt, *)
-                store 0 or 1, 0 for negative class and 1 for
-                positive class.
-
-        Returns:
-            Tensor: Dice cost matrix in shape (num_query, num_gt).
-        """
-        mask_preds = mask_preds.flatten(1)
-        gt_masks = gt_masks.flatten(1).float()
-        numerator = 2 * torch.einsum('nc,mc->nm', mask_preds, gt_masks)
-        denominator = mask_preds.sum(-1)[:, None] + gt_masks.sum(-1)[None, :]
+        if self.naive_dice:
+            denominator = mask_preds.sum(-1)[:, None] + \
+                gt_masks.sum(-1)[None, :]
+        else:
+            denominator = mask_preds.pow(2).sum(1)[:, None] + \
+                gt_masks.pow(2).sum(1)[None, :]
         loss = 1 - (numerator + self.eps) / (denominator + self.eps)
         return loss
 
@@ -344,23 +269,18 @@ class DiceCost:
         Args:
             mask_preds (Tensor): Mask prediction logits in shape (num_query, *)
             gt_masks (Tensor): Ground truth in shape (num_gt, *)
-
         Returns:
             Tensor: Dice cost matrix with weight in shape (num_query, num_gt).
         """
         if self.pred_act:
             mask_preds = mask_preds.sigmoid()
-        if self.solo_style:
-            dice_cost = self.solo_style_dice_loss(mask_preds, gt_masks)
-        else:
-            dice_cost = self.binary_mask_dice_loss(mask_preds, gt_masks)
+        dice_cost = self.binary_mask_dice_loss(mask_preds, gt_masks)
         return dice_cost * self.weight
 
 
 @MATCH_COST.register_module()
 class CrossEntropyLossCost:
     """CrossEntropyLossCost.
-
     Args:
         weight (int | float, optional): loss weight. Defaults to 1.
         use_sigmoid (bool, optional): Whether the prediction uses sigmoid
@@ -386,7 +306,6 @@ class CrossEntropyLossCost:
                 (num_query, *).
             gt_labels (Tensor): The learning label of prediction with
                 shape (num_gt, *).
-
         Returns:
             Tensor: Cross entropy cost matrix in shape (num_query, num_gt).
         """
@@ -408,7 +327,6 @@ class CrossEntropyLossCost:
         Args:
             cls_pred (Tensor): Predicted classification logits.
             gt_labels (Tensor): Labels.
-
         Returns:
             Tensor: Cross entropy cost matrix with weight in
                 shape (num_query, num_gt).
