@@ -268,3 +268,61 @@ def bbox_xyxy_to_cxcywh(bbox):
     x1, y1, x2, y2 = bbox.split((1, 1, 1, 1), dim=-1)
     bbox_new = [(x1 + x2) / 2, (y1 + y2) / 2, (x2 - x1), (y2 - y1)]
     return torch.cat(bbox_new, dim=-1)
+
+
+def bbox2point(bboxes):
+    """Convert bbox coordinates from (x1, y1, x2, y2) to points ((x1, y1), (x2,
+    y1), (x1, y2), (x2, y2)).
+
+    Args:
+        bboxes (Tensor): Shape (n, 4) for bboxes.
+
+    Returns:
+        Tensor: Shape (n*4, 2) for points.
+    """
+    x1, y1, x2, y2 = torch.split(bboxes, 1, dim=1)
+    return torch.cat([x1, y1, x2, y1, x1, y2, x2, y2], dim=1).reshape(-1, 2)
+
+
+def point2bbox(points, img_shape):
+    """Convert bbox coordinates from points ((x1, y1), (x2, y1), (x1, y2), (x2,
+    y2)) to (x1, y1, x2, y2).
+
+    Args:
+        points (Tensor): Shape (n*4, 2) for points.
+        img_shape (tuple): Image shape.
+
+    Returns:
+        Tensor: Shape (n, 4) for bboxes.
+    """
+    points = points.reshape(-1, 4, 2)
+    min_xy = points.min(dim=1)[0]
+    max_xy = points.max(dim=1)[0]
+    x1 = min_xy[:, 0:1].clamp(min=0, max=img_shape[1])
+    y1 = min_xy[:, 1:2].clamp(min=0, max=img_shape[0])
+    x2 = max_xy[:, 0:1].clamp(min=0, max=img_shape[1])
+    y2 = max_xy[:, 1:2].clamp(min=0, max=img_shape[0])
+    return torch.cat([x1, y1, x2, y2], dim=1)
+
+
+def transform_bbox(bboxes, homography_matrix, img_shape):
+    """Geometric transformation for bbox.
+
+    Args:
+        bboxes (Tensor): Shape (n, 4) for bboxes.
+        homography_matrix (Tensor): Shape (3, 3) for geometric transformation.
+        img_shape (tuple): Image shape.
+
+    Returns:
+        Tensor: Converted bboxes.
+    """
+
+    if bboxes.shape[0] == 0:
+        return bboxes
+    points = bbox2point(bboxes)
+    points = torch.cat([points, points.new_ones(points.shape[0], 1)], dim=1)
+    points = torch.matmul(homography_matrix, points.t()).t()
+    # Convert to homogeneous coordinates by normalization
+    points = points[:, :2] / points[:, 2:3]
+    bbox = point2bbox(points, img_shape)
+    return bbox
