@@ -95,97 +95,97 @@ asyncio.run(main())
 
 这是在单张图片上进行推理的脚本，可以开启 `--async-test` 来进行异步推理。
 
-   ```shell
-   python demo/image_demo.py \
-       ${IMAGE_FILE} \
-       ${CONFIG_FILE} \
-       ${CHECKPOINT_FILE} \
-       [--device ${GPU_ID}] \
-       [--score-thr ${SCORE_THR}] \
-       [--async-test]
-   ```
+```shell
+python demo/image_demo.py \
+    ${IMAGE_FILE} \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--device ${GPU_ID}] \
+    [--score-thr ${SCORE_THR}] \
+    [--async-test]
+```
 
 运行样例：
 
-   ```shell
-   python demo/image_demo.py demo/demo.jpg \
-       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
-       checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
-       --device cpu
-   ```
+```shell
+python demo/image_demo.py demo/demo.jpg \
+    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+    --device cpu
+```
 
 #### 摄像头样例
 
 这是使用摄像头实时图片的推理脚本。
 
-   ```shell
-   python demo/webcam_demo.py \
-       ${CONFIG_FILE} \
-       ${CHECKPOINT_FILE} \
-       [--device ${GPU_ID}] \
-       [--camera-id ${CAMERA-ID}] \
-       [--score-thr ${SCORE_THR}]
-   ```
+```shell
+python demo/webcam_demo.py \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--device ${GPU_ID}] \
+    [--camera-id ${CAMERA-ID}] \
+    [--score-thr ${SCORE_THR}]
+```
 
 运行样例：
 
-   ```shell
-   python demo/webcam_demo.py \
-       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
-       checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
-   ```
+```shell
+python demo/webcam_demo.py \
+    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
+```
 
 #### 视频样例
 
 这是在视频样例上进行推理的脚本。
 
-   ```shell
-   python demo/video_demo.py \
-       ${VIDEO_FILE} \
-       ${CONFIG_FILE} \
-       ${CHECKPOINT_FILE} \
-       [--device ${GPU_ID}] \
-       [--score-thr ${SCORE_THR}] \
-       [--out ${OUT_FILE}] \
-       [--show] \
-       [--wait-time ${WAIT_TIME}]
-   ```
+```shell
+python demo/video_demo.py \
+    ${VIDEO_FILE} \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--device ${GPU_ID}] \
+    [--score-thr ${SCORE_THR}] \
+    [--out ${OUT_FILE}] \
+    [--show] \
+    [--wait-time ${WAIT_TIME}]
+```
 
 运行样例：
 
-   ```shell
-   python demo/video_demo.py demo/demo.mp4 \
-       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
-       checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
-       --out result.mp4
-   ```
+```shell
+python demo/video_demo.py demo/demo.mp4 \
+    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+    --out result.mp4
+```
 
 #### 视频样例，显卡加速版本
 
 这是在视频样例上进行推理的脚本，使用显卡加速。
 
-   ```shell
-   python demo/video_gpuaccel_demo.py \
-        ${VIDEO_FILE} \
-        ${CONFIG_FILE} \
-        ${CHECKPOINT_FILE} \
-        [--device ${GPU_ID}] \
-        [--score-thr ${SCORE_THR}] \
-        [--nvdecode] \
-        [--out ${OUT_FILE}] \
-        [--show] \
-        [--wait-time ${WAIT_TIME}]
+```shell
+python demo/video_gpuaccel_demo.py \
+     ${VIDEO_FILE} \
+     ${CONFIG_FILE} \
+     ${CHECKPOINT_FILE} \
+     [--device ${GPU_ID}] \
+     [--score-thr ${SCORE_THR}] \
+     [--nvdecode] \
+     [--out ${OUT_FILE}] \
+     [--show] \
+     [--wait-time ${WAIT_TIME}]
 
-   ```
+```
 
 运行样例：
 
-   ```shell
-   python demo/video_gpuaccel_demo.py demo/demo.mp4 \
-       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
-       checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
-       --nvdecode --out result.mp4
-   ```
+```shell
+python demo/video_gpuaccel_demo.py demo/demo.mp4 \
+    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+    --nvdecode --out result.mp4
+```
 
 ## 在标准数据集上测试现有模型
 
@@ -414,7 +414,6 @@ python tools/dataset_converters/images2coco.py \
 - `OUT`: 输出 json 文件名。 默认保存目录和 `IMG_PATH` 在同一级。
 - `exclude-extensions`: 待排除的文件后缀名。
 
-
 在转换完成后，使用如下命令进行测试
 
 ```shell
@@ -516,14 +515,14 @@ MMDetection 也为训练检测模型提供了开盖即食的工具。本节将�
 
 ### 数据集
 
-训练需要准备好数据集，细节请参考 [数据集准备](#数据集准备) 。
+训练需要准备好数据集，细节请参考 [数据集准备](#%E6%95%B0%E6%8D%AE%E9%9B%86%E5%87%86%E5%A4%87) 。
 
 **注意**：
 目前，`configs/cityscapes` 文件夹下的配置文件都是使用 COCO 预训练权值进行初始化的。如果网络连接不可用或者速度很慢，你可以提前下载现存的模型。否则可能在训练的开始会有错误发生。
 
 ### 学习率自动缩放
 
-**注意**：在配置文件中的学习率是在 8 块 GPU，每块 GPU 有 2 张图像（批大小为 8*2=16）的情况下设置的。其已经设置在`config/_base_/default_runtime.py` 中的 `auto_scale_lr.base_batch_size`。当配置文件的批次大小为`16`时，学习率会基于该值进行自动缩放。同时，为了不影响其他基于 mmdet 的 codebase，启用自动缩放标志 `auto_scale_lr.enable` 默认设置为 `False`。
+**注意**：在配置文件中的学习率是在 8 块 GPU，每块 GPU 有 2 张图像（批大小为 8\*2=16）的情况下设置的。其已经设置在`config/_base_/default_runtime.py` 中的 `auto_scale_lr.base_batch_size`。当配置文件的批次大小为`16`时，学习率会基于该值进行自动缩放。同时，为了不影响其他基于 mmdet 的 codebase，启用自动缩放标志 `auto_scale_lr.enable` 默认设置为 `False`。
 
 如果要启用此功能，需在命令添加参数 `--auto-scale-lr`。并且在启动命令之前，请检查下即将使用的配置文件的名称，因为配置名称指示默认的批处理大小。
 在默认情况下，批次大小是 `8 x 2 = 16`，例如：`faster_rcnn_r50_caffe_fpn_90k_coco.py` 或者 `pisa_faster_rcnn_x101_32x4d_fpn_1x_coco.py`；若不是默认批次，你可以在配置文件看到像 `_NxM_` 字样的，例如：`cornernet_hourglass104_mstest_32x3_210e_coco.py` 的批次大小是 `32 x 3 = 96`, 或者 `scnet_x101_64x4d_fpn_8x1_20e_coco.py` 的批次大小是 `8 x 1 = 8`。
@@ -561,6 +560,7 @@ python tools/train.py \
 # 每 12 轮迭代进行一次测试评估
 evaluation = dict(interval=12)
 ```
+
 这个工具接受以下参数：
 
 - `--no-validate` (**不建议**): 在训练期间关闭测试.

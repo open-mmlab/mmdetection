@@ -17,7 +17,8 @@ We present a simple, fully-convolutional model for real-time instance segmentati
 A simple, fully convolutional model for real-time instance segmentation. This is the code for our paper:
 
 - [YOLACT: Real-time Instance Segmentation](https://arxiv.org/abs/1904.02689)
- <!-- - [YOLACT++: Better Real-time Instance Segmentation](https://arxiv.org/abs/1912.06218) -->
+
+<!-- - [YOLACT++: Better Real-time Instance Segmentation](https://arxiv.org/abs/1912.06218) -->
 
 For a real-time demo, check out our ICCV video:
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/0pMfmo8qfpQ/0.jpg)](https://www.youtube.com/watch?v=0pMfmo8qfpQ)
@@ -26,13 +27,13 @@ For a real-time demo, check out our ICCV video:
 
 Here are our YOLACT models along with their FPS on a Titan Xp and mAP on COCO's `val`:
 
-| Image Size | GPU x BS | Backbone      | *FPS  | mAP  | Weights | Configs | Download |
-|:----------:|:--------:|:-------------:|:-----:|:----:|:-------:|:------:|:--------:|
-| 550        | 1x8      | Resnet50-FPN  | 42.5 | 29.0 | | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolact/yolact_r50_1x8_coco.py) |[model](https://download.openmmlab.com/mmdetection/v2.0/yolact/yolact_r50_1x8_coco/yolact_r50_1x8_coco_20200908-f38d58df.pth) |
-| 550        | 8x8      | Resnet50-FPN  | 42.5 | 28.4 | | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolact/yolact_r50_8x8_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/yolact/yolact_r50_8x8_coco/yolact_r50_8x8_coco_20200908-ca34f5db.pth) |
-| 550        | 1x8      | Resnet101-FPN | 33.5 | 30.4 | | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolact/yolact_r101_1x8_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/yolact/yolact_r101_1x8_coco/yolact_r101_1x8_coco_20200908-4cbe9101.pth) |
+| Image Size | GPU x BS |   Backbone    | \*FPS | mAP  | Weights |                                                Configs                                                 |                                                            Download                                                             |
+| :--------: | :------: | :-----------: | :---: | :--: | :-----: | :----------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------------------------------: |
+|    550     |   1x8    | Resnet50-FPN  | 42.5  | 29.0 |         | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolact/yolact_r50_1x8_coco.py)  |  [model](https://download.openmmlab.com/mmdetection/v2.0/yolact/yolact_r50_1x8_coco/yolact_r50_1x8_coco_20200908-f38d58df.pth)  |
+|    550     |   8x8    | Resnet50-FPN  | 42.5  | 28.4 |         | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolact/yolact_r50_8x8_coco.py)  |  [model](https://download.openmmlab.com/mmdetection/v2.0/yolact/yolact_r50_8x8_coco/yolact_r50_8x8_coco_20200908-ca34f5db.pth)  |
+|    550     |   1x8    | Resnet101-FPN | 33.5  | 30.4 |         | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/yolact/yolact_r101_1x8_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/yolact/yolact_r101_1x8_coco/yolact_r101_1x8_coco_20200908-4cbe9101.pth) |
 
-*Note: The FPS is evaluated by the [original implementation](https://github.com/dbolya/yolact). When calculating FPS, only the model inference time is taken into account. Data loading and post-processing operations such as converting masks to RLE code, generating COCO JSON results, image rendering are not included.
+\*Note: The FPS is evaluated by the [original implementation](https://github.com/dbolya/yolact). When calculating FPS, only the model inference time is taken into account. Data loading and post-processing operations such as converting masks to RLE code, generating COCO JSON results, image rendering are not included.
 
 ## Training
 
