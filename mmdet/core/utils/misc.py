@@ -206,3 +206,22 @@ def generate_coordinate(featmap_sizes, device='cuda'):
     coord_feat = torch.cat([x, y], 1)
 
     return coord_feat
+
+
+def filter_scores(scores, *instances, score_thr=0.0):
+    """Filter instances using score threshold.
+
+    Args:
+        scores (Tensor): The scores of instances.
+        instances (list): The gt_bboxes, gt_labels or gt_masks of instances.
+        score_thr (float): The score filter threshold.
+
+    Returns:
+        list: Filtered gt_bboxes, gt_labels or gt_masks of instances.
+    """
+    valid_mask = scores > score_thr
+    filtered_instances = []
+    for item in instances:
+        assert len(valid_mask) == len(item)
+        filtered_instances.append(item[valid_mask])
+    return filtered_instances
