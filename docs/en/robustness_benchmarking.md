@@ -92,19 +92,19 @@ python tools/analysis_tools/test_robustness.py ${CONFIG_FILE} ${CHECKPOINT_FILE}
 
 The results on COCO 2017val are shown in the below table.
 
-Model  | Backbone  | Style   | Lr schd | box AP clean | box AP corr. | box % | mask AP clean | mask AP corr. | mask % |
-:-----:|:---------:|:-------:|:-------:|:------------:|:------------:|:-----:|:-------------:|:-------------:|:------:|
-Faster R-CNN | R-50-FPN  | pytorch | 1x      | 36.3   | 18.2         | 50.2  | -             | -             | -      |
-Faster R-CNN | R-101-FPN | pytorch | 1x      | 38.5   | 20.9         | 54.2  | -             | -             | -      |
-Faster R-CNN | X-101-32x4d-FPN | pytorch |1x | 40.1   | 22.3         | 55.5  | -             | -             | -      |
-Faster R-CNN | X-101-64x4d-FPN | pytorch |1x | 41.3   | 23.4         | 56.6  | -             | -             | -      |
-Faster R-CNN | R-50-FPN-DCN | pytorch | 1x   | 40.0   | 22.4         | 56.1  | -             | -             | -      |
-Faster R-CNN | X-101-32x4d-FPN-DCN | pytorch | 1x | 43.4 | 26.7      | 61.6  | -             | -             | -      |
-Mask R-CNN   | R-50-FPN  | pytorch | 1x      | 37.3   | 18.7         | 50.1  | 34.2          | 16.8          | 49.1   |
-Mask R-CNN   | R-50-FPN-DCN | pytorch | 1x   | 41.1   | 23.3         | 56.7  | 37.2          | 20.7          | 55.7   |
-Cascade R-CNN | R-50-FPN  | pytorch | 1x     | 40.4   | 20.1         | 49.7  | -             | -             | -      |
-Cascade Mask R-CNN | R-50-FPN  | pytorch | 1x| 41.2   | 20.7         | 50.2  | 35.7          | 17.6          | 49.3   |
-RetinaNet    | R-50-FPN  | pytorch | 1x      | 35.6   | 17.8         | 50.1  | -             | -             | -      |
-Hybrid Task Cascade | X-101-64x4d-FPN-DCN | pytorch | 1x | 50.6 | 32.7 | 64.7 | 43.8         | 28.1          | 64.0   |
+|        Model        |      Backbone       |  Style  | Lr schd | box AP clean | box AP corr. | box % | mask AP clean | mask AP corr. | mask % |
+| :-----------------: | :-----------------: | :-----: | :-----: | :----------: | :----------: | :---: | :-----------: | :-----------: | :----: |
+|    Faster R-CNN     |      R-50-FPN       | pytorch |   1x    |     36.3     |     18.2     | 50.2  |       -       |       -       |   -    |
+|    Faster R-CNN     |      R-101-FPN      | pytorch |   1x    |     38.5     |     20.9     | 54.2  |       -       |       -       |   -    |
+|    Faster R-CNN     |   X-101-32x4d-FPN   | pytorch |   1x    |     40.1     |     22.3     | 55.5  |       -       |       -       |   -    |
+|    Faster R-CNN     |   X-101-64x4d-FPN   | pytorch |   1x    |     41.3     |     23.4     | 56.6  |       -       |       -       |   -    |
+|    Faster R-CNN     |    R-50-FPN-DCN     | pytorch |   1x    |     40.0     |     22.4     | 56.1  |       -       |       -       |   -    |
+|    Faster R-CNN     | X-101-32x4d-FPN-DCN | pytorch |   1x    |     43.4     |     26.7     | 61.6  |       -       |       -       |   -    |
+|     Mask R-CNN      |      R-50-FPN       | pytorch |   1x    |     37.3     |     18.7     | 50.1  |     34.2      |     16.8      |  49.1  |
+|     Mask R-CNN      |    R-50-FPN-DCN     | pytorch |   1x    |     41.1     |     23.3     | 56.7  |     37.2      |     20.7      |  55.7  |
+|    Cascade R-CNN    |      R-50-FPN       | pytorch |   1x    |     40.4     |     20.1     | 49.7  |       -       |       -       |   -    |
+| Cascade Mask R-CNN  |      R-50-FPN       | pytorch |   1x    |     41.2     |     20.7     | 50.2  |     35.7      |     17.6      |  49.3  |
+|      RetinaNet      |      R-50-FPN       | pytorch |   1x    |     35.6     |     17.8     | 50.1  |       -       |       -       |   -    |
+| Hybrid Task Cascade | X-101-64x4d-FPN-DCN | pytorch |   1x    |     50.6     |     32.7     | 64.7  |     43.8      |     28.1      |  64.0  |
 
 Results may vary slightly due to the stochastic application of the corruptions.
