@@ -2,7 +2,6 @@
 
 MMDetection and MMCV provide users with various useful hooks including log hooks, evaluation hooks, NumClassCheckHook, etc. This tutorial introduces the functionalities and usages of hooks implemented in MMDetection. For using hooks in MMCV, please read the [API documentation in MMCV](https://github.com/open-mmlab/mmcv/blob/master/docs/en/understand_mmcv/runner.md).
 
-
 ## CheckInvalidLossHook
 
 ## EvalHook and DistEvalHook
@@ -43,7 +42,6 @@ During training, you can see the messages in the log recorded by `MemoryProfiler
 
 ## YOLOXModeSwitchHook
 
-
 ## How to implement a custom hook
 
 In general, there are 10 points where hooks can be inserted from the beginning to the end of model training. The users can implement custom hooks and insert them at different points in the process of training to do what they want.
@@ -53,6 +51,7 @@ In general, there are 10 points where hooks can be inserted from the beginning t
 - points in validation: `before_val_epoch`, `before_val_iter`, `after_val_iter`, `after_val_epoch`
 
 For example, users can implement a hook to check loss and terminate training when loss goes NaN. To achieve that, there are three steps to go:
+
 1. Implement a new hook that inherits the `Hook` class in MMCV, and implement `after_train_iter` method which checks whether loss goes NaN after every `n` training iterations.
 2. The implemented hook should be registered in `HOOKS` by `@HOOKS.register_module()` as shown in the code below.
 3. Add `custom_hooks = [dict(type='MemoryProfilerHook', interval=50)]` in the config file.
