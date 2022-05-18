@@ -316,9 +316,6 @@ def transform_bbox(bboxes, homography_matrix, img_shape):
     Returns:
         Tensor: Converted bboxes.
     """
-
-    if bboxes.shape[0] == 0:
-        return bboxes
     points = bbox2point(bboxes)
     points = torch.cat([points, points.new_ones(points.shape[0], 1)], dim=1)
     points = torch.matmul(homography_matrix, points.t()).t()
