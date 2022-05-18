@@ -15,11 +15,9 @@ env_cfg = dict(
     dist_cfg=dict(backend='nccl'),
 )
 
-# TODO: Waiting for DetLocalVisualizer to implement
-# vis_backends = [dict(type='LocalVisBackend')]
-# visualizer = dict(
-#     type='DetLocalVisualizer', vis_backends=vis_backends, name='visualizer')
-visualizer = None
+vis_backends = [dict(type='LocalVisBackend')]
+visualizer = dict(
+    type='DetLocalVisualizer', vis_backends=vis_backends, name='visualizer')
 # custom_hooks = [dict(type='DetVisualizationHook', interval=10)]
 
 log_level = 'INFO'

@@ -1,13 +1,15 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import List, Tuple, Union
+
 import mmcv
 import numpy as np
 
 
-def palette_val(palette):
+def palette_val(palette: List[tuple]) -> List[tuple]:
     """Convert palette to matplotlib palette.
 
     Args:
-        palette List[tuple]: A list of color tuples.
+        palette (List[tuple]): A list of color tuples.
 
     Returns:
         List[tuple[float]]: A list of RGB matplotlib color tuples.
@@ -19,11 +21,12 @@ def palette_val(palette):
     return new_palette
 
 
-def get_palette(palette, num_classes):
+def get_palette(palette: Union[List[tuple], str, tuple],
+                num_classes: int) -> List[Tuple[int]]:
     """Get palette from various inputs.
 
     Args:
-        palette (list[tuple] | str | tuple | :obj:`Color`): palette inputs.
+        palette (list[tuple] | str | tuple): palette inputs.
         num_classes (int): the number of classes.
 
     Returns:
@@ -44,15 +47,15 @@ def get_palette(palette, num_classes):
         dataset_palette = [tuple(c) for c in palette]
     elif palette == 'coco':
         from mmdet.datasets import CocoDataset, CocoPanopticDataset
-        dataset_palette = CocoDataset.PALETTE
+        dataset_palette = CocoDataset.METAINFO['PALETTE']
         if len(dataset_palette) < num_classes:
-            dataset_palette = CocoPanopticDataset.PALETTE
+            dataset_palette = CocoPanopticDataset.METAINFO['PALETTE']
     elif palette == 'citys':
         from mmdet.datasets import CityscapesDataset
-        dataset_palette = CityscapesDataset.PALETTE
+        dataset_palette = CityscapesDataset.METAINFO['PALETTE']
     elif palette == 'voc':
         from mmdet.datasets import VOCDataset
-        dataset_palette = VOCDataset.PALETTE
+        dataset_palette = VOCDataset.METAINFO['PALETTE']
     elif mmcv.is_str(palette):
         dataset_palette = [mmcv.color_val(palette)[::-1]] * num_classes
     else:
@@ -61,3 +64,28 @@ def get_palette(palette, num_classes):
     assert len(dataset_palette) >= num_classes, \
         'The length of palette should not be less than `num_classes`.'
     return dataset_palette
+
+
+def _get_adaptive_scales(areas: np.ndarray,
+                         min_area: int = 800,
+                         max_area: int = 30000) -> np.ndarray:
+    """Get adaptive scales according to areas.
+
+    The scale range is [0.5, 1.0]. When the area is less than
+    ``min_area``, the scale is 0.5 while the area is larger than
+    ``max_area``, the scale is 1.0.
+
+    Args:
+        areas (ndarray): The areas of bboxes or masks with the
+            shape of (n, ).
+        min_area (int): Lower bound areas for adaptive scales.
+            Defaults to 800.
+        max_area (int): Upper bound areas for adaptive scales.
+            Defaults to 30000.
+
+    Returns:
+        ndarray: The adaotive scales with the shape of (n, ).
+    """
+    scales = 0.5 + (areas - min_area) / (max_area - min_area)
+    scales = np.clip(scales, 0.5, 1.0)
+    return scales
