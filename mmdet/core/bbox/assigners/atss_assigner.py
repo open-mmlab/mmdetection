@@ -104,19 +104,13 @@ class ATSSAssigner(BaseAssigner):
                 num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
 
         # compute center distance between all bbox and gt
-        if self.alpha == 1:
-            gt_cx = (gt_bboxes[:, 0] + gt_bboxes[:, 2]) / 2.0
-            gt_cy = (gt_bboxes[:, 1] + gt_bboxes[:, 3]) / 2.0
-            gt_points = torch.stack((gt_cx, gt_cy), dim=1)
-        else:
-            gt_points = (gt_bboxes[:, :2] + gt_bboxes[:, 2:4]) / 2.0
+        gt_cx = (gt_bboxes[:, 0] + gt_bboxes[:, 2]) / 2.0
+        gt_cy = (gt_bboxes[:, 1] + gt_bboxes[:, 3]) / 2.0
+        gt_points = torch.stack((gt_cx, gt_cy), dim=1)
 
-        if self.alpha == 1:
-            bboxes_cx = (bboxes[:, 0] + bboxes[:, 2]) / 2.0
-            bboxes_cy = (bboxes[:, 1] + bboxes[:, 3]) / 2.0
-            bboxes_points = torch.stack((bboxes_cx, bboxes_cy), dim=1)
-        else:
-            bboxes_points = (bboxes[:, :2] + bboxes[:, 2:4]) / 2.0
+        bboxes_cx = (bboxes[:, 0] + bboxes[:, 2]) / 2.0
+        bboxes_cy = (bboxes[:, 1] + bboxes[:, 3]) / 2.0
+        bboxes_points = torch.stack((bboxes_cx, bboxes_cy), dim=1)
             
         distances = (bboxes_points[:, None, :] -
                      gt_points[None, :, :]).pow(2).sum(-1).sqrt()
@@ -158,29 +152,20 @@ class ATSSAssigner(BaseAssigner):
         # limit the positive sample's center in gt
         for gt_idx in range(num_gt):
             candidate_idxs[:, gt_idx] += gt_idx * num_bboxes
-        if self.alpha == 1:
-            ep_bboxes_cx = bboxes_cx.view(1, -1).expand(
-                num_gt, num_bboxes).contiguous().view(-1)
-            ep_bboxes_cy = bboxes_cy.view(1, -1).expand(
-                num_gt, num_bboxes).contiguous().view(-1)
-        else:
-            ep_bboxes_center = bboxes_points.view(1, -1, 2).\
-                expand(num_gt, num_bboxes, 2).contiguous().view(-1, 2)
+        ep_bboxes_cx = bboxes_cx.view(1, -1).expand(
+            num_gt, num_bboxes).contiguous().view(-1)
+        ep_bboxes_cy = bboxes_cy.view(1, -1).expand(
+            num_gt, num_bboxes).contiguous().view(-1)
         candidate_idxs = candidate_idxs.view(-1)
 
         # calculate the left, top, right, bottom distance between positive
         # bbox center and gt side
-        if self.alpha == 1:
-            l_ = ep_bboxes_cx[candidate_idxs].view(-1, num_gt) - gt_bboxes[:, 0]
-            t_ = ep_bboxes_cy[candidate_idxs].view(-1, num_gt) - gt_bboxes[:, 1]
-            r_ = gt_bboxes[:, 2] - ep_bboxes_cx[candidate_idxs].view(-1, num_gt)
-            b_ = gt_bboxes[:, 3] - ep_bboxes_cy[candidate_idxs].view(-1, num_gt)
-            is_in_gts = torch.stack([l_, t_, r_, b_], dim=1).min(dim=1)[0] > 0.01
-        else:
-            ltrb_ = ep_bboxes_center[candidate_idxs].view(-1, num_gt, 2).repeat(
-                1, 1, 2) - gt_bboxes[None, :]
-            ltrb_[..., 2:4] = -ltrb_[..., 2:4]
-            is_in_gts = ltrb_.min(dim=-1)[0] > 0.01
+        l_ = ep_bboxes_cx[candidate_idxs].view(-1, num_gt) - gt_bboxes[:, 0]
+        t_ = ep_bboxes_cy[candidate_idxs].view(-1, num_gt) - gt_bboxes[:, 1]
+        r_ = gt_bboxes[:, 2] - ep_bboxes_cx[candidate_idxs].view(-1, num_gt)
+        b_ = gt_bboxes[:, 3] - ep_bboxes_cy[candidate_idxs].view(-1, num_gt)
+        is_in_gts = torch.stack([l_, t_, r_, b_], dim=1).min(dim=1)[0] > 0.01
+
         is_pos = is_pos & is_in_gts
 
         # if an anchor box is assigned to multiple gts,
