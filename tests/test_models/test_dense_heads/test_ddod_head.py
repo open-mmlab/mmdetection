@@ -3,6 +3,7 @@ import mmcv
 import torch
 
 from mmdet.models.dense_heads import DDODHead
+from torch.nn.functional import alpha_dropout
 
 
 def test_ddod_head_loss():
@@ -15,7 +16,7 @@ def test_ddod_head_loss():
     }]
     train_cfg = mmcv.Config(
         dict(  # ATSSAssigner
-            assigner=dict(type='ATSSCostAssigner', topk=9),
+            assigner=dict(type='ATSSAssigner', topk=9, alpha=0.8),
             allowed_border=-1,
             pos_weight=-1,
             debug=False))

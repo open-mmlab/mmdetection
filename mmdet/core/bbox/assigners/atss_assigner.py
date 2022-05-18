@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
+import warnings
 
 from ..builder import BBOX_ASSIGNERS
 from ..iou_calculators import build_iou_calculator
@@ -23,7 +24,7 @@ class ATSSAssigner(BaseAssigner):
 
     def __init__(self,
                  topk,
-                 alpha=1,
+                 alpha=None,
                  iou_calculator=dict(type='BboxOverlaps2D'),
                  ignore_iof_thr=-1):
         self.topk = topk
@@ -34,7 +35,7 @@ class ATSSAssigner(BaseAssigner):
 
     Args:
         topk (int): number of bbox selected in each level.
-        alpha (float): param of cost rate for each proposal only in DDOD. Default 1. 
+        alpha (float): param of cost rate for each proposal only in DDOD. Default None. 
         iou_calculator (dict): builder of IoU calculator.
             Default dict(type='BboxOverlaps2D').
         ignore_iof_thr (int): whether ignore max overlaps or not.
@@ -83,16 +84,23 @@ class ATSSAssigner(BaseAssigner):
 
         # compute iou between all bbox and gt
         overlaps = self.iou_calculator(bboxes, gt_bboxes)
-        # compute cls cost for bbox and GT
-        cls_cost = torch.sigmoid(cls_scores[:, gt_labels])
-
+        
         # compute cost rate for proposal only in DDOD
-        if self.alpha != 1:
-            # make sure that we are in element-wise multiplication
-            assert cls_cost.shape == overlaps.shape
+        if self.alpha != None:
+            if cls_scores == None:
+                warnings.warn("Check the input param of alpha in ATSSAssigner, please set alpha at 1 if you are not using DDOD.")
+            else:
+                # compute cls cost for bbox and GT
+                cls_cost = torch.sigmoid(cls_scores[:, gt_labels])
+  
+                # compute iou between all bbox and gt
+                overlaps = self.iou_calculator(bbox_preds, gt_bboxes)
+                
+                # make sure that we are in element-wise multiplication
+                assert cls_cost.shape == overlaps.shape
 
-            # overlaps is actually a cost matrix
-            overlaps = cls_cost**(1 - self.alpha) * overlaps**self.alpha
+                # overlaps is actually a cost matrix
+                overlaps = cls_cost**(1 - self.alpha) * overlaps**self.alpha
 
         # assign 0 by default
         assigned_gt_inds = overlaps.new_full((num_bboxes, ),

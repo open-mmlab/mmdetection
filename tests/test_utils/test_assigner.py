@@ -8,7 +8,7 @@ CommandLine:
 import pytest
 import torch
 
-from mmdet.core.bbox.assigners import (ApproxMaxIoUAssigner, ATSSCostAssigner,
+from mmdet.core.bbox.assigners import (ApproxMaxIoUAssigner,
                                        CenterRegionAssigner, HungarianAssigner,
                                        MaskHungarianAssigner, MaxIoUAssigner,
                                        PointAssigner, SimOTAAssigner,
