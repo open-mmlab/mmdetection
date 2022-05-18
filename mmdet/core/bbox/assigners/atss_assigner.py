@@ -30,7 +30,16 @@ class ATSSAssigner(BaseAssigner):
         self.alpha = alpha
         self.iou_calculator = build_iou_calculator(iou_calculator)
         self.ignore_iof_thr = ignore_iof_thr
+    """Assign a corresponding gt bbox or background to each bbox.
 
+    Args:
+        topk (int): number of bbox selected in each level.
+        alpha (float): param of cost rate for each proposal in DDOD. Default 1. 
+        iou_calculator (dict): builder of IoU calculator.
+            Default dict(type='BboxOverlaps2D').
+        ignore_iof_thr (int): whether ignore max overlaps or not.
+            Default -1 (1 or -1).
+    """
     # https://github.com/sfzhang15/ATSS/blob/master/atss_core/modeling/rpn/atss/loss.py
     @torch.no_grad()
     def assign(self,
@@ -77,11 +86,13 @@ class ATSSAssigner(BaseAssigner):
         # compute cls cost for bbox and GT
         cls_cost = torch.sigmoid(cls_scores[:, gt_labels])
 
-        # make sure that we are in element-wise multiplication
-        assert cls_cost.shape == overlaps.shape
+        # compute cost rate for proposal
+        if self.alpha != 1:
+            # make sure that we are in element-wise multiplication
+            assert cls_cost.shape == overlaps.shape
 
-        # overlaps is actually a cost matrix
-        overlaps = cls_cost**(1 - self.alpha) * overlaps**self.alpha
+            # overlaps is actually a cost matrix
+            overlaps = cls_cost**(1 - self.alpha) * overlaps**self.alpha
 
         # assign 0 by default
         assigned_gt_inds = overlaps.new_full((num_bboxes, ),
