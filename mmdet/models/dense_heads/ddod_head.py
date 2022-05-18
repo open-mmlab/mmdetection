@@ -697,8 +697,8 @@ class DDODHead(AnchorHead):
         # decode prediction out of assigner
         bbox_preds_valid = self.bbox_coder.decode(anchors, bbox_preds_valid)
         assign_result = assigner.assign(anchors, num_level_anchors_inside,
-                                        cls_scores_valid, bbox_preds_valid,
-                                        gt_bboxes, gt_bboxes_ignore, gt_labels)
+                                        gt_bboxes, cls_scores_valid, 
+                                        bbox_preds_valid,gt_bboxes_ignore, gt_labels)
         sampling_result = self.sampler.sample(assign_result, anchors,
                                               gt_bboxes)
 

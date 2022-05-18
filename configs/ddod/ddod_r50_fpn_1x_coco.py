@@ -49,8 +49,8 @@ model = dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
     train_cfg=dict(
         # assigner is mean cls_assigner
-        assigner=dict(type='ATSSCostAssigner', topk=9),
-        reg_assigner=dict(type='ATSSCostAssigner', topk=9, alpha=0.5),
+        assigner=dict(type='ATSSAssigner', topk=9, alpha=0.8),
+        reg_assigner=dict(type='ATSSAssigner', topk=9, alpha=0.5),
         allowed_border=-1,
         pos_weight=-1,
         debug=False),
