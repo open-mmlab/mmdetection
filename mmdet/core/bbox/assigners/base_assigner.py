@@ -1,5 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from abc import ABCMeta, abstractmethod
+from typing import Optional
+
+from mmengine.data import InstanceData
 
 
 class BaseAssigner(metaclass=ABCMeta):
@@ -7,8 +10,8 @@ class BaseAssigner(metaclass=ABCMeta):
 
     @abstractmethod
     def assign(self,
-               pred_instances,
-               gt_instances,
-               gt_instances_ignore=None,
+               pred_instances: InstanceData,
+               gt_instances: InstanceData,
+               gt_instances_ignore: Optional[InstanceData] = None,
                **kwargs):
         """Assign boxes to either a ground truth boxes or a negative boxes."""

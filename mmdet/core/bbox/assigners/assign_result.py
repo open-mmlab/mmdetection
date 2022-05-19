@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
+from torch import Tensor
 
 from mmdet.utils import util_mixins
 
@@ -10,15 +11,12 @@ class AssignResult(util_mixins.NiceRepr):
     Attributes:
         num_gts (int): the number of truth boxes considered when computing this
             assignment
-
-        gt_inds (LongTensor): for each predicted box indicates the 1-based
+        gt_inds (Tensor): for each predicted box indicates the 1-based
             index of the assigned truth box. 0 means unassigned and -1 means
             ignore.
-
-        max_overlaps (FloatTensor): the iou between the predicted box and its
+        max_overlaps (Tensor): the iou between the predicted box and its
             assigned truth box.
-
-        labels (None | LongTensor): If specified, for each predicted box
+        labels (Tensor): If specified, for each predicted box
             indicates the category label of the assigned truth box.
 
     Example:
@@ -40,7 +38,8 @@ class AssignResult(util_mixins.NiceRepr):
                       labels.shape=(7,))>
     """
 
-    def __init__(self, num_gts, gt_inds, max_overlaps, labels=None):
+    def __init__(self, num_gts: int, gt_inds: Tensor, max_overlaps: Tensor,
+                 labels: Tensor) -> None:
         self.num_gts = num_gts
         self.gt_inds = gt_inds
         self.max_overlaps = max_overlaps
@@ -123,8 +122,7 @@ class AssignResult(util_mixins.NiceRepr):
         num_preds = kwargs.get('num_preds', None)
         p_ignore = kwargs.get('p_ignore', 0.3)
         p_assigned = kwargs.get('p_assigned', 0.7)
-        p_use_label = kwargs.get('p_use_label', 0.5)
-        num_classes = kwargs.get('p_use_label', 3)
+        num_classes = kwargs.get('num_classes', 3)
 
         if num_gts is None:
             num_gts = rng.randint(0, 8)
@@ -134,10 +132,8 @@ class AssignResult(util_mixins.NiceRepr):
         if num_gts == 0:
             max_overlaps = torch.zeros(num_preds, dtype=torch.float32)
             gt_inds = torch.zeros(num_preds, dtype=torch.int64)
-            if p_use_label is True or p_use_label < rng.rand():
-                labels = torch.zeros(num_preds, dtype=torch.int64)
-            else:
-                labels = None
+            labels = torch.zeros(num_preds, dtype=torch.int64)
+
         else:
             import numpy as np
 
@@ -173,18 +169,15 @@ class AssignResult(util_mixins.NiceRepr):
             gt_inds[~is_assigned] = 0
             max_overlaps[~is_assigned] = 0
 
-            if p_use_label is True or p_use_label < rng.rand():
-                if num_classes == 0:
-                    labels = torch.zeros(num_preds, dtype=torch.int64)
-                else:
-                    labels = torch.from_numpy(
-                        # remind that we set FG labels to [0, num_class-1]
-                        # since mmdet v2.0
-                        # BG cat_id: num_class
-                        rng.randint(0, num_classes, size=num_preds))
-                    labels[~is_assigned] = 0
+            if num_classes == 0:
+                labels = torch.zeros(num_preds, dtype=torch.int64)
             else:
-                labels = None
+                labels = torch.from_numpy(
+                    # remind that we set FG labels to [0, num_class-1]
+                    # since mmdet v2.0
+                    # BG cat_id: num_class
+                    rng.randint(0, num_classes, size=num_preds))
+                labels[~is_assigned] = 0
 
         self = cls(num_gts, gt_inds, max_overlaps, labels)
         return self
@@ -202,5 +195,4 @@ class AssignResult(util_mixins.NiceRepr):
         self.max_overlaps = torch.cat(
             [self.max_overlaps.new_ones(len(gt_labels)), self.max_overlaps])
 
-        if self.labels is not None:
-            self.labels = torch.cat([gt_labels, self.labels])
+        self.labels = torch.cat([gt_labels, self.labels])

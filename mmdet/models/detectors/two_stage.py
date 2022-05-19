@@ -1,9 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import warnings
+from typing import List, Optional, Tuple
 
 import torch
+from mmcv.utils import ConfigDict
 from mmengine.data import InstanceData
+from torch import Tensor
 
 from mmdet.registry import MODELS
 from .base import BaseDetector
@@ -18,16 +21,16 @@ class TwoStageDetector(BaseDetector):
     """
 
     def __init__(self,
-                 backbone,
-                 neck=None,
-                 rpn_head=None,
-                 roi_head=None,
-                 train_cfg=None,
-                 test_cfg=None,
-                 pretrained=None,
-                 init_cfg=None,
-                 img_norm_cfg=None):
-        super(TwoStageDetector, self).__init__(img_norm_cfg, init_cfg)
+                 backbone: ConfigDict,
+                 neck: Optional[ConfigDict] = None,
+                 rpn_head: Optional[ConfigDict] = None,
+                 roi_head: Optional[ConfigDict] = None,
+                 train_cfg: Optional[ConfigDict] = None,
+                 test_cfg: Optional[ConfigDict] = None,
+                 pretrained: Optional[ConfigDict] = None,
+                 preprocess_cfg: Optional[ConfigDict] = None,
+                 init_cfg: Optional[ConfigDict] = None) -> None:
+        super().__init__(preprocess_cfg=preprocess_cfg, init_cfg=init_cfg)
         if pretrained:
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')
@@ -41,6 +44,16 @@ class TwoStageDetector(BaseDetector):
             rpn_train_cfg = train_cfg.rpn if train_cfg is not None else None
             rpn_head_ = rpn_head.copy()
             rpn_head_.update(train_cfg=rpn_train_cfg, test_cfg=test_cfg.rpn)
+            rpn_head_num_classes = rpn_head_.get('num_classes', None)
+            if rpn_head_num_classes is None:
+                rpn_head_.update(num_classes=1)
+            else:
+                if rpn_head_num_classes != 1:
+                    warnings.warn(
+                        'The `num_classes` should be 1 in RPN, but get '
+                        f'{rpn_head_num_classes}, please set '
+                        'rpn_head.num_classes = 1 in your config file.')
+                    rpn_head_.update(num_classes=1)
             self.rpn_head = MODELS.build(rpn_head_)
 
         if roi_head is not None:
@@ -56,23 +69,31 @@ class TwoStageDetector(BaseDetector):
         self.test_cfg = test_cfg
 
     @property
-    def with_rpn(self):
+    def with_rpn(self) -> bool:
         """bool: whether the detector has RPN"""
         return hasattr(self, 'rpn_head') and self.rpn_head is not None
 
     @property
-    def with_roi_head(self):
+    def with_roi_head(self) -> bool:
         """bool: whether the detector has a RoI head"""
         return hasattr(self, 'roi_head') and self.roi_head is not None
 
-    def extract_feat(self, img):
-        """Directly extract features from the backbone+neck."""
-        x = self.backbone(img)
+    def extract_feat(self, batch_inputs: Tensor) -> Tuple[Tensor]:
+        """Extract features.
+
+        Args:
+            batch_inputs (Tensor): Image tensor with shape (n, c, h ,w).
+
+        Returns:
+            tuple[Tensor]: Multi-level features that may have
+                different resolutions.
+        """
+        x = self.backbone(batch_inputs)
         if self.with_neck:
             x = self.neck(x)
         return x
 
-    def forward_dummy(self, img):
+    def forward_dummy(self, img: Tensor) -> Tuple[List[Tensor]]:
         """Used for computing network flops.
 
         See `mmdetection/tools/analysis_tools/get_flops.py`
@@ -113,13 +134,15 @@ class TwoStageDetector(BaseDetector):
         if self.with_rpn:
             proposal_cfg = self.train_cfg.get('rpn_proposal',
                                               self.test_cfg.rpn)
-            # TODO:
-            cp_data_samples = copy.deepcopy(data_samples)
-            for data_sample in cp_data_samples:
-                del data_sample.gt_instances.labels
+            rpn_data_samples = copy.deepcopy(data_samples)
+            # set cat_id of gt_labels to 0 in RPN
+            for data_sample in rpn_data_samples:
+                data_sample.gt_instances.labels = \
+                    torch.zeros_like(data_sample.gt_instances.labels)
 
             rpn_losses, results_list = self.rpn_head.forward_train(
-                x, cp_data_samples, proposal_cfg=proposal_cfg, **kwargs)
+                x, rpn_data_samples, proposal_cfg=proposal_cfg, **kwargs)
+            # TODO: losses check whether get 'rpn_'
             losses.update(rpn_losses)
             # TODO: remove this after refactor two stage input
             proposal_list = results2proposal(results_list)
