@@ -131,28 +131,6 @@ class BBoxTestMixin(object):
         results.labels = det_labels
         return [results]
 
-    def simple_test_rpn(self, x, img_metas):
-        """Test without augmentation, only for ``RPNHead`` and its variants,
-        e.g., ``GARPNHead``, etc.
-
-        Args:
-            x (tuple[Tensor]): Features from the upstream network, each is
-                a 4D-tensor.
-            img_metas (list[dict]): Meta info of each image.
-
-        Returns:
-            list[Tensor]: Proposals of each image, each item has shape (n, 5),
-                where 5 represent (tl_x, tl_y, br_x, br_y, score).
-        """
-        warnings.warn('You are calling `simple_test_rpn` in '
-                      '`dense_test_mixins`, but the `dense_test_mixins`'
-                      'will be deprecated soon. Please use '
-                      '`simple_test` instead.')
-
-        rpn_outs = self(x)
-        proposal_list = self.get_results(*rpn_outs, img_metas=img_metas)
-        return proposal_list
-
     def aug_test_rpn(self, feats, img_metas):
         """Test with augmentation for only for ``RPNHead`` and its variants,
         e.g., ``GARPNHead``, etc.

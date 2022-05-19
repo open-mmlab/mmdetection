@@ -1,6 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import torch
+from typing import Union
 
+import torch
+from numpy import ndarray
+from torch import Tensor
+
+from mmdet.core.bbox.assigners import AssignResult
 from mmdet.registry import TASK_UTILS
 from .base_sampler import BaseSampler
 
@@ -12,24 +17,25 @@ class RandomSampler(BaseSampler):
     Args:
         num (int): Number of samples
         pos_fraction (float): Fraction of positive samples
-        neg_pos_up (int, optional): Upper bound number of negative and
+        neg_pos_up (int): Upper bound number of negative and
             positive samples. Defaults to -1.
-        add_gt_as_proposals (bool, optional): Whether to add ground truth
+        add_gt_as_proposals (bool): Whether to add ground truth
             boxes as proposals. Defaults to True.
     """
 
     def __init__(self,
-                 num,
-                 pos_fraction,
-                 neg_pos_ub=-1,
-                 add_gt_as_proposals=True,
+                 num: int,
+                 pos_fraction: float,
+                 neg_pos_ub: int = -1,
+                 add_gt_as_proposals: bool = True,
                  **kwargs):
         from mmdet.core.bbox import demodata
         super(RandomSampler, self).__init__(num, pos_fraction, neg_pos_ub,
                                             add_gt_as_proposals)
         self.rng = demodata.ensure_rng(kwargs.get('rng', None))
 
-    def random_choice(self, gallery, num):
+    def random_choice(self, gallery: Union[Tensor, ndarray, list],
+                      num: int) -> Union[Tensor, ndarray]:
         """Random select some elements from the gallery.
 
         If `gallery` is a Tensor, the returned indices will be a Tensor;
@@ -61,8 +67,17 @@ class RandomSampler(BaseSampler):
             rand_inds = rand_inds.cpu().numpy()
         return rand_inds
 
-    def _sample_pos(self, assign_result, num_expected, **kwargs):
-        """Randomly sample some positive samples."""
+    def _sample_pos(self, assign_result: AssignResult, num_expected: int,
+                    **kwargs) -> Union[Tensor, ndarray]:
+        """Randomly sample some positive samples.
+
+        Args:
+            assign_result (:obj:`AssignResult`): Bbox assigning results.
+            num_expected (int): The number of expected positive samples
+
+        Returns:
+            Tensor or ndarray: sampled indices.
+        """
         pos_inds = torch.nonzero(assign_result.gt_inds > 0, as_tuple=False)
         if pos_inds.numel() != 0:
             pos_inds = pos_inds.squeeze(1)
@@ -71,8 +86,17 @@ class RandomSampler(BaseSampler):
         else:
             return self.random_choice(pos_inds, num_expected)
 
-    def _sample_neg(self, assign_result, num_expected, **kwargs):
-        """Randomly sample some negative samples."""
+    def _sample_neg(self, assign_result: AssignResult, num_expected: int,
+                    **kwargs) -> Union[Tensor, ndarray]:
+        """Randomly sample some negative samples.
+
+        Args:
+            assign_result (:obj:`AssignResult`): Bbox assigning results.
+            num_expected (int): The number of expected positive samples
+
+        Returns:
+            Tensor or ndarray: sampled indices.
+        """
         neg_inds = torch.nonzero(assign_result.gt_inds == 0, as_tuple=False)
         if neg_inds.numel() != 0:
             neg_inds = neg_inds.squeeze(1)

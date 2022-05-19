@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import unittest
 from os.path import dirname, exists, join
@@ -101,8 +102,8 @@ def _demo_mm_inputs(batch_size=2,
 
         img_meta = {
             'img_id': idx,
-            'img_shape': image_shape,
-            'ori_shape': image_shape,
+            'img_shape': image_shape[1:],
+            'ori_shape': image_shape[1:],
             'filename': '<demo>.png',
             'scale_factor': np.array([1.1, 1.2]),
             'flip': False,

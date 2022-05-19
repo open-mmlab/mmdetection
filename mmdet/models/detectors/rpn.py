@@ -1,11 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import copy
 import warnings
+from typing import List, Optional, Tuple
 
 import mmcv
 import torch
-from mmcv.image import tensor2imgs
+from mmengine.config import ConfigDict
+from torch import Tensor
 
-from mmdet.core import bbox_mapping
+from mmdet.core import DetDataSample, bbox_mapping
 from mmdet.registry import MODELS
 from .base import BaseDetector
 
@@ -15,14 +18,15 @@ class RPN(BaseDetector):
     """Implementation of Region Proposal Network."""
 
     def __init__(self,
-                 backbone,
-                 neck,
-                 rpn_head,
-                 train_cfg,
-                 test_cfg,
-                 pretrained=None,
-                 init_cfg=None):
-        super(RPN, self).__init__(init_cfg)
+                 backbone: ConfigDict,
+                 neck: ConfigDict,
+                 rpn_head: ConfigDict,
+                 train_cfg: ConfigDict,
+                 test_cfg: ConfigDict,
+                 pretrained: Optional[ConfigDict] = None,
+                 preprocess_cfg: Optional[ConfigDict] = None,
+                 init_cfg: Optional[dict] = None) -> None:
+        super().__init__(preprocess_cfg=preprocess_cfg, init_cfg=init_cfg)
         if pretrained:
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')
@@ -30,90 +34,104 @@ class RPN(BaseDetector):
         self.backbone = MODELS.build(backbone)
         self.neck = MODELS.build(neck) if neck is not None else None
         rpn_train_cfg = train_cfg.rpn if train_cfg is not None else None
+        rpn_head_num_classes = rpn_head.get('num_classes', 1)
+        if rpn_head_num_classes != 1:
+            warnings.warn('The `num_classes` should be 1 in RPN, but get '
+                          f'{rpn_head_num_classes}, please set '
+                          'rpn_head.num_classes = 1 in your config file.')
+            rpn_head.update(num_classes=1)
         rpn_head.update(train_cfg=rpn_train_cfg)
         rpn_head.update(test_cfg=test_cfg.rpn)
         self.rpn_head = MODELS.build(rpn_head)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
-    def extract_feat(self, img):
+    def extract_feat(self, batch_inputs: Tensor) -> Tuple[Tensor]:
         """Extract features.
 
         Args:
-            img (torch.Tensor): Image tensor with shape (n, c, h ,w).
+            batch_inputs (Tensor): Image tensor with shape (n, c, h ,w).
 
         Returns:
-            list[torch.Tensor]: Multi-level features that may have
+            tuple[Tensor]: Multi-level features that may have
                 different resolutions.
         """
-        x = self.backbone(img)
+        x = self.backbone(batch_inputs)
         if self.with_neck:
             x = self.neck(x)
         return x
 
-    def forward_dummy(self, img):
+    def forward_dummy(self, img: Tensor) -> Tuple[List[Tensor]]:
         """Dummy forward function."""
         x = self.extract_feat(img)
         rpn_outs = self.rpn_head(x)
         return rpn_outs
 
-    def forward_train(self,
-                      img,
-                      img_metas,
-                      gt_bboxes=None,
-                      gt_bboxes_ignore=None):
+    def forward_train(self, batch_inputs: Tensor,
+                      batch_data_samples: List[DetDataSample],
+                      **kwargs) -> dict:
         """
         Args:
-            img (Tensor): Input images of shape (N, C, H, W).
-                Typically these should be mean centered and std scaled.
-            img_metas (list[dict]): A List of image info dict where each dict
-                has: 'img_shape', 'scale_factor', 'flip', and may also contain
-                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
-                For details on the values of these keys see
-                :class:`mmdet.datasets.pipelines.Collect`.
-            gt_bboxes (list[Tensor]): Each item are the truth boxes for each
-                image in [tl_x, tl_y, br_x, br_y] format.
-            gt_bboxes_ignore (None | list[Tensor]): Specify which bounding
-                boxes can be ignored when computing the loss.
+            batch_inputs (Tensor): Input images of shape (N, C, H, W).
+                These should usually be mean centered and std scaled.
+            batch_data_samples (list[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        if (isinstance(self.train_cfg.rpn, dict)
-                and self.train_cfg.rpn.get('debug', False)):
-            self.rpn_head.debug_imgs = tensor2imgs(img)
+        super().forward_train(batch_inputs, batch_data_samples)
 
-        x = self.extract_feat(img)
-        losses = self.rpn_head.forward_train(x, img_metas, gt_bboxes, None,
-                                             gt_bboxes_ignore)
+        x = self.extract_feat(batch_inputs)
+        # set cat_id of gt_labels to 0 in RPN
+        rpn_data_samples = copy.deepcopy(batch_data_samples)
+        for data_sample in rpn_data_samples:
+            data_sample.gt_instances.labels = \
+                torch.zeros_like(data_sample.gt_instances.labels)
+
+        losses = self.rpn_head.forward_train(x, rpn_data_samples, **kwargs)
         return losses
 
-    def simple_test(self, img, img_metas, rescale=False):
+    def simple_test(self,
+                    batch_inputs: Tensor,
+                    batch_img_metas: List[dict],
+                    rescale: bool = False) \
+            -> List[DetDataSample]:
         """Test function without test time augmentation.
 
         Args:
-            imgs (list[torch.Tensor]): List of multiple images
-            img_metas (list[dict]): List of image information.
+            batch_inputs (Tensor): Inputs with shape (N, C, H, W).
+            batch_img_metas (list[dict]): List of image information.
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
 
         Returns:
-            list[np.ndarray]: proposals
+            list[:obj:`DetDataSample`]: Return the detection results of the
+                input images. The returns value is DetDataSample,
+                which usually contain 'pred_instances'. And the
+                ``pred_instances`` usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                    (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                    (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                    the last dimension 4 arrange as (x1, y1, x2, y2).
         """
-        x = self.extract_feat(img)
-        # get origin input shape to onnx dynamic input shape
-        if torch.onnx.is_in_onnx_export():
-            img_shape = torch._shape_as_tensor(img)[2:]
-            img_metas[0]['img_shape_for_onnx'] = img_shape
-        proposal_list = self.rpn_head.simple_test_rpn(x, img_metas)
-        if rescale:
-            for proposals, meta in zip(proposal_list, img_metas):
-                proposals[:, :4] /= proposals.new_tensor(meta['scale_factor'])
-        if torch.onnx.is_in_onnx_export():
-            return proposal_list
+        x = self.extract_feat(batch_inputs)
+        results_list = self.rpn_head.simple_test(
+            x, batch_img_metas, rescale=rescale)
 
-        return [proposal.cpu().numpy() for proposal in proposal_list]
+        # connvert to DetDataSample
+        for i in range(len(results_list)):
+            result = DetDataSample()
+            result.pred_instances = results_list[i]
+            results_list[i] = result
 
+        return results_list
+
+    # TODO: Currently not supported
     def aug_test(self, imgs, img_metas, rescale=False):
         """Test function with test time augmentation.
 
@@ -139,6 +157,7 @@ class RPN(BaseDetector):
                                                 flip_direction)
         return [proposal.cpu().numpy() for proposal in proposal_list]
 
+    # TODO: Currently not supported
     def show_result(self, data, result, top_k=20, **kwargs):
         """Show RPN proposals on the image.
 

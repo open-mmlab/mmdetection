@@ -219,11 +219,6 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         """
         batch_inputs, batch_data_samples = self.preprocss_data(data)
 
-        if torch.onnx.is_in_onnx_export():
-            # TODO: Delete
-            assert len(batch_inputs) == 1
-            return self.onnx_export(batch_inputs, batch_data_samples)
-
         if return_loss:
             losses = self.forward_train(batch_inputs, batch_data_samples,
                                         **kwargs)
@@ -413,8 +408,3 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
             log_vars[loss_name] = loss_value.item()
 
         return loss, log_vars
-
-    # TODO
-    def onnx_export(self, img, data_sample):
-        raise NotImplementedError(f'{self.__class__.__name__} does '
-                                  f'not support ONNX EXPORT')

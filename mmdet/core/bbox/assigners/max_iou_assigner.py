@@ -1,5 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Optional, Union
+
 import torch
+from mmengine.data import InstanceData
+from torch import Tensor
 
 from mmdet.registry import TASK_UTILS
 from .assign_result import AssignResult
@@ -40,18 +44,19 @@ class MaxIoUAssigner(BaseAssigner):
         gpu_assign_thr (int): The upper bound of the number of GT for GPU
             assign. When the number of gt is above this threshold, will assign
             on CPU device. Negative values mean not assign on CPU.
+        iou_calculator (dict): Config of overlaps Calculator.
     """
 
     def __init__(self,
-                 pos_iou_thr,
-                 neg_iou_thr,
-                 min_pos_iou=.0,
-                 gt_max_assign_all=True,
-                 ignore_iof_thr=-1,
-                 ignore_wrt_candidates=True,
-                 match_low_quality=True,
-                 gpu_assign_thr=-1,
-                 iou_calculator=dict(type='BboxOverlaps2D')):
+                 pos_iou_thr: float,
+                 neg_iou_thr: Union[float, tuple],
+                 min_pos_iou: float = .0,
+                 gt_max_assign_all: bool = True,
+                 ignore_iof_thr: float = -1,
+                 ignore_wrt_candidates: bool = True,
+                 match_low_quality: bool = True,
+                 gpu_assign_thr: float = -1,
+                 iou_calculator: dict = dict(type='BboxOverlaps2D')):
         self.pos_iou_thr = pos_iou_thr
         self.neg_iou_thr = neg_iou_thr
         self.min_pos_iou = min_pos_iou
@@ -63,10 +68,10 @@ class MaxIoUAssigner(BaseAssigner):
         self.iou_calculator = TASK_UTILS.build(iou_calculator)
 
     def assign(self,
-               pred_instances,
-               gt_instances,
-               gt_instances_ignore=None,
-               **kwargs):
+               pred_instances: InstanceData,
+               gt_instances: InstanceData,
+               gt_instances_ignore: Optional[InstanceData] = None,
+               **kwargs) -> AssignResult:
         """Assign gt to bboxes.
 
         This method assign a gt bbox to every bbox (proposal/anchor), each bbox
@@ -82,14 +87,17 @@ class MaxIoUAssigner(BaseAssigner):
            one) to itself
 
         Args:
-            pred_instances (:obj:`InstaceData`): Instances of model
-                predictions. It includes bboxes, and the bboxes can
-                be anchors, points, or bboxes predicted by the model,
-                shape(n, 4).
-            gt_instances (:obj:`InstaceData`): Ground truth of instance
-                annotations. It usually includes ``bboxes`` and ``labels``
-                attributes.
-            gt_instances_ignore (:obj:`InstaceData`, optional): Instances
+            pred_instances (:obj:`InstanceData`): Instances of model
+                predictions. It includes ``priors``, and the priors can
+                be anchors or points, or the bboxes predicted by the
+                previous stage, has shape (n, 4). The bboxes predicted by
+                the current model or stage will be named ``bboxes``,
+                ``labels``, and ``scores``, the same as the ``InstanceData``
+                in other places.
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It usually includes ``bboxes``, with shape (k, 4),
+                and ``labels``, with shape (k, ).
+            gt_instances_ignore (:obj:`InstanceData`, optional): Instances
                 to be ignored during training. It includes ``bboxes``
                 attribute data that is ignored during training and testing.
                 Defaults to None.
@@ -101,17 +109,18 @@ class MaxIoUAssigner(BaseAssigner):
             >>> from mmengine.data import InstanceData
             >>> self = MaxIoUAssigner(0.5, 0.5)
             >>> pred_instances = InstanceData()
-            >>> pred_instances.bboxes = torch.Tensor([[0, 0, 10, 10],
+            >>> pred_instances.priors = torch.Tensor([[0, 0, 10, 10],
             ...                                      [10, 10, 20, 20]])
             >>> gt_instances = InstanceData()
             >>> gt_instances.bboxes = torch.Tensor([[0, 0, 10, 9]])
+            >>> gt_instances.labels = torch.Tensor([0])
             >>> assign_result = self.assign(pred_instances, gt_instances)
             >>> expected_gt_inds = torch.LongTensor([1, 0])
             >>> assert torch.all(assign_result.gt_inds == expected_gt_inds)
         """
         gt_bboxes = gt_instances.bboxes
-        bboxes = pred_instances.bboxes
-        gt_labels = gt_instances.get('labels', None)
+        priors = pred_instances.priors
+        gt_labels = gt_instances.labels
         if gt_instances_ignore is not None:
             gt_bboxes_ignore = gt_instances_ignore.bboxes
         else:
@@ -121,25 +130,24 @@ class MaxIoUAssigner(BaseAssigner):
             gt_bboxes.shape[0] > self.gpu_assign_thr) else False
         # compute overlap and assign gt on CPU when number of GT is large
         if assign_on_cpu:
-            device = bboxes.device
-            bboxes = bboxes.cpu()
+            device = priors.device
+            priors = priors.cpu()
             gt_bboxes = gt_bboxes.cpu()
+            gt_labels = gt_labels.cpu()
             if gt_bboxes_ignore is not None:
                 gt_bboxes_ignore = gt_bboxes_ignore.cpu()
-            if gt_labels is not None:
-                gt_labels = gt_labels.cpu()
 
-        overlaps = self.iou_calculator(gt_bboxes, bboxes)
+        overlaps = self.iou_calculator(gt_bboxes, priors)
 
         if (self.ignore_iof_thr > 0 and gt_bboxes_ignore is not None
-                and gt_bboxes_ignore.numel() > 0 and bboxes.numel() > 0):
+                and gt_bboxes_ignore.numel() > 0 and priors.numel() > 0):
             if self.ignore_wrt_candidates:
                 ignore_overlaps = self.iou_calculator(
-                    bboxes, gt_bboxes_ignore, mode='iof')
+                    priors, gt_bboxes_ignore, mode='iof')
                 ignore_max_overlaps, _ = ignore_overlaps.max(dim=1)
             else:
                 ignore_overlaps = self.iou_calculator(
-                    gt_bboxes_ignore, bboxes, mode='iof')
+                    gt_bboxes_ignore, priors, mode='iof')
                 ignore_max_overlaps, _ = ignore_overlaps.max(dim=0)
             overlaps[:, ignore_max_overlaps > self.ignore_iof_thr] = -1
 
@@ -151,14 +159,14 @@ class MaxIoUAssigner(BaseAssigner):
                 assign_result.labels = assign_result.labels.to(device)
         return assign_result
 
-    def assign_wrt_overlaps(self, overlaps, gt_labels=None):
-        """Assign w.r.t. the overlaps of bboxes with gts.
+    def assign_wrt_overlaps(self, overlaps: Tensor,
+                            gt_labels: Tensor) -> AssignResult:
+        """Assign w.r.t. the overlaps of priors with gts.
 
         Args:
             overlaps (Tensor): Overlaps between k gt_bboxes and n bboxes,
                 shape(k, n).
-            gt_labels (Tensor, optional): Labels of k gt_bboxes, shape (k, ).
-                Defaults to None.
+            gt_labels (Tensor): Labels of k gt_bboxes, shape (k, ).
 
         Returns:
             :obj:`AssignResult`: The assign result.
@@ -173,19 +181,16 @@ class MaxIoUAssigner(BaseAssigner):
         if num_gts == 0 or num_bboxes == 0:
             # No ground truth or boxes, return empty assignment
             max_overlaps = overlaps.new_zeros((num_bboxes, ))
+            assigned_labels = overlaps.new_full((num_bboxes, ),
+                                                -1,
+                                                dtype=torch.long)
             if num_gts == 0:
                 # No truth, assign everything to background
                 assigned_gt_inds[:] = 0
-            if gt_labels is None:
-                assigned_labels = None
-            else:
-                assigned_labels = overlaps.new_full((num_bboxes, ),
-                                                    -1,
-                                                    dtype=torch.long)
             return AssignResult(
-                num_gts,
-                assigned_gt_inds,
-                max_overlaps,
+                num_gts=num_gts,
+                gt_inds=assigned_gt_inds,
+                max_overlaps=max_overlaps,
                 labels=assigned_labels)
 
         # for each anchor, which gt best overlaps with it
@@ -226,15 +231,15 @@ class MaxIoUAssigner(BaseAssigner):
                     else:
                         assigned_gt_inds[gt_argmax_overlaps[i]] = i + 1
 
-        if gt_labels is not None:
-            assigned_labels = assigned_gt_inds.new_full((num_bboxes, ), -1)
-            pos_inds = torch.nonzero(
-                assigned_gt_inds > 0, as_tuple=False).squeeze()
-            if pos_inds.numel() > 0:
-                assigned_labels[pos_inds] = gt_labels[
-                    assigned_gt_inds[pos_inds] - 1]
-        else:
-            assigned_labels = None
+        assigned_labels = assigned_gt_inds.new_full((num_bboxes, ), -1)
+        pos_inds = torch.nonzero(
+            assigned_gt_inds > 0, as_tuple=False).squeeze()
+        if pos_inds.numel() > 0:
+            assigned_labels[pos_inds] = gt_labels[assigned_gt_inds[pos_inds] -
+                                                  1]
 
         return AssignResult(
-            num_gts, assigned_gt_inds, max_overlaps, labels=assigned_labels)
+            num_gts=num_gts,
+            gt_inds=assigned_gt_inds,
+            max_overlaps=max_overlaps,
+            labels=assigned_labels)

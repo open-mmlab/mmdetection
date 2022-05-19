@@ -42,18 +42,18 @@ class SingleStageDetector(BaseDetector):
 
     def extract_feat(self, batch_inputs):
         """Directly extract features from the backbone+neck."""
-        feats = self.backbone(batch_inputs)
+        x = self.backbone(batch_inputs)
         if self.with_neck:
-            feats = self.neck(feats)
-        return feats
+            x = self.neck(x)
+        return x
 
     def forward_dummy(self, batch_inputs):
         """Used for computing network flops.
 
         See `mmdetection/tools/analysis_tools/get_flops.py`
         """
-        feats = self.extract_feat(batch_inputs)
-        outs = self.bbox_head(feats)
+        x = self.extract_feat(batch_inputs)
+        outs = self.bbox_head(x)
         return outs
 
     def forward_train(self, batch_inputs, batch_data_samples, **kwargs):
@@ -70,9 +70,8 @@ class SingleStageDetector(BaseDetector):
         """
         super(SingleStageDetector, self).forward_train(batch_inputs,
                                                        batch_data_samples)
-        feats = self.extract_feat(batch_inputs)
-        losses = self.bbox_head.forward_train(feats, batch_data_samples,
-                                              **kwargs)
+        x = self.extract_feat(batch_inputs)
+        losses = self.bbox_head.forward_train(x, batch_data_samples, **kwargs)
         return losses
 
     def simple_test(self, batch_inputs, batch_img_metas, rescale=False):
@@ -97,9 +96,9 @@ class SingleStageDetector(BaseDetector):
                 - bboxes (Tensor): Has a shape (num_instances, 4),
                     the last dimension 4 arrange as (x1, y1, x2, y2).
         """
-        feats = self.extract_feat(batch_inputs)
+        x = self.extract_feat(batch_inputs)
         results_list = self.bbox_head.simple_test(
-            feats, batch_img_metas, rescale=rescale)
+            x, batch_img_metas, rescale=rescale)
 
         # connvert to DetDataSample
         for i in range(len(results_list)):
@@ -134,9 +133,9 @@ class SingleStageDetector(BaseDetector):
             f'{self.bbox_head.__class__.__name__}' \
             ' does not support test-time augmentation'
 
-        feats = self.extract_feats(aug_batch_imgs)
+        x = self.extract_feats(aug_batch_imgs)
         results_list = self.bbox_head.aug_test(
-            feats, aug_batch_img_metas, rescale=rescale)
+            x, aug_batch_img_metas, rescale=rescale)
         bbox_results = []
         for results in results_list:
             det_bboxes = torch.cat([results.bboxes, results.scores[:, None]],
@@ -146,36 +145,3 @@ class SingleStageDetector(BaseDetector):
                 bbox2result(det_bboxes, det_labels,
                             self.bbox_head.num_classes))
         return bbox_results
-
-    # TODO: Currently not supported
-    def onnx_export(self, img, img_metas, with_nms=True):
-        """Test function without test time augmentation.
-
-        Args:
-            img (torch.Tensor): input images.
-            img_metas (list[dict]): List of image information.
-
-        Returns:
-            tuple[Tensor, Tensor]: dets of shape [N, num_det, 5]
-                and class labels of shape [N, num_det].
-        """
-        x = self.extract_feat(img)
-        outs = self.bbox_head(x)
-        # get origin input shape to support onnx dynamic shape
-
-        # get shape as tensor
-        img_shape = torch._shape_as_tensor(img)[2:]
-        img_metas[0]['img_shape_for_onnx'] = img_shape
-        # get pad input shape to support onnx dynamic shape for exporting
-        # `CornerNet` and `CentripetalNet`, which 'pad_shape' is used
-        # for inference
-        img_metas[0]['pad_shape_for_onnx'] = img_shape
-
-        if len(outs) == 2:
-            # add dummy score_factor
-            outs = (*outs, None)
-        # TODO Can we change to `get_bboxes` when `onnx_export` fail
-        det_bboxes, det_labels = self.bbox_head.onnx_export(
-            *outs, img_metas, with_nms=with_nms)
-
-        return det_bboxes, det_labels

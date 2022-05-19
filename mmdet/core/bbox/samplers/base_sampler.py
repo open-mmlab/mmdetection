@@ -2,19 +2,30 @@
 from abc import ABCMeta, abstractmethod
 
 import torch
+from mmengine.data import InstanceData
 
+from mmdet.core.bbox.assigners import AssignResult
 from .sampling_result import SamplingResult
 
 
 class BaseSampler(metaclass=ABCMeta):
-    """Base class of samplers."""
+    """Base class of samplers.
+
+    Args:
+        num (int): Number of samples
+        pos_fraction (float): Fraction of positive samples
+        neg_pos_up (int): Upper bound number of negative and
+            positive samples. Defaults to -1.
+        add_gt_as_proposals (bool): Whether to add ground truth
+            boxes as proposals. Defaults to True.
+    """
 
     def __init__(self,
-                 num,
-                 pos_fraction,
-                 neg_pos_ub=-1,
-                 add_gt_as_proposals=True,
-                 **kwargs):
+                 num: int,
+                 pos_fraction: float,
+                 neg_pos_ub: int = -1,
+                 add_gt_as_proposals: bool = True,
+                 **kwargs) -> None:
         self.num = num
         self.pos_fraction = pos_fraction
         self.neg_pos_ub = neg_pos_ub
@@ -23,66 +34,77 @@ class BaseSampler(metaclass=ABCMeta):
         self.neg_sampler = self
 
     @abstractmethod
-    def _sample_pos(self, assign_result, num_expected, **kwargs):
+    def _sample_pos(self, assign_result: AssignResult, num_expected: int,
+                    **kwargs):
         """Sample positive samples."""
         pass
 
     @abstractmethod
-    def _sample_neg(self, assign_result, num_expected, **kwargs):
+    def _sample_neg(self, assign_result: AssignResult, num_expected: int,
+                    **kwargs):
         """Sample negative samples."""
         pass
 
-    def sample(self,
-               assign_result,
-               bboxes,
-               gt_bboxes,
-               gt_labels=None,
-               **kwargs):
+    def sample(self, assign_result: AssignResult, pred_instances: InstanceData,
+               gt_instances: InstanceData, **kwargs) -> SamplingResult:
         """Sample positive and negative bboxes.
 
         This is a simple implementation of bbox sampling given candidates,
         assigning results and ground truth bboxes.
 
         Args:
-            assign_result (:obj:`AssignResult`): Bbox assigning results.
-            bboxes (Tensor): Boxes to be sampled from.
-            gt_bboxes (Tensor): Ground truth bboxes.
-            gt_labels (Tensor, optional): Class labels of ground truth bboxes.
+            assign_result (:obj:`AssignResult`): Assigning results.
+            pred_instances (:obj:`InstanceData`): Instances of model
+                predictions. It includes ``priors``, and the priors can
+                be anchors or points, or the bboxes predicted by the
+                previous stage, has shape (n, 4). The bboxes predicted by
+                the current model or stage will be named ``bboxes``,
+                ``labels``, and ``scores``, the same as the ``InstanceData``
+                in other places.
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It usually includes ``bboxes``, with shape (k, 4),
+                and ``labels``, with shape (k, ).
 
         Returns:
             :obj:`SamplingResult`: Sampling result.
 
         Example:
+            >>> from mmengine.data import InstanceData
             >>> from mmdet.core.bbox import RandomSampler
             >>> from mmdet.core.bbox import AssignResult
             >>> from mmdet.core.bbox.demodata import ensure_rng, random_boxes
             >>> rng = ensure_rng(None)
             >>> assign_result = AssignResult.random(rng=rng)
-            >>> bboxes = random_boxes(assign_result.num_preds, rng=rng)
-            >>> gt_bboxes = random_boxes(assign_result.num_gts, rng=rng)
-            >>> gt_labels = None
+            >>> pred_instances = InstanceData()
+            >>> pred_instances.priors = random_boxes(assign_result.num_preds,
+            ...                                      rng=rng)
+            >>> gt_instances = InstanceData()
+            >>> gt_instances.bboxes = random_boxes(assign_result.num_gts,
+            ...                                    rng=rng)
+            >>> gt_instances.labels = torch.randint(
+            ...     0, 5, (assign_result.num_gts,), dtype=torch.long)
             >>> self = RandomSampler(num=32, pos_fraction=0.5, neg_pos_ub=-1,
             >>>                      add_gt_as_proposals=False)
-            >>> self = self.sample(assign_result, bboxes, gt_bboxes, gt_labels)
+            >>> self = self.sample(assign_result, pred_instances, gt_instances)
         """
-        if len(bboxes.shape) < 2:
-            bboxes = bboxes[None, :]
+        gt_bboxes = gt_instances.bboxes
+        priors = pred_instances.priors
+        gt_labels = gt_instances.labels
+        if len(priors.shape) < 2:
+            priors = priors[None, :]
 
-        bboxes = bboxes[:, :4]
+        priors = priors[:, :4]
 
-        gt_flags = bboxes.new_zeros((bboxes.shape[0], ), dtype=torch.uint8)
+        gt_flags = priors.new_zeros((priors.shape[0], ), dtype=torch.uint8)
         if self.add_gt_as_proposals and len(gt_bboxes) > 0:
-            if gt_labels is None:
-                raise ValueError(
-                    'gt_labels must be given when add_gt_as_proposals is True')
-            bboxes = torch.cat([gt_bboxes, bboxes], dim=0)
+            priors = torch.cat([gt_bboxes, priors], dim=0)
             assign_result.add_gt_(gt_labels)
-            gt_ones = bboxes.new_ones(gt_bboxes.shape[0], dtype=torch.uint8)
+            gt_ones = priors.new_ones(gt_bboxes.shape[0], dtype=torch.uint8)
             gt_flags = torch.cat([gt_ones, gt_flags])
 
         num_expected_pos = int(self.num * self.pos_fraction)
         pos_inds = self.pos_sampler._sample_pos(
-            assign_result, num_expected_pos, bboxes=bboxes, **kwargs)
+            assign_result, num_expected_pos, bboxes=priors, **kwargs)
         # We found that sampled indices have duplicated items occasionally.
         # (may be a bug of PyTorch)
         pos_inds = pos_inds.unique()
@@ -94,9 +116,14 @@ class BaseSampler(metaclass=ABCMeta):
             if num_expected_neg > neg_upper_bound:
                 num_expected_neg = neg_upper_bound
         neg_inds = self.neg_sampler._sample_neg(
-            assign_result, num_expected_neg, bboxes=bboxes, **kwargs)
+            assign_result, num_expected_neg, bboxes=priors, **kwargs)
         neg_inds = neg_inds.unique()
 
-        sampling_result = SamplingResult(pos_inds, neg_inds, bboxes, gt_bboxes,
-                                         assign_result, gt_flags)
+        sampling_result = SamplingResult(
+            pos_inds=pos_inds,
+            neg_inds=neg_inds,
+            priors=priors,
+            gt_bboxes=gt_bboxes,
+            assign_result=assign_result,
+            gt_flags=gt_flags)
         return sampling_result
