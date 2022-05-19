@@ -19,7 +19,7 @@ class MMDetWandbHook(WandbLoggerHook):
 
     Comparing with the :cls:`mmcv.runner.WandbLoggerHook`, this hook can not
     only automatically log all the metrics but also log the following extra
-    information - logs metrics, saves model checkpoints as W&B Artifact, and
+    information - saves model checkpoints as W&B Artifact, and
     logs model prediction as interactive W&B Tables.
 
     - Metrics: The MMDetWandbHook will automatically log training
