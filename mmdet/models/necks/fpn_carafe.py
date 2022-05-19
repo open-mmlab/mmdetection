@@ -3,6 +3,9 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule, build_upsample_layer, xavier_init
 from mmcv.ops.carafe import CARAFEPack
 from mmcv.runner import BaseModule, ModuleList
+from mmdet.models.utils.carafe import CARAFE
+from .ssfpn import ASPP
+from mmdet.models.utils.cbam import CBAM
 
 from ..builder import NECKS
 
@@ -70,6 +73,7 @@ class FPN_CARAFE(BaseModule):
 
         assert self.upsample in [
             'nearest', 'bilinear', 'deconv', 'pixel_shuffle', 'carafe', None
+            ,'carafe_pytorch'
         ]
         if self.upsample in ['deconv', 'pixel_shuffle']:
             assert hasattr(
@@ -93,6 +97,11 @@ class FPN_CARAFE(BaseModule):
         self.upsample_modules = ModuleList()
 
         for i in range(self.start_level, self.backbone_end_level):
+            # modify by lzj 将横向卷积替换为ASPP模块以减少尺度
+            # l_conv = ASPP(
+            #     in_channels[i],
+            #     out_channels
+            # )
             l_conv = ConvModule(
                 in_channels[i],
                 out_channels,
@@ -102,6 +111,7 @@ class FPN_CARAFE(BaseModule):
                 act_cfg=act_cfg,
                 inplace=False,
                 order=self.order)
+            # modify by lzj 为了规范特征图，采用CBAM注意力规范
             fpn_conv = ConvModule(
                 out_channels,
                 out_channels,
@@ -112,33 +122,41 @@ class FPN_CARAFE(BaseModule):
                 act_cfg=act_cfg,
                 inplace=False,
                 order=self.order)
+
+
             if i != self.backbone_end_level - 1:
                 upsample_cfg_ = self.upsample_cfg.copy()
-                if self.upsample == 'deconv':
-                    upsample_cfg_.update(
-                        in_channels=out_channels,
-                        out_channels=out_channels,
-                        kernel_size=self.upsample_kernel,
-                        stride=2,
-                        padding=(self.upsample_kernel - 1) // 2,
-                        output_padding=(self.upsample_kernel - 1) // 2)
-                elif self.upsample == 'pixel_shuffle':
-                    upsample_cfg_.update(
-                        in_channels=out_channels,
-                        out_channels=out_channels,
-                        scale_factor=2,
-                        upsample_kernel=self.upsample_kernel)
-                elif self.upsample == 'carafe':
-                    upsample_cfg_.update(channels=out_channels, scale_factor=2)
+                # 添加自己修改的carafe模块
+                if self.upsample != 'carafe_pytorch':
+                    if self.upsample == 'deconv':
+                        upsample_cfg_.update(
+                            in_channels=out_channels,
+                            out_channels=out_channels,
+                            kernel_size=self.upsample_kernel,
+                            stride=2,
+                            padding=(self.upsample_kernel - 1) // 2,
+                            output_padding=(self.upsample_kernel - 1) // 2)
+                    elif self.upsample == 'pixel_shuffle':
+                        upsample_cfg_.update(
+                            in_channels=out_channels,
+                            out_channels=out_channels,
+                            scale_factor=2,
+                            upsample_kernel=self.upsample_kernel)
+                    elif self.upsample == 'carafe':
+                        upsample_cfg_.update(channels=out_channels, scale_factor=2)
+                    else:
+                        # suppress warnings
+                        align_corners = (None
+                                         if self.upsample == 'nearest' else False)
+                        upsample_cfg_.update(
+                            scale_factor=2,
+                            mode=self.upsample,
+                            align_corners=align_corners)
+                    upsample_module = build_upsample_layer(upsample_cfg_)
                 else:
-                    # suppress warnings
-                    align_corners = (None
-                                     if self.upsample == 'nearest' else False)
-                    upsample_cfg_.update(
-                        scale_factor=2,
-                        mode=self.upsample,
-                        align_corners=align_corners)
-                upsample_module = build_upsample_layer(upsample_cfg_)
+                    upsample_cfg_.update(c=out_channels, scale=2)
+                    upsample_cfg_.pop('type')
+                    upsample_module = CARAFE(**upsample_cfg_)
                 self.upsample_modules.append(upsample_module)
             self.lateral_convs.append(l_conv)
             self.fpn_convs.append(fpn_conv)
@@ -162,45 +180,64 @@ class FPN_CARAFE(BaseModule):
                     act_cfg=act_cfg,
                     inplace=False,
                     order=self.order)
-                if self.upsample == 'deconv':
-                    upsampler_cfg_ = dict(
-                        in_channels=out_channels,
-                        out_channels=out_channels,
-                        kernel_size=self.upsample_kernel,
-                        stride=2,
-                        padding=(self.upsample_kernel - 1) // 2,
-                        output_padding=(self.upsample_kernel - 1) // 2)
-                elif self.upsample == 'pixel_shuffle':
-                    upsampler_cfg_ = dict(
-                        in_channels=out_channels,
-                        out_channels=out_channels,
-                        scale_factor=2,
-                        upsample_kernel=self.upsample_kernel)
-                elif self.upsample == 'carafe':
-                    upsampler_cfg_ = dict(
-                        channels=out_channels,
-                        scale_factor=2,
-                        **self.upsample_cfg)
+                if self.upsample != 'carafe_pytorch':
+                    if self.upsample == 'deconv':
+                        upsampler_cfg_ = dict(
+                            in_channels=out_channels,
+                            out_channels=out_channels,
+                            kernel_size=self.upsample_kernel,
+                            stride=2,
+                            padding=(self.upsample_kernel - 1) // 2,
+                            output_padding=(self.upsample_kernel - 1) // 2)
+                    elif self.upsample == 'pixel_shuffle':
+                        upsampler_cfg_ = dict(
+                            in_channels=out_channels,
+                            out_channels=out_channels,
+                            scale_factor=2,
+                            upsample_kernel=self.upsample_kernel)
+                    elif self.upsample == 'carafe':
+                        upsampler_cfg_ = dict(
+                            channels=out_channels,
+                            scale_factor=2,
+                            **self.upsample_cfg)
+                    else:
+                        # suppress warnings
+                        align_corners = (None
+                                         if self.upsample == 'nearest' else False)
+                        upsampler_cfg_ = dict(
+                            scale_factor=2,
+                            mode=self.upsample,
+                            align_corners=align_corners)
+                    upsampler_cfg_['type'] = self.upsample
+                    upsample_module = build_upsample_layer(upsampler_cfg_)
                 else:
-                    # suppress warnings
-                    align_corners = (None
-                                     if self.upsample == 'nearest' else False)
-                    upsampler_cfg_ = dict(
-                        scale_factor=2,
-                        mode=self.upsample,
-                        align_corners=align_corners)
-                upsampler_cfg_['type'] = self.upsample
-                upsample_module = build_upsample_layer(upsampler_cfg_)
-                extra_fpn_conv = ConvModule(
-                    out_channels,
-                    out_channels,
-                    3,
-                    padding=1,
-                    norm_cfg=self.norm_cfg,
-                    bias=self.with_bias,
-                    act_cfg=act_cfg,
-                    inplace=False,
-                    order=self.order)
+                    upsample_cfg_.update(c=out_channels, scale=2)
+                    # upsample_cfg_.pop('type')
+                    upsample_module = CARAFE(**upsample_cfg_)
+                # modify by lzj 同样修改为CBAM，另外上面extra的carafe_pytorch照标准carafe实现少一个，现在修正
+                # extra_fpn_conv = ConvModule(
+                #     out_channels,
+                #     out_channels,
+                #     3,
+                #     padding=1,
+                #     norm_cfg=self.norm_cfg,
+                #     bias=self.with_bias,
+                #     act_cfg=act_cfg,
+                #     inplace=False,
+                #     order=self.order)
+                extra_fpn_conv = nn.Sequential(
+                    ConvModule(
+                        out_channels,
+                        out_channels,
+                        3,
+                        padding=1,
+                        norm_cfg=self.norm_cfg,
+                        bias=self.with_bias,
+                        act_cfg=act_cfg,
+                        inplace=False,
+                        order=self.order),
+                    CBAM(gate_channels=out_channels, pool_types=['max'])
+                )
                 self.upsample_modules.append(upsample_module)
                 self.fpn_convs.append(extra_fpn_conv)
                 self.lateral_convs.append(extra_l_conv)
@@ -261,6 +298,11 @@ class FPN_CARAFE(BaseModule):
         # build top-down path
         for i in range(len(laterals) - 1, 0, -1):
             if self.upsample is not None:
+                # modify by lzj for modified carafe_pytorch
+                # if self.upsample != 'carafe_pytorch':
+                #     upsample_feat = self.upsample_modules[i - 1](laterals[i])
+                # else:
+                #     upsample_feat = self.upsample_modules[i - 1](laterals[i],laterals[i-1])
                 upsample_feat = self.upsample_modules[i - 1](laterals[i])
             else:
                 upsample_feat = laterals[i]

@@ -1,4 +1,4 @@
-dataset_type = 'CocoDataset'
+dataset_type = 'TinyPersonCocoDataset'
 # data_root = '../data/dense/'
 data_root = '../data/tiny_set/'
 img_norm_cfg = dict(
@@ -107,4 +107,4 @@ data = dict(
         ann_file=data_root + 'divide_640x512_overlap30_annotations/test/tiny_set_test_single.json',
         img_prefix=data_root + 'test',
         pipeline=test_pipeline))
-evaluation = dict(interval=1, metric='bbox',save_best='bbox_mAP')
+# evaluation = dict(interval=1, metric='bbox',save_best='bbox_mAP')

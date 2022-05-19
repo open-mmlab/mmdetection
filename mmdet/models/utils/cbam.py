@@ -36,7 +36,7 @@ class ChannelGate(nn.Module):
         self.pool_types = pool_types
     def forward(self, x):
         channel_att_sum = None
-        # add by lzj 这里是为了导出为onnx的修正带吗
+        # add by lzj 这里是为了导出为onnx的修正代码
         batch, channels, height, width = x.size()
         if torch.is_tensor(height):
             height = height.item()  # 这里是修正代码

@@ -142,20 +142,21 @@ def imshow_det_bboxes(img,
             label] if class_names is not None else f'class {label}'
         if len(bbox) > 4:
             label_text += f'|{bbox[-1]:.02f}'
-        ax.text(
-            bbox_int[0],
-            bbox_int[1],
-            f'{label_text}',
-            bbox={
-                'facecolor': 'black',
-                'alpha': 0.8,
-                'pad': 0.7,
-                'edgecolor': 'none'
-            },
-            color=text_color,
-            fontsize=font_size,
-            verticalalignment='top',
-            horizontalalignment='left')
+        # modify by lzj 去掉检测框上的文字与置信度
+        # ax.text(
+        #     bbox_int[0],
+        #     bbox_int[1],
+        #     f'{label_text}',
+        #     bbox={
+        #         'facecolor': 'black',
+        #         'alpha': 0.8,
+        #         'pad': 0.7,
+        #         'edgecolor': 'none'
+        #     },
+        #     color=text_color,
+        #     fontsize=font_size,
+        #     verticalalignment='top',
+        #     horizontalalignment='left')
         if segms is not None:
             color_mask = mask_colors[labels[i]]
             mask = segms[i].astype(bool)

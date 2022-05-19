@@ -195,7 +195,7 @@ class TwoStageDetector(BaseDetector):
         #     x, proposal_list, img_metas, rescale=rescale)
 
         # modified by hui #####################################
-        if self.test_cfg.rcnn.get('do_tile_as_aug', False):
+        if self.test_cfg.rcnn.get('do_tile_as_aug', False)==False:
             x = self.extract_feats(imgs)
             proposal_list = self.rpn_head.aug_test_rpn(x, img_metas)
             return self.roi_head.aug_test(

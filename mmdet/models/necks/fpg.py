@@ -327,8 +327,37 @@ class FPG(BaseModule):
                 if out is None:
                     out = item
                 else:
-                    out = out + item
+                    # out = out + item
+                    out = self.tensor_add(out,item)
         return out
+
+    def slice_as(self, src, dst):
+        """Slice ``src`` as ``dst``
+
+        Note:
+            ``src`` should have the same or larger size than ``dst``.
+
+        Args:
+            src (torch.Tensor): Tensors to be sliced.
+            dst (torch.Tensor): ``src`` will be sliced to have the same
+                size as ``dst``.
+
+        Returns:
+            torch.Tensor: Sliced tensor.
+        """
+        assert (src.size(2) >= dst.size(2)) and (src.size(3) >= dst.size(3))
+        if src.size(2) == dst.size(2) and src.size(3) == dst.size(3):
+            return src
+        else:
+            return src[:, :, :dst.size(2), :dst.size(3)]
+
+    def tensor_add(self, a, b):
+        """Add tensors ``a`` and ``b`` that might have different sizes."""
+        if a.size() == b.size():
+            c = a + b
+        else:
+            c = a + self.slice_as(b, a)
+        return c
 
     def forward(self, inputs):
         assert len(inputs) == len(self.in_channels)

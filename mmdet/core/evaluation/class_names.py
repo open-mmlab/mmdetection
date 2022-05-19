@@ -83,6 +83,12 @@ def coco_classes():
     ]
 
 
+def visdrone_classes():
+    return [
+        'pedestrian', 'people', 'bicycle', 'car', 'van', 'truck', 'tricycle', 'awning-tricycle', 'bus', 'motor'
+    ]
+
+
 def cityscapes_classes():
     return [
         'person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle',
@@ -97,6 +103,7 @@ dataset_aliases = {
     'coco': ['coco', 'mscoco', 'ms_coco'],
     'wider_face': ['WIDERFaceDataset', 'wider_face', 'WIDERFace'],
     'cityscapes': ['cityscapes']
+    , 'visdrone': ['visdrone_coco','VisDroneCocoDataset']
 }
 
 

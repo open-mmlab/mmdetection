@@ -306,6 +306,7 @@ class SSFPN(nn.Module):
             else:
                 prev_shape = laterals[i - 1].shape[2:]
 
+                # comment by lzj Scale selection module
                 # get intersection of Adjacent attention maps
                 att_2x = F.interpolate(att_list[i], size=prev_shape, **self.upsample_cfg)
                 att_insec = att_list[i - 1] * att_2x
@@ -316,7 +317,7 @@ class SSFPN(nn.Module):
                 laterals[i - 1] = laterals[i - 1] + select_gate * F.interpolate(
                     laterals[i], size=prev_shape, **self.upsample_cfg)
         # build outputs
-
+        # comment by lzj scale selection module
         outs = [
             (1 + att_list[i]) * self.fpn_convs[i](laterals[i]) for i in range(used_backbone_levels)
         ]
@@ -346,6 +347,3 @@ class SSFPN(nn.Module):
                         outs.append(self.fpn_convs[i](outs[-1]))
 
         return tuple(outs), tuple(att_list)
-        # modify by lzj 根据论文来看，这里应该不需要att_list这个输出
-        # modify by lzj 根据论文来看，网络中有attention_loss，放出来看看？
-        # return tuple(outs)

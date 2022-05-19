@@ -64,7 +64,7 @@ train_pipeline = [
         },
         update_pad_shape=False,
         skip_img_without_anno=True),
-    dict(type='Mosaic',img_scale=640),
+    # dict(type='Mosaic',img_scale=(640,640)),
     dict(type='RandomFlip', flip_ratio=0.5),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32),
@@ -113,4 +113,4 @@ data = dict(
         ann_file=data_root + 'test-dev.json',
         img_prefix=data_root + 'VisDrone2019-DET-test-dev/images',
         pipeline=test_pipeline))
-evaluation = dict(interval=1, metric='bbox',save_best='bbox_mAP_s')
+# evaluation = dict(interval=1, metric='bbox',save_best='bbox_mAP_s')

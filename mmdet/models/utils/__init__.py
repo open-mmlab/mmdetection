@@ -16,8 +16,11 @@ from .se_layer import SELayer
 from .transformer import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
                           DynamicConv, PatchEmbed, Transformer, nchw_to_nlc,
                           nlc_to_nchw)
-
+from .carafe import CARAFE
+from .global_attention_carafe import Attention_CARAFE
 from .cbam import CBAM,ChannelGate,SpatialGate
+from .se_attention import SEAttention
+
 
 __all__ = [
     'ResLayer', 'gaussian_radius', 'gen_gaussian_target',
@@ -29,4 +32,8 @@ __all__ = [
     'adaptive_avg_pool2d', 'AdaptiveAvgPool2d', 'PatchEmbed', 'nchw_to_nlc',
     'nlc_to_nchw', 'pvt_convert'
     ,'CBAM','ChannelGate','SpatialGate'
+    ,'CARAFE'
+    ,'Attention_CARAFE'
+    ,'SEAttention'
+
 ]

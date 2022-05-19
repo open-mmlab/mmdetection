@@ -178,6 +178,15 @@ def main():
     model.CLASSES = datasets[0].CLASSES
     # print('---------------start printing models---------------------------------')
     # print(model)
+    # with torch.autograd.set_detect_anomaly(True):
+    #     train_detector(
+    #         model,
+    #         datasets,
+    #         cfg,
+    #         distributed=distributed,
+    #         validate=(not args.no_validate),
+    #         timestamp=timestamp,
+    #         meta=meta)
     train_detector(
         model,
         datasets,
@@ -186,7 +195,6 @@ def main():
         validate=(not args.no_validate),
         timestamp=timestamp,
         meta=meta)
-
 
 if __name__ == '__main__':
     main()
