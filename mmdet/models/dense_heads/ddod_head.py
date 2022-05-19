@@ -185,7 +185,7 @@ class DDODHead(AnchorHead):
                 reduced over all GPUs.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            tuple[Tensor]: A tuple of loss components.
         """
         cls_score = cls_score.permute(0, 2, 3, 1).reshape(
             -1, self.cls_out_channels).contiguous()
@@ -272,15 +272,10 @@ class DDODHead(AnchorHead):
 
         return reweight_factor * loss_bbox, reweight_factor * loss_iou
 
-    def preprocess_loss(self, num_total_pos, labels_list, device):
+    def calc_reweight_factor(self, labels_list):
         '''
-        Compute common vars for regression and classification loss.
+        Compute reweight_factor for regression and classification loss.
         '''
-        num_total_samples = reduce_mean(
-            torch.tensor(num_total_pos, dtype=torch.float,
-                         device=device)).item()
-        num_total_samples = max(num_total_samples, 1.0)
-
         # get pos samples for each level
         bg_class_ind = self.num_classes
         for ii, each_level_label in enumerate(labels_list):
@@ -296,7 +291,7 @@ class DDODHead(AnchorHead):
         for pos_samples in self.cls_num_pos_samples_per_level:
             factor = 2. - (pos_samples - min_pos_samples) * interval
             reweight_factor_per_level.append(factor)
-        return num_total_samples, reweight_factor_per_level
+        return reweight_factor_per_level
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'iou_preds'))
     def loss(self,
@@ -366,7 +361,12 @@ class DDODHead(AnchorHead):
         (cls_anchor_list, labels_list, label_weights_list, bbox_targets_list,
          bbox_weights_list, num_total_pos, num_total_neg) = cls_targets
         
-        num_total_samples, reweight_factor_per_level = self.preprocess_loss(num_total_pos, labels_list, device)
+        num_total_samples = reduce_mean(
+            torch.tensor(num_total_pos, dtype=torch.float,
+                         device=device)).item()
+        num_total_samples = max(num_total_samples, 1.0)
+        
+        reweight_factor_per_level = self.calc_reweight_factor(labels_list)
 
         cls_losses_cls, = multi_apply(
             self.loss_cls_single,
@@ -395,7 +395,12 @@ class DDODHead(AnchorHead):
         (reg_anchor_list, labels_list, label_weights_list, bbox_targets_list,
          bbox_weights_list, num_total_pos, num_total_neg) = reg_targets
 
-        num_total_samples, reweight_factor_per_level = self.preprocess_loss(num_total_pos, labels_list, device)
+        num_total_samples = reduce_mean(
+            torch.tensor(num_total_pos, dtype=torch.float,
+                         device=device)).item()
+        num_total_samples = max(num_total_samples, 1.0)
+        
+        reweight_factor_per_level = self.calc_reweight_factor(labels_list)
         
         reg_losses_bbox, reg_losses_iou = multi_apply(
             self.loss_reg_single,
@@ -437,6 +442,9 @@ class DDODHead(AnchorHead):
                 image size, scaling factor, etc.
             gt_bboxes_ignore_list (list[Tensor] | None): specify which bounding
                 boxes can be ignored when computing the loss.
+        
+        Return:
+            tuple[Tensor]: A tuple of common loss vars.
         """
         num_imgs = len(img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs
@@ -523,6 +531,9 @@ class DDODHead(AnchorHead):
                 image size, scaling factor, etc.
             gt_bboxes_ignore_list (list[Tensor] | None): specify which bounding
                 boxes can be ignored when computing the loss.
+        
+        Return:
+            tuple[Tensor]: A tuple of cls targets components.
         """ 
         (all_anchors, all_labels, all_label_weights, all_bbox_targets,
          all_bbox_weights, pos_inds_list, neg_inds_list) = multi_apply(
@@ -593,6 +604,9 @@ class DDODHead(AnchorHead):
                 image size, scaling factor, etc.
             gt_bboxes_ignore_list (list[Tensor] | None): specify which bounding
                 boxes can be ignored when computing the loss.
+        
+        Return:
+            tuple[Tensor]: A tuple of reg targets components.
         """ 
         (all_anchors, all_labels, all_label_weights, all_bbox_targets,
          all_bbox_weights, pos_inds_list, neg_inds_list) = multi_apply(

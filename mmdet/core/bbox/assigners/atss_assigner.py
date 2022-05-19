@@ -1,6 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
-import warnings
 
 from ..builder import BBOX_ASSIGNERS
 from ..iou_calculators import build_iou_calculator
@@ -71,8 +70,14 @@ class ATSSAssigner(BaseAssigner):
             bboxes (Tensor): Bounding boxes to be assigned, shape(n, 4).
             num_level_bboxes (List): num of bboxes in each level
             gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
+            cls_scores (list[Tensor]): Classification scores for all scale
+                levels, each is a 4D-tensor, the channels number is
+                num_base_priors * num_classes. Default None. 
+            bbox_preds (list[Tensor]): Box energies / deltas for all scale
+                levels, each is a 4D-tensor, the channels number is
+                num_base_priors * 4. Default None. 
             gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
-                labelled as `ignored`, e.g., crowd boxes in COCO.
+                labelled as `ignored`, e.g., crowd boxes in COCO. Default None. 
             gt_labels (Tensor, optional): Label of gt_bboxes, shape (k, ).
 
         Returns:
@@ -82,26 +87,26 @@ class ATSSAssigner(BaseAssigner):
         bboxes = bboxes[:, :4]
         num_gt, num_bboxes = gt_bboxes.size(0), bboxes.size(0)
 
-        # compute iou between all bbox and gt
-        overlaps = self.iou_calculator(bboxes, gt_bboxes)
-        
-        # compute cost rate for proposal only in DDOD
-        if self.alpha != None:
-            if cls_scores == None:
-                warnings.warn("Check the input param of alpha in ATSSAssigner, please set alpha at 1 if you are not using DDOD.")
+        if cls_scores == None or bbox_preds ==None:
+            if self.alpha == None:
+                # ATSSAssigner
+                overlaps = self.iou_calculator(bboxes, gt_bboxes)
             else:
-                # compute cls cost for bbox and GT
-                cls_cost = torch.sigmoid(cls_scores[:, gt_labels])
-  
-                # compute iou between all bbox and gt
-                overlaps = self.iou_calculator(bbox_preds, gt_bboxes)
-                
-                # make sure that we are in element-wise multiplication
-                assert cls_cost.shape == overlaps.shape
+                # Dynamic cost ATSSAssigner in DDOD
+                assert cls_scores is not None and bbox_preds is not None, 'Invalid ``alpha`` parameter because ``cls_scores`` or ``bbox_preds`` are None. If you want to use the cost-based ATSSAssigner,  please set ``cls_scores``, ``bbox_preds`` and ``self.alpha`` at the same time. ' 
+        else:
+            # compute cls cost for bbox and GT
+            cls_cost = torch.sigmoid(cls_scores[:, gt_labels])
 
-                # overlaps is actually a cost matrix
-                overlaps = cls_cost**(1 - self.alpha) * overlaps**self.alpha
+            # compute iou between all bbox and gt
+            overlaps = self.iou_calculator(bbox_preds, gt_bboxes)
+            
+            # make sure that we are in element-wise multiplication
+            assert cls_cost.shape == overlaps.shape
 
+            # overlaps is actually a cost matrix
+            overlaps = cls_cost**(1 - self.alpha) * overlaps**self.alpha
+            
         # assign 0 by default
         assigned_gt_inds = overlaps.new_full((num_bboxes, ),
                                              0,
