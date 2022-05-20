@@ -293,7 +293,6 @@ MMDetection 也支持非常多的数据集包装器（wrapper）来混合数据�
 
 使用 `RepeatDataset` 包装器来重复数据集。例如，假设原始数据集为 `Dataset_A`，重复它过后，其配置如下：
 
-
 ```python
 dataset_A_train = dict(
         type='RepeatDataset',
@@ -331,42 +330,42 @@ dataset_A_train = dict(
 
 1. 如果要合并的数据集类型一致但有多个的标注文件，那么可以使用如下配置将其合并。
 
-    ```python
-    dataset_A_train = dict(
-        type='Dataset_A',
-        ann_file = ['anno_file_1', 'anno_file_2'],
-        pipeline=train_pipeline
-    )
-    ```
+   ```python
+   dataset_A_train = dict(
+       type='Dataset_A',
+       ann_file = ['anno_file_1', 'anno_file_2'],
+       pipeline=train_pipeline
+   )
+   ```
 
-    如果合并的数据集适用于测试或者评估，那么这种方式支持每个数据集分开进行评估。如果想要将合并的数据集作为整体用于评估，那么可以像如下一样设置 `separate_eval=False`。
+   如果合并的数据集适用于测试或者评估，那么这种方式支持每个数据集分开进行评估。如果想要将合并的数据集作为整体用于评估，那么可以像如下一样设置 `separate_eval=False`。
 
-    ```python
-    dataset_A_train = dict(
-        type='Dataset_A',
-        ann_file = ['anno_file_1', 'anno_file_2'],
-        separate_eval=False,
-        pipeline=train_pipeline
-    )
-    ```
+   ```python
+   dataset_A_train = dict(
+       type='Dataset_A',
+       ann_file = ['anno_file_1', 'anno_file_2'],
+       separate_eval=False,
+       pipeline=train_pipeline
+   )
+   ```
 
 2. 如果想要合并的是不同数据集，那么可以使用如下配置。
 
-    ```python
-    dataset_A_val = dict()
-    dataset_B_val = dict()
+   ```python
+   dataset_A_val = dict()
+   dataset_B_val = dict()
 
-    data = dict(
-        imgs_per_gpu=2,
-        workers_per_gpu=2,
-        train=dataset_A_train,
-        val=dict(
-            type='ConcatDataset',
-            datasets=[dataset_A_val, dataset_B_val],
-            separate_eval=False))
-    ```
+   data = dict(
+       imgs_per_gpu=2,
+       workers_per_gpu=2,
+       train=dataset_A_train,
+       val=dict(
+           type='ConcatDataset',
+           datasets=[dataset_A_val, dataset_B_val],
+           separate_eval=False))
+   ```
 
-    只需设置 `separate_eval=False`，用户就可以将所有的数据集作为一个整体来评估。
+   只需设置 `separate_eval=False`，用户就可以将所有的数据集作为一个整体来评估。
 
 **注意**
 

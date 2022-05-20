@@ -17,6 +17,7 @@ This paper proposes a Fast Region-based Convolutional Network method (Fast R-CNN
 Before training the Fast R-CNN, users should first train an [RPN](../rpn/README.md), and use the RPN to extract the region proposals.
 
 - Firstly, extract the region proposals of the val set by this command as below:
+
 ```bash
 ./tools/dist_test.sh \
     configs/rpn_r50_fpn_1x_coco.py \
