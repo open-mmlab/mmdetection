@@ -197,7 +197,7 @@ class MMDetWandbHook(WandbLoggerHook):
             # Initialize evaluation table
             self._init_pred_table()
             # Log predictions
-            self._log_predictions(results, runner.epoch + 1)
+            self._log_predictions(results)
             # Log the table
             self._log_eval_table(runner.epoch + 1)
 
@@ -237,7 +237,7 @@ class MMDetWandbHook(WandbLoggerHook):
             # Initialize evaluation table
             self._init_pred_table()
             # Log predictions
-            self._log_predictions(results, runner.iter + 1)
+            self._log_predictions(results)
             # Log the table
             self._log_eval_table(runner.iter + 1)
 
@@ -350,7 +350,7 @@ class MMDetWandbHook(WandbLoggerHook):
                     masks=wandb_masks,
                     classes=self.class_set))
 
-    def _log_predictions(self, results, epoch):
+    def _log_predictions(self, results):
         table_idxs = self.data_table_ref.get_index()
         assert len(table_idxs) == len(self.eval_image_indexs)
 
@@ -525,7 +525,7 @@ class MMDetWandbHook(WandbLoggerHook):
 
         self.data_table_ref = data_artifact.get('val_data')
 
-    def _log_eval_table(self, epoch):
+    def _log_eval_table(self, idx):
         """Log the W&B Tables for model evaluation.
 
         The table will be logged multiple times creating new version. Use this
@@ -534,5 +534,8 @@ class MMDetWandbHook(WandbLoggerHook):
         pred_artifact = self.wandb.Artifact(
             f'run_{self.wandb.run.id}_pred', type='evaluation')
         pred_artifact.add(self.eval_table, 'eval_data')
-        self.wandb.run.log_artifact(
-            pred_artifact, aliases=['latest', f'epoch_{epoch}'])
+        if self.by_epoch:
+            aliases = ['latest', f'epoch_{idx}']
+        else:
+            aliases = ['latest', f'iter_{idx}']
+        self.wandb.run.log_artifact(pred_artifact, aliases=aliases)
