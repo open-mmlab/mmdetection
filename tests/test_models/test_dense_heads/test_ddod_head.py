@@ -3,7 +3,6 @@ import mmcv
 import torch
 
 from mmdet.models.dense_heads import DDODHead
-from torch.nn.functional import alpha_dropout
 
 
 def test_ddod_head_loss():
@@ -17,24 +16,23 @@ def test_ddod_head_loss():
     train_cfg = mmcv.Config(
         dict(  # ATSSAssigner
             assigner=dict(type='ATSSAssigner', topk=9, alpha=0.8),
+            reg_assigner=dict(type='ATSSAssigner', topk=9, alpha=0.5),
             allowed_border=-1,
             pos_weight=-1,
             debug=False))
     self = DDODHead(
         num_classes=4,
         in_channels=1,
-        stacked_convs=4,
+        anchor_generator=dict(
+            type='AnchorGenerator',
+            ratios=[1.0],
+            octave_base_scale=8,
+            scales_per_octave=1,
+            strides=[8, 16, 32, 64, 128]),
         train_cfg=train_cfg,
-        conv_cfg=None,
         norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
         loss_iou=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-        init_cfg=dict(
-            type='Normal',
-            layer='Conv2d',
-            std=0.01,
-            override=dict(
-                type='Normal', name='atss_cls', std=0.01, bias_prob=0.01)))
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0))
     feat = [
         torch.rand(1, 1, s // feat_size, s // feat_size)
         for feat_size in [4, 8, 16, 32, 64]
@@ -71,4 +69,4 @@ def test_ddod_head_loss():
     onegt_iou_loss = sum(one_gt_losses['loss_iou'])
     assert onegt_cls_loss.item() > 0, 'cls loss should be non-zero'
     assert onegt_box_loss.item() > 0, 'box loss should be non-zero'
-    assert onegt_iou_loss.item() > 0, ('iou loss should be non-zero')
+    assert onegt_iou_loss.item() > 0, 'iou loss should be non-zero'

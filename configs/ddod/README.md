@@ -14,9 +14,9 @@ Deep learning-based dense object detectors have achieved great success in the pa
 
 ## Results and Models
 
-|   Model   |  Backbone   |  Style  | Lr schd | Mem (GB) | box AP | Config | Download  |
-| :-------: | :---------: | :-----: | :-----: | :------: | :------------: | :----: | :------: |
-|   DDOD-ATSS    |  R-50   | pytorch |   1x    |   #TODO  | 41.6 | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/ddod/ddod_r50_fpn_1x_coco.py) | [model]() &#124; [log]() |
+|   Model   | Backbone |  Style  | Lr schd | Mem (GB) | box AP |                                                Config                                                |         Download         |
+| :-------: | :------: | :-----: | :-----: | :------: | :----: | :--------------------------------------------------------------------------------------------------: | :----------------------: |
+| DDOD-ATSS |   R-50   | pytorch |   1x    |  #TODO   |  41.6  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/ddod/ddod_r50_fpn_1x_coco.py) | [model](<>) \| [log](<>) |
 
 ## Citation
 
