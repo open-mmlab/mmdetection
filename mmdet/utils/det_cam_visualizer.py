@@ -35,6 +35,9 @@ def reshape_transform(feats, max_shape=(20, 20), is_need_grad=False):
     Takes these tensors with different sizes, resizes them to a common shape,
     and concatenates them.
     """
+    if len(max_shape) == 1:
+        max_shape = max_shape * 2
+
     if isinstance(feats, torch.Tensor):
         feats = [feats]
     else:

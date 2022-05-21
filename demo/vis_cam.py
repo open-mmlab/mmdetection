@@ -70,12 +70,13 @@ def parse_args():
         default=10,
         help='Topk of the predicted result to visualizer')
     parser.add_argument(
-        '--max-reshape-shape',
-        type=tuple,
-        default=(20, 20),
-        help='max reshape shapes. Its purpose is to save GPU memory. '
+        '--max-shape',
+        nargs='+',
+        type=int,
+        default=20,
+        help='max shapes. Its purpose is to save GPU memory. '
         'The activation map is scaled and then evaluated. '
-        'If set to (-1, -1), it means no scaling.')
+        'If set to -1, it means no scaling.')
     parser.add_argument(
         '--no-norm-in-bbox',
         action='store_true',
@@ -157,14 +158,17 @@ def init_model_cam(args, cfg):
         method_class = GRAD_FREE_METHOD_MAP[args.method]
         is_need_grad = False
 
+    max_shape = args.max_shape
+    if not isinstance(max_shape, list):
+        max_shape = [args.max_shape]
+    assert len(max_shape) == 1 or len(max_shape) == 2
+
     det_cam_visualizer = DetCAMVisualizer(
         method_class,
         model,
         target_layers,
         reshape_transform=partial(
-            reshape_transform,
-            max_shape=args.max_reshape_shape,
-            is_need_grad=is_need_grad),
+            reshape_transform, max_shape=max_shape, is_need_grad=is_need_grad),
         is_need_grad=is_need_grad,
         extra_params=extra_params)
     return model, det_cam_visualizer
@@ -172,6 +176,7 @@ def init_model_cam(args, cfg):
 
 def main():
     args = parse_args()
+
     cfg = Config.fromfile(args.config)
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
