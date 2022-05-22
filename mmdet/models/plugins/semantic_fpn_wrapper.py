@@ -22,8 +22,15 @@ class SemanticFPNWrapper(BaseModule):
             used in PanopticFPN.
         end_level (int): The end level of the used features, the
             ``end_level``-th layer will not be used.
-        cat_coors_level (int): Indicate which level will add position
-            embdding.
+        cat_coors_level (int): Indicate which level will add
+            position embdding.
+        upsample_times (int): Upsample time of ebd level.
+        num_aux_convs (int): number of aux conv for semantic
+            segmentation.
+        act_cfg (dict): Config dict for activation layer.
+            Default: ReLU.
+        out_act_cfg (dict): Config dict for output 
+            activation layer. Default: ReLU.
         conv_cfg (dict): Dictionary to construct and config
             conv layer. Default: None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
@@ -36,11 +43,9 @@ class SemanticFPNWrapper(BaseModule):
                  out_channels,
                  start_level,
                  end_level,
-                #  cat_coors=False, # This is always False
                  positional_encoding=None,
                  cat_coors_level=-1,
                  upsample_times=2,
-                 with_pred=True, # always True
                  num_aux_convs=0,
                  act_cfg=dict(type='ReLU', inplace=True),
                  out_act_cfg=dict(type='ReLU'),
@@ -57,10 +62,8 @@ class SemanticFPNWrapper(BaseModule):
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.act_cfg = act_cfg
-        # self.cat_coors = cat_coors
         self.cat_coors_level = cat_coors_level
         self.upsample_times = upsample_times
-        self.with_pred = with_pred
         if positional_encoding is not None:
             self.positional_encoding = build_positional_encoding(
                 positional_encoding)
@@ -82,15 +85,14 @@ class SemanticFPNWrapper(BaseModule):
                 ))
         in_channels = self.inner_channels
 
-        if self.with_pred:
-            self.conv_pred = ConvModule(
-                in_channels,
-                self.out_channels,
-                1,
-                padding=0,
-                conv_cfg=self.conv_cfg,
-                act_cfg=out_act_cfg,
-                norm_cfg=self.norm_cfg)
+        self.conv_pred = ConvModule(
+            in_channels,
+            self.out_channels,
+            1,
+            padding=0,
+            conv_cfg=self.conv_cfg,
+            act_cfg=out_act_cfg,
+            norm_cfg=self.norm_cfg)
 
         self.num_aux_convs = num_aux_convs # equal to 1
         self.aux_convs = nn.ModuleList()
@@ -145,11 +147,7 @@ class SemanticFPNWrapper(BaseModule):
             mlvl_feats.append(self.conv_upsample_layers[i](input_p))
 
         out_features = sum(mlvl_feats)
-
-        if self.with_pred:
-            out = self.conv_pred(out_features)
-        else:
-            out = out_features
+        out = self.conv_pred(out_features)
         outs = [out]
         if self.num_aux_convs > 0:
             for conv in self.aux_convs:
