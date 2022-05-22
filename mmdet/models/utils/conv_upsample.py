@@ -18,6 +18,7 @@ class ConvUpsample(BaseModule):
         num_upsample (int | optional): Number of upsampling layer. Must be no
             more than num_layers. Upsampling will be applied after the first
             ``num_upsample`` layers of convolution. Default: ``num_layers``.
+        stride: (int): The stride of convolution.
         conv_cfg (dict): Config dict for convolution layer. Default: None,
             which means using conv2d.
         norm_cfg (dict): Config dict for normalization layer. Default: None.
@@ -30,6 +31,7 @@ class ConvUpsample(BaseModule):
                  inner_channels,
                  num_layers=1,
                  num_upsample=None,
+                 stride=1,
                  conv_cfg=None,
                  norm_cfg=None,
                  init_cfg=None,
@@ -50,7 +52,7 @@ class ConvUpsample(BaseModule):
                     inner_channels,
                     3,
                     padding=1,
-                    stride=1,
+                    stride=stride,
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
                     **kwargs))
