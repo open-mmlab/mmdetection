@@ -20,7 +20,7 @@ class ConvUpsample(BaseModule):
             ``num_upsample`` layers of convolution. Default: ``num_layers``.
         stride: (int): The stride of convolution.
         conv_cfg (dict): Config dict for convolution layer. Default: None,
-            which means using conv2d.
+            which means using conv2d. Default: 1.
         norm_cfg (dict): Config dict for normalization layer. Default: None.
         init_cfg (dict): Config dict for initialization. Default: None.
         kwargs (key word augments): Other augments used in ConvModule.
