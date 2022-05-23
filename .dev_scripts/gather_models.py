@@ -269,7 +269,7 @@ def main():
         # when using Panoptic Dataset, the evaluation key is 'PQ'.
         for i, key in enumerate(results_lut):
             if 'mAP' not in key and 'PQ' not in key:
-                results_lut[i] = key + 'm_AP'
+                results_lut[i] = key + '_mAP'
         model_performance = get_final_results(log_json_path,
                                               final_epoch_or_iter, results_lut,
                                               by_epoch)
