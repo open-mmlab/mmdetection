@@ -4,6 +4,7 @@ from .builder import build_linear_layer, build_transformer
 from .ckpt_convert import pvt_convert
 from .conv_upsample import ConvUpsample
 from .csp_layer import CSPLayer
+from .ema import ExpMomentumEMA
 from .gaussian_target import gaussian_radius, gen_gaussian_target
 from .inverted_residual import InvertedResidual
 from .make_divisible import make_divisible
@@ -30,5 +31,6 @@ __all__ = [
     'adaptive_avg_pool2d', 'AdaptiveAvgPool2d', 'PatchEmbed', 'nchw_to_nlc',
     'nlc_to_nchw', 'pvt_convert', 'sigmoid_geometric_mean',
     'preprocess_panoptic_gt', 'DyReLU',
-    'get_uncertain_point_coords_with_randomness', 'get_uncertainty'
+    'get_uncertain_point_coords_with_randomness', 'get_uncertainty',
+    'ExpMomentumEMA'
 ]
