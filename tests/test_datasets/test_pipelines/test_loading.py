@@ -1,10 +1,15 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
+import os
 import os.path as osp
+import sys
 import unittest
+from unittest.mock import MagicMock, Mock, patch
 
+import mmcv
 import numpy as np
 
+from mmdet.core.evaluation import INSTANCE_OFFSET
 from mmdet.core.mask import BitmapMasks, PolygonMasks
 from mmdet.datasets.pipelines import LoadAnnotations
 
@@ -128,3 +133,123 @@ class TestLoadAnnotations(unittest.TestCase):
                               'with_seg=False, poly2mask=True, '
                               "imdecode_backend='cv2', "
                               "file_client_args={'backend': 'disk'})"))
+
+
+class TestLoadPanopticAnnotations(unittest.TestCase):
+
+    def setUp(self):
+        seg_map = np.zeros((10, 10), dtype=np.int32)
+        seg_map[:5, :10] = 1 + 10 * INSTANCE_OFFSET
+        seg_map[5:10, :5] = 4 + 11 * INSTANCE_OFFSET
+        seg_map[5:10, 5:10] = 6 + 0 * INSTANCE_OFFSET
+        rgb_seg_map = np.zeros((10, 10, 3), dtype=np.uint8)
+        rgb_seg_map[:, :, 0] = seg_map / (256 * 256)
+        rgb_seg_map[:, :, 1] = seg_map % (256 * 256) / 256
+        rgb_seg_map[:, :, 2] = seg_map % 256
+        self.seg_map_path = './1.png'
+        mmcv.imwrite(rgb_seg_map, self.seg_map_path)
+
+        self.seg_map = seg_map
+        self.rgb_seg_map = rgb_seg_map
+        self.results = {
+            'height':
+            10,
+            'width':
+            10,
+            'instances': [{
+                'bbox': [0, 0, 10, 5],
+                'bbox_label': 0,
+                'ignore_flag': 0,
+            }, {
+                'bbox': [0, 5, 5, 10],
+                'bbox_label': 1,
+                'ignore_flag': 1,
+            }],
+            'segments_info': [
+                {
+                    'id': 1 + 10 * INSTANCE_OFFSET,
+                    'category': 0,
+                    'is_thing': True,
+                },
+                {
+                    'id': 4 + 11 * INSTANCE_OFFSET,
+                    'category': 1,
+                    'is_thing': True,
+                },
+                {
+                    'id': 6 + 0 * INSTANCE_OFFSET,
+                    'category': 2,
+                    'is_thing': False,
+                },
+            ],
+            'seg_map_path':
+            self.seg_map_path
+        }
+
+        self.gt_mask = BitmapMasks([
+            (seg_map == 1 + 10 * INSTANCE_OFFSET).astype(np.uint8),
+            (seg_map == 4 + 11 * INSTANCE_OFFSET).astype(np.uint8),
+        ], 10, 10)
+        self.gt_bboxes = np.array([[0, 0, 10, 5], [0, 5, 5, 10]],
+                                  dtype=np.float32)
+        self.gt_bboxes_labels = np.array([0, 1], dtype=np.int64)
+        self.gt_ignore_flags = np.array([0, 1], dtype=bool)
+        self.gt_seg_map = np.zeros((10, 10), dtype=np.int32)
+        self.gt_seg_map[:5, :10] = 0
+        self.gt_seg_map[5:10, :5] = 1
+        self.gt_seg_map[5:10, 5:10] = 2
+
+    def tearDown(self):
+        os.remove(self.seg_map_path)
+
+    def test_init(self):
+        from mmdet.datasets.pipelines import LoadPanopticAnnotations
+        with self.assertRaises(ImportError):
+            LoadPanopticAnnotations()
+
+    def test_transform(self):
+        sys.modules['panopticapi'] = MagicMock()
+        sys.modules['panopticapi.utils'] = MagicMock()
+        from mmdet.datasets.pipelines import LoadPanopticAnnotations
+        mock_rgb2id = Mock(return_value=self.seg_map)
+        with patch('panopticapi.utils.rgb2id', mock_rgb2id):
+            # test with all False
+            transform = LoadPanopticAnnotations(
+                with_bbox=False,
+                with_label=False,
+                with_mask=False,
+                with_seg=False)
+            results = transform(copy.deepcopy(self.results))
+            self.assertDictEqual(results, self.results)
+            # test with with_mask=True
+            transform = LoadPanopticAnnotations(
+                with_bbox=False,
+                with_label=False,
+                with_mask=True,
+                with_seg=False)
+            results = transform(copy.deepcopy(self.results))
+            self.assertTrue(
+                (results['gt_masks'].masks == self.gt_mask.masks).all())
+
+            # test with with_seg=True
+            transform = LoadPanopticAnnotations(
+                with_bbox=False,
+                with_label=False,
+                with_mask=False,
+                with_seg=True)
+            results = transform(copy.deepcopy(self.results))
+            self.assertNotIn('gt_masks', results)
+            self.assertTrue((results['gt_seg_map'] == self.gt_seg_map).all())
+
+            # test with all True
+            transform = LoadPanopticAnnotations(
+                with_bbox=True, with_label=True, with_mask=True, with_seg=True)
+            results = transform(copy.deepcopy(self.results))
+            self.assertTrue(
+                (results['gt_masks'].masks == self.gt_mask.masks).all())
+            self.assertTrue((results['gt_bboxes'] == self.gt_bboxes).all())
+            self.assertTrue(
+                (results['gt_bboxes_labels'] == self.gt_bboxes_labels).all())
+            self.assertTrue(
+                (results['gt_ignore_flags'] == self.gt_ignore_flags).all())
+            self.assertTrue((results['gt_seg_map'] == self.gt_seg_map).all())

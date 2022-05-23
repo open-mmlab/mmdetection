@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import os.path as osp
+from typing import List, Union
 
 import mmcv
 import numpy as np
@@ -9,11 +10,6 @@ from mmcv.transforms import LoadImageFromFile
 
 from mmdet.core import BitmapMasks, PolygonMasks
 from mmdet.registry import TRANSFORMS
-
-try:
-    from panopticapi.utils import rgb2id
-except ImportError:
-    rgb2id = None
 
 
 @TRANSFORMS.register_module()
@@ -203,7 +199,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
     Added Keys:
 
     - gt_bboxes (np.float32)
-    - gt_bboxes_labels (np.int32)
+    - gt_bboxes_labels (np.int64)
     - gt_masks (BitmapMasks | PolygonMasks)
     - gt_seg_map (np.uint8)
     - gt_ignore_flags (np.bool)
@@ -278,7 +274,8 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         results['gt_bboxes_labels'] = np.array(
             gt_bboxes_labels, dtype=np.int64)
 
-    def _poly2mask(self, mask_ann, img_h, img_w):
+    def _poly2mask(self, mask_ann: Union[list, dict], img_h: int,
+                   img_w: int) -> np.ndarray:
         """Private function to convert masks represented with polygon to
         bitmaps.
 
@@ -288,7 +285,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             img_w (int): The width of output mask.
 
         Returns:
-            numpy.ndarray: The decode bitmap mask of shape (img_h, img_w).
+            np.ndarray: The decode bitmap mask of shape (img_h, img_w).
         """
 
         if isinstance(mask_ann, list):
@@ -305,14 +302,14 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         mask = maskUtils.decode(rle)
         return mask
 
-    def process_polygons(self, polygons):
+    def process_polygons(self, polygons: List[list]) -> List[np.ndarray]:
         """Convert polygons to list of ndarray and filter invalid polygons.
 
         Args:
             polygons (list[list]): Polygons of one instance.
 
         Returns:
-            list[numpy.ndarray]: Processed polygons.
+            list[np.ndarray]: Processed polygons.
         """
 
         polygons = [np.array(p) for p in polygons]
@@ -322,14 +319,11 @@ class LoadAnnotations(MMCV_LoadAnnotations):
                 valid_polygons.append(polygon)
         return valid_polygons
 
-    def _load_masks(self, results):
+    def _load_masks(self, results: dict) -> None:
         """Private function to load mask annotations.
 
         Args:
             results (dict): Result dict from :obj:``mmcv.BaseDataset``.
-
-        Returns:
-            dict: The dict contains loaded mask annotations.
         """
 
         h, w = results['height'], results['width']
@@ -383,93 +377,170 @@ class LoadAnnotations(MMCV_LoadAnnotations):
 class LoadPanopticAnnotations(LoadAnnotations):
     """Load multiple types of panoptic annotations.
 
+    The annotation format is as the following:
+
+    .. code-block:: python
+
+        {
+            'instances':
+            [
+                {
+                # List of 4 numbers representing the bounding box of the
+                # instance, in (x1, y1, x2, y2) order.
+                'bbox': [x1, y1, x2, y2],
+
+                # Label of image classification.
+                'bbox_label': 1,
+                },
+                ...
+            ]
+            'segments_info':
+            [
+                {
+                # id = cls_id + instance_id * INSTANCE_OFFSET
+                'id': int,
+
+                # Contiguous category id defined in dataset.
+                'category': int
+
+                # Thing flag.
+                'is_thing': bool
+                },
+                ...
+            ]
+
+            # Filename of semantic or panoptic segmentation ground truth file.
+            'seg_map_path': 'a/b/c'
+        }
+
+    After this module, the annotation has been changed to the format below:
+
+    .. code-block:: python
+
+        {
+            # In (x1, y1, x2, y2) order, float type. N is the number of bboxes
+            # in an image
+            'gt_bboxes': np.ndarray(N, 4)
+             # In int type.
+            'gt_bboxes_labels': np.ndarray(N, )
+             # In built-in class
+            'gt_masks': PolygonMasks (H, W) or BitmapMasks (H, W)
+             # In uint8 type.
+            'gt_seg_map': np.ndarray (H, W)
+             # in (x, y, v) order, float type.
+        }
+
+    Required Keys:
+
+    - height
+    - width
+    - instances
+      - bbox
+      - bbox_label
+      - ignore_flag
+    - segments_info
+      - id
+      - category
+      - is_thing
+    - seg_map_path
+
+    Added Keys:
+
+    - gt_bboxes (np.float32)
+    - gt_bboxes_labels (np.int64)
+    - gt_masks (BitmapMasks | PolygonMasks)
+    - gt_seg_map (np.uint8)
+    - gt_ignore_flags (np.bool)
+
     Args:
         with_bbox (bool): Whether to parse and load the bbox annotation.
-             Default: True.
+            Defaults to True.
         with_label (bool): Whether to parse and load the label annotation.
-            Default: True.
+            Defaults to True.
         with_mask (bool): Whether to parse and load the mask annotation.
-             Default: True.
+             Defaults to True.
         with_seg (bool): Whether to parse and load the semantic segmentation
-            annotation. Default: True.
+            annotation. Defaults to False.
+        denorm_bbox (bool): Whether to convert bbox from relative value to
+            absolute value. Only used in OpenImage Dataset.
+            Defaults to False.
+        imdecode_backend (str): The image decoding backend type. The backend
+            argument for :func:``mmcv.imfrombytes``.
+            See :fun:``mmcv.imfrombytes`` for details.
+            Defaults to 'cv2'.
         file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:`mmcv.fileio.FileClient` for details.
+            See :class:``mmcv.fileio.FileClient`` for details.
             Defaults to ``dict(backend='disk')``.
     """
 
-    def __init__(self,
-                 with_bbox=True,
-                 with_label=True,
-                 with_mask=True,
-                 with_seg=True,
-                 file_client_args=dict(backend='disk')):
-        if rgb2id is None:
-            raise RuntimeError(
+    def __init__(
+        self,
+        with_bbox: bool = True,
+        with_label: bool = True,
+        with_mask: bool = True,
+        with_seg: bool = True,
+        denorm_bbox: bool = False,
+        imdecode_backend: str = 'cv2',
+        file_client_args: dict = dict(backend='disk')
+    ) -> None:
+        try:
+            from panopticapi import utils
+        except ImportError:
+            raise ImportError(
                 'panopticapi is not installed, please install it by: '
                 'pip install git+https://github.com/cocodataset/'
                 'panopticapi.git.')
+        self.rgb2id = utils.rgb2id
 
         super(LoadPanopticAnnotations, self).__init__(
             with_bbox=with_bbox,
             with_label=with_label,
             with_mask=with_mask,
             with_seg=with_seg,
-            poly2mask=True,
-            denorm_bbox=False,
+            with_keypoints=False,
+            denorm_bbox=denorm_bbox,
+            imdecode_backend=imdecode_backend,
             file_client_args=file_client_args)
 
-    def _load_masks_and_semantic_segs(self, results):
+    def _load_masks_and_semantic_segs(self, results: dict) -> None:
         """Private function to load mask and semantic segmentation annotations.
 
-        In gt_semantic_seg, the foreground label is from `0` to
-        `num_things - 1`, the background label is from `num_things` to
-        `num_things + num_stuff - 1`, 255 means the ignored label (`VOID`).
+        In gt_semantic_seg, the foreground label is from ``0`` to
+        ``num_things - 1``, the background label is from ``num_things`` to
+        ``num_things + num_stuff - 1``, 255 means the ignored label (``VOID``).
 
         Args:
-            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
-
-        Returns:
-            dict: The dict contains loaded mask and semantic segmentation
-                annotations. `BitmapMasks` is used for mask annotations.
+            results (dict): Result dict from :obj:``mmdet.CustomDataset``.
         """
-
-        if self.file_client is None:
-            self.file_client = mmcv.FileClient(**self.file_client_args)
-
-        filename = osp.join(results['seg_prefix'],
-                            results['ann_info']['seg_map'])
-        img_bytes = self.file_client.get(filename)
+        img_bytes = self.file_client.get(results['seg_map_path'])
         pan_png = mmcv.imfrombytes(
             img_bytes, flag='color', channel_order='rgb').squeeze()
-        pan_png = rgb2id(pan_png)
+        pan_png = self.rgb2id(pan_png)
 
         gt_masks = []
         gt_seg = np.zeros_like(pan_png) + 255  # 255 as ignore
 
-        for mask_info in results['ann_info']['masks']:
-            mask = (pan_png == mask_info['id'])
-            gt_seg = np.where(mask, mask_info['category'], gt_seg)
+        for segment_info in results['segments_info']:
+            mask = (pan_png == segment_info['id'])
+            gt_seg = np.where(mask, segment_info['category'], gt_seg)
 
             # The legal thing masks
-            if mask_info.get('is_thing'):
+            if segment_info.get('is_thing'):
                 gt_masks.append(mask.astype(np.uint8))
 
         if self.with_mask:
-            h, w = results['img_info']['height'], results['img_info']['width']
+            h, w = results['height'], results['width']
             gt_masks = BitmapMasks(gt_masks, h, w)
             results['gt_masks'] = gt_masks
-            results['mask_fields'].append('gt_masks')
 
         if self.with_seg:
-            results['gt_semantic_seg'] = gt_seg
-            results['seg_fields'].append('gt_semantic_seg')
-        return results
+            results['gt_seg_map'] = gt_seg
 
-    def __call__(self, results):
-        """Call function to load multiple types panoptic annotations.
+    def transform(self, results: dict) -> dict:
+        """Function to load multiple types panoptic annotations.
 
         Args:
-            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
+            results (dict): Result dict from :obj:``mmdet.CustomDataset``.
 
         Returns:
             dict: The dict contains loaded bounding box, label, mask and
@@ -477,15 +548,13 @@ class LoadPanopticAnnotations(LoadAnnotations):
         """
 
         if self.with_bbox:
-            results = self._load_bboxes(results)
-            if results is None:
-                return None
+            self._load_bboxes(results)
         if self.with_label:
-            results = self._load_labels(results)
+            self._load_labels(results)
         if self.with_mask or self.with_seg:
             # The tasks completed by '_load_masks' and '_load_semantic_segs'
             # in LoadAnnotations are merged to one function.
-            results = self._load_masks_and_semantic_segs(results)
+            self._load_masks_and_semantic_segs(results)
 
         return results
 
