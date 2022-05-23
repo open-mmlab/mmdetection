@@ -51,29 +51,33 @@ class CocoDataset(BaseDataset):
          (196, 172, 0), (95, 54, 80), (128, 76, 255), (201, 57, 1),
          (246, 0, 122), (191, 162, 208)]
     }
+    COCOAPI = COCO
+    # ann_id is unique in coco dataset.
+    ANN_ID_UNIQUE = True
 
     def load_data_list(self) -> List[dict]:
         """Load annotations from an annotation file named as ``self.ann_file``
 
         Returns:
-            list[dict]: A list of annotation.
+            List[dict]: A list of annotation.
         """  # noqa: E501
-        coco = COCO(self.ann_file)
+        self.coco = self.COCOAPI(self.ann_file)
         # The order of returned `cat_ids` will not
         # change with the order of the CLASSES
-        self.cat_ids = coco.get_cat_ids(cat_names=self.metainfo['CLASSES'])
+        self.cat_ids = self.coco.get_cat_ids(
+            cat_names=self.metainfo['CLASSES'])
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
-        self.cat_img_map = copy.deepcopy(coco.cat_img_map)
+        self.cat_img_map = copy.deepcopy(self.coco.cat_img_map)
 
-        img_ids = coco.get_img_ids()
+        img_ids = self.coco.get_img_ids()
         data_list = []
         total_ann_ids = []
         for img_id in img_ids:
-            raw_img_info = coco.load_imgs([img_id])[0]
+            raw_img_info = self.coco.load_imgs([img_id])[0]
             raw_img_info['img_id'] = img_id
 
-            ann_ids = coco.get_ann_ids(img_ids=[img_id])
-            raw_ann_info = coco.load_anns(ann_ids)
+            ann_ids = self.coco.get_ann_ids(img_ids=[img_id])
+            raw_ann_info = self.coco.load_anns(ann_ids)
             total_ann_ids.extend(ann_ids)
 
             parsed_data_info = self.parse_data_info({
@@ -83,9 +87,13 @@ class CocoDataset(BaseDataset):
                 raw_img_info
             })
             data_list.append(parsed_data_info)
-        assert len(set(total_ann_ids)) == len(
-            total_ann_ids
-        ), f"Annotation ids in '{self.ann_file}' are not unique!"
+        if self.ANN_ID_UNIQUE:
+            assert len(set(total_ann_ids)) == len(
+                total_ann_ids
+            ), f"Annotation ids in '{self.ann_file}' are not unique!"
+
+        del self.coco
+
         return data_list
 
     def parse_data_info(self, raw_data_info: dict) -> Union[dict, List[dict]]:
@@ -140,24 +148,24 @@ class CocoDataset(BaseDataset):
         data_info['instances'] = instances
         return data_info
 
-    def get_cat_ids(self, idx):
+    def get_cat_ids(self, idx: int) -> List[int]:
         """Get COCO category ids by index.
 
         Args:
             idx (int): Index of data.
 
         Returns:
-            list[int]: All categories in the image of specified index.
+            List[int]: All categories in the image of specified index.
         """
 
         instances = self.data_list[idx]['instances']
         return [instance['bbox_label'] for instance in instances]
 
-    def filter_data(self):
+    def filter_data(self) -> List[dict]:
         """Filter annotations according to filter_cfg.
 
         Returns:
-            list[int]: Filtered results.
+            List[dict]: Filtered results.
         """
         if self.test_mode:
             return self.data_list
