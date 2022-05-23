@@ -1,6 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from mmcv.parallel import is_module_wrapper
-from mmcv.runner.hooks import Hook
+from typing import Sequence
+
+from mmengine.hooks import Hook
+from mmengine.model import is_model_wrapper
 
 from mmdet.registry import HOOKS
 
@@ -15,24 +17,27 @@ class YOLOXModeSwitchHook(Hook):
     Args:
         num_last_epochs (int): The number of latter epochs in the end of the
             training to close the data augmentation and switch to L1 loss.
-            Default: 15.
-       skip_type_keys (list[str], optional): Sequence of type string to be
-            skip pipeline. Default: ('Mosaic', 'RandomAffine', 'MixUp')
+            Defaults to 15.
+       skip_type_keys (Sequence[str], optional): Sequence of type string to be
+            skip pipeline. Defaults to ('Mosaic', 'RandomAffine', 'MixUp').
     """
 
-    def __init__(self,
-                 num_last_epochs=15,
-                 skip_type_keys=('Mosaic', 'RandomAffine', 'MixUp')):
+    def __init__(
+        self,
+        num_last_epochs: int = 15,
+        skip_type_keys: Sequence[str] = ('Mosaic', 'RandomAffine', 'MixUp')
+    ) -> None:
         self.num_last_epochs = num_last_epochs
         self.skip_type_keys = skip_type_keys
         self._restart_dataloader = False
 
-    def before_train_epoch(self, runner):
+    def before_train_epoch(self, runner) -> None:
         """Close mosaic and mixup augmentation and switches to use L1 loss."""
         epoch = runner.epoch
-        train_loader = runner.data_loader
+        train_loader = runner.train_dataloader
         model = runner.model
-        if is_module_wrapper(model):
+        # TODO: refactor after mmengine using model wrapper
+        if is_model_wrapper(model):
             model = model.module
         if (epoch + 1) == runner.max_epochs - self.num_last_epochs:
             runner.logger.info('No mosaic and mixup aug now!')
