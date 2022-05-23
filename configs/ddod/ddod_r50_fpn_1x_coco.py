@@ -63,3 +63,5 @@ model = dict(
 
 # This `persistent_workers` is only valid when PyTorch>=1.7.0
 data = dict(persistent_workers=True)
+# optimizer
+optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
