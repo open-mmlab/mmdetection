@@ -1,5 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import importlib
 import os.path as osp
+import sys
 
 import mmcv
 import numpy as np
@@ -110,6 +112,16 @@ class MMDetWandbHook(WandbLoggerHook):
     @master_only
     def before_run(self, runner):
         super(MMDetWandbHook, self).before_run(runner)
+
+        # Save and Log config.
+        if runner.meta is not None:
+            src_cfg_path = osp.join(runner.work_dir,
+                                    runner.meta.get('exp_name', None))
+            if osp.exists(src_cfg_path):
+                self.wandb.save(src_cfg_path, base_path=runner.work_dir)
+                self._update_wandb_config(runner)
+        else:
+            runner.logger.warning('No meta information found in the runner. ')
 
         # Inspect CheckpointHook and EvalHook
         for hook in runner.hooks:
@@ -244,6 +256,18 @@ class MMDetWandbHook(WandbLoggerHook):
     @master_only
     def after_run(self, runner):
         self.wandb.finish()
+
+    def _update_wandb_config(self, runner):
+        """Update wandb config."""
+        # Import the config file.
+        sys.path.append(runner.work_dir)
+        config_filename = runner.meta['exp_name'][:-3]
+        configs = importlib.import_module(config_filename)
+        # Prepare a nested dict of config variables.
+        config_keys = [key for key in dir(configs) if not key.startswith('__')]
+        config_dict = {key: getattr(configs, key) for key in config_keys}
+        # Update the W&B config.
+        self.wandb.config.update(config_dict)
 
     def _log_ckpt_as_artifact(self, model_path, aliases, metadata=None):
         """Log model checkpoint as  W&B Artifact.
