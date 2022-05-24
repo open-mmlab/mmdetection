@@ -48,7 +48,7 @@ class MaskFeatModule(BaseModule):
                  conv_cfg=None,
                  norm_cfg=None,
                  init_cfg=[dict(type='Normal', layer='Conv2d', std=0.01)]):
-        super(MaskFeatModule, self).__init__(init_cfg=init_cfg)
+        super().__init__(init_cfg=init_cfg)
 
         self.in_channels = in_channels
         self.feat_channels = feat_channels
@@ -188,7 +188,7 @@ class SOLOV2Head(SOLOHead):
         self.kernel_out_channels = \
             mask_out_channels * self.dynamic_conv_size * self.dynamic_conv_size
 
-        super(SOLOV2Head, self).__init__(*args, init_cfg=init_cfg, **kwargs)
+        super().__init__(*args, init_cfg=init_cfg, **kwargs)
 
         # update the in_channels of mask_feature_head
         if mask_feature_head.get('in_channels', None) is not None:
