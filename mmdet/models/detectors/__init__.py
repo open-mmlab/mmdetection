@@ -5,6 +5,7 @@ from .base import BaseDetector
 from .cascade_rcnn import CascadeRCNN
 from .centernet import CenterNet
 from .cornernet import CornerNet
+from .ddod import DDOD
 from .deformable_detr import DeformableDETR
 from .detr import DETR
 from .fast_rcnn import FastRCNN
@@ -52,5 +53,5 @@ __all__ = [
     'VFNet', 'DETR', 'TridentFasterRCNN', 'SparseRCNN', 'SCNet', 'SOLO',
     'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet', 'YOLOX',
     'TwoStagePanopticSegmentor', 'PanopticFPN', 'QueryInst', 'LAD', 'TOOD',
-    'MaskFormer', 'Mask2Former'
+    'MaskFormer', 'DDOD', 'Mask2Former'
 ]

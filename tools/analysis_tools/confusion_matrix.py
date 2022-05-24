@@ -10,7 +10,7 @@ from mmcv.ops import nms
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.datasets import build_dataset
-from mmdet.utils import update_data_root
+from mmdet.utils import replace_cfg_vals, update_data_root
 
 
 def parse_args():
@@ -231,6 +231,9 @@ def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
+
+    # replace the ${key} with the value of cfg.key
+    cfg = replace_cfg_vals(cfg)
 
     # update data root according to MMDET_DATASETS
     update_data_root(cfg)

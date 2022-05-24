@@ -62,7 +62,8 @@ def tpfp_imagenet(det_bboxes,
                   gt_bboxes_ignore=None,
                   default_iou_thr=0.5,
                   area_ranges=None,
-                  use_legacy_coordinate=False):
+                  use_legacy_coordinate=False,
+                  **kwargs):
     """Check if detected bboxes are true positive or false positive.
 
     Args:
@@ -170,7 +171,8 @@ def tpfp_default(det_bboxes,
                  gt_bboxes_ignore=None,
                  iou_thr=0.5,
                  area_ranges=None,
-                 use_legacy_coordinate=False):
+                 use_legacy_coordinate=False,
+                 **kwargs):
     """Check if detected bboxes are true positive or false positive.
 
     Args:
@@ -275,7 +277,8 @@ def tpfp_openimages(det_bboxes,
                     use_legacy_coordinate=False,
                     gt_bboxes_group_of=None,
                     use_group_of=True,
-                    ioa_thr=0.5):
+                    ioa_thr=0.5,
+                    **kwargs):
     """Check if detected bboxes are true positive or false positive.
 
     Args:
@@ -585,7 +588,13 @@ def eval_map(det_results,
     area_ranges = ([(rg[0]**2, rg[1]**2) for rg in scale_ranges]
                    if scale_ranges is not None else None)
 
-    pool = Pool(nproc)
+    # There is no need to use multi processes to process
+    # when num_imgs = 1 .
+    if num_imgs > 1:
+        assert nproc > 0, 'nproc must be at least one.'
+        nproc = min(nproc, num_imgs)
+        pool = Pool(nproc)
+
     eval_results = []
     for i in range(num_classes):
         # get gt and det bboxes of this class
@@ -603,21 +612,38 @@ def eval_map(det_results,
         if not callable(tpfp_fn):
             raise ValueError(
                 f'tpfp_fn has to be a function or None, but got {tpfp_fn}')
-        args = []
-        if use_group_of:
-            # used in Open Images Dataset evaluation
-            gt_group_ofs = get_cls_group_ofs(annotations, i)
-            args.append(gt_group_ofs)
-            args.append([use_group_of for _ in range(num_imgs)])
-        if ioa_thr is not None:
-            args.append([ioa_thr for _ in range(num_imgs)])
-        # compute tp and fp for each image with multiple processes
-        tpfp = pool.starmap(
-            tpfp_fn,
-            zip(cls_dets, cls_gts, cls_gts_ignore,
-                [iou_thr for _ in range(num_imgs)],
-                [area_ranges for _ in range(num_imgs)],
-                [use_legacy_coordinate for _ in range(num_imgs)], *args))
+
+        if num_imgs > 1:
+            # compute tp and fp for each image with multiple processes
+            args = []
+            if use_group_of:
+                # used in Open Images Dataset evaluation
+                gt_group_ofs = get_cls_group_ofs(annotations, i)
+                args.append(gt_group_ofs)
+                args.append([use_group_of for _ in range(num_imgs)])
+            if ioa_thr is not None:
+                args.append([ioa_thr for _ in range(num_imgs)])
+
+            tpfp = pool.starmap(
+                tpfp_fn,
+                zip(cls_dets, cls_gts, cls_gts_ignore,
+                    [iou_thr for _ in range(num_imgs)],
+                    [area_ranges for _ in range(num_imgs)],
+                    [use_legacy_coordinate for _ in range(num_imgs)], *args))
+        else:
+            tpfp = tpfp_fn(
+                cls_dets[0],
+                cls_gts[0],
+                cls_gts_ignore[0],
+                iou_thr,
+                area_ranges,
+                use_legacy_coordinate,
+                gt_bboxes_group_of=(get_cls_group_ofs(annotations, i)[0]
+                                    if use_group_of else None),
+                use_group_of=use_group_of,
+                ioa_thr=ioa_thr)
+            tpfp = [tpfp]
+
         if use_group_of:
             tp, fp, cls_dets = tuple(zip(*tpfp))
         else:
@@ -660,7 +686,10 @@ def eval_map(det_results,
             'precision': precisions,
             'ap': ap
         })
-    pool.close()
+
+    if num_imgs > 1:
+        pool.close()
+
     if scale_ranges is not None:
         # shape (num_classes, num_scales)
         all_ap = np.vstack([cls_result['ap'] for cls_result in eval_results])

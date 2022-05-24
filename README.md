@@ -25,7 +25,7 @@
 [![license](https://img.shields.io/github/license/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/blob/master/LICENSE)
 [![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 
-  <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
+<img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
 [📘Documentation](https://mmdetection.readthedocs.io/en/v2.21.0/) |
 [🛠️Installation](https://mmdetection.readthedocs.io/en/v2.21.0/get_started.html) |
@@ -231,6 +231,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         <li><a href="configs/pvt">PVTv2 (ArXiv'2021)</a></li>
         <li><a href="configs/resnet_strikes_back">ResNet strikes back (ArXiv'2021)</a></li>
         <li><a href="configs/efficientnet">EfficientNet (ArXiv'2021)</a></li>
+        <li><a href="configs/convnext">ConvNeXt (CVPR'2022)</a></li>
       </ul>
       </td>
       <td>

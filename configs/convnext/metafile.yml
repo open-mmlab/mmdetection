@@ -1,0 +1,93 @@
+Models:
+  - Name: mask_rcnn_convnext-t_p4_w7_fpn_fp16_ms-crop_3x_coco
+    In Collection: Mask R-CNN
+    Config: configs/convnext/mask_rcnn_convnext-t_p4_w7_fpn_fp16_ms-crop_3x_coco
+    Metadata:
+      Training Memory (GB): 7.3
+      Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - AdamW
+        - Mixed Precision Training
+      Training Resources: 8x A100 GPUs
+      Architecture:
+        - ConvNeXt
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 46.2
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 41.7
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/convnext/mask_rcnn_convnext-t_p4_w7_fpn_fp16_ms-crop_3x_coco/mask_rcnn_convnext-t_p4_w7_fpn_fp16_ms-crop_3x_coco_20220426_154953-050731f4.pth
+    Paper:
+      URL: https://arxiv.org/abs/2201.03545
+      Title: 'A ConvNet for the 2020s'
+    README: configs/convnext/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.16.0/mmdet/models/backbones/swin.py#L465
+      Version: v2.16.0
+
+  - Name: cascade_mask_rcnn_convnext-t_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco
+    In Collection: Cascade Mask R-CNN
+    Config: configs/convnext/cascade_mask_rcnn_convnext-t_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco.py
+    Metadata:
+      Training Memory (GB): 9.0
+      Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - AdamW
+        - Mixed Precision Training
+      Training Resources: 8x A100 GPUs
+      Architecture:
+        - ConvNeXt
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 50.3
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 43.6
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/convnext/cascade_mask_rcnn_convnext-t_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco/cascade_mask_rcnn_convnext-t_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco_20220509_204200-8f07c40b.pth
+    Paper:
+      URL: https://arxiv.org/abs/2201.03545
+      Title: 'A ConvNet for the 2020s'
+    README: configs/convnext/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.16.0/mmdet/models/backbones/swin.py#L465
+      Version: v2.25.0
+
+  - Name: cascade_mask_rcnn_convnext-s_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco
+    In Collection: Cascade Mask R-CNN
+    Config: configs/convnext/cascade_mask_rcnn_convnext-s_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco.py
+    Metadata:
+      Training Memory (GB): 12.3
+      Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - AdamW
+        - Mixed Precision Training
+      Training Resources: 8x A100 GPUs
+      Architecture:
+        - ConvNeXt
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 51.8
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 44.8
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/convnext/cascade_mask_rcnn_convnext-s_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco/cascade_mask_rcnn_convnext-s_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco_20220510_201004-3d24f5a4.pth
+    Paper:
+      URL: https://arxiv.org/abs/2201.03545
+      Title: 'A ConvNet for the 2020s'
+    README: configs/convnext/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.16.0/mmdet/models/backbones/swin.py#L465
+      Version: v2.25.0

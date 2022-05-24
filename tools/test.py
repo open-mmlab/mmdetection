@@ -17,7 +17,8 @@ from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
 from mmdet.models import build_detector
 from mmdet.utils import (build_ddp, build_dp, compat_cfg, get_device,
-                         setup_multi_processes, update_data_root)
+                         replace_cfg_vals, setup_multi_processes,
+                         update_data_root)
 
 
 def parse_args():
@@ -133,6 +134,9 @@ def main():
         raise ValueError('The output file must be a pkl file.')
 
     cfg = Config.fromfile(args.config)
+
+    # replace the ${key} with the value of cfg.key
+    cfg = replace_cfg_vals(cfg)
 
     # update data root according to MMDET_DATASETS
     update_data_root(cfg)

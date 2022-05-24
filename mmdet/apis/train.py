@@ -6,10 +6,10 @@ import numpy as np
 import torch
 import torch.distributed as dist
 from mmcv.runner import (DistSamplerSeedHook, EpochBasedRunner,
-                         Fp16OptimizerHook, OptimizerHook, build_optimizer,
-                         build_runner, get_dist_info)
+                         Fp16OptimizerHook, OptimizerHook, build_runner,
+                         get_dist_info)
 
-from mmdet.core import DistEvalHook, EvalHook
+from mmdet.core import DistEvalHook, EvalHook, build_optimizer
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
 from mmdet.utils import (build_ddp, build_dp, compat_cfg,
