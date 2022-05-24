@@ -1,7 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import warnings
+from typing import List, Optional, Tuple, Union
 
 import torch
+from mmengine.config import ConfigDict
+from mmengine.data import InstanceData
+from torch import Tensor
 
 from mmdet.core import DetDataSample, bbox2result
 from mmdet.registry import MODELS
@@ -17,16 +21,15 @@ class SingleStageDetector(BaseDetector):
     """
 
     def __init__(self,
-                 backbone,
-                 neck=None,
-                 bbox_head=None,
-                 train_cfg=None,
-                 test_cfg=None,
-                 preprocess_cfg=None,
-                 pretrained=None,
-                 init_cfg=None):
-        super(SingleStageDetector, self).__init__(
-            preprocess_cfg=preprocess_cfg, init_cfg=init_cfg)
+                 backbone: Union[ConfigDict, dict],
+                 neck: Optional[Union[ConfigDict, dict]] = None,
+                 bbox_head: Optional[Union[ConfigDict, dict]] = None,
+                 train_cfg: Optional[Union[ConfigDict, dict]] = None,
+                 test_cfg: Optional[Union[ConfigDict, dict]] = None,
+                 preprocess_cfg: Optional[Union[ConfigDict, dict]] = None,
+                 pretrained: Optional[str] = None,
+                 init_cfg: Optional[Union[ConfigDict, dict]] = None) -> None:
+        super().__init__(preprocess_cfg=preprocess_cfg, init_cfg=init_cfg)
         if pretrained:
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')
@@ -40,14 +43,22 @@ class SingleStageDetector(BaseDetector):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
-    def extract_feat(self, batch_inputs):
-        """Directly extract features from the backbone+neck."""
+    def extract_feat(self, batch_inputs: Tensor) -> Tuple[Tensor]:
+        """Extract features.
+
+        Args:
+            batch_inputs (Tensor): Image tensor with shape (N, C, H ,W).
+
+        Returns:
+            tuple[Tensor]: Multi-level features that may have
+                different resolutions.
+        """
         x = self.backbone(batch_inputs)
         if self.with_neck:
             x = self.neck(x)
         return x
 
-    def forward_dummy(self, batch_inputs):
+    def forward_dummy(self, batch_inputs: Tensor) -> tuple:
         """Used for computing network flops.
 
         See `mmdetection/tools/analysis_tools/get_flops.py`
@@ -56,7 +67,11 @@ class SingleStageDetector(BaseDetector):
         outs = self.bbox_head(x)
         return outs
 
-    def forward_train(self, batch_inputs, batch_data_samples, **kwargs):
+    def forward_train(self,
+                      batch_inputs: Tensor,
+                      batch_data_samples: List[DetDataSample],
+                      proposals: Optional[InstanceData] = None,
+                      **kwargs) -> dict:
         """
         Args:
             batch_inputs (Tensor): Input images of shape (N, C, H, W).
@@ -66,28 +81,31 @@ class SingleStageDetector(BaseDetector):
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            dict: A dictionary of loss components.
         """
-        super(SingleStageDetector, self).forward_train(batch_inputs,
-                                                       batch_data_samples)
+        super().forward_train(
+            batch_inputs=batch_inputs, batch_data_samples=batch_data_samples)
         x = self.extract_feat(batch_inputs)
         losses = self.bbox_head.forward_train(x, batch_data_samples, **kwargs)
         return losses
 
-    def simple_test(self, batch_inputs, batch_img_metas, rescale=False):
+    def simple_test(self,
+                    batch_inputs: Tensor,
+                    batch_img_metas: List[dict],
+                    rescale: bool = False) -> List[DetDataSample]:
         """Test function without test-time augmentation.
 
         Args:
-            batch_inputs (torch.Tensor): Inputs with shape (N, C, H, W).
+            batch_inputs (Tensor): Inputs with shape (N, C, H, W).
             batch_img_metas (list[dict]): List of image information.
-            rescale (bool, optional): Whether to rescale the results.
+            rescale (bool): Whether to rescale the results.
                 Defaults to False.
 
         Returns:
-            list[:obj:`DetDataSample`]: Detection results of the \
-                input images. Each DetDataSample usually contain \
-                'pred_instances'. And the ``pred_instances`` usually \
-                contains following keys.
+            list[:obj:`DetDataSample`]: Detection results of the
+            input images. Each DetDataSample usually contain
+            'pred_instances'. And the ``pred_instances`` usually
+            contains following keys.
 
                 - scores (Tensor): Classification scores, has a shape
                     (num_instance, )
@@ -101,10 +119,7 @@ class SingleStageDetector(BaseDetector):
             x, batch_img_metas, rescale=rescale)
 
         # connvert to DetDataSample
-        for i in range(len(results_list)):
-            result = DetDataSample()
-            result.pred_instances = results_list[i]
-            results_list[i] = result
+        results_list = self.postprocess_result(results_list)
         return results_list
 
     # TODO: Currently not supported

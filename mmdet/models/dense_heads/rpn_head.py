@@ -31,8 +31,12 @@ class RPNHead(AnchorHead):
     def __init__(self,
                  in_channels: int,
                  num_classes: int = 1,
-                 init_cfg: Optional[Union[dict, List[dict]]] = dict(
-                     type='Normal', layer='Conv2d', std=0.01),
+                 init_cfg: Optional[Union[Union[ConfigDict, dict],
+                                          List[Union[ConfigDict,
+                                                     dict]]]] = dict(
+                                                         type='Normal',
+                                                         layer='Conv2d',
+                                                         std=0.01),
                  num_convs: int = 1,
                  **kwargs) -> None:
         self.num_convs = num_convs
@@ -116,19 +120,14 @@ class RPNHead(AnchorHead):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        losses = super(RPNHead, self).loss(
+        losses = super().loss(
             cls_scores,
             bbox_preds,
             batch_gt_instances,
             batch_img_metas,
             batch_gt_instances_ignore=batch_gt_instances_ignore)
-        if losses is None:
-            # AnchorHead.loss may return None
-            return None
-        else:
-            return dict(
-                loss_rpn_cls=losses['loss_cls'],
-                loss_rpn_bbox=losses['loss_bbox'])
+        return dict(
+            loss_rpn_cls=losses['loss_cls'], loss_rpn_bbox=losses['loss_bbox'])
 
     def _get_results_single(self,
                             cls_score_list: List[Tensor],
@@ -137,7 +136,6 @@ class RPNHead(AnchorHead):
                             img_meta: dict,
                             cfg: ConfigDict,
                             rescale: bool = False,
-                            with_nms: bool = True,
                             **kwargs) -> InstanceData:
         """Transform outputs of a single image into bbox predictions.
 
@@ -159,20 +157,18 @@ class RPNHead(AnchorHead):
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
                 Defaults to False.
-            with_nms (bool): If True, do nms before return boxes.
-                Defaults to True.
 
         Returns:
             :obj:`InstanceData`: Detection results of each image
             after the post process.
             Each item usually contains following keys.
 
-            - scores (Tensor): Classification scores, has a shape
-              (num_instance, )
-            - labels (Tensor): Labels of bboxes, has a shape
-              (num_instances, ).
-            - bboxes (Tensor): Has a shape (num_instances, 4),
-              the last dimension 4 arrange as (x1, y1, x2, y2).
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
         """
         cfg = self.test_cfg if cfg is None else cfg
         cfg = copy.deepcopy(cfg)
@@ -222,7 +218,7 @@ class RPNHead(AnchorHead):
         priors = torch.cat(mlvl_valid_priors)
         bboxes = self.bbox_coder.decode(priors, bbox_pred, max_shape=img_shape)
 
-        results = InstanceData(metainfo=img_meta)
+        results = InstanceData()
         results.bboxes = bboxes
         results.scores = torch.cat(mlvl_scores)
         results.level_ids = torch.cat(level_ids)
@@ -231,7 +227,6 @@ class RPNHead(AnchorHead):
             results=results,
             cfg=cfg,
             rescale=rescale,
-            with_nms=with_nms,
             img_meta=img_meta,
             **kwargs)
 
@@ -239,23 +234,19 @@ class RPNHead(AnchorHead):
                            results: InstanceData,
                            cfg: ConfigDict,
                            rescale: bool = False,
-                           with_nms: bool = True,
                            img_meta: Optional[dict] = None,
                            **kwargs) -> InstanceData:
         """bbox post-processing method.
 
         The boxes would be rescaled to the original image scale and do
-        the nms operation. Usually `with_nms` is False is used for aug test.
+        the nms operation.
 
         Args:
             results (:obj:`InstaceData`): Detection instance results,
                 each item has shape (num_bboxes, ).
-            cfg (ConfigDict): Test / postprocessing configuration,
-                if None, test_cfg would be used.
+            cfg (ConfigDict): Test / postprocessing configuration.
             rescale (bool): If True, return boxes in original image space.
                 Defaults to False.
-            with_nms (bool): If True, do nms before return boxes.
-                Defaults to True.
             img_meta (dict, optional): Image meta info. Defaults to None.
 
         Returns:
@@ -263,12 +254,12 @@ class RPNHead(AnchorHead):
             after the post process.
             Each item usually contains following keys.
 
-            - scores (Tensor): Classification scores, has a shape
-              (num_instance, )
-            - labels (Tensor): Labels of bboxes, has a shape
-              (num_instances, ).
-            - bboxes (Tensor): Has a shape (num_instances, 4),
-              the last dimension 4 arrange as (x1, y1, x2, y2).
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
         """
 
         if rescale:
@@ -296,7 +287,7 @@ class RPNHead(AnchorHead):
             del results.level_ids
         else:
             # To avoid some potential error
-            results_ = InstanceData(metainfo=img_meta)
+            results_ = InstanceData()
             results_.bboxes = results.scores.new_zeros(0, 4)
             results_.scores = results.scores.new_zeros(0)
             results_.labels = results.scores.new_zeros(0)

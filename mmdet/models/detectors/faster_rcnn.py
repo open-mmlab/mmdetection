@@ -1,4 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Optional, Union
+
+from mmengine.config import ConfigDict
+
 from mmdet.registry import MODELS
 from .two_stage import TwoStageDetector
 
@@ -8,16 +12,16 @@ class FasterRCNN(TwoStageDetector):
     """Implementation of `Faster R-CNN <https://arxiv.org/abs/1506.01497>`_"""
 
     def __init__(self,
-                 backbone,
-                 rpn_head,
-                 roi_head,
-                 train_cfg,
-                 test_cfg,
-                 neck=None,
-                 pretrained=None,
-                 init_cfg=None,
-                 img_norm_cfg=None):
-        super(FasterRCNN, self).__init__(
+                 backbone: Union[ConfigDict, dict],
+                 rpn_head: Union[ConfigDict, dict],
+                 roi_head: Union[ConfigDict, dict],
+                 train_cfg: Union[ConfigDict, dict],
+                 test_cfg: Union[ConfigDict, dict],
+                 neck: Optional[Union[ConfigDict, dict]] = None,
+                 pretrained: Optional[str] = None,
+                 preprocess_cfg: Optional[Union[ConfigDict, dict]] = None,
+                 init_cfg: Optional[Union[ConfigDict, dict]] = None) -> None:
+        super().__init__(
             backbone=backbone,
             neck=neck,
             rpn_head=rpn_head,
@@ -26,4 +30,4 @@ class FasterRCNN(TwoStageDetector):
             test_cfg=test_cfg,
             pretrained=pretrained,
             init_cfg=init_cfg,
-            img_norm_cfg=img_norm_cfg)
+            preprocess_cfg=preprocess_cfg)

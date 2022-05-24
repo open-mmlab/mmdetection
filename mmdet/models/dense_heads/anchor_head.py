@@ -9,11 +9,9 @@ from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import (AnchorGenerator, anchor_inside_flags, build_assigner,
-                        build_bbox_coder, build_prior_generator, build_sampler,
-                        images_to_levels, multi_apply, unmap)
-from mmdet.registry import MODELS
-from ..builder import build_loss
+from mmdet.core import (AnchorGenerator, anchor_inside_flags, images_to_levels,
+                        multi_apply, unmap)
+from mmdet.registry import MODELS, TASK_UTILS
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
 
@@ -46,25 +44,26 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         num_classes: int,
         in_channels: int,
         feat_channels: int = 256,
-        anchor_generator: ConfigDict = dict(
+        anchor_generator: Union[ConfigDict, dict] = dict(
             type='AnchorGenerator',
             scales=[8, 16, 32],
             ratios=[0.5, 1.0, 2.0],
             strides=[4, 8, 16, 32, 64]),
-        bbox_coder: ConfigDict = dict(
+        bbox_coder: Union[ConfigDict, dict] = dict(
             type='DeltaXYWHBBoxCoder',
             clip_border=True,
             target_means=(.0, .0, .0, .0),
             target_stds=(1.0, 1.0, 1.0, 1.0)),
         reg_decoded_bbox: bool = False,
-        loss_cls: ConfigDict = dict(
+        loss_cls: Union[ConfigDict, dict] = dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-        loss_bbox: ConfigDict = dict(
+        loss_bbox: Union[ConfigDict, dict] = dict(
             type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0),
-        train_cfg: Optional[ConfigDict] = None,
-        test_cfg: Optional[ConfigDict] = None,
-        init_cfg: Optional[Union[ConfigDict, List[ConfigDict]]] = dict(
-            type='Normal', layer='Conv2d', std=0.01)
+        train_cfg: Optional[Union[ConfigDict, dict]] = None,
+        test_cfg: Optional[Union[ConfigDict, dict]] = None,
+        init_cfg: Optional[Union[Union[ConfigDict, dict],
+                                 List[Union[ConfigDict, dict]]]] = dict(
+                                     type='Normal', layer='Conv2d', std=0.01)
     ) -> None:
         super().__init__(init_cfg=init_cfg)
         self.in_channels = in_channels
@@ -80,13 +79,13 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             raise ValueError(f'num_classes={num_classes} is too small')
         self.reg_decoded_bbox = reg_decoded_bbox
 
-        self.bbox_coder = build_bbox_coder(bbox_coder)
-        self.loss_cls = build_loss(loss_cls)
-        self.loss_bbox = build_loss(loss_bbox)
+        self.bbox_coder = TASK_UTILS.build(bbox_coder)
+        self.loss_cls = MODELS.build(loss_cls)
+        self.loss_bbox = MODELS.build(loss_bbox)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         if self.train_cfg:
-            self.assigner = build_assigner(self.train_cfg.assigner)
+            self.assigner = TASK_UTILS.build(self.train_cfg.assigner)
             if hasattr(self.train_cfg,
                        'sampler') and self.train_cfg.sampler.type.split(
                            '.')[-1] != 'PseudoSampler':
@@ -106,10 +105,11 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             else:
                 self.sampling = False
                 sampler_cfg = dict(type='PseudoSampler')
-            self.sampler = build_sampler(sampler_cfg, context=self)
+            self.sampler = TASK_UTILS.build(
+                sampler_cfg, default_args=dict(context=self))
         self.fp16_enabled = False
 
-        self.prior_generator = build_prior_generator(anchor_generator)
+        self.prior_generator = TASK_UTILS.build(anchor_generator)
 
         # Usually the numbers of anchors for each level are the same
         # except SSD detectors. So it is an int in the most dense
@@ -175,10 +175,10 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         return multi_apply(self.forward_single, x)
 
     def get_anchors(self,
-                    featmap_sizes: List[Tensor],
+                    featmap_sizes: List[tuple],
                     batch_img_metas: List[dict],
                     device: Union[torch.device, str] = 'cuda') \
-            -> Tuple[List[Tensor], List[Tensor]]:
+            -> Tuple[List[List[Tensor]], List[List[Tensor]]]:
         """Get anchors according to feature map sizes.
 
         Args:
@@ -189,8 +189,9 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         Returns:
             tuple:
-                anchor_list (list[Tensor]): Anchors of each image.
-                valid_flag_list (list[Tensor]): Valid flags of each image.
+                - anchor_list (list[list[Tensor]]): Anchors of each image.
+                - valid_flag_list (list[list[Tensor]]): Valid flags of each
+                  image.
         """
         num_imgs = len(batch_img_metas)
 
@@ -239,12 +240,14 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         Returns:
             tuple:
-                labels_list (list[Tensor]): Labels of each level.
-                label_weights_list (list[Tensor]): Label weights of each level.
-                bbox_targets_list (list[Tensor]): BBox targets of each level.
-                bbox_weights_list (list[Tensor]): BBox weights of each level.
-                num_total_pos (int): Number of positive samples in all images.
-                num_total_neg (int): Number of negative samples in all images.
+
+                - labels (Tensor): Labels of each level.
+                - label_weights (Tensor): Label weights of each level.
+                - bbox_targets (Tensor): BBox targets of each level.
+                - bbox_weights (Tensor): BBox weights of each level.
+                - pos_inds (Tensor): positive samples indexes.
+                - neg_inds (Tensor): negative samples indexes.
+                - sampling_result (:obj:`SamplingResult`): Sampling results.
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
@@ -413,7 +416,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
     def loss_single(self, cls_score: Tensor, bbox_pred: Tensor,
                     anchors: Tensor, labels: Tensor, label_weights: Tensor,
                     bbox_targets: Tensor, bbox_weights: Tensor,
-                    num_total_samples: int) -> dict:
+                    num_total_samples: int) -> tuple:
         """Compute loss of a single scale level.
 
         Args:
@@ -436,7 +439,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 positive anchors.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            tuple: loss components.
         """
         # classification loss
         labels = labels.reshape(-1)
@@ -489,7 +492,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 Defaults to None.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            dict: A dictionary of loss components.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == self.prior_generator.num_levels
@@ -505,7 +508,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             batch_img_metas,
             batch_gt_instances_ignore=batch_gt_instances_ignore)
         if cls_reg_targets is None:
-            return None
+            raise ValueError('`cls_reg_targets` cannot be None.')
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          num_total_pos, num_total_neg) = cls_reg_targets
         # TODO: Considering put this in sampler?

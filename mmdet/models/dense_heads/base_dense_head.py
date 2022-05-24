@@ -21,7 +21,8 @@ from mmdet.core.utils import filter_scores_and_topk, select_single_mlvl
 class BaseDenseHead(BaseModule, metaclass=ABCMeta):
     """Base class for DenseHeads."""
 
-    def __init__(self, init_cfg: Optional[dict] = None) -> None:
+    def __init__(self,
+                 init_cfg: Optional[Union[ConfigDict, dict]] = None) -> None:
         super().__init__(init_cfg=init_cfg)
 
     def init_weights(self) -> None:
@@ -83,12 +84,12 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             results of each image after the post process.
             Each item usually contains following keys.
 
-            - scores (Tensor): Classification scores, has a shape
-              (num_instance, )
-            - labels (Tensor): Labels of bboxes, has a shape
-              (num_instances, ).
-            - bboxes (Tensor): Has a shape (num_instances, 4),
-              the last dimension 4 arrange as (x1, y1, x2, y2).
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
         """
         assert len(cls_scores) == len(bbox_preds)
 
@@ -173,12 +174,12 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             after the post process.
             Each item usually contains following keys.
 
-            - scores (Tensor): Classification scores, has a shape
-              (num_instance, )
-            - labels (Tensor): Labels of bboxes, has a shape
-              (num_instances, ).
-            - bboxes (Tensor): Has a shape (num_instances, 4),
-              the last dimension 4 arrange as (x1, y1, x2, y2).
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
         """
         if score_factor_list[0] is None:
             # e.g. Retina, FreeAnchor, etc.
@@ -250,7 +251,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         priors = torch.cat(mlvl_valid_priors)
         bboxes = self.bbox_coder.decode(priors, bbox_pred, max_shape=img_shape)
 
-        results = InstanceData(metainfo=img_meta)
+        results = InstanceData()
         results.bboxes = bboxes
         results.scores = torch.cat(mlvl_scores)
         results.labels = torch.cat(mlvl_labels)
@@ -293,12 +294,12 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             after the post process.
             Each item usually contains following keys.
 
-            - scores (Tensor): Classification scores, has a shape
-              (num_instance, )
-            - labels (Tensor): Labels of bboxes, has a shape
-              (num_instances, ).
-            - bboxes (Tensor): Has a shape (num_instances, 4),
-              the last dimension 4 arrange as (x1, y1, x2, y2).
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
         """
 
         if rescale:
@@ -343,7 +344,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
                 the meta information of each image and corresponding
                 annotations.
-            proposal_cfg (mmengine.Config, optional): Test / postprocessing
+            proposal_cfg (ConfigDict, optional): Test / postprocessing
                 configuration, if None, test_cfg would be used.
                 Defaults to None.
 
@@ -351,22 +352,22 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             tuple or Tensor: When `proposal_cfg` is None, the detector is a \
             normal one-stage detector, The return value is the losses.
 
-            - losses: (dict[str, Tensor]): A dictionary of loss components.
+                - losses: (dict[str, Tensor]): A dictionary of loss components.
 
             When the `proposal_cfg` is not None, the head is used as a
             `rpn_head`, the return value is a tuple contains:
 
-            - losses: (dict[str, Tensor]): A dictionary of loss components.
-            - results_list (list[:obj:`InstanceData`]): Detection
-              results of each image after the post process.
-              Each item usually contains following keys.
+                - losses: (dict[str, Tensor]): A dictionary of loss components.
+                - results_list (list[:obj:`InstanceData`]): Detection
+                  results of each image after the post process.
+                  Each item usually contains following keys.
 
-                - scores (Tensor): Classification scores, has a shape
-                  (num_instance, )
-                - labels (Tensor): Labels of bboxes, has a shape
-                  (num_instances, ).
-                - bboxes (Tensor): Has a shape (num_instances, 4),
-                  the last dimension 4 arrange as (x1, y1, x2, y2).
+                    - scores (Tensor): Classification scores, has a shape
+                      (num_instance, )
+                    - labels (Tensor): Labels of bboxes, has a shape
+                      (num_instances, ).
+                    - bboxes (Tensor): Has a shape (num_instances, 4),
+                      the last dimension 4 arrange as (x1, y1, x2, y2).
         """
         outs = self(x)
 
@@ -415,12 +416,12 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             after the post process.
             Each item usually contains following keys.
 
-            - scores (Tensor): Classification scores, has a shape
-              (num_instance, )
-            - labels (Tensor): Labels of bboxes, has a shape
-              (num_instances, ).
-            - bboxes (Tensor): Has a shape (num_instances, 4),
-              the last dimension 4 arrange as (x1, y1, x2, y2).
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
         """
         outs = self.forward(x)
         results_list = self.get_results(
@@ -455,12 +456,12 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             input images. Each item usually contains\
             following keys.
 
-            - scores (Tensor): Classification scores, has a shape
-              (num_instance,)
-            - labels (Tensor): Labels of bboxes, has a shape
-              (num_instances,).
-            - bboxes (Tensor): Has a shape (num_instances, 4),
-              the last dimension 4 arrange as (x1, y1, x2, y2).
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance,)
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances,).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
         """
         # TODO: remove this for detr and deformdetr
         sig_of_get_results = signature(self.get_results)

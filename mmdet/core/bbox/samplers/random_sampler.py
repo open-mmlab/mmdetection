@@ -30,8 +30,11 @@ class RandomSampler(BaseSampler):
                  add_gt_as_proposals: bool = True,
                  **kwargs):
         from mmdet.core.bbox import demodata
-        super(RandomSampler, self).__init__(num, pos_fraction, neg_pos_ub,
-                                            add_gt_as_proposals)
+        super().__init__(
+            num=num,
+            pos_fraction=pos_fraction,
+            neg_pos_ub=neg_pos_ub,
+            add_gt_as_proposals=add_gt_as_proposals)
         self.rng = demodata.ensure_rng(kwargs.get('rng', None))
 
     def random_choice(self, gallery: Union[Tensor, ndarray, list],

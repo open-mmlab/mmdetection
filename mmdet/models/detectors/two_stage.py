@@ -1,13 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import warnings
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import torch
 from mmcv.utils import ConfigDict
 from mmengine.data import InstanceData
 from torch import Tensor
 
+from mmdet.core import DetDataSample
 from mmdet.registry import MODELS
 from .base import BaseDetector
 
@@ -22,14 +23,14 @@ class TwoStageDetector(BaseDetector):
 
     def __init__(self,
                  backbone: ConfigDict,
-                 neck: Optional[ConfigDict] = None,
-                 rpn_head: Optional[ConfigDict] = None,
-                 roi_head: Optional[ConfigDict] = None,
-                 train_cfg: Optional[ConfigDict] = None,
-                 test_cfg: Optional[ConfigDict] = None,
-                 pretrained: Optional[ConfigDict] = None,
-                 preprocess_cfg: Optional[ConfigDict] = None,
-                 init_cfg: Optional[ConfigDict] = None) -> None:
+                 neck: Optional[Union[ConfigDict, dict]] = None,
+                 rpn_head: Optional[Union[ConfigDict, dict]] = None,
+                 roi_head: Optional[Union[ConfigDict, dict]] = None,
+                 train_cfg: Optional[Union[ConfigDict, dict]] = None,
+                 test_cfg: Optional[Union[ConfigDict, dict]] = None,
+                 pretrained: Optional[str] = None,
+                 preprocess_cfg: Optional[Union[ConfigDict, dict]] = None,
+                 init_cfg: Optional[Union[ConfigDict, dict]] = None) -> None:
         super().__init__(preprocess_cfg=preprocess_cfg, init_cfg=init_cfg)
         if pretrained:
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
@@ -82,51 +83,56 @@ class TwoStageDetector(BaseDetector):
         """Extract features.
 
         Args:
-            batch_inputs (Tensor): Image tensor with shape (n, c, h ,w).
+            batch_inputs (Tensor): Image tensor with shape (N, C, H ,W).
 
         Returns:
             tuple[Tensor]: Multi-level features that may have
-                different resolutions.
+            different resolutions.
         """
         x = self.backbone(batch_inputs)
         if self.with_neck:
             x = self.neck(x)
         return x
 
-    def forward_dummy(self, img: Tensor) -> Tuple[List[Tensor]]:
+    def forward_dummy(self, batch_inputs: Tensor) -> tuple:
         """Used for computing network flops.
 
         See `mmdetection/tools/analysis_tools/get_flops.py`
         """
         outs = ()
         # backbone
-        x = self.extract_feat(img)
+        x = self.extract_feat(batch_inputs)
         # rpn
         if self.with_rpn:
             rpn_outs = self.rpn_head(x)
             outs = outs + (rpn_outs, )
-        proposals = torch.randn(1000, 4).to(img.device)
+        proposals = torch.randn(1000, 4, device=batch_inputs.device)
         # roi_head
         roi_outs = self.roi_head.forward_dummy(x, proposals)
         outs = outs + (roi_outs, )
         return outs
 
-    def forward_train(self, img, data_samples, proposals=None, **kwargs):
+    def forward_train(self,
+                      batch_inputs: Tensor,
+                      batch_data_samples: List[DetDataSample],
+                      proposals: Optional[List[InstanceData]] = None,
+                      **kwargs) -> dict:
         """
         Args:
-            img (Tensor): of shape (N, C, H, W) encoding input images.
-                Typically these should be mean centered and std scaled.
-            data_samples (list[:obj:`GeneralData`]): Each item contains
-                the meta information of each image and corresponding
-                annotations.
-            proposals (List[Tensor]): The proposals obtained in advance
-                outside.  Default: None.
+            batch_inputs (Tensor): Input images of shape (N, C, H, W).
+                These should usually be mean centered and std scaled.
+            batch_data_samples (list[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+            proposals (List[:obj:`InstanceData`]): The proposals
+                obtained in advance outside. Defaults to None.
 
         Returns:
-            dict[str, Tensor]: a dictionary of loss components
+            dict: A dictionary of loss components
         """
-
-        x = self.extract_feat(img)
+        super().forward_train(
+            batch_inputs=batch_inputs, batch_data_samples=batch_data_samples)
+        x = self.extract_feat(batch_inputs)
 
         losses = dict()
 
@@ -134,27 +140,37 @@ class TwoStageDetector(BaseDetector):
         if self.with_rpn:
             proposal_cfg = self.train_cfg.get('rpn_proposal',
                                               self.test_cfg.rpn)
-            rpn_data_samples = copy.deepcopy(data_samples)
+            rpn_data_samples = copy.deepcopy(batch_data_samples)
             # set cat_id of gt_labels to 0 in RPN
             for data_sample in rpn_data_samples:
                 data_sample.gt_instances.labels = \
                     torch.zeros_like(data_sample.gt_instances.labels)
 
-            rpn_losses, results_list = self.rpn_head.forward_train(
+            rpn_losses, rpn_results_list = self.rpn_head.forward_train(
                 x, rpn_data_samples, proposal_cfg=proposal_cfg, **kwargs)
-            # TODO: losses check whether get 'rpn_'
+            # avoid get same name with roi_head loss
+            keys = rpn_losses.keys()
+            for key in keys:
+                if 'loss' in key and 'rpn' not in key:
+                    rpn_losses[f'rpn_{key}'] = rpn_losses.pop(key)
             losses.update(rpn_losses)
-            # TODO: remove this after refactor two stage input
-            proposal_list = results2proposal(results_list)
         else:
-            proposal_list = proposals
+            # TODO: Need check with Fast R-CNN
+            assert proposals is not None
+            assert len(proposals) == len(batch_data_samples)
+            rpn_results_list = []
+            for i in range(len(batch_data_samples)):
+                results = InstanceData()
+                results.bboxes = proposals[i]
+                rpn_results_list.append(results)
 
-        roi_losses = self.roi_head.forward_train(x, proposal_list,
-                                                 data_samples, **kwargs)
+        roi_losses = self.roi_head.forward_train(x, rpn_results_list,
+                                                 batch_data_samples, **kwargs)
         losses.update(roi_losses)
 
         return losses
 
+    # TODO: Currently not supported
     async def async_simple_test(self,
                                 img,
                                 img_meta,
@@ -170,25 +186,60 @@ class TwoStageDetector(BaseDetector):
         else:
             proposal_list = proposals
         # TODO: remove this after refactor two stage input
-        proposal_list = results2proposal(proposal_list)
         return await self.roi_head.async_simple_test(
             x, proposal_list, img_meta, rescale=rescale)
 
-    def simple_test(self, img, img_metas, proposals=None, rescale=False):
-        """Test without augmentation."""
+    def simple_test(self,
+                    batch_inputs: Tensor,
+                    batch_img_metas: List[dict],
+                    proposals: Optional[List[InstanceData]] = None,
+                    rescale: bool = False) -> List[DetDataSample]:
+        """Test function without test time augmentation.
+
+        Args:
+            batch_inputs (Tensor): Inputs with shape (N, C, H, W).
+            batch_img_metas (list[dict]): List of image information.
+            rescale (bool): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list[:obj:`DetDataSample`]: Return the detection results of the
+            input images. The returns value is DetDataSample,
+            which usually contain 'pred_instances'. And the
+            ``pred_instances`` usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                    (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                    (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                    the last dimension 4 arrange as (x1, y1, x2, y2).
+                - masks (Tensor): Has a shape (num_instances, H, W).
+        """
 
         assert self.with_bbox, 'Bbox head must be implemented.'
-        x = self.extract_feat(img)
+        x = self.extract_feat(batch_inputs)
         if proposals is None:
-            results_list = self.rpn_head.simple_test(x, img_metas)
-            proposal_list = results2proposal(results_list)
+            rpn_results_list = self.rpn_head.simple_test(
+                x, batch_img_metas, rescale=False)
         else:
-            proposal_list = proposals
-        # TODO: remove this after refactor two stage input
+            rpn_results_list = proposals
+            # TODO: Need check with Fast R-CNN
+            assert len(rpn_results_list) == len(batch_img_metas)
+            for i in range(len(batch_img_metas)):
+                results = InstanceData()
+                results.bboxes = proposals[i]
+                rpn_results_list.append(results)
 
-        return self.roi_head.simple_test(
-            x, proposal_list, img_metas, rescale=rescale)
+        results_list = self.roi_head.simple_test(
+            x, rpn_results_list, batch_img_metas, rescale=rescale)
 
+        # connvert to DetDataSample
+        results_list = self.postprocess_result(results_list)
+
+        return results_list
+
+    # TODO: Currently not supported
     def aug_test(self, aug_batch_imgs, aug_batch_img_metas, rescale=False):
         """Test with augmentations.
 
@@ -208,12 +259,12 @@ class TwoStageDetector(BaseDetector):
             input images. Each item usually contains\
             following keys.
 
-            - scores (Tensor): Classification scores, has a shape
-              (num_instance,)
-            - labels (Tensor): Labels of bboxes, has a shape
-              (num_instances,).
-            - bboxes (Tensor): Has a shape (num_instances, 4),
-              the last dimension 4 arrange as (x1, y1, x2, y2).
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance,)
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances,).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
 
 
         Note:
@@ -233,24 +284,8 @@ class TwoStageDetector(BaseDetector):
         return self.roi_head.aug_test(
             x, proposal_list, aug_batch_img_metas, rescale=rescale)
 
-    def onnx_export(self, img, img_metas):
 
-        img_shape = torch._shape_as_tensor(img)[2:]
-        img_metas[0]['img_shape_for_onnx'] = img_shape
-        x = self.extract_feat(img)
-        proposals = self.rpn_head.onnx_export(x, img_metas)
-        if hasattr(self.roi_head, 'onnx_export'):
-            return self.roi_head.onnx_export(x, proposals, img_metas)
-        else:
-            raise NotImplementedError(
-                f'{self.__class__.__name__} can not '
-                f'be exported to ONNX. Please refer to the '
-                f'list of supported models,'
-                f'https://mmdetection.readthedocs.io/en/latest/tutorials/pytorch2onnx.html#list-of-supported-models-exportable-to-onnx'  # noqa E501
-            )
-
-
-# TODO: remove this after refactor `roi_head` input
+# TODO: remove this after finish refactor TwoStagePanopticSegmentor
 def results2proposal(results_list):
     if isinstance(results_list[0], InstanceData):
         proposal_list = []

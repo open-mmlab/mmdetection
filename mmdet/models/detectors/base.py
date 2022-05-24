@@ -1,12 +1,19 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
+import warnings
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
+from typing import List, Optional, Union
 
 import torch
 import torch.distributed as dist
 from mmcv.runner import BaseModule, auto_fp16
+from mmengine.config import ConfigDict
+from mmengine.data import InstanceData
+from torch import Tensor, device
+from torch.optim import Optimizer
 
+from mmdet.core import DetDataSample
 from mmdet.core.utils import stack_batch
 
 
@@ -14,16 +21,18 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
     """Base class for detectors.
 
     Args:
-        preprocess_cfg (dict, optional): Model preprocessing config
-            for processing the input data. it usually includes
-            ``to_rgb``, ``pad_size_divisor``, ``pad_value``,
-            ``mean`` and ``std``. Default to None.
-       init_cfg (dict, optional): the config to control the
-           initialization. Default to None.
+        preprocess_cfg (dict or ConfigDict, optional):
+            Model preprocessing config for processing the input data.
+            it usually includes ``to_rgb``, ``pad_size_divisor``,
+            ``pad_value``, ``mean`` and ``std``. Defaults to None.
+       init_cfg (dict or ConfigDict, optional): the config to control the
+           initialization. Defaults to None.
     """
 
-    def __init__(self, preprocess_cfg=None, init_cfg=None):
-        super(BaseDetector, self).__init__(init_cfg)
+    def __init__(self,
+                 preprocess_cfg: Optional[Union[dict, ConfigDict]] = None,
+                 init_cfg: Optional[Union[dict, ConfigDict]] = None) -> None:
+        super().__init__(init_cfg=init_cfg)
         self.fp16_enabled = False
         self.preprocess_cfg = preprocess_cfg
 
@@ -45,51 +54,53 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
                 torch.tensor(preprocess_cfg['std']).view(-1, 1, 1), False)
         else:
             # Only used to provide device information
+            warnings.warn('We treat `model.preprocess_cfg` is None.')
             self.register_buffer('pixel_mean', torch.tensor(1), False)
 
     @property
-    def device(self):
+    def device(self) -> device:
+        """Get the current device."""
         return self.pixel_mean.device
 
     @property
-    def with_neck(self):
+    def with_neck(self) -> bool:
         """bool: whether the detector has a neck"""
         return hasattr(self, 'neck') and self.neck is not None
 
     # TODO: these properties need to be carefully handled
     # for both single stage & two stage detectors
     @property
-    def with_shared_head(self):
+    def with_shared_head(self) -> bool:
         """bool: whether the detector has a shared head in the RoI Head"""
         return hasattr(self, 'roi_head') and self.roi_head.with_shared_head
 
     @property
-    def with_bbox(self):
+    def with_bbox(self) -> bool:
         """bool: whether the detector has a bbox head"""
         return ((hasattr(self, 'roi_head') and self.roi_head.with_bbox)
                 or (hasattr(self, 'bbox_head') and self.bbox_head is not None))
 
     @property
-    def with_mask(self):
+    def with_mask(self) -> bool:
         """bool: whether the detector has a mask head"""
         return ((hasattr(self, 'roi_head') and self.roi_head.with_mask)
                 or (hasattr(self, 'mask_head') and self.mask_head is not None))
 
     @abstractmethod
-    def extract_feat(self, batch_inputs):
+    def extract_feat(self, batch_inputs: Tensor):
         """Extract features from images."""
         pass
 
-    def extract_feats(self, multi_batch_inputs):
+    def extract_feats(self, multi_batch_inputs: List[Tensor]) -> List[Tensor]:
         """Extract features from multiple images.
 
         Args:
-            multi_batch_inputs (list[torch.Tensor]): A list of images.
+            multi_batch_inputs (list[Tensor]): A list of images.
                 The images are augmented from the same image but
                 in different ways.
 
         Returns:
-            list[torch.Tensor]: Features of different images
+            list[Tensor]: Features of different images.
         """
         assert isinstance(multi_batch_inputs, list)
         return [
@@ -98,7 +109,9 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         ]
 
     @auto_fp16(apply_to=('batch_inputs', ))
-    def forward_train(self, batch_inputs, batch_data_samples, **kwargs):
+    def forward_train(self, batch_inputs: Tensor,
+                      batch_data_samples: List[DetDataSample],
+                      **kwargs) -> None:
         """
         Args:
             batch_inputs (Tensor):The image Tensor should have a shape NxCxHxW.
@@ -118,15 +131,17 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def simple_test(self, batch_inputs, batch_img_metas, **kwargs):
+    def simple_test(self, batch_inputs: Tensor, batch_img_metas: List[dict],
+                    **kwargs):
         pass
 
-    # TODO
+    # TODO: Currently not supported
     @abstractmethod
     def aug_test(self, imgs, img_metas, **kwargs):
         """Test function with test time augmentation."""
         pass
 
+    # TODO: Currently not supported
     async def aforward_test(self, *, aug_batch_imgs, aug_batch_data_samples,
                             **kwargs):
         """
@@ -184,7 +199,11 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         else:
             raise NotImplementedError
 
-    def forward(self, data, optimizer=None, return_loss=False, **kwargs):
+    def forward(self,
+                data: List[dict],
+                optimizer: Optional[Union[Optimizer, dict]] = None,
+                return_loss: bool = False,
+                **kwargs) -> Union[dict, List[DetDataSample]]:
         """The iteration step during training and testing. This method defines
         an iteration step during training and testing, except for the back
         propagation and optimizer updating during training, which are done in
@@ -217,7 +236,7 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
                 ``pred_instances`` or ``pred_panoptic_seg`` or
                 ``pred_sem_seg``.
         """
-        batch_inputs, batch_data_samples = self.preprocss_data(data)
+        batch_inputs, batch_data_samples = self.preprocess_data(data)
 
         if return_loss:
             losses = self.forward_train(batch_inputs, batch_data_samples,
@@ -237,14 +256,16 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
             return self.forward_simple_test(batch_inputs, batch_data_samples,
                                             **kwargs)
 
-    def preprocss_data(self, data):
-        """ Process input data during training and simple testing phases.
+    def preprocess_data(self, data: List[dict]) -> tuple:
+        """Process input data during training and simple testing phases.
+
         Args:
             data (list[dict]): The data to be processed, which
                 comes from dataloader.
 
         Returns:
-            tuple:  It should contain 2 item.
+            tuple: It should contain 2 item.
+
                  - batch_inputs (Tensor): The batch input tensor.
                  - batch_data_samples (list[:obj:`DetDataSample`]): The Data
                      Samples. It usually includes information such as
@@ -270,7 +291,33 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
                                    self.pad_value)
         return batch_inputs, batch_data_samples
 
-    def preprocss_aug_testing_data(self, data):
+    def postprocess_result(self, results_list: List[InstanceData]) \
+            -> List[DetDataSample]:
+        """ Convert results list to `DetDataSample`.
+        Args:
+            results_list (list[:obj:`InstanceData`]): Detection results of
+                each image.
+
+        Returns:
+            list[:obj:`DetDataSample`]: Detection results of the
+            input images. Each DetDataSample usually contain
+            'pred_instances'. And the ``pred_instances`` usually
+            contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                    (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                    (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                    the last dimension 4 arrange as (x1, y1, x2, y2).
+            """
+        for i in range(len(results_list)):
+            result = DetDataSample()
+            result.pred_instances = results_list[i]
+            results_list[i] = result
+        return results_list
+
+    def preprocess_aug_testing_data(self, data: List[dict]) -> tuple:
         """ Process input data during training and testing phases.
         Args:
             data (list[dict]): The data to be processed, which
@@ -334,11 +381,14 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         return aug_batch_imgs, aug_batch_data_samples
 
     @auto_fp16(apply_to=('batch_inputs', ))
-    def forward_simple_test(self, batch_inputs, batch_data_samples, **kwargs):
-        """
+    def forward_simple_test(self, batch_inputs: Tensor,
+                            batch_data_samples: List[DetDataSample],
+                            **kwargs) -> List[DetDataSample]:
+        """Test function without test time augmentation.
+
         Args:
             batch_inputs (Tensor): The input Tensor should have a
-                shape NxCxHxW.
+                shape (N, C, H, W).
             batch_data_samples (List[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
@@ -364,7 +414,7 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         return self.simple_test(
             batch_inputs, batch_img_metas, rescale=True, **kwargs)
 
-    def _parse_losses(self, losses):
+    def _parse_losses(self, losses: dict) -> tuple:
         """Parse the raw outputs (losses) of the network.
 
         Args:
