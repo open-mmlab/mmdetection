@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from unittest import TestCase
 
+import pytest
 import torch
 from mmengine import Config
 from mmengine.data import InstanceData
@@ -10,6 +11,19 @@ from mmdet.models.dense_heads import RPNHead
 
 
 class TestRPNHead(TestCase):
+
+    def test_init(self):
+        """Test init rpn head."""
+        rpn_head = RPNHead(num_classes=1, in_channels=1)
+        assert rpn_head.rpn_conv
+        assert rpn_head.rpn_cls
+        assert rpn_head.rpn_reg
+
+        # rpn_head.num_convs > 1
+        rpn_head = RPNHead(num_classes=1, in_channels=1, num_convs=2)
+        assert rpn_head.rpn_conv
+        assert rpn_head.rpn_cls
+        assert rpn_head.rpn_reg
 
     def test_rpn_head_loss(self):
         """Tests rpn head loss when truth is empty and non-empty."""
@@ -73,3 +87,31 @@ class TestRPNHead(TestCase):
         onegt_box_loss = sum(one_gt_losses['loss_rpn_bbox'])
         assert onegt_cls_loss.item() > 0, 'rpn cls loss should be non-zero'
         assert onegt_box_loss.item() > 0, 'rpn box loss should be non-zero'
+
+        # When there is no valid anchor, the loss will be None,
+        # and this will raise a ValueError.
+        img_metas = [{
+            'img_shape': (8, 8, 3),
+            'scale_factor': 1,
+        }]
+        with pytest.raises(ValueError):
+            rpn_head.loss(cls_scores, bbox_preds, [gt_instances], img_metas)
+
+    def test_bbox_post_process(self):
+        """Test the length of detection instance results is 0."""
+        from mmengine.config import ConfigDict
+        cfg = ConfigDict(
+            nms_pre=1000,
+            max_per_img=1000,
+            nms=dict(type='nms', iou_threshold=0.7),
+            min_bbox_size=0)
+
+        rpn_head = RPNHead(num_classes=1, in_channels=1)
+        results = InstanceData(metainfo=dict())
+        results.bboxes = torch.zeros((0, 4))
+        results.scores = torch.zeros(0)
+        results = rpn_head._bbox_post_process(results, cfg, img_meta=dict())
+        assert len(results) == 0
+        assert results.bboxes.size() == (0, 4)
+        assert results.scores.size() == (0, )
+        assert results.labels.size() == (0, )

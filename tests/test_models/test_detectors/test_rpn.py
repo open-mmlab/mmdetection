@@ -6,30 +6,38 @@ import torch
 from parameterized import parameterized
 
 from mmdet import *  # noqa
-from tests.test_models.test_detectors.test_single_stage import (
-    _demo_mm_inputs, _get_detector_cfg)
+from mmdet.core import DetDataSample
+from .utils import demo_mm_inputs, get_detector_cfg
 
 
 class TestRPN(TestCase):
 
-    @parameterized.expand([
-        'rpn/rpn_r50_fpn_1x_coco.py',
-    ])
+    @parameterized.expand(['rpn/rpn_r50_fpn_1x_coco.py'])
     def test_init(self, cfg_file):
-        model = _get_detector_cfg(cfg_file)
+        model = get_detector_cfg(cfg_file)
+        # backbone convert to ResNet18
+        model.backbone.depth = 18
+        model.neck.in_channels = [64, 128, 256, 512]
         model.backbone.init_cfg = None
 
         from mmdet.models import build_detector
         detector = build_detector(model)
         assert detector.backbone
+        assert detector.neck
         assert detector.rpn_head
         assert detector.device.type == 'cpu'
 
-    @parameterized.expand([
-        ('rpn/rpn_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
-    ])
+        # if rpn.num_classes > 1, force set rpn.num_classes = 1
+        model.rpn_head.num_classes = 2
+        detector = build_detector(model)
+        assert detector.rpn_head.num_classes == 1
+
+    @parameterized.expand([('rpn/rpn_r50_fpn_1x_coco.py', ('cpu', 'cuda'))])
     def test_rpn_forward_train(self, cfg_file, devices):
-        model = _get_detector_cfg(cfg_file)
+        model = get_detector_cfg(cfg_file)
+        # backbone convert to ResNet18
+        model.backbone.depth = 18
+        model.neck.in_channels = [64, 128, 256, 512]
         model.backbone.init_cfg = None
 
         from mmdet.models import build_detector
@@ -45,17 +53,24 @@ class TestRPN(TestCase):
 
             assert detector.device.type == device
 
-            packed_inputs = _demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]])
+            packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]])
 
             # Test forward train
             losses = detector.forward(packed_inputs, return_loss=True)
             assert isinstance(losses, dict)
 
-    @parameterized.expand([
-        ('rpn/rpn_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
-    ])
+            # Test forward_dummy
+            batch = torch.ones((1, 3, 64, 64)).to(device=device)
+            out = detector.forward_dummy(batch)
+            assert isinstance(out, tuple)
+            assert len(out) == 2
+
+    @parameterized.expand([('rpn/rpn_r50_fpn_1x_coco.py', ('cpu', 'cuda'))])
     def test_single_stage_forward_test(self, cfg_file, devices):
-        model = _get_detector_cfg(cfg_file)
+        model = get_detector_cfg(cfg_file)
+        # backbone convert to ResNet18
+        model.backbone.depth = 18
+        model.neck.in_channels = [64, 128, 256, 512]
         model.backbone.init_cfg = None
 
         from mmdet.models import build_detector
@@ -71,7 +86,7 @@ class TestRPN(TestCase):
 
             assert detector.device.type == device
 
-            packed_inputs = _demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]])
+            packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]])
 
             # Test forward test
             detector.eval()
@@ -79,3 +94,4 @@ class TestRPN(TestCase):
                 batch_results = detector.forward(
                     packed_inputs, return_loss=False)
                 assert len(batch_results) == 2
+                isinstance(batch_results[0], DetDataSample)

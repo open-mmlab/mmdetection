@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import warnings
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import mmcv
 import torch
@@ -18,12 +18,12 @@ class RPN(BaseDetector):
     """Implementation of Region Proposal Network."""
 
     def __init__(self,
-                 backbone: ConfigDict,
-                 neck: ConfigDict,
-                 rpn_head: ConfigDict,
-                 train_cfg: ConfigDict,
-                 test_cfg: ConfigDict,
-                 pretrained: Optional[ConfigDict] = None,
+                 backbone: Union[ConfigDict, dict],
+                 neck: Union[ConfigDict, dict],
+                 rpn_head: Union[ConfigDict, dict],
+                 train_cfg: Union[ConfigDict, dict],
+                 test_cfg: Union[ConfigDict, dict],
+                 pretrained: Optional[str] = None,
                  preprocess_cfg: Optional[ConfigDict] = None,
                  init_cfg: Optional[dict] = None) -> None:
         super().__init__(preprocess_cfg=preprocess_cfg, init_cfg=init_cfg)
@@ -50,7 +50,7 @@ class RPN(BaseDetector):
         """Extract features.
 
         Args:
-            batch_inputs (Tensor): Image tensor with shape (n, c, h ,w).
+            batch_inputs (Tensor): Image tensor with shape (N, C, H, W).
 
         Returns:
             tuple[Tensor]: Multi-level features that may have
@@ -61,9 +61,9 @@ class RPN(BaseDetector):
             x = self.neck(x)
         return x
 
-    def forward_dummy(self, img: Tensor) -> Tuple[List[Tensor]]:
+    def forward_dummy(self, batch_inputs: Tensor) -> Tuple[List[Tensor]]:
         """Dummy forward function."""
-        x = self.extract_feat(img)
+        x = self.extract_feat(batch_inputs)
         rpn_outs = self.rpn_head(x)
         return rpn_outs
 
@@ -103,14 +103,14 @@ class RPN(BaseDetector):
         Args:
             batch_inputs (Tensor): Inputs with shape (N, C, H, W).
             batch_img_metas (list[dict]): List of image information.
-            rescale (bool, optional): Whether to rescale the results.
+            rescale (bool): Whether to rescale the results.
                 Defaults to False.
 
         Returns:
             list[:obj:`DetDataSample`]: Return the detection results of the
-                input images. The returns value is DetDataSample,
-                which usually contain 'pred_instances'. And the
-                ``pred_instances`` usually contains following keys.
+            input images. The returns value is DetDataSample,
+            which usually contain 'pred_instances'. And the
+            ``pred_instances`` usually contains following keys.
 
                 - scores (Tensor): Classification scores, has a shape
                     (num_instance, )
@@ -124,10 +124,7 @@ class RPN(BaseDetector):
             x, batch_img_metas, rescale=rescale)
 
         # connvert to DetDataSample
-        for i in range(len(results_list)):
-            result = DetDataSample()
-            result.pred_instances = results_list[i]
-            results_list[i] = result
+        results_list = self.postprocess_result(results_list)
 
         return results_list
 

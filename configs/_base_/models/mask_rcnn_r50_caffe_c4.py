@@ -6,8 +6,8 @@ preprocess_cfg = dict(
     pad_size_divisor=32)
 norm_cfg = dict(type='BN', requires_grad=False)
 model = dict(
-    preprocess_cfg=preprocess_cfg,
     type='MaskRCNN',
+    preprocess_cfg=preprocess_cfg,
     backbone=dict(
         type='ResNet',
         depth=50,

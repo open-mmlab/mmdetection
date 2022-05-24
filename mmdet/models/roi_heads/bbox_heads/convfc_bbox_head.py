@@ -1,6 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Optional, Tuple, Union
+
 import torch.nn as nn
 from mmcv.cnn import ConvModule
+from mmengine.config import ConfigDict
+from torch import Tensor
 
 from mmdet.models.utils import build_linear_layer
 from mmdet.registry import MODELS
@@ -20,21 +24,20 @@ class ConvFCBBoxHead(BBoxHead):
     """  # noqa: W605
 
     def __init__(self,
-                 num_shared_convs=0,
-                 num_shared_fcs=0,
-                 num_cls_convs=0,
-                 num_cls_fcs=0,
-                 num_reg_convs=0,
-                 num_reg_fcs=0,
-                 conv_out_channels=256,
-                 fc_out_channels=1024,
-                 conv_cfg=None,
-                 norm_cfg=None,
-                 init_cfg=None,
+                 num_shared_convs: int = 0,
+                 num_shared_fcs: int = 0,
+                 num_cls_convs: int = 0,
+                 num_cls_fcs: int = 0,
+                 num_reg_convs: int = 0,
+                 num_reg_fcs: int = 0,
+                 conv_out_channels: int = 256,
+                 fc_out_channels: int = 1024,
+                 conv_cfg: Optional[Union[dict, ConfigDict]] = None,
+                 norm_cfg: Optional[Union[dict, ConfigDict]] = None,
+                 init_cfg: Optional[Union[dict, ConfigDict]] = None,
                  *args,
-                 **kwargs):
-        super(ConvFCBBoxHead, self).__init__(
-            *args, init_cfg=init_cfg, **kwargs)
+                 **kwargs) -> None:
+        super().__init__(*args, init_cfg=init_cfg, **kwargs)
         assert (num_shared_convs + num_shared_fcs + num_cls_convs +
                 num_cls_fcs + num_reg_convs + num_reg_fcs > 0)
         if num_cls_convs > 0 or num_reg_convs > 0:
@@ -116,10 +119,10 @@ class ConvFCBBoxHead(BBoxHead):
             ]
 
     def _add_conv_fc_branch(self,
-                            num_branch_convs,
-                            num_branch_fcs,
-                            in_channels,
-                            is_shared=False):
+                            num_branch_convs: int,
+                            num_branch_fcs: int,
+                            in_channels: int,
+                            is_shared: bool = False) -> tuple:
         """Add shared or separable branch.
 
         convs -> avg pool (optional) -> fcs
@@ -156,7 +159,23 @@ class ConvFCBBoxHead(BBoxHead):
             last_layer_dim = self.fc_out_channels
         return branch_convs, branch_fcs, last_layer_dim
 
-    def forward(self, x):
+    def forward(self, x: Tuple[Tensor]) -> tuple:
+        """Forward features from the upstream network.
+
+        Args:
+            x (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+
+        Returns:
+            tuple: A tuple of classification scores and bbox prediction.
+
+                - cls_score (Tensor): Classification scores for all \
+                    scale levels, each is a 4D-tensor, the channels number \
+                    is num_base_priors * num_classes.
+                - bbox_pred (Tensor): Box energies / deltas for all \
+                    scale levels, each is a 4D-tensor, the channels number \
+                    is num_base_priors * 4.
+        """
         # shared part
         if self.num_shared_convs > 0:
             for conv in self.shared_convs:
@@ -200,8 +219,8 @@ class ConvFCBBoxHead(BBoxHead):
 @MODELS.register_module()
 class Shared2FCBBoxHead(ConvFCBBoxHead):
 
-    def __init__(self, fc_out_channels=1024, *args, **kwargs):
-        super(Shared2FCBBoxHead, self).__init__(
+    def __init__(self, fc_out_channels: int = 1024, *args, **kwargs) -> None:
+        super().__init__(
             num_shared_convs=0,
             num_shared_fcs=2,
             num_cls_convs=0,
@@ -216,8 +235,8 @@ class Shared2FCBBoxHead(ConvFCBBoxHead):
 @MODELS.register_module()
 class Shared4Conv1FCBBoxHead(ConvFCBBoxHead):
 
-    def __init__(self, fc_out_channels=1024, *args, **kwargs):
-        super(Shared4Conv1FCBBoxHead, self).__init__(
+    def __init__(self, fc_out_channels: int = 1024, *args, **kwargs) -> None:
+        super().__init__(
             num_shared_convs=4,
             num_shared_fcs=1,
             num_cls_convs=0,

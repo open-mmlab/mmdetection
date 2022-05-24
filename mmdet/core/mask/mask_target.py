@@ -10,15 +10,15 @@ def mask_target(pos_proposals_list, pos_assigned_gt_inds_list, gt_masks_list,
 
     Args:
         pos_proposals_list (list[Tensor]): Positive proposals in multiple
-            images.
+            images, each has shape (num_pos, 4).
         pos_assigned_gt_inds_list (list[Tensor]): Assigned GT indices for each
-            positive proposals.
+            positive proposals, each has shape (num_pos,).
         gt_masks_list (list[:obj:`BaseInstanceMasks`]): Ground truth masks of
             each image.
         cfg (dict): Config dict that specifies the mask size.
 
     Returns:
-        list[Tensor]: Mask target of each image.
+        Tensor: Mask target of each image, has shape (num_pos, w, h).
 
     Example:
         >>> import mmcv

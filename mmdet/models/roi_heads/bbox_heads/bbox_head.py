@@ -1,15 +1,19 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import List, Optional, Tuple, Union
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.runner import BaseModule, auto_fp16, force_fp32
+from mmengine.config import ConfigDict
+from mmengine.data import InstanceData
+from torch import Tensor
 from torch.nn.modules.utils import _pair
 
-from mmdet.core import build_bbox_coder, multi_apply, multiclass_nms
-from mmdet.models.builder import build_loss
+from mmdet.core import SamplingResult, multi_apply, multiclass_nms
 from mmdet.models.losses import accuracy
 from mmdet.models.utils import build_linear_layer
-from mmdet.registry import MODELS
+from mmdet.registry import MODELS, TASK_UTILS
 
 
 @MODELS.register_module()
@@ -18,29 +22,31 @@ class BBoxHead(BaseModule):
     regression respectively."""
 
     def __init__(self,
-                 with_avg_pool=False,
-                 with_cls=True,
-                 with_reg=True,
-                 roi_feat_size=7,
-                 in_channels=256,
-                 num_classes=80,
-                 bbox_coder=dict(
+                 with_avg_pool: bool = False,
+                 with_cls: bool = True,
+                 with_reg: bool = True,
+                 roi_feat_size: int = 7,
+                 in_channels: int = 256,
+                 num_classes: int = 80,
+                 bbox_coder: Union[ConfigDict, dict] = dict(
                      type='DeltaXYWHBBoxCoder',
                      clip_border=True,
                      target_means=[0., 0., 0., 0.],
                      target_stds=[0.1, 0.1, 0.2, 0.2]),
-                 reg_class_agnostic=False,
-                 reg_decoded_bbox=False,
-                 reg_predictor_cfg=dict(type='Linear'),
-                 cls_predictor_cfg=dict(type='Linear'),
-                 loss_cls=dict(
+                 reg_class_agnostic: bool = False,
+                 reg_decoded_bbox: bool = False,
+                 reg_predictor_cfg: Union[ConfigDict,
+                                          dict] = dict(type='Linear'),
+                 cls_predictor_cfg: Union[ConfigDict,
+                                          dict] = dict(type='Linear'),
+                 loss_cls: Union[ConfigDict, dict] = dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=False,
                      loss_weight=1.0),
-                 loss_bbox=dict(
+                 loss_bbox: Union[ConfigDict, dict] = dict(
                      type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
-                 init_cfg=None):
-        super(BBoxHead, self).__init__(init_cfg)
+                 init_cfg: Optional[Union[ConfigDict, dict]] = None) -> None:
+        super().__init__(init_cfg=init_cfg)
         assert with_cls or with_reg
         self.with_avg_pool = with_avg_pool
         self.with_cls = with_cls
@@ -55,9 +61,9 @@ class BBoxHead(BaseModule):
         self.cls_predictor_cfg = cls_predictor_cfg
         self.fp16_enabled = False
 
-        self.bbox_coder = build_bbox_coder(bbox_coder)
-        self.loss_cls = build_loss(loss_cls)
-        self.loss_bbox = build_loss(loss_bbox)
+        self.bbox_coder = TASK_UTILS.build(bbox_coder)
+        self.loss_cls = MODELS.build(loss_cls)
+        self.loss_bbox = MODELS.build(loss_bbox)
 
         in_channels = self.in_channels
         if self.with_avg_pool:
@@ -94,20 +100,39 @@ class BBoxHead(BaseModule):
                         type='Normal', std=0.001, override=dict(name='fc_reg'))
                 ]
 
+    # TODO: Create a SeasawBBoxHead to simplified logic in BBoxHead
     @property
-    def custom_cls_channels(self):
+    def custom_cls_channels(self) -> bool:
         return getattr(self.loss_cls, 'custom_cls_channels', False)
 
+    # TODO: Create a SeasawBBoxHead to simplified logic in BBoxHead
     @property
-    def custom_activation(self):
+    def custom_activation(self) -> bool:
         return getattr(self.loss_cls, 'custom_activation', False)
 
+    # TODO: Create a SeasawBBoxHead to simplified logic in BBoxHead
     @property
-    def custom_accuracy(self):
+    def custom_accuracy(self) -> bool:
         return getattr(self.loss_cls, 'custom_accuracy', False)
 
     @auto_fp16()
-    def forward(self, x):
+    def forward(self, x: Tuple[Tensor]) -> tuple:
+        """Forward features from the upstream network.
+
+        Args:
+            x (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+
+        Returns:
+            tuple: A tuple of classification scores and bbox prediction.
+
+                - cls_score (Tensor): Classification scores for all
+                  scale levels, each is a 4D-tensor, the channels number
+                  is num_base_priors * num_classes.
+                - bbox_pred (Tensor): Box energies / deltas for all
+                  scale levels, each is a 4D-tensor, the channels number
+                  is num_base_priors * 4.
+        """
         if self.with_avg_pool:
             if x.numel() > 0:
                 x = self.avg_pool(x)
@@ -120,16 +145,17 @@ class BBoxHead(BaseModule):
         bbox_pred = self.fc_reg(x) if self.with_reg else None
         return cls_score, bbox_pred
 
-    def _get_target_single(self, pos_bboxes, neg_bboxes, pos_gt_bboxes,
-                           pos_gt_labels, cfg):
+    def _get_target_single(self, pos_priors: Tensor, neg_priors: Tensor,
+                           pos_gt_bboxes: Tensor, pos_gt_labels: Tensor,
+                           cfg: ConfigDict) -> tuple:
         """Calculate the ground truth for proposals in the single image
         according to the sampling results.
 
         Args:
-            pos_bboxes (Tensor): Contains all the positive boxes,
+            pos_priors (Tensor): Contains all the positive boxes,
                 has shape (num_pos, 4), the last dimension 4
                 represents [tl_x, tl_y, br_x, br_y].
-            neg_bboxes (Tensor): Contains all the negative boxes,
+            neg_priors (Tensor): Contains all the negative boxes,
                 has shape (num_neg, 4), the last dimension 4
                 represents [tl_x, tl_y, br_x, br_y].
             pos_gt_bboxes (Tensor): Contains gt_boxes for
@@ -154,26 +180,26 @@ class BBoxHead(BaseModule):
                 - bbox_weights(Tensor):Regression weights for all
                   proposals, has shape (num_proposals, 4).
         """
-        num_pos = pos_bboxes.size(0)
-        num_neg = neg_bboxes.size(0)
+        num_pos = pos_priors.size(0)
+        num_neg = neg_priors.size(0)
         num_samples = num_pos + num_neg
 
         # original implementation uses new_zeros since BG are set to be 0
         # now use empty & fill because BG cat_id = num_classes,
         # FG cat_id = [0, num_classes-1]
-        labels = pos_bboxes.new_full((num_samples, ),
+        labels = pos_priors.new_full((num_samples, ),
                                      self.num_classes,
                                      dtype=torch.long)
-        label_weights = pos_bboxes.new_zeros(num_samples)
-        bbox_targets = pos_bboxes.new_zeros(num_samples, 4)
-        bbox_weights = pos_bboxes.new_zeros(num_samples, 4)
+        label_weights = pos_priors.new_zeros(num_samples)
+        bbox_targets = pos_priors.new_zeros(num_samples, 4)
+        bbox_weights = pos_priors.new_zeros(num_samples, 4)
         if num_pos > 0:
             labels[:num_pos] = pos_gt_labels
             pos_weight = 1.0 if cfg.pos_weight <= 0 else cfg.pos_weight
             label_weights[:num_pos] = pos_weight
             if not self.reg_decoded_bbox:
                 pos_bbox_targets = self.bbox_coder.encode(
-                    pos_bboxes, pos_gt_bboxes)
+                    pos_priors, pos_gt_bboxes)
             else:
                 # When the regression loss (e.g. `IouLoss`, `GIouLoss`)
                 # is applied directly on the decoded bounding boxes, both
@@ -188,11 +214,9 @@ class BBoxHead(BaseModule):
         return labels, label_weights, bbox_targets, bbox_weights
 
     def get_targets(self,
-                    sampling_results,
-                    gt_bboxes,
-                    gt_labels,
-                    rcnn_train_cfg,
-                    concat=True):
+                    sampling_results: List[SamplingResult],
+                    rcnn_train_cfg: ConfigDict,
+                    concat: bool = True) -> tuple:
         """Calculate the ground truth for all samples in a batch according to
         the sampling_results.
 
@@ -201,13 +225,8 @@ class BBoxHead(BaseModule):
         `_get_target_single` function.
 
         Args:
-            sampling_results (List[obj:SamplingResults]): Assign results of
+            sampling_results (List[obj:SamplingResult]): Assign results of
                 all images in a batch after sampling.
-            gt_bboxes (list[Tensor]): Gt_bboxes of all images in a batch,
-                each tensor has shape (num_gt, 4),  the last dimension 4
-                represents [tl_x, tl_y, br_x, br_y].
-            gt_labels (list[Tensor]): Gt_labels of all images in a batch,
-                each tensor has shape (num_gt,).
             rcnn_train_cfg (obj:ConfigDict): `train_cfg` of RCNN.
             concat (bool): Whether to concatenate the results of all
                 the images in a single batch.
@@ -235,14 +254,14 @@ class BBoxHead(BaseModule):
                   (num_proposals, 4) when `concat=False`, otherwise just a
                   single tensor has shape (num_all_proposals, 4).
         """
-        pos_bboxes_list = [res.pos_bboxes for res in sampling_results]
-        neg_bboxes_list = [res.neg_bboxes for res in sampling_results]
+        pos_priors_list = [res.pos_priors for res in sampling_results]
+        neg_priors_list = [res.neg_priors for res in sampling_results]
         pos_gt_bboxes_list = [res.pos_gt_bboxes for res in sampling_results]
         pos_gt_labels_list = [res.pos_gt_labels for res in sampling_results]
         labels, label_weights, bbox_targets, bbox_weights = multi_apply(
             self._get_target_single,
-            pos_bboxes_list,
-            neg_bboxes_list,
+            pos_priors_list,
+            neg_priors_list,
             pos_gt_bboxes_list,
             pos_gt_labels_list,
             cfg=rcnn_train_cfg)
@@ -256,14 +275,49 @@ class BBoxHead(BaseModule):
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
     def loss(self,
-             cls_score,
-             bbox_pred,
-             rois,
-             labels,
-             label_weights,
-             bbox_targets,
-             bbox_weights,
-             reduction_override=None):
+             cls_score: Tensor,
+             bbox_pred: Tensor,
+             rois: Tensor,
+             labels: Tensor,
+             label_weights: Tensor,
+             bbox_targets: Tensor,
+             bbox_weights: Tensor,
+             reduction_override: Optional[str] = None,
+             **kwargs) -> dict:
+        """Compute losses of the head.
+
+        Args:
+            cls_score (Tensor): Classification prediction
+                results of all class, has shape
+                (batch_size * num_proposals_single_image, num_classes)
+            bbox_pred (Tensor): Regression prediction results,
+                has shape
+                (batch_size * num_proposals_single_image, 4), the last
+                dimension 4 represents [tl_x, tl_y, br_x, br_y].
+            rois (Tensor): RoIs with the shape
+                (batch_size * num_proposals_single_image, 5) where the first
+                column indicates batch id of each RoI.
+            labels (Tensor): Label of each proposals, has shape
+                (batch_size * num_proposals_single_image
+            label_weights (Tensor): Classification loss
+                weight of each proposals, has shape
+                (batch_size * num_proposals_single_image, )
+            bbox_targets (Tensor): Regression targets of each
+                proposals, has shape
+                (batch_size * num_proposals_single_image, 4),
+                the last dimension 4 represents
+                [tl_x, tl_y, br_x, br_y].
+            bbox_weights (Tensor): Regression loss weight of each
+                proposals's coordinate, has shape
+                (batch_size * num_proposals_single_image, 4),
+            reduction_override (str, optional): The reduction
+                method used to override the original reduction
+                method of the loss. Options are "none",
+                "mean" and "sum". Defaults to None,
+
+        Returns:
+            dict: A dictionary of loss components.
+        """
         losses = dict()
         if cls_score is not None:
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
@@ -314,38 +368,102 @@ class BBoxHead(BaseModule):
         return losses
 
     @force_fp32(apply_to=('cls_score', 'bbox_pred'))
-    def get_bboxes(self,
-                   rois,
-                   cls_score,
-                   bbox_pred,
-                   img_shape,
-                   scale_factor,
-                   rescale=False,
-                   cfg=None):
-        """Transform network output for a batch into bbox predictions.
+    def get_results(self,
+                    rois: Tuple[Tensor],
+                    cls_scores: Tuple[Tensor],
+                    bbox_preds: Tuple[Tensor],
+                    batch_img_metas: List[dict],
+                    rcnn_test_cfg: Optional[ConfigDict] = None,
+                    rescale: bool = False,
+                    **kwargs) -> List[InstanceData]:
+        """Transform network outputs of a batch into bbox results.
 
         Args:
-            rois (Tensor): Boxes to be transformed. Has shape (num_boxes, 5).
+            rois (tuple[Tensor]): Tuple of boxes to be transformed.
+                Each has shape  (num_boxes, 5). last dimension 5 arrange as
+                (batch_index, x1, y1, x2, y2).
+            cls_scores (tuple[Tensor]): Tuple of box scores, each has shape
+                (num_boxes, num_classes + 1).
+            bbox_preds (tuple[Tensor]): Tuple of box energies / deltas, each
+                has shape (num_boxes, num_classes * 4).
+            batch_img_metas (list[dict]): List of image information.
+            rcnn_test_cfg (obj:`ConfigDict`, optional): `test_cfg` of R-CNN.
+                Defaults to None.
+            rescale (bool): If True, return boxes in original image space.
+                Defaults to False.
+
+        Returns:
+            list[:obj:`InstanceData`]: Instance segmentation
+            results of each image after the post process.
+            Each item usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
+        """
+        assert len(cls_scores) == len(bbox_preds)
+        result_list = []
+        for img_id in range(len(batch_img_metas)):
+            img_meta = batch_img_metas[img_id]
+            results = self._get_results_single(
+                roi=rois[img_id],
+                cls_score=cls_scores[img_id],
+                bbox_pred=bbox_preds[img_id],
+                img_meta=img_meta,
+                rescale=rescale,
+                rcnn_test_cfg=rcnn_test_cfg,
+                **kwargs)
+            result_list.append(results)
+
+        return result_list
+
+    def _get_results_single(self,
+                            roi: Tensor,
+                            cls_score: Tensor,
+                            bbox_pred: Tensor,
+                            img_meta: dict,
+                            rescale: bool = False,
+                            rcnn_test_cfg: Optional[ConfigDict] = None,
+                            **kwargs) -> InstanceData:
+        """Transform network outputs of a single image into bbox results.
+
+        Args:
+            roi (Tensor): Boxes to be transformed. Has shape (num_boxes, 5).
                 last dimension 5 arrange as (batch_index, x1, y1, x2, y2).
             cls_score (Tensor): Box scores, has shape
                 (num_boxes, num_classes + 1).
-            bbox_pred (Tensor, optional): Box energies / deltas.
+            bbox_pred (Tensor): Box energies / deltas.
                 has shape (num_boxes, num_classes * 4).
-            img_shape (Sequence[int], optional): Maximum bounds for boxes,
-                specifies (H, W, C) or (H, W).
-            scale_factor (ndarray): Scale factor of the
-               image arrange as (w_scale, h_scale, w_scale, h_scale).
+            img_meta (dict): image information.
             rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head. Default: None
+                Defaults to False.
+            rcnn_test_cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head.
+                Defaults to None
 
         Returns:
-            tuple[Tensor, Tensor]:
-                First tensor is `det_bboxes`, has the shape
-                (num_boxes, 5) and last
-                dimension 5 represent (tl_x, tl_y, br_x, br_y, score).
-                Second tensor is the labels with shape (num_boxes, ).
+            :obj:`InstanceData`: Detection results of each image\
+            Each item usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
         """
+        results = InstanceData()
+        if roi.shape[0] == 0:
+            # There is no proposal in the single image
+            results.bboxes = roi.new_zeros(0, 4)
+            if rcnn_test_cfg is None:
+                results.scores = roi.new_zeros((0, self.fc_cls.out_features))
+            else:
+                results.scores = roi.new_zeros((0, ))
+                results.labels = roi.new_zeros((0, ), dtype=torch.long)
+            return results
 
         # some loss (Seesaw loss..) may have custom activation
         if self.custom_cls_channels:
@@ -353,31 +471,40 @@ class BBoxHead(BaseModule):
         else:
             scores = F.softmax(
                 cls_score, dim=-1) if cls_score is not None else None
+
+        img_shape = img_meta['img_shape']
         # bbox_pred would be None in some detector when with_reg is False,
         # e.g. Grid R-CNN.
         if bbox_pred is not None:
             bboxes = self.bbox_coder.decode(
-                rois[..., 1:], bbox_pred, max_shape=img_shape)
+                roi[..., 1:], bbox_pred, max_shape=img_shape)
         else:
-            bboxes = rois[:, 1:].clone()
+            bboxes = roi[:, 1:].clone()
             if img_shape is not None:
                 bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1])
                 bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0])
 
         if rescale and bboxes.size(0) > 0:
-            scale_factor = bboxes.new_tensor(scale_factor)
+            assert img_meta.get('scale_factor') is not None
+            scale_factor = bboxes.new_tensor(img_meta['scale_factor']).repeat(
+                (1, 2))
             bboxes = (bboxes.view(bboxes.size(0), -1, 4) / scale_factor).view(
                 bboxes.size()[0], -1)
 
-        if cfg is None:
-            return bboxes, scores
+        if rcnn_test_cfg is None:
+            results.bboxes = bboxes
+            results.scores = scores
         else:
             det_bboxes, det_labels = multiclass_nms(bboxes, scores,
-                                                    cfg.score_thr, cfg.nms,
-                                                    cfg.max_per_img)
+                                                    rcnn_test_cfg.score_thr,
+                                                    rcnn_test_cfg.nms,
+                                                    rcnn_test_cfg.max_per_img)
+            results.bboxes = det_bboxes[:, :4]
+            results.scores = det_bboxes[:, -1]
+            results.labels = det_labels
+        return results
 
-            return det_bboxes, det_labels
-
+    # TODO: Currently not check
     @force_fp32(apply_to=('bbox_preds', ))
     def refine_bboxes(self, rois, labels, bbox_preds, pos_is_gts, img_metas):
         """Refine bboxes during training.
@@ -457,6 +584,7 @@ class BBoxHead(BaseModule):
 
         return bboxes_list
 
+    # TODO: Currently not check
     @force_fp32(apply_to=('bbox_pred', ))
     def regress_by_class(self, rois, label, bbox_pred, img_meta):
         """Regress the bbox for the predicted class. Used in Cascade R-CNN.
@@ -496,100 +624,3 @@ class BBoxHead(BaseModule):
             new_rois = torch.cat((rois[:, [0]], bboxes), dim=1)
 
         return new_rois
-
-    def onnx_export(self,
-                    rois,
-                    cls_score,
-                    bbox_pred,
-                    img_shape,
-                    cfg=None,
-                    **kwargs):
-        """Transform network output for a batch into bbox predictions.
-
-        Args:
-            rois (Tensor): Boxes to be transformed.
-                Has shape (B, num_boxes, 5)
-            cls_score (Tensor): Box scores. has shape
-                (B, num_boxes, num_classes + 1), 1 represent the background.
-            bbox_pred (Tensor, optional): Box energies / deltas for,
-                has shape (B, num_boxes, num_classes * 4) when.
-            img_shape (torch.Tensor): Shape of image.
-            cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head. Default: None
-
-        Returns:
-            tuple[Tensor, Tensor]: dets of shape [N, num_det, 5]
-                and class labels of shape [N, num_det].
-        """
-
-        assert rois.ndim == 3, 'Only support export two stage ' \
-                               'model to ONNX ' \
-                               'with batch dimension. '
-        if self.custom_cls_channels:
-            scores = self.loss_cls.get_activation(cls_score)
-        else:
-            scores = F.softmax(
-                cls_score, dim=-1) if cls_score is not None else None
-
-        if bbox_pred is not None:
-            bboxes = self.bbox_coder.decode(
-                rois[..., 1:], bbox_pred, max_shape=img_shape)
-        else:
-            bboxes = rois[..., 1:].clone()
-            if img_shape is not None:
-                max_shape = bboxes.new_tensor(img_shape)[..., :2]
-                min_xy = bboxes.new_tensor(0)
-                max_xy = torch.cat(
-                    [max_shape] * 2, dim=-1).flip(-1).unsqueeze(-2)
-                bboxes = torch.where(bboxes < min_xy, min_xy, bboxes)
-                bboxes = torch.where(bboxes > max_xy, max_xy, bboxes)
-
-        # Replace multiclass_nms with ONNX::NonMaxSuppression in deployment
-        from mmdet.core.export import add_dummy_nms_for_onnx
-        max_output_boxes_per_class = cfg.nms.get('max_output_boxes_per_class',
-                                                 cfg.max_per_img)
-        iou_threshold = cfg.nms.get('iou_threshold', 0.5)
-        score_threshold = cfg.score_thr
-        nms_pre = cfg.get('deploy_nms_pre', -1)
-
-        scores = scores[..., :self.num_classes]
-        if self.reg_class_agnostic:
-            return add_dummy_nms_for_onnx(
-                bboxes,
-                scores,
-                max_output_boxes_per_class,
-                iou_threshold,
-                score_threshold,
-                pre_top_k=nms_pre,
-                after_top_k=cfg.max_per_img)
-        else:
-            batch_size = scores.shape[0]
-            labels = torch.arange(
-                self.num_classes, dtype=torch.long).to(scores.device)
-            labels = labels.view(1, 1, -1).expand_as(scores)
-            labels = labels.reshape(batch_size, -1)
-            scores = scores.reshape(batch_size, -1)
-            bboxes = bboxes.reshape(batch_size, -1, 4)
-
-            max_size = torch.max(img_shape)
-            # Offset bboxes of each class so that bboxes of different labels
-            #  do not overlap.
-            offsets = (labels * max_size + 1).unsqueeze(2)
-            bboxes_for_nms = bboxes + offsets
-
-            batch_dets, labels = add_dummy_nms_for_onnx(
-                bboxes_for_nms,
-                scores.unsqueeze(2),
-                max_output_boxes_per_class,
-                iou_threshold,
-                score_threshold,
-                pre_top_k=nms_pre,
-                after_top_k=cfg.max_per_img,
-                labels=labels)
-            # Offset the bboxes back after dummy nms.
-            offsets = (labels * max_size + 1).unsqueeze(2)
-            # Indexing + inplace operation fails with dynamic shape in ONNX
-            # original style: batch_dets[..., :4] -= offsets
-            bboxes, scores = batch_dets[..., 0:4], batch_dets[..., 4:5]
-            bboxes -= offsets
-            batch_dets = torch.cat([bboxes, scores], dim=2)
-            return batch_dets, labels
