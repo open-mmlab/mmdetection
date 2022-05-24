@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import os.path as osp
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import mmcv
 import numpy as np
@@ -38,11 +38,8 @@ class LoadImageFromWebcam(LoadImageFromFile):
 
         results['img_path'] = None
         results['img'] = img
-        height, width = img.shape[:2]
-        results['height'] = height
-        results['width'] = width
-        results['ori_height'] = height
-        results['ori_width'] = width
+        results['img_shape'] = img.shape[:2]
+        results['ori_shape'] = img.shape[:2]
         return results
 
 
@@ -256,8 +253,9 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         if self.denorm_bbox:
             bbox_num = results['gt_bboxes'].shape[0]
             if bbox_num != 0:
-                results['gt_bboxes'][:, 0::2] *= results['width']
-                results['gt_bboxes'][:, 1::2] *= results['height']
+                h, w = results['img_shape']
+                results['gt_bboxes'][:, 0::2] *= w
+                results['gt_bboxes'][:, 1::2] *= h
 
     def _load_labels(self, results: dict) -> None:
         """Private function to load label annotations.
@@ -327,7 +325,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             results (dict): Result dict from :obj:``mmcv.BaseDataset``.
         """
 
-        h, w = results['height'], results['width']
+        h, w = results['img_shape']
         gt_masks = []
         for instance in results['instances']:
             if 'mask' in instance:
@@ -530,7 +528,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
                 gt_masks.append(mask.astype(np.uint8))
 
         if self.with_mask:
-            h, w = results['height'], results['width']
+            h, w = results['img_shape']
             gt_masks = BitmapMasks(gt_masks, h, w)
             results['gt_masks'] = gt_masks
 
@@ -637,11 +635,12 @@ class FilterAnnotations(BaseTransform):
     """
 
     def __init__(self,
-                 min_gt_bbox_wh=(1., 1.),
-                 min_gt_mask_area=1,
-                 by_box=True,
-                 by_mask=False,
-                 keep_empty=True):
+                 min_gt_bbox_wh: Tuple[int, int] = (1, 1),
+                 min_gt_mask_area: int = 1,
+                 keep_empty: bool = True,
+                 by_box: bool = True,
+                 by_mask: bool = False,
+                 keep_empty: bool = True) -> None:
         # TODO: add more filter options
         assert by_box or by_mask
         self.min_gt_bbox_wh = min_gt_bbox_wh
