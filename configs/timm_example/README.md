@@ -18,10 +18,10 @@ Py**T**orch **Im**age **M**odels (`timm`) is a collection of image models, layer
 
 ### RetinaNet
 
-| Backbone        | Style   | Lr schd | Mem (GB) | Inf time (fps) | box AP | Config | Download |
-|:---------------:|:-------:|:-------:|:--------:|:--------------:|:------:|:------:|:--------:|
-| R-50            | pytorch | 1x      |          |                |        | [config](./retinanet_timm_tv_resnet50_fpn_1x_coco.py) |      |
-| EfficientNet-B1 | -       | 1x      |          |                |        | [config](./retinanet_timm_efficientnet_b1_fpn_1x_coco.py) |      |
+|    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP |                          Config                           | Download |
+| :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :-------------------------------------------------------: | :------: |
+|      R-50       | pytorch |   1x    |          |                |        |   [config](./retinanet_timm_tv_resnet50_fpn_1x_coco.py)   |          |
+| EfficientNet-B1 |    -    |   1x    |          |                |        | [config](./retinanet_timm_efficientnet_b1_fpn_1x_coco.py) |          |
 
 ## Usage
 
@@ -41,11 +41,11 @@ See [this document](https://mmclassification.readthedocs.io/en/latest/install.ht
 
 ### Edit config
 
-* See example configs for basic usage.
-* See the documents of [timm feature extraction](https://rwightman.github.io/pytorch-image-models/feature_extraction/#multi-scale-feature-maps-feature-pyramid) and [TIMMBackbone](https://mmclassification.readthedocs.io/en/latest/api.html#mmcls.models.backbones.TIMMBackbone) for details.
-* Which feature map is output depends on the backbone.
+- See example configs for basic usage.
+- See the documents of [timm feature extraction](https://rwightman.github.io/pytorch-image-models/feature_extraction/#multi-scale-feature-maps-feature-pyramid) and [TIMMBackbone](https://mmclassification.readthedocs.io/en/latest/api.html#mmcls.models.backbones.TIMMBackbone) for details.
+- Which feature map is output depends on the backbone.
   Please check `backbone out_channels` and `backbone out_strides` in your log, and modify `model.neck.in_channels` and `model.backbone.out_indices` if necessary.
-* If you use Vision Transformer models that do not support `features_only=True`, add `custom_hooks = []` to your config to disable `NumClassCheckHook`.
+- If you use Vision Transformer models that do not support `features_only=True`, add `custom_hooks = []` to your config to disable `NumClassCheckHook`.
 
 ## Citation
 

@@ -49,6 +49,12 @@ def convert_tensor_type(inputs, src_type=None, dst_type=None):
         return type(inputs)(
             convert_tensor_type(item, src_type=src_type, dst_type=dst_type)
             for item in inputs)
+    # TODO: Currently not supported
+    # elif isinstance(inputs, InstanceData):
+    #     for key, value in inputs.items():
+    #         inputs[key] = convert_tensor_type(
+    #             value, src_type=src_type, dst_type=dst_type)
+    #     return inputs
     else:
         return inputs
 
@@ -75,25 +81,19 @@ class AvoidOOM(object):
     Memory error. It will do the following steps:
 
         1. First retry after calling `torch.cuda.empty_cache()`.
-        2. If that still fails, it will then retry by trying to
-            convert inputs to FP16.
+        2. If that still fails, it will then retry by converting inputs
+          to FP16.
         3. If that still fails trying to convert inputs to CPUs.
           In this case, it expects the function to dispatch to
           CPU implementation.
 
     Args:
-        keep_type (bool): Whether to ensure that tensors have the same type
-            when they are passed in and processed out. If False, the output
-            type will be fp16. Default: True.
         convert_cpu (bool): Whether to convert outputs to CPU if get an OOM
             error. This will slow down the code significantly.
-            Default: True.
-        return_gpu (bool): Whether convert outputs back to GPU, which will
-            used in when `convert_cpu` is True. Default: True.
-        test (bool): Whether skip torch.cuda.empty_cache(), only used in
-            test unit. Default: False.
-        return_fp16 (bool): Whether return torch.half, only used in test unit.
-            Default: True.
+            Defaults to True.
+        test (bool): Skip `_ignore_torch_cuda_oom` operate that can use
+            lightweight data in unit test, only used in
+            test unit. Defaults to False.
 
     Examples:
         >>> from mmdet.utils.memory import AvoidOOM
@@ -117,18 +117,10 @@ class AvoidOOM(object):
             stateless.
     """
 
-    def __init__(self,
-                 keep_type=True,
-                 convert_cpu=True,
-                 return_gpu=True,
-                 test=False,
-                 return_fp16=True):
+    def __init__(self, convert_cpu=True, test=False):
         self.logger = get_root_logger()
-        self.keep_type = keep_type
         self.convert_cpu = convert_cpu
-        self.return_gpu = return_gpu
         self.test = test
-        self.return_fp16 = return_fp16
 
     def retry_if_cuda_oom(self, func):
         """Makes a function retry itself after encountering pytorch's CUDA OOM
@@ -169,32 +161,21 @@ class AvoidOOM(object):
                 raise ValueError('There is no tensor in the inputs, '
                                  'cannot get dtype and device.')
 
-            # Try to use FP16
+            # Convert to FP16
             fp16_args = convert_tensor_type(args, dst_type=torch.half)
             fp16_kwargs = convert_tensor_type(kwargs, dst_type=torch.half)
             self.logger.info(f'Attempting to copy inputs of {str(func)} '
-                             f'to fp16 due to CUDA OOM')
+                             f'to FP16 due to CUDA OOM')
 
-            if self.keep_type:
-                # get input tensor type, the output type will same as
-                # the first parameter type.
-                with _ignore_torch_cuda_oom():
-                    self.logger.info(f'Trying to convert output to {dtype}')
-                    output = func(*fp16_args, **fp16_kwargs)
-                    output = convert_tensor_type(
-                        output, src_type=torch.half, dst_type=dtype)
+            # get input tensor type, the output type will same as
+            # the first parameter type.
+            with _ignore_torch_cuda_oom():
+                output = func(*fp16_args, **fp16_kwargs)
+                output = convert_tensor_type(
+                    output, src_type=torch.half, dst_type=dtype)
+                if not self.test:
                     return output
-                self.logger.info(f'Cannot convert output to {dtype} due to '
-                                 'CUDA OOM.')
-
-            if self.return_fp16:
-                with _ignore_torch_cuda_oom():
-                    # try to convert outputs to fp16
-                    self.logger.info('Trying to convert outputs to fp16')
-                    return func(*fp16_args, **fp16_kwargs)
-                warnings.warn('Cannot convert outputs to fp16 due to CUDA OOM')
-                self.logger.info('Cannot convert output to fp16 due to '
-                                 'CUDA OOM.')
+            self.logger.info('Using FP16 still meet CUDA OOM')
 
             # Try on CPU. This will slow down the code significantly,
             # therefore print a notice.
@@ -204,15 +185,15 @@ class AvoidOOM(object):
                 cpu_device = torch.empty(0).device
                 cpu_args = convert_tensor_type(args, dst_type=cpu_device)
                 cpu_kwargs = convert_tensor_type(kwargs, dst_type=cpu_device)
-                if self.return_gpu:
-                    # try to convert outputs to GPU
-                    with _ignore_torch_cuda_oom():
-                        self.logger.info(f'Convert outputs to GPU '
-                                         f'(device={device})')
-                        output = func(*cpu_args, **cpu_kwargs)
-                        output = convert_tensor_type(
-                            output, src_type=cpu_device, dst_type=device)
-                        return output
+
+                # convert outputs to GPU
+                with _ignore_torch_cuda_oom():
+                    self.logger.info(f'Convert outputs to GPU '
+                                     f'(device={device})')
+                    output = func(*cpu_args, **cpu_kwargs)
+                    output = convert_tensor_type(
+                        output, src_type=cpu_device, dst_type=device)
+                    return output
 
                 warnings.warn('Cannot convert output to GPU due to CUDA OOM, '
                               'the output is now on CPU, which might cause '
@@ -224,7 +205,7 @@ class AvoidOOM(object):
                 return func(*cpu_args, **cpu_kwargs)
             else:
                 # may still get CUDA OOM error
-                return func(*fp16_args, **fp16_kwargs)
+                return func(*args, **kwargs)
 
         return wrapped
 

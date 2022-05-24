@@ -28,7 +28,6 @@
 
 在 v2.14.0 中，为了使 SSD 能够被更灵活地使用，[PR #5291](https://github.com/open-mmlab/mmdetection/pull/5291) 重构了 SSD 的 backbone、neck 和 head。用户可以使用 tools/model_converters/upgrade_ssd_version.py 转换旧版本训练的模型。
 
-
 ```shell
 python tools/model_converters/upgrade_ssd_version.py ${OLD_MODEL_PATH} ${NEW_MODEL_PATH}
 
@@ -100,11 +99,11 @@ MMDetection v2.0 经过了大规模重构并解决了许多遗留问题。 MMDet
 - MMDetection v2.0 更改了类别标签的顺序，减少了回归和 mask 分支里的无用参数并使得顺序更加自然（没有 +1 和 -1）。
   这会影响模型的所有分类层，使其输出的类别标签顺序发生改变。回归分支和 mask head 的最后一层不再为 K 个类别保留 K+1 个通道，类别顺序与分类分支一致。
 
-  - 在 MMDetection v2.0 中，标签 “K” 表示背景，标签 [0, K-1] 对应于 K = num_categories 个对象类别。
+  - 在 MMDetection v2.0 中，标签 “K” 表示背景，标签 \[0, K-1\] 对应于 K = num_categories 个对象类别。
 
-  - 在 MMDetection v1.x 及之前的版本中，标签 “0” 表示背景，标签 [1, K] 对应 K 个类别。
+  - 在 MMDetection v1.x 及之前的版本中，标签 “0” 表示背景，标签 \[1, K\] 对应 K 个类别。
 
-  - **注意**：softmax RPN 的类顺序在 version<=2.4.0 中仍然和 1.x 中的一样，而 sigmoid RPN 不受影响。从 MMDetection v2.5.0 开始，所有 head 中的类顺序是统一的。
+  - **注意**：softmax RPN 的类顺序在 version\<=2.4.0 中仍然和 1.x 中的一样，而 sigmoid RPN 不受影响。从 MMDetection v2.5.0 开始，所有 head 中的类顺序是统一的。
 
 - 不使用 R-CNN 中的低质量匹配。在 MMDetection v1.x 和之前的版本中，`max_iou_assigner` 会在 RPN 和 R-CNN 训练时给每个 ground truth 匹配低质量框。我们发现这会导致最佳的 GT 框不会被分配给某些边界框，
   因此，在MMDetection v2.0 的 R-CNN 训练中默认不允许低质量匹配。这有时可能会稍微改善 box AP（约为 0.1%）。
