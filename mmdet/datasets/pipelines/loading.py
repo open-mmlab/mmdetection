@@ -5,6 +5,7 @@ from typing import List, Union
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
+from mmcv.transforms import BaseTransform
 from mmcv.transforms import LoadAnnotations as MMCV_LoadAnnotations
 from mmcv.transforms import LoadImageFromFile
 
@@ -605,22 +606,38 @@ class LoadProposals:
 
 
 @TRANSFORMS.register_module()
-class FilterAnnotations:
+class FilterAnnotations(BaseTransform):
     """Filter invalid annotations.
 
+    Required Keys:
+
+    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes_labels (np.int64) (optional)
+    - gt_masks (BitmapMasks | PolygonMasks) (optional)
+    - gt_ignore_flags (np.bool) (optional)
+
+    Modified Keys:
+
+    - gt_bboxes (optional)
+    - gt_bboxes_labels (optional)
+    - gt_masks (optional)
+    - gt_ignore_flags (optional)
+
     Args:
-        min_gt_bbox_wh (tuple[int]): Minimum width and height of ground truth
-            boxes.
+        min_gt_bbox_wh (tuple[int, int]): Minimum width and
+            height of ground truth boxes.
         keep_empty (bool): Whether to return None when it
-            becomes an empty bbox after filtering. Default: True
+            becomes an empty bbox after filtering. Defaults to True.
     """
 
-    def __init__(self, min_gt_bbox_wh, keep_empty=True):
+    def __init__(self,
+                 min_gt_bbox_wh: tuple[int, int],
+                 keep_empty: bool = True) -> None:
         # TODO: add more filter options
         self.min_gt_bbox_wh = min_gt_bbox_wh
         self.keep_empty = keep_empty
 
-    def __call__(self, results):
+    def transform(self, results: dict) -> Union[dict, None]:
         assert 'gt_bboxes' in results
         gt_bboxes = results['gt_bboxes']
         if gt_bboxes.shape[0] == 0:
@@ -634,7 +651,8 @@ class FilterAnnotations:
             else:
                 return results
         else:
-            keys = ('gt_bboxes', 'gt_labels', 'gt_masks', 'gt_semantic_seg')
+            keys = ('gt_bboxes', 'gt_bboxes_labels', 'gt_masks',
+                    'gt_ignore_flags')
             for key in keys:
                 if key in results:
                     results[key] = results[key][keep]
@@ -642,5 +660,5 @@ class FilterAnnotations:
 
     def __repr__(self):
         return self.__class__.__name__ + \
-               f'(min_gt_bbox_wh={self.min_gt_bbox_wh},' \
-               f'always_keep={self.always_keep})'
+               f'(min_gt_bbox_wh={self.min_gt_bbox_wh}, ' \
+               f'keep_empty={self.keep_empty})'

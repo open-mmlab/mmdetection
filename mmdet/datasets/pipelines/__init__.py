@@ -6,7 +6,7 @@ from .compose import Compose
 from .formatting import (ImageToTensor, PackDetInputs, ToDataContainer,
                          ToTensor, Transpose)
 from .instaboost import InstaBoost
-from .loading import (LoadAnnotations, LoadImageFromWebcam,
+from .loading import (FilterAnnotations, LoadAnnotations, LoadImageFromWebcam,
                       LoadMultiChannelImageFromFiles, LoadPanopticAnnotations,
                       LoadProposals)
 from .test_time_aug import MultiScaleFlipAug
@@ -26,5 +26,5 @@ __all__ = [
     'AutoAugment', 'CutOut', 'Shear', 'Rotate', 'ColorTransform',
     'EqualizeTransform', 'BrightnessTransform', 'ContrastTransform',
     'Translate', 'RandomShift', 'Mosaic', 'MixUp', 'RandomAffine',
-    'YOLOXHSVRandomAug', 'CopyPaste'
+    'YOLOXHSVRandomAug', 'CopyPaste', 'FilterAnnotations'
 ]

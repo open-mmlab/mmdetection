@@ -112,12 +112,8 @@ class PackDetInputs(BaseTransform):
 
         img_meta = {}
         for key in self.meta_keys:
-            # TODO: Wait until mmcv is modified and deleted.
-            if key == 'ori_shape':
-                img_shape = (results['ori_height'], results['ori_width'])
-                img_meta[key] = img_shape
-            else:
-                img_meta[key] = results[key]
+            img_meta[key] = results[key]
+
         data_sample.set_metainfo(img_meta)
         packed_results['data_sample'] = data_sample
 

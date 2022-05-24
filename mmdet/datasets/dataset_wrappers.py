@@ -4,9 +4,11 @@ import collections
 import copy
 import math
 from collections import defaultdict
+from typing import Sequence, Union
 
 import numpy as np
 from mmcv.utils import print_log
+from mmengine.dataset import BaseDataset, force_full_init
 from torch.utils.data.dataset import ConcatDataset as _ConcatDataset
 
 from mmdet.registry import DATASETS, TRANSFORMS
@@ -360,15 +362,11 @@ class MultiImageMixDataset:
     """
 
     def __init__(self,
-                 dataset,
-                 pipeline,
-                 dynamic_scale=None,
-                 skip_type_keys=None,
-                 max_refetch=15):
-        if dynamic_scale is not None:
-            raise RuntimeError(
-                'dynamic_scale is deprecated. Please use Resize pipeline '
-                'to achieve similar functions')
+                 dataset: Union[BaseDataset, dict],
+                 pipeline: Sequence[str],
+                 skip_type_keys: Union[Sequence[str], None] = None,
+                 max_refetch: int = 15,
+                 lazy_init: bool = False) -> None:
         assert isinstance(pipeline, collections.abc.Sequence)
         if skip_type_keys is not None:
             assert all([
@@ -387,14 +385,57 @@ class MultiImageMixDataset:
             else:
                 raise TypeError('pipeline must be a dict')
 
-        self.dataset = dataset
-        self.CLASSES = dataset.CLASSES
-        self.PALETTE = getattr(dataset, 'PALETTE', None)
+        self.dataset: BaseDataset
+        if isinstance(dataset, dict):
+            self.dataset = DATASETS.build(dataset)
+        elif isinstance(dataset, BaseDataset):
+            self.dataset = dataset
+        else:
+            raise TypeError(
+                'elements in datasets sequence should be config or '
+                f'`BaseDataset` instance, but got {type(dataset)}')
+
+        self._metainfo = self.dataset.metainfo
         if hasattr(self.dataset, 'flag'):
             self.flag = dataset.flag
-        self.num_samples = len(dataset)
+        self.num_samples = len(self.dataset)
         self.max_refetch = max_refetch
 
+        self._fully_initialized = False
+        if not lazy_init:
+            self.full_init()
+
+    @property
+    def metainfo(self) -> dict:
+        """Get the meta information of the multi-image-mixed dataset.
+
+        Returns:
+            dict: The meta information of multi-image-mixed dataset.
+        """
+        return copy.deepcopy(self._metainfo)
+
+    def full_init(self):
+        """Loop to ``full_init`` each dataset."""
+        if self._fully_initialized:
+            return
+
+        self.dataset.full_init()
+        self._ori_len = len(self.dataset)
+        self._fully_initialized = True
+
+    @force_full_init
+    def get_data_info(self, idx: int) -> dict:
+        """Get annotation by index.
+
+        Args:
+            idx (int): Global index of ``ConcatDataset``.
+
+        Returns:
+            dict: The idx-th annotation of the datasets.
+        """
+        return self.dataset.get_data_info(idx)
+
+    @force_full_init
     def __len__(self):
         return self.num_samples
 
