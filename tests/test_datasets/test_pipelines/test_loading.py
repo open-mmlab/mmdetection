@@ -25,10 +25,7 @@ class TestLoadAnnotations(unittest.TestCase):
         data_prefix = osp.join(osp.dirname(__file__), '../../data')
         seg_map = osp.join(data_prefix, 'gray.jpg')
         self.results = {
-            'height':
-            300,
-            'width':
-            400,
+            'img_shape': (300, 400),
             'seg_map_path':
             seg_map,
             'instances': [{
@@ -214,10 +211,7 @@ class TestLoadPanopticAnnotations(unittest.TestCase):
         self.seg_map = seg_map
         self.rgb_seg_map = rgb_seg_map
         self.results = {
-            'height':
-            10,
-            'width':
-            10,
+            'img_shape': (10, 10),
             'instances': [{
                 'bbox': [0, 0, 10, 5],
                 'bbox_label': 0,
