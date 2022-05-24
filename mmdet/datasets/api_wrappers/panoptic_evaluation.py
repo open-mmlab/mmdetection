@@ -26,7 +26,7 @@ def pq_compute_single_core(proc_id,
                            pred_folder,
                            categories,
                            file_client=None,
-                           print_log=True):
+                           print_log=False):
     """The single core function to evaluate the metric of Panoptic
     Segmentation.
 
@@ -40,7 +40,7 @@ def pq_compute_single_core(proc_id,
         categories (str): The categories of the dataset.
         file_client (object): The file client of the dataset. If None,
             the backend will be set to `disk`.
-        print_log (bool): Whether to print the log. Defaults to True.
+        print_log (bool): Whether to print the log. Defaults to False.
     """
     if PQStat is None:
         raise RuntimeError(

@@ -536,7 +536,8 @@ class CocoPanopticDataset(CocoDataset):
             pred_folder,
             self.categories,
             self.file_client,
-            nproc=nproc)
+            nproc=nproc,
+            print_log=True)
 
         metrics = [('All', None), ('Things', True), ('Stuff', False)]
         pq_results = {}
