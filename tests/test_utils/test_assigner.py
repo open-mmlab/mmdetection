@@ -402,6 +402,7 @@ def test_hungarian_match_assigner():
     gt_labels = torch.LongTensor([1, 20])
     assign_result = self.assign(bbox_pred, cls_pred, gt_bboxes, gt_labels,
                                 img_meta)
+
     assert torch.all(assign_result.gt_inds > -1)
     assert (assign_result.gt_inds > 0).sum() == gt_bboxes.size(0)
     assert (assign_result.labels > -1).sum() == gt_bboxes.size(0)

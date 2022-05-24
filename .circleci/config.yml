@@ -7,12 +7,6 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install dependencies
-          command: |
-            sudo apt-add-repository ppa:brightbox/ruby-ng -y
-            sudo apt-get update
-            sudo apt-get install -y ruby2.7
-      - run:
           name: Install pre-commit hook
           command: |
             pip install pre-commit
