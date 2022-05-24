@@ -11,7 +11,7 @@ import numpy as np
 
 from mmdet.core.evaluation import INSTANCE_OFFSET
 from mmdet.core.mask import BitmapMasks, PolygonMasks
-from mmdet.datasets.pipelines import LoadAnnotations
+from mmdet.datasets.pipelines import FilterAnnotations, LoadAnnotations
 
 
 class TestLoadAnnotations(unittest.TestCase):
@@ -133,6 +133,68 @@ class TestLoadAnnotations(unittest.TestCase):
                               'with_seg=False, poly2mask=True, '
                               "imdecode_backend='cv2', "
                               "file_client_args={'backend': 'disk'})"))
+
+
+class TestFilterAnnotations(unittest.TestCase):
+
+    def setUp(self):
+        """Setup the model and optimizer which are used in every test method.
+
+        TestCase calls functions in this order: setUp() -> testMethod() ->
+        tearDown() -> cleanUp()
+        """
+        rng = np.random.RandomState(0)
+        self.results = {
+            'img':
+            np.random.random((224, 224, 3)),
+            'img_shape': (224, 224),
+            'gt_bboxes_labels':
+            np.array([1, 2, 3], dtype=np.int64),
+            'gt_bboxes':
+            np.array([[10, 10, 20, 20], [20, 20, 40, 40], [40, 40, 80, 80]]),
+            'gt_ignore_flags':
+            np.array([0, 0, 1], dtype=np.bool8),
+            'gt_masks':
+            BitmapMasks(rng.rand(3, 224, 224), height=224, width=224),
+        }
+
+    def test_transform(self):
+        # test keep_empty = True
+        transform = FilterAnnotations(
+            min_gt_bbox_wh=(50, 50),
+            keep_empty=True,
+        )
+        results = transform(copy.deepcopy(self.results))
+        self.assertIsNone(results)
+
+        # test keep_empty = False
+        transform = FilterAnnotations(
+            min_gt_bbox_wh=(50, 50),
+            keep_empty=False,
+        )
+        results = transform(copy.deepcopy(self.results))
+        self.assertTrue(isinstance(results, dict))
+
+        # test filter annotations
+        transform = FilterAnnotations(min_gt_bbox_wh=(15, 15), )
+        results = transform(copy.deepcopy(self.results))
+        self.assertIsInstance(results, dict)
+        self.assertTrue((results['gt_bboxes_labels'] == np.array([2,
+                                                                  3])).all())
+        self.assertTrue((results['gt_bboxes'] == np.array([[20, 20, 40, 40],
+                                                           [40, 40, 80,
+                                                            80]])).all())
+        self.assertTrue(len(results['gt_masks']) == 2)
+        self.assertTrue(len(results['gt_ignore_flags'] == 2))
+
+    def test_repr(self):
+        transform = FilterAnnotations(
+            min_gt_bbox_wh=(1, 1),
+            keep_empty=False,
+        )
+        self.assertEqual(
+            repr(transform), ('FilterAnnotations(min_gt_bbox_wh=(1, 1), '
+                              'keep_empty=False)'))
 
 
 class TestLoadPanopticAnnotations(unittest.TestCase):

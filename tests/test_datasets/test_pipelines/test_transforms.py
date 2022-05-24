@@ -8,9 +8,10 @@ import numpy as np
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.core.mask import BitmapMasks
-from mmdet.datasets.pipelines import (Expand, MinIoURandomCrop,
-                                      PhotoMetricDistortion, RandomCrop,
-                                      RandomFlip, Resize, SegRescale)
+from mmdet.datasets.pipelines import (Expand, MinIoURandomCrop, MixUp, Mosaic,
+                                      PhotoMetricDistortion, RandomAffine,
+                                      RandomCrop, RandomFlip, Resize,
+                                      SegRescale, YOLOXHSVRandomAug)
 from .utils import create_random_bboxes
 
 
@@ -388,3 +389,274 @@ class TestRandomCrop(unittest.TestCase):
             f'allow_negative_crop={allow_negative_crop}, '
             f'recompute_bbox={recompute_bbox}, '
             f'bbox_clip_border={bbox_clip_border})')
+
+
+class TestMosaic(unittest.TestCase):
+
+    def setUp(self):
+        """Setup the model and optimizer which are used in every test method.
+
+        TestCase calls functions in this order: setUp() -> testMethod() ->
+        tearDown() -> cleanUp()
+        """
+        rng = np.random.RandomState(0)
+        self.results = {
+            'img':
+            np.random.random((224, 224, 3)),
+            'img_shape': (224, 224),
+            'gt_bboxes_labels':
+            np.array([1, 2, 3], dtype=np.int64),
+            'gt_bboxes':
+            np.array([[10, 10, 20, 20], [20, 20, 40, 40], [40, 40, 80, 80]],
+                     dtype=np.float32),
+            'gt_ignore_flags':
+            np.array([0, 0, 1], dtype=np.bool8),
+            'gt_masks':
+            BitmapMasks(rng.rand(3, 224, 224), height=224, width=224),
+        }
+
+    def test_transform(self):
+        # test assertion for invalid img_scale
+        with self.assertRaises(AssertionError):
+            transform = Mosaic(img_scale=640)
+
+        # test assertion for invalid probability
+        with self.assertRaises(AssertionError):
+            transform = Mosaic(prob=1.5)
+
+        transform = Mosaic(img_scale=(10, 12))
+        # test assertion for invalid mix_results
+        with self.assertRaises(AssertionError):
+            results = transform(copy.deepcopy(self.results))
+
+        self.results['mix_results'] = [copy.deepcopy(self.results)] * 3
+        results = transform(copy.deepcopy(self.results))
+        self.assertTrue(results['img'].shape[:2] == (20, 24))
+        self.assertTrue(results['gt_bboxes_labels'].shape[0] ==
+                        results['gt_bboxes'].shape[0])
+        self.assertTrue(results['gt_bboxes_labels'].dtype == np.int64)
+        self.assertTrue(results['gt_bboxes'].dtype == np.float32)
+        self.assertTrue(results['gt_ignore_flags'].dtype == np.bool8)
+
+        # test removing outside bboxes when gt_bbox is empty.
+        self.results['gt_bboxes'] = np.empty((0, 4), dtype=np.float32)
+        self.results['gt_bboxes_labels'] = np.empty((0, ), dtype=np.int64)
+        self.results['gt_ignore_flags'] = np.empty((0, 4), dtype=np.bool8)
+        self.results['mix_results'] = [copy.deepcopy(self.results)] * 3
+        results = transform(copy.deepcopy(self.results))
+        self.assertIsInstance(results, dict)
+
+    def test_repr(self):
+        transform = Mosaic(img_scale=(640, 640), )
+        self.assertEqual(
+            repr(transform), ('Mosaic(img_scale=(640, 640), '
+                              'center_ratio_range=(0.5, 1.5), '
+                              'pad_val=114.0, '
+                              'min_bbox_size=0, '
+                              'skip_filter=True'
+                              'prob=1.0)'))
+
+
+class TestMixUp(unittest.TestCase):
+
+    def setUp(self):
+        """Setup the model and optimizer which are used in every test method.
+
+        TestCase calls functions in this order: setUp() -> testMethod() ->
+        tearDown() -> cleanUp()
+        """
+        rng = np.random.RandomState(0)
+        self.results = {
+            'img':
+            np.random.random((224, 224, 3)),
+            'img_shape': (224, 224),
+            'gt_bboxes_labels':
+            np.array([1, 2, 3], dtype=np.int64),
+            'gt_bboxes':
+            np.array([[10, 10, 20, 20], [20, 20, 40, 40], [40, 40, 80, 80]],
+                     dtype=np.float32),
+            'gt_ignore_flags':
+            np.array([0, 0, 1], dtype=np.bool8),
+            'gt_masks':
+            BitmapMasks(rng.rand(3, 224, 224), height=224, width=224),
+        }
+
+    def test_transform(self):
+        # test assertion for invalid img_scale
+        with self.assertRaises(AssertionError):
+            transform = MixUp(img_scale=640)
+
+        transform = MixUp(img_scale=(10, 12))
+        # test assertion for invalid mix_results
+        with self.assertRaises(AssertionError):
+            results = transform(copy.deepcopy(self.results))
+
+        with self.assertRaises(AssertionError):
+            self.results['mix_results'] = [copy.deepcopy(self.results)] * 2
+            results = transform(copy.deepcopy(self.results))
+
+        self.results['mix_results'] = [copy.deepcopy(self.results)]
+        results = transform(copy.deepcopy(self.results))
+        self.assertTrue(results['img'].shape[:2] == (224, 224))
+        self.assertTrue(results['gt_bboxes_labels'].shape[0] ==
+                        results['gt_bboxes'].shape[0])
+        self.assertTrue(results['gt_bboxes_labels'].dtype == np.int64)
+        self.assertTrue(results['gt_bboxes'].dtype == np.float32)
+        self.assertTrue(results['gt_ignore_flags'].dtype == np.bool8)
+
+        # test filter bbox :
+        # 2 boxes with sides 10 and 20 are filtered as min_bbox_size=30
+        transform = MixUp(
+            img_scale=(224, 224),
+            ratio_range=(1.0, 1.0),
+            min_bbox_size=30,
+            skip_filter=False)
+        results = transform(copy.deepcopy(self.results))
+        print(results['gt_bboxes'])
+        self.assertTrue(results['gt_bboxes'].shape[0] == 4)
+        self.assertTrue(results['gt_bboxes_labels'].shape[0] == 4)
+        self.assertTrue(results['gt_bboxes_labels'].shape[0] ==
+                        results['gt_bboxes'].shape[0])
+        self.assertTrue(results['gt_bboxes_labels'].dtype == np.int64)
+        self.assertTrue(results['gt_bboxes'].dtype == np.float32)
+        self.assertTrue(results['gt_ignore_flags'].dtype == np.bool8)
+
+    def test_repr(self):
+        transform = MixUp(
+            img_scale=(640, 640),
+            ratio_range=(0.8, 1.6),
+            pad_val=114.0,
+        )
+        self.assertEqual(
+            repr(transform), ('MixUp(dynamic_scale=(640, 640), '
+                              'ratio_range=(0.8, 1.6), '
+                              'flip_ratio=0.5, '
+                              'pad_val=114.0, '
+                              'max_iters=15, '
+                              'min_bbox_size=5, '
+                              'min_area_ratio=0.2, '
+                              'max_aspect_ratio=20, '
+                              'bbox_clip_border=True, '
+                              'skip_filter=True)'))
+
+
+class TestRandomAffine(unittest.TestCase):
+
+    def setUp(self):
+        """Setup the model and optimizer which are used in every test method.
+
+        TestCase calls functions in this order: setUp() -> testMethod() ->
+        tearDown() -> cleanUp()
+        """
+        self.results = {
+            'img':
+            np.random.random((224, 224, 3)),
+            'img_shape': (224, 224),
+            'gt_bboxes_labels':
+            np.array([1, 2, 3], dtype=np.int64),
+            'gt_bboxes':
+            np.array([[10, 10, 20, 20], [20, 20, 40, 40], [40, 40, 80, 80]],
+                     dtype=np.float32),
+            'gt_ignore_flags':
+            np.array([0, 0, 1], dtype=np.bool8),
+        }
+
+    def test_transform(self):
+        # test assertion for invalid translate_ratio
+        with self.assertRaises(AssertionError):
+            transform = RandomAffine(max_translate_ratio=1.5)
+
+        # test assertion for invalid scaling_ratio_range
+        with self.assertRaises(AssertionError):
+            transform = RandomAffine(scaling_ratio_range=(1.5, 0.5))
+
+        with self.assertRaises(AssertionError):
+            transform = RandomAffine(scaling_ratio_range=(0, 0.5))
+
+        transform = RandomAffine()
+        results = transform(copy.deepcopy(self.results))
+        self.assertTrue(results['img'].shape[:2] == (224, 224))
+        self.assertTrue(results['gt_bboxes_labels'].shape[0] ==
+                        results['gt_bboxes'].shape[0])
+        self.assertTrue(results['gt_bboxes_labels'].dtype == np.int64)
+        self.assertTrue(results['gt_bboxes'].dtype == np.float32)
+        self.assertTrue(results['gt_ignore_flags'].dtype == np.bool8)
+
+        # test filter bbox
+        transform = RandomAffine(
+            max_rotate_degree=0.,
+            max_translate_ratio=0.,
+            scaling_ratio_range=(1., 1.),
+            max_shear_degree=0.,
+            border=(0, 0),
+            min_bbox_size=30,
+            max_aspect_ratio=20,
+            skip_filter=False)
+        results = transform(copy.deepcopy(self.results))
+        self.assertTrue(results['gt_bboxes'].shape[0] == 1)
+        self.assertTrue(results['gt_bboxes_labels'].shape[0] == 1)
+        self.assertTrue(results['gt_bboxes_labels'].shape[0] ==
+                        results['gt_bboxes'].shape[0])
+        self.assertTrue(results['gt_bboxes_labels'].dtype == np.int64)
+        self.assertTrue(results['gt_bboxes'].dtype == np.float32)
+        self.assertTrue(results['gt_ignore_flags'].dtype == np.bool8)
+
+    def test_repr(self):
+        transform = RandomAffine(
+            scaling_ratio_range=(0.1, 2),
+            border=(-320, -320),
+        )
+        self.assertEqual(
+            repr(transform), ('RandomAffine(max_rotate_degree=10.0, '
+                              'max_translate_ratio=0.1, '
+                              'scaling_ratio_range=(0.1, 2), '
+                              'max_shear_degree=2.0, '
+                              'border=(-320, -320), '
+                              'border_val=(114, 114, 114), '
+                              'min_bbox_size=2, '
+                              'min_area_ratio=0.2, '
+                              'max_aspect_ratio=20, '
+                              'bbox_clip_border=True, '
+                              'skip_filter=True)'))
+
+
+class TestYOLOXHSVRandomAug(unittest.TestCase):
+
+    def setUp(self):
+        """Setup the model and optimizer which are used in every test method.
+
+        TestCase calls functions in this order: setUp() -> testMethod() ->
+        tearDown() -> cleanUp()
+        """
+        img = mmcv.imread(
+            osp.join(osp.dirname(__file__), '../../data/color.jpg'), 'color')
+        self.results = {
+            'img':
+            img,
+            'img_shape': (224, 224),
+            'gt_bboxes_labels':
+            np.array([1, 2, 3], dtype=np.int64),
+            'gt_bboxes':
+            np.array([[10, 10, 20, 20], [20, 20, 40, 40], [40, 40, 80, 80]],
+                     dtype=np.float32),
+            'gt_ignore_flags':
+            np.array([0, 0, 1], dtype=np.bool8),
+        }
+
+    def test_transform(self):
+        transform = YOLOXHSVRandomAug()
+        results = transform(copy.deepcopy(self.results))
+        self.assertTrue(
+            results['img'].shape[:2] == self.results['img'].shape[:2])
+        self.assertTrue(results['gt_bboxes_labels'].shape[0] ==
+                        results['gt_bboxes'].shape[0])
+        self.assertTrue(results['gt_bboxes_labels'].dtype == np.int64)
+        self.assertTrue(results['gt_bboxes'].dtype == np.float32)
+        self.assertTrue(results['gt_ignore_flags'].dtype == np.bool8)
+
+    def test_repr(self):
+        transform = YOLOXHSVRandomAug()
+        self.assertEqual(
+            repr(transform), ('YOLOXHSVRandomAug(hue_delta=5, '
+                              'saturation_delta=30, '
+                              'value_delta=30)'))

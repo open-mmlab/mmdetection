@@ -12,6 +12,7 @@ from mmcv.transforms import BaseTransform
 from mmcv.transforms import RandomFlip as MMCV_RandomFlip
 from mmcv.transforms import Resize as MMCV_Resize
 from mmcv.transforms.utils import cache_randomness
+from mmengine.dataset import BaseDataset
 from numpy import random
 
 from mmdet.core import BitmapMasks, PolygonMasks, find_inside_bboxes
@@ -1720,7 +1721,7 @@ class CutOut:
 
 
 @TRANSFORMS.register_module()
-class Mosaic:
+class Mosaic(BaseTransform):
     """Mosaic augmentation.
 
     Given 4 images, mosaic transform combines them into
@@ -1753,34 +1754,50 @@ class Mosaic:
             sample another 3 images from the custom dataset.
          3. Sub image will be cropped if image is larger than mosaic patch
 
+    Required Keys:
+
+    - img
+    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes_labels (np.int64) (optional)
+    - gt_ignore_flags (np.bool) (optional)
+    - mix_results (List[dict])
+
+    Modified Keys:
+
+    - img
+    - img_shape
+    - gt_bboxes (optional)
+    - gt_bboxes_labels (optional)
+    - gt_ignore_flags (optional)
+
     Args:
         img_scale (Sequence[int]): Image size after mosaic pipeline of single
             image. The shape order should be (height, width).
-            Default to (640, 640).
+            Defaults to (640, 640).
         center_ratio_range (Sequence[float]): Center ratio range of mosaic
-            output. Default to (0.5, 1.5).
+            output. Defaults to (0.5, 1.5).
         min_bbox_size (int | float): The minimum pixel for filtering
-            invalid bboxes after the mosaic pipeline. Default to 0.
+            invalid bboxes after the mosaic pipeline. Defaults to 0.
         bbox_clip_border (bool, optional): Whether to clip the objects outside
             the border of the image. In some dataset like MOT17, the gt bboxes
             are allowed to cross the border of images. Therefore, we don't
             need to clip the gt bboxes in these cases. Defaults to True.
         skip_filter (bool): Whether to skip filtering rules. If it
             is True, the filter rule will not be applied, and the
-            `min_bbox_size` is invalid. Default to True.
-        pad_val (int): Pad value. Default to 114.
+            `min_bbox_size` is invalid. Defaults to True.
+        pad_val (int): Pad value. Defaults to 114.
         prob (float): Probability of applying this transformation.
-            Default to 1.0.
+            Defaults to 1.0.
     """
 
     def __init__(self,
-                 img_scale=(640, 640),
-                 center_ratio_range=(0.5, 1.5),
-                 min_bbox_size=0,
-                 bbox_clip_border=True,
-                 skip_filter=True,
-                 pad_val=114,
-                 prob=1.0):
+                 img_scale: Tuple[int, int] = (640, 640),
+                 center_ratio_range: Tuple[float, float] = (0.5, 1.5),
+                 min_bbox_size: int = 0,
+                 bbox_clip_border: bool = True,
+                 skip_filter: bool = True,
+                 pad_val: float = 114.0,
+                 prob: float = 1.0) -> None:
         assert isinstance(img_scale, tuple)
         assert 0 <= prob <= 1.0, 'The probability should be in range [0,1]. '\
             f'got {prob}.'
@@ -1794,23 +1811,8 @@ class Mosaic:
         self.pad_val = pad_val
         self.prob = prob
 
-    def __call__(self, results):
-        """Call function to make a mosaic of image.
-
-        Args:
-            results (dict): Result dict.
-
-        Returns:
-            dict: Result dict with mosaic transformed.
-        """
-
-        if random.uniform(0, 1) > self.prob:
-            return results
-
-        results = self._mosaic_transform(results)
-        return results
-
-    def get_indexes(self, dataset):
+    @cache_randomness
+    def get_indexes(self, dataset: BaseDataset) -> int:
         """Call function to collect indexes.
 
         Args:
@@ -1823,7 +1825,7 @@ class Mosaic:
         indexes = [random.randint(0, len(dataset)) for _ in range(3)]
         return indexes
 
-    def _mosaic_transform(self, results):
+    def transform(self, results: dict) -> dict:
         """Mosaic transform function.
 
         Args:
@@ -1832,10 +1834,13 @@ class Mosaic:
         Returns:
             dict: Updated result dict.
         """
+        if random.uniform(0, 1) > self.prob:
+            return results
 
         assert 'mix_results' in results
-        mosaic_labels = []
         mosaic_bboxes = []
+        mosaic_bboxes_labels = []
+        mosaic_ignore_flags = []
         if len(results['img'].shape) == 3:
             mosaic_img = np.full(
                 (int(self.img_scale[0] * 2), int(self.img_scale[1] * 2), 3),
@@ -1880,7 +1885,8 @@ class Mosaic:
 
             # adjust coordinate
             gt_bboxes_i = results_patch['gt_bboxes']
-            gt_labels_i = results_patch['gt_labels']
+            gt_bboxes_labels_i = results_patch['gt_bboxes_labels']
+            gt_ignore_flags_i = results_patch['gt_ignore_flags']
 
             if gt_bboxes_i.shape[0] > 0:
                 padw = x1_p - x1_c
@@ -1891,11 +1897,13 @@ class Mosaic:
                     scale_ratio_i * gt_bboxes_i[:, 1::2] + padh
 
             mosaic_bboxes.append(gt_bboxes_i)
-            mosaic_labels.append(gt_labels_i)
+            mosaic_bboxes_labels.append(gt_bboxes_labels_i)
+            mosaic_ignore_flags.append(gt_ignore_flags_i)
 
-        if len(mosaic_labels) > 0:
+        if len(mosaic_bboxes_labels) > 0:
             mosaic_bboxes = np.concatenate(mosaic_bboxes, 0)
-            mosaic_labels = np.concatenate(mosaic_labels, 0)
+            mosaic_bboxes_labels = np.concatenate(mosaic_bboxes_labels, 0)
+            mosaic_ignore_flags = np.concatenate(mosaic_ignore_flags, 0)
 
             if self.bbox_clip_border:
                 mosaic_bboxes[:, 0::2] = np.clip(mosaic_bboxes[:, 0::2], 0,
@@ -1904,23 +1912,30 @@ class Mosaic:
                                                  2 * self.img_scale[0])
 
             if not self.skip_filter:
-                mosaic_bboxes, mosaic_labels = \
-                    self._filter_box_candidates(mosaic_bboxes, mosaic_labels)
+                mosaic_bboxes, mosaic_bboxes_labels, mosaic_ignore_flags = \
+                    self._filter_box_candidates(mosaic_bboxes,
+                                                mosaic_bboxes_labels,
+                                                mosaic_ignore_flags)
 
-        # remove outside bboxes
-        inside_inds = find_inside_bboxes(mosaic_bboxes, 2 * self.img_scale[0],
-                                         2 * self.img_scale[1])
-        mosaic_bboxes = mosaic_bboxes[inside_inds]
-        mosaic_labels = mosaic_labels[inside_inds]
+            # remove outside bboxes
+            inside_inds = find_inside_bboxes(mosaic_bboxes,
+                                             2 * self.img_scale[0],
+                                             2 * self.img_scale[1])
+            mosaic_bboxes = mosaic_bboxes[inside_inds]
+            mosaic_bboxes_labels = mosaic_bboxes_labels[inside_inds]
+            mosaic_ignore_flags = mosaic_ignore_flags[inside_inds]
 
         results['img'] = mosaic_img
         results['img_shape'] = mosaic_img.shape
         results['gt_bboxes'] = mosaic_bboxes
-        results['gt_labels'] = mosaic_labels
+        results['gt_bboxes_labels'] = mosaic_bboxes_labels
+        results['gt_ignore_flags'] = mosaic_ignore_flags
 
         return results
 
-    def _mosaic_combine(self, loc, center_position_xy, img_shape_wh):
+    def _mosaic_combine(
+            self, loc: str, center_position_xy: Sequence[float],
+            img_shape_wh: Sequence[int]) -> Tuple[Tuple[int], Tuple[int]]:
         """Calculate global coordinate of mosaic image and local coordinate of
         cropped sub-image.
 
@@ -1981,27 +1996,30 @@ class Mosaic:
         paste_coord = x1, y1, x2, y2
         return paste_coord, crop_coord
 
-    def _filter_box_candidates(self, bboxes, labels):
+    def _filter_box_candidates(
+            self, bboxes: np.float32, labels: np.int64,
+            flags: np.bool) -> Tuple[np.float32, np.int64, np.bool]:
         """Filter out bboxes too small after Mosaic."""
         bbox_w = bboxes[:, 2] - bboxes[:, 0]
         bbox_h = bboxes[:, 3] - bboxes[:, 1]
         valid_inds = (bbox_w > self.min_bbox_size) & \
                      (bbox_h > self.min_bbox_size)
         valid_inds = np.nonzero(valid_inds)[0]
-        return bboxes[valid_inds], labels[valid_inds]
+        return bboxes[valid_inds], labels[valid_inds], flags[valid_inds]
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += f'img_scale={self.img_scale}, '
+        repr_str += f'(img_scale={self.img_scale}, '
         repr_str += f'center_ratio_range={self.center_ratio_range}, '
         repr_str += f'pad_val={self.pad_val}, '
         repr_str += f'min_bbox_size={self.min_bbox_size}, '
-        repr_str += f'skip_filter={self.skip_filter})'
+        repr_str += f'skip_filter={self.skip_filter}'
+        repr_str += f'prob={self.prob})'
         return repr_str
 
 
 @TRANSFORMS.register_module()
-class MixUp:
+class MixUp(BaseTransform):
     """MixUp data augmentation.
 
     .. code:: text
@@ -2027,26 +2045,44 @@ class MixUp:
         2. The target of mixup transform is the weighted average of mixup
            image and origin image.
 
+    Required Keys:
+
+    - img
+    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes_labels (np.int64) (optional)
+    - gt_ignore_flags (np.bool) (optional)
+    - mix_results (List[dict])
+
+
+    Modified Keys:
+
+    - img
+    - img_shape
+    - gt_bboxes (optional)
+    - gt_bboxes_labels (optional)
+    - gt_ignore_flags (optional)
+
+
     Args:
         img_scale (Sequence[int]): Image output size after mixup pipeline.
-            The shape order should be (height, width). Default: (640, 640).
+            The shape order should be (height, width). Defaults to (640, 640).
         ratio_range (Sequence[float]): Scale ratio of mixup image.
-            Default: (0.5, 1.5).
+            Defaults to (0.5, 1.5).
         flip_ratio (float): Horizontal flip ratio of mixup image.
-            Default: 0.5.
-        pad_val (int): Pad value. Default: 114.
+            Defaults to 0.5.
+        pad_val (int): Pad value. Defaults to 114.
         max_iters (int): The maximum number of iterations. If the number of
             iterations is greater than `max_iters`, but gt_bbox is still
-            empty, then the iteration is terminated. Default: 15.
+            empty, then the iteration is terminated. Defaults to 15.
         min_bbox_size (float): Width and height threshold to filter bboxes.
             If the height or width of a box is smaller than this value, it
-            will be removed. Default: 5.
+            will be removed. Defaults to 5.
         min_area_ratio (float): Threshold of area ratio between
             original bboxes and wrapped bboxes. If smaller than this value,
-            the box will be removed. Default: 0.2.
+            the box will be removed. Defaults to 0.2.
         max_aspect_ratio (float): Aspect ratio of width and height
             threshold to filter bboxes. If max(h/w, w/h) larger than this
-            value, the box will be removed. Default: 20.
+            value, the box will be removed. Defaults to 20.
         bbox_clip_border (bool, optional): Whether to clip the objects outside
             the border of the image. In some dataset like MOT17, the gt bboxes
             are allowed to cross the border of images. Therefore, we don't
@@ -2054,20 +2090,20 @@ class MixUp:
         skip_filter (bool): Whether to skip filtering rules. If it
             is True, the filter rule will not be applied, and the
             `min_bbox_size` and `min_area_ratio` and `max_aspect_ratio`
-            is invalid. Default to True.
+            is invalid. Defaults to True.
     """
 
     def __init__(self,
-                 img_scale=(640, 640),
-                 ratio_range=(0.5, 1.5),
-                 flip_ratio=0.5,
-                 pad_val=114,
-                 max_iters=15,
-                 min_bbox_size=5,
-                 min_area_ratio=0.2,
-                 max_aspect_ratio=20,
-                 bbox_clip_border=True,
-                 skip_filter=True):
+                 img_scale: Tuple[int, int] = (640, 640),
+                 ratio_range: Tuple[float, float] = (0.5, 1.5),
+                 flip_ratio: float = 0.5,
+                 pad_val: float = 114.0,
+                 max_iters: int = 15,
+                 min_bbox_size: int = 5,
+                 min_area_ratio: float = 0.2,
+                 max_aspect_ratio: int = 20,
+                 bbox_clip_border: bool = True,
+                 skip_filter: bool = True) -> None:
         assert isinstance(img_scale, tuple)
         log_img_scale(img_scale, skip_square=True)
         self.dynamic_scale = img_scale
@@ -2081,20 +2117,7 @@ class MixUp:
         self.bbox_clip_border = bbox_clip_border
         self.skip_filter = skip_filter
 
-    def __call__(self, results):
-        """Call function to make a mixup of image.
-
-        Args:
-            results (dict): Result dict.
-
-        Returns:
-            dict: Result dict with mixup transformed.
-        """
-
-        results = self._mixup_transform(results)
-        return results
-
-    def get_indexes(self, dataset):
+    def get_indexes(self, dataset: BaseDataset) -> int:
         """Call function to collect indexes.
 
         Args:
@@ -2106,13 +2129,13 @@ class MixUp:
 
         for i in range(self.max_iters):
             index = random.randint(0, len(dataset))
-            gt_bboxes_i = dataset.get_ann_info(index)['bboxes']
+            gt_bboxes_i = dataset[index]['gt_bboxes']
             if len(gt_bboxes_i) != 0:
                 break
 
         return index
 
-    def _mixup_transform(self, results):
+    def transform(self, results: dict) -> dict:
         """MixUp transform function.
 
         Args:
@@ -2210,32 +2233,40 @@ class MixUp:
         ori_img = ori_img.astype(np.float32)
         mixup_img = 0.5 * ori_img + 0.5 * padded_cropped_img.astype(np.float32)
 
-        retrieve_gt_labels = retrieve_results['gt_labels']
+        retrieve_gt_bboxes_labels = retrieve_results['gt_bboxes_labels']
+        retrieve_gt_ignore_flags = retrieve_results['gt_ignore_flags']
+
         if not self.skip_filter:
             keep_list = self._filter_box_candidates(retrieve_gt_bboxes.T,
                                                     cp_retrieve_gt_bboxes.T)
 
-            retrieve_gt_labels = retrieve_gt_labels[keep_list]
             cp_retrieve_gt_bboxes = cp_retrieve_gt_bboxes[keep_list]
+            retrieve_gt_bboxes_labels = retrieve_gt_bboxes_labels[keep_list]
+            retrieve_gt_ignore_flags = retrieve_gt_ignore_flags[keep_list]
 
         mixup_gt_bboxes = np.concatenate(
             (results['gt_bboxes'], cp_retrieve_gt_bboxes), axis=0)
-        mixup_gt_labels = np.concatenate(
-            (results['gt_labels'], retrieve_gt_labels), axis=0)
+        mixup_gt_bboxes_labels = np.concatenate(
+            (results['gt_bboxes_labels'], retrieve_gt_bboxes_labels), axis=0)
+        mixup_gt_ignore_flags = np.concatenate(
+            (results['gt_ignore_flags'], retrieve_gt_ignore_flags), axis=0)
 
         # remove outside bbox
         inside_inds = find_inside_bboxes(mixup_gt_bboxes, target_h, target_w)
         mixup_gt_bboxes = mixup_gt_bboxes[inside_inds]
-        mixup_gt_labels = mixup_gt_labels[inside_inds]
+        mixup_gt_bboxes_labels = mixup_gt_bboxes_labels[inside_inds]
+        mixup_gt_ignore_flags = mixup_gt_ignore_flags[inside_inds]
 
         results['img'] = mixup_img.astype(np.uint8)
         results['img_shape'] = mixup_img.shape
         results['gt_bboxes'] = mixup_gt_bboxes
-        results['gt_labels'] = mixup_gt_labels
+        results['gt_bboxes_labels'] = mixup_gt_bboxes_labels
+        results['gt_ignore_flags'] = mixup_gt_ignore_flags
 
         return results
 
-    def _filter_box_candidates(self, bbox1, bbox2):
+    def _filter_box_candidates(self, bbox1: np.float32,
+                               bbox2: np.float32) -> np.bool:
         """Compute candidate boxes which include following 5 things:
 
         bbox1 before augment, bbox2 after augment, min_bbox_size (pixels),
@@ -2252,7 +2283,7 @@ class MixUp:
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += f'dynamic_scale={self.dynamic_scale}, '
+        repr_str += f'(dynamic_scale={self.dynamic_scale}, '
         repr_str += f'ratio_range={self.ratio_range}, '
         repr_str += f'flip_ratio={self.flip_ratio}, '
         repr_str += f'pad_val={self.pad_val}, '
@@ -2260,40 +2291,57 @@ class MixUp:
         repr_str += f'min_bbox_size={self.min_bbox_size}, '
         repr_str += f'min_area_ratio={self.min_area_ratio}, '
         repr_str += f'max_aspect_ratio={self.max_aspect_ratio}, '
+        repr_str += f'bbox_clip_border={self.bbox_clip_border}, '
         repr_str += f'skip_filter={self.skip_filter})'
         return repr_str
 
 
 @TRANSFORMS.register_module()
-class RandomAffine:
+class RandomAffine(BaseTransform):
     """Random affine transform data augmentation.
 
     This operation randomly generates affine transform matrix which including
     rotation, translation, shear and scaling transforms.
 
+
+    Required Keys:
+
+    - img
+    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes_labels (np.int64) (optional)
+    - gt_ignore_flags (np.bool) (optional)
+
+    Modified Keys:
+
+    - img
+    - img_shape
+    - gt_bboxes (optional)
+    - gt_bboxes_labels (optional)
+    - gt_ignore_flags (optional)
+
     Args:
         max_rotate_degree (float): Maximum degrees of rotation transform.
-            Default: 10.
+            Defaults to 10.
         max_translate_ratio (float): Maximum ratio of translation.
-            Default: 0.1.
+            Defaults to 0.1.
         scaling_ratio_range (tuple[float]): Min and max ratio of
-            scaling transform. Default: (0.5, 1.5).
+            scaling transform. Defaults to (0.5, 1.5).
         max_shear_degree (float): Maximum degrees of shear
-            transform. Default: 2.
+            transform. Defaults to 2.
         border (tuple[int]): Distance from height and width sides of input
             image to adjust output shape. Only used in mosaic dataset.
-            Default: (0, 0).
+            Defaults to (0, 0).
         border_val (tuple[int]): Border padding values of 3 channels.
-            Default: (114, 114, 114).
+            Defaults to (114, 114, 114).
         min_bbox_size (float): Width and height threshold to filter bboxes.
             If the height or width of a box is smaller than this value, it
-            will be removed. Default: 2.
+            will be removed. Defaults to 2.
         min_area_ratio (float): Threshold of area ratio between
             original bboxes and wrapped bboxes. If smaller than this value,
-            the box will be removed. Default: 0.2.
+            the box will be removed. Defaults to 0.2.
         max_aspect_ratio (float): Aspect ratio of width and height
             threshold to filter bboxes. If max(h/w, w/h) larger than this
-            value, the box will be removed.
+            value, the box will be removed. Defaults to 20.
         bbox_clip_border (bool, optional): Whether to clip the objects outside
             the border of the image. In some dataset like MOT17, the gt bboxes
             are allowed to cross the border of images. Therefore, we don't
@@ -2301,21 +2349,21 @@ class RandomAffine:
         skip_filter (bool): Whether to skip filtering rules. If it
             is True, the filter rule will not be applied, and the
             `min_bbox_size` and `min_area_ratio` and `max_aspect_ratio`
-            is invalid. Default to True.
+            is invalid. Defaults to True.
     """
 
     def __init__(self,
-                 max_rotate_degree=10.0,
-                 max_translate_ratio=0.1,
-                 scaling_ratio_range=(0.5, 1.5),
-                 max_shear_degree=2.0,
-                 border=(0, 0),
-                 border_val=(114, 114, 114),
-                 min_bbox_size=2,
-                 min_area_ratio=0.2,
-                 max_aspect_ratio=20,
-                 bbox_clip_border=True,
-                 skip_filter=True):
+                 max_rotate_degree: float = 10.0,
+                 max_translate_ratio: float = 0.1,
+                 scaling_ratio_range: Tuple[float, float] = (0.5, 1.5),
+                 max_shear_degree: float = 2.0,
+                 border: Tuple[int, int] = (0, 0),
+                 border_val: Tuple[int, int, int] = (114, 114, 114),
+                 min_bbox_size: int = 2,
+                 min_area_ratio: float = 0.2,
+                 max_aspect_ratio: int = 20,
+                 bbox_clip_border: bool = True,
+                 skip_filter: bool = True) -> None:
         assert 0 <= max_translate_ratio <= 1
         assert scaling_ratio_range[0] <= scaling_ratio_range[1]
         assert scaling_ratio_range[0] > 0
@@ -2331,20 +2379,23 @@ class RandomAffine:
         self.bbox_clip_border = bbox_clip_border
         self.skip_filter = skip_filter
 
-    def __call__(self, results):
-        img = results['img']
-        height = img.shape[0] + self.border[0] * 2
-        width = img.shape[1] + self.border[1] * 2
+    @cache_randomness
+    def _get_random_homography_matrix(self, height, width):
+        matrix_info = dict()
 
         # Rotation
         rotation_degree = random.uniform(-self.max_rotate_degree,
                                          self.max_rotate_degree)
         rotation_matrix = self._get_rotation_matrix(rotation_degree)
+        matrix_info['rotation_degree'] = rotation_degree
+        matrix_info['rotation_matrix'] = rotation_matrix
 
         # Scaling
         scaling_ratio = random.uniform(self.scaling_ratio_range[0],
                                        self.scaling_ratio_range[1])
         scaling_matrix = self._get_scaling_matrix(scaling_ratio)
+        matrix_info['scaling_ratio'] = scaling_ratio
+        matrix_info['scaling_matrix'] = scaling_matrix
 
         # Shear
         x_degree = random.uniform(-self.max_shear_degree,
@@ -2352,6 +2403,9 @@ class RandomAffine:
         y_degree = random.uniform(-self.max_shear_degree,
                                   self.max_shear_degree)
         shear_matrix = self._get_shear_matrix(x_degree, y_degree)
+        matrix_info['x_degree'] = x_degree
+        matrix_info['y_degree'] = y_degree
+        matrix_info['shear_matrix'] = shear_matrix
 
         # Translation
         trans_x = random.uniform(-self.max_translate_ratio,
@@ -2359,9 +2413,24 @@ class RandomAffine:
         trans_y = random.uniform(-self.max_translate_ratio,
                                  self.max_translate_ratio) * height
         translate_matrix = self._get_translation_matrix(trans_x, trans_y)
+        matrix_info['trans_x'] = trans_x
+        matrix_info['trans_y'] = trans_y
+        matrix_info['translate_matrix'] = translate_matrix
 
         warp_matrix = (
             translate_matrix @ shear_matrix @ rotation_matrix @ scaling_matrix)
+        matrix_info['warp_matrix'] = warp_matrix
+
+        return matrix_info
+
+    def transform(self, results: dict) -> dict:
+        img = results['img']
+        height = img.shape[0] + self.border[0] * 2
+        width = img.shape[1] + self.border[1] * 2
+
+        matrix_info = self._get_random_homography_matrix(height, width)
+        warp_matrix = matrix_info['warp_matrix']
+        scaling_ratio = matrix_info['scaling_ratio']
 
         img = cv2.warpPerspective(
             img,
@@ -2371,50 +2440,49 @@ class RandomAffine:
         results['img'] = img
         results['img_shape'] = img.shape
 
-        for key in results.get('bbox_fields', []):
-            bboxes = results[key]
-            num_bboxes = len(bboxes)
-            if num_bboxes:
-                # homogeneous coordinates
-                xs = bboxes[:, [0, 0, 2, 2]].reshape(num_bboxes * 4)
-                ys = bboxes[:, [1, 3, 3, 1]].reshape(num_bboxes * 4)
-                ones = np.ones_like(xs)
-                points = np.vstack([xs, ys, ones])
+        bboxes = results['gt_bboxes']
+        num_bboxes = len(bboxes)
+        if num_bboxes:
+            # homogeneous coordinates
+            xs = bboxes[:, [0, 0, 2, 2]].reshape(num_bboxes * 4)
+            ys = bboxes[:, [1, 3, 3, 1]].reshape(num_bboxes * 4)
+            ones = np.ones_like(xs)
+            points = np.vstack([xs, ys, ones])
 
-                warp_points = warp_matrix @ points
-                warp_points = warp_points[:2] / warp_points[2]
-                xs = warp_points[0].reshape(num_bboxes, 4)
-                ys = warp_points[1].reshape(num_bboxes, 4)
+            warp_points = warp_matrix @ points
+            warp_points = warp_points[:2] / warp_points[2]
+            xs = warp_points[0].reshape(num_bboxes, 4)
+            ys = warp_points[1].reshape(num_bboxes, 4)
 
-                warp_bboxes = np.vstack(
-                    (xs.min(1), ys.min(1), xs.max(1), ys.max(1))).T
+            warp_bboxes = np.vstack(
+                (xs.min(1), ys.min(1), xs.max(1), ys.max(1))).T
 
-                if self.bbox_clip_border:
-                    warp_bboxes[:, [0, 2]] = \
-                        warp_bboxes[:, [0, 2]].clip(0, width)
-                    warp_bboxes[:, [1, 3]] = \
-                        warp_bboxes[:, [1, 3]].clip(0, height)
+            if self.bbox_clip_border:
+                warp_bboxes[:, [0, 2]] = \
+                    warp_bboxes[:, [0, 2]].clip(0, width)
+                warp_bboxes[:, [1, 3]] = \
+                    warp_bboxes[:, [1, 3]].clip(0, height)
 
-                # remove outside bbox
-                valid_index = find_inside_bboxes(warp_bboxes, height, width)
-                if not self.skip_filter:
-                    # filter bboxes
-                    filter_index = self.filter_gt_bboxes(
-                        bboxes * scaling_ratio, warp_bboxes)
-                    valid_index = valid_index & filter_index
+            # remove outside bbox
+            valid_index = find_inside_bboxes(warp_bboxes, height, width)
+            if not self.skip_filter:
+                # filter bboxes
+                filter_index = self.filter_gt_bboxes(bboxes * scaling_ratio,
+                                                     warp_bboxes)
+                valid_index = valid_index & filter_index
 
-                results[key] = warp_bboxes[valid_index]
-                if key in ['gt_bboxes']:
-                    if 'gt_labels' in results:
-                        results['gt_labels'] = results['gt_labels'][
-                            valid_index]
+            results['gt_bboxes'] = warp_bboxes[valid_index]
+            results['gt_bboxes_labels'] = results['gt_bboxes_labels'][
+                valid_index]
+            results['gt_ignore_flags'] = results['gt_ignore_flags'][
+                valid_index]
 
-                if 'gt_masks' in results:
-                    raise NotImplementedError(
-                        'RandomAffine only supports bbox.')
+            if 'gt_masks' in results:
+                raise NotImplementedError('RandomAffine only supports bbox.')
         return results
 
-    def filter_gt_bboxes(self, origin_bboxes, wrapped_bboxes):
+    def filter_gt_bboxes(self, origin_bboxes: np.float32,
+                         wrapped_bboxes: np.float32) -> np.bool:
         origin_w = origin_bboxes[:, 2] - origin_bboxes[:, 0]
         origin_h = origin_bboxes[:, 3] - origin_bboxes[:, 1]
         wrapped_w = wrapped_bboxes[:, 2] - wrapped_bboxes[:, 0]
@@ -2433,18 +2501,19 @@ class RandomAffine:
         repr_str = self.__class__.__name__
         repr_str += f'(max_rotate_degree={self.max_rotate_degree}, '
         repr_str += f'max_translate_ratio={self.max_translate_ratio}, '
-        repr_str += f'scaling_ratio={self.scaling_ratio_range}, '
+        repr_str += f'scaling_ratio_range={self.scaling_ratio_range}, '
         repr_str += f'max_shear_degree={self.max_shear_degree}, '
         repr_str += f'border={self.border}, '
         repr_str += f'border_val={self.border_val}, '
         repr_str += f'min_bbox_size={self.min_bbox_size}, '
         repr_str += f'min_area_ratio={self.min_area_ratio}, '
         repr_str += f'max_aspect_ratio={self.max_aspect_ratio}, '
+        repr_str += f'bbox_clip_border={self.bbox_clip_border}, '
         repr_str += f'skip_filter={self.skip_filter})'
         return repr_str
 
     @staticmethod
-    def _get_rotation_matrix(rotate_degrees):
+    def _get_rotation_matrix(rotate_degrees: float) -> np.float32:
         radian = math.radians(rotate_degrees)
         rotation_matrix = np.array(
             [[np.cos(radian), -np.sin(radian), 0.],
@@ -2453,21 +2522,22 @@ class RandomAffine:
         return rotation_matrix
 
     @staticmethod
-    def _get_scaling_matrix(scale_ratio):
+    def _get_scaling_matrix(scale_ratio: float) -> np.float32:
         scaling_matrix = np.array(
             [[scale_ratio, 0., 0.], [0., scale_ratio, 0.], [0., 0., 1.]],
             dtype=np.float32)
         return scaling_matrix
 
     @staticmethod
-    def _get_share_matrix(scale_ratio):
+    def _get_share_matrix(scale_ratio: float) -> np.float32:
         scaling_matrix = np.array(
             [[scale_ratio, 0., 0.], [0., scale_ratio, 0.], [0., 0., 1.]],
             dtype=np.float32)
         return scaling_matrix
 
     @staticmethod
-    def _get_shear_matrix(x_shear_degrees, y_shear_degrees):
+    def _get_shear_matrix(x_shear_degrees: float,
+                          y_shear_degrees: float) -> np.float32:
         x_radian = math.radians(x_shear_degrees)
         y_radian = math.radians(y_shear_degrees)
         shear_matrix = np.array([[1, np.tan(x_radian), 0.],
@@ -2476,31 +2546,42 @@ class RandomAffine:
         return shear_matrix
 
     @staticmethod
-    def _get_translation_matrix(x, y):
+    def _get_translation_matrix(x: float, y: float) -> np.float32:
         translation_matrix = np.array([[1, 0., x], [0., 1, y], [0., 0., 1.]],
                                       dtype=np.float32)
         return translation_matrix
 
 
 @TRANSFORMS.register_module()
-class YOLOXHSVRandomAug:
+class YOLOXHSVRandomAug(BaseTransform):
     """Apply HSV augmentation to image sequentially. It is referenced from
     https://github.com/Megvii-
     BaseDetection/YOLOX/blob/main/yolox/data/data_augment.py#L21.
 
+    Required Keys:
+
+    - img
+
+    Modified Keys:
+
+    - img
+
     Args:
-        hue_delta (int): delta of hue. Default: 5.
-        saturation_delta (int): delta of saturation. Default: 30.
-        value_delta (int): delat of value. Default: 30.
+        hue_delta (int): delta of hue. Defaults to 5.
+        saturation_delta (int): delta of saturation. Defaults to 30.
+        value_delta (int): delat of value. Defaults to 30.
     """
 
-    def __init__(self, hue_delta=5, saturation_delta=30, value_delta=30):
+    def __init__(self,
+                 hue_delta: int = 5,
+                 saturation_delta: int = 30,
+                 value_delta: int = 30) -> None:
         self.hue_delta = hue_delta
         self.saturation_delta = saturation_delta
         self.value_delta = value_delta
 
-    def __call__(self, results):
-        img = results['img']
+    @cache_randomness
+    def _get_hsv_gains(self):
         hsv_gains = np.random.uniform(-1, 1, 3) * [
             self.hue_delta, self.saturation_delta, self.value_delta
         ]
@@ -2508,6 +2589,11 @@ class YOLOXHSVRandomAug:
         hsv_gains *= np.random.randint(0, 2, 3)
         # prevent overflow
         hsv_gains = hsv_gains.astype(np.int16)
+        return hsv_gains
+
+    def transform(self, results: dict) -> dict:
+        img = results['img']
+        hsv_gains = self._get_hsv_gains()
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV).astype(np.int16)
 
         img_hsv[..., 0] = (img_hsv[..., 0] + hsv_gains[0]) % 180

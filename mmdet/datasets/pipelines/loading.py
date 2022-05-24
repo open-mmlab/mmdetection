@@ -5,6 +5,7 @@ from typing import List, Union
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
+from mmcv.transforms import BaseTransform
 from mmcv.transforms import LoadAnnotations as MMCV_LoadAnnotations
 from mmcv.transforms import LoadImageFromFile
 
@@ -605,8 +606,22 @@ class LoadProposals:
 
 
 @TRANSFORMS.register_module()
-class FilterAnnotations:
+class FilterAnnotations(BaseTransform):
     """Filter invalid annotations.
+
+    Required Keys:
+
+    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes_labels (np.int64) (optional)
+    - gt_masks (BitmapMasks | PolygonMasks) (optional)
+    - gt_ignore_flags (np.bool) (optional)
+
+    Modified Keys:
+
+    - gt_bboxes (optional)
+    - gt_bboxes_labels (optional)
+    - gt_masks (optional)
+    - gt_ignore_flags (optional)
 
     Args:
         min_gt_bbox_wh (tuple[float]): Minimum width and height of ground truth
@@ -618,7 +633,7 @@ class FilterAnnotations:
         by_mask (bool): Filter instances with masks not meeting
             min_gt_mask_area threshold. Default: False
         keep_empty (bool): Whether to return None when it
-            becomes an empty bbox after filtering. Default: True
+            becomes an empty bbox after filtering. Defaults to True.
     """
 
     def __init__(self,
@@ -635,17 +650,10 @@ class FilterAnnotations:
         self.by_mask = by_mask
         self.keep_empty = keep_empty
 
-    def __call__(self, results):
-        if self.by_box:
-            assert 'gt_bboxes' in results
-            gt_bboxes = results['gt_bboxes']
-            instance_num = gt_bboxes.shape[0]
-        if self.by_mask:
-            assert 'gt_masks' in results
-            gt_masks = results['gt_masks']
-            instance_num = len(gt_masks)
-
-        if instance_num == 0:
+    def transform(self, results: dict) -> Union[dict, None]:
+        assert 'gt_bboxes' in results
+        gt_bboxes = results['gt_bboxes']
+        if gt_bboxes.shape[0] == 0:
             return results
 
         tests = []
@@ -669,12 +677,17 @@ class FilterAnnotations:
         if not keep.any():
             if self.keep_empty:
                 return None
-        return results
+            else:
+                return results
+        else:
+            keys = ('gt_bboxes', 'gt_bboxes_labels', 'gt_masks',
+                    'gt_ignore_flags')
+            for key in keys:
+                if key in results:
+                    results[key] = results[key][keep]
+            return results
 
     def __repr__(self):
         return self.__class__.__name__ + \
-               f'(min_gt_bbox_wh={self.min_gt_bbox_wh},' \
-               f'(min_gt_mask_area={self.min_gt_mask_area},' \
-               f'(by_box={self.by_box},' \
-               f'(by_mask={self.by_mask},' \
-               f'always_keep={self.always_keep})'
+               f'(min_gt_bbox_wh={self.min_gt_bbox_wh}, ' \
+               f'keep_empty={self.keep_empty})'
