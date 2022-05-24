@@ -10,11 +10,9 @@ from .builder import MATCH_COST
 @MATCH_COST.register_module()
 class BBoxL1Cost:
     """BBoxL1Cost.
-
      Args:
          weight (int | float, optional): loss_weight
          box_format (str, optional): 'xyxy' for DETR, 'xywh' for Sparse_RCNN
-
      Examples:
          >>> from mmdet.core.bbox.match_costs.match_cost import BBoxL1Cost
          >>> import torch
@@ -39,7 +37,6 @@ class BBoxL1Cost:
                 (num_query, 4).
             gt_bboxes (Tensor): Ground truth boxes with normalized
                 coordinates (x1, y1, x2, y2). Shape (num_gt, 4).
-
         Returns:
             torch.Tensor: bbox_cost value with weight
         """
@@ -54,7 +51,6 @@ class BBoxL1Cost:
 @MATCH_COST.register_module()
 class FocalLossCost:
     """FocalLossCost.
-
      Args:
          weight (int | float, optional): loss_weight
          alpha (int | float, optional): focal_loss alpha
@@ -62,7 +58,6 @@ class FocalLossCost:
          eps (float, optional): default 1e-12
          binary_input (bool, optional): Whether the input is binary,
             default False.
-
      Examples:
          >>> from mmdet.core.bbox.match_costs.match_cost import FocalLossCost
          >>> import torch
@@ -95,7 +90,6 @@ class FocalLossCost:
             cls_pred (Tensor): Predicted classification logits, shape
                 (num_query, num_class).
             gt_labels (Tensor): Label of `gt_bboxes`, shape (num_gt,).
-
         Returns:
             torch.Tensor: cls_cost value with weight
         """
@@ -115,7 +109,6 @@ class FocalLossCost:
                 in shape (num_query, d1, ..., dn), dtype=torch.float32.
             gt_labels (Tensor): Ground truth in shape (num_gt, d1, ..., dn),
                 dtype=torch.long. Labels should be binary.
-
         Returns:
             Tensor: Focal cost matrix with weight in shape\
                 (num_query, num_gt).
@@ -138,7 +131,6 @@ class FocalLossCost:
         Args:
             cls_pred (Tensor): Predicted classfication logits.
             gt_labels (Tensor)): Labels.
-
         Returns:
             Tensor: Focal cost matrix with weight in shape\
                 (num_query, num_gt).
@@ -152,10 +144,8 @@ class FocalLossCost:
 @MATCH_COST.register_module()
 class ClassificationCost:
     """ClsSoftmaxCost.
-
      Args:
          weight (int | float, optional): loss_weight
-
      Examples:
          >>> from mmdet.core.bbox.match_costs.match_cost import \
          ... ClassificationCost
@@ -180,7 +170,6 @@ class ClassificationCost:
             cls_pred (Tensor): Predicted classification logits, shape
                 (num_query, num_class).
             gt_labels (Tensor): Label of `gt_bboxes`, shape (num_gt,).
-
         Returns:
             torch.Tensor: cls_cost value with weight
         """
@@ -196,11 +185,9 @@ class ClassificationCost:
 @MATCH_COST.register_module()
 class IoUCost:
     """IoUCost.
-
      Args:
          iou_mode (str, optional): iou mode such as 'iou' | 'giou'
          weight (int | float, optional): loss weight
-
      Examples:
          >>> from mmdet.core.bbox.match_costs.match_cost import IoUCost
          >>> import torch
@@ -223,7 +210,6 @@ class IoUCost:
                 (x1, y1, x2, y2). Shape (num_query, 4).
             gt_bboxes (Tensor): Ground truth boxes with unnormalized
                 coordinates (x1, y1, x2, y2). Shape (num_gt, 4).
-
         Returns:
             torch.Tensor: iou_cost value with weight
         """
@@ -238,7 +224,6 @@ class IoUCost:
 @MATCH_COST.register_module()
 class DiceCost:
     """Cost of mask assignments based on dice losses.
-
     Args:
         weight (int | float, optional): loss_weight. Defaults to 1.
         pred_act (bool, optional): Whether to apply sigmoid to mask_pred.
@@ -264,7 +249,6 @@ class DiceCost:
             gt_masks (Tensor): Ground truth in shape (num_gt, *)
                 store 0 or 1, 0 for negative class and 1 for
                 positive class.
-
         Returns:
             Tensor: Dice cost matrix in shape (num_query, num_gt).
         """
@@ -285,7 +269,6 @@ class DiceCost:
         Args:
             mask_preds (Tensor): Mask prediction logits in shape (num_query, *)
             gt_masks (Tensor): Ground truth in shape (num_gt, *)
-
         Returns:
             Tensor: Dice cost matrix with weight in shape (num_query, num_gt).
         """
@@ -298,7 +281,6 @@ class DiceCost:
 @MATCH_COST.register_module()
 class CrossEntropyLossCost:
     """CrossEntropyLossCost.
-
     Args:
         weight (int | float, optional): loss weight. Defaults to 1.
         use_sigmoid (bool, optional): Whether the prediction uses sigmoid
@@ -324,7 +306,6 @@ class CrossEntropyLossCost:
                 (num_query, *).
             gt_labels (Tensor): The learning label of prediction with
                 shape (num_gt, *).
-
         Returns:
             Tensor: Cross entropy cost matrix in shape (num_query, num_gt).
         """
@@ -346,7 +327,6 @@ class CrossEntropyLossCost:
         Args:
             cls_pred (Tensor): Predicted classification logits.
             gt_labels (Tensor): Labels.
-
         Returns:
             Tensor: Cross entropy cost matrix with weight in
                 shape (num_query, num_gt).
