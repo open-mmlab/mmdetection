@@ -52,7 +52,7 @@ def main():
     dataset = build_dataset(cfg.train_dataloader.dataset)
 
     visualizer = VISUALIZERS.build(cfg.visualizer)
-    visualizer.dataset_meta = dataset.METAINFO
+    visualizer.dataset_meta = dataset.metainfo
 
     progress_bar = mmcv.ProgressBar(len(dataset))
     for item in dataset:
