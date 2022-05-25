@@ -155,7 +155,13 @@ class ConvKernelHead(BaseModule):
                 stride=self.feat_refine_stride,
                 padding=1,
                 norm_cfg=self.norm_cfg)
-
+        self.conv_pred = ConvModule(
+            self.in_channels,
+            self.out_channels,
+            1,
+            padding=0,
+            act_cfg=self.act_cfg,
+            norm_cfg=self.norm_cfg)
         self.loc_convs = nn.ModuleList()
         for i in range(self.num_loc_convs):
             self.loc_convs.append(
