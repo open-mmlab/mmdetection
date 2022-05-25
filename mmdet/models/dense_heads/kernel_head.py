@@ -224,34 +224,22 @@ class ConvKernelHead(BaseModule):
                     shape (N,classes,H,W)
         """
         num_imgs = len(img_metas)
-
-        localization_feats = self.localization_fpn(img)
-        if isinstance(localization_feats, list):
-            loc_feats = localization_feats[0]
-        else:
-            loc_feats = localization_feats
+        feats = self.localization_fpn(img)
+        loc_feats = self.conv_pred(feats)
         for conv in self.loc_convs:
             loc_feats = conv(loc_feats)
-        if self.feat_downsample_stride > 1 and self.feat_refine:
-            loc_feats = self.ins_downsample(loc_feats)
         mask_preds = self.init_kernels(loc_feats)  # (N,num_proposal,H,W)
 
         if self.semantic_fpn:  # use for panoptic predict
-            if isinstance(localization_feats, list):
-                semantic_feats = localization_feats[1]
-            else:
-                semantic_feats = localization_feats
+            semantic_feats = self.semantic_pre(feats)
             for conv in self.seg_convs:
                 semantic_feats = conv(semantic_feats)
-            if self.feat_downsample_stride > 1 and self.feat_refine:
-                semantic_feats = self.seg_downsample(
-                    semantic_feats)  # (N,C,H/8,W/8)
         else:
             semantic_feats = None
 
         if semantic_feats is not None:
             seg_preds = self.conv_seg(
-                semantic_feats)  # (N,thing+stuff,H,W). predict for seg
+                semantic_feats)  # (N, thing+stuff, H, W). predict for seg
         else:
             seg_preds = None
 
