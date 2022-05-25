@@ -23,6 +23,7 @@ class ConvKernelHead(BaseModule):
                  att_dropout=False,
                  localization_fpn=None,
                  conv_kernel_size=1,
+                 act_cfg=dict(type="Relu", inplace=True),
                  norm_cfg=dict(type='GN', num_groups=32),
                  semantic_fpn=True,
                  train_cfg=None,
@@ -60,6 +61,7 @@ class ConvKernelHead(BaseModule):
         self.sampling = False
         self.localization_fpn = build_neck(localization_fpn)
         self.semantic_fpn = semantic_fpn
+        self.act_cfg = act_cfg
         self.norm_cfg = norm_cfg
         self.num_heads = num_heads
         self.att_dropout = att_dropout
@@ -182,14 +184,16 @@ class ConvKernelHead(BaseModule):
 
     def init_weights(self):
         self.localization_fpn.init_weights()
-
-        if self.feat_downsample_stride > 1 and self.conv_normal_init:
-            for conv in [self.loc_convs, self.seg_convs]:
-                for m in conv.modules():
-                    if isinstance(m, nn.Conv2d):
-                        normal_init(m, std=0.01)
+        for conv in [self.loc_convs, self.seg_convs,
+                     self.conv_pred]:
+            for m in conv.modules():
+                if isinstance(m, nn.Conv2d):
+                    normal_init(m, std=0.01)
 
         if self.semantic_fpn:
+            for m in self.semantic_pre.modules():
+                if isinstance(m, nn.Conv2d):
+                    normal_init(self.semantic_pre, std=0.01)
             bias_seg = bias_init_with_prob(0.01)
             if self.loss_seg.use_sigmoid:
                 normal_init(self.conv_seg, std=0.01, bias=bias_seg)
