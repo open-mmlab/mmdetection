@@ -87,25 +87,18 @@
 
   3. 使用 `config/fp16` 中的示例尝试混合精度训练。`loss_scale` 可能需要针对不同模型进行调整。
 
-  4. 你也可以尝试使用 `AvoidOOM` 来避免该问题。首先它将尝试调用 `torch.cuda.empty_cache()`。如果失败，将会尝试把输入类型转换到 FP16。如果仍然失败，将会把输入从 GPUs 转换到 CPUs 进行计算。这里提供了两个使用的例子：
+  4. 你也可以尝试使用 `AvoidCUDAOOM` 来避免该问题。首先它将尝试调用 `torch.cuda.empty_cache()`。如果失败，将会尝试把输入类型转换到 FP16。如果仍然失败，将会把输入从 GPUs 转换到 CPUs 进行计算。这里提供了两个使用的例子：
 
      ```python
-     # 作为函数使用
-     from mmdet.utils import AvoidOOM
+     from mmdet.utils import AvoidCUDAOOM
 
-     AvoidCUDAOOM = AvoidOOM()
-     # GPU OOM 错误
-     # outputs = some_torch_function(input1, input2)
-     output = AvoidCUDAOOM.retry_if_cuda_oom(some_torch_function)(input1, input2)
+     output = AvoidCUDAOOM.retry_if_cuda_oom(some_function)(input1, input2)
      ```
 
      你也可也使用 `AvoidCUDAOOM` 作为装饰器让代码遇到 OOM 的时候继续运行：
 
      ```python
-     # 作为装饰器使用
      from mmdet.utils import AvoidCUDAOOM
-     # from mmdet.utils import AvoidOOM
-     # AvoidCUDAOOM = AvoidOOM(**kwargs)
 
      @AvoidCUDAOOM.retry_if_cuda_oom
      def function(*args, **kwargs):

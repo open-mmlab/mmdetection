@@ -155,26 +155,18 @@ We list some common troubles faced by many users and their corresponding solutio
 
   3. Try mixed precision training using following the examples in `config/fp16`. The `loss_scale` might need further tuning for different models.
 
-  4. Try to use `AvoidOOM` to avoid GPU out of memory. It will first retry after calling `torch.cuda.empty_cache()`. If it still fails, it will then retry by converting the type of inputs to FP16 format. If it still fails, it will try to copy inputs from GPUs to CPUs to continue computing. Try AvoidOOM in you code to make the code continue to run when GPU memory runs out:
+  4. Try to use `AvoidCUDAOOM` to avoid GPU out of memory. It will first retry after calling `torch.cuda.empty_cache()`. If it still fails, it will then retry by converting the type of inputs to FP16 format. If it still fails, it will try to copy inputs from GPUs to CPUs to continue computing. Try AvoidOOM in you code to make the code continue to run when GPU memory runs out:
 
      ```python
-     # To use as a function
-     from mmdet.utils import AvoidOOM
+     from mmdet.utils import AvoidCUDAOOM
 
-     AvoidCUDAOOM = AvoidOOM(**kwargs)
-     # GPU OOM error
-     # outputs = some_function(input1, input2)
      output = AvoidCUDAOOM.retry_if_cuda_oom(some_function)(input1, input2)
      ```
 
      You can also try `AvoidCUDAOOM` as a decorator to make the code continue to run when GPU memory runs out:
 
      ```python
-     # To use as a decorator
      from mmdet.utils import AvoidCUDAOOM
-     # Or defined according to your requirements
-     # from mmdet.utils import AvoidOOM
-     # AvoidCUDAOOM = AvoidOOM(**kwargs)
 
      @AvoidCUDAOOM.retry_if_cuda_oom
      def function(*args, **kwargs):
