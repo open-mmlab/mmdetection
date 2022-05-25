@@ -9,13 +9,13 @@ import torch
 from mmdet.utils import get_root_logger
 
 
-def convert_tensor_type(inputs, src_type=None, dst_type=None):
-    """Recursively convert Tensor in inputs from src_type to dst_type.
+def cast_tensor_type(inputs, src_type=None, dst_type=None):
+    """Recursively convert Tensor in inputs from ``src_type`` to ``dst_type``.
 
     Args:
         inputs: Inputs that to be casted.
         src_type (torch.dtype | torch.device): Source type.
-        dst_type (torch.dtype | torch.device): Destination type.
+        src_type (torch.dtype | torch.device): Destination type.
 
     Returns:
         The same type with inputs, but all contained Tensors have been cast.
@@ -42,17 +42,17 @@ def convert_tensor_type(inputs, src_type=None, dst_type=None):
         # as the argument `src_type`.
     elif isinstance(inputs, abc.Mapping):
         return type(inputs)({
-            k: convert_tensor_type(v, src_type=src_type, dst_type=dst_type)
+            k: cast_tensor_type(v, src_type=src_type, dst_type=dst_type)
             for k, v in inputs.items()
         })
     elif isinstance(inputs, abc.Iterable):
         return type(inputs)(
-            convert_tensor_type(item, src_type=src_type, dst_type=dst_type)
+            cast_tensor_type(item, src_type=src_type, dst_type=dst_type)
             for item in inputs)
     # TODO: Currently not supported
     # elif isinstance(inputs, InstanceData):
     #     for key, value in inputs.items():
-    #         inputs[key] = convert_tensor_type(
+    #         inputs[key] = cast_tensor_type(
     #             value, src_type=src_type, dst_type=dst_type)
     #     return inputs
     else:
@@ -76,7 +76,7 @@ def _ignore_torch_cuda_oom():
             raise
 
 
-class AvoidOOM(object):
+class AvoidOOM:
     """Try to convert inputs to FP16 and CPU if got a PyTorch's CUDA Out of
     Memory error. It will do the following steps:
 
@@ -88,7 +88,7 @@ class AvoidOOM(object):
           CPU implementation.
 
     Args:
-        convert_cpu (bool): Whether to convert outputs to CPU if get an OOM
+        to_cpu (bool): Whether to convert outputs to CPU if get an OOM
             error. This will slow down the code significantly.
             Defaults to True.
         test (bool): Skip `_ignore_torch_cuda_oom` operate that can use
@@ -117,9 +117,9 @@ class AvoidOOM(object):
             stateless.
     """
 
-    def __init__(self, convert_cpu=True, test=False):
+    def __init__(self, to_cpu=True, test=False):
         self.logger = get_root_logger()
-        self.convert_cpu = convert_cpu
+        self.to_cpu = to_cpu
         self.test = test
 
     def retry_if_cuda_oom(self, func):
@@ -162,8 +162,8 @@ class AvoidOOM(object):
                                  'cannot get dtype and device.')
 
             # Convert to FP16
-            fp16_args = convert_tensor_type(args, dst_type=torch.half)
-            fp16_kwargs = convert_tensor_type(kwargs, dst_type=torch.half)
+            fp16_args = cast_tensor_type(args, dst_type=torch.half)
+            fp16_kwargs = cast_tensor_type(kwargs, dst_type=torch.half)
             self.logger.info(f'Attempting to copy inputs of {str(func)} '
                              f'to FP16 due to CUDA OOM')
 
@@ -171,7 +171,7 @@ class AvoidOOM(object):
             # the first parameter type.
             with _ignore_torch_cuda_oom():
                 output = func(*fp16_args, **fp16_kwargs)
-                output = convert_tensor_type(
+                output = cast_tensor_type(
                     output, src_type=torch.half, dst_type=dtype)
                 if not self.test:
                     return output
@@ -179,19 +179,19 @@ class AvoidOOM(object):
 
             # Try on CPU. This will slow down the code significantly,
             # therefore print a notice.
-            if self.convert_cpu:
+            if self.to_cpu:
                 self.logger.info(f'Attempting to copy inputs of {str(func)} '
                                  f'to CPU due to CUDA OOM')
                 cpu_device = torch.empty(0).device
-                cpu_args = convert_tensor_type(args, dst_type=cpu_device)
-                cpu_kwargs = convert_tensor_type(kwargs, dst_type=cpu_device)
+                cpu_args = cast_tensor_type(args, dst_type=cpu_device)
+                cpu_kwargs = cast_tensor_type(kwargs, dst_type=cpu_device)
 
                 # convert outputs to GPU
                 with _ignore_torch_cuda_oom():
                     self.logger.info(f'Convert outputs to GPU '
                                      f'(device={device})')
                     output = func(*cpu_args, **cpu_kwargs)
-                    output = convert_tensor_type(
+                    output = cast_tensor_type(
                         output, src_type=cpu_device, dst_type=device)
                     return output
 

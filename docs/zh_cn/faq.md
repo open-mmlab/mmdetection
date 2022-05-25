@@ -99,6 +99,8 @@
      output = AvoidCUDAOOM.retry_if_cuda_oom(some_torch_function)(input1, input2)
      ```
 
+     你也可也使用 `AvoidCUDAOOM` 作为装饰器让代码遇到 OOM 的时候继续运行：
+
      ```python
      # 作为装饰器使用
      from mmdet.utils import AvoidCUDAOOM

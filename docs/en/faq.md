@@ -161,15 +161,18 @@ We list some common troubles faced by many users and their corresponding solutio
      # To use as a function
      from mmdet.utils import AvoidOOM
 
-     AvoidCUDAOOM = AvoidOOM()
+     AvoidCUDAOOM = AvoidOOM(**kwargs)
      # GPU OOM error
-     # outputs = some_torch_function(input1, input2)
-     output = AvoidCUDAOOM.retry_if_cuda_oom(some_torch_function)(input1, input2)
+     # outputs = some_function(input1, input2)
+     output = AvoidCUDAOOM.retry_if_cuda_oom(some_function)(input1, input2)
      ```
+
+     You can also try `AvoidCUDAOOM` as a decorator to make the code continue to run when GPU memory runs out:
 
      ```python
      # To use as a decorator
      from mmdet.utils import AvoidCUDAOOM
+     # Or defined according to your requirements
      # from mmdet.utils import AvoidOOM
      # AvoidCUDAOOM = AvoidOOM(**kwargs)
 

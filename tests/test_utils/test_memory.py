@@ -3,7 +3,7 @@ import pytest
 import torch
 
 from mmdet.utils import AvoidOOM
-from mmdet.utils.memory import convert_tensor_type
+from mmdet.utils.memory import cast_tensor_type
 
 
 def test_avoidoom():
@@ -41,7 +41,7 @@ def test_avoidoom():
                torch.allclose(default_result, result)
 
         # do not calculate on cpu and the outputs will be same as input
-        AvoidCudaOOM = AvoidOOM(test=True, convert_cpu=False)
+        AvoidCudaOOM = AvoidOOM(test=True, to_cpu=False)
         result = AvoidCudaOOM.retry_if_cuda_oom(torch.mm)(tensor,
                                                           tensor.transpose(
                                                               1, 0))
@@ -59,31 +59,31 @@ def test_avoidoom():
                torch.equal(default_result, result)
 
 
-def test_conver_tensor_type():
+def test_cast_tensor_type():
     inputs = torch.rand(10)
     if torch.cuda.is_available():
         inputs = inputs.cuda()
     with pytest.raises(AssertionError):
-        convert_tensor_type(inputs, src_type=None, dst_type=None)
+        cast_tensor_type(inputs, src_type=None, dst_type=None)
     # input is a float
-    out = convert_tensor_type(10., dst_type=torch.half)
+    out = cast_tensor_type(10., dst_type=torch.half)
     assert out == 10. and isinstance(out, float)
     # convert Tensor to fp16 and re-convert to fp32
-    fp16_out = convert_tensor_type(inputs, dst_type=torch.half)
+    fp16_out = cast_tensor_type(inputs, dst_type=torch.half)
     assert fp16_out.dtype == torch.half
-    fp32_out = convert_tensor_type(fp16_out, dst_type=torch.float32)
+    fp32_out = cast_tensor_type(fp16_out, dst_type=torch.float32)
     assert fp32_out.dtype == torch.float32
 
     # input is a list
     list_input = [inputs, inputs]
-    list_outs = convert_tensor_type(list_input, dst_type=torch.half)
+    list_outs = cast_tensor_type(list_input, dst_type=torch.half)
     assert len(list_outs) == len(list_input) and \
            isinstance(list_outs, list)
     for out in list_outs:
         assert out.dtype == torch.half
     # input is a dict
     dict_input = {'test1': inputs, 'test2': inputs}
-    dict_outs = convert_tensor_type(dict_input, dst_type=torch.half)
+    dict_outs = cast_tensor_type(dict_input, dst_type=torch.half)
     assert len(dict_outs) == len(dict_input) and \
            isinstance(dict_outs, dict)
 
@@ -91,8 +91,8 @@ def test_conver_tensor_type():
     if torch.cuda.is_available():
         cpu_device = torch.empty(0).device
         gpu_device = inputs.device
-        cpu_out = convert_tensor_type(inputs, dst_type=cpu_device)
+        cpu_out = cast_tensor_type(inputs, dst_type=cpu_device)
         assert cpu_out.device == cpu_device
 
-        gpu_out = convert_tensor_type(inputs, dst_type=gpu_device)
+        gpu_out = cast_tensor_type(inputs, dst_type=gpu_device)
         assert gpu_out.device == gpu_device
