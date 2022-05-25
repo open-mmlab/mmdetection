@@ -9,7 +9,7 @@ import numpy as np
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.core.mask import BitmapMasks
 from mmdet.datasets.pipelines import (Expand, MinIoURandomCrop, MixUp, Mosaic,
-                                      PhotoMetricDistortion, RandomAffine,
+                                      Pad, PhotoMetricDistortion, RandomAffine,
                                       RandomCrop, RandomFlip, Resize,
                                       SegRescale, YOLOXHSVRandomAug)
 from .utils import create_random_bboxes
@@ -108,6 +108,61 @@ class TestRandomFlip(unittest.TestCase):
         transform = RandomFlip(0.1)
         transform_str = str(transform)
         self.assertIsInstance(transform_str, str)
+
+
+class TestPad(unittest.TestCase):
+
+    def setUp(self):
+        """Setup the model and optimizer which are used in every test method.
+
+        TestCase calls functions in this order: setUp() -> testMethod() ->
+        tearDown() -> cleanUp()
+        """
+        rng = np.random.RandomState(0)
+        self.results = {
+            'img': np.random.random((1333, 800, 3)),
+            'gt_masks':
+            BitmapMasks(rng.rand(4, 1333, 800), height=1333, width=800)
+        }
+
+    def test_transform(self):
+        # test pad img/gt_masks with size
+        transform = Pad(size=(1200, 2000))
+        results = transform(copy.deepcopy(self.results))
+        self.assertEqual(results['img'].shape[:2], (2000, 1200))
+        self.assertEqual(results['gt_masks'].masks.shape[1:], (2000, 1200))
+
+        # test pad img/gt_masks with size_divisor
+        transform = Pad(size_divisor=11)
+        results = transform(copy.deepcopy(self.results))
+        self.assertEqual(results['img'].shape[:2], (1342, 803))
+        self.assertEqual(results['gt_masks'].masks.shape[1:], (1342, 803))
+
+        # test pad img/gt_masks with pad_to_square
+        transform = Pad(pad_to_square=True)
+        results = transform(copy.deepcopy(self.results))
+        self.assertEqual(results['img'].shape[:2], (1333, 1333))
+        self.assertEqual(results['gt_masks'].masks.shape[1:], (1333, 1333))
+
+        # test pad img/gt_masks with pad_to_square and size_divisor
+        transform = Pad(pad_to_square=True, size_divisor=11)
+        results = transform(copy.deepcopy(self.results))
+        self.assertEqual(results['img'].shape[:2], (1342, 1342))
+        self.assertEqual(results['gt_masks'].masks.shape[1:], (1342, 1342))
+
+        # test pad img/gt_masks with pad_to_square and size_divisor
+        transform = Pad(pad_to_square=True, size_divisor=11)
+        results = transform(copy.deepcopy(self.results))
+        self.assertEqual(results['img'].shape[:2], (1342, 1342))
+        self.assertEqual(results['gt_masks'].masks.shape[1:], (1342, 1342))
+
+    def test_repr(self):
+        transform = Pad(
+            pad_to_square=True, size_divisor=11, padding_mode='edge')
+        self.assertEqual(
+            repr(transform),
+            ('Pad(size=None, size_divisor=11, pad_to_square=True, '
+             "pad_val={'img': 0, 'seg': 255}), padding_mode=edge)"))
 
 
 class TestMinIoURandomCrop(unittest.TestCase):

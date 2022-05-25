@@ -9,6 +9,7 @@ import mmcv
 import numpy as np
 from mmcv.image.geometric import _scale_size
 from mmcv.transforms import BaseTransform
+from mmcv.transforms import Pad as MMCV_Pad
 from mmcv.transforms import RandomFlip as MMCV_RandomFlip
 from mmcv.transforms import Resize as MMCV_Resize
 from mmcv.transforms.utils import cache_randomness
@@ -325,6 +326,89 @@ class RandomShift:
         repr_str = self.__class__.__name__
         repr_str += f'(max_shift_px={self.max_shift_px}, '
         return repr_str
+
+
+@TRANSFORMS.register_module()
+class Pad(MMCV_Pad):
+    """Pad the image & segmentation map.
+
+    There are three padding modes: (1) pad to a fixed size and (2) pad to the
+    minimum size that is divisible by some number. and (3)pad to square. Also,
+    pad to square and pad to the minimum size can be used as the same time.
+
+    Required Keys:
+
+    - img
+    - gt_bboxes (np.float32) (optional)
+    - gt_masks (BitmapMasks | PolygonMasks) (optional)
+    - gt_seg_map (np.uint8) (optional)
+
+    Modified Keys:
+
+    - img
+    - img_shape
+    - gt_masks
+    - gt_seg_map
+
+    Added Keys:
+
+    - pad_shape
+    - pad_fixed_size
+    - pad_size_divisor
+
+    Args:
+        size (tuple, optional): Fixed padding size.
+            Expected padding shape (w, h). Defaults to None.
+        size_divisor (int, optional): The divisor of padded size. Defaults to
+            None.
+        pad_to_square (bool): Whether to pad the image into a square.
+            Currently only used for YOLOX. Defaults to False.
+        pad_val (Number | dict[str, Number], optional) - Padding value for if
+            the pad_mode is "constant".  If it is a single number, the value
+            to pad the image is the number and to pad the semantic
+            segmentation map is 255. If it is a dict, it should have the
+            following keys:
+
+            - img: The value to pad the image.
+            - seg: The value to pad the semantic segmentation map.
+            Defaults to dict(img=0, seg=255).
+        padding_mode (str): Type of padding. Should be: constant, edge,
+            reflect or symmetric. Defaults to 'constant'.
+
+            - constant: pads with a constant value, this value is specified
+              with pad_val.
+            - edge: pads with the last value at the edge of the image.
+            - reflect: pads with reflection of image without repeating the last
+              value on the edge. For example, padding [1, 2, 3, 4] with 2
+              elements on both sides in reflect mode will result in
+              [3, 2, 1, 2, 3, 4, 3, 2].
+            - symmetric: pads with reflection of image repeating the last value
+              on the edge. For example, padding [1, 2, 3, 4] with 2 elements on
+              both sides in symmetric mode will result in
+              [2, 1, 1, 2, 3, 4, 4, 3]
+    """
+
+    def _pad_masks(self, results: dict) -> None:
+        """Pad masks according to ``results['pad_shape']``."""
+        if results.get('gt_masks', None) is not None:
+            pad_val = self.pad_val.get('masks', 0)
+            pad_shape = results['pad_shape'][:2]
+            results['gt_masks'] = results['gt_masks'].pad(
+                pad_shape, pad_val=pad_val)
+
+    def transform(self, results: dict) -> dict:
+        """Call function to pad images, masks, semantic segmentation maps.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Updated result dict.
+        """
+        self._pad_img(results)
+        self._pad_seg(results)
+        self._pad_masks(results)
+        return results
 
 
 @TRANSFORMS.register_module()

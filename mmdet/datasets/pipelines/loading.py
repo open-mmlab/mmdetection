@@ -650,6 +650,14 @@ class FilterAnnotations(BaseTransform):
         self.keep_empty = keep_empty
 
     def transform(self, results: dict) -> Union[dict, None]:
+        """Transform function to filter annotations.
+
+        Args:
+            results (dict): Result dict.
+
+        Returns:
+            dict: Updated result dict.
+        """
         assert 'gt_bboxes' in results
         gt_bboxes = results['gt_bboxes']
         if gt_bboxes.shape[0] == 0:
