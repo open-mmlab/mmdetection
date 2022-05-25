@@ -11,7 +11,7 @@ from .loading import (FilterAnnotations, LoadAnnotations, LoadImageFromWebcam,
                       LoadProposals)
 from .test_time_aug import MultiScaleFlipAug
 from .transforms import (Albu, CopyPaste, CutOut, Expand, MinIoURandomCrop,
-                         MixUp, Mosaic, Normalize, PhotoMetricDistortion,
+                         MixUp, Mosaic, Normalize, Pad, PhotoMetricDistortion,
                          RandomAffine, RandomCenterCropPad, RandomCrop,
                          RandomFlip, RandomShift, Resize, SegRescale,
                          YOLOXHSVRandomAug)
@@ -26,5 +26,5 @@ __all__ = [
     'AutoAugment', 'CutOut', 'Shear', 'Rotate', 'ColorTransform',
     'EqualizeTransform', 'BrightnessTransform', 'ContrastTransform',
     'Translate', 'RandomShift', 'Mosaic', 'MixUp', 'RandomAffine',
-    'YOLOXHSVRandomAug', 'CopyPaste', 'FilterAnnotations'
+    'YOLOXHSVRandomAug', 'CopyPaste', 'FilterAnnotations', 'Pad'
 ]
