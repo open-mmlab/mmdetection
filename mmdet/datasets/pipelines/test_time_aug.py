@@ -43,6 +43,8 @@ class MultiScaleFlipAug:
         transforms (list[dict]): Transforms to apply in each augmentation.
         img_scale (tuple | list[tuple] | None): Images scales for resizing.
         scale_factor (float | list[float] | None): Scale factors for resizing.
+        obj_scale_range (tuple | list[tuple] | None): The object scale range in
+            each image scale.
         flip (bool): Whether apply flip augmentation. Default: False.
         flip_direction (str | list[str]): Flip augmentation directions,
             options are "horizontal", "vertical" and "diagonal". If
