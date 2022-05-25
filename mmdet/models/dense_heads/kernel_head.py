@@ -126,6 +126,13 @@ class ConvKernelHead(BaseModule):
             bias=False)
 
         if self.semantic_fpn:
+            self.semantic_pre = ConvModule(
+                                self.in_channels,
+                                self.out_channels,
+                                1,
+                                padding=0,
+                                act_cfg=self.act_cfg,
+                                norm_cfg=self.norm_cfg)
             if self.loss_seg.use_sigmoid:
                 self.conv_seg = nn.Conv2d(self.out_channels, self.num_classes,
                                           1)
