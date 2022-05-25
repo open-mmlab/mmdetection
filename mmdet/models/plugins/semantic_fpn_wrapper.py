@@ -24,11 +24,9 @@ class SemanticFPNWrapper(BaseModule):
             ``end_level``-th layer will not be used.
         cat_coors_level (int): Indicate which level will add
             position embdding.
-        upsample_times (int): Upsample time of ebd level.
+        upsample_times (int): Upsample time of end level.
         num_aux_convs (int): number of aux conv for semantic
             segmentation.
-        act_cfg (dict): Config dict for activation layer.
-            Default: ReLU.
         out_act_cfg (dict): Config dict for output 
             activation layer. Default: ReLU.
         conv_cfg (dict): Dictionary to construct and config
@@ -47,7 +45,6 @@ class SemanticFPNWrapper(BaseModule):
                  cat_coors_level=-1,
                  upsample_times=2,
                  num_aux_convs=0,
-                 act_cfg=dict(type='ReLU', inplace=True),
                  out_act_cfg=dict(type='ReLU'),
                  conv_cfg=None,
                  norm_cfg=None):
@@ -61,7 +58,6 @@ class SemanticFPNWrapper(BaseModule):
         self.out_channels = out_channels
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
-        self.act_cfg = act_cfg
         self.cat_coors_level = cat_coors_level
         self.upsample_times = upsample_times
         if positional_encoding is not None:
