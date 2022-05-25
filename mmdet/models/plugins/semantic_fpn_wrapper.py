@@ -37,21 +37,17 @@ class SemanticFPNWrapper(BaseModule):
 
     def __init__(self,
                  in_channels,
-                 inner_channels,
                  out_channels,
                  start_level,
                  end_level,
                  positional_encoding=None,
                  cat_coors_level=-1,
                  upsample_times=2,
-                 num_aux_convs=0,
-                 out_act_cfg=dict(type='ReLU'),
                  conv_cfg=None,
                  norm_cfg=None):
         super(SemanticFPNWrapper, self).__init__()
 
         self.in_channels = in_channels
-        self.inner_channels = inner_channels
         self.start_level = start_level
         self.end_level = end_level
         assert start_level >= 0 and end_level >= start_level
@@ -72,36 +68,13 @@ class SemanticFPNWrapper(BaseModule):
             self.conv_upsample_layers.append(
                 ConvUpsample(
                     in_channels,
-                    inner_channels,
+                    out_channels,
                     num_layers= num_layers+1 if num_layers > 0 else 1,
                     num_upsample= num_layers if num_layers > 0 else 0,
                     stride = 1 if num_layers >= 0 else 2,
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
                 ))
-        in_channels = self.inner_channels
-
-        self.conv_pred = ConvModule(
-            in_channels,
-            self.out_channels,
-            1,
-            padding=0,
-            conv_cfg=self.conv_cfg,
-            act_cfg=out_act_cfg,
-            norm_cfg=self.norm_cfg)
-
-        self.num_aux_convs = num_aux_convs # equal to 1
-        self.aux_convs = nn.ModuleList()
-        for i in range(num_aux_convs):
-            self.aux_convs.append(
-                ConvModule(
-                    in_channels,
-                    self.out_channels,
-                    1,
-                    padding=0,
-                    conv_cfg=self.conv_cfg,
-                    act_cfg=out_act_cfg,
-                    norm_cfg=self.norm_cfg))
 
     def init_weights(self):
         for m in self.modules():
@@ -125,8 +98,7 @@ class SemanticFPNWrapper(BaseModule):
             inputs (List[Tensor]):feature of each feature map, \
                 each has shape (N,C,H_i,W_i),
         return:
-            List[Tensor]: loc_feats: (N,C,H,W) 8x downsample
-                          sem_feature: (N,C,H,W) 8x downsample
+            feats (Tensor): features (N,C,H,W) 8x downsample
         """
         mlvl_feats = []
         for i in range(self.start_level, self.end_level):
@@ -142,10 +114,5 @@ class SemanticFPNWrapper(BaseModule):
 
             mlvl_feats.append(self.conv_upsample_layers[i](input_p))
 
-        out_features = sum(mlvl_feats)
-        out = self.conv_pred(out_features)
-        outs = [out]
-        if self.num_aux_convs > 0:
-            for conv in self.aux_convs:
-                outs.append(conv(out_features))
-        return outs
+        feats = sum(mlvl_feats)
+        return feats
