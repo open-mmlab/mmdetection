@@ -33,6 +33,7 @@ from .retina_sepbn_head import RetinaSepBNHead
 from .rpn_head import RPNHead
 from .sabl_retina_head import SABLRetinaHead
 from .solo_head import DecoupledSOLOHead, DecoupledSOLOLightHead, SOLOHead
+from .solov2_head import SOLOV2Head
 from .ssd_head import SSDHead
 from .tood_head import TOODHead
 from .vfnet_head import VFNetHead
@@ -53,5 +54,5 @@ __all__ = [
     'AutoAssignHead', 'DETRHead', 'YOLOFHead', 'DeformableDETRHead',
     'SOLOHead', 'DecoupledSOLOHead', 'CenterNetHead', 'YOLOXHead',
     'DecoupledSOLOLightHead', 'LADHead', 'TOODHead', 'MaskFormerHead',
-    'DDODHead', 'Mask2FormerHead'
+    'Mask2FormerHead', 'SOLOV2Head', 'DDODHead'
 ]
