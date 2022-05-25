@@ -156,6 +156,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="configs/solo">SOLO (ECCV'2020)</a></li>
           <li><a href="configs/point_rend">PointRend (CVPR'2020)</a></li>
           <li><a href="configs/detectors">DetectoRS (ArXiv'2020)</a></li>
+          <li><a href="configs/solov2">SOLOv2 (NeurIPS'2020)</a></li>
           <li><a href="configs/scnet">SCNet (AAAI'2021)</a></li>
           <li><a href="configs/queryinst">QueryInst (ICCV'2021)</a></li>
         </ul>
