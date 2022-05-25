@@ -579,7 +579,7 @@ class FilterAnnotations:
         by_box (bool): Filter instances with bounding boxes not meeting the
             min_gt_bbox_wh threshold. Default: True
         by_mask (bool): Filter instances with masks not meeting
-        min_gt_mask_area threshold. Default: False
+            min_gt_mask_area threshold. Default: False
         keep_empty (bool): Whether to return None when it
             becomes an empty bbox after filtering. Default: True
     """
