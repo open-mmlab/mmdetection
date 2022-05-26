@@ -55,5 +55,6 @@ class PseudoSampler(BaseSampler):
             priors=priors,
             gt_bboxes=gt_bboxes,
             assign_result=assign_result,
-            gt_flags=gt_flags)
+            gt_flags=gt_flags,
+            avg_factor_with_neg=False)
         return sampling_result

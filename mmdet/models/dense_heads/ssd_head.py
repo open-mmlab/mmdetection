@@ -218,7 +218,7 @@ class SSDHead(AnchorHead):
         return cls_scores, bbox_preds
 
     def loss_single(self, cls_score, bbox_pred, anchor, labels, label_weights,
-                    bbox_targets, bbox_weights, num_total_samples):
+                    bbox_targets, bbox_weights, avg_factor):
         """Compute loss of a single image.
 
         Args:
@@ -236,9 +236,11 @@ class SSDHead(AnchorHead):
                 weight shape (num_total_anchors, 4).
             bbox_weights (Tensor): BBox regression loss weights of each anchor
                 with shape (num_total_anchors, 4).
-            num_total_samples (int): If sampling, num total samples equal to
-                the number of total anchors; Otherwise, it is the number of
-                positive anchors.
+            avg_factor (int): Average factor that is used to average
+                the loss. When using sampling method, avg_factor is usually
+                the sum of positive and negative priors. When using
+                `PseudoSampler`, `avg_factor` is usually equal to the number
+                of positive priors.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -259,7 +261,7 @@ class SSDHead(AnchorHead):
         topk_loss_cls_neg, _ = loss_cls_all[neg_inds].topk(num_neg_samples)
         loss_cls_pos = loss_cls_all[pos_inds].sum()
         loss_cls_neg = topk_loss_cls_neg.sum()
-        loss_cls = (loss_cls_pos + loss_cls_neg) / num_total_samples
+        loss_cls = (loss_cls_pos + loss_cls_neg) / avg_factor
 
         if self.reg_decoded_bbox:
             # When the regression loss (e.g. `IouLoss`, `GIouLoss`)
@@ -272,7 +274,7 @@ class SSDHead(AnchorHead):
             bbox_targets,
             bbox_weights,
             beta=self.train_cfg.smoothl1_beta,
-            avg_factor=num_total_samples)
+            avg_factor=avg_factor)
         return loss_cls[None], loss_bbox
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
@@ -320,7 +322,7 @@ class SSDHead(AnchorHead):
         if cls_reg_targets is None:
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
-         num_total_pos, num_total_neg) = cls_reg_targets
+         avg_factor) = cls_reg_targets
 
         num_images = len(batch_img_metas)
         all_cls_scores = torch.cat([
@@ -353,5 +355,5 @@ class SSDHead(AnchorHead):
             all_label_weights,
             all_bbox_targets,
             all_bbox_weights,
-            num_total_samples=num_total_pos)
+            avg_factor=avg_factor)
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)

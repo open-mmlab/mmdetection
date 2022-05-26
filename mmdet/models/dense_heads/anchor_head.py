@@ -9,8 +9,8 @@ from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import (AnchorGenerator, anchor_inside_flags, images_to_levels,
-                        multi_apply, unmap)
+from mmdet.core import (AnchorGenerator, PseudoSampler, anchor_inside_flags,
+                        images_to_levels, multi_apply, unmap)
 from mmdet.registry import MODELS, TASK_UTILS
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -86,27 +86,12 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         self.test_cfg = test_cfg
         if self.train_cfg:
             self.assigner = TASK_UTILS.build(self.train_cfg.assigner)
-            if hasattr(self.train_cfg,
-                       'sampler') and self.train_cfg.sampler.type.split(
-                           '.')[-1] != 'PseudoSampler':
-                self.sampling = True
-                sampler_cfg = self.train_cfg.sampler
-                # avoid BC-breaking
-                if loss_cls['type'] in [
-                        'FocalLoss', 'GHMC', 'QualityFocalLoss'
-                ]:
-                    warnings.warn(
-                        'DeprecationWarning: Determining whether to sampling'
-                        'by loss type is deprecated, please delete sampler in'
-                        'your config when using `FocalLoss`, `GHMC`, '
-                        '`QualityFocalLoss` or other FocalLoss variant.')
-                    self.sampling = False
-                    sampler_cfg = dict(type='PseudoSampler')
+            if train_cfg.get('sampler', None) is not None:
+                self.sampler = TASK_UTILS.build(
+                    self.train_cfg.sampler, default_args=dict(context=self))
             else:
-                self.sampling = False
-                sampler_cfg = dict(type='PseudoSampler')
-            self.sampler = TASK_UTILS.build(
-                sampler_cfg, default_args=dict(context=self))
+                self.sampler = PseudoSampler(context=self)
+
         self.fp16_enabled = False
 
         self.prior_generator = TASK_UTILS.build(anchor_generator)
@@ -352,10 +337,11 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                   level.
                 - bbox_targets_list (list[Tensor]): BBox targets of each level.
                 - bbox_weights_list (list[Tensor]): BBox weights of each level.
-                - num_total_pos (int): Number of positive samples in all
-                  images.
-                - num_total_neg (int): Number of negative samples in all
-                  images.
+                - avg_factor (int): Average factor that is used to average
+                  the loss. When using sampling method, avg_factor is usually
+                  the sum of positive and negative priors. When using
+                  `PseudoSampler`, `avg_factor` is usually equal to the number
+                  of positive priors.
 
             additional_returns: This function enables user-defined returns from
                 `self._get_targets_single`. These returns are currently refined
@@ -393,9 +379,12 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         # no valid anchors
         if any([labels is None for labels in all_labels]):
             return None
-        # sampled anchors of all images
-        num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
-        num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
+        # Get `avg_factor` of all images, which calculate in `SamplingResult`.
+        # When using sampling method, avg_factor is usually the sum of
+        # positive and negative priors. When using `PseudoSampler`,
+        # `avg_factor` is usually equal to the number of positive priors.
+        avg_factor = sum(
+            [results.avg_factor for results in sampling_results_list])
         # split targets to a list w.r.t. multiple levels
         labels_list = images_to_levels(all_labels, num_level_anchors)
         label_weights_list = images_to_levels(all_label_weights,
@@ -405,7 +394,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         bbox_weights_list = images_to_levels(all_bbox_weights,
                                              num_level_anchors)
         res = (labels_list, label_weights_list, bbox_targets_list,
-               bbox_weights_list, num_total_pos, num_total_neg)
+               bbox_weights_list, avg_factor)
         if return_sampling_results:
             res = res + (sampling_results_list, )
         for i, r in enumerate(rest_results):  # user-added return values
@@ -416,7 +405,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
     def loss_single(self, cls_score: Tensor, bbox_pred: Tensor,
                     anchors: Tensor, labels: Tensor, label_weights: Tensor,
                     bbox_targets: Tensor, bbox_weights: Tensor,
-                    num_total_samples: int) -> tuple:
+                    avg_factor: int) -> tuple:
         """Compute loss of a single scale level.
 
         Args:
@@ -434,9 +423,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 weight shape (N, num_total_anchors, 4).
             bbox_weights (Tensor): BBox regression loss weights of each anchor
                 with shape (N, num_total_anchors, 4).
-            num_total_samples (int): If sampling, num total samples equal to
-                the number of total anchors; Otherwise, it is the number of
-                positive anchors.
+            avg_factor (int): Average factor that is used to average the loss.
 
         Returns:
             tuple: loss components.
@@ -447,7 +434,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         cls_score = cls_score.permute(0, 2, 3,
                                       1).reshape(-1, self.cls_out_channels)
         loss_cls = self.loss_cls(
-            cls_score, labels, label_weights, avg_factor=num_total_samples)
+            cls_score, labels, label_weights, avg_factor=avg_factor)
         # regression loss
         bbox_targets = bbox_targets.reshape(-1, 4)
         bbox_weights = bbox_weights.reshape(-1, 4)
@@ -459,10 +446,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             anchors = anchors.reshape(-1, 4)
             bbox_pred = self.bbox_coder.decode(anchors, bbox_pred)
         loss_bbox = self.loss_bbox(
-            bbox_pred,
-            bbox_targets,
-            bbox_weights,
-            avg_factor=num_total_samples)
+            bbox_pred, bbox_targets, bbox_weights, avg_factor=avg_factor)
         return loss_cls, loss_bbox
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
@@ -510,10 +494,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         if cls_reg_targets is None:
             raise ValueError('`cls_reg_targets` cannot be None.')
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
-         num_total_pos, num_total_neg) = cls_reg_targets
-        # TODO: Considering put this in sampler?
-        num_total_samples = (
-            num_total_pos + num_total_neg if self.sampling else num_total_pos)
+         avg_factor) = cls_reg_targets
 
         # anchor number of multi levels
         num_level_anchors = [anchors.size(0) for anchors in anchor_list[0]]
@@ -533,5 +514,5 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             label_weights_list,
             bbox_targets_list,
             bbox_weights_list,
-            num_total_samples=num_total_samples)
+            avg_factor=avg_factor)
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
