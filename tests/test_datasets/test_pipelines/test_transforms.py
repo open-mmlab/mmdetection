@@ -8,11 +8,12 @@ import numpy as np
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.core.mask import BitmapMasks
-from mmdet.datasets.pipelines import (Expand, MinIoURandomCrop, MixUp, Mosaic,
-                                      Pad, PhotoMetricDistortion, RandomAffine,
+from mmdet.datasets.pipelines import (CopyPaste, CutOut, Expand,
+                                      MinIoURandomCrop, MixUp, Mosaic, Pad,
+                                      PhotoMetricDistortion, RandomAffine,
                                       RandomCrop, RandomFlip, Resize,
                                       SegRescale, YOLOXHSVRandomAug)
-from .utils import create_random_bboxes
+from .utils import create_full_masks, create_random_bboxes
 
 
 class TestResize(unittest.TestCase):
@@ -446,6 +447,68 @@ class TestRandomCrop(unittest.TestCase):
             f'bbox_clip_border={bbox_clip_border})')
 
 
+class TestCutOut(unittest.TestCase):
+
+    def setUp(self):
+        """Setup the model and optimizer which are used in every test method.
+
+        TestCase calls functions in this order: setUp() -> testMethod() ->
+        tearDown() -> cleanUp()
+        """
+        img = mmcv.imread(
+            osp.join(osp.dirname(__file__), '../../data/color.jpg'), 'color')
+        self.results = {'img': img}
+
+    def test_transform(self):
+        # test n_holes
+        with self.assertRaises(AssertionError):
+            transform = CutOut(n_holes=(5, 3), cutout_shape=(8, 8))
+        with self.assertRaises(AssertionError):
+            transform = CutOut(n_holes=(3, 4, 5), cutout_shape=(8, 8))
+
+        # test cutout_shape and cutout_ratio
+        with self.assertRaises(AssertionError):
+            transform = CutOut(n_holes=1, cutout_shape=8)
+        with self.assertRaises(AssertionError):
+            transform = CutOut(n_holes=1, cutout_ratio=0.2)
+
+        # either of cutout_shape and cutout_ratio should be given
+        with self.assertRaises(AssertionError):
+            transform = CutOut(n_holes=1)
+        with self.assertRaises(AssertionError):
+            transform = CutOut(
+                n_holes=1, cutout_shape=(2, 2), cutout_ratio=(0.4, 0.4))
+
+        transform = CutOut(n_holes=1, cutout_shape=(10, 10))
+        results = transform(copy.deepcopy(self.results))
+        self.assertTrue(results['img'].sum() < self.results['img'].sum())
+
+        transform = CutOut(
+            n_holes=(2, 4),
+            cutout_shape=[(10, 10), (15, 15)],
+            fill_in=(255, 255, 255))
+        results = transform(copy.deepcopy(self.results))
+        self.assertTrue(results['img'].sum() > self.results['img'].sum())
+
+        transform = CutOut(
+            n_holes=1, cutout_ratio=(0.8, 0.8), fill_in=(255, 255, 255))
+        results = transform(copy.deepcopy(self.results))
+        self.assertTrue(results['img'].sum() > self.results['img'].sum())
+
+    def test_repr(self):
+        transform = CutOut(n_holes=1, cutout_shape=(10, 10))
+        self.assertEqual(
+            repr(transform), ('CutOut(n_holes=(1, 1), '
+                              'cutout_shape=[(10, 10)], '
+                              'fill_in=(0, 0, 0))'))
+        transform = CutOut(
+            n_holes=1, cutout_ratio=(0.8, 0.8), fill_in=(255, 255, 255))
+        self.assertEqual(
+            repr(transform), ('CutOut(n_holes=(1, 1), '
+                              'cutout_ratio=[(0.8, 0.8)], '
+                              'fill_in=(255, 255, 255))'))
+
+
 class TestMosaic(unittest.TestCase):
 
     def setUp(self):
@@ -715,3 +778,111 @@ class TestYOLOXHSVRandomAug(unittest.TestCase):
             repr(transform), ('YOLOXHSVRandomAug(hue_delta=5, '
                               'saturation_delta=30, '
                               'value_delta=30)'))
+
+
+class TestCopyPaste(unittest.TestCase):
+
+    def setUp(self):
+        """Setup the model and optimizer which are used in every test method.
+
+        TestCase calls functions in this order: setUp() -> testMethod() ->
+        tearDown() -> cleanUp()
+        """
+        img = mmcv.imread(
+            osp.join(osp.dirname(__file__), '../../data/color.jpg'), 'color')
+        h, w, _ = img.shape
+        dst_bboxes = np.array([[0.2 * w, 0.2 * h, 0.4 * w, 0.4 * h],
+                               [0.5 * w, 0.5 * h, 0.6 * w, 0.6 * h]],
+                              dtype=np.float32)
+        src_bboxes = np.array([[0.1 * w, 0.1 * h, 0.3 * w, 0.5 * h],
+                               [0.4 * w, 0.4 * h, 0.7 * w, 0.7 * h],
+                               [0.8 * w, 0.8 * h, 0.9 * w, 0.9 * h]],
+                              dtype=np.float32)
+
+        self.dst_results = {
+            'img': img.copy(),
+            'gt_bboxes': dst_bboxes,
+            'gt_bboxes_labels': np.ones(dst_bboxes.shape[0], dtype=np.int64),
+            'gt_masks': create_full_masks(dst_bboxes, w, h),
+            'gt_ignore_flags': np.array([0, 1], dtype=np.bool8),
+        }
+        self.src_results = {
+            'img': img.copy(),
+            'gt_bboxes': src_bboxes,
+            'gt_bboxes_labels':
+            np.ones(src_bboxes.shape[0], dtype=np.int64) * 2,
+            'gt_masks': create_full_masks(src_bboxes, w, h),
+            'gt_ignore_flags': np.array([0, 0, 1], dtype=np.bool8),
+        }
+
+    def test_transform(self):
+        transform = CopyPaste(selected=False)
+        # test assertion for invalid mix_results
+        with self.assertRaises(AssertionError):
+            results = transform(copy.deepcopy(self.dst_results))
+
+        results = copy.deepcopy(self.dst_results)
+        results['mix_results'] = [copy.deepcopy(self.src_results)]
+        results = transform(results)
+
+        self.assertEqual(results['img'].shape[:2],
+                         self.dst_results['img'].shape[:2])
+
+        # one object of destination image is totally occluded
+        self.assertEqual(
+            results['gt_bboxes'].shape[0],
+            self.dst_results['gt_bboxes'].shape[0] +
+            self.src_results['gt_bboxes'].shape[0] - 1)
+        self.assertEqual(
+            results['gt_bboxes_labels'].shape[0],
+            self.dst_results['gt_bboxes_labels'].shape[0] +
+            self.src_results['gt_bboxes_labels'].shape[0] - 1)
+        self.assertEqual(
+            results['gt_masks'].masks.shape[0],
+            self.dst_results['gt_masks'].masks.shape[0] +
+            self.src_results['gt_masks'].masks.shape[0] - 1)
+        self.assertEqual(
+            results['gt_ignore_flags'].shape[0],
+            self.dst_results['gt_ignore_flags'].shape[0] +
+            self.src_results['gt_ignore_flags'].shape[0] - 1)
+
+        # the object of destination image is partially occluded
+        ori_bbox = self.dst_results['gt_bboxes'][0]
+        occ_bbox = results['gt_bboxes'][0]
+        ori_mask = self.dst_results['gt_masks'].masks[0]
+        occ_mask = results['gt_masks'].masks[0]
+        self.assertTrue(ori_mask.sum() > occ_mask.sum())
+        self.assertTrue(
+            np.all(np.abs(occ_bbox - ori_bbox) <= transform.bbox_occluded_thr)
+            or occ_mask.sum() > transform.mask_occluded_thr)
+
+        # test copypaste with selected objects
+        transform = CopyPaste()
+        results = copy.deepcopy(self.dst_results)
+        results['mix_results'] = [copy.deepcopy(self.src_results)]
+        results = transform(results)
+
+        # test copypaste with an empty source image
+        results = copy.deepcopy(self.dst_results)
+        valid_inds = [False] * self.src_results['gt_bboxes'].shape[0]
+        results['mix_results'] = [{
+            'img':
+            self.src_results['img'].copy(),
+            'gt_bboxes':
+            self.src_results['gt_bboxes'][valid_inds],
+            'gt_bboxes_labels':
+            self.src_results['gt_bboxes_labels'][valid_inds],
+            'gt_masks':
+            self.src_results['gt_masks'][valid_inds],
+            'gt_ignore_flags':
+            self.src_results['gt_ignore_flags'][valid_inds],
+        }]
+        results = transform(results)
+
+    def test_repr(self):
+        transform = CopyPaste()
+        self.assertEqual(
+            repr(transform), ('CopyPaste(max_num_pasted=100, '
+                              'bbox_occluded_thr=10, '
+                              'mask_occluded_thr=300, '
+                              'selected=True)'))

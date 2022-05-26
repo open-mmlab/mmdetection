@@ -2,7 +2,7 @@
 import copy
 import inspect
 import math
-from typing import Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import cv2
 import mmcv
@@ -1731,34 +1731,50 @@ class RandomCenterCropPad:
 
 
 @TRANSFORMS.register_module()
-class CutOut:
+class CutOut(BaseTransform):
     """CutOut operation.
 
     Randomly drop some regions of image used in
     `Cutout <https://arxiv.org/abs/1708.04552>`_.
 
+    Required Keys:
+
+    - img
+
+    Modified Keys:
+
+    - img
+
     Args:
-        n_holes (int | tuple[int, int]): Number of regions to be dropped.
+        n_holes (int or tuple[int, int]): Number of regions to be dropped.
             If it is given as a list, number of holes will be randomly
-            selected from the closed interval [`n_holes[0]`, `n_holes[1]`].
-        cutout_shape (tuple[int, int] | list[tuple[int, int]]): The candidate
-            shape of dropped regions. It can be `tuple[int, int]` to use a
-            fixed cutout shape, or `list[tuple[int, int]]` to randomly choose
-            shape from the list.
-        cutout_ratio (tuple[float, float] | list[tuple[float, float]]): The
-            candidate ratio of dropped regions. It can be `tuple[float, float]`
-            to use a fixed ratio or `list[tuple[float, float]]` to randomly
-            choose ratio from the list. Please note that `cutout_shape`
-            and `cutout_ratio` cannot be both given at the same time.
-        fill_in (tuple[float, float, float] | tuple[int, int, int]): The value
-            of pixel to fill in the dropped regions. Default: (0, 0, 0).
+            selected from the closed interval [``n_holes[0]``, ``n_holes[1]``].
+        cutout_shape (tuple[int, int] or list[tuple[int, int]], optional):
+            The candidate shape of dropped regions. It can be
+            ``tuple[int, int]`` to use a fixed cutout shape, or
+            ``list[tuple[int, int]]`` to randomly choose shape
+            from the list. Defaults to None.
+        cutout_ratio (tuple[float, float] or list[tuple[float, float]],
+            optional): The candidate ratio of dropped regions. It can be
+            ``tuple[float, float]`` to use a fixed ratio or
+            ``list[tuple[float, float]]`` to randomly choose ratio
+            from the list. Please note that ``cutout_shape`` and
+            ``cutout_ratio`` cannot be both given at the same time.
+            Defaults to None.
+        fill_in (tuple[float, float, float] or tuple[int, int, int]): The value
+            of pixel to fill in the dropped regions. Defaults to (0, 0, 0).
     """
 
-    def __init__(self,
-                 n_holes,
-                 cutout_shape=None,
-                 cutout_ratio=None,
-                 fill_in=(0, 0, 0)):
+    def __init__(
+        self,
+        n_holes: Union[int, Tuple[int, int]],
+        cutout_shape: Optional[Union[Tuple[int, int],
+                                     List[Tuple[int, int]]]] = None,
+        cutout_ratio: Optional[Union[Tuple[float, float],
+                                     List[Tuple[float, float]]]] = None,
+        fill_in: Union[Tuple[float, float, float], Tuple[int, int,
+                                                         int]] = (0, 0, 0)
+    ) -> None:
 
         assert (cutout_shape is None) ^ (cutout_ratio is None), \
             'Either cutout_shape or cutout_ratio should be specified.'
@@ -1775,7 +1791,7 @@ class CutOut:
         if not isinstance(self.candidates, list):
             self.candidates = [self.candidates]
 
-    def __call__(self, results):
+    def transform(self, results: dict) -> dict:
         """Call function to drop some regions of image."""
         h, w, c = results['img'].shape
         n_holes = np.random.randint(self.n_holes[0], self.n_holes[1] + 1)
@@ -2081,8 +2097,8 @@ class Mosaic(BaseTransform):
         return paste_coord, crop_coord
 
     def _filter_box_candidates(
-            self, bboxes: np.float32, labels: np.int64,
-            flags: np.bool) -> Tuple[np.float32, np.int64, np.bool]:
+            self, bboxes: np.ndarray, labels: np.ndarray,
+            flags: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Filter out bboxes too small after Mosaic."""
         bbox_w = bboxes[:, 2] - bboxes[:, 0]
         bbox_h = bboxes[:, 3] - bboxes[:, 1]
@@ -2201,6 +2217,7 @@ class MixUp(BaseTransform):
         self.bbox_clip_border = bbox_clip_border
         self.skip_filter = skip_filter
 
+    @cache_randomness
     def get_indexes(self, dataset: BaseDataset) -> int:
         """Call function to collect indexes.
 
@@ -2349,8 +2366,8 @@ class MixUp(BaseTransform):
 
         return results
 
-    def _filter_box_candidates(self, bbox1: np.float32,
-                               bbox2: np.float32) -> np.bool:
+    def _filter_box_candidates(self, bbox1: np.ndarray,
+                               bbox2: np.ndarray) -> np.ndarray:
         """Compute candidate boxes which include following 5 things:
 
         bbox1 before augment, bbox2 after augment, min_bbox_size (pixels),
@@ -2386,7 +2403,6 @@ class RandomAffine(BaseTransform):
 
     This operation randomly generates affine transform matrix which including
     rotation, translation, shear and scaling transforms.
-
 
     Required Keys:
 
@@ -2565,8 +2581,8 @@ class RandomAffine(BaseTransform):
                 raise NotImplementedError('RandomAffine only supports bbox.')
         return results
 
-    def filter_gt_bboxes(self, origin_bboxes: np.float32,
-                         wrapped_bboxes: np.float32) -> np.bool:
+    def filter_gt_bboxes(self, origin_bboxes: np.ndarray,
+                         wrapped_bboxes: np.ndarray) -> np.ndarray:
         origin_w = origin_bboxes[:, 2] - origin_bboxes[:, 0]
         origin_h = origin_bboxes[:, 3] - origin_bboxes[:, 1]
         wrapped_w = wrapped_bboxes[:, 2] - wrapped_bboxes[:, 0]
@@ -2597,7 +2613,7 @@ class RandomAffine(BaseTransform):
         return repr_str
 
     @staticmethod
-    def _get_rotation_matrix(rotate_degrees: float) -> np.float32:
+    def _get_rotation_matrix(rotate_degrees: float) -> np.ndarray:
         radian = math.radians(rotate_degrees)
         rotation_matrix = np.array(
             [[np.cos(radian), -np.sin(radian), 0.],
@@ -2606,14 +2622,14 @@ class RandomAffine(BaseTransform):
         return rotation_matrix
 
     @staticmethod
-    def _get_scaling_matrix(scale_ratio: float) -> np.float32:
+    def _get_scaling_matrix(scale_ratio: float) -> np.ndarray:
         scaling_matrix = np.array(
             [[scale_ratio, 0., 0.], [0., scale_ratio, 0.], [0., 0., 1.]],
             dtype=np.float32)
         return scaling_matrix
 
     @staticmethod
-    def _get_share_matrix(scale_ratio: float) -> np.float32:
+    def _get_share_matrix(scale_ratio: float) -> np.ndarray:
         scaling_matrix = np.array(
             [[scale_ratio, 0., 0.], [0., scale_ratio, 0.], [0., 0., 1.]],
             dtype=np.float32)
@@ -2621,7 +2637,7 @@ class RandomAffine(BaseTransform):
 
     @staticmethod
     def _get_shear_matrix(x_shear_degrees: float,
-                          y_shear_degrees: float) -> np.float32:
+                          y_shear_degrees: float) -> np.ndarray:
         x_radian = math.radians(x_shear_degrees)
         y_radian = math.radians(y_shear_degrees)
         shear_matrix = np.array([[1, np.tan(x_radian), 0.],
@@ -2630,7 +2646,7 @@ class RandomAffine(BaseTransform):
         return shear_matrix
 
     @staticmethod
-    def _get_translation_matrix(x: float, y: float) -> np.float32:
+    def _get_translation_matrix(x: float, y: float) -> np.ndarray:
         translation_matrix = np.array([[1, 0., x], [0., 1, y], [0., 0., 1.]],
                                       dtype=np.float32)
         return translation_matrix
@@ -2697,7 +2713,7 @@ class YOLOXHSVRandomAug(BaseTransform):
 
 
 @TRANSFORMS.register_module()
-class CopyPaste:
+class CopyPaste(BaseTransform):
     """Simple Copy-Paste is a Strong Data Augmentation Method for Instance
     Segmentation The simple copy-paste transform steps are as follows:
 
@@ -2716,32 +2732,49 @@ class CopyPaste:
        which are partly occluded.
     7. Append selected source bboxes, masks, and labels.
 
+    Required Keys:
+
+    - img
+    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes_labels (np.int64) (optional)
+    - gt_ignore_flags (np.bool) (optional)
+    - gt_masks (BitmapMasks) (optional)
+
+    Modified Keys:
+
+    - img
+    - gt_bboxes (optional)
+    - gt_bboxes_labels (optional)
+    - gt_ignore_flags (optional)
+    - gt_masks (optional)
+
     Args:
         max_num_pasted (int): The maximum number of pasted objects.
-            Default: 100.
+            Defaults to 100.
         bbox_occluded_thr (int): The threshold of occluded bbox.
-            Default: 10.
+            Defaults to 10.
         mask_occluded_thr (int): The threshold of occluded mask.
-            Default: 300.
+            Defaults to 300.
         selected (bool): Whether select objects or not. If select is False,
             all objects of the source image will be pasted to the
             destination image.
-            Default: True.
+            Defaults to True.
     """
 
     def __init__(
         self,
-        max_num_pasted=100,
-        bbox_occluded_thr=10,
-        mask_occluded_thr=300,
-        selected=True,
-    ):
+        max_num_pasted: int = 100,
+        bbox_occluded_thr: int = 10,
+        mask_occluded_thr: int = 300,
+        selected: bool = True,
+    ) -> None:
         self.max_num_pasted = max_num_pasted
         self.bbox_occluded_thr = bbox_occluded_thr
         self.mask_occluded_thr = mask_occluded_thr
         self.selected = selected
 
-    def get_indexes(self, dataset):
+    @cache_randomness
+    def get_indexes(self, dataset: BaseDataset) -> int:
         """Call function to collect indexes.s.
 
         Args:
@@ -2751,8 +2784,8 @@ class CopyPaste:
         """
         return random.randint(0, len(dataset))
 
-    def __call__(self, results):
-        """Call function to make a copy-paste of image.
+    def transform(self, results: dict) -> dict:
+        """Transform function to make a copy-paste of image.
 
         Args:
             results (dict): Result dict.
@@ -2770,26 +2803,33 @@ class CopyPaste:
             selected_results = results['mix_results'][0]
         return self._copy_paste(results, selected_results)
 
-    def _select_object(self, results):
+    @cache_randomness
+    def _get_selected_inds(self, num_bboxes: int) -> np.array:
+        max_num_pasted = min(num_bboxes + 1, self.max_num_pasted)
+        num_pasted = np.random.randint(0, max_num_pasted)
+        return np.random.choice(num_bboxes, size=num_pasted, replace=False)
+
+    def _select_object(self, results: dict) -> dict:
         """Select some objects from the source results."""
         bboxes = results['gt_bboxes']
-        labels = results['gt_labels']
+        labels = results['gt_bboxes_labels']
         masks = results['gt_masks']
-        max_num_pasted = min(bboxes.shape[0] + 1, self.max_num_pasted)
-        num_pasted = np.random.randint(0, max_num_pasted)
-        selected_inds = np.random.choice(
-            bboxes.shape[0], size=num_pasted, replace=False)
+        ignore_flags = results['gt_ignore_flags']
+
+        selected_inds = self._get_selected_inds(bboxes.shape[0])
 
         selected_bboxes = bboxes[selected_inds]
         selected_labels = labels[selected_inds]
         selected_masks = masks[selected_inds]
+        selected_ignore_flags = ignore_flags[selected_inds]
 
         results['gt_bboxes'] = selected_bboxes
-        results['gt_labels'] = selected_labels
+        results['gt_bboxes_labels'] = selected_labels
         results['gt_masks'] = selected_masks
+        results['gt_ignore_flags'] = selected_ignore_flags
         return results
 
-    def _copy_paste(self, dst_results, src_results):
+    def _copy_paste(self, dst_results: dict, src_results: dict) -> dict:
         """CopyPaste transform function.
 
         Args:
@@ -2800,20 +2840,22 @@ class CopyPaste:
         """
         dst_img = dst_results['img']
         dst_bboxes = dst_results['gt_bboxes']
-        dst_labels = dst_results['gt_labels']
+        dst_labels = dst_results['gt_bboxes_labels']
         dst_masks = dst_results['gt_masks']
+        dst_ignore_flags = dst_results['gt_ignore_flags']
 
         src_img = src_results['img']
         src_bboxes = src_results['gt_bboxes']
-        src_labels = src_results['gt_labels']
+        src_labels = src_results['gt_bboxes_labels']
         src_masks = src_results['gt_masks']
+        src_ignore_flags = src_results['gt_ignore_flags']
 
         if len(src_bboxes) == 0:
             return dst_results
 
         # update masks and generate bboxes from updated masks
         composed_mask = np.where(np.any(src_masks.masks, axis=0), 1, 0)
-        updated_dst_masks = self.get_updated_masks(dst_masks, composed_mask)
+        updated_dst_masks = self._get_updated_masks(dst_masks, composed_mask)
         updated_dst_bboxes = updated_dst_masks.get_bboxes()
         assert len(updated_dst_bboxes) == len(updated_dst_masks)
 
@@ -2833,16 +2875,21 @@ class CopyPaste:
         labels = np.concatenate([dst_labels[valid_inds], src_labels])
         masks = np.concatenate(
             [updated_dst_masks.masks[valid_inds], src_masks.masks])
+        ignore_flags = np.concatenate(
+            [dst_ignore_flags[valid_inds], src_ignore_flags])
 
         dst_results['img'] = img
         dst_results['gt_bboxes'] = bboxes
-        dst_results['gt_labels'] = labels
+        dst_results['gt_bboxes_labels'] = labels
         dst_results['gt_masks'] = BitmapMasks(masks, masks.shape[1],
                                               masks.shape[2])
+        dst_results['gt_ignore_flags'] = ignore_flags
 
         return dst_results
 
-    def get_updated_masks(self, masks, composed_mask):
+    def _get_updated_masks(self, masks: BitmapMasks,
+                           composed_mask: np.ndarray) -> BitmapMasks:
+        """Update masks with composed mask."""
         assert masks.masks.shape[-2:] == composed_mask.shape[-2:], \
             'Cannot compare two arrays of different size'
         masks.masks = np.where(composed_mask, 0, masks.masks)
@@ -2850,8 +2897,8 @@ class CopyPaste:
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += f'max_num_pasted={self.max_num_pasted}, '
+        repr_str += f'(max_num_pasted={self.max_num_pasted}, '
         repr_str += f'bbox_occluded_thr={self.bbox_occluded_thr}, '
         repr_str += f'mask_occluded_thr={self.mask_occluded_thr}, '
-        repr_str += f'selected={self.selected}, '
+        repr_str += f'selected={self.selected})'
         return repr_str
