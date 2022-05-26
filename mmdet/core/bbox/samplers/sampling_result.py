@@ -19,6 +19,9 @@ class SamplingResult(util_mixins.NiceRepr):
         gt_bboxes (Tensor): Ground truth of bboxes.
         assign_result (:obj:`AssignResult`): Assigning results.
         gt_flags (Tensor): The Ground truth flags.
+        avg_factor_with_neg (bool):  If True, ``avg_factor`` equal to
+            the number of total priors; Otherwise, it is the number of
+            positive priors. Defaults to True.
 
     Example:
         >>> # xdoctest: +IGNORE_WANT
@@ -26,21 +29,34 @@ class SamplingResult(util_mixins.NiceRepr):
         >>> self = SamplingResult.random(rng=10)
         >>> print(f'self = {self}')
         self = <SamplingResult({
+            'neg_inds': tensor([1,  2,  3,  5,  6,  7,  8,
+                                9, 10, 11, 12, 13]),
             'neg_priors': torch.Size([12, 4]),
-            'neg_inds': tensor([ 0,  1,  2,  4,  5,  6,  7,  8,  9, 10, 11, 12]),
-            'num_gts': 4,
-            'pos_assigned_gt_inds': tensor([], dtype=torch.int64),
-            'pos_priors': torch.Size([0, 4]),
-            'pos_inds': tensor([], dtype=torch.int64),
-            'pos_is_gt': tensor([], dtype=torch.uint8)
+            'num_gts': 1,
+            'num_neg': 12,
+            'num_pos': 1,
+            'avg_factor': 13,
+            'pos_assigned_gt_inds': tensor([0]),
+            'pos_inds': tensor([0]),
+            'pos_is_gt': tensor([1], dtype=torch.uint8),
+            'pos_priors': torch.Size([1, 4])
         })>
     """
 
-    def __init__(self, pos_inds: Tensor, neg_inds: Tensor, priors: Tensor,
-                 gt_bboxes: Tensor, assign_result: AssignResult,
-                 gt_flags: Tensor) -> None:
+    def __init__(self,
+                 pos_inds: Tensor,
+                 neg_inds: Tensor,
+                 priors: Tensor,
+                 gt_bboxes: Tensor,
+                 assign_result: AssignResult,
+                 gt_flags: Tensor,
+                 avg_factor_with_neg: bool = True) -> None:
         self.pos_inds = pos_inds
         self.neg_inds = neg_inds
+        self.num_pos = max(pos_inds.numel(), 1)
+        self.num_neg = max(neg_inds.numel(), 1)
+        self.avg_factor = self.num_pos + self.num_neg \
+            if avg_factor_with_neg else self.num_pos
         self.pos_priors = priors[pos_inds]
         self.neg_priors = priors[neg_inds]
         self.pos_is_gt = gt_flags[pos_inds]
@@ -58,9 +74,16 @@ class SamplingResult(util_mixins.NiceRepr):
             self.pos_gt_bboxes = gt_bboxes[self.pos_assigned_gt_inds.long(), :]
 
     @property
+    def priors(self):
+        """torch.Tensor: concatenated positive and negative priors"""
+        return torch.cat([self.pos_priors, self.neg_priors])
+
+    @property
     def bboxes(self):
         """torch.Tensor: concatenated positive and negative boxes"""
-        return torch.cat([self.pos_priors, self.neg_priors])
+        warnings.warn('DeprecationWarning: bboxes is deprecated, '
+                      'please use "priors" instead')
+        return self.priors
 
     @property
     def pos_bboxes(self):
@@ -108,6 +131,9 @@ class SamplingResult(util_mixins.NiceRepr):
             'pos_is_gt': self.pos_is_gt,
             'num_gts': self.num_gts,
             'pos_assigned_gt_inds': self.pos_assigned_gt_inds,
+            'num_pos': self.num_pos,
+            'num_neg': self.num_neg,
+            'avg_factor': self.avg_factor
         }
 
     @classmethod
@@ -148,13 +174,9 @@ class SamplingResult(util_mixins.NiceRepr):
         # Note we could just compute an assignment
         priors = demodata.random_boxes(assign_result.num_preds, rng=rng)
         gt_bboxes = demodata.random_boxes(assign_result.num_gts, rng=rng)
-
-        if rng.rand() > 0.2:
-            # sometimes algorithms squeeze their data, be robust to that
-            gt_bboxes = gt_bboxes.squeeze()
-            priors = priors.squeeze()
         gt_labels = torch.randint(
             0, 5, (assign_result.num_gts, ), dtype=torch.long)
+
         pred_instances = InstanceData()
         pred_instances.priors = priors
 

@@ -86,7 +86,7 @@ class PISASSDHead(SSDHead):
         if cls_reg_targets is None:
             return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
-         num_total_pos, num_total_neg, sampling_results_list) = cls_reg_targets
+         avg_factor, sampling_results_list) = cls_reg_targets
 
         num_images = len(batch_img_metas)
         all_cls_scores = torch.cat([
@@ -143,7 +143,7 @@ class PISASSDHead(SSDHead):
                 all_targets[2],
                 SmoothL1Loss(beta=1.),
                 **self.train_cfg.carl,
-                avg_factor=num_total_pos,
+                avg_factor=avg_factor,
                 num_class=self.num_classes)
 
         # check NaN and Inf
@@ -161,7 +161,7 @@ class PISASSDHead(SSDHead):
             all_label_weights,
             all_bbox_targets,
             all_bbox_weights,
-            num_total_samples=num_total_pos)
+            avg_factor=avg_factor)
         loss_dict = dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
         if carl_loss_cfg is not None:
             loss_dict.update(loss_carl)
