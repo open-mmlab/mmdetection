@@ -813,7 +813,7 @@ def test_maskformer_forward():
 
 @pytest.mark.parametrize('cfg_file', [
     'mask2former/mask2former_r50_lsj_8x2_50e_coco.py',
-    'mask2former/mask2former_r50_lsj_8x2_50e_coco_ins.py'
+    'mask2former/mask2former_r50_lsj_8x2_50e_coco-panoptic.py'
 ])
 def test_mask2former_forward(cfg_file):
     # Test Panoptic Segmentation and Instance Segmentation
