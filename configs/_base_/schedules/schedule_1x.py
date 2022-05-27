@@ -10,4 +10,4 @@ lr_config = dict(
     step=[8, 11])
 runner = dict(type='EpochBasedRunner', max_epochs=12)
 
-evaluation = dict(interval=1, metric='bbox',save_best='bbox_mAP')
+# evaluation = dict(interval=1, metric='bbox',save_best='bbox_mAP')

@@ -167,7 +167,7 @@ class CARAFE(nn.Module):
         # W = F.softmax(W, dim=1)  # b * 25 * h_ * w_
 
         X = self.feature_reassemble(X)
-        X = self.unfold(X).contiguous()  # b * c * h_ * w_ -> b * 25c * h_ * w_
+        X = self.unfold(X).contiguous()  # b * 25c * h_ * w_
         X = X.view(b, c, -1, h_, w_).contiguous()  # b * c * 25 * h_ * w_
 
         X = torch.einsum('bkhw,bckhw->bchw', [W, X])  # b * c * h_ * w_
