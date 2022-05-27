@@ -74,11 +74,38 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-**2.24.1** was released in 30/4/2022:
+**2.25.0** was released in ???/5/2022:
 
-- Support [Simple Copy Paste](configs/simple_copy_paste)
-- Support automatically scaling LR according to GPU number and samples per GPU
-- Support Class Aware Sampler that improves performance on OpenImages Dataset
+- Support [ConvNeXt](configs/convnext)
+
+- Support [DDOD](configs/ddod)
+
+- Support [SOLOv2](configs/solov2)
+
+- Support [Mask2Former](configs/mask2former) for instance segmentation
+
+- Rename [config files of Mask2Former](configs/mask2former) (#7571)
+
+  <table align="center">
+    <thead>
+        <tr align='center'>
+            <td>before v2.25.0</td>
+            <td>after v2.25.0</td>
+        </tr>
+    </thead>
+    <tbody><tr valign='top'>
+    <th>
+
+  - `mask2former_xxx_coco.py` represents config files for **panoptic segmentation**.
+
+  </th>
+    <th>
+
+  - `mask2former_xxx_coco.py` represents config files for **instance segmentation**.
+  - `mask2former_xxx_coco-panoptic.py` represents config files for **panoptic segmentation**.
+
+  </th></tr>
+  </tbody></table>
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 
@@ -144,6 +171,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/yolox">YOLOX (CVPR'2021)</a></li>
             <li><a href="configs/deformable_detr">Deformable DETR (ICLR'2021)</a></li>
             <li><a href="configs/tood">TOOD (ICCV'2021)</a></li>
+            <li><a href="configs/ddod">DDOD (MM'2021)</a></li>
       </ul>
       </td>
       <td>
@@ -160,6 +188,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="configs/solov2">SOLOv2 (NeurIPS'2020)</a></li>
           <li><a href="configs/scnet">SCNet (AAAI'2021)</a></li>
           <li><a href="configs/queryinst">QueryInst (ICCV'2021)</a></li>
+          <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
         </ul>
       </td>
       <td>

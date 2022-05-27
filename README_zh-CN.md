@@ -73,11 +73,32 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 更新日志
 
-最新的 **2.24.1** 版本已经在 2022.04.30 发布:
+最新的 **2.25.0** 版本已经在 2022.05.??? 发布:
 
-- 支持算法 [Simple Copy Paste](configs/simple_copy_paste)
-- 支持训练时根据总 batch 数自动缩放学习率
-- 支持类别可知的采样器来提高算法在 OpenImages 数据集上的性能
+- 支持算法 [ConvNeXt](configs/convnext), [DDOD](configs/ddod), [SOLOv2](configs/solov2) 和 [Mask2Former](configs/mask2former) 实例分割
+
+- 为了加入 Mask2Former 实例分割的模型，对 Mask2Former 原有的全景分割的配置文件进行了重命名
+
+  <table align="center">
+    <thead>
+        <tr align='center'>
+            <td>在 v2.25.0 之前</td>
+            <td>v2.25.0 及之后</td>
+        </tr>
+    </thead>
+    <tbody><tr valign='top'>
+    <th>
+
+  mask2former_xxx_coco.py 代表全景分割的配置文件
+
+  </th>
+    <th>
+
+  mask2former_xxx_coco.py 代表实例分割的配置文件
+  mask2former_xxx_coco-panoptic.py 代表全景分割的配置文件
+
+  </th></tr>
+  </tbody></table>
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/en/changelog.md)。
 
@@ -143,6 +164,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
             <li><a href="configs/yolox">YOLOX (CVPR'2021)</a></li>
             <li><a href="configs/deformable_detr">Deformable DETR (ICLR'2021)</a></li>
             <li><a href="configs/tood">TOOD (ICCV'2021)</a></li>
+            <li><a href="configs/ddod">DDOD (MM'2021)</a></li>
       </ul>
       </td>
       <td>
@@ -159,6 +181,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="configs/solov2">SOLOv2 (NeurIPS'2020)</a></li>
           <li><a href="configs/scnet">SCNet (AAAI'2021)</a></li>
           <li><a href="configs/queryinst">QueryInst (ICCV'2021)</a></li>
+          <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
         </ul>
       </td>
       <td>
