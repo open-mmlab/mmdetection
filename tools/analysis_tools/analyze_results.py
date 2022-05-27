@@ -344,7 +344,13 @@ def main():
     cfg.data.test.test_mode = True
 
     cfg.data.test.pop('samples_per_gpu', 0)
-    cfg.data.test.pipeline = get_loading_pipeline(cfg.data.train.pipeline)
+    if cfg.data.train.type in ('MultiImageMixDataset', 'ClassBalancedDataset',
+                               'RepeatDataset', 'ConcatDataset'):
+        cfg.data.test.pipeline = get_loading_pipeline(
+            cfg.data.train.dataset.pipeline)
+    else:
+        cfg.data.test.pipeline = get_loading_pipeline(cfg.data.train.pipeline)
+
     dataset = build_dataset(cfg.data.test)
     outputs = mmcv.load(args.prediction_path)
 
