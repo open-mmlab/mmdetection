@@ -1,30 +1,16 @@
-_base_ = ['./mask2former_r50_lsj_8x2_50e_coco.py']
-pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_tiny_patch4_window7_224.pth'  # noqa
-depths = [2, 2, 6, 2]
+_base_ = ['./mask2former_swin-t-p4-w7-224_lsj_8x2_50e_coco-panoptic.py']
+pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_base_patch4_window12_384.pth'  # noqa
+
+depths = [2, 2, 18, 2]
 model = dict(
-    type='Mask2Former',
     backbone=dict(
-        _delete_=True,
-        type='SwinTransformer',
-        embed_dims=96,
+        pretrain_img_size=384,
+        embed_dims=128,
         depths=depths,
-        num_heads=[3, 6, 12, 24],
-        window_size=7,
-        mlp_ratio=4,
-        qkv_bias=True,
-        qk_scale=None,
-        drop_rate=0.,
-        attn_drop_rate=0.,
-        drop_path_rate=0.3,
-        patch_norm=True,
-        out_indices=(0, 1, 2, 3),
-        with_cp=False,
-        convert_weights=True,
-        frozen_stages=-1,
+        num_heads=[4, 8, 16, 32],
+        window_size=12,
         init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
-    panoptic_head=dict(
-        type='Mask2FormerHead', in_channels=[96, 192, 384, 768]),
-    init_cfg=None)
+    panoptic_head=dict(in_channels=[128, 256, 512, 1024]))
 
 # set all layers in backbone to lr_mult=0.1
 # set all norm layers, position_embeding,
@@ -53,9 +39,4 @@ custom_keys.update({
 })
 # optimizer
 optimizer = dict(
-    type='AdamW',
-    lr=0.0001,
-    weight_decay=0.05,
-    eps=1e-8,
-    betas=(0.9, 0.999),
     paramwise_cfg=dict(custom_keys=custom_keys, norm_decay_mult=0.0))

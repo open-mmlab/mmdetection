@@ -12,10 +12,12 @@ def test_maskformer_head_loss():
     # batch_input_shape = (128, 160)
     img_metas = [{
         'batch_input_shape': (128, 160),
+        'pad_shape': (128, 160, 3),
         'img_shape': (126, 160, 3),
         'ori_shape': (63, 80, 3)
     }, {
         'batch_input_shape': (128, 160),
+        'pad_shape': (128, 160, 3),
         'img_shape': (120, 160, 3),
         'ori_shape': (60, 80, 3)
     }]

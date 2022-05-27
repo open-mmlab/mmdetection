@@ -811,9 +811,13 @@ def test_maskformer_forward():
         batch_results.append(result)
 
 
-def test_mask2former_forward():
-    model_cfg = _get_detector_cfg(
-        'mask2former/mask2former_r50_lsj_8x2_50e_coco.py')
+@pytest.mark.parametrize('cfg_file', [
+    'mask2former/mask2former_r50_lsj_8x2_50e_coco.py',
+    'mask2former/mask2former_r50_lsj_8x2_50e_coco-panoptic.py'
+])
+def test_mask2former_forward(cfg_file):
+    # Test Panoptic Segmentation and Instance Segmentation
+    model_cfg = _get_detector_cfg(cfg_file)
     base_channels = 32
     model_cfg.backbone.depth = 18
     model_cfg.backbone.init_cfg = None
@@ -842,9 +846,24 @@ def test_mask2former_forward():
     model_cfg.panoptic_head.transformer_decoder.\
         transformerlayers.feedforward_channels = base_channels * 8
 
+    num_stuff_classes = model_cfg.panoptic_head.num_stuff_classes
+
     from mmdet.core import BitmapMasks
     from mmdet.models import build_detector
     detector = build_detector(model_cfg)
+
+    def _forward_train():
+        losses = detector.forward(
+            img,
+            img_metas,
+            gt_bboxes=gt_bboxes,
+            gt_labels=gt_labels,
+            gt_masks=gt_masks,
+            gt_semantic_seg=gt_semantic_seg,
+            return_loss=True)
+        assert isinstance(losses, dict)
+        loss, _ = detector._parse_losses(losses)
+        assert float(loss.item()) > 0
 
     # Test forward train with non-empty truth batch
     detector.train()
@@ -872,17 +891,11 @@ def test_mask2former_forward():
     gt_semantic_seg = [
         stuff_mask1,
     ]
-    losses = detector.forward(
-        img=img,
-        img_metas=img_metas,
-        gt_bboxes=gt_bboxes,
-        gt_labels=gt_labels,
-        gt_masks=gt_masks,
-        gt_semantic_seg=gt_semantic_seg,
-        return_loss=True)
-    assert isinstance(losses, dict)
-    loss, _ = detector._parse_losses(losses)
-    assert float(loss.item()) > 0
+    _forward_train()
+
+    # Test forward train with non-empty truth batch and gt_semantic_seg=None
+    gt_semantic_seg = None
+    _forward_train()
 
     # Test forward train with an empty truth batch
     gt_bboxes = [
@@ -898,17 +911,11 @@ def test_mask2former_forward():
     gt_semantic_seg = [
         torch.randint(0, 133, (0, 128, 160)),
     ]
-    losses = detector.forward(
-        img,
-        img_metas,
-        gt_bboxes=gt_bboxes,
-        gt_labels=gt_labels,
-        gt_masks=gt_masks,
-        gt_semantic_seg=gt_semantic_seg,
-        return_loss=True)
-    assert isinstance(losses, dict)
-    loss, _ = detector._parse_losses(losses)
-    assert float(loss.item()) > 0
+    _forward_train()
+
+    # Test forward train with an empty truth batch and gt_semantic_seg=None
+    gt_semantic_seg = None
+    _forward_train()
 
     # Test forward test
     detector.eval()
@@ -919,4 +926,10 @@ def test_mask2former_forward():
             result = detector.forward([one_img], [[one_meta]],
                                       rescale=True,
                                       return_loss=False)
+
+            if num_stuff_classes > 0:
+                assert isinstance(result[0], dict)
+            else:
+                assert isinstance(result[0], tuple)
+
         batch_results.append(result)
