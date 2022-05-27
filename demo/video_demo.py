@@ -23,6 +23,16 @@ def parse_args():
         type=float,
         default=1,
         help='The interval of show (s), 0 is block')
+    parser.add_argument(
+        '--cat-id',
+        type=int,
+        default=0,
+        help='Category ID to visualise (0 => all)')
+    parser.add_argument(
+        '--single-inst',
+        action='store_true',
+        help=('For each category ID, only visualise the single maximum '
+              'scoring instance'))
     args = parser.parse_args()
     return args
 
@@ -45,6 +55,16 @@ def main():
 
     for frame in mmcv.track_iter_progress(video_reader):
         result = inference_detector(model, frame)
+        if args.cat_id > 0:
+            result = [
+                r if i + 1 == args.cat_id else r[:0, :]
+                for i, r in enumerate(result)
+            ]
+        if args.single_inst:
+            result = [
+                r if r.shape[0] <= 1 else r[r[:, -1].argmax(), None, :]
+                for r in result
+            ]
         frame = model.show_result(frame, result, score_thr=args.score_thr)
         if args.show:
             cv2.namedWindow('video', 0)
