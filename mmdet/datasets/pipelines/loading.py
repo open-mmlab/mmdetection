@@ -625,7 +625,7 @@ class FilterAnnotations:
         for t in tests[1:]:
             keep = keep & t
 
-        keys = ('gt_bboxes', 'gt_labels', 'gt_masks', 'gt_semantic_seg')
+        keys = ('gt_bboxes', 'gt_labels', 'gt_masks')
         for key in keys:
             if key in results:
                 results[key] = results[key][keep]
