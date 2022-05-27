@@ -15,15 +15,15 @@ Inorder to support Mask2Former for instance segmentation, the original config fi
     <th>
 
 ```
-- `mask2former_xxx_coco.py` represents config files for **panoptic segmentation**.
+'mask2former_xxx_coco.py' represents config files for **panoptic segmentation**.
 ```
 
 </th>
     <th>
 
 ```
-- `mask2former_xxx_coco.py` represents config files for **instance segmentation**.
-- `mask2former_xxx_coco-panoptic.py` represents config files for **panoptic segmentation**.
+'mask2former_xxx_coco.py' represents config files for **instance segmentation**.
+'mask2former_xxx_coco-panoptic.py' represents config files for **panoptic segmentation**.
 ```
 
 </th></tr>

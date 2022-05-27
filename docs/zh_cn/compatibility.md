@@ -15,15 +15,15 @@
     <th>
 
 ```
-mask2former_xxx_coco.py 代表全景分割的配置文件
+'mask2former_xxx_coco.py' 代表全景分割的配置文件
 ```
 
 </th>
     <th>
 
 ```
-mask2former_xxx_coco.py 代表实例分割的配置文件
-mask2former_xxx_coco-panoptic.py 代表全景分割的配置文件
+'mask2former_xxx_coco.py' 代表实例分割的配置文件
+'mask2former_xxx_coco-panoptic.py' 代表全景分割的配置文件
 ```
 
 </th></tr>

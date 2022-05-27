@@ -89,13 +89,13 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
     <tbody><tr valign='top'>
     <th>
 
-  mask2former_xxx_coco.py 代表全景分割的配置文件
+  'mask2former_xxx_coco.py' 代表全景分割的配置文件
 
   </th>
     <th>
 
-  mask2former_xxx_coco.py 代表实例分割的配置文件
-  mask2former_xxx_coco-panoptic.py 代表全景分割的配置文件
+  'mask2former_xxx_coco.py' 代表实例分割的配置文件
+  'mask2former_xxx_coco-panoptic.py' 代表全景分割的配置文件
 
   </th></tr>
   </tbody></table>
