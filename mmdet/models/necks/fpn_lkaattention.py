@@ -5,6 +5,8 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmcv.runner import BaseModule, auto_fp16
 from mmdet.models.utils import CARAFE
+from mmdet.models.utils.se_layer import SELayer
+from mmdet.models.utils.cbam import CBAM
 
 from mmdet.models.utils.lka_layer import AttentionModule
 
@@ -72,18 +74,26 @@ class lka_FPN(BaseModule):
                  add_extra_convs=False,
                  relu_before_extra_convs=False,
                  no_norm_on_lateral=False,
+                 with_aem = True,
                  with_bn_relu=True,
                  with_conv_sigmoid=True,
                  with_carafe=False,
+                 attention_type='lka',
                  with_ffm=True,
                  conv_cfg=None,
                  norm_cfg=None,
                  act_cfg=None,
+                 att_kernel_size=7,
+                 att_kernel_dilation=3,
                  upsample_cfg=dict(mode='nearest'),
                  init_cfg=dict(
                      type='Xavier', layer='Conv2d', distribution='uniform')):
         super(lka_FPN, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
+        assert attention_type in ('se_layer','cbam','lka')
+        assert attention_type == 'cbam' and (with_ffm == False and with_aem==False)
+
+        self.attention_type = attention_type
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.num_ins = len(in_channels)
@@ -117,7 +127,9 @@ class lka_FPN(BaseModule):
         else:
             self.att_norm_cfg = None
             self.att_act_cfg = None
+
         self.with_ffm = with_ffm
+        self.with_aem = with_aem
 
         self.lateral_convs = nn.ModuleList()
         self.fpn_convs = nn.ModuleList()
@@ -134,10 +146,20 @@ class lka_FPN(BaseModule):
         for i in range(self.start_level, self.backbone_end_level):
             # lzj 添加一个注意力模块
 
-            fpn_att_conv = nn.Sequential(AttentionModule(dim=out_channels,
+            fpn_att_conv = nn.Sequential()
+            if attention_type == 'lka':
+                att_module = AttentionModule(dim=out_channels,
                                                          norm_cfg=self.att_norm_cfg,
-                                                         act_cfg=self.att_act_cfg)
-                                         )
+                                                         act_cfg=self.att_act_cfg,
+                                                         kernel_size=att_kernel_size,
+                                                         dilation=att_kernel_dilation)
+            elif attention_type == 'se_layer':
+                att_module = SELayer(channels=out_channels)
+
+            else:
+                att_module = CBAM(gate_channels=out_channels)
+
+            fpn_att_conv.add_module(name='att_module',module=att_module)
             if with_conv_sigmoid == True:
                 fpn_att_conv.add_module(name='att_conv_relu',module=ConvModule(in_channels=out_channels, out_channels=out_channels,
                                                           kernel_size=3, padding=1,
@@ -197,24 +219,20 @@ class lka_FPN(BaseModule):
 
         # lzj 应用注意力
         fpn_att_list = [self.fpn_att_convs[i](laterals[i]) for i in range(len(laterals))]
-        laterals = [(1 + fpn_att_list[i]) * laterals[i] for i in range(len(laterals))]
+        if  self.attention_type == 'lka':
+            if self.with_aem:
+                laterals = [(1 + fpn_att_list[i]) * laterals[i] for i in range(len(laterals))]
+            else:
+                laterals = [fpn_att_list[i] * laterals[i] for i in range(len(laterals))]
+        else:
+            laterals = fpn_att_list
 
         # build top-down path
         used_backbone_levels = len(laterals)
         for i in range(used_backbone_levels - 1, 0, -1):
-            # In some cases, fixing `scale factor` (e.g. 2) is preferred, but
-            #  it cannot co-exist with `size` in `F.interpolate`.
-            # if 'scale_factor' in self.upsample_cfg:
-            #     laterals[i - 1] += F.interpolate(laterals[i],
-            #                                      **self.upsample_cfg) * fpn_att_list[i - 1]
-            # else:
-            #     prev_shape = laterals[i - 1].shape[2:]
-            #     laterals[i - 1] += F.interpolate(
-            #         laterals[i], size=prev_shape, **self.upsample_cfg) * fpn_att_list[i - 1]
-
             # 这种方法的效果更好，为了做对比实验来看看
             # 坏了，真的用下面的更好
-            # laterals[i - 1] += self.upsample_convs[i - 1](laterals[i]) * fpn_att_list[i - 1]
+
             if self.with_ffm:
                 laterals[i - 1] += self.upsample_convs[i - 1](laterals[i]) * F.interpolate(
                     fpn_att_list[i], scale_factor=2, mode='bilinear')
@@ -253,7 +271,7 @@ class lka_FPN(BaseModule):
 
 
 if __name__ == '__main__':
-    model = torch.set_default_tensor_type('torch.cuda.FloatTensor')
+    torch.set_default_tensor_type('torch.cuda.FloatTensor')
     tensor = [torch.rand(size=(1, 256, 128, 160)),
               torch.rand(size=(1, 512, 64, 80)),
               torch.rand(size=(1, 1024, 32, 40)),

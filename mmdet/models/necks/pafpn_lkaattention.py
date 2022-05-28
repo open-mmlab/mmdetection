@@ -60,7 +60,12 @@ class PAFPN_LKAATTENTION(FPN):
                  norm_cfg=None,
                  act_cfg=None,
                  init_cfg=dict(
-                     type='Xavier', layer='Conv2d', distribution='uniform')):
+                     type='Xavier', layer='Conv2d', distribution='uniform'),
+                 with_aem=True,
+                 with_bn_relu=True,
+                 with_conv_sigmoid=True,
+                 with_carafe=False,
+                 with_ffm=True):
         super(PAFPN_LKAATTENTION, self).__init__(
             in_channels,
             out_channels,
@@ -80,38 +85,64 @@ class PAFPN_LKAATTENTION(FPN):
 
         self.fpn_att_convs = nn.ModuleList()
         self.pafpn_att_convs = nn.ModuleList()
-        norm_cfg = dict(type='BN')
-        act_cfg = dict(type='ReLU')
+
+        self.with_ffm = with_ffm
+        self.with_aem = with_aem
+
+        if with_bn_relu == True:
+            self.att_norm_cfg = dict(type='BN')
+            self.att_act_cfg = dict(type='ReLU')
+        else:
+            self.att_norm_cfg = None
+            self.att_act_cfg = None
+
+        self.upsample_convs = nn.ModuleList()
+        for i in range(self.num_ins - 1, 0, -1):
+            if with_carafe == True:
+                upsample_conv = CARAFE(self.out_channels, op='upsample', c_mid=64)
+            else:
+                upsample_conv = nn.UpsamplingBilinear2d(scale_factor=2)
+            self.upsample_convs.append(upsample_conv)
 
         for i in range(self.start_level, self.backbone_end_level):
             fpn_att_conv = nn.Sequential(AttentionModule(dim=out_channels,
-                                           norm_cfg=norm_cfg,
-                                           act_cfg=act_cfg),
-                                         ConvModule(in_channels=out_channels, out_channels=out_channels,
-                                                    kernel_size=3, padding=1,
-                                                    act_cfg=dict(type='Sigmoid'))
+                                                         norm_cfg=self.att_norm_cfg,
+                                                         act_cfg=self.att_act_cfg)
                                          )
+
             pafpn_att_conv = nn.Sequential(AttentionModule(dim=out_channels,
-                                           norm_cfg=norm_cfg,
-                                           act_cfg=act_cfg),
-                                         ConvModule(in_channels=out_channels, out_channels=out_channels,
-                                                    kernel_size=3, padding=1,
-                                                    act_cfg=dict(type='Sigmoid'))
-                                         )
+                                                           norm_cfg=self.att_norm_cfg,
+                                                           act_cfg=self.att_act_cfg)
+                                           )
+            if with_conv_sigmoid == True:
+                fpn_att_conv.add_module(name='att_conv_relu',
+                                        module=ConvModule(in_channels=out_channels, out_channels=out_channels,
+                                                          kernel_size=3, padding=1,
+                                                          act_cfg=dict(type='Sigmoid')))
+
+                pafpn_att_conv.add_module(name='att_conv_relu',
+                                          module=ConvModule(in_channels=out_channels, out_channels=out_channels,
+                                                            kernel_size=3, padding=1,
+                                                            act_cfg=dict(type='Sigmoid')))
+
             self.fpn_att_convs.append(fpn_att_conv)
             self.pafpn_att_convs.append(pafpn_att_conv)
 
         for i in range(self.start_level + 1, self.backbone_end_level):
-            d_conv = ConvModule(
-                out_channels,
-                out_channels,
-                3,
-                stride=2,
-                padding=1,
-                conv_cfg=conv_cfg,
-                norm_cfg=norm_cfg,
-                act_cfg=act_cfg,
-                inplace=False)
+            if with_carafe == True:
+                d_conv = CARAFE(self.out_channels, op='downsample', c_mid=16)
+            else:
+                d_conv = ConvModule(
+                    out_channels,
+                    out_channels,
+                    3,
+                    stride=2,
+                    padding=1,
+                    conv_cfg=conv_cfg,
+                    norm_cfg=norm_cfg,
+                    act_cfg=act_cfg,
+                    inplace=False)
+
             pafpn_conv = ConvModule(
                 out_channels,
                 out_channels,
@@ -146,36 +177,43 @@ class PAFPN_LKAATTENTION(FPN):
 
         # lzj 应用注意力
         fpn_att_list = [self.fpn_att_convs[i](laterals[i]) for i in range(len(laterals))]
-        laterals = [(1 + fpn_att_list[i]) * laterals[i] for i in range(len(laterals))]
+        if self.with_aem:
+            laterals = [(1 + fpn_att_list[i]) * laterals[i] for i in range(len(laterals))]
+        else:
+            laterals = [fpn_att_list[i] * laterals[i] for i in range(len(laterals))]
 
         # build top-down path
 
         for i in range(self.used_backbone_levels - 1, 0, -1):
-            prev_shape = laterals[i - 1].shape[2:]
-            laterals[i - 1] += F.interpolate(
-                laterals[i], size=prev_shape, mode='bilinear') * F.interpolate(
-                fpn_att_list[i], scale_factor=2, mode='bilinear')
-
+            if self.with_ffm:
+                laterals[i - 1] += self.upsample_convs[i - 1](laterals[i]) * F.interpolate(
+                    fpn_att_list[i], scale_factor=2, mode='bilinear')
+            else:
+                laterals[i - 1] += self.upsample_convs[i - 1](laterals[i])
             # laterals[i - 1] += self.upsample_modules[i - 1](laterals[i]) * fpn_att_list[i - 1]
 
         # build outputs
         # part 1: from original levels
-        # inter_outs = [
-        #     self.fpn_convs[i](laterals[i]) for i in range(self.used_backbone_levels)
-        # ]
 
         inter_outs = [
             self.fpn_convs[i](laterals[i]) for i in range(self.used_backbone_levels)
         ]
         # 为pafpn的中间输出也添加注意力
+
         inter_att_list = [self.pafpn_att_convs[i](inter_outs[i]) for i in range(len(laterals))]
-        inter_outs = [(1 + inter_att_list[i]) * inter_outs[i] for i in range(len(laterals))]
+        if self.with_aem:
+            inter_outs = [(1 + inter_att_list[i]) * inter_outs[i] for i in range(len(laterals))]
+        else:
+            inter_outs = [inter_att_list[i] * inter_outs[i] for i in range(len(laterals))]
 
         # part 2: add bottom-up path
         # 添加注意力
         for i in range(0, self.used_backbone_levels - 1):
-            inter_outs[i + 1] += self.downsample_convs[i](inter_outs[i]) * F.max_pool2d(
-                inter_att_list[i], kernel_size=2,stride=2)
+            if self.with_ffm:
+                inter_outs[i + 1] += self.downsample_convs[i](inter_outs[i]) * F.max_pool2d(
+                    inter_att_list[i], kernel_size=2, stride=2)
+            else:
+                inter_outs[i + 1] += self.downsample_convs[i](inter_outs[i])
 
             # inter_outs[i + 1] += self.downsample_convs[i](inter_outs[i]) * inter_att_list[i + 1]
             # inter_outs[i + 1] += self.downsample_convs[i](inter_outs[i]) * fpn_att_list[i + 1]
@@ -222,8 +260,8 @@ if __name__ == '__main__':
               torch.rand(size=(1, 2048, 16, 20))]
 
     model = PAFPN_LKAATTENTION(in_channels=[256, 512, 1024, 2048],
-                                              out_channels=256,
-                                              num_outs=5)
+                               out_channels=256,
+                               num_outs=5)
 
     results = model(tensor)
     for result in results:

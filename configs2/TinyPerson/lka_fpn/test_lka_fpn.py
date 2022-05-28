@@ -11,6 +11,7 @@ if __name__ == '__main__':
     model = lka_FPN(in_channels=[256, 512, 1024, 2048],
                     out_channels=256,
                     num_outs=5,
+                    with_aem =False,
                     with_ffm=False)
 
     results = model(tensor)

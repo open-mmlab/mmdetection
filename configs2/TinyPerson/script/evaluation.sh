@@ -50,26 +50,6 @@ tools/dist_test.sh configs2/TinyPerson/sspnet/faster_rcnn_r50_sspnet_1x_TinyPers
      ../TOV_mmdetection_cache/work_dir/TinyPerson/sspnet/model_zoo/epoch_10.pth \
       4 --work-dir exp/fasterrcnn_r50_sspnet_lr0.02_1x_4g --eval bbox
 
-# 查看pafpn_unified_carafe的结果，顺便看看 保存的图片使什么样的
-python tools/test.py configs2/TinyPerson/PAFPN/faster_rcnn_r50_pafpn_unified_carafe_1x_TinyPerson640_newData.py \
-     ../TOV_mmdetection_cache/work_dir/TinyPerson/PAFPN/faster_rcnn_r50_pafpn_unified_carafe_1x_TinyPerson640_newData/old640x512_lr0.02_1x_4g/best_bbox_mAP_epoch_10.pth \
-    --work-dir exp/faster_rcnn_r50_pafpn_unified_carafe_TinyPerson640_newData_lr0.02_1x_4g \
-    --show-dir ../TOV_mmdetection_cache/work_dir/TinyPerson/PAFPN/faster_rcnn_r50_pafpn_unified_carafe_1x_TinyPerson640_newData/old640x512_lr0.02_1x_4g/test_result \
-
-python tools/test.py configs2/TinyPerson/PAFPN/faster_rcnn_r50_pafpn_unified_carafe_1x_TinyPerson640_newData.py \
-     ../TOV_mmdetection_cache/work_dir/TinyPerson/PAFPN/faster_rcnn_r50_pafpn_unified_carafe_1x_TinyPerson640_newData/old640x512_lr0.02_1x_4g/best_bbox_mAP_epoch_10.pth \
-    --work-dir exp/faster_rcnn_r50_pafpn_unified_carafe_TinyPerson640_newData_lr0.02_1x_4g \
-    --show-dir ../TOV_mmdetection_cache/work_dir/TinyPerson/PAFPN/faster_rcnn_r50_pafpn_unified_carafe_1x_TinyPerson640_newData/old640x512_lr0.02_1x_4g/test_result_nolabel_fuseconvbn \
-    --show-score-thr 0.7 --fuse-conv-bn
-
-python tools/test.py configs2/TinyPerson/PAFPN/faster_rcnn_r50_pafpn_unified_carafe_1x_TinyPerson640_newData.py \
-     ../TOV_mmdetection_cache/work_dir/TinyPerson/PAFPN/faster_rcnn_r50_pafpn_unified_carafe_1x_TinyPerson640_newData/old640x512_lr0.02_1x_4g/best_bbox_mAP_epoch_10.pth \
-    --work-dir exp/faster_rcnn_r50_pafpn_unified_carafe_TinyPerson640_newData_lr0.02_1x_4g \
-    --show-dir ../TOV_mmdetection_cache/work_dir/TinyPerson/PAFPN/faster_rcnn_r50_pafpn_unified_carafe_1x_TinyPerson640_newData/old640x512_lr0.02_1x_4g/test_result_nolabel_fuseconvbn_nosubimg \
-    --show-score-thr 0.7 --fuse-conv-bn
-
-# 查看转换后的文件是否对得上
-python  tools/misc/browse_dataset.py   configs2/TinyPerson/PAFPN/faster_rcnn_r50_pafpn_attetion_carafe_1x_TinyPerson640_newData.py
 tools/dist_test.sh configs2/TinyPerson/sspnet/faster_rcnn_r50_sspnet_1x_coco.py \
      ../TOV_mmdetection_cache/work_dir/TinyPerson/sspnet/model_zoo/epoch_10.pth \
       4 --work-dir exp/fasterrcnn_r50_sspnet_lr0.02_1x_4g --eval bbox
