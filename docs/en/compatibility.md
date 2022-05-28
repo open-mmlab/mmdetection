@@ -2,7 +2,7 @@
 
 ## MMDetection 2.25.0
 
-Inorder to support Mask2Former for instance segmentation, the original config files of Mask2Former for panpotic segmentation need to be renamed [PR #7571](https://github.com/open-mmlab/mmdetection/pull/7571).
+In order to support Mask2Former for instance segmentation, the original config files of Mask2Former for panpotic segmentation need to be renamed [PR #7571](https://github.com/open-mmlab/mmdetection/pull/7571).
 
 <table align="center">
     <thead>
