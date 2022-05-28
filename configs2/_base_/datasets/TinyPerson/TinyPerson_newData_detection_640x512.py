@@ -72,7 +72,9 @@ train_pipeline = [
 ]
 
 test_pipeline = [
-    dict(type='LoadSubImageFromFile'),
+    dict(type='LoadImageFromFile'),
+    # test用下面的
+    # dict(type='LoadSubImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
         img_scale=[(1280, 1024), (1920, 1536)],  # (1280, 1024), (1920, 1536)

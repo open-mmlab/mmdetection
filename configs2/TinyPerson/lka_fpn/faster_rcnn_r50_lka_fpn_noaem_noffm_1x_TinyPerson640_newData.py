@@ -6,8 +6,8 @@ model = dict(
         in_channels=[256, 512, 1024, 2048],
         out_channels=256,
         num_outs=5,
-        with_aem = False,
-        with_ffm = False,
+        with_aem=False,
+        with_ffm=False,
         with_bn_relu=True,
         with_conv_sigmoid=False),
 )

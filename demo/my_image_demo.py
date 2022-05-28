@@ -31,7 +31,7 @@ def main(args):
     # test a single image
     result = inference_detector(model, args.img)
     # show the results
-    show_result_pyplot(model, args.img, result, score_thr=args.score_thr, show_result=False, out_file=args.out_path)
+    show_result_pyplot(model, args.img, result, score_thr=args.score_thr, show_result=False, out_file=args.save_path)
 
 
 async def async_main(args):

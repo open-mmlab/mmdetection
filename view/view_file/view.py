@@ -54,7 +54,7 @@ class Ui_view(QMainWindow, Ui_MainWindow):
                                  "{} " \
                                  "{}" \
                                  " {} " \
-                                 "--async-test --score-thr 0.7 --save-path {}"
+                                 "--score-thr 0.7 --save-path {}"
 
         self.video_detection_cmd = "python demo/video_demo.py " \
                                    "{} " \
@@ -66,8 +66,8 @@ class Ui_view(QMainWindow, Ui_MainWindow):
         self.total_video_detection_cmd = self.env_act_cmd + " && " + self.video_detection_cmd
 
         self.datasets = ('请选择', 'TinyPerson', 'VisDrone')
-        self.datas_index = ('default','image','video')
-        self.datas = {'default':'None','image': 'None', 'video': 'None'}
+        self.datas_index = ('default', 'image', 'video')
+        self.datas = {'default': 'None', 'image': 'None', 'video': 'None'}
         self.cur_dataset = self.datasets[0]
         self.cur_data = self.datas['default']
         self.cur_data_type = 'default'
@@ -167,11 +167,12 @@ class Ui_view(QMainWindow, Ui_MainWindow):
                                 "警告",
                                 "请选择要检测的数据类型！",
                                 QMessageBox.Close)
+            self.pushButtonBaseLine.setEnabled(True)
             return
 
         method = 'base'
         cfg = 'faster_rcnn_r50_fpn_1x_{}'.format(self.cfg_suffixs[self.cur_dataset])
-        cfg_name = cfg+'.py'
+        cfg_name = cfg + '.py'
         print('method:', method)
         print("cfg:", self.cfg_path.format(self.cur_dataset, method, cfg_name))
         print("ckpt_path:", self.ckpt_path.format(self.cur_dataset, cfg, self.ckpt_name))
@@ -184,6 +185,10 @@ class Ui_view(QMainWindow, Ui_MainWindow):
                                   self.ckpt_path.format(self.cur_dataset, cfg, self.ckpt_name))
             except Exception as e:
                 print(e)
+                QMessageBox.warning(self,
+                                    "警告",
+                                    "出现错误，请查看后台输出 ",
+                                    QMessageBox.Close)
         elif self.cur_data == 'video':
             try:
                 # self.image_detect(self.origin_img_path,
@@ -192,10 +197,15 @@ class Ui_view(QMainWindow, Ui_MainWindow):
                                   self.ckpt_path.format(self.cur_dataset, cfg, self.ckpt_name))
             except Exception as e:
                 print(e)
+                QMessageBox.warning(self,
+                                    "警告",
+                                    "出现错误，请查看后台输出 ",
+                                    QMessageBox.Close)
         self.pushButtonBaseLine.setEnabled(True)
 
     def lka_detect(self):
         self.pushButtonLKA.setEnabled(False)
+
         if not self.is_open_image and not self.is_open_video:
             QMessageBox.warning(self,
                                 "警告",
@@ -211,19 +221,45 @@ class Ui_view(QMainWindow, Ui_MainWindow):
             self.pushButtonLKA.setEnabled(True)
             return
 
+        if self.cur_data == 'default':
+            QMessageBox.warning(self,
+                                "警告",
+                                "请选择要检测的数据类型！",
+                                QMessageBox.Close)
+            self.pushButtonLKA.setEnabled(True)
+            return
+
         method = 'lka_fpn'
-        cfg_name = 'faster_rcnn_r50_lka_fpn_noaem_noffm_1x_{}.py'.format(self.cfg_suffixs[self.cur_dataset])
+        cfg = 'faster_rcnn_r50_lka_fpn_noaem_noffm_1x_{}'.format(self.cfg_suffixs[self.cur_dataset])
+        cfg_name = cfg + '.py'
         print('method:', method)
         print("cfg:", self.cfg_path.format(self.cur_dataset, method, cfg_name))
-        print("ckpt_path:", self.ckpt_path.format(self.cur_dataset, method, self.ckpt_name))
+        print("ckpt_path:", self.ckpt_path.format(self.cur_dataset, cfg, self.ckpt_name))
 
-        try:
-            # self.image_detect(self.origin_img_path,
-            self.image_detect(self.datas['image'],
-                              self.cfg_path.format(self.cur_dataset, method, cfg_name),
-                              self.ckpt_path.format(self.cur_dataset, method, self.ckpt_name))
-        except Exception as e:
-            print(e)
+        if self.cur_data == 'image':
+            try:
+                # self.image_detect(self.origin_img_path,
+                self.image_detect(self.datas['image'],
+                                  self.cfg_path.format(self.cur_dataset, method, cfg_name),
+                                  self.ckpt_path.format(self.cur_dataset, cfg, self.ckpt_name))
+            except Exception as e:
+                print(e)
+                QMessageBox.warning(self,
+                                    "警告",
+                                    "出现错误，请查看后台输出 ",
+                                    QMessageBox.Close)
+        elif self.cur_data == 'video':
+            try:
+                # self.image_detect(self.origin_img_path,
+                self.video_detect(self.datas['video'],
+                                  self.cfg_path.format(self.cur_dataset, method, cfg_name),
+                                  self.ckpt_path.format(self.cur_dataset, cfg, self.ckpt_name))
+            except Exception as e:
+                print(e)
+                QMessageBox.warning(self,
+                                    "警告",
+                                    "出现错误，请查看后台输出 ",
+                                    QMessageBox.Close)
         self.pushButtonLKA.setEnabled(True)
 
     def aem_ffm_detect(self):
@@ -231,7 +267,7 @@ class Ui_view(QMainWindow, Ui_MainWindow):
         if not self.is_open_image and not self.is_open_video:
             QMessageBox.warning(self,
                                 "警告",
-                                "请先打开一张图片！",
+                                "请先打开一种数据！",
                                 QMessageBox.Close)
             self.pushButtonAEMFFM.setEnabled(True)
             return
@@ -243,24 +279,45 @@ class Ui_view(QMainWindow, Ui_MainWindow):
             self.pushButtonAEMFFM.setEnabled(True)
             return
 
-        method = 'lka_fpn'
-        cfg_name = 'faster_rcnn_r50_lka_fpn_1x_{}.py'.format(self.cfg_suffixs[self.cur_dataset])
-
-        print('method:', method)
-        print("cfg:", self.cfg_path.format(self.cur_dataset, method, cfg_name))
-        print("ckpt_path:", self.ckpt_path.format(self.cur_dataset, method, self.ckpt_name))
-
-        try:
-            # self.image_detect(self.origin_img_path,
-            self.image_detect(self.datas['image'],
-                              self.cfg_path.format(self.cur_dataset, method, cfg_name),
-                              self.ckpt_path.format(self.cur_dataset, method, self.ckpt_name))
-        except Exception as e:
-            print(e)
+        if self.cur_data == 'default':
             QMessageBox.warning(self,
                                 "警告",
-                                "出现错误，请查看后台输出 ",
+                                "请选择要检测的数据类型！",
                                 QMessageBox.Close)
+            self.pushButtonAEMFFM.setEnabled(True)
+            return
+
+        method = 'lka_fpn'
+        cfg = 'faster_rcnn_r50_lka_fpn_1x_{}'.format(self.cfg_suffixs[self.cur_dataset])
+        cfg_name = cfg + '.py'
+        print('method:', method)
+        print("cfg:", self.cfg_path.format(self.cur_dataset, method, cfg_name))
+        print("ckpt_path:", self.ckpt_path.format(self.cur_dataset, cfg, self.ckpt_name))
+
+        if self.cur_data == 'image':
+            try:
+                # self.image_detect(self.origin_img_path,
+                self.image_detect(self.datas['image'],
+                                  self.cfg_path.format(self.cur_dataset, method, cfg_name),
+                                  self.ckpt_path.format(self.cur_dataset, cfg, self.ckpt_name))
+            except Exception as e:
+                print(e)
+                QMessageBox.warning(self,
+                                    "警告",
+                                    "出现错误，请查看后台输出 ",
+                                    QMessageBox.Close)
+        elif self.cur_data == 'video':
+            try:
+                # self.image_detect(self.origin_img_path,
+                self.video_detect(self.datas['video'],
+                                  self.cfg_path.format(self.cur_dataset, method, cfg_name),
+                                  self.ckpt_path.format(self.cur_dataset, cfg, self.ckpt_name))
+            except Exception as e:
+                print(e)
+                QMessageBox.warning(self,
+                                    "警告",
+                                    "出现错误，请查看后台输出 ",
+                                    QMessageBox.Close)
         self.pushButtonAEMFFM.setEnabled(True)
 
     def image_detect(self, img_path, cfg_path, ckpt_path):
@@ -375,4 +432,3 @@ class Ui_view(QMainWindow, Ui_MainWindow):
     def update_data_path(self, data_type, path):
         assert data_type in ('image', 'video')
         self.datas[data_type] = path
-
