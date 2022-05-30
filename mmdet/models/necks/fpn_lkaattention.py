@@ -74,11 +74,10 @@ class lka_FPN(BaseModule):
                  add_extra_convs=False,
                  relu_before_extra_convs=False,
                  no_norm_on_lateral=False,
-                 with_aem = True,
+                 with_aem=True,
                  with_bn_relu=True,
                  with_conv_sigmoid=True,
                  with_carafe=False,
-                 attention_type='lka',
                  with_ffm=True,
                  conv_cfg=None,
                  norm_cfg=None,
@@ -90,10 +89,6 @@ class lka_FPN(BaseModule):
                      type='Xavier', layer='Conv2d', distribution='uniform')):
         super(lka_FPN, self).__init__(init_cfg)
         assert isinstance(in_channels, list)
-        assert attention_type in ('se_layer','cbam','lka')
-        assert attention_type == 'cbam' and (with_ffm == False and with_aem==False)
-
-        self.attention_type = attention_type
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.num_ins = len(in_channels)
@@ -146,20 +141,12 @@ class lka_FPN(BaseModule):
         for i in range(self.start_level, self.backbone_end_level):
             # lzj 添加一个注意力模块
 
-            fpn_att_conv = nn.Sequential()
-            if attention_type == 'lka':
-                att_module = AttentionModule(dim=out_channels,
+            fpn_att_conv = nn.Sequential(AttentionModule(dim=out_channels,
                                                          norm_cfg=self.att_norm_cfg,
                                                          act_cfg=self.att_act_cfg,
                                                          kernel_size=att_kernel_size,
                                                          dilation=att_kernel_dilation)
-            elif attention_type == 'se_layer':
-                att_module = SELayer(channels=out_channels)
-
-            else:
-                att_module = CBAM(gate_channels=out_channels)
-
-            fpn_att_conv.add_module(name='att_module',module=att_module)
+                                         )
             if with_conv_sigmoid == True:
                 fpn_att_conv.add_module(name='att_conv_relu',module=ConvModule(in_channels=out_channels, out_channels=out_channels,
                                                           kernel_size=3, padding=1,
@@ -219,13 +206,10 @@ class lka_FPN(BaseModule):
 
         # lzj 应用注意力
         fpn_att_list = [self.fpn_att_convs[i](laterals[i]) for i in range(len(laterals))]
-        if  self.attention_type == 'lka':
-            if self.with_aem:
-                laterals = [(1 + fpn_att_list[i]) * laterals[i] for i in range(len(laterals))]
-            else:
-                laterals = [fpn_att_list[i] * laterals[i] for i in range(len(laterals))]
+        if self.with_aem:
+            laterals = [(1 + fpn_att_list[i]) * laterals[i] for i in range(len(laterals))]
         else:
-            laterals = fpn_att_list
+            laterals = [fpn_att_list[i] * laterals[i] for i in range(len(laterals))]
 
         # build top-down path
         used_backbone_levels = len(laterals)
