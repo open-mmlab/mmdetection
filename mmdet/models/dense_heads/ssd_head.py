@@ -1,83 +1,94 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import warnings
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 from mmcv.runner import force_fp32
+from mmengine.config import ConfigDict
+from mmengine.data import InstanceData
+from torch import Tensor
 
-from mmdet.core import (build_assigner, build_bbox_coder,
-                        build_prior_generator, build_sampler, multi_apply)
-from mmdet.registry import MODELS
+from mmdet.core import PseudoSampler, multi_apply
+from mmdet.registry import MODELS, TASK_UTILS
 from ..losses import smooth_l1_loss
 from .anchor_head import AnchorHead
+
+ConfigType = Union[ConfigDict, Dict]
+MultiConfig = Union[ConfigType, List[ConfigType]]
+InstList = List[InstanceData]
+OptInstList = Optional[InstList]
 
 
 # TODO: add loss evaluator for SSD
 @MODELS.register_module()
 class SSDHead(AnchorHead):
-    """SSD head used in https://arxiv.org/abs/1512.02325.
+    """Implementation of `SSD head <https://arxiv.org/abs/1512.02325>`_
 
     Args:
         num_classes (int): Number of categories excluding the background
             category.
-        in_channels (int): Number of channels in the input feature map.
+        in_channels (Sequence[int]): Number of channels in the input feature
+            map.
         stacked_convs (int): Number of conv layers in cls and reg tower.
-            Default: 0.
+            Defaults to 0.
         feat_channels (int): Number of hidden channels when stacked_convs
-            > 0. Default: 256.
+            > 0. Defaults to 256.
         use_depthwise (bool): Whether to use DepthwiseSeparableConv.
-            Default: False.
-        conv_cfg (dict): Dictionary to construct and config conv layer.
-            Default: None.
-        norm_cfg (dict): Dictionary to construct and config norm layer.
-            Default: None.
-        act_cfg (dict): Dictionary to construct and config activation layer.
-            Default: None.
-        anchor_generator (dict): Config dict for anchor generator
-        bbox_coder (dict): Config of bounding box coder.
+            Defaults to False.
+        conv_cfg (:obj:`ConfigDict` or dict, Optional): Dictionary to construct
+            and config conv layer. Defaults to None.
+        norm_cfg (:obj:`ConfigDict` or dict, Optional): Dictionary to construct
+            and config norm layer. Defaults to None.
+        act_cfg (:obj:`ConfigDict` or dict, Optional): Dictionary to construct
+            and config activation layer. Defaults to None.
+        anchor_generator (:obj:`ConfigDict` or dict): Config dict for anchor
+            generator.
+        bbox_coder (:obj:`ConfigDict` or dict): Config of bounding box coder.
         reg_decoded_bbox (bool): If true, the regression loss would be
             applied directly on decoded bounding boxes, converting both
             the predicted boxes and regression targets to absolute
-            coordinates format. Default False. It should be `True` when
+            coordinates format. Defaults to False. It should be `True` when
             using `IoULoss`, `GIoULoss`, or `DIoULoss` in the bbox head.
-        train_cfg (dict): Training config of anchor head.
-        test_cfg (dict): Testing config of anchor head.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+        train_cfg (:obj:`ConfigDict` or dict, Optional): Training config of
+            anchor head.
+        test_cfg (:obj:`ConfigDict` or dict, Optional): Testing config of
+            anchor head.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict], Optional): Initialization config dict.
     """  # noqa: W605
 
-    def __init__(self,
-                 num_classes=80,
-                 in_channels=(512, 1024, 512, 256, 256, 256),
-                 stacked_convs=0,
-                 feat_channels=256,
-                 use_depthwise=False,
-                 conv_cfg=None,
-                 norm_cfg=None,
-                 act_cfg=None,
-                 anchor_generator=dict(
-                     type='SSDAnchorGenerator',
-                     scale_major=False,
-                     input_size=300,
-                     strides=[8, 16, 32, 64, 100, 300],
-                     ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
-                     basesize_ratio_range=(0.1, 0.9)),
-                 bbox_coder=dict(
-                     type='DeltaXYWHBBoxCoder',
-                     clip_border=True,
-                     target_means=[.0, .0, .0, .0],
-                     target_stds=[1.0, 1.0, 1.0, 1.0],
-                 ),
-                 reg_decoded_bbox=False,
-                 train_cfg=None,
-                 test_cfg=None,
-                 init_cfg=dict(
-                     type='Xavier',
-                     layer='Conv2d',
-                     distribution='uniform',
-                     bias=0)):
-        super(AnchorHead, self).__init__(init_cfg)
+    def __init__(
+        self,
+        num_classes: int = 80,
+        in_channels: Sequence[int] = (512, 1024, 512, 256, 256, 256),
+        stacked_convs: int = 0,
+        feat_channels: int = 256,
+        use_depthwise: bool = False,
+        conv_cfg: Optional[ConfigType] = None,
+        norm_cfg: Optional[ConfigType] = None,
+        act_cfg: Optional[ConfigType] = None,
+        anchor_generator: ConfigType = dict(
+            type='SSDAnchorGenerator',
+            scale_major=False,
+            input_size=300,
+            strides=[8, 16, 32, 64, 100, 300],
+            ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),
+            basesize_ratio_range=(0.1, 0.9)),
+        bbox_coder: ConfigType = dict(
+            type='DeltaXYWHBBoxCoder',
+            clip_border=True,
+            target_means=[.0, .0, .0, .0],
+            target_stds=[1.0, 1.0, 1.0, 1.0],
+        ),
+        reg_decoded_bbox: bool = False,
+        train_cfg: Optional[ConfigType] = None,
+        test_cfg: Optional[ConfigType] = None,
+        init_cfg: MultiConfig = dict(
+            type='Xavier', layer='Conv2d', distribution='uniform', bias=0)
+    ) -> None:
+        super(AnchorHead, self).__init__(init_cfg=init_cfg)
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.stacked_convs = stacked_convs
@@ -88,7 +99,7 @@ class SSDHead(AnchorHead):
         self.act_cfg = act_cfg
 
         self.cls_out_channels = num_classes + 1  # add background class
-        self.prior_generator = build_prior_generator(anchor_generator)
+        self.prior_generator = TASK_UTILS.build(anchor_generator)
 
         # Usually the numbers of anchors for each level are the same
         # except SSD detectors. So it is an int in the most dense
@@ -97,32 +108,22 @@ class SSDHead(AnchorHead):
 
         self._init_layers()
 
-        self.bbox_coder = build_bbox_coder(bbox_coder)
+        self.bbox_coder = TASK_UTILS.build(bbox_coder)
         self.reg_decoded_bbox = reg_decoded_bbox
         self.use_sigmoid_cls = False
         self.cls_focal_loss = False
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-        # set sampling=False for archor_target
-        self.sampling = False
         if self.train_cfg:
-            self.assigner = build_assigner(self.train_cfg.assigner)
-            # SSD sampling=False so use PseudoSampler
-            sampler_cfg = dict(type='PseudoSampler')
-            self.sampler = build_sampler(sampler_cfg, context=self)
+            self.assigner = TASK_UTILS.build(self.train_cfg['assigner'])
+            if self.train_cfg.get('sampler', None) is not None:
+                self.sampler = TASK_UTILS.build(
+                    self.train_cfg['sampler'], default_args=dict(context=self))
+            else:
+                self.sampler = PseudoSampler(context=self)
         self.fp16_enabled = False
 
-    @property
-    def num_anchors(self):
-        """
-        Returns:
-            list[int]: Number of base_anchors on each point of each level.
-        """
-        warnings.warn('DeprecationWarning: `num_anchors` is deprecated, '
-                      'please use "num_base_priors" instead')
-        return self.num_base_priors
-
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         """Initialize layers of the head."""
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
@@ -193,32 +194,35 @@ class SSDHead(AnchorHead):
             self.cls_convs.append(nn.Sequential(*cls_layers))
             self.reg_convs.append(nn.Sequential(*reg_layers))
 
-    def forward(self, feats):
+    def forward(self, x: Tuple[Tensor]) -> Tuple[List[Tensor], List[Tensor]]:
         """Forward features from the upstream network.
 
         Args:
-            feats (tuple[Tensor]): Features from the upstream network, each is
+            x (tuple[Tensor]): Features from the upstream network, each is
                 a 4D-tensor.
 
         Returns:
-            tuple:
-                cls_scores (list[Tensor]): Classification scores for all scale
-                    levels, each is a 4D-tensor, the channels number is
-                    num_anchors * num_classes.
-                bbox_preds (list[Tensor]): Box energies / deltas for all scale
-                    levels, each is a 4D-tensor, the channels number is
-                    num_anchors * 4.
+            tuple[list[Tensor], list[Tensor]]: A tuple of cls_scores list and
+            bbox_preds list.
+
+            - cls_scores (list[Tensor]): Classification scores for all scale \
+            levels, each is a 4D-tensor, the channels number is \
+            num_anchors * num_classes.
+            - bbox_preds (list[Tensor]): Box energies / deltas for all scale \
+            levels, each is a 4D-tensor, the channels number is \
+            num_anchors * 4.
         """
         cls_scores = []
         bbox_preds = []
-        for feat, reg_conv, cls_conv in zip(feats, self.reg_convs,
-                                            self.cls_convs):
+        for feat, reg_conv, cls_conv in zip(x, self.reg_convs, self.cls_convs):
             cls_scores.append(cls_conv(feat))
             bbox_preds.append(reg_conv(feat))
         return cls_scores, bbox_preds
 
-    def loss_single(self, cls_score, bbox_pred, anchor, labels, label_weights,
-                    bbox_targets, bbox_weights, avg_factor):
+    def loss_single(self, cls_score: Tensor, bbox_pred: Tensor, anchor: Tensor,
+                    labels: Tensor, label_weights: Tensor,
+                    bbox_targets: Tensor, bbox_weights: Tensor,
+                    avg_factor: int) -> Tuple[Tensor, Tensor]:
         """Compute loss of a single image.
 
         Args:
@@ -243,7 +247,8 @@ class SSDHead(AnchorHead):
                 of positive priors.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            Tuple[Tensor, Tensor]: A tuple of cls loss and bbox loss of one
+            feature map.
         """
 
         loss_cls_all = F.cross_entropy(
@@ -255,7 +260,7 @@ class SSDHead(AnchorHead):
             as_tuple=False).view(-1)
 
         num_pos_samples = pos_inds.size(0)
-        num_neg_samples = self.train_cfg.neg_pos_ratio * num_pos_samples
+        num_neg_samples = self.train_cfg['neg_pos_ratio'] * num_pos_samples
         if num_neg_samples > neg_inds.size(0):
             num_neg_samples = neg_inds.size(0)
         topk_loss_cls_neg, _ = loss_cls_all[neg_inds].topk(num_neg_samples)
@@ -273,17 +278,19 @@ class SSDHead(AnchorHead):
             bbox_pred,
             bbox_targets,
             bbox_weights,
-            beta=self.train_cfg.smoothl1_beta,
+            beta=self.train_cfg['smoothl1_beta'],
             avg_factor=avg_factor)
         return loss_cls[None], loss_bbox
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def loss(self,
-             cls_scores,
-             bbox_preds,
-             batch_gt_instances,
-             batch_img_metas,
-             batch_gt_instances_ignore=None):
+    def loss(
+        self,
+        cls_scores: List[Tensor],
+        bbox_preds: List[Tensor],
+        batch_gt_instances: InstList,
+        batch_img_metas: List[dict],
+        batch_gt_instances_ignore: OptInstList = None
+    ) -> Dict[str, List[Tensor]]:
         """Compute losses of the head.
 
         Args:
@@ -302,7 +309,13 @@ class SSDHead(AnchorHead):
                 Defaults to None.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            dict[str, list[Tensor]]: A dictionary of loss components. the dict
+            has components below:
+
+            - loss_cls (list[Tensor]): A list containing each feature map \
+            classification loss.
+            - loss_bbox (list[Tensor]): A list containing each feature map \
+            regression loss.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == self.prior_generator.num_levels
@@ -319,8 +332,6 @@ class SSDHead(AnchorHead):
             batch_gt_instances_ignore=batch_gt_instances_ignore,
             label_channels=1,
             unmap_outputs=True)
-        if cls_reg_targets is None:
-            return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          avg_factor) = cls_reg_targets
 
