@@ -76,11 +76,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 **2.25.0** was released in ???/5/2022:
 
-- Support [ConvNeXt](configs/convnext)
-
-- Support [DDOD](configs/ddod)
-
-- Support [SOLOv2](configs/solov2)
+- Support [ConvNeXt](configs/convnext), [DDOD](configs/ddod), [SOLOv2](configs/solov2)
 
 - Support [Mask2Former](configs/mask2former) for instance segmentation
 

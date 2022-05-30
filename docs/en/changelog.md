@@ -47,6 +47,7 @@
 - Fix path issue of `docs/en/stat.py` (#6696)
 - Fix the log plot error when evaluation with `interval != 1` (#7784)
 - Fix windows CI (#8046)
+- Fix RuntimeError of HTC (#8083)
 
 #### Improvements
 
@@ -112,9 +113,9 @@
 
 #### Contributors
 
-A total of 18 developers contributed to this release.
+A total of 20 developers contributed to this release.
 
-Thanks @ZwwWayne, @Wsnhg, @Solomiya, @Luting Wang, @ChenXF, @Czm369, @Chenastron, @Cedric Luo, @Shanyaliux, @Kai Chen, @Y-M-Y, @jbwang1997, @Haian Huang(深度眸), @Irving.Gao, @zhanggefan, @BigDong, @Peter Vennerstrom, @Ayush Thakur
+Thanks @ZwwWayne, @DarthThomas, @solyaH, @LutingWang, @chenxinfeng4, @Czm369, @Chenastron, @chhluo, @austinmw, @Shanyaliux @hellock, @Y-M-Y, @jbwang1997, @hhaAndroid, @Irvingao, @zhanggefan, @BIGWangYuDong, @Keiku, @PeterVennerstrom, @ayulockin
 
 ### v2.24.0 (26/4/2022)
 
