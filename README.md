@@ -74,7 +74,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-**2.25.0** was released in ???/5/2022:
+**2.25.0** was released in 31/5/2022:
 
 - Support [ConvNeXt](configs/convnext), [DDOD](configs/ddod), [SOLOv2](configs/solov2)
 

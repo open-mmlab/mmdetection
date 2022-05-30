@@ -1,6 +1,6 @@
 ## Changelog
 
-### v2.25.0 (???/5/2022)
+### v2.25.0 (31/5/2022)
 
 #### Highlights
 
@@ -63,7 +63,7 @@
 
 - Support panoptic segmentation result analysis (#7922)
 
-- Add `AvoidOOM` to avoid OOM (#7434)
+- Add `AvoidOOM` to avoid OOM (#7434, #8091)
 
   Try to use `AvoidCUDAOOM` to avoid GPU out of memory. It will first retry after calling `torch.cuda.empty_cache()`. If it still fails, it will then retry by converting the type of inputs to FP16 format. If it still fails, it will try to copy inputs from GPUs to CPUs to continue computing. Try AvoidOOM in code to make the code continue to run when GPU memory runs out:
 
