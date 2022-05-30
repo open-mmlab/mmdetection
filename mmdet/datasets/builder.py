@@ -47,19 +47,10 @@ def _concat_dataset(cfg, default_args=None):
     return ConcatDataset(datasets, separate_eval)
 
 
+# TODO: Need to refactor later
 def build_dataset(cfg, default_args=None):
-    from .dataset_wrappers import (ClassBalancedDataset, ConcatDataset,
-                                   MultiImageMixDataset, RepeatDataset)
-    if isinstance(cfg, (list, tuple)):
-        dataset = ConcatDataset([build_dataset(c, default_args) for c in cfg])
-    elif cfg['type'] == 'ConcatDataset':
-        dataset = ConcatDataset(
-            [build_dataset(c, default_args) for c in cfg['datasets']],
-            cfg.get('separate_eval', True))
-    elif cfg['type'] == 'RepeatDataset':
-        dataset = RepeatDataset(
-            build_dataset(cfg['dataset'], default_args), cfg['times'])
-    elif cfg['type'] == 'ClassBalancedDataset':
+    from .dataset_wrappers import ClassBalancedDataset, MultiImageMixDataset
+    if cfg['type'] == 'ClassBalancedDataset':
         dataset = ClassBalancedDataset(
             build_dataset(cfg['dataset'], default_args), cfg['oversample_thr'])
     elif cfg['type'] == 'MultiImageMixDataset':

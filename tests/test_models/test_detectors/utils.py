@@ -118,6 +118,7 @@ def demo_mm_inputs(batch_size=2,
             'scale_factor': np.array([1.1, 1.2]),
             'flip': False,
             'flip_direction': None,
+            'border': [1, 1, 1, 1]  # Only used by CenterNet
         }
 
         data_sample = DetDataSample()

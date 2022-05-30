@@ -12,7 +12,10 @@ from .utils import demo_mm_inputs, get_detector_cfg
 
 class TestSingleStageDetector(TestCase):
 
-    @parameterized.expand(['retinanet/retinanet_r18_fpn_1x_coco.py'])
+    @parameterized.expand([
+        'retinanet/retinanet_r18_fpn_1x_coco.py',
+        'centernet/centernet_resnet18_140e_coco.py'
+    ])
     def test_init(self, cfg_file):
         model = get_detector_cfg(cfg_file)
         model.backbone.init_cfg = None
@@ -24,8 +27,10 @@ class TestSingleStageDetector(TestCase):
         assert detector.bbox_head
         assert detector.device.type == 'cpu'
 
-    @parameterized.expand([('retinanet/retinanet_r18_fpn_1x_coco.py',
-                            ('cpu', 'cuda'))])
+    @parameterized.expand([
+        ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda')),
+        ('centernet/centernet_resnet18_140e_coco.py', ('cpu', 'cuda'))
+    ])
     def test_single_stage_forward_train(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
         model.backbone.init_cfg = None
@@ -35,6 +40,7 @@ class TestSingleStageDetector(TestCase):
 
         for device in devices:
             detector = build_detector(model)
+            detector.init_weights()
 
             if device == 'cuda':
                 if not torch.cuda.is_available():
@@ -53,10 +59,11 @@ class TestSingleStageDetector(TestCase):
             batch = torch.ones((1, 3, 64, 64)).to(device=device)
             out = detector.forward_dummy(batch)
             assert isinstance(out, tuple)
-            assert len(out) == 2
 
-    @parameterized.expand([('retinanet/retinanet_r18_fpn_1x_coco.py',
-                            ('cpu', 'cuda'))])
+    @parameterized.expand([
+        ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda')),
+        ('centernet/centernet_resnet18_140e_coco.py', ('cpu', 'cuda'))
+    ])
     def test_single_stage_forward_test(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
         model.backbone.init_cfg = None
