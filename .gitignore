@@ -126,3 +126,6 @@ work_dirs/
 
 huicv/
 exp/
+cache/*
+test_data/
+/cache/

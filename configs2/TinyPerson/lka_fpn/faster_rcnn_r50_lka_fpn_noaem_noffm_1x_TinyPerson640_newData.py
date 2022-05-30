@@ -9,5 +9,5 @@ model = dict(
         with_aem = False,
         with_ffm = False,
         with_bn_relu=True,
-        with_conv_sigmoid=False),
+        with_conv_sigmoid=True),
 )
