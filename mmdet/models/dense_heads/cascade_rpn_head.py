@@ -344,7 +344,8 @@ class StageCascadeRPNHead(RPNHead):
             assert ks == 3 and dilation == 1
             pad = (ks - 1) // 2
             idx = torch.arange(-pad, pad + 1, dtype=dtype, device=device)
-            yy, xx = torch.meshgrid(idx, idx)  # return order matters
+            yy, xx = torch.meshgrid(
+                idx, idx, indexing='ij')  # return order matters
             xx = xx.reshape(-1)
             yy = yy.reshape(-1)
             w = (anchors[:, 2] - anchors[:, 0]) / stride
@@ -367,7 +368,7 @@ class StageCascadeRPNHead(RPNHead):
             # compute predefine centers
             xx = torch.arange(0, feat_w, device=anchors.device)
             yy = torch.arange(0, feat_h, device=anchors.device)
-            yy, xx = torch.meshgrid(yy, xx)
+            yy, xx = torch.meshgrid(yy, xx, indexing='ij')
             xx = xx.reshape(-1).type_as(x)
             yy = yy.reshape(-1).type_as(y)
 

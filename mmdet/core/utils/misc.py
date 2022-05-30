@@ -200,7 +200,7 @@ def generate_coordinate(featmap_sizes, device='cuda'):
 
     x_range = torch.linspace(-1, 1, featmap_sizes[-1], device=device)
     y_range = torch.linspace(-1, 1, featmap_sizes[-2], device=device)
-    y, x = torch.meshgrid(y_range, x_range)
+    y, x = torch.meshgrid(y_range, x_range, indexing='ij')
     y = y.expand([featmap_sizes[0], 1, -1, -1])
     x = x.expand([featmap_sizes[0], 1, -1, -1])
     coord_feat = torch.cat([x, y], 1)

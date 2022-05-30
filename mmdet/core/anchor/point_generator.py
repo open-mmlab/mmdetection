@@ -68,7 +68,7 @@ class MlvlPointGenerator:
         return [1 for _ in range(len(self.strides))]
 
     def _meshgrid(self, x, y, row_major=True):
-        yy, xx = torch.meshgrid(y, x)
+        yy, xx = torch.meshgrid(y, x, indexing='ij')
         if row_major:
             # warning .flatten() would cause error in ONNX exporting
             # have to use reshape here

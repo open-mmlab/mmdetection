@@ -301,7 +301,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         # target `dtype` for onnx exporting.
         x_range = torch.arange(w, device=device).to(dtype)
         y_range = torch.arange(h, device=device).to(dtype)
-        y, x = torch.meshgrid(y_range, x_range)
+        y, x = torch.meshgrid(y_range, x_range, indexing='ij')
         if flatten:
             y = y.flatten()
             x = x.flatten()

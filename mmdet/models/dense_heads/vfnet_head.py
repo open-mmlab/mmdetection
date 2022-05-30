@@ -728,7 +728,7 @@ class VFNetHead(ATSSHead, FCOSHead):
             0, w * stride, stride, dtype=dtype, device=device)
         y_range = torch.arange(
             0, h * stride, stride, dtype=dtype, device=device)
-        y, x = torch.meshgrid(y_range, x_range)
+        y, x = torch.meshgrid(y_range, x_range, indexing='ij')
         # to be compatible with anchor points in ATSS
         if self.use_atss:
             points = torch.stack(
