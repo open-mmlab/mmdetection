@@ -1,10 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
+from typing import Sequence, Tuple
 
+import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule
-from mmcv.runner import BaseModule, auto_fp16
+from mmcv.runner import BaseModule
 
+from mmdet.core.utils import OptMultiConfig
 from mmdet.registry import MODELS
 
 
@@ -14,54 +17,59 @@ class CTResNetNeck(BaseModule):
     object classification and box regression.
 
     Args:
-         in_channel (int): Number of input channels.
+         in_channels (int): Number of input channels.
          num_deconv_filters (tuple[int]): Number of filters per stage.
          num_deconv_kernels (tuple[int]): Number of kernels per stage.
-         use_dcn (bool): If True, use DCNv2. Default: True.
-         init_cfg (dict or list[dict], optional): Initialization config dict.
+         use_dcn (bool): If True, use DCNv2. Defaults to True.
+         init_cfg (:obj:`ConfigDict` or dict or list[dict] or
+             list[:obj:`ConfigDict`], optional): Initialization
+             config dict.
     """
 
     def __init__(self,
-                 in_channel,
-                 num_deconv_filters,
-                 num_deconv_kernels,
-                 use_dcn=True,
-                 init_cfg=None):
-        super(CTResNetNeck, self).__init__(init_cfg)
+                 in_channels: int,
+                 num_deconv_filters: Tuple[int, ...],
+                 num_deconv_kernels: Tuple[int, ...],
+                 use_dcn: bool = True,
+                 init_cfg: OptMultiConfig = None) -> None:
+        super().__init__(init_cfg=init_cfg)
         assert len(num_deconv_filters) == len(num_deconv_kernels)
         self.fp16_enabled = False
         self.use_dcn = use_dcn
-        self.in_channel = in_channel
+        self.in_channels = in_channels
         self.deconv_layers = self._make_deconv_layer(num_deconv_filters,
                                                      num_deconv_kernels)
 
-    def _make_deconv_layer(self, num_deconv_filters, num_deconv_kernels):
+    def _make_deconv_layer(
+            self, num_deconv_filters: Tuple[int, ...],
+            num_deconv_kernels: Tuple[int, ...]) -> nn.Sequential:
         """use deconv layers to upsample backbone's output."""
         layers = []
         for i in range(len(num_deconv_filters)):
-            feat_channel = num_deconv_filters[i]
+            feat_channels = num_deconv_filters[i]
             conv_module = ConvModule(
-                self.in_channel,
-                feat_channel,
+                self.in_channels,
+                feat_channels,
                 3,
                 padding=1,
                 conv_cfg=dict(type='DCNv2') if self.use_dcn else None,
                 norm_cfg=dict(type='BN'))
             layers.append(conv_module)
             upsample_module = ConvModule(
-                feat_channel,
-                feat_channel,
+                feat_channels,
+                feat_channels,
                 num_deconv_kernels[i],
                 stride=2,
                 padding=1,
                 conv_cfg=dict(type='deconv'),
                 norm_cfg=dict(type='BN'))
             layers.append(upsample_module)
-            self.in_channel = feat_channel
+            self.in_channels = feat_channels
 
         return nn.Sequential(*layers)
 
-    def init_weights(self):
+    def init_weights(self) -> None:
+        """Initialize the parameters."""
         for m in self.modules():
             if isinstance(m, nn.ConvTranspose2d):
                 # In order to be consistent with the source code,
@@ -87,8 +95,8 @@ class CTResNetNeck(BaseModule):
                 # reset the Conv2d initialization parameters
                 m.reset_parameters()
 
-    @auto_fp16()
-    def forward(self, inputs):
-        assert isinstance(inputs, (list, tuple))
-        outs = self.deconv_layers(inputs[-1])
+    def forward(self, x: Sequence[torch.Tensor]) -> Tuple[torch.Tensor]:
+        """model forward."""
+        assert isinstance(x, (list, tuple))
+        outs = self.deconv_layers(x[-1])
         return outs,

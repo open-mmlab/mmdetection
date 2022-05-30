@@ -12,7 +12,7 @@ from mmcv.transforms import BaseTransform
 from mmcv.transforms import Pad as MMCV_Pad
 from mmcv.transforms import RandomFlip as MMCV_RandomFlip
 from mmcv.transforms import Resize as MMCV_Resize
-from mmcv.transforms.utils import cache_randomness
+from mmcv.transforms.utils import avoid_cache_randomness, cache_randomness
 from mmengine.dataset import BaseDataset
 from numpy import random
 
@@ -746,11 +746,11 @@ class PhotoMetricDistortion(BaseTransform):
 
     Required Keys:
 
-    - img
+    - img (np.uint8)
 
     Modified Keys:
 
-    - img
+    - img (np.float32)
 
     Args:
         brightness_delta (int): delta of brightness.
@@ -992,7 +992,7 @@ class MinIoURandomCrop(BaseTransform):
     - img
     - img_shape
     - gt_bboxes (np.float32) (optional)
-    - gt_bboxes_labels (np.int32) (optional)
+    - gt_bboxes_labels (np.int64) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_ignore_flags (np.bool) (optional)
     - gt_seg_map (np.uint8) (optional)
@@ -1383,7 +1383,8 @@ class Albu:
 
 
 @TRANSFORMS.register_module()
-class RandomCenterCropPad:
+@avoid_cache_randomness
+class RandomCenterCropPad(BaseTransform):
     """Random center crop and random around padding for CornerNet.
 
     This operation generates randomly cropped image from the original image and
@@ -1443,45 +1444,65 @@ class RandomCenterCropPad:
     3. Initialize the padding image with pixel value equals to ``mean``.
     4. Copy the ``cropped area`` to padding image.
 
+    Required Keys:
+
+    - img (np.float32)
+    - img_shape (tuple)
+    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes_labels (np.int64) (optional)
+    - gt_ignore_flags (np.bool) (optional)
+
+    Modified Keys:
+
+    - img (np.float32)
+    - img_shape (tuple)
+    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes_labels (np.int64) (optional)
+    - gt_ignore_flags (np.bool) (optional)
+
     Args:
-        crop_size (tuple | None): expected size after crop, final size will
+        crop_size (tuple, optional): expected size after crop, final size will
             computed according to ratio. Requires (h, w) in train mode, and
             None in test mode.
-        ratios (tuple): random select a ratio from tuple and crop image to
-            (crop_size[0] * ratio) * (crop_size[1] * ratio).
-            Only available in train mode.
-        border (int): max distance from center select area to image border.
-            Only available in train mode.
-        mean (sequence): Mean values of 3 channels.
-        std (sequence): Std values of 3 channels.
-        to_rgb (bool): Whether to convert the image from BGR to RGB.
+        ratios (tuple, optional): random select a ratio from tuple and crop
+            image to (crop_size[0] * ratio) * (crop_size[1] * ratio).
+            Only available in train mode. Defaults to (0.9, 1.0, 1.1).
+        border (int, optional): max distance from center select area to image
+            border. Only available in train mode. Defaults to 128.
+        mean (sequence, optional): Mean values of 3 channels.
+        std (sequence, optional): Std values of 3 channels.
+        to_rgb (bool, optional): Whether to convert the image from BGR to RGB.
         test_mode (bool): whether involve random variables in transform.
             In train mode, crop_size is fixed, center coords and ratio is
             random selected from predefined lists. In test mode, crop_size
             is image's original shape, center coords and ratio is fixed.
-        test_pad_mode (tuple): padding method and padding shape value, only
-            available in test mode. Default is using 'logical_or' with
-            127 as padding shape value.
+            Defaults to False.
+        test_pad_mode (tuple, optional): padding method and padding shape
+            value, only available in test mode. Default is using
+            'logical_or' with 127 as padding shape value.
 
             - 'logical_or': final_shape = input_shape | padding_shape_value
             - 'size_divisor': final_shape = int(
               ceil(input_shape / padding_shape_value) * padding_shape_value)
-        test_pad_add_pix (int): Extra padding pixel in test mode. Default 0.
-        bbox_clip_border (bool, optional): Whether clip the objects outside
+
+            Defaults to ('logical_or', 127).
+        test_pad_add_pix (int): Extra padding pixel in test mode.
+            Defaults to 0.
+        bbox_clip_border (bool): Whether clip the objects outside
             the border of the image. Defaults to True.
     """
 
     def __init__(self,
-                 crop_size=None,
-                 ratios=(0.9, 1.0, 1.1),
-                 border=128,
-                 mean=None,
-                 std=None,
-                 to_rgb=None,
-                 test_mode=False,
-                 test_pad_mode=('logical_or', 127),
-                 test_pad_add_pix=0,
-                 bbox_clip_border=True):
+                 crop_size: Optional[tuple] = None,
+                 ratios: Optional[tuple] = (0.9, 1.0, 1.1),
+                 border: Optional[int] = 128,
+                 mean: Optional[Sequence] = None,
+                 std: Optional[Sequence] = None,
+                 to_rgb: Optional[bool] = None,
+                 test_mode: bool = False,
+                 test_pad_mode: Optional[tuple] = ('logical_or', 127),
+                 test_pad_add_pix: int = 0,
+                 bbox_clip_border: bool = True) -> None:
         if test_mode:
             assert crop_size is None, 'crop_size must be None in test mode'
             assert ratios is None, 'ratios must be None in test mode'
@@ -1614,7 +1635,7 @@ class RandomCenterCropPad:
         """
         img = results['img']
         h, w, c = img.shape
-        boxes = results['gt_bboxes']
+        gt_bboxes = results['gt_bboxes']
         while True:
             scale = random.choice(self.ratios)
             new_h = int(self.crop_size[0] * scale)
@@ -1629,14 +1650,18 @@ class RandomCenterCropPad:
                 cropped_img, border, patch = self._crop_image_and_paste(
                     img, [center_y, center_x], [new_h, new_w])
 
-                mask = self._filter_boxes(patch, boxes)
+                if len(gt_bboxes) == 0:
+                    results['img'] = cropped_img
+                    results['img_shape'] = cropped_img.shape
+                    return results
+
                 # if image do not have valid bbox, any crop patch is valid.
-                if not mask.any() and len(boxes) > 0:
+                mask = self._filter_boxes(patch, gt_bboxes)
+                if not mask.any():
                     continue
 
                 results['img'] = cropped_img
                 results['img_shape'] = cropped_img.shape
-                results['pad_shape'] = cropped_img.shape
 
                 x0, y0, x1, y1 = patch
 
@@ -1644,31 +1669,35 @@ class RandomCenterCropPad:
                 cropped_center_x, cropped_center_y = new_w // 2, new_h // 2
 
                 # crop bboxes accordingly and clip to the image boundary
-                for key in results.get('bbox_fields', []):
-                    mask = self._filter_boxes(patch, results[key])
-                    bboxes = results[key][mask]
-                    bboxes[:, 0:4:2] += cropped_center_x - left_w - x0
-                    bboxes[:, 1:4:2] += cropped_center_y - top_h - y0
-                    if self.bbox_clip_border:
-                        bboxes[:, 0:4:2] = np.clip(bboxes[:, 0:4:2], 0, new_w)
-                        bboxes[:, 1:4:2] = np.clip(bboxes[:, 1:4:2], 0, new_h)
-                    keep = (bboxes[:, 2] > bboxes[:, 0]) & (
-                        bboxes[:, 3] > bboxes[:, 1])
-                    bboxes = bboxes[keep]
-                    results[key] = bboxes
-                    if key in ['gt_bboxes']:
-                        if 'gt_labels' in results:
-                            labels = results['gt_labels'][mask]
-                            labels = labels[keep]
-                            results['gt_labels'] = labels
-                        if 'gt_masks' in results:
-                            raise NotImplementedError(
-                                'RandomCenterCropPad only supports bbox.')
+                gt_bboxes = gt_bboxes[mask]
+                gt_bboxes[:, 0:4:2] += cropped_center_x - left_w - x0
+                gt_bboxes[:, 1:4:2] += cropped_center_y - top_h - y0
+                if self.bbox_clip_border:
+                    gt_bboxes[:, 0:4:2] = np.clip(gt_bboxes[:, 0:4:2], 0,
+                                                  new_w)
+                    gt_bboxes[:, 1:4:2] = np.clip(gt_bboxes[:, 1:4:2], 0,
+                                                  new_h)
+                keep = (gt_bboxes[:, 2] > gt_bboxes[:, 0]) & (
+                    gt_bboxes[:, 3] > gt_bboxes[:, 1])
+                gt_bboxes = gt_bboxes[keep]
 
-                # crop semantic seg
-                for key in results.get('seg_fields', []):
+                results['gt_bboxes'] = gt_bboxes
+
+                # ignore_flags
+                if results.get('gt_ignore_flags', None) is not None:
+                    gt_ignore_flags = results['gt_ignore_flags'][mask]
+                    results['gt_ignore_flags'] = \
+                        gt_ignore_flags[keep]
+
+                # labels
+                if results.get('gt_bboxes_labels', None) is not None:
+                    gt_labels = results['gt_bboxes_labels'][mask]
+                    results['gt_bboxes_labels'] = gt_labels[keep]
+
+                if 'gt_masks' in results or 'gt_seg_map' in results:
                     raise NotImplementedError(
                         'RandomCenterCropPad only supports bbox.')
+
                 return results
 
     def _test_aug(self, results):
@@ -1684,7 +1713,6 @@ class RandomCenterCropPad:
         """
         img = results['img']
         h, w, c = img.shape
-        results['img_shape'] = img.shape
         if self.test_pad_mode[0] in ['logical_or']:
             # self.test_pad_add_pix is only used for centernet
             target_h = (h | self.test_pad_mode[1]) + self.test_pad_add_pix
@@ -1701,11 +1729,11 @@ class RandomCenterCropPad:
         cropped_img, border, _ = self._crop_image_and_paste(
             img, [h // 2, w // 2], [target_h, target_w])
         results['img'] = cropped_img
-        results['pad_shape'] = cropped_img.shape
+        results['img_shape'] = cropped_img.shape
         results['border'] = border
         return results
 
-    def __call__(self, results):
+    def transform(self, results: dict) -> dict:
         img = results['img']
         assert img.dtype == np.float32, (
             'RandomCenterCropPad needs the input image of dtype np.float32,'
@@ -1900,8 +1928,8 @@ class Mosaic(BaseTransform):
                  pad_val: float = 114.0,
                  prob: float = 1.0) -> None:
         assert isinstance(img_scale, tuple)
-        assert 0 <= prob <= 1.0, 'The probability should be in range [0,1]. '\
-            f'got {prob}.'
+        assert 0 <= prob <= 1.0, 'The probability should be in range [0,1]. ' \
+                                 f'got {prob}.'
 
         log_img_scale(img_scale, skip_square=True)
         self.img_scale = img_scale
@@ -2057,40 +2085,40 @@ class Mosaic(BaseTransform):
         if loc == 'top_left':
             # index0 to top left part of image
             x1, y1, x2, y2 = max(center_position_xy[0] - img_shape_wh[0], 0), \
-                max(center_position_xy[1] - img_shape_wh[1], 0), \
-                center_position_xy[0], \
-                center_position_xy[1]
+                             max(center_position_xy[1] - img_shape_wh[1], 0), \
+                             center_position_xy[0], \
+                             center_position_xy[1]
             crop_coord = img_shape_wh[0] - (x2 - x1), img_shape_wh[1] - (
                 y2 - y1), img_shape_wh[0], img_shape_wh[1]
 
         elif loc == 'top_right':
             # index1 to top right part of image
             x1, y1, x2, y2 = center_position_xy[0], \
-                max(center_position_xy[1] - img_shape_wh[1], 0), \
-                min(center_position_xy[0] + img_shape_wh[0],
-                    self.img_scale[1] * 2), \
-                center_position_xy[1]
+                             max(center_position_xy[1] - img_shape_wh[1], 0), \
+                             min(center_position_xy[0] + img_shape_wh[0],
+                                 self.img_scale[1] * 2), \
+                             center_position_xy[1]
             crop_coord = 0, img_shape_wh[1] - (y2 - y1), min(
                 img_shape_wh[0], x2 - x1), img_shape_wh[1]
 
         elif loc == 'bottom_left':
             # index2 to bottom left part of image
             x1, y1, x2, y2 = max(center_position_xy[0] - img_shape_wh[0], 0), \
-                center_position_xy[1], \
-                center_position_xy[0], \
-                min(self.img_scale[0] * 2, center_position_xy[1] +
-                    img_shape_wh[1])
+                             center_position_xy[1], \
+                             center_position_xy[0], \
+                             min(self.img_scale[0] * 2, center_position_xy[1] +
+                                 img_shape_wh[1])
             crop_coord = img_shape_wh[0] - (x2 - x1), 0, img_shape_wh[0], min(
                 y2 - y1, img_shape_wh[1])
 
         else:
             # index3 to bottom right part of image
             x1, y1, x2, y2 = center_position_xy[0], \
-                center_position_xy[1], \
-                min(center_position_xy[0] + img_shape_wh[0],
-                    self.img_scale[1] * 2), \
-                min(self.img_scale[0] * 2, center_position_xy[1] +
-                    img_shape_wh[1])
+                             center_position_xy[1], \
+                             min(center_position_xy[0] + img_shape_wh[0],
+                                 self.img_scale[1] * 2), \
+                             min(self.img_scale[0] * 2, center_position_xy[1] +
+                                 img_shape_wh[1])
             crop_coord = 0, 0, min(img_shape_wh[0],
                                    x2 - x1), min(y2 - y1, img_shape_wh[1])
 

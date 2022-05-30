@@ -5,14 +5,16 @@ import unittest
 
 import mmcv
 import numpy as np
+from mmcv.transforms import LoadImageFromFile
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.core.mask import BitmapMasks
 from mmdet.datasets.pipelines import (CopyPaste, CutOut, Expand,
                                       MinIoURandomCrop, MixUp, Mosaic, Pad,
                                       PhotoMetricDistortion, RandomAffine,
-                                      RandomCrop, RandomFlip, Resize,
-                                      SegRescale, YOLOXHSVRandomAug)
+                                      RandomCenterCropPad, RandomCrop,
+                                      RandomFlip, Resize, SegRescale,
+                                      YOLOXHSVRandomAug)
 from .utils import create_full_masks, create_random_bboxes
 
 
@@ -778,6 +780,126 @@ class TestYOLOXHSVRandomAug(unittest.TestCase):
             repr(transform), ('YOLOXHSVRandomAug(hue_delta=5, '
                               'saturation_delta=30, '
                               'value_delta=30)'))
+
+
+class TestRandomCenterCropPad(unittest.TestCase):
+
+    def test_init(self):
+        # test assertion for invalid crop_size while test_mode=False
+        with self.assertRaises(AssertionError):
+            RandomCenterCropPad(
+                crop_size=(-1, 0), test_mode=False, test_pad_mode=None)
+
+        # test assertion for invalid ratios while test_mode=False
+        with self.assertRaises(AssertionError):
+            RandomCenterCropPad(
+                crop_size=(511, 511),
+                ratios=(1.0, 1.0),
+                test_mode=False,
+                test_pad_mode=None)
+
+        # test assertion for invalid mean, std and to_rgb
+        with self.assertRaises(AssertionError):
+            RandomCenterCropPad(
+                crop_size=(511, 511),
+                mean=None,
+                std=None,
+                to_rgb=None,
+                test_mode=False,
+                test_pad_mode=None)
+
+        # test assertion for invalid crop_size while test_mode=True
+        with self.assertRaises(AssertionError):
+            RandomCenterCropPad(
+                crop_size=(511, 511),
+                ratios=None,
+                border=None,
+                mean=[123.675, 116.28, 103.53],
+                std=[58.395, 57.12, 57.375],
+                to_rgb=True,
+                test_mode=True,
+                test_pad_mode=('logical_or', 127))
+
+        # test assertion for invalid ratios while test_mode=True
+        with self.assertRaises(AssertionError):
+            RandomCenterCropPad(
+                crop_size=None,
+                ratios=(0.9, 1.0, 1.1),
+                border=None,
+                mean=[123.675, 116.28, 103.53],
+                std=[58.395, 57.12, 57.375],
+                to_rgb=True,
+                test_mode=True,
+                test_pad_mode=('logical_or', 127))
+
+        # test assertion for invalid border while test_mode=True
+        with self.assertRaises(AssertionError):
+            RandomCenterCropPad(
+                crop_size=None,
+                ratios=None,
+                border=128,
+                mean=[123.675, 116.28, 103.53],
+                std=[58.395, 57.12, 57.375],
+                to_rgb=True,
+                test_mode=True,
+                test_pad_mode=('logical_or', 127))
+
+        # test assertion for invalid test_pad_mode while test_mode=True
+        with self.assertRaises(AssertionError):
+            RandomCenterCropPad(
+                crop_size=None,
+                ratios=None,
+                border=None,
+                mean=[123.675, 116.28, 103.53],
+                std=[58.395, 57.12, 57.375],
+                to_rgb=True,
+                test_mode=True,
+                test_pad_mode=('do_nothing', 100))
+
+    def test_transform(self):
+        results = dict(
+            img_path=osp.join(osp.dirname(__file__), '../../data/color.jpg'))
+
+        load = LoadImageFromFile(to_float32=True)
+        results = load(results)
+        test_results = copy.deepcopy(results)
+
+        h, w = results['img_shape']
+        gt_bboxes = create_random_bboxes(4, w, h)
+        gt_bboxes_labels = np.array([1, 2, 3, 1], dtype=np.int64)
+        gt_ignore_flags = np.array([0, 0, 1, 1], dtype=np.bool8)
+        results['gt_bboxes'] = gt_bboxes
+        results['gt_bboxes_labels'] = gt_bboxes_labels
+        results['gt_ignore_flags'] = gt_ignore_flags
+        crop_module = RandomCenterCropPad(
+            crop_size=(h - 20, w - 20),
+            ratios=(1.0, ),
+            border=128,
+            mean=[123.675, 116.28, 103.53],
+            std=[58.395, 57.12, 57.375],
+            to_rgb=True,
+            test_mode=False,
+            test_pad_mode=None)
+        train_results = crop_module(results)
+        assert train_results['img'].shape[:2] == (h - 20, w - 20)
+        # All bboxes should be reserved after crop
+        assert train_results['img_shape'][:2] == (h - 20, w - 20)
+        assert train_results['gt_bboxes'].shape[0] == 4
+        assert train_results['gt_bboxes'].dtype == np.float32
+
+        crop_module = RandomCenterCropPad(
+            crop_size=None,
+            ratios=None,
+            border=None,
+            mean=[123.675, 116.28, 103.53],
+            std=[58.395, 57.12, 57.375],
+            to_rgb=True,
+            test_mode=True,
+            test_pad_mode=('logical_or', 127))
+        test_results = crop_module(test_results)
+        assert test_results['img'].shape[:2] == (h | 127, w | 127)
+        assert test_results['img_shape'][:2] == (h | 127, w | 127)
+        assert 'border' in test_results
 
 
 class TestCopyPaste(unittest.TestCase):

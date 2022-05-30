@@ -4,8 +4,8 @@ import torch
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmdet.models.necks import (FPG, FPN, FPN_CARAFE, NASFCOS_FPN, NASFPN,
-                                YOLOXPAFPN, ChannelMapper, CTResNetNeck,
-                                DilatedEncoder, DyHead, SSDNeck, YOLOV3Neck)
+                                YOLOXPAFPN, ChannelMapper, DilatedEncoder,
+                                DyHead, SSDNeck, YOLOV3Neck)
 
 
 def test_fpn():
@@ -239,48 +239,6 @@ def test_dilated_encoder():
     feat = [torch.rand(1, in_channels, 34, 34)]
     out_feat = dilated_encoder(feat)[0]
     assert out_feat.shape == (1, out_channels, out_shape, out_shape)
-
-
-def test_ct_resnet_neck():
-    # num_filters/num_kernels must be a list
-    with pytest.raises(TypeError):
-        CTResNetNeck(
-            in_channel=10, num_deconv_filters=10, num_deconv_kernels=4)
-
-    # num_filters/num_kernels must be same length
-    with pytest.raises(AssertionError):
-        CTResNetNeck(
-            in_channel=10,
-            num_deconv_filters=(10, 10),
-            num_deconv_kernels=(4, ))
-
-    in_channels = 16
-    num_filters = (8, 8)
-    num_kernels = (4, 4)
-    feat = torch.rand(1, 16, 4, 4)
-    ct_resnet_neck = CTResNetNeck(
-        in_channel=in_channels,
-        num_deconv_filters=num_filters,
-        num_deconv_kernels=num_kernels,
-        use_dcn=False)
-
-    # feat must be list or tuple
-    with pytest.raises(AssertionError):
-        ct_resnet_neck(feat)
-
-    out_feat = ct_resnet_neck([feat])[0]
-    assert out_feat.shape == (1, num_filters[-1], 16, 16)
-
-    if torch.cuda.is_available():
-        # test dcn
-        ct_resnet_neck = CTResNetNeck(
-            in_channel=in_channels,
-            num_deconv_filters=num_filters,
-            num_deconv_kernels=num_kernels)
-        ct_resnet_neck = ct_resnet_neck.cuda()
-        feat = feat.cuda()
-        out_feat = ct_resnet_neck([feat])[0]
-        assert out_feat.shape == (1, num_filters[-1], 16, 16)
 
 
 def test_yolov3_neck():
