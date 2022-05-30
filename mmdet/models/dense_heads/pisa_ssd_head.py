@@ -1,51 +1,65 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Dict, List, Optional, Union
+
 import torch
+from mmengine.data import InstanceData
+from torch import Tensor
 
 from mmdet.core import multi_apply
 from mmdet.registry import MODELS
 from ..losses import CrossEntropyLoss, SmoothL1Loss, carl_loss, isr_p
 from .ssd_head import SSDHead
 
+InstList = List[InstanceData]
+OptInstList = Optional[InstList]
+
 
 # TODO: add loss evaluator for SSD
 @MODELS.register_module()
 class PISASSDHead(SSDHead):
-    """SSD head with PISA used in https://arxiv.org/abs/1904.04821.
+    """Implementation of `PISA SSD head <https://arxiv.org/abs/1904.04821>`_
 
     Args:
         num_classes (int): Number of categories excluding the background
             category.
-        in_channels (int): Number of channels in the input feature map.
+        in_channels (Sequence[int]): Number of channels in the input feature
+            map.
         stacked_convs (int): Number of conv layers in cls and reg tower.
-            Default: 0.
+            Defaults to 0.
         feat_channels (int): Number of hidden channels when stacked_convs
-            > 0. Default: 256.
+            > 0. Defaults to 256.
         use_depthwise (bool): Whether to use DepthwiseSeparableConv.
-            Default: False.
-        conv_cfg (dict): Dictionary to construct and config conv layer.
-            Default: None.
-        norm_cfg (dict): Dictionary to construct and config norm layer.
-            Default: None.
-        act_cfg (dict): Dictionary to construct and config activation layer.
-            Default: None.
-        anchor_generator (dict): Config dict for anchor generator
-        bbox_coder (dict): Config of bounding box coder.
+            Defaults to False.
+        conv_cfg (:obj:`ConfigDict` or dict, Optional): Dictionary to construct
+            and config conv layer. Defaults to None.
+        norm_cfg (:obj:`ConfigDict` or dict, Optional): Dictionary to construct
+            and config norm layer. Defaults to None.
+        act_cfg (:obj:`ConfigDict` or dict, Optional): Dictionary to construct
+            and config activation layer. Defaults to None.
+        anchor_generator (:obj:`ConfigDict` or dict): Config dict for anchor
+            generator.
+        bbox_coder (:obj:`ConfigDict` or dict): Config of bounding box coder.
         reg_decoded_bbox (bool): If true, the regression loss would be
             applied directly on decoded bounding boxes, converting both
             the predicted boxes and regression targets to absolute
-            coordinates format. Default False. It should be `True` when
+            coordinates format. Defaults to False. It should be `True` when
             using `IoULoss`, `GIoULoss`, or `DIoULoss` in the bbox head.
-        train_cfg (dict): Training config of anchor head.
-        test_cfg (dict): Testing config of anchor head.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+        train_cfg (:obj:`ConfigDict` or dict, Optional): Training config of
+            anchor head.
+        test_cfg (:obj:`ConfigDict` or dict, Optional): Testing config of
+            anchor head.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict], Optional): Initialization config dict.
     """  # noqa: W605
 
-    def loss(self,
-             cls_scores,
-             bbox_preds,
-             batch_gt_instances,
-             batch_img_metas,
-             batch_gt_instances_ignore=None):
+    def loss(
+        self,
+        cls_scores: List[Tensor],
+        bbox_preds: List[Tensor],
+        batch_gt_instances: InstList,
+        batch_img_metas: List[dict],
+        batch_gt_instances_ignore: OptInstList = None
+    ) -> Dict[str, Union[List[Tensor], Tensor]]:
         """Compute losses of the head.
 
         Args:
@@ -64,8 +78,14 @@ class PISASSDHead(SSDHead):
                 Defaults to None.
 
         Returns:
-            dict: Loss dict, comprise classification loss regression loss and
-                carl loss.
+            dict[str, Union[List[Tensor], Tensor]]: A dictionary of loss
+            components. the dict has components below:
+
+            - loss_cls (list[Tensor]): A list containing each feature map \
+            classification loss.
+            - loss_bbox (list[Tensor]): A list containing each feature map \
+            regression loss.
+            - loss_carl (Tensor): The loss of CARL.
         """
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == self.prior_generator.num_levels
@@ -83,8 +103,6 @@ class PISASSDHead(SSDHead):
             label_channels=1,
             unmap_outputs=False,
             return_sampling_results=True)
-        if cls_reg_targets is None:
-            return None
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          avg_factor, sampling_results_list) = cls_reg_targets
 
@@ -124,7 +142,7 @@ class PISASSDHead(SSDHead):
                 sampling_results_list,
                 loss_cls=CrossEntropyLoss(),
                 bbox_coder=self.bbox_coder,
-                **self.train_cfg.isr,
+                **self.train_cfg['isr'],
                 num_class=self.num_classes)
             (new_labels, new_label_weights, new_bbox_targets,
              new_bbox_weights) = all_targets
@@ -142,7 +160,7 @@ class PISASSDHead(SSDHead):
                 all_bbox_preds.view(-1, 4),
                 all_targets[2],
                 SmoothL1Loss(beta=1.),
-                **self.train_cfg.carl,
+                **self.train_cfg['carl'],
                 avg_factor=avg_factor,
                 num_class=self.num_classes)
 

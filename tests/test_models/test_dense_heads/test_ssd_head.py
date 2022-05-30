@@ -13,7 +13,7 @@ from mmdet.models.dense_heads import SSDHead
 class TestSSDHead(TestCase):
 
     def test_ssd_head_loss(self):
-        """Tests anchor head loss when truth is empty and non-empty."""
+        """Tests ssd head loss when truth is empty and non-empty."""
         s = 300
         img_metas = [{
             'img_shape': (s, s, 3),
@@ -28,6 +28,7 @@ class TestSSDHead(TestCase):
                     min_pos_iou=0.,
                     ignore_iof_thr=-1,
                     gt_max_assign_all=False),
+                sampler=dict(type='PseudoSampler'),
                 smoothl1_beta=1.,
                 allowed_border=-1,
                 pos_weight=-1,
@@ -48,7 +49,7 @@ class TestSSDHead(TestCase):
                 ratios=[[2], [2, 3], [2, 3], [2, 3], [2], [2]]),
             train_cfg=cfg)
 
-        # Anchor head expects a multiple levels of features per image
+        # SSD head expects a multiple levels of features per image
         feats = (
             torch.rand(1, 1, ceil(s / stride[0]), ceil(s / stride[0]))
             for stride in ssd_head.prior_generator.strides)

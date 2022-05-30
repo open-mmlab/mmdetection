@@ -1107,8 +1107,9 @@ class MinIoURandomCrop(BaseTransform):
                                 results['gt_ignore_flags'][mask]
 
                         # labels
-                        if results.get('gt_labels', None) is not None:
-                            results['gt_labels'] = results['gt_labels'][mask]
+                        if results.get('gt_bboxes_labels', None) is not None:
+                            results['gt_bboxes_labels'] = results[
+                                'gt_bboxes_labels'][mask]
 
                         # mask fields
                         if results.get('gt_masks', None) is not None:
