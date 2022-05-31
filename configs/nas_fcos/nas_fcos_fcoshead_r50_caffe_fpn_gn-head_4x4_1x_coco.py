@@ -3,8 +3,15 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
+# model settings
+preprocess_cfg = dict(
+    mean=[103.530, 116.280, 123.675],
+    std=[1.0, 1.0, 1.0],
+    to_rgb=False,
+    pad_size_divisor=32)
 model = dict(
     type='NASFCOS',
+    preprocess_cfg=preprocess_cfg,
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -59,42 +66,9 @@ model = dict(
         nms=dict(type='nms', iou_threshold=0.6),
         max_per_img=100))
 
-img_norm_cfg = dict(
-    mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
+# dataset settings
+train_dataloader = dict(batch_size=4, num_workers=2)
 
-train_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
-]
-
-test_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(
-        type='MultiScaleFlipAug',
-        img_scale=(1333, 800),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
-        ])
-]
-
-data = dict(
-    samples_per_gpu=4,
-    workers_per_gpu=2,
-    train=dict(pipeline=train_pipeline),
-    val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
-
+# optimizer
 optimizer = dict(
     lr=0.01, paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.))
