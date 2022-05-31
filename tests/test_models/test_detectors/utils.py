@@ -149,7 +149,7 @@ def demo_mm_inputs(batch_size=2,
         # ignore_instances
         ignore_instances = InstanceData()
         bboxes = _rand_bboxes(rng, num_boxes, w, h)
-        ignore_instances.bboxes = bboxes
+        ignore_instances.bboxes = torch.FloatTensor(bboxes)
         data_sample.ignored_instances = ignore_instances
 
         # gt_sem_seg

@@ -6,7 +6,7 @@ from typing import List, Optional, Union
 from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 
-from mmdet.core import DetDataSample
+from ..data_structures import DetDataSample
 
 # Type hint of config data
 ConfigType = Union[ConfigDict, dict]
