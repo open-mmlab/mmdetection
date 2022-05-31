@@ -1,18 +1,22 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import warnings
 from abc import abstractmethod
+from typing import Any, List, Sequence, Tuple, Union
 
-import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmcv.runner import force_fp32
+from numpy import ndarray
+from torch import Tensor
 
-from mmdet.core import build_bbox_coder, multi_apply
+from mmdet.core import multi_apply
 from mmdet.core.anchor.point_generator import MlvlPointGenerator
-from mmdet.registry import MODELS
-from ..builder import build_loss
+from mmdet.core.utils import (ConfigType, InstanceList, MultiConfig,
+                              OptConfigType, OptInstanceList)
+from mmdet.registry import MODELS, TASK_UTILS
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
+
+StrideType = Union[Sequence[int], Sequence[Tuple[int, int]]]
 
 
 @MODELS.register_module()
@@ -25,55 +29,60 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         in_channels (int): Number of channels in the input feature map.
         feat_channels (int): Number of hidden channels. Used in child classes.
         stacked_convs (int): Number of stacking convs of the head.
-        strides (tuple): Downsample factor of each feature map.
+        strides (Sequence[int] or Sequence[Tuple[int, int]]): Downsample
+            factor of each feature map.
         dcn_on_last_conv (bool): If true, use dcn in the last layer of
-            towers. Default: False.
-        conv_bias (bool | str): If specified as `auto`, it will be decided by
+            towers. Defaults to False.
+        conv_bias (bool or str): If specified as `auto`, it will be decided by
             the norm_cfg. Bias of conv will be set as True if `norm_cfg` is
             None, otherwise False. Default: "auto".
-        loss_cls (dict): Config of classification loss.
-        loss_bbox (dict): Config of localization loss.
-        bbox_coder (dict): Config of bbox coder. Defaults
+        loss_cls (:obj:`ConfigDict` or dict): Config of classification loss.
+        loss_bbox (:obj:`ConfigDict` or dict): Config of localization loss.
+        bbox_coder (:obj:`ConfigDict` or dict): Config of bbox coder. Defaults
             'DistancePointBBoxCoder'.
-        conv_cfg (dict): Config dict for convolution layer. Default: None.
-        norm_cfg (dict): Config dict for normalization layer. Default: None.
-        train_cfg (dict): Training config of anchor head.
-        test_cfg (dict): Testing config of anchor head.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+        conv_cfg (:obj:`ConfigDict` or dict, Optional): Config dict for
+            convolution layer. Defaults to None.
+        norm_cfg (:obj:`ConfigDict` or dict, Optional): Config dict for
+            normalization layer. Defaults to None.
+        train_cfg (:obj:`ConfigDict` or dict, Optional): Training config of
+            anchor-free head.
+        test_cfg (:obj:`ConfigDict` or dict, Optional): Testing config of
+            anchor-free head.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict]): Initialization config dict.
     """  # noqa: W605
 
     _version = 1
 
-    def __init__(self,
-                 num_classes,
-                 in_channels,
-                 feat_channels=256,
-                 stacked_convs=4,
-                 strides=(4, 8, 16, 32, 64),
-                 dcn_on_last_conv=False,
-                 conv_bias='auto',
-                 loss_cls=dict(
-                     type='FocalLoss',
-                     use_sigmoid=True,
-                     gamma=2.0,
-                     alpha=0.25,
-                     loss_weight=1.0),
-                 loss_bbox=dict(type='IoULoss', loss_weight=1.0),
-                 bbox_coder=dict(type='DistancePointBBoxCoder'),
-                 conv_cfg=None,
-                 norm_cfg=None,
-                 train_cfg=None,
-                 test_cfg=None,
-                 init_cfg=dict(
-                     type='Normal',
-                     layer='Conv2d',
-                     std=0.01,
-                     override=dict(
-                         type='Normal',
-                         name='conv_cls',
-                         std=0.01,
-                         bias_prob=0.01))):
-        super(AnchorFreeHead, self).__init__(init_cfg=init_cfg)
+    def __init__(
+        self,
+        num_classes: int,
+        in_channels: int,
+        feat_channels: int = 256,
+        stacked_convs: int = 4,
+        strides: StrideType = (4, 8, 16, 32, 64),
+        dcn_on_last_conv: bool = False,
+        conv_bias: Union[bool, str] = 'auto',
+        loss_cls: ConfigType = dict(
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0),
+        loss_bbox: ConfigType = dict(type='IoULoss', loss_weight=1.0),
+        bbox_coder: ConfigType = dict(type='DistancePointBBoxCoder'),
+        conv_cfg: OptConfigType = None,
+        norm_cfg: OptConfigType = None,
+        train_cfg: OptConfigType = None,
+        test_cfg: OptConfigType = None,
+        init_cfg: MultiConfig = dict(
+            type='Normal',
+            layer='Conv2d',
+            std=0.01,
+            override=dict(
+                type='Normal', name='conv_cls', std=0.01, bias_prob=0.01))
+    ) -> None:
+        super().__init__(init_cfg=init_cfg)
         self.num_classes = num_classes
         self.use_sigmoid_cls = loss_cls.get('use_sigmoid', False)
         if self.use_sigmoid_cls:
@@ -87,9 +96,9 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         self.dcn_on_last_conv = dcn_on_last_conv
         assert conv_bias == 'auto' or isinstance(conv_bias, bool)
         self.conv_bias = conv_bias
-        self.loss_cls = build_loss(loss_cls)
-        self.loss_bbox = build_loss(loss_bbox)
-        self.bbox_coder = build_bbox_coder(bbox_coder)
+        self.loss_cls = MODELS.build(loss_cls)
+        self.loss_bbox = MODELS.build(loss_bbox)
+        self.bbox_coder = TASK_UTILS.build(bbox_coder)
 
         self.prior_generator = MlvlPointGenerator(strides)
 
@@ -105,13 +114,13 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
 
         self._init_layers()
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         """Initialize layers of the head."""
         self._init_cls_convs()
         self._init_reg_convs()
         self._init_predictor()
 
-    def _init_cls_convs(self):
+    def _init_cls_convs(self) -> None:
         """Initialize classification conv layers of the head."""
         self.cls_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
@@ -131,7 +140,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                     norm_cfg=self.norm_cfg,
                     bias=self.conv_bias))
 
-    def _init_reg_convs(self):
+    def _init_reg_convs(self) -> None:
         """Initialize bbox regression conv layers of the head."""
         self.reg_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
@@ -151,14 +160,17 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                     norm_cfg=self.norm_cfg,
                     bias=self.conv_bias))
 
-    def _init_predictor(self):
+    def _init_predictor(self) -> None:
         """Initialize predictor layers of the head."""
         self.conv_cls = nn.Conv2d(
             self.feat_channels, self.cls_out_channels, 3, padding=1)
         self.conv_reg = nn.Conv2d(self.feat_channels, 4, 3, padding=1)
 
-    def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
-                              missing_keys, unexpected_keys, error_msgs):
+    def _load_from_state_dict(self, state_dict: dict, prefix: str,
+                              local_metadata: dict, strict: bool,
+                              missing_keys: Union[List[str], str],
+                              unexpected_keys: Union[List[str], str],
+                              error_msgs: Union[List[str], str]) -> None:
         """Hack some keys of the model state dict so that can load checkpoints
         of previous version."""
         version = local_metadata.get('version', None)
@@ -195,7 +207,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
                                       strict, missing_keys, unexpected_keys,
                                       error_msgs)
 
-    def forward(self, feats):
+    def forward(self, x: Tuple[Tensor]) -> Tuple[List[Tensor], List[Tensor]]:
         """Forward features from the upstream network.
 
         Args:
@@ -204,16 +216,16 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
 
         Returns:
             tuple: Usually contain classification scores and bbox predictions.
-                cls_scores (list[Tensor]): Box scores for each scale level,
-                    each is a 4D-tensor, the channel number is
-                    num_points * num_classes.
-                bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                    level, each is a 4D-tensor, the channel number is
-                    num_points * 4.
-        """
-        return multi_apply(self.forward_single, feats)[:2]
 
-    def forward_single(self, x):
+            - cls_scores (list[Tensor]): Box scores for each scale level, \
+            each is a 4D-tensor, the channel number is \
+            num_points * num_classes.
+            - bbox_preds (list[Tensor]): Box energies / deltas for each scale \
+            level, each is a 4D-tensor, the channel number is num_points * 4.
+        """
+        return multi_apply(self.forward_single, x)[:2]
+
+    def forward_single(self, x: Tensor) -> Tuple[Tensor, ...]:
         """Forward features of a single scale level.
 
         Args:
@@ -221,8 +233,8 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
 
         Returns:
             tuple: Scores for each class, bbox predictions, features
-                after classification and regression conv layers, some
-                models needs these features like FCOS.
+            after classification and regression conv layers, some
+            models needs these features like FCOS.
         """
         cls_feat = x
         reg_feat = x
@@ -239,11 +251,11 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
     @abstractmethod
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def loss(self,
-             cls_scores,
-             bbox_preds,
-             batch_gt_instances,
-             batch_img_metas,
-             batch_gt_instances_ignore=None):
+             cls_scores: List[Tensor],
+             bbox_preds: List[Tensor],
+             batch_gt_instances: InstanceList,
+             batch_img_metas: List[dict],
+             batch_gt_instances_ignore: OptInstanceList = None) -> dict:
         """Compute loss of the head.
 
         Args:
@@ -267,7 +279,8 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         raise NotImplementedError
 
     @abstractmethod
-    def get_targets(self, points, batch_gt_instances):
+    def get_targets(self, points: List[Tensor],
+                    batch_gt_instances: InstanceList) -> Any:
         """Compute regression, classification and centerness targets for points
         in multiple images.
 
@@ -280,59 +293,11 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         """
         raise NotImplementedError
 
-    def _get_points_single(self,
-                           featmap_size,
-                           stride,
-                           dtype,
-                           device,
-                           flatten=False):
-        """Get points of a single scale level.
-
-        This function will be deprecated soon.
-        """
-
-        warnings.warn(
-            '`_get_points_single` in `AnchorFreeHead` will be '
-            'deprecated soon, we support a multi level point generator now'
-            'you can get points of a single level feature map '
-            'with `self.prior_generator.single_level_grid_priors` ')
-
-        h, w = featmap_size
-        # First create Range with the default dtype, than convert to
-        # target `dtype` for onnx exporting.
-        x_range = torch.arange(w, device=device).to(dtype)
-        y_range = torch.arange(h, device=device).to(dtype)
-        y, x = torch.meshgrid(y_range, x_range)
-        if flatten:
-            y = y.flatten()
-            x = x.flatten()
-        return y, x
-
-    def get_points(self, featmap_sizes, dtype, device, flatten=False):
-        """Get points according to feature map sizes.
-
-        Args:
-            featmap_sizes (list[tuple]): Multi-level feature map sizes.
-            dtype (torch.dtype): Type of points.
-            device (torch.device): Device of points.
-
-        Returns:
-            tuple: points of each image.
-        """
-        warnings.warn(
-            '`get_points` in `AnchorFreeHead` will be '
-            'deprecated soon, we support a multi level point generator now'
-            'you can get points of all levels '
-            'with `self.prior_generator.grid_priors` ')
-
-        mlvl_points = []
-        for i in range(len(featmap_sizes)):
-            mlvl_points.append(
-                self._get_points_single(featmap_sizes[i], self.strides[i],
-                                        dtype, device, flatten))
-        return mlvl_points
-
-    def aug_test(self, aug_batch_feats, aug_batch_img_metas, rescale=False):
+    # TODO refactor aug_test
+    def aug_test(self,
+                 aug_batch_feats: List[Tensor],
+                 aug_batch_img_metas: List[List[Tensor]],
+                 rescale: bool = False) -> List[ndarray]:
         """Test function with test time augmentation.
 
         Args:

@@ -2,9 +2,16 @@ _base_ = [
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
+
 # model settings
+preprocess_cfg = dict(
+    mean=[102.9801, 115.9465, 122.7717],
+    std=[1.0, 1.0, 1.0],
+    to_rgb=False,
+    pad_size_divisor=32)
 model = dict(
     type='FCOS',
+    preprocess_cfg=preprocess_cfg,
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -48,49 +55,30 @@ model = dict(
         score_thr=0.05,
         nms=dict(type='nms', iou_threshold=0.5),
         max_per_img=100))
-img_norm_cfg = dict(
-    mean=[102.9801, 115.9465, 122.7717], std=[1.0, 1.0, 1.0], to_rgb=False)
-train_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
-]
-test_pipeline = [
-    dict(type='LoadImageFromFile'),
+
+# training schedule for 1x
+train_cfg = dict(by_epoch=True, max_epochs=12)
+val_cfg = dict(interval=1)
+test_cfg = dict()
+
+# learning rate
+param_scheduler = [
+    dict(type='ConstantLR', factor=1.0 / 3, by_epoch=False, begin=0, end=500),
     dict(
-        type='MultiScaleFlipAug',
-        img_scale=(1333, 800),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
-        ])
+        type='MultiStepLR',
+        begin=0,
+        end=12,
+        by_epoch=True,
+        milestones=[8, 11],
+        gamma=0.1)
 ]
-data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
-    train=dict(pipeline=train_pipeline),
-    val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
+
 # optimizer
 optimizer = dict(
     lr=0.01, paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.))
-optimizer_config = dict(
-    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
-# learning policy
-lr_config = dict(
-    policy='step',
-    warmup='constant',
-    warmup_iters=500,
-    warmup_ratio=1.0 / 3,
-    step=[8, 11])
-runner = dict(type='EpochBasedRunner', max_epochs=12)
+
+default_hooks = dict(
+    optimizer=dict(
+        _delete_=True,
+        type='OptimizerHook',
+        grad_clip=dict(max_norm=35, norm_type=2)))
