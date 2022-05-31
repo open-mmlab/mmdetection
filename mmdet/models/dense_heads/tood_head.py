@@ -144,10 +144,10 @@ class TOODHead(ATSSHead):
         self.relu = nn.ReLU(inplace=True)
         self.inter_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
-            if i < self.num_dcn:
-                conv_cfg = dict(type='DCNv2', deform_groups=4)
-            else:
-                conv_cfg = self.conv_cfg
+            # if i < self.num_dcn:
+            #     conv_cfg = dict(type='DCNv2', deform_groups=4)
+            # else:
+            conv_cfg = self.conv_cfg
             chn = self.in_channels if i == 0 else self.feat_channels
             self.inter_convs.append(
                 ConvModule(
@@ -207,6 +207,12 @@ class TOODHead(ATSSHead):
         normal_init(self.tood_cls, std=0.01, bias=bias_cls)
         normal_init(self.tood_reg, std=0.01)
 
+    def sigmoid_geometric_mean(self, x, y):
+        x_sigmoid = x.sigmoid()
+        y_sigmoid = y.sigmoid()
+        z = (x_sigmoid * y_sigmoid).sqrt()
+        return z
+
     def forward(self, feats):
         """Forward features from the upstream network.
 
@@ -246,7 +252,7 @@ class TOODHead(ATSSHead):
             # cls prediction and alignment
             cls_logits = self.tood_cls(cls_feat)
             cls_prob = self.cls_prob_module(feat)
-            cls_score = sigmoid_geometric_mean(cls_logits, cls_prob)
+            cls_score = self.sigmoid_geometric_mean(cls_logits, cls_prob)
 
             # reg prediction and alignment
             if self.anchor_type == 'anchor_free':
@@ -281,6 +287,14 @@ class TOODHead(ATSSHead):
             bbox_preds.append(bbox_pred)
         return tuple(cls_scores), tuple(bbox_preds)
 
+    def spatial_shift(self, x, y):
+        n, c, w, h = x.size()
+        y[:, :c // 4, 1:, :] = x[:, : c // 4, :w - 1, :]
+        y[:, c // 4:c // 2, :w - 1, :] = x[:,  c // 4:c // 2, 1:, :]
+        y[:, c // 2:c * 3 // 4, :, 1:] = x[:,  c // 2:c * 3 // 4, :, :h - 1]
+        y[:, 3 * c // 4:, :, :h - 1] = x[:, 3 * c // 4:, :, 1:]
+        return y
+
     def deform_sampling(self, feat, offset):
         """Sampling the feature x according to offset.
 
@@ -289,9 +303,10 @@ class TOODHead(ATSSHead):
             offset (Tensor): Spatial offset for feature sampling
         """
         # it is an equivalent implementation of bilinear interpolation
-        b, c, h, w = feat.shape
-        weight = feat.new_ones(c, 1, 1, 1)
-        y = deform_conv2d(feat, offset, weight, 1, 0, 1, c, c)
+        # b, c, h, w = feat.shape
+        # weight = feat.new_ones(c, 1, 1, 1)
+        y = self.spatial_shift(feat, feat.clone())
+        # y = deform_conv2d(feat, offset, weight, 1, 0, 1, c, c)
         return y
 
     def anchor_center(self, anchors):
