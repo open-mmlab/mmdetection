@@ -118,7 +118,6 @@ class AvoidOOM:
     """
 
     def __init__(self, to_cpu=True, test=False):
-        self.logger = get_root_logger()
         self.to_cpu = to_cpu
         self.test = test
 
@@ -164,8 +163,9 @@ class AvoidOOM:
             # Convert to FP16
             fp16_args = cast_tensor_type(args, dst_type=torch.half)
             fp16_kwargs = cast_tensor_type(kwargs, dst_type=torch.half)
-            self.logger.info(f'Attempting to copy inputs of {str(func)} '
-                             f'to FP16 due to CUDA OOM')
+            logger = get_root_logger()
+            logger.warning(f'Attempting to copy inputs of {str(func)} '
+                           'to FP16 due to CUDA OOM')
 
             # get input tensor type, the output type will same as
             # the first parameter type.
@@ -175,21 +175,20 @@ class AvoidOOM:
                     output, src_type=torch.half, dst_type=dtype)
                 if not self.test:
                     return output
-            self.logger.info('Using FP16 still meet CUDA OOM')
+            logger.warning('Using FP16 still meet CUDA OOM')
 
             # Try on CPU. This will slow down the code significantly,
             # therefore print a notice.
             if self.to_cpu:
-                self.logger.info(f'Attempting to copy inputs of {str(func)} '
-                                 f'to CPU due to CUDA OOM')
+                logger.warning(f'Attempting to copy inputs of {str(func)} '
+                               'to CPU due to CUDA OOM')
                 cpu_device = torch.empty(0).device
                 cpu_args = cast_tensor_type(args, dst_type=cpu_device)
                 cpu_kwargs = cast_tensor_type(kwargs, dst_type=cpu_device)
 
                 # convert outputs to GPU
                 with _ignore_torch_cuda_oom():
-                    self.logger.info(f'Convert outputs to GPU '
-                                     f'(device={device})')
+                    logger.warning(f'Convert outputs to GPU (device={device})')
                     output = func(*cpu_args, **cpu_kwargs)
                     output = cast_tensor_type(
                         output, src_type=cpu_device, dst_type=device)
@@ -199,8 +198,8 @@ class AvoidOOM:
                               'the output is now on CPU, which might cause '
                               'errors if the output need to interact with GPU '
                               'data in subsequent operations')
-                self.logger.info('Cannot convert output to GPU due to '
-                                 'CUDA OOM, the output is on CPU now.')
+                logger.warning('Cannot convert output to GPU due to '
+                               'CUDA OOM, the output is on CPU now.')
 
                 return func(*cpu_args, **cpu_kwargs)
             else:
