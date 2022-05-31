@@ -1,17 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Union
 
 import torch
-from mmengine.data import InstanceData
 from torch import Tensor
 
 from mmdet.core import multi_apply
+from mmdet.core.utils import InstanceList, OptInstanceList
 from mmdet.registry import MODELS
 from ..losses import CrossEntropyLoss, SmoothL1Loss, carl_loss, isr_p
 from .ssd_head import SSDHead
-
-InstList = List[InstanceData]
-OptInstList = Optional[InstList]
 
 
 # TODO: add loss evaluator for SSD
@@ -56,9 +53,9 @@ class PISASSDHead(SSDHead):
         self,
         cls_scores: List[Tensor],
         bbox_preds: List[Tensor],
-        batch_gt_instances: InstList,
+        batch_gt_instances: InstanceList,
         batch_img_metas: List[dict],
-        batch_gt_instances_ignore: OptInstList = None
+        batch_gt_instances_ignore: OptInstanceList = None
     ) -> Dict[str, Union[List[Tensor], Tensor]]:
         """Compute losses of the head.
 
