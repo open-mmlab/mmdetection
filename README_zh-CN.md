@@ -75,30 +75,9 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 最新的 **2.25.0** 版本已经在 2022.05.31 发布:
 
+- 支持功能更丰富的 `WandbLogger`
 - 支持算法 [ConvNeXt](configs/convnext), [DDOD](configs/ddod), [SOLOv2](configs/solov2) 和 [Mask2Former](configs/mask2former) 实例分割
-
 - 为了加入 Mask2Former 实例分割的模型，对 Mask2Former 原有的全景分割的配置文件进行了重命名
-
-  <table align="center">
-    <thead>
-        <tr align='center'>
-            <td>在 v2.25.0 之前</td>
-            <td>v2.25.0 及之后</td>
-        </tr>
-    </thead>
-    <tbody><tr valign='top'>
-    <th>
-
-  'mask2former_xxx_coco.py' 代表全景分割的配置文件
-
-  </th>
-    <th>
-
-  'mask2former_xxx_coco.py' 代表实例分割的配置文件
-  'mask2former_xxx_coco-panoptic.py' 代表全景分割的配置文件
-
-  </th></tr>
-  </tbody></table>
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/en/changelog.md)。
 

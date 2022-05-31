@@ -76,32 +76,10 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 **2.25.0** was released in 31/5/2022:
 
+- Support dedicated `WandbLogger` hook
 - Support [ConvNeXt](configs/convnext), [DDOD](configs/ddod), [SOLOv2](configs/solov2)
-
 - Support [Mask2Former](configs/mask2former) for instance segmentation
-
-- Rename [config files of Mask2Former](configs/mask2former) (#7571)
-
-  <table align="center">
-    <thead>
-        <tr align='center'>
-            <td>before v2.25.0</td>
-            <td>after v2.25.0</td>
-        </tr>
-    </thead>
-    <tbody><tr valign='top'>
-    <th>
-
-  - `mask2former_xxx_coco.py` represents config files for **panoptic segmentation**.
-
-  </th>
-    <th>
-
-  - `mask2former_xxx_coco.py` represents config files for **instance segmentation**.
-  - `mask2former_xxx_coco-panoptic.py` represents config files for **panoptic segmentation**.
-
-  </th></tr>
-  </tbody></table>
+- Rename [config files of Mask2Former](configs/mask2former)
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 
