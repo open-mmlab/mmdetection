@@ -1,24 +1,19 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 from mmcv.runner import force_fp32
-from mmengine.config import ConfigDict
-from mmengine.data import InstanceData
 from torch import Tensor
 
 from mmdet.core import PseudoSampler, multi_apply
+from mmdet.core.utils import (ConfigType, InstanceList, MultiConfig,
+                              OptInstanceList)
 from mmdet.registry import MODELS, TASK_UTILS
 from ..losses import smooth_l1_loss
 from .anchor_head import AnchorHead
-
-ConfigType = Union[ConfigDict, Dict]
-MultiConfig = Union[ConfigType, List[ConfigType]]
-InstList = List[InstanceData]
-OptInstList = Optional[InstList]
 
 
 # TODO: add loss evaluator for SSD
@@ -287,9 +282,9 @@ class SSDHead(AnchorHead):
         self,
         cls_scores: List[Tensor],
         bbox_preds: List[Tensor],
-        batch_gt_instances: InstList,
+        batch_gt_instances: InstanceList,
         batch_img_metas: List[dict],
-        batch_gt_instances_ignore: OptInstList = None
+        batch_gt_instances_ignore: OptInstanceList = None
     ) -> Dict[str, List[Tensor]]:
         """Compute losses of the head.
 
