@@ -74,12 +74,11 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-**2.25.0** was released in 31/5/2022:
+**2.24.1** was released in 30/4/2022:
 
-- Support dedicated `WandbLogger` hook
-- Support [ConvNeXt](configs/convnext), [DDOD](configs/ddod), [SOLOv2](configs/solov2)
-- Support [Mask2Former](configs/mask2former) for instance segmentation
-- Rename [config files of Mask2Former](configs/mask2former)
+- Support [Simple Copy Paste](configs/simple_copy_paste)
+- Support automatically scaling LR according to GPU number and samples per GPU
+- Support Class Aware Sampler that improves performance on OpenImages Dataset
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 
@@ -133,7 +132,6 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/double_heads">Double-Head R-CNN (CVPR'2020)</a></li>
             <li><a href="configs/atss">ATSS (CVPR'2020)</a></li>
             <li><a href="configs/nas_fcos">NAS-FCOS (CVPR'2020)</a></li>
-            <li><a href="configs/centripetalnet">CentripetalNet (CVPR'2020)</a></li>
             <li><a href="configs/autoassign">AutoAssign (ArXiv'2020)</a></li>
             <li><a href="configs/sabl">Side-Aware Boundary Localization (ECCV'2020)</a></li>
             <li><a href="configs/dynamic_rcnn">Dynamic R-CNN (ECCV'2020)</a></li>
@@ -145,7 +143,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/yolox">YOLOX (CVPR'2021)</a></li>
             <li><a href="configs/deformable_detr">Deformable DETR (ICLR'2021)</a></li>
             <li><a href="configs/tood">TOOD (ICCV'2021)</a></li>
-            <li><a href="configs/ddod">DDOD (ACM MM'2021)</a></li>
+            <li><a href="configs/centripetalnet">CentripetalNet (CVPR'2020)</a></li>
       </ul>
       </td>
       <td>
@@ -159,10 +157,8 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="configs/solo">SOLO (ECCV'2020)</a></li>
           <li><a href="configs/point_rend">PointRend (CVPR'2020)</a></li>
           <li><a href="configs/detectors">DetectoRS (ArXiv'2020)</a></li>
-          <li><a href="configs/solov2">SOLOv2 (NeurIPS'2020)</a></li>
           <li><a href="configs/scnet">SCNet (AAAI'2021)</a></li>
           <li><a href="configs/queryinst">QueryInst (ICCV'2021)</a></li>
-          <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
         </ul>
       </td>
       <td>
@@ -235,7 +231,6 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         <li><a href="configs/pvt">PVTv2 (ArXiv'2021)</a></li>
         <li><a href="configs/resnet_strikes_back">ResNet strikes back (ArXiv'2021)</a></li>
         <li><a href="configs/efficientnet">EfficientNet (ArXiv'2021)</a></li>
-        <li><a href="configs/convnext">ConvNeXt (CVPR'2022)</a></li>
       </ul>
       </td>
       <td>
