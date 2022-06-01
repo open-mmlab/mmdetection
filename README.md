@@ -88,7 +88,7 @@ For compatibility changes between different versions of MMDetection, please refe
 
 ## Installation
 
-Please refer to [Installation](docs/en/get_started.md/Installation) for installation.
+Please refer to [Installation](docs/en/get_started.md/#Installation) for installation instructions.
 
 ## Getting Started
 
