@@ -262,3 +262,30 @@ def stack_batch(tensors: List[torch.Tensor],
             padded_samples.append(F.pad(tensor, padding_size, value=pad_value))
 
     return torch.stack(padded_samples, dim=0)
+
+
+def levels_to_images(mlvl_tensor: List[torch.Tensor]) -> List[torch.Tensor]:
+    """Concat multi-level feature maps by image.
+
+    [feature_level0, feature_level1...] -> [feature_image0, feature_image1...]
+    Convert the shape of each element in mlvl_tensor from (N, C, H, W) to
+    (N, H*W , C), then split the element to N elements with shape (H*W, C), and
+    concat elements in same image of all level along first dimension.
+
+    Args:
+        mlvl_tensor (list[Tensor]): list of Tensor which collect from
+            corresponding level. Each element is of shape (N, C, H, W)
+
+    Returns:
+        list[Tensor]: A list that contains N tensors and each tensor is
+            of shape (num_elements, C)
+    """
+    batch_size = mlvl_tensor[0].size(0)
+    batch_list = [[] for _ in range(batch_size)]
+    channels = mlvl_tensor[0].size(1)
+    for t in mlvl_tensor:
+        t = t.permute(0, 2, 3, 1)
+        t = t.view(batch_size, -1, channels).contiguous()
+        for img in range(batch_size):
+            batch_list[img].append(t[img])
+    return [torch.cat(item, 0) for item in batch_list]
