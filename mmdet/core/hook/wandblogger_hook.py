@@ -2,6 +2,7 @@
 import importlib
 import os.path as osp
 import sys
+import warnings
 
 import mmcv
 import numpy as np
@@ -10,6 +11,7 @@ from mmcv.runner import HOOKS
 from mmcv.runner.dist_utils import master_only
 from mmcv.runner.hooks.checkpoint import CheckpointHook
 from mmcv.runner.hooks.logger.wandb import WandbLoggerHook
+from mmcv.utils import digit_version
 
 from mmdet.core import DistEvalHook, EvalHook
 from mmdet.core.mask.structures import polygon_to_bitmap
@@ -109,6 +111,25 @@ class MMDetWandbHook(WandbLoggerHook):
         self.ckpt_hook: CheckpointHook = None
         self.eval_hook: EvalHook = None
 
+    def import_wandb(self):
+        try:
+            import wandb
+            from wandb import init  # noqa
+
+            # Fix ResourceWarning when calling wandb.log in wandb v0.12.10.
+            # https://github.com/wandb/client/issues/2837
+            if digit_version(wandb.__version__) < digit_version('0.12.10'):
+                warnings.warn(
+                    f'The current wandb {wandb.__version__} is '
+                    f'lower than v0.12.10 will cause ResourceWarning '
+                    f'when calling wandb.log, Please run '
+                    f'"pip install --upgrade wandb"')
+
+        except ImportError:
+            raise ImportError(
+                'Please run "pip install "wandb>=0.12.10"" to install wandb')
+        self.wandb = wandb
+
     @master_only
     def before_run(self, runner):
         super(MMDetWandbHook, self).before_run(runner)
@@ -198,9 +219,9 @@ class MMDetWandbHook(WandbLoggerHook):
                 }
             else:
                 metadata = None
-            aliases = [f'epoch_{runner.epoch+1}', 'latest']
+            aliases = [f'epoch_{runner.epoch + 1}', 'latest']
             model_path = osp.join(self.ckpt_hook.out_dir,
-                                  f'epoch_{runner.epoch+1}.pth')
+                                  f'epoch_{runner.epoch + 1}.pth')
             self._log_ckpt_as_artifact(model_path, aliases, metadata)
 
         # Save prediction table
@@ -238,9 +259,9 @@ class MMDetWandbHook(WandbLoggerHook):
                 }
             else:
                 metadata = None
-            aliases = [f'iter_{runner.iter+1}', 'latest']
+            aliases = [f'iter_{runner.iter + 1}', 'latest']
             model_path = osp.join(self.ckpt_hook.out_dir,
-                                  f'iter_{runner.iter+1}.pth')
+                                  f'iter_{runner.iter + 1}.pth')
             self._log_ckpt_as_artifact(model_path, aliases, metadata)
 
         # Save prediction table
