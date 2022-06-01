@@ -15,6 +15,12 @@
         <i><font size="4">TRY IT OUT</font></i>
       </a>
     </sup>
+     <b><font size="5">Gradio Web Demo</font></b>
+    <sup>
+      <a href="https://huggingface.co/spaces/hysts/mmdetection">
+        <i><font size="4">TRY IT OUT</font></i>
+      </a>
+    </sup>
   </div>
   <div>&nbsp;</div>
 
@@ -25,6 +31,7 @@
 [![license](https://img.shields.io/github/license/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/blob/master/LICENSE)
 [![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 [![issue resolution](https://isitmaintained.com/badge/resolution/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
+[![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/hysts/mmdetection)
 
 [📘Documentation](https://mmdetection.readthedocs.io/en/stable/) |
 [🛠️Installation](https://mmdetection.readthedocs.io/en/stable/get_started.html) |
