@@ -10,6 +10,7 @@ from mmcv.runner import HOOKS
 from mmcv.runner.dist_utils import master_only
 from mmcv.runner.hooks.checkpoint import CheckpointHook
 from mmcv.runner.hooks.logger.wandb import WandbLoggerHook
+from mmcv.utils import digit_version
 
 from mmdet.core import DistEvalHook, EvalHook
 from mmdet.core.mask.structures import polygon_to_bitmap
@@ -108,6 +109,23 @@ class MMDetWandbHook(WandbLoggerHook):
         self.log_evaluation = (num_eval_images > 0)
         self.ckpt_hook: CheckpointHook = None
         self.eval_hook: EvalHook = None
+
+    def import_wandb(self):
+        try:
+            import wandb
+            from wandb import init  # noqa
+
+            # Fix ResourceWarning when calling wandb.log in wandb v0.12.10.
+            # https://github.com/wandb/client/issues/2837
+            if digit_version(wandb.__version__) < digit_version('0.12.10'):
+                raise RuntimeError('The wandb version is required to be '
+                                   'greater than or equal to 0.12.10, '
+                                   f'but got {wandb.__version__}, '
+                                   f'Please run "pip install --upgrade wandb"')
+        except ImportError:
+            raise ImportError(
+                'Please run "pip install "wandb>=0.12.10"" to install wandb')
+        self.wandb = wandb
 
     @master_only
     def before_run(self, runner):
