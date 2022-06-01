@@ -73,11 +73,11 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ## 更新日志
 
-最新的 **2.23.0** 版本已经在 2022.03.28 发布:
+最新的 **2.24.1** 版本已经在 2022.04.30 发布:
 
-- 支持 [Mask2Former](configs/mask2former) 和 [Efficientnet](configs/efficientnet)
-- 支持通环境变量 `MMDET_DATASETS` 设置数据根目录，因此无需修改配置文件中对应的路径。
-- 发现一个很好的方法来微调由 Torchvision 预训练的高精度 ResNet 主干。
+- 支持算法 [Simple Copy Paste](configs/simple_copy_paste)
+- 支持训练时根据总 batch 数自动缩放学习率
+- 支持类别可知的采样器来提高算法在 OpenImages 数据集上的性能
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/en/changelog.md)。
 
@@ -131,6 +131,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
             <li><a href="configs/double_heads">Double-Head R-CNN (CVPR'2020)</a></li>
             <li><a href="configs/atss">ATSS (CVPR'2020)</a></li>
             <li><a href="configs/nas_fcos">NAS-FCOS (CVPR'2020)</a></li>
+            <li><a href="configs/centripetalnet">CentripetalNet (CVPR'2020)</a></li>
             <li><a href="configs/autoassign">AutoAssign (ArXiv'2020)</a></li>
             <li><a href="configs/sabl">Side-Aware Boundary Localization (ECCV'2020)</a></li>
             <li><a href="configs/dynamic_rcnn">Dynamic R-CNN (ECCV'2020)</a></li>
@@ -155,6 +156,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="configs/solo">SOLO (ECCV'2020)</a></li>
           <li><a href="configs/point_rend">PointRend (CVPR'2020)</a></li>
           <li><a href="configs/detectors">DetectoRS (ArXiv'2020)</a></li>
+          <li><a href="configs/solov2">SOLOv2 (NeurIPS'2020)</a></li>
           <li><a href="configs/scnet">SCNet (AAAI'2021)</a></li>
           <li><a href="configs/queryinst">QueryInst (ICCV'2021)</a></li>
         </ul>
@@ -229,6 +231,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
         <li><a href="configs/pvt">PVTv2 (ArXiv'2021)</a></li>
         <li><a href="configs/resnet_strikes_back">ResNet strikes back (ArXiv'2021)</a></li>
         <li><a href="configs/efficientnet">EfficientNet (ArXiv'2021)</a></li>
+        <li><a href="configs/convnext">ConvNeXt (CVPR'2022)</a></li>
       </ul>
       </td>
       <td>
