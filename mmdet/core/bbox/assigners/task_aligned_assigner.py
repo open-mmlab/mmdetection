@@ -1,7 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Optional
+
 import torch
+from mmengine.data import InstanceData
 
 from mmdet.registry import TASK_UTILS
+from ...utils import ConfigType
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
@@ -23,24 +27,23 @@ class TaskAlignedAssigner(BaseAssigner):
 
     Args:
         topk (int): number of bbox selected in each level
-        iou_calculator (dict): Config dict for iou calculator.
-            Default: dict(type='BboxOverlaps2D')
+        iou_calculator (:obj:`ConfigDict` or dict): Config dict for iou
+            calculator. Defaults to ``dict(type='BboxOverlaps2D')``
     """
 
-    def __init__(self, topk, iou_calculator=dict(type='BboxOverlaps2D')):
+    def __init__(self,
+                 topk: int,
+                 iou_calculator: ConfigType = dict(type='BboxOverlaps2D')):
         assert topk >= 1
         self.topk = topk
         self.iou_calculator = TASK_UTILS.build(iou_calculator)
 
     def assign(self,
-               pred_scores,
-               decode_bboxes,
-               anchors,
-               gt_bboxes,
-               gt_bboxes_ignore=None,
-               gt_labels=None,
-               alpha=1,
-               beta=6):
+               pred_instances: InstanceData,
+               gt_instances: InstanceData,
+               gt_instances_ignore: Optional[InstanceData] = None,
+               alpha: int = 1,
+               beta: int = 6) -> AssignResult:
         """Assign gt to bboxes.
 
         The assignment is done in following steps
@@ -53,41 +56,49 @@ class TaskAlignedAssigner(BaseAssigner):
 
 
         Args:
-            pred_scores (Tensor): predicted class probability,
-                shape(n, num_classes)
-            decode_bboxes (Tensor): predicted bounding boxes, shape(n, 4)
-            anchors (Tensor): pre-defined anchors, shape(n, 4).
-            gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
-            gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
-                labelled as `ignored`, e.g., crowd boxes in COCO.
-            gt_labels (Tensor, optional): Label of gt_bboxes, shape (k, ).
+            pred_instances (:obj:`InstaceData`): Instances of model
+                predictions. It includes ``priors``, and the priors can
+                be anchors, points, or bboxes predicted by the model,
+                shape(n, 4).
+            gt_instances (:obj:`InstaceData`): Ground truth of instance
+                annotations. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            gt_instances_ignore (:obj:`InstaceData`, optional): Instances
+                to be ignored during training. It includes ``bboxes``
+                attribute data that is ignored during training and testing.
+                Defaults to None.
+            alpha (int): Hyper-parameters related to alignment_metrics.
+                Defaults to 1.
+            beta (int): Hyper-parameters related to alignment_metrics.
+                Defaults to 6.
 
         Returns:
             :obj:`TaskAlignedAssignResult`: The assign result.
         """
-        anchors = anchors[:, :4]
-        num_gt, num_bboxes = gt_bboxes.size(0), anchors.size(0)
+        priors = pred_instances.priors
+        decode_bboxes = pred_instances.bboxes
+        pred_scores = pred_instances.scores
+        gt_bboxes = gt_instances.bboxes
+        gt_labels = gt_instances.labels
+
+        priors = priors[:, :4]
+        num_gt, num_bboxes = gt_bboxes.size(0), priors.size(0)
         # compute alignment metric between all bbox and gt
         overlaps = self.iou_calculator(decode_bboxes, gt_bboxes).detach()
         bbox_scores = pred_scores[:, gt_labels].detach()
         # assign 0 by default
-        assigned_gt_inds = anchors.new_full((num_bboxes, ),
-                                            0,
-                                            dtype=torch.long)
-        assign_metrics = anchors.new_zeros((num_bboxes, ))
+        assigned_gt_inds = priors.new_full((num_bboxes, ), 0, dtype=torch.long)
+        assign_metrics = priors.new_zeros((num_bboxes, ))
 
         if num_gt == 0 or num_bboxes == 0:
             # No ground truth or boxes, return empty assignment
-            max_overlaps = anchors.new_zeros((num_bboxes, ))
+            max_overlaps = priors.new_zeros((num_bboxes, ))
             if num_gt == 0:
                 # No gt boxes, assign everything to background
                 assigned_gt_inds[:] = 0
-            if gt_labels is None:
-                assigned_labels = None
-            else:
-                assigned_labels = anchors.new_full((num_bboxes, ),
-                                                   -1,
-                                                   dtype=torch.long)
+            assigned_labels = priors.new_full((num_bboxes, ),
+                                              -1,
+                                              dtype=torch.long)
             assign_result = AssignResult(
                 num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
             assign_result.assign_metrics = assign_metrics
@@ -102,22 +113,22 @@ class TaskAlignedAssigner(BaseAssigner):
         is_pos = candidate_metrics > 0
 
         # limit the positive sample's center in gt
-        anchors_cx = (anchors[:, 0] + anchors[:, 2]) / 2.0
-        anchors_cy = (anchors[:, 1] + anchors[:, 3]) / 2.0
+        priors_cx = (priors[:, 0] + priors[:, 2]) / 2.0
+        priors_cy = (priors[:, 1] + priors[:, 3]) / 2.0
         for gt_idx in range(num_gt):
             candidate_idxs[:, gt_idx] += gt_idx * num_bboxes
-        ep_anchors_cx = anchors_cx.view(1, -1).expand(
+        ep_priors_cx = priors_cx.view(1, -1).expand(
             num_gt, num_bboxes).contiguous().view(-1)
-        ep_anchors_cy = anchors_cy.view(1, -1).expand(
+        ep_priors_cy = priors_cy.view(1, -1).expand(
             num_gt, num_bboxes).contiguous().view(-1)
         candidate_idxs = candidate_idxs.view(-1)
 
         # calculate the left, top, right, bottom distance between positive
         # bbox center and gt side
-        l_ = ep_anchors_cx[candidate_idxs].view(-1, num_gt) - gt_bboxes[:, 0]
-        t_ = ep_anchors_cy[candidate_idxs].view(-1, num_gt) - gt_bboxes[:, 1]
-        r_ = gt_bboxes[:, 2] - ep_anchors_cx[candidate_idxs].view(-1, num_gt)
-        b_ = gt_bboxes[:, 3] - ep_anchors_cy[candidate_idxs].view(-1, num_gt)
+        l_ = ep_priors_cx[candidate_idxs].view(-1, num_gt) - gt_bboxes[:, 0]
+        t_ = ep_priors_cy[candidate_idxs].view(-1, num_gt) - gt_bboxes[:, 1]
+        r_ = gt_bboxes[:, 2] - ep_priors_cx[candidate_idxs].view(-1, num_gt)
+        b_ = gt_bboxes[:, 3] - ep_priors_cy[candidate_idxs].view(-1, num_gt)
         is_in_gts = torch.stack([l_, t_, r_, b_], dim=1).min(dim=1)[0] > 0.01
         is_pos = is_pos & is_in_gts
 
@@ -135,15 +146,12 @@ class TaskAlignedAssigner(BaseAssigner):
         assign_metrics[max_overlaps != -INF] = alignment_metrics[
             max_overlaps != -INF, argmax_overlaps[max_overlaps != -INF]]
 
-        if gt_labels is not None:
-            assigned_labels = assigned_gt_inds.new_full((num_bboxes, ), -1)
-            pos_inds = torch.nonzero(
-                assigned_gt_inds > 0, as_tuple=False).squeeze()
-            if pos_inds.numel() > 0:
-                assigned_labels[pos_inds] = gt_labels[
-                    assigned_gt_inds[pos_inds] - 1]
-        else:
-            assigned_labels = None
+        assigned_labels = assigned_gt_inds.new_full((num_bboxes, ), -1)
+        pos_inds = torch.nonzero(
+            assigned_gt_inds > 0, as_tuple=False).squeeze()
+        if pos_inds.numel() > 0:
+            assigned_labels[pos_inds] = gt_labels[assigned_gt_inds[pos_inds] -
+                                                  1]
         assign_result = AssignResult(
             num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
         assign_result.assign_metrics = assign_metrics

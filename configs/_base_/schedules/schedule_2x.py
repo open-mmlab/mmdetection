@@ -1,4 +1,4 @@
-# training schedule for 1x
+# training schedule for 2x
 train_cfg = dict(by_epoch=True, max_epochs=24)
 val_cfg = dict(interval=1)
 test_cfg = dict()

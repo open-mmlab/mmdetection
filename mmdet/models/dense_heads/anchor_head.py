@@ -238,7 +238,10 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                                            img_meta['img_shape'][:2],
                                            self.train_cfg.allowed_border)
         if not inside_flags.any():
-            return (None, ) * 7
+            raise ValueError(
+                'There is no valid anchor inside the image boundary. Please '
+                'check the image size and anchor sizes, or set '
+                '``allowed_border`` to -1 to skip the condition.')
         # assign gt and sample anchors
         anchors = flat_anchors[inside_flags, :]
 
@@ -376,9 +379,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         (all_labels, all_label_weights, all_bbox_targets, all_bbox_weights,
          pos_inds_list, neg_inds_list, sampling_results_list) = results[:7]
         rest_results = list(results[7:])  # user-added return values
-        # no valid anchors
-        if any([labels is None for labels in all_labels]):
-            return None
         # Get `avg_factor` of all images, which calculate in `SamplingResult`.
         # When using sampling method, avg_factor is usually the sum of
         # positive and negative priors. When using `PseudoSampler`,
@@ -491,8 +491,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             batch_gt_instances,
             batch_img_metas,
             batch_gt_instances_ignore=batch_gt_instances_ignore)
-        if cls_reg_targets is None:
-            raise ValueError('`cls_reg_targets` cannot be None.')
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          avg_factor) = cls_reg_targets
 
