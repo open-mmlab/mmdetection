@@ -1,0 +1,11 @@
+<!DOCTYPE RCC>
+<RCC>
+<qresource>
+<file alias="images/fullsrceen_btn_icon.png">images/fullsrceen_btn_icon.png</file>
+<file alias="images/mute_btn_icon.png">images/mute_btn_icon.png</file>
+<file alias="images/play_btn_icon.png">images/play_btn_icon.png</file>
+<file alias="images/sound_btn_icon.png">images/sound_btn_icon.png</file>
+<file alias="images/stop_btn_icon.png">images/stop_btn_icon.png</file>
+<file alias="images/video_player_icon.png">images/video_player_icon.png</file>
+</qresource>
+</RCC>

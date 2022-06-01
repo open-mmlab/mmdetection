@@ -227,7 +227,6 @@
      <string>视频功能</string>
     </property>
     <addaction name="actionOpenVideo"/>
-    <addaction name="actionSaveVideo"/>
    </widget>
    <addaction name="menu"/>
    <addaction name="menu_2"/>
@@ -250,7 +249,7 @@
   </action>
   <action name="actionOpenVideo">
    <property name="text">
-    <string>打开视频</string>
+    <string>选择待检测视频与保存位置</string>
    </property>
   </action>
   <action name="actionSaveVideo">

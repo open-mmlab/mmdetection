@@ -136,7 +136,6 @@ class Ui_MainWindow(object):
         self.menu.addSeparator()
         self.menu.addAction(self.actionExit)
         self.menu_2.addAction(self.actionOpenVideo)
-        self.menu_2.addAction(self.actionSaveVideo)
         self.menubar.addAction(self.menu.menuAction())
         self.menubar.addAction(self.menu_2.menuAction())
 
@@ -161,5 +160,5 @@ class Ui_MainWindow(object):
         self.actionOpenImage.setText(_translate("MainWindow", "打开图片"))
         self.actionSaveImage.setText(_translate("MainWindow", "保存图片"))
         self.actionExit.setText(_translate("MainWindow", "退出"))
-        self.actionOpenVideo.setText(_translate("MainWindow", "打开视频"))
+        self.actionOpenVideo.setText(_translate("MainWindow", "选择待检测视频与保存位置"))
         self.actionSaveVideo.setText(_translate("MainWindow", "保存视频"))

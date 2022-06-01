@@ -13,6 +13,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     ui = Ui_view()
     ui.show()
+    # ui.show_processing_dialog()
     sys.exit(app.exec_())
 
 

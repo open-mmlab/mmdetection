@@ -28,12 +28,7 @@ def cv_imwrite(ext, img, save_path):
 
 
 def get_file_name(path):
-    cur_sys = sys.platform
-    if cur_sys == 'win32':
-        sep = '\\'
-    else:
-        sep = '/'
-    return os.path.split(sep)[-1]
+    return os.path.split(path)[-1]
 
 
 def img_seq_2_video(dataset_path, output_path):
@@ -66,7 +61,7 @@ def img_seq_2_video(dataset_path, output_path):
         # (1280,720)是生成的视频像素1280*720，一般要与所使用的图片像素大小一致，否则生成的视频无法播放
         # 定义保存视频目录名称和压缩格式，像素为1280*720
         video_path = osp.join(output_path, video_name + '.mp4')
-        video_writer = cv2.VideoWriter(video_path, cv2.VideoWriter_fourcc(*'MJPG'), 30, img_video_size)
+        video_writer = cv2.VideoWriter(video_path, cv2.VideoWriter_fourcc(*'mp4v'), 15, img_video_size)
 
         if not os.path.exists(output_path):
             os.makedirs(output_path)
@@ -76,7 +71,7 @@ def img_seq_2_video(dataset_path, output_path):
             img = cv2.imread(osp.join(dataset_path, video_name, video[i]))
             # resize方法是cv2库提供的更改像素大小的方法
             # 将图片转换为1280*720像素大小
-            # img = cv2.resize(img,img_video_size)
+            img = cv2.resize(img,img_video_size)
             # 写入视频
             video_writer.write(img)
         print('写入完成')
