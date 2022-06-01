@@ -1,5 +1,120 @@
 ## Changelog
 
+### v2.25.0 (31/5/2022)
+
+#### Highlights
+
+- Support dedicated `WandbLogger` hook
+- Support [ConvNeXt](configs/convnext), [DDOD](configs/ddod), [SOLOv2](configs/solov2)
+- Support [Mask2Former](configs/mask2former) for instance segmentation
+- Rename [config files of Mask2Former](configs/mask2former)
+
+#### Backwards incompatible changes
+
+- Rename [config files of Mask2Former](configs/mask2former) (#7571)
+
+  <table align="center">
+    <thead>
+        <tr align='center'>
+            <td>before v2.25.0</td>
+            <td>after v2.25.0</td>
+        </tr>
+    </thead>
+    <tbody><tr valign='top'>
+    <th>
+
+  - `mask2former_xxx_coco.py` represents config files for **panoptic segmentation**.
+
+  </th>
+    <th>
+
+  - `mask2former_xxx_coco.py` represents config files for **instance segmentation**.
+  - `mask2former_xxx_coco-panoptic.py` represents config files for **panoptic segmentation**.
+
+  </th></tr>
+  </tbody></table>
+
+#### New Features
+
+- Support [ConvNeXt](https://arxiv.org/abs/2201.03545) (#7281)
+- Support [DDOD](https://arxiv.org/abs/2107.02963) (#7279)
+- Support [SOLOv2](https://arxiv.org/abs/2003.10152) (#7441)
+- Support [Mask2Former](https://arxiv.org/abs/2112.01527) for instance segmentation (#7571, #8032)
+
+#### Bug Fixes
+
+- Enable YOLOX training on different devices (#7912)
+- Fix the log plot error when evaluation with `interval != 1` (#7784)
+- Fix RuntimeError of HTC (#8083)
+
+#### Improvements
+
+- Support dedicated `WandbLogger` hook (#7459)
+
+  Users can set
+
+  ```python
+  cfg.log_config.hooks = [
+    dict(type='MMDetWandbHook',
+         init_kwargs={'project': 'MMDetection-tutorial'},
+         interval=10,
+         log_checkpoint=True,
+         log_checkpoint_metadata=True,
+         num_eval_images=10)]
+  ```
+
+  in the config to use `MMDetWandbHook`. Example can be found in this [colab tutorial](https://colab.research.google.com/drive/1RCSXHZwDZvakFh3eo9RuNrJbCGqD0dru?usp=sharing#scrollTo=WTEdPDRaBz2C)
+
+- Add `AvoidOOM` to avoid OOM (#7434, #8091)
+
+  Try to use `AvoidCUDAOOM` to avoid GPU out of memory. It will first retry after calling `torch.cuda.empty_cache()`. If it still fails, it will then retry by converting the type of inputs to FP16 format. If it still fails, it will try to copy inputs from GPUs to CPUs to continue computing. Try AvoidOOM in code to make the code continue to run when GPU memory runs out:
+
+  ```python
+  from mmdet.utils import AvoidCUDAOOM
+
+  output = AvoidCUDAOOM.retry_if_cuda_oom(some_function)(input1, input2)
+  ```
+
+  Users can also try `AvoidCUDAOOM` as a decorator to make the code continue to run when GPU memory runs out:
+
+  ```python
+  from mmdet.utils import AvoidCUDAOOM
+
+  @AvoidCUDAOOM.retry_if_cuda_oom
+  def function(*args, **kwargs):
+      ...
+      return xxx
+  ```
+
+- Support reading `gpu_collect` from `cfg.evaluation.gpu_collect` (#7672)
+
+- Speedup the Video Inference by Accelerating data-loading Stage (#7832)
+
+- Support replacing the `${key}` with the value of `cfg.key` (#7492)
+
+- Accelerate result analysis in `analyze_result.py`. The evaluation time is speedup by 10 ~ 15 times and only tasks 10 ~ 15 minutes now. (#7891)
+
+- Support to set `block_dilations` in `DilatedEncoder` (#7812)
+
+- Support panoptic segmentation result analysis (#7922)
+
+- Release DyHead with Swin-Large backbone (#7733)
+
+- Documentations updating and adding
+
+  - Fix wrong default type of `act_cfg` in `SwinTransformer` (#7794)
+  - Fix text errors in the tutorials (#7959)
+  - Rewrite the [installation guide](docs/en/get_started.md) (#7897)
+  - [Useful hooks](docs/en/tutorials/useful_hooks.md) (#7810)
+  - Fix heading anchor in documentation  (#8006)
+  - Replace `markdownlint` with `mdformat` for avoiding installing ruby (#8009)
+
+#### Contributors
+
+A total of 20 developers contributed to this release.
+
+Thanks @ZwwWayne, @DarthThomas, @solyaH, @LutingWang, @chenxinfeng4, @Czm369, @Chenastron, @chhluo, @austinmw, @Shanyaliux @hellock, @Y-M-Y, @jbwang1997, @hhaAndroid, @Irvingao, @zhanggefan, @BIGWangYuDong, @Keiku, @PeterVennerstrom, @ayulockin
+
 ### v2.24.0 (26/4/2022)
 
 #### Highlights

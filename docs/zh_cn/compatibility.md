@@ -1,6 +1,35 @@
 # MMDetection v2.x 兼容性说明
 
-## MMDection 2.21.0
+## MMDetection 2.25.0
+
+为了加入 Mask2Former 实例分割模型，对 Mask2Former 的配置文件进行了重命名 [PR #7571](https://github.com/open-mmlab/mmdetection/pull/7571)：
+
+<table align="center">
+    <thead>
+        <tr align='center'>
+            <td>在 v2.25.0 之前</td>
+            <td>v2.25.0 及之后</td>
+        </tr>
+    </thead>
+    <tbody><tr valign='top'>
+    <th>
+
+```
+'mask2former_xxx_coco.py' 代表全景分割的配置文件
+```
+
+</th>
+    <th>
+
+```
+'mask2former_xxx_coco.py' 代表实例分割的配置文件
+'mask2former_xxx_coco-panoptic.py' 代表全景分割的配置文件
+```
+
+</th></tr>
+  </tbody></table>
+
+## MMDetection 2.21.0
 
 为了支持 CPU 训练，MMCV 中进行批处理的 scatter 的代码逻辑已经被修改。我们推荐使用 MMCV v1.4.4 或更高版本，
 更多信息请参考 [MMCV PR #1621](https://github.com/open-mmlab/mmcv/pull/1621).

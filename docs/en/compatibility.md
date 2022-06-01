@@ -1,5 +1,34 @@
 # Compatibility of MMDetection 2.x
 
+## MMDetection 2.25.0
+
+In order to support Mask2Former for instance segmentation, the original config files of Mask2Former for panpotic segmentation need to be renamed [PR #7571](https://github.com/open-mmlab/mmdetection/pull/7571).
+
+<table align="center">
+    <thead>
+        <tr align='center'>
+            <td>before v2.25.0</td>
+            <td>after v2.25.0</td>
+        </tr>
+    </thead>
+    <tbody><tr valign='top'>
+    <th>
+
+```
+'mask2former_xxx_coco.py' represents config files for **panoptic segmentation**.
+```
+
+</th>
+    <th>
+
+```
+'mask2former_xxx_coco.py' represents config files for **instance segmentation**.
+'mask2former_xxx_coco-panoptic.py' represents config files for **panoptic segmentation**.
+```
+
+</th></tr>
+  </tbody></table>
+
 ## MMDetection 2.21.0
 
 In order to support CPU training, the logic of scatter in batch collating has been changed. We recommend to use
