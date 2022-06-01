@@ -77,7 +77,7 @@ Apart from MMDetection, we also released a library [mmcv](https://github.com/ope
 
 **2.25.0** was released in 1/6/2022:
 
-- Support dedicated `WandbLogger` hook
+- Support dedicated `MMDetWandbHook` hook
 - Support [ConvNeXt](configs/convnext), [DDOD](configs/ddod), [SOLOv2](configs/solov2)
 - Support [Mask2Former](configs/mask2former) for instance segmentation
 - Rename [config files of Mask2Former](configs/mask2former)
