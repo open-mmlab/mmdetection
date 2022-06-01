@@ -19,8 +19,8 @@ Collections:
       Title: "Simple Copy-Paste is a Strong Data Augmentation Method for Instance Segmentation"
     README: configs/simple_copy_paste/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/v2.24.1/mmdet/datasets/pipelines/transforms.py#L2762
-      Version: v2.24.1
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.25.0/mmdet/datasets/pipelines/transforms.py#L2762
+      Version: v2.25.0
 
 Models:
   - Name: mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_270k_coco
