@@ -1,5 +1,120 @@
 ## Changelog
 
+### v2.25.0 (31/5/2022)
+
+#### Highlights
+
+- Support dedicated `WandbLogger` hook
+- Support [ConvNeXt](configs/convnext), [DDOD](configs/ddod), [SOLOv2](configs/solov2)
+- Support [Mask2Former](configs/mask2former) for instance segmentation
+- Rename [config files of Mask2Former](configs/mask2former)
+
+#### Backwards incompatible changes
+
+- Rename [config files of Mask2Former](configs/mask2former) (#7571)
+
+  <table align="center">
+    <thead>
+        <tr align='center'>
+            <td>before v2.25.0</td>
+            <td>after v2.25.0</td>
+        </tr>
+    </thead>
+    <tbody><tr valign='top'>
+    <th>
+
+  - `mask2former_xxx_coco.py` represents config files for **panoptic segmentation**.
+
+  </th>
+    <th>
+
+  - `mask2former_xxx_coco.py` represents config files for **instance segmentation**.
+  - `mask2former_xxx_coco-panoptic.py` represents config files for **panoptic segmentation**.
+
+  </th></tr>
+  </tbody></table>
+
+#### New Features
+
+- Support [ConvNeXt](https://arxiv.org/abs/2201.03545) (#7281)
+- Support [DDOD](https://arxiv.org/abs/2107.02963) (#7279)
+- Support [SOLOv2](https://arxiv.org/abs/2003.10152) (#7441)
+- Support [Mask2Former](https://arxiv.org/abs/2112.01527) for instance segmentation (#7571, #8032)
+
+#### Bug Fixes
+
+- Enable YOLOX training on different devices (#7912)
+- Fix the log plot error when evaluation with `interval != 1` (#7784)
+- Fix RuntimeError of HTC (#8083)
+
+#### Improvements
+
+- Support dedicated `WandbLogger` hook (#7459)
+
+  Users can set
+
+  ```python
+  cfg.log_config.hooks = [
+    dict(type='MMDetWandbHook',
+         init_kwargs={'project': 'MMDetection-tutorial'},
+         interval=10,
+         log_checkpoint=True,
+         log_checkpoint_metadata=True,
+         num_eval_images=10)]
+  ```
+
+  in the config to use `MMDetWandbHook`. Example can be found in this [colab tutorial](https://colab.research.google.com/drive/1RCSXHZwDZvakFh3eo9RuNrJbCGqD0dru?usp=sharing#scrollTo=WTEdPDRaBz2C)
+
+- Add `AvoidOOM` to avoid OOM (#7434, #8091)
+
+  Try to use `AvoidCUDAOOM` to avoid GPU out of memory. It will first retry after calling `torch.cuda.empty_cache()`. If it still fails, it will then retry by converting the type of inputs to FP16 format. If it still fails, it will try to copy inputs from GPUs to CPUs to continue computing. Try AvoidOOM in code to make the code continue to run when GPU memory runs out:
+
+  ```python
+  from mmdet.utils import AvoidCUDAOOM
+
+  output = AvoidCUDAOOM.retry_if_cuda_oom(some_function)(input1, input2)
+  ```
+
+  Users can also try `AvoidCUDAOOM` as a decorator to make the code continue to run when GPU memory runs out:
+
+  ```python
+  from mmdet.utils import AvoidCUDAOOM
+
+  @AvoidCUDAOOM.retry_if_cuda_oom
+  def function(*args, **kwargs):
+      ...
+      return xxx
+  ```
+
+- Support reading `gpu_collect` from `cfg.evaluation.gpu_collect` (#7672)
+
+- Speedup the Video Inference by Accelerating data-loading Stage (#7832)
+
+- Support replacing the `${key}` with the value of `cfg.key` (#7492)
+
+- Accelerate result analysis in `analyze_result.py`. The evaluation time is speedup by 10 ~ 15 times and only tasks 10 ~ 15 minutes now. (#7891)
+
+- Support to set `block_dilations` in `DilatedEncoder` (#7812)
+
+- Support panoptic segmentation result analysis (#7922)
+
+- Release DyHead with Swin-Large backbone (#7733)
+
+- Documentations updating and adding
+
+  - Fix wrong default type of `act_cfg` in `SwinTransformer` (#7794)
+  - Fix text errors in the tutorials (#7959)
+  - Rewrite the [installation guide](docs/en/get_started.md) (#7897)
+  - [Useful hooks](docs/en/tutorials/useful_hooks.md) (#7810)
+  - Fix heading anchor in documentation  (#8006)
+  - Replace `markdownlint` with `mdformat` for avoiding installing ruby (#8009)
+
+#### Contributors
+
+A total of 20 developers contributed to this release.
+
+Thanks @ZwwWayne, @DarthThomas, @solyaH, @LutingWang, @chenxinfeng4, @Czm369, @Chenastron, @chhluo, @austinmw, @Shanyaliux @hellock, @Y-M-Y, @jbwang1997, @hhaAndroid, @Irvingao, @zhanggefan, @BIGWangYuDong, @Keiku, @PeterVennerstrom, @ayulockin
+
 ### v2.24.0 (26/4/2022)
 
 #### Highlights
@@ -11,6 +126,7 @@
 #### New Features
 
 - Support [Simple Copy-Paste is a Strong Data Augmentation Method for Instance Segmentation](https://arxiv.org/abs/2012.07177), see [example configs](configs/simple_copy_paste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco.py) (#7501)
+
 - Support Class Aware Sampler, users can set
 
   ```python
@@ -22,9 +138,9 @@
 - Support automatically scaling LR according to GPU number and samples per GPU. (#7482)
   In each config, there is a corresponding config of auto-scaling LR as below,
 
-   ```python
-   auto_scale_lr = dict(enable=True, base_batch_size=N)
-   ```
+  ```python
+  auto_scale_lr = dict(enable=True, base_batch_size=N)
+  ```
 
   where `N` is the batch size used for the current learning rate in the config (also equals to `samples_per_gpu` * gpu number to train this config).
   By default, we set `enable=False` so that the original usages will not be affected. Users can set `enable=True` in each config or add `--auto-scale-lr` after the command line to enable this feature and should check the correctness of `base_batch_size` in customized configs.
@@ -42,61 +158,68 @@
     <tbody><tr valign='top'>
     <th>
 
-    ```python
-    data = dict(
-        samples_per_gpu=64, workers_per_gpu=4,
-        train=dict(type='xxx', ...),
-        val=dict(type='xxx', samples_per_gpu=4, ...),
-        test=dict(type='xxx', ...),
-    )
-    ```
+  ```python
+  data = dict(
+      samples_per_gpu=64, workers_per_gpu=4,
+      train=dict(type='xxx', ...),
+      val=dict(type='xxx', samples_per_gpu=4, ...),
+      test=dict(type='xxx', ...),
+  )
+  ```
 
-    </th>
+  </th>
     <th>
 
-    ```python
-    # A recommended config that is clear
-    data = dict(
-        train=dict(type='xxx', ...),
-        val=dict(type='xxx', ...),
-        test=dict(type='xxx', ...),
-        # Use different batch size during inference.
-        train_dataloader=dict(samples_per_gpu=64, workers_per_gpu=4),
-        val_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
-        test_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
-    )
+  ```python
+  # A recommended config that is clear
+  data = dict(
+      train=dict(type='xxx', ...),
+      val=dict(type='xxx', ...),
+      test=dict(type='xxx', ...),
+      # Use different batch size during inference.
+      train_dataloader=dict(samples_per_gpu=64, workers_per_gpu=4),
+      val_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+      test_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+  )
 
-    # Old style still works but allows to set more arguments about data loaders
-    data = dict(
-        samples_per_gpu=64,  # only works for train_dataloader
-        workers_per_gpu=4,  # only works for train_dataloader
-        train=dict(type='xxx', ...),
-        val=dict(type='xxx', ...),
-        test=dict(type='xxx', ...),
-        # Use different batch size during inference.
-        val_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
-        test_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
-    )
-    ```
+  # Old style still works but allows to set more arguments about data loaders
+  data = dict(
+      samples_per_gpu=64,  # only works for train_dataloader
+      workers_per_gpu=4,  # only works for train_dataloader
+      train=dict(type='xxx', ...),
+      val=dict(type='xxx', ...),
+      test=dict(type='xxx', ...),
+      # Use different batch size during inference.
+      val_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+      test_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+  )
+  ```
 
-    </th></tr>
+  </th></tr>
   </tbody></table>
 
 - Support memory profile hook. Users can use it to monitor the memory usages during training as below (#7560)
 
-    ```python
-    custom_hooks = [
-        dict(type='MemoryProfilerHook', interval=50)
-    ]
-    ```
+  ```python
+  custom_hooks = [
+      dict(type='MemoryProfilerHook', interval=50)
+  ]
+  ```
 
 - Support to run on PyTorch with MLU chip (#7578)
+
 - Support re-spliting data batch with tag (#7641)
+
 - Support the `DiceCost` used by [K-Net](https://arxiv.org/abs/2106.14855) in `MaskHungarianAssigner` (#7716)
+
 - Support splitting COCO data for Semi-supervised object detection (#7431)
+
 - Support Pathlib for Config.fromfile (#7685)
+
 - Support to use file client in OpenImages dataset (#7433)
+
 - Add a probability parameter to Mosaic transformation (#7371)
+
 - Support specifying interpolation mode in `Resize` pipeline (#7585)
 
 #### Bug Fixes
@@ -239,7 +362,7 @@ To standardize the contents in config READMEs and meta files of OpenMMLab projec
 #### Bug Fixes
 
 - Fix weight conversion issue of RetinaNet with Swin-S (#6973)
-- Update ``__repr__`` of ``Compose`` (#6951)
+- Update `__repr__` of `Compose` (#6951)
 - Fix BadZipFile Error when build docker (#6966)
 - Fix bug in non-distributed multi-gpu training/testing (#7019)
 - Fix bbox clamp in PyTorch 1.10 (#7074)
@@ -254,7 +377,7 @@ To standardize the contents in config READMEs and meta files of OpenMMLab projec
 - Disable cv2 multiprocessing by default for acceleration (#6867)
 - Deprecate the support for "python setup.py test" (#6998)
 - Re-organize metafiles and config readmes (#7051)
-- Fix None grad problem during training TOOD by adding ``SigmoidGeometricMean`` (#7090)
+- Fix None grad problem during training TOOD by adding `SigmoidGeometricMean` (#7090)
 
 #### Contributors
 
@@ -998,13 +1121,13 @@ __Bug Fixes__
 __FP16 related methods are imported from mmcv instead of mmdet. (#3766, #3822)__
 Mixed precision training utils in `mmdet.core.fp16` are moved to `mmcv.runner`, including `force_fp32`, `auto_fp16`, `wrap_fp16_model`, and `Fp16OptimizerHook`. A deprecation warning will be raised if users attempt to import those methods from `mmdet.core.fp16`, and will be finally removed in V2.10.0.
 
-__[0, N-1] represents foreground classes and N indicates background classes for all models. (#3221)__
+__\[0, N-1\] represents foreground classes and N indicates background classes for all models. (#3221)__
 Before v2.5.0, the background label for RPN is 0, and N for other heads. Now the behavior is consistent for all models. Thus `self.background_labels` in `dense_heads` is removed and all heads use `self.num_classes` to indicate the class index of background labels.
 This change has no effect on the pre-trained models in the v2.x model zoo, but will affect the training of all models with RPN heads. Two-stage detectors whose RPN head uses softmax will be affected because the order of categories is changed.
 
 **Only call `get_subset_by_classes` when `test_mode=True` and `self.filter_empty_gt=True` (#3695)**
 Function `get_subset_by_classes` in dataset is refactored and only filters out images when `test_mode=True` and `self.filter_empty_gt=True`.
-    In the original implementation, `get_subset_by_classes` is not related to the flag `self.filter_empty_gt` and will only be called when the classes is set during initialization no matter `test_mode` is `True` or `False`. This brings ambiguous behavior and potential bugs in many cases. After v2.5.0, if `filter_empty_gt=False`, no matter whether the classes are specified in a dataset, the dataset will use all the images in the annotations. If `filter_empty_gt=True` and `test_mode=True`, no matter whether the classes are specified, the dataset will call ``get_subset_by_classes` to check the images and filter out images containing no GT boxes. Therefore, the users should be responsible for the data filtering/cleaning process for the test dataset.
+In the original implementation, `get_subset_by_classes` is not related to the flag `self.filter_empty_gt` and will only be called when the classes is set during initialization no matter `test_mode` is `True` or `False`. This brings ambiguous behavior and potential bugs in many cases. After v2.5.0, if `filter_empty_gt=False`, no matter whether the classes are specified in a dataset, the dataset will use all the images in the annotations. If `filter_empty_gt=True` and `test_mode=True`, no matter whether the classes are specified, the dataset will call \`\`get_subset_by_classes\` to check the images and filter out images containing no GT boxes. Therefore, the users should be responsible for the data filtering/cleaning process for the test dataset.
 
 #### New Features
 

@@ -11,7 +11,7 @@ from mmcv import Config, DictAction
 from mmdet.core.utils import mask2ndarray
 from mmdet.core.visualization import imshow_det_bboxes
 from mmdet.datasets.builder import build_dataset
-from mmdet.utils import update_data_root
+from mmdet.utils import replace_cfg_vals, update_data_root
 
 
 def parse_args():
@@ -56,6 +56,9 @@ def retrieve_data_cfg(config_path, skip_type, cfg_options):
         ]
 
     cfg = Config.fromfile(config_path)
+
+    # replace the ${key} with the value of cfg.key
+    cfg = replace_cfg_vals(cfg)
 
     # update data root according to MMDET_DATASETS
     update_data_root(cfg)

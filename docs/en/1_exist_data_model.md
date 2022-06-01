@@ -162,6 +162,32 @@ python demo/video_demo.py demo/demo.mp4 \
     --out result.mp4
 ```
 
+#### Video demo with GPU acceleration
+
+This script performs inference on a video with GPU acceleration.
+
+```shell
+python demo/video_gpuaccel_demo.py \
+    ${VIDEO_FILE} \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--device ${GPU_ID}] \
+    [--score-thr ${SCORE_THR}] \
+    [--nvdecode] \
+    [--out ${OUT_FILE}] \
+    [--show] \
+    [--wait-time ${WAIT_TIME}]
+```
+
+Examples:
+
+```shell
+python demo/video_gpuaccel_demo.py demo/demo.mp4 \
+    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+    --nvdecode --out result.mp4
+```
+
 ## Test existing models on standard datasets
 
 To evaluate a model's accuracy, one usually tests the model on some standard datasets.

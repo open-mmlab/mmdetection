@@ -101,7 +101,8 @@ class FusedSemanticHead(BaseModule):
             if i != self.fusion_level:
                 feat = F.interpolate(
                     feat, size=fused_size, mode='bilinear', align_corners=True)
-                x += self.lateral_convs[i](feat)
+                # fix runtime error of "+=" inplace operation in PyTorch 1.10
+                x = x + self.lateral_convs[i](feat)
 
         for i in range(self.num_convs):
             x = self.convs[i](x)
