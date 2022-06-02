@@ -3,4 +3,5 @@ _base_ = [
 ]
 # optimizer
 model = dict(pretrained='torchvision://resnet101', backbone=dict(depth=101))
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+optim_wrapper = dict(
+    optimizer=dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001))

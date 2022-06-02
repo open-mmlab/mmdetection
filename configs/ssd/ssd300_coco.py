@@ -65,7 +65,8 @@ val_dataloader = dict(
 test_dataloader = val_dataloader
 
 # optimizer
-optimizer = dict(type='SGD', lr=2e-3, momentum=0.9, weight_decay=5e-4)
+optim_wrapper = dict(
+    optimizer=dict(type='SGD', lr=2e-3, momentum=0.9, weight_decay=5e-4))
 
 custom_hooks = [
     dict(type='NumClassCheckHook'),
