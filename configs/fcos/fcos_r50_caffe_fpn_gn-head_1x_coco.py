@@ -75,8 +75,8 @@ param_scheduler = [
 
 # optimizer
 optim_wrapper = dict(
-    optimizer=dict(
-        lr=0.01, paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.)))
+    optimizer=dict(lr=0.01),
+    paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.))
 
 default_hooks = dict(
     optimizer=dict(

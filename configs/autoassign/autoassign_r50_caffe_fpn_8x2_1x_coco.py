@@ -66,4 +66,4 @@ param_scheduler = [
 
 # optimizer
 optim_wrapper = dict(
-    optimizer=dict(lr=0.01, paramwise_cfg=dict(norm_decay_mult=0.)))
+    optimizer=dict(lr=0.01), paramwise_cfg=dict(norm_decay_mult=0.))
