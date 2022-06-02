@@ -1,12 +1,15 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from pathlib import Path
+from typing import Any, Optional, Union
 
-import mmcv
 import torch
-from mmcv.runner import load_checkpoint
+import torch.nn as nn
+from mmengine.config import Config
+from mmengine.runner import load_checkpoint
+from torch import Tensor
 
+from mmdet.core import ConfigType, OptConfigType, SampleList
 from mmdet.registry import MODELS
-from .. import build_detector
 from .single_stage import SingleStageDetector
 
 
@@ -16,72 +19,75 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
     <https://arxiv.org/abs/1503.02531>`_.
 
     Args:
-        teacher_config (str | dict): Config file path
-            or the config object of teacher model.
+        teacher_config (:obj:`ConfigDict` | dict | str | Path): Config file
+            path or the config object of teacher model.
         teacher_ckpt (str, optional): Checkpoint path of teacher model.
             If left as None, the model will not load any weights.
     """
 
-    def __init__(self,
-                 backbone,
-                 neck,
-                 bbox_head,
-                 teacher_config,
-                 teacher_ckpt=None,
-                 eval_teacher=True,
-                 train_cfg=None,
-                 test_cfg=None,
-                 pretrained=None):
-        super().__init__(backbone, neck, bbox_head, train_cfg, test_cfg,
-                         pretrained)
+    def __init__(
+        self,
+        backbone: ConfigType,
+        neck: ConfigType,
+        bbox_head: ConfigType,
+        teacher_config: Union[ConfigType, str, Path],
+        teacher_ckpt: Optional[str] = None,
+        eval_teacher: bool = True,
+        train_cfg: OptConfigType = None,
+        test_cfg: OptConfigType = None,
+        preprocess_cfg: OptConfigType = None,
+    ) -> None:
+        super().__init__(
+            backbone=backbone,
+            neck=neck,
+            bbox_head=bbox_head,
+            train_cfg=train_cfg,
+            test_cfg=test_cfg,
+            preprocess_cfg=preprocess_cfg)
         self.eval_teacher = eval_teacher
         # Build teacher model
         if isinstance(teacher_config, (str, Path)):
-            teacher_config = mmcv.Config.fromfile(teacher_config)
-        self.teacher_model = build_detector(teacher_config['model'])
+            teacher_config = Config.fromfile(teacher_config)
+        self.teacher_model = MODELS.build(teacher_config['model'])
         if teacher_ckpt is not None:
             load_checkpoint(
                 self.teacher_model, teacher_ckpt, map_location='cpu')
 
-    def forward_train(self,
-                      img,
-                      img_metas,
-                      gt_bboxes,
-                      gt_labels,
-                      gt_bboxes_ignore=None):
+    def forward_train(self, batch_inputs: Tensor,
+                      batch_data_samples: SampleList, **kwargs) -> dict:
         """
         Args:
-            img (Tensor): Input images of shape (N, C, H, W).
-                Typically these should be mean centered and std scaled.
-            img_metas (list[dict]): A List of image info dict where each dict
-                has: 'img_shape', 'scale_factor', 'flip', and may also contain
-                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
-                For details on the values of these keys see
-                :class:`mmdet.datasets.pipelines.Collect`.
-            gt_bboxes (list[Tensor]): Each item are the truth boxes for each
-                image in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): Class indices corresponding to each box
-            gt_bboxes_ignore (None | list[Tensor]): Specify which bounding
-                boxes can be ignored when computing the loss.
+            batch_inputs (Tensor): Input images of shape (N, C, H, W).
+                These should usually be mean centered and std scaled.
+            batch_data_samples (list[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        x = self.extract_feat(img)
+        x = self.extract_feat(batch_inputs)
         with torch.no_grad():
-            teacher_x = self.teacher_model.extract_feat(img)
+            teacher_x = self.teacher_model.extract_feat(batch_inputs)
             out_teacher = self.teacher_model.bbox_head(teacher_x)
-        losses = self.bbox_head.forward_train(x, out_teacher, img_metas,
-                                              gt_bboxes, gt_labels,
-                                              gt_bboxes_ignore)
+        losses = self.bbox_head.forward_train(x, out_teacher,
+                                              batch_data_samples)
         return losses
 
-    def cuda(self, device=None):
+    def cuda(self, device: Optional[str] = None) -> nn.Module:
         """Since teacher_model is registered as a plain object, it is necessary
-        to put the teacher model to cuda when calling cuda function."""
+        to put the teacher model to cuda when calling ``cuda`` function."""
         self.teacher_model.cuda(device=device)
         return super().cuda(device=device)
 
-    def train(self, mode=True):
+    def to(self, device: Optional[str] = None) -> nn.Module:
+        """Since teacher_model is registered as a plain object, it is necessary
+        to put the teacher model to other device when calling ``to``
+        function."""
+        self.teacher_model.to(device=device)
+        return super().to(device=device)
+
+    def train(self, mode: bool = True) -> None:
         """Set the same train mode for teacher and student model."""
         if self.eval_teacher:
             self.teacher_model.train(False)
@@ -89,7 +95,7 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
             self.teacher_model.train(mode)
         super().train(mode)
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         """Set attribute, i.e. self.name = value
 
         This reloading prevent the teacher model from being registered as a
