@@ -12,9 +12,6 @@ from mmdet.models.roi_heads.mask_heads import FCNMaskHead
 
 class TestFCNMaskHead(TestCase):
 
-    def test_init(self):
-        """Test init standard RoI head."""
-
     @parameterized.expand(['cpu', 'cuda'])
     def test_get_seg_masks(self, device):
         if device == 'cuda':
@@ -51,9 +48,28 @@ class TestFCNMaskHead(TestCase):
             batch_img_metas=[img_metas],
             rcnn_test_cfg=rcnn_test_cfg)
 
-        assert isinstance(result_list[0], InstanceData)
-        assert len(result_list[0]) == num_samples
-        assert result_list[0].masks.shape == (num_samples, s, s)
+        self.assertIsInstance(result_list[0], InstanceData)
+        self.assertEqual(len(result_list[0]), num_samples)
+        self.assertEqual(result_list[0].masks.shape, (num_samples, s, s))
+
+        # test with activate_map, `mask_pred` has been activated before
+        num_samples = 2
+        mask_pred = [torch.rand((num_samples, num_classes, 14, 14)).to(device)]
+        mask_pred = [m.sigmoid().detach() for m in mask_pred]
+        result.bboxes = torch.rand((num_samples, 4)).to(device)
+        result.labels = torch.randint(
+            num_classes, (num_samples, ), dtype=torch.long).to(device)
+        mask_head.to(device=device)
+        result_list = mask_head.get_results(
+            mask_preds=tuple(mask_pred),
+            results_list=tuple([result]),
+            batch_img_metas=[img_metas],
+            rcnn_test_cfg=rcnn_test_cfg,
+            activate_map=True)
+
+        self.assertIsInstance(result_list[0], InstanceData)
+        self.assertEqual(len(result_list[0]), num_samples)
+        self.assertEqual(result_list[0].masks.shape, (num_samples, s, s))
 
         # num_samples is 0
         num_samples = 0
@@ -67,6 +83,6 @@ class TestFCNMaskHead(TestCase):
             batch_img_metas=[img_metas],
             rcnn_test_cfg=rcnn_test_cfg)
 
-        assert isinstance(result_list[0], InstanceData)
-        assert len(result_list[0]) == num_samples
-        assert result_list[0].masks.shape == (num_samples, s, s)
+        self.assertIsInstance(result_list[0], InstanceData)
+        self.assertEqual(len(result_list[0]), num_samples)
+        self.assertEqual(result_list[0].masks.shape, (num_samples, s, s))

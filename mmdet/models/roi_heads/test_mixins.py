@@ -244,21 +244,13 @@ class MaskTestMixin:
                   the last dimension 4 arrange as (x1, y1, x2, y2).
                 - masks (Tensor): Has a shape (num_instances, H, W).
         """
-        # if det_bboxes is rescaled to the original image size, we need to
-        # rescale it back to the testing scale to obtain RoIs.
-        _bboxes = [res.bboxes for res in results_list]
-        if rescale:
-            for img_id in range(len(batch_img_metas)):
-                scale_factor = _bboxes[img_id].new_tensor(
-                    batch_img_metas[img_id]['scale_factor']).repeat((1, 2))
-                _bboxes[img_id] *= scale_factor
-
-        mask_rois = bbox2roi(_bboxes)
+        bboxes = [res.bboxes for res in results_list]
+        mask_rois = bbox2roi(bboxes)
         mask_results = self._mask_forward(x, mask_rois)
-        mask_pred = mask_results['mask_pred']
+        mask_preds = mask_results['mask_pred']
         # split batch mask prediction back to each image
-        num_mask_roi_per_img = [len(res) for res in results_list]
-        mask_preds = mask_pred.split(num_mask_roi_per_img, 0)
+        num_mask_rois_per_img = [len(res) for res in results_list]
+        mask_preds = mask_preds.split(num_mask_rois_per_img, 0)
 
         results_list = self.mask_head.get_results(
             mask_preds=mask_preds,

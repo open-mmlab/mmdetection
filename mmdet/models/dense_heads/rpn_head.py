@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -11,6 +11,7 @@ from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 from torch import Tensor
 
+from mmdet.core.utils import InstanceList, OptInstanceList, OptMultiConfig
 from mmdet.registry import MODELS
 from .anchor_head import AnchorHead
 
@@ -31,12 +32,8 @@ class RPNHead(AnchorHead):
     def __init__(self,
                  in_channels: int,
                  num_classes: int = 1,
-                 init_cfg: Optional[Union[Union[ConfigDict, dict],
-                                          List[Union[ConfigDict,
-                                                     dict]]]] = dict(
-                                                         type='Normal',
-                                                         layer='Conv2d',
-                                                         std=0.01),
+                 init_cfg: OptMultiConfig = dict(
+                     type='Normal', layer='Conv2d', std=0.01),
                  num_convs: int = 1,
                  **kwargs) -> None:
         self.num_convs = num_convs
@@ -98,10 +95,9 @@ class RPNHead(AnchorHead):
     def loss(self,
              cls_scores: List[Tensor],
              bbox_preds: List[Tensor],
-             batch_gt_instances: List[InstanceData],
+             batch_gt_instances: InstanceList,
              batch_img_metas: List[dict],
-             batch_gt_instances_ignore: Optional[InstanceData] = None) \
-            -> dict:
+             batch_gt_instances_ignore: OptInstanceList = None) -> dict:
         """Compute losses of the head.
 
         Args:

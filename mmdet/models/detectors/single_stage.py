@@ -1,13 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import warnings
-from typing import List, Optional, Tuple, Union
+from typing import List, Tuple
 
 import torch
-from mmengine.config import ConfigDict
-from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import DetDataSample, bbox2result
+from mmdet.core import bbox2result
+from mmdet.core.utils import (ConfigType, OptConfigType, OptInstanceList,
+                              OptMultiConfig, SampleList)
 from mmdet.registry import MODELS
 from .base import BaseDetector
 
@@ -21,19 +20,14 @@ class SingleStageDetector(BaseDetector):
     """
 
     def __init__(self,
-                 backbone: Union[ConfigDict, dict],
-                 neck: Optional[Union[ConfigDict, dict]] = None,
-                 bbox_head: Optional[Union[ConfigDict, dict]] = None,
-                 train_cfg: Optional[Union[ConfigDict, dict]] = None,
-                 test_cfg: Optional[Union[ConfigDict, dict]] = None,
-                 preprocess_cfg: Optional[Union[ConfigDict, dict]] = None,
-                 pretrained: Optional[str] = None,
-                 init_cfg: Optional[Union[ConfigDict, dict]] = None) -> None:
+                 backbone: ConfigType,
+                 neck: OptConfigType = None,
+                 bbox_head: OptConfigType = None,
+                 train_cfg: OptConfigType = None,
+                 test_cfg: OptConfigType = None,
+                 preprocess_cfg: OptConfigType = None,
+                 init_cfg: OptMultiConfig = None) -> None:
         super().__init__(preprocess_cfg=preprocess_cfg, init_cfg=init_cfg)
-        if pretrained:
-            warnings.warn('DeprecationWarning: pretrained is deprecated, '
-                          'please use "init_cfg" instead')
-            backbone.pretrained = pretrained
         self.backbone = MODELS.build(backbone)
         if neck is not None:
             self.neck = MODELS.build(neck)
@@ -69,8 +63,8 @@ class SingleStageDetector(BaseDetector):
 
     def forward_train(self,
                       batch_inputs: Tensor,
-                      batch_data_samples: List[DetDataSample],
-                      proposals: Optional[InstanceData] = None,
+                      batch_data_samples: SampleList,
+                      proposals: OptInstanceList = None,
                       **kwargs) -> dict:
         """
         Args:
@@ -92,7 +86,7 @@ class SingleStageDetector(BaseDetector):
     def simple_test(self,
                     batch_inputs: Tensor,
                     batch_img_metas: List[dict],
-                    rescale: bool = False) -> List[DetDataSample]:
+                    rescale: bool = False) -> SampleList:
         """Test function without test-time augmentation.
 
         Args:

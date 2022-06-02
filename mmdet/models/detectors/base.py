@@ -8,13 +8,12 @@ from typing import List, Optional, Union
 import torch
 import torch.distributed as dist
 from mmcv.runner import BaseModule, auto_fp16
-from mmengine.config import ConfigDict
-from mmengine.data import InstanceData
 from torch import Tensor, device
 from torch.optim import Optimizer
 
 from mmdet.core import DetDataSample
-from mmdet.core.utils import stack_batch
+from mmdet.core.utils import (InstanceList, OptConfigType, OptMultiConfig,
+                              SampleList, stack_batch)
 
 
 class BaseDetector(BaseModule, metaclass=ABCMeta):
@@ -30,8 +29,8 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
     """
 
     def __init__(self,
-                 preprocess_cfg: Optional[Union[dict, ConfigDict]] = None,
-                 init_cfg: Optional[Union[dict, ConfigDict]] = None) -> None:
+                 preprocess_cfg: OptConfigType = None,
+                 init_cfg: OptMultiConfig = None) -> None:
         super().__init__(init_cfg=init_cfg)
         self.fp16_enabled = False
         self.preprocess_cfg = preprocess_cfg
@@ -110,8 +109,7 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
 
     @auto_fp16(apply_to=('batch_inputs', ))
     def forward_train(self, batch_inputs: Tensor,
-                      batch_data_samples: List[DetDataSample],
-                      **kwargs) -> None:
+                      batch_data_samples: SampleList, **kwargs) -> None:
         """
         Args:
             batch_inputs (Tensor):The image Tensor should have a shape NxCxHxW.
@@ -203,7 +201,7 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
                 data: List[dict],
                 optimizer: Optional[Union[Optimizer, dict]] = None,
                 return_loss: bool = False,
-                **kwargs) -> Union[dict, List[DetDataSample]]:
+                **kwargs) -> Union[dict, SampleList]:
         """The iteration step during training and testing. This method defines
         an iteration step during training and testing, except for the back
         propagation and optimizer updating during training, which are done in
@@ -291,8 +289,7 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
                                    self.pad_value)
         return batch_inputs, batch_data_samples
 
-    def postprocess_result(self, results_list: List[InstanceData]) \
-            -> List[DetDataSample]:
+    def postprocess_result(self, results_list: InstanceList) -> SampleList:
         """ Convert results list to `DetDataSample`.
         Args:
             results_list (list[:obj:`InstanceData`]): Detection results of
@@ -382,8 +379,8 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
 
     @auto_fp16(apply_to=('batch_inputs', ))
     def forward_simple_test(self, batch_inputs: Tensor,
-                            batch_data_samples: List[DetDataSample],
-                            **kwargs) -> List[DetDataSample]:
+                            batch_data_samples: SampleList,
+                            **kwargs) -> SampleList:
         """Test function without test time augmentation.
 
         Args:

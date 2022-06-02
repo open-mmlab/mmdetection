@@ -1,11 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import warnings
+from typing import List, Optional, Union
 
 import numpy as np
 import torch
 from mmcv import ConfigDict
 from mmcv.ops import nms
+from torch import Tensor
 
 from ..bbox import bbox_mapping_back
 
@@ -174,22 +176,31 @@ def merge_aug_scores(aug_scores):
         return np.mean(aug_scores, axis=0)
 
 
-def merge_aug_masks(aug_masks, img_metas, rcnn_test_cfg, weights=None):
+def merge_aug_masks(aug_masks: List[Tensor],
+                    img_metas: dict,
+                    weights: Optional[Union[list, Tensor]] = None) -> Tensor:
     """Merge augmented mask prediction.
 
     Args:
-        aug_masks (list[ndarray]): shape (n, #class, h, w)
-        img_shapes (list[ndarray]): shape (3, ).
-        rcnn_test_cfg (dict): rcnn test config.
+        aug_masks (list[Tensor]): each has shape
+            (n, c, h, w).
+        img_metas (dict): Image information.
+        weights (list or Tensor): Weight of each aug_masks,
+            the length should be n.
 
     Returns:
-        tuple: (bboxes, scores)
+        Tensor: has shape (n, c, h, w)
     """
     recovered_masks = []
-    for mask, img_info in zip(aug_masks, img_metas):
-        flip = img_info[0]['flip']
+    for i, mask in enumerate(aug_masks):
+        if weights is not None:
+            assert len(weights) == len(aug_masks)
+            weight = weights[i]
+        else:
+            weight = 1
+        flip = img_metas.get('filp', False)
         if flip:
-            flip_direction = img_info[0]['flip_direction']
+            flip_direction = img_metas['flip_direction']
             if flip_direction == 'horizontal':
                 mask = mask[:, :, :, ::-1]
             elif flip_direction == 'vertical':
@@ -200,11 +211,9 @@ def merge_aug_masks(aug_masks, img_metas, rcnn_test_cfg, weights=None):
             else:
                 raise ValueError(
                     f"Invalid flipping direction '{flip_direction}'")
-        recovered_masks.append(mask)
+        recovered_masks.append(mask[None, :] * weight)
 
-    if weights is None:
-        merged_masks = np.mean(recovered_masks, axis=0)
-    else:
-        merged_masks = np.average(
-            np.array(recovered_masks), axis=0, weights=np.array(weights))
+    merged_masks = torch.cat(recovered_masks, 0).mean(dim=0)
+    if weights is not None:
+        merged_masks = merged_masks * len(weights) / sum(weights)
     return merged_masks

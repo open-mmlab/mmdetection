@@ -5,12 +5,13 @@ from typing import List, Optional, Tuple, Union
 import torch
 import torch.nn as nn
 from mmcv.runner import force_fp32
-from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 from torch import Tensor
 
 from mmdet.core import (AnchorGenerator, PseudoSampler, anchor_inside_flags,
                         images_to_levels, multi_apply, unmap)
+from mmdet.core.utils import (ConfigType, InstanceList, OptConfigType,
+                              OptInstanceList, OptMultiConfig)
 from mmdet.registry import MODELS, TASK_UTILS
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -44,26 +45,25 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         num_classes: int,
         in_channels: int,
         feat_channels: int = 256,
-        anchor_generator: Union[ConfigDict, dict] = dict(
+        anchor_generator: ConfigType = dict(
             type='AnchorGenerator',
             scales=[8, 16, 32],
             ratios=[0.5, 1.0, 2.0],
             strides=[4, 8, 16, 32, 64]),
-        bbox_coder: Union[ConfigDict, dict] = dict(
+        bbox_coder: ConfigType = dict(
             type='DeltaXYWHBBoxCoder',
             clip_border=True,
             target_means=(.0, .0, .0, .0),
             target_stds=(1.0, 1.0, 1.0, 1.0)),
         reg_decoded_bbox: bool = False,
-        loss_cls: Union[ConfigDict, dict] = dict(
+        loss_cls: ConfigType = dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-        loss_bbox: Union[ConfigDict, dict] = dict(
+        loss_bbox: ConfigType = dict(
             type='SmoothL1Loss', beta=1.0 / 9.0, loss_weight=1.0),
-        train_cfg: Optional[Union[ConfigDict, dict]] = None,
-        test_cfg: Optional[Union[ConfigDict, dict]] = None,
-        init_cfg: Optional[Union[Union[ConfigDict, dict],
-                                 List[Union[ConfigDict, dict]]]] = dict(
-                                     type='Normal', layer='Conv2d', std=0.01)
+        train_cfg: OptConfigType = None,
+        test_cfg: OptConfigType = None,
+        init_cfg: OptMultiConfig = dict(
+            type='Normal', layer='Conv2d', std=0.01)
     ) -> None:
         super().__init__(init_cfg=init_cfg)
         self.in_channels = in_channels
@@ -299,10 +299,9 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
     def get_targets(self,
                     anchor_list: List[List[Tensor]],
                     valid_flag_list: List[List[Tensor]],
-                    batch_gt_instances: List[InstanceData],
+                    batch_gt_instances: InstanceList,
                     batch_img_metas: List[dict],
-                    batch_gt_instances_ignore: Optional[
-                        List[InstanceData]] = None,
+                    batch_gt_instances_ignore: OptInstanceList = None,
                     unmap_outputs: bool = True,
                     return_sampling_results: bool = False,
                     **kwargs) -> tuple:
@@ -450,14 +449,12 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         return loss_cls, loss_bbox
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def loss(
-        self,
-        cls_scores: List[Tensor],
-        bbox_preds: List[Tensor],
-        batch_gt_instances: List[InstanceData],
-        batch_img_metas: List[dict],
-        batch_gt_instances_ignore: Optional[List[InstanceData]] = None
-    ) -> dict:
+    def loss(self,
+             cls_scores: List[Tensor],
+             bbox_preds: List[Tensor],
+             batch_gt_instances: InstanceList,
+             batch_img_metas: List[dict],
+             batch_gt_instances_ignore: OptInstanceList = None) -> dict:
         """Compute losses of the head.
 
         Args:

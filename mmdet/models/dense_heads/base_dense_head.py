@@ -1,6 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
-import warnings
 from abc import ABCMeta, abstractmethod
 from inspect import signature
 from typing import List, Optional, Tuple, Union
@@ -13,16 +12,15 @@ from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import DetDataSample
 from mmdet.core.post_processing.merge_augs import merge_aug_results
-from mmdet.core.utils import filter_scores_and_topk, select_single_mlvl
+from mmdet.core.utils import (InstanceList, OptMultiConfig, SampleList,
+                              filter_scores_and_topk, select_single_mlvl)
 
 
 class BaseDenseHead(BaseModule, metaclass=ABCMeta):
     """Base class for DenseHeads."""
 
-    def __init__(self,
-                 init_cfg: Optional[Union[ConfigDict, dict]] = None) -> None:
+    def __init__(self, init_cfg: OptMultiConfig = None) -> None:
         super().__init__(init_cfg=init_cfg)
 
     def init_weights(self) -> None:
@@ -38,11 +36,6 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         """Compute losses of the head."""
         pass
 
-    def get_bboxes(self, *args, **kwargs) -> List[InstanceData]:
-        warnings.warn('`get_bboxes` is deprecated and will be removed in '
-                      'the future. Please use `get_results` instead.')
-        return self.get_results(*args, **kwargs)
-
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def get_results(self,
                     cls_scores: List[Tensor],
@@ -52,7 +45,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                     cfg: Optional[ConfigDict] = None,
                     rescale: bool = False,
                     with_nms: bool = True,
-                    **kwargs) -> List[InstanceData]:
+                    **kwargs) -> InstanceList:
         """Transform network outputs of a batch into bbox results.
 
         Note: When score_factors is not None, the cls_scores are
@@ -334,10 +327,10 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
     def forward_train(self,
                       x: Tensor,
-                      batch_data_samples: List[DetDataSample],
+                      batch_data_samples: SampleList,
                       proposal_cfg: Optional[ConfigDict] = None,
                       **kwargs) \
-            -> Union[Tuple[dict, List[InstanceData], dict]]:
+            -> Union[Tuple[dict, InstanceList], dict]:
         """
         Args:
             x (list[Tensor]): Features from FPN.
@@ -401,7 +394,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
     def simple_test(self,
                     x: Tuple[Tensor],
                     batch_img_metas: List[dict],
-                    rescale: bool = False) -> List[InstanceData]:
+                    rescale: bool = False) -> InstanceList:
         """Test function without test-time augmentation.
 
         Args:

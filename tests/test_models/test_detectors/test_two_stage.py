@@ -10,9 +10,12 @@ from mmdet.core import DetDataSample
 from .utils import demo_mm_inputs, get_detector_cfg
 
 
-class TestFasterRCNN(TestCase):
+class TestTwoStageBBox(TestCase):
 
-    @parameterized.expand(['faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'])
+    @parameterized.expand([
+        'faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py',
+        'cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py'
+    ])
     def test_init(self, cfg_file):
         model = get_detector_cfg(cfg_file)
         # backbone convert to ResNet18
@@ -33,9 +36,11 @@ class TestFasterRCNN(TestCase):
         detector = build_detector(model)
         assert detector.rpn_head.num_classes == 1
 
-    @parameterized.expand([('faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py',
-                            'cuda')])
-    def test_faster_rcnn_forward_train(self, cfg_file, device):
+    @parameterized.expand([
+        ('faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py', 'cuda'),
+        ('cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py', 'cuda')
+    ])
+    def test_two_stage_forward_train(self, cfg_file, device):
         model = get_detector_cfg(cfg_file)
         # backbone convert to ResNet18
         model.backbone.depth = 18
@@ -62,9 +67,11 @@ class TestFasterRCNN(TestCase):
         out = detector.forward_dummy(batch)
         assert isinstance(out, tuple)
 
-    @parameterized.expand([('faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py',
-                            'cuda')])
-    def test_faster_rcnn_forward_test(self, cfg_file, device):
+    @parameterized.expand([
+        ('faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py', 'cuda'),
+        ('cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py', 'cuda')
+    ])
+    def test_two_stage_forward_test(self, cfg_file, device):
         model = get_detector_cfg(cfg_file)
         # backbone convert to ResNet18
         model.backbone.depth = 18
@@ -90,9 +97,12 @@ class TestFasterRCNN(TestCase):
             assert isinstance(batch_results[0], DetDataSample)
 
 
-class TestMaskRCNN(TestCase):
+class TestTwoStageMask(TestCase):
 
-    @parameterized.expand(['mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py'])
+    @parameterized.expand([
+        'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py',
+        'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py'
+    ])
     def test_init(self, cfg_file):
         model = get_detector_cfg(cfg_file)
         # backbone convert to ResNet18
@@ -109,8 +119,11 @@ class TestMaskRCNN(TestCase):
         assert detector.roi_head.mask_head
         assert detector.device.type == 'cpu'
 
-    @parameterized.expand([('mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py', 'cuda')])
-    def test_mask_rcnn_forward_train(self, cfg_file, device):
+    @parameterized.expand([
+        ('mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py', 'cuda'),
+        ('cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py', 'cuda')
+    ])
+    def test_forward_train(self, cfg_file, device):
         model = get_detector_cfg(cfg_file)
         # backbone convert to ResNet18
         model.backbone.depth = 18
@@ -138,8 +151,11 @@ class TestMaskRCNN(TestCase):
         out = detector.forward_dummy(batch)
         assert isinstance(out, tuple)
 
-    @parameterized.expand([('mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py', 'cuda')])
-    def test_mask_rcnn_forward_test(self, cfg_file, device):
+    @parameterized.expand([
+        ('mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py', 'cuda'),
+        ('cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py', 'cuda')
+    ])
+    def test_forward_test(self, cfg_file, device):
         model = get_detector_cfg(cfg_file)
         # backbone convert to ResNet18
         model.backbone.depth = 18
