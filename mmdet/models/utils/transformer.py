@@ -829,7 +829,7 @@ class DeformableDetrTransformer(Transformer):
 
     @staticmethod
     def get_reference_points(spatial_shapes, valid_ratios, device):
-        """Get the reference points used in decoder.
+        """Get the reference points used in encoder.
 
         Args:
             spatial_shapes (Tensor): The shape of all
@@ -841,7 +841,7 @@ class DeformableDetrTransformer(Transformer):
                 reference_points should be.
 
         Returns:
-            Tensor: reference points used in decoder, has \
+            Tensor: reference points used in encoder, has \
                 shape (bs, num_keys, num_levels, 2).
         """
         reference_points_list = []
