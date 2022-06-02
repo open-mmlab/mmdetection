@@ -10,7 +10,8 @@ model = dict(
         depth=18,
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet18')),
     neck=dict(in_channels=[64, 128, 256, 512]))
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+optim_wrapper = dict(
+    optimizer=dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001))
 
 # TODO: support auto scaling lr
 # NOTE: `auto_scale_lr` is for automatically scaling LR,

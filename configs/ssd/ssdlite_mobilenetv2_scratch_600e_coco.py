@@ -149,7 +149,8 @@ param_scheduler = [
 ]
 
 # optimizer
-optimizer = dict(type='SGD', lr=0.015, momentum=0.9, weight_decay=4.0e-5)
+optim_wrapper = dict(
+    optimizer=dict(type='SGD', lr=0.015, momentum=0.9, weight_decay=4.0e-5))
 
 custom_hooks = [
     dict(type='NumClassCheckHook'),

@@ -5,4 +5,4 @@ _base_ = [
 model = dict(
     pretrained='open-mmlab://resnext101_64x4d',
     backbone=dict(type='ResNeXt', depth=101, groups=64, base_width=4))
-optimizer = dict(type='SGD', lr=0.01)
+optim_wrapper = dict(optimizer=dict(type='SGD', lr=0.01))

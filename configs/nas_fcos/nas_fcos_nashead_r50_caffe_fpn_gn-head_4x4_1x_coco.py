@@ -69,5 +69,6 @@ model = dict(
 train_dataloader = dict(batch_size=4, num_workers=2)
 
 # optimizer
-optimizer = dict(
-    lr=0.01, paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.))
+optim_wrapper = dict(
+    optimizer=dict(
+        lr=0.01, paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.)))
