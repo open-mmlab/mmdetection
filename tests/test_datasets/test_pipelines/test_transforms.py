@@ -558,13 +558,21 @@ class TestMosaic(unittest.TestCase):
         self.assertTrue(results['gt_bboxes'].dtype == np.float32)
         self.assertTrue(results['gt_ignore_flags'].dtype == np.bool8)
 
-        # test removing outside bboxes when gt_bbox is empty.
+    def test_transform_with_no_gt(self):
         self.results['gt_bboxes'] = np.empty((0, 4), dtype=np.float32)
         self.results['gt_bboxes_labels'] = np.empty((0, ), dtype=np.int64)
-        self.results['gt_ignore_flags'] = np.empty((0, 4), dtype=np.bool8)
+        self.results['gt_ignore_flags'] = np.empty((0, ), dtype=np.bool)
+        transform = Mosaic(img_scale=(10, 12))
         self.results['mix_results'] = [copy.deepcopy(self.results)] * 3
         results = transform(copy.deepcopy(self.results))
         self.assertIsInstance(results, dict)
+        self.assertTrue(results['img'].shape[:2] == (20, 24))
+        self.assertTrue(
+            results['gt_bboxes_labels'].shape[0] == results['gt_bboxes'].
+            shape[0] == results['gt_ignore_flags'].shape[0] == 0)
+        self.assertTrue(results['gt_bboxes_labels'].dtype == np.int64)
+        self.assertTrue(results['gt_bboxes'].dtype == np.float32)
+        self.assertTrue(results['gt_ignore_flags'].dtype == np.bool8)
 
     def test_repr(self):
         transform = Mosaic(img_scale=(640, 640), )
@@ -572,8 +580,6 @@ class TestMosaic(unittest.TestCase):
             repr(transform), ('Mosaic(img_scale=(640, 640), '
                               'center_ratio_range=(0.5, 1.5), '
                               'pad_val=114.0, '
-                              'min_bbox_size=0, '
-                              'skip_filter=True'
                               'prob=1.0)'))
 
 
@@ -624,23 +630,6 @@ class TestMixUp(unittest.TestCase):
         self.assertTrue(results['gt_bboxes'].dtype == np.float32)
         self.assertTrue(results['gt_ignore_flags'].dtype == np.bool8)
 
-        # test filter bbox :
-        # 2 boxes with sides 10 and 20 are filtered as min_bbox_size=30
-        transform = MixUp(
-            img_scale=(224, 224),
-            ratio_range=(1.0, 1.0),
-            min_bbox_size=30,
-            skip_filter=False)
-        results = transform(copy.deepcopy(self.results))
-        print(results['gt_bboxes'])
-        self.assertTrue(results['gt_bboxes'].shape[0] == 4)
-        self.assertTrue(results['gt_bboxes_labels'].shape[0] == 4)
-        self.assertTrue(results['gt_bboxes_labels'].shape[0] ==
-                        results['gt_bboxes'].shape[0])
-        self.assertTrue(results['gt_bboxes_labels'].dtype == np.int64)
-        self.assertTrue(results['gt_bboxes'].dtype == np.float32)
-        self.assertTrue(results['gt_ignore_flags'].dtype == np.bool8)
-
     def test_repr(self):
         transform = MixUp(
             img_scale=(640, 640),
@@ -653,11 +642,7 @@ class TestMixUp(unittest.TestCase):
                               'flip_ratio=0.5, '
                               'pad_val=114.0, '
                               'max_iters=15, '
-                              'min_bbox_size=5, '
-                              'min_area_ratio=0.2, '
-                              'max_aspect_ratio=20, '
-                              'bbox_clip_border=True, '
-                              'skip_filter=True)'))
+                              'bbox_clip_border=True)'))
 
 
 class TestRandomAffine(unittest.TestCase):
@@ -702,25 +687,6 @@ class TestRandomAffine(unittest.TestCase):
         self.assertTrue(results['gt_bboxes'].dtype == np.float32)
         self.assertTrue(results['gt_ignore_flags'].dtype == np.bool8)
 
-        # test filter bbox
-        transform = RandomAffine(
-            max_rotate_degree=0.,
-            max_translate_ratio=0.,
-            scaling_ratio_range=(1., 1.),
-            max_shear_degree=0.,
-            border=(0, 0),
-            min_bbox_size=30,
-            max_aspect_ratio=20,
-            skip_filter=False)
-        results = transform(copy.deepcopy(self.results))
-        self.assertTrue(results['gt_bboxes'].shape[0] == 1)
-        self.assertTrue(results['gt_bboxes_labels'].shape[0] == 1)
-        self.assertTrue(results['gt_bboxes_labels'].shape[0] ==
-                        results['gt_bboxes'].shape[0])
-        self.assertTrue(results['gt_bboxes_labels'].dtype == np.int64)
-        self.assertTrue(results['gt_bboxes'].dtype == np.float32)
-        self.assertTrue(results['gt_ignore_flags'].dtype == np.bool8)
-
     def test_repr(self):
         transform = RandomAffine(
             scaling_ratio_range=(0.1, 2),
@@ -733,11 +699,7 @@ class TestRandomAffine(unittest.TestCase):
                               'max_shear_degree=2.0, '
                               'border=(-320, -320), '
                               'border_val=(114, 114, 114), '
-                              'min_bbox_size=2, '
-                              'min_area_ratio=0.2, '
-                              'max_aspect_ratio=20, '
-                              'bbox_clip_border=True, '
-                              'skip_filter=True)'))
+                              'bbox_clip_border=True)'))
 
 
 class TestYOLOXHSVRandomAug(unittest.TestCase):

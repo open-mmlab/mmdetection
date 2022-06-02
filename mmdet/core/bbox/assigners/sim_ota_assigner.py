@@ -1,13 +1,18 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import warnings
+from typing import Optional, Tuple
 
 import torch
 import torch.nn.functional as F
+from mmengine.data import InstanceData
+from torch import Tensor
 
 from mmdet.registry import TASK_UTILS
-from ..iou_calculators import bbox_overlaps
+from ...utils import ConfigType
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
+
+INF = 100000.0
+EPS = 1.0e-7
 
 
 @TASK_UTILS.register_module()
@@ -15,141 +20,93 @@ class SimOTAAssigner(BaseAssigner):
     """Computes matching between predictions and ground truth.
 
     Args:
-        center_radius (int | float, optional): Ground truth center size
-            to judge whether a prior is in center. Default 2.5.
-        candidate_topk (int, optional): The candidate top-k which used to
-            get top-k ious to calculate dynamic-k. Default 10.
-        iou_weight (int | float, optional): The scale factor for regression
-            iou cost. Default 3.0.
-        cls_weight (int | float, optional): The scale factor for classification
-            cost. Default 1.0.
+        center_radius (float): Ground truth center size
+            to judge whether a prior is in center. Defaults to 2.5.
+        candidate_topk (int): The candidate top-k which used to
+            get top-k ious to calculate dynamic-k. Defaults to 10.
+        iou_weight (float): The scale factor for regression
+            iou cost. Defaults to 3.0.
+        cls_weight (float): The scale factor for classification
+            cost. Defaults to 1.0.
+        iou_calculator (ConfigType): Config of overlaps Calculator.
+            Defaults to dict(type='BboxOverlaps2D').
     """
 
     def __init__(self,
-                 center_radius=2.5,
-                 candidate_topk=10,
-                 iou_weight=3.0,
-                 cls_weight=1.0):
+                 center_radius: float = 2.5,
+                 candidate_topk: int = 10,
+                 iou_weight: float = 3.0,
+                 cls_weight: float = 1.0,
+                 iou_calculator: ConfigType = dict(type='BboxOverlaps2D')):
         self.center_radius = center_radius
         self.candidate_topk = candidate_topk
         self.iou_weight = iou_weight
         self.cls_weight = cls_weight
+        self.iou_calculator = TASK_UTILS.build(iou_calculator)
 
     def assign(self,
-               pred_scores,
-               priors,
-               decoded_bboxes,
-               gt_bboxes,
-               gt_labels,
-               gt_bboxes_ignore=None,
-               eps=1e-7):
-        """Assign gt to priors using SimOTA. It will switch to CPU mode when
-        GPU is out of memory.
-        Args:
-            pred_scores (Tensor): Classification scores of one image,
-                a 2D-Tensor with shape [num_priors, num_classes]
-            priors (Tensor): All priors of one image, a 2D-Tensor with shape
-                [num_priors, 4] in [cx, xy, stride_w, stride_y] format.
-            decoded_bboxes (Tensor): Predicted bboxes, a 2D-Tensor with shape
-                [num_priors, 4] in [tl_x, tl_y, br_x, br_y] format.
-            gt_bboxes (Tensor): Ground truth bboxes of one image, a 2D-Tensor
-                with shape [num_gts, 4] in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (Tensor): Ground truth labels of one image, a Tensor
-                with shape [num_gts].
-            gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
-                labelled as `ignored`, e.g., crowd boxes in COCO.
-            eps (float): A value added to the denominator for numerical
-                stability. Default 1e-7.
-        Returns:
-            assign_result (obj:`AssignResult`): The assigned result.
-        """
-        try:
-            assign_result = self._assign(pred_scores, priors, decoded_bboxes,
-                                         gt_bboxes, gt_labels,
-                                         gt_bboxes_ignore, eps)
-            return assign_result
-        except RuntimeError:
-            origin_device = pred_scores.device
-            warnings.warn('OOM RuntimeError is raised due to the huge memory '
-                          'cost during label assignment. CPU mode is applied '
-                          'in this batch. If you want to avoid this issue, '
-                          'try to reduce the batch size or image size.')
-            torch.cuda.empty_cache()
-
-            pred_scores = pred_scores.cpu()
-            priors = priors.cpu()
-            decoded_bboxes = decoded_bboxes.cpu()
-            gt_bboxes = gt_bboxes.cpu().float()
-            gt_labels = gt_labels.cpu()
-
-            assign_result = self._assign(pred_scores, priors, decoded_bboxes,
-                                         gt_bboxes, gt_labels,
-                                         gt_bboxes_ignore, eps)
-            assign_result.gt_inds = assign_result.gt_inds.to(origin_device)
-            assign_result.max_overlaps = assign_result.max_overlaps.to(
-                origin_device)
-            assign_result.labels = assign_result.labels.to(origin_device)
-
-            return assign_result
-
-    def _assign(self,
-                pred_scores,
-                priors,
-                decoded_bboxes,
-                gt_bboxes,
-                gt_labels,
-                gt_bboxes_ignore=None,
-                eps=1e-7):
+               pred_instances: InstanceData,
+               gt_instances: InstanceData,
+               gt_instances_ignore: Optional[InstanceData] = None,
+               **kwargs) -> AssignResult:
         """Assign gt to priors using SimOTA.
+
         Args:
-            pred_scores (Tensor): Classification scores of one image,
-                a 2D-Tensor with shape [num_priors, num_classes]
-            priors (Tensor): All priors of one image, a 2D-Tensor with shape
-                [num_priors, 4] in [cx, xy, stride_w, stride_y] format.
-            decoded_bboxes (Tensor): Predicted bboxes, a 2D-Tensor with shape
-                [num_priors, 4] in [tl_x, tl_y, br_x, br_y] format.
-            gt_bboxes (Tensor): Ground truth bboxes of one image, a 2D-Tensor
-                with shape [num_gts, 4] in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (Tensor): Ground truth labels of one image, a Tensor
-                with shape [num_gts].
-            gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
-                labelled as `ignored`, e.g., crowd boxes in COCO.
-            eps (float): A value added to the denominator for numerical
-                stability. Default 1e-7.
+            pred_instances (:obj:`InstanceData`): Instances of model
+                predictions. It includes ``priors``, and the priors can
+                be anchors or points, or the bboxes predicted by the
+                previous stage, has shape (n, 4). The bboxes predicted by
+                the current model or stage will be named ``bboxes``,
+                ``labels``, and ``scores``, the same as the ``InstanceData``
+                in other places.
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It usually includes ``bboxes``, with shape (k, 4),
+                and ``labels``, with shape (k, ).
+            gt_instances_ignore (:obj:`InstanceData`, optional): Instances
+                to be ignored during training. It includes ``bboxes``
+                attribute data that is ignored during training and testing.
+                Defaults to None.
         Returns:
-            :obj:`AssignResult`: The assigned result.
+            obj:`AssignResult`: The assigned result.
         """
-        INF = 100000.0
+        gt_bboxes = gt_instances.bboxes
+        gt_labels = gt_instances.labels
         num_gt = gt_bboxes.size(0)
+
+        decoded_bboxes = pred_instances.bboxes
+        pred_scores = pred_instances.scores
+        priors = pred_instances.priors
         num_bboxes = decoded_bboxes.size(0)
 
         # assign 0 by default
         assigned_gt_inds = decoded_bboxes.new_full((num_bboxes, ),
                                                    0,
                                                    dtype=torch.long)
+        if num_gt == 0 or num_bboxes == 0:
+            # No ground truth or boxes, return empty assignment
+            max_overlaps = decoded_bboxes.new_zeros((num_bboxes, ))
+            assigned_labels = decoded_bboxes.new_full((num_bboxes, ),
+                                                      -1,
+                                                      dtype=torch.long)
+            return AssignResult(
+                num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
+
         valid_mask, is_in_boxes_and_center = self.get_in_gt_and_in_center_info(
             priors, gt_bboxes)
         valid_decoded_bbox = decoded_bboxes[valid_mask]
         valid_pred_scores = pred_scores[valid_mask]
         num_valid = valid_decoded_bbox.size(0)
-
-        if num_gt == 0 or num_bboxes == 0 or num_valid == 0:
-            # No ground truth or boxes, return empty assignment
+        if num_valid == 0:
+            # No valid bboxes, return empty assignment
             max_overlaps = decoded_bboxes.new_zeros((num_bboxes, ))
-            if num_gt == 0:
-                # No truth, assign everything to background
-                assigned_gt_inds[:] = 0
-            if gt_labels is None:
-                assigned_labels = None
-            else:
-                assigned_labels = decoded_bboxes.new_full((num_bboxes, ),
-                                                          -1,
-                                                          dtype=torch.long)
+            assigned_labels = decoded_bboxes.new_full((num_bboxes, ),
+                                                      -1,
+                                                      dtype=torch.long)
             return AssignResult(
                 num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
 
-        pairwise_ious = bbox_overlaps(valid_decoded_bbox, gt_bboxes)
-        iou_cost = -torch.log(pairwise_ious + eps)
+        pairwise_ious = self.iou_calculator(valid_decoded_bbox, gt_bboxes)
+        iou_cost = -torch.log(pairwise_ious + EPS)
 
         gt_onehot_label = (
             F.one_hot(gt_labels.to(torch.int64),
@@ -183,7 +140,10 @@ class SimOTAAssigner(BaseAssigner):
         return AssignResult(
             num_gt, assigned_gt_inds, max_overlaps, labels=assigned_labels)
 
-    def get_in_gt_and_in_center_info(self, priors, gt_bboxes):
+    def get_in_gt_and_in_center_info(
+            self, priors: Tensor, gt_bboxes: Tensor) -> Tuple[Tensor, Tensor]:
+        """Get the information of which prior is in gt bboxes and gt center
+        priors."""
         num_gt = gt_bboxes.size(0)
 
         repeated_x = priors[:, 0].unsqueeze(1).repeat(1, num_gt)
@@ -227,7 +187,11 @@ class SimOTAAssigner(BaseAssigner):
             & is_in_cts[is_in_gts_or_centers, :])
         return is_in_gts_or_centers, is_in_boxes_and_centers
 
-    def dynamic_k_matching(self, cost, pairwise_ious, num_gt, valid_mask):
+    def dynamic_k_matching(self, cost: Tensor, pairwise_ious: Tensor,
+                           num_gt: int,
+                           valid_mask: Tensor) -> Tuple[Tensor, Tensor]:
+        """Use IoU and matching cost to calculate the dynamic top-k positive
+        targets."""
         matching_matrix = torch.zeros_like(cost, dtype=torch.uint8)
         # select candidate topk ious for dynamic-k calculation
         candidate_topk = min(self.candidate_topk, pairwise_ious.size(0))
