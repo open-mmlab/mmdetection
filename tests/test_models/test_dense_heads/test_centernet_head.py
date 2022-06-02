@@ -120,11 +120,11 @@ class TestCenterNetHead(TestCase):
         wh_target = targets['wh_target']
         offset_target = targets['offset_target']
         # make sure get_bboxes is right
-        detections = centernet_head.get_bboxes([center_target], [wh_target],
-                                               [offset_target],
-                                               img_metas,
-                                               rescale=True,
-                                               with_nms=False)
+        detections = centernet_head.get_results([center_target], [wh_target],
+                                                [offset_target],
+                                                img_metas,
+                                                rescale=True,
+                                                with_nms=False)
 
         pred_instances = detections[0]
         out_bboxes = pred_instances.bboxes[:3]
@@ -136,11 +136,11 @@ class TestCenterNetHead(TestCase):
                     flag = True
             assert flag, 'get_bboxes is wrong'
 
-        detections = centernet_head.get_bboxes([center_target], [wh_target],
-                                               [offset_target],
-                                               img_metas,
-                                               rescale=True,
-                                               with_nms=True)
+        detections = centernet_head.get_results([center_target], [wh_target],
+                                                [offset_target],
+                                                img_metas,
+                                                rescale=True,
+                                                with_nms=True)
 
         pred_instances = detections[0]
         out_bboxes = pred_instances.bboxes[:3]

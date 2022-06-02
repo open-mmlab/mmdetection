@@ -1,14 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import warnings
-from typing import List, Optional, Tuple, Union
+from typing import List, Tuple
 
 import torch
-from mmcv.utils import ConfigDict
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import DetDataSample
+from mmdet.core.utils import (ConfigType, OptConfigType, OptInstanceList,
+                              OptMultiConfig, SampleList)
 from mmdet.registry import MODELS
 from .base import BaseDetector
 
@@ -22,20 +22,15 @@ class TwoStageDetector(BaseDetector):
     """
 
     def __init__(self,
-                 backbone: ConfigDict,
-                 neck: Optional[Union[ConfigDict, dict]] = None,
-                 rpn_head: Optional[Union[ConfigDict, dict]] = None,
-                 roi_head: Optional[Union[ConfigDict, dict]] = None,
-                 train_cfg: Optional[Union[ConfigDict, dict]] = None,
-                 test_cfg: Optional[Union[ConfigDict, dict]] = None,
-                 pretrained: Optional[str] = None,
-                 preprocess_cfg: Optional[Union[ConfigDict, dict]] = None,
-                 init_cfg: Optional[Union[ConfigDict, dict]] = None) -> None:
+                 backbone: ConfigType,
+                 neck: OptConfigType = None,
+                 rpn_head: OptConfigType = None,
+                 roi_head: OptConfigType = None,
+                 train_cfg: OptConfigType = None,
+                 test_cfg: OptConfigType = None,
+                 preprocess_cfg: OptConfigType = None,
+                 init_cfg: OptMultiConfig = None) -> None:
         super().__init__(preprocess_cfg=preprocess_cfg, init_cfg=init_cfg)
-        if pretrained:
-            warnings.warn('DeprecationWarning: pretrained is deprecated, '
-                          'please use "init_cfg" instead')
-            backbone.pretrained = pretrained
         self.backbone = MODELS.build(backbone)
 
         if neck is not None:
@@ -63,7 +58,6 @@ class TwoStageDetector(BaseDetector):
             rcnn_train_cfg = train_cfg.rcnn if train_cfg is not None else None
             roi_head.update(train_cfg=rcnn_train_cfg)
             roi_head.update(test_cfg=test_cfg.rcnn)
-            roi_head.pretrained = pretrained
             self.roi_head = MODELS.build(roi_head)
 
         self.train_cfg = train_cfg
@@ -114,8 +108,8 @@ class TwoStageDetector(BaseDetector):
 
     def forward_train(self,
                       batch_inputs: Tensor,
-                      batch_data_samples: List[DetDataSample],
-                      proposals: Optional[List[InstanceData]] = None,
+                      batch_data_samples: SampleList,
+                      proposals: OptInstanceList = None,
                       **kwargs) -> dict:
         """
         Args:
@@ -192,8 +186,8 @@ class TwoStageDetector(BaseDetector):
     def simple_test(self,
                     batch_inputs: Tensor,
                     batch_img_metas: List[dict],
-                    proposals: Optional[List[InstanceData]] = None,
-                    rescale: bool = False) -> List[DetDataSample]:
+                    proposals: OptInstanceList = None,
+                    rescale: bool = False) -> SampleList:
         """Test function without test time augmentation.
 
         Args:

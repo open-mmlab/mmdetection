@@ -1,8 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Optional, Union
-
-from mmengine.config import ConfigDict
-
+from mmdet.core.utils import ConfigType, OptConfigType, OptMultiConfig
 from mmdet.registry import MODELS
 from .two_stage import TwoStageDetector
 
@@ -12,15 +9,14 @@ class FasterRCNN(TwoStageDetector):
     """Implementation of `Faster R-CNN <https://arxiv.org/abs/1506.01497>`_"""
 
     def __init__(self,
-                 backbone: Union[ConfigDict, dict],
-                 rpn_head: Union[ConfigDict, dict],
-                 roi_head: Union[ConfigDict, dict],
-                 train_cfg: Union[ConfigDict, dict],
-                 test_cfg: Union[ConfigDict, dict],
-                 neck: Optional[Union[ConfigDict, dict]] = None,
-                 pretrained: Optional[str] = None,
-                 preprocess_cfg: Optional[Union[ConfigDict, dict]] = None,
-                 init_cfg: Optional[Union[ConfigDict, dict]] = None) -> None:
+                 backbone: ConfigType,
+                 rpn_head: ConfigType,
+                 roi_head: ConfigType,
+                 train_cfg: ConfigType,
+                 test_cfg: ConfigType,
+                 neck: OptConfigType = None,
+                 preprocess_cfg: OptConfigType = None,
+                 init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
             backbone=backbone,
             neck=neck,
@@ -28,6 +24,5 @@ class FasterRCNN(TwoStageDetector):
             roi_head=roi_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
-            pretrained=pretrained,
             init_cfg=init_cfg,
             preprocess_cfg=preprocess_cfg)

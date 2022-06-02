@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import List, Optional, Tuple, Union
+from typing import List, Tuple
 
 import numpy as np
 import torch
@@ -13,7 +13,9 @@ from mmengine.data import InstanceData
 from torch import Tensor
 from torch.nn.modules.utils import _pair
 
-from mmdet.core import SamplingResult, mask_target
+from mmdet.core import mask_target
+from mmdet.core.utils import (ConfigType, InstanceList, OptConfigType,
+                              OptMultiConfig, SamplingResultList)
 from mmdet.registry import MODELS
 
 BYTES_PER_FLOAT = 4
@@ -33,14 +35,14 @@ class FCNMaskHead(BaseModule):
                  conv_out_channels: int = 256,
                  num_classes: int = 80,
                  class_agnostic: int = False,
-                 upsample_cfg: Union[dict, ConfigDict] = dict(
+                 upsample_cfg: ConfigType = dict(
                      type='deconv', scale_factor=2),
-                 conv_cfg: Optional[Union[dict, ConfigDict]] = None,
-                 norm_cfg: Optional[Union[dict, ConfigDict]] = None,
-                 predictor_cfg: Union[dict, ConfigDict] = dict(type='Conv'),
-                 loss_mask: Union[dict, ConfigDict] = dict(
+                 conv_cfg: OptConfigType = None,
+                 norm_cfg: OptConfigType = None,
+                 predictor_cfg: ConfigType = dict(type='Conv'),
+                 loss_mask: ConfigType = dict(
                      type='CrossEntropyLoss', use_mask=True, loss_weight=1.0),
-                 init_cfg: Optional[Union[dict, ConfigDict]] = None) -> None:
+                 init_cfg: OptMultiConfig = None) -> None:
         assert init_cfg is None, 'To prevent abnormal initialization ' \
                                  'behavior, init_cfg is not allowed to be set'
         super().__init__(init_cfg=init_cfg)
@@ -148,8 +150,8 @@ class FCNMaskHead(BaseModule):
         mask_pred = self.conv_logits(x)
         return mask_pred
 
-    def get_targets(self, sampling_results: List[SamplingResult],
-                    batch_gt_instances: List[InstanceData],
+    def get_targets(self, sampling_results: SamplingResultList,
+                    batch_gt_instances: InstanceList,
                     rcnn_train_cfg: ConfigDict) -> Tensor:
         """Calculate the ground truth for all samples in a batch according to
         the sampling_results.
@@ -223,7 +225,8 @@ class FCNMaskHead(BaseModule):
                     results_list: Tuple[InstanceData],
                     batch_img_metas: List[dict],
                     rcnn_test_cfg: ConfigDict,
-                    rescale: bool = False) -> List[InstanceData]:
+                    rescale: bool = False,
+                    activate_map: bool = False) -> InstanceList:
         """Transform network outputs of a batch into mask results.
 
         Args:
@@ -234,6 +237,9 @@ class FCNMaskHead(BaseModule):
             batch_img_metas (list[dict]): List of image information.
             rcnn_test_cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head.
             rescale (bool): If True, return boxes in original image space.
+                Defaults to False.
+            activate_map (book): Whether get results with augmentations test.
+                If True, the `mask_preds` will not process with sigmoid.
                 Defaults to False.
 
         Returns:
@@ -265,7 +271,8 @@ class FCNMaskHead(BaseModule):
                 labels=labels,
                 img_meta=img_meta,
                 rcnn_test_cfg=rcnn_test_cfg,
-                rescale=rescale)
+                rescale=rescale,
+                activate_map=activate_map)
             results.masks = im_mask
         return results_list
 
@@ -275,7 +282,8 @@ class FCNMaskHead(BaseModule):
                             labels: Tensor,
                             img_meta: dict,
                             rcnn_test_cfg: ConfigDict,
-                            rescale: bool = False) -> Tensor:
+                            rescale: bool = False,
+                            activate_map: bool = False) -> Tensor:
         """Get segmentation masks from mask_pred and bboxes.
 
         Args:
@@ -287,6 +295,9 @@ class FCNMaskHead(BaseModule):
             rcnn_test_cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head.
                 Defaults to None.
             rescale (bool): If True, return boxes in original image space.
+                Defaults to False.
+            activate_map (book): Whether get results with augmentations test.
+                If True, the `mask_preds` will not process with sigmoid.
                 Defaults to False.
 
         Returns:
@@ -320,8 +331,10 @@ class FCNMaskHead(BaseModule):
         scale_factor = bboxes.new_tensor(img_meta['scale_factor']).repeat(
             (1, 2))
         img_h, img_w = img_meta['ori_shape'][:2]
-        device = mask_pred.device
+        device = bboxes.device
 
+        # the type of `im_mask` will be torch.bool or torch.uint8,
+        # where uint8 if for visualization and debugging.
         if bboxes.shape[0] == 0:
             im_mask = torch.zeros(
                 0,
@@ -332,7 +345,7 @@ class FCNMaskHead(BaseModule):
                 if rcnn_test_cfg.mask_thr_binary >= 0 else torch.uint8)
             return im_mask
 
-        if isinstance(mask_pred, torch.Tensor):
+        if not activate_map:
             mask_pred = mask_pred.sigmoid()
         else:
             # In AugTest, has been activated before

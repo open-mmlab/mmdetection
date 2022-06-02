@@ -1,8 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Optional, Union
-
-from mmengine.config import ConfigDict
-
+from mmdet.core.utils import ConfigType, OptConfigType, OptMultiConfig
 from mmdet.registry import MODELS
 from .single_stage import SingleStageDetector
 
@@ -12,20 +9,18 @@ class RetinaNet(SingleStageDetector):
     """Implementation of `RetinaNet <https://arxiv.org/abs/1708.02002>`_"""
 
     def __init__(self,
-                 backbone: Union[ConfigDict, dict],
-                 neck: Union[ConfigDict, dict],
-                 bbox_head: Union[ConfigDict, dict],
-                 train_cfg: Optional[Union[ConfigDict, dict]] = None,
-                 test_cfg: Optional[Union[ConfigDict, dict]] = None,
-                 preprocess_cfg: Optional[Union[ConfigDict, dict]] = None,
-                 pretrained: Optional[str] = None,
-                 init_cfg: Optional[Union[ConfigDict, dict]] = None) -> None:
+                 backbone: ConfigType,
+                 neck: ConfigType,
+                 bbox_head: ConfigType,
+                 train_cfg: OptConfigType = None,
+                 test_cfg: OptConfigType = None,
+                 preprocess_cfg: OptConfigType = None,
+                 init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
             backbone=backbone,
             neck=neck,
             bbox_head=bbox_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
-            pretrained=pretrained,
             init_cfg=init_cfg,
             preprocess_cfg=preprocess_cfg)

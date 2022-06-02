@@ -5,6 +5,7 @@ import torch
 from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 
+from mmdet.core.bbox import SamplingResult
 from mmdet.models.roi_heads.bbox_heads import (BBoxHead, Shared2FCBBoxHead,
                                                Shared4Conv1FCBBoxHead)
 
@@ -15,17 +16,17 @@ class TestBboxHead(TestCase):
         # Shared2FCBBoxHead
         bbox_head = Shared2FCBBoxHead(
             in_channels=1, fc_out_channels=1, num_classes=4)
-        assert bbox_head.fc_cls
-        assert bbox_head.fc_reg
-        assert len(bbox_head.shared_fcs) == 2
+        self.assertTrue(bbox_head.fc_cls)
+        self.assertTrue(bbox_head.fc_reg)
+        self.assertEqual(len(bbox_head.shared_fcs), 2)
 
         # Shared4Conv1FCBBoxHead
         bbox_head = Shared4Conv1FCBBoxHead(
             in_channels=1, fc_out_channels=1, num_classes=4)
-        assert bbox_head.fc_cls
-        assert bbox_head.fc_reg
-        assert len(bbox_head.shared_convs) == 4
-        assert len(bbox_head.shared_fcs) == 1
+        self.assertTrue(bbox_head.fc_cls)
+        self.assertTrue(bbox_head.fc_reg)
+        self.assertEqual(len(bbox_head.shared_convs), 4)
+        self.assertEqual(len(bbox_head.shared_fcs), 1)
         print()
 
     def test_bbox_head_get_results(self):
@@ -54,11 +55,11 @@ class TestBboxHead(TestCase):
             batch_img_metas=img_metas,
             rcnn_test_cfg=rcnn_test_cfg)
 
-        assert len(result_list[0]) <= num_samples * num_classes
-        assert isinstance(result_list[0], InstanceData)
-        assert result_list[0].bboxes.shape[1] == 4
-        assert len(result_list[0].scores.shape) == \
-               len(result_list[0].labels.shape) == 1
+        self.assertLessEqual(len(result_list[0]), num_samples * num_classes)
+        self.assertIsInstance(result_list[0], InstanceData)
+        self.assertEqual(result_list[0].bboxes.shape[1], 4)
+        self.assertEqual(len(result_list[0].scores.shape), 1)
+        self.assertEqual(len(result_list[0].labels.shape), 1)
 
         # without nms
         result_list = bbox_head.get_results(
@@ -67,11 +68,11 @@ class TestBboxHead(TestCase):
             bbox_preds=tuple(bbox_preds),
             batch_img_metas=img_metas)
 
-        assert isinstance(result_list[0], InstanceData)
-        assert len(result_list[0]) == num_samples
-        assert result_list[0].bboxes.shape == bbox_preds[0].shape
-        assert result_list[0].scores.shape == cls_scores[0].shape
-        assert result_list[0].get('label', None) is None
+        self.assertIsInstance(result_list[0], InstanceData)
+        self.assertEqual(len(result_list[0]), num_samples)
+        self.assertEqual(result_list[0].bboxes.shape, bbox_preds[0].shape)
+        self.assertEqual(result_list[0].scores.shape, cls_scores[0].shape)
+        self.assertIsNone(result_list[0].get('label', None))
 
         # num_samples is 0
         num_samples = 0
@@ -91,9 +92,9 @@ class TestBboxHead(TestCase):
             batch_img_metas=img_metas,
             rcnn_test_cfg=rcnn_test_cfg)
 
-        assert isinstance(result_list[0], InstanceData)
-        assert len(result_list[0]) == 0
-        assert result_list[0].bboxes.shape[1] == 4
+        self.assertIsInstance(result_list[0], InstanceData)
+        self.assertEqual(len(result_list[0]), 0)
+        self.assertEqual(result_list[0].bboxes.shape[1], 4)
 
         # without nms
         result_list = bbox_head.get_results(
@@ -102,8 +103,40 @@ class TestBboxHead(TestCase):
             bbox_preds=tuple(bbox_preds),
             batch_img_metas=img_metas)
 
-        assert isinstance(result_list[0], InstanceData)
-        assert len(result_list[0]) == 0
-        assert result_list[0].bboxes.shape == bbox_preds[0].shape
-        assert result_list[0].scores.shape == cls_scores[0].shape
-        assert result_list[0].get('label', None) is None
+        self.assertIsInstance(result_list[0], InstanceData)
+        self.assertEqual(len(result_list[0]), 0)
+        self.assertEqual(result_list[0].bboxes.shape, bbox_preds[0].shape)
+        self.assertEqual(result_list[0].scores.shape, cls_scores[0].shape)
+        self.assertIsNone(result_list[0].get('label', None))
+
+    def test_bbox_head_refine_bboxes(self):
+        num_classes = 6
+        bbox_head = BBoxHead(reg_class_agnostic=True, num_classes=num_classes)
+        s = 128
+        img_metas = [{
+            'img_shape': (s, s, 3),
+            'scale_factor': 1,
+        }]
+        sampling_results = [SamplingResult.random()]
+        num_samples = 20
+        rois = torch.rand((num_samples, 4))
+        roi_img_ids = torch.zeros(num_samples, 1)
+        rois = torch.cat((roi_img_ids, rois), dim=1)
+        cls_scores = torch.rand((num_samples, num_classes + 1))
+        bbox_preds = torch.rand((num_samples, 4))
+        labels = torch.randint(0, num_classes + 1, (num_samples, )).long()
+        bbox_targets = (labels, None, None, None)
+        bbox_results = dict(
+            rois=rois,
+            bbox_pred=bbox_preds,
+            cls_score=cls_scores,
+            bbox_targets=bbox_targets)
+
+        bbox_list = bbox_head.refine_bboxes(
+            sampling_results=sampling_results,
+            bbox_results=bbox_results,
+            batch_img_metas=img_metas)
+
+        self.assertGreaterEqual(num_samples, len(bbox_list[0]))
+        self.assertIsInstance(bbox_list[0], InstanceData)
+        self.assertEqual(bbox_list[0].bboxes.shape[1], 4)

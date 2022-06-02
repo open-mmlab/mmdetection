@@ -1,13 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from abc import ABCMeta, abstractmethod
-from typing import List, Optional, Tuple, Union
+from typing import List, Tuple
 
 from mmcv.runner import BaseModule
-from mmengine.config import ConfigDict
-from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import DetDataSample
+from mmdet.core.utils import (InstanceList, OptConfigType, OptMultiConfig,
+                              SampleList)
 from mmdet.registry import MODELS
 
 
@@ -15,20 +14,18 @@ class BaseRoIHead(BaseModule, metaclass=ABCMeta):
     """Base class for RoIHeads."""
 
     def __init__(self,
-                 bbox_roi_extractor: Optional[Union[ConfigDict, dict]] = None,
-                 bbox_head: Optional[Union[ConfigDict, dict]] = None,
-                 mask_roi_extractor: Optional[Union[ConfigDict, dict]] = None,
-                 mask_head: Optional[Union[ConfigDict, dict]] = None,
-                 shared_head: Optional[Union[ConfigDict, dict]] = None,
-                 train_cfg: Optional[Union[ConfigDict, dict]] = None,
-                 test_cfg: Optional[Union[ConfigDict, dict]] = None,
-                 pretrained: Optional[str] = None,
-                 init_cfg: Optional[Union[ConfigDict, dict]] = None) -> None:
+                 bbox_roi_extractor: OptMultiConfig = None,
+                 bbox_head: OptMultiConfig = None,
+                 mask_roi_extractor: OptMultiConfig = None,
+                 mask_head: OptMultiConfig = None,
+                 shared_head: OptConfigType = None,
+                 train_cfg: OptConfigType = None,
+                 test_cfg: OptConfigType = None,
+                 init_cfg: OptMultiConfig = None) -> None:
         super().__init__(init_cfg=init_cfg)
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         if shared_head is not None:
-            shared_head.pretrained = pretrained
             self.shared_head = MODELS.build(shared_head)
 
         if bbox_head is not None:
@@ -70,9 +67,8 @@ class BaseRoIHead(BaseModule, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def forward_train(self, x: Tuple[Tensor],
-                      proposal_list: List[InstanceData],
-                      batch_data_samples: List[DetDataSample], **kwargs):
+    def forward_train(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
+                      batch_data_samples: SampleList, **kwargs):
         """Forward function during training."""
 
     # TODO: Currently not supported
@@ -88,7 +84,7 @@ class BaseRoIHead(BaseModule, metaclass=ABCMeta):
 
     def simple_test(self,
                     x: Tuple[Tensor],
-                    proposal_list: List[InstanceData],
+                    proposal_list: InstanceList,
                     batch_img_metas: List[dict],
                     rescale: bool = False,
                     **kwargs):

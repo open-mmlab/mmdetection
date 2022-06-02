@@ -1,12 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple
 
 import torch
-from mmengine.config import ConfigDict
-from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import DetDataSample, SamplingResult, bbox2result, bbox2roi
+from mmdet.core import bbox2result, bbox2roi
+from mmdet.core.utils import (ConfigType, InstanceList, SampleList,
+                              SamplingResultList)
 from mmdet.registry import MODELS, TASK_UTILS
 from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
@@ -25,8 +25,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             self.bbox_sampler = TASK_UTILS.build(
                 self.train_cfg.sampler, default_args=dict(context=self))
 
-    def init_bbox_head(self, bbox_roi_extractor: Union[ConfigDict, dict],
-                       bbox_head: Union[ConfigDict, dict]) -> None:
+    def init_bbox_head(self, bbox_roi_extractor: ConfigType,
+                       bbox_head: ConfigType) -> None:
         """Initialize box head and box roi extractor.
 
         Args:
@@ -37,9 +37,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         self.bbox_roi_extractor = MODELS.build(bbox_roi_extractor)
         self.bbox_head = MODELS.build(bbox_head)
 
-    def init_mask_head(self, mask_roi_extractor: Optional[Union[ConfigDict,
-                                                                dict]],
-                       mask_head: Union[ConfigDict, dict]) -> None:
+    def init_mask_head(self, mask_roi_extractor: ConfigType,
+                       mask_head: ConfigType) -> None:
         """Initialize mask head and mask roi extractor.
 
         Args:
@@ -74,10 +73,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             outs = outs + (mask_results['mask_pred'], )
         return outs
 
-    def forward_train(self, x: Tuple[Tensor],
-                      rpn_results_list: List[InstanceData],
-                      batch_data_samples: List[DetDataSample],
-                      **kwargs) -> dict:
+    def forward_train(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
+                      batch_data_samples: SampleList, **kwargs) -> dict:
         """Forward function during training.
 
         Args:
@@ -135,7 +132,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
         return losses
 
-    def _bbox_forward(self, x: Tuple[Tensor], rois: Tensor) -> dict:
+    def _bbox_forward(self, x: Tuple[Tensor], rois: Tensor, **kwargs) -> dict:
         """Box head forward function used in both training and testing.
 
         Args:
@@ -162,8 +159,9 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         return bbox_results
 
     def _bbox_forward_train(self, x: Tuple[Tensor],
-                            sampling_results: List[SamplingResult],
-                            batch_gt_instances: List[InstanceData]) -> dict:
+                            sampling_results: SamplingResultList,
+                            batch_gt_instances: InstanceList,
+                            **kwargs) -> dict:
         """Run forward function and calculate loss for box head in training.
 
         Args:
@@ -181,7 +179,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 - `bbox_feats` (Tensor): Extract bbox RoI features.
                 - `loss_bbox` (dict): A dictionary of bbox loss components.
         """
-        rois = bbox2roi([res.bboxes for res in sampling_results])
+        rois = bbox2roi([res.priors for res in sampling_results])
         bbox_results = self._bbox_forward(x, rois)
 
         bbox_targets = self.bbox_head.get_targets(sampling_results,
@@ -194,9 +192,9 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         return bbox_results
 
     def _mask_forward_train(self, x: Tuple[Tensor],
-                            sampling_results: List[SamplingResult],
+                            sampling_results: SamplingResultList,
                             bbox_feats: Tensor,
-                            batch_gt_instances: List[InstanceData],
+                            batch_gt_instances: InstanceList,
                             **kwargs) -> dict:
         """Run forward function and calculate loss for mask head in training.
 
@@ -250,10 +248,11 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         return mask_results
 
     def _mask_forward(self,
-                      x,
-                      rois=None,
-                      pos_inds=None,
-                      bbox_feats=None) -> dict:
+                      x: Tuple[Tensor],
+                      rois: Tensor = None,
+                      pos_inds: Optional[Tensor] = None,
+                      bbox_feats: Optional[Tensor] = None,
+                      **kwargs) -> dict:
         """Mask head forward function used in both training and testing.
 
         Args:
@@ -313,16 +312,16 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
     def simple_test(self,
                     x: Tuple[Tensor],
-                    rpn_results_list: List[InstanceData],
+                    rpn_results_list: InstanceList,
                     batch_img_metas: List[dict],
                     rescale: bool = False,
-                    **kwargs):
+                    **kwargs) -> InstanceList:
         """Test without augmentation.
 
         Args:
             x (tuple[Tensor]): Features from upstream network. Each
                 has shape (N, C, H, W).
-           rpn_results_list (list[:obj:`InstanceData`]): list of region
+            rpn_results_list (list[:obj:`InstanceData`]): list of region
                 proposals.
             batch_img_metas (list[dict]): List of image information.
             rescale (bool): Whether to rescale the results to
@@ -341,13 +340,14 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 - masks (Tensor): Has a shape (num_instances, H, W).
         """
         assert self.with_bbox, 'Bbox head must be implemented.'
-
+        # TODO: nms_op in mmcv need be enhanced, the bbox result may get
+        #  difference when not rescale in bbox_head
         results_list = self.simple_test_bboxes(
             x,
             batch_img_metas,
             rpn_results_list,
             self.test_cfg,
-            rescale=rescale)
+            rescale=rescale if not self.with_mask else False)
 
         if self.with_mask:
             results_list = self.simple_test_mask(
