@@ -9,6 +9,14 @@ model = dict(
 
 img_scale = (640, 640)  # height, width
 
+# file_client_args = dict(
+#     backend='petrel',
+#     path_mapping=dict({
+#         './data/': 's3://openmmlab/datasets/detection/',
+#         'data/': 's3://openmmlab/datasets/detection/'
+#     }))
+file_client_args = dict(backend='disk')
+
 train_pipeline = [
     dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
     dict(
@@ -16,43 +24,36 @@ train_pipeline = [
         scaling_ratio_range=(0.5, 1.5),
         border=(-img_scale[0] // 2, -img_scale[1] // 2)),
     dict(type='YOLOXHSVRandomAug'),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Resize', img_scale=img_scale, keep_ratio=True),
+    dict(type='RandomFlip', prob=0.5),
+    # Resize and Pad are for the last 15 epochs when Mosaic and
+    # RandomAffine are closed by YOLOXModeSwitchHook.
+    dict(type='Resize', scale=img_scale, keep_ratio=True),
     dict(
         type='Pad',
         pad_to_square=True,
         pad_val=dict(img=(114.0, 114.0, 114.0))),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1), keep_empty=False),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
+    dict(type='PackDetInputs')
 ]
 
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='Resize', scale=(416, 416), keep_ratio=True),
     dict(
-        type='MultiScaleFlipAug',
-        img_scale=(416, 416),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip'),
-            dict(
-                type='Pad',
-                pad_to_square=True,
-                pad_val=dict(img=(114.0, 114.0, 114.0))),
-            dict(type='DefaultFormatBundle'),
-            dict(type='Collect', keys=['img'])
-        ])
+        type='Pad',
+        pad_to_square=True,
+        pad_val=dict(img=(114.0, 114.0, 114.0))),
+    dict(
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
 ]
 
-train_dataset = dict(pipeline=train_pipeline)
-
-data = dict(
-    train=train_dataset,
-    val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
+train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
+val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
+test_dataloader = val_dataloader
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (8 samples per GPU)
-auto_scale_lr = dict(base_batch_size=64)
+# auto_scale_lr = dict(base_batch_size=64)

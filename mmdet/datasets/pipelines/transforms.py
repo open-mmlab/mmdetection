@@ -1905,15 +1905,10 @@ class Mosaic(BaseTransform):
             Defaults to (640, 640).
         center_ratio_range (Sequence[float]): Center ratio range of mosaic
             output. Defaults to (0.5, 1.5).
-        min_bbox_size (int | float): The minimum pixel for filtering
-            invalid bboxes after the mosaic pipeline. Defaults to 0.
         bbox_clip_border (bool, optional): Whether to clip the objects outside
             the border of the image. In some dataset like MOT17, the gt bboxes
             are allowed to cross the border of images. Therefore, we don't
             need to clip the gt bboxes in these cases. Defaults to True.
-        skip_filter (bool): Whether to skip filtering rules. If it
-            is True, the filter rule will not be applied, and the
-            `min_bbox_size` is invalid. Defaults to True.
         pad_val (int): Pad value. Defaults to 114.
         prob (float): Probability of applying this transformation.
             Defaults to 1.0.
@@ -1922,9 +1917,7 @@ class Mosaic(BaseTransform):
     def __init__(self,
                  img_scale: Tuple[int, int] = (640, 640),
                  center_ratio_range: Tuple[float, float] = (0.5, 1.5),
-                 min_bbox_size: int = 0,
                  bbox_clip_border: bool = True,
-                 skip_filter: bool = True,
                  pad_val: float = 114.0,
                  prob: float = 1.0) -> None:
         assert isinstance(img_scale, tuple)
@@ -1934,9 +1927,7 @@ class Mosaic(BaseTransform):
         log_img_scale(img_scale, skip_square=True)
         self.img_scale = img_scale
         self.center_ratio_range = center_ratio_range
-        self.min_bbox_size = min_bbox_size
         self.bbox_clip_border = bbox_clip_border
-        self.skip_filter = skip_filter
         self.pad_val = pad_val
         self.prob = prob
 
@@ -2017,49 +2008,37 @@ class Mosaic(BaseTransform):
             gt_bboxes_labels_i = results_patch['gt_bboxes_labels']
             gt_ignore_flags_i = results_patch['gt_ignore_flags']
 
-            if gt_bboxes_i.shape[0] > 0:
-                padw = x1_p - x1_c
-                padh = y1_p - y1_c
-                gt_bboxes_i[:, 0::2] = \
-                    scale_ratio_i * gt_bboxes_i[:, 0::2] + padw
-                gt_bboxes_i[:, 1::2] = \
-                    scale_ratio_i * gt_bboxes_i[:, 1::2] + padh
-
+            padw = x1_p - x1_c
+            padh = y1_p - y1_c
+            gt_bboxes_i[:, 0::2] = \
+                scale_ratio_i * gt_bboxes_i[:, 0::2] + padw
+            gt_bboxes_i[:, 1::2] = \
+                scale_ratio_i * gt_bboxes_i[:, 1::2] + padh
             mosaic_bboxes.append(gt_bboxes_i)
             mosaic_bboxes_labels.append(gt_bboxes_labels_i)
             mosaic_ignore_flags.append(gt_ignore_flags_i)
 
-        if len(mosaic_bboxes_labels) > 0:
-            mosaic_bboxes = np.concatenate(mosaic_bboxes, 0)
-            mosaic_bboxes_labels = np.concatenate(mosaic_bboxes_labels, 0)
-            mosaic_ignore_flags = np.concatenate(mosaic_ignore_flags, 0)
+        mosaic_bboxes = np.concatenate(mosaic_bboxes, 0)
+        mosaic_bboxes_labels = np.concatenate(mosaic_bboxes_labels, 0)
+        mosaic_ignore_flags = np.concatenate(mosaic_ignore_flags, 0)
 
-            if self.bbox_clip_border:
-                mosaic_bboxes[:, 0::2] = np.clip(mosaic_bboxes[:, 0::2], 0,
-                                                 2 * self.img_scale[1])
-                mosaic_bboxes[:, 1::2] = np.clip(mosaic_bboxes[:, 1::2], 0,
-                                                 2 * self.img_scale[0])
-
-            if not self.skip_filter:
-                mosaic_bboxes, mosaic_bboxes_labels, mosaic_ignore_flags = \
-                    self._filter_box_candidates(mosaic_bboxes,
-                                                mosaic_bboxes_labels,
-                                                mosaic_ignore_flags)
-
-            # remove outside bboxes
-            inside_inds = find_inside_bboxes(mosaic_bboxes,
-                                             2 * self.img_scale[0],
+        if self.bbox_clip_border:
+            mosaic_bboxes[:, 0::2] = np.clip(mosaic_bboxes[:, 0::2], 0,
                                              2 * self.img_scale[1])
-            mosaic_bboxes = mosaic_bboxes[inside_inds]
-            mosaic_bboxes_labels = mosaic_bboxes_labels[inside_inds]
-            mosaic_ignore_flags = mosaic_ignore_flags[inside_inds]
+            mosaic_bboxes[:, 1::2] = np.clip(mosaic_bboxes[:, 1::2], 0,
+                                             2 * self.img_scale[0])
+        # remove outside bboxes
+        inside_inds = find_inside_bboxes(mosaic_bboxes, 2 * self.img_scale[0],
+                                         2 * self.img_scale[1])
+        mosaic_bboxes = mosaic_bboxes[inside_inds]
+        mosaic_bboxes_labels = mosaic_bboxes_labels[inside_inds]
+        mosaic_ignore_flags = mosaic_ignore_flags[inside_inds]
 
         results['img'] = mosaic_img
         results['img_shape'] = mosaic_img.shape
         results['gt_bboxes'] = mosaic_bboxes
         results['gt_bboxes_labels'] = mosaic_bboxes_labels
         results['gt_ignore_flags'] = mosaic_ignore_flags
-
         return results
 
     def _mosaic_combine(
@@ -2125,24 +2104,11 @@ class Mosaic(BaseTransform):
         paste_coord = x1, y1, x2, y2
         return paste_coord, crop_coord
 
-    def _filter_box_candidates(
-            self, bboxes: np.ndarray, labels: np.ndarray,
-            flags: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Filter out bboxes too small after Mosaic."""
-        bbox_w = bboxes[:, 2] - bboxes[:, 0]
-        bbox_h = bboxes[:, 3] - bboxes[:, 1]
-        valid_inds = (bbox_w > self.min_bbox_size) & \
-                     (bbox_h > self.min_bbox_size)
-        valid_inds = np.nonzero(valid_inds)[0]
-        return bboxes[valid_inds], labels[valid_inds], flags[valid_inds]
-
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'(img_scale={self.img_scale}, '
         repr_str += f'center_ratio_range={self.center_ratio_range}, '
         repr_str += f'pad_val={self.pad_val}, '
-        repr_str += f'min_bbox_size={self.min_bbox_size}, '
-        repr_str += f'skip_filter={self.skip_filter}'
         repr_str += f'prob={self.prob})'
         return repr_str
 
@@ -2203,23 +2169,10 @@ class MixUp(BaseTransform):
         max_iters (int): The maximum number of iterations. If the number of
             iterations is greater than `max_iters`, but gt_bbox is still
             empty, then the iteration is terminated. Defaults to 15.
-        min_bbox_size (float): Width and height threshold to filter bboxes.
-            If the height or width of a box is smaller than this value, it
-            will be removed. Defaults to 5.
-        min_area_ratio (float): Threshold of area ratio between
-            original bboxes and wrapped bboxes. If smaller than this value,
-            the box will be removed. Defaults to 0.2.
-        max_aspect_ratio (float): Aspect ratio of width and height
-            threshold to filter bboxes. If max(h/w, w/h) larger than this
-            value, the box will be removed. Defaults to 20.
         bbox_clip_border (bool, optional): Whether to clip the objects outside
             the border of the image. In some dataset like MOT17, the gt bboxes
             are allowed to cross the border of images. Therefore, we don't
             need to clip the gt bboxes in these cases. Defaults to True.
-        skip_filter (bool): Whether to skip filtering rules. If it
-            is True, the filter rule will not be applied, and the
-            `min_bbox_size` and `min_area_ratio` and `max_aspect_ratio`
-            is invalid. Defaults to True.
     """
 
     def __init__(self,
@@ -2228,11 +2181,7 @@ class MixUp(BaseTransform):
                  flip_ratio: float = 0.5,
                  pad_val: float = 114.0,
                  max_iters: int = 15,
-                 min_bbox_size: int = 5,
-                 min_area_ratio: float = 0.2,
-                 max_aspect_ratio: int = 20,
-                 bbox_clip_border: bool = True,
-                 skip_filter: bool = True) -> None:
+                 bbox_clip_border: bool = True) -> None:
         assert isinstance(img_scale, tuple)
         log_img_scale(img_scale, skip_square=True)
         self.dynamic_scale = img_scale
@@ -2240,11 +2189,7 @@ class MixUp(BaseTransform):
         self.flip_ratio = flip_ratio
         self.pad_val = pad_val
         self.max_iters = max_iters
-        self.min_bbox_size = min_bbox_size
-        self.min_area_ratio = min_area_ratio
-        self.max_aspect_ratio = max_aspect_ratio
         self.bbox_clip_border = bbox_clip_border
-        self.skip_filter = skip_filter
 
     @cache_randomness
     def get_indexes(self, dataset: BaseDataset) -> int:
@@ -2366,14 +2311,6 @@ class MixUp(BaseTransform):
         retrieve_gt_bboxes_labels = retrieve_results['gt_bboxes_labels']
         retrieve_gt_ignore_flags = retrieve_results['gt_ignore_flags']
 
-        if not self.skip_filter:
-            keep_list = self._filter_box_candidates(retrieve_gt_bboxes.T,
-                                                    cp_retrieve_gt_bboxes.T)
-
-            cp_retrieve_gt_bboxes = cp_retrieve_gt_bboxes[keep_list]
-            retrieve_gt_bboxes_labels = retrieve_gt_bboxes_labels[keep_list]
-            retrieve_gt_ignore_flags = retrieve_gt_ignore_flags[keep_list]
-
         mixup_gt_bboxes = np.concatenate(
             (results['gt_bboxes'], cp_retrieve_gt_bboxes), axis=0)
         mixup_gt_bboxes_labels = np.concatenate(
@@ -2395,22 +2332,6 @@ class MixUp(BaseTransform):
 
         return results
 
-    def _filter_box_candidates(self, bbox1: np.ndarray,
-                               bbox2: np.ndarray) -> np.ndarray:
-        """Compute candidate boxes which include following 5 things:
-
-        bbox1 before augment, bbox2 after augment, min_bbox_size (pixels),
-        min_area_ratio, max_aspect_ratio.
-        """
-
-        w1, h1 = bbox1[2] - bbox1[0], bbox1[3] - bbox1[1]
-        w2, h2 = bbox2[2] - bbox2[0], bbox2[3] - bbox2[1]
-        ar = np.maximum(w2 / (h2 + 1e-16), h2 / (w2 + 1e-16))
-        return ((w2 > self.min_bbox_size)
-                & (h2 > self.min_bbox_size)
-                & (w2 * h2 / (w1 * h1 + 1e-16) > self.min_area_ratio)
-                & (ar < self.max_aspect_ratio))
-
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'(dynamic_scale={self.dynamic_scale}, '
@@ -2418,11 +2339,7 @@ class MixUp(BaseTransform):
         repr_str += f'flip_ratio={self.flip_ratio}, '
         repr_str += f'pad_val={self.pad_val}, '
         repr_str += f'max_iters={self.max_iters}, '
-        repr_str += f'min_bbox_size={self.min_bbox_size}, '
-        repr_str += f'min_area_ratio={self.min_area_ratio}, '
-        repr_str += f'max_aspect_ratio={self.max_aspect_ratio}, '
-        repr_str += f'bbox_clip_border={self.bbox_clip_border}, '
-        repr_str += f'skip_filter={self.skip_filter})'
+        repr_str += f'bbox_clip_border={self.bbox_clip_border})'
         return repr_str
 
 
@@ -2462,23 +2379,10 @@ class RandomAffine(BaseTransform):
             Defaults to (0, 0).
         border_val (tuple[int]): Border padding values of 3 channels.
             Defaults to (114, 114, 114).
-        min_bbox_size (float): Width and height threshold to filter bboxes.
-            If the height or width of a box is smaller than this value, it
-            will be removed. Defaults to 2.
-        min_area_ratio (float): Threshold of area ratio between
-            original bboxes and wrapped bboxes. If smaller than this value,
-            the box will be removed. Defaults to 0.2.
-        max_aspect_ratio (float): Aspect ratio of width and height
-            threshold to filter bboxes. If max(h/w, w/h) larger than this
-            value, the box will be removed. Defaults to 20.
         bbox_clip_border (bool, optional): Whether to clip the objects outside
             the border of the image. In some dataset like MOT17, the gt bboxes
             are allowed to cross the border of images. Therefore, we don't
             need to clip the gt bboxes in these cases. Defaults to True.
-        skip_filter (bool): Whether to skip filtering rules. If it
-            is True, the filter rule will not be applied, and the
-            `min_bbox_size` and `min_area_ratio` and `max_aspect_ratio`
-            is invalid. Defaults to True.
     """
 
     def __init__(self,
@@ -2488,11 +2392,7 @@ class RandomAffine(BaseTransform):
                  max_shear_degree: float = 2.0,
                  border: Tuple[int, int] = (0, 0),
                  border_val: Tuple[int, int, int] = (114, 114, 114),
-                 min_bbox_size: int = 2,
-                 min_area_ratio: float = 0.2,
-                 max_aspect_ratio: int = 20,
-                 bbox_clip_border: bool = True,
-                 skip_filter: bool = True) -> None:
+                 bbox_clip_border: bool = True) -> None:
         assert 0 <= max_translate_ratio <= 1
         assert scaling_ratio_range[0] <= scaling_ratio_range[1]
         assert scaling_ratio_range[0] > 0
@@ -2502,29 +2402,19 @@ class RandomAffine(BaseTransform):
         self.max_shear_degree = max_shear_degree
         self.border = border
         self.border_val = border_val
-        self.min_bbox_size = min_bbox_size
-        self.min_area_ratio = min_area_ratio
-        self.max_aspect_ratio = max_aspect_ratio
         self.bbox_clip_border = bbox_clip_border
-        self.skip_filter = skip_filter
 
     @cache_randomness
     def _get_random_homography_matrix(self, height, width):
-        matrix_info = dict()
-
         # Rotation
         rotation_degree = random.uniform(-self.max_rotate_degree,
                                          self.max_rotate_degree)
         rotation_matrix = self._get_rotation_matrix(rotation_degree)
-        matrix_info['rotation_degree'] = rotation_degree
-        matrix_info['rotation_matrix'] = rotation_matrix
 
         # Scaling
         scaling_ratio = random.uniform(self.scaling_ratio_range[0],
                                        self.scaling_ratio_range[1])
         scaling_matrix = self._get_scaling_matrix(scaling_ratio)
-        matrix_info['scaling_ratio'] = scaling_ratio
-        matrix_info['scaling_matrix'] = scaling_matrix
 
         # Shear
         x_degree = random.uniform(-self.max_shear_degree,
@@ -2532,9 +2422,6 @@ class RandomAffine(BaseTransform):
         y_degree = random.uniform(-self.max_shear_degree,
                                   self.max_shear_degree)
         shear_matrix = self._get_shear_matrix(x_degree, y_degree)
-        matrix_info['x_degree'] = x_degree
-        matrix_info['y_degree'] = y_degree
-        matrix_info['shear_matrix'] = shear_matrix
 
         # Translation
         trans_x = random.uniform(-self.max_translate_ratio,
@@ -2542,24 +2429,17 @@ class RandomAffine(BaseTransform):
         trans_y = random.uniform(-self.max_translate_ratio,
                                  self.max_translate_ratio) * height
         translate_matrix = self._get_translation_matrix(trans_x, trans_y)
-        matrix_info['trans_x'] = trans_x
-        matrix_info['trans_y'] = trans_y
-        matrix_info['translate_matrix'] = translate_matrix
 
         warp_matrix = (
             translate_matrix @ shear_matrix @ rotation_matrix @ scaling_matrix)
-        matrix_info['warp_matrix'] = warp_matrix
-
-        return matrix_info
+        return warp_matrix
 
     def transform(self, results: dict) -> dict:
         img = results['img']
         height = img.shape[0] + self.border[0] * 2
         width = img.shape[1] + self.border[1] * 2
 
-        matrix_info = self._get_random_homography_matrix(height, width)
-        warp_matrix = matrix_info['warp_matrix']
-        scaling_ratio = matrix_info['scaling_ratio']
+        warp_matrix = self._get_random_homography_matrix(height, width)
 
         img = cv2.warpPerspective(
             img,
@@ -2594,12 +2474,6 @@ class RandomAffine(BaseTransform):
 
             # remove outside bbox
             valid_index = find_inside_bboxes(warp_bboxes, height, width)
-            if not self.skip_filter:
-                # filter bboxes
-                filter_index = self.filter_gt_bboxes(bboxes * scaling_ratio,
-                                                     warp_bboxes)
-                valid_index = valid_index & filter_index
-
             results['gt_bboxes'] = warp_bboxes[valid_index]
             results['gt_bboxes_labels'] = results['gt_bboxes_labels'][
                 valid_index]
@@ -2610,22 +2484,6 @@ class RandomAffine(BaseTransform):
                 raise NotImplementedError('RandomAffine only supports bbox.')
         return results
 
-    def filter_gt_bboxes(self, origin_bboxes: np.ndarray,
-                         wrapped_bboxes: np.ndarray) -> np.ndarray:
-        origin_w = origin_bboxes[:, 2] - origin_bboxes[:, 0]
-        origin_h = origin_bboxes[:, 3] - origin_bboxes[:, 1]
-        wrapped_w = wrapped_bboxes[:, 2] - wrapped_bboxes[:, 0]
-        wrapped_h = wrapped_bboxes[:, 3] - wrapped_bboxes[:, 1]
-        aspect_ratio = np.maximum(wrapped_w / (wrapped_h + 1e-16),
-                                  wrapped_h / (wrapped_w + 1e-16))
-
-        wh_valid_idx = (wrapped_w > self.min_bbox_size) & \
-                       (wrapped_h > self.min_bbox_size)
-        area_valid_idx = wrapped_w * wrapped_h / (origin_w * origin_h +
-                                                  1e-16) > self.min_area_ratio
-        aspect_ratio_valid_idx = aspect_ratio < self.max_aspect_ratio
-        return wh_valid_idx & area_valid_idx & aspect_ratio_valid_idx
-
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'(max_rotate_degree={self.max_rotate_degree}, '
@@ -2634,11 +2492,7 @@ class RandomAffine(BaseTransform):
         repr_str += f'max_shear_degree={self.max_shear_degree}, '
         repr_str += f'border={self.border}, '
         repr_str += f'border_val={self.border_val}, '
-        repr_str += f'min_bbox_size={self.min_bbox_size}, '
-        repr_str += f'min_area_ratio={self.min_area_ratio}, '
-        repr_str += f'max_aspect_ratio={self.max_aspect_ratio}, '
-        repr_str += f'bbox_clip_border={self.bbox_clip_border}, '
-        repr_str += f'skip_filter={self.skip_filter})'
+        repr_str += f'bbox_clip_border={self.bbox_clip_border})'
         return repr_str
 
     @staticmethod

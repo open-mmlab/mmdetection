@@ -247,7 +247,8 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         for instance in results['instances']:
             gt_bboxes.append(instance['bbox'])
             gt_ignore_flags.append(instance['ignore_flag'])
-        results['gt_bboxes'] = np.array(gt_bboxes, dtype=np.float32)
+        results['gt_bboxes'] = np.array(
+            gt_bboxes, dtype=np.float32).reshape((-1, 4))
         results['gt_ignore_flags'] = np.array(gt_ignore_flags, dtype=np.bool)
 
         if self.denorm_bbox:
