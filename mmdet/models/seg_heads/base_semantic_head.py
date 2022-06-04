@@ -84,3 +84,12 @@ class BaseSemanticHead(BaseModule, metaclass=ABCMeta):
             seg_preds = F.interpolate(
                 seg_preds, size=(h, w), mode='bilinear', align_corners=False)
         return seg_preds
+
+    def onnx_export(self, x, img_metas):
+        output = self.forward(x)
+        seg_preds = output['seg_preds']
+
+        h, w = img_metas[0]['img_shape_for_onnx']
+        seg_preds = F.interpolate(
+            seg_preds, size=(h, w), mode='bilinear', align_corners=False)
+        return seg_preds

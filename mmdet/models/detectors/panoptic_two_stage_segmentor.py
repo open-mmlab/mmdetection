@@ -277,3 +277,22 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
 
         if not (show or out_file):
             return img
+
+    def onnx_export(self, img, img_metas):
+        img_shape = torch._shape_as_tensor(img)[2:]
+        img_metas[0]['img_shape_for_onnx'] = img_shape
+        x = self.extract_feat(img)
+        proposals = self.rpn_head.onnx_export(x, img_metas)
+
+        if hasattr(self.roi_head, 'onnx_export') \
+          and hasattr(self.semantic_head, 'onnx_export'):
+            detections = self.roi_head.onnx_export(x, proposals, img_metas)
+            sem_seg = self.semantic_head.onnx_export(x, img_metas)
+            return *detections, sem_seg
+        else:
+            raise NotImplementedError(
+                f'{self.__class__.__name__} can not '
+                f'be exported to ONNX. Please refer to the '
+                f'list of supported models,'
+                f'https://mmdetection.readthedocs.io/en/latest/tutorials/pytorch2onnx.html#list-of-supported-models-exportable-to-onnx'  # noqa E501
+            )
