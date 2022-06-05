@@ -625,7 +625,7 @@ class FilterAnnotations:
         for t in tests[1:]:
             keep = keep & t
 
-        keep = np.where(keep == True)[0]
+        keep = keep.nonzero()[0]
 
         keys = ('gt_bboxes', 'gt_labels', 'gt_masks')
         for key in keys:
