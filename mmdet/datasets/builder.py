@@ -207,9 +207,9 @@ def build_dataloader(dataset,
 def worker_init_fn(worker_id, num_workers, rank):
     # according to https://github.com/open-mmlab/mmdetection/issues/8110
     # numpy may be set the same seed at each epoch.
-    # Thus, # we use the return torch.initail_seed here to make sure numpy
-    # is set a new seed in each epoch.
-    initial_seed = torch.initial_seed() % 2**31
+    # The solution can be found at
+    # https://pytorch.org/docs/stable/data.html#randomness-in-multi-process-data-loading # noqa
+    initial_seed = torch.initial_seed() % 2**32
     # The seed of each worker equals to
     # num_worker * rank + worker_id + user_seed
     worker_seed = num_workers * rank + worker_id + initial_seed
