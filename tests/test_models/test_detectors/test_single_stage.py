@@ -15,7 +15,8 @@ class TestSingleStageDetector(TestCase):
     @parameterized.expand([
         'retinanet/retinanet_r18_fpn_1x_coco.py',
         'centernet/centernet_resnet18_140e_coco.py',
-        'fsaf/fsaf_r50_fpn_1x_coco.py', 'yolox/yolox_tiny_8x8_300e_coco.py'
+        'fsaf/fsaf_r50_fpn_1x_coco.py', 'yolox/yolox_tiny_8x8_300e_coco.py',
+        'yolo/yolov3_mobilenetv2_320_300e_coco.py'
     ])
     def test_init(self, cfg_file):
         model = get_detector_cfg(cfg_file)
@@ -32,7 +33,8 @@ class TestSingleStageDetector(TestCase):
         ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda')),
         ('centernet/centernet_resnet18_140e_coco.py', ('cpu', 'cuda')),
         ('fsaf/fsaf_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
-        ('yolox/yolox_tiny_8x8_300e_coco.py', ('cpu', 'cuda'))
+        ('yolox/yolox_tiny_8x8_300e_coco.py', ('cpu', 'cuda')),
+        ('yolo/yolov3_mobilenetv2_320_300e_coco.py', ('cpu', 'cuda'))
     ])
     def test_single_stage_forward_train(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
@@ -67,7 +69,8 @@ class TestSingleStageDetector(TestCase):
         ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda')),
         ('centernet/centernet_resnet18_140e_coco.py', ('cpu', 'cuda')),
         ('fsaf/fsaf_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
-        ('yolox/yolox_tiny_8x8_300e_coco.py', ('cpu', 'cuda'))
+        ('yolox/yolox_tiny_8x8_300e_coco.py', ('cpu', 'cuda')),
+        ('yolo/yolov3_mobilenetv2_320_300e_coco.py', ('cpu', 'cuda'))
     ])
     def test_single_stage_forward_test(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)

@@ -9,45 +9,41 @@ model = dict(
                         [(10, 15), (24, 36), (72, 42)]])))
 # yapf:enable
 
-# dataset settings
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+# file_client_args = dict(
+#     backend='petrel',
+#     path_mapping=dict({
+#         './data/': 's3://openmmlab/datasets/detection/',
+#         'data/': 's3://openmmlab/datasets/detection/'
+#     }))
+file_client_args = dict(backend='disk')
+
+input_size = (320, 320)
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(type='LoadAnnotations', with_bbox=True),
+    # `mean` and `to_rgb` should be the same with the `preprocess_cfg`
     dict(
         type='Expand',
-        mean=img_norm_cfg['mean'],
-        to_rgb=img_norm_cfg['to_rgb'],
+        mean=[123.675, 116.28, 103.53],
+        to_rgb=True,
         ratio_range=(1, 2)),
     dict(
         type='MinIoURandomCrop',
         min_ious=(0.4, 0.5, 0.6, 0.7, 0.8, 0.9),
         min_crop_size=0.3),
-    dict(type='Resize', img_scale=(320, 320), keep_ratio=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='Resize', scale=input_size, keep_ratio=True),
+    dict(type='RandomFlip', prob=0.5),
     dict(type='PhotoMetricDistortion'),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
+    dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='Resize', scale=input_size, keep_ratio=True),
     dict(
-        type='MultiScaleFlipAug',
-        img_scale=(320, 320),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32),
-            dict(type='DefaultFormatBundle'),
-            dict(type='Collect', keys=['img'])
-        ])
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
 ]
-data = dict(
-    train=dict(dataset=dict(pipeline=train_pipeline)),
-    val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
+train_dataloader = dict(dataset=dict(dataset=dict(pipeline=train_pipeline)))
+val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
+test_dataloader = val_dataloader
