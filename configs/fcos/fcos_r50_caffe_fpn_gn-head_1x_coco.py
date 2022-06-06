@@ -56,11 +56,6 @@ model = dict(
         nms=dict(type='nms', iou_threshold=0.5),
         max_per_img=100))
 
-# training schedule for 1x
-train_cfg = dict(by_epoch=True, max_epochs=12)
-val_cfg = dict(interval=1)
-test_cfg = dict()
-
 # learning rate
 param_scheduler = [
     dict(type='ConstantLR', factor=1.0 / 3, by_epoch=False, begin=0, end=500),

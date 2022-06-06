@@ -1,8 +1,8 @@
 _base_ = 'retinanet_r50_fpn_1x_coco.py'
 
 # training schedule for 90k
-train_cfg = dict(by_epoch=False, max_iters=90000)
-val_cfg = dict(interval=10000)
+train_cfg = dict(
+    type='IterBasedTrainLoop', max_iters=90000, val_interval=10000)
 # learning rate policy
 param_scheduler = [
     dict(

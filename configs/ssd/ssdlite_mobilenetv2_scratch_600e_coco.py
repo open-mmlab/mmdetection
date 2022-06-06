@@ -1,5 +1,6 @@
 _base_ = [
-    '../_base_/datasets/coco_detection.py', '../_base_/default_runtime.py'
+    '../_base_/datasets/coco_detection.py',
+    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
 # model settings
@@ -132,9 +133,7 @@ test_dataloader = val_dataloader
 
 # training schedule
 max_epochs = 120
-train_cfg = dict(by_epoch=True, max_epochs=max_epochs)
-val_cfg = dict(interval=5)
-test_cfg = dict()
+train_cfg = dict(max_epochs=max_epochs, val_interval=5)
 
 # learning rate
 param_scheduler = [
