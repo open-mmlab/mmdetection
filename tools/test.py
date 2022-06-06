@@ -9,7 +9,7 @@ from mmengine.runner import Runner
 from mmdet.utils import register_all_modules
 
 
-# TODO: support fuse_conv_bn, visualization, and format_only
+# TODO: support fuse_conv_bn and format_only
 def parse_args():
     parser = argparse.ArgumentParser(
         description='MMDet test (and eval) a model')
@@ -18,6 +18,15 @@ def parse_args():
     parser.add_argument(
         '--work-dir',
         help='the directory to save the file containing evaluation metrics')
+    parser.add_argument(
+        '--show', action='store_true', help='show prediction results')
+    parser.add_argument(
+        '--show-dir',
+        help='directory where painted images will be saved. '
+        'If specified, it will be automatically saved '
+        'to the work_dir/timestamp/show_dir')
+    parser.add_argument(
+        '--wait-time', type=float, default=2, help='the interval of show (s)')
     parser.add_argument(
         '--cfg-options',
         nargs='+',
@@ -38,6 +47,26 @@ def parse_args():
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
     return args
+
+
+def trigger_visualization_hook(cfg, args):
+    default_hooks = cfg.default_hooks
+    if 'visualization' in default_hooks:
+        visualization_hook = default_hooks['visualization']
+        # Turn on visualization
+        visualization_hook['draw'] = True
+        if args.show:
+            visualization_hook['show'] = True
+            visualization_hook['wait_time'] = args.wait_time
+        if args.show_dir:
+            visualization_hook['test_out_dir'] = args.show_dir
+    else:
+        raise RuntimeError(
+            'VisualizationHook must be included in default_hooks.'
+            'refer to usage '
+            '"visualization=dict(type=\'VisualizationHook\')"')
+
+    return cfg
 
 
 def main():
@@ -63,6 +92,9 @@ def main():
                                 osp.splitext(osp.basename(args.config))[0])
 
     cfg.load_from = args.checkpoint
+
+    if args.show or args.show_dir:
+        cfg = trigger_visualization_hook(cfg, args)
 
     # build the runner from config
     runner = Runner.from_cfg(cfg)
