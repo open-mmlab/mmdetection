@@ -631,7 +631,7 @@ class FilterAnnotations:
         for key in keys:
             if key in results:
                 results[key] = results[key][keep]
-        if not keep.any():
+        if keep.size == 0:
             if self.keep_empty:
                 return None
         return results
@@ -639,7 +639,7 @@ class FilterAnnotations:
     def __repr__(self):
         return self.__class__.__name__ + \
             f'(min_gt_bbox_wh={self.min_gt_bbox_wh},' \
-            f'(min_gt_mask_area={self.min_gt_mask_area},' \
-            f'(by_box={self.by_box},' \
-            f'(by_mask={self.by_mask},' \
+            f'min_gt_mask_area={self.min_gt_mask_area},' \
+            f'by_box={self.by_box},' \
+            f'by_mask={self.by_mask},' \
             f'always_keep={self.always_keep})'
