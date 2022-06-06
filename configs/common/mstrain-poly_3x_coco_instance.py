@@ -40,12 +40,15 @@ train_dataloader = dict(
     sampler=dict(type='DefaultSampler', shuffle=True),
     batch_sampler=dict(type='AspectRatioBatchSampler'),
     dataset=dict(
-        type=dataset_type,
-        data_root=data_root,
-        ann_file='annotations/instances_train2017.json',
-        data_prefix=dict(img='train2017/'),
-        filter_cfg=dict(filter_empty_gt=True, min_size=32),
-        pipeline=train_pipeline))
+        type='RepeatDataset',
+        times=3,
+        dataset=dict(
+            type=dataset_type,
+            data_root=data_root,
+            ann_file='annotations/instances_train2017.json',
+            data_prefix=dict(img='train2017/'),
+            filter_cfg=dict(filter_empty_gt=True, min_size=32),
+            pipeline=train_pipeline)))
 val_dataloader = dict(
     batch_size=2,
     num_workers=2,
@@ -67,25 +70,26 @@ val_evaluator = dict(
     metric='bbox')
 test_evaluator = val_evaluator
 
-# TODO: use repeat dataset wrapper
-# training schedule for 3x
-train_cfg = dict(by_epoch=True, max_epochs=36)
-val_cfg = dict(interval=3)
-test_cfg = dict()
+# training schedule for 3x with `RepeatDataset`
+train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=12, val_interval=1)
+val_cfg = dict(type='ValLoop')
+test_cfg = dict(type='TestLoop')
 
 # learning rate
-# Experiments show that using milestones=[27, 33] has higher performance
+# Experiments show that using milestones=[9, 11] has higher performance
 param_scheduler = [
     dict(
         type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
     dict(
         type='MultiStepLR',
         begin=0,
-        end=36,
+        end=12,
         by_epoch=True,
-        milestones=[27, 33],
+        milestones=[9, 11],
         gamma=0.1)
 ]
 
 # optimizer
-optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
+optim_wrapper = dict(
+    type='OptimWrapper',
+    optimizer=dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001))

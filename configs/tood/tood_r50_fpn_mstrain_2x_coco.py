@@ -15,7 +15,7 @@ param_scheduler = [
 ]
 
 # training schedule for 2x
-train_cfg = dict(by_epoch=True, max_epochs=max_epochs)
+train_cfg = dict(max_epochs=max_epochs)
 
 # multi-scale training
 train_pipeline = [
