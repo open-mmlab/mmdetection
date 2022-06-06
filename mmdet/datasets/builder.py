@@ -181,9 +181,7 @@ def build_dataloader(dataset,
                                    samples_per_gpu) if shuffle else None
         batch_sampler = None
 
-    init_fn = partial(
-        worker_init_fn, num_workers=num_workers, rank=rank,
-        seed=seed) if seed is not None else None
+    init_fn = partial(worker_init_fn, num_workers=num_workers, rank=rank)
 
     if (TORCH_VERSION != 'parrots'
             and digit_version(TORCH_VERSION) >= digit_version('1.7.0')):
@@ -206,10 +204,15 @@ def build_dataloader(dataset,
     return data_loader
 
 
-def worker_init_fn(worker_id, num_workers, rank, seed):
+def worker_init_fn(worker_id, num_workers, rank):
+    # according to https://github.com/open-mmlab/mmdetection/issues/8110
+    # numpy may be set the same seed at each epoch.
+    # Thus, # we use the return torch.initail_seed here to make sure numpy
+    # is set a new seed in each epoch.
+    initial_seed = torch.initial_seed() % 2 ** 31
     # The seed of each worker equals to
     # num_worker * rank + worker_id + user_seed
-    worker_seed = num_workers * rank + worker_id + seed
+    worker_seed = num_workers * rank + worker_id + initial_seed
     np.random.seed(worker_seed)
     random.seed(worker_seed)
     torch.manual_seed(worker_seed)
