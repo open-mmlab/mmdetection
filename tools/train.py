@@ -29,6 +29,8 @@ def parse_args():
     parser.add_argument(
         '--resume-from', help='the checkpoint file to resume from')
     parser.add_argument(
+        '--load-from', help='the checkpoint file to load from')
+    parser.add_argument(
         '--auto-resume',
         action='store_true',
         help='resume from the latest checkpoint automatically')
@@ -147,8 +149,12 @@ def main():
         cfg.work_dir = osp.join('./work_dirs',
                                 osp.splitext(osp.basename(args.config))[0])
 
+    # If resume_from and load_from are both not None, behave as resume_from.
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
+    elif args.load_from is not None:
+        cfg.load_from = args.load_from
+
     cfg.auto_resume = args.auto_resume
     if args.gpus is not None:
         cfg.gpu_ids = range(1)
