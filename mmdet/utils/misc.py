@@ -5,7 +5,9 @@ import os.path as osp
 import warnings
 
 import mmcv
+import torch
 from mmcv.utils import print_log
+from packaging import version
 
 
 def find_latest_checkpoint(path, suffix='pth'):
@@ -74,3 +76,14 @@ def update_data_root(cfg, logger=None):
 
     update(cfg.data, cfg.data_root, dst_root)
     cfg.data_root = dst_root
+
+
+_torch_version_meshgrid_indexing = version.parse(
+    torch.__version__) >= version.parse('1.10.0a0')
+
+
+def torch_meshgrid_ij(*tensors):
+    if _torch_version_meshgrid_indexing:
+        return torch.meshgrid(*tensors, indexing='ij')
+    else:
+        return torch.meshgrid(*tensors)  # Uses indexing='ij' by default

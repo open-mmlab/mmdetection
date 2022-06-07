@@ -18,6 +18,7 @@ from mmcv.utils import to_2tuple
 from torch.nn.init import normal_
 
 from mmdet.models.utils.builder import TRANSFORMER
+from mmdet.utils.misc import torch_meshgrid_ij
 
 try:
     from mmcv.ops.multi_scale_deform_attn import MultiScaleDeformableAttention
@@ -795,12 +796,11 @@ class DeformableDetrTransformer(Transformer):
             valid_H = torch.sum(~mask_flatten_[:, :, 0, 0], 1)
             valid_W = torch.sum(~mask_flatten_[:, 0, :, 0], 1)
 
-            grid_y, grid_x = torch.meshgrid(
+            grid_y, grid_x = torch_meshgrid_ij(
                 torch.linspace(
                     0, H - 1, H, dtype=torch.float32, device=memory.device),
                 torch.linspace(
-                    0, W - 1, W, dtype=torch.float32, device=memory.device),
-                indexing='ij')
+                    0, W - 1, W, dtype=torch.float32, device=memory.device))
             grid = torch.cat([grid_x.unsqueeze(-1), grid_y.unsqueeze(-1)], -1)
 
             scale = torch.cat([valid_W.unsqueeze(-1),
@@ -848,12 +848,11 @@ class DeformableDetrTransformer(Transformer):
         reference_points_list = []
         for lvl, (H, W) in enumerate(spatial_shapes):
             #  TODO  check this 0.5
-            ref_y, ref_x = torch.meshgrid(
+            ref_y, ref_x = torch_meshgrid_ij(
                 torch.linspace(
                     0.5, H - 0.5, H, dtype=torch.float32, device=device),
                 torch.linspace(
-                    0.5, W - 0.5, W, dtype=torch.float32, device=device),
-                indexing='ij')
+                    0.5, W - 0.5, W, dtype=torch.float32, device=device))
             ref_y = ref_y.reshape(-1)[None] / (
                 valid_ratios[:, None, lvl, 1] * H)
             ref_x = ref_x.reshape(-1)[None] / (

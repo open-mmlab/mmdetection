@@ -12,6 +12,7 @@ from mmcv.runner import BaseModule, ModuleList
 from mmdet.core import (RegionAssigner, build_assigner, build_sampler,
                         images_to_levels, multi_apply)
 from mmdet.core.utils import select_single_mlvl
+from mmdet.utils.misc import torch_meshgrid_ij
 from ..builder import HEADS, build_head
 from .base_dense_head import BaseDenseHead
 from .rpn_head import RPNHead
@@ -344,8 +345,7 @@ class StageCascadeRPNHead(RPNHead):
             assert ks == 3 and dilation == 1
             pad = (ks - 1) // 2
             idx = torch.arange(-pad, pad + 1, dtype=dtype, device=device)
-            yy, xx = torch.meshgrid(
-                idx, idx, indexing='ij')  # return order matters
+            yy, xx = torch_meshgrid_ij(idx, idx)  # return order matters
             xx = xx.reshape(-1)
             yy = yy.reshape(-1)
             w = (anchors[:, 2] - anchors[:, 0]) / stride
@@ -368,7 +368,7 @@ class StageCascadeRPNHead(RPNHead):
             # compute predefine centers
             xx = torch.arange(0, feat_w, device=anchors.device)
             yy = torch.arange(0, feat_h, device=anchors.device)
-            yy, xx = torch.meshgrid(yy, xx, indexing='ij')
+            yy, xx = torch_meshgrid_ij(yy, xx)
             xx = xx.reshape(-1).type_as(x)
             yy = yy.reshape(-1).type_as(y)
 

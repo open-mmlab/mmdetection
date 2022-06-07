@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from torch.nn.modules.utils import _pair
 
+from mmdet.utils.misc import torch_meshgrid_ij
 from .builder import PRIOR_GENERATORS
 
 
@@ -68,7 +69,7 @@ class MlvlPointGenerator:
         return [1 for _ in range(len(self.strides))]
 
     def _meshgrid(self, x, y, row_major=True):
-        yy, xx = torch.meshgrid(y, x, indexing='ij')
+        yy, xx = torch_meshgrid_ij(y, x)
         if row_major:
             # warning .flatten() would cause error in ONNX exporting
             # have to use reshape here

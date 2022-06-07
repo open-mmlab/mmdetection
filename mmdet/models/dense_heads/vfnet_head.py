@@ -11,6 +11,7 @@ from mmcv.runner import force_fp32
 from mmdet.core import (MlvlPointGenerator, bbox_overlaps, build_assigner,
                         build_prior_generator, build_sampler, multi_apply,
                         reduce_mean)
+from mmdet.utils.misc import torch_meshgrid_ij
 from ..builder import HEADS, build_loss
 from .atss_head import ATSSHead
 from .fcos_head import FCOSHead
@@ -728,7 +729,7 @@ class VFNetHead(ATSSHead, FCOSHead):
             0, w * stride, stride, dtype=dtype, device=device)
         y_range = torch.arange(
             0, h * stride, stride, dtype=dtype, device=device)
-        y, x = torch.meshgrid(y_range, x_range, indexing='ij')
+        y, x = torch_meshgrid_ij(y_range, x_range)
         # to be compatible with anchor points in ATSS
         if self.use_atss:
             points = torch.stack(
