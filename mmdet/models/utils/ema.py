@@ -51,8 +51,8 @@ class ExpMomentumEMA(ExponentialMovingAverage):
         self.gamma = gamma
 
     def avg_func(self, averaged_param: Tensor, source_param: Tensor,
-                 steps: int) -> Tensor:
-        """Compute the moving average of the parameters using the linear
+                 steps: int) -> None:
+        """Compute the moving average of the parameters using the exponential
         momentum strategy.
 
         Args:
@@ -60,9 +60,7 @@ class ExpMomentumEMA(ExponentialMovingAverage):
             source_param (Tensor): The source parameters.
             steps (int): The number of times the parameters have been
                 updated.
-        Returns:
-            Tensor: The averaged parameters.
         """
         momentum = (1 - self.momentum) * math.exp(
             -(1 + steps) / self.gamma) + self.momentum
-        return averaged_param * (1 - momentum) + source_param * momentum
+        averaged_param.mul_(1 - momentum).add_(source_param, alpha=momentum)
