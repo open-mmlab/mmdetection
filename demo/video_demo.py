@@ -26,14 +26,17 @@ def parse_args():
     parser.add_argument(
         '--cat-id',
         type=int,
-        default=0,
-        help='Category ID to visualise (0 => all)')
+        nargs='+',
+        default=None,
+        help='Category ID(s) to visualise (0 => all)')
     parser.add_argument(
-        '--single-inst',
+        '--max-score-only',
         action='store_true',
         help=('For each category ID, only visualise the single maximum '
               'scoring instance'))
     args = parser.parse_args()
+    if not args.cat_id or 0 in args.cat_id:
+        args.cat_id = None
     return args
 
 
@@ -55,12 +58,12 @@ def main():
 
     for frame in mmcv.track_iter_progress(video_reader):
         result = inference_detector(model, frame)
-        if args.cat_id > 0:
+        if args.cat_id:
             result = [
-                r if i + 1 == args.cat_id else r[:0, :]
+                r if i + 1 in args.cat_id else r[:0, :]
                 for i, r in enumerate(result)
             ]
-        if args.single_inst:
+        if args.max_score_only:
             result = [
                 r if r.shape[0] <= 1 else r[r[:, -1].argmax(), None, :]
                 for r in result
