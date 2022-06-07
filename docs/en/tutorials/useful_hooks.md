@@ -54,7 +54,7 @@ For example, users can implement a hook to check loss and terminate training whe
 
 1. Implement a new hook that inherits the `Hook` class in MMCV, and implement `after_train_iter` method which checks whether loss goes NaN after every `n` training iterations.
 2. The implemented hook should be registered in `HOOKS` by `@HOOKS.register_module()` as shown in the code below.
-3. Add `custom_hooks = [dict(type='MemoryProfilerHook', interval=50)]` in the config file.
+3. Add `custom_hooks = [dict(type='CheckInvalidLossHook', interval=50)]` in the config file.
 
 ```python
 import torch
