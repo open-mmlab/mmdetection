@@ -6,8 +6,7 @@ import warnings
 
 import mmcv
 import torch
-from mmcv.utils import print_log
-from packaging import version
+from mmcv.utils import TORCH_VERSION, digit_version, print_log
 
 
 def find_latest_checkpoint(path, suffix='pth'):
@@ -78,8 +77,9 @@ def update_data_root(cfg, logger=None):
     cfg.data_root = dst_root
 
 
-_torch_version_meshgrid_indexing = version.parse(
-    torch.__version__) >= version.parse('1.10.0a0')
+_torch_version_meshgrid_indexing = (
+    'parrots' not in TORCH_VERSION
+    and digit_version(TORCH_VERSION) >= digit_version('1.10.0a0'))
 
 
 def torch_meshgrid_ij(*tensors):
