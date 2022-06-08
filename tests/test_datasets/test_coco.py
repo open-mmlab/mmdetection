@@ -27,7 +27,7 @@ class TestCocoDataset(unittest.TestCase):
             data_prefix=dict(img='imgs'),
             ann_file='tests/data/coco_sample.json',
             pipeline=[])
-        self.assertEqual(len(dataset), 2)
+        self.assertEqual(len(dataset), 4)
 
         # test with test_mode = True
         dataset = CocoDataset(

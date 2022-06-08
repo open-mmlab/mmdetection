@@ -250,6 +250,12 @@ class CocoPanopticDataset(CocoDataset):
         if self.test_mode:
             return self.data_list
 
+        if self.filter_cfg is None:
+            return self.data_list
+
+        filter_empty_gt = self.filter_cfg.get('filter_empty_gt', False)
+        min_size = self.filter_cfg.get('min_size', 0)
+
         ids_with_ann = set()
         # check whether images have legal thing annotations.
         for data_info in self.data_list:
@@ -263,16 +269,9 @@ class CocoPanopticDataset(CocoDataset):
             img_id = data_info['img_id']
             width = data_info['width']
             height = data_info['height']
-            if self.filter_cfg is None:
-                if img_id not in ids_with_ann:
-                    continue
-                if min(width, height) >= 32:
-                    valid_data_list.append(data_info)
-            else:
-                if self.filter_cfg.get('filter_empty_gt',
-                                       True) and img_id not in ids_with_ann:
-                    continue
-                if min(width, height) >= self.filter_cfg.get('min_size', 32):
-                    valid_data_list.append(data_info)
+            if filter_empty_gt and img_id not in ids_with_ann:
+                continue
+            if min(width, height) >= min_size:
+                valid_data_list.append(data_info)
 
         return valid_data_list

@@ -416,3 +416,35 @@ class TestCocoMetric(TestCase):
             osp.isfile(osp.join(self.tmp_dir.name, 'test.segm.json')))
         self.assertTrue(
             osp.isfile(osp.join(self.tmp_dir.name, 'test.gt.json')))
+
+    def test_format_only(self):
+        # create dummy data
+        fake_json_file = osp.join(self.tmp_dir.name, 'fake_data.json')
+        self._create_dummy_coco_json(fake_json_file)
+        dummy_pred = self._create_dummy_results()
+
+        with self.assertRaises(AssertionError):
+            CocoMetric(
+                ann_file=fake_json_file,
+                classwise=False,
+                format_only=True,
+                outfile_prefix=None)
+
+        coco_metric = CocoMetric(
+            ann_file=fake_json_file,
+            metric='bbox',
+            classwise=False,
+            format_only=True,
+            outfile_prefix=f'{self.tmp_dir.name}/test')
+        coco_metric.dataset_meta = dict(CLASSES=['car', 'bicycle'])
+        coco_metric.process([
+            dict(
+                inputs=None,
+                data_sample={
+                    'img_id': 0,
+                    'ori_shape': (640, 640)
+                })
+        ], [dict(pred_instances=dummy_pred)])
+        eval_results = coco_metric.evaluate(size=1)
+        self.assertDictEqual(eval_results, dict())
+        self.assertTrue(osp.exists(f'{self.tmp_dir.name}/test.bbox.json'))

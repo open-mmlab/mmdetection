@@ -229,7 +229,7 @@ class TestCocoPanopticDataset(unittest.TestCase):
         dataset.full_init()
         # filter images of small size and images
         # with all illegal annotations
-        self.assertEqual(len(dataset), 2)
+        self.assertEqual(len(dataset), 4)
         self.assertEqual(len(dataset.load_data_list()), 4)
 
         # test mode

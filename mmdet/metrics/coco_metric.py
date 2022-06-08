@@ -42,7 +42,11 @@ class CocoMetric(BaseMetric):
             Defaults to None.
         metric_items (List[str], optional): Metric result names to be
             recorded in the evaluation result. Defaults to None.
-        outfile_prefix (str | None): The prefix of json files. It includes
+        format_only (bool): Format the output results without perform
+            evaluation. It is useful when you want to format the result
+            to a specific format and submit it to the test server.
+            Defaults to False.
+        outfile_prefix (str, optional): The prefix of json files. It includes
             the file path and the prefix of filename, e.g., "a/b/prefix".
             If not specified, a temp file will be created. Defaults to None.
         collect_device (str): Device name used for collecting results from
@@ -62,6 +66,7 @@ class CocoMetric(BaseMetric):
                  proposal_nums: Sequence[int] = (100, 300, 1000),
                  iou_thrs: Optional[Union[float, Sequence[float]]] = None,
                  metric_items: Optional[Sequence[str]] = None,
+                 format_only: bool = False,
                  outfile_prefix: Optional[str] = None,
                  collect_device: str = 'cpu',
                  prefix: Optional[str] = None) -> None:
@@ -87,6 +92,12 @@ class CocoMetric(BaseMetric):
                 .5, 0.95, int(np.round((0.95 - .5) / .05)) + 1, endpoint=True)
         self.iou_thrs = iou_thrs
         self.metric_items = metric_items
+        self.format_only = format_only
+        if self.format_only:
+            assert outfile_prefix is not None, 'outfile_prefix must be not'
+            'None when format_only is True, otherwise the result files will'
+            'be saved to a temp directory which will be cleaned up at the end.'
+
         self.outfile_prefix = outfile_prefix
 
         # if ann_file is not specified,
@@ -372,6 +383,10 @@ class CocoMetric(BaseMetric):
         result_files = self.results2json(preds, outfile_prefix)
 
         eval_results = OrderedDict()
+        if self.format_only:
+            logger.info('results are saved in '
+                        f'{osp.dirname(outfile_prefix)}')
+            return eval_results
 
         for metric in self.metrics:
             logger.info(f'Evaluating {metric}...')
