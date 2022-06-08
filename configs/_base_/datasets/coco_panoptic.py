@@ -63,3 +63,9 @@ val_evaluator = dict(
     seg_prefix=data_root + 'annotations/panoptic_val2017/',
     metric='PQ')
 test_evaluator = val_evaluator
+
+# TODO add setting on test dataset after panoptic fpn
+# inference on test dataset and
+# format the output results for submission.
+# test_dataloader = None
+# test_evaluator = None

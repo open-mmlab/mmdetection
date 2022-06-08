@@ -254,3 +254,36 @@ class TestCocoPanopticMetric(unittest.TestCase):
         metric.process(data_batch, deepcopy(self.predictions))
         eval_results = metric.evaluate(size=1)
         self.assertDictEqual(eval_results, self.target)
+
+    @unittest.skipIf(panopticapi is None, 'panopticapi is not installed')
+    def test_format_only(self):
+        data_batch = [{
+            'input': None,
+            'data_sample': {
+                'img_id': 0,
+                'ori_shape': (60, 80)
+            }
+        }]
+        with self.assertRaises(AssertionError):
+            metric = CocoPanopticMetric(
+                ann_file=self.gt_json_path,
+                seg_prefix=self.gt_seg_dir,
+                classwise=False,
+                nproc=1,
+                format_only=True,
+                outfile_prefix=None)
+
+        outfile_prefix = f'{self.tmp_dir.name}/test'
+        metric = CocoPanopticMetric(
+            ann_file=self.gt_json_path,
+            seg_prefix=self.gt_seg_dir,
+            classwise=False,
+            nproc=1,
+            format_only=True,
+            outfile_prefix=outfile_prefix)
+        metric.dataset_meta = self.dataset_meta
+        metric.process(data_batch, deepcopy(self.predictions))
+        eval_results = metric.evaluate(size=1)
+        self.assertDictEqual(eval_results, dict())
+        self.assertTrue(osp.exists(f'{self.tmp_dir.name}/test.panoptic'))
+        self.assertTrue(osp.exists(f'{self.tmp_dir.name}/test.panoptic.json'))

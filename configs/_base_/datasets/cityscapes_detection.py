@@ -1,56 +1,78 @@
 # dataset settings
 dataset_type = 'CityscapesDataset'
+# TODO remove it after cityscape metric
+# data_root = '/mnt/lustre/luochunhua.vendor/openmmlab2.0/data/cityscapes/'
 data_root = 'data/cityscapes/'
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(
-        type='Resize', img_scale=[(2048, 800), (2048, 1024)], keep_ratio=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
+    dict(type='RandomResize', scale=[(2048, 800), (2048, 1024)]),
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PackDetInputs')
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile'),
+    dict(type='Resize', scale=(2048, 1024), keep_ratio=True),
     dict(
-        type='MultiScaleFlipAug',
-        img_scale=(2048, 1024),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
-        ])
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
 ]
-data = dict(
-    samples_per_gpu=1,
-    workers_per_gpu=2,
-    train=dict(
+
+train_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    persistent_workers=True,
+    sampler=dict(type='DefaultSampler', shuffle=True),
+    batch_sampler=dict(type='AspectRatioBatchSampler'),
+    dataset=dict(
         type='RepeatDataset',
         times=8,
         dataset=dict(
             type=dataset_type,
-            ann_file=data_root +
-            'annotations/instancesonly_filtered_gtFine_train.json',
-            img_prefix=data_root + 'leftImg8bit/train/',
-            pipeline=train_pipeline)),
-    val=dict(
+            data_root=data_root,
+            ann_file='annotations/instancesonly_filtered_gtFine_train.json',
+            data_prefix=dict(img='leftImg8bit/train/'),
+            filter_cfg=dict(filter_empty_gt=True, min_size=32),
+            pipeline=train_pipeline)))
+
+val_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    persistent_workers=True,
+    drop_last=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
         type=dataset_type,
-        ann_file=data_root +
-        'annotations/instancesonly_filtered_gtFine_val.json',
-        img_prefix=data_root + 'leftImg8bit/val/',
-        pipeline=test_pipeline),
-    test=dict(
-        type=dataset_type,
-        ann_file=data_root +
-        'annotations/instancesonly_filtered_gtFine_test.json',
-        img_prefix=data_root + 'leftImg8bit/test/',
+        data_root=data_root,
+        ann_file='annotations/instancesonly_filtered_gtFine_val.json',
+        data_prefix=dict(img='leftImg8bit/val/'),
+        test_mode=True,
+        filter_cfg=dict(filter_empty_gt=True, min_size=32),
         pipeline=test_pipeline))
-evaluation = dict(interval=1, metric='bbox')
+
+test_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    persistent_workers=True,
+    drop_last=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
+        type=dataset_type,
+        data_root=data_root,
+        ann_file='annotations/instancesonly_filtered_gtFine_val.json',
+        data_prefix=dict(img='leftImg8bit/val/'),
+        test_mode=True,
+        filter_cfg=dict(filter_empty_gt=True, min_size=32),
+        pipeline=test_pipeline))
+
+val_evaluator = dict(
+    type='CocoMetric',
+    ann_file=data_root + 'annotations/instancesonly_filtered_gtFine_val.json',
+    metric='bbox')
+
+test_evaluator = dict(
+    type='CocoMetric',
+    ann_file=data_root + 'annotations/instancesonly_filtered_gtFine_val.json',
+    metric='bbox')

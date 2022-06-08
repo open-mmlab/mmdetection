@@ -23,22 +23,30 @@ model = dict(
 # optimizer
 # lr is set for a batch size of 8
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
-optimizer_config = dict(grad_clip=None)
-# learning policy
-lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=500,
-    warmup_ratio=0.001,
-    # [7] yields higher performance than [6]
-    step=[7])
-runner = dict(
-    type='EpochBasedRunner', max_epochs=8)  # actual epoch = 8 * 8 = 64
-log_config = dict(interval=100)
+
+# learning rate
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=12,
+        by_epoch=True,
+        # [7] yields higher performance than [6]
+        milestones=[7],
+        gamma=0.1)
+]
+
+train_cfg = dict(by_epoch=True, max_epochs=8)  # actual epoch = 8 * 8 = 64
+val_cfg = dict(interval=1)
+test_cfg = dict()
+
 # For better, more stable performance initialize from COCO
 load_from = 'https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'  # noqa
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (1 samples per GPU)
-auto_scale_lr = dict(base_batch_size=8)
+# TODO: support auto scaling lr
+# auto_scale_lr = dict(base_batch_size=8)

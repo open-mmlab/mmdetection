@@ -48,6 +48,10 @@ class CocoPanopticMetric(BaseMetric):
         outfile_prefix (str | None): The prefix of json files. It includes
             the file path and the prefix of filename, e.g., "a/b/prefix".
             If not specified, a temp file will be created. Defaults to None.
+        format_only (bool): Format the output results without perform
+            evaluation. It is useful when you want to format the result
+            to a specific format and submit it to the test server.
+            Defaults to False.
         nproc (int): Number of processes for panoptic quality computing.
             Defaults to 32. When ``nproc`` exceeds the number of cpu cores,
             the number of cpu cores is used.
@@ -65,6 +69,7 @@ class CocoPanopticMetric(BaseMetric):
                  ann_file: Optional[str] = None,
                  seg_prefix: Optional[str] = None,
                  classwise: bool = False,
+                 format_only: bool = False,
                  outfile_prefix: Optional[str] = None,
                  nproc: int = 32,
                  collect_device: str = 'cpu',
@@ -77,6 +82,11 @@ class CocoPanopticMetric(BaseMetric):
 
         super().__init__(collect_device=collect_device, prefix=prefix)
         self.classwise = classwise
+        self.format_only = format_only
+        if self.format_only:
+            assert outfile_prefix is not None, 'outfile_prefix must be not'
+            'None when format_only is True, otherwise the result files will'
+            'be saved to a temp directory which will be cleaned up at the end.'
 
         self.tmp_dir = None
         self.outfile_prefix = outfile_prefix
@@ -314,6 +324,11 @@ class CocoPanopticMetric(BaseMetric):
         # convert predictions to coco format and dump to json file
         json_filename, seg_out_dir = self.result2json(
             results=preds, outfile_prefix=self.outfile_prefix)
+
+        if self.format_only:
+            logger.info('results are saved in '
+                        f'{osp.dirname(self.outfile_prefix)}')
+            return dict()
 
         imgs = self._coco_api.imgs
         gt_json = self._coco_api.img_ann_map
