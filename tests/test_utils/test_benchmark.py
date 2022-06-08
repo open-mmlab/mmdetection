@@ -1,13 +1,11 @@
 import copy
 import os
-import sys
 import tempfile
 import unittest
-from unittest.mock import MagicMock
 
 import torch
 import torch.nn as nn
-from mmengine import Config, ConfigDict, MMLogger
+from mmengine import Config, MMLogger
 from mmengine.dataset import Compose
 from torch.utils.data import Dataset
 
@@ -15,15 +13,6 @@ from mmdet.registry import DATASETS, MODELS
 from mmdet.utils import register_all_modules
 from mmdet.utils.benchmark import (DataLoaderBenchmark, DatasetBenchmark,
                                    InferenceBenchmark)
-
-
-class MockProcess(MagicMock):
-
-    def memory_full_info(self):
-        return ConfigDict(uss=1, pss=1)
-
-    def children(self):
-        return [self]
 
 
 @MODELS.register_module()
@@ -78,7 +67,6 @@ class ToyFullInitDataset(Dataset):
 
 
 class TestInferenceBenchmark(unittest.TestCase):
-    sys.modules['psutil.Process'] = MockProcess()
 
     def setUp(self) -> None:
         register_all_modules()
@@ -174,7 +162,6 @@ class TestInferenceBenchmark(unittest.TestCase):
 
 
 class TestDataLoaderBenchmark(unittest.TestCase):
-    sys.modules['psutil.Process'] = MockProcess()
 
     def setUp(self) -> None:
         register_all_modules()
@@ -254,7 +241,6 @@ class TestDataLoaderBenchmark(unittest.TestCase):
 
 
 class TestDatasetBenchmark(unittest.TestCase):
-    sys.modules['psutil.Process'] = MockProcess()
 
     def setUp(self) -> None:
         register_all_modules()
