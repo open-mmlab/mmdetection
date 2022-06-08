@@ -1,5 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from mmcv.runner.hooks import Hook
+from typing import Optional, Sequence, Union
+
+from mmengine.data import BaseDataElement
+from mmengine.hooks import Hook
+from mmengine.runner import Runner
 
 from mmdet.registry import HOOKS
 
@@ -14,7 +18,7 @@ class MemoryProfilerHook(Hook):
             Default: 50.
     """
 
-    def __init__(self, interval=50):
+    def __init__(self, interval: int = 50) -> None:
         try:
             from psutil import swap_memory, virtual_memory
             self._swap_memory = swap_memory
@@ -33,8 +37,24 @@ class MemoryProfilerHook(Hook):
 
         self.interval = interval
 
-    def after_iter(self, runner):
-        if self.every_n_iters(runner, self.interval):
+    def _after_iter(self,
+                    runner: Runner,
+                    batch_idx: int,
+                    data_batch: Optional[Sequence[dict]] = None,
+                    outputs: Optional[Union[Sequence[BaseDataElement],
+                                            dict]] = None,
+                    mode: str = 'train') -> None:
+        """Regularly record memory information.
+
+        Args:
+            runner (:obj:`Runner`): The runner of the training process.
+            batch_idx (int): The index of the current batch in the train loop.
+            data_batch (Sequence[dict], optional): Data from dataloader.
+                Defaults to None.
+            outputs (Union[Sequence[:obj:`BaseDataElement`], dict], optional):
+                Outputs from model. Defaults to None.
+        """
+        if self.every_n_inner_iters(batch_idx, self.interval):
             # in Byte
             virtual_memory = self._virtual_memory()
             swap_memory = self._swap_memory()
