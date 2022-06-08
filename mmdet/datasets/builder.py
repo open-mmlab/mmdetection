@@ -204,7 +204,7 @@ def build_dataloader(dataset,
     return data_loader
 
 
-def worker_init_fn(worker_id, num_workers, rank):
+def worker_init_fn(worker_id, num_workers, rank, seed=None):
     # according to https://github.com/open-mmlab/mmdetection/issues/8110
     # numpy may be set the same seed at each epoch.
     # The solution can be found at
