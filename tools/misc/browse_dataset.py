@@ -9,7 +9,7 @@ from mmcv import Config, DictAction
 from mmdet.core.utils import mask2ndarray
 from mmdet.datasets.builder import build_dataset
 from mmdet.registry import VISUALIZERS
-from mmdet.utils import register_all_modules
+from mmdet.utils import register_all_modules, replace_cfg_vals
 
 
 def parse_args():
@@ -43,6 +43,8 @@ def parse_args():
 def main():
     args = parse_args()
     cfg = Config.fromfile(args.config)
+    # replace the ${key} with the value of cfg.key
+    cfg = replace_cfg_vals(cfg)
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
 

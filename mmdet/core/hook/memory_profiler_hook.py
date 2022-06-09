@@ -10,8 +10,8 @@ from mmdet.registry import HOOKS
 
 @HOOKS.register_module()
 class MemoryProfilerHook(Hook):
-    """Memory profiler hook recording memory information: virtual memory, swap
-    memory and memory of current process.
+    """Memory profiler hook recording memory information including virtual
+    memory, swap memory, and the memory of the current process.
 
     Args:
         interval (int): Checking interval (every k iterations).
@@ -70,7 +70,7 @@ class MemoryProfilerHook(Hook):
                 f'memory_utilization: {virtual_memory.percent} %, '
                 'available_swap_memory: '
                 f'{round((swap_memory.total - swap_memory.used) / factor)}'
-                'MB, '
+                ' MB, '
                 f'used_swap_memory: {round(swap_memory.used / factor)} MB, '
                 f'swap_memory_utilization: {swap_memory.percent} %, '
                 'current_process_memory: '

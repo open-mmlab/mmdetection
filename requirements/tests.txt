@@ -10,6 +10,7 @@ memory_profiler
 onnx==1.7.0
 onnxruntime>=1.8.0
 parameterized
+protobuf<=3.20.1
 psutil
 pytest
 ubelt

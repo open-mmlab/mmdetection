@@ -6,7 +6,7 @@ import os.path as osp
 from mmengine.config import Config, DictAction
 from mmengine.runner import Runner
 
-from mmdet.utils import register_all_modules
+from mmdet.utils import register_all_modules, replace_cfg_vals
 
 
 # TODO: support fuse_conv_bn and format_only
@@ -78,6 +78,8 @@ def main():
 
     # load config
     cfg = Config.fromfile(args.config)
+    # replace the ${key} with the value of cfg.key
+    cfg = replace_cfg_vals(cfg)
     cfg.launcher = args.launcher
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)

@@ -25,7 +25,8 @@ def pq_compute_single_core(proc_id,
                            gt_folder,
                            pred_folder,
                            categories,
-                           file_client=None):
+                           file_client=None,
+                           print_log=False):
     """The single core function to evaluate the metric of Panoptic
     Segmentation.
 
@@ -39,6 +40,7 @@ def pq_compute_single_core(proc_id,
         categories (str): The categories of the dataset.
         file_client (object): The file client of the dataset. If None,
             the backend will be set to `disk`.
+        print_log (bool): Whether to print the log. Defaults to False.
     """
     if PQStat is None:
         raise RuntimeError(
@@ -54,7 +56,7 @@ def pq_compute_single_core(proc_id,
 
     idx = 0
     for gt_ann, pred_ann in annotation_set:
-        if idx % 100 == 0:
+        if print_log and idx % 100 == 0:
             print('Core: {}, {} from {} images processed'.format(
                 proc_id, idx, len(annotation_set)))
         idx += 1
@@ -161,8 +163,10 @@ def pq_compute_single_core(proc_id,
             if intersection / pred_info['area'] > 0.5:
                 continue
             pq_stat[pred_info['category_id']].fp += 1
-    print('Core: {}, all {} images processed'.format(proc_id,
-                                                     len(annotation_set)))
+
+    if print_log:
+        print('Core: {}, all {} images processed'.format(
+            proc_id, len(annotation_set)))
     return pq_stat
 
 

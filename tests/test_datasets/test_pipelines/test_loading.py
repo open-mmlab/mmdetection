@@ -191,6 +191,9 @@ class TestFilterAnnotations(unittest.TestCase):
         )
         self.assertEqual(
             repr(transform), ('FilterAnnotations(min_gt_bbox_wh=(1, 1), '
+                              'min_gt_mask_area=1, '
+                              'by_box=True, '
+                              'by_mask=False, '
                               'keep_empty=False)'))
 
 

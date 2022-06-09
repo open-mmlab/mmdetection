@@ -623,17 +623,30 @@ class FilterAnnotations(BaseTransform):
     - gt_ignore_flags (optional)
 
     Args:
-        min_gt_bbox_wh (tuple[int, int]): Minimum width and
-            height of ground truth boxes.
-        keep_empty (bool): Whether to return None when it
-            becomes an empty bbox after filtering. Defaults to True.
+        min_gt_bbox_wh (tuple[int, int]): Minimum width and height of ground
+            truth boxes. Defaults to (1., 1.)
+        min_gt_mask_area (int): Minimum foreground area of ground truth masks.
+            Default: 1
+        by_box (bool): Filter instances with bounding boxes not meeting the
+            min_gt_bbox_wh threshold. Default: True
+        by_mask (bool): Filter instances with masks not meeting
+            min_gt_mask_area threshold. Default: False
+        keep_empty (bool): Whether to return None when it becomes an empty
+            bbox after filtering. Defaults to True.
     """
 
     def __init__(self,
-                 min_gt_bbox_wh: Tuple[int, int],
+                 min_gt_bbox_wh: Tuple[int, int] = (1., 1.),
+                 min_gt_mask_area: int = 1,
+                 by_box: bool = True,
+                 by_mask: bool = False,
                  keep_empty: bool = True) -> None:
         # TODO: add more filter options
+        assert by_box or by_mask
         self.min_gt_bbox_wh = min_gt_bbox_wh
+        self.min_gt_mask_area = min_gt_mask_area
+        self.by_box = by_box
+        self.by_mask = by_mask
         self.keep_empty = keep_empty
 
     def transform(self, results: dict) -> Union[dict, None]:
@@ -645,27 +658,45 @@ class FilterAnnotations(BaseTransform):
         Returns:
             dict: Updated result dict.
         """
-        assert 'gt_bboxes' in results
-        gt_bboxes = results['gt_bboxes']
-        if gt_bboxes.shape[0] == 0:
+        if self.by_box:
+            assert 'gt_bboxes' in results
+            gt_bboxes = results['gt_bboxes']
+            instance_num = gt_bboxes.shape[0]
+        if self.by_mask:
+            assert 'gt_masks' in results
+            gt_masks = results['gt_masks']
+            instance_num = len(gt_masks)
+
+        if instance_num == 0:
             return results
-        w = gt_bboxes[:, 2] - gt_bboxes[:, 0]
-        h = gt_bboxes[:, 3] - gt_bboxes[:, 1]
-        keep = (w > self.min_gt_bbox_wh[0]) & (h > self.min_gt_bbox_wh[1])
+
+        tests = []
+        if self.by_box:
+            w = gt_bboxes[:, 2] - gt_bboxes[:, 0]
+            h = gt_bboxes[:, 3] - gt_bboxes[:, 1]
+            tests.append((w > self.min_gt_bbox_wh[0])
+                         & (h > self.min_gt_bbox_wh[1]))
+        if self.by_mask:
+            gt_masks = results['gt_masks']
+            tests.append(gt_masks.areas >= self.min_gt_mask_area)
+
+        keep = tests[0]
+        for t in tests[1:]:
+            keep = keep & t
+
+        keys = ('gt_bboxes', 'gt_bboxes_labels', 'gt_masks', 'gt_ignore_flags')
+        for key in keys:
+            if key in results:
+                results[key] = results[key][keep]
         if not keep.any():
             if self.keep_empty:
                 return None
-            else:
-                return results
-        else:
-            keys = ('gt_bboxes', 'gt_bboxes_labels', 'gt_masks',
-                    'gt_ignore_flags')
-            for key in keys:
-                if key in results:
-                    results[key] = results[key][keep]
-            return results
+        return results
 
     def __repr__(self):
         return self.__class__.__name__ + \
                f'(min_gt_bbox_wh={self.min_gt_bbox_wh}, ' \
+               f'min_gt_mask_area={self.min_gt_mask_area}, ' \
+               f'by_box={self.by_box}, ' \
+               f'by_mask={self.by_mask}, ' \
                f'keep_empty={self.keep_empty})'

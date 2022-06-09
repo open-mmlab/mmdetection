@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
 from typing import List, Optional
 
 import torch
@@ -46,8 +47,13 @@ class ATSSAssigner(BaseAssigner):
     - 0: negative sample, no assigned gt
     - positive integer: positive sample, index (1-based) of assigned gt
 
+    If ``alpha`` is not None, it means that the dynamic cost
+    ATSSAssigner is adopted, which is currently only used in the DDOD.
+
     Args:
         topk (int): number of priors selected in each level
+        alpha (float, optional): param of cost rate for each proposal only
+            in DDOD. Defaults to None.
         iou_calculator (:obj:`ConfigDict` or dict): Config dict for iou
             calculator. Defaults to ``dict(type='BboxOverlaps2D')``
         ignore_iof_thr (float): IoF threshold for ignoring bboxes (if
@@ -57,9 +63,11 @@ class ATSSAssigner(BaseAssigner):
 
     def __init__(self,
                  topk: int,
+                 alpha: Optional[float] = None,
                  iou_calculator: ConfigType = dict(type='BboxOverlaps2D'),
                  ignore_iof_thr: float = -1) -> None:
         self.topk = topk
+        self.alpha = alpha
         self.iou_calculator = build_iou_calculator(iou_calculator)
         self.ignore_iof_thr = ignore_iof_thr
 
@@ -87,6 +95,10 @@ class ATSSAssigner(BaseAssigner):
            the threshold as positive
         6. limit the positive sample's center in gt
 
+        If ``alpha`` is not None, and ``cls_scores`` and `bbox_preds`
+        are not None, the overlaps calculation in the first step
+        will also include dynamic cost, which is currently only used in
+        the DDOD.
 
         Args:
             pred_instances (:obj:`InstaceData`): Instances of model
@@ -117,8 +129,37 @@ class ATSSAssigner(BaseAssigner):
         priors = priors[:, :4]
         num_gt, num_priors = gt_bboxes.size(0), priors.size(0)
 
+        message = 'Invalid alpha parameter because cls_scores or ' \
+                  'bbox_preds are None. If you want to use the ' \
+                  'cost-based ATSSAssigner,  please set cls_scores, ' \
+                  'bbox_preds and self.alpha at the same time. '
+
         # compute iou between all bbox and gt
-        overlaps = self.iou_calculator(priors, gt_bboxes)
+        if self.alpha is None:
+            # ATSSAssigner
+            overlaps = self.iou_calculator(priors, gt_bboxes)
+            if ('cls_scores' in pred_instances
+                    or 'bbox_preds' in pred_instances):
+                warnings.warn(message)
+
+        else:
+            # Dynamic cost ATSSAssigner in DDOD
+            assert ('cls_scores' in pred_instances
+                    and 'bbox_preds' in pred_instances), message
+            cls_scores = pred_instances.cls_scores
+            bbox_preds = pred_instances.bbox_preds
+
+            # compute cls cost for bbox and GT
+            cls_cost = torch.sigmoid(cls_scores[:, gt_labels])
+
+            # compute iou between all bbox and gt
+            overlaps = self.iou_calculator(bbox_preds, gt_bboxes)
+
+            # make sure that we are in element-wise multiplication
+            assert cls_cost.shape == overlaps.shape
+
+            # overlaps is actually a cost matrix
+            overlaps = cls_cost**(1 - self.alpha) * overlaps**self.alpha
 
         # assign 0 by default
         assigned_gt_inds = overlaps.new_full((num_priors, ),
@@ -191,6 +232,7 @@ class ATSSAssigner(BaseAssigner):
         r_ = gt_bboxes[:, 2] - ep_priors_cx[candidate_idxs].view(-1, num_gt)
         b_ = gt_bboxes[:, 3] - ep_priors_cy[candidate_idxs].view(-1, num_gt)
         is_in_gts = torch.stack([l_, t_, r_, b_], dim=1).min(dim=1)[0] > 0.01
+
         is_pos = is_pos & is_in_gts
 
         # if an anchor box is assigned to multiple gts,
