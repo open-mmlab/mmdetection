@@ -22,3 +22,4 @@ SampleList = List[DetDataSample]
 OptSampleList = Optional[SampleList]
 
 SamplingResultList = List[SamplingResult]
+OptSamplingResultList = Optional[SamplingResultList]

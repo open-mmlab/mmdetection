@@ -2,10 +2,16 @@ _base_ = [
     '../_base_/datasets/coco_instance.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
+preprocess_cfg = dict(
+    mean=[123.675, 116.28, 103.53],
+    std=[58.395, 57.12, 57.375],
+    to_rgb=True,
+    pad_size_divisor=32)
 
 # model settings
 model = dict(
     type='SOLO',
+    preprocess_cfg=preprocess_cfg,
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -50,4 +56,7 @@ model = dict(
         max_per_img=100))
 
 # optimizer
-optimizer = dict(type='SGD', lr=0.01)
+optim_wrapper = dict(optimizer=dict(lr=0.01))
+
+val_evaluator = dict(metric='segm')
+test_evaluator = val_evaluator

@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import List, Optional, Tuple
+
 import mmcv
 import numpy as np
 import torch
@@ -6,10 +8,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmengine.data import InstanceData
+from torch import Tensor
 
 from mmdet.core import mask_matrix_nms, multi_apply
-from mmdet.core.utils import center_of_mass, generate_coordinate
-from mmdet.models.builder import build_loss
+from mmdet.core.utils import (ConfigType, InstanceList, MultiConfig,
+                              OptConfigType, center_of_mass,
+                              generate_coordinate)
 from mmdet.registry import MODELS
 from .base_mask_head import BaseMaskHead
 
@@ -50,21 +54,29 @@ class SOLOHead(BaseMaskHead):
 
     def __init__(
         self,
-        num_classes,
-        in_channels,
-        feat_channels=256,
-        stacked_convs=4,
-        strides=(4, 8, 16, 32, 64),
-        scale_ranges=((8, 32), (16, 64), (32, 128), (64, 256), (128, 512)),
-        pos_scale=0.2,
-        num_grids=[40, 36, 24, 16, 12],
-        cls_down_index=0,
-        loss_mask=None,
-        loss_cls=None,
-        norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
-        train_cfg=None,
-        test_cfg=None,
-        init_cfg=[
+        num_classes: int,
+        in_channels: int,
+        feat_channels: int = 256,
+        stacked_convs: int = 4,
+        strides: tuple = (4, 8, 16, 32, 64),
+        scale_ranges: tuple = ((8, 32), (16, 64), (32, 128), (64, 256), (128,
+                                                                         512)),
+        pos_scale: float = 0.2,
+        num_grids: list = [40, 36, 24, 16, 12],
+        cls_down_index: int = 0,
+        loss_mask: ConfigType = dict(
+            type='DiceLoss', use_sigmoid=True, loss_weight=3.0),
+        loss_cls: ConfigType = dict(
+            type='FocalLoss',
+            use_sigmoid=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0),
+        norm_cfg: ConfigType = dict(
+            type='GN', num_groups=32, requires_grad=True),
+        train_cfg: OptConfigType = None,
+        test_cfg: OptConfigType = None,
+        init_cfg: MultiConfig = [
             dict(type='Normal', layer='Conv2d', std=0.01),
             dict(
                 type='Normal',
@@ -76,9 +88,9 @@ class SOLOHead(BaseMaskHead):
                 std=0.01,
                 bias_prob=0.01,
                 override=dict(name='conv_cls'))
-        ],
-    ):
-        super(SOLOHead, self).__init__(init_cfg)
+        ]
+    ) -> None:
+        super().__init__(init_cfg=init_cfg)
         self.num_classes = num_classes
         self.cls_out_channels = self.num_classes
         self.in_channels = in_channels
@@ -93,15 +105,15 @@ class SOLOHead(BaseMaskHead):
         self.pos_scale = pos_scale
 
         self.cls_down_index = cls_down_index
-        self.loss_cls = build_loss(loss_cls)
-        self.loss_mask = build_loss(loss_mask)
+        self.loss_cls = MODELS.build(loss_cls)
+        self.loss_mask = MODELS.build(loss_mask)
         self.norm_cfg = norm_cfg
         self.init_cfg = init_cfg
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self._init_layers()
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         self.mask_convs = nn.ModuleList()
         self.cls_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
@@ -131,31 +143,48 @@ class SOLOHead(BaseMaskHead):
         self.conv_cls = nn.Conv2d(
             self.feat_channels, self.cls_out_channels, 3, padding=1)
 
-    def resize_feats(self, feats):
-        """Downsample the first feat and upsample last feat in feats."""
+    def resize_feats(self, x: Tuple[Tensor]) -> List[Tensor]:
+        """Downsample the first feat and upsample last feat in feats.
+
+        Args:
+            x (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+
+        Returns:
+            list[Tensor]: Features after resizing, each is a 4D-tensor.
+        """
         out = []
-        for i in range(len(feats)):
+        for i in range(len(x)):
             if i == 0:
                 out.append(
-                    F.interpolate(
-                        feats[0],
-                        size=feats[i + 1].shape[-2:],
-                        mode='bilinear',
-                        align_corners=False))
-            elif i == len(feats) - 1:
+                    F.interpolate(x[0], scale_factor=0.5, mode='bilinear'))
+            elif i == len(x) - 1:
                 out.append(
                     F.interpolate(
-                        feats[i],
-                        size=feats[i - 1].shape[-2:],
-                        mode='bilinear',
-                        align_corners=False))
+                        x[i], size=x[i - 1].shape[-2:], mode='bilinear'))
             else:
-                out.append(feats[i])
+                out.append(x[i])
         return out
 
-    def forward(self, feats):
-        assert len(feats) == self.num_levels
-        feats = self.resize_feats(feats)
+    def forward(self, x: Tuple[Tensor]) -> tuple:
+        """Forward features from the upstream network.
+
+        Args:
+            x (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+
+        Returns:
+            tuple: A tuple of classification scores and mask prediction.
+
+                - mlvl_mask_preds (list[Tensor]): Multi-level mask prediction.
+                  Each element in the list has shape
+                  (batch_size, num_grids**2 ,h ,w).
+                - mlvl_cls_preds (list[Tensor]): Multi-level scores.
+                  Each element in the list has shape
+                  (batch_size, num_classes, num_grids ,num_grids).
+        """
+        assert len(x) == self.num_levels
+        feats = self.resize_feats(x)
         mlvl_mask_preds = []
         mlvl_cls_preds = []
         for i in range(self.num_levels):
@@ -199,35 +228,25 @@ class SOLOHead(BaseMaskHead):
             mlvl_cls_preds.append(cls_pred)
         return mlvl_mask_preds, mlvl_cls_preds
 
-    def loss(self,
-             mlvl_mask_preds,
-             mlvl_cls_preds,
-             gt_labels,
-             gt_masks,
-             img_metas,
-             gt_bboxes=None,
-             **kwargs):
+    def loss(self, mlvl_mask_preds: List[Tensor], mlvl_cls_preds: List[Tensor],
+             batch_gt_instances: InstanceList, batch_img_metas: List[dict],
+             **kwargs) -> dict:
         """Calculate the loss of total batch.
 
         Args:
             mlvl_mask_preds (list[Tensor]): Multi-level mask prediction.
                 Each element in the list has shape
                 (batch_size, num_grids**2 ,h ,w).
-            mlvl_cls_preds (list[Tensor]): Multi-level scores. Each element
-                in the list has shape
-                (batch_size, num_classes, num_grids ,num_grids).
-            gt_labels (list[Tensor]): Labels of multiple images.
-            gt_masks (list[Tensor]): Ground truth masks of multiple images.
-                Each has shape (num_instances, h, w).
-            img_metas (list[dict]): Meta information of multiple images.
-            gt_bboxes (list[Tensor]): Ground truth bboxes of multiple
-                images. Default: None.
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes``, ``masks``,
+                and ``labels`` attributes.
+            batch_img_metas (list[dict]): Meta information of multiple images.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
         num_levels = self.num_levels
-        num_imgs = len(gt_labels)
+        num_imgs = len(batch_img_metas)
 
         featmap_sizes = [featmap.size()[-2:] for featmap in mlvl_mask_preds]
 
@@ -236,9 +255,7 @@ class SOLOHead(BaseMaskHead):
         # positive
         pos_mask_targets, labels, pos_masks = multi_apply(
             self._get_targets_single,
-            gt_bboxes,
-            gt_labels,
-            gt_masks,
+            batch_gt_instances,
             featmap_sizes=featmap_sizes)
 
         # change from the outside list meaning multi images
@@ -290,19 +307,14 @@ class SOLOHead(BaseMaskHead):
         return dict(loss_mask=loss_mask, loss_cls=loss_cls)
 
     def _get_targets_single(self,
-                            gt_bboxes,
-                            gt_labels,
-                            gt_masks,
-                            featmap_sizes=None):
+                            gt_instances: InstanceData,
+                            featmap_sizes: Optional[list] = None) -> tuple:
         """Compute targets for predictions of single image.
 
         Args:
-            gt_bboxes (Tensor): Ground truth bbox of each instance,
-                shape (num_gts, 4).
-            gt_labels (Tensor): Ground truth label of each instance,
-                shape (num_gts,).
-            gt_masks (Tensor): Ground truth mask of each instance,
-                shape (num_gts, h, w).
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It should includes ``bboxes``, ``labels``,
+                and ``masks`` attributes.
             featmap_sizes (list[:obj:`torch.size`]): Size of each
                 feature map from feature pyramid, each element
                 means (feat_h, feat_w). Default: None.
@@ -322,9 +334,15 @@ class SOLOHead(BaseMaskHead):
                   corresponding point in single level
                   is positive, has shape (num_grid **2).
         """
+        gt_labels = gt_instances.labels
         device = gt_labels.device
+
+        gt_bboxes = gt_instances.bboxes
         gt_areas = torch.sqrt((gt_bboxes[:, 2] - gt_bboxes[:, 0]) *
                               (gt_bboxes[:, 3] - gt_bboxes[:, 1]))
+
+        gt_masks = gt_instances.masks.to_tensor(
+            dtype=torch.bool, device=device)
 
         mlvl_pos_mask_targets = []
         mlvl_labels = []
@@ -423,8 +441,9 @@ class SOLOHead(BaseMaskHead):
             mlvl_pos_masks.append(pos_mask)
         return mlvl_pos_mask_targets, mlvl_labels, mlvl_pos_masks
 
-    def get_results(self, mlvl_mask_preds, mlvl_cls_scores, img_metas,
-                    **kwargs):
+    def get_results(self, mlvl_mask_preds: List[Tensor],
+                    mlvl_cls_scores: List[Tensor], batch_img_metas: List[dict],
+                    **kwargs) -> InstanceList:
         """Get multi-image mask results.
 
         Args:
@@ -434,7 +453,7 @@ class SOLOHead(BaseMaskHead):
             mlvl_cls_scores (list[Tensor]): Multi-level scores. Each element
                 in the list has shape
                 (batch_size, num_classes, num_grids ,num_grids).
-            img_metas (list[dict]): Meta information of all images.
+            batch_img_metas (list[dict]): Meta information of all images.
 
         Returns:
             list[:obj:`InstanceData`]: Processed results of multiple
@@ -454,7 +473,7 @@ class SOLOHead(BaseMaskHead):
         num_levels = len(mlvl_cls_scores)
 
         results_list = []
-        for img_id in range(len(img_metas)):
+        for img_id in range(len(batch_img_metas)):
             cls_pred_list = [
                 mlvl_cls_scores[lvl][img_id].view(-1, self.cls_out_channels)
                 for lvl in range(num_levels)
@@ -465,14 +484,19 @@ class SOLOHead(BaseMaskHead):
 
             cls_pred_list = torch.cat(cls_pred_list, dim=0)
             mask_pred_list = torch.cat(mask_pred_list, dim=0)
+            img_meta = batch_img_metas[img_id]
 
             results = self._get_results_single(
-                cls_pred_list, mask_pred_list, img_meta=img_metas[img_id])
+                cls_pred_list, mask_pred_list, img_meta=img_meta)
             results_list.append(results)
 
         return results_list
 
-    def _get_results_single(self, cls_scores, mask_preds, img_meta, cfg=None):
+    def _get_results_single(self,
+                            cls_scores: Tensor,
+                            mask_preds: Tensor,
+                            img_meta: dict,
+                            cfg: OptConfigType = None) -> InstanceData:
         """Get processed mask related results of single image.
 
         Args:
@@ -495,29 +519,27 @@ class SOLOHead(BaseMaskHead):
                   shape (num_instances, h, w).
         """
 
-        def empty_results(results, cls_scores):
+        def empty_results(cls_scores, ori_shape):
             """Generate a empty results."""
+            results = InstanceData()
             results.scores = cls_scores.new_ones(0)
-            results.masks = cls_scores.new_zeros(0, *results.ori_shape[:2])
+            results.masks = cls_scores.new_zeros(0, *ori_shape)
             results.labels = cls_scores.new_ones(0)
+            results.bboxes = cls_scores.new_zeros(0, 4)
             return results
 
         cfg = self.test_cfg if cfg is None else cfg
         assert len(cls_scores) == len(mask_preds)
-        results = InstanceData(img_meta)
 
         featmap_size = mask_preds.size()[-2:]
 
-        img_shape = results.img_shape
-        ori_shape = results.ori_shape
-
-        h, w, _ = img_shape
+        h, w = img_meta['img_shape'][:2]
         upsampled_size = (featmap_size[0] * 4, featmap_size[1] * 4)
 
         score_mask = (cls_scores > cfg.score_thr)
         cls_scores = cls_scores[score_mask]
         if len(cls_scores) == 0:
-            return empty_results(results, cls_scores)
+            return empty_results(cls_scores, img_meta['ori_shape'][:2])
 
         inds = score_mask.nonzero()
         cls_labels = inds[:, 1]
@@ -537,7 +559,7 @@ class SOLOHead(BaseMaskHead):
         sum_masks = masks.sum((1, 2)).float()
         keep = sum_masks > strides
         if keep.sum() == 0:
-            return empty_results(results, cls_scores)
+            return empty_results(cls_scores, img_meta['ori_shape'][:2])
         masks = masks[keep]
         mask_preds = mask_preds[keep]
         sum_masks = sum_masks[keep]
@@ -563,9 +585,11 @@ class SOLOHead(BaseMaskHead):
             mask_preds.unsqueeze(0), size=upsampled_size,
             mode='bilinear')[:, :, :h, :w]
         mask_preds = F.interpolate(
-            mask_preds, size=ori_shape[:2], mode='bilinear').squeeze(0)
+            mask_preds, size=img_meta['ori_shape'][:2],
+            mode='bilinear').squeeze(0)
         masks = mask_preds > cfg.mask_thr
 
+        results = InstanceData()
         results.masks = masks
         results.labels = labels
         results.scores = scores
@@ -585,7 +609,7 @@ class DecoupledSOLOHead(SOLOHead):
 
     def __init__(self,
                  *args,
-                 init_cfg=[
+                 init_cfg: MultiConfig = [
                      dict(type='Normal', layer='Conv2d', std=0.01),
                      dict(
                          type='Normal',
@@ -603,11 +627,10 @@ class DecoupledSOLOHead(SOLOHead):
                          bias_prob=0.01,
                          override=dict(name='conv_cls'))
                  ],
-                 **kwargs):
-        super(DecoupledSOLOHead, self).__init__(
-            *args, init_cfg=init_cfg, **kwargs)
+                 **kwargs) -> None:
+        super().__init__(*args, init_cfg=init_cfg, **kwargs)
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         self.mask_convs_x = nn.ModuleList()
         self.mask_convs_y = nn.ModuleList()
         self.cls_convs = nn.ModuleList()
@@ -651,9 +674,28 @@ class DecoupledSOLOHead(SOLOHead):
         self.conv_cls = nn.Conv2d(
             self.feat_channels, self.cls_out_channels, 3, padding=1)
 
-    def forward(self, feats):
-        assert len(feats) == self.num_levels
-        feats = self.resize_feats(feats)
+    def forward(self, x: Tuple[Tensor]) -> Tuple:
+        """Forward features from the upstream network.
+
+        Args:
+            x (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+
+        Returns:
+            tuple: A tuple of classification scores and mask prediction.
+
+                - mlvl_mask_preds_x (list[Tensor]): Multi-level mask prediction
+                  from x branch. Each element in the list has shape
+                  (batch_size, num_grids ,h ,w).
+                - mlvl_mask_preds_y (list[Tensor]): Multi-level mask prediction
+                  from y branch. Each element in the list has shape
+                  (batch_size, num_grids ,h ,w).
+                - mlvl_cls_preds (list[Tensor]): Multi-level scores.
+                  Each element in the list has shape
+                  (batch_size, num_classes, num_grids ,num_grids).
+        """
+        assert len(x) == self.num_levels
+        feats = self.resize_feats(x)
         mask_preds_x = []
         mask_preds_y = []
         cls_preds = []
@@ -712,48 +754,38 @@ class DecoupledSOLOHead(SOLOHead):
             cls_preds.append(cls_pred)
         return mask_preds_x, mask_preds_y, cls_preds
 
-    def loss(self,
-             mlvl_mask_preds_x,
-             mlvl_mask_preds_y,
-             mlvl_cls_preds,
-             gt_labels,
-             gt_masks,
-             img_metas,
-             gt_bboxes=None,
-             **kwargs):
+    def loss(self, mlvl_mask_preds_x: List[Tensor],
+             mlvl_mask_preds_y: List[Tensor], mlvl_cls_preds: List[Tensor],
+             batch_gt_instances: InstanceList, batch_img_metas: List[dict],
+             **kwargs) -> dict:
         """Calculate the loss of total batch.
 
         Args:
             mlvl_mask_preds_x (list[Tensor]): Multi-level mask prediction
                 from x branch. Each element in the list has shape
                 (batch_size, num_grids ,h ,w).
-            mlvl_mask_preds_x (list[Tensor]): Multi-level mask prediction
+            mlvl_mask_preds_y (list[Tensor]): Multi-level mask prediction
                 from y branch. Each element in the list has shape
                 (batch_size, num_grids ,h ,w).
             mlvl_cls_preds (list[Tensor]): Multi-level scores. Each element
                 in the list has shape
                 (batch_size, num_classes, num_grids ,num_grids).
-            gt_labels (list[Tensor]): Labels of multiple images.
-            gt_masks (list[Tensor]): Ground truth masks of multiple images.
-                Each has shape (num_instances, h, w).
-            img_metas (list[dict]): Meta information of multiple images.
-            gt_bboxes (list[Tensor]): Ground truth bboxes of multiple
-                images. Default: None.
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes``, ``masks``,
+                and ``labels`` attributes.
+            batch_img_metas (list[dict]): Meta information of multiple images.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
         num_levels = self.num_levels
-        num_imgs = len(gt_labels)
+        num_imgs = len(batch_img_metas)
         featmap_sizes = [featmap.size()[-2:] for featmap in mlvl_mask_preds_x]
 
-        pos_mask_targets, labels, \
-            xy_pos_indexes = \
-            multi_apply(self._get_targets_single,
-                        gt_bboxes,
-                        gt_labels,
-                        gt_masks,
-                        featmap_sizes=featmap_sizes)
+        pos_mask_targets, labels, xy_pos_indexes = multi_apply(
+            self._get_targets_single,
+            batch_gt_instances,
+            featmap_sizes=featmap_sizes)
 
         # change from the outside list meaning multi images
         # to the outside list meaning multi levels
@@ -816,19 +848,14 @@ class DecoupledSOLOHead(SOLOHead):
         return dict(loss_mask=loss_mask, loss_cls=loss_cls)
 
     def _get_targets_single(self,
-                            gt_bboxes,
-                            gt_labels,
-                            gt_masks,
-                            featmap_sizes=None):
+                            gt_instances: InstanceData,
+                            featmap_sizes: Optional[list] = None) -> tuple:
         """Compute targets for predictions of single image.
 
         Args:
-            gt_bboxes (Tensor): Ground truth bbox of each instance,
-                shape (num_gts, 4).
-            gt_labels (Tensor): Ground truth label of each instance,
-                shape (num_gts,).
-            gt_masks (Tensor): Ground truth mask of each instance,
-                shape (num_gts, h, w).
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It should includes ``bboxes``, ``labels``,
+                and ``masks`` attributes.
             featmap_sizes (list[:obj:`torch.size`]): Size of each
                 feature map from feature pyramid, each element
                 means (feat_h, feat_w). Default: None.
@@ -848,9 +875,8 @@ class DecoupledSOLOHead(SOLOHead):
                   corresponding level, has shape (num_pos, 2), last
                   dimension 2 present (index_x, index_y).
         """
-        mlvl_pos_mask_targets, mlvl_labels, \
-            mlvl_pos_masks = \
-            super()._get_targets_single(gt_bboxes, gt_labels, gt_masks,
+        mlvl_pos_mask_targets, mlvl_labels, mlvl_pos_masks = \
+            super()._get_targets_single(gt_instances,
                                         featmap_sizes=featmap_sizes)
 
         mlvl_xy_pos_indexes = [(item - self.num_classes).nonzero()
@@ -858,13 +884,10 @@ class DecoupledSOLOHead(SOLOHead):
 
         return mlvl_pos_mask_targets, mlvl_labels, mlvl_xy_pos_indexes
 
-    def get_results(self,
-                    mlvl_mask_preds_x,
-                    mlvl_mask_preds_y,
-                    mlvl_cls_scores,
-                    img_metas,
-                    rescale=None,
-                    **kwargs):
+    def get_results(self, mlvl_mask_preds_x: List[Tensor],
+                    mlvl_mask_preds_y: List[Tensor],
+                    mlvl_cls_scores: List[Tensor], batch_img_metas: List[dict],
+                    **kwargs) -> InstanceList:
         """Get multi-image mask results.
 
         Args:
@@ -877,7 +900,7 @@ class DecoupledSOLOHead(SOLOHead):
             mlvl_cls_scores (list[Tensor]): Multi-level scores. Each element
                 in the list has shape
                 (batch_size, num_classes ,num_grids ,num_grids).
-            img_metas (list[dict]): Meta information of all images.
+            batch_img_metas (list[dict]): Meta information of all images.
 
         Returns:
             list[:obj:`InstanceData`]: Processed results of multiple
@@ -897,7 +920,7 @@ class DecoupledSOLOHead(SOLOHead):
         num_levels = len(mlvl_cls_scores)
 
         results_list = []
-        for img_id in range(len(img_metas)):
+        for img_id in range(len(batch_img_metas)):
             cls_pred_list = [
                 mlvl_cls_scores[i][img_id].view(
                     -1, self.cls_out_channels).detach()
@@ -913,18 +936,22 @@ class DecoupledSOLOHead(SOLOHead):
             cls_pred_list = torch.cat(cls_pred_list, dim=0)
             mask_pred_list_x = torch.cat(mask_pred_list_x, dim=0)
             mask_pred_list_y = torch.cat(mask_pred_list_y, dim=0)
+            img_meta = batch_img_metas[img_id]
 
             results = self._get_results_single(
                 cls_pred_list,
                 mask_pred_list_x,
                 mask_pred_list_y,
-                img_meta=img_metas[img_id],
-                cfg=self.test_cfg)
+                img_meta=img_meta)
             results_list.append(results)
         return results_list
 
-    def _get_results_single(self, cls_scores, mask_preds_x, mask_preds_y,
-                            img_meta, cfg):
+    def _get_results_single(self,
+                            cls_scores: Tensor,
+                            mask_preds_x: Tensor,
+                            mask_preds_y: Tensor,
+                            img_meta: dict,
+                            cfg: OptConfigType = None) -> InstanceData:
         """Get processed mask related results of single image.
 
         Args:
@@ -950,20 +977,20 @@ class DecoupledSOLOHead(SOLOHead):
                   shape (num_instances, h, w).
         """
 
-        def empty_results(results, cls_scores):
+        def empty_results(cls_scores, ori_shape):
             """Generate a empty results."""
+            results = InstanceData()
             results.scores = cls_scores.new_ones(0)
-            results.masks = cls_scores.new_zeros(0, *results.ori_shape[:2])
+            results.masks = cls_scores.new_zeros(0, *ori_shape)
             results.labels = cls_scores.new_ones(0)
+            results.bboxes = cls_scores.new_zeros(0, 4)
             return results
 
         cfg = self.test_cfg if cfg is None else cfg
 
-        results = InstanceData(img_meta)
-        img_shape = results.img_shape
-        ori_shape = results.ori_shape
-        h, w, _ = img_shape
         featmap_size = mask_preds_x.size()[-2:]
+
+        h, w = img_meta['img_shape'][:2]
         upsampled_size = (featmap_size[0] * 4, featmap_size[1] * 4)
 
         score_mask = (cls_scores > cfg.score_thr)
@@ -1009,7 +1036,7 @@ class DecoupledSOLOHead(SOLOHead):
         sum_masks = masks.sum((1, 2)).float()
         keep = sum_masks > strides
         if keep.sum() == 0:
-            return empty_results(results, cls_scores)
+            return empty_results(cls_scores, img_meta['ori_shape'][:2])
 
         masks = masks[keep]
         mask_preds = mask_preds[keep]
@@ -1036,9 +1063,11 @@ class DecoupledSOLOHead(SOLOHead):
             mask_preds.unsqueeze(0), size=upsampled_size,
             mode='bilinear')[:, :, :h, :w]
         mask_preds = F.interpolate(
-            mask_preds, size=ori_shape[:2], mode='bilinear').squeeze(0)
+            mask_preds, size=img_meta['ori_shape'][:2],
+            mode='bilinear').squeeze(0)
         masks = mask_preds > cfg.mask_thr
 
+        results = InstanceData()
         results.masks = masks
         results.labels = labels
         results.scores = scores
@@ -1059,8 +1088,8 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
 
     def __init__(self,
                  *args,
-                 dcn_cfg=None,
-                 init_cfg=[
+                 dcn_cfg: OptConfigType = None,
+                 init_cfg: MultiConfig = [
                      dict(type='Normal', layer='Conv2d', std=0.01),
                      dict(
                          type='Normal',
@@ -1078,13 +1107,12 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
                          bias_prob=0.01,
                          override=dict(name='conv_cls'))
                  ],
-                 **kwargs):
+                 **kwargs) -> None:
         assert dcn_cfg is None or isinstance(dcn_cfg, dict)
         self.dcn_cfg = dcn_cfg
-        super(DecoupledSOLOLightHead, self).__init__(
-            *args, init_cfg=init_cfg, **kwargs)
+        super().__init__(*args, init_cfg=init_cfg, **kwargs)
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         self.mask_convs = nn.ModuleList()
         self.cls_convs = nn.ModuleList()
 
@@ -1127,9 +1155,28 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
         self.conv_cls = nn.Conv2d(
             self.feat_channels, self.cls_out_channels, 3, padding=1)
 
-    def forward(self, feats):
-        assert len(feats) == self.num_levels
-        feats = self.resize_feats(feats)
+    def forward(self, x: Tuple[Tensor]) -> Tuple:
+        """Forward features from the upstream network.
+
+        Args:
+            x (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+
+        Returns:
+            tuple: A tuple of classification scores and mask prediction.
+
+                - mlvl_mask_preds_x (list[Tensor]): Multi-level mask prediction
+                  from x branch. Each element in the list has shape
+                  (batch_size, num_grids ,h ,w).
+                - mlvl_mask_preds_y (list[Tensor]): Multi-level mask prediction
+                  from y branch. Each element in the list has shape
+                  (batch_size, num_grids ,h ,w).
+                - mlvl_cls_preds (list[Tensor]): Multi-level scores.
+                  Each element in the list has shape
+                  (batch_size, num_classes, num_grids ,num_grids).
+        """
+        assert len(x) == self.num_levels
+        feats = self.resize_feats(x)
         mask_preds_x = []
         mask_preds_y = []
         cls_preds = []
