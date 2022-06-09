@@ -1,6 +1,4 @@
-_base_ = [
-    './solo_r50_fpn_1x_coco.py',
-]
+_base_ = './solo_r50_fpn_1x_coco.py'
 # model settings
 model = dict(
     mask_head=dict(
@@ -24,5 +22,3 @@ model = dict(
             alpha=0.25,
             loss_weight=1.0),
         norm_cfg=dict(type='GN', num_groups=32, requires_grad=True)))
-
-optimizer = dict(type='SGD', lr=0.01)

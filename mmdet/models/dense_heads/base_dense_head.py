@@ -73,9 +73,8 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 Defaults to True.
 
         Returns:
-            list[:obj:`InstanceData`]: Instance segmentation
-            results of each image after the post process.
-            Each item usually contains following keys.
+            list[:obj:`InstanceData`]: Object detection results of each image
+            after the post process. Each item usually contains following keys.
 
                 - scores (Tensor): Classification scores, has a shape
                   (num_instance, )
@@ -326,14 +325,14 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         return results
 
     def forward_train(self,
-                      x: Tensor,
+                      x: Tuple[Tensor],
                       batch_data_samples: SampleList,
                       proposal_cfg: Optional[ConfigDict] = None,
                       **kwargs) \
             -> Union[Tuple[dict, InstanceList], dict]:
         """
         Args:
-            x (list[Tensor]): Features from FPN.
+            x (tuple[Tensor]): Features from FPN.
             batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
                 the meta information of each image and corresponding
                 annotations.
