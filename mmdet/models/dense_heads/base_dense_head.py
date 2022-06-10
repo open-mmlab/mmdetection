@@ -2,14 +2,15 @@
 import copy
 from abc import ABCMeta, abstractmethod
 from inspect import signature
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple
 
 import torch
 from mmcv.cnn.utils.weight_init import constant_init
 from mmcv.ops import batched_nms
-from mmcv.runner import BaseModule, force_fp32
+from mmcv.runner import force_fp32
 from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
+from mmengine.model import BaseModule
 from torch import Tensor
 
 from mmdet.core.post_processing.merge_augs import merge_aug_results
@@ -18,12 +19,47 @@ from mmdet.core.utils import (InstanceList, OptMultiConfig, SampleList,
 
 
 class BaseDenseHead(BaseModule, metaclass=ABCMeta):
-    """Base class for DenseHeads."""
+    """Base class for DenseHeads.
+
+    1. The ``init_weights`` method is used to initialize densehead's
+    model parameters. After detector initialization, ``init_weights``
+    is triggered when ``detector.init_weights()`` is called externally.
+
+    2. The ``loss`` method is used to calculate the loss of densehead,
+    which includes two steps: (1) the densehead model performs forward
+    propagation to obtain the feature maps (2) The ``loss_by_feat`` method
+    is called based on the feature maps to calculate the loss.
+
+    .. code:: text
+
+    loss(): forward() -> loss_by_feat()
+
+    3. The ``predict`` method is used to predict detection results,
+    which includes two steps: (1) the densehead model performs forward
+    propagation to obtain the feature maps (2) The ``predict_by_feat`` method
+    is called based on the feature maps to predict detection results including
+    post-processing.
+
+    .. code:: text
+
+    predict(): forward() -> predict_by_feat()
+
+    4. The ``loss_and_predict`` method is used to return loss and detection
+    results at the same time. It will call densehead's ``forward``,
+    ``loss_by_feat`` and ``predict_by_feat`` methods in order.  If one-stage is
+    used as RPN, the densehead needs to return both losses and predictions.
+    This predictions is used as the proposal of roihead.
+
+    .. code:: text
+
+    loss_and_predict(): forward() -> loss_by_feat() -> predict_by_feat()
+    """
 
     def __init__(self, init_cfg: OptMultiConfig = None) -> None:
         super().__init__(init_cfg=init_cfg)
 
     def init_weights(self) -> None:
+        """Initialize the weights."""
         super().init_weights()
         # avoid init_cfg overwrite the initialization of `conv_offset`
         for m in self.modules():
@@ -31,22 +67,128 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             if hasattr(m, 'conv_offset'):
                 constant_init(m.conv_offset, 0)
 
+    def loss(self, x: Tuple[Tensor], batch_data_samples: SampleList,
+             **kwargs) -> dict:
+        """Perform forward propagation and loss calculation of the detection
+        head on the features of the upstream network.
+
+        Args:
+            x (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+            batch_data_samples (List[:obj:`DetDataSample`]): The Data
+                Samples. It usually includes information such as
+                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+
+        Returns:
+            dict: A dictionary of loss components.
+        """
+        outs = self(x)
+
+        batch_gt_instances = []
+        batch_gt_instances_ignore = []
+        batch_img_metas = []
+        for data_sample in batch_data_samples:
+            batch_img_metas.append(data_sample.metainfo)
+            batch_gt_instances.append(data_sample.gt_instances)
+            batch_gt_instances_ignore.append(
+                data_sample.get('ignored_instances', None))
+
+        loss_inputs = outs + (batch_gt_instances, batch_img_metas,
+                              batch_gt_instances_ignore)
+        losses = self.loss_by_feat(*loss_inputs)
+        return losses
+
     @abstractmethod
-    def loss(self, **kwargs):
-        """Compute losses of the head."""
+    def loss_by_feat(self, **kwargs) -> dict:
+        """Calculate the loss based on the features extracted by the detection
+        head."""
         pass
 
+    def loss_and_predict(self,
+                         x: Tuple[Tensor],
+                         batch_data_samples: SampleList,
+                         proposal_cfg: Optional[ConfigDict] = None) \
+            -> Tuple[dict, InstanceList]:
+        """Perform forward propagation of the head, then calculate loss and
+        predictions from the features and data samples.
+
+        Args:
+            x (tuple[Tensor]): Features from FPN.
+            batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
+                the meta information of each image and corresponding
+                annotations.
+            proposal_cfg (ConfigDict, optional): Test / postprocessing
+                configuration, if None, test_cfg would be used.
+                Defaults to None.
+
+        Returns:
+            tuple: the return value is a tuple contains:
+
+                - losses: (dict[str, Tensor]): A dictionary of loss components.
+                - predictions (list[:obj:`InstanceData`]): Detection
+                  results of each image after the post process.
+        """
+        batch_gt_instances = []
+        batch_gt_instances_ignore = []
+        batch_img_metas = []
+        for data_sample in batch_data_samples:
+            batch_img_metas.append(data_sample.metainfo)
+            batch_gt_instances.append(data_sample.gt_instances)
+            batch_gt_instances_ignore.append(
+                data_sample.get('ignored_instances', None))
+
+        outs = self(x)
+
+        loss_inputs = outs + (batch_gt_instances, batch_img_metas,
+                              batch_gt_instances_ignore)
+        losses = self.loss_by_feat(*loss_inputs)
+
+        predictions = self.predict_by_feat(
+            *outs, batch_img_metas=batch_img_metas, cfg=proposal_cfg)
+        return losses, predictions
+
+    def predict(self,
+                x: Tuple[Tensor],
+                batch_data_samples: SampleList,
+                rescale: bool = False) -> InstanceList:
+        """Perform forward propagation of the detection head and predict
+        detection results on the features of the upstream network.
+
+        Args:
+            x (tuple[Tensor]): Multi-level features from the
+                upstream network, each is a 4D-tensor.
+            batch_data_samples (List[:obj:`DetDataSample`]): The Data
+                Samples. It usually includes information such as
+                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to False.
+
+        Returns:
+            list[obj:`InstanceData`]: Detection results of each image
+            after the post process.
+        """
+        batch_img_metas = [
+            data_samples.metainfo for data_samples in batch_data_samples
+        ]
+
+        outs = self(x)
+
+        predictions = self.predict_by_feat(
+            *outs, batch_img_metas=batch_img_metas, rescale=rescale)
+        return predictions
+
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def get_results(self,
-                    cls_scores: List[Tensor],
-                    bbox_preds: List[Tensor],
-                    score_factors: Optional[List[Tensor]] = None,
-                    batch_img_metas: Optional[List[dict]] = None,
-                    cfg: Optional[ConfigDict] = None,
-                    rescale: bool = False,
-                    with_nms: bool = True,
-                    **kwargs) -> InstanceList:
-        """Transform network outputs of a batch into bbox results.
+    def predict_by_feat(self,
+                        cls_scores: List[Tensor],
+                        bbox_preds: List[Tensor],
+                        score_factors: Optional[List[Tensor]] = None,
+                        batch_img_metas: Optional[List[dict]] = None,
+                        cfg: Optional[ConfigDict] = None,
+                        rescale: bool = False,
+                        with_nms: bool = True,
+                        **kwargs) -> InstanceList:
+        """Transform a batch of output features extracted from the head into
+        bbox results.
 
         Note: When score_factors is not None, the cls_scores are
         usually multiplied by it then obtain the real score used in NMS,
@@ -112,7 +254,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             else:
                 score_factor_list = [None for _ in range(num_levels)]
 
-            results = self._get_results_single(
+            results = self._predict_by_feat_single(
                 cls_score_list=cls_score_list,
                 bbox_pred_list=bbox_pred_list,
                 score_factor_list=score_factor_list,
@@ -125,17 +267,18 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             result_list.append(results)
         return result_list
 
-    def _get_results_single(self,
-                            cls_score_list: List[Tensor],
-                            bbox_pred_list: List[Tensor],
-                            score_factor_list: List[Tensor],
-                            mlvl_priors: List[Tensor],
-                            img_meta: dict,
-                            cfg: ConfigDict,
-                            rescale: bool = False,
-                            with_nms: bool = True,
-                            **kwargs) -> InstanceData:
-        """Transform outputs of a single image into bbox predictions.
+    def _predict_by_feat_single(self,
+                                cls_score_list: List[Tensor],
+                                bbox_pred_list: List[Tensor],
+                                score_factor_list: List[Tensor],
+                                mlvl_priors: List[Tensor],
+                                img_meta: dict,
+                                cfg: ConfigDict,
+                                rescale: bool = False,
+                                with_nms: bool = True,
+                                **kwargs) -> InstanceData:
+        """Transform a single image's features extracted from the head into
+        bbox results.
 
         Args:
             cls_score_list (list[Tensor]): Box scores from all scale
@@ -323,102 +466,6 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             results = results[:cfg.max_per_img]
 
         return results
-
-    def forward_train(self,
-                      x: Tuple[Tensor],
-                      batch_data_samples: SampleList,
-                      proposal_cfg: Optional[ConfigDict] = None,
-                      **kwargs) \
-            -> Union[Tuple[dict, InstanceList], dict]:
-        """
-        Args:
-            x (tuple[Tensor]): Features from FPN.
-            batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
-                the meta information of each image and corresponding
-                annotations.
-            proposal_cfg (ConfigDict, optional): Test / postprocessing
-                configuration, if None, test_cfg would be used.
-                Defaults to None.
-
-        Returns:
-            tuple or Tensor: When `proposal_cfg` is None, the detector is a \
-            normal one-stage detector, The return value is the losses.
-
-                - losses: (dict[str, Tensor]): A dictionary of loss components.
-
-            When the `proposal_cfg` is not None, the head is used as a
-            `rpn_head`, the return value is a tuple contains:
-
-                - losses: (dict[str, Tensor]): A dictionary of loss components.
-                - results_list (list[:obj:`InstanceData`]): Detection
-                  results of each image after the post process.
-                  Each item usually contains following keys.
-
-                    - scores (Tensor): Classification scores, has a shape
-                      (num_instance, )
-                    - labels (Tensor): Labels of bboxes, has a shape
-                      (num_instances, ).
-                    - bboxes (Tensor): Has a shape (num_instances, 4),
-                      the last dimension 4 arrange as (x1, y1, x2, y2).
-        """
-        outs = self(x)
-
-        batch_gt_instances = []
-        batch_gt_instances_ignore = []
-        batch_img_metas = []
-        for data_sample in batch_data_samples:
-            batch_img_metas.append(data_sample.metainfo)
-            batch_gt_instances.append(data_sample.gt_instances)
-            if 'ignored_instances' in data_sample:
-                batch_gt_instances_ignore.append(data_sample.ignored_instances)
-            else:
-                batch_gt_instances_ignore.append(None)
-
-        loss_inputs = outs + (batch_gt_instances, batch_img_metas,
-                              batch_gt_instances_ignore)
-        losses = self.loss(*loss_inputs)
-
-        if proposal_cfg is None:
-            return losses
-        else:
-            # TODO: Since roi_head.get_results might need batch_data_sample,
-            #  may need to pass batch_data_sample directly into get_results.
-            batch_img_metas = [
-                data_sample.metainfo for data_sample in batch_data_samples
-            ]
-            results_list = self.get_results(
-                *outs, batch_img_metas=batch_img_metas, cfg=proposal_cfg)
-            return losses, results_list
-
-    def simple_test(self,
-                    x: Tuple[Tensor],
-                    batch_img_metas: List[dict],
-                    rescale: bool = False) -> InstanceList:
-        """Test function without test-time augmentation.
-
-        Args:
-            x (tuple[Tensor]): Multi-level features from the
-                upstream network, each is a 4D-tensor.
-            batch_img_metas (list[dict]): List of image information.
-            rescale (bool, optional): Whether to rescale the results.
-                Defaults to False.
-
-        Returns:
-            list[obj:`InstanceData`]: Detection results of each image
-            after the post process.
-            Each item usually contains following keys.
-
-                - scores (Tensor): Classification scores, has a shape
-                  (num_instance, )
-                - labels (Tensor): Labels of bboxes, has a shape
-                  (num_instances, ).
-                - bboxes (Tensor): Has a shape (num_instances, 4),
-                  the last dimension 4 arrange as (x1, y1, x2, y2).
-        """
-        outs = self.forward(x)
-        results_list = self.get_results(
-            *outs, batch_img_metas=batch_img_metas, rescale=rescale)
-        return results_list
 
     def aug_test(self,
                  aug_batch_feats,

@@ -8,8 +8,7 @@ from parameterized import parameterized
 
 from mmdet.models.roi_heads import StandardRoIHead  # noqa
 from mmdet.registry import MODELS
-from tests.test_models.test_detectors import demo_mm_inputs
-from tests.test_models.test_detectors.utils import get_detector_cfg
+from mmdet.testing import demo_mm_inputs, get_detector_cfg
 
 
 def _fake_roi_head(cfg_file):

@@ -1,7 +1,6 @@
 default_scope = 'mmdet'
 
 default_hooks = dict(
-    optimizer=dict(type='OptimizerHook', grad_clip=None),
     timer=dict(type='IterTimerHook'),
     logger=dict(type='LoggerHook', interval=50),
     param_scheduler=dict(type='ParamSchedulerHook'),

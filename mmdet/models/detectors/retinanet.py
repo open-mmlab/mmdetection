@@ -14,7 +14,7 @@ class RetinaNet(SingleStageDetector):
                  bbox_head: ConfigType,
                  train_cfg: OptConfigType = None,
                  test_cfg: OptConfigType = None,
-                 preprocess_cfg: OptConfigType = None,
+                 data_preprocessor: OptConfigType = None,
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
             backbone=backbone,
@@ -22,5 +22,5 @@ class RetinaNet(SingleStageDetector):
             bbox_head=bbox_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
-            init_cfg=init_cfg,
-            preprocess_cfg=preprocess_cfg)
+            data_preprocessor=data_preprocessor,
+            init_cfg=init_cfg)

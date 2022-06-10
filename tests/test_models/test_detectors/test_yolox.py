@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from mmdet.models import YOLOX
 from mmdet.registry import MODELS
-from .utils import demo_mm_inputs, get_detector_cfg
+from mmdet.testing import demo_mm_inputs, get_detector_cfg
 
 
 class TestYOLOX(TestCase):
