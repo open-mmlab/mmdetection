@@ -190,7 +190,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         valid_flag_list = []
         for img_id, img_meta in enumerate(batch_img_metas):
             multi_level_flags = self.prior_generator.valid_flags(
-                featmap_sizes, img_meta['img_shape'], device)
+                featmap_sizes, img_meta['pad_shape'], device)
             valid_flag_list.append(multi_level_flags)
 
         return anchor_list, valid_flag_list
@@ -401,11 +401,12 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         return res + tuple(rest_results)
 
-    def loss_single(self, cls_score: Tensor, bbox_pred: Tensor,
-                    anchors: Tensor, labels: Tensor, label_weights: Tensor,
-                    bbox_targets: Tensor, bbox_weights: Tensor,
-                    avg_factor: int) -> tuple:
-        """Compute loss of a single scale level.
+    def loss_by_feat_single(self, cls_score: Tensor, bbox_pred: Tensor,
+                            anchors: Tensor, labels: Tensor,
+                            label_weights: Tensor, bbox_targets: Tensor,
+                            bbox_weights: Tensor, avg_factor: int) -> tuple:
+        """Calculate the loss of a single scale level based on the features
+        extracted by the detection head.
 
         Args:
             cls_score (Tensor): Box scores for each scale level
@@ -449,13 +450,15 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         return loss_cls, loss_bbox
 
     @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def loss(self,
-             cls_scores: List[Tensor],
-             bbox_preds: List[Tensor],
-             batch_gt_instances: InstanceList,
-             batch_img_metas: List[dict],
-             batch_gt_instances_ignore: OptInstanceList = None) -> dict:
-        """Compute losses of the head.
+    def loss_by_feat(
+            self,
+            cls_scores: List[Tensor],
+            bbox_preds: List[Tensor],
+            batch_gt_instances: InstanceList,
+            batch_img_metas: List[dict],
+            batch_gt_instances_ignore: OptInstanceList = None) -> dict:
+        """Calculate the loss based on the features extracted by the detection
+        head.
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level
@@ -501,7 +504,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                                            num_level_anchors)
 
         losses_cls, losses_bbox = multi_apply(
-            self.loss_single,
+            self.loss_by_feat_single,
             cls_scores,
             bbox_preds,
             all_anchor_list,

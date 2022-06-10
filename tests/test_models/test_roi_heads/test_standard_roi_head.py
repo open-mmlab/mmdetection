@@ -9,7 +9,7 @@ from parameterized import parameterized
 
 from mmdet.models.roi_heads import StandardRoIHead  # noqa
 from mmdet.registry import MODELS
-from tests.test_models.test_detectors import demo_mm_inputs
+from mmdet.testing import demo_mm_inputs
 
 
 def _fake_roi_head(with_shared_head=False):

@@ -5,9 +5,9 @@ from typing import List, Tuple
 import torch
 import torch.nn.functional as F
 from mmengine.dist import barrier, broadcast, get_dist_info
+from mmengine.model import stack_batch
 
-from mmdet.core.utils import (ConfigType, OptConfigType, OptMultiConfig,
-                              stack_batch)
+from mmdet.core.utils import ConfigType, OptConfigType, OptMultiConfig
 from mmdet.registry import MODELS
 from ...utils import log_img_scale
 from .single_stage import SingleStageDetector

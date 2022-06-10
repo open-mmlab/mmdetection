@@ -7,7 +7,7 @@ from parameterized import parameterized
 
 from mmdet import *  # noqa
 from mmdet.core import DetDataSample
-from .utils import demo_mm_inputs, get_detector_cfg
+from mmdet.testing import demo_mm_inputs, get_detector_cfg
 
 
 class TestTwoStageBBox(TestCase):

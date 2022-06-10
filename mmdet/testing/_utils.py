@@ -14,7 +14,7 @@ def _get_config_directory():
     """Find the predefined detector config directory."""
     try:
         # Assume we are running in the source mmdetection repo
-        repo_dpath = dirname(dirname(dirname(dirname(__file__))))
+        repo_dpath = dirname(dirname(dirname(__file__)))
     except NameError:
         # For IPython development when this __file__ is not defined
         import mmdet
@@ -27,7 +27,7 @@ def _get_config_directory():
 
 def _get_config_module(fname):
     """Load a configuration as a python module."""
-    from mmcv import Config
+    from mmengine import Config
     config_dpath = _get_config_directory()
     config_fpath = join(config_dpath, fname)
     config_mod = Config.fromfile(config_fpath)

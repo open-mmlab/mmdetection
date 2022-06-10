@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import os
+import os.path as osp
 import shutil
 import time
 from unittest import TestCase
@@ -31,7 +31,10 @@ class TestVisualizationHook(TestCase):
         DetLocalVisualizer.get_instance('visualizer')
 
         data_sample = DetDataSample()
-        data_sample.set_metainfo({'img_path': 'tests/data/color.jpg'})
+        data_sample.set_metainfo({
+            'img_path':
+            osp.join(osp.dirname(__file__), '../../data/color.jpg')
+        })
         self.data_batch = [{'data_sample': data_sample}] * 2
 
         pred_instances = InstanceData()
@@ -62,9 +65,9 @@ class TestVisualizationHook(TestCase):
         runner.timestamp = '1'
         hook = DetVisualizationHook(draw=False, test_out_dir=test_out_dir)
         hook.after_test_iter(runner, 1, self.data_batch, self.outputs)
-        self.assertTrue(not os.path.exists(f'{timestamp}/1/{test_out_dir}'))
+        self.assertTrue(not osp.exists(f'{timestamp}/1/{test_out_dir}'))
 
         hook = DetVisualizationHook(draw=True, test_out_dir=test_out_dir)
         hook.after_test_iter(runner, 1, self.data_batch, self.outputs)
-        self.assertTrue(os.path.exists(f'{timestamp}/1/{test_out_dir}'))
-        shutil.rmtree(f'{timestamp}/1/{test_out_dir}')
+        self.assertTrue(osp.exists(f'{timestamp}/1/{test_out_dir}'))
+        shutil.rmtree(f'{timestamp}')

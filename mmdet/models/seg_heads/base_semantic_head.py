@@ -3,8 +3,8 @@ from abc import ABCMeta, abstractmethod
 
 import torch.nn.functional as F
 from mmcv.runner import BaseModule, force_fp32
+from mmengine.model import stack_batch
 
-from ...core.utils import stack_batch
 from ..builder import build_loss
 from ..utils import interpolate_as
 

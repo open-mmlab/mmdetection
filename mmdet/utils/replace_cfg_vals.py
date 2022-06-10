@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import re
 
-from mmcv.utils import Config
+from mmengine.config import Config
 
 
 def replace_cfg_vals(ori_cfg):
