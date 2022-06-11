@@ -284,8 +284,9 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         x = self.extract_feat(img)
         proposals = self.rpn_head.onnx_export(x, img_metas)
 
-        if hasattr(self.roi_head, 'onnx_export') \
-          and hasattr(self.semantic_head, 'onnx_export'):
+        roi_head_exportable = hasattr(self.roi_head, 'onnx_export')
+        semantic_head_exportable = hasattr(self.semantic_head, 'onnx_export')
+        if roi_head_exportable and semantic_head_exportable:
             det_bboxes, det_labels, mask_results \
               = self.roi_head.onnx_export(x, proposals, img_metas)
             seg_preds = self.semantic_head.onnx_export(x, img_metas)
