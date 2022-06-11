@@ -748,9 +748,10 @@ class SwinTransformer(BaseModule):
             h, w = self.absolute_pos_embed.shape[1:3]
             if hw_shape[0] != h or hw_shape[1] != w:
                 absolute_pos_embed = F.interpolate(
-                    self.absolute_pos_embed, size=hw_shape,
-                    mode='bicubic', align_corners=False
-                ).flatten(2).transpose(1, 2)
+                    self.absolute_pos_embed,
+                    size=hw_shape,
+                    mode='bicubic',
+                    align_corners=False).flatten(2).transpose(1, 2)
             else:
                 absolute_pos_embed = self.absolute_pos_embed\
                     .flatten(2).transpose(1, 2)
