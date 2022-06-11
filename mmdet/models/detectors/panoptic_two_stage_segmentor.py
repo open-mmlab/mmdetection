@@ -286,9 +286,10 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
 
         if hasattr(self.roi_head, 'onnx_export') \
           and hasattr(self.semantic_head, 'onnx_export'):
-            detections = self.roi_head.onnx_export(x, proposals, img_metas)
-            sem_seg = self.semantic_head.onnx_export(x, img_metas)
-            return *detections, sem_seg
+            det_bboxes, det_labels, mask_results \
+              = self.roi_head.onnx_export(x, proposals, img_metas)
+            seg_preds = self.semantic_head.onnx_export(x, img_metas)
+            return det_bboxes, det_labels, mask_results, seg_preds
         else:
             raise NotImplementedError(
                 f'{self.__class__.__name__} can not '
