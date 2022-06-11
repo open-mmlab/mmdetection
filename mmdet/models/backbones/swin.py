@@ -753,7 +753,7 @@ class SwinTransformer(BaseModule):
                 ).flatten(2).transpose(1, 2)
             else:
                 absolute_pos_embed = self.absolute_pos_embed\
-                        .flatten(2).transpose(1, 2)
+                    .flatten(2).transpose(1, 2)
             x = x + absolute_pos_embed
         x = self.drop_after_pos(x)
 
