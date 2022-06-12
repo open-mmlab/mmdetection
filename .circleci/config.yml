@@ -7,12 +7,6 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install dependencies
-          command: |
-            sudo apt-add-repository ppa:brightbox/ruby-ng -y
-            sudo apt-get update
-            sudo apt-get install -y ruby2.7
-      - run:
           name: Install pre-commit hook
           command: |
             pip install pre-commit
@@ -61,7 +55,7 @@ jobs:
           condition:
             equal: [ "3.9.0", << parameters.python >> ]
           steps:
-            - run: pip install protobuf && sudo apt-get update && sudo apt-get -y install libprotobuf-dev protobuf-compiler cmake
+            - run: pip install "protobuf <= 3.20.1" && sudo apt-get update && sudo apt-get -y install libprotobuf-dev protobuf-compiler cmake
       - run:
           name: Install mmdet dependencies
           command: |

@@ -3,7 +3,8 @@ import pytest
 import torch
 from torch.nn.modules.batchnorm import _BatchNorm
 
-from mmdet.models.necks import (FPN, YOLOXPAFPN, ChannelMapper, CTResNetNeck,
+from mmdet.models.necks import (FPG, FPN, FPN_CARAFE, NASFCOS_FPN, NASFPN,
+                                YOLOXPAFPN, ChannelMapper, CTResNetNeck,
                                 DilatedEncoder, DyHead, SSDNeck, YOLOV3Neck)
 
 
@@ -13,6 +14,27 @@ def test_fpn():
     in_channels = [8, 16, 32, 64]
     feat_sizes = [s // 2**i for i in range(4)]  # [64, 32, 16, 8]
     out_channels = 8
+
+    # end_level=-1 is equal to end_level=3
+    FPN(in_channels=in_channels,
+        out_channels=out_channels,
+        start_level=0,
+        end_level=-1,
+        num_outs=5)
+    FPN(in_channels=in_channels,
+        out_channels=out_channels,
+        start_level=0,
+        end_level=3,
+        num_outs=5)
+
+    # `num_outs` is not equal to end_level - start_level + 1
+    with pytest.raises(AssertionError):
+        FPN(in_channels=in_channels,
+            out_channels=out_channels,
+            start_level=1,
+            end_level=2,
+            num_outs=3)
+
     # `num_outs` is not equal to len(in_channels) - start_level
     with pytest.raises(AssertionError):
         FPN(in_channels=in_channels,
@@ -212,7 +234,8 @@ def test_dilated_encoder():
     in_channels = 16
     out_channels = 32
     out_shape = 34
-    dilated_encoder = DilatedEncoder(in_channels, out_channels, 16, 2)
+    dilated_encoder = DilatedEncoder(in_channels, out_channels, 16, 2,
+                                     [2, 4, 6, 8])
     feat = [torch.rand(1, in_channels, 34, 34)]
     out_feat = dilated_encoder(feat)[0]
     assert out_feat.shape == (1, out_channels, out_shape, out_shape)
@@ -427,3 +450,224 @@ def test_dyhead():
     # input feat must be tuple or list
     with pytest.raises(AssertionError):
         neck(feat)
+
+
+def test_fpg():
+    # end_level=-1 is equal to end_level=3
+    norm_cfg = dict(type='BN', requires_grad=True)
+    FPG(in_channels=[8, 16, 32, 64],
+        out_channels=8,
+        inter_channels=8,
+        num_outs=5,
+        add_extra_convs=True,
+        start_level=1,
+        end_level=-1,
+        stack_times=9,
+        paths=['bu'] * 9,
+        same_down_trans=None,
+        same_up_trans=dict(
+            type='conv',
+            kernel_size=3,
+            stride=2,
+            padding=1,
+            norm_cfg=norm_cfg,
+            inplace=False,
+            order=('act', 'conv', 'norm')),
+        across_lateral_trans=dict(
+            type='conv',
+            kernel_size=1,
+            norm_cfg=norm_cfg,
+            inplace=False,
+            order=('act', 'conv', 'norm')),
+        across_down_trans=dict(
+            type='interpolation_conv',
+            mode='nearest',
+            kernel_size=3,
+            norm_cfg=norm_cfg,
+            order=('act', 'conv', 'norm'),
+            inplace=False),
+        across_up_trans=None,
+        across_skip_trans=dict(
+            type='conv',
+            kernel_size=1,
+            norm_cfg=norm_cfg,
+            inplace=False,
+            order=('act', 'conv', 'norm')),
+        output_trans=dict(
+            type='last_conv',
+            kernel_size=3,
+            order=('act', 'conv', 'norm'),
+            inplace=False),
+        norm_cfg=norm_cfg,
+        skip_inds=[(0, 1, 2, 3), (0, 1, 2), (0, 1), (0, ), ()])
+    FPG(in_channels=[8, 16, 32, 64],
+        out_channels=8,
+        inter_channels=8,
+        num_outs=5,
+        add_extra_convs=True,
+        start_level=1,
+        end_level=3,
+        stack_times=9,
+        paths=['bu'] * 9,
+        same_down_trans=None,
+        same_up_trans=dict(
+            type='conv',
+            kernel_size=3,
+            stride=2,
+            padding=1,
+            norm_cfg=norm_cfg,
+            inplace=False,
+            order=('act', 'conv', 'norm')),
+        across_lateral_trans=dict(
+            type='conv',
+            kernel_size=1,
+            norm_cfg=norm_cfg,
+            inplace=False,
+            order=('act', 'conv', 'norm')),
+        across_down_trans=dict(
+            type='interpolation_conv',
+            mode='nearest',
+            kernel_size=3,
+            norm_cfg=norm_cfg,
+            order=('act', 'conv', 'norm'),
+            inplace=False),
+        across_up_trans=None,
+        across_skip_trans=dict(
+            type='conv',
+            kernel_size=1,
+            norm_cfg=norm_cfg,
+            inplace=False,
+            order=('act', 'conv', 'norm')),
+        output_trans=dict(
+            type='last_conv',
+            kernel_size=3,
+            order=('act', 'conv', 'norm'),
+            inplace=False),
+        norm_cfg=norm_cfg,
+        skip_inds=[(0, 1, 2, 3), (0, 1, 2), (0, 1), (0, ), ()])
+
+    # `end_level` is larger than len(in_channels) - 1
+    with pytest.raises(AssertionError):
+        FPG(in_channels=[8, 16, 32, 64],
+            out_channels=8,
+            stack_times=9,
+            paths=['bu'] * 9,
+            start_level=1,
+            end_level=4,
+            num_outs=2,
+            skip_inds=[(0, 1, 2, 3), (0, 1, 2), (0, 1), (0, ), ()])
+
+    # `num_outs` is not equal to end_level - start_level + 1
+    with pytest.raises(AssertionError):
+        FPG(in_channels=[8, 16, 32, 64],
+            out_channels=8,
+            stack_times=9,
+            paths=['bu'] * 9,
+            start_level=1,
+            end_level=2,
+            num_outs=3,
+            skip_inds=[(0, 1, 2, 3), (0, 1, 2), (0, 1), (0, ), ()])
+
+
+def test_fpn_carafe():
+    # end_level=-1 is equal to end_level=3
+    FPN_CARAFE(
+        in_channels=[8, 16, 32, 64],
+        out_channels=8,
+        start_level=0,
+        end_level=3,
+        num_outs=4)
+    FPN_CARAFE(
+        in_channels=[8, 16, 32, 64],
+        out_channels=8,
+        start_level=0,
+        end_level=-1,
+        num_outs=4)
+    # `end_level` is larger than len(in_channels) - 1
+    with pytest.raises(AssertionError):
+        FPN_CARAFE(
+            in_channels=[8, 16, 32, 64],
+            out_channels=8,
+            start_level=1,
+            end_level=4,
+            num_outs=2)
+
+    # `num_outs` is not equal to end_level - start_level + 1
+    with pytest.raises(AssertionError):
+        FPN_CARAFE(
+            in_channels=[8, 16, 32, 64],
+            out_channels=8,
+            start_level=1,
+            end_level=2,
+            num_outs=3)
+
+
+def test_nas_fpn():
+    # end_level=-1 is equal to end_level=3
+    NASFPN(
+        in_channels=[8, 16, 32, 64],
+        out_channels=8,
+        stack_times=9,
+        start_level=0,
+        end_level=3,
+        num_outs=4)
+    NASFPN(
+        in_channels=[8, 16, 32, 64],
+        out_channels=8,
+        stack_times=9,
+        start_level=0,
+        end_level=-1,
+        num_outs=4)
+    # `end_level` is larger than len(in_channels) - 1
+    with pytest.raises(AssertionError):
+        NASFPN(
+            in_channels=[8, 16, 32, 64],
+            out_channels=8,
+            stack_times=9,
+            start_level=1,
+            end_level=4,
+            num_outs=2)
+
+    # `num_outs` is not equal to end_level - start_level + 1
+    with pytest.raises(AssertionError):
+        NASFPN(
+            in_channels=[8, 16, 32, 64],
+            out_channels=8,
+            stack_times=9,
+            start_level=1,
+            end_level=2,
+            num_outs=3)
+
+
+def test_nasfcos_fpn():
+    # end_level=-1 is equal to end_level=3
+    NASFCOS_FPN(
+        in_channels=[8, 16, 32, 64],
+        out_channels=8,
+        start_level=0,
+        end_level=3,
+        num_outs=4)
+    NASFCOS_FPN(
+        in_channels=[8, 16, 32, 64],
+        out_channels=8,
+        start_level=0,
+        end_level=-1,
+        num_outs=4)
+
+    # `end_level` is larger than len(in_channels) - 1
+    with pytest.raises(AssertionError):
+        NASFCOS_FPN(
+            in_channels=[8, 16, 32, 64],
+            out_channels=8,
+            start_level=1,
+            end_level=4,
+            num_outs=2)
+
+    # `num_outs` is not equal to end_level - start_level + 1
+    with pytest.raises(AssertionError):
+        NASFCOS_FPN(
+            in_channels=[8, 16, 32, 64],
+            out_channels=8,
+            start_level=1,
+            end_level=2,
+            num_outs=3)

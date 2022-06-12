@@ -6,6 +6,7 @@ FROM pytorch/pytorch:${PYTORCH}-cuda${CUDA}-cudnn${CUDNN}-devel
 ARG MMCV="1.4.8"
 ARG MMDET="2.23.0"
 
+
 ENV PYTHONUNBUFFERED TRUE
 
 RUN apt-get update && \

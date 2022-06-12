@@ -21,8 +21,8 @@ _base_ = [
 ]
 ```
 
+## Head 的修改
 
-##  Head 的修改
 接下来新的配置还需要根据新数据集的类别数量对 Head 进行修改。只需要对 roi_head 中的 `num_classes`进行修改。修改后除了最后的预测模型的 Head 之外，预训练模型的权重的大部分都会被重新使用。
 
 ```python
@@ -54,9 +54,11 @@ model = dict(
 ```
 
 ## 数据集的修改
+
 用户可能还需要准备数据集并编写有关数据集的配置。目前 MMDetection V2.0 的配置文件已经支持 VOC、WIDER FACE、COCO 和 Cityscapes Dataset 的数据集信息。
 
 ## 训练策略的修改
+
 微调超参数与默认的训练策略不同。它通常需要更小的学习率和更少的训练回合。
 
 ```python
@@ -79,6 +81,7 @@ log_config = dict(interval=100)
 ## 使用预训练模型
 
 如果要使用预训练模型时，可以在 `load_from` 中查阅新的配置信息，用户需要在训练开始之前下载好需要的模型权重，从而避免在训练过程中浪费了宝贵时间。
+
 ```python
 load_from = 'https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco_bbox_mAP-0.408__segm_mAP-0.37_20200504_163245-42aa3d00.pth'  # noqa
 ```

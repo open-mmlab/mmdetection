@@ -53,9 +53,9 @@ or creating your own config file.
 
 ## Results and Models
 
-|   Backbone  |  Model type  |       Dataset       |  bbox detection Average Precision  | segmentation Average Precision |  Config |      Download (Google)      |
-| :---------: | :----------: | :-----------------: | :--------------------------------: | :----------------------------: | :---------:| :-------------------------: |
-|   ResNet50  |   Mask RCNN  | DeepFashion-In-shop |                0.599               |              0.584             |[config](https://github.com/open-mmlab/mmdetection/blob/master/configs/deepfashion/mask_rcnn_r50_fpn_15e_deepfashion.py)|  [model](https://download.openmmlab.com/mmdetection/v2.0/deepfashion/mask_rcnn_r50_fpn_15e_deepfashion/mask_rcnn_r50_fpn_15e_deepfashion_20200329_192752.pth) &#124; [log](https://download.openmmlab.com/mmdetection/v2.0/deepfashion/mask_rcnn_r50_fpn_15e_deepfashion/20200329_192752.log.json)   |
+| Backbone | Model type |       Dataset       | bbox detection Average Precision | segmentation Average Precision |                                                          Config                                                          |                                                                                                                                       Download (Google)                                                                                                                                       |
+| :------: | :--------: | :-----------------: | :------------------------------: | :----------------------------: | :----------------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| ResNet50 | Mask RCNN  | DeepFashion-In-shop |              0.599               |             0.584              | [config](https://github.com/open-mmlab/mmdetection/blob/master/configs/deepfashion/mask_rcnn_r50_fpn_15e_deepfashion.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/deepfashion/mask_rcnn_r50_fpn_15e_deepfashion/mask_rcnn_r50_fpn_15e_deepfashion_20200329_192752.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/deepfashion/mask_rcnn_r50_fpn_15e_deepfashion/20200329_192752.log.json) |
 
 ## Citation
 
