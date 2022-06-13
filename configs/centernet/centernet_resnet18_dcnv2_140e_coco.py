@@ -6,21 +6,14 @@ _base_ = [
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
 
-# file_client_args = dict(
-#     backend='petrel',
-#     path_mapping=dict({
-#         './data/': 's3://openmmlab/datasets/detection/',
-#         'data/': 's3://openmmlab/datasets/detection/'
-#     }))
-file_client_args = dict(backend='disk')
-
 # model settings
-preprocess_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
-
 model = dict(
     type='CenterNet',
-    preprocess_cfg=preprocess_cfg,
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        bgr_to_rgb=True),
     backbone=dict(
         type='ResNet',
         depth=18,
@@ -45,7 +38,9 @@ model = dict(
     test_cfg=dict(topk=100, local_maximum_kernel=3, max_per_img=100))
 
 train_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(
+        type='LoadImageFromFile',
+        file_client_args={{_base_.file_client_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PhotoMetricDistortion',
@@ -72,7 +67,7 @@ test_pipeline = [
     dict(
         type='LoadImageFromFile',
         to_float32=True,
-        file_client_args=file_client_args),
+        file_client_args={{_base_.file_client_args}}),
     # don't need Resize
     dict(
         type='RandomCenterCropPad',
@@ -114,11 +109,7 @@ test_dataloader = val_dataloader
 # Based on the default settings of modern detectors, the SGD effect is better
 # than the Adam in the source code, so we use SGD default settings and
 # if you use adam+lr5e-4, the map is 29.1.
-default_hooks = dict(
-    optimizer=dict(
-        _delete_=True,
-        type='OptimizerHook',
-        grad_clip=dict(max_norm=35, norm_type=2)))
+optim_wrapper = dict(clip_grad=dict(max_norm=35, norm_type=2))
 
 max_epochs = 28
 # learning policy
