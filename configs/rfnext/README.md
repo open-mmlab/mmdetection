@@ -13,7 +13,7 @@ The source code is publicly available on [http://mmcheng.net/rfnext](http://mmch
 
 | Backbone | Method | RFNext | Lr Schd | box mAP | mask mAP | Config | Download |
 |:---:|:---:|:---:|:---:| :---:|:---:|:---:|:---:|
-| ConvNeXt-T | Cascade Mask R-CNN | NO            | 20e | 50.4 | 43.7 | [config](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/convnext/cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k.py) | [model]() &#124; [log]() |
+| ConvNeXt-T | Cascade Mask R-CNN | NO            | 20e | 50.4 | 43.7 | [config](https://github.com/facebookresearch/ConvNeXt/tree/main/object_detection) | [model](https://github.com/facebookresearch/ConvNeXt/tree/main/object_detection) &#124; [log](https://github.com/facebookresearch/ConvNeXt/tree/main/object_detection) |
 | RF-ConvNeXt-T | Cascade Mask R-CNN | Single-Branch | 20e | 50.6 | 44.0 | [config](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfsearch_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k.py) | [model]() &#124; [log]() |
 | RF-ConvNeXt-T | Cascade Mask R-CNN | Multiple-Branch  | 20e | 50.9 | 44.3 | [config](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfsearch_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k.py) | [model]() &#124; [log]() |
 
