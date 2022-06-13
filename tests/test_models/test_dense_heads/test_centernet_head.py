@@ -25,8 +25,10 @@ class TestCenterNetHead(TestCase):
         gt_instances = InstanceData()
         gt_instances.bboxes = torch.empty((0, 4))
         gt_instances.labels = torch.LongTensor([])
-        empty_gt_losses = centernet_head.loss(center_out, wh_out, offset_out,
-                                              [gt_instances], img_metas)
+        empty_gt_losses = centernet_head.loss_by_feat(center_out, wh_out,
+                                                      offset_out,
+                                                      [gt_instances],
+                                                      img_metas)
         loss_center = empty_gt_losses['loss_center_heatmap']
         loss_wh = empty_gt_losses['loss_wh']
         loss_offset = empty_gt_losses['loss_offset']
@@ -42,8 +44,9 @@ class TestCenterNetHead(TestCase):
         gt_instances.bboxes = torch.Tensor(
             [[23.6667, 23.8757, 238.6326, 151.8874]])
         gt_instances.labels = torch.LongTensor([2])
-        one_gt_losses = centernet_head.loss(center_out, wh_out, offset_out,
-                                            [gt_instances], img_metas)
+        one_gt_losses = centernet_head.loss_by_feat(center_out, wh_out,
+                                                    offset_out, [gt_instances],
+                                                    img_metas)
         loss_center = one_gt_losses['loss_center_heatmap']
         loss_wh = one_gt_losses['loss_wh']
         loss_offset = one_gt_losses['loss_offset']
@@ -120,11 +123,12 @@ class TestCenterNetHead(TestCase):
         wh_target = targets['wh_target']
         offset_target = targets['offset_target']
         # make sure get_bboxes is right
-        detections = centernet_head.get_results([center_target], [wh_target],
-                                                [offset_target],
-                                                img_metas,
-                                                rescale=True,
-                                                with_nms=False)
+        detections = centernet_head.predict_by_feat([center_target],
+                                                    [wh_target],
+                                                    [offset_target],
+                                                    img_metas,
+                                                    rescale=True,
+                                                    with_nms=False)
 
         pred_instances = detections[0]
         out_bboxes = pred_instances.bboxes[:3]
@@ -136,11 +140,12 @@ class TestCenterNetHead(TestCase):
                     flag = True
             assert flag, 'get_bboxes is wrong'
 
-        detections = centernet_head.get_results([center_target], [wh_target],
-                                                [offset_target],
-                                                img_metas,
-                                                rescale=True,
-                                                with_nms=True)
+        detections = centernet_head.predict_by_feat([center_target],
+                                                    [wh_target],
+                                                    [offset_target],
+                                                    img_metas,
+                                                    rescale=True,
+                                                    with_nms=True)
 
         pred_instances = detections[0]
         out_bboxes = pred_instances.bboxes[:3]

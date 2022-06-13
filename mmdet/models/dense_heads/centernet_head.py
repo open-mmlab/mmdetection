@@ -18,11 +18,10 @@ from mmdet.registry import MODELS
 from ..utils.gaussian_target import (get_local_maximum, get_topk_from_heatmap,
                                      transpose_and_gather_feat)
 from .base_dense_head import BaseDenseHead
-from .dense_test_mixins import BBoxTestMixin
 
 
 @MODELS.register_module()
-class CenterNetHead(BaseDenseHead, BBoxTestMixin):
+class CenterNetHead(BaseDenseHead):
     """Objects as Points Head. CenterHead use center_point to indicate object's
     position. Paper link <https://arxiv.org/abs/1904.07850>
 
@@ -128,13 +127,14 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
         return center_heatmap_pred, wh_pred, offset_pred
 
     @force_fp32(apply_to=('center_heatmap_preds', 'wh_preds', 'offset_preds'))
-    def loss(self,
-             center_heatmap_preds: List[Tensor],
-             wh_preds: List[Tensor],
-             offset_preds: List[Tensor],
-             batch_gt_instances: InstanceList,
-             batch_img_metas: List[dict],
-             batch_gt_instances_ignore: OptInstanceList = None) -> dict:
+    def loss_by_feat(
+            self,
+            center_heatmap_preds: List[Tensor],
+            wh_preds: List[Tensor],
+            offset_preds: List[Tensor],
+            batch_gt_instances: InstanceList,
+            batch_img_metas: List[dict],
+            batch_gt_instances_ignore: OptInstanceList = None) -> dict:
         """Compute losses of the head.
 
         Args:
@@ -273,13 +273,13 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
         return target_result, avg_factor
 
     @force_fp32(apply_to=('center_heatmap_preds', 'wh_preds', 'offset_preds'))
-    def get_results(self,
-                    center_heatmap_preds: List[Tensor],
-                    wh_preds: List[Tensor],
-                    offset_preds: List[Tensor],
-                    batch_img_metas: Optional[List[dict]] = None,
-                    rescale: bool = True,
-                    with_nms: bool = False) -> InstanceList:
+    def predict_by_feat(self,
+                        center_heatmap_preds: List[Tensor],
+                        wh_preds: List[Tensor],
+                        offset_preds: List[Tensor],
+                        batch_img_metas: Optional[List[dict]] = None,
+                        rescale: bool = True,
+                        with_nms: bool = False) -> InstanceList:
         """Transform network output for a batch into bbox predictions.
 
         Args:
@@ -313,7 +313,7 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
         result_list = []
         for img_id in range(len(batch_img_metas)):
             result_list.append(
-                self._get_results_single(
+                self._predict_by_feat_single(
                     center_heatmap_preds[0][img_id:img_id + 1, ...],
                     wh_preds[0][img_id:img_id + 1, ...],
                     offset_preds[0][img_id:img_id + 1, ...],
@@ -322,13 +322,13 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
                     with_nms=with_nms))
         return result_list
 
-    def _get_results_single(self,
-                            center_heatmap_pred: Tensor,
-                            wh_pred: Tensor,
-                            offset_pred: Tensor,
-                            img_meta: dict,
-                            rescale: bool = True,
-                            with_nms: bool = False) -> InstanceData:
+    def _predict_by_feat_single(self,
+                                center_heatmap_pred: Tensor,
+                                wh_pred: Tensor,
+                                offset_pred: Tensor,
+                                img_meta: dict,
+                                rescale: bool = True,
+                                with_nms: bool = False) -> InstanceData:
         """Transform outputs of a single image into bbox results.
 
         Args:
@@ -357,7 +357,7 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
                 - bboxes (Tensor): Has a shape (num_instances, 4),
                   the last dimension 4 arrange as (x1, y1, x2, y2).
         """
-        batch_det_bboxes, batch_labels = self.decode_heatmap(
+        batch_det_bboxes, batch_labels = self._decode_heatmap(
             center_heatmap_pred,
             wh_pred,
             offset_pred,
@@ -385,13 +385,13 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
         results.labels = det_labels
         return results
 
-    def decode_heatmap(self,
-                       center_heatmap_pred: Tensor,
-                       wh_pred: Tensor,
-                       offset_pred: Tensor,
-                       img_shape: tuple,
-                       k: int = 100,
-                       kernel: int = 3) -> Tuple[Tensor, Tensor]:
+    def _decode_heatmap(self,
+                        center_heatmap_pred: Tensor,
+                        wh_pred: Tensor,
+                        offset_pred: Tensor,
+                        img_shape: tuple,
+                        k: int = 100,
+                        kernel: int = 3) -> Tuple[Tensor, Tensor]:
         """Transform outputs into detections raw bbox prediction.
 
         Args:
