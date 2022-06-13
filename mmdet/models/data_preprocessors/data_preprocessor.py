@@ -4,20 +4,20 @@ from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
-from mmengine.model import BaseDataPreprocessor, stack_batch
+from mmengine.model import ImgDataPreprocessor
 
 from mmdet.registry import MODELS
 
 
 @MODELS.register_module()
-class DetDataPreprocessor(BaseDataPreprocessor):
+class DetDataPreprocessor(ImgDataPreprocessor):
     """Image pre-processor for detection tasks.
 
     Comparing with the :class:`mmengine.ImgDataPreprocessor`,
 
-    1. It won't do normalization if ``mean`` is not specified.
-    2. It does normalization and color space conversion after stacking batch.
-    3. It supports batch augmentations like mixup and cutmix.
+    1. It supports batch augmentations.
+    2. It will additionally append batch_input_shape and pad_shape
+    to data_samples considering the object detection task.
 
     It provides the data pre-processing as follows
 
@@ -28,7 +28,7 @@ class DetDataPreprocessor(BaseDataPreprocessor):
     - Stack inputs to batch_inputs.
     - Convert inputs from bgr to rgb if the shape of input is (3, H, W).
     - Normalize image with defined std and mean.
-    - Do batch augmentations like Mixup and Cutmix during training.
+    - Do batch augmentations during training.
 
     Args:
         mean (Sequence[Number], optional): The pixel mean of R, G, B channels.
@@ -53,27 +53,13 @@ class DetDataPreprocessor(BaseDataPreprocessor):
                  bgr_to_rgb: bool = False,
                  rgb_to_bgr: bool = False,
                  batch_augments: Optional[List[dict]] = None):
-        super().__init__()
-        self.pad_size_divisor = pad_size_divisor
-        self.pad_value = pad_value
-        assert not (bgr_to_rgb and rgb_to_bgr), (
-            '`bgr2rgb` and `rgb2bgr` cannot be set to True at the same time')
-        self.channel_conversion = rgb_to_bgr or bgr_to_rgb
-
-        if mean is not None:
-            assert std is not None, 'To enable the normalization in ' \
-                                    'preprocessing, please specify both ' \
-                                    '`mean` and `std`.'
-            # Enable the normalization in preprocessing.
-            self._enable_normalize = True
-            self.register_buffer('mean',
-                                 torch.tensor(mean).view(-1, 1, 1), False)
-            self.register_buffer('std',
-                                 torch.tensor(std).view(-1, 1, 1), False)
-        else:
-            self._enable_normalize = False
-
-        # TODO: support batch augmentations.
+        super().__init__(
+            mean=mean,
+            std=std,
+            pad_size_divisor=pad_size_divisor,
+            pad_value=pad_value,
+            bgr_to_rgb=bgr_to_rgb,
+            rgb_to_bgr=rgb_to_bgr)
         self.batch_augments = batch_augments
 
     def forward(self,
@@ -90,23 +76,14 @@ class DetDataPreprocessor(BaseDataPreprocessor):
             Tuple[torch.Tensor, Optional[list]]: Data in the same format as the
             model input.
         """
-        inputs, batch_data_samples = self.collate_data(data)
-        batch_pad_shape = self._get_pad_shape(inputs)
-        # TODO: whether normalize should be after stack_batch
-        if self.channel_conversion and inputs[0].size(0) == 3:
-            inputs = [_input[[2, 1, 0], ...] for _input in inputs]
-
-        if self._enable_normalize:
-            inputs = [(_input - self.mean) / self.std for _input in inputs]
-        else:
-            inputs = [_input.float() for _input in inputs]
-
-        batch_inputs = stack_batch(inputs, self.pad_size_divisor,
-                                   self.pad_value)
+        batch_inputs, batch_data_samples = super().forward(
+            data=data, training=training)
+        batch_pad_shape = self._get_pad_shape(data)
 
         if training and self.batch_augments is not None:
-            inputs, batch_data_samples = self.batch_augments(
-                inputs, batch_data_samples)
+            # TODO: mmdet has not been used batch_augments for the time being.
+            batch_inputs, batch_data_samples = self.batch_augments(
+                batch_inputs, batch_data_samples)
 
         if batch_data_samples is not None:
             # NOTE the batched image size information may be useful, e.g.
@@ -122,9 +99,10 @@ class DetDataPreprocessor(BaseDataPreprocessor):
 
         return batch_inputs, batch_data_samples
 
-    def _get_pad_shape(self, ori_inputs: List[torch.Tensor]) -> List[tuple]:
-        """Get the pad_shape of each image based on ori_inputs and
+    def _get_pad_shape(self, data: Sequence[dict]) -> List[tuple]:
+        """Get the pad_shape of each image based on data and
         pad_size_divisor."""
+        ori_inputs = [_data['inputs'] for _data in data]
         batch_pad_shape = []
         for ori_input in ori_inputs:
             pad_h = int(np.ceil(ori_input.shape[1] /
