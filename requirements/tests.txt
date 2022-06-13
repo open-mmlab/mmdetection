@@ -1,4 +1,5 @@
 asynctest
+cityscapesscripts
 codecov
 flake8
 interrogate

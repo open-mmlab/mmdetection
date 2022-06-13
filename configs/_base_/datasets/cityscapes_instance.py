@@ -1,7 +1,5 @@
 # dataset settings
 dataset_type = 'CityscapesDataset'
-# TODO remove it after cityscape metric
-# data_root = '/mnt/lustre/luochunhua.vendor/openmmlab2.0/data/cityscapes/'
 data_root = 'data/cityscapes/'
 
 train_pipeline = [
@@ -11,6 +9,7 @@ train_pipeline = [
     dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs')
 ]
+
 test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=(2048, 1024), keep_ratio=True),
@@ -52,33 +51,41 @@ val_dataloader = dict(
         filter_cfg=dict(filter_empty_gt=True, min_size=32),
         pipeline=test_pipeline))
 
-test_dataloader = dict(
-    batch_size=1,
-    num_workers=2,
-    persistent_workers=True,
-    drop_last=False,
-    sampler=dict(type='DefaultSampler', shuffle=False),
-    dataset=dict(
-        type=dataset_type,
-        data_root=data_root,
-        ann_file='annotations/instancesonly_filtered_gtFine_val.json',
-        data_prefix=dict(img='leftImg8bit/val/'),
-        test_mode=True,
-        filter_cfg=dict(filter_empty_gt=True, min_size=32),
-        pipeline=test_pipeline))
+test_dataloader = val_dataloader
 
-val_evaluator = dict(
-    type='CocoMetric',
-    ann_file=data_root + 'annotations/instancesonly_filtered_gtFine_val.json',
-    metric=['bbox', 'segm'])
+val_evaluator = [
+    dict(
+        type='CocoMetric',
+        ann_file=data_root +
+        'annotations/instancesonly_filtered_gtFine_val.json',
+        metric=['bbox', 'segm']),
+    dict(
+        type='CityScapesMetric',
+        ann_file=data_root +
+        'annotations/instancesonly_filtered_gtFine_val.json',
+        seg_prefix=data_root + '/gtFine/val',
+        outfile_prefix='./work_dirs/cityscapes_metric/instance')
+]
 
-test_evaluator = dict(
-    type='CocoMetric',
-    ann_file=data_root + 'annotations/instancesonly_filtered_gtFine_val.json',
-    metric=['bbox', 'segm'])
+test_evaluator = val_evaluator
 
-# TODO add setting on test dataset after cityscape metric
 # inference on test dataset and
 # format the output results for submission.
-# test_dataloader = None
-# test_evaluator = None
+# test_dataloader = dict(
+#     batch_size=1,
+#     num_workers=2,
+#     persistent_workers=True,
+#     drop_last=False,
+#     sampler=dict(type='DefaultSampler', shuffle=False),
+#     dataset=dict(
+#         type=dataset_type,
+#         data_root=data_root,
+#         ann_file='annotations/instancesonly_filtered_gtFine_test.json',
+#         data_prefix=dict(img='leftImg8bit/test/'),
+#         test_mode=True,
+#         filter_cfg=dict(filter_empty_gt=True, min_size=32),
+#         pipeline=test_pipeline))
+# test_evaluator = dict(
+#         type='CityScapesMetric',
+#         format_only=True,
+#         outfile_prefix='./work_dirs/cityscapes_metric/test')
