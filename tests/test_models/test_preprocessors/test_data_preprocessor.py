@@ -2,9 +2,12 @@
 from unittest import TestCase
 
 import torch
+from mmengine.logging import MessageHub
 
 from mmdet.core import DetDataSample
-from mmdet.models.data_preprocessors import DetDataPreprocessor
+from mmdet.models.data_preprocessors import (BatchSyncRandomResize,
+                                             DetDataPreprocessor)
+from mmdet.testing import demo_mm_inputs
 
 
 class TestClsDataPreprocessor(TestCase):
@@ -76,3 +79,32 @@ class TestClsDataPreprocessor(TestCase):
         for data_sample, expected_shape in zip(data_samples, [(10, 15),
                                                               (10, 25)]):
             self.assertEqual(data_sample.pad_shape, expected_shape)
+
+    def test_batch_sync_random_resize(self):
+        processor = DetDataPreprocessor(batch_augments=[
+            dict(
+                type='BatchSyncRandomResize',
+                random_size_range=(320, 320),
+                size_divisor=32,
+                interval=1)
+        ])
+        self.assertTrue(
+            isinstance(processor.batch_augments[0], BatchSyncRandomResize))
+        message_hub = MessageHub.get_instance('test_batch_sync_random_resize')
+        message_hub.update_info('iter', 0)
+        packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 128, 128]])
+        batch_inputs, batch_data_samples = processor(
+            packed_inputs, training=True)
+        self.assertEqual(batch_inputs.shape, (2, 3, 128, 128))
+
+        # resize after one iter
+        message_hub.update_info('iter', 1)
+        packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 128, 128]])
+        batch_inputs, batch_data_samples = processor(
+            packed_inputs, training=True)
+        self.assertEqual(batch_inputs.shape, (2, 3, 320, 320))
+
+        packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 128, 128]])
+        batch_inputs, batch_data_samples = processor(
+            packed_inputs, training=False)
+        self.assertEqual(batch_inputs.shape, (2, 3, 128, 128))

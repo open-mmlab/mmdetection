@@ -25,7 +25,7 @@ class TestYOLOXHead(TestCase):
             assert_allclose(conv_obj.bias.data,
                             torch.ones_like(conv_obj.bias.data) * bias_init)
 
-    def test_get_results(self):
+    def test_predict_by_feat(self):
         s = 256
         img_metas = [{
             'img_shape': (s, s, 3),
@@ -44,7 +44,7 @@ class TestYOLOXHead(TestCase):
             for feat_size in [4, 8, 16]
         ]
         cls_scores, bbox_preds, objectnesses = head.forward(feat)
-        head.get_results(
+        head.predict_by_feat(
             cls_scores,
             bbox_preds,
             objectnesses,
@@ -52,7 +52,7 @@ class TestYOLOXHead(TestCase):
             cfg=test_cfg,
             rescale=True,
             with_nms=True)
-        head.get_results(
+        head.predict_by_feat(
             cls_scores,
             bbox_preds,
             objectnesses,
@@ -61,7 +61,7 @@ class TestYOLOXHead(TestCase):
             rescale=False,
             with_nms=False)
 
-    def test_loss(self):
+    def test_loss_by_feat(self):
         s = 256
         img_metas = [{
             'img_shape': (s, s, 3),
@@ -95,8 +95,9 @@ class TestYOLOXHead(TestCase):
         gt_instances = InstanceData(
             bboxes=torch.empty((0, 4)), labels=torch.LongTensor([]))
 
-        empty_gt_losses = head.loss(cls_scores, bbox_preds, objectnesses,
-                                    [gt_instances], img_metas)
+        empty_gt_losses = head.loss_by_feat(cls_scores, bbox_preds,
+                                            objectnesses, [gt_instances],
+                                            img_metas)
         # When there is no truth, the cls loss should be nonzero but there
         # should be no box loss.
         empty_cls_loss = empty_gt_losses['loss_cls'].sum()
@@ -126,8 +127,8 @@ class TestYOLOXHead(TestCase):
             bboxes=torch.Tensor([[23.6667, 23.8757, 238.6326, 151.8874]]),
             labels=torch.LongTensor([2]))
 
-        one_gt_losses = head.loss(cls_scores, bbox_preds, objectnesses,
-                                  [gt_instances], img_metas)
+        one_gt_losses = head.loss_by_feat(cls_scores, bbox_preds, objectnesses,
+                                          [gt_instances], img_metas)
         onegt_cls_loss = one_gt_losses['loss_cls'].sum()
         onegt_box_loss = one_gt_losses['loss_bbox'].sum()
         onegt_obj_loss = one_gt_losses['loss_obj'].sum()
@@ -145,8 +146,9 @@ class TestYOLOXHead(TestCase):
         gt_instances = InstanceData(
             bboxes=torch.Tensor([[s * 4, s * 4, s * 4 + 10, s * 4 + 10]]),
             labels=torch.LongTensor([2]))
-        empty_gt_losses = head.loss(cls_scores, bbox_preds, objectnesses,
-                                    [gt_instances], img_metas)
+        empty_gt_losses = head.loss_by_feat(cls_scores, bbox_preds,
+                                            objectnesses, [gt_instances],
+                                            img_metas)
         # When gt_bboxes out of bound, the assign results should be empty,
         # so the cls and bbox loss should be zero.
         empty_cls_loss = empty_gt_losses['loss_cls'].sum()

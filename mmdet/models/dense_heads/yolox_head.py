@@ -227,15 +227,16 @@ class YOLOXHead(BaseDenseHead):
                            self.multi_level_conv_reg,
                            self.multi_level_conv_obj)
 
-    def get_results(self,
-                    cls_scores: List[Tensor],
-                    bbox_preds: List[Tensor],
-                    objectnesses: Optional[List[Tensor]],
-                    batch_img_metas: Optional[List[dict]] = None,
-                    cfg: Optional[ConfigDict] = None,
-                    rescale: bool = False,
-                    with_nms: bool = True) -> List[InstanceData]:
-        """Transform network outputs of a batch into bbox results.
+    def predict_by_feat(self,
+                        cls_scores: List[Tensor],
+                        bbox_preds: List[Tensor],
+                        objectnesses: Optional[List[Tensor]],
+                        batch_img_metas: Optional[List[dict]] = None,
+                        cfg: Optional[ConfigDict] = None,
+                        rescale: bool = False,
+                        with_nms: bool = True) -> List[InstanceData]:
+        """Transform a batch of output features extracted by the head into
+        bbox results.
         Args:
             cls_scores (list[Tensor]): Classification scores for all
                 scale levels, each is a 4D-tensor, has shape
@@ -395,14 +396,17 @@ class YOLOXHead(BaseDenseHead):
             results.scores = det_bboxes[:, -1]
         return results
 
-    def loss(self,
-             cls_scores: Sequence[Tensor],
-             bbox_preds: Sequence[Tensor],
-             objectnesses: Sequence[Tensor],
-             batch_gt_instances: Sequence[InstanceData],
-             batch_img_metas: Sequence[dict],
-             batch_gt_instances_ignore: OptInstanceList = None) -> dict:
-        """Compute loss of the head.
+    def loss_by_feat(
+            self,
+            cls_scores: Sequence[Tensor],
+            bbox_preds: Sequence[Tensor],
+            objectnesses: Sequence[Tensor],
+            batch_gt_instances: Sequence[InstanceData],
+            batch_img_metas: Sequence[dict],
+            batch_gt_instances_ignore: OptInstanceList = None) -> dict:
+        """Calculate the loss based on the features extracted by the detection
+        head.
+
         Args:
             cls_scores (Sequence[Tensor]): Box scores for each scale level,
                 each is a 4D-tensor, the channel number is
@@ -464,7 +468,7 @@ class YOLOXHead(BaseDenseHead):
              flatten_objectness.detach(), batch_gt_instances, batch_img_metas,
              batch_gt_instances_ignore)
 
-        # The experimental results show that ‘reduce_mean’ can improve
+        # The experimental results show that 'reduce_mean' can improve
         # performance on the COCO dataset.
         num_pos = torch.tensor(
             sum(num_fg_imgs),
@@ -573,10 +577,9 @@ class YOLOXHead(BaseDenseHead):
         offset_priors = torch.cat(
             [priors[:, :2] + priors[:, 2:] * 0.5, priors[:, 2:]], dim=-1)
 
+        scores = cls_preds.sigmoid() * objectness.unsqueeze(1).sigmoid()
         pred_instances = InstanceData(
-            bboxes=decoded_bboxes,
-            scores=cls_preds.sigmoid() * objectness.unsqueeze(1).sigmoid(),
-            priors=offset_priors)
+            bboxes=decoded_bboxes, scores=scores.sqrt_(), priors=offset_priors)
         assign_result = self.assigner.assign(
             pred_instances=pred_instances,
             gt_instances=gt_instances,
