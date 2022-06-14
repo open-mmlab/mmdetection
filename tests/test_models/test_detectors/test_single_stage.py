@@ -1,8 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import time
 import unittest
 from unittest import TestCase
 
 import torch
+from mmengine.logging import MessageHub
 from parameterized import parameterized
 
 from mmdet.core import DetDataSample
@@ -17,7 +19,8 @@ class TestSingleStageDetector(TestCase):
     @parameterized.expand([
         'retinanet/retinanet_r18_fpn_1x_coco.py',
         'centernet/centernet_resnet18_140e_coco.py',
-        # 'fsaf/fsaf_r50_fpn_1x_coco.py', 'yolox/yolox_tiny_8x8_300e_coco.py',
+        # 'fsaf/fsaf_r50_fpn_1x_coco.py',
+        'yolox/yolox_tiny_8x8_300e_coco.py',
         # 'yolo/yolov3_mobilenetv2_320_300e_coco.py'
     ])
     def test_init(self, cfg_file):
@@ -34,10 +37,14 @@ class TestSingleStageDetector(TestCase):
         ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda')),
         ('centernet/centernet_resnet18_140e_coco.py', ('cpu', 'cuda')),
         # ('fsaf/fsaf_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
-        # ('yolox/yolox_tiny_8x8_300e_coco.py', ('cpu', 'cuda')),
+        ('yolox/yolox_tiny_8x8_300e_coco.py', ('cpu', 'cuda')),
         # ('yolo/yolov3_mobilenetv2_320_300e_coco.py', ('cpu', 'cuda'))
     ])
     def test_single_stage_forward_loss_mode(self, cfg_file, devices):
+        message_hub = MessageHub.get_instance(
+            f'test_single_stage_forward_loss_mode-{time.time()}')
+        message_hub.update_info('iter', 0)
+        message_hub.update_info('epoch', 0)
         model = get_detector_cfg(cfg_file)
         model.backbone.init_cfg = None
 
@@ -63,7 +70,7 @@ class TestSingleStageDetector(TestCase):
         ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda')),
         ('centernet/centernet_resnet18_140e_coco.py', ('cpu', 'cuda')),
         # ('fsaf/fsaf_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
-        # ('yolox/yolox_tiny_8x8_300e_coco.py', ('cpu', 'cuda')),
+        ('yolox/yolox_tiny_8x8_300e_coco.py', ('cpu', 'cuda')),
         # ('yolo/yolov3_mobilenetv2_320_300e_coco.py', ('cpu', 'cuda'))
     ])
     def test_single_stage_forward_predict_mode(self, cfg_file, devices):
@@ -96,7 +103,7 @@ class TestSingleStageDetector(TestCase):
         ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda')),
         ('centernet/centernet_resnet18_140e_coco.py', ('cpu', 'cuda')),
         # ('fsaf/fsaf_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
-        # ('yolox/yolox_tiny_8x8_300e_coco.py', ('cpu', 'cuda')),
+        ('yolox/yolox_tiny_8x8_300e_coco.py', ('cpu', 'cuda')),
         # ('yolo/yolov3_mobilenetv2_320_300e_coco.py', ('cpu', 'cuda'))
     ])
     def test_single_stage_forward_tensor_mode(self, cfg_file, devices):
