@@ -86,12 +86,12 @@ test_pipeline = [
 ]
 
 dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
+data_root = '/home/PJLAB/huanghaian/dataset/coco200/'
 
 # Use RepeatDataset to speed up training
 data = dict(
-    samples_per_gpu=16,
-    workers_per_gpu=4,
+    samples_per_gpu=2,
+    workers_per_gpu=2,
     train=dict(
         _delete_=True,
         type='RepeatDataset',
