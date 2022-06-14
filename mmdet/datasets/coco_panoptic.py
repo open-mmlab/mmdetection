@@ -22,7 +22,7 @@ except ImportError:
     id2rgb = None
     VOID = None
 
-__all__ = ['CocoPanopticDataset']
+__all__ = ['CocoPanopticDataset', 'CocoLiposomeDataset']
 
 
 class COCOPanoptic(COCO):
@@ -109,6 +109,29 @@ class COCOPanoptic(COCO):
         elif type(ids) == int:
             return self.anns[ids]
 
+
+@DATASETS.register_module()
+class CocoLiposomeDataset(CocoDataset):
+    # CLASSES = ["liposome_1", "liposome_2", "striped"]
+    # PALETTE = [(0, 255, 0), (0, 0, 255), (255, 0, 0)]
+
+    CLASSES = [
+        "Inside Uni Empty",
+        "Outside Uni Empty",
+        "Inside Uni Filled",
+        "Outside Uni Filled",
+        "Inside Multi Empty",
+        "Outside Multi Empty",
+        "Inside Multi Filled",
+        "Outside Multi Filled",
+        "Inside Collaps Filled",
+        "Outside Collaps Filled"
+               ]
+    PALETTE = [(0, 255, 0), (255, 0, 0),
+                (0, 0, 255), (0, 127, 127),
+                (127, 127, 0), (127, 0, 127),
+                (0, 255, 127), (127, 255, 0),
+                (255, 0, 127), (255, 127, 0)]
 
 @DATASETS.register_module()
 class CocoPanopticDataset(CocoDataset):

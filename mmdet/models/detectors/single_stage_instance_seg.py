@@ -264,7 +264,8 @@ class SingleStageInstanceSegmentor(BaseDetector):
                     win_name='',
                     show=False,
                     wait_time=0,
-                    out_file=None):
+                    out_file=None,
+                    debug=False):
         """Draw `result` over `img`.
 
         Args:
@@ -358,6 +359,9 @@ class SingleStageInstanceSegmentor(BaseDetector):
             show=show,
             wait_time=wait_time,
             out_file=out_file)
+
+        if debug:
+            return img, bboxes, labels, masks
 
         if not (show or out_file):
             return img
