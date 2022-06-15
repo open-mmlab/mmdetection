@@ -1,11 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+# TODO: delete this file after refactor
 import sys
-from typing import List, Tuple
 
 import torch
-from mmengine.config import ConfigDict
-from mmengine.data import InstanceData
-from torch import Tensor
 
 from mmdet.core import (bbox2roi, bbox_mapping, merge_aug_bboxes,
                         merge_aug_masks, multiclass_nms)
@@ -50,83 +47,6 @@ class BBoxTestMixin:
                 cfg=rcnn_test_cfg)
             return det_bboxes, det_labels
 
-    def simple_test_bboxes(self,
-                           x: Tuple[Tensor],
-                           batch_img_metas: List[dict],
-                           rpn_results_list: List[InstanceData],
-                           rcnn_test_cfg: ConfigDict,
-                           rescale: bool = False) -> List[InstanceData]:
-        """Simple test for bbox head without augmentation.
-
-        Args:
-            x (tuple[Tensor]): Feature maps of all scale level.
-            batch_img_metas (list[dict]): List of image information.
-            rpn_results_list (list[:obj:`InstanceData`]): List of region
-                proposals.
-            rcnn_test_cfg (obj:`ConfigDict`): `test_cfg` of R-CNN.
-            rescale (bool): If True, return boxes in original image space.
-                Defaults to False.
-
-        Returns:
-            :obj:`InstanceData`: Detection results of each image
-            after the post process.
-            Each item usually contains following keys.
-
-                - scores (Tensor): Classification scores, has a shape
-                  (num_instance, )
-                - labels (Tensor): Labels of bboxes, has a shape
-                  (num_instances, ).
-                - bboxes (Tensor): Has a shape (num_instances, 4),
-                  the last dimension 4 arrange as (x1, y1, x2, y2).
-        """
-        proposals = [res.bboxes for res in rpn_results_list]
-        rois = bbox2roi(proposals)
-
-        if rois.shape[0] == 0:
-            # There is no proposal in the whole batch
-            result_list = []
-            for img_id in range(len(proposals)):
-                results = InstanceData()
-                results.bboxes = rois[0].new_zeros(0, 4)
-                if rcnn_test_cfg is None:
-                    results.scores = rois[0].new_zeros(
-                        (0, self.bbox_head.fc_cls.out_features))
-                else:
-                    results.scores = rois[0].new_zeros((0, ))
-                    results.labels = rois[0].new_zeros((0, ), dtype=torch.long)
-                result_list.append(results)
-            return result_list
-
-        bbox_results = self._bbox_forward(x, rois)
-
-        # split batch bbox prediction back to each image
-        cls_scores = bbox_results['cls_score']
-        bbox_preds = bbox_results['bbox_pred']
-        num_proposals_per_img = tuple(len(p) for p in proposals)
-        rois = rois.split(num_proposals_per_img, 0)
-        cls_scores = cls_scores.split(num_proposals_per_img, 0)
-
-        # some detector with_reg is False, bbox_preds will be None
-        if bbox_preds is not None:
-            # TODO move this to a sabl_roi_head
-            # the bbox prediction of some detectors like SABL is not Tensor
-            if isinstance(bbox_preds, torch.Tensor):
-                bbox_preds = bbox_preds.split(num_proposals_per_img, 0)
-            else:
-                bbox_preds = self.bbox_head.bbox_pred_split(
-                    bbox_preds, num_proposals_per_img)
-        else:
-            bbox_preds = (None, ) * len(proposals)
-
-        result_list = self.bbox_head.get_results(
-            rois=rois,
-            cls_scores=cls_scores,
-            bbox_preds=bbox_preds,
-            batch_img_metas=batch_img_metas,
-            rcnn_test_cfg=rcnn_test_cfg,
-            rescale=rescale)
-        return result_list
-
     # TODO: Currently not supported
     def aug_test_bboxes(self, feats, img_metas, rpn_results_list,
                         rcnn_test_cfg):
@@ -143,7 +63,7 @@ class BBoxTestMixin:
             proposals = bbox_mapping(rpn_results_list[0][:, :4], img_shape,
                                      scale_factor, flip, flip_direction)
             rois = bbox2roi([proposals])
-            bbox_results = self._bbox_forward(x, rois)
+            bbox_results = self.bbox_forward(x, rois)
             bboxes, scores = self.bbox_head.get_bboxes(
                 rois,
                 bbox_results['cls_score'],
@@ -215,50 +135,6 @@ class MaskTestMixin:
                     mask_pred, _bboxes, det_labels, self.test_cfg, ori_shape,
                     scale_factor, rescale)
             return segm_result
-
-    def simple_test_mask(self,
-                         x: Tuple[Tensor],
-                         batch_img_metas: List[dict],
-                         results_list: List[InstanceData],
-                         rescale: bool = False) -> List[InstanceData]:
-        """Simple test for mask head without augmentation.
-
-        Args:
-            x (tuple[Tensor]): Feature maps of all scale level.
-            batch_img_metas (list[dict]): List of image information.
-            results_list (list[:obj:`InstanceData`]): Detection results of
-                each image.
-            rescale (bool): If True, return boxes in original image space.
-                Defaults to False.
-
-        Returns:
-            :obj:`InstanceData`: Detection results of each image
-            after the post process.
-            Each item usually contains following keys.
-
-                - scores (Tensor): Classification scores, has a shape
-                  (num_instance, )
-                - labels (Tensor): Labels of bboxes, has a shape
-                  (num_instances, ).
-                - bboxes (Tensor): Has a shape (num_instances, 4),
-                  the last dimension 4 arrange as (x1, y1, x2, y2).
-                - masks (Tensor): Has a shape (num_instances, H, W).
-        """
-        bboxes = [res.bboxes for res in results_list]
-        mask_rois = bbox2roi(bboxes)
-        mask_results = self._mask_forward(x, mask_rois)
-        mask_preds = mask_results['mask_pred']
-        # split batch mask prediction back to each image
-        num_mask_rois_per_img = [len(res) for res in results_list]
-        mask_preds = mask_preds.split(num_mask_rois_per_img, 0)
-
-        results_list = self.mask_head.get_results(
-            mask_preds=mask_preds,
-            results_list=results_list,
-            batch_img_metas=batch_img_metas,
-            rcnn_test_cfg=self.test_cfg,
-            rescale=rescale)
-        return results_list
 
     # TODO: Currently not supported
     def aug_test_mask(self, feats, img_metas, det_bboxes, det_labels):

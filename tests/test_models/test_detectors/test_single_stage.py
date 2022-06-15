@@ -29,9 +29,9 @@ class TestSingleStageDetector(TestCase):
 
         from mmdet.models import build_detector
         detector = build_detector(model)
-        assert detector.backbone
-        assert detector.neck
-        assert detector.bbox_head
+        self.assertTrue(detector.backbone)
+        self.assertTrue(detector.neck)
+        self.assertTrue(detector.bbox_head)
 
     @parameterized.expand([
         ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda')),
@@ -64,7 +64,7 @@ class TestSingleStageDetector(TestCase):
             batch_inputs, data_samples = detector.data_preprocessor(
                 packed_inputs, True)
             losses = detector.forward(batch_inputs, data_samples, mode='loss')
-            assert isinstance(losses, dict)
+            self.assertIsInstance(losses, dict)
 
     @parameterized.expand([
         ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda')),
@@ -96,8 +96,8 @@ class TestSingleStageDetector(TestCase):
             with torch.no_grad():
                 batch_results = detector.forward(
                     batch_inputs, data_samples, mode='predict')
-                assert len(batch_results) == 2
-                assert isinstance(batch_results[0], DetDataSample)
+                self.assertEqual(len(batch_results), 2)
+                self.assertIsInstance(batch_results[0], DetDataSample)
 
     @parameterized.expand([
         ('retinanet/retinanet_r18_fpn_1x_coco.py', ('cpu', 'cuda')),
@@ -126,4 +126,4 @@ class TestSingleStageDetector(TestCase):
                 packed_inputs, False)
             batch_results = detector.forward(
                 batch_inputs, data_samples, mode='tensor')
-            assert isinstance(batch_results, tuple)
+            self.assertIsInstance(batch_results, tuple)

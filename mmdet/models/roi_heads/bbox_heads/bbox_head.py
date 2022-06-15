@@ -4,9 +4,9 @@ from typing import List, Optional, Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.runner import BaseModule, auto_fp16, force_fp32
 from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
+from mmengine.model import BaseModule
 from torch import Tensor
 from torch.nn.modules.utils import _pair
 
@@ -59,7 +59,6 @@ class BBoxHead(BaseModule):
         self.reg_decoded_bbox = reg_decoded_bbox
         self.reg_predictor_cfg = reg_predictor_cfg
         self.cls_predictor_cfg = cls_predictor_cfg
-        self.fp16_enabled = False
 
         self.bbox_coder = TASK_UTILS.build(bbox_coder)
         self.loss_cls = MODELS.build(loss_cls)
@@ -115,7 +114,6 @@ class BBoxHead(BaseModule):
     def custom_accuracy(self) -> bool:
         return getattr(self.loss_cls, 'custom_accuracy', False)
 
-    @auto_fp16()
     def forward(self, x: Tuple[Tensor]) -> tuple:
         """Forward features from the upstream network.
 
@@ -273,18 +271,15 @@ class BBoxHead(BaseModule):
             bbox_weights = torch.cat(bbox_weights, 0)
         return labels, label_weights, bbox_targets, bbox_weights
 
-    @force_fp32(apply_to=('cls_score', 'bbox_pred'))
-    def loss(self,
-             cls_score: Tensor,
-             bbox_pred: Tensor,
-             rois: Tensor,
-             labels: Tensor,
-             label_weights: Tensor,
-             bbox_targets: Tensor,
-             bbox_weights: Tensor,
-             reduction_override: Optional[str] = None,
-             **kwargs) -> dict:
-        """Compute losses of the head.
+    def loss_by_feat(self,
+                     cls_score: Tensor,
+                     bbox_pred: Tensor,
+                     rois: Tensor,
+                     sampling_results: SamplingResultList,
+                     rcnn_train_cfg: ConfigDict,
+                     reduction_override: Optional[str] = None,
+                     **kwargs) -> dict:
+        """Calculate the loss based on the features extracted by the bbox head.
 
         Args:
             cls_score (Tensor): Classification prediction
@@ -297,19 +292,9 @@ class BBoxHead(BaseModule):
             rois (Tensor): RoIs with the shape
                 (batch_size * num_proposals_single_image, 5) where the first
                 column indicates batch id of each RoI.
-            labels (Tensor): Label of each proposals, has shape
-                (batch_size * num_proposals_single_image
-            label_weights (Tensor): Classification loss
-                weight of each proposals, has shape
-                (batch_size * num_proposals_single_image, )
-            bbox_targets (Tensor): Regression targets of each
-                proposals, has shape
-                (batch_size * num_proposals_single_image, 4),
-                the last dimension 4 represents
-                [tl_x, tl_y, br_x, br_y].
-            bbox_weights (Tensor): Regression loss weight of each
-                proposals's coordinate, has shape
-                (batch_size * num_proposals_single_image, 4),
+            sampling_results (List[obj:SamplingResult]): Assign results of
+                all images in a batch after sampling.
+            rcnn_train_cfg (obj:ConfigDict): `train_cfg` of RCNN.
             reduction_override (str, optional): The reduction
                 method used to override the original reduction
                 method of the loss. Options are "none",
@@ -318,7 +303,11 @@ class BBoxHead(BaseModule):
         Returns:
             dict: A dictionary of loss components.
         """
+        cls_reg_targets = self.get_targets(sampling_results, rcnn_train_cfg)
+        (labels, label_weights, bbox_targets, bbox_weights) = cls_reg_targets
+
         losses = dict()
+
         if cls_score is not None:
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
             if cls_score.numel() > 0:
@@ -367,16 +356,16 @@ class BBoxHead(BaseModule):
                 losses['loss_bbox'] = bbox_pred[pos_inds].sum()
         return losses
 
-    @force_fp32(apply_to=('cls_score', 'bbox_pred'))
-    def get_results(self,
-                    rois: Tuple[Tensor],
-                    cls_scores: Tuple[Tensor],
-                    bbox_preds: Tuple[Tensor],
-                    batch_img_metas: List[dict],
-                    rcnn_test_cfg: Optional[ConfigDict] = None,
-                    rescale: bool = False,
-                    **kwargs) -> InstanceList:
-        """Transform network outputs of a batch into bbox results.
+    def predict_by_feat(self,
+                        rois: Tuple[Tensor],
+                        cls_scores: Tuple[Tensor],
+                        bbox_preds: Tuple[Tensor],
+                        batch_img_metas: List[dict],
+                        rcnn_test_cfg: Optional[ConfigDict] = None,
+                        rescale: bool = False,
+                        **kwargs) -> InstanceList:
+        """Transform a batch of output features extracted from the head into
+        bbox results.
 
         Args:
             rois (tuple[Tensor]): Tuple of boxes to be transformed.
@@ -408,7 +397,7 @@ class BBoxHead(BaseModule):
         result_list = []
         for img_id in range(len(batch_img_metas)):
             img_meta = batch_img_metas[img_id]
-            results = self._get_results_single(
+            results = self._predict_by_feat_single(
                 roi=rois[img_id],
                 cls_score=cls_scores[img_id],
                 bbox_pred=bbox_preds[img_id],
@@ -420,15 +409,16 @@ class BBoxHead(BaseModule):
 
         return result_list
 
-    def _get_results_single(self,
-                            roi: Tensor,
-                            cls_score: Tensor,
-                            bbox_pred: Tensor,
-                            img_meta: dict,
-                            rescale: bool = False,
-                            rcnn_test_cfg: Optional[ConfigDict] = None,
-                            **kwargs) -> InstanceData:
-        """Transform network outputs of a single image into bbox results.
+    def _predict_by_feat_single(self,
+                                roi: Tensor,
+                                cls_score: Tensor,
+                                bbox_pred: Tensor,
+                                img_meta: dict,
+                                rescale: bool = False,
+                                rcnn_test_cfg: Optional[ConfigDict] = None,
+                                **kwargs) -> InstanceData:
+        """Transform a single image's features extracted from the head into
+        bbox results.
 
         Args:
             roi (Tensor): Boxes to be transformed. Has shape (num_boxes, 5).
@@ -599,8 +589,6 @@ class BBoxHead(BaseModule):
 
         return results_list
 
-    # TODO: check would we deprecate all original fp16 logic
-    @force_fp32(apply_to=('bbox_pred', ))
     def regress_by_class(self, rois: Tensor, label: Tensor, bbox_pred: Tensor,
                          img_meta: dict) -> Tensor:
         """Regress the bbox for the predicted class. Used in Cascade R-CNN.

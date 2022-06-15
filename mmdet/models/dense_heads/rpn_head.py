@@ -92,13 +92,15 @@ class RPNHead(AnchorHead):
         rpn_bbox_pred = self.rpn_reg(x)
         return rpn_cls_score, rpn_bbox_pred
 
-    def loss(self,
-             cls_scores: List[Tensor],
-             bbox_preds: List[Tensor],
-             batch_gt_instances: InstanceList,
-             batch_img_metas: List[dict],
-             batch_gt_instances_ignore: OptInstanceList = None) -> dict:
-        """Compute losses of the head.
+    def loss_by_feat(self,
+                     cls_scores: List[Tensor],
+                     bbox_preds: List[Tensor],
+                     batch_gt_instances: InstanceList,
+                     batch_img_metas: List[dict],
+                     batch_gt_instances_ignore: OptInstanceList = None) \
+            -> dict:
+        """Calculate the loss based on the features extracted by the detection
+        head.
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level,
@@ -116,7 +118,7 @@ class RPNHead(AnchorHead):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        losses = super().loss(
+        losses = super().loss_by_feat(
             cls_scores,
             bbox_preds,
             batch_gt_instances,
@@ -125,15 +127,16 @@ class RPNHead(AnchorHead):
         return dict(
             loss_rpn_cls=losses['loss_cls'], loss_rpn_bbox=losses['loss_bbox'])
 
-    def _get_results_single(self,
-                            cls_score_list: List[Tensor],
-                            bbox_pred_list: List[Tensor],
-                            mlvl_priors: List[Tensor],
-                            img_meta: dict,
-                            cfg: ConfigDict,
-                            rescale: bool = False,
-                            **kwargs) -> InstanceData:
-        """Transform outputs of a single image into bbox predictions.
+    def _predict_by_feat_single(self,
+                                cls_score_list: List[Tensor],
+                                bbox_pred_list: List[Tensor],
+                                mlvl_priors: List[Tensor],
+                                img_meta: dict,
+                                cfg: ConfigDict,
+                                rescale: bool = False,
+                                **kwargs) -> InstanceData:
+        """Transform a single image's features extracted from the head into
+        bbox results.
 
         Args:
             cls_score_list (list[Tensor]): Box scores from all scale

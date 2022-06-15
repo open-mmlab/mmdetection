@@ -1,8 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from abc import ABCMeta, abstractmethod
-from typing import List, Tuple
+from typing import Tuple
 
-from mmcv.runner import BaseModule
+from mmengine.model import BaseModule
 from torch import Tensor
 
 from mmdet.core.utils import (InstanceList, OptConfigType, OptMultiConfig,
@@ -67,32 +67,23 @@ class BaseRoIHead(BaseModule, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def forward_train(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
-                      batch_data_samples: SampleList, **kwargs):
-        """Forward function during training."""
+    def loss(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
+             batch_data_samples: SampleList, **kwargs):
+        """Perform forward propagation and loss calculation of the roi head on
+        the features of the upstream network."""
 
-    # TODO: Currently not supported
-    async def async_simple_test(self,
-                                x,
-                                proposal_list,
-                                img_metas,
-                                proposals=None,
-                                rescale=False,
-                                **kwargs):
-        """Asynchronized test function."""
-        raise NotImplementedError
-
-    def simple_test(self,
-                    x: Tuple[Tensor],
-                    proposal_list: InstanceList,
-                    batch_img_metas: List[dict],
-                    rescale: bool = False,
-                    **kwargs):
-        """Test without augmentation."""
+    def predict(self,
+                x: Tuple[Tensor],
+                rpn_results_list: InstanceList,
+                batch_data_samples: SampleList,
+                rescale: bool = False,
+                **kwargs):
+        """Perform forward propagation of the roi head and predict detection
+        results on the features of the upstream network."""
 
     # TODO: Currently not supported
     def aug_test(self, x, proposal_list, img_metas, rescale=False, **kwargs):
-        """Test with augmentations.
+        """Test function with test time augmentation.
 
         If rescale is False, then returned bboxes and masks will fit the scale
         of imgs[0].

@@ -138,15 +138,15 @@ class TestStandardRoIHead(TestCase):
         # Normal Mask R-CNN RoI head
         roi_head_cfg = _fake_roi_head()
         roi_head = MODELS.build(roi_head_cfg)
-        assert roi_head.with_bbox
-        assert roi_head.with_mask
+        self.assertTrue(roi_head.with_bbox)
+        self.assertTrue(roi_head.with_mask)
 
         # Mask R-CNN RoI head with shared_head
         roi_head_cfg = _fake_roi_head(with_shared_head=True)
         rpn_head = MODELS.build(roi_head_cfg)
-        assert roi_head.with_bbox
-        assert roi_head.with_mask
-        assert rpn_head.with_shared_head
+        self.assertTrue(roi_head.with_bbox)
+        self.assertTrue(roi_head.with_mask)
+        self.assertTrue(rpn_head.with_shared_head)
 
     @parameterized.expand([(False, ), (True, )])
     def test_standard_roi_head_loss(self, with_shared_head):
@@ -187,13 +187,13 @@ class TestStandardRoIHead(TestCase):
         for i in range(len(packed_inputs)):
             batch_data_samples.append(
                 packed_inputs[i]['data_sample'].to(device='cuda'))
-        out = roi_head.forward_train(feats, proposal_list, batch_data_samples)
+        out = roi_head.loss(feats, proposal_list, batch_data_samples)
         loss_cls = out['loss_cls']
         loss_bbox = out['loss_bbox']
         loss_mask = out['loss_mask']
-        assert loss_cls.sum() > 0, 'cls loss should be non-zero'
-        assert loss_bbox.sum() > 0, 'box loss should be non-zero'
-        assert loss_mask.sum() > 0, 'mask loss should be non-zero'
+        self.assertGreater(loss_cls.sum(), 0, 'cls loss should be non-zero')
+        self.assertGreater(loss_bbox.sum(), 0, 'box loss should be non-zero')
+        self.assertGreater(loss_mask.sum(), 0, 'mask loss should be non-zero')
 
         # When there is no truth, the cls loss should be nonzero but
         # there should be no box and mask loss.
@@ -208,12 +208,15 @@ class TestStandardRoIHead(TestCase):
         for i in range(len(packed_inputs)):
             batch_data_samples.append(
                 packed_inputs[i]['data_sample'].to(device='cuda'))
-        out = roi_head.forward_train(feats, proposal_list, batch_data_samples)
+        out = roi_head.loss(feats, proposal_list, batch_data_samples)
         empty_cls_loss = out['loss_cls']
         empty_bbox_loss = out['loss_bbox']
         empty_mask_loss = out['loss_mask']
-        assert empty_cls_loss.sum() > 0, 'cls loss should be non-zero'
-        assert empty_bbox_loss.sum() == 0, (
+        self.assertGreater(empty_cls_loss.sum(), 0,
+                           'cls loss should be non-zero')
+        self.assertEqual(
+            empty_bbox_loss.sum(), 0,
             'there should be no box loss when there are no true boxes')
-        assert empty_mask_loss.sum() == 0, (
+        self.assertEqual(
+            empty_mask_loss.sum(), 0,
             'there should be no box loss when there are no true boxes')

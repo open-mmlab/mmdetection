@@ -111,7 +111,7 @@ class BaseDetector(BaseModel, metaclass=ABCMeta):
     @abstractmethod
     def _forward(self,
                  batch_inputs: Tensor,
-                 data_samples: OptSampleList = None,
+                 batch_data_samples: OptSampleList = None,
                  **kwargs):
         """Network forward process.
 

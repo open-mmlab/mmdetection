@@ -4,7 +4,6 @@ from typing import List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
-from mmcv.runner import force_fp32
 from mmengine.data import InstanceData
 from torch import Tensor
 
@@ -174,6 +173,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
 
         Returns:
             tuple:
+
                 - anchor_list (list[list[Tensor]]): Anchors of each image.
                 - valid_flag_list (list[list[Tensor]]): Valid flags of each
                   image.
@@ -449,7 +449,6 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             bbox_pred, bbox_targets, bbox_weights, avg_factor=avg_factor)
         return loss_cls, loss_bbox
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def loss_by_feat(
             self,
             cls_scores: List[Tensor],
