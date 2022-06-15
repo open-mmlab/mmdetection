@@ -24,14 +24,14 @@
 
 MMdetection 常用到的主干网络细节如下表所示：
 
-| 模型               | 来源          | 链接                                                                                                                                                                                                | 描述                                                                                                                                                                                                   |
-| ---------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ResNet50         | TorchVision | [torchvision 中的 ResNet-50](https://download.pytorch.org/models/resnet50-19c8e357.pth)                                                                                                             | 来自 [torchvision 中的 ResNet-50](https://download.pytorch.org/models/resnet50-19c8e357.pth)。                                                                                                            |
-| ResNet101        | TorchVision | [torchvision 中的 ResNet-101](https://download.pytorch.org/models/resnet101-5d3b4d8f.pth)                                                                                                           | 来自 [torchvision 中的 ResNet-101](https://download.pytorch.org/models/resnet101-5d3b4d8f.pth)。                                                                                                          |
-| RegNetX          | Pycls       | [RegNetX_3.2gf](https://download.openmmlab.com/pretrain/third_party/regnetx_3.2gf-c2599b0f.pth)，[RegNetX_800mf](https://download.openmmlab.com/pretrain/third_party/regnetx_800mf-1f4be4c7.pth) 等 | 来自 [pycls](https://github.com/facebookresearch/pycls)。                                                                                                                                               |
+| 模型             | 来源        | 链接                                                                                                                                                                                                | 描述                                                                                                                                                                                                                       |
+| ---------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ResNet50         | TorchVision | [torchvision 中的 ResNet-50](https://download.pytorch.org/models/resnet50-19c8e357.pth)                                                                                                             | 来自 [torchvision 中的 ResNet-50](https://download.pytorch.org/models/resnet50-19c8e357.pth)。                                                                                                                             |
+| ResNet101        | TorchVision | [torchvision 中的 ResNet-101](https://download.pytorch.org/models/resnet101-5d3b4d8f.pth)                                                                                                           | 来自 [torchvision 中的 ResNet-101](https://download.pytorch.org/models/resnet101-5d3b4d8f.pth)。                                                                                                                           |
+| RegNetX          | Pycls       | [RegNetX_3.2gf](https://download.openmmlab.com/pretrain/third_party/regnetx_3.2gf-c2599b0f.pth)，[RegNetX_800mf](https://download.openmmlab.com/pretrain/third_party/regnetx_800mf-1f4be4c7.pth) 等 | 来自 [pycls](https://github.com/facebookresearch/pycls)。                                                                                                                                                                  |
 | ResNet50_Caffe   | MSRA        | [MSRA 中的 ResNet-50](https://download.openmmlab.com/pretrain/third_party/resnet50_caffe-788b5fa3.pth)                                                                                              | 由 [Detectron2 中的 R-50.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/MSRA/R-50.pkl) 转化的副本。原始权重文件来自 [MSRA 中的原始 ResNet-50](https://github.com/KaimingHe/deep-residual-networks)。    |
 | ResNet101_Caffe  | MSRA        | [MSRA 中的 ResNet-101](https://download.openmmlab.com/pretrain/third_party/resnet101_caffe-3ad79236.pth)                                                                                            | 由 [Detectron2 中的 R-101.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/MSRA/R-101.pkl) 转化的副本。原始权重文件来自 [MSRA 中的原始 ResNet-101](https://github.com/KaimingHe/deep-residual-networks)。 |
-| ResNext101_32x8d | Caffe2      | [Caffe2 ResNext101_32x8d](https://download.openmmlab.com/pretrain/third_party/resnext101_32x8d-1516f1aa.pth)                                                                                      | 由 [Detectron2 中的 X-101-32x8d.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/FAIR/X-101-32x8d.pkl) 转化的副本。原始 ResNeXt-101-32x8d 由 FB 使用 Caffe2 训练。                                   |
+| ResNext101_32x8d | Caffe2      | [Caffe2 ResNext101_32x8d](https://download.openmmlab.com/pretrain/third_party/resnext101_32x8d-1516f1aa.pth)                                                                                        | 由 [Detectron2 中的 X-101-32x8d.pkl](https://dl.fbaipublicfiles.com/detectron2/ImageNetPretrained/FAIR/X-101-32x8d.pkl) 转化的副本。原始 ResNeXt-101-32x8d 由 FB 使用 Caffe2 训练。                                        |
 
 ## Baselines
 
@@ -255,15 +255,15 @@ MMdetection 常用到的主干网络细节如下表所示：
 
 我们与其他流行框架的 Mask R-CNN 训练速度进行比较（数据是从 [detectron2](https://github.com/facebookresearch/detectron2/blob/master/docs/notes/benchmarks.md/) 复制而来）。在 mmdetection 中，我们使用 [mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_poly_1x_coco_v1.py) 进行基准测试。它与 detectron2 的 [mask_rcnn_R_50_FPN_noaug_1x.yaml](https://github.com/facebookresearch/detectron2/blob/master/configs/Detectron1-Comparisons/mask_rcnn_R_50_FPN_noaug_1x.yaml) 设置完全一样。同时，我们还提供了[模型权重](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug_compare_20200518-10127928.pth)和[训练 log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug/mask_rcnn_r50_caffe_fpn_poly_1x_coco_no_aug_20200518_105755.log.json) 作为参考。为了跳过 GPU 预热时间，吞吐量按照100-500次迭代之间的平均吞吐量来计算。
 
-| 框架                                                                                     | 吞吐量 (img/s) |
-| -------------------------------------------------------------------------------------- | ----------- |
-| [Detectron2](https://github.com/facebookresearch/detectron2)                           | 62          |
-| [MMDetection](https://github.com/open-mmlab/mmdetection)                               | 61          |
-| [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark/)          | 53          |
-| [tensorpack](https://github.com/tensorpack/tensorpack/tree/master/examples/FasterRCNN) | 50          |
-| [simpledet](https://github.com/TuSimple/simpledet/)                                    | 39          |
-| [Detectron](https://github.com/facebookresearch/Detectron)                             | 19          |
-| [matterport/Mask_RCNN](https://github.com/matterport/Mask_RCNN/)                       | 14          |
+| 框架                                                                                   | 吞吐量 (img/s) |
+| -------------------------------------------------------------------------------------- | -------------- |
+| [Detectron2](https://github.com/facebookresearch/detectron2)                           | 62             |
+| [MMDetection](https://github.com/open-mmlab/mmdetection)                               | 61             |
+| [maskrcnn-benchmark](https://github.com/facebookresearch/maskrcnn-benchmark/)          | 53             |
+| [tensorpack](https://github.com/tensorpack/tensorpack/tree/master/examples/FasterRCNN) | 50             |
+| [simpledet](https://github.com/TuSimple/simpledet/)                                    | 39             |
+| [Detectron](https://github.com/facebookresearch/Detectron)                             | 19             |
+| [matterport/Mask_RCNN](https://github.com/matterport/Mask_RCNN/)                       | 14             |
 
 ### 推理时间基准
 
@@ -295,17 +295,17 @@ python tools/benchmark.py ${CONFIG} ${CHECKPOINT} [--log-interval $[LOG-INTERVAL
 
 ### 精度
 
-| 模型                                                                                                                                     | 训练策略 | Detectron2                                                                                                                             | mmdetection | 下载                                                                                                                                                                                                                                                                                                                                                               |
-| -------------------------------------------------------------------------------------------------------------------------------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco.py) | 1x   | [37.9](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml)                 | 38.0        | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-5324cff8.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco_20200429_234554.log.json)             |
-| [Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py)  | 1x   | [38.6 & 35.2](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml) | 38.8 & 35.4 | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco-dbecf295.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco_20200430_054239.log.json) |
-| [Retinanet](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/retinanet_r50_caffe_fpn_mstrain_1x_coco.py)        | 1x   | [36.5](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-Detection/retinanet_R_50_FPN_1x.yaml)                   | 37.0        | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco-586977a0.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco_20200430_014748.log.json)                     |
+| 模型                                                                                                                                   | 训练策略 | Detectron2                                                                                                                             | mmdetection | 下载                                                                                                                                                                                                                                                                                                                                                             |
+| -------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Faster R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco.py) | 1x       | [37.9](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-Detection/faster_rcnn_R_50_FPN_1x.yaml)                 | 38.0        | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco-5324cff8.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco/faster_rcnn_r50_caffe_fpn_mstrain_1x_coco_20200429_234554.log.json)             |
+| [Mask R-CNN](https://github.com/open-mmlab/mmdetection/blob/master/configs/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py)  | 1x       | [38.6 & 35.2](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml) | 38.8 & 35.4 | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco-dbecf295.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco_20200430_054239.log.json) |
+| [Retinanet](https://github.com/open-mmlab/mmdetection/blob/master/configs/retinanet/retinanet_r50_caffe_fpn_mstrain_1x_coco.py)        | 1x       | [36.5](https://github.com/facebookresearch/detectron2/blob/master/configs/COCO-Detection/retinanet_R_50_FPN_1x.yaml)                   | 37.0        | [model](https://download.openmmlab.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco-586977a0.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/benchmark/retinanet_r50_caffe_fpn_mstrain_1x_coco/retinanet_r50_caffe_fpn_mstrain_1x_coco_20200430_014748.log.json)                     |
 
 ### 训练速度
 
 训练速度使用 s/iter 来度量。结果越低越好。
 
-| 模型           | Detectron2 | mmdetection |
+| 模型         | Detectron2 | mmdetection |
 | ------------ | ---------- | ----------- |
 | Faster R-CNN | 0.210      | 0.216       |
 | Mask R-CNN   | 0.261      | 0.265       |
@@ -318,7 +318,7 @@ python tools/benchmark.py ${CONFIG} ${CHECKPOINT} [--log-interval $[LOG-INTERVAL
 对于 Mask RCNN，我们去除了后处理中 RLE 编码的时间。
 我们在括号中给出了官方给出的速度。由于硬件差异，官方给出的速度会比我们所测试得到的速度快一些。
 
-| 模型           | Detectron2  | mmdetection |
+| 模型         | Detectron2  | mmdetection |
 | ------------ | ----------- | ----------- |
 | Faster R-CNN | 25.6 (26.3) | 22.2        |
 | Mask R-CNN   | 22.5 (23.3) | 19.6        |
@@ -326,7 +326,7 @@ python tools/benchmark.py ${CONFIG} ${CHECKPOINT} [--log-interval $[LOG-INTERVAL
 
 ### 训练内存
 
-| 模型           | Detectron2 | mmdetection |
+| 模型         | Detectron2 | mmdetection |
 | ------------ | ---------- | ----------- |
 | Faster R-CNN | 3.0        | 3.8         |
 | Mask R-CNN   | 3.4        | 3.9         |
