@@ -7,7 +7,6 @@ from typing import List, Optional, Tuple
 import torch
 from mmcv.cnn.utils.weight_init import constant_init
 from mmcv.ops import batched_nms
-from mmcv.runner import force_fp32
 from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 from mmengine.model import BaseModule
@@ -107,8 +106,8 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
     def loss_and_predict(self,
                          x: Tuple[Tensor],
                          batch_data_samples: SampleList,
-                         proposal_cfg: Optional[ConfigDict] = None) \
-            -> Tuple[dict, InstanceList]:
+                         proposal_cfg: Optional[ConfigDict] = None,
+                         **kwargs) -> Tuple[dict, InstanceList]:
         """Perform forward propagation of the head, then calculate loss and
         predictions from the features and data samples.
 
@@ -177,7 +176,6 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             *outs, batch_img_metas=batch_img_metas, rescale=rescale)
         return predictions
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def predict_by_feat(self,
                         cls_scores: List[Tensor],
                         bbox_preds: List[Tensor],
@@ -416,7 +414,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         Args:
             results (:obj:`InstaceData`): Detection instance results,
                 each item has shape (num_bboxes, ).
-            cfg (mmengine.Config): Test / postprocessing configuration,
+            cfg (ConfigDict): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
                 Default to False.

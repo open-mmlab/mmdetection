@@ -3,8 +3,8 @@ from typing import List, Tuple, Union
 
 from torch import Tensor
 
-from mmdet.core.utils import (ConfigType, OptConfigType, OptInstanceList,
-                              OptMultiConfig, OptSampleList, SampleList)
+from mmdet.core.utils import (ConfigType, OptConfigType, OptMultiConfig,
+                              SampleList)
 from mmdet.registry import MODELS
 from .base import BaseDetector
 
@@ -36,10 +36,7 @@ class SingleStageDetector(BaseDetector):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
-    def loss(self,
-             batch_inputs: Tensor,
-             batch_data_samples: SampleList,
-             proposals: OptInstanceList = None,
+    def loss(self, batch_inputs: Tensor, batch_data_samples: SampleList,
              **kwargs) -> Union[dict, list]:
         """Calculate losses from a batch of inputs and data samples.
 
@@ -49,8 +46,6 @@ class SingleStageDetector(BaseDetector):
             batch_data_samples (list[:obj:`DetDataSample`]): The batch
                 data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
-            proposals (List[:obj:`InstanceData`], optional): Predefined
-                proposal boxes. Defaults to None.
 
         Returns:
             dict: A dictionary of loss components.
@@ -94,18 +89,13 @@ class SingleStageDetector(BaseDetector):
         predictions = self.convert_to_datasample(results_list)
         return predictions
 
-    def _forward(self,
-                 batch_inputs: Tensor,
-                 data_samples: OptSampleList = None,
-                 **kwargs) -> Tuple[List[Tensor]]:
+    def _forward(self, batch_inputs: Tensor, *args, **kwargs) \
+            -> Tuple[List[Tensor]]:
         """Network forward process. Usually includes backbone, neck and head
         forward without any post-processing.
 
          Args:
             batch_inputs (Tensor): Inputs with shape (N, C, H, W).
-            batch_data_samples (List[:obj:`DetDataSample`], optional): The Data
-                Samples. It usually includes information such as
-                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
 
         Returns:
             tuple[list]: A tuple of features from ``bbox_head`` forward.
@@ -122,7 +112,7 @@ class SingleStageDetector(BaseDetector):
 
         Returns:
             tuple[Tensor]: Multi-level features that may have
-                different resolutions.
+            different resolutions.
         """
         x = self.backbone(batch_inputs)
         if self.with_neck:

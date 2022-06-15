@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 import torch
 import torch.nn as nn
 from mmcv import ops
-from mmcv.runner import BaseModule
+from mmengine.model import BaseModule
 
 
 class BaseRoIExtractor(BaseModule, metaclass=ABCMeta):

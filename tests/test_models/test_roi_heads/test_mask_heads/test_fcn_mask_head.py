@@ -42,9 +42,9 @@ class TestFCNMaskHead(TestCase):
         result.labels = torch.randint(
             num_classes, (num_samples, ), dtype=torch.long).to(device)
         mask_head.to(device=device)
-        result_list = mask_head.get_results(
+        result_list = mask_head.predict_by_feat(
             mask_preds=tuple(mask_pred),
-            results_list=tuple([result]),
+            results_list=[result],
             batch_img_metas=[img_metas],
             rcnn_test_cfg=rcnn_test_cfg)
 
@@ -60,9 +60,9 @@ class TestFCNMaskHead(TestCase):
         result.labels = torch.randint(
             num_classes, (num_samples, ), dtype=torch.long).to(device)
         mask_head.to(device=device)
-        result_list = mask_head.get_results(
+        result_list = mask_head.predict_by_feat(
             mask_preds=tuple(mask_pred),
-            results_list=tuple([result]),
+            results_list=[result],
             batch_img_metas=[img_metas],
             rcnn_test_cfg=rcnn_test_cfg,
             activate_map=True)
@@ -77,9 +77,9 @@ class TestFCNMaskHead(TestCase):
         mask_pred = [torch.rand((num_samples, num_classes, 14, 14)).to(device)]
         result.bboxes = torch.zeros((num_samples, 4)).to(device)
         result.labels = torch.zeros((num_samples, )).to(device)
-        result_list = mask_head.get_results(
+        result_list = mask_head.predict_by_feat(
             mask_preds=tuple(mask_pred),
-            results_list=tuple([result]),
+            results_list=[result],
             batch_img_metas=[img_metas],
             rcnn_test_cfg=rcnn_test_cfg)
 

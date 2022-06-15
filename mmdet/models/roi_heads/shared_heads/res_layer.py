@@ -2,7 +2,7 @@
 import warnings
 
 import torch.nn as nn
-from mmcv.runner import BaseModule, auto_fp16
+from mmengine.model import BaseModule
 
 from mmdet.models.backbones import ResNet
 from mmdet.models.utils import ResLayer as _ResLayer
@@ -66,7 +66,6 @@ class ResLayer(BaseModule):
         else:
             raise TypeError('pretrained must be a str or None')
 
-    @auto_fp16()
     def forward(self, x):
         res_layer = getattr(self, f'layer{self.stage + 1}')
         out = res_layer(x)

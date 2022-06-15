@@ -27,7 +27,6 @@ class TestBboxHead(TestCase):
         self.assertTrue(bbox_head.fc_reg)
         self.assertEqual(len(bbox_head.shared_convs), 4)
         self.assertEqual(len(bbox_head.shared_fcs), 1)
-        print()
 
     def test_bbox_head_get_results(self):
         num_classes = 6
@@ -48,7 +47,7 @@ class TestBboxHead(TestCase):
             score_thr=0.,
             nms=dict(type='nms', iou_threshold=0.5),
             max_per_img=100)
-        result_list = bbox_head.get_results(
+        result_list = bbox_head.predict_by_feat(
             rois=tuple(rois),
             cls_scores=tuple(cls_scores),
             bbox_preds=tuple(bbox_preds),
@@ -62,7 +61,7 @@ class TestBboxHead(TestCase):
         self.assertEqual(len(result_list[0].labels.shape), 1)
 
         # without nms
-        result_list = bbox_head.get_results(
+        result_list = bbox_head.predict_by_feat(
             rois=tuple(rois),
             cls_scores=tuple(cls_scores),
             bbox_preds=tuple(bbox_preds),
@@ -85,7 +84,7 @@ class TestBboxHead(TestCase):
             score_thr=0.,
             nms=dict(type='nms', iou_threshold=0.5),
             max_per_img=100)
-        result_list = bbox_head.get_results(
+        result_list = bbox_head.predict_by_feat(
             rois=tuple(rois),
             cls_scores=tuple(cls_scores),
             bbox_preds=tuple(bbox_preds),
@@ -97,7 +96,7 @@ class TestBboxHead(TestCase):
         self.assertEqual(result_list[0].bboxes.shape[1], 4)
 
         # without nms
-        result_list = bbox_head.get_results(
+        result_list = bbox_head.predict_by_feat(
             rois=tuple(rois),
             cls_scores=tuple(cls_scores),
             bbox_preds=tuple(bbox_preds),

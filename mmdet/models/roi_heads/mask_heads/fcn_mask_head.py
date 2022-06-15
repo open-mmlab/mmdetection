@@ -7,9 +7,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, build_conv_layer, build_upsample_layer
 from mmcv.ops.carafe import CARAFEPack
-from mmcv.runner import BaseModule, ModuleList, auto_fp16, force_fp32
 from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
+from mmengine.model import BaseModule, ModuleList
 from torch import Tensor
 from torch.nn.modules.utils import _pair
 
@@ -67,7 +67,6 @@ class FCNMaskHead(BaseModule):
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.predictor_cfg = predictor_cfg
-        self.fp16_enabled = False
         self.loss_mask = MODELS.build(loss_mask)
 
         self.convs = ModuleList()
@@ -131,7 +130,6 @@ class FCNMaskHead(BaseModule):
                     m.weight, mode='fan_out', nonlinearity='relu')
                 nn.init.constant_(m.bias, 0)
 
-    @auto_fp16()
     def forward(self, x: Tensor) -> Tensor:
         """Forward features from the upstream network.
 
@@ -176,58 +174,53 @@ class FCNMaskHead(BaseModule):
                                    gt_masks, rcnn_train_cfg)
         return mask_targets
 
-    @force_fp32(apply_to=('mask_pred', ))
-    def loss(self, mask_pred: Tensor, mask_targets: Tensor,
-             labels: Tensor) -> dict:
-        """Compute losses of the head.
+    def loss_by_feat(self, mask_pred: Tensor,
+                     sampling_results: SamplingResultList,
+                     batch_gt_instances: InstanceList,
+                     rcnn_train_cfg: ConfigDict) -> dict:
+        """Calculate the loss based on the features extracted by the mask head.
 
         Args:
              mask_pred (Tensor): Predicted foreground masks, has shape
                 (num_pos, num_classes, h, w).
-             mask_targets (Tensor): Mask target of each positive proposals
-                in the image, has shape (num_pos, h, w).
-             labels (Tensor): Labels of positive samples, has shape (num_pos, ).
+            sampling_results (List[obj:SamplingResult]): Assign results of
+                all images in a batch after sampling.
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes``, ``labels``, and
+                ``masks`` attributes.
+            rcnn_train_cfg (obj:ConfigDict): `train_cfg` of RCNN.
 
         Returns:
             dict: A dictionary of loss components.
-
-        Example:
-            >>> from mmdet.models.roi_heads.mask_heads.fcn_mask_head import *  # NOQA
-            >>> N = 7  # N = number of extracted ROIs
-            >>> C, H, W = 11, 32, 32
-            >>> # Create example instance of FCN Mask Head.
-            >>> # There are lots of variations depending on the configuration
-            >>> self = FCNMaskHead(num_classes=C, num_convs=1)
-            >>> inputs = torch.rand(N, self.in_channels, H, W)
-            >>> mask_pred = self.forward(inputs)
-            >>> sf = self.scale_factor
-            >>> labels = torch.randint(0, C, size=(N,))
-            >>> # With the default properties the mask targets should indicate
-            >>> # a (potentially soft) single-class label
-            >>> mask_targets = torch.rand(N, H * sf, W * sf)
-            >>> loss = self.loss(mask_pred, mask_targets, labels)
-            >>> print('loss = {!r}'.format(loss))
         """
+        mask_targets = self.get_targets(
+            sampling_results=sampling_results,
+            batch_gt_instances=batch_gt_instances,
+            rcnn_train_cfg=rcnn_train_cfg)
+
+        pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
+
         loss = dict()
         if mask_pred.size(0) == 0:
             loss_mask = mask_pred.sum()
         else:
             if self.class_agnostic:
                 loss_mask = self.loss_mask(mask_pred, mask_targets,
-                                           torch.zeros_like(labels))
+                                           torch.zeros_like(pos_labels))
             else:
-                loss_mask = self.loss_mask(mask_pred, mask_targets, labels)
+                loss_mask = self.loss_mask(mask_pred, mask_targets, pos_labels)
         loss['loss_mask'] = loss_mask
-        return loss
+        return dict(loss_mask=loss, mask_targets=mask_targets)
 
-    def get_results(self,
-                    mask_preds: Tuple[Tensor],
-                    results_list: Tuple[InstanceData],
-                    batch_img_metas: List[dict],
-                    rcnn_test_cfg: ConfigDict,
-                    rescale: bool = False,
-                    activate_map: bool = False) -> InstanceList:
-        """Transform network outputs of a batch into mask results.
+    def predict_by_feat(self,
+                        mask_preds: Tuple[Tensor],
+                        results_list: List[InstanceData],
+                        batch_img_metas: List[dict],
+                        rcnn_test_cfg: ConfigDict,
+                        rescale: bool = False,
+                        activate_map: bool = False) -> InstanceList:
+        """Transform a batch of output features extracted from the head into
+        mask results.
 
         Args:
             mask_preds (tuple[Tensor]): Tuple of predicted foreground masks,
@@ -265,7 +258,7 @@ class FCNMaskHead(BaseModule):
                 # When rcnn_test_cfg is None
                 # TODO: the logic need enhance.
                 labels = results.scores
-            im_mask = self._get_results_single(
+            im_mask = self._predict_by_feat_single(
                 mask_pred=mask_preds[img_id],
                 bboxes=bboxes,
                 labels=labels,
@@ -276,14 +269,14 @@ class FCNMaskHead(BaseModule):
             results.masks = im_mask
         return results_list
 
-    def _get_results_single(self,
-                            mask_pred: Tensor,
-                            bboxes: Tensor,
-                            labels: Tensor,
-                            img_meta: dict,
-                            rcnn_test_cfg: ConfigDict,
-                            rescale: bool = False,
-                            activate_map: bool = False) -> Tensor:
+    def _predict_by_feat_single(self,
+                                mask_pred: Tensor,
+                                bboxes: Tensor,
+                                labels: Tensor,
+                                img_meta: dict,
+                                rcnn_test_cfg: ConfigDict,
+                                rescale: bool = False,
+                                activate_map: bool = False) -> Tensor:
         """Get segmentation masks from mask_pred and bboxes.
 
         Args:

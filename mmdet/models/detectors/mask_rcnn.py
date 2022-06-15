@@ -17,7 +17,7 @@ class MaskRCNN(TwoStageDetector):
                  train_cfg: ConfigDict,
                  test_cfg: ConfigDict,
                  neck: OptConfigType = None,
-                 preprocess_cfg: OptConfigType = None,
+                 data_preprocessor: OptConfigType = None,
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
             backbone=backbone,
@@ -27,4 +27,4 @@ class MaskRCNN(TwoStageDetector):
             train_cfg=train_cfg,
             test_cfg=test_cfg,
             init_cfg=init_cfg,
-            preprocess_cfg=preprocess_cfg)
+            data_preprocessor=data_preprocessor)
