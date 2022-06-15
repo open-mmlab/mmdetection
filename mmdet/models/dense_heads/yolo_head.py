@@ -11,7 +11,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import (ConvModule, bias_init_with_prob, constant_init, is_norm,
                       normal_init)
-from mmcv.runner import force_fp32
 from mmengine.data import InstanceData
 from torch import Tensor
 
@@ -104,7 +103,6 @@ class YOLOV3Head(BaseDenseHead):
                     self.train_cfg.sampler, context=self)
             else:
                 self.sampler = PseudoSampler()
-        self.fp16_enabled = False
 
         self.one_hot_smoother = one_hot_smoother
 
@@ -196,15 +194,14 @@ class YOLOV3Head(BaseDenseHead):
 
         return tuple(pred_maps),
 
-    @force_fp32(apply_to=('pred_maps', ))
-    def get_results(self,
-                    pred_maps: Sequence[Tensor],
-                    batch_img_metas: Optional[List[dict]],
-                    cfg: OptConfigType = None,
-                    rescale: bool = False,
-                    with_nms: bool = True) -> InstanceList:
-        """Transform network output for a batch into bbox predictions. It has
-        been accelerated since PR #5991.
+    def predict_by_feat(self,
+                        pred_maps: Sequence[Tensor],
+                        batch_img_metas: Optional[List[dict]],
+                        cfg: OptConfigType = None,
+                        rescale: bool = False,
+                        with_nms: bool = True) -> InstanceList:
+        """Transform a batch of output features extracted from the head into
+        bbox results. It has been accelerated since PR #5991.
 
         Args:
             pred_maps (Sequence[Tensor]): Raw predictions for a batch of
@@ -290,13 +287,14 @@ class YOLOV3Head(BaseDenseHead):
             results_list.append(results)
         return results_list
 
-    @force_fp32(apply_to=('pred_maps', ))
-    def loss(self,
-             pred_maps: Sequence[Tensor],
-             batch_gt_instances: InstanceList,
-             batch_img_metas: List[dict],
-             batch_gt_instances_ignore: OptInstanceList = None) -> dict:
-        """Compute loss of the head.
+    def loss_by_feat(
+            self,
+            pred_maps: Sequence[Tensor],
+            batch_gt_instances: InstanceList,
+            batch_img_metas: List[dict],
+            batch_gt_instances_ignore: OptInstanceList = None) -> dict:
+        """Calculate the loss based on the features extracted by the detection
+        head.
 
         Args:
             pred_maps (list[Tensor]): Prediction map for each scale level,
@@ -335,7 +333,8 @@ class YOLOV3Head(BaseDenseHead):
             anchor_list, responsible_flag_list, batch_gt_instances)
 
         losses_cls, losses_conf, losses_xy, losses_wh = multi_apply(
-            self.loss_single, pred_maps, target_maps_list, neg_maps_list)
+            self.loss_by_feat_single, pred_maps, target_maps_list,
+            neg_maps_list)
 
         return dict(
             loss_cls=losses_cls,
@@ -343,9 +342,10 @@ class YOLOV3Head(BaseDenseHead):
             loss_xy=losses_xy,
             loss_wh=losses_wh)
 
-    def loss_single(self, pred_map: Tensor, target_map: Tensor,
-                    neg_map: Tensor) -> tuple:
-        """Compute loss of a single image from a batch.
+    def loss_by_feat_single(self, pred_map: Tensor, target_map: Tensor,
+                            neg_map: Tensor) -> tuple:
+        """Calculate the loss of a single scale level based on the features
+        extracted by the detection head.
 
         Args:
             pred_map (Tensor): Raw predictions for a single level.
