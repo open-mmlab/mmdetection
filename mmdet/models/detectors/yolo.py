@@ -19,7 +19,7 @@ class YOLOV3(SingleStageDetector):
             of YOLOX. Default: None.
         test_cfg (:obj:`ConfigDict` or dict, optional): The testing config
             of YOLOX. Default: None.
-        preprocess_cfg (:obj:`ConfigDict` or dict, optional):
+        data_preprocessor (:obj:`ConfigDict` or dict, optional):
             Model preprocessing config for processing the input data.
             it usually includes ``to_rgb``, ``pad_size_divisor``,
             ``pad_value``, ``mean`` and ``std``. Defaults to None.
@@ -33,7 +33,7 @@ class YOLOV3(SingleStageDetector):
                  bbox_head: ConfigType,
                  train_cfg: OptConfigType = None,
                  test_cfg: OptConfigType = None,
-                 preprocess_cfg: OptConfigType = None,
+                 data_preprocessor: OptConfigType = None,
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
             backbone=backbone,
@@ -41,5 +41,5 @@ class YOLOV3(SingleStageDetector):
             bbox_head=bbox_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
-            preprocess_cfg=preprocess_cfg,
+            data_preprocessor=data_preprocessor,
             init_cfg=init_cfg)

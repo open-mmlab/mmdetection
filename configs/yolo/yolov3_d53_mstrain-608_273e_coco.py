@@ -1,11 +1,14 @@
 _base_ = ['../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py']
-
-preprocess_cfg = dict(
-    mean=[0, 0, 0], std=[255., 255., 255.], to_rgb=True, pad_size_divisor=32)
 # model settings
+data_preprocessor = dict(
+    type='DetDataPreprocessor',
+    mean=[0, 0, 0],
+    std=[255., 255., 255.],
+    bgr_to_rgb=True,
+    pad_size_divisor=32)
 model = dict(
     type='YOLOV3',
-    preprocess_cfg=preprocess_cfg,
+    data_preprocessor=data_preprocessor,
     backbone=dict(
         type='Darknet',
         depth=53,
@@ -76,8 +79,8 @@ train_pipeline = [
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='Expand',
-        mean=preprocess_cfg['mean'],
-        to_rgb=preprocess_cfg['to_rgb'],
+        mean=data_preprocessor['mean'],
+        to_rgb=data_preprocessor['bgr_to_rgb'],
         ratio_range=(1, 2)),
     dict(
         type='MinIoURandomCrop',
@@ -136,7 +139,8 @@ train_cfg = dict(max_epochs=273, val_interval=7)
 # optimizer
 optim_wrapper = dict(
     type='OptimWrapper',
-    optimizer=dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0005))
+    optimizer=dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0005),
+    clip_grad=dict(max_norm=35, norm_type=2))
 
 # learning policy
 param_scheduler = [
@@ -144,14 +148,9 @@ param_scheduler = [
     dict(type='MultiStepLR', by_epoch=True, milestones=[218, 246], gamma=0.1)
 ]
 
-default_hooks = dict(
-    optimizer=dict(
-        _delete_=True,
-        type='OptimizerHook',
-        grad_clip=dict(max_norm=35, norm_type=2)),
-    checkpoint=dict(type='CheckpointHook', interval=7))
+default_hooks = dict(checkpoint=dict(type='CheckpointHook', interval=7))
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (8 samples per GPU)
-# auto_scale_lr = dict(base_batch_size=64)
+auto_scale_lr = dict(base_batch_size=64)
