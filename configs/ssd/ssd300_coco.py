@@ -12,8 +12,8 @@ train_pipeline = [
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='Expand',
-        mean=[123.675, 116.28, 103.53],
-        to_rgb=True,
+        mean={{_base_.model.data_preprocessor.mean}},
+        to_rgb={{_base_.model.data_preprocessor.bgr_to_rgb}},
         ratio_range=(1, 4)),
     dict(
         type='MinIoURandomCrop',
@@ -66,6 +66,7 @@ test_dataloader = val_dataloader
 
 # optimizer
 optim_wrapper = dict(
+    type='OptimWrapper',
     optimizer=dict(type='SGD', lr=2e-3, momentum=0.9, weight_decay=5e-4))
 
 custom_hooks = [
@@ -73,8 +74,7 @@ custom_hooks = [
     dict(type='CheckInvalidLossHook', interval=50, priority='VERY_LOW')
 ]
 
-# TODO support auto_scale_lr
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (8 samples per GPU)
-# auto_scale_lr = dict(base_batch_size=64)
+auto_scale_lr = dict(base_batch_size=64)

@@ -49,7 +49,7 @@ class PISASSDHead(SSDHead):
             dict], Optional): Initialization config dict.
     """  # noqa: W605
 
-    def loss(
+    def loss_by_feat(
         self,
         cls_scores: List[Tensor],
         bbox_preds: List[Tensor],
@@ -168,7 +168,7 @@ class PISASSDHead(SSDHead):
             'bbox predications become infinite or NaN!'
 
         losses_cls, losses_bbox = multi_apply(
-            self.loss_single,
+            self.loss_by_feat_single,
             all_cls_scores,
             all_bbox_preds,
             all_anchors,
