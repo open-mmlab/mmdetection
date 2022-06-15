@@ -580,6 +580,7 @@ This tool accepts several optional arguments, including:
 - `--no-validate` (**not suggested**): Disable evaluation during training.
 - `--work-dir ${WORK_DIR}`: Override the working directory.
 - `--resume-from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
+- `--cfg-options load_from=${CHECKPOINT_FILE}`: Load the model weights from a previous checkpoint file.
 - `--options 'Key=value'`: Overrides other settings in the used config.
 
 **Note**:
