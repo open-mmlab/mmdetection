@@ -58,14 +58,13 @@ def _rand_bboxes(rng, num_boxes, w, h):
 
 
 def _rand_masks(rng, num_boxes, bboxes, img_w, img_h):
-    from mmdet.core.mask import BitmapMasks
     masks = np.zeros((num_boxes, img_h, img_w))
     for i, bbox in enumerate(bboxes):
         bbox = bbox.astype(np.int32)
         mask = (rng.rand(1, bbox[3] - bbox[1], bbox[2] - bbox[0]) >
                 0.3).astype(np.int)
         masks[i:i + 1, bbox[1]:bbox[3], bbox[0]:bbox[2]] = mask
-    return BitmapMasks(masks, height=img_h, width=img_w)
+    return torch.from_numpy(masks)
 
 
 def demo_mm_inputs(batch_size=2,
@@ -155,8 +154,9 @@ def demo_mm_inputs(batch_size=2,
         # gt_sem_seg
         if with_semantic:
             # assume gt_semantic_seg using scale 1/8 of the img
-            gt_semantic_seg = np.random.randint(
-                0, num_classes, (1, 1, h // 8, w // 8), dtype=np.uint8)
+            gt_semantic_seg = torch.from_numpy(
+                np.random.randint(
+                    0, num_classes, (1, h // 8, w // 8), dtype=np.uint8))
             gt_sem_seg_data = dict(sem_seg=gt_semantic_seg)
             data_sample.gt_sem_seg = PixelData(**gt_sem_seg_data)
 

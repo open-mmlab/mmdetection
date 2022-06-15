@@ -45,6 +45,13 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         pad_size_divisor (int): The size of padded image should be
             divisible by ``pad_size_divisor``. Defaults to 1.
         pad_value (Number): The padded pixel value. Defaults to 0.
+        pad_mask (bool): Whether to pad instance masks. Defaults to False.
+        mask_pad_value (int): The padded pixel value for instance masks.
+            Defaults to 0.
+        pad_seg (bool): Whether to pad semantic segmentation maps.
+            Defaults to False.
+        seg_pad_value (int): The padded pixel value for semantic
+            segmentation maps. Defaults to 255.
         bgr_to_rgb (bool): whether to convert image from BGR to RGB.
             Defaults to False.
         rgb_to_bgr (bool): whether to convert image from RGB to RGB.
@@ -57,6 +64,10 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                  std: Sequence[Number] = None,
                  pad_size_divisor: int = 1,
                  pad_value: Union[float, int] = 0,
+                 pad_mask: bool = False,
+                 mask_pad_value: int = 0,
+                 pad_seg: bool = False,
+                 seg_pad_value: int = 255,
                  bgr_to_rgb: bool = False,
                  rgb_to_bgr: bool = False,
                  batch_augments: Optional[List[dict]] = None):
@@ -72,6 +83,10 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                 [MODELS.build(aug) for aug in batch_augments])
         else:
             self.batch_augments = None
+        self.pad_mask = pad_mask
+        self.mask_pad_value = mask_pad_value
+        self.pad_seg = pad_seg
+        self.seg_pad_value = seg_pad_value
 
     def forward(self,
                 data: Sequence[dict],
@@ -102,6 +117,13 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                     'batch_input_shape': batch_input_shape,
                     'pad_shape': pad_shape
                 })
+
+            if self.pad_mask:
+                self.pad_gt_masks(batch_data_samples)
+
+            if self.pad_seg:
+                self.pad_gt_sem_seg(batch_data_samples)
+
         if training and self.batch_augments is not None:
             for batch_aug in self.batch_augments:
                 batch_inputs, batch_data_samples = batch_aug(
@@ -121,6 +143,34 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                                 self.pad_size_divisor)) * self.pad_size_divisor
             batch_pad_shape.append((pad_h, pad_w))
         return batch_pad_shape
+
+    def pad_gt_masks(self,
+                     batch_data_samples: Sequence[DetDataSample]) -> None:
+        """Pad gt_masks to shape of batch_input_shape."""
+        if 'masks' in batch_data_samples[0].gt_instances:
+            for data_samples in batch_data_samples:
+                masks = data_samples.gt_instances.masks
+                h, w = masks.shape[-2:]
+                pad_h, pad_w = data_samples.batch_input_shape
+                data_samples.gt_instances.masks = F.pad(
+                    masks,
+                    pad=(0, pad_w - w, 0, pad_h - h),
+                    mode='constant',
+                    value=self.mask_pad_value)
+
+    def pad_gt_sem_seg(self,
+                       batch_data_samples: Sequence[DetDataSample]) -> None:
+        """Pad gt_sem_seg to shape of batch_input_shape."""
+        if 'gt_sem_seg' in batch_data_samples[0]:
+            for data_samples in batch_data_samples:
+                gt_sem_seg = data_samples.gt_sem_seg.sem_seg
+                h, w = gt_sem_seg.shape[-2:]
+                pad_h, pad_w = data_samples.batch_input_shape
+                data_samples.gt_sem_seg.sem_seg = F.pad(
+                    gt_sem_seg,
+                    pad=(0, pad_w - w, 0, pad_h - h),
+                    mode='constant',
+                    value=self.seg_pad_value)
 
 
 @MODELS.register_module()
@@ -209,3 +259,83 @@ class BatchSyncRandomResize(nn.Module):
         broadcast(tensor, 0)
         input_size = (tensor[0].item(), tensor[1].item())
         return input_size
+
+
+@MODELS.register_module()
+class BatchFixedSizePad(nn.Module):
+    """Fixed size padding for batch images.
+
+    Args:
+        size (Tuple[int, int]): Fixed padding size. Expected padding
+            shape (h, w). Defaults to None.
+        img_pad_value (int): The padded pixel value for images.
+            Defaults to 0.
+        pad_mask (bool): Whether to pad instance masks. Defaults to False.
+        mask_pad_value (int): The padded pixel value for instance masks.
+            Defaults to 0.
+        pad_seg (bool): Whether to pad semantic segmentation maps.
+            Defaults to False.
+        seg_pad_value (int): The padded pixel value for semantic
+            segmentation maps. Defaults to 255.
+    """
+
+    def __init__(self,
+                 size: Tuple[int, int],
+                 img_pad_value: int = 0,
+                 pad_mask: bool = False,
+                 mask_pad_value: int = 0,
+                 pad_seg: bool = False,
+                 seg_pad_value: int = 255) -> None:
+        super().__init__()
+        self.size = size
+        self.pad_mask = pad_mask
+        self.pad_seg = pad_seg
+        self.img_pad_value = img_pad_value
+        self.mask_pad_value = mask_pad_value
+        self.seg_pad_value = seg_pad_value
+
+    def forward(
+        self,
+        batch_inputs: Tensor,
+        batch_data_samples: Optional[List[dict]] = None
+    ) -> Tuple[Tensor, Optional[List[dict]]]:
+        """Pad image, instance masks, segmantic segmentation maps."""
+        src_h, src_w = batch_inputs.shape[-2:]
+        dst_h, dst_w = self.size
+
+        if src_h >= dst_h and src_w >= dst_w:
+            return batch_inputs, batch_data_samples
+
+        batch_inputs = F.pad(
+            batch_inputs,
+            pad=(0, max(0, dst_h - src_h), 0, max(0, dst_w - src_w)),
+            mode='constant',
+            value=self.img_pad_value)
+
+        if batch_data_samples is not None:
+            # update batch_input_shape
+            for data_samples in batch_data_samples:
+                data_samples.set_metainfo(
+                    {'batch_input_shape': (dst_h, dst_w)})
+
+            if self.pad_mask:
+                for data_samples in batch_data_samples:
+                    masks = data_samples.gt_instances.masks
+                    h, w = masks.shape[-2:]
+                    data_samples.gt_instances.masks = F.pad(
+                        masks,
+                        pad=(0, dst_w - w, 0, dst_h - h),
+                        mode='constant',
+                        value=self.mask_pad_value)
+
+            if self.pad_seg:
+                for data_samples in batch_data_samples:
+                    gt_sem_seg = data_samples.gt_sem_seg.sem_seg
+                    h, w = gt_sem_seg.shape[-2:]
+                    data_samples.gt_sem_seg.sem_seg = F.pad(
+                        gt_sem_seg,
+                        pad=(0, dst_w - w, 0, dst_h - h),
+                        mode='constant',
+                        value=self.seg_pad_value)
+
+        return batch_inputs, batch_data_samples
