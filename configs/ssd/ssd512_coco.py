@@ -24,8 +24,8 @@ train_pipeline = [
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='Expand',
-        mean=[123.675, 116.28, 103.53],
-        to_rgb=True,
+        mean={{_base_.model.data_preprocessor.mean}},
+        to_rgb={{_base_.model.data_preprocessor.bgr_to_rgb}},
         ratio_range=(1, 4)),
     dict(
         type='MinIoURandomCrop',
@@ -53,8 +53,7 @@ train_dataloader = dict(dataset=dict(dataset=dict(pipeline=train_pipeline)))
 val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
 test_dataloader = val_dataloader
 
-# TODO support auto_scale_lr
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (8 samples per GPU)
-# auto_scale_lr = dict(base_batch_size=64)
+auto_scale_lr = dict(base_batch_size=64)

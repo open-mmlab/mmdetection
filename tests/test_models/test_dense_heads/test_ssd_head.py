@@ -17,6 +17,7 @@ class TestSSDHead(TestCase):
         s = 300
         img_metas = [{
             'img_shape': (s, s, 3),
+            'pad_shape': (s, s, 3),
             'scale_factor': 1,
         }]
         cfg = Config(
@@ -61,8 +62,8 @@ class TestSSDHead(TestCase):
         gt_instances.bboxes = torch.empty((0, 4))
         gt_instances.labels = torch.LongTensor([])
 
-        empty_gt_losses = ssd_head.loss(cls_scores, bbox_preds, [gt_instances],
-                                        img_metas)
+        empty_gt_losses = ssd_head.loss_by_feat(cls_scores, bbox_preds,
+                                                [gt_instances], img_metas)
         # When there is no truth, cls_loss and box_loss should all be zero.
         empty_cls_loss = sum(empty_gt_losses['loss_cls'])
         empty_box_loss = sum(empty_gt_losses['loss_bbox'])
@@ -80,8 +81,8 @@ class TestSSDHead(TestCase):
             [[23.6667, 23.8757, 238.6326, 151.8874]])
         gt_instances.labels = torch.LongTensor([2])
 
-        one_gt_losses = ssd_head.loss(cls_scores, bbox_preds, [gt_instances],
-                                      img_metas)
+        one_gt_losses = ssd_head.loss_by_feat(cls_scores, bbox_preds,
+                                              [gt_instances], img_metas)
         onegt_cls_loss = sum(one_gt_losses['loss_cls'])
         onegt_box_loss = sum(one_gt_losses['loss_bbox'])
         self.assertGreater(onegt_cls_loss.item(), 0,

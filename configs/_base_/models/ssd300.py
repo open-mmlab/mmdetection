@@ -1,11 +1,13 @@
 # model settings
-preprocess_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
-
 input_size = 300
 model = dict(
     type='SingleStageDetector',
-    preprocess_cfg=preprocess_cfg,
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[123.675, 116.28, 103.53],
+        std=[1, 1, 1],
+        bgr_to_rgb=True,
+        pad_size_divisor=1),
     backbone=dict(
         type='SSDVGG',
         depth=16,

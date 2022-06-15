@@ -4,11 +4,15 @@ _base_ = [
 ]
 
 # model settings
-preprocess_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+data_preprocessor = dict(
+    type='DetDataPreprocessor',
+    mean=[123.675, 116.28, 103.53],
+    std=[58.395, 57.12, 57.375],
+    bgr_to_rgb=True,
+    pad_size_divisor=1)
 model = dict(
     type='SingleStageDetector',
-    preprocess_cfg=preprocess_cfg,
+    data_preprocessor=data_preprocessor,
     backbone=dict(
         type='MobileNetV2',
         out_indices=(4, 7),
@@ -79,8 +83,8 @@ train_pipeline = [
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='Expand',
-        mean=preprocess_cfg['mean'],
-        to_rgb=preprocess_cfg['to_rgb'],
+        mean=data_preprocessor['mean'],
+        to_rgb=data_preprocessor['bgr_to_rgb'],
         ratio_range=(1, 4)),
     dict(
         type='MinIoURandomCrop',
@@ -149,6 +153,7 @@ param_scheduler = [
 
 # optimizer
 optim_wrapper = dict(
+    type='OptimWrapper',
     optimizer=dict(type='SGD', lr=0.015, momentum=0.9, weight_decay=4.0e-5))
 
 custom_hooks = [
@@ -156,8 +161,7 @@ custom_hooks = [
     dict(type='CheckInvalidLossHook', interval=50, priority='VERY_LOW')
 ]
 
-# TODO add auto_scale_lr
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (24 samples per GPU)
-# auto_scale_lr = dict(base_batch_size=192)
+auto_scale_lr = dict(base_batch_size=192)

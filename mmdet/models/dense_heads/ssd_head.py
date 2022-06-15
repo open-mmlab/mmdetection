@@ -5,7 +5,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
-from mmcv.runner import force_fp32
 from torch import Tensor
 
 from mmdet.core import PseudoSampler, multi_apply
@@ -116,7 +115,6 @@ class SSDHead(AnchorHead):
                     self.train_cfg['sampler'], default_args=dict(context=self))
             else:
                 self.sampler = PseudoSampler(context=self)
-        self.fp16_enabled = False
 
     def _init_layers(self) -> None:
         """Initialize layers of the head."""
@@ -214,10 +212,11 @@ class SSDHead(AnchorHead):
             bbox_preds.append(reg_conv(feat))
         return cls_scores, bbox_preds
 
-    def loss_single(self, cls_score: Tensor, bbox_pred: Tensor, anchor: Tensor,
-                    labels: Tensor, label_weights: Tensor,
-                    bbox_targets: Tensor, bbox_weights: Tensor,
-                    avg_factor: int) -> Tuple[Tensor, Tensor]:
+    def loss_by_feat_single(self, cls_score: Tensor, bbox_pred: Tensor,
+                            anchor: Tensor, labels: Tensor,
+                            label_weights: Tensor, bbox_targets: Tensor,
+                            bbox_weights: Tensor,
+                            avg_factor: int) -> Tuple[Tensor, Tensor]:
         """Compute loss of a single image.
 
         Args:
@@ -277,8 +276,7 @@ class SSDHead(AnchorHead):
             avg_factor=avg_factor)
         return loss_cls[None], loss_bbox
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def loss(
+    def loss_by_feat(
         self,
         cls_scores: List[Tensor],
         bbox_preds: List[Tensor],
@@ -353,7 +351,7 @@ class SSDHead(AnchorHead):
             all_anchors.append(torch.cat(anchor_list[i]))
 
         losses_cls, losses_bbox = multi_apply(
-            self.loss_single,
+            self.loss_by_feat_single,
             all_cls_scores,
             all_bbox_preds,
             all_anchors,
