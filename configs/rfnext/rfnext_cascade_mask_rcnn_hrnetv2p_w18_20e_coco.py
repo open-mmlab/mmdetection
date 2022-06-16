@@ -28,8 +28,6 @@ model = dict(
                 skip_layer=['stem', 'layer1'])),
     ))
 
-custom_imports = dict(
-    imports=['mmcv.cnn.rfsearch'], allow_failed_imports=False)
 custom_hooks = [
     dict(
         type='RFSearch',

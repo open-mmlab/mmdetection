@@ -97,8 +97,6 @@ model = dict(
     ),
 )
 
-custom_imports = dict(
-    imports=['mmcv.cnn.rfsearch'], allow_failed_imports=False)
 custom_hooks = [
     dict(
         type='RFSearch',
