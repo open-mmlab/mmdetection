@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from .convnext import ConvNeXt
 from .csp_darknet import CSPDarknet
 from .darknet import Darknet
 from .detectors_resnet import DetectoRS_ResNet
@@ -23,5 +22,5 @@ __all__ = [
     'MobileNetV2', 'Res2Net', 'HourglassNet', 'DetectoRS_ResNet',
     'DetectoRS_ResNeXt', 'Darknet', 'ResNeSt', 'TridentResNet', 'CSPDarknet',
     'SwinTransformer', 'PyramidVisionTransformer',
-    'PyramidVisionTransformerV2', 'EfficientNet', 'ConvNeXt'
+    'PyramidVisionTransformerV2', 'EfficientNet'
 ]
