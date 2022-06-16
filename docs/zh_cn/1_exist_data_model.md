@@ -567,7 +567,6 @@ evaluation = dict(interval=12)
 - `--work-dir ${WORK_DIR}`: 覆盖工作目录.
 - `--resume-from ${CHECKPOINT_FILE}`: 从某个 checkpoint 文件继续训练.
 - `--cfg-options load_from=${CHECKPOINT_FILE}`: 从某个 checkpoint 文件加载模型的权重.
-- `--options 'Key=value'`: 覆盖使用的配置文件中的其他设置.
 
 **注意**：
 `resume-from` 和 `load-from` 的区别：
