@@ -4,14 +4,14 @@ _base_ = [
 ]
 
 # model settings
-preprocess_cfg = dict(
-    mean=[102.9801, 115.9465, 122.7717],
-    std=[1.0, 1.0, 1.0],
-    to_rgb=False,
-    pad_size_divisor=32)
 model = dict(
     type='FCOS',
-    preprocess_cfg=preprocess_cfg,
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[102.9801, 115.9465, 122.7717],
+        std=[1.0, 1.0, 1.0],
+        bgr_to_rgb=False,
+        pad_size_divisor=32),
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -71,10 +71,5 @@ param_scheduler = [
 # optimizer
 optim_wrapper = dict(
     optimizer=dict(lr=0.01),
-    paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.))
-
-default_hooks = dict(
-    optimizer=dict(
-        _delete_=True,
-        type='OptimizerHook',
-        grad_clip=dict(max_norm=35, norm_type=2)))
+    paramwise_cfg=dict(bias_lr_mult=2., bias_decay_mult=0.),
+    clip_grad=dict(max_norm=35, norm_type=2))

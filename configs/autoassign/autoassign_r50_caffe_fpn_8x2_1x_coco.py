@@ -5,14 +5,14 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 # model settings
-preprocess_cfg = dict(
-    mean=[102.9801, 115.9465, 122.7717],
-    std=[1.0, 1.0, 1.0],
-    to_rgb=False,
-    pad_size_divisor=32)
 model = dict(
     type='AutoAssign',
-    preprocess_cfg=preprocess_cfg,
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[102.9801, 115.9465, 122.7717],
+        std=[1.0, 1.0, 1.0],
+        bgr_to_rgb=False,
+        pad_size_divisor=32),
     backbone=dict(
         type='ResNet',
         depth=50,

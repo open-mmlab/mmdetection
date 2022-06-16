@@ -1,13 +1,13 @@
 _base_ = 'fcos_r50_caffe_fpn_gn-head_1x_coco.py'
 
 # model settings
-preprocess_cfg = dict(
-    mean=[103.530, 116.280, 123.675],
-    std=[1.0, 1.0, 1.0],
-    to_rgb=False,
-    pad_size_divisor=32)
 model = dict(
-    preprocess_cfg=preprocess_cfg,
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[103.530, 116.280, 123.675],
+        std=[1.0, 1.0, 1.0],
+        bgr_to_rgb=False,
+        pad_size_divisor=32),
     backbone=dict(
         dcn=dict(type='DCNv2', deform_groups=1, fallback_on_stride=False),
         stage_with_dcn=(False, True, True, True),
@@ -42,4 +42,4 @@ param_scheduler = [
 ]
 
 # optimizer
-default_hooks = dict(optimizer=dict(type='OptimizerHook', grad_clip=None))
+optim_wrapper = dict(clip_grad=None)

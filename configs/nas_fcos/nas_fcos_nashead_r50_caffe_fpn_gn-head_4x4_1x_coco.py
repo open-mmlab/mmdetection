@@ -4,14 +4,14 @@ _base_ = [
 ]
 
 # model settings
-preprocess_cfg = dict(
-    mean=[103.530, 116.280, 123.675],
-    std=[1.0, 1.0, 1.0],
-    to_rgb=False,
-    pad_size_divisor=32)
 model = dict(
     type='NASFCOS',
-    preprocess_cfg=preprocess_cfg,
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[103.530, 116.280, 123.675],
+        std=[1.0, 1.0, 1.0],
+        bgr_to_rgb=False,
+        pad_size_divisor=32),
     backbone=dict(
         type='ResNet',
         depth=50,

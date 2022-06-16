@@ -5,7 +5,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import Scale, bias_init_with_prob, normal_init
-from mmcv.runner import force_fp32
 from mmengine.data import InstanceData
 from torch import Tensor
 
@@ -317,8 +316,7 @@ class AutoAssignHead(FCOSHead):
         neg_loss = neg_loss.sum() * self.neg_loss_weight
         return neg_loss,
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'objectnesses'))
-    def loss(
+    def loss_by_feat(
         self,
         cls_scores: List[Tensor],
         bbox_preds: List[Tensor],
@@ -327,7 +325,8 @@ class AutoAssignHead(FCOSHead):
         batch_img_metas: List[dict],
         batch_gt_instances_ignore: OptInstanceList = None
     ) -> Dict[str, Tensor]:
-        """Compute loss of the head.
+        """Calculate the loss based on the features extracted by the detection
+        head.
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level,
