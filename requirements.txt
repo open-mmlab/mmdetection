@@ -2,3 +2,4 @@
 -r requirements/optional.txt
 -r requirements/runtime.txt
 -r requirements/tests.txt
+-r requirements/albu.txt
