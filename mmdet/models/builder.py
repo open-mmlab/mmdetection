@@ -68,6 +68,7 @@ def build_detector(cfg, train_cfg=None, test_cfg=None):
             config=rfsearch_cfg.get('config', None),
             rfstructure_file=rfsearch_cfg.get('rfstructure_file', None),
         )
+        detector.init_weights()
         rfsearch_warp.model_init(detector)
 
     return detector
