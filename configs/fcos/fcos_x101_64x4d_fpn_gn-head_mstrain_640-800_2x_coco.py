@@ -1,13 +1,13 @@
 _base_ = './fcos_r50_caffe_fpn_gn-head_1x_coco.py'
 
 # model settings
-preprocess_cfg = dict(
-    mean=[123.675, 116.28, 103.53],
-    std=[58.395, 57.12, 57.375],
-    to_rgb=True,
-    pad_size_divisor=32)
 model = dict(
-    preprocess_cfg=preprocess_cfg,
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        bgr_to_rgb=True,
+        pad_size_divisor=32),
     backbone=dict(
         type='ResNeXt',
         depth=101,

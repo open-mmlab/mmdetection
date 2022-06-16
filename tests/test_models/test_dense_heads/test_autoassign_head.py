@@ -14,6 +14,7 @@ class TestAutoAssignHead(TestCase):
         s = 300
         img_metas = [{
             'img_shape': (s, s, 3),
+            'pad_shape': (s, s, 3),
             'scale_factor': 1,
         }]
 
@@ -38,9 +39,10 @@ class TestAutoAssignHead(TestCase):
         gt_instances.bboxes = torch.empty((0, 4))
         gt_instances.labels = torch.LongTensor([])
 
-        empty_gt_losses = autoassign_head.loss(cls_scores, bbox_preds,
-                                               centernesses, [gt_instances],
-                                               img_metas)
+        empty_gt_losses = autoassign_head.loss_by_feat(cls_scores, bbox_preds,
+                                                       centernesses,
+                                                       [gt_instances],
+                                                       img_metas)
         # When there is no truth, the neg loss should be nonzero but
         # pos loss and center loss should be zero
         empty_pos_loss = empty_gt_losses['loss_pos'].item()
@@ -61,9 +63,9 @@ class TestAutoAssignHead(TestCase):
             [[23.6667, 23.8757, 238.6326, 151.8874]])
         gt_instances.labels = torch.LongTensor([2])
 
-        one_gt_losses = autoassign_head.loss(cls_scores, bbox_preds,
-                                             centernesses, [gt_instances],
-                                             img_metas)
+        one_gt_losses = autoassign_head.loss_by_feat(cls_scores, bbox_preds,
+                                                     centernesses,
+                                                     [gt_instances], img_metas)
         onegt_pos_loss = one_gt_losses['loss_pos'].item()
         onegt_neg_loss = one_gt_losses['loss_neg'].item()
         onegt_ctr_loss = one_gt_losses['loss_center'].item()
