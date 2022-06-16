@@ -44,11 +44,4 @@ model = dict(
         pos_weight=-1,
         debug=False))
 
-optim_wrapper = dict(
-    optimizer=dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001))
-
-default_hooks = dict(
-    optimizer=dict(
-        _delete_=True,
-        type='OptimizerHook',
-        grad_clip=dict(max_norm=10, norm_type=2)))
+optim_wrapper = dict(clip_grad=dict(max_norm=10, norm_type=2))

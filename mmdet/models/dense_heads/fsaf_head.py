@@ -3,7 +3,6 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
-from mmcv.runner import force_fp32
 from mmengine.data import InstanceData
 from torch import Tensor
 
@@ -205,8 +204,7 @@ class FSAFHead(RetinaHead):
         return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
                 neg_inds, sampling_result, pos_gt_inds)
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def loss(
+    def loss_by_feat(
         self,
         cls_scores: List[Tensor],
         bbox_preds: List[Tensor],
@@ -265,7 +263,7 @@ class FSAFHead(RetinaHead):
         all_anchor_list = images_to_levels(concat_anchor_list,
                                            num_level_anchors)
         losses_cls, losses_bbox = multi_apply(
-            self.loss_single,
+            self.loss_by_feat_single,
             cls_scores,
             bbox_preds,
             all_anchor_list,
