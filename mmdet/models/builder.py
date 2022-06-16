@@ -57,10 +57,7 @@ def build_detector(cfg, train_cfg=None, test_cfg=None):
     assert cfg.get('test_cfg') is None or test_cfg is None, \
         'test_cfg specified in both outer field and model field '
 
-    try:
-        rfsearch_cfg = cfg.pop('rfsearch_cfg')
-    except rfsearch_cfg.DoesNotExist:
-        rfsearch_cfg = None
+    rfsearch_cfg = cfg.pop('rfsearch_cfg', None)
 
     detector = DETECTORS.build(
         cfg, default_args=dict(train_cfg=train_cfg, test_cfg=test_cfg))
