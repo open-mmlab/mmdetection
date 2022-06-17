@@ -3,7 +3,6 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 import torch
-from mmcv.runner import force_fp32
 from mmengine.data import InstanceData
 from torch import Tensor
 
@@ -62,15 +61,16 @@ class PAAHead(ATSSHead):
         self.covariance_type = covariance_type
         super().__init__(*args, **kwargs)
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'iou_preds'))
-    def loss(self,
-             cls_scores: List[Tensor],
-             bbox_preds: List[Tensor],
-             iou_preds: List[Tensor],
-             batch_gt_instances: InstanceList,
-             batch_img_metas: List[dict],
-             batch_gt_instances_ignore: OptInstanceList = None) -> dict:
-        """Compute losses of the head.
+    def loss_by_feat(
+            self,
+            cls_scores: List[Tensor],
+            bbox_preds: List[Tensor],
+            iou_preds: List[Tensor],
+            batch_gt_instances: InstanceList,
+            batch_img_metas: List[dict],
+            batch_gt_instances_ignore: OptInstanceList = None) -> dict:
+        """Calculate the loss based on the features extracted by the detection
+        head.
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level
@@ -490,17 +490,17 @@ class PAAHead(ATSSHead):
             gt_instances_ignore,
             unmap_outputs=True)
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def get_results(self,
-                    cls_scores: List[Tensor],
-                    bbox_preds: List[Tensor],
-                    score_factors: Optional[List[Tensor]] = None,
-                    batch_img_metas: Optional[List[dict]] = None,
-                    cfg: OptConfigType = None,
-                    rescale: bool = False,
-                    with_nms: bool = True,
-                    **kwargs) -> InstanceList:
-        """Transform network outputs of a batch into bbox results.
+    def predict_by_feat(self,
+                        cls_scores: List[Tensor],
+                        bbox_preds: List[Tensor],
+                        score_factors: Optional[List[Tensor]] = None,
+                        batch_img_metas: Optional[List[dict]] = None,
+                        cfg: OptConfigType = None,
+                        rescale: bool = False,
+                        with_nms: bool = True,
+                        **kwargs) -> InstanceList:
+        """Transform a batch of output features extracted from the head into
+        bbox results.
 
         This method is same as `BaseDenseHead.get_results()`.
         """
@@ -508,21 +508,22 @@ class PAAHead(ATSSHead):
                          'means PAAHead does not support ' \
                          'test-time augmentation'
         return super(ATSSHead,
-                     self).get_results(cls_scores, bbox_preds, score_factors,
-                                       batch_img_metas, cfg, rescale, with_nms,
-                                       **kwargs)
+                     self).predict_by_feat(cls_scores, bbox_preds,
+                                           score_factors, batch_img_metas, cfg,
+                                           rescale, with_nms, **kwargs)
 
-    def _get_results_single(self,
-                            cls_score_list: List[Tensor],
-                            bbox_pred_list: List[Tensor],
-                            score_factor_list: List[Tensor],
-                            mlvl_priors: List[Tensor],
-                            img_meta: dict,
-                            cfg: OptConfigType = None,
-                            rescale: bool = False,
-                            with_nms: bool = True,
-                            **kwargs) -> InstanceData:
-        """Transform outputs of a single image into bbox predictions.
+    def _predict_by_feat_single(self,
+                                cls_score_list: List[Tensor],
+                                bbox_pred_list: List[Tensor],
+                                score_factor_list: List[Tensor],
+                                mlvl_priors: List[Tensor],
+                                img_meta: dict,
+                                cfg: OptConfigType = None,
+                                rescale: bool = False,
+                                with_nms: bool = True,
+                                **kwargs) -> InstanceData:
+        """Transform a single image's features extracted from the head into
+        bbox results.
 
         Args:
             cls_score_list (list[Tensor]): Box scores from all scale
