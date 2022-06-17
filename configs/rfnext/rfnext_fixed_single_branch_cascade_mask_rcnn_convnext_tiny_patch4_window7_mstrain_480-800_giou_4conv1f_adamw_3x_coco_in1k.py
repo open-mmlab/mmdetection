@@ -15,7 +15,9 @@ model = dict(
         layer_scale_init_value=1.0,
         gap_before_final_norm=False,
         init_cfg=dict(
-            type='Pretrained', checkpoint=checkpoint_file,
+            type='Pretrained',
+            checkpoint=  # noqa
+            'convnext-tiny_3rdparty_32xb128-noema_in1k_20220301-795e9634.pth',  # noqa
             prefix='backbone.')),
     neck=dict(in_channels=[96, 192, 384, 768]),
     roi_head=dict(bbox_head=[
@@ -79,8 +81,9 @@ model = dict(
     ]),
     rfsearch_cfg=dict(
         logdir='./search_log/convnext_cascade_maskrcnn',
-        mode='search',
-        rfstructure_file=None,
+        mode='fixed_single_branch',
+        rfstructure_file=  # noqa
+        './configs/rfnext/search_log/convnext_cascade_maskrcnn/local_search_config_step11.json',  # noqa
         config=dict(
             search=dict(
                 step=0,

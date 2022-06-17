@@ -11,35 +11,37 @@ The source code is publicly available on [http://mmcheng.net/rfnext](http://mmch
 
 ### ConvNext on COCO
 
-|   Backbone    |       Method       |     RFNext      | Lr Schd | box mAP | mask mAP |                                                                                             Config                                                                                             |                                                                              Download                                                                              |
-| :-----------: | :----------------: | :-------------: | :-----: | :-----: | :------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|  ConvNeXt-T   | Cascade Mask R-CNN |       NO        |   20e   |  50.4   |   43.7   |                                                       [config](https://github.com/facebookresearch/ConvNeXt/tree/main/object_detection)                                                        | [model](https://github.com/facebookresearch/ConvNeXt/tree/main/object_detection) \| [log](https://github.com/facebookresearch/ConvNeXt/tree/main/object_detection) |
-| RF-ConvNeXt-T | Cascade Mask R-CNN |  Single-Branch  |   20e   |  50.6   |   44.0   | [config](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k.py) |                                                                      [model](<>) \| [log](<>)                                                                      |
-| RF-ConvNeXt-T | Cascade Mask R-CNN | Multiple-Branch |   20e   |  50.9   |   44.3   | [config](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k.py) |                                                                      [model](<>) \| [log](<>)                                                                      |
+|   Backbone    |       Method       |     RFNext      | Lr Schd | box mAP | mask mAP |                                                                                                                                                                                                          Config                                                                                                                                                                                                           |                                                                              Download                                                                              |
+| :-----------: | :----------------: | :-------------: | :-----: | :-----: | :------: | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|  ConvNeXt-T   | Cascade Mask R-CNN |       NO        |   20e   |  50.4   |   43.7   |                                                                                                                                                                     [config](https://github.com/facebookresearch/ConvNeXt/tree/main/object_detection)                                                                                                                                                                     | [model](https://github.com/facebookresearch/ConvNeXt/tree/main/object_detection) \| [log](https://github.com/facebookresearch/ConvNeXt/tree/main/object_detection) |
+| RF-ConvNeXt-T | Cascade Mask R-CNN |  Single-Branch  |   20e   |  50.6   |   44.0   | [search](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_search_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k.py) [retrain](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_fixed_single_branch_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k.py) |                                                                      [model](<>) \| [log](<>)                                                                      |
+| RF-ConvNeXt-T | Cascade Mask R-CNN | Multiple-Branch |   20e   |  50.9   |   44.3   | [search](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_search_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k.py) [retrain](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_fixed_multi_branch_cascade_mask_rcnn_convnext_tiny_patch4_window7_mstrain_480-800_giou_4conv1f_adamw_3x_coco_in1k.py)  |                                                                      [model](<>) \| [log](<>)                                                                      |
 
 ### PVTv2 on COCO
 
-|  Backbone   |   Method   |     RFNext      | Lr Schd | box mAP | mask mAP |                                                             Config                                                             |                                                       Download                                                       |
-| :---------: | :--------: | :-------------: | :-----: | :-----: | :------: | :----------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------: |
-|  PVTv2-b0   | Mask R-CNN |       NO        |   1x    |  38.2   |   36.2   |                                   [config](https://github.com/whai362/PVT/tree/v2/detection)                                   | [model](https://github.com/whai362/PVT/tree/v2/detection) \| [log](https://github.com/whai362/PVT/tree/v2/detection) |
-| RF-PVTv2-b0 | Mask R-CNN |  Single-Branch  |   1x    |  38.8   |   36.8   | [config](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_mask_rcnn_pvtv2-b0_fpn_1x_coco.py) |                                               [model](<>) \| [log](<>)                                               |
-| RF-PVTv2-b0 | Mask R-CNN | Multiple-Branch |   1x    |  39.1   |   37.1   | [config](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_mask_rcnn_pvtv2-b0_fpn_1x_coco.py) |                                               [model](<>) \| [log](<>)                                               |
+|  Backbone   |   Method   |     RFNext      | Lr Schd | box mAP | mask mAP |                                                                                                                                          Config                                                                                                                                           |                                                       Download                                                       |
+| :---------: | :--------: | :-------------: | :-----: | :-----: | :------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------: |
+|  PVTv2-b0   | Mask R-CNN |       NO        |   1x    |  38.2   |   36.2   |                                                                                                                [config](https://github.com/whai362/PVT/tree/v2/detection)                                                                                                                 | [model](https://github.com/whai362/PVT/tree/v2/detection) \| [log](https://github.com/whai362/PVT/tree/v2/detection) |
+| RF-PVTv2-b0 | Mask R-CNN |  Single-Branch  |   1x    |  38.8   |   36.8   | [search](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_search_mask_rcnn_pvtv2-b0_fpn_1x_coco.py) [retrain](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_fixed_single_branch_mask_rcnn_pvtv2-b0_fpn_1x_coco.py) |                                               [model](<>) \| [log](<>)                                               |
+| RF-PVTv2-b0 | Mask R-CNN | Multiple-Branch |   1x    |  39.1   |   37.1   | [search](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_search_mask_rcnn_pvtv2-b0_fpn_1x_coco.py) [retrain](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_fixed_multi_branch_mask_rcnn_pvtv2-b0_fpn_1x_coco.py)  |                                               [model](<>) \| [log](<>)                                               |
 
 ### Res2Net on COCO
 
-|    Backbone    |       Method       |     RFNext      | Lr Schd | box mAP | mask mAP |                                                                Config                                                                 |         Download         |
-| :------------: | :----------------: | :-------------: | :-----: | :-----: | :------: | :-----------------------------------------------------------------------------------------------------------------------------------: | :----------------------: |
-|  Res2Net-101   | Cascade Mask R-CNN |       NO        |   20e   |  46.3   |   40.0   |    [config](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/res2net/cascade_mask_rcnn_r2_101_fpn_20e_coco.py)    | [model](<>) \| [log](<>) |
-| RF-Res2Net-101 | Cascade Mask R-CNN |  Single-Branch  |   20e   |  46.9   |   40.7   | [config](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_cascade_mask_rcnn_r2_101_fpn_20e_coco.py) | [model](<>) \| [log](<>) |
-| RF-Res2Net-101 | Cascade Mask R-CNN | Multiple-Branch |   20e   |  47.9   |   41.5   | [config](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_cascade_mask_rcnn_r2_101_fpn_20e_coco.py) | [model](<>) \| [log](<>) |
+|    Backbone    |       Method       |     RFNext      | Lr Schd | box mAP | mask mAP |                                                                                                                                                  Config                                                                                                                                                  |         Download         |
+| :------------: | :----------------: | :-------------: | :-----: | :-----: | :------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------: |
+|  Res2Net-101   | Cascade Mask R-CNN |       NO        |   20e   |  46.3   |   40.0   |                                                                                     [config](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/res2net/cascade_mask_rcnn_r2_101_fpn_20e_coco.py)                                                                                      | [model](<>) \| [log](<>) |
+| RF-Res2Net-101 | Cascade Mask R-CNN |  Single-Branch  |   20e   |  46.9   |   40.7   | [search](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_search_cascade_mask_rcnn_r2_101_fpn_20e_coco.py)  [retrain](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_fixed_single_branch_cascade_mask_rcnn_r2_101_fpn_20e_coco.py) | [model](<>) \| [log](<>) |
+| RF-Res2Net-101 | Cascade Mask R-CNN | Multiple-Branch |   20e   |  47.9   |   41.5   | [search](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_search_cascade_mask_rcnn_r2_101_fpn_20e_coco.py)  [retrain](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfnext_fixed_multi_branch_cascade_mask_rcnn_r2_101_fpn_20e_coco.py)  | [model](<>) \| [log](<>) |
 
 ### HRNet on COCO
 
-|    Backbone     |       Method       |     RFNext      | Lr Schd | box mAP | mask mAP |                                                                   Config                                                                    |         Download         |
-| :-------------: | :----------------: | :-------------: | :-----: | :-----: | :------: | :-----------------------------------------------------------------------------------------------------------------------------------------: | :----------------------: |
-|  HRNetV2p-W18   | Cascade Mask R-CNN |       NO        |   20e   |  41.6   |   36.4   |       [config](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/hrnet/cascade_mask_rcnn_hrnetv2p_w18_20e_coco.py)       | [model](<>) \| [log](<>) |
-| RF-HRNetV2p-W18 | Cascade Mask R-CNN |  Single-Branch  |   20e   |  42.9   |   37.6   | [config](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfsearched_cascade_mask_rcnn_hrnetv2p_w18_20e_coco.py) | [model](<>) \| [log](<>) |
-| RF-HRNetV2p-W18 | Cascade Mask R-CNN | Multiple-Branch |   20e   |  43.7   |   38.1   | [config](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfsearched_cascade_mask_rcnn_hrnetv2p_w18_20e_coco.py) | [model](<>) \| [log](<>) |
+|    Backbone     |       Method       |     RFNext      | Lr Schd | box mAP | mask mAP |                                                                                                                                                       Config                                                                                                                                                        |         Download         |
+| :-------------: | :----------------: | :-------------: | :-----: | :-----: | :------: | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------: |
+|  HRNetV2p-W18   | Cascade Mask R-CNN |       NO        |   20e   |  41.6   |   36.4   |                                                                                           [config](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/hrnet/cascade_mask_rcnn_hrnetv2p_w18_20e_coco.py)                                                                                           | [model](<>) \| [log](<>) |
+| RF-HRNetV2p-W18 | Cascade Mask R-CNN |  Single-Branch  |   20e   |  42.9   |   37.6   | [search](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfsearched_search_cascade_mask_rcnn_hrnetv2p_w18_20e_coco.py) [retrain](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfsearched_fixed_single_branch_cascade_mask_rcnn_hrnetv2p_w18_20e_coco.py) | [model](<>) \| [log](<>) |
+| RF-HRNetV2p-W18 | Cascade Mask R-CNN | Multiple-Branch |   20e   |  43.7   |   38.1   | [search](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfsearched_search_cascade_mask_rcnn_hrnetv2p_w18_20e_coco.py) [retrain](https://github.com/ShangHua-Gao/RF-mmdetection/tree/rfsearch/configs/rfnext/rfsearched_fixed_multi_branch_cascade_mask_rcnn_hrnetv2p_w18_20e_coco.py)  | [model](<>) \| [log](<>) |
+
+Note: the performance of multi-branch models listed above are evaluated during searching to save computional cost, retraining would achieve similar or better performance.
 
 ## Configs
 
@@ -65,10 +67,7 @@ rfsearch_cfg=dict(
             skip_layer=[])),
     )
 
-custom_imports = dict(
-    imports=['mmcv.cnn.rfsearch'], allow_failed_imports=False)
 custom_hooks = [
-    dict(type='NumClassCheckHook'),
     dict(
         type='RFSearch',
         logdir=model['rfsearch_cfg']['logdir'],
@@ -90,49 +89,36 @@ Arguments:
 
 ### Searching Jobs
 
-You can launch searching jobs by using config files with `rfsearch_cfg`. The json files of searched structures will be saved to `rfsearch_cfg.log_dir`.
+You can launch searching jobs by using config files with prefix `rfnext_search`. The json files of searched structures will be saved to `rfsearch_cfg.log_dir`.
+
+If you want to further search receptive fields upon a searched structure, please set `rfsearch_cfg.rfstructure_file` in config file to the corresponding json file.
 
 ```shell
 bash ./tools/dist_train.sh \
-    ${CONFIG_FILE} \
-    ${GPU_NUM} \
-    --cfg-options model.rfsearch_cfg.log_dir="the path to log_dir"
-```
-
-If you want to further search receptive fields upon a searched structure, please set `rfsearch_cfg.rfstructure_file` to the corresponding json file.
-
-```shell
-bash ./tools/dist_train.sh \
-    ${CONFIG_FILE} \
-    ${GPU_NUM} \
-    --cfg-options model.rfsearch_cfg.rfstructure_file="a predefined config file"
+    ${rfnext_search_CONFIG_FILE} \
+    ${GPU_NUM}
 ```
 
 ### Training Jobs
 
-Setting `rfsearch_cfg.rfstructure_file` to the searched structure file (.json) and setting `rfsearch_cfg.mode` to `fixed_single_branch`, you can retrain a model with the searched structure.
+\*\* Warning
 
-Training with fixed_single_branch:
-
-```shell
-bash ./tools/dist_train.sh \
-    ${CONFIG_FILE} \
-    ${GPU_NUM} \
-    --cfg-options model.rfsearch_cfg.rfstructure_file="the searched config json file" model.rfsearch_cfg.mode="fixed_single_branch" \
-    --work_dir [./work_dirs/rfsearched_"add a prefix to the training work_dirs to avoid overwrite file"]
-```
-
-If you want to retrain a model that keeps the multiple-branch structure as the search stage, you can set `rfsearch_cfg.mode` to `fixed_multi_branch`.
+Setting `rfsearch_cfg.rfstructure_file` to the searched structure file (.json) and setting `rfsearch_cfg.mode` to `fixed_single_branch` or `fixed_multi_branch`, you can retrain a model with the searched structure.
+You can launch fixed_single_branch/fixed_multi_branch training jobs by using config files with prefix `rfnext_fixed_single_branch` or `rfnext_fixed_multi_branch`.
 
 ```shell
 bash ./tools/dist_train.sh \
-    ${CONFIG_FILE} \
-    ${GPU_NUM} \
-    --cfg-options model.rfsearch_cfg.rfstructure_file="the searched config json file" model.rfsearch_cfg.mode="fixed_multi_branch" \
-    --work_dir [./work_dirs/rfsearched_"add a prefix to the training work_dirs to avoid overwrite file"]
+    ${rfnext_fixed_single_branch_CONFIG_FILE} \
+    ${GPU_NUM}
+
+bash ./tools/dist_train.sh \
+    ${rfnext_fixed_multi_branch_CONFIG_FILE} \
+    ${GPU_NUM}
 ```
 
 Note that the models after the searching stage is ready a `fixed_multi_branch` version, which achieves better performance than `fixed_single_branch`, without any retraining.
+
+**Warning: Do please change the settings in the config file, because we are using the hook that only apply the settings in config files.**
 
 ## Inference
 
@@ -142,13 +128,12 @@ Single branch inference:
 
 ```shell
 ./tools/dist_test.sh \
-    ${CONFIG_FILE} \
+    ${rfnext_fixed_single_branch_CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
     ${GPU_NUM} \
     --out results.pkl \
     --eval bbox segm \
-    --options "classwise=True" \
-    --cfg-options model.rfsearch_cfg.rfstructure_file="the json file" model.rfsearch_cfg.mode="fixed_single_branch"
+    --options "classwise=True"
 
 ```
 
@@ -156,13 +141,12 @@ If you want to inference models with multiple-branch structure, please set `rfse
 
 ```shell
 ./tools/dist_test.sh \
-    ${CONFIG_FILE} \
+    ${rfnext_fixed_multi_branch_CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
     ${GPU_NUM} \
     --out results.pkl \
     --eval bbox segm \
-    --options "classwise=True" \
-    --cfg-options model.rfsearch_cfg.rfstructure_file="the json file" model.rfsearch_cfg.mode="fixed_multi_branch"
+    --options "classwise=True"
 
 ```
 

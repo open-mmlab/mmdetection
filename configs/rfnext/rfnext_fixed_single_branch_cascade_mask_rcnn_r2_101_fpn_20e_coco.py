@@ -1,18 +1,18 @@
-_base_ = '../hrnet/cascade_mask_rcnn_hrnetv2p_w32_20e_coco.py'
-# model settings
+_base_ = '../cascade_rcnn/cascade_mask_rcnn_r50_fpn_20e_coco.py'
 model = dict(
     backbone=dict(
-        extra=dict(
-            stage2=dict(num_channels=(18, 36)),
-            stage3=dict(num_channels=(18, 36, 72)),
-            stage4=dict(num_channels=(18, 36, 72, 144))),
+        type='Res2Net',
+        depth=101,
+        scales=4,
+        base_width=26,
         init_cfg=dict(
-            type='Pretrained', checkpoint='open-mmlab://msra/hrnetv2_w18')),
-    neck=dict(type='HRFPN', in_channels=[18, 36, 72, 144], out_channels=256),
+            type='Pretrained',
+            checkpoint='open-mmlab://res2net101_v1d_26w_4s')),
     rfsearch_cfg=dict(
-        logdir='./search_log/convnext_cascade_maskrcnn',
-        mode='search',
-        rfstructure_file=None,
+        logdir='./search_log/cascade_mask_rcnn_r2_101_fpn_20e_coco',
+        mode='fixed_single_branch',
+        rfstructure_file=  # noqa
+        './configs/rfnext/search_log/cascade_mask_rcnn_r2_101_fpn_20e_coco/local_search_config_step11.json',  # noqa
         config=dict(
             search=dict(
                 step=0,
@@ -29,6 +29,7 @@ model = dict(
     ))
 
 custom_hooks = [
+    dict(type='NumClassCheckHook'),
     dict(
         type='RFSearch',
         logdir=model['rfsearch_cfg']['logdir'],
