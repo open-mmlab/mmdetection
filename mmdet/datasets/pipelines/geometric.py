@@ -137,9 +137,9 @@ class GeomTransform(BaseTransform):
         """Transform the bboxes."""
         self._set_homography_matrix(mag)
         self._record_homography_matrix(results)
-        results['gt_bboxes'], = bbox_project(results['gt_bboxes'],
-                                             self.homography_matrix,
-                                             results['img_shape'])
+        results['gt_bboxes'] = bbox_project(results['gt_bboxes'],
+                                            self.homography_matrix,
+                                            results['img_shape'])
 
     def _record_homography_matrix(self, results: dict) -> None:
         """Record the homography matrix for the geometric transformation."""
@@ -503,9 +503,9 @@ class Rotate(GeomTransform):
         """Transform the bboxes."""
         self._set_homography_matrix(results['img_shape'], mag)
         self._record_homography_matrix(results)
-        results['gt_bboxes'], = bbox_project(results['gt_bboxes'],
-                                             self.homography_matrix,
-                                             results['img_shape'])
+        results['gt_bboxes'] = bbox_project(results['gt_bboxes'],
+                                            self.homography_matrix,
+                                            results['img_shape'])
 
     def _transform_masks(self, results: dict, mag: float) -> None:
         """Rotate the masks."""
