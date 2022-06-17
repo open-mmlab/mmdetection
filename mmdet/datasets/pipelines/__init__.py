@@ -1,10 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from .auto_augment import (AutoAugment, BrightnessTransform, ColorTransform,
-                           ContrastTransform, EqualizeTransform, Rotate, Shear,
-                           Translate)
+from .augment_wrappers import AutoAugment, RandAugment
+from .colorspace import (AutoContrast, Brightness, Color, ColorTransform,
+                         Contrast, Equalize, Invert, Posterize, Sharpness,
+                         Solarize, SolarizeAdd)
 from .compose import Compose
 from .formatting import (ImageToTensor, PackDetInputs, ToDataContainer,
                          ToTensor, Transpose)
+from .geometric import (GeomTransform, Rotate, ShearX, ShearY, TranslateX,
+                        TranslateY)
 from .instaboost import InstaBoost
 from .loading import (FilterAnnotations, LoadAnnotations, LoadImageFromWebcam,
                       LoadMultiChannelImageFromFiles, LoadPanopticAnnotations,
@@ -23,8 +26,10 @@ __all__ = [
     'LoadProposals', 'MultiScaleFlipAug', 'Resize', 'RandomFlip', 'RandomCrop',
     'Normalize', 'SegRescale', 'MinIoURandomCrop', 'Expand',
     'PhotoMetricDistortion', 'Albu', 'InstaBoost', 'RandomCenterCropPad',
-    'AutoAugment', 'CutOut', 'Shear', 'Rotate', 'ColorTransform',
-    'EqualizeTransform', 'BrightnessTransform', 'ContrastTransform',
-    'Translate', 'RandomShift', 'Mosaic', 'MixUp', 'RandomAffine',
-    'YOLOXHSVRandomAug', 'CopyPaste', 'FilterAnnotations', 'Pad'
+    'AutoAugment', 'CutOut', 'ShearX', 'ShearY', 'Rotate', 'Color', 'Equalize',
+    'Brightness', 'Contrast', 'TranslateX', 'TranslateY', 'RandomShift',
+    'Mosaic', 'MixUp', 'RandomAffine', 'YOLOXHSVRandomAug', 'CopyPaste',
+    'FilterAnnotations', 'Pad', 'GeomTransform', 'ColorTransform',
+    'RandAugment', 'Sharpness', 'Solarize', 'SolarizeAdd', 'Posterize',
+    'AutoContrast', 'Invert'
 ]

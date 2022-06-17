@@ -2512,13 +2512,6 @@ class RandomAffine(BaseTransform):
         return scaling_matrix
 
     @staticmethod
-    def _get_share_matrix(scale_ratio: float) -> np.ndarray:
-        scaling_matrix = np.array(
-            [[scale_ratio, 0., 0.], [0., scale_ratio, 0.], [0., 0., 1.]],
-            dtype=np.float32)
-        return scaling_matrix
-
-    @staticmethod
     def _get_shear_matrix(x_shear_degrees: float,
                           y_shear_degrees: float) -> np.ndarray:
         x_radian = math.radians(x_shear_degrees)
@@ -2687,7 +2680,7 @@ class CopyPaste(BaseTransform):
         return self._copy_paste(results, selected_results)
 
     @cache_randomness
-    def _get_selected_inds(self, num_bboxes: int) -> np.array:
+    def _get_selected_inds(self, num_bboxes: int) -> np.ndarray:
         max_num_pasted = min(num_bboxes + 1, self.max_num_pasted)
         num_pasted = np.random.randint(0, max_num_pasted)
         return np.random.choice(num_bboxes, size=num_pasted, replace=False)

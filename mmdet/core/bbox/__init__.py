@@ -9,10 +9,11 @@ from .samplers import (BaseSampler, CombinedSampler,
                        InstanceBalancedPosSampler, IoUBalancedNegSampler,
                        OHEMSampler, PseudoSampler, RandomSampler,
                        SamplingResult, ScoreHLRSampler)
-from .transforms import (bbox2distance, bbox2result, bbox2roi,
+from .transforms import (bbox2corner, bbox2distance, bbox2result, bbox2roi,
                          bbox_cxcywh_to_xyxy, bbox_flip, bbox_mapping,
-                         bbox_mapping_back, bbox_rescale, bbox_xyxy_to_cxcywh,
-                         distance2bbox, find_inside_bboxes, roi2bbox)
+                         bbox_mapping_back, bbox_project, bbox_rescale,
+                         bbox_xyxy_to_cxcywh, corner2bbox, distance2bbox,
+                         find_inside_bboxes, roi2bbox)
 
 __all__ = [
     'bbox_overlaps', 'BboxOverlaps2D', 'BaseAssigner', 'MaxIoUAssigner',
@@ -24,5 +25,6 @@ __all__ = [
     'build_bbox_coder', 'BaseBBoxCoder', 'PseudoBBoxCoder',
     'DeltaXYWHBBoxCoder', 'TBLRBBoxCoder', 'DistancePointBBoxCoder',
     'CenterRegionAssigner', 'bbox_rescale', 'bbox_cxcywh_to_xyxy',
-    'bbox_xyxy_to_cxcywh', 'RegionAssigner', 'find_inside_bboxes'
+    'bbox_xyxy_to_cxcywh', 'RegionAssigner', 'find_inside_bboxes',
+    'bbox2corner', 'corner2bbox', 'bbox_project'
 ]

@@ -355,7 +355,7 @@ class TestRandomCrop(unittest.TestCase):
         img = np.random.randint(0, 255, size=(10, 10), dtype=np.uint8)
         gt_bboxes = np.array([[0, 0, 7, 7], [2, 3, 9, 9]], dtype=np.float32)
         gt_bboxes_labels = np.array([0, 1], dtype=np.int64)
-        gt_ignore_flags = np.array([0, 1], dtype=np.bool8)
+        gt_ignore_flags = np.array([0, 1], dtype=bool)
         gt_masks_ = np.zeros((2, 10, 10), np.uint8)
         gt_masks_[0, 0:7, 0:7] = 1
         gt_masks_[1, 2:7, 3:8] = 1
@@ -530,7 +530,7 @@ class TestMosaic(unittest.TestCase):
             np.array([[10, 10, 20, 20], [20, 20, 40, 40], [40, 40, 80, 80]],
                      dtype=np.float32),
             'gt_ignore_flags':
-            np.array([0, 0, 1], dtype=np.bool8),
+            np.array([0, 0, 1], dtype=bool),
             'gt_masks':
             BitmapMasks(rng.rand(3, 224, 224), height=224, width=224),
         }
@@ -556,7 +556,7 @@ class TestMosaic(unittest.TestCase):
                         results['gt_bboxes'].shape[0])
         self.assertTrue(results['gt_bboxes_labels'].dtype == np.int64)
         self.assertTrue(results['gt_bboxes'].dtype == np.float32)
-        self.assertTrue(results['gt_ignore_flags'].dtype == np.bool8)
+        self.assertTrue(results['gt_ignore_flags'].dtype == bool)
 
     def test_transform_with_no_gt(self):
         self.results['gt_bboxes'] = np.empty((0, 4), dtype=np.float32)
@@ -572,7 +572,7 @@ class TestMosaic(unittest.TestCase):
             shape[0] == results['gt_ignore_flags'].shape[0] == 0)
         self.assertTrue(results['gt_bboxes_labels'].dtype == np.int64)
         self.assertTrue(results['gt_bboxes'].dtype == np.float32)
-        self.assertTrue(results['gt_ignore_flags'].dtype == np.bool8)
+        self.assertTrue(results['gt_ignore_flags'].dtype == bool)
 
     def test_repr(self):
         transform = Mosaic(img_scale=(640, 640), )
@@ -602,7 +602,7 @@ class TestMixUp(unittest.TestCase):
             np.array([[10, 10, 20, 20], [20, 20, 40, 40], [40, 40, 80, 80]],
                      dtype=np.float32),
             'gt_ignore_flags':
-            np.array([0, 0, 1], dtype=np.bool8),
+            np.array([0, 0, 1], dtype=bool),
             'gt_masks':
             BitmapMasks(rng.rand(3, 224, 224), height=224, width=224),
         }
@@ -628,7 +628,7 @@ class TestMixUp(unittest.TestCase):
                         results['gt_bboxes'].shape[0])
         self.assertTrue(results['gt_bboxes_labels'].dtype == np.int64)
         self.assertTrue(results['gt_bboxes'].dtype == np.float32)
-        self.assertTrue(results['gt_ignore_flags'].dtype == np.bool8)
+        self.assertTrue(results['gt_ignore_flags'].dtype == bool)
 
     def test_repr(self):
         transform = MixUp(
@@ -663,7 +663,7 @@ class TestRandomAffine(unittest.TestCase):
             np.array([[10, 10, 20, 20], [20, 20, 40, 40], [40, 40, 80, 80]],
                      dtype=np.float32),
             'gt_ignore_flags':
-            np.array([0, 0, 1], dtype=np.bool8),
+            np.array([0, 0, 1], dtype=bool),
         }
 
     def test_transform(self):
@@ -685,7 +685,7 @@ class TestRandomAffine(unittest.TestCase):
                         results['gt_bboxes'].shape[0])
         self.assertTrue(results['gt_bboxes_labels'].dtype == np.int64)
         self.assertTrue(results['gt_bboxes'].dtype == np.float32)
-        self.assertTrue(results['gt_ignore_flags'].dtype == np.bool8)
+        self.assertTrue(results['gt_ignore_flags'].dtype == bool)
 
     def test_repr(self):
         transform = RandomAffine(
@@ -722,7 +722,7 @@ class TestYOLOXHSVRandomAug(unittest.TestCase):
             np.array([[10, 10, 20, 20], [20, 20, 40, 40], [40, 40, 80, 80]],
                      dtype=np.float32),
             'gt_ignore_flags':
-            np.array([0, 0, 1], dtype=np.bool8),
+            np.array([0, 0, 1], dtype=bool),
         }
 
     def test_transform(self):
@@ -734,7 +734,7 @@ class TestYOLOXHSVRandomAug(unittest.TestCase):
                         results['gt_bboxes'].shape[0])
         self.assertTrue(results['gt_bboxes_labels'].dtype == np.int64)
         self.assertTrue(results['gt_bboxes'].dtype == np.float32)
-        self.assertTrue(results['gt_ignore_flags'].dtype == np.bool8)
+        self.assertTrue(results['gt_ignore_flags'].dtype == bool)
 
     def test_repr(self):
         transform = YOLOXHSVRandomAug()
@@ -829,7 +829,7 @@ class TestRandomCenterCropPad(unittest.TestCase):
         h, w = results['img_shape']
         gt_bboxes = create_random_bboxes(4, w, h)
         gt_bboxes_labels = np.array([1, 2, 3, 1], dtype=np.int64)
-        gt_ignore_flags = np.array([0, 0, 1, 1], dtype=np.bool8)
+        gt_ignore_flags = np.array([0, 0, 1, 1], dtype=bool)
         results['gt_bboxes'] = gt_bboxes
         results['gt_bboxes_labels'] = gt_bboxes_labels
         results['gt_ignore_flags'] = gt_ignore_flags
@@ -888,7 +888,7 @@ class TestCopyPaste(unittest.TestCase):
             'gt_bboxes': dst_bboxes,
             'gt_bboxes_labels': np.ones(dst_bboxes.shape[0], dtype=np.int64),
             'gt_masks': create_full_masks(dst_bboxes, w, h),
-            'gt_ignore_flags': np.array([0, 1], dtype=np.bool8),
+            'gt_ignore_flags': np.array([0, 1], dtype=bool),
         }
         self.src_results = {
             'img': img.copy(),
@@ -896,7 +896,7 @@ class TestCopyPaste(unittest.TestCase):
             'gt_bboxes_labels':
             np.ones(src_bboxes.shape[0], dtype=np.int64) * 2,
             'gt_masks': create_full_masks(src_bboxes, w, h),
-            'gt_ignore_flags': np.array([0, 0, 1], dtype=np.bool8),
+            'gt_ignore_flags': np.array([0, 0, 1], dtype=bool),
         }
 
     def test_transform(self):

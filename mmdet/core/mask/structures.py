@@ -134,7 +134,7 @@ class BaseInstanceMasks(metaclass=ABCMeta):
                   out_shape,
                   offset,
                   direction='horizontal',
-                  fill_val=0,
+                  border_value=0,
                   interpolation='bilinear'):
         """Translate the masks.
 
@@ -143,7 +143,7 @@ class BaseInstanceMasks(metaclass=ABCMeta):
             offset (int | float): The offset for translate.
             direction (str): The translate direction, either "horizontal"
                 or "vertical".
-            fill_val (int | float): Border value. Default 0.
+            border_value (int | float): Border value. Default 0.
             interpolation (str): Same as :func:`mmcv.imtranslate`.
 
         Returns:
@@ -172,7 +172,7 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def rotate(self, out_shape, angle, center=None, scale=1.0, fill_val=0):
+    def rotate(self, out_shape, angle, center=None, scale=1.0, border_value=0):
         """Rotate the masks.
 
         Args:
@@ -183,7 +183,7 @@ class BaseInstanceMasks(metaclass=ABCMeta):
                 rotation in source image. If not specified, the center of
                 the image will be used.
             scale (int | float): Isotropic scale factor.
-            fill_val (int | float): Border value. Default 0 for masks.
+            border_value (int | float): Border value. Default 0 for masks.
 
         Returns:
             Rotated masks.
@@ -382,7 +382,7 @@ class BitmapMasks(BaseInstanceMasks):
                   out_shape,
                   offset,
                   direction='horizontal',
-                  fill_val=0,
+                  border_value=0,
                   interpolation='bilinear'):
         """Translate the BitmapMasks.
 
@@ -391,7 +391,7 @@ class BitmapMasks(BaseInstanceMasks):
             offset (int | float): The offset for translate.
             direction (str): The translate direction, either "horizontal"
                 or "vertical".
-            fill_val (int | float): Border value. Default 0 for masks.
+            border_value (int | float): Border value. Default 0 for masks.
             interpolation (str): Same as :func:`mmcv.imtranslate`.
 
         Returns:
@@ -403,13 +403,13 @@ class BitmapMasks(BaseInstanceMasks):
             >>> out_shape = (32, 32)
             >>> offset = 4
             >>> direction = 'horizontal'
-            >>> fill_val = 0
+            >>> border_value = 0
             >>> interpolation = 'bilinear'
             >>> # Note, There seem to be issues when:
             >>> # * out_shape is different than self's shape
             >>> # * the mask dtype is not supported by cv2.AffineWarp
-            >>> new = self.translate(out_shape, offset, direction, fill_val,
-            >>>                      interpolation)
+            >>> new = self.translate(out_shape, offset, direction,
+            >>>                      border_value, interpolation)
             >>> assert len(new) == len(self)
             >>> assert new.height, new.width == out_shape
         """
@@ -420,7 +420,7 @@ class BitmapMasks(BaseInstanceMasks):
                 self.masks.transpose((1, 2, 0)),
                 offset,
                 direction,
-                border_value=fill_val,
+                border_value=border_value,
                 interpolation=interpolation)
             if translated_masks.ndim == 2:
                 translated_masks = translated_masks[:, :, None]
@@ -463,7 +463,13 @@ class BitmapMasks(BaseInstanceMasks):
                 (2, 0, 1)).astype(self.masks.dtype)
         return BitmapMasks(sheared_masks, *out_shape)
 
-    def rotate(self, out_shape, angle, center=None, scale=1.0, fill_val=0):
+    def rotate(self,
+               out_shape,
+               angle,
+               center=None,
+               scale=1.0,
+               border_value=0,
+               interpolation='bilinear'):
         """Rotate the BitmapMasks.
 
         Args:
@@ -474,7 +480,8 @@ class BitmapMasks(BaseInstanceMasks):
                 rotation in source image. If not specified, the center of
                 the image will be used.
             scale (int | float): Isotropic scale factor.
-            fill_val (int | float): Border value. Default 0 for masks.
+            border_value (int | float): Border value. Default 0 for masks.
+            interpolation (str): Same as in :func:`mmcv.imrotate`.
 
         Returns:
             BitmapMasks: Rotated BitmapMasks.
@@ -487,7 +494,8 @@ class BitmapMasks(BaseInstanceMasks):
                 angle,
                 center=center,
                 scale=scale,
-                border_value=fill_val)
+                border_value=border_value,
+                interpolation=interpolation)
             if rotated_masks.ndim == 2:
                 # case when only one mask, (h, w)
                 rotated_masks = rotated_masks[:, :, None]  # (h, w, 1)
@@ -766,7 +774,7 @@ class PolygonMasks(BaseInstanceMasks):
                   out_shape,
                   offset,
                   direction='horizontal',
-                  fill_val=None,
+                  border_value=None,
                   interpolation=None):
         """Translate the PolygonMasks.
 
@@ -777,8 +785,9 @@ class PolygonMasks(BaseInstanceMasks):
             >>> assert np.all(new.masks[0][0][1::2] == self.masks[0][0][1::2])
             >>> assert np.all(new.masks[0][0][0::2] == self.masks[0][0][0::2] + 4)  # noqa: E501
         """
-        assert fill_val is None or fill_val == 0, 'Here fill_val is not '\
-            f'used, and defaultly should be None or 0. got {fill_val}.'
+        assert border_value is None or border_value == 0, \
+            'Here border_value is not '\
+            f'used, and defaultly should be None or 0. got {border_value}.'
         if len(self.masks) == 0:
             translated_masks = PolygonMasks([], *out_shape)
         else:
@@ -828,7 +837,13 @@ class PolygonMasks(BaseInstanceMasks):
             sheared_masks = PolygonMasks(sheared_masks, *out_shape)
         return sheared_masks
 
-    def rotate(self, out_shape, angle, center=None, scale=1.0, fill_val=0):
+    def rotate(self,
+               out_shape,
+               angle,
+               center=None,
+               scale=1.0,
+               border_value=0,
+               interpolation='bilinear'):
         """See :func:`BaseInstanceMasks.rotate`."""
         if len(self.masks) == 0:
             rotated_masks = PolygonMasks([], *out_shape)
@@ -1068,7 +1083,7 @@ def polygon_to_bitmap(polygons, height, width):
     """
     rles = maskUtils.frPyObjects(polygons, height, width)
     rle = maskUtils.merge(rles)
-    bitmap_mask = maskUtils.decode(rle).astype(np.bool)
+    bitmap_mask = maskUtils.decode(rle).astype(bool)
     return bitmap_mask
 
 
