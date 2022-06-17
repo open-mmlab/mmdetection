@@ -4,7 +4,6 @@ from typing import List, Optional, Sequence, Tuple
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, Scale
-from mmcv.runner import force_fp32
 from mmengine.data import InstanceData
 from torch import Tensor
 
@@ -173,11 +172,12 @@ class ATSSHead(AnchorHead):
         centerness = self.atss_centerness(reg_feat)
         return cls_score, bbox_pred, centerness
 
-    def loss_single(self, anchors: Tensor, cls_score: Tensor,
-                    bbox_pred: Tensor, centerness: Tensor, labels: Tensor,
-                    label_weights: Tensor, bbox_targets: Tensor,
-                    avg_factor: int) -> dict:
-        """Compute loss of a single scale level.
+    def loss_by_feat_single(self, anchors: Tensor, cls_score: Tensor,
+                            bbox_pred: Tensor, centerness: Tensor,
+                            labels: Tensor, label_weights: Tensor,
+                            bbox_targets: Tensor, avg_factor: float) -> dict:
+        """Calculate the loss of a single scale level based on the features
+        extracted by the detection head.
 
         Args:
             cls_score (Tensor): Box scores for each scale level
@@ -192,7 +192,7 @@ class ATSSHead(AnchorHead):
                 (N, num_total_anchors)
             bbox_targets (Tensor): BBox regression targets of each anchor
                 weight shape (N, num_total_anchors, 4).
-            avg_factor (int): Average factor that is used to average
+            avg_factor (float): Average factor that is used to average
                 the loss. When using sampling method, avg_factor is usually
                 the sum of positive and negative priors. When using
                 `PseudoSampler`, `avg_factor` is usually equal to the number
@@ -249,15 +249,16 @@ class ATSSHead(AnchorHead):
 
         return loss_cls, loss_bbox, loss_centerness, centerness_targets.sum()
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'centernesses'))
-    def loss(self,
-             cls_scores: List[Tensor],
-             bbox_preds: List[Tensor],
-             centernesses: List[Tensor],
-             batch_gt_instances: InstanceList,
-             batch_img_metas: List[dict],
-             batch_gt_instances_ignore: OptInstanceList = None) -> dict:
-        """Compute losses of the head.
+    def loss_by_feat(
+            self,
+            cls_scores: List[Tensor],
+            bbox_preds: List[Tensor],
+            centernesses: List[Tensor],
+            batch_gt_instances: InstanceList,
+            batch_img_metas: List[dict],
+            batch_gt_instances_ignore: OptInstanceList = None) -> dict:
+        """Calculate the loss based on the features extracted by the detection
+        head.
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level
@@ -300,7 +301,7 @@ class ATSSHead(AnchorHead):
 
         losses_cls, losses_bbox, loss_centerness,\
             bbox_avg_factor = multi_apply(
-                self.loss_single,
+                self.loss_by_feat_single,
                 anchor_list,
                 cls_scores,
                 bbox_preds,

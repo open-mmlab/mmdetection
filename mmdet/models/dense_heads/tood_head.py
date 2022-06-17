@@ -6,7 +6,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
 from mmcv.ops import deform_conv2d
-from mmcv.runner import force_fp32
 from mmengine import MessageHub
 from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
@@ -325,11 +324,13 @@ class TOODHead(ATSSHead):
         anchors_cy = (anchors[:, 3] + anchors[:, 1]) / 2
         return torch.stack([anchors_cx, anchors_cy], dim=-1)
 
-    def loss_single(self, anchors: Tensor, cls_score: Tensor,
-                    bbox_pred: Tensor, labels: Tensor, label_weights: Tensor,
-                    bbox_targets: Tensor, alignment_metrics: Tensor,
-                    stride: Tuple[int, int]) -> dict:
-        """Compute loss of a single scale level.
+    def loss_by_feat_single(self, anchors: Tensor, cls_score: Tensor,
+                            bbox_pred: Tensor, labels: Tensor,
+                            label_weights: Tensor, bbox_targets: Tensor,
+                            alignment_metrics: Tensor,
+                            stride: Tuple[int, int]) -> dict:
+        """Calculate the loss of a single scale level based on the features
+        extracted by the detection head.
 
         Args:
             anchors (Tensor): Box reference for each scale level with shape
@@ -399,14 +400,15 @@ class TOODHead(ATSSHead):
         return loss_cls, loss_bbox, alignment_metrics.sum(
         ), pos_bbox_weight.sum()
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def loss(self,
-             cls_scores: List[Tensor],
-             bbox_preds: List[Tensor],
-             batch_gt_instances: InstanceList,
-             batch_img_metas: List[dict],
-             batch_gt_instances_ignore: OptInstanceList = None) -> dict:
-        """Compute losses of the head.
+    def loss_by_feat(
+            self,
+            cls_scores: List[Tensor],
+            bbox_preds: List[Tensor],
+            batch_gt_instances: InstanceList,
+            batch_img_metas: List[dict],
+            batch_gt_instances_ignore: OptInstanceList = None) -> dict:
+        """Calculate the loss based on the features extracted by the detection
+        head.
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level
@@ -459,7 +461,7 @@ class TOODHead(ATSSHead):
 
         losses_cls, losses_bbox,\
             cls_avg_factors, bbox_avg_factors = multi_apply(
-                self.loss_single,
+                self.loss_by_feat_single,
                 anchor_list,
                 cls_scores,
                 bbox_preds,
@@ -477,17 +479,18 @@ class TOODHead(ATSSHead):
         losses_bbox = list(map(lambda x: x / bbox_avg_factor, losses_bbox))
         return dict(loss_cls=losses_cls, loss_bbox=losses_bbox)
 
-    def _get_results_single(self,
-                            cls_score_list: List[Tensor],
-                            bbox_pred_list: List[Tensor],
-                            score_factor_list: List[Tensor],
-                            mlvl_priors: List[Tensor],
-                            img_meta: dict,
-                            cfg: ConfigDict,
-                            rescale: bool = False,
-                            with_nms: bool = True,
-                            **kwargs) -> InstanceData:
-        """Transform outputs of a single image into bbox predictions.
+    def _predict_by_feat_single(self,
+                                cls_score_list: List[Tensor],
+                                bbox_pred_list: List[Tensor],
+                                score_factor_list: List[Tensor],
+                                mlvl_priors: List[Tensor],
+                                img_meta: dict,
+                                cfg: Optional[ConfigDict] = None,
+                                rescale: bool = False,
+                                with_nms: bool = True,
+                                **kwargs) -> InstanceData:
+        """Transform a single image's features extracted from the head into
+        bbox results.
 
         Args:
             cls_score_list (list[Tensor]): Box scores from all scale
@@ -506,8 +509,8 @@ class TOODHead(ATSSHead):
                 when `with_stride=True`, otherwise it still has shape
                 (num_priors, 4).
             img_meta (dict): Image meta info.
-            cfg (mmengine.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used.
+            cfg (:obj:`ConfigDict`, optional): Test / postprocessing
+                configuration, if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
                 Defaults to False.
             with_nms (bool): If True, do nms before return boxes.
