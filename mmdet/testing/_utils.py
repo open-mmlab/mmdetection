@@ -58,13 +58,14 @@ def _rand_bboxes(rng, num_boxes, w, h):
 
 
 def _rand_masks(rng, num_boxes, bboxes, img_w, img_h):
+    from mmdet.core.mask import BitmapMasks
     masks = np.zeros((num_boxes, img_h, img_w))
     for i, bbox in enumerate(bboxes):
         bbox = bbox.astype(np.int32)
         mask = (rng.rand(1, bbox[3] - bbox[1], bbox[2] - bbox[0]) >
                 0.3).astype(np.int)
         masks[i:i + 1, bbox[1]:bbox[3], bbox[0]:bbox[2]] = mask
-    return torch.from_numpy(masks)
+    return BitmapMasks(masks, height=img_h, width=img_w)
 
 
 def demo_mm_inputs(batch_size=2,
