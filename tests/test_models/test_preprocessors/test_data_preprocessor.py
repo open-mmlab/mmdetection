@@ -91,7 +91,8 @@ class TestDetDataPreprocessor(TestCase):
         packed_inputs[1]['data_sample'].gt_sem_seg.sem_seg = torch.randint(
             0, 256, (1, 9, 24))
         mask_pad_sums = [
-            x['data_sample'].gt_instances.masks.sum() for x in packed_inputs
+            x['data_sample'].gt_instances.masks.masks.sum()
+            for x in packed_inputs
         ]
         seg_pad_sums = [
             x['data_sample'].gt_sem_seg.sem_seg.sum() for x in packed_inputs
@@ -100,11 +101,11 @@ class TestDetDataPreprocessor(TestCase):
         for data_samples, expected_shape, mask_pad_sum, seg_pad_sum in zip(
                 batch_data_samples, [(10, 24), (10, 24)], mask_pad_sums,
                 seg_pad_sums):
-            self.assertEqual(data_samples.gt_instances.masks.shape[-2:],
+            self.assertEqual(data_samples.gt_instances.masks.masks.shape[-2:],
                              expected_shape)
             self.assertEqual(data_samples.gt_sem_seg.sem_seg.shape[-2:],
                              expected_shape)
-            self.assertEqual(data_samples.gt_instances.masks.sum(),
+            self.assertEqual(data_samples.gt_instances.masks.masks.sum(),
                              mask_pad_sum)
             self.assertEqual(data_samples.gt_sem_seg.sem_seg.sum(),
                              seg_pad_sum)
@@ -159,7 +160,8 @@ class TestDetDataPreprocessor(TestCase):
         packed_inputs[1]['data_sample'].gt_sem_seg.sem_seg = torch.randint(
             0, 256, (1, 9, 24))
         mask_pad_sums = [
-            x['data_sample'].gt_instances.masks.sum() for x in packed_inputs
+            x['data_sample'].gt_instances.masks.masks.sum()
+            for x in packed_inputs
         ]
         seg_pad_sums = [
             x['data_sample'].gt_sem_seg.sem_seg.sum() for x in packed_inputs
@@ -170,11 +172,11 @@ class TestDetDataPreprocessor(TestCase):
         for data_samples, expected_shape, mask_pad_sum, seg_pad_sum in zip(
                 batch_data_samples, [(32, 32), (32, 32)], mask_pad_sums,
                 seg_pad_sums):
-            self.assertEqual(data_samples.gt_instances.masks.shape[-2:],
+            self.assertEqual(data_samples.gt_instances.masks.masks.shape[-2:],
                              expected_shape)
             self.assertEqual(data_samples.gt_sem_seg.sem_seg.shape[-2:],
                              expected_shape)
-            self.assertEqual(data_samples.gt_instances.masks.sum(),
+            self.assertEqual(data_samples.gt_instances.masks.masks.sum(),
                              mask_pad_sum)
             self.assertEqual(data_samples.gt_sem_seg.sem_seg.sum(),
                              seg_pad_sum)
@@ -204,7 +206,8 @@ class TestDetDataPreprocessor(TestCase):
         packed_inputs[1]['data_sample'].gt_sem_seg.sem_seg = torch.randint(
             0, 256, (1, 9, 24))
         mask_pad_sums = [
-            x['data_sample'].gt_instances.masks.sum() for x in packed_inputs
+            x['data_sample'].gt_instances.masks.masks.sum()
+            for x in packed_inputs
         ]
         seg_pad_sums = [
             x['data_sample'].gt_sem_seg.sem_seg.sum() for x in packed_inputs
@@ -215,11 +218,11 @@ class TestDetDataPreprocessor(TestCase):
         for data_samples, expected_shape, mask_pad_sum, seg_pad_sum in zip(
                 batch_data_samples, [(32, 32), (32, 32)], mask_pad_sums,
                 seg_pad_sums):
-            self.assertEqual(data_samples.gt_instances.masks.shape[-2:],
+            self.assertEqual(data_samples.gt_instances.masks.masks.shape[-2:],
                              expected_shape)
             self.assertEqual(data_samples.gt_sem_seg.sem_seg.shape[-2:],
                              expected_shape)
-            self.assertEqual(data_samples.gt_instances.masks.sum(),
+            self.assertEqual(data_samples.gt_instances.masks.masks.sum(),
                              mask_pad_sum)
             self.assertEqual(data_samples.gt_sem_seg.sem_seg.sum(),
                              seg_pad_sum)

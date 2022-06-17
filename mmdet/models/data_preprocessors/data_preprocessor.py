@@ -13,6 +13,7 @@ from mmengine.model import ImgDataPreprocessor
 from torch import Tensor
 
 from mmdet.core.data_structures import DetDataSample
+from mmdet.core.mask import BitmapMasks
 from mmdet.registry import MODELS
 
 
@@ -149,14 +150,12 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         """Pad gt_masks to shape of batch_input_shape."""
         if 'masks' in batch_data_samples[0].gt_instances:
             for data_samples in batch_data_samples:
+                # BitmapMasks
                 masks = data_samples.gt_instances.masks
-                h, w = masks.shape[-2:]
-                pad_h, pad_w = data_samples.batch_input_shape
-                data_samples.gt_instances.masks = F.pad(
-                    masks,
-                    pad=(0, pad_w - w, 0, pad_h - h),
-                    mode='constant',
-                    value=self.mask_pad_value)
+                assert isinstance(masks, BitmapMasks)
+                data_samples.gt_instances.masks = masks.pad(
+                    data_samples.batch_input_shape,
+                    pad_val=self.mask_pad_value)
 
     def pad_gt_sem_seg(self,
                        batch_data_samples: Sequence[DetDataSample]) -> None:
@@ -320,13 +319,11 @@ class BatchFixedSizePad(nn.Module):
 
             if self.pad_mask:
                 for data_samples in batch_data_samples:
+                    # BitmapMasks
                     masks = data_samples.gt_instances.masks
-                    h, w = masks.shape[-2:]
-                    data_samples.gt_instances.masks = F.pad(
-                        masks,
-                        pad=(0, dst_w - w, 0, dst_h - h),
-                        mode='constant',
-                        value=self.mask_pad_value)
+                    assert isinstance(masks, BitmapMasks)
+                    data_samples.gt_instances.masks = masks.pad(
+                        (dst_h, dst_w), pad_val=self.mask_pad_value)
 
             if self.pad_seg:
                 for data_samples in batch_data_samples:
