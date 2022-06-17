@@ -14,7 +14,11 @@ class TestATSSHead(TestCase):
     def test_atss_head_loss(self):
         """Tests atss head loss when truth is empty and non-empty."""
         s = 256
-        img_metas = [{'img_shape': (s, s, 3), 'scale_factor': 1}]
+        img_metas = [{
+            'img_shape': (s, s, 3),
+            'pad_shape': (s, s, 3),
+            'scale_factor': 1
+        }]
         cfg = Config(
             dict(
                 assigner=dict(type='ATSSAssigner', topk=9),
@@ -53,8 +57,9 @@ class TestATSSHead(TestCase):
         gt_instances.bboxes = torch.empty((0, 4))
         gt_instances.labels = torch.LongTensor([])
 
-        empty_gt_losses = atss_head.loss(cls_scores, bbox_preds, centernesses,
-                                         [gt_instances], img_metas)
+        empty_gt_losses = atss_head.loss_by_feat(cls_scores, bbox_preds,
+                                                 centernesses, [gt_instances],
+                                                 img_metas)
         # When there is no truth, the cls loss should be nonzero but there
         # should be no box loss.
         empty_cls_loss = sum(empty_gt_losses['loss_cls'])
@@ -75,8 +80,9 @@ class TestATSSHead(TestCase):
         gt_instances.bboxes = torch.Tensor(
             [[23.6667, 23.8757, 238.6326, 151.8874]])
         gt_instances.labels = torch.LongTensor([2])
-        one_gt_losses = atss_head.loss(cls_scores, bbox_preds, centernesses,
-                                       [gt_instances], img_metas)
+        one_gt_losses = atss_head.loss_by_feat(cls_scores, bbox_preds,
+                                               centernesses, [gt_instances],
+                                               img_metas)
         onegt_cls_loss = sum(one_gt_losses['loss_cls'])
         onegt_box_loss = sum(one_gt_losses['loss_bbox'])
         onegt_centerness_loss = sum(one_gt_losses['loss_centerness'])

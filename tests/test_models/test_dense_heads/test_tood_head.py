@@ -70,7 +70,11 @@ class TestTOODHead(TestCase):
     def test_tood_head_anchor_free_loss(self):
         """Tests tood head loss when truth is empty and non-empty."""
         s = 256
-        img_metas = [{'img_shape': (s, s, 3), 'scale_factor': 1}]
+        img_metas = [{
+            'img_shape': (s, s, 3),
+            'pad_shape': (s, s, 3),
+            'scale_factor': 1
+        }]
         tood_head = _tood_head('anchor_free')
         tood_head.init_weights()
         feat = [
@@ -87,9 +91,9 @@ class TestTOODHead(TestCase):
         gt_instances.bboxes = torch.empty((0, 4))
         gt_instances.labels = torch.LongTensor([])
         gt_bboxes_ignore = None
-        empty_gt_losses = tood_head.loss(cls_scores, bbox_preds,
-                                         [gt_instances], img_metas,
-                                         gt_bboxes_ignore)
+        empty_gt_losses = tood_head.loss_by_feat(cls_scores, bbox_preds,
+                                                 [gt_instances], img_metas,
+                                                 gt_bboxes_ignore)
         # When there is no truth, the cls loss should be nonzero but there
         # should be no box loss.
         empty_cls_loss = empty_gt_losses['loss_cls']
@@ -106,8 +110,9 @@ class TestTOODHead(TestCase):
             [[23.6667, 23.8757, 238.6326, 151.8874]])
         gt_instances.labels = torch.LongTensor([2])
         gt_bboxes_ignore = None
-        one_gt_losses = tood_head.loss(cls_scores, bbox_preds, [gt_instances],
-                                       img_metas, gt_bboxes_ignore)
+        one_gt_losses = tood_head.loss_by_feat(cls_scores, bbox_preds,
+                                               [gt_instances], img_metas,
+                                               gt_bboxes_ignore)
         onegt_cls_loss = one_gt_losses['loss_cls']
         onegt_box_loss = one_gt_losses['loss_bbox']
         self.assertGreater(
@@ -121,9 +126,9 @@ class TestTOODHead(TestCase):
         gt_instances.bboxes = torch.empty((0, 4))
         gt_instances.labels = torch.LongTensor([])
         gt_bboxes_ignore = None
-        empty_gt_losses = tood_head.loss(cls_scores, bbox_preds,
-                                         [gt_instances], img_metas,
-                                         gt_bboxes_ignore)
+        empty_gt_losses = tood_head.loss_by_feat(cls_scores, bbox_preds,
+                                                 [gt_instances], img_metas,
+                                                 gt_bboxes_ignore)
         # When there is no truth, the cls loss should be nonzero but there
         # should be no box loss.
         empty_cls_loss = empty_gt_losses['loss_cls']
@@ -140,8 +145,9 @@ class TestTOODHead(TestCase):
             [[23.6667, 23.8757, 238.6326, 151.8874]])
         gt_instances.labels = torch.LongTensor([2])
         gt_bboxes_ignore = None
-        one_gt_losses = tood_head.loss(cls_scores, bbox_preds, [gt_instances],
-                                       img_metas, gt_bboxes_ignore)
+        one_gt_losses = tood_head.loss_by_feat(cls_scores, bbox_preds,
+                                               [gt_instances], img_metas,
+                                               gt_bboxes_ignore)
         onegt_cls_loss = one_gt_losses['loss_cls']
         onegt_box_loss = one_gt_losses['loss_bbox']
         self.assertGreater(
@@ -152,7 +158,11 @@ class TestTOODHead(TestCase):
     def test_tood_head_anchor_based_loss(self):
         """Tests tood head loss when truth is empty and non-empty."""
         s = 256
-        img_metas = [{'img_shape': (s, s, 3), 'scale_factor': 1}]
+        img_metas = [{
+            'img_shape': (s, s, 3),
+            'pad_shape': (s, s, 3),
+            'scale_factor': 1
+        }]
         tood_head = _tood_head('anchor_based')
         tood_head.init_weights()
         feat = [
@@ -169,9 +179,9 @@ class TestTOODHead(TestCase):
         gt_instances.bboxes = torch.empty((0, 4))
         gt_instances.labels = torch.LongTensor([])
         gt_bboxes_ignore = None
-        empty_gt_losses = tood_head.loss(cls_scores, bbox_preds,
-                                         [gt_instances], img_metas,
-                                         gt_bboxes_ignore)
+        empty_gt_losses = tood_head.loss_by_feat(cls_scores, bbox_preds,
+                                                 [gt_instances], img_metas,
+                                                 gt_bboxes_ignore)
         # When there is no truth, the cls loss should be nonzero but there
         # should be no box loss.
         empty_cls_loss = empty_gt_losses['loss_cls']
