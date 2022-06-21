@@ -1,14 +1,20 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from logging import warning
 from math import ceil, log
+from typing import List, Optional, Sequence, Tuple
 
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, bias_init_with_prob
 from mmcv.ops import CornerPool, batched_nms
-from mmcv.runner import BaseModule, force_fp32
+from mmengine.config import ConfigDict
+from mmengine.data import InstanceData
+from mmengine.model import BaseModule
+from torch import Tensor
 
 from mmdet.core import multi_apply
+from mmdet.core.utils import (ConfigType, InstanceList, OptConfigType,
+                              OptInstanceList, OptMultiConfig)
 from mmdet.registry import MODELS
 from ..builder import build_loss
 from ..utils import gaussian_radius, gen_gaussian_target
@@ -16,7 +22,6 @@ from ..utils.gaussian_target import (gather_feat, get_local_maximum,
                                      get_topk_from_heatmap,
                                      transpose_and_gather_feat)
 from .base_dense_head import BaseDenseHead
-from .dense_test_mixins import BBoxTestMixin
 
 
 class BiCornerPool(BaseModule):
@@ -24,22 +29,23 @@ class BiCornerPool(BaseModule):
 
     Args:
         in_channels (int): Input channels of module.
+        directions (list[str]): Directions of two CornerPools.
         out_channels (int): Output channels of module.
         feat_channels (int): Feature channels of module.
-        directions (list[str]): Directions of two CornerPools.
-        norm_cfg (dict): Dictionary to construct and config norm layer.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default: None
+        norm_cfg (:obj:`ConfigDict` or dict): Dictionary to construct
+            and config norm layer.
+        init_cfg (:obj:`ConfigDict` or dict, optional): the config to
+            control the initialization.
     """
 
     def __init__(self,
-                 in_channels,
-                 directions,
-                 feat_channels=128,
-                 out_channels=128,
-                 norm_cfg=dict(type='BN', requires_grad=True),
-                 init_cfg=None):
-        super(BiCornerPool, self).__init__(init_cfg)
+                 in_channels: int,
+                 directions: List[int],
+                 feat_channels: int = 128,
+                 out_channels: int = 128,
+                 norm_cfg: ConfigType = dict(type='BN', requires_grad=True),
+                 init_cfg: OptMultiConfig = None) -> None:
+        super().__init__(init_cfg)
         self.direction1_conv = ConvModule(
             in_channels, feat_channels, 3, padding=1, norm_cfg=norm_cfg)
         self.direction2_conv = ConvModule(
@@ -62,7 +68,7 @@ class BiCornerPool(BaseModule):
         self.direction2_pool = CornerPool(directions[1])
         self.relu = nn.ReLU(inplace=True)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         """Forward features from the upstream network.
 
         Args:
@@ -83,7 +89,7 @@ class BiCornerPool(BaseModule):
 
 
 @MODELS.register_module()
-class CornerHead(BaseDenseHead, BBoxTestMixin):
+class CornerHead(BaseDenseHead):
     """Head of CornerNet: Detecting Objects as Paired Keypoints.
 
     Code is modified from the `official github repo
@@ -97,47 +103,49 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
         num_classes (int): Number of categories excluding the background
             category.
         in_channels (int): Number of channels in the input feature map.
-        num_feat_levels (int): Levels of feature from the previous module. 2
-            for HourglassNet-104 and 1 for HourglassNet-52. Because
+        num_feat_levels (int): Levels of feature from the previous module.
+            2 for HourglassNet-104 and 1 for HourglassNet-52. Because
             HourglassNet-104 outputs the final feature and intermediate
             supervision feature and HourglassNet-52 only outputs the final
-            feature. Default: 2.
-        corner_emb_channels (int): Channel of embedding vector. Default: 1.
-        train_cfg (dict | None): Training config. Useless in CornerHead,
-            but we keep this variable for SingleStageDetector. Default: None.
-        test_cfg (dict | None): Testing config of CornerHead. Default: None.
-        loss_heatmap (dict | None): Config of corner heatmap loss. Default:
-            GaussianFocalLoss.
-        loss_embedding (dict | None): Config of corner embedding loss. Default:
-            AssociativeEmbeddingLoss.
-        loss_offset (dict | None): Config of corner offset loss. Default:
-            SmoothL1Loss.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default: None
+            feature. Defaults to 2.
+        corner_emb_channels (int): Channel of embedding vector. Defaults to 1.
+        train_cfg (:obj:`ConfigDict` or dict, optional): Training config.
+            Useless in CornerHead, but we keep this variable for
+            SingleStageDetector.
+        test_cfg (:obj:`ConfigDict` or dict, optional): Testing config of
+            CornerHead.
+        loss_heatmap (:obj:`ConfigDict` or dict): Config of corner heatmap
+            loss. Defaults to GaussianFocalLoss.
+        loss_embedding (:obj:`ConfigDict` or dict): Config of corner embedding
+            loss. Defaults to AssociativeEmbeddingLoss.
+        loss_offset (:obj:`ConfigDict` or dict): Config of corner offset loss.
+            Defaults to SmoothL1Loss.
+        init_cfg (:obj:`ConfigDict` or dict, optional): the config to control
+            the initialization.
     """
 
     def __init__(self,
-                 num_classes,
-                 in_channels,
-                 num_feat_levels=2,
-                 corner_emb_channels=1,
-                 train_cfg=None,
-                 test_cfg=None,
-                 loss_heatmap=dict(
+                 num_classes: int,
+                 in_channels: int,
+                 num_feat_levels: int = 2,
+                 corner_emb_channels: int = 1,
+                 train_cfg: OptConfigType = None,
+                 test_cfg: OptConfigType = None,
+                 loss_heatmap: ConfigType = dict(
                      type='GaussianFocalLoss',
                      alpha=2.0,
                      gamma=4.0,
                      loss_weight=1),
-                 loss_embedding=dict(
+                 loss_embedding: ConfigType = dict(
                      type='AssociativeEmbeddingLoss',
                      pull_weight=0.25,
                      push_weight=0.25),
-                 loss_offset=dict(
+                 loss_offset: ConfigType = dict(
                      type='SmoothL1Loss', beta=1.0, loss_weight=1),
-                 init_cfg=None):
+                 init_cfg: OptMultiConfig = None) -> None:
         assert init_cfg is None, 'To prevent abnormal initialization ' \
                                  'behavior, init_cfg is not allowed to be set'
-        super(CornerHead, self).__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.corner_emb_channels = corner_emb_channels
@@ -153,17 +161,19 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
-        self.fp16_enabled = False
         self._init_layers()
 
-    def _make_layers(self, out_channels, in_channels=256, feat_channels=256):
+    def _make_layers(self,
+                     out_channels: int,
+                     in_channels: int = 256,
+                     feat_channels: int = 256) -> nn.Sequential:
         """Initialize conv sequential for CornerHead."""
         return nn.Sequential(
             ConvModule(in_channels, feat_channels, 3, padding=1),
             ConvModule(
                 feat_channels, out_channels, 1, norm_cfg=None, act_cfg=None))
 
-    def _init_corner_kpt_layers(self):
+    def _init_corner_kpt_layers(self) -> None:
         """Initialize corner keypoint layers.
 
         Including corner heatmap branch and corner offset branch. Each branch
@@ -201,7 +211,7 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                     out_channels=self.corner_offset_channels,
                     in_channels=self.in_channels))
 
-    def _init_corner_emb_layers(self):
+    def _init_corner_emb_layers(self) -> None:
         """Initialize corner embedding layers.
 
         Only include corner embedding branch with two parts: prefix `tl_` for
@@ -219,7 +229,7 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                     out_channels=self.corner_emb_channels,
                     in_channels=self.in_channels))
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         """Initialize layers for CornerHead.
 
         Including two parts: corner keypoint layers and corner embedding layers
@@ -228,8 +238,8 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
         if self.with_corner_emb:
             self._init_corner_emb_layers()
 
-    def init_weights(self):
-        super(CornerHead, self).init_weights()
+    def init_weights(self) -> None:
+        super().init_weights()
         bias_init = bias_init_with_prob(0.1)
         for i in range(self.num_feat_levels):
             # The initialization of parameters are different between
@@ -246,7 +256,7 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                 self.tl_emb[i][-1].conv.reset_parameters()
                 self.br_emb[i][-1].conv.reset_parameters()
 
-    def forward(self, feats):
+    def forward(self, feats: Tuple[Tensor]) -> tuple:
         """Forward features from the upstream network.
 
         Args:
@@ -278,13 +288,17 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
         lvl_ind = list(range(self.num_feat_levels))
         return multi_apply(self.forward_single, feats, lvl_ind)
 
-    def forward_single(self, x, lvl_ind, return_pool=False):
+    def forward_single(self,
+                       x: Tensor,
+                       lvl_ind: int,
+                       return_pool: bool = False) -> List[Tensor]:
         """Forward feature of a single level.
 
         Args:
             x (Tensor): Feature of a single level.
             lvl_ind (int): Level index of current feature.
             return_pool (bool): Return corner pool feature or not.
+                Defaults to False.
 
         Returns:
             tuple[Tensor]: A tuple of CornerHead's output for current feature
@@ -324,13 +338,13 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
         return result_list
 
     def get_targets(self,
-                    gt_bboxes,
-                    gt_labels,
-                    feat_shape,
-                    img_shape,
-                    with_corner_emb=False,
-                    with_guiding_shift=False,
-                    with_centripetal_shift=False):
+                    gt_bboxes: List[Tensor],
+                    gt_labels: List[Tensor],
+                    feat_shape: Sequence[int],
+                    img_shape: Sequence[int],
+                    with_corner_emb: bool = False,
+                    with_guiding_shift: bool = False,
+                    with_centripetal_shift: bool = False) -> dict:
         """Generate corner targets.
 
         Including corner heatmap, corner offset.
@@ -347,17 +361,17 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
             gt_bboxes (list[Tensor]): Ground truth bboxes of each image, each
                 has shape (num_gt, 4).
             gt_labels (list[Tensor]): Ground truth labels of each box, each has
-                shape (num_gt,).
-            feat_shape (list[int]): Shape of output feature,
+                shape (num_gt, ).
+            feat_shape (Sequence[int]): Shape of output feature,
                 [batch, channel, height, width].
-            img_shape (list[int]): Shape of input image,
+            img_shape (Sequence[int]): Shape of input image,
                 [height, width, channel].
             with_corner_emb (bool): Generate corner embedding target or not.
-                Default: False.
+                Defaults to False.
             with_guiding_shift (bool): Generate guiding shift target or not.
-                Default: False.
+                Defaults to False.
             with_centripetal_shift (bool): Generate centripetal shift target or
-                not. Default: False.
+                not. Defaults to False.
 
         Returns:
             dict: Ground truth of corner heatmap, corner offset, corner
@@ -511,19 +525,19 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
 
         return target_result
 
-    @force_fp32()
-    def loss(self,
-             tl_heats,
-             br_heats,
-             tl_embs,
-             br_embs,
-             tl_offs,
-             br_offs,
-             gt_bboxes,
-             gt_labels,
-             img_metas,
-             gt_bboxes_ignore=None):
-        """Compute losses of the head.
+    def loss_by_feat(
+            self,
+            tl_heats: List[Tensor],
+            br_heats: List[Tensor],
+            tl_embs: List[Tensor],
+            br_embs: List[Tensor],
+            tl_offs: List[Tensor],
+            br_offs: List[Tensor],
+            batch_gt_instances: InstanceList,
+            batch_img_metas: List[dict],
+            batch_gt_instances_ignore: OptInstanceList = None) -> dict:
+        """Calculate the loss based on the features extracted by the detection
+        head.
 
         Args:
             tl_heats (list[Tensor]): Top-left corner heatmaps for each level
@@ -538,13 +552,14 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                 with shape (N, corner_offset_channels, H, W).
             br_offs (list[Tensor]): Bottom-right corner offsets for each level
                 with shape (N, corner_offset_channels, H, W).
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [left, top, right, bottom] format.
-            gt_labels (list[Tensor]): Class indices corresponding to each box.
-            img_metas (list[dict]): Meta information of each image, e.g.,
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            gt_bboxes_ignore (list[Tensor] | None): Specify which bounding
-                boxes can be ignored when computing the loss.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
+                Specify which bounding boxes can be ignored when computing
+                the loss.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components. Containing the
@@ -559,34 +574,44 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                 - off_loss (list[Tensor]): Corner offset losses of all feature
                   levels.
         """
+        gt_bboxes = [
+            gt_instances.bboxes for gt_instances in batch_gt_instances
+        ]
+        gt_labels = [
+            gt_instances.labels for gt_instances in batch_gt_instances
+        ]
+
         targets = self.get_targets(
             gt_bboxes,
             gt_labels,
             tl_heats[-1].shape,
-            img_metas[0]['pad_shape'],
+            batch_img_metas[0]['batch_input_shape'],
             with_corner_emb=self.with_corner_emb)
         mlvl_targets = [targets for _ in range(self.num_feat_levels)]
         det_losses, pull_losses, push_losses, off_losses = multi_apply(
-            self.loss_single, tl_heats, br_heats, tl_embs, br_embs, tl_offs,
-            br_offs, mlvl_targets)
+            self.loss_by_feat_single, tl_heats, br_heats, tl_embs, br_embs,
+            tl_offs, br_offs, mlvl_targets)
         loss_dict = dict(det_loss=det_losses, off_loss=off_losses)
         if self.with_corner_emb:
             loss_dict.update(pull_loss=pull_losses, push_loss=push_losses)
         return loss_dict
 
-    def loss_single(self, tl_hmp, br_hmp, tl_emb, br_emb, tl_off, br_off,
-                    targets):
-        """Compute losses for single level.
+    def loss_by_feat_single(self, tl_hmp: Tensor, br_hmp: Tensor,
+                            tl_emb: Optional[Tensor], br_emb: Optional[Tensor],
+                            tl_off: Tensor, br_off: Tensor,
+                            targets: dict) -> Tuple[Tensor, ...]:
+        """Calculate the loss of a single scale level based on the features
+        extracted by the detection head.
 
         Args:
             tl_hmp (Tensor): Top-left corner heatmap for current level with
                 shape (N, num_classes, H, W).
             br_hmp (Tensor): Bottom-right corner heatmap for current level with
                 shape (N, num_classes, H, W).
-            tl_emb (Tensor): Top-left corner embedding for current level with
-                shape (N, corner_emb_channels, H, W).
-            br_emb (Tensor): Bottom-right corner embedding for current level
-                with shape (N, corner_emb_channels, H, W).
+            tl_emb (Tensor, optional): Top-left corner embedding for current
+                level with shape (N, corner_emb_channels, H, W).
+            br_emb (Tensor, optional): Bottom-right corner embedding for
+                current level with shape (N, corner_emb_channels, H, W).
             tl_off (Tensor): Top-left corner offset for current level with
                 shape (N, corner_offset_channels, H, W).
             br_off (Tensor): Bottom-right corner offset for current level with
@@ -652,18 +677,18 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
 
         return det_loss, pull_loss, push_loss, off_loss
 
-    @force_fp32()
-    def get_bboxes(self,
-                   tl_heats,
-                   br_heats,
-                   tl_embs,
-                   br_embs,
-                   tl_offs,
-                   br_offs,
-                   img_metas,
-                   rescale=False,
-                   with_nms=True):
-        """Transform network output for a batch into bbox predictions.
+    def predict_by_feat(self,
+                        tl_heats: List[Tensor],
+                        br_heats: List[Tensor],
+                        tl_embs: List[Tensor],
+                        br_embs: List[Tensor],
+                        tl_offs: List[Tensor],
+                        br_offs: List[Tensor],
+                        batch_img_metas: Optional[List[dict]] = None,
+                        rescale: bool = False,
+                        with_nms: bool = True) -> InstanceList:
+        """Transform a batch of output features extracted from the head into
+        bbox results.
 
         Args:
             tl_heats (list[Tensor]): Top-left corner heatmaps for each level
@@ -678,23 +703,35 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                 with shape (N, corner_offset_channels, H, W).
             br_offs (list[Tensor]): Bottom-right corner offsets for each level
                 with shape (N, corner_offset_channels, H, W).
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
+            batch_img_metas (list[dict], optional): Batch image meta info.
+                Defaults to None.
             rescale (bool): If True, return boxes in original image space.
-                Default: False.
+                Defaults to False.
             with_nms (bool): If True, do nms before return boxes.
-                Default: True.
+                Defaults to True.
+
+        Returns:
+            list[:obj:`InstanceData`]: Object detection results of each image
+            after the post process. Each item usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
         """
-        assert tl_heats[-1].shape[0] == br_heats[-1].shape[0] == len(img_metas)
+        assert tl_heats[-1].shape[0] == br_heats[-1].shape[0] == len(
+            batch_img_metas)
         result_list = []
-        for img_id in range(len(img_metas)):
+        for img_id in range(len(batch_img_metas)):
             result_list.append(
-                self._get_bboxes_single(
+                self._predict_by_feat_single(
                     tl_heats[-1][img_id:img_id + 1, :],
                     br_heats[-1][img_id:img_id + 1, :],
                     tl_offs[-1][img_id:img_id + 1, :],
                     br_offs[-1][img_id:img_id + 1, :],
-                    img_metas[img_id],
+                    batch_img_metas[img_id],
                     tl_emb=tl_embs[-1][img_id:img_id + 1, :],
                     br_emb=br_embs[-1][img_id:img_id + 1, :],
                     rescale=rescale,
@@ -702,19 +739,20 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
 
         return result_list
 
-    def _get_bboxes_single(self,
-                           tl_heat,
-                           br_heat,
-                           tl_off,
-                           br_off,
-                           img_meta,
-                           tl_emb=None,
-                           br_emb=None,
-                           tl_centripetal_shift=None,
-                           br_centripetal_shift=None,
-                           rescale=False,
-                           with_nms=True):
-        """Transform outputs for a single batch item into bbox predictions.
+    def _predict_by_feat_single(self,
+                                tl_heat: Tensor,
+                                br_heat: Tensor,
+                                tl_off: Tensor,
+                                br_off: Tensor,
+                                img_meta: dict,
+                                tl_emb: Optional[Tensor] = None,
+                                br_emb: Optional[Tensor] = None,
+                                tl_centripetal_shift: Optional[Tensor] = None,
+                                br_centripetal_shift: Optional[Tensor] = None,
+                                rescale: bool = False,
+                                with_nms: bool = True) -> InstanceData:
+        """Transform a single image's features extracted from the head into
+        bbox results.
 
         Args:
             tl_heat (Tensor): Top-left corner heatmap for current level with
@@ -736,14 +774,26 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
             br_centripetal_shift: Bottom-right corner's centripetal shift for
                 current level with shape (N, 2, H, W).
             rescale (bool): If True, return boxes in original image space.
-                Default: False.
+                Defaults to False.
             with_nms (bool): If True, do nms before return boxes.
-                Default: True.
+                Defaults to True.
+
+        Returns:
+            :obj:`InstanceData`: Detection results of each image
+            after the post process.
+            Each item usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
         """
         if isinstance(img_meta, (list, tuple)):
             img_meta = img_meta[0]
 
-        batch_bboxes, batch_scores, batch_clses = self.decode_heatmap(
+        batch_bboxes, batch_scores, batch_clses = self._decode_heatmap(
             tl_heat=tl_heat.sigmoid(),
             br_heat=br_heat.sigmoid(),
             tl_off=tl_off,
@@ -757,25 +807,32 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
             kernel=self.test_cfg.local_maximum_kernel,
             distance_threshold=self.test_cfg.distance_threshold)
 
-        if rescale:
-            batch_bboxes /= batch_bboxes.new_tensor(img_meta['scale_factor'])
+        if rescale and 'scale_factor' in img_meta:
+            batch_bboxes /= batch_bboxes.new_tensor(
+                img_meta['scale_factor']).repeat((1, 2))
 
         bboxes = batch_bboxes.view([-1, 4])
         scores = batch_scores.view(-1)
         clses = batch_clses.view(-1)
 
-        detections = torch.cat([bboxes, scores.unsqueeze(-1)], -1)
-        keepinds = (detections[:, -1] > -0.1)
-        detections = detections[keepinds]
-        labels = clses[keepinds]
+        det_bboxes = torch.cat([bboxes, scores.unsqueeze(-1)], -1)
+        keepinds = (det_bboxes[:, -1] > -0.1)
+        det_bboxes = det_bboxes[keepinds]
+        det_labels = clses[keepinds]
 
         if with_nms:
-            detections, labels = self._bboxes_nms(detections, labels,
-                                                  self.test_cfg)
+            det_bboxes, det_labels = self._bboxes_nms(det_bboxes, det_labels,
+                                                      self.test_cfg)
 
-        return detections, labels
+        results = InstanceData()
+        results.bboxes = det_bboxes[..., :4]
+        results.scores = det_bboxes[..., 4]
+        results.labels = det_labels
+        return results
 
-    def _bboxes_nms(self, bboxes, labels, cfg):
+    def _bboxes_nms(self, bboxes: Tensor, labels: Tensor,
+                    cfg: ConfigDict) -> Tuple[Tensor, Tensor]:
+        """bboxes nms."""
         if 'nms_cfg' in cfg:
             warning.warn('nms_cfg in test_cfg will be deprecated. '
                          'Please rename it as nms')
@@ -793,21 +850,21 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
 
         return bboxes, labels
 
-    def decode_heatmap(self,
-                       tl_heat,
-                       br_heat,
-                       tl_off,
-                       br_off,
-                       tl_emb=None,
-                       br_emb=None,
-                       tl_centripetal_shift=None,
-                       br_centripetal_shift=None,
-                       img_meta=None,
-                       k=100,
-                       kernel=3,
-                       distance_threshold=0.5,
-                       num_dets=1000):
-        """Transform outputs for a single batch item into raw bbox predictions.
+    def _decode_heatmap(self,
+                        tl_heat: Tensor,
+                        br_heat: Tensor,
+                        tl_off: Tensor,
+                        br_off: Tensor,
+                        tl_emb: Optional[Tensor] = None,
+                        br_emb: Optional[Tensor] = None,
+                        tl_centripetal_shift: Optional[Tensor] = None,
+                        br_centripetal_shift: Optional[Tensor] = None,
+                        img_meta: Optional[dict] = None,
+                        k: int = 100,
+                        kernel: int = 3,
+                        distance_threshold: float = 0.5,
+                        num_dets: int = 1000) -> Tuple[Tensor, Tensor, Tensor]:
+        """Transform outputs into detections raw bbox prediction.
 
         Args:
             tl_heat (Tensor): Top-left corner heatmap for current level with
@@ -818,13 +875,13 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
                 shape (N, corner_offset_channels, H, W).
             br_off (Tensor): Bottom-right corner offset for current level with
                 shape (N, corner_offset_channels, H, W).
-            tl_emb (Tensor | None): Top-left corner embedding for current
+            tl_emb (Tensor, Optional): Top-left corner embedding for current
                 level with shape (N, corner_emb_channels, H, W).
-            br_emb (Tensor | None): Bottom-right corner embedding for current
-                level with shape (N, corner_emb_channels, H, W).
-            tl_centripetal_shift (Tensor | None): Top-left centripetal shift
+            br_emb (Tensor, Optional): Bottom-right corner embedding for
+                current level with shape (N, corner_emb_channels, H, W).
+            tl_centripetal_shift (Tensor, Optional): Top-left centripetal shift
                 for current level with shape (N, 2, H, W).
-            br_centripetal_shift (Tensor | None): Bottom-right centripetal
+            br_centripetal_shift (Tensor, Optional): Bottom-right centripetal
                 shift for current level with shape (N, 2, H, W).
             img_meta (dict): Meta information of current image, e.g.,
                 image size, scaling factor, etc.
@@ -852,7 +909,7 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
         if torch.onnx.is_in_onnx_export():
             inp_h, inp_w = img_meta['pad_shape_for_onnx'][:2]
         else:
-            inp_h, inp_w, _ = img_meta['pad_shape']
+            inp_h, inp_w = img_meta['batch_input_shape'][:2]
 
         # perform nms on heatmaps
         tl_heat = get_local_maximum(tl_heat, kernel=kernel)
@@ -1025,63 +1082,6 @@ class CornerHead(BaseDenseHead, BBoxTestMixin):
         bboxes = gather_feat(bboxes, inds)
 
         clses = tl_clses.contiguous().view(batch, -1, 1)
-        clses = gather_feat(clses, inds).float()
+        clses = gather_feat(clses, inds)
 
         return bboxes, scores, clses
-
-    def onnx_export(self,
-                    tl_heats,
-                    br_heats,
-                    tl_embs,
-                    br_embs,
-                    tl_offs,
-                    br_offs,
-                    img_metas,
-                    rescale=False,
-                    with_nms=True):
-        """Transform network output for a batch into bbox predictions.
-
-        Args:
-            tl_heats (list[Tensor]): Top-left corner heatmaps for each level
-                with shape (N, num_classes, H, W).
-            br_heats (list[Tensor]): Bottom-right corner heatmaps for each
-                level with shape (N, num_classes, H, W).
-            tl_embs (list[Tensor]): Top-left corner embeddings for each level
-                with shape (N, corner_emb_channels, H, W).
-            br_embs (list[Tensor]): Bottom-right corner embeddings for each
-                level with shape (N, corner_emb_channels, H, W).
-            tl_offs (list[Tensor]): Top-left corner offsets for each level
-                with shape (N, corner_offset_channels, H, W).
-            br_offs (list[Tensor]): Bottom-right corner offsets for each level
-                with shape (N, corner_offset_channels, H, W).
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
-
-        Returns:
-            tuple[Tensor, Tensor]: First tensor bboxes with shape
-            [N, num_det, 5], 5 arrange as (x1, y1, x2, y2, score)
-            and second element is class labels of shape [N, num_det].
-        """
-        assert tl_heats[-1].shape[0] == br_heats[-1].shape[0] == len(
-            img_metas) == 1
-        result_list = []
-        for img_id in range(len(img_metas)):
-            result_list.append(
-                self._get_bboxes_single(
-                    tl_heats[-1][img_id:img_id + 1, :],
-                    br_heats[-1][img_id:img_id + 1, :],
-                    tl_offs[-1][img_id:img_id + 1, :],
-                    br_offs[-1][img_id:img_id + 1, :],
-                    img_metas[img_id],
-                    tl_emb=tl_embs[-1][img_id:img_id + 1, :],
-                    br_emb=br_embs[-1][img_id:img_id + 1, :],
-                    rescale=rescale,
-                    with_nms=with_nms))
-
-        detections, labels = result_list[0]
-        # batch_size 1 here, [1, num_det, 5], [1, num_det]
-        return detections.unsqueeze(0), labels.unsqueeze(0)

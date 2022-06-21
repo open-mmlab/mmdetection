@@ -2,9 +2,16 @@ _base_ = [
     '../_base_/default_runtime.py', '../_base_/datasets/coco_detection.py'
 ]
 
+data_preprocessor = dict(
+    type='DetDataPreprocessor',
+    mean=[123.675, 116.28, 103.53],
+    std=[58.395, 57.12, 57.375],
+    bgr_to_rgb=True)
+
 # model settings
 model = dict(
     type='CornerNet',
+    data_preprocessor=data_preprocessor,
     backbone=dict(
         type='HourglassNet',
         downsample_times=5,
@@ -35,11 +42,12 @@ model = dict(
         score_thr=0.05,
         max_per_img=100,
         nms=dict(type='soft_nms', iou_threshold=0.5, method='gaussian')))
+
 # data settings
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
-    dict(type='LoadImageFromFile', to_float32=True),
+    dict(
+        type='LoadImageFromFile',
+        file_client_args={{_base_.file_client_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PhotoMetricDistortion',
@@ -48,61 +56,83 @@ train_pipeline = [
         saturation_range=(0.5, 1.5),
         hue_delta=18),
     dict(
+        # The cropped images are padded into squares during training,
+        # but may be smaller than crop_size.
         type='RandomCenterCropPad',
         crop_size=(511, 511),
         ratios=(0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3),
         test_mode=False,
         test_pad_mode=None,
-        **img_norm_cfg),
-    dict(type='Resize', img_scale=(511, 511), keep_ratio=False),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
+        mean=data_preprocessor['mean'],
+        std=data_preprocessor['std'],
+        # Image data is not converted to rgb.
+        to_rgb=data_preprocessor['bgr_to_rgb']),
+    # Make sure the output is always crop_size.
+    dict(type='Resize', scale=(511, 511), keep_ratio=False),
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PackDetInputs'),
 ]
+
+# TODO: mstest is not currently implemented
 test_pipeline = [
-    dict(type='LoadImageFromFile', to_float32=True),
     dict(
-        type='MultiScaleFlipAug',
-        scale_factor=1.0,
-        flip=True,
-        transforms=[
-            dict(type='Resize'),
-            dict(
-                type='RandomCenterCropPad',
-                crop_size=None,
-                ratios=None,
-                border=None,
-                test_mode=True,
-                test_pad_mode=['logical_or', 127],
-                **img_norm_cfg),
-            dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(
-                type='Collect',
-                keys=['img'],
-                meta_keys=('filename', 'ori_shape', 'img_shape', 'pad_shape',
-                           'scale_factor', 'flip', 'img_norm_cfg', 'border')),
-        ])
+        type='LoadImageFromFile',
+        to_float32=True,
+        file_client_args={{_base_.file_client_args}}),
+    # don't need Resize
+    dict(
+        type='RandomCenterCropPad',
+        crop_size=None,
+        ratios=None,
+        border=None,
+        test_mode=True,
+        test_pad_mode=['logical_or', 127],
+        mean=data_preprocessor['mean'],
+        std=data_preprocessor['std'],
+        # Image data is not converted to rgb.
+        to_rgb=data_preprocessor['bgr_to_rgb']),
+    dict(
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape', 'border'))
 ]
-data = dict(
-    samples_per_gpu=6,
-    workers_per_gpu=3,
-    train=dict(pipeline=train_pipeline),
-    val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
+
+train_dataloader = dict(
+    batch_size=6,
+    num_workers=3,
+    batch_sampler=None,
+    dataset=dict(pipeline=train_pipeline))
+val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
+test_dataloader = val_dataloader
+
 # optimizer
-optimizer = dict(type='Adam', lr=0.0005)
-optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
-# learning policy
-lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=500,
-    warmup_ratio=1.0 / 3,
-    step=[180])
-runner = dict(type='EpochBasedRunner', max_epochs=210)
+optim_wrapper = dict(
+    type='OptimWrapper',
+    optimizer=dict(type='Adam', lr=0.0005),
+    clip_grad=dict(max_norm=35, norm_type=2))
+
+max_epochs = 210
+
+# learning rate
+param_scheduler = [
+    dict(
+        type='LinearLR',
+        start_factor=1.0 / 3,
+        by_epoch=False,
+        begin=0,
+        end=500),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=max_epochs,
+        by_epoch=True,
+        milestones=[180],
+        gamma=0.1)
+]
+
+train_cfg = dict(
+    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
+val_cfg = dict(type='ValLoop')
+test_cfg = dict(type='TestLoop')
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
