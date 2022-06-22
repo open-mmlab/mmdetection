@@ -23,9 +23,10 @@ class SingleStageInstanceSegmentor(BaseDetector):
                  mask_head: OptConfigType = None,
                  train_cfg: OptConfigType = None,
                  test_cfg: OptConfigType = None,
-                 preprocess_cfg: OptConfigType = None,
+                 data_preprocessor: OptConfigType = None,
                  init_cfg: OptMultiConfig = None) -> None:
-        super().__init__(preprocess_cfg=preprocess_cfg, init_cfg=init_cfg)
+        super().__init__(
+            data_preprocessor=data_preprocessor, init_cfg=init_cfg)
         self.backbone = MODELS.build(backbone)
         if neck is not None:
             self.neck = MODELS.build(neck)
@@ -47,11 +48,6 @@ class SingleStageInstanceSegmentor(BaseDetector):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
-    @property
-    def with_bbox_head(self) -> bool:
-        """bool: whether the detector has RPN"""
-        return hasattr(self, 'bbox_head') and self.bbox_head is not None
-
     def extract_feat(self, batch_inputs: Tensor) -> Tuple[Tensor]:
         """Extract features.
 
@@ -67,25 +63,31 @@ class SingleStageInstanceSegmentor(BaseDetector):
             x = self.neck(x)
         return x
 
-    def forward_dummy(self, batch_inputs: Tensor) -> tuple:
-        """Used for computing network flops.
+    def _forward(self, batch_inputs: Tensor, *args, **kwargs) \
+            -> Tuple[List[Tensor]]:
+        """Network forward process. Usually includes backbone, neck and head
+        forward without any post-processing.
 
-        See `mmdetection/tools/analysis_tools/get_flops.py`
+         Args:
+            batch_inputs (Tensor): Inputs with shape (N, C, H, W).
+
+        Returns:
+            tuple[list]: A tuple of features from ``bbox_head`` forward.
         """
         outs = ()
         # backbone
         x = self.extract_feat(batch_inputs)
         # bbox_head
-        if self.with_bbox_head:
+        if self.with_bbox:
             # TODO: current not supported
             pass
         # mask_head
-        mask_outs = self.mask_head(x)
+        mask_outs = self.mask_head.forward(x)
         outs = outs + (mask_outs, )
         return outs
 
-    def forward_train(self, batch_inputs: Tensor,
-                      batch_data_samples: SampleList, **kwargs) -> dict:
+    def loss(self, batch_inputs: Tensor, batch_data_samples: SampleList,
+             **kwargs) -> dict:
         """
         Args:
             batch_inputs (Tensor): Input images of shape (N, C, H, W).
@@ -97,37 +99,20 @@ class SingleStageInstanceSegmentor(BaseDetector):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        # process batch_data_samples to set `batch_input_shape` into metainfo
-        super().forward_train(
-            batch_inputs=batch_inputs, batch_data_samples=batch_data_samples)
-
         x = self.extract_feat(batch_inputs)
         losses = dict()
 
         # TODO: Check the logic in CondInst and YOLACT
+        positive_infos = None
         # CondInst and YOLACT have bbox_head
-        if self.with_bbox_head:
-            # TODO: Check whether can simply use bbox.forward_train here
-            det_losses, positive_infos = self.bbox_head.forward_train(
-                x, batch_data_samples, **kwargs)
-            # # bbox_head_preds is a tuple
-            # bbox_head_preds = self.bbox_head(x)
-            # # positive_infos is a list of obj:`InstanceData`
-            # # It contains the information about the positive samples
-            # # CondInst, YOLACT
-            # det_losses, positive_infos = self.bbox_head.loss(
-            #     *bbox_head_preds,
-            #     gt_bboxes=gt_bboxes,
-            #     gt_labels=gt_labels,
-            #     gt_masks=gt_masks,
-            #     img_metas=img_metas,
-            #     gt_bboxes_ignore=gt_bboxes_ignore,
-            #     **kwargs)
-            losses.update(det_losses)
-        else:
-            positive_infos = None
+        if self.with_bbox:
+            bbox_losses = self.bbox_head.loss(x, batch_data_samples, **kwargs)
+            # TODO: enhance the logic when refactor YOLACT
+            if bbox_losses.get('positive_infos', None) is not None:
+                positive_infos = bbox_losses.pop('positive_infos')
+            losses.update(bbox_losses)
 
-        mask_loss = self.mask_head.forward_train(
+        mask_loss = self.mask_head.loss(
             x, batch_data_samples, positive_infos=positive_infos, **kwargs)
         # avoid loss override
         assert not set(mask_loss.keys()) & set(losses.keys())
@@ -135,16 +120,19 @@ class SingleStageInstanceSegmentor(BaseDetector):
         losses.update(mask_loss)
         return losses
 
-    def simple_test(self,
-                    batch_inputs: Tensor,
-                    batch_img_metas: List[dict],
-                    rescale: bool = False,
-                    **kwargs) -> SampleList:
-        """Test function without test-time augmentation.
+    def predict(self,
+                batch_inputs: Tensor,
+                batch_data_samples: SampleList,
+                rescale: bool = False,
+                **kwargs) -> SampleList:
+        """Perform forward propagation of the mask head and predict mask
+        results on the features of the upstream network.
 
         Args:
             batch_inputs (Tensor): Inputs with shape (N, C, H, W).
-            batch_img_metas (list[dict]): List of image information.
+            batch_data_samples (List[:obj:`DetDataSample`]): The Data
+                Samples. It usually includes information such as
+                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
             rescale (bool): Whether to rescale the results.
                 Defaults to False.
 
@@ -163,31 +151,19 @@ class SingleStageInstanceSegmentor(BaseDetector):
                 - masks (Tensor): Has a shape (num_instances, H, W).
         """
         x = self.extract_feat(batch_inputs)
-        if self.with_bbox_head:
-            # TODO: currently not supported, check whether can use
-            #  `bbox_head.simple_test` to keep the logic same as
-            #  single_stage detector
-            results_list = self.bbox_head.simple_test(
-                x, batch_img_metas, rescale=rescale)
-            # outs = self.bbox_head(x)
-            # # results_list is list[obj:`InstanceData`]
-            # results_list = self.bbox_head.get_results(
-            #     *outs, img_metas=img_metas,
-            #     cfg=self.test_cfg, rescale=rescale)
+        if self.with_bbox:
+            # TODO: currently not checked
+            bbox_results_list = self.bbox_head.predict(
+                x, batch_data_samples, rescale=rescale)
         else:
-            results_list = None
+            bbox_results_list = None
 
-        results_list = self.mask_head.simple_test(
-            x, batch_img_metas, rescale=rescale, results_list=results_list)
-
-        for results in results_list:
-            # create dummy bbox results to store the scores
-            if 'bboxes' not in results:
-                results.bboxes = results.scores.new_zeros(len(results), 4)
+        results_list = self.mask_head.predict(
+            x,
+            batch_data_samples,
+            rescale=rescale,
+            bbox_results_list=bbox_results_list)
 
         # connvert to DetDataSample
-        results_list = self.postprocess_result(results_list)
+        results_list = self.convert_to_datasample(results_list)
         return results_list
-
-    def aug_test(self, imgs, img_metas, rescale=False):
-        raise NotImplementedError

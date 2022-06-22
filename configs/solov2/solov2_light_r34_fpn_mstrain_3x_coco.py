@@ -1,4 +1,4 @@
-_base_ = 'solov2_light_r50_fpn_3x_coco.py'
+_base_ = 'solov2_light_r50_fpn_mstrain_3x_coco.py'
 
 # model settings
 model = dict(
