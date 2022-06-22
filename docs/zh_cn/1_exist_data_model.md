@@ -95,70 +95,97 @@ asyncio.run(main())
 
 这是在单张图片上进行推理的脚本，可以开启 `--async-test` 来进行异步推理。
 
-   ```shell
-   python demo/image_demo.py \
-       ${IMAGE_FILE} \
-       ${CONFIG_FILE} \
-       ${CHECKPOINT_FILE} \
-       [--device ${GPU_ID}] \
-       [--score-thr ${SCORE_THR}] \
-       [--async-test]
-   ```
+```shell
+python demo/image_demo.py \
+    ${IMAGE_FILE} \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--device ${GPU_ID}] \
+    [--score-thr ${SCORE_THR}] \
+    [--async-test]
+```
 
 运行样例：
 
-   ```shell
-   python demo/image_demo.py demo/demo.jpg \
-       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
-       checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
-       --device cpu
-   ```
+```shell
+python demo/image_demo.py demo/demo.jpg \
+    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+    --device cpu
+```
 
 #### 摄像头样例
 
 这是使用摄像头实时图片的推理脚本。
 
-   ```shell
-   python demo/webcam_demo.py \
-       ${CONFIG_FILE} \
-       ${CHECKPOINT_FILE} \
-       [--device ${GPU_ID}] \
-       [--camera-id ${CAMERA-ID}] \
-       [--score-thr ${SCORE_THR}]
-   ```
+```shell
+python demo/webcam_demo.py \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--device ${GPU_ID}] \
+    [--camera-id ${CAMERA-ID}] \
+    [--score-thr ${SCORE_THR}]
+```
 
 运行样例：
 
-   ```shell
-   python demo/webcam_demo.py \
-       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
-       checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
-   ```
+```shell
+python demo/webcam_demo.py \
+    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
+```
 
 #### 视频样例
 
 这是在视频样例上进行推理的脚本。
 
-   ```shell
-   python demo/video_demo.py \
-       ${VIDEO_FILE} \
-       ${CONFIG_FILE} \
-       ${CHECKPOINT_FILE} \
-       [--device ${GPU_ID}] \
-       [--score-thr ${SCORE_THR}] \
-       [--out ${OUT_FILE}] \
-       [--show] \
-       [--wait-time ${WAIT_TIME}]
-   ```
+```shell
+python demo/video_demo.py \
+    ${VIDEO_FILE} \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE} \
+    [--device ${GPU_ID}] \
+    [--score-thr ${SCORE_THR}] \
+    [--out ${OUT_FILE}] \
+    [--show] \
+    [--wait-time ${WAIT_TIME}]
+```
 
 运行样例：
 
-   ```shell
-   python demo/video_demo.py demo/demo.mp4 \
-       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
-       checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
-       --out result.mp4
-   ```
+```shell
+python demo/video_demo.py demo/demo.mp4 \
+    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+    --out result.mp4
+```
+
+#### 视频样例，显卡加速版本
+
+这是在视频样例上进行推理的脚本，使用显卡加速。
+
+```shell
+python demo/video_gpuaccel_demo.py \
+     ${VIDEO_FILE} \
+     ${CONFIG_FILE} \
+     ${CHECKPOINT_FILE} \
+     [--device ${GPU_ID}] \
+     [--score-thr ${SCORE_THR}] \
+     [--nvdecode] \
+     [--out ${OUT_FILE}] \
+     [--show] \
+     [--wait-time ${WAIT_TIME}]
+
+```
+
+运行样例：
+
+```shell
+python demo/video_gpuaccel_demo.py demo/demo.mp4 \
+    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
+    --nvdecode --out result.mp4
+```
 
 ## 在标准数据集上测试现有模型
 
@@ -387,7 +414,6 @@ python tools/dataset_converters/images2coco.py \
 - `OUT`: 输出 json 文件名。 默认保存目录和 `IMG_PATH` 在同一级。
 - `exclude-extensions`: 待排除的文件后缀名。
 
-
 在转换完成后，使用如下命令进行测试
 
 ```shell
@@ -487,16 +513,34 @@ pipelines = [
 
 MMDetection 也为训练检测模型提供了开盖即食的工具。本节将展示在标准数据集（比如 COCO）上如何训练一个预定义的模型。
 
-重要信息：在配置文件中的学习率是在 8 块 GPU，每块 GPU 有 2 张图像（批大小为 8*2=16）的情况下设置的。
-根据 [线性扩展规则](https://arxiv.org/abs/1706.02677) ，如果你使用不同数目的 GPU 或者每块 GPU 上有不同数量的图片，你需要设置学习率以正比于批大小，比如，
-在 4 块 GPU 并且每张 GPU 上有 2 张图片的情况下，设置 `lr=0.01`； 在 16 块 GPU 并且每张 GPU 上有 4 张图片的情况下, 设置 `lr=0.08`。
-
 ### 数据集
 
-训练需要准备好数据集，细节请参考 [数据集准备](#数据集准备) 。
+训练需要准备好数据集，细节请参考 [数据集准备](#%E6%95%B0%E6%8D%AE%E9%9B%86%E5%87%86%E5%A4%87) 。
 
 **注意**：
 目前，`configs/cityscapes` 文件夹下的配置文件都是使用 COCO 预训练权值进行初始化的。如果网络连接不可用或者速度很慢，你可以提前下载现存的模型。否则可能在训练的开始会有错误发生。
+
+### 学习率自动缩放
+
+**注意**：在配置文件中的学习率是在 8 块 GPU，每块 GPU 有 2 张图像（批大小为 8\*2=16）的情况下设置的。其已经设置在`config/_base_/default_runtime.py` 中的 `auto_scale_lr.base_batch_size`。当配置文件的批次大小为`16`时，学习率会基于该值进行自动缩放。同时，为了不影响其他基于 mmdet 的 codebase，启用自动缩放标志 `auto_scale_lr.enable` 默认设置为 `False`。
+
+如果要启用此功能，需在命令添加参数 `--auto-scale-lr`。并且在启动命令之前，请检查下即将使用的配置文件的名称，因为配置名称指示默认的批处理大小。
+在默认情况下，批次大小是 `8 x 2 = 16`，例如：`faster_rcnn_r50_caffe_fpn_90k_coco.py` 或者 `pisa_faster_rcnn_x101_32x4d_fpn_1x_coco.py`；若不是默认批次，你可以在配置文件看到像 `_NxM_` 字样的，例如：`cornernet_hourglass104_mstest_32x3_210e_coco.py` 的批次大小是 `32 x 3 = 96`, 或者 `scnet_x101_64x4d_fpn_8x1_20e_coco.py` 的批次大小是 `8 x 1 = 8`。
+
+**请记住：如果使用不是默认批次大小为`16`的配置文件，请检查配置文件中的底部，会有 `auto_scale_lr.base_batch_size`。如果找不到，可以在其继承的 `_base_=[xxx]` 文件中找到。另外，如果想使用自动缩放学习率的功能，请不要修改这些值。**
+
+学习率自动缩放基本用法如下：
+
+```shell
+python tools/train.py \
+    ${CONFIG_FILE} \
+    --auto-scale-lr \
+    [optional arguments]
+```
+
+执行命令之后，会根据机器的GPU数量和训练的批次大小对学习率进行自动缩放，缩放方式详见 [线性扩展规则](https://arxiv.org/abs/1706.02677) ，比如：在 4 块 GPU 并且每张 GPU 上有 2 张图片的情况下 `lr=0.01`，那么在 16 块 GPU 并且每张 GPU 上有 4 张图片的情况下, LR 会自动缩放至`lr=0.08`。
+
+如果不启用该功能，则需要根据 [线性扩展规则](https://arxiv.org/abs/1706.02677) 来手动计算并修改配置文件里面 `optimizer.lr` 的值。
 
 ### 使用单 GPU 训练
 
@@ -516,6 +560,7 @@ python tools/train.py \
 # 每 12 轮迭代进行一次测试评估
 evaluation = dict(interval=12)
 ```
+
 这个工具接受以下参数：
 
 - `--no-validate` (**不建议**): 在训练期间关闭测试.
@@ -566,11 +611,25 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 PORT=29500 ./tools/dist_train.sh ${CONFIG_FILE} 4
 CUDA_VISIBLE_DEVICES=4,5,6,7 PORT=29501 ./tools/dist_train.sh ${CONFIG_FILE} 4
 ```
 
-#### 在多个节点上训练
+### 使用多台机器训练
 
-MMDetection 是依赖 `torch.distributed` 包进行分布式训练的。因此，我们可以通过 PyTorch 的 [启动工具](https://pytorch.org/docs/stable/distributed.html#launch-utility) 来进行基本地使用。
+如果您想使用由 ethernet 连接起来的多台机器， 您可以使用以下命令:
 
-#### 使用 Slurm 来管理任务
+在第一台机器上:
+
+```shell
+NNODES=2 NODE_RANK=0 PORT=$MASTER_PORT MASTER_ADDR=$MASTER_ADDR sh tools/dist_train.sh $CONFIG $GPUS
+```
+
+在第二台机器上:
+
+```shell
+NNODES=2 NODE_RANK=1 PORT=$MASTER_PORT MASTER_ADDR=$MASTER_ADDR sh tools/dist_train.sh $CONFIG $GPUS
+```
+
+但是，如果您不使用高速网路连接这几台机器的话，训练将会非常慢。
+
+### 使用 Slurm 来管理任务
 
 Slurm 是一个常见的计算集群调度系统。在 Slurm 管理的集群上，你可以使用 `slurm.sh` 来开启训练任务。它既支持单节点训练也支持多节点训练。
 

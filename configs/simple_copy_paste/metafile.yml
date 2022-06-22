@@ -1,0 +1,92 @@
+Collections:
+  - Name: SimpleCopyPaste
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 32x A100 GPUs
+      Architecture:
+        - Softmax
+        - RPN
+        - Convolution
+        - Dense Connections
+        - FPN
+        - ResNet
+        - RoIAlign
+    Paper:
+      URL: https://arxiv.org/abs/2012.07177
+      Title: "Simple Copy-Paste is a Strong Data Augmentation Method for Instance Segmentation"
+    README: configs/simple_copy_paste/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.25.0/mmdet/datasets/pipelines/transforms.py#L2762
+      Version: v2.25.0
+
+Models:
+  - Name: mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_270k_coco
+    In Collection: SimpleCopyPaste
+    Config: configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_270k_coco.py
+    Metadata:
+      Training Memory (GB): 7.2
+      Iterations: 270000
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 43.5
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 39.1
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/simple_copy_paste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_270k_coco/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_270k_coco_20220324_182940-33a100c5.pth
+
+  - Name: mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_90k_coco
+    In Collection: SimpleCopyPaste
+    Config: configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_90k_coco.py
+    Metadata:
+      Training Memory (GB): 7.2
+      Iterations: 90000
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 43.3
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 39.0
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/simple_copy_paste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_90k_coco/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_90k_coco_20220316_181409-f79c84c5.pth
+
+  - Name: mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco
+    In Collection: SimpleCopyPaste
+    Config: configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco.py
+    Metadata:
+      Training Memory (GB): 7.2
+      Iterations: 270000
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 45.1
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 40.3
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/simple_copy_paste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco_20220324_201229-80ee90b7.pth
+
+  - Name: mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_90k_coco
+    In Collection: SimpleCopyPaste
+    Config: configs/simplecopypaste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_90k_coco.py
+    Metadata:
+      Training Memory (GB): 7.2
+      Iterations: 90000
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 43.8
+      - Task: Instance Segmentation
+        Dataset: COCO
+        Metrics:
+          mask AP: 39.2
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/simple_copy_paste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_90k_coco/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_90k_coco_20220316_181307-6bc5726f.pth

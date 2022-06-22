@@ -24,26 +24,31 @@
 [![codecov](https://codecov.io/gh/open-mmlab/mmdetection/branch/master/graph/badge.svg)](https://codecov.io/gh/open-mmlab/mmdetection)
 [![license](https://img.shields.io/github/license/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/blob/master/LICENSE)
 [![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
+[![issue resolution](https://isitmaintained.com/badge/resolution/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 
-  <img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
-
-[📘Documentation](https://mmdetection.readthedocs.io/en/v2.21.0/) |
-[🛠️Installation](https://mmdetection.readthedocs.io/en/v2.21.0/get_started.html) |
-[👀Model Zoo](https://mmdetection.readthedocs.io/en/v2.21.0/model_zoo.html) |
-[🆕Update News](https://mmdetection.readthedocs.io/en/v2.21.0/changelog.html) |
+[📘Documentation](https://mmdetection.readthedocs.io/en/stable/) |
+[🛠️Installation](https://mmdetection.readthedocs.io/en/stable/get_started.html) |
+[👀Model Zoo](https://mmdetection.readthedocs.io/en/stable/model_zoo.html) |
+[🆕Update News](https://mmdetection.readthedocs.io/en/stable/changelog.html) |
 [🚀Ongoing Projects](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔Reporting Issues](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
 </div>
 
-## Introduction
+<div align="center">
 
 English | [简体中文](README_zh-CN.md)
+
+</div>
+
+## Introduction
 
 MMDetection is an open source object detection toolbox based on PyTorch. It is
 a part of the [OpenMMLab](https://openmmlab.com/) project.
 
 The master branch works with **PyTorch 1.5+**.
+
+<img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
 
 <details open>
 <summary>Major features</summary>
@@ -68,21 +73,41 @@ The master branch works with **PyTorch 1.5+**.
 
 Apart from MMDetection, we also released a library [mmcv](https://github.com/open-mmlab/mmcv) for computer vision research, which is heavily depended on by this toolbox.
 
-## License
+## What's New
 
-This project is released under the [Apache 2.0 license](LICENSE).
+**2.25.0** was released in 1/6/2022:
 
-## Changelog
-
-**2.22.0** was released in 24/2/2022:
-
-- Support [MaskFormer](configs/maskformer), [DyHead](configs/dyhead), [OpenImages Dataset](configs/openimages) and [TIMM backbone](configs/timm_example)
-- Support visualization for Panoptic Segmentation
-- Release a good recipe of using ResNet in object detectors pre-trained by [ResNet Strikes Back](https://arxiv.org/abs/2110.00476), which consistently brings about 3~4 mAP improvements over RetinaNet, Faster/Mask/Cascade Mask R-CNN
+- Support dedicated `MMDetWandbHook` hook
+- Support [ConvNeXt](configs/convnext), [DDOD](configs/ddod), [SOLOv2](configs/solov2)
+- Support [Mask2Former](configs/mask2former) for instance segmentation
+- Rename [config files of Mask2Former](configs/mask2former)
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 
 For compatibility changes between different versions of MMDetection, please refer to [compatibility.md](docs/en/compatibility.md).
+
+## Installation
+
+Please refer to [Installation](docs/en/get_started.md/#Installation) for installation instructions.
+
+## Getting Started
+
+Please see [get_started.md](docs/en/get_started.md) for the basic usage of MMDetection. We provide [colab tutorial](demo/MMDet_Tutorial.ipynb) and [instance segmentation colab tutorial](demo/MMDet_InstanceSeg_Tutorial.ipynb), and other tutorials for:
+
+- [with existing dataset](docs/en/1_exist_data_model.md)
+- [with new dataset](docs/en/2_new_data_model.md)
+- [with existing dataset_new_model](docs/en/3_exist_data_new_model.md)
+- [learn about configs](docs/en/tutorials/config.md)
+- [customize_datasets](docs/en/tutorials/customize_dataset.md)
+- [customize data pipelines](docs/en/tutorials/data_pipeline.md)
+- [customize_models](docs/en/tutorials/customize_models.md)
+- [customize runtime settings](docs/en/tutorials/customize_runtime.md)
+- [customize_losses](docs/en/tutorials/customize_losses.md)
+- [finetuning models](docs/en/tutorials/finetune.md)
+- [export a model to ONNX](docs/en/tutorials/pytorch2onnx.md)
+- [export ONNX to TRT](docs/en/tutorials/onnx2tensorrt.md)
+- [weight initialization](docs/en/tutorials/init_cfg.md)
+- [how to xxx](docs/en/tutorials/how_to.md)
 
 ## Overview of Benchmark and Model Zoo
 
@@ -132,6 +157,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/double_heads">Double-Head R-CNN (CVPR'2020)</a></li>
             <li><a href="configs/atss">ATSS (CVPR'2020)</a></li>
             <li><a href="configs/nas_fcos">NAS-FCOS (CVPR'2020)</a></li>
+            <li><a href="configs/centripetalnet">CentripetalNet (CVPR'2020)</a></li>
             <li><a href="configs/autoassign">AutoAssign (ArXiv'2020)</a></li>
             <li><a href="configs/sabl">Side-Aware Boundary Localization (ECCV'2020)</a></li>
             <li><a href="configs/dynamic_rcnn">Dynamic R-CNN (ECCV'2020)</a></li>
@@ -143,6 +169,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/yolox">YOLOX (CVPR'2021)</a></li>
             <li><a href="configs/deformable_detr">Deformable DETR (ICLR'2021)</a></li>
             <li><a href="configs/tood">TOOD (ICCV'2021)</a></li>
+            <li><a href="configs/ddod">DDOD (ACM MM'2021)</a></li>
       </ul>
       </td>
       <td>
@@ -156,14 +183,17 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="configs/solo">SOLO (ECCV'2020)</a></li>
           <li><a href="configs/point_rend">PointRend (CVPR'2020)</a></li>
           <li><a href="configs/detectors">DetectoRS (ArXiv'2020)</a></li>
+          <li><a href="configs/solov2">SOLOv2 (NeurIPS'2020)</a></li>
           <li><a href="configs/scnet">SCNet (AAAI'2021)</a></li>
           <li><a href="configs/queryinst">QueryInst (ICCV'2021)</a></li>
+          <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
         </ul>
       </td>
       <td>
         <ul>
           <li><a href="configs/panoptic_fpn">Panoptic FPN (CVPR'2019)</a></li>
           <li><a href="configs/maskformer">MaskFormer (NeurIPS'2021)</a></li>
+          <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
         </ul>
       </td>
       <td>
@@ -228,6 +258,8 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         <li><a href="configs/swin">Swin (CVPR'2021)</a></li>
         <li><a href="configs/pvt">PVTv2 (ArXiv'2021)</a></li>
         <li><a href="configs/resnet_strikes_back">ResNet strikes back (ArXiv'2021)</a></li>
+        <li><a href="configs/efficientnet">EfficientNet (ArXiv'2021)</a></li>
+        <li><a href="configs/convnext">ConvNeXt (CVPR'2022)</a></li>
       </ul>
       </td>
       <td>
@@ -267,15 +299,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
 
 Some other methods are also supported in [projects using MMDetection](./docs/en/projects.md).
 
-## Installation
-
-Please refer to [get_started.md](docs/en/get_started.md) for installation.
-
-## Getting Started
-
-Please see [get_started.md](docs/en/get_started.md) for the basic usage of MMDetection.
-We provide [detection colab tutorial](demo/MMDet_Tutorial.ipynb) and [instance segmentation colab tutorial](demo/MMDet_InstanceSeg_Tutorial.ipynb), and full guidance for quick run [with existing dataset](docs/en/1_exist_data_model.md) and [with new dataset](docs/en/2_new_data_model.md) for beginners.
-There are also tutorials for [finetuning models](docs/en/tutorials/finetune.md), [adding new dataset](docs/en/tutorials/customize_dataset.md), [designing data pipeline](docs/en/tutorials/data_pipeline.md), [customizing models](docs/en/tutorials/customize_models.md), [customizing runtime settings](docs/en/tutorials/customize_runtime.md) and [useful tools](docs/en/useful_tools.md).
+## FAQ
 
 Please refer to [FAQ](docs/en/faq.md) for frequently asked questions.
 
@@ -305,6 +329,10 @@ If you use this toolbox or benchmark in your research, please cite this project.
   year={2019}
 }
 ```
+
+## License
+
+This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Projects in OpenMMLab
 

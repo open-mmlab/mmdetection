@@ -9,41 +9,60 @@
 
 MMDetection 和 MMCV 版本兼容性如下所示，需要安装正确的 MMCV 版本以避免安装出现问题。
 
-| MMDetection 版本 |          MMCV 版本          |
-|:--------------:|:-------------------------:|
-|     master     | mmcv-full>=1.3.17, <1.5.0 |
-|     2.22.0     | mmcv-full>=1.3.17, <1.5.0 |
-|     2.21.0     | mmcv-full>=1.3.17, <1.5.0 |
-|     2.20.0     | mmcv-full>=1.3.17, <1.5.0 |
-|     2.19.1     | mmcv-full>=1.3.17, <1.5.0 |
-|     2.19.0     | mmcv-full>=1.3.17, <1.5.0 |
-|     2.18.1     | mmcv-full>=1.3.17, <1.4.0 |
-|     2.18.0     | mmcv-full>=1.3.14, <1.4.0 |
-|     2.17.0     | mmcv-full>=1.3.14, <1.4.0 |
-|     2.16.0     | mmcv-full>=1.3.8, <1.4.0  |
-|     2.15.1     | mmcv-full>=1.3.8, <1.4.0  |
-|     2.15.0     | mmcv-full>=1.3.8, <1.4.0  |
-|     2.14.0     | mmcv-full>=1.3.8, <1.4.0  |
-|     2.13.0     | mmcv-full>=1.3.3, <1.4.0  |
-|     2.12.0     | mmcv-full>=1.3.3, <1.4.0  |
-|     2.11.0     | mmcv-full>=1.2.4, <1.4.0  |
-|     2.10.0     | mmcv-full>=1.2.4, <1.4.0  |
-|     2.9.0      | mmcv-full>=1.2.4, <1.4.0  |
-|     2.8.0      | mmcv-full>=1.2.4, <1.4.0  |
-|     2.7.0      | mmcv-full>=1.1.5, <1.4.0  |
-|     2.6.0      | mmcv-full>=1.1.5, <1.4.0  |
-|     2.5.0      | mmcv-full>=1.1.5, <1.4.0  |
-|     2.4.0      | mmcv-full>=1.1.1, <1.4.0  |
-|     2.3.0      |     mmcv-full==1.0.5      |
-|    2.3.0rc0    |     mmcv-full>=1.0.2      |
-|     2.2.1      |        mmcv==0.6.2        |
-|     2.2.0      |        mmcv==0.6.2        |
-|     2.1.0      |   mmcv>=0.5.9, <=0.6.1    |
-|     2.0.0      |   mmcv>=0.5.1, <=0.5.8    |
+| MMDetection 版本 |          MMCV 版本           |
+| :------------: | :------------------------: |
+|     master     | mmcv-full>=1.3.17, \<1.6.0 |
+|     2.25.0     | mmcv-full>=1.3.17, \<1.6.0 |
+|     2.24.1     | mmcv-full>=1.3.17, \<1.6.0 |
+|     2.24.0     | mmcv-full>=1.3.17, \<1.6.0 |
+|     2.23.0     | mmcv-full>=1.3.17, \<1.5.0 |
+|     2.22.0     | mmcv-full>=1.3.17, \<1.5.0 |
+|     2.21.0     | mmcv-full>=1.3.17, \<1.5.0 |
+|     2.20.0     | mmcv-full>=1.3.17, \<1.5.0 |
+|     2.19.1     | mmcv-full>=1.3.17, \<1.5.0 |
+|     2.19.0     | mmcv-full>=1.3.17, \<1.5.0 |
+|     2.18.1     | mmcv-full>=1.3.17, \<1.4.0 |
+|     2.18.0     | mmcv-full>=1.3.14, \<1.4.0 |
+|     2.17.0     | mmcv-full>=1.3.14, \<1.4.0 |
+|     2.16.0     | mmcv-full>=1.3.8, \<1.4.0  |
+|     2.15.1     | mmcv-full>=1.3.8, \<1.4.0  |
+|     2.15.0     | mmcv-full>=1.3.8, \<1.4.0  |
+|     2.14.0     | mmcv-full>=1.3.8, \<1.4.0  |
+|     2.13.0     | mmcv-full>=1.3.3, \<1.4.0  |
+|     2.12.0     | mmcv-full>=1.3.3, \<1.4.0  |
+|     2.11.0     | mmcv-full>=1.2.4, \<1.4.0  |
+|     2.10.0     | mmcv-full>=1.2.4, \<1.4.0  |
+|     2.9.0      | mmcv-full>=1.2.4, \<1.4.0  |
+|     2.8.0      | mmcv-full>=1.2.4, \<1.4.0  |
+|     2.7.0      | mmcv-full>=1.1.5, \<1.4.0  |
+|     2.6.0      | mmcv-full>=1.1.5, \<1.4.0  |
+|     2.5.0      | mmcv-full>=1.1.5, \<1.4.0  |
+|     2.4.0      | mmcv-full>=1.1.1, \<1.4.0  |
+|     2.3.0      |      mmcv-full==1.0.5      |
+|    2.3.0rc0    |      mmcv-full>=1.0.2      |
+|     2.2.1      |        mmcv==0.6.2         |
+|     2.2.0      |        mmcv==0.6.2         |
+|     2.1.0      |   mmcv>=0.5.9, \<=0.6.1    |
+|     2.0.0      |   mmcv>=0.5.1, \<=0.5.8    |
 
-**注意：**如果已经安装了 mmcv，首先需要使用 `pip uninstall mmcv` 卸载已安装的 mmcv，如果同时安装了 mmcv 和 mmcv-full，将会报 `ModuleNotFoundError` 错误。
+\*\*注意：\*\*如果已经安装了 mmcv，首先需要使用 `pip uninstall mmcv` 卸载已安装的 mmcv，如果同时安装了 mmcv 和 mmcv-full，将会报 `ModuleNotFoundError` 错误。
 
 ## 安装流程
+
+### 从零开始设置脚本
+
+假设当前已经成功安装 CUDA 10.1，这里提供了一个完整的基于 conda 安装 MMDetection 的脚本。您可以参考下一节中的分步安装说明。
+
+```shell
+conda create -n openmmlab python=3.7 pytorch==1.6.0 cudatoolkit=10.1 torchvision -c pytorch -y
+conda activate openmmlab
+pip install openmim
+mim install mmcv-full
+git clone https://github.com/open-mmlab/mmdetection.git
+cd mmdetection
+pip install -r requirements/build.txt
+pip install -v -e .
+```
 
 ### 准备环境
 
@@ -80,7 +99,7 @@ MMDetection 和 MMCV 版本兼容性如下所示，需要安装正确的 MMCV �
 
 我们建议使用 [MIM](https://github.com/open-mmlab/mim) 来安装 MMDetection：
 
-``` shell
+```shell
 pip install openmim
 mim install mmdet
 ```
@@ -91,67 +110,67 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
 
 1. 安装 mmcv-full，我们建议使用预构建包来安装：
 
-    ```shell
-    pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/{cu_version}/{torch_version}/index.html
-    ```
+   ```shell
+   pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/{cu_version}/{torch_version}/index.html
+   ```
 
-    需要把命令行中的 `{cu_version}` 和 `{torch_version}` 替换成对应的版本。例如：在 CUDA 11 和 PyTorch 1.7.0 的环境下，可以使用下面命令安装最新版本的 MMCV：
+   需要把命令行中的 `{cu_version}` 和 `{torch_version}` 替换成对应的版本。例如：在 CUDA 11 和 PyTorch 1.7.0 的环境下，可以使用下面命令安装最新版本的 MMCV：
 
-    ```shell
-    pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7.0/index.html
-    ```
+   ```shell
+   pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7.0/index.html
+   ```
 
-    请参考 [MMCV](https://mmcv.readthedocs.io/en/latest/#installation) 获取不同版本的 MMCV 所兼容的的不同的 PyTorch 和 CUDA 版本。同时，也可以通过以下命令行从源码编译 MMCV：
+   请参考 [MMCV](https://mmcv.readthedocs.io/en/latest/#installation) 获取不同版本的 MMCV 所兼容的的不同的 PyTorch 和 CUDA 版本。同时，也可以通过以下命令行从源码编译 MMCV：
 
-    ```shell
-    git clone https://github.com/open-mmlab/mmcv.git
-    cd mmcv
-    MMCV_WITH_OPS=1 pip install -e .  # 安装好 mmcv-full
-    cd ..
-    ```
+   ```shell
+   git clone https://github.com/open-mmlab/mmcv.git
+   cd mmcv
+   MMCV_WITH_OPS=1 pip install -e .  # 安装好 mmcv-full
+   cd ..
+   ```
 
-    或者，可以直接使用命令行安装：
+   或者，可以直接使用命令行安装：
 
-    ```shell
-    pip install mmcv-full
-    ```
+   ```shell
+   pip install mmcv-full
+   ```
 
-    PyTorch 在 1.x.0 和 1.x.1 之间通常是兼容的，故 mmcv-full 只提供 1.x.0 的编译包。如果你的 PyTorch 版本是 1.x.1，你可以放心地安装在 1.x.0 版本编译的 mmcv-full。
+   PyTorch 在 1.x.0 和 1.x.1 之间通常是兼容的，故 mmcv-full 只提供 1.x.0 的编译包。如果你的 PyTorch 版本是 1.x.1，你可以放心地安装在 1.x.0 版本编译的 mmcv-full。
 
-    ```
-    # 我们可以忽略 PyTorch 的小版本号
-    pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7/index.html
-    ```
+   ```
+   # 我们可以忽略 PyTorch 的小版本号
+   pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu110/torch1.7/index.html
+   ```
 
 2. 安装 MMDetection：
 
-    你可以直接通过如下命令从 pip 安装使用 mmdetection:
+   你可以直接通过如下命令从 pip 安装使用 mmdetection:
 
-    ```shell
-    pip install mmdet
-    ```
+   ```shell
+   pip install mmdet
+   ```
 
-    或者从 git 仓库编译源码
+   或者从 git 仓库编译源码
 
-    ```shell
-    git clone https://github.com/open-mmlab/mmdetection.git
-    cd mmdetection
-    pip install -r requirements/build.txt
-    pip install -v -e .  # or "python setup.py develop"
-    ```
+   ```shell
+   git clone https://github.com/open-mmlab/mmdetection.git
+   cd mmdetection
+   pip install -r requirements/build.txt
+   pip install -v -e .  # or "python setup.py develop"
+   ```
 
 3. 安装额外的依赖以使用 Instaboost, 全景分割, 或者 LVIS 数据集
 
-    ```shell
-    # 安装 instaboost 依赖
-    pip install instaboostfast
-    # 安装全景分割依赖
-    pip install git+https://github.com/cocodataset/panopticapi.git
-    # 安装 LVIS 数据集依赖
-    pip install git+https://github.com/lvis-dataset/lvis-api.git
-    # 安装 albumentations 依赖
-    pip install -r requirements/albu.txt
-    ```
+   ```shell
+   # 安装 instaboost 依赖
+   pip install instaboostfast
+   # 安装全景分割依赖
+   pip install git+https://github.com/cocodataset/panopticapi.git
+   # 安装 LVIS 数据集依赖
+   pip install git+https://github.com/lvis-dataset/lvis-api.git
+   # 安装 albumentations 依赖
+   pip install -r requirements/albu.txt
+   ```
 
 **注意：**
 
@@ -184,12 +203,12 @@ MIM 能够自动地安装 OpenMMLab 的项目以及对应的依赖包。
 
 因此，如果尝试使用包含上述操作的模型进行训练/测试/推理，将会报错。下表列出了由于依赖上述算子而无法在 CPU 上运行的相关模型：
 
-|                        操作                         |                            模型                             |
-| :-----------------------------------------------------: | :----------------------------------------------------------: |
+|                           操作                            |                                        模型                                         |
+| :-----------------------------------------------------: | :-------------------------------------------------------------------------------: |
 | Deformable Convolution/Modulated Deformable Convolution | DCN、Guided Anchoring、RepPoints、CentripetalNet、VFNet、CascadeRPN、NAS-FCOS、DetectoRS |
-|                      MaskedConv2d                       |                       Guided Anchoring                       |
-|                         CARAFE                          |                            CARAFE                            |
-|                      SyncBatchNorm                      |                           ResNeSt                            |
+|                      MaskedConv2d                       |                                 Guided Anchoring                                  |
+|                         CARAFE                          |                                      CARAFE                                       |
+|                      SyncBatchNorm                      |                                      ResNeSt                                      |
 
 ### 另一种选择： Docker 镜像
 
@@ -204,26 +223,6 @@ docker build -t mmdetection docker/
 
 ```shell
 docker run --gpus all --shm-size=8g -it -v {DATA_DIR}:/mmdetection/data mmdetection
-```
-
-### 从零开始设置脚本
-
-假设当前已经成功安装 CUDA 10.1，这里提供了一个完整的基于 conda 安装 MMDetection 的脚本：
-
-```shell
-conda create -n open-mmlab python=3.7 -y
-conda activate open-mmlab
-
-conda install pytorch==1.6.0 torchvision==0.7.0 cudatoolkit=10.1 -c pytorch -y
-
-# 安装最新版本的 mmcv
-pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.6.0/index.html
-
-# 安装 MMDetection
-git clone https://github.com/open-mmlab/mmdetection.git
-cd mmdetection
-pip install -r requirements/build.txt
-pip install -v -e .
 ```
 
 ### 使用多个 MMDetection 版本进行开发

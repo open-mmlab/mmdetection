@@ -12,10 +12,12 @@ def test_maskformer_head_loss():
     # batch_input_shape = (128, 160)
     img_metas = [{
         'batch_input_shape': (128, 160),
+        'pad_shape': (128, 160, 3),
         'img_shape': (126, 160, 3),
         'ori_shape': (63, 80, 3)
     }, {
         'batch_input_shape': (128, 160),
+        'pad_shape': (128, 160, 3),
         'img_shape': (120, 160, 3),
         'ori_shape': (60, 80, 3)
     }]
@@ -23,15 +25,17 @@ def test_maskformer_head_loss():
         torch.rand((2, 64 * 2**i, 4 * 2**(3 - i), 5 * 2**(3 - i)))
         for i in range(4)
     ]
-
+    num_things_classes = 80
+    num_stuff_classes = 53
+    num_classes = num_things_classes + num_stuff_classes
     config = ConfigDict(
         dict(
             type='MaskFormerHead',
             in_channels=[base_channels * 2**i for i in range(4)],
             feat_channels=base_channels,
             out_channels=base_channels,
-            num_things_classes=80,
-            num_stuff_classes=53,
+            num_things_classes=num_things_classes,
+            num_stuff_classes=num_stuff_classes,
             num_queries=100,
             pixel_decoder=dict(
                 type='TransformerEncoderPixelDecoder',
@@ -102,11 +106,10 @@ def test_maskformer_head_loss():
                 init_cfg=None),
             loss_cls=dict(
                 type='CrossEntropyLoss',
-                bg_cls_weight=0.1,
                 use_sigmoid=False,
                 loss_weight=1.0,
                 reduction='mean',
-                class_weight=1.0),
+                class_weight=[1.0] * num_classes + [0.1]),
             loss_mask=dict(
                 type='FocalLoss',
                 use_sigmoid=True,

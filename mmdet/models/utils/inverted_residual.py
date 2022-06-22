@@ -1,6 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import torch.nn as nn
 import torch.utils.checkpoint as cp
 from mmcv.cnn import ConvModule
+from mmcv.cnn.bricks import DropPath
 from mmcv.runner import BaseModule
 
 from .se_layer import SELayer
@@ -27,6 +29,7 @@ class InvertedResidual(BaseModule):
             Default: dict(type='BN').
         act_cfg (dict): Config dict for activation layer.
             Default: dict(type='ReLU').
+        drop_path_rate (float): stochastic depth rate. Defaults to 0.
         with_cp (bool): Use checkpoint or not. Using checkpoint will save some
             memory while slowing down the training speed. Default: False.
         init_cfg (dict or list[dict], optional): Initialization config dict.
@@ -47,6 +50,7 @@ class InvertedResidual(BaseModule):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  act_cfg=dict(type='ReLU'),
+                 drop_path_rate=0.,
                  with_cp=False,
                  init_cfg=None):
         super(InvertedResidual, self).__init__(init_cfg)
@@ -54,6 +58,8 @@ class InvertedResidual(BaseModule):
         assert stride in [1, 2], f'stride must in [1, 2]. ' \
             f'But received {stride}.'
         self.with_cp = with_cp
+        self.drop_path = DropPath(
+            drop_path_rate) if drop_path_rate > 0 else nn.Identity()
         self.with_se = se_cfg is not None
         self.with_expand_conv = with_expand_conv
 
@@ -112,7 +118,7 @@ class InvertedResidual(BaseModule):
             out = self.linear_conv(out)
 
             if self.with_res_shortcut:
-                return x + out
+                return x + self.drop_path(out)
             else:
                 return out
 

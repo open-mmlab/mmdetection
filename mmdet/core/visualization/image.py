@@ -389,7 +389,8 @@ def imshow_gt_det_bboxes(img,
                          win_name='',
                          show=True,
                          wait_time=0,
-                         out_file=None):
+                         out_file=None,
+                         overlay_gt_pred=True):
     """General visualization GT and result function.
 
     Args:
@@ -425,6 +426,11 @@ def imshow_gt_det_bboxes(img,
       wait_time (float): Value of waitKey param. Default: 0.
       out_file (str, optional): The filename to write the image.
           Default: None.
+      overlay_gt_pred (bool): Whether to plot gts and predictions on the
+       same image. If False, predictions and gts will be plotted on two same
+       image which will be concatenated in vertical direction. The image
+       above is drawn with gt, and the image below is drawn with the
+       prediction result. Default: True.
 
     Returns:
         ndarray: The image with bboxes or masks drawn on it.
@@ -458,7 +464,7 @@ def imshow_gt_det_bboxes(img,
 
     img = mmcv.imread(img)
 
-    img = imshow_det_bboxes(
+    img_with_gt = imshow_det_bboxes(
         img,
         gt_bboxes,
         gt_labels,
@@ -505,20 +511,49 @@ def imshow_gt_det_bboxes(img,
         labels = np.array([id % INSTANCE_OFFSET for id in ids], dtype=np.int64)
         segms = (pan_results[None] == ids[:, None, None])
 
-    img = imshow_det_bboxes(
-        img,
-        bboxes,
-        labels,
-        segms=segms,
-        class_names=class_names,
-        score_thr=score_thr,
-        bbox_color=det_bbox_color,
-        text_color=det_text_color,
-        mask_color=det_mask_color,
-        thickness=thickness,
-        font_size=font_size,
-        win_name=win_name,
-        show=show,
-        wait_time=wait_time,
-        out_file=out_file)
+    if overlay_gt_pred:
+        img = imshow_det_bboxes(
+            img_with_gt,
+            bboxes,
+            labels,
+            segms=segms,
+            class_names=class_names,
+            score_thr=score_thr,
+            bbox_color=det_bbox_color,
+            text_color=det_text_color,
+            mask_color=det_mask_color,
+            thickness=thickness,
+            font_size=font_size,
+            win_name=win_name,
+            show=show,
+            wait_time=wait_time,
+            out_file=out_file)
+    else:
+        img_with_det = imshow_det_bboxes(
+            img,
+            bboxes,
+            labels,
+            segms=segms,
+            class_names=class_names,
+            score_thr=score_thr,
+            bbox_color=det_bbox_color,
+            text_color=det_text_color,
+            mask_color=det_mask_color,
+            thickness=thickness,
+            font_size=font_size,
+            win_name=win_name,
+            show=False)
+        img = np.concatenate([img_with_gt, img_with_det], axis=0)
+
+        plt.imshow(img)
+        if show:
+            if wait_time == 0:
+                plt.show()
+            else:
+                plt.show(block=False)
+                plt.pause(wait_time)
+        if out_file is not None:
+            mmcv.imwrite(img, out_file)
+        plt.close()
+
     return img

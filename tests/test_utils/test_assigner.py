@@ -11,8 +11,8 @@ import torch
 from mmdet.core.bbox.assigners import (ApproxMaxIoUAssigner,
                                        CenterRegionAssigner, HungarianAssigner,
                                        MaskHungarianAssigner, MaxIoUAssigner,
-                                       PointAssigner, TaskAlignedAssigner,
-                                       UniformAssigner)
+                                       PointAssigner, SimOTAAssigner,
+                                       TaskAlignedAssigner, UniformAssigner)
 
 
 def test_max_iou_assigner():
@@ -402,6 +402,7 @@ def test_hungarian_match_assigner():
     gt_labels = torch.LongTensor([1, 20])
     assign_result = self.assign(bbox_pred, cls_pred, gt_bboxes, gt_labels,
                                 img_meta)
+
     assert torch.all(assign_result.gt_inds > -1)
     assert (assign_result.gt_inds > 0).sum() == gt_bboxes.size(0)
     assert (assign_result.labels > -1).sum() == gt_bboxes.size(0)
@@ -500,6 +501,21 @@ def test_uniform_assigner_with_empty_boxes():
     assert len(assign_result.gt_inds) == 0
 
 
+def test_sim_ota_assigner():
+    self = SimOTAAssigner(
+        center_radius=2.5, candidate_topk=1, iou_weight=3.0, cls_weight=1.0)
+    pred_scores = torch.FloatTensor([[0.2], [0.8]])
+    priors = torch.Tensor([[0, 12, 23, 34], [4, 5, 6, 7]])
+    decoded_bboxes = torch.Tensor([[[30, 40, 50, 60]], [[4, 5, 6, 7]]])
+    gt_bboxes = torch.Tensor([[23.6667, 23.8757, 238.6326, 151.8874]])
+    gt_labels = torch.LongTensor([2])
+    assign_result = self.assign(pred_scores, priors, decoded_bboxes, gt_bboxes,
+                                gt_labels)
+
+    expected_gt_inds = torch.LongTensor([0, 0])
+    assert torch.all(assign_result.gt_inds == expected_gt_inds)
+
+
 def test_task_aligned_assigner():
     with pytest.raises(AssertionError):
         TaskAlignedAssigner(topk=0)
@@ -560,7 +576,7 @@ def test_mask_hungarian_match_assigner():
     assert torch.all(assign_result.gt_inds == 0)
     assert torch.all(assign_result.labels == -1)
 
-    # test with gt masks
+    # test with gt masks of naive_dice is True
     gt_labels = torch.LongTensor([10, 100])
     gt_masks = torch.zeros((2, 50, 50)).long()
     gt_masks[0, :25] = 1
@@ -606,3 +622,42 @@ def test_mask_hungarian_match_assigner():
     assert torch.all(assign_result.gt_inds > -1)
     assert (assign_result.gt_inds > 0).sum() == gt_labels.size(0)
     assert (assign_result.labels > -1).sum() == gt_labels.size(0)
+
+    # test with mask dice mode that naive_dice is False
+    assigner_cfg = dict(
+        cls_cost=dict(type='ClassificationCost', weight=0.0),
+        mask_cost=dict(type='FocalLossCost', weight=0.0, binary_input=True),
+        dice_cost=dict(
+            type='DiceCost',
+            weight=1.0,
+            pred_act=True,
+            eps=1.0,
+            naive_dice=False))
+    self = MaskHungarianAssigner(**assigner_cfg)
+    assign_result = self.assign(cls_pred, mask_pred, gt_labels, gt_masks,
+                                img_meta)
+    assert torch.all(assign_result.gt_inds > -1)
+    assert (assign_result.gt_inds > 0).sum() == gt_labels.size(0)
+    assert (assign_result.labels > -1).sum() == gt_labels.size(0)
+
+    # test with mask bce mode
+    assigner_cfg = dict(
+        cls_cost=dict(type='ClassificationCost', weight=0.0),
+        mask_cost=dict(
+            type='CrossEntropyLossCost', weight=1.0, use_sigmoid=True),
+        dice_cost=dict(type='DiceCost', weight=0.0, pred_act=True, eps=1.0))
+    self = MaskHungarianAssigner(**assigner_cfg)
+    assign_result = self.assign(cls_pred, mask_pred, gt_labels, gt_masks,
+                                img_meta)
+    assert torch.all(assign_result.gt_inds > -1)
+    assert (assign_result.gt_inds > 0).sum() == gt_labels.size(0)
+    assert (assign_result.labels > -1).sum() == gt_labels.size(0)
+
+    # test with ce mode of CrossEntropyLossCost which is not supported yet
+    assigner_cfg = dict(
+        cls_cost=dict(type='ClassificationCost', weight=0.0),
+        mask_cost=dict(
+            type='CrossEntropyLossCost', weight=1.0, use_sigmoid=False),
+        dice_cost=dict(type='DiceCost', weight=0.0, pred_act=True, eps=1.0))
+    with pytest.raises(AssertionError):
+        self = MaskHungarianAssigner(**assigner_cfg)

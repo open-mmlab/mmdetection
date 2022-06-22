@@ -5,6 +5,7 @@ import mmcv
 from mmcv import Config, DictAction
 
 from mmdet.datasets import build_dataset
+from mmdet.utils import replace_cfg_vals, update_data_root
 
 
 def parse_args():
@@ -48,6 +49,13 @@ def main():
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
+
+    # replace the ${key} with the value of cfg.key
+    cfg = replace_cfg_vals(cfg)
+
+    # update data root according to MMDET_DATASETS
+    update_data_root(cfg)
+
     assert args.eval or args.format_only, (
         'Please specify at least one operation (eval/format the results) with '
         'the argument "--eval", "--format-only"')

@@ -2,7 +2,7 @@
 import mmcv
 import numpy as np
 
-from mmdet.core import INSTANCE_OFFSET
+from mmdet.core import INSTANCE_OFFSET, bbox2result
 from mmdet.core.visualization import imshow_det_bboxes
 from ..builder import DETECTORS, build_backbone, build_head, build_neck
 from .single_stage import SingleStageDetector
@@ -18,6 +18,7 @@ class MaskFormer(SingleStageDetector):
                  backbone,
                  neck=None,
                  panoptic_head=None,
+                 panoptic_fusion_head=None,
                  train_cfg=None,
                  test_cfg=None,
                  init_cfg=None):
@@ -25,9 +26,15 @@ class MaskFormer(SingleStageDetector):
         self.backbone = build_backbone(backbone)
         if neck is not None:
             self.neck = build_neck(neck)
-        panoptic_head.update(train_cfg=train_cfg)
-        panoptic_head.update(test_cfg=test_cfg)
-        self.panoptic_head = build_head(panoptic_head)
+
+        panoptic_head_ = panoptic_head.deepcopy()
+        panoptic_head_.update(train_cfg=train_cfg)
+        panoptic_head_.update(test_cfg=test_cfg)
+        self.panoptic_head = build_head(panoptic_head_)
+
+        panoptic_fusion_head_ = panoptic_fusion_head.deepcopy()
+        panoptic_fusion_head_.update(test_cfg=test_cfg)
+        self.panoptic_fusion_head = build_head(panoptic_fusion_head_)
 
         self.num_things_classes = self.panoptic_head.num_things_classes
         self.num_stuff_classes = self.panoptic_head.num_stuff_classes
@@ -35,6 +42,10 @@ class MaskFormer(SingleStageDetector):
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+
+        # BaseDetector.show_result default for instance segmentation
+        if self.num_stuff_classes > 0:
+            self.show_result = self._show_pan_result
 
     def forward_dummy(self, img, img_metas):
         """Used for computing network flops. See
@@ -60,7 +71,7 @@ class MaskFormer(SingleStageDetector):
                       gt_bboxes,
                       gt_labels,
                       gt_masks,
-                      gt_semantic_seg,
+                      gt_semantic_seg=None,
                       gt_bboxes_ignore=None,
                       **kargs):
         """
@@ -78,7 +89,8 @@ class MaskFormer(SingleStageDetector):
             gt_masks (list[BitmapMasks]): true segmentation masks for each box
                 used if the architecture supports a segmentation task.
             gt_semantic_seg (list[tensor]): semantic segmentation mask for
-                images.
+                images for panoptic segmentation.
+                Defaults to None for instance segmentation.
             gt_bboxes_ignore (list[Tensor]): specify which bounding
                 boxes can be ignored when computing the loss.
                 Defaults to None.
@@ -96,16 +108,71 @@ class MaskFormer(SingleStageDetector):
 
         return losses
 
-    def simple_test(self, img, img_metas, **kwargs):
-        """Test without augmentation."""
-        feat = self.extract_feat(img)
-        mask_results = self.panoptic_head.simple_test(feat, img_metas,
-                                                      **kwargs)
+    def simple_test(self, imgs, img_metas, **kwargs):
+        """Test without augmentation.
 
-        results = []
-        for mask in mask_results:
-            result = {'pan_results': mask.detach().cpu().numpy()}
-            results.append(result)
+        Args:
+            imgs (Tensor): A batch of images.
+            img_metas (list[dict]): List of image information.
+
+        Returns:
+            list[dict[str, np.array | tuple[list]] | tuple[list]]:
+                Semantic segmentation results and panoptic segmentation \
+                results of each image for panoptic segmentation, or formatted \
+                bbox and mask results of each image for instance segmentation.
+
+            .. code-block:: none
+
+                [
+                    # panoptic segmentation
+                    {
+                        'pan_results': np.array, # shape = [h, w]
+                        'ins_results': tuple[list],
+                        # semantic segmentation results are not supported yet
+                        'sem_results': np.array
+                    },
+                    ...
+                ]
+
+            or
+
+            .. code-block:: none
+
+                [
+                    # instance segmentation
+                    (
+                        bboxes, # list[np.array]
+                        masks # list[list[np.array]]
+                    ),
+                    ...
+                ]
+        """
+        feats = self.extract_feat(imgs)
+        mask_cls_results, mask_pred_results = self.panoptic_head.simple_test(
+            feats, img_metas, **kwargs)
+        results = self.panoptic_fusion_head.simple_test(
+            mask_cls_results, mask_pred_results, img_metas, **kwargs)
+        for i in range(len(results)):
+            if 'pan_results' in results[i]:
+                results[i]['pan_results'] = results[i]['pan_results'].detach(
+                ).cpu().numpy()
+
+            if 'ins_results' in results[i]:
+                labels_per_image, bboxes, mask_pred_binary = results[i][
+                    'ins_results']
+                bbox_results = bbox2result(bboxes, labels_per_image,
+                                           self.num_things_classes)
+                mask_results = [[] for _ in range(self.num_things_classes)]
+                for j, label in enumerate(labels_per_image):
+                    mask = mask_pred_binary[j].detach().cpu().numpy()
+                    mask_results[label].append(mask)
+                results[i]['ins_results'] = bbox_results, mask_results
+
+            assert 'sem_results' not in results[i], 'segmantic segmentation '\
+                'results are not supported yet.'
+
+        if self.num_stuff_classes == 0:
+            results = [res['ins_results'] for res in results]
 
         return results
 
@@ -115,20 +182,20 @@ class MaskFormer(SingleStageDetector):
     def onnx_export(self, img, img_metas):
         raise NotImplementedError
 
-    def show_result(self,
-                    img,
-                    result,
-                    score_thr=0.3,
-                    bbox_color=(72, 101, 241),
-                    text_color=(72, 101, 241),
-                    mask_color=None,
-                    thickness=2,
-                    font_size=13,
-                    win_name='',
-                    show=False,
-                    wait_time=0,
-                    out_file=None):
-        """Draw `result` over `img`.
+    def _show_pan_result(self,
+                         img,
+                         result,
+                         score_thr=0.3,
+                         bbox_color=(72, 101, 241),
+                         text_color=(72, 101, 241),
+                         mask_color=None,
+                         thickness=2,
+                         font_size=13,
+                         win_name='',
+                         show=False,
+                         wait_time=0,
+                         out_file=None):
+        """Draw `panoptic result` over `img`.
 
         Args:
             img (str or Tensor): The image to be displayed.

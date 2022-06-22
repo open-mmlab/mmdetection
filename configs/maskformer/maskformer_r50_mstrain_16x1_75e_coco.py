@@ -1,7 +1,9 @@
 _base_ = [
     '../_base_/datasets/coco_panoptic.py', '../_base_/default_runtime.py'
 ]
-
+num_things_classes = 80
+num_stuff_classes = 53
+num_classes = num_things_classes + num_stuff_classes
 model = dict(
     type='MaskFormer',
     backbone=dict(
@@ -19,8 +21,8 @@ model = dict(
         in_channels=[256, 512, 1024, 2048],  # pass to pixel_decoder inside
         feat_channels=256,
         out_channels=256,
-        num_things_classes=80,
-        num_stuff_classes=53,
+        num_things_classes=num_things_classes,
+        num_stuff_classes=num_stuff_classes,
         num_queries=100,
         pixel_decoder=dict(
             type='TransformerEncoderPixelDecoder',
@@ -87,11 +89,10 @@ model = dict(
             init_cfg=None),
         loss_cls=dict(
             type='CrossEntropyLoss',
-            bg_cls_weight=0.1,
             use_sigmoid=False,
             loss_weight=1.0,
             reduction='mean',
-            class_weight=1.0),
+            class_weight=[1.0] * num_classes + [0.1]),
         loss_mask=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -107,6 +108,12 @@ model = dict(
             naive_dice=True,
             eps=1.0,
             loss_weight=1.0)),
+    panoptic_fusion_head=dict(
+        type='MaskFormerFusionHead',
+        num_things_classes=num_things_classes,
+        num_stuff_classes=num_stuff_classes,
+        loss_panoptic=None,
+        init_cfg=None),
     train_cfg=dict(
         assigner=dict(
             type='MaskHungarianAssigner',
@@ -116,8 +123,19 @@ model = dict(
             dice_cost=dict(
                 type='DiceCost', weight=1.0, pred_act=True, eps=1.0)),
         sampler=dict(type='MaskPseudoSampler')),
-    test_cfg=dict(object_mask_thr=0.8, iou_thr=0.8),
-    # pretrained=None,
+    test_cfg=dict(
+        panoptic_on=True,
+        # For now, the dataset does not support
+        # evaluating semantic segmentation metric.
+        semantic_on=False,
+        instance_on=False,
+        # max_per_image is for instance segmentation.
+        max_per_image=100,
+        object_mask_thr=0.8,
+        iou_thr=0.8,
+        # In MaskFormer's panoptic postprocessing,
+        # it will not filter masks whose score is smaller than 0.5 .
+        filter_low_score=False),
     init_cfg=None)
 
 # dataset settings

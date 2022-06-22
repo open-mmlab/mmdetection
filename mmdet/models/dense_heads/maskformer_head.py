@@ -8,7 +8,6 @@ from mmcv.cnn.bricks.transformer import (build_positional_encoding,
 from mmcv.runner import force_fp32
 
 from mmdet.core import build_assigner, build_sampler, multi_apply, reduce_mean
-from mmdet.core.evaluation import INSTANCE_OFFSET
 from mmdet.models.utils import preprocess_panoptic_gt
 from ..builder import HEADS, build_loss
 from .anchor_free_head import AnchorFreeHead
@@ -64,10 +63,9 @@ class MaskFormerHead(AnchorFreeHead):
                  positional_encoding=None,
                  loss_cls=dict(
                      type='CrossEntropyLoss',
-                     bg_cls_weight=0.1,
                      use_sigmoid=False,
                      loss_weight=1.0,
-                     class_weight=1.0),
+                     class_weight=[1.0] * 133 + [0.1]),
                  loss_mask=dict(
                      type='FocalLoss',
                      use_sigmoid=True,
@@ -118,32 +116,10 @@ class MaskFormerHead(AnchorFreeHead):
         self.test_cfg = test_cfg
         self.train_cfg = train_cfg
         if train_cfg:
-            assert 'assigner' in train_cfg, 'assigner should be provided '\
-                'when train_cfg is set.'
-            assigner = train_cfg['assigner']
-            self.assigner = build_assigner(assigner)
-            sampler_cfg = dict(type='MaskPseudoSampler')
-            self.sampler = build_sampler(sampler_cfg, context=self)
+            self.assigner = build_assigner(train_cfg.assigner)
+            self.sampler = build_sampler(train_cfg.sampler, context=self)
 
-        self.bg_cls_weight = 0
-        class_weight = loss_cls.get('class_weight', None)
-        if class_weight is not None and (self.__class__ is MaskFormerHead):
-            assert isinstance(class_weight, float), 'Expected ' \
-                'class_weight to have type float. Found ' \
-                f'{type(class_weight)}.'
-            # NOTE following the official MaskFormerHead repo, bg_cls_weight
-            # means relative classification weight of the VOID class.
-            bg_cls_weight = loss_cls.get('bg_cls_weight', class_weight)
-            assert isinstance(bg_cls_weight, float), 'Expected ' \
-                'bg_cls_weight to have type float. Found ' \
-                f'{type(bg_cls_weight)}.'
-            class_weight = torch.ones(self.num_classes + 1) * class_weight
-            # set VOID class as the last indice
-            class_weight[self.num_classes] = bg_cls_weight
-            loss_cls.update({'class_weight': class_weight})
-            if 'bg_cls_weight' in loss_cls:
-                loss_cls.pop('bg_cls_weight')
-            self.bg_cls_weight = bg_cls_weight
+        self.class_weight = loss_cls.class_weight
         self.loss_cls = build_loss(loss_cls)
         self.loss_mask = build_loss(loss_mask)
         self.loss_dice = build_loss(loss_dice)
@@ -158,7 +134,8 @@ class MaskFormerHead(AnchorFreeHead):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
 
-    def preprocess_gt(self, gt_labels_list, gt_masks_list, gt_semantic_segs):
+    def preprocess_gt(self, gt_labels_list, gt_masks_list, gt_semantic_segs,
+                      img_metas):
         """Preprocess the ground truth for all images.
 
         Args:
@@ -167,13 +144,12 @@ class MaskFormerHead(AnchorFreeHead):
             gt_masks_list (list[BitmapMasks]): Each is ground truth
                 masks of each instances of a image, shape
                 (num_gts, h, w).
-            gt_semantic_seg (Tensor): Ground truth of semantic
+            gt_semantic_seg (Tensor | None): Ground truth of semantic
                 segmentation with the shape (batch_size, n, h, w).
                 [0, num_thing_class - 1] means things,
                 [num_thing_class, num_class-1] means stuff,
-                255 means VOID.
-            target_shape (tuple[int]): Shape of output mask_preds.
-                Resize the masks to shape of mask_preds.
+                255 means VOID. It's None when training instance segmentation.
+            img_metas (list[dict]): List of image meta information.
 
         Returns:
             tuple: a tuple containing the following targets.
@@ -185,10 +161,12 @@ class MaskFormerHead(AnchorFreeHead):
         """
         num_things_list = [self.num_things_classes] * len(gt_labels_list)
         num_stuff_list = [self.num_stuff_classes] * len(gt_labels_list)
+        if gt_semantic_segs is None:
+            gt_semantic_segs = [None] * len(gt_labels_list)
 
         targets = multi_apply(preprocess_panoptic_gt, gt_labels_list,
                               gt_masks_list, gt_semantic_segs, num_things_list,
-                              num_stuff_list)
+                              num_stuff_list, img_metas)
         labels, masks = targets
         return labels, masks
 
@@ -304,7 +282,8 @@ class MaskFormerHead(AnchorFreeHead):
         Args:
             all_cls_scores (Tensor): Classification scores for all decoder
                 layers with shape (num_decoder, batch_size, num_queries,
-                cls_out_channels).
+                cls_out_channels). Note `cls_out_channels` should includes
+                background.
             all_mask_preds (Tensor): Mask scores for all decoder layers with
                 shape (num_decoder, batch_size, num_queries, h, w).
             gt_labels_list (list[Tensor]): Ground truth class indices for each
@@ -347,7 +326,8 @@ class MaskFormerHead(AnchorFreeHead):
         Args:
             cls_scores (Tensor): Mask score logits from a single decoder layer
                 for all images. Shape (batch_size, num_queries,
-                cls_out_channels).
+                cls_out_channels). Note `cls_out_channels` should includes
+                background.
             mask_preds (Tensor): Mask logits for a pixel decoder for all
                 images. Shape (batch_size, num_queries, h, w).
             gt_labels_list (list[Tensor]): Ground truth class indices for each
@@ -385,8 +365,7 @@ class MaskFormerHead(AnchorFreeHead):
         labels = labels.flatten(0, 1)
         label_weights = label_weights.flatten(0, 1)
 
-        class_weight = cls_scores.new_ones(self.num_classes + 1)
-        class_weight[-1] = self.bg_cls_weight
+        class_weight = cls_scores.new_tensor(self.class_weight)
         loss_cls = self.loss_cls(
             cls_scores,
             labels,
@@ -517,11 +496,11 @@ class MaskFormerHead(AnchorFreeHead):
                 each box, shape (num_gts,).
             gt_masks (list[BitmapMasks]): Each element is masks of instances
                 of a image, shape (num_gts, h, w).
-            gt_semantic_seg (list[tensor]):Each element is the ground truth
-                of semantic segmentation with the shape (N, H, W).
+            gt_semantic_seg (list[tensor] | None): Each element is the ground
+                truth of semantic segmentation with the shape (N, H, W).
                 [0, num_thing_class - 1] means things,
                 [num_thing_class, num_class-1] means stuff,
-                255 means VOID.
+                255 means VOID. It's None when training instance segmentation.
             gt_bboxes_ignore (list[Tensor]): Ground truth bboxes to be
                 ignored. Defaults to None.
 
@@ -536,7 +515,7 @@ class MaskFormerHead(AnchorFreeHead):
 
         # preprocess ground truth
         gt_labels, gt_masks = self.preprocess_gt(gt_labels, gt_masks,
-                                                 gt_semantic_seg)
+                                                 gt_semantic_seg, img_metas)
 
         # loss
         losses = self.loss(all_cls_scores, all_mask_preds, gt_labels, gt_masks,
@@ -544,30 +523,22 @@ class MaskFormerHead(AnchorFreeHead):
 
         return losses
 
-    def simple_test(self, feats, img_metas, rescale=False):
-        """Test segment without test-time aumengtation.
-
-        Only the output of last decoder layers was used.
+    def simple_test(self, feats, img_metas, **kwargs):
+        """Test without augmentaton.
 
         Args:
             feats (list[Tensor]): Multi-level features from the
                 upstream network, each is a 4D-tensor.
             img_metas (list[dict]): List of image information.
-            rescale (bool, optional):  If True, return boxes in
-                original image space. Default False.
 
         Returns:
-            list[dict[str, np.array]]: semantic segmentation results\
-                and panoptic segmentation results for each image.
+            tuple: A tuple contains two tensors.
 
-            .. code-block:: none
-
-                [
-                    {
-                        'pan_results': <np.ndarray>, # shape = [h, w]
-                    },
-                    ...
-                ]
+            - mask_cls_results (Tensor): Mask classification logits,\
+                shape (batch_size, num_queries, cls_out_channels).
+                Note `cls_out_channels` should includes background.
+            - mask_pred_results (Tensor): Mask logits, shape \
+                (batch_size, num_queries, h, w).
         """
         all_cls_scores, all_mask_preds = self(feats, img_metas)
         mask_cls_results = all_cls_scores[-1]
@@ -581,84 +552,4 @@ class MaskFormerHead(AnchorFreeHead):
             mode='bilinear',
             align_corners=False)
 
-        results = []
-        for mask_cls_result, mask_pred_result, meta in zip(
-                mask_cls_results, mask_pred_results, img_metas):
-            # remove padding
-            img_height, img_width = meta['img_shape'][:2]
-            mask_pred_result = mask_pred_result[:, :img_height, :img_width]
-
-            if rescale:
-                # return result in original resolution
-                ori_height, ori_width = meta['ori_shape'][:2]
-                mask_pred_result = F.interpolate(mask_pred_result.unsqueeze(1),
-                                                 size=(ori_height, ori_width),
-                                                 mode='bilinear',
-                                                 align_corners=False)\
-                    .squeeze(1)
-
-            mask = self.post_process(mask_cls_result, mask_pred_result)
-            results.append(mask)
-
-        return results
-
-    def post_process(self, mask_cls, mask_pred):
-        """Panoptic segmengation inference.
-
-        This implementation is modified from `MaskFormer
-        <https://github.com/facebookresearch/MaskFormer>`_.
-
-        Args:
-            mask_cls (Tensor): Classfication outputs for a image.
-                shape = (num_queries, cls_out_channels).
-            mask_pred (Tensor): Mask outputs for a image.
-                shape = (num_queries, h, w).
-
-        Returns:
-            Tensor: panoptic segment result of shape (h, w),\
-                each element in Tensor means:
-                segment_id = _cls + instance_id * INSTANCE_OFFSET.
-        """
-        object_mask_thr = self.test_cfg.get('object_mask_thr', 0.8)
-        iou_thr = self.test_cfg.get('iou_thr', 0.8)
-
-        scores, labels = F.softmax(mask_cls, dim=-1).max(-1)
-        mask_pred = mask_pred.sigmoid()
-
-        keep = labels.ne(self.num_classes) & (scores > object_mask_thr)
-        cur_scores = scores[keep]
-        cur_classes = labels[keep]
-        cur_masks = mask_pred[keep]
-
-        cur_prob_masks = cur_scores.view(-1, 1, 1) * cur_masks
-
-        h, w = cur_masks.shape[-2:]
-        panoptic_seg = torch.full((h, w),
-                                  self.num_classes,
-                                  dtype=torch.int32,
-                                  device=cur_masks.device)
-        if cur_masks.shape[0] == 0:
-            # We didn't detect any mask :(
-            pass
-        else:
-            cur_mask_ids = cur_prob_masks.argmax(0)
-            instance_id = 1
-            for k in range(cur_classes.shape[0]):
-                pred_class = int(cur_classes[k].item())
-                isthing = pred_class < self.num_things_classes
-                mask = cur_mask_ids == k
-                mask_area = mask.sum().item()
-                original_area = (cur_masks[k] >= 0.5).sum().item()
-                if mask_area > 0 and original_area > 0:
-                    if mask_area / original_area < iou_thr:
-                        continue
-
-                    if not isthing:
-                        # different stuff regions of same class will be
-                        # merged here, and stuff share the instance_id 0.
-                        panoptic_seg[mask] = pred_class
-                    else:
-                        panoptic_seg[mask] = (
-                            pred_class + instance_id * INSTANCE_OFFSET)
-                        instance_id += 1
-        return panoptic_seg
+        return mask_cls_results, mask_pred_results

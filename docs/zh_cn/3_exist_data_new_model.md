@@ -1,4 +1,5 @@
 # 3: 在标准数据集上训练自定义模型
+
 在本文中，你将知道如何在标准数据集上训练、测试和推理自定义模型。我们将在 cityscapes 数据集上以自定义 Cascade Mask R-CNN R50 模型为例演示整个过程，为了方便说明，我们将 neck 模块中的 `FPN` 替换为 `AugFPN`，并且在训练中的自动增强类中增加 `Rotate` 或 `Translate`。
 
 基本步骤如下所示：
@@ -39,6 +40,14 @@ mmdetection
 │   │   ├── VOC2007
 │   │   ├── VOC2012
 ```
+
+你也可以通过如下方式设定数据集根路径
+
+```bash
+export MMDET_DATASETS=$data_root
+```
+
+我们将会使用环境便变量 `$MMDET_DATASETS` 作为数据集的根目录，因此你无需再修改相应配置文件的路径信息。
 
 你需要使用脚本 `tools/dataset_converters/cityscapes.py` 将 cityscapes 标注转化为 coco 标注格式。
 
