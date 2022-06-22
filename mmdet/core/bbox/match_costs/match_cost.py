@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 import torch.nn.functional as F
+from torch import Tensor
 
 from mmdet.core.bbox.iou_calculators import bbox_overlaps
 from mmdet.core.bbox.transforms import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
@@ -26,12 +27,12 @@ class BBoxL1Cost:
          tensor([[1.6172, 1.6422]])
     """
 
-    def __init__(self, weight=1., box_format='xyxy'):
+    def __init__(self, weight: float = 1., box_format: str = 'xyxy'):
         self.weight = weight
         assert box_format in ['xyxy', 'xywh']
         self.box_format = box_format
 
-    def __call__(self, bbox_pred, gt_bboxes):
+    def __call__(self, bbox_pred: Tensor, gt_bboxes: Tensor):
         """
         Args:
             bbox_pred (Tensor): Predicted boxes with normalized coordinates
@@ -171,10 +172,10 @@ class ClassificationCost:
                 [-0.3343, -0.2701, -0.3956]])
     """
 
-    def __init__(self, weight=1.):
+    def __init__(self, weight: float = 1.):
         self.weight = weight
 
-    def __call__(self, cls_pred, gt_labels):
+    def __call__(self, cls_pred: Tensor, gt_labels: Tensor):
         """
         Args:
             cls_pred (Tensor): Predicted classification logits, shape
@@ -212,11 +213,11 @@ class IoUCost:
                 [ 0.1667, -0.5000]])
     """
 
-    def __init__(self, iou_mode='giou', weight=1.):
+    def __init__(self, iou_mode: str = 'giou', weight: float = 1.):
         self.weight = weight
         self.iou_mode = iou_mode
 
-    def __call__(self, bboxes, gt_bboxes):
+    def __call__(self, bboxes: Tensor, gt_bboxes: Tensor):
         """
         Args:
             bboxes (Tensor): Predicted boxes with unnormalized coordinates

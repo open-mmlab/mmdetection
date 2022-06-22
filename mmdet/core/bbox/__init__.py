@@ -5,6 +5,8 @@ from .builder import build_assigner, build_bbox_coder, build_sampler
 from .coder import (BaseBBoxCoder, DeltaXYWHBBoxCoder, DistancePointBBoxCoder,
                     PseudoBBoxCoder, TBLRBBoxCoder)
 from .iou_calculators import BboxOverlaps2D, bbox_overlaps
+from .match_costs import (BBoxL1Cost, ClassificationCost, CrossEntropyLossCost,
+                          DiceCost, FocalLossCost, IoUCost)
 from .samplers import (BaseSampler, CombinedSampler,
                        InstanceBalancedPosSampler, IoUBalancedNegSampler,
                        OHEMSampler, PseudoSampler, RandomSampler,
@@ -26,5 +28,7 @@ __all__ = [
     'DeltaXYWHBBoxCoder', 'TBLRBBoxCoder', 'DistancePointBBoxCoder',
     'CenterRegionAssigner', 'bbox_rescale', 'bbox_cxcywh_to_xyxy',
     'bbox_xyxy_to_cxcywh', 'RegionAssigner', 'find_inside_bboxes',
-    'bbox2corner', 'corner2bbox', 'bbox_project'
+    'bbox2corner', 'corner2bbox', 'bbox_project', 'BBoxL1Cost',
+    'FocalLossCost', 'ClassificationCost', 'IoUCost', 'DiceCost',
+    'CrossEntropyLossCost'
 ]

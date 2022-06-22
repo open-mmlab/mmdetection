@@ -1,13 +1,15 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
+from typing import Dict, List, Tuple
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import Linear, bias_init_with_prob, constant_init
-from mmcv.runner import force_fp32
+from torch import Tensor
 
-from mmdet.core import multi_apply
+from mmdet.core import (InstanceList, OptConfigType, OptInstanceList,
+                        multi_apply)
 from mmdet.models.utils.transformer import inverse_sigmoid
 from mmdet.registry import MODELS
 from .detr_head import DETRHead
@@ -35,19 +37,18 @@ class DeformableDETRHead(DETRHead):
 
     def __init__(self,
                  *args,
-                 with_box_refine=False,
-                 as_two_stage=False,
-                 transformer=None,
-                 **kwargs):
+                 with_box_refine: bool = False,
+                 as_two_stage: bool = False,
+                 transformer: OptConfigType = None,
+                 **kwargs) -> None:
         self.with_box_refine = with_box_refine
         self.as_two_stage = as_two_stage
         if self.as_two_stage:
             transformer['as_two_stage'] = self.as_two_stage
 
-        super(DeformableDETRHead, self).__init__(
-            *args, transformer=transformer, **kwargs)
+        super().__init__(*args, transformer=transformer, **kwargs)
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         """Initialize classification branch and regression branch of head."""
 
         fc_cls = Linear(self.embed_dims, self.cls_out_channels)
@@ -80,7 +81,7 @@ class DeformableDETRHead(DETRHead):
             self.query_embedding = nn.Embedding(self.num_query,
                                                 self.embed_dims * 2)
 
-    def init_weights(self):
+    def init_weights(self) -> None:
         """Initialize weights of the DeformDETR head."""
         self.transformer.init_weights()
         if self.loss_cls.use_sigmoid:
@@ -94,43 +95,45 @@ class DeformableDETRHead(DETRHead):
             for m in self.reg_branches:
                 nn.init.constant_(m[-1].bias.data[2:], 0.0)
 
-    def forward(self, mlvl_feats, img_metas):
+    def forward(self, x: Tuple[Tensor],
+                batch_img_metas: List[dict]) -> Tuple[Tensor, ...]:
         """Forward function.
 
         Args:
-            mlvl_feats (tuple[Tensor]): Features from the upstream
-                network, each is a 4D-tensor with shape
-                (N, C, H, W).
-            img_metas (list[dict]): List of image information.
+            x (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
 
         Returns:
-            all_cls_scores (Tensor): Outputs from the classification head, \
-                shape [nb_dec, bs, num_query, cls_out_channels]. Note \
-                cls_out_channels should includes background.
-            all_bbox_preds (Tensor): Sigmoid outputs from the regression \
-                head with normalized coordinate format (cx, cy, w, h). \
-                Shape [nb_dec, bs, num_query, 4].
-            enc_outputs_class (Tensor): The score of each point on encode \
-                feature map, has shape (N, h*w, num_class). Only when \
-                as_two_stage is True it would be returned, otherwise \
-                `None` would be returned.
-            enc_outputs_coord (Tensor): The proposal generate from the \
-                encode feature map, has shape (N, h*w, 4). Only when \
-                as_two_stage is True it would be returned, otherwise \
-                `None` would be returned.
+            tuple[Tensor]:
+
+            - all_cls_scores (Tensor): Outputs from the classification head,
+              shape [nb_dec, bs, num_query, cls_out_channels].
+            - cls_out_channels should includes background.
+            - all_bbox_preds (Tensor): Sigmoid outputs from the regression
+              head with normalized coordinate format (cx, cy, w, h).
+              Shape [nb_dec, bs, num_query, 4].
+            - enc_outputs_class (Tensor): The score of each point on encode
+              feature map, has shape (N, h*w, num_class). Only when
+              as_two_stage is True it would be returned, otherwise `None`
+              would be returned.
+            - enc_outputs_coord (Tensor): The proposal generate from the
+              encode feature map, has shape (N, h*w, 4). Only when
+              as_two_stage is True it would be returned, otherwise `None`
+              would be returned.
         """
 
-        batch_size = mlvl_feats[0].size(0)
-        input_img_h, input_img_w = img_metas[0]['batch_input_shape']
-        img_masks = mlvl_feats[0].new_ones(
-            (batch_size, input_img_h, input_img_w))
+        batch_size = x[0].size(0)
+        input_img_h, input_img_w = batch_img_metas[0]['batch_input_shape']
+        img_masks = x[0].new_ones((batch_size, input_img_h, input_img_w))
         for img_id in range(batch_size):
-            img_h, img_w, _ = img_metas[img_id]['img_shape']
+            img_h, img_w = batch_img_metas[img_id]['img_shape']
             img_masks[img_id, :img_h, :img_w] = 0
 
         mlvl_masks = []
         mlvl_positional_encodings = []
-        for feat in mlvl_feats:
+        for feat in x:
             mlvl_masks.append(
                 F.interpolate(img_masks[None],
                               size=feat.shape[-2:]).to(torch.bool).squeeze(0))
@@ -142,7 +145,7 @@ class DeformableDETRHead(DETRHead):
             query_embeds = self.query_embedding.weight
         hs, init_reference, inter_references, \
             enc_outputs_class, enc_outputs_coord = self.transformer(
-                    mlvl_feats,
+                    x,
                     mlvl_masks,
                     query_embeds,
                     mlvl_positional_encodings,
@@ -180,16 +183,16 @@ class DeformableDETRHead(DETRHead):
             return outputs_classes, outputs_coords, \
                 None, None
 
-    @force_fp32(apply_to=('all_cls_scores_list', 'all_bbox_preds_list'))
-    def loss(self,
-             all_cls_scores,
-             all_bbox_preds,
-             enc_cls_scores,
-             enc_bbox_preds,
-             gt_bboxes_list,
-             gt_labels_list,
-             img_metas,
-             gt_bboxes_ignore=None):
+    def loss_by_feat(
+        self,
+        all_cls_scores: Tensor,
+        all_bbox_preds: Tensor,
+        enc_cls_scores: Tensor,
+        enc_bbox_preds: Tensor,
+        batch_gt_instances: InstanceList,
+        batch_img_metas: List[dict],
+        batch_gt_instances_ignore: OptInstanceList = None
+    ) -> Dict[str, Tensor]:
         """"Loss function.
 
         Args:
@@ -207,45 +210,42 @@ class DeformableDETRHead(DETRHead):
             enc_bbox_preds (Tensor): Regression results of each points
                 on the encode feature map, has shape (N, h*w, 4). Only be
                 passed when as_two_stage is True, otherwise is None.
-            gt_bboxes_list (list[Tensor]): Ground truth bboxes for each image
-                with shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels_list (list[Tensor]): Ground truth class indices for each
-                image with shape (num_gts, ).
-            img_metas (list[dict]): List of image meta information.
-            gt_bboxes_ignore (list[Tensor], optional): Bounding boxes
-                which can be ignored for each image. Default None.
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        assert gt_bboxes_ignore is None, \
+        assert batch_gt_instances_ignore is None, \
             f'{self.__class__.__name__} only supports ' \
             f'for gt_bboxes_ignore setting to None.'
 
         num_dec_layers = len(all_cls_scores)
-        all_gt_bboxes_list = [gt_bboxes_list for _ in range(num_dec_layers)]
-        all_gt_labels_list = [gt_labels_list for _ in range(num_dec_layers)]
-        all_gt_bboxes_ignore_list = [
-            gt_bboxes_ignore for _ in range(num_dec_layers)
+        batch_gt_instances_list = [
+            batch_gt_instances for _ in range(num_dec_layers)
         ]
-        img_metas_list = [img_metas for _ in range(num_dec_layers)]
+        batch_img_metas_list = [batch_img_metas for _ in range(num_dec_layers)]
 
         losses_cls, losses_bbox, losses_iou = multi_apply(
-            self.loss_single, all_cls_scores, all_bbox_preds,
-            all_gt_bboxes_list, all_gt_labels_list, img_metas_list,
-            all_gt_bboxes_ignore_list)
+            self.loss_by_feat_single, all_cls_scores, all_bbox_preds,
+            batch_gt_instances_list, batch_img_metas_list)
 
         loss_dict = dict()
         # loss of proposal generated from encode feature map.
         if enc_cls_scores is not None:
-            binary_labels_list = [
-                torch.zeros_like(gt_labels_list[i])
-                for i in range(len(img_metas))
-            ]
+            for i in range(len(batch_img_metas)):
+                batch_gt_instances[i].labels = torch.zeros_like(
+                    batch_gt_instances[i].labels)
             enc_loss_cls, enc_losses_bbox, enc_losses_iou = \
                 self.loss_single(enc_cls_scores, enc_bbox_preds,
-                                 gt_bboxes_list, binary_labels_list,
-                                 img_metas, gt_bboxes_ignore)
+                                 batch_gt_instances, batch_img_metas)
             loss_dict['enc_loss_cls'] = enc_loss_cls
             loss_dict['enc_loss_bbox'] = enc_losses_bbox
             loss_dict['enc_loss_iou'] = enc_losses_iou
@@ -265,15 +265,15 @@ class DeformableDETRHead(DETRHead):
             num_dec_layer += 1
         return loss_dict
 
-    @force_fp32(apply_to=('all_cls_scores_list', 'all_bbox_preds_list'))
-    def get_bboxes(self,
-                   all_cls_scores,
-                   all_bbox_preds,
-                   enc_cls_scores,
-                   enc_bbox_preds,
-                   img_metas,
-                   rescale=False):
-        """Transform network outputs for a batch into bbox predictions.
+    def predict_by_feat(self,
+                        all_cls_scores: Tensor,
+                        all_bbox_preds: Tensor,
+                        enc_cls_scores: Tensor,
+                        enc_bbox_preds: Tensor,
+                        batch_img_metas: List[Dict],
+                        rescale: bool = False) -> InstanceList:
+        """Transform a batch of output features extracted from the head into
+        bbox results.
 
         Args:
             all_cls_scores (Tensor): Classification score of all
@@ -290,7 +290,7 @@ class DeformableDETRHead(DETRHead):
             enc_bbox_preds (Tensor): Regression results of each points
                 on the encode feature map, has shape (N, h*w, 4). Only be
                 passed when as_two_stage is True, otherwise is None.
-            img_metas (list[dict]): Meta information of each image.
+            batch_img_metas (list[dict]): Meta information of each image.
             rescale (bool, optional): If True, return boxes in original
                 image space. Default False.
 
@@ -306,13 +306,11 @@ class DeformableDETRHead(DETRHead):
         bbox_preds = all_bbox_preds[-1]
 
         result_list = []
-        for img_id in range(len(img_metas)):
+        for img_id in range(len(batch_img_metas)):
             cls_score = cls_scores[img_id]
             bbox_pred = bbox_preds[img_id]
-            img_shape = img_metas[img_id]['img_shape']
-            scale_factor = img_metas[img_id]['scale_factor']
-            proposals = self._get_bboxes_single(cls_score, bbox_pred,
-                                                img_shape, scale_factor,
-                                                rescale)
-            result_list.append(proposals)
+            img_meta = batch_img_metas[img_id]
+            results = self._predict_by_feat_single(cls_score, bbox_pred,
+                                                   img_meta, rescale)
+            result_list.append(results)
         return result_list
