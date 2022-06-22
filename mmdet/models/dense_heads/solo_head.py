@@ -29,9 +29,9 @@ class SOLOHead(BaseMaskHead):
             category.
         in_channels (int): Number of channels in the input feature map.
         feat_channels (int): Number of hidden channels. Used in child classes.
-            Default: 256.
+            Defaults to 256.
         stacked_convs (int): Number of stacking convs of the head.
-            Default: 4.
+            Defaults to 4.
         strides (tuple): Downsample factor of each feature map.
         scale_ranges (tuple[tuple[int, int]]): Area range of multiple
             level masks, in the format [(min1, max1), (min2, max2), ...].
@@ -39,14 +39,14 @@ class SOLOHead(BaseMaskHead):
         pos_scale (float): Constant scale factor to control the center region.
         num_grids (list[int]): Divided image into a uniform grids, each
             feature map has a different grid value. The number of output
-            channels is grid ** 2. Default: [40, 36, 24, 16, 12].
+            channels is grid ** 2. Defaults to [40, 36, 24, 16, 12].
         cls_down_index (int): The index of downsample operation in
-            classification branch. Default: 0.
+            classification branch. Defaults to 0.
         loss_mask (dict): Config of mask loss.
         loss_cls (dict): Config of classification loss.
-        norm_cfg (dict): dictionary to construct and config norm layer.
-            Default: norm_cfg=dict(type='GN', num_groups=32,
-                                   requires_grad=True).
+        norm_cfg (dict): Dictionary to construct and config norm layer.
+            Defaults to norm_cfg=dict(type='GN', num_groups=32,
+            requires_grad=True).
         train_cfg (dict): Training config of head.
         test_cfg (dict): Testing config of head.
         init_cfg (dict or list[dict], optional): Initialization config dict.
@@ -114,6 +114,7 @@ class SOLOHead(BaseMaskHead):
         self._init_layers()
 
     def _init_layers(self) -> None:
+        """Initialize layers of the head."""
         self.mask_convs = nn.ModuleList()
         self.cls_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
@@ -228,10 +229,11 @@ class SOLOHead(BaseMaskHead):
             mlvl_cls_preds.append(cls_pred)
         return mlvl_mask_preds, mlvl_cls_preds
 
-    def loss(self, mlvl_mask_preds: List[Tensor], mlvl_cls_preds: List[Tensor],
-             batch_gt_instances: InstanceList, batch_img_metas: List[dict],
-             **kwargs) -> dict:
-        """Calculate the loss of total batch.
+    def loss_by_feat(self, mlvl_mask_preds: List[Tensor],
+                     mlvl_cls_preds: List[Tensor],
+                     batch_gt_instances: InstanceList,
+                     batch_img_metas: List[dict], **kwargs) -> dict:
+        """Calculate the loss based on the features extracted by the mask head.
 
         Args:
             mlvl_mask_preds (list[Tensor]): Multi-level mask prediction.
@@ -317,7 +319,7 @@ class SOLOHead(BaseMaskHead):
                 and ``masks`` attributes.
             featmap_sizes (list[:obj:`torch.size`]): Size of each
                 feature map from feature pyramid, each element
-                means (feat_h, feat_w). Default: None.
+                means (feat_h, feat_w). Defaults to None.
 
         Returns:
             Tuple: Usually returns a tuple containing targets for predictions.
@@ -441,10 +443,11 @@ class SOLOHead(BaseMaskHead):
             mlvl_pos_masks.append(pos_mask)
         return mlvl_pos_mask_targets, mlvl_labels, mlvl_pos_masks
 
-    def get_results(self, mlvl_mask_preds: List[Tensor],
-                    mlvl_cls_scores: List[Tensor], batch_img_metas: List[dict],
-                    **kwargs) -> InstanceList:
-        """Get multi-image mask results.
+    def predict_by_feat(self, mlvl_mask_preds: List[Tensor],
+                        mlvl_cls_scores: List[Tensor],
+                        batch_img_metas: List[dict], **kwargs) -> InstanceList:
+        """Transform a batch of output features extracted from the head into
+        mask results.
 
         Args:
             mlvl_mask_preds (list[Tensor]): Multi-level mask prediction.
@@ -486,18 +489,19 @@ class SOLOHead(BaseMaskHead):
             mask_pred_list = torch.cat(mask_pred_list, dim=0)
             img_meta = batch_img_metas[img_id]
 
-            results = self._get_results_single(
+            results = self._predict_by_feat_single(
                 cls_pred_list, mask_pred_list, img_meta=img_meta)
             results_list.append(results)
 
         return results_list
 
-    def _get_results_single(self,
-                            cls_scores: Tensor,
-                            mask_preds: Tensor,
-                            img_meta: dict,
-                            cfg: OptConfigType = None) -> InstanceData:
-        """Get processed mask related results of single image.
+    def _predict_by_feat_single(self,
+                                cls_scores: Tensor,
+                                mask_preds: Tensor,
+                                img_meta: dict,
+                                cfg: OptConfigType = None) -> InstanceData:
+        """Transform a single image's features extracted from the head into
+        mask results.
 
         Args:
             cls_scores (Tensor): Classification score of all points
@@ -506,7 +510,7 @@ class SOLOHead(BaseMaskHead):
                 single image, has shape (num_points, feat_h, feat_w).
             img_meta (dict): Meta information of corresponding image.
             cfg (dict, optional): Config used in test phase.
-                Default: None.
+                Defaults to None.
 
         Returns:
             :obj:`InstanceData`: Processed results of single image.
@@ -580,6 +584,9 @@ class SOLOHead(BaseMaskHead):
             kernel=cfg.kernel,
             sigma=cfg.sigma,
             filter_thr=cfg.filter_thr)
+        # mask_matrix_nms may return an empty Tensor
+        if len(keep_inds) == 0:
+            return empty_results(cls_scores, img_meta['ori_shape'][:2])
         mask_preds = mask_preds[keep_inds]
         mask_preds = F.interpolate(
             mask_preds.unsqueeze(0), size=upsampled_size,
@@ -593,7 +600,9 @@ class SOLOHead(BaseMaskHead):
         results.masks = masks
         results.labels = labels
         results.scores = scores
-
+        # create an empty bbox in InstanceData to avoid bugs when
+        # calculating metrics.
+        results.bboxes = results.scores.new_zeros(len(scores), 4)
         return results
 
 
@@ -754,11 +763,12 @@ class DecoupledSOLOHead(SOLOHead):
             cls_preds.append(cls_pred)
         return mask_preds_x, mask_preds_y, cls_preds
 
-    def loss(self, mlvl_mask_preds_x: List[Tensor],
-             mlvl_mask_preds_y: List[Tensor], mlvl_cls_preds: List[Tensor],
-             batch_gt_instances: InstanceList, batch_img_metas: List[dict],
-             **kwargs) -> dict:
-        """Calculate the loss of total batch.
+    def loss_by_feat(self, mlvl_mask_preds_x: List[Tensor],
+                     mlvl_mask_preds_y: List[Tensor],
+                     mlvl_cls_preds: List[Tensor],
+                     batch_gt_instances: InstanceList,
+                     batch_img_metas: List[dict], **kwargs) -> dict:
+        """Calculate the loss based on the features extracted by the mask head.
 
         Args:
             mlvl_mask_preds_x (list[Tensor]): Multi-level mask prediction
@@ -858,7 +868,7 @@ class DecoupledSOLOHead(SOLOHead):
                 and ``masks`` attributes.
             featmap_sizes (list[:obj:`torch.size`]): Size of each
                 feature map from feature pyramid, each element
-                means (feat_h, feat_w). Default: None.
+                means (feat_h, feat_w). Defaults to None.
 
         Returns:
             Tuple: Usually returns a tuple containing targets for predictions.
@@ -884,11 +894,12 @@ class DecoupledSOLOHead(SOLOHead):
 
         return mlvl_pos_mask_targets, mlvl_labels, mlvl_xy_pos_indexes
 
-    def get_results(self, mlvl_mask_preds_x: List[Tensor],
-                    mlvl_mask_preds_y: List[Tensor],
-                    mlvl_cls_scores: List[Tensor], batch_img_metas: List[dict],
-                    **kwargs) -> InstanceList:
-        """Get multi-image mask results.
+    def predict_by_feat(self, mlvl_mask_preds_x: List[Tensor],
+                        mlvl_mask_preds_y: List[Tensor],
+                        mlvl_cls_scores: List[Tensor],
+                        batch_img_metas: List[dict], **kwargs) -> InstanceList:
+        """Transform a batch of output features extracted from the head into
+        mask results.
 
         Args:
             mlvl_mask_preds_x (list[Tensor]): Multi-level mask prediction
@@ -938,7 +949,7 @@ class DecoupledSOLOHead(SOLOHead):
             mask_pred_list_y = torch.cat(mask_pred_list_y, dim=0)
             img_meta = batch_img_metas[img_id]
 
-            results = self._get_results_single(
+            results = self._predict_by_feat_single(
                 cls_pred_list,
                 mask_pred_list_x,
                 mask_pred_list_y,
@@ -946,13 +957,14 @@ class DecoupledSOLOHead(SOLOHead):
             results_list.append(results)
         return results_list
 
-    def _get_results_single(self,
-                            cls_scores: Tensor,
-                            mask_preds_x: Tensor,
-                            mask_preds_y: Tensor,
-                            img_meta: dict,
-                            cfg: OptConfigType = None) -> InstanceData:
-        """Get processed mask related results of single image.
+    def _predict_by_feat_single(self,
+                                cls_scores: Tensor,
+                                mask_preds_x: Tensor,
+                                mask_preds_y: Tensor,
+                                img_meta: dict,
+                                cfg: OptConfigType = None) -> InstanceData:
+        """Transform a single image's features extracted from the head into
+        mask results.
 
         Args:
             cls_scores (Tensor): Classification score of all points
@@ -1058,6 +1070,9 @@ class DecoupledSOLOHead(SOLOHead):
             kernel=cfg.kernel,
             sigma=cfg.sigma,
             filter_thr=cfg.filter_thr)
+        # mask_matrix_nms may return an empty Tensor
+        if len(keep_inds) == 0:
+            return empty_results(cls_scores, img_meta['ori_shape'][:2])
         mask_preds = mask_preds[keep_inds]
         mask_preds = F.interpolate(
             mask_preds.unsqueeze(0), size=upsampled_size,
@@ -1071,6 +1086,9 @@ class DecoupledSOLOHead(SOLOHead):
         results.masks = masks
         results.labels = labels
         results.scores = scores
+        # create an empty bbox in InstanceData to avoid bugs when
+        # calculating metrics.
+        results.bboxes = results.scores.new_zeros(len(scores), 4)
 
         return results
 
@@ -1082,7 +1100,7 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
 
     Args:
         with_dcn (bool): Whether use dcn in mask_convs and cls_convs,
-            default: False.
+            Defaults to False.
         init_cfg (dict or list[dict], optional): Initialization config dict.
     """
 

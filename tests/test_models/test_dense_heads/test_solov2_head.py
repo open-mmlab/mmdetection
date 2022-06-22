@@ -5,12 +5,10 @@ import numpy as np
 import torch
 from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
-from parameterized import parameterized
 
 from mmdet import *  # noqa
 from mmdet.core.mask import BitmapMasks
-from mmdet.models.dense_heads import (DecoupledSOLOHead,
-                                      DecoupledSOLOLightHead, SOLOHead)
+from mmdet.models.dense_heads import SOLOV2Head
 
 
 def _rand_masks(num_items, bboxes, img_w, img_h):
@@ -24,11 +22,20 @@ def _rand_masks(num_items, bboxes, img_w, img_h):
     return BitmapMasks(masks, height=img_h, width=img_w)
 
 
-class TestSOLOHead(TestCase):
+def _fake_mask_feature_head():
+    mask_feature_head = ConfigDict(
+        feat_channels=128,
+        start_level=0,
+        end_level=3,
+        out_channels=256,
+        mask_stride=4,
+        norm_cfg=dict(type='GN', num_groups=32, requires_grad=True))
+    return mask_feature_head
 
-    @parameterized.expand([(SOLOHead, ), (DecoupledSOLOHead, ),
-                           (DecoupledSOLOLightHead, )])
-    def test_mask_head_loss(self, MaskHead):
+
+class TestSOLOv2Head(TestCase):
+
+    def test_solov2_head_loss(self):
         """Tests mask head loss when truth is empty and non-empty."""
         s = 256
         img_metas = [{
@@ -38,7 +45,10 @@ class TestSOLOHead(TestCase):
             'batch_input_shape': (s, s, 3)
         }]
 
-        mask_head = MaskHead(num_classes=4, in_channels=1)
+        mask_feature_head = _fake_mask_feature_head()
+
+        mask_head = SOLOV2Head(
+            num_classes=4, in_channels=1, mask_feature_head=mask_feature_head)
 
         # SOLO head expects a multiple levels of features per image
         feats = []
@@ -89,7 +99,7 @@ class TestSOLOHead(TestCase):
         self.assertGreater(onegt_mask_loss.item(), 0,
                            'mask loss should be non-zero')
 
-    def test_solo_head_empty_result(self):
+    def test_solov2_head_empty_result(self):
         s = 256
         img_metas = {
             'img_shape': (s, s, 3),
@@ -98,45 +108,21 @@ class TestSOLOHead(TestCase):
             'batch_input_shape': (s, s, 3)
         }
 
-        mask_head = SOLOHead(num_classes=4, in_channels=1)
+        mask_feature_head = _fake_mask_feature_head()
+        mask_head = SOLOV2Head(
+            num_classes=4, in_channels=1, mask_feature_head=mask_feature_head)
 
+        kernel_preds = torch.empty(0, 128)
         cls_scores = torch.empty(0, 80)
-        mask_preds = torch.empty(0, 16, 16)
+        mask_feats = torch.empty(0, 16, 16)
         test_cfg = ConfigDict(
             score_thr=0.1,
             mask_thr=0.5,
         )
         results = mask_head._predict_by_feat_single(
+            kernel_preds=kernel_preds,
             cls_scores=cls_scores,
-            mask_preds=mask_preds,
-            img_meta=img_metas,
-            cfg=test_cfg)
-
-        self.assertIsInstance(results, InstanceData)
-        self.assertEqual(len(results), 0)
-
-    def test_decoupled_solo_head_empty_result(self):
-        s = 256
-        img_metas = {
-            'img_shape': (s, s, 3),
-            'ori_shape': (s, s, 3),
-            'scale_factor': 1,
-            'batch_input_shape': (s, s, 3)
-        }
-
-        mask_head = DecoupledSOLOHead(num_classes=4, in_channels=1)
-
-        cls_scores = torch.empty(0, 80)
-        mask_preds_x = torch.empty(0, 16, 16)
-        mask_preds_y = torch.empty(0, 16, 16)
-        test_cfg = ConfigDict(
-            score_thr=0.1,
-            mask_thr=0.5,
-        )
-        results = mask_head._predict_by_feat_single(
-            cls_scores=cls_scores,
-            mask_preds_x=mask_preds_x,
-            mask_preds_y=mask_preds_y,
+            mask_feats=mask_feats,
             img_meta=img_metas,
             cfg=test_cfg)
 

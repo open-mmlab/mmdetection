@@ -16,21 +16,25 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
         super().__init__(init_cfg=init_cfg)
 
     @abstractmethod
-    def loss(self, **kwargs):
-        """Compute losses of the head."""
+    def loss_by_feat(self, *args, **kwargs):
+        """Calculate the loss based on the features extracted by the mask
+        head."""
         pass
 
     @abstractmethod
-    def get_results(self, **kwargs):
-        """Transform network outputs of a batch into mask results."""
+    def predict_by_feat(self, *args, **kwargs):
+        """Transform a batch of output features extracted from the head into
+        mask results."""
         pass
 
-    def forward_train(self,
-                      x: Union[List[Tensor], Tuple[Tensor]],
-                      batch_data_samples: SampleList,
-                      positive_infos: OptSamplingResultList = None,
-                      **kwargs) -> dict:
-        """
+    def loss(self,
+             x: Union[List[Tensor], Tuple[Tensor]],
+             batch_data_samples: SampleList,
+             positive_infos: OptSamplingResultList = None,
+             **kwargs) -> dict:
+        """Perform forward propagation and loss calculation of the mask head on
+        the features of the upstream network.
+
         Args:
             x (list[Tensor] | tuple[Tensor]): Features from FPN.
                 Each has a shape (B, C, H, W).
@@ -71,30 +75,32 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
             else:
                 batch_gt_instances_ignore.append(None)
 
-        loss = self.loss(
+        losses = self.loss_by_feat(
             *outs,
             batch_gt_instances=batch_gt_instances,
             batch_img_metas=batch_img_metas,
             positive_infos=positive_infos,
             batch_gt_instances_ignore=batch_gt_instances_ignore,
             **kwargs)
-        return loss
+        return losses
 
-    def simple_test(self,
-                    x: Tuple[Tensor],
-                    batch_img_metas: List[dict],
-                    rescale: bool = False,
-                    results_list: OptInstanceList = None,
-                    **kwargs) -> InstanceList:
+    def predict(self,
+                x: Tuple[Tensor],
+                batch_data_samples: SampleList,
+                rescale: bool = False,
+                bbox_results_list: OptInstanceList = None,
+                **kwargs) -> InstanceList:
         """Test function without test-time augmentation.
 
         Args:
             x (tuple[Tensor]): Multi-level features from the
                 upstream network, each is a 4D-tensor.
-            batch_img_metas (list[dict]): List of image information.
+            batch_data_samples (List[:obj:`DetDataSample`]): The Data
+                Samples. It usually includes information such as
+                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
-            results_list (list[obj:``], optional): Detection
+            bbox_results_list (list[obj:`InstanceData`], optional): Detection
                 results of each image after the post process. Only exist
                 if there is a `bbox_head`, like `YOLACT`, `CondInst`, etc.
 
@@ -109,14 +115,16 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
                 - masks (Tensor): Processed mask results, has a
                   shape (num_instances, h, w).
         """
-        if results_list is None:
-            outs = self(x)
-        else:
-            outs = self(x, results_list=results_list)
-        results_list = self.get_results(
+        batch_img_metas = [
+            data_samples.metainfo for data_samples in batch_data_samples
+        ]
+
+        outs = self(x)
+        results_list = self.predict_by_feat(
             *outs,
             batch_img_metas=batch_img_metas,
             rescale=rescale,
-            results_list=results_list,
+            bbox_results_list=bbox_results_list,
             **kwargs)
+
         return results_list
