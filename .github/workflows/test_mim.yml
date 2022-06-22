@@ -44,4 +44,4 @@ jobs:
       - name: Build and install
         run: rm -rf .eggs && mim install -e .
       - name: test commands of mim
-        run: mim search mmdetection
+        run: mim search mmdet
