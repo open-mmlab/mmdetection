@@ -136,7 +136,6 @@ class CocoPanopticMetric(BaseMetric):
 
         image_infos = []
         annotations = []
-        instance_id = 1
         for gt_dict in gt_dicts:
             img_id = gt_dict['img_id']
             image_info = {
@@ -157,9 +156,9 @@ class CocoPanopticMetric(BaseMetric):
                 mask = pan_png == id
                 isthing = categories[label]['isthing']
                 if isthing:
-                    iscrowd = not segment_info['is_thing']
+                    iscrowd = 1 if not segment_info['is_thing'] else 0
                 else:
-                    iscrowd = False
+                    iscrowd = 0
 
                 new_segment_info = {
                     'id': id,
@@ -169,7 +168,6 @@ class CocoPanopticMetric(BaseMetric):
                     'area': mask.sum()
                 }
                 segments_info.append(new_segment_info)
-                instance_id += 1
 
             segm_file = image_info['file_name'].replace('jpg', 'png')
             annotation = dict(
@@ -224,7 +222,9 @@ class CocoPanopticMetric(BaseMetric):
         pan_json_results = dict(annotations=pred_annotations)
         json_filename = f'{outfile_prefix}.panoptic.json'
         dump(pan_json_results, json_filename)
-        return json_filename, self.seg_out_dir
+        return json_filename, (
+            self.seg_out_dir
+            if self.tmp_dir is None else tempfile.gettempdir())
 
     def process(self, data_batch: Sequence[dict],
                 predictions: Sequence[dict]) -> None:
@@ -238,15 +238,15 @@ class CocoPanopticMetric(BaseMetric):
             predictions (Sequence[dict]): A batch of outputs from
                 the model.
         """
-        if not osp.exists(self.seg_out_dir):
-            os.mkdir(self.seg_out_dir)
+        os.makedirs(self.seg_out_dir, exist_ok=True)
 
         for data, pred in zip(data_batch, predictions):
             # parse pred
             result = dict()
             img_id = data['data_sample']['img_id']
             result['img_id'] = img_id
-            pan = pred['pred_panoptic_seg'].cpu().numpy()
+            # shape (1, H, W) -> (H, W)
+            pan = pred['pred_panoptic_seg']['sem_seg'].cpu().numpy()[0]
             pan_labels = np.unique(pan)
             segments_info = []
             for pan_label in pan_labels:
@@ -267,11 +267,16 @@ class CocoPanopticMetric(BaseMetric):
             pan[pan %
                 INSTANCE_OFFSET == len(self.dataset_meta['CLASSES'])] = VOID
             pan = id2rgb(pan).astype(np.uint8)
-            # TODO Need to verify whether the file name has any
-            # effect on submitting
-            segm_file = f'{img_id:0<12d}.png'
+            segm_file = f'{img_id:0>12d}.png'
             mmcv.imwrite(pan[:, :, ::-1], osp.join(self.seg_out_dir,
                                                    segm_file))
+            # when use TemporaryDirectory, self.seg_out_dir is changing
+            # the pattern of self.seg_out_dir
+            # is '/tmp/lnr0zort/results.panoptic'
+            if self.tmp_dir is not None:
+                segm_file = osp.join(
+                    osp.basename(osp.dirname(self.seg_out_dir)),
+                    osp.basename(self.seg_out_dir), segm_file)
             result = {
                 'image_id': img_id,
                 'segments_info': segments_info,
@@ -285,7 +290,6 @@ class CocoPanopticMetric(BaseMetric):
             gt['height'] = data['data_sample']['ori_shape'][0]
             if self._coco_api is None:
                 gt['segments_info'] = data['data_sample']['segments_info']
-                gt['file_name'] = data['data_sample']['file_name']
                 gt['seg_map_path'] = data['data_sample']['seg_map_path']
 
             self.results.append((gt, result))

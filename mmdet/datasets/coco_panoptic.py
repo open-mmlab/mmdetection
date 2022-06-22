@@ -169,9 +169,6 @@ class CocoPanopticDataset(CocoDataset):
                  test_mode: bool = False,
                  lazy_init: bool = False,
                  max_refetch: int = 1000) -> None:
-        assert isinstance(data_prefix, dict) and \
-            data_prefix.get('seg', None) is not None, 'The prefix "seg" for' \
-            'panoptic segmentation map must not be None.'
         super().__init__(
             ann_file=ann_file,
             metainfo=metainfo,
@@ -196,12 +193,20 @@ class CocoPanopticDataset(CocoDataset):
         """
         img_info = raw_data_info['raw_img_info']
         ann_info = raw_data_info['raw_ann_info']
-
+        # filter out unmatched annotations which have
+        # same segment_id but belong to other image
+        ann_info = [
+            ann for ann in ann_info if ann['image_id'] == img_info['img_id']
+        ]
         data_info = {}
 
         img_path = osp.join(self.data_prefix['img'], img_info['file_name'])
-        seg_map_path = osp.join(self.data_prefix['seg'],
-                                img_info['file_name'].replace('jpg', 'png'))
+        if self.data_prefix.get('seg', None):
+            seg_map_path = osp.join(
+                self.data_prefix['seg'],
+                img_info['file_name'].replace('jpg', 'png'))
+        else:
+            seg_map_path = None
         data_info['img_path'] = img_path
         data_info['img_id'] = img_info['img_id']
         data_info['seg_map_path'] = seg_map_path
@@ -236,7 +241,8 @@ class CocoPanopticDataset(CocoDataset):
                 'is_thing': is_thing
             }
             segments_info.append(segment_info)
-            instances.append(instance)
+            if len(instance) > 0 and is_thing:
+                instances.append(instance)
         data_info['instances'] = instances
         data_info['segments_info'] = segments_info
         return data_info

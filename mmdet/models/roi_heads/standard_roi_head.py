@@ -424,8 +424,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     def predict_mask(self,
                      x: Tuple[Tensor],
                      batch_img_metas: List[dict],
-                     results_list: List[InstanceData],
-                     rescale: bool = False) -> List[InstanceData]:
+                     results_list: InstanceList,
+                     rescale: bool = False) -> InstanceList:
         """Perform forward propagation of the mask head and predict detection
         results on the features of the upstream network.
 

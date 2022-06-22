@@ -70,24 +70,30 @@ class COCOPanoptic(COCO):
         anns, cats, imgs = {}, {}, {}
         img_to_anns, cat_to_imgs = defaultdict(list), defaultdict(list)
         if 'annotations' in self.dataset:
-            for ann, img_info in zip(self.dataset['annotations'],
-                                     self.dataset['images']):
-                img_info['segm_file'] = ann['file_name']
+            for ann in self.dataset['annotations']:
                 for seg_ann in ann['segments_info']:
                     # to match with instance.json
                     seg_ann['image_id'] = ann['image_id']
-                    seg_ann['height'] = img_info['height']
-                    seg_ann['width'] = img_info['width']
                     img_to_anns[ann['image_id']].append(seg_ann)
                     # segment_id is not unique in coco dataset orz...
+                    # annotations from different images but
+                    # may have same segment_id
                     if seg_ann['id'] in anns.keys():
                         anns[seg_ann['id']].append(seg_ann)
                     else:
                         anns[seg_ann['id']] = [seg_ann]
 
+            # filter out annotations from other images
+            img_to_anns_ = defaultdict(list)
+            for k, v in img_to_anns.items():
+                img_to_anns_[k] = [x for x in v if x['image_id'] == k]
+            img_to_anns = img_to_anns_
+
         if 'images' in self.dataset:
-            for img in self.dataset['images']:
-                imgs[img['id']] = img
+            for img_info in self.dataset['images']:
+                img_info['segm_file'] = img_info['file_name'].replace(
+                    'jpg', 'png')
+                imgs[img_info['id']] = img_info
 
         if 'categories' in self.dataset:
             for cat in self.dataset['categories']:

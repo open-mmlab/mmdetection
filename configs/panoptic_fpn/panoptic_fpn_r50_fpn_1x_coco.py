@@ -3,15 +3,19 @@ _base_ = [
     '../_base_/datasets/coco_panoptic.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
-preprocess_cfg = dict(
-    mean=[123.675, 116.28, 103.53],
-    std=[58.395, 57.12, 57.375],
-    to_rgb=True,
-    pad_size_divisor=32)
 
 model = dict(
     type='PanopticFPN',
-    preprocess_cfg=preprocess_cfg,
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        bgr_to_rgb=True,
+        pad_size_divisor=32,
+        pad_mask=True,
+        mask_pad_value=0,
+        pad_seg=True,
+        seg_pad_value=255),
     semantic_head=dict(
         type='PanopticFPNHead',
         num_things_classes=80,

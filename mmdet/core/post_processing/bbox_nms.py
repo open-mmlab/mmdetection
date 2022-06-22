@@ -1,17 +1,23 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Optional, Tuple, Union
+
 import torch
 from mmcv.ops.nms import batched_nms
+from torch import Tensor
 
 from mmdet.core.bbox.iou_calculators import bbox_overlaps
+from mmdet.core.utils.typing import ConfigType
 
 
-def multiclass_nms(multi_bboxes,
-                   multi_scores,
-                   score_thr,
-                   nms_cfg,
-                   max_num=-1,
-                   score_factors=None,
-                   return_inds=False):
+def multiclass_nms(
+    multi_bboxes: Tensor,
+    multi_scores: Tensor,
+    score_thr: float,
+    nms_cfg: ConfigType,
+    max_num: int = -1,
+    score_factors: Optional[Tensor] = None,
+    return_inds: bool = False
+) -> Union[Tuple[Tensor, Tensor, Tensor], Tuple[Tensor, Tensor]]:
     """NMS for multi-class bboxes.
 
     Args:
@@ -20,7 +26,8 @@ def multiclass_nms(multi_bboxes,
             contains scores of the background class, but this will be ignored.
         score_thr (float): bbox threshold, bboxes with scores lower than it
             will not be considered.
-        nms_cfg (dict): a dict that contains the arguments of nms operations
+        nms_cfg (Union[:obj:`ConfigDict`, dict]): a dict that contains
+            the arguments of nms operations.
         max_num (int, optional): if there are more than max_num bboxes after
             NMS, only top max_num will be kept. Default to -1.
         score_factors (Tensor, optional): The factors multiplied to scores
@@ -29,7 +36,8 @@ def multiclass_nms(multi_bboxes,
             bboxes. Default to False.
 
     Returns:
-        tuple: (dets, labels, indices (optional)), tensors of shape (k, 5),
+        Union[Tuple[Tensor, Tensor, Tensor], Tuple[Tensor, Tensor]]:
+            (dets, labels, indices (optional)), tensors of shape (k, 5),
             (k), and (k). Dets are boxes with scores. Labels are 0-based.
     """
     num_classes = multi_scores.size(1) - 1
@@ -95,13 +103,15 @@ def multiclass_nms(multi_bboxes,
         return dets, labels[keep]
 
 
-def fast_nms(multi_bboxes,
-             multi_scores,
-             multi_coeffs,
-             score_thr,
-             iou_thr,
-             top_k,
-             max_num=-1):
+def fast_nms(
+    multi_bboxes: Tensor,
+    multi_scores: Tensor,
+    multi_coeffs: Tensor,
+    score_thr: float,
+    iou_thr: float,
+    top_k: int,
+    max_num: int = -1
+) -> Union[Tuple[Tensor, Tensor, Tensor], Tuple[Tensor, Tensor]]:
     """Fast NMS in `YOLACT <https://arxiv.org/abs/1904.02689>`_.
 
     Fast NMS allows already-removed detections to suppress other detections so
@@ -124,7 +134,8 @@ def fast_nms(multi_bboxes,
             Default: -1.
 
     Returns:
-        tuple: (dets, labels, coefficients), tensors of shape (k, 5), (k, 1),
+        Union[Tuple[Tensor, Tensor, Tensor], Tuple[Tensor, Tensor]]:
+            (dets, labels, coefficients), tensors of shape (k, 5), (k, 1),
             and (k, coeffs_dim). Dets are boxes with scores.
             Labels are 0-based.
     """
