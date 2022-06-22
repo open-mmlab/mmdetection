@@ -125,7 +125,9 @@ class TestCocoPanopticMetric(unittest.TestCase):
             pred[y:y + h, x:x + w] = (i + 1) * INSTANCE_OFFSET + pred_labels[i]
 
         predictions = [{
-            'pred_panoptic_seg': torch.from_numpy(pred),
+            'pred_panoptic_seg': {
+                'sem_seg': torch.from_numpy(pred).unsqueeze(0)
+            },
         }]
 
         return predictions

@@ -107,7 +107,8 @@ class PackDetInputs(BaseTransform):
             data_sample.proposals = InstanceData(bboxes=results['proposals'])
 
         if 'gt_seg_map' in results:
-            gt_sem_seg_data = dict(sem_seg=results['gt_seg_map'][None, ...])
+            gt_sem_seg_data = dict(
+                sem_seg=to_tensor(results['gt_seg_map'][None, ...].copy()))
             data_sample.gt_sem_seg = PixelData(**gt_sem_seg_data)
 
         img_meta = {}
@@ -220,7 +221,7 @@ class Transpose:
 
     def __repr__(self):
         return self.__class__.__name__ + \
-               f'(keys={self.keys}, order={self.order})'
+            f'(keys={self.keys}, order={self.order})'
 
 
 @TRANSFORMS.register_module()

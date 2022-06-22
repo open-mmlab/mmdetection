@@ -171,13 +171,6 @@ class TestCocoPanopticDataset(unittest.TestCase):
     def tearDown(self):
         os.remove(self.json_name)
 
-    def test_init(self):
-        with self.assertRaises(AssertionError):
-            CocoPanopticDataset(data_prefix=None)
-
-        with self.assertRaises(AssertionError):
-            CocoPanopticDataset(data_prefix=dict(seg=None))
-
     def test_coco_panoptic_dataset(self):
         dataset = CocoPanopticDataset(
             ann_file=self.json_name,

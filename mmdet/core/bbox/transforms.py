@@ -1,11 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Optional, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
+from torch import Tensor
 
 
-def find_inside_bboxes(bboxes, img_h, img_w):
+def find_inside_bboxes(bboxes: Tensor, img_h: int, img_w: int) -> Tensor:
     """Find bboxes as long as a part of bboxes is inside the image.
 
     Args:
@@ -21,12 +22,14 @@ def find_inside_bboxes(bboxes, img_h, img_w):
     return inside_inds
 
 
-def bbox_flip(bboxes, img_shape, direction='horizontal'):
+def bbox_flip(bboxes: Tensor,
+              img_shape: Tuple[int],
+              direction: str = 'horizontal') -> Tensor:
     """Flip bboxes horizontally or vertically.
 
     Args:
         bboxes (Tensor): Shape (..., 4*k)
-        img_shape (tuple): Image shape.
+        img_shape (Tuple[int]): Image shape.
         direction (str): Flip direction, options are "horizontal", "vertical",
             "diagonal". Default: "horizontal"
 
@@ -50,11 +53,11 @@ def bbox_flip(bboxes, img_shape, direction='horizontal'):
     return flipped
 
 
-def bbox_mapping(bboxes,
-                 img_shape,
-                 scale_factor,
-                 flip,
-                 flip_direction='horizontal'):
+def bbox_mapping(bboxes: Tensor,
+                 img_shape: Tuple[int],
+                 scale_factor: Union[float, Tuple[float]],
+                 flip: bool,
+                 flip_direction: str = 'horizontal') -> Tensor:
     """Map bboxes from the original image scale to testing scale."""
     new_bboxes = bboxes * bboxes.new_tensor(scale_factor)
     if flip:
@@ -62,11 +65,11 @@ def bbox_mapping(bboxes,
     return new_bboxes
 
 
-def bbox_mapping_back(bboxes,
-                      img_shape,
-                      scale_factor,
-                      flip,
-                      flip_direction='horizontal'):
+def bbox_mapping_back(bboxes: Tensor,
+                      img_shape: Tuple[int],
+                      scale_factor: Union[float, Tuple[float]],
+                      flip: bool,
+                      flip_direction: str = 'horizontal') -> Tensor:
     """Map bboxes from testing scale to original image scale."""
     new_bboxes = bbox_flip(bboxes, img_shape,
                            flip_direction) if flip else bboxes
@@ -74,11 +77,11 @@ def bbox_mapping_back(bboxes,
     return new_bboxes.view(bboxes.shape)
 
 
-def bbox2roi(bbox_list):
+def bbox2roi(bbox_list: List[Tensor]) -> Tensor:
     """Convert a list of bboxes to roi format.
 
     Args:
-        bbox_list (list[Tensor]): a list of bboxes corresponding to a batch
+        bbox_list (List[Tensor]): a list of bboxes corresponding to a batch
             of images.
 
     Returns:
@@ -96,15 +99,15 @@ def bbox2roi(bbox_list):
     return rois
 
 
-def roi2bbox(rois):
+def roi2bbox(rois: Tensor) -> List[Tensor]:
     """Convert rois to bounding box format.
 
     Args:
-        rois (torch.Tensor): RoIs with the shape (n, 5) where the first
+        rois (Tensor): RoIs with the shape (n, 5) where the first
             column indicates batch id of each RoI.
 
     Returns:
-        list[torch.Tensor]: Converted boxes of corresponding rois.
+        List[Tensor]: Converted boxes of corresponding rois.
     """
     bbox_list = []
     img_ids = torch.unique(rois[:, 0].cpu(), sorted=True)
@@ -115,16 +118,19 @@ def roi2bbox(rois):
     return bbox_list
 
 
-def bbox2result(bboxes, labels, num_classes):
+# TODO remove later
+def bbox2result(bboxes: Union[Tensor, np.ndarray], labels: Union[Tensor,
+                                                                 np.ndarray],
+                num_classes: int) -> List[np.ndarray]:
     """Convert detection results to a list of numpy arrays.
 
     Args:
-        bboxes (torch.Tensor | np.ndarray): shape (n, 5)
-        labels (torch.Tensor | np.ndarray): shape (n, )
+        bboxes (Tensor | np.ndarray): shape (n, 5)
+        labels (Tensor | np.ndarray): shape (n, )
         num_classes (int): class number, including background class
 
     Returns:
-        list(ndarray): bbox results of each class
+        List(np.ndarray]): bbox results of each class
     """
     if bboxes.shape[0] == 0:
         return [np.zeros((0, 5), dtype=np.float32) for i in range(num_classes)]
@@ -135,15 +141,20 @@ def bbox2result(bboxes, labels, num_classes):
         return [bboxes[labels == i, :] for i in range(num_classes)]
 
 
-def distance2bbox(points, distance, max_shape=None):
+def distance2bbox(
+    points: Tensor,
+    distance: Tensor,
+    max_shape: Optional[Union[Sequence[int], Tensor,
+                              Sequence[Sequence[int]]]] = None
+) -> Tensor:
     """Decode distance prediction to bounding box.
 
     Args:
         points (Tensor): Shape (B, N, 2) or (N, 2).
         distance (Tensor): Distance from the given point to 4
             boundaries (left, top, right, bottom). Shape (B, N, 4) or (N, 4)
-        max_shape (Sequence[int] or torch.Tensor or Sequence[
-            Sequence[int]],optional): Maximum bounds for boxes, specifies
+        max_shape (Union[Sequence[int], Tensor, Sequence[Sequence[int]]],
+            optional): Maximum bounds for boxes, specifies
             (H, W, C) or (H, W). If priors shape is (B, N, 4), then
             the max_shape should be a Sequence[Sequence[int]]
             and the length of max_shape should also be B.
@@ -188,13 +199,16 @@ def distance2bbox(points, distance, max_shape=None):
     return bboxes
 
 
-def bbox2distance(points, bbox, max_dis=None, eps=0.1):
+def bbox2distance(points: Tensor,
+                  bbox: Tensor,
+                  max_dis: Optional[float] = None,
+                  eps: float = 0.1) -> Tensor:
     """Decode bounding box based on distances.
 
     Args:
         points (Tensor): Shape (n, 2), [x, y].
         bbox (Tensor): Shape (n, 4), "xyxy" format
-        max_dis (float): Upper bound of the distance.
+        max_dis (float, optional): Upper bound of the distance.
         eps (float): a small value to ensure target < max_dis, instead <=
 
     Returns:
@@ -212,7 +226,7 @@ def bbox2distance(points, bbox, max_dis=None, eps=0.1):
     return torch.stack([left, top, right, bottom], -1)
 
 
-def bbox_rescale(bboxes, scale_factor=1.0):
+def bbox_rescale(bboxes: Tensor, scale_factor: float = 1.0) -> Tensor:
     """Rescale bounding box w.r.t. scale_factor.
 
     Args:
@@ -244,7 +258,7 @@ def bbox_rescale(bboxes, scale_factor=1.0):
     return rescaled_bboxes
 
 
-def bbox_cxcywh_to_xyxy(bbox):
+def bbox_cxcywh_to_xyxy(bbox: Tensor) -> Tensor:
     """Convert bbox coordinates from (cx, cy, w, h) to (x1, y1, x2, y2).
 
     Args:
@@ -258,7 +272,7 @@ def bbox_cxcywh_to_xyxy(bbox):
     return torch.cat(bbox_new, dim=-1)
 
 
-def bbox_xyxy_to_cxcywh(bbox):
+def bbox_xyxy_to_cxcywh(bbox: Tensor) -> Tensor:
     """Convert bbox coordinates from (x1, y1, x2, y2) to (cx, cy, w, h).
 
     Args:

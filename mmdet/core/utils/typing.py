@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 from mmengine.config import ConfigDict
-from mmengine.data import InstanceData
+from mmengine.data import InstanceData, PixelData
 
 from ..bbox.samplers import SamplingResult
 from ..data_structures import DetDataSample
@@ -18,6 +18,9 @@ OptMultiConfig = Optional[MultiConfig]
 
 InstanceList = List[InstanceData]
 OptInstanceList = Optional[InstanceList]
+
+PixelList = List[PixelData]
+OptPixelList = Optional[PixelList]
 
 SampleList = List[DetDataSample]
 OptSampleList = Optional[SampleList]

@@ -4,7 +4,6 @@ import warnings
 from typing import Tuple
 
 import torch
-from mmengine.data import InstanceData
 from torch import Tensor
 
 from mmdet.core.utils import (ConfigType, OptConfigType, OptMultiConfig,
@@ -131,7 +130,7 @@ class TwoStageDetector(BaseDetector):
         Args:
             batch_inputs (Tensor): Input images of shape (N, C, H, W).
                 These should usually be mean centered and std scaled.
-            batch_data_samples (list[:obj:`DetDataSample`]): The batch
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
                 data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
 
@@ -224,16 +223,4 @@ class TwoStageDetector(BaseDetector):
         # connvert to DetDataSample
         results_list = self.convert_to_datasample(results_list)
 
-        return results_list
-
-
-# TODO: remove this after finish refactor TwoStagePanopticSegmentor
-def results2proposal(results_list):
-    if isinstance(results_list[0], InstanceData):
-        proposal_list = []
-        for results in results_list:
-            proposal_list.append(
-                torch.cat([results.bboxes, results.scores[:, None]], dim=-1))
-        return proposal_list
-    else:
         return results_list

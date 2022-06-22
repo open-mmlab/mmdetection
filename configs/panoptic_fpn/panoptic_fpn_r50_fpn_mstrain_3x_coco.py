@@ -9,9 +9,8 @@ train_pipeline = [
         with_bbox=True,
         with_mask=True,
         with_seg=True),
-    dict(type='RandomResize', img_scale=[(1333, 640), (1333, 800)]),
+    dict(type='RandomResize', scale=[(1333, 640), (1333, 800)]),
     dict(type='RandomFlip', prob=0.5),
-    dict(type='SegRescale', scale_factor=1 / 4),
     dict(type='PackDetInputs')
 ]
 train_dataloader = dict(dataset=dict(pipeline=train_pipeline))

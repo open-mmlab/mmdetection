@@ -6,8 +6,8 @@ from .misc import (center_of_mass, filter_scores_and_topk, flip_tensor,
                    multi_apply, select_single_mlvl, unmap)
 from .typing import (ConfigType, ForwardResults, InstanceList, MultiConfig,
                      OptConfigType, OptInstanceList, OptMultiConfig,
-                     OptSampleList, OptSamplingResultList, SampleList,
-                     SamplingResultList)
+                     OptPixelList, OptSampleList, OptSamplingResultList,
+                     PixelList, SampleList, SamplingResultList)
 
 __all__ = [
     'allreduce_grads', 'DistOptimizerHook', 'reduce_mean', 'multi_apply',
@@ -16,5 +16,6 @@ __all__ = [
     'filter_scores_and_topk', 'sync_random_seed', 'levels_to_images',
     'ConfigType', 'OptConfigType', 'MultiConfig', 'OptMultiConfig',
     'InstanceList', 'OptInstanceList', 'SampleList', 'OptSampleList',
-    'SamplingResultList', 'ForwardResults', 'OptSamplingResultList'
+    'SamplingResultList', 'ForwardResults', 'OptSamplingResultList',
+    'PixelList', 'OptPixelList'
 ]

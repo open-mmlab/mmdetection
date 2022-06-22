@@ -12,10 +12,9 @@ file_client_args = dict(backend='disk')
 
 train_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
-    dict(type='LoadPanopticAnnotations'),
+    dict(type='LoadPanopticAnnotations', file_client_args=file_client_args),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
-    dict(type='SegRescale', scale_factor=1 / 4),
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
@@ -37,8 +36,8 @@ train_dataloader = dict(
         type=dataset_type,
         data_root=data_root,
         ann_file='annotations/panoptic_train2017.json',
-        seg_prefix=data_root + 'annotations/panoptic_train2017/',
-        data_prefix=dict(img='train2017/'),
+        data_prefix=dict(
+            img='train2017/', seg='annotations/panoptic_train2017/'),
         filter_cfg=dict(filter_empty_gt=True, min_size=32),
         pipeline=train_pipeline))
 val_dataloader = dict(
@@ -51,8 +50,7 @@ val_dataloader = dict(
         type=dataset_type,
         data_root=data_root,
         ann_file='annotations/panoptic_val2017.json',
-        seg_prefix=data_root + 'annotations/panoptic_val2017/',
-        data_prefix=dict(img='val2017/'),
+        data_prefix=dict(img='val2017/', seg='annotations/panoptic_val2017/'),
         test_mode=True,
         pipeline=test_pipeline))
 test_dataloader = val_dataloader
@@ -61,11 +59,25 @@ val_evaluator = dict(
     type='CocoPanopticMetric',
     ann_file=data_root + 'annotations/panoptic_val2017.json',
     seg_prefix=data_root + 'annotations/panoptic_val2017/',
-    metric='PQ')
+)
 test_evaluator = val_evaluator
 
-# TODO add setting on test dataset after panoptic fpn
 # inference on test dataset and
 # format the output results for submission.
-# test_dataloader = None
-# test_evaluator = None
+# test_dataloader = dict(
+#     batch_size=1,
+#     num_workers=1,
+#     persistent_workers=True,
+#     drop_last=False,
+#     sampler=dict(type='DefaultSampler', shuffle=False),
+#     dataset=dict(
+#         type=dataset_type,
+#         data_root=data_root,
+#         ann_file='annotations/panoptic_image_info_test-dev2017.json',
+#         data_prefix=dict(img='test2017/', seg=None),
+#         test_mode=True,
+#         pipeline=test_pipeline))
+# test_evaluator = dict(
+#     type='CocoPanopticMetric',
+#     format_only=True,
+#     outfile_prefix='./work_dirs/coco_panoptic/test')

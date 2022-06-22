@@ -72,6 +72,7 @@ def demo_mm_inputs(batch_size=2,
                    image_shapes=(3, 128, 128),
                    num_items=None,
                    num_classes=10,
+                   sem_seg_output_strides=1,
                    with_mask=False,
                    with_semantic=False):
     """Create a superset of inputs needed to run test or train batches.
@@ -157,7 +158,10 @@ def demo_mm_inputs(batch_size=2,
             # assume gt_semantic_seg using scale 1/8 of the img
             gt_semantic_seg = torch.from_numpy(
                 np.random.randint(
-                    0, num_classes, (1, h // 8, w // 8), dtype=np.uint8))
+                    0,
+                    num_classes, (1, h // sem_seg_output_strides,
+                                  w // sem_seg_output_strides),
+                    dtype=np.uint8))
             gt_sem_seg_data = dict(sem_seg=gt_semantic_seg)
             data_sample.gt_sem_seg = PixelData(**gt_sem_seg_data)
 
