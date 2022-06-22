@@ -19,3 +19,20 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 PORT=10004 tools/dist_train.sh configs2/VisDrone/lk
   --work-dir ../VisDrone_cache/lka_fpn/${CONFIG}/slice_640x640_lr${LR}_1x_${GPU}g/ \
   --cfg-options optimizer.lr=${LR} data.samples_per_gpu=4
 
+# Epoch(val) [12][137]   bbox_mAP: 0.1140, bbox_mAP_50: 0.2680, bbox_mAP_75: 0.0830, bbox_mAP_s: 0.0810, bbox_mAP_m: 0.1550, bbox_mAP_l: 0.1610,
+# bbox_mAP_copypaste: 0.114 0.268 0.083 0.081 0.155 0.161
+# 看起来还算正常，难道是因为数据集太小的原因？
+export GPU=4 && LR=0.16 && CONFIG="faster_rcnn_r18_lka_fpn_1x_VisDrone640"
+tools/dist_train.sh configs2/VisDrone/lka_fpn/${CONFIG}.py $GPU \
+  --work-dir ../VisDrone_cache/lka_fpn/${CONFIG}/slice_640x640_lr${LR}_1x_${GPU}g/ \
+  --cfg-options optimizer.lr=${LR} data.samples_per_gpu=16
+
+#  Epoch(val) [12][137]   bbox_mAP: 0.1030, bbox_mAP_50: 0.2490, bbox_mAP_75: 0.0730, bbox_mAP_s: 0.0750, bbox_mAP_m: 0.1400, bbox_mAP_l: 0.1450,
+#  bbox_mAP_copypaste: 0.103 0.249 0.073 0.075 0.140 0.145
+#  看起来不用额外调参了
+export GPU=4 && LR=0.08 && CONFIG="faster_rcnn_r18_lka_fpn_1x_VisDrone640"
+tools/dist_train.sh configs2/VisDrone/lka_fpn/${CONFIG}.py $GPU \
+  --work-dir ../VisDrone_cache/lka_fpn/${CONFIG}/slice_640x640_lr${LR}_1x_${GPU}g/ \
+  --cfg-options optimizer.lr=${LR} data.samples_per_gpu=16
+
+
