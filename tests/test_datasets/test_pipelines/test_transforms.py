@@ -7,6 +7,7 @@ import mmcv
 import numpy as np
 from mmcv.transforms import LoadImageFromFile
 
+from mmdet.core import bbox_project
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.core.mask import BitmapMasks
 from mmdet.datasets.pipelines import (CopyPaste, CutOut, Expand,
@@ -30,12 +31,13 @@ class TestResize(unittest.TestCase):
         self.data_info1 = dict(
             img=np.random.random((1333, 800, 3)),
             gt_seg_map=np.random.random((1333, 800, 3)),
-            gt_bboxes=np.array([[0, 0, 112, 112]]),
+            gt_bboxes=np.array([[0, 0, 112, 112]], dtype=np.float32),
             gt_masks=BitmapMasks(
                 rng.rand(1, 1333, 800), height=1333, width=800))
         self.data_info2 = dict(
             img=np.random.random((300, 400, 3)),
-            gt_bboxes=np.array([[200, 150, 600, 450]]))
+            gt_bboxes=np.array([[200, 150, 600, 450]]),
+            dtype=np.float32)
         self.data_info3 = dict(img=np.random.random((300, 400, 3)))
 
     def test_resize(self):
@@ -66,6 +68,13 @@ class TestResize(unittest.TestCase):
         results = transform(self.data_info3)
         self.assertTupleEqual(results['img'].shape[:2], (150, 200))
 
+        # test geometric transformation with homography matrix
+        transform = Resize(scale_factor=(1.5, 2))
+        results = transform(copy.deepcopy(self.data_info1))
+        self.assertTrue((bbox_project(
+            copy.deepcopy(self.data_info1['gt_bboxes']),
+            results['homography_matrix']) == results['gt_bboxes']).all())
+
     def test_repr(self):
         transform = Resize(scale=(2000, 2000), keep_ratio=True)
         self.assertEqual(
@@ -86,7 +95,7 @@ class TestRandomFlip(unittest.TestCase):
         rng = np.random.RandomState(0)
         self.results1 = {
             'img': np.random.random((224, 224, 3)),
-            'gt_bboxes': np.array([[0, 1, 100, 101]]),
+            'gt_bboxes': np.array([[0, 1, 100, 101]], dtype=np.float32),
             'gt_masks':
             BitmapMasks(rng.rand(1, 224, 224), height=224, width=224),
             'gt_seg_map': np.random.random((224, 224))
@@ -106,6 +115,32 @@ class TestRandomFlip(unittest.TestCase):
         results_update = transform.transform(copy.deepcopy(self.results2))
         self.assertTrue(
             (results_update['img'] == self.results2['img'][:, ::-1]).all())
+
+        # test geometric transformation with homography matrix
+        # (1) Horizontal Flip
+        transform = RandomFlip(1.0)
+        results_update = transform.transform(copy.deepcopy(self.results1))
+        bboxes = copy.deepcopy(self.results1['gt_bboxes'])
+        self.assertTrue((bbox_project(
+            bboxes,
+            results_update['homography_matrix']) == results_update['gt_bboxes']
+                         ).all())
+        # (2) Vertical Flip
+        transform = RandomFlip(1.0, direction='vertical')
+        results_update = transform.transform(copy.deepcopy(self.results1))
+        bboxes = copy.deepcopy(self.results1['gt_bboxes'])
+        self.assertTrue((bbox_project(
+            bboxes,
+            results_update['homography_matrix']) == results_update['gt_bboxes']
+                         ).all())
+        # (3) Diagonal Flip
+        transform = RandomFlip(1.0, direction='diagonal')
+        results_update = transform.transform(copy.deepcopy(self.results1))
+        bboxes = copy.deepcopy(self.results1['gt_bboxes'])
+        self.assertTrue((bbox_project(
+            bboxes,
+            results_update['homography_matrix']) == results_update['gt_bboxes']
+                         ).all())
 
     def test_repr(self):
         transform = RandomFlip(0.1)
@@ -382,6 +417,11 @@ class TestRandomCrop(unittest.TestCase):
         self.assertEqual(results['gt_bboxes_labels'].shape[0], 2)
         self.assertEqual(results['gt_ignore_flags'].shape[0], 2)
         self.assertTupleEqual(results['gt_seg_map'].shape[:2], (5, 5))
+
+        # test geometric transformation with homography matrix
+        bboxes = copy.deepcopy(src_results['gt_bboxes'])
+        self.assertTrue((bbox_project(bboxes, results['homography_matrix'],
+                                      (5, 5)) == results['gt_bboxes']).all())
 
         # test recompute_bbox = True
         gt_masks_ = np.zeros((2, 10, 10), np.uint8)
