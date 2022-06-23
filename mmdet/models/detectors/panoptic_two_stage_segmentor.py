@@ -313,7 +313,7 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         results = results + (roi_outs)
 
         # semantic_head
-        sem_outs = self.semantic_head._forward(x)
+        sem_outs = self.semantic_head.forward(x)
         results = results + (sem_outs['seg_preds'], )
 
         return results

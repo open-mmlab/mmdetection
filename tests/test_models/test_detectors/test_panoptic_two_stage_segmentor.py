@@ -123,9 +123,9 @@ class TestTwoStagePanopticSegmentor(unittest.TestCase):
             for data_sample in batch_data_samples
         ]
         x = detector.extract_feat(batch_inputs)
-        mask_results = detector.predict_mask(
+        mask_results = detector._predict_mask(
             x, batch_img_metas, det_bboxes, det_labels, rescale=True)
         self.assertIsInstance(mask_results, dict)
-        mask_results = detector.predict_mask(
+        mask_results = detector._predict_mask(
             x, batch_img_metas, det_bboxes, det_labels, rescale=False)
         self.assertIsInstance(mask_results, dict)
