@@ -67,6 +67,7 @@ class Resize(MMCV_Resize):
     - scale
     - scale_factor
     - keep_ratio
+    - homography_matrix
 
     Args:
         scale (int or tuple): Images scales for resizing. Defaults to None
@@ -126,6 +127,17 @@ class Resize(MMCV_Resize):
                     backend=self.backend)
             results['gt_seg_map'] = gt_seg
 
+    def _record_homography_matrix(self, results: dict) -> None:
+        """Record the homography matrix for the Resize."""
+        w_scale, h_scale = results['scale_factor']
+        homography_matrix = np.array(
+            [[w_scale, 0, 0], [0, h_scale, 0], [0, 0, 1]], dtype=np.float32)
+        if results.get('homography_matrix', None) is None:
+            results['homography_matrix'] = homography_matrix
+        else:
+            results['homography_matrix'] = homography_matrix @ results[
+                'homography_matrix']
+
     def transform(self, results: dict) -> dict:
         """Transform function to resize images, bounding boxes and semantic
         segmentation map.
@@ -147,6 +159,7 @@ class Resize(MMCV_Resize):
         self._resize_bboxes(results)
         self._resize_masks(results)
         self._resize_seg(results)
+        self._record_homography_matrix(results)
         return results
 
     def __repr__(self) -> str:
@@ -202,6 +215,7 @@ class RandomFlip(MMCV_RandomFlip):
 
     - flip
     - flip_direction
+    - homography_matrix
 
 
     Args:
@@ -212,6 +226,29 @@ class RandomFlip(MMCV_RandomFlip):
              element in ``prob`` indicates the flip probability of
              corresponding direction. Defaults to 'horizontal'.
     """
+
+    def _record_homography_matrix(self, results: dict) -> None:
+        """Record the homography matrix for the RandomFlip."""
+        cur_dir = results['flip_direction']
+        h, w = results['img'].shape[:2]
+
+        if cur_dir == 'horizontal':
+            homography_matrix = np.array([[-1, 0, w], [0, 1, 0], [0, 0, 1]],
+                                         dtype=np.float32)
+        elif cur_dir == 'vertical':
+            homography_matrix = np.array([[1, 0, 0], [0, -1, h], [0, 0, 1]],
+                                         dtype=np.float32)
+        elif cur_dir == 'diagonal':
+            homography_matrix = np.array([[-1, 0, w], [0, -1, h], [0, 0, 1]],
+                                         dtype=np.float32)
+        else:
+            homography_matrix = np.eye(3, dtype=np.float32)
+
+        if results.get('homography_matrix', None) is None:
+            results['homography_matrix'] = homography_matrix
+        else:
+            results['homography_matrix'] = homography_matrix @ results[
+                'homography_matrix']
 
     def _flip(self, results: dict) -> None:
         """Flip images, bounding boxes, and semantic segmentation map."""
@@ -236,6 +273,9 @@ class RandomFlip(MMCV_RandomFlip):
         if results.get('gt_seg_map', None) is not None:
             results['gt_seg_map'] = mmcv.imflip(
                 results['gt_seg_map'], direction=results['flip_direction'])
+
+        # record homography matrix for flip
+        self._record_homography_matrix(results)
 
 
 @TRANSFORMS.register_module()
@@ -478,6 +518,10 @@ class RandomCrop(BaseTransform):
     - gt_ignore_flags (optional)
     - gt_seg_map (optional)
 
+    Added Keys:
+
+    - homography_matrix
+
     Args:
         crop_size (tuple): The relative ratio or absolute pixels of
             height and width.
@@ -557,6 +601,16 @@ class RandomCrop(BaseTransform):
         offset_h, offset_w = self._rand_offset((margin_h, margin_w))
         crop_y1, crop_y2 = offset_h, offset_h + crop_size[0]
         crop_x1, crop_x2 = offset_w, offset_w + crop_size[1]
+
+        # Record the homography matrix for the RandomCrop
+        homography_matrix = np.array(
+            [[1, 0, -offset_w], [0, 1, -offset_h], [0, 0, 1]],
+            dtype=np.float32)
+        if results.get('homography_matrix', None) is None:
+            results['homography_matrix'] = homography_matrix
+        else:
+            results['homography_matrix'] = homography_matrix @ results[
+                'homography_matrix']
 
         # crop the image
         img = img[crop_y1:crop_y2, crop_x1:crop_x2, ...]
