@@ -6,7 +6,7 @@ import mmcv
 import torch
 import torch.nn as nn
 
-from mmdet.core import bbox_overlaps
+from mmdet.core import alpha_bbox_overlaps, bbox_overlaps
 from ..builder import LOSSES
 from .utils import weighted_loss
 
@@ -307,6 +307,16 @@ def alphaiou_loss(pred, target, alpha=3, eps=1e-9, mode='iou'):
         return loss
 
 
+@weighted_loss
+def alphaiou_loss_v2(pred, target, alpha=3, eps=1e-9, mode='iou'):
+    assert mode in ['iou', 'iof', 'giou']
+    ious = alpha_bbox_overlaps(
+        pred, target, mode, alpha=alpha, is_aligned=True,
+        eps=eps).clamp(min=eps)
+    loss = 1 - ious
+    return loss
+
+
 @LOSSES.register_module()
 class IoULoss(nn.Module):
     """IoULoss.
@@ -580,7 +590,7 @@ class AlphaIoULoss(nn.Module):
             # giou_loss of shape (n,)
             assert weight.shape == pred.shape
             weight = weight.mean(-1)
-        loss = self.loss_weight * alphaiou_loss(
+        loss = self.loss_weight * alphaiou_loss_v2(
             pred,
             target,
             weight,
