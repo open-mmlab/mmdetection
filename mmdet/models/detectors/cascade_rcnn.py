@@ -16,7 +16,7 @@ class CascadeRCNN(TwoStageDetector):
                  roi_head: OptConfigType = None,
                  train_cfg: OptConfigType = None,
                  test_cfg: OptConfigType = None,
-                 preprocess_cfg: OptConfigType = None,
+                 data_preprocessor: OptConfigType = None,
                  init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
             backbone=backbone,
@@ -25,27 +25,5 @@ class CascadeRCNN(TwoStageDetector):
             roi_head=roi_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
-            init_cfg=init_cfg,
-            preprocess_cfg=preprocess_cfg)
-
-    # TODO: Currently not supported
-    def show_result(self, data, result, **kwargs):
-        """Show prediction results of the detector.
-
-        Args:
-            data (str or np.ndarray): Image filename or loaded image.
-            result (Tensor or tuple): The results to draw over `img`
-                bbox_result or (bbox_result, segm_result).
-
-        Returns:
-            np.ndarray: The image with bboxes drawn on it.
-        """
-        if self.with_mask:
-            ms_bbox_result, ms_segm_result = result
-            if isinstance(ms_bbox_result, dict):
-                result = (ms_bbox_result['ensemble'],
-                          ms_segm_result['ensemble'])
-        else:
-            if isinstance(result, dict):
-                result = result['ensemble']
-        return super(CascadeRCNN, self).show_result(data, result, **kwargs)
+            data_preprocessor=data_preprocessor,
+            init_cfg=init_cfg)

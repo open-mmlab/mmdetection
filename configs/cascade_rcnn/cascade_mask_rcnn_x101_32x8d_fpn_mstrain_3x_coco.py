@@ -1,15 +1,14 @@
 _base_ = './cascade_mask_rcnn_r50_fpn_mstrain_3x_coco.py'
 
-preprocess_cfg = dict(
-    mean=[103.530, 116.280, 123.675],
-    std=[57.375, 57.120, 58.395],
-    to_rgb=False,
-    pad_size_divisor=32)
-
 model = dict(
     # ResNeXt-101-32x8d model trained with Caffe2 at FB,
     # so the mean and std need to be changed.
-    preprocess_cfg=preprocess_cfg,
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[103.530, 116.280, 123.675],
+        std=[57.375, 57.120, 58.395],
+        to_rgb=False,
+        pad_size_divisor=32),
     backbone=dict(
         type='ResNeXt',
         depth=101,

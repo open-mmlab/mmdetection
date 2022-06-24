@@ -7,6 +7,7 @@ from torch import Tensor
 
 from mmdet.core.utils import (InstanceList, OptInstanceList, OptMultiConfig,
                               OptSamplingResultList, SampleList)
+from ..utils.misc import unpack_gt_instances
 
 
 class BaseMaskHead(BaseModule, metaclass=ABCMeta):
@@ -60,20 +61,14 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
         assert isinstance(outs, tuple), 'Forward results should be a tuple, ' \
                                         'even if only one item is returned'
 
-        batch_gt_instances = []
-        batch_gt_instances_ignore = []
-        batch_img_metas = []
-        for data_sample in batch_data_samples:
-            batch_img_metas.append(data_sample.metainfo)
-            # pad the `gt_mask` to keep the same shape as `batch_img_shape`
-            img_shape = data_sample.metainfo['batch_input_shape']
-            gt_masks = data_sample.gt_instances.masks.pad(img_shape)
-            data_sample.gt_instances.masks = gt_masks
-            batch_gt_instances.append(data_sample.gt_instances)
-            if 'ignored_instances' in data_sample:
-                batch_gt_instances_ignore.append(data_sample.ignored_instances)
-            else:
-                batch_gt_instances_ignore.append(None)
+        outputs = unpack_gt_instances(batch_data_samples)
+        batch_gt_instances, batch_gt_instances_ignore, batch_img_metas \
+            = outputs
+        for gt_instances, img_metas in zip(batch_gt_instances,
+                                           batch_img_metas):
+            img_shape = img_metas['batch_input_shape']
+            gt_masks = gt_instances.masks.pad(img_shape)
+            gt_instances.masks = gt_masks
 
         losses = self.loss_by_feat(
             *outs,

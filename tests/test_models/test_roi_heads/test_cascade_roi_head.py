@@ -32,7 +32,7 @@ def _fake_proposals(img_metas, proposal_len):
     return results
 
 
-class TestStandardRoIHead(TestCase):
+class TestCascadeRoIHead(TestCase):
 
     @parameterized.expand(
         ['cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py'])
@@ -79,7 +79,7 @@ class TestStandardRoIHead(TestCase):
         for i in range(len(packed_inputs)):
             batch_data_samples.append(
                 packed_inputs[i]['data_sample'].to(device='cuda'))
-        out = roi_head.forward_train(feats, proposal_list, batch_data_samples)
+        out = roi_head.loss(feats, proposal_list, batch_data_samples)
         for name, value in out.items():
             if 'loss' in name:
                 self.assertGreaterEqual(
@@ -98,7 +98,7 @@ class TestStandardRoIHead(TestCase):
         for i in range(len(packed_inputs)):
             batch_data_samples.append(
                 packed_inputs[i]['data_sample'].to(device='cuda'))
-        out = roi_head.forward_train(feats, proposal_list, batch_data_samples)
+        out = roi_head.loss(feats, proposal_list, batch_data_samples)
         for name, value in out.items():
             if 'loss_cls' in name:
                 self.assertGreaterEqual(
