@@ -9,7 +9,7 @@ from .formatting import (ImageToTensor, PackDetInputs, ToDataContainer,
 from .geometric import (GeomTransform, Rotate, ShearX, ShearY, TranslateX,
                         TranslateY)
 from .instaboost import InstaBoost
-from .loading import (FilterAnnotations, LoadAnnotations, LoadImageFromWebcam,
+from .loading import (FilterAnnotations, LoadAnnotations, LoadImageFromNDArray,
                       LoadMultiChannelImageFromFiles, LoadPanopticAnnotations,
                       LoadProposals)
 from .test_time_aug import MultiScaleFlipAug
@@ -21,7 +21,7 @@ from .transforms import (Albu, CopyPaste, CutOut, Expand, MinIoURandomCrop,
 
 __all__ = [
     'PackDetInputs', 'Compose', 'ToTensor', 'ImageToTensor', 'ToDataContainer',
-    'Transpose', 'LoadImageFromWebcam', 'LoadAnnotations',
+    'Transpose', 'LoadImageFromNDArray', 'LoadAnnotations',
     'LoadPanopticAnnotations', 'LoadMultiChannelImageFromFiles',
     'LoadProposals', 'MultiScaleFlipAug', 'Resize', 'RandomFlip', 'RandomCrop',
     'Normalize', 'SegRescale', 'MinIoURandomCrop', 'Expand',
