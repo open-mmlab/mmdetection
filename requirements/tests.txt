@@ -2,6 +2,8 @@ asynctest
 cityscapesscripts
 codecov
 flake8
+imagecorruptions
+instaboostfast
 interrogate
 isort==4.3.21
 # Note: used for kwarray.group_items, this may be ported to mmcv in the future.

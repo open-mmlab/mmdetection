@@ -1,8 +1,9 @@
 _base_ = '../mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py'
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(
+        type='LoadImageFromFile',
+        file_client_args={{_base_.file_client_args}}),
     dict(
         type='InstaBoost',
         action_candidate=('normal', 'horizontal', 'skip'),
@@ -15,14 +16,27 @@ train_pipeline = [
         hflag=False,
         aug_ratio=0.5),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
-    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks']),
+    dict(type='Resize', scale=(1333, 800), keep_ratio=True),
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PackDetInputs')
 ]
-data = dict(train=dict(pipeline=train_pipeline))
-# learning policy
-lr_config = dict(step=[32, 44])
-runner = dict(type='EpochBasedRunner', max_epochs=48)
+
+train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
+
+max_epochs = 48
+
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=max_epochs,
+        by_epoch=True,
+        milestones=[32, 44],
+        gamma=0.1)
+]
+train_cfg = dict(max_epochs=max_epochs)
+
+# only keep latest 3 checkpoints
+default_hooks = dict(checkpoint=dict(max_keep_ckpts=3))

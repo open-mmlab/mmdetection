@@ -16,7 +16,15 @@ from mmdet.datasets.pipelines import (CopyPaste, CutOut, Expand,
                                       RandomCenterCropPad, RandomCrop,
                                       RandomFlip, Resize, SegRescale,
                                       YOLOXHSVRandomAug)
+from mmdet.registry import TRANSFORMS
 from .utils import create_full_masks, create_random_bboxes
+
+try:
+    import albumentations
+    from albumentations import Compose
+except ImportError:
+    albumentations = None
+    Compose = None
 
 
 class TestResize(unittest.TestCase):
@@ -45,7 +53,6 @@ class TestResize(unittest.TestCase):
         transform = Resize(scale=(2000, 2000), keep_ratio=True)
         results = transform(copy.deepcopy(self.data_info1))
         self.assertEqual(results['img_shape'], (2000, 1200))
-        self.assertEqual(results['scale'], (1200, 2000))
         self.assertEqual(results['scale_factor'], (1200 / 800, 2000 / 1333))
 
         # test resize_bboxes/seg/masks
@@ -290,7 +297,6 @@ class TestExpand(unittest.TestCase):
         }
 
     def test_transform(self):
-
         transform = Expand()
         results = transform.transform(copy.deepcopy(self.results))
         self.assertEqual(
@@ -1010,3 +1016,64 @@ class TestCopyPaste(unittest.TestCase):
                               'bbox_occluded_thr=10, '
                               'mask_occluded_thr=300, '
                               'selected=True)'))
+
+
+class TestAlbu(unittest.TestCase):
+
+    @unittest.skipIf(albumentations is None, 'albumentations is not installed')
+    def test_transform(self):
+        results = dict(
+            img_path=osp.join(osp.dirname(__file__), '../../data/color.jpg'))
+
+        # Define simple pipeline
+        load = dict(type='LoadImageFromFile')
+        load = TRANSFORMS.build(load)
+
+        albu_transform = dict(
+            type='Albu', transforms=[dict(type='ChannelShuffle', p=1)])
+        albu_transform = TRANSFORMS.build(albu_transform)
+
+        # Execute transforms
+        results = load(results)
+        results = albu_transform(results)
+
+        self.assertEqual(results['img'].dtype, np.uint8)
+
+    @unittest.skipIf(albumentations is None, 'albumentations is not installed')
+    def test_repr(self):
+        albu_transform = dict(
+            type='Albu', transforms=[dict(type='ChannelShuffle', p=1)])
+        albu_transform = TRANSFORMS.build(albu_transform)
+
+        self.assertEqual(
+            repr(albu_transform), 'Albu(transforms=['
+            '{\'type\': \'ChannelShuffle\', '
+            '\'p\': 1}])')
+
+
+class TestCorrupt(unittest.TestCase):
+
+    def test_transform(self):
+        results = dict(
+            img_path=osp.join(osp.dirname(__file__), '../../data/color.jpg'))
+
+        # Define simple pipeline
+        load = dict(type='LoadImageFromFile')
+        load = TRANSFORMS.build(load)
+
+        corrupt_transform = dict(type='Corrupt', corruption='gaussian_blur')
+        corrupt_transform = TRANSFORMS.build(corrupt_transform)
+
+        # Execute transforms
+        results = load(results)
+        results = corrupt_transform(results)
+
+        self.assertEqual(results['img'].dtype, np.uint8)
+
+    def test_repr(self):
+        corrupt_transform = dict(type='Corrupt', corruption='gaussian_blur')
+        corrupt_transform = TRANSFORMS.build(corrupt_transform)
+
+        self.assertEqual(
+            repr(corrupt_transform), 'Corrupt(corruption=gaussian_blur, '
+            'severity=1)')

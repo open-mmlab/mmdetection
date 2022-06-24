@@ -1189,22 +1189,32 @@ class MinIoURandomCrop(BaseTransform):
 
 
 @TRANSFORMS.register_module()
-class Corrupt:
+class Corrupt(BaseTransform):
     """Corruption augmentation.
 
     Corruption transforms implemented based on
     `imagecorruptions <https://github.com/bethgelab/imagecorruptions>`_.
 
+    Required Keys:
+
+    - img (np.uint8)
+
+
+    Modified Keys:
+
+    - img (np.uint8)
+
+
     Args:
         corruption (str): Corruption name.
-        severity (int, optional): The severity of corruption. Default: 1.
+        severity (int): The severity of corruption. Defaults to 1.
     """
 
-    def __init__(self, corruption, severity=1):
+    def __init__(self, corruption: str, severity: int = 1) -> None:
         self.corruption = corruption
         self.severity = severity
 
-    def __call__(self, results):
+    def transform(self, results: dict) -> dict:
         """Call function to corrupt image.
 
         Args:
@@ -1216,16 +1226,13 @@ class Corrupt:
 
         if corrupt is None:
             raise RuntimeError('imagecorruptions is not installed')
-        if 'img_fields' in results:
-            assert results['img_fields'] == ['img'], \
-                'Only single img_fields is allowed'
         results['img'] = corrupt(
             results['img'].astype(np.uint8),
             corruption_name=self.corruption,
             severity=self.severity)
         return results
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         repr_str = self.__class__.__name__
         repr_str += f'(corruption={self.corruption}, '
         repr_str += f'severity={self.severity})'
@@ -1233,12 +1240,26 @@ class Corrupt:
 
 
 @TRANSFORMS.register_module()
-class Albu:
+@avoid_cache_randomness
+class Albu(BaseTransform):
     """Albumentation augmentation.
 
     Adds custom transformations from Albumentations library.
     Please, visit `https://albumentations.readthedocs.io`
     to get more information.
+
+    Required Keys:
+
+    - img (np.uint8)
+    - gt_bboxes (np.float32) (optional)
+    - gt_masks (BitmapMasks | PolygonMasks) (optional)
+
+    Modified Keys:
+
+    - img (np.uint8)
+    - gt_bboxes (np.float32) (optional)
+    - gt_masks (BitmapMasks | PolygonMasks) (optional)
+    - img_shape (tuple)
 
     An example of ``transforms`` is as followed:
 
@@ -1269,18 +1290,18 @@ class Albu:
 
     Args:
         transforms (list[dict]): A list of albu transformations
-        bbox_params (dict): Bbox_params for albumentation `Compose`
-        keymap (dict): Contains {'input key':'albumentation-style key'}
+        bbox_params (dict, optional): Bbox_params for albumentation `Compose`
+        keymap (dict, optional): Contains
+            {'input key':'albumentation-style key'}
         skip_img_without_anno (bool): Whether to skip the image if no ann left
-            after aug
+            after aug. Defaults to False.
     """
 
     def __init__(self,
-                 transforms,
-                 bbox_params=None,
-                 keymap=None,
-                 update_pad_shape=False,
-                 skip_img_without_anno=False):
+                 transforms: List[dict],
+                 bbox_params: Optional[dict] = None,
+                 keymap: Optional[dict] = None,
+                 skip_img_without_anno: bool = False) -> None:
         if Compose is None:
             raise RuntimeError('albumentations is not installed')
 
@@ -1292,7 +1313,6 @@ class Albu:
             keymap = copy.deepcopy(keymap)
         self.transforms = transforms
         self.filter_lost_elements = False
-        self.update_pad_shape = update_pad_shape
         self.skip_img_without_anno = skip_img_without_anno
 
         # A simple workaround to remove masks without boxes
@@ -1318,7 +1338,7 @@ class Albu:
             self.keymap_to_albu = keymap
         self.keymap_back = {v: k for k, v in self.keymap_to_albu.items()}
 
-    def albu_builder(self, cfg):
+    def albu_builder(self, cfg: dict) -> albumentations:
         """Import a module from albumentations.
 
         It inherits some of :func:`build_from_cfg` logic.
@@ -1332,7 +1352,6 @@ class Albu:
 
         assert isinstance(cfg, dict) and 'type' in cfg
         args = cfg.copy()
-
         obj_type = args.pop('type')
         if mmcv.is_str(obj_type):
             if albumentations is None:
@@ -1353,7 +1372,7 @@ class Albu:
         return obj_cls(**args)
 
     @staticmethod
-    def mapper(d, keymap):
+    def mapper(d: dict, keymap: dict) -> dict:
         """Dictionary mapper. Renames keys according to keymap provided.
 
         Args:
@@ -1362,17 +1381,29 @@ class Albu:
         Returns:
             dict: new dict.
         """
-
         updated_dict = {}
         for k, v in zip(d.keys(), d.values()):
             new_k = keymap.get(k, k)
             updated_dict[new_k] = d[k]
         return updated_dict
 
-    def __call__(self, results):
+    def transform(self, results: dict) -> Union[dict, None]:
+        """Transform function of Albu."""
+        # TODO: gt_seg_map is not currently supported
         # dict to albumentations format
         results = self.mapper(results, self.keymap_to_albu)
-        # TODO: add bbox_fields
+        results, ori_masks = self._preprocess_results(results)
+        results = self.aug(**results)
+        results = self._postprocess_results(results, ori_masks)
+        if results is None:
+            return None
+        # back to the original format
+        results = self.mapper(results, self.keymap_back)
+        results['img_shape'] = results['img'].shape
+        return results
+
+    def _preprocess_results(self, results: dict) -> tuple:
+        """Pre-processing results to facilitate the use of Albu."""
         if 'bboxes' in results:
             # to list of boxes
             if isinstance(results['bboxes'], np.ndarray):
@@ -1382,6 +1413,7 @@ class Albu:
                 results['idx_mapper'] = np.arange(len(results['bboxes']))
 
         # TODO: Support mask structure in albu
+        ori_masks = None
         if 'masks' in results:
             if isinstance(results['masks'], PolygonMasks):
                 raise NotImplementedError(
@@ -1392,8 +1424,14 @@ class Albu:
             else:
                 results['masks'] = [mask for mask in results['masks'].masks]
 
-        results = self.aug(**results)
+        return results, ori_masks
 
+    def _postprocess_results(
+            self,
+            results: dict,
+            ori_masks: Optional[Union[BitmapMasks,
+                                      PolygonMasks]] = None) -> dict:
+        """Post-processing Albu output."""
         if 'bboxes' in results:
             if isinstance(results['bboxes'], list):
                 results['bboxes'] = np.array(
@@ -1407,6 +1445,7 @@ class Albu:
                     results[label] = np.array(
                         [results[label][i] for i in results['idx_mapper']])
                 if 'masks' in results:
+                    assert ori_masks is not None
                     results['masks'] = np.array(
                         [results['masks'][i] for i in results['idx_mapper']])
                     results['masks'] = ori_masks.__class__(
@@ -1417,21 +1456,9 @@ class Albu:
                         and self.skip_img_without_anno):
                     return None
 
-        if 'gt_labels' in results:
-            if isinstance(results['gt_labels'], list):
-                results['gt_labels'] = np.array(results['gt_labels'])
-            results['gt_labels'] = results['gt_labels'].astype(np.int64)
-
-        # back to the original format
-        results = self.mapper(results, self.keymap_back)
-
-        # update final shape
-        if self.update_pad_shape:
-            results['pad_shape'] = results['img'].shape
-
         return results
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         repr_str = self.__class__.__name__ + f'(transforms={self.transforms})'
         return repr_str
 
