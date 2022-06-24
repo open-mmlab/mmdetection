@@ -11,7 +11,10 @@ import numpy as np
 
 from mmdet.core.evaluation import INSTANCE_OFFSET
 from mmdet.core.mask import BitmapMasks, PolygonMasks
-from mmdet.datasets.pipelines import FilterAnnotations, LoadAnnotations
+from mmdet.datasets.pipelines import (FilterAnnotations, LoadAnnotations,
+                                      LoadImageFromNDArray,
+                                      LoadMultiChannelImageFromFiles,
+                                      LoadProposals)
 
 
 class TestLoadAnnotations(unittest.TestCase):
@@ -309,3 +312,108 @@ class TestLoadPanopticAnnotations(unittest.TestCase):
             self.assertTrue(
                 (results['gt_ignore_flags'] == self.gt_ignore_flags).all())
             self.assertTrue((results['gt_seg_map'] == self.gt_seg_map).all())
+
+
+class TestLoadImageFromNDArray(unittest.TestCase):
+
+    def setUp(self):
+        """Setup the model and optimizer which are used in every test method.
+
+        TestCase calls functions in this order: setUp() -> testMethod() ->
+        tearDown() -> cleanUp()
+        """
+        self.results = {'img': np.zeros((256, 256, 3), dtype=np.uint8)}
+
+    def test_transform(self):
+        transform = LoadImageFromNDArray()
+        results = transform(copy.deepcopy(self.results))
+        self.assertEqual(results['img'].shape, (256, 256, 3))
+        self.assertEqual(results['img'].dtype, np.uint8)
+        self.assertEqual(results['img_shape'], (256, 256))
+        self.assertEqual(results['ori_shape'], (256, 256))
+
+        # to_float32
+        transform = LoadImageFromNDArray(to_float32=True)
+        results = transform(copy.deepcopy(results))
+        self.assertEqual(results['img'].dtype, np.float32)
+
+    def test_repr(self):
+        transform = LoadImageFromNDArray()
+        self.assertEqual(
+            repr(transform), ('LoadImageFromNDArray('
+                              'to_float32=False, '
+                              "color_type='color', "
+                              "imdecode_backend='cv2', "
+                              "file_client_args={'backend': 'disk'})"))
+
+
+class TestLoadMultiChannelImageFromFiles(unittest.TestCase):
+
+    def setUp(self):
+        """Setup the model and optimizer which are used in every test method.
+
+        TestCase calls functions in this order: setUp() -> testMethod() ->
+        tearDown() -> cleanUp()
+        """
+        self.img_path = []
+        for i in range(4):
+            img_channel_path = f'./part_{i}.jpg'
+            img_channel = np.zeros((10, 10), dtype=np.uint8)
+            mmcv.imwrite(img_channel, img_channel_path)
+            self.img_path.append(img_channel_path)
+        self.results = {'img_path': self.img_path}
+
+    def tearDown(self):
+        for filename in self.img_path:
+            os.remove(filename)
+
+    def test_transform(self):
+        transform = LoadMultiChannelImageFromFiles()
+        results = transform(copy.deepcopy(self.results))
+        self.assertEqual(results['img'].shape, (10, 10, 4))
+        self.assertEqual(results['img'].dtype, np.uint8)
+        self.assertEqual(results['img_shape'], (10, 10))
+        self.assertEqual(results['ori_shape'], (10, 10))
+
+        # to_float32
+        transform = LoadMultiChannelImageFromFiles(to_float32=True)
+        results = transform(copy.deepcopy(results))
+        self.assertEqual(results['img'].dtype, np.float32)
+
+    def test_rper(self):
+        transform = LoadMultiChannelImageFromFiles()
+        self.assertEqual(
+            repr(transform), ('LoadMultiChannelImageFromFiles('
+                              'to_float32=False, '
+                              "color_type='unchanged', "
+                              "imdecode_backend='cv2', "
+                              "file_client_args={'backend': 'disk'})"))
+
+
+class TestLoadProposals(unittest.TestCase):
+
+    def test_transform(self):
+        transform = LoadProposals()
+        results = {'proposals': np.zeros((4, 5), dtype=np.int64)}
+        results = transform(results)
+        self.assertEqual(results['proposals'].dtype, np.float32)
+        self.assertEqual(results['proposals'].shape[-1], 4)
+
+        results = {'proposals': np.zeros((4, 3), dtype=np.float32)}
+        with self.assertRaises(AssertionError):
+            transform(results)
+
+        results = {'proposals': np.zeros((0, 4), dtype=np.float32)}
+        results = transform(results)
+        excepted_proposals = np.array([[0, 0, 0, 0]], dtype=np.float32)
+        self.assertTrue((results['proposals'] == excepted_proposals).all())
+
+        transform = LoadProposals(num_max_proposals=2)
+        results = {'proposals': np.zeros((4, 4), dtype=np.float32)}
+        results = transform(results)
+        self.assertEqual(results['proposals'].shape[0], 2)
+
+    def test_repr(self):
+        transform = LoadProposals()
+        self.assertEqual(
+            repr(transform), 'LoadProposals(num_max_proposals=None)')

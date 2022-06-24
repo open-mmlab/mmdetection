@@ -1,6 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import os.path as osp
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import mmcv
 import numpy as np
@@ -14,15 +13,32 @@ from mmdet.registry import TRANSFORMS
 
 
 @TRANSFORMS.register_module()
-class LoadImageFromWebcam(LoadImageFromFile):
-    """Load an image from webcam.
+class LoadImageFromNDArray(LoadImageFromFile):
+    """Load an image from ``results['img']``.
 
-    Similar with :obj:`LoadImageFromFile`, but the image read from webcam is in
-    ``results['img']``.
+    Similar with :obj:`LoadImageFromFile`, but the image has been loaded as
+    :obj:`np.ndarray` in ``results['img']``. Can be used when loading image
+    from webcam.
+
+    Required Keys:
+
+    - img
+
+    Modified Keys:
+
+    - img
+    - img_path
+    - img_shape
+    - ori_shape
+
+    Args:
+        to_float32 (bool): Whether to convert the loaded image to a float32
+            numpy array. If set to False, the loaded image is an uint8 array.
+            Defaults to False.
     """
 
-    def __call__(self, results):
-        """Call functions to add image meta information.
+    def transform(self, results: dict) -> dict:
+        """Transform function to add image meta information.
 
         Args:
             results (dict): Result dict with Webcam read image in
@@ -44,37 +60,49 @@ class LoadImageFromWebcam(LoadImageFromFile):
 
 
 @TRANSFORMS.register_module()
-class LoadMultiChannelImageFromFiles:
+class LoadMultiChannelImageFromFiles(BaseTransform):
     """Load multi-channel images from a list of separate channel files.
 
-    Required keys are "img_prefix" and "img_info" (a dict that must contain the
-    key "filename", which is expected to be a list of filenames).
-    Added or updated keys are "filename", "img", "img_shape",
-    "ori_shape" (same as `img_shape`), "pad_shape" (same as `img_shape`),
-    "scale_factor" (1.0) and "img_norm_cfg" (means=0 and stds=1).
+    Required Keys:
+
+    - img_path
+
+    Modified Keys:
+
+    - img
+    - img_shape
+    - ori_shape
 
     Args:
         to_float32 (bool): Whether to convert the loaded image to a float32
             numpy array. If set to False, the loaded image is an uint8 array.
             Defaults to False.
-        color_type (str): The flag argument for :func:`mmcv.imfrombytes`.
-            Defaults to 'color'.
+        color_type (str): The flag argument for :func:``mmcv.imfrombytes``.
+            Defaults to 'unchanged'.
+        imdecode_backend (str): The image decoding backend type. The backend
+            argument for :func:``mmcv.imfrombytes``.
+            See :func:``mmcv.imfrombytes`` for details.
+            Defaults to 'cv2'.
         file_client_args (dict): Arguments to instantiate a FileClient.
             See :class:`mmcv.fileio.FileClient` for details.
             Defaults to ``dict(backend='disk')``.
     """
 
-    def __init__(self,
-                 to_float32=False,
-                 color_type='unchanged',
-                 file_client_args=dict(backend='disk')):
+    def __init__(
+        self,
+        to_float32: bool = False,
+        color_type: str = 'unchanged',
+        imdecode_backend: str = 'cv2',
+        file_client_args: dict = dict(backend='disk')
+    ) -> None:
         self.to_float32 = to_float32
         self.color_type = color_type
+        self.imdecode_backend = imdecode_backend
         self.file_client_args = file_client_args.copy()
-        self.file_client = None
+        self.file_client = mmcv.FileClient(**self.file_client_args)
 
-    def __call__(self, results):
-        """Call functions to load multiple images and get images meta
+    def transform(self, results: dict) -> dict:
+        """Transform functions to load multiple images and get images meta
         information.
 
         Args:
@@ -84,44 +112,29 @@ class LoadMultiChannelImageFromFiles:
             dict: The dict contains loaded images and meta information.
         """
 
-        if self.file_client is None:
-            self.file_client = mmcv.FileClient(**self.file_client_args)
-
-        if results['img_prefix'] is not None:
-            filename = [
-                osp.join(results['img_prefix'], fname)
-                for fname in results['img_info']['filename']
-            ]
-        else:
-            filename = results['img_info']['filename']
-
+        assert isinstance(results['img_path'], list)
         img = []
-        for name in filename:
+        for name in results['img_path']:
             img_bytes = self.file_client.get(name)
-            img.append(mmcv.imfrombytes(img_bytes, flag=self.color_type))
+            img.append(
+                mmcv.imfrombytes(
+                    img_bytes,
+                    flag=self.color_type,
+                    backend=self.imdecode_backend))
         img = np.stack(img, axis=-1)
         if self.to_float32:
             img = img.astype(np.float32)
 
-        results['filename'] = filename
-        results['ori_filename'] = results['img_info']['filename']
         results['img'] = img
-        results['img_shape'] = img.shape
-        results['ori_shape'] = img.shape
-        # Set initial values for default meta_keys
-        results['pad_shape'] = img.shape
-        results['scale_factor'] = 1.0
-        num_channels = 1 if len(img.shape) < 3 else img.shape[2]
-        results['img_norm_cfg'] = dict(
-            mean=np.zeros(num_channels, dtype=np.float32),
-            std=np.ones(num_channels, dtype=np.float32),
-            to_rgb=False)
+        results['img_shape'] = img.shape[:2]
+        results['ori_shape'] = img.shape[:2]
         return results
 
     def __repr__(self):
         repr_str = (f'{self.__class__.__name__}('
                     f'to_float32={self.to_float32}, '
                     f"color_type='{self.color_type}', "
+                    f"imdecode_backend='{self.imdecode_backend}', "
                     f'file_client_args={self.file_client_args})')
         return repr_str
 
@@ -560,21 +573,27 @@ class LoadPanopticAnnotations(LoadAnnotations):
 
 
 @TRANSFORMS.register_module()
-class LoadProposals:
+class LoadProposals(BaseTransform):
     """Load proposal pipeline.
 
-    Required key is "proposals". Updated keys are "proposals", "bbox_fields".
+    Required Keys:
+
+    - proposals
+
+    Modified Keys:
+
+    - proposals
 
     Args:
         num_max_proposals (int, optional): Maximum number of proposals to load.
             If not specified, all proposals will be loaded.
     """
 
-    def __init__(self, num_max_proposals=None):
+    def __init__(self, num_max_proposals: Optional[int] = None) -> None:
         self.num_max_proposals = num_max_proposals
 
-    def __call__(self, results):
-        """Call function to load proposals from file.
+    def transform(self, results: dict) -> dict:
+        """Transform function to load proposals from file.
 
         Args:
             results (dict): Result dict from :obj:`mmdet.CustomDataset`.
@@ -584,11 +603,10 @@ class LoadProposals:
         """
 
         proposals = results['proposals']
-        if proposals.shape[1] not in (4, 5):
-            raise AssertionError(
-                'proposals should have shapes (n, 4) or (n, 5), '
-                f'but found {proposals.shape}')
-        proposals = proposals[:, :4]
+        assert proposals.shape[1] in (4, 5), ('proposals should have shapes '
+                                              '(n, 4) or (n, 5), but found'
+                                              f'{proposals.shape}')
+        proposals = proposals[:, :4].astype(np.float32)
 
         if self.num_max_proposals is not None:
             proposals = proposals[:self.num_max_proposals]
@@ -596,7 +614,6 @@ class LoadProposals:
         if len(proposals) == 0:
             proposals = np.array([[0, 0, 0, 0]], dtype=np.float32)
         results['proposals'] = proposals
-        results['bbox_fields'].append('proposals')
         return results
 
     def __repr__(self):
