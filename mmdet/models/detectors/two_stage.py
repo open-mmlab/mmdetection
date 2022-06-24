@@ -102,25 +102,18 @@ class TwoStageDetector(BaseDetector):
         """
         results = ()
         x = self.extract_feat(batch_inputs)
-        rpn_outs = self.rpn_head.forward(x)
-        results = results + (rpn_outs)
 
-        # If there are no pre-defined proposals, use RPN to get proposals
-        if batch_data_samples[0].get('proposals', None) is None:
-            batch_img_metas = [
-                data_samples.metainfo for data_samples in batch_data_samples
-            ]
-            rpn_results_list = self.rpn_head.predict_by_feat(
-                *rpn_outs, batch_img_metas=batch_img_metas, rescale=False)
+        if self.with_rpn:
+            rpn_results_list = self.rpn_head.predict(
+                x, batch_data_samples, rescale=False)
         else:
-            # TODO: Not checked currently.
+            assert batch_data_samples[0].get('proposals', None) is not None
             rpn_results_list = [
                 data_sample.proposals for data_sample in batch_data_samples
             ]
 
-        # roi_head
-        roi_outs = self.roi_head._forward(x, rpn_results_list)
-        results = results + (roi_outs)
+        roi_outs = self.roi_head.forward(x, rpn_results_list)
+        results = results + (roi_outs, )
         return results
 
     def loss(self, batch_inputs: Tensor, batch_data_samples: SampleList,

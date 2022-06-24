@@ -16,6 +16,7 @@ from torch.nn.modules.utils import _pair
 from mmdet.core import mask_target
 from mmdet.core.utils import (ConfigType, InstanceList, OptConfigType,
                               OptMultiConfig, SamplingResultList)
+from mmdet.models.utils import empty_instances
 from mmdet.registry import MODELS
 
 BYTES_PER_FLOAT = 4
@@ -174,10 +175,10 @@ class FCNMaskHead(BaseModule):
                                    gt_masks, rcnn_train_cfg)
         return mask_targets
 
-    def loss_by_feat(self, mask_pred: Tensor,
-                     sampling_results: SamplingResultList,
-                     batch_gt_instances: InstanceList,
-                     rcnn_train_cfg: ConfigDict) -> dict:
+    def loss_and_target(self, mask_pred: Tensor,
+                        sampling_results: SamplingResultList,
+                        batch_gt_instances: InstanceList,
+                        rcnn_train_cfg: ConfigDict) -> dict:
         """Calculate the loss based on the features extracted by the mask head.
 
         Args:
@@ -191,7 +192,7 @@ class FCNMaskHead(BaseModule):
             rcnn_train_cfg (obj:ConfigDict): `train_cfg` of RCNN.
 
         Returns:
-            dict: A dictionary of loss components.
+            dict: A dictionary of loss and targets components.
         """
         mask_targets = self.get_targets(
             sampling_results=sampling_results,
@@ -210,6 +211,7 @@ class FCNMaskHead(BaseModule):
             else:
                 loss_mask = self.loss_mask(mask_pred, mask_targets, pos_labels)
         loss['loss_mask'] = loss_mask
+        # TODO: which algorithm requires mask_targets?
         return dict(loss_mask=loss, mask_targets=mask_targets)
 
     def predict_by_feat(self,
@@ -253,20 +255,23 @@ class FCNMaskHead(BaseModule):
             img_meta = batch_img_metas[img_id]
             results = results_list[img_id]
             bboxes = results.bboxes
-            labels = results.get('labels', None)
-            if labels is None:
-                # When rcnn_test_cfg is None
-                # TODO: the logic need enhance.
-                labels = results.scores
-            im_mask = self._predict_by_feat_single(
-                mask_pred=mask_preds[img_id],
-                bboxes=bboxes,
-                labels=labels,
-                img_meta=img_meta,
-                rcnn_test_cfg=rcnn_test_cfg,
-                rescale=rescale,
-                activate_map=activate_map)
-            results.masks = im_mask
+            if bboxes.shape[0] == 0:
+                results_list[img_id] = empty_instances(
+                    [img_meta],
+                    bboxes.device,
+                    task_type='mask',
+                    instance_results=[results],
+                    mask_thr_binary=rcnn_test_cfg.mask_thr_binary)[0]
+            else:
+                im_mask = self._predict_by_feat_single(
+                    mask_pred=mask_preds[img_id],
+                    bboxes=bboxes,
+                    labels=results.labels,
+                    img_meta=img_meta,
+                    rcnn_test_cfg=rcnn_test_cfg,
+                    rescale=rescale,
+                    activate_map=activate_map)
+                results.masks = im_mask
         return results_list
 
     def _predict_by_feat_single(self,
@@ -325,18 +330,6 @@ class FCNMaskHead(BaseModule):
             (1, 2))
         img_h, img_w = img_meta['ori_shape'][:2]
         device = bboxes.device
-
-        # the type of `im_mask` will be torch.bool or torch.uint8,
-        # where uint8 if for visualization and debugging.
-        if bboxes.shape[0] == 0:
-            im_mask = torch.zeros(
-                0,
-                img_h,
-                img_w,
-                device=device,
-                dtype=torch.bool
-                if rcnn_test_cfg.mask_thr_binary >= 0 else torch.uint8)
-            return im_mask
 
         if not activate_map:
             mask_pred = mask_pred.sigmoid()

@@ -8,6 +8,7 @@ from torch import Tensor
 
 from mmdet.core import ConfigType, OptConfigType, SampleList
 from mmdet.registry import MODELS
+from ..utils.misc import unpack_gt_instances
 from .kd_one_stage import KnowledgeDistillationSingleStageDetector
 
 
@@ -72,17 +73,9 @@ class LAD(KnowledgeDistillationSingleStageDetector):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        batch_gt_instances = []
-        batch_gt_instances_ignore = []
-        batch_img_metas = []
-        for data_sample in batch_data_samples:
-            batch_img_metas.append(data_sample.metainfo)
-            batch_gt_instances.append(data_sample.gt_instances)
-            if 'ignored_instances' in data_sample:
-                batch_gt_instances_ignore.append(data_sample.ignored_instances)
-            else:
-                batch_gt_instances_ignore.append(None)
-
+        outputs = unpack_gt_instances(batch_data_samples)
+        batch_gt_instances, batch_gt_instances_ignore, batch_img_metas \
+            = outputs
         # get label assignment from the teacher
         with torch.no_grad():
             x_teacher = self.extract_teacher_feat(batch_inputs)

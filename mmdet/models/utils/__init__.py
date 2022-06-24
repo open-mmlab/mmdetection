@@ -8,7 +8,8 @@ from .ema import ExpMomentumEMA
 from .gaussian_target import gaussian_radius, gen_gaussian_target
 from .inverted_residual import InvertedResidual
 from .make_divisible import make_divisible
-from .misc import interpolate_as, sigmoid_geometric_mean
+from .misc import (empty_instances, interpolate_as, sigmoid_geometric_mean,
+                   unpack_gt_instances)
 from .normed_predictor import NormedConv2d, NormedLinear
 from .panoptic_gt_processing import preprocess_panoptic_gt
 from .point_sample import (get_uncertain_point_coords_with_randomness,
@@ -32,5 +33,5 @@ __all__ = [
     'nlc_to_nchw', 'pvt_convert', 'sigmoid_geometric_mean',
     'preprocess_panoptic_gt', 'DyReLU',
     'get_uncertain_point_coords_with_randomness', 'get_uncertainty',
-    'ExpMomentumEMA'
+    'ExpMomentumEMA', 'unpack_gt_instances', 'empty_instances'
 ]

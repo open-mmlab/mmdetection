@@ -14,7 +14,7 @@ from mmdet.core import multi_apply, multiclass_nms
 from mmdet.core.utils import (ConfigType, InstanceList, OptMultiConfig,
                               SamplingResultList)
 from mmdet.models.losses import accuracy
-from mmdet.models.utils import build_linear_layer
+from mmdet.models.utils import build_linear_layer, empty_instances
 from mmdet.registry import MODELS, TASK_UTILS
 
 
@@ -271,14 +271,13 @@ class BBoxHead(BaseModule):
             bbox_weights = torch.cat(bbox_weights, 0)
         return labels, label_weights, bbox_targets, bbox_weights
 
-    def loss_by_feat(self,
-                     cls_score: Tensor,
-                     bbox_pred: Tensor,
-                     rois: Tensor,
-                     sampling_results: SamplingResultList,
-                     rcnn_train_cfg: ConfigDict,
-                     reduction_override: Optional[str] = None,
-                     **kwargs) -> dict:
+    def loss_and_target(self,
+                        cls_score: Tensor,
+                        bbox_pred: Tensor,
+                        rois: Tensor,
+                        sampling_results: SamplingResultList,
+                        rcnn_train_cfg: ConfigDict,
+                        reduction_override: Optional[str] = None) -> dict:
         """Calculate the loss based on the features extracted by the bbox head.
 
         Args:
@@ -301,8 +300,10 @@ class BBoxHead(BaseModule):
                 "mean" and "sum". Defaults to None,
 
         Returns:
-            dict: A dictionary of loss components.
+            dict: A dictionary of loss and targets components.
+                The targets are only used for cascade rcnn.
         """
+
         cls_reg_targets = self.get_targets(sampling_results, rcnn_train_cfg)
         (labels, label_weights, bbox_targets, bbox_weights) = cls_reg_targets
 
@@ -354,7 +355,9 @@ class BBoxHead(BaseModule):
                     reduction_override=reduction_override)
             else:
                 losses['loss_bbox'] = bbox_pred[pos_inds].sum()
-        return losses
+
+        # cls_reg_targets is only for cascade rcnn
+        return dict(loss_bbox=losses, bbox_targets=cls_reg_targets)
 
     def predict_by_feat(self,
                         rois: Tuple[Tensor],
@@ -362,8 +365,7 @@ class BBoxHead(BaseModule):
                         bbox_preds: Tuple[Tensor],
                         batch_img_metas: List[dict],
                         rcnn_test_cfg: Optional[ConfigDict] = None,
-                        rescale: bool = False,
-                        **kwargs) -> InstanceList:
+                        rescale: bool = False) -> InstanceList:
         """Transform a batch of output features extracted from the head into
         bbox results.
 
@@ -403,20 +405,19 @@ class BBoxHead(BaseModule):
                 bbox_pred=bbox_preds[img_id],
                 img_meta=img_meta,
                 rescale=rescale,
-                rcnn_test_cfg=rcnn_test_cfg,
-                **kwargs)
+                rcnn_test_cfg=rcnn_test_cfg)
             result_list.append(results)
 
         return result_list
 
-    def _predict_by_feat_single(self,
-                                roi: Tensor,
-                                cls_score: Tensor,
-                                bbox_pred: Tensor,
-                                img_meta: dict,
-                                rescale: bool = False,
-                                rcnn_test_cfg: Optional[ConfigDict] = None,
-                                **kwargs) -> InstanceData:
+    def _predict_by_feat_single(
+            self,
+            roi: Tensor,
+            cls_score: Tensor,
+            bbox_pred: Tensor,
+            img_meta: dict,
+            rescale: bool = False,
+            rcnn_test_cfg: Optional[ConfigDict] = None) -> InstanceData:
         """Transform a single image's features extracted from the head into
         bbox results.
 
@@ -446,14 +447,10 @@ class BBoxHead(BaseModule):
         """
         results = InstanceData()
         if roi.shape[0] == 0:
-            # There is no proposal in the single image
-            results.bboxes = roi.new_zeros(0, 4)
-            if rcnn_test_cfg is None:
-                results.scores = roi.new_zeros((0, self.fc_cls.out_features))
-            else:
-                results.scores = roi.new_zeros((0, ))
-                results.labels = roi.new_zeros((0, ), dtype=torch.long)
-            return results
+            return empty_instances([img_meta],
+                                   roi.device,
+                                   task_type='bbox',
+                                   instance_results=[results])[0]
 
         # some loss (Seesaw loss..) may have custom activation
         if self.custom_cls_channels:
@@ -482,6 +479,8 @@ class BBoxHead(BaseModule):
                 bboxes.size()[0], -1)
 
         if rcnn_test_cfg is None:
+            # This means that it is aug test.
+            # It needs to return the raw results without nms.
             results.bboxes = bboxes
             results.scores = scores
         else:

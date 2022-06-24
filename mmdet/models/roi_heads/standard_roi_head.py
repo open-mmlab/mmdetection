@@ -2,19 +2,18 @@
 from typing import List, Optional, Tuple
 
 import torch
-from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import bbox2result, bbox2roi
+from mmdet.core import bbox2roi
 from mmdet.core.utils import (ConfigType, InstanceList, SampleList,
                               SamplingResultList)
 from mmdet.registry import MODELS, TASK_UTILS
+from ..utils.misc import empty_instances, unpack_gt_instances
 from .base_roi_head import BaseRoIHead
-from .test_mixins import BBoxTestMixin, MaskTestMixin
 
 
 @MODELS.register_module()
-class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
+class StandardRoIHead(BaseRoIHead):
     """Simplest base roi head including one bbox head and one mask head."""
 
     def init_assigner_sampler(self) -> None:
@@ -55,8 +54,9 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             self.mask_roi_extractor = self.bbox_roi_extractor
         self.mask_head = MODELS.build(mask_head)
 
-    def _forward(self, x: Tuple[Tensor],
-                 rpn_results_list: InstanceList) -> tuple:
+    # TODO: Need to refactor later
+    def forward(self, x: Tuple[Tensor],
+                rpn_results_list: InstanceList) -> tuple:
         """Network forward process. Usually includes backbone, neck and head
         forward without any post-processing.
 
@@ -102,14 +102,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             dict[str, Tensor]: A dictionary of loss components
         """
         assert len(rpn_results_list) == len(batch_data_samples)
-        batch_gt_instances = []
-        batch_gt_instances_ignore = []
-        for data_sample in batch_data_samples:
-            batch_gt_instances.append(data_sample.gt_instances)
-            if 'ignored_instances' in data_sample:
-                batch_gt_instances_ignore.append(data_sample.ignored_instances)
-            else:
-                batch_gt_instances_ignore.append(None)
+        outputs = unpack_gt_instances(batch_data_samples)
+        batch_gt_instances, batch_gt_instances_ignore, _ = outputs
 
         # assign gts and sample proposals
         num_imgs = len(batch_data_samples)
@@ -170,8 +164,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             cls_score=cls_score, bbox_pred=bbox_pred, bbox_feats=bbox_feats)
         return bbox_results
 
-    def bbox_loss(self, x: Tuple[Tensor], sampling_results: SamplingResultList,
-                  **kwargs) -> dict:
+    def bbox_loss(self, x: Tuple[Tensor],
+                  sampling_results: SamplingResultList) -> dict:
         """Perform forward propagation and loss calculation of the bbox head on
         the features of the upstream network.
 
@@ -190,19 +184,19 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         rois = bbox2roi([res.priors for res in sampling_results])
         bbox_results = self._bbox_forward(x, rois)
 
-        loss_bbox = self.bbox_head.loss_by_feat(
+        bbox_loss_and_target = self.bbox_head.loss_and_target(
             cls_score=bbox_results['cls_score'],
             bbox_pred=bbox_results['bbox_pred'],
             rois=rois,
             sampling_results=sampling_results,
             rcnn_train_cfg=self.train_cfg)
 
-        bbox_results.update(loss_bbox=loss_bbox)
+        bbox_results.update(loss_bbox=bbox_loss_and_target['loss_bbox'])
         return bbox_results
 
     def mask_loss(self, x: Tuple[Tensor], sampling_results: SamplingResultList,
-                  bbox_feats: Tensor, batch_gt_instances: InstanceList,
-                  **kwargs) -> dict:
+                  bbox_feats: Tensor,
+                  batch_gt_instances: InstanceList) -> dict:
         """Perform forward propagation and loss calculation of the mask head on
         the features of the upstream network.
 
@@ -245,21 +239,20 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             mask_results = self._mask_forward(
                 x, pos_inds=pos_inds, bbox_feats=bbox_feats)
 
-        loss_mask = self.mask_head.loss_by_feat(
+        mask_loss_and_target = self.mask_head.loss_and_target(
             mask_pred=mask_results['mask_pred'],
             sampling_results=sampling_results,
             batch_gt_instances=batch_gt_instances,
             rcnn_train_cfg=self.train_cfg)
 
-        mask_results.update(loss_mask)
+        mask_results.update(loss_mask=mask_loss_and_target['loss_mask'])
         return mask_results
 
     def _mask_forward(self,
                       x: Tuple[Tensor],
                       rois: Tensor = None,
                       pos_inds: Optional[Tensor] = None,
-                      bbox_feats: Optional[Tensor] = None,
-                      **kwargs) -> dict:
+                      bbox_feats: Optional[Tensor] = None) -> dict:
         """Mask head forward function used in both training and testing.
 
         Args:
@@ -290,58 +283,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         mask_pred = self.mask_head(mask_feats)
         mask_results = dict(mask_pred=mask_pred, mask_feats=mask_feats)
         return mask_results
-
-    def predict(self,
-                x: Tuple[Tensor],
-                rpn_results_list: InstanceList,
-                batch_data_samples: SampleList,
-                rescale: bool = False,
-                **kwargs) -> InstanceList:
-        """Perform forward propagation of the roi head and predict detection
-        results on the features of the upstream network.
-
-        Args:
-            x (tuple[Tensor]): Features from upstream network. Each
-                has shape (N, C, H, W).
-            rpn_results_list (list[:obj:`InstanceData`]): list of region
-                proposals.
-            batch_data_samples (List[:obj:`DetDataSample`]): The Data
-                Samples. It usually includes information such as
-                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
-            rescale (bool): Whether to rescale the results to
-                the original image. Defaults to True.
-
-        Returns:
-            list[obj:`InstanceData`]: Detection results of each image.
-            Each item usually contains following keys.
-
-                - scores (Tensor): Classification scores, has a shape
-                  (num_instance, )
-                - labels (Tensor): Labels of bboxes, has a shape
-                  (num_instances, ).
-                - bboxes (Tensor): Has a shape (num_instances, 4),
-                  the last dimension 4 arrange as (x1, y1, x2, y2).
-                - masks (Tensor): Has a shape (num_instances, H, W).
-        """
-        assert self.with_bbox, 'Bbox head must be implemented.'
-        batch_img_metas = [
-            data_samples.metainfo for data_samples in batch_data_samples
-        ]
-
-        # TODO: nms_op in mmcv need be enhanced, the bbox result may get
-        #  difference when not rescale in bbox_head
-        results_list = self.predict_bbox(
-            x,
-            batch_img_metas,
-            rpn_results_list,
-            self.test_cfg,
-            rescale=rescale if not self.with_mask else False)
-
-        if self.with_mask:
-            results_list = self.predict_mask(
-                x, batch_img_metas, results_list, rescale=rescale)
-
-        return results_list
 
     def predict_bbox(self,
                      x: Tuple[Tensor],
@@ -377,19 +318,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         rois = bbox2roi(proposals)
 
         if rois.shape[0] == 0:
-            # There is no proposal in the whole batch
-            result_list = []
-            for img_id in range(len(proposals)):
-                results = InstanceData()
-                results.bboxes = rois[0].new_zeros(0, 4)
-                if rcnn_test_cfg is None:
-                    results.scores = rois[0].new_zeros(
-                        (0, self.bbox_head.fc_cls.out_features))
-                else:
-                    results.scores = rois[0].new_zeros((0, ))
-                    results.labels = rois[0].new_zeros((0, ), dtype=torch.long)
-                result_list.append(results)
-            return result_list
+            return empty_instances(
+                batch_img_metas, rois.device, task_type='bbox')
 
         bbox_results = self._bbox_forward(x, rois)
 
@@ -450,14 +380,25 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                   the last dimension 4 arrange as (x1, y1, x2, y2).
                 - masks (Tensor): Has a shape (num_instances, H, W).
         """
+        # don't need to consider aug_test.
         bboxes = [res.bboxes for res in results_list]
         mask_rois = bbox2roi(bboxes)
+        if mask_rois.shape[0] == 0:
+            results_list = empty_instances(
+                batch_img_metas,
+                mask_rois.device,
+                task_type='mask',
+                instance_results=results_list,
+                mask_thr_binary=self.test_cfg.mask_thr_binary)
+            return results_list
+
         mask_results = self._mask_forward(x, mask_rois)
         mask_preds = mask_results['mask_pred']
         # split batch mask prediction back to each image
         num_mask_rois_per_img = [len(res) for res in results_list]
         mask_preds = mask_preds.split(num_mask_rois_per_img, 0)
 
+        # TODO: Handle the case where rescale is false
         results_list = self.mask_head.predict_by_feat(
             mask_preds=mask_preds,
             results_list=results_list,
@@ -465,30 +406,3 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             rcnn_test_cfg=self.test_cfg,
             rescale=rescale)
         return results_list
-
-    # TODO: Currently not supported
-    def aug_test(self, x, results_list, aug_batch_img_metas, rescale=False):
-        """Test with augmentations.
-
-        If rescale is False, then returned bboxes and masks will fit the scale
-        of imgs[0].
-        """
-        det_bboxes, det_labels = self.aug_test_bboxes(x, aug_batch_img_metas,
-                                                      results_list,
-                                                      self.test_cfg)
-        if rescale:
-            _det_bboxes = det_bboxes
-        else:
-            _det_bboxes = det_bboxes.clone()
-            _det_bboxes[:, :4] *= det_bboxes.new_tensor(
-                aug_batch_img_metas[0][0]['scale_factor'])
-        bbox_results = bbox2result(_det_bboxes, det_labels,
-                                   self.bbox_head.num_classes)
-
-        # det_bboxes always keep the original scale
-        if self.with_mask:
-            segm_results = self.aug_test_mask(x, aug_batch_img_metas,
-                                              det_bboxes, det_labels)
-            return [(bbox_results, segm_results)]
-        else:
-            return [bbox_results]

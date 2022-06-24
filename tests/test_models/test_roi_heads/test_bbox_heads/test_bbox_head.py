@@ -105,7 +105,6 @@ class TestBboxHead(TestCase):
         self.assertIsInstance(result_list[0], InstanceData)
         self.assertEqual(len(result_list[0]), 0)
         self.assertEqual(result_list[0].bboxes.shape, bbox_preds[0].shape)
-        self.assertEqual(result_list[0].scores.shape, cls_scores[0].shape)
         self.assertIsNone(result_list[0].get('label', None))
 
     def test_bbox_head_refine_bboxes(self):
