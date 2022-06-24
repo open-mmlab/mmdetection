@@ -2,9 +2,9 @@
 import warnings
 
 import mmcv
+from mmcv.transforms import Compose
 
 from mmdet.registry import TRANSFORMS
-from .compose import Compose
 
 
 @TRANSFORMS.register_module()

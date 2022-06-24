@@ -3,7 +3,6 @@ from .augment_wrappers import AutoAugment, RandAugment
 from .colorspace import (AutoContrast, Brightness, Color, ColorTransform,
                          Contrast, Equalize, Invert, Posterize, Sharpness,
                          Solarize, SolarizeAdd)
-from .compose import Compose
 from .formatting import (ImageToTensor, PackDetInputs, ToDataContainer,
                          ToTensor, Transpose)
 from .geometric import (GeomTransform, Rotate, ShearX, ShearY, TranslateX,
@@ -18,9 +17,10 @@ from .transforms import (Albu, CopyPaste, CutOut, Expand, MinIoURandomCrop,
                          RandomAffine, RandomCenterCropPad, RandomCrop,
                          RandomFlip, RandomShift, Resize, SegRescale,
                          YOLOXHSVRandomAug)
+from .wrappers import MultiBranch
 
 __all__ = [
-    'PackDetInputs', 'Compose', 'ToTensor', 'ImageToTensor', 'ToDataContainer',
+    'PackDetInputs', 'ToTensor', 'ImageToTensor', 'ToDataContainer',
     'Transpose', 'LoadImageFromNDArray', 'LoadAnnotations',
     'LoadPanopticAnnotations', 'LoadMultiChannelImageFromFiles',
     'LoadProposals', 'MultiScaleFlipAug', 'Resize', 'RandomFlip', 'RandomCrop',
@@ -31,5 +31,5 @@ __all__ = [
     'Mosaic', 'MixUp', 'RandomAffine', 'YOLOXHSVRandomAug', 'CopyPaste',
     'FilterAnnotations', 'Pad', 'GeomTransform', 'ColorTransform',
     'RandAugment', 'Sharpness', 'Solarize', 'SolarizeAdd', 'Posterize',
-    'AutoContrast', 'Invert'
+    'AutoContrast', 'Invert', 'MultiBranch'
 ]

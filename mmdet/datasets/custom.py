@@ -5,13 +5,13 @@ from collections import OrderedDict
 
 import mmcv
 import numpy as np
+from mmcv.transforms import Compose
 from mmcv.utils import print_log
 from terminaltables import AsciiTable
 from torch.utils.data import Dataset
 
 from mmdet.core import eval_map, eval_recalls
 from mmdet.registry import DATASETS
-from .pipelines import Compose
 
 
 @DATASETS.register_module()

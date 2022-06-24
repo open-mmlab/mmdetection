@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 
 import cv2
 import mmcv
@@ -129,14 +129,12 @@ class GeomTransform(BaseTransform):
         """Transform the segmentation map."""
         pass
 
-    def _set_homography_matrix(self, mag: float) -> None:
-        """Set the homography matrix for the geometric transformation."""
-        self.homography_matrix = np.eye(3, dtype=np.float32)
+    def _get_homography_matrix(self, results: dict, mag: float) -> np.ndarray:
+        """Get the homography matrix for the geometric transformation."""
+        return np.eye(3, dtype=np.float32)
 
     def _transform_bboxes(self, results: dict, mag: float) -> None:
         """Transform the bboxes."""
-        self._set_homography_matrix(mag)
-        self._record_homography_matrix(results)
         results['gt_bboxes'] = bbox_project(results['gt_bboxes'],
                                             self.homography_matrix,
                                             results['img_shape'])
@@ -174,11 +172,14 @@ class GeomTransform(BaseTransform):
         if self._random_disable():
             return results
         mag = self._get_mag()
+        self.homography_matrix = self._get_homography_matrix(results, mag)
+        self._record_homography_matrix(results)
         self._transform_img(results, mag)
-        self._transform_bboxes(results, mag)
-        if 'gt_masks' in results:
+        if results.get('gt_bboxes', None) is not None:
+            self._transform_bboxes(results, mag)
+        if results.get('gt_masks', None) is not None:
             self._transform_masks(results, mag)
-        if 'gt_seg_map' in results:
+        if results.get('gt_seg_map', None) is not None:
             self._transform_seg(results, mag)
         return results
 
@@ -269,10 +270,9 @@ class ShearX(GeomTransform):
             seg_ignore_label=seg_ignore_label,
             interpolation=interpolation)
 
-    def _set_homography_matrix(self, mag: float) -> None:
-        """Set the homography matrix for ShearX."""
-        self.homography_matrix = np.array([[1, mag, 0], [0, 1, 0], [0, 0, 1]],
-                                          dtype=np.float32)
+    def _get_homography_matrix(self, results: dict, mag: float) -> np.ndarray:
+        """Get the homography matrix for ShearX."""
+        return np.array([[1, mag, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float32)
 
     def _transform_img(self, results: dict, mag: float) -> None:
         """Shear the image horizontally."""
@@ -375,10 +375,9 @@ class ShearY(GeomTransform):
             seg_ignore_label=seg_ignore_label,
             interpolation=interpolation)
 
-    def _set_homography_matrix(self, mag: float) -> None:
-        """Set the homography matrix for ShearY."""
-        self.homography_matrix = np.array([[1, 0, 0], [mag, 1, 0], [0, 0, 1]],
-                                          dtype=np.float32)
+    def _get_homography_matrix(self, results: dict, mag: float) -> np.ndarray:
+        """Get the homography matrix for ShearY."""
+        return np.array([[1, 0, 0], [mag, 1, 0], [0, 0, 1]], dtype=np.float32)
 
     def _transform_img(self, results: dict, mag: float) -> None:
         """Shear the image vertically."""
@@ -481,12 +480,12 @@ class Rotate(GeomTransform):
             seg_ignore_label=seg_ignore_label,
             interpolation=interpolation)
 
-    def _set_homography_matrix(self, img_shape: Tuple[int, int],
-                               mag: float) -> None:
-        """Set the homography matrix for Rotate."""
+    def _get_homography_matrix(self, results: dict, mag: float) -> np.ndarray:
+        """Get the homography matrix for Rotate."""
+        img_shape = results['img_shape']
         center = ((img_shape[1] - 1) * 0.5, (img_shape[0] - 1) * 0.5)
         cv2_rotation_matrix = cv2.getRotationMatrix2D(center, -mag, 1.0)
-        self.homography_matrix = np.concatenate(
+        return np.concatenate(
             [cv2_rotation_matrix,
              np.array([0, 0, 1]).reshape((1, 3))],
             dtype=np.float32)
@@ -498,14 +497,6 @@ class Rotate(GeomTransform):
             mag,
             border_value=self.img_border_value,
             interpolation=self.interpolation)
-
-    def _transform_bboxes(self, results: dict, mag: float) -> None:
-        """Transform the bboxes."""
-        self._set_homography_matrix(results['img_shape'], mag)
-        self._record_homography_matrix(results)
-        results['gt_bboxes'] = bbox_project(results['gt_bboxes'],
-                                            self.homography_matrix,
-                                            results['img_shape'])
 
     def _transform_masks(self, results: dict, mag: float) -> None:
         """Rotate the masks."""
@@ -597,10 +588,9 @@ class TranslateX(GeomTransform):
             seg_ignore_label=seg_ignore_label,
             interpolation=interpolation)
 
-    def _set_homography_matrix(self, mag: float) -> None:
-        """Set the homography matrix for TranslateX."""
-        self.homography_matrix = np.array([[1, 0, mag], [0, 1, 0], [0, 0, 1]],
-                                          dtype=np.float32)
+    def _get_homography_matrix(self, results: dict, mag: float) -> np.ndarray:
+        """Get the homography matrix for TranslateX."""
+        return np.array([[1, 0, mag], [0, 1, 0], [0, 0, 1]], dtype=np.float32)
 
     def _transform_img(self, results: dict, mag: float) -> None:
         """Translate the image horizontally."""
@@ -703,10 +693,9 @@ class TranslateY(GeomTransform):
             seg_ignore_label=seg_ignore_label,
             interpolation=interpolation)
 
-    def _set_homography_matrix(self, mag: float) -> None:
-        """Set the homography matrix for TranslateY."""
-        self.homography_matrix = np.array([[1, 0, 0], [0, 1, mag], [0, 0, 1]],
-                                          dtype=np.float32)
+    def _get_homography_matrix(self, results: dict, mag: float) -> np.ndarray:
+        """Get the homography matrix for TranslateY."""
+        return np.array([[1, 0, 0], [0, 1, mag], [0, 0, 1]], dtype=np.float32)
 
     def _transform_img(self, results: dict, mag: float) -> None:
         """Translate the image vertically."""
