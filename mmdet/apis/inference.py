@@ -81,7 +81,7 @@ def inference_detector(model, imgs):
     if isinstance(imgs[0], np.ndarray):
         cfg = cfg.copy()
         # set loading pipeline type
-        cfg.test_dataloader.dataset.pipeline[0].type = 'LoadImageFromWebcam'
+        cfg.test_dataloader.dataset.pipeline[0].type = 'LoadImageFromNDArray'
 
     test_pipeline = Compose(cfg.test_dataloader.dataset.pipeline)
 
@@ -133,7 +133,7 @@ async def async_inference_detector(model, imgs):
     if isinstance(imgs[0], np.ndarray):
         cfg = cfg.copy()
         # set loading pipeline type
-        cfg.data.test.pipeline[0].type = 'LoadImageFromWebcam'
+        cfg.data.test.pipeline[0].type = 'LoadImageFromNDArray'
 
     # cfg.data.test.pipeline = replace_ImageToTensor(cfg.data.test.pipeline)
     test_pipeline = Compose(cfg.data.test.pipeline)

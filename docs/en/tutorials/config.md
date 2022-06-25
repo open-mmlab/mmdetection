@@ -15,8 +15,8 @@ When submitting jobs using "tools/train.py" or "tools/test.py", you may specify 
 - Update keys inside a list of configs.
 
   Some config dicts are composed as a list in your config. For example, the training pipeline `data.train.pipeline` is normally a list
-  e.g. `[dict(type='LoadImageFromFile'), ...]`. If you want to change `'LoadImageFromFile'` to `'LoadImageFromWebcam'` in the pipeline,
-  you may specify `--cfg-options data.train.pipeline.0.type=LoadImageFromWebcam`.
+  e.g. `[dict(type='LoadImageFromFile'), ...]`. If you want to change `'LoadImageFromFile'` to `'LoadImageFromNDArray'` in the pipeline,
+  you may specify `--cfg-options data.train.pipeline.0.type=LoadImageFromNDArray`.
 
 - Update values of list/tuples.
 

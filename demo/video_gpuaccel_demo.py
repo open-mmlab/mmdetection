@@ -42,7 +42,7 @@ def parse_args():
 
 def prefetch_img_metas(cfg, ori_wh):
     w, h = ori_wh
-    cfg.data.test.pipeline[0].type = 'LoadImageFromWebcam'
+    cfg.data.test.pipeline[0].type = 'LoadImageFromNDArray'
     test_pipeline = Compose(cfg.data.test.pipeline)
     data = {'img': np.zeros((h, w, 3), dtype=np.uint8)}
     data = test_pipeline(data)
