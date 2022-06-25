@@ -341,6 +341,7 @@ class TestLoadImageFromNDArray(unittest.TestCase):
         transform = LoadImageFromNDArray()
         self.assertEqual(
             repr(transform), ('LoadImageFromNDArray('
+                              'ignore_empty=False, '
                               'to_float32=False, '
                               "color_type='color', "
                               "imdecode_backend='cv2', "
