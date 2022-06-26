@@ -336,3 +336,25 @@ class BatchFixedSizePad(nn.Module):
                         value=self.seg_pad_value)
 
         return batch_inputs, batch_data_samples
+
+
+@MODELS.register_module()
+class MultiDataPreprocessor(nn.Module):
+
+    def __init__(self, data_preprocessor):
+        super().__init__()
+        self.data_preprocessor = MODELS.build(data_preprocessor)
+
+    def forward(self, data, training):
+        multi_data = {}
+        for multi_results in data:
+            for branch, results in multi_results.items():
+                if multi_data.get(branch, None) is None:
+                    multi_data[branch] = [results]
+                else:
+                    multi_data[branch].append(results)
+        multi_batch_inputs, multi_batch_data_samples = {}, {}
+        for branch, data in multi_data.items():
+            multi_batch_inputs[branch], multi_batch_data_samples[
+                branch] = self.data_preprocessor(data, training)
+        return multi_batch_inputs, multi_batch_data_samples

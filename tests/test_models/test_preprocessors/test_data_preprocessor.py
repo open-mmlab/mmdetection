@@ -7,7 +7,8 @@ from mmengine.logging import MessageHub
 from mmdet.core import DetDataSample
 from mmdet.models.data_preprocessors import (BatchFixedSizePad,
                                              BatchSyncRandomResize,
-                                             DetDataPreprocessor)
+                                             DetDataPreprocessor,
+                                             MultiDataPreprocessor)
 from mmdet.testing import demo_mm_inputs
 
 
@@ -226,3 +227,22 @@ class TestDetDataPreprocessor(TestCase):
                              mask_pad_sum)
             self.assertEqual(data_samples.gt_sem_seg.sem_seg.sum(),
                              seg_pad_sum)
+
+
+class TestMultiDataPreprocessor(TestCase):
+
+    def setUp(self):
+        """Setup the model and optimizer which are used in every test method.
+
+        TestCase calls functions in this order: setUp() -> testMethod() ->
+        tearDown() -> cleanUp()
+        """
+        self.data_preprocessor = dict(
+            type='DetDataPreprocessor',
+            mean=[123.675, 116.28, 103.53],
+            std=[58.395, 57.12, 57.375],
+            bgr_to_rgb=True,
+            pad_size_divisor=32)
+
+    def test_multi_data_preprocessor(self):
+        MultiDataPreprocessor(self.data_preprocessor)
