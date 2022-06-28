@@ -19,8 +19,10 @@ class TestSingleStageDetector(TestCase):
     @parameterized.expand([
         'retinanet/retinanet_r18_fpn_1x_coco.py',
         'centernet/centernet_resnet18_140e_coco.py',
-        'fsaf/fsaf_r50_fpn_1x_coco.py', 'yolox/yolox_tiny_8x8_300e_coco.py',
-        'yolo/yolov3_mobilenetv2_320_300e_coco.py'
+        'fsaf/fsaf_r50_fpn_1x_coco.py',
+        'yolox/yolox_tiny_8x8_300e_coco.py',
+        'yolo/yolov3_mobilenetv2_320_300e_coco.py',
+        'reppoints/reppoints_minmax_r50_fpn_gn-neck+head_1x_coco.py',
     ])
     def test_init(self, cfg_file):
         model = get_detector_cfg(cfg_file)
@@ -37,7 +39,9 @@ class TestSingleStageDetector(TestCase):
         ('centernet/centernet_resnet18_140e_coco.py', ('cpu', 'cuda')),
         ('fsaf/fsaf_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
         ('yolox/yolox_tiny_8x8_300e_coco.py', ('cpu', 'cuda')),
-        ('yolo/yolov3_mobilenetv2_320_300e_coco.py', ('cpu', 'cuda'))
+        ('yolo/yolov3_mobilenetv2_320_300e_coco.py', ('cpu', 'cuda')),
+        ('reppoints/reppoints_minmax_r50_fpn_gn-neck+head_1x_coco.py',
+         ('cpu', 'cuda')),
     ])
     def test_single_stage_forward_loss_mode(self, cfg_file, devices):
         message_hub = MessageHub.get_instance(
@@ -70,7 +74,9 @@ class TestSingleStageDetector(TestCase):
         ('centernet/centernet_resnet18_140e_coco.py', ('cpu', 'cuda')),
         ('fsaf/fsaf_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
         ('yolox/yolox_tiny_8x8_300e_coco.py', ('cpu', 'cuda')),
-        ('yolo/yolov3_mobilenetv2_320_300e_coco.py', ('cpu', 'cuda'))
+        ('yolo/yolov3_mobilenetv2_320_300e_coco.py', ('cpu', 'cuda')),
+        ('reppoints/reppoints_minmax_r50_fpn_gn-neck+head_1x_coco.py',
+         ('cpu', 'cuda')),
     ])
     def test_single_stage_forward_predict_mode(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
@@ -103,7 +109,9 @@ class TestSingleStageDetector(TestCase):
         ('centernet/centernet_resnet18_140e_coco.py', ('cpu', 'cuda')),
         ('fsaf/fsaf_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
         ('yolox/yolox_tiny_8x8_300e_coco.py', ('cpu', 'cuda')),
-        ('yolo/yolov3_mobilenetv2_320_300e_coco.py', ('cpu', 'cuda'))
+        ('yolo/yolov3_mobilenetv2_320_300e_coco.py', ('cpu', 'cuda')),
+        ('reppoints/reppoints_minmax_r50_fpn_gn-neck+head_1x_coco.py',
+         ('cpu', 'cuda')),
     ])
     def test_single_stage_forward_tensor_mode(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
