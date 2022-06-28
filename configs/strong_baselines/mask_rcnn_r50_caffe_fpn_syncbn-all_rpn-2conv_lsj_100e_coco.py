@@ -15,7 +15,6 @@ model = dict(
         mean=[103.530, 116.280, 123.675],
         std=[1.0, 1.0, 1.0],
         bgr_to_rgb=False,
-        pad_size_divisor=32,
         batch_augments=batch_augments),
     backbone=dict(
         frozen_stages=-1,

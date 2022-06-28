@@ -309,7 +309,7 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
             ]
 
         # roi_head
-        roi_outs = self.roi_head._forward(x, rpn_results_list)
+        roi_outs = self.roi_head(x, rpn_results_list)
         results = results + (roi_outs)
 
         # semantic_head

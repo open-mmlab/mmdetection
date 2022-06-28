@@ -167,7 +167,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                 pad_h, pad_w = data_samples.batch_input_shape
                 data_samples.gt_sem_seg.sem_seg = F.pad(
                     gt_sem_seg,
-                    pad=(0, pad_w - w, 0, pad_h - h),
+                    pad=(0, max(pad_w - w, 0), 0, max(pad_h - h, 0)),
                     mode='constant',
                     value=self.seg_pad_value)
 
@@ -307,15 +307,17 @@ class BatchFixedSizePad(nn.Module):
 
         batch_inputs = F.pad(
             batch_inputs,
-            pad=(0, max(0, dst_h - src_h), 0, max(0, dst_w - src_w)),
+            pad=(0, max(0, dst_w - src_w), 0, max(0, dst_h - src_h)),
             mode='constant',
             value=self.img_pad_value)
 
         if batch_data_samples is not None:
             # update batch_input_shape
             for data_samples in batch_data_samples:
-                data_samples.set_metainfo(
-                    {'batch_input_shape': (dst_h, dst_w)})
+                data_samples.set_metainfo({
+                    'batch_input_shape': (dst_h, dst_w),
+                    'pad_shape': (dst_h, dst_w)
+                })
 
             if self.pad_mask:
                 for data_samples in batch_data_samples:
@@ -331,7 +333,7 @@ class BatchFixedSizePad(nn.Module):
                     h, w = gt_sem_seg.shape[-2:]
                     data_samples.gt_sem_seg.sem_seg = F.pad(
                         gt_sem_seg,
-                        pad=(0, dst_w - w, 0, dst_h - h),
+                        pad=(0, max(0, dst_w - w), 0, max(0, dst_h - h)),
                         mode='constant',
                         value=self.seg_pad_value)
 
