@@ -1,7 +1,7 @@
 Models:
   - Name: mask_rcnn_convnext-t_p4_w7_fpn_fp16_ms-crop_3x_coco
     In Collection: Mask R-CNN
-    Config: configs/convnext/mask_rcnn_convnext-t_p4_w7_fpn_fp16_ms-crop_3x_coco
+    Config: configs/convnext/mask_rcnn_convnext-t_p4_w7_fpn_fp16_ms-crop_3x_coco.py
     Metadata:
       Training Memory (GB): 7.3
       Epochs: 36
