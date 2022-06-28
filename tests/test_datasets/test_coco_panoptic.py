@@ -173,6 +173,7 @@ class TestCocoPanopticDataset(unittest.TestCase):
 
     def test_coco_panoptic_dataset(self):
         dataset = CocoPanopticDataset(
+            data_root='./',
             ann_file=self.json_name,
             data_prefix=dict(img='imgs', seg='seg'),
             metainfo=self.metainfo,
@@ -190,6 +191,7 @@ class TestCocoPanopticDataset(unittest.TestCase):
         self.assertEqual(len(dataset.load_data_list()), 4)
         # test mode
         dataset = CocoPanopticDataset(
+            data_root='./',
             ann_file=self.json_name,
             data_prefix=dict(img='imgs', seg='seg'),
             metainfo=self.metainfo,
@@ -209,6 +211,7 @@ class TestCocoPanopticDataset(unittest.TestCase):
 
     def test_coco_panoptic_dataset_without_filter_cfg(self):
         dataset = CocoPanopticDataset(
+            data_root='./',
             ann_file=self.json_name,
             data_prefix=dict(img='imgs', seg='seg'),
             metainfo=self.metainfo,
@@ -227,6 +230,7 @@ class TestCocoPanopticDataset(unittest.TestCase):
 
         # test mode
         dataset = CocoPanopticDataset(
+            data_root='./',
             ann_file=self.json_name,
             data_prefix=dict(img='imgs', seg='seg'),
             metainfo=self.metainfo,

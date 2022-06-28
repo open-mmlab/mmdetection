@@ -17,7 +17,6 @@ model = dict(
         mean=[123.675, 116.28, 103.53],
         std=[58.395, 57.12, 57.375],
         bgr_to_rgb=True,
-        pad_size_divisor=32,
         batch_augments=batch_augments),
     backbone=dict(
         frozen_stages=-1, norm_eval=False, norm_cfg=norm_cfg, init_cfg=None),
