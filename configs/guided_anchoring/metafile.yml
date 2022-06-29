@@ -41,7 +41,7 @@ Models:
 
   - Name: ga_rpn_r101_caffe_fpn_1x_coco
     In Collection: Guided Anchoring
-    Config: configs/guided_anchoring/ga_rpn_r101_caffe_fpn_1x_coco.py.py
+    Config: configs/guided_anchoring/ga_rpn_r101_caffe_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 7.3
       inference time (ms/im):
