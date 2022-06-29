@@ -69,49 +69,43 @@ def set_random_seed(seed, deterministic=False):
 
 
 def auto_scale_lr(cfg, distributed, logger):
-    """Automatically scaling LR according to GPU number and sample per GPU.
+    """根据 num_gpus和samples_per_gpu自动缩放 LR.
 
     Args:
-        cfg (config): Training config.
-        distributed (bool): Using distributed or not.
-        logger (logging.Logger): Logger.
+        cfg (config): 训练的配置文件.
+        distributed (bool): 是否使用分布式.
+        logger (logging.Logger): 日志对象.
     """
     # Get flag from config
     if ('auto_scale_lr' not in cfg) or \
             (not cfg.auto_scale_lr.get('enable', False)):
-        logger.info('Automatic scaling of learning rate (LR)'
-                    ' has been disabled.')
+        logger.info('LR的自动缩放已被禁用.')
         return
 
-    # Get base batch size from config
+    # 从配置文件中获取base_batch_size `base_batch_size` = (8 GPUs) x (2 samples per GPU)
     base_batch_size = cfg.auto_scale_lr.get('base_batch_size', None)
     if base_batch_size is None:
         return
 
-    # Get gpu number
+    # 获取gpu数量
     if distributed:
         _, world_size = get_dist_info()
         num_gpus = len(range(world_size))
     else:
         num_gpus = len(cfg.gpu_ids)
 
-    # calculate the batch size
+    # 计算实际bs
     samples_per_gpu = cfg.data.train_dataloader.samples_per_gpu
     batch_size = num_gpus * samples_per_gpu
-    logger.info(f'Training with {num_gpus} GPU(s) with {samples_per_gpu} '
-                f'samples per GPU. The total batch size is {batch_size}.')
+    logger.info(f'使用 {num_gpus} 个GPU进行训练,每个GPU有 {samples_per_gpu} 个样本.总bs大小为 {batch_size}.')
 
     if batch_size != base_batch_size:
-        # scale LR with
-        # [linear scaling rule](https://arxiv.org/abs/1706.02677)
-        scaled_lr = (batch_size / base_batch_size) * cfg.optimizer.lr
-        logger.info('LR has been automatically scaled '
-                    f'from {cfg.optimizer.lr} to {scaled_lr}')
+        # 通过[线性缩放规则]缩放LR(https://arxiv.org/abs/1706.02677)
+        scaled_lr = (batch_size / base_batch_size) * cfg.optimizer.lr  # 实际bs = 实际bs/理论bs/ * 理论lr
+        logger.info(f'LR 已自动缩放,从 {cfg.optimizer.lr} 到 {scaled_lr}')
         cfg.optimizer.lr = scaled_lr
     else:
-        logger.info('The batch size match the '
-                    f'base batch size: {base_batch_size}, '
-                    f'will not scaling the LR ({cfg.optimizer.lr}).')
+        logger.info(f'实际bs与理论bs: {base_batch_size}相等,所以最终不会缩放LR ({cfg.optimizer.lr}).')
 
 
 def train_detector(model,
@@ -122,37 +116,35 @@ def train_detector(model,
                    timestamp=None,
                    meta=None):
 
-    cfg = compat_cfg(cfg)
-    logger = get_root_logger(log_level=cfg.log_level)
+    cfg = compat_cfg(cfg)  # 向下兼容的手段,增加已被弃用的字段  比如老参数"a"被新参数"a_"代替,那么就会把cfg中的"a_"删除并把值值赋予"a"
+    logger = get_root_logger(log_level=cfg.log_level)  # 获取日志对象
 
-    # prepare data loaders
-    dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
+    # 确保数据为list格式
+    dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]  # TODO 是否有必要
 
-    runner_type = 'EpochBasedRunner' if 'runner' not in cfg else cfg.runner[
-        'type']
+    runner_type = 'EpochBasedRunner' if 'runner' not in cfg else cfg.runner['type']  # TODO 是否有必要
 
     train_dataloader_default_args = dict(
         samples_per_gpu=2,
         workers_per_gpu=2,
-        # `num_gpus` will be ignored if distributed
+        # 如果是分布式训练,那么`num_gpus`参数将被忽略
         num_gpus=len(cfg.gpu_ids),
         dist=distributed,
         seed=cfg.seed,
         runner_type=runner_type,
-        persistent_workers=False)
+        persistent_workers=False)  # True:运行完一个Epoch后不会关闭worker进程,保持现有的worker进程继续进行下一个Epoch的数据加载
 
     train_loader_cfg = {
         **train_dataloader_default_args,
-        **cfg.data.get('train_dataloader', {})
+        **cfg.data.get('train_dataloader', {})  # 仅有两个参数,即cfg文件中的samples_per_gpu workers_per_gpu会覆盖上面的两个值
     }
 
     data_loaders = [build_dataloader(ds, **train_loader_cfg) for ds in dataset]
 
-    # put model on gpus
+    # 将模型放在 gpus 上
     if distributed:
         find_unused_parameters = cfg.get('find_unused_parameters', False)
-        # Sets the `find_unused_parameters` parameter in
-        # torch.nn.parallel.DistributedDataParallel
+        # 在 torch.nn.parallel.DistributedDataParallel 中设置 `find_unused_parameters` 参数
         model = build_ddp(
             model,
             cfg.device,
@@ -162,7 +154,7 @@ def train_detector(model,
     else:
         model = build_dp(model, cfg.device, device_ids=cfg.gpu_ids)
 
-    # build optimizer
+    # 是否根据实际bs大小缩放lr,构建优化器
     auto_scale_lr(cfg, distributed, logger)
     optimizer = build_optimizer(model, cfg.optimizer)
 

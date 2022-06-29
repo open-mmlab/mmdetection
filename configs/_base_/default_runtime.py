@@ -15,9 +15,9 @@ load_from = None
 resume_from = None
 workflow = [('train', 1)]
 
-# disable opencv multithreading to avoid system being overloaded
+# 禁用opencv多线程以避免系统过载
 opencv_num_threads = 0
-# set multi-process start method as `fork` to speed up the training
+# 将多进程启动方法设置为"fork"以加快训练速度
 mp_start_method = 'fork'
 
 # Default setting for scaling LR automatically

@@ -6,16 +6,14 @@ from mmcv import ConfigDict
 
 
 def compat_cfg(cfg):
-    """This function would modify some filed to keep the compatibility of
-    config.
+    """该函数会修改一些参数以保持配置的兼容性.
 
-    For example, it will move some args which will be deprecated to the correct
-    fields.
+    例如,它会将一些将被弃用的 参数 移动到正确的字段.
     """
     cfg = copy.deepcopy(cfg)
-    cfg = compat_imgs_per_gpu(cfg)
-    cfg = compat_loader_args(cfg)
-    cfg = compat_runner_args(cfg)
+    cfg = compat_imgs_per_gpu(cfg)  # 如果存在imgs_per_gpu字段则将其值赋给samples_per_gpu
+    cfg = compat_loader_args(cfg)   # 生成 train/val/test_dataloader字段,并将已有的一些参数赋予它们
+    cfg = compat_runner_args(cfg)   # 确保runner字段存在并且它的max_epochs与total_epochs一致
     return cfg
 
 

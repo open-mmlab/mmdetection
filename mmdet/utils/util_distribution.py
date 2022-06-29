@@ -8,18 +8,18 @@ ddp_factory = {'cuda': MMDistributedDataParallel}
 
 
 def build_dp(model, device='cuda', dim=0, *args, **kwargs):
-    """build DataParallel module by device type.
+    """按设备类型构建 DataParallel 模块.
 
-    if device is cuda, return a MMDataParallel model; if device is mlu,
-    return a MLUDataParallel model.
+    如果设备是 cuda，则返回一个 MMDistributedDataParallel 模型;
+    如果设备是 mlu，则返回一个 MLUDistributedDataParallel 模型.
 
     Args:
-        model (:class:`nn.Module`): model to be parallelized.
-        device (str): device type, cuda, cpu or mlu. Defaults to cuda.
-        dim (int): Dimension used to scatter the data. Defaults to 0.
+        model (:class:`nn.Module`): 要并行化的模型.
+        device (str): 设备类型, cuda, cpu or mlu. 默认为 cuda.
+        dim (int): 用于分散数据的维度.默认为 0
 
     Returns:
-        nn.Module: the model to be parallelized.
+        nn.Module: 并行化的模型.
     """
     if device == 'cuda':
         model = model.cuda()
@@ -32,10 +32,10 @@ def build_dp(model, device='cuda', dim=0, *args, **kwargs):
 
 
 def build_ddp(model, device='cuda', *args, **kwargs):
-    """Build DistributedDataParallel module by device type.
+    """按设备类型构建 DistributedDataParallel 模块.
 
-    If device is cuda, return a MMDistributedDataParallel model;
-    if device is mlu, return a MLUDistributedDataParallel model.
+    如果设备是 cuda，则返回一个 MMDistributedDataParallel 模型;
+    如果设备是 mlu，则返回一个 MLUDistributedDataParallel 模型.
 
     Args:
         model (:class:`nn.Module`): module to be parallelized.
@@ -48,7 +48,7 @@ def build_ddp(model, device='cuda', *args, **kwargs):
         .. [1] https://pytorch.org/docs/stable/generated/torch.nn.parallel.
                      DistributedDataParallel.html
     """
-    assert device in ['cuda', 'mlu'], 'Only available for cuda or mlu devices.'
+    assert device in ['cuda', 'mlu'], '仅适用于 cuda 或 mlu 设备.'
     if device == 'cuda':
         model = model.cuda()
     elif device == 'mlu':
