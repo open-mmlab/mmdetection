@@ -717,3 +717,59 @@ class FilterAnnotations(BaseTransform):
                f'by_box={self.by_box}, ' \
                f'by_mask={self.by_mask}, ' \
                f'keep_empty={self.keep_empty})'
+
+
+@TRANSFORMS.register_module()
+class LoadPseudoAnnos(BaseTransform):
+    """Load Pseudo Annotations."""
+
+    def __init__(self,
+                 with_bbox: bool = True,
+                 with_label: bool = True,
+                 with_mask: bool = False,
+                 with_seg: bool = False,
+                 seg_ignore_label: int = 255) -> None:
+        self.with_bbox = with_bbox
+        self.with_label = with_label
+        self.with_mask = with_mask
+        self.with_seg = with_seg
+        self.seg_ignore_label = seg_ignore_label
+
+    def transform(self, results: dict) -> dict:
+        pseudo_annos = results['dataset'].id2pseudo_annos.get('image_id', None)
+        results['gt_ignore_flags'] = np.zeros((0, ), dtype=bool)
+        if self.with_bbox:
+            if pseudo_annos is None:
+                results['gt_bboxes'] = np.zeros((0, 4), dtype=np.float32)
+            else:
+                results['gt_bboxes'] = pseudo_annos.pred_instances.bboxes.cpu(
+                ).numpy()
+        if self.with_label:
+            if pseudo_annos is None:
+                results['gt_bboxes_labels'] = np.zeros((0, ), dtype=np.int64)
+            else:
+                results['gt_bboxes_labels'] = \
+                    pseudo_annos.pred_instances.labels.cpu().numpy()
+        if self.with_mask:
+            if pseudo_annos is None:
+                h, w = results['img_shape']
+                gt_masks = np.zeros((0, h, w), dtype=np.uint8)
+                results['gt_masks'] = BitmapMasks(gt_masks, h, w)
+            else:
+                results['gt_masks'] = pseudo_annos.pred_instances.masks
+        if self.with_seg:
+            if pseudo_annos is None:
+                h, w = results['img_shape']
+                results['gt_seg_map'] = self.seg_ignore_label * np.ones(
+                    (h, w), dtype=np.uint8)
+            else:
+                results['gt_seg_map'] = pseudo_annos.seg_map.cpu().numpy()
+        return results
+
+    def __repr__(self) -> str:
+        repr_str = self.__class__.__name__
+        repr_str += f'(with_bbox={self.with_bbox}, '
+        repr_str += f'with_label={self.with_label}, '
+        repr_str += f'with_mask={self.with_mask}, '
+        repr_str += f'with_seg={self.with_seg})'
+        return repr_str

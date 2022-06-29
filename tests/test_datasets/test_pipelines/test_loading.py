@@ -14,7 +14,7 @@ from mmdet.core.mask import BitmapMasks, PolygonMasks
 from mmdet.datasets.pipelines import (FilterAnnotations, LoadAnnotations,
                                       LoadImageFromNDArray,
                                       LoadMultiChannelImageFromFiles,
-                                      LoadProposals)
+                                      LoadProposals, LoadPseudoAnnos)
 
 
 class TestLoadAnnotations(unittest.TestCase):
@@ -420,3 +420,31 @@ class TestLoadProposals(unittest.TestCase):
         transform = LoadProposals()
         self.assertEqual(
             repr(transform), 'LoadProposals(num_max_proposals=None)')
+
+
+class TestLoadPseudoAnnos(unittest.TestCase):
+
+    def setUp(self):
+        """Setup the model and optimizer which are used in every test method.
+
+        TestCase calls functions in this order: setUp() -> testMethod() ->
+        tearDown() -> cleanUp()
+        """
+        self.img_path = []
+        for i in range(4):
+            img_channel_path = f'./part_{i}.jpg'
+            img_channel = np.zeros((10, 10), dtype=np.uint8)
+            mmcv.imwrite(img_channel, img_channel_path)
+            self.img_path.append(img_channel_path)
+        self.results = {'img_path': self.img_path}
+
+    def test_transform(self):
+        LoadPseudoAnnos()
+
+    def test_repr(self):
+        transform = LoadPseudoAnnos()
+        self.assertEqual(
+            repr(transform), 'LoadPseudoAnnos(with_bbox=True, '
+            'with_label=True, '
+            'with_mask=False, '
+            'with_seg=False)')

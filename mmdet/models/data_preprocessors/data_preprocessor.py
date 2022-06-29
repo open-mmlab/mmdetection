@@ -358,3 +358,40 @@ class MultiDataPreprocessor(nn.Module):
             multi_batch_inputs[branch], multi_batch_data_samples[
                 branch] = self.data_preprocessor(data, training)
         return multi_batch_inputs, multi_batch_data_samples
+
+    @property
+    def device(self):
+        return self.data_preprocessor.device
+
+    def to(self, device: Optional[Union[int, torch.device]], *args,
+           **kwargs) -> nn.Module:
+        """Overrides this method to set the :attr:`device`
+
+        Args:
+            device (int or torch.device, optional): The desired device of the
+                parameters and buffers in this module.
+
+        Returns:
+            nn.Module: The model itself.
+        """
+        self.data_preprocessor._device = torch.device(device)
+        return super().to(device)
+
+    def cuda(self, *args, **kwargs) -> nn.Module:
+        """Overrides this method to set the :attr:`device`
+
+        Returns:
+            nn.Module: The model itself.
+        """
+        self.data_preprocessor._device = torch.device(
+            torch.cuda.current_device())
+        return super().cuda()
+
+    def cpu(self, *args, **kwargs) -> nn.Module:
+        """Overrides this method to set the :attr:`device`
+
+        Returns:
+            nn.Module: The model itself.
+        """
+        self.data_preprocessor._device = torch.device('cpu')
+        return super().cpu()
