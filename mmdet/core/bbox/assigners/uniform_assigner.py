@@ -1,7 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Optional
+
 import torch
+from mmengine.data import InstanceData
 
 from mmdet.registry import TASK_UTILS
+from ...utils import ConfigType
 from ..transforms import bbox_xyxy_to_cxcywh
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
@@ -9,34 +13,69 @@ from .base_assigner import BaseAssigner
 
 @TASK_UTILS.register_module()
 class UniformAssigner(BaseAssigner):
-    """Uniform Matching between the anchors and gt boxes, which can achieve
-    balance in positive anchors, and gt_bboxes_ignore was not considered for
+    """Uniform Matching between the priors and gt boxes, which can achieve
+    balance in positive priors, and gt_bboxes_ignore was not considered for
     now.
 
     Args:
-        pos_ignore_thr (float): the threshold to ignore positive anchors
-        neg_ignore_thr (float): the threshold to ignore negative anchors
-        match_times(int): Number of positive anchors for each gt box.
-           Default 4.
-        iou_calculator (dict): iou_calculator config
+        pos_ignore_thr (float): the threshold to ignore positive priors
+        neg_ignore_thr (float): the threshold to ignore negative priors
+        match_times(int): Number of positive priors for each gt box.
+           Defaults to 4.
+        iou_calculator (:obj:`ConfigDict` or dict): Config dict for iou
+            calculator. Defaults to ``dict(type='BboxOverlaps2D')``
     """
 
     def __init__(self,
-                 pos_ignore_thr,
-                 neg_ignore_thr,
-                 match_times=4,
-                 iou_calculator=dict(type='BboxOverlaps2D')):
+                 pos_ignore_thr: float,
+                 neg_ignore_thr: float,
+                 match_times: int = 4,
+                 iou_calculator: ConfigType = dict(type='BboxOverlaps2D')):
         self.match_times = match_times
         self.pos_ignore_thr = pos_ignore_thr
         self.neg_ignore_thr = neg_ignore_thr
         self.iou_calculator = TASK_UTILS.build(iou_calculator)
 
-    def assign(self,
-               bbox_pred,
-               anchor,
-               gt_bboxes,
-               gt_bboxes_ignore=None,
-               gt_labels=None):
+    def assign(
+            self,
+            pred_instances: InstanceData,
+            gt_instances: InstanceData,
+            gt_instances_ignore: Optional[InstanceData] = None
+    ) -> AssignResult:
+        """Assign gt to priors.
+
+        The assignment is done in following steps
+
+        1. assign -1 by default
+        2. compute the L1 cost between boxes. Note that we use priors and
+           predict boxes both
+        3. compute the ignore indexes use gt_bboxes and predict boxes
+        4. compute the ignore indexes of positive sample use priors and
+           predict boxes
+
+
+        Args:
+            pred_instances (:obj:`InstaceData`): Instances of model
+                predictions. It includes ``priors``, and the priors can
+                be priors, points, or bboxes predicted by the model,
+                shape(n, 4).
+            gt_instances (:obj:`InstaceData`): Ground truth of instance
+                annotations. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            gt_instances_ignore (:obj:`InstaceData`, optional): Instances
+                to be ignored during training. It includes ``bboxes``
+                attribute data that is ignored during training and testing.
+                Defaults to None.
+
+        Returns:
+            :obj:`AssignResult`: The assign result.
+        """
+
+        gt_bboxes = gt_instances.bboxes
+        gt_labels = gt_instances.labels
+        priors = pred_instances.priors
+        bbox_pred = pred_instances.decoder_priors
+
         num_gts, num_bboxes = gt_bboxes.size(0), bbox_pred.size(0)
 
         # 1. assign -1 by default
@@ -62,20 +101,20 @@ class UniformAssigner(BaseAssigner):
             return assign_result
 
         # 2. Compute the L1 cost between boxes
-        # Note that we use anchors and predict boxes both
+        # Note that we use priors and predict boxes both
         cost_bbox = torch.cdist(
             bbox_xyxy_to_cxcywh(bbox_pred),
             bbox_xyxy_to_cxcywh(gt_bboxes),
             p=1)
-        cost_bbox_anchors = torch.cdist(
-            bbox_xyxy_to_cxcywh(anchor), bbox_xyxy_to_cxcywh(gt_bboxes), p=1)
+        cost_bbox_priors = torch.cdist(
+            bbox_xyxy_to_cxcywh(priors), bbox_xyxy_to_cxcywh(gt_bboxes), p=1)
 
         # We found that topk function has different results in cpu and
         # cuda mode. In order to ensure consistency with the source code,
         # we also use cpu mode.
         # TODO: Check whether the performance of cpu and cuda are the same.
         C = cost_bbox.cpu()
-        C1 = cost_bbox_anchors.cpu()
+        C1 = cost_bbox_priors.cpu()
 
         # self.match_times x n
         index = torch.topk(
@@ -91,7 +130,7 @@ class UniformAssigner(BaseAssigner):
                             dim=1).reshape(-1).to(bbox_pred.device)
 
         pred_overlaps = self.iou_calculator(bbox_pred, gt_bboxes)
-        anchor_overlaps = self.iou_calculator(anchor, gt_bboxes)
+        anchor_overlaps = self.iou_calculator(priors, gt_bboxes)
         pred_max_overlaps, _ = pred_overlaps.max(dim=1)
         anchor_max_overlaps, _ = anchor_overlaps.max(dim=0)
 
@@ -99,7 +138,7 @@ class UniformAssigner(BaseAssigner):
         ignore_idx = pred_max_overlaps > self.neg_ignore_thr
         assigned_gt_inds[ignore_idx] = -1
 
-        # 4. Compute the ignore indexes of positive sample use anchors
+        # 4. Compute the ignore indexes of positive sample use priors
         # and predict boxes
         pos_gt_index = torch.arange(
             0, C1.size(1),
