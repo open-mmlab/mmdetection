@@ -135,7 +135,8 @@ class MMDetWandbHook(WandbLoggerHook):
         super(MMDetWandbHook, self).before_run(runner)
 
         # Save and Log config.
-        if runner.meta is not None:
+        if runner.meta is not None and runner.meta.get('exp_name',
+                                                       None) is not None:
             src_cfg_path = osp.join(runner.work_dir,
                                     runner.meta.get('exp_name', None))
             if osp.exists(src_cfg_path):
