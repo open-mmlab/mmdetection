@@ -1,71 +1,51 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import List, Optional, Tuple
+
 import torch
 import torch.nn as nn
 from mmcv.cnn import (ConvModule, bias_init_with_prob, constant_init, is_norm,
                       normal_init)
-from mmcv.runner import force_fp32
+from mmengine.data import InstanceData
+from torch import Tensor
 
-from mmdet.core import anchor_inside_flags, multi_apply, reduce_mean, unmap
+from mmdet.core import (ConfigType, InstanceList, OptInstanceList,
+                        anchor_inside_flags, levels_to_images, multi_apply,
+                        reduce_mean, unmap)
 from mmdet.registry import MODELS
 from .anchor_head import AnchorHead
 
 INF = 1e8
 
 
-def levels_to_images(mlvl_tensor):
-    """Concat multi-level feature maps by image.
-
-    [feature_level0, feature_level1...] -> [feature_image0, feature_image1...]
-    Convert the shape of each element in mlvl_tensor from (N, C, H, W) to
-    (N, H*W , C), then split the element to N elements with shape (H*W, C), and
-    concat elements in same image of all level along first dimension.
-
-    Args:
-        mlvl_tensor (list[torch.Tensor]): list of Tensor which collect from
-            corresponding level. Each element is of shape (N, C, H, W)
-
-    Returns:
-        list[torch.Tensor]: A list that contains N tensors and each tensor is
-            of shape (num_elements, C)
-    """
-    batch_size = mlvl_tensor[0].size(0)
-    batch_list = [[] for _ in range(batch_size)]
-    channels = mlvl_tensor[0].size(1)
-    for t in mlvl_tensor:
-        t = t.permute(0, 2, 3, 1)
-        t = t.view(batch_size, -1, channels).contiguous()
-        for img in range(batch_size):
-            batch_list[img].append(t[img])
-    return [torch.cat(item, 0) for item in batch_list]
-
-
 @MODELS.register_module()
 class YOLOFHead(AnchorHead):
-    """YOLOFHead Paper link: https://arxiv.org/abs/2103.09460.
+    """Detection Head of `YOLOF <https://arxiv.org/abs/2103.09460>`_
 
     Args:
         num_classes (int): The number of object classes (w/o background)
-        in_channels (List[int]): The number of input channels per scale.
+        in_channels (list[int]): The number of input channels per scale.
         cls_num_convs (int): The number of convolutions of cls branch.
-           Default 2.
+           Defaults to 2.
         reg_num_convs (int): The number of convolutions of reg branch.
-           Default 4.
-        norm_cfg (dict): Dictionary to construct and config norm layer.
+           Defaults to 4.
+        norm_cfg (:obj:`ConfigDict` or dict): Config dict for normalization
+            layer. Defaults to ``dict(type='BN', requires_grad=True)``.
     """
 
     def __init__(self,
-                 num_classes,
-                 in_channels,
-                 num_cls_convs=2,
-                 num_reg_convs=4,
-                 norm_cfg=dict(type='BN', requires_grad=True),
-                 **kwargs):
+                 num_classes: int,
+                 in_channels: List[int],
+                 num_cls_convs: int = 2,
+                 num_reg_convs: int = 4,
+                 norm_cfg: ConfigType = dict(type='BN', requires_grad=True),
+                 **kwargs) -> None:
         self.num_cls_convs = num_cls_convs
         self.num_reg_convs = num_reg_convs
         self.norm_cfg = norm_cfg
-        super(YOLOFHead, self).__init__(num_classes, in_channels, **kwargs)
+        super().__init__(
+            num_classes=num_classes, in_channels=in_channels, **kwargs)
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         cls_subnet = []
         bbox_subnet = []
         for i in range(self.num_cls_convs):
@@ -105,7 +85,7 @@ class YOLOFHead(AnchorHead):
             stride=1,
             padding=1)
 
-    def init_weights(self):
+    def init_weights(self) -> None:
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 normal_init(m, mean=0, std=0.01)
@@ -116,12 +96,25 @@ class YOLOFHead(AnchorHead):
         bias_cls = bias_init_with_prob(0.01)
         torch.nn.init.constant_(self.cls_score.bias, bias_cls)
 
-    def forward_single(self, feature):
-        cls_score = self.cls_score(self.cls_subnet(feature))
+    def forward_single(self, x: Tensor) -> Tuple[Tensor, Tensor]:
+        """Forward feature of a single scale level.
+
+        Args:
+            x (Tensor): Features of a single scale level.
+
+        Returns:
+            tuple:
+                normalized_cls_score (Tensor): Normalized Cls scores for a \
+                    single scale level, the channels number is \
+                    num_base_priors * num_classes.
+                bbox_reg (Tensor): Box energies / deltas for a single scale \
+                    level, the channels number is num_base_priors * 4.
+        """
+        cls_score = self.cls_score(self.cls_subnet(x))
         N, _, H, W = cls_score.shape
         cls_score = cls_score.view(N, -1, self.num_classes, H, W)
 
-        reg_feat = self.bbox_subnet(feature)
+        reg_feat = self.bbox_subnet(x)
         bbox_reg = self.bbox_pred(reg_feat)
         objectness = self.object_pred(reg_feat)
 
@@ -133,31 +126,33 @@ class YOLOFHead(AnchorHead):
         normalized_cls_score = normalized_cls_score.view(N, -1, H, W)
         return normalized_cls_score, bbox_reg
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def loss(self,
-             cls_scores,
-             bbox_preds,
-             gt_bboxes,
-             gt_labels,
-             img_metas,
-             gt_bboxes_ignore=None):
-        """Compute losses of the head.
+    def loss_by_feat(
+            self,
+            cls_scores: List[Tensor],
+            bbox_preds: List[Tensor],
+            batch_gt_instances: InstanceList,
+            batch_img_metas: List[dict],
+            batch_gt_instances_ignore: OptInstanceList = None) -> dict:
+        """Calculate the loss based on the features extracted by the detection
+        head.
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level
-                Has shape (batch, num_anchors * num_classes, h, w)
+                has shape (N, num_anchors * num_classes, H, W).
             bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (batch, num_anchors * 4, h, w)
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box
-            img_metas (list[dict]): Meta information of each image, e.g.,
+                level with shape (N, num_anchors * 4, H, W).
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss. Default: None
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            dict: A dictionary of loss components.
         """
         assert len(cls_scores) == 1
         assert self.prior_generator.num_levels == 1
@@ -165,7 +160,7 @@ class YOLOFHead(AnchorHead):
         device = cls_scores[0].device
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, img_metas, device=device)
+            featmap_sizes, batch_img_metas, device=device)
 
         # The output level is always 1
         anchor_list = [anchors[0] for anchors in anchor_list]
@@ -174,39 +169,33 @@ class YOLOFHead(AnchorHead):
         cls_scores_list = levels_to_images(cls_scores)
         bbox_preds_list = levels_to_images(bbox_preds)
 
-        label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
         cls_reg_targets = self.get_targets(
             cls_scores_list,
             bbox_preds_list,
             anchor_list,
             valid_flag_list,
-            gt_bboxes,
-            img_metas,
-            gt_bboxes_ignore_list=gt_bboxes_ignore,
-            gt_labels_list=gt_labels,
-            label_channels=label_channels)
+            batch_gt_instances,
+            batch_img_metas,
+            batch_gt_instances_ignore=batch_gt_instances_ignore)
         if cls_reg_targets is None:
             return None
-        (batch_labels, batch_label_weights, num_total_pos, num_total_neg,
-         batch_bbox_weights, batch_pos_predicted_boxes,
-         batch_target_boxes) = cls_reg_targets
+        (batch_labels, batch_label_weights, avg_factor, batch_bbox_weights,
+         batch_pos_predicted_boxes, batch_target_boxes) = cls_reg_targets
 
         flatten_labels = batch_labels.reshape(-1)
         batch_label_weights = batch_label_weights.reshape(-1)
         cls_score = cls_scores[0].permute(0, 2, 3,
                                           1).reshape(-1, self.cls_out_channels)
 
-        num_total_samples = (num_total_pos +
-                             num_total_neg) if self.sampling else num_total_pos
-        num_total_samples = reduce_mean(
-            cls_score.new_tensor(num_total_samples)).clamp_(1.0).item()
+        avg_factor = reduce_mean(
+            torch.tensor(avg_factor, dtype=torch.float, device=device)).item()
 
         # classification loss
         loss_cls = self.loss_cls(
             cls_score,
             flatten_labels,
             batch_label_weights,
-            avg_factor=num_total_samples)
+            avg_factor=avg_factor)
 
         # regression loss
         if batch_pos_predicted_boxes.shape[0] == 0:
@@ -217,21 +206,19 @@ class YOLOFHead(AnchorHead):
                 batch_pos_predicted_boxes,
                 batch_target_boxes,
                 batch_bbox_weights.float(),
-                avg_factor=num_total_samples)
+                avg_factor=avg_factor)
 
         return dict(loss_cls=loss_cls, loss_bbox=loss_bbox)
 
     def get_targets(self,
-                    cls_scores_list,
-                    bbox_preds_list,
-                    anchor_list,
-                    valid_flag_list,
-                    gt_bboxes_list,
-                    img_metas,
-                    gt_bboxes_ignore_list=None,
-                    gt_labels_list=None,
-                    label_channels=1,
-                    unmap_outputs=True):
+                    cls_scores_list: List[Tensor],
+                    bbox_preds_list: List[Tensor],
+                    anchor_list: List[Tensor],
+                    valid_flag_list: List[Tensor],
+                    batch_gt_instances: InstanceList,
+                    batch_img_metas: List[dict],
+                    batch_gt_instances_ignore: OptInstanceList = None,
+                    unmap_outputs: bool = True):
         """Compute regression and classification targets for anchors in
         multiple images.
 
@@ -245,12 +232,15 @@ class YOLOFHead(AnchorHead):
                 is a tensor of shape (h * w * num_anchors, 4).
             valid_flag_list (list[Tensor]): Valid flags of each image. Each
                element of is a tensor of shape (h * w * num_anchors, )
-            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
-            img_metas (list[dict]): Meta info of each image.
-            gt_bboxes_ignore_list (list[Tensor]): Ground truth bboxes to be
-                ignored.
-            gt_labels_list (list[Tensor]): Ground truth labels of each box.
-            label_channels (int): Channel of label.
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
             unmap_outputs (bool): Whether to map outputs back to the original
                 set of anchors.
 
@@ -270,54 +260,49 @@ class YOLOFHead(AnchorHead):
                 to properties at each feature map (i.e. having HxW dimension).
                 The results will be concatenated after the end
         """
-        num_imgs = len(img_metas)
+        num_imgs = len(batch_img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs
 
         # compute targets for each image
-        if gt_bboxes_ignore_list is None:
-            gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
-        if gt_labels_list is None:
-            gt_labels_list = [None for _ in range(num_imgs)]
+        if batch_gt_instances_ignore is None:
+            batch_gt_instances_ignore = [None] * num_imgs
         results = multi_apply(
             self._get_targets_single,
             bbox_preds_list,
             anchor_list,
             valid_flag_list,
-            gt_bboxes_list,
-            gt_bboxes_ignore_list,
-            gt_labels_list,
-            img_metas,
-            label_channels=label_channels,
+            batch_gt_instances,
+            batch_img_metas,
+            batch_gt_instances_ignore,
             unmap_outputs=unmap_outputs)
-        (all_labels, all_label_weights, pos_inds_list, neg_inds_list,
+        (all_labels, all_label_weights, pos_inds, neg_inds,
          sampling_results_list) = results[:5]
+        # Get `avg_factor` of all images, which calculate in `SamplingResult`.
+        # When using sampling method, avg_factor is usually the sum of
+        # positive and negative priors. When using `PseudoSampler`,
+        # `avg_factor` is usually equal to the number of positive priors.
+        avg_factor = sum(
+            [results.avg_factor for results in sampling_results_list])
         rest_results = list(results[5:])  # user-added return values
-        # no valid anchors
-        if any([labels is None for labels in all_labels]):
-            return None
-        # sampled anchors of all images
-        num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
-        num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
 
         batch_labels = torch.stack(all_labels, 0)
         batch_label_weights = torch.stack(all_label_weights, 0)
 
-        res = (batch_labels, batch_label_weights, num_total_pos, num_total_neg)
+        res = (batch_labels, batch_label_weights, avg_factor)
         for i, rests in enumerate(rest_results):  # user-added return values
             rest_results[i] = torch.cat(rests, 0)
 
         return res + tuple(rest_results)
 
     def _get_targets_single(self,
-                            bbox_preds,
-                            flat_anchors,
-                            valid_flags,
-                            gt_bboxes,
-                            gt_bboxes_ignore,
-                            gt_labels,
-                            img_meta,
-                            label_channels=1,
-                            unmap_outputs=True):
+                            bbox_preds: Tensor,
+                            flat_anchors: Tensor,
+                            valid_flags: Tensor,
+                            gt_instances: InstanceData,
+                            img_meta: dict,
+                            gt_instances_ignore: Optional[InstanceData] = None,
+                            unmap_outputs: bool = True,
+                            **kwargs) -> tuple:
         """Compute regression and classification targets for anchors in a
         single image.
 
@@ -328,14 +313,14 @@ class YOLOFHead(AnchorHead):
                 (h * w * num_anchors ,4)
             valid_flags (Tensor): Valid flags of the image, which shape is
                 (h * w * num_anchors,).
-            gt_bboxes (Tensor): Ground truth bboxes of the image,
-                shape (num_gts, 4).
-            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
-                ignored, shape (num_ignored_gts, 4).
-            img_meta (dict): Meta info of the image.
-            gt_labels (Tensor): Ground truth labels of each box,
-                shape (num_gts,).
-            label_channels (int): Channel of label.
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It should includes ``bboxes`` and ``labels``
+                attributes.
+            img_meta (dict): Meta information for current image.
+            gt_instances_ignore (:obj:`InstanceData`, optional): Instances
+                to be ignored during training. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
             unmap_outputs (bool): Whether to map outputs back to the original
                 set of anchors.
 
@@ -359,9 +344,13 @@ class YOLOFHead(AnchorHead):
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
-                                           self.train_cfg.allowed_border)
+                                           self.train_cfg['allowed_border'])
         if not inside_flags.any():
-            return (None, ) * 8
+            raise ValueError(
+                'There is no valid anchor inside the image boundary. Please '
+                'check the image size and anchor sizes, or set '
+                '``allowed_border`` to -1 to skip the condition.')
+
         # assign gt and sample anchors
         anchors = flat_anchors[inside_flags, :]
         bbox_preds = bbox_preds.reshape(-1, 4)
@@ -369,17 +358,18 @@ class YOLOFHead(AnchorHead):
 
         # decoded bbox
         decoder_bbox_preds = self.bbox_coder.decode(anchors, bbox_preds)
-        assign_result = self.assigner.assign(
-            decoder_bbox_preds, anchors, gt_bboxes, gt_bboxes_ignore,
-            None if self.sampling else gt_labels)
+        pred_instances = InstanceData(
+            priors=anchors, decoder_priors=decoder_bbox_preds)
+        assign_result = self.assigner.assign(pred_instances, gt_instances,
+                                             gt_instances_ignore)
 
         pos_bbox_weights = assign_result.get_extra_property('pos_idx')
         pos_predicted_boxes = assign_result.get_extra_property(
             'pos_predicted_boxes')
         pos_target_boxes = assign_result.get_extra_property('target_boxes')
 
-        sampling_result = self.sampler.sample(assign_result, anchors,
-                                              gt_bboxes)
+        sampling_result = self.sampler.sample(assign_result, pred_instances,
+                                              gt_instances)
         num_valid_anchors = anchors.shape[0]
         labels = anchors.new_full((num_valid_anchors, ),
                                   self.num_classes,
@@ -389,17 +379,11 @@ class YOLOFHead(AnchorHead):
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
         if len(pos_inds) > 0:
-            if gt_labels is None:
-                # Only rpn gives gt_labels as None
-                # Foreground is the first class since v2.5.0
-                labels[pos_inds] = 0
-            else:
-                labels[pos_inds] = gt_labels[
-                    sampling_result.pos_assigned_gt_inds]
-            if self.train_cfg.pos_weight <= 0:
+            labels[pos_inds] = sampling_result.pos_gt_labels
+            if self.train_cfg['pos_weight'] <= 0:
                 label_weights[pos_inds] = 1.0
             else:
-                label_weights[pos_inds] = self.train_cfg.pos_weight
+                label_weights[pos_inds] = self.train_cfg['pos_weight']
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
 

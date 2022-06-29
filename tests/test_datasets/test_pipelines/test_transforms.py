@@ -14,8 +14,8 @@ from mmdet.datasets.pipelines import (CopyPaste, CutOut, Expand,
                                       MinIoURandomCrop, MixUp, Mosaic, Pad,
                                       PhotoMetricDistortion, RandomAffine,
                                       RandomCenterCropPad, RandomCrop,
-                                      RandomFlip, Resize, SegRescale,
-                                      YOLOXHSVRandomAug)
+                                      RandomFlip, RandomShift, Resize,
+                                      SegRescale, YOLOXHSVRandomAug)
 from mmdet.registry import TRANSFORMS
 from .utils import create_full_masks, create_random_bboxes
 
@@ -1077,3 +1077,42 @@ class TestCorrupt(unittest.TestCase):
         self.assertEqual(
             repr(corrupt_transform), 'Corrupt(corruption=gaussian_blur, '
             'severity=1)')
+
+
+class TestRandomShift(unittest.TestCase):
+
+    def test_init(self):
+        # test assertion for invalid shift_ratio
+        with self.assertRaises(AssertionError):
+            RandomShift(prob=1.5)
+
+        # test assertion for invalid max_shift_px
+        with self.assertRaises(AssertionError):
+            RandomShift(max_shift_px=-1)
+
+    def test_transform(self):
+
+        results = dict()
+        img = mmcv.imread(
+            osp.join(osp.dirname(__file__), '../../data/color.jpg'), 'color')
+        results['img'] = img
+        h, w, _ = img.shape
+        gt_bboxes = create_random_bboxes(8, w, h)
+        results['gt_bboxes_labels'] = np.ones(
+            gt_bboxes.shape[0], dtype=np.int64)
+        results['gt_bboxes'] = gt_bboxes
+        transform = RandomShift(prob=1.0)
+        results = transform(results)
+
+        self.assertEqualresults(['img'].shape[:2], (h, w))
+        self.assertEqual(results['gt_bboxes_labels'].shape[0],
+                         results['gt_bboxes'].shape[0])
+        self.assertEqual(results['gt_bboxes_labels'].dtype, np.int64)
+        self.assertEqual(results['gt_bboxes'].dtype, np.float32)
+
+    def test_repr(self):
+        transform = RandomShift()
+        self.assertEqual(
+            repr(transform), ('RandomShift(prob=0.5, '
+                              'max_shift_px=32, '
+                              'filter_thr_px=1)'))
