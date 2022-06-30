@@ -1,8 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import torch
+from typing import Optional
 
+import torch
+from mmengine.data import InstanceData
+
+from mmdet.core.bbox.assigners.assign_result import AssignResult
 from mmdet.registry import TASK_UTILS
-from ..iou_calculators import build_iou_calculator
 from .max_iou_assigner import MaxIoUAssigner
 
 
@@ -37,16 +40,18 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
             on CPU device. Negative values mean not assign on CPU.
     """
 
-    def __init__(self,
-                 pos_iou_thr,
-                 neg_iou_thr,
-                 min_pos_iou=.0,
-                 gt_max_assign_all=True,
-                 ignore_iof_thr=-1,
-                 ignore_wrt_candidates=True,
-                 match_low_quality=True,
-                 gpu_assign_thr=-1,
-                 iou_calculator=dict(type='BboxOverlaps2D')):
+    def __init__(
+        self,
+        pos_iou_thr: float,
+        neg_iou_thr: float,
+        min_pos_iou: float = .0,
+        gt_max_assign_all: bool = True,
+        ignore_iof_thr: float = -1,
+        ignore_wrt_candidates: bool = True,
+        match_low_quality: bool = True,
+        gpu_assign_thr: int = -1,
+        iou_calculator: dict = dict(type='BboxOverlaps2D')
+    ) -> None:
         self.pos_iou_thr = pos_iou_thr
         self.neg_iou_thr = neg_iou_thr
         self.min_pos_iou = min_pos_iou
@@ -55,15 +60,13 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
         self.ignore_wrt_candidates = ignore_wrt_candidates
         self.gpu_assign_thr = gpu_assign_thr
         self.match_low_quality = match_low_quality
-        self.iou_calculator = build_iou_calculator(iou_calculator)
+        self.iou_calculator = TASK_UTILS.build(iou_calculator)
 
     def assign(self,
-               approxs,
-               squares,
-               approxs_per_octave,
-               gt_bboxes,
-               gt_bboxes_ignore=None,
-               gt_labels=None):
+               pred_instances: InstanceData,
+               gt_instances: InstanceData,
+               gt_instances_ignore: Optional[InstanceData] = None,
+               **kwargs) -> AssignResult:
         """Assign gt to approxs.
 
         This method assign a gt bbox to each group of approxs (bboxes),
@@ -82,19 +85,31 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
            one) to itself
 
         Args:
-            approxs (Tensor): Bounding boxes to be assigned,
-                shape(approxs_per_octave*n, 4).
-            squares (Tensor): Base Bounding boxes to be assigned,
-                shape(n, 4).
-            approxs_per_octave (int): number of approxs per octave
-            gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
-            gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
-                labelled as `ignored`, e.g., crowd boxes in COCO.
-            gt_labels (Tensor, optional): Label of gt_bboxes, shape (k, ).
+            pred_instances (:obj:`InstanceData`): Instances of model
+                predictions. It includes ``priors``, and the priors can
+                be anchors or points, or the bboxes predicted by the
+                previous stage, has shape (n, 4). ``approxs`` means the
+                group of approxs aligned with ``priors``, has shape
+                (n, num_approxs, 4).
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It usually includes ``bboxes``, with shape (k, 4),
+                and ``labels``, with shape (k, ).
+            gt_instances_ignore (:obj:`InstanceData`, optional): Instances
+                to be ignored during training. It includes ``bboxes``
+                attribute data that is ignored during training and testing.
+                Defaults to None.
 
         Returns:
             :obj:`AssignResult`: The assign result.
         """
+        squares = pred_instances.priors
+        approxs = pred_instances.approxs
+        gt_bboxes = gt_instances.bboxes
+        gt_labels = gt_instances.labels
+        gt_bboxes_ignore = None if gt_instances_ignore is None else \
+            gt_instances_ignore.get('bboxes', None)
+        approxs_per_octave = approxs.size(1)
+
         num_squares = squares.size(0)
         num_gts = gt_bboxes.size(0)
 
@@ -105,9 +120,7 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
             return assign_result
 
         # re-organize anchors by approxs_per_octave x num_squares
-        approxs = torch.transpose(
-            approxs.view(num_squares, approxs_per_octave, 4), 0,
-            1).contiguous().view(-1, 4)
+        approxs = torch.transpose(approxs, 0, 1).contiguous().view(-1, 4)
         assign_on_cpu = True if (self.gpu_assign_thr > 0) and (
             num_gts > self.gpu_assign_thr) else False
         # compute overlap and assign gt on CPU when number of GT is large
