@@ -6,7 +6,8 @@ import os.path as osp
 from mmengine.config import Config, DictAction
 from mmengine.runner import Runner
 
-from mmdet.utils import register_all_modules
+from mmdet.registry import RUNNERS
+from mmdet.utils import register_all_modules, replace_cfg_vals
 
 
 # TODO: support fuse_conv_bn and format_only
@@ -97,7 +98,13 @@ def main():
         cfg = trigger_visualization_hook(cfg, args)
 
     # build the runner from config
-    runner = Runner.from_cfg(cfg)
+    if 'runner_type' not in cfg:
+        # build the default runner
+        runner = Runner.from_cfg(cfg)
+    else:
+        # build customized runner from the registry
+        # if 'runner_type' is set in the cfg
+        runner = RUNNERS.build(cfg)
 
     # start testing
     runner.test()
