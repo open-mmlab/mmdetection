@@ -23,6 +23,13 @@ class SemiBaseDetector(BaseDetector):
         self.student = MODELS.build(detector)
         self.semi_train_cfg = semi_train_cfg
         self.semi_test_cfg = semi_test_cfg
+        self.freeze(self.teacher)
+
+    @staticmethod
+    def freeze(model):
+        model.eval()
+        for param in model.parameters():
+            param.requires_grad = False
 
     def loss(self, multi_batch_inputs, multi_batch_data_samples):
         losses = dict()
@@ -35,11 +42,9 @@ class SemiBaseDetector(BaseDetector):
             'unsup_student'] = self.project_pseudo_instances(
                 origin_pseudo_instances,
                 multi_batch_data_samples['unsup_student'])
-
         losses.update(
             **self.pseudo_loss(multi_batch_inputs['unsup_student'],
                                multi_batch_data_samples['unsup_student']))
-
         return losses
 
     def gt_loss(self, batch_inputs, batch_data_samples):
@@ -81,37 +86,22 @@ class SemiBaseDetector(BaseDetector):
             data_samples.gt_instances = data_samples.gt_instances.new(
                 bboxes=data_samples.gt_instances.bboxes[valid_mask],
                 labels=data_samples.gt_instances.labels[valid_mask])
-
         return batch_data_samples
 
     def update_pseudo_instances(self, batch_inputs, batch_data_samples):
-        self.teacher.eval()
-        with torch.no_grad():
-            results_list = self.teacher.predict(batch_inputs,
-                                                batch_data_samples)
-
+        results_list = self.teacher.predict(batch_inputs, batch_data_samples)
         for data_samples, results in zip(batch_data_samples, results_list):
-            if results.pred_instances.get('bboxes', None) is None:
-                continue
-            results.pred_instances.bboxes = bbox_project(
-                results.pred_instances.bboxes,
-                torch.tensor(data_samples.homography_matrix).inverse().to(
-                    self.data_preprocessor.device), data_samples.img_shape)
-            results = data_samples.dataset.update_pseudo_annos(
-                data_samples.img_id, results)
             valid_flag = \
                 results.pred_instances.scores > self.semi_train_cfg.score_thr
             data_samples.gt_instances = data_samples.gt_instances.new(
                 bboxes=results.pred_instances.bboxes[valid_flag],
                 labels=results.pred_instances.labels[valid_flag])
-        return self.filter_pseudo_instances(batch_data_samples)
+        return batch_data_samples
 
     def project_pseudo_instances(self, batch_pseudo_instances,
                                  batch_data_samples):
         for pseudo_instances, data_samples in zip(batch_pseudo_instances,
                                                   batch_data_samples):
-            if pseudo_instances.gt_instances.get('bboxes', None) is None:
-                continue
             pseudo_bboxes = bbox_project(
                 pseudo_instances.gt_instances.bboxes,
                 torch.tensor(data_samples.homography_matrix).to(
@@ -119,7 +109,7 @@ class SemiBaseDetector(BaseDetector):
             pseudo_labels = pseudo_instances.gt_instances.labels
             data_samples.gt_instances = data_samples.gt_instances.new(
                 bboxes=pseudo_bboxes, labels=pseudo_labels)
-        return batch_data_samples
+        return self.filter_pseudo_instances(batch_data_samples)
 
     def predict(self, batch_inputs, batch_data_samples):
         if self.semi_test_cfg.get('infer_on', None) == 'teacher':
@@ -154,7 +144,6 @@ class SemiBaseDetector(BaseDetector):
             state_dict.update({'student.' + k: state_dict[k] for k in keys})
             for k in keys:
                 state_dict.pop(k)
-
         return super()._load_from_state_dict(
             state_dict,
             prefix,

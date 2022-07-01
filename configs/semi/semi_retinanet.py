@@ -1,5 +1,5 @@
 _base_ = [
-    '../_base_/models/faster_rcnn_r50_fpn.py', '../_base_/default_runtime.py'
+    '../_base_/models/retinanet_r50_fpn.py', '../_base_/default_runtime.py'
 ]
 
 model_wrapper = dict(
@@ -151,4 +151,4 @@ log_processor = dict(by_epoch=False)
 
 custom_hooks = [dict(type='MeanTeacherHook')]
 load_from = '/home/SENSETIME/chenzeming.vendor/Documents/' \
-            'gitlib/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
+            'gitlib/retinanet_r50_fpn_1x_coco_20200130-c2398f9e.pth'
