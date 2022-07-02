@@ -548,9 +548,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco
+  - Name: mask_rcnn_regnetx-1.6GF_fpn_mstrain-poly_3x_coco
     In Collection: Mask R-CNN
-    Config: configs/regnet/mask_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco.py
+    Config: configs/regnet/mask_rcnn_regnetx-1.6GF_fpn_mstrain-poly_3x_coco.py
     Metadata:
       Training Memory (GB): 3.6
       Epochs: 36
@@ -601,7 +601,7 @@ Models:
         Dataset: COCO
         Metrics:
           mask AP: 38.7
-    Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-1.6GF_fpn_mstrain-poly_3x_coco/mask_rcnn_regnetx-1_20210602_210641-6e63e19c.pth
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco/mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco_20200521_202221-99879813.pth
     Paper:
       URL: https://arxiv.org/abs/2003.13678
       Title: 'Designing Network Design Spaces'
@@ -610,9 +610,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco
+  - Name: mask_rcnn_regnetx-4GF_fpn_mstrain-poly_3x_coco
     In Collection: Mask R-CNN
-    Config: configs/regnet/mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco.py
+    Config: configs/regnet/mask_rcnn_regnetx-4GF_fpn_mstrain-poly_3x_coco.py
     Metadata:
       Training Memory (GB): 5.1
       Epochs: 36
