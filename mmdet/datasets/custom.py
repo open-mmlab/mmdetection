@@ -16,10 +16,9 @@ from .pipelines import Compose
 
 @DATASETS.register_module()
 class CustomDataset(Dataset):
-    """Custom dataset for detection.
+    """用于检测的自定义数据集.
 
-    The annotation format is shown as follows. The `ann` field is optional for
-    testing.
+    标注文件格式如下所示。 `ann` 字段对于验证阶段是可有可无的.
 
     .. code-block:: none
 
@@ -39,17 +38,13 @@ class CustomDataset(Dataset):
         ]
 
     Args:
-        ann_file (str): Annotation file path.
-        pipeline (list[dict]): Processing pipeline.
-        classes (str | Sequence[str], optional): Specify classes to load.
-            If is None, ``cls.CLASSES`` will be used. Default: None.
-        data_root (str, optional): Data root for ``ann_file``,
-            ``img_prefix``, ``seg_prefix``, ``proposal_file`` if specified.
-        test_mode (bool, optional): If set True, annotation will not be loaded.
-        filter_empty_gt (bool, optional): If set true, images without bounding
-            boxes of the dataset's classes will be filtered out. This option
-            only works when `test_mode=False`, i.e., we never filter images
-            during tests.
+        ann_file (str): 标注文件路径.
+        pipeline (list[dict]): 数据处理管道.
+        classes (str | Sequence[str], optional): 指定要加载的类.如果是 None,将使用 ``cls.CLASSES``.默认值:无.
+        data_root (str, optional): 如果指定, ``ann_file``,``img_prefix``, ``seg_prefix``, ``proposal_file``的数据根目录,
+        test_mode (bool, optional): 如果为 True,则不会加载标注文件.
+        filter_empty_gt (bool, optional): 如果设置为 true,则将过滤掉没有标注框的图像.
+                                          此选项仅在 `test_mode=False` 时有效,即我们在测试期间从不过滤图像.
     """
 
     CLASSES = None
@@ -77,7 +72,7 @@ class CustomDataset(Dataset):
         self.file_client = mmcv.FileClient(**file_client_args)
         self.CLASSES = self.get_classes(classes)
 
-        # join paths if data_root is specified
+        # 如果指定了 data_root 并且 下列各路径并非绝对路径时.则使data_root成为下列路径的父目录
         if self.data_root is not None:
             if not osp.isabs(self.ann_file):
                 self.ann_file = osp.join(self.data_root, self.ann_file)
@@ -85,55 +80,47 @@ class CustomDataset(Dataset):
                 self.img_prefix = osp.join(self.data_root, self.img_prefix)
             if not (self.seg_prefix is None or osp.isabs(self.seg_prefix)):
                 self.seg_prefix = osp.join(self.data_root, self.seg_prefix)
-            if not (self.proposal_file is None
-                    or osp.isabs(self.proposal_file)):
-                self.proposal_file = osp.join(self.data_root,
-                                              self.proposal_file)
-        # load annotations (and proposals)
+            if not (self.proposal_file is None or osp.isabs(self.proposal_file)):
+                self.proposal_file = osp.join(self.data_root, self.proposal_file)
+        # 加载标注文件 (and proposals) TODO proposals?
         if hasattr(self.file_client, 'get_local_path'):
+            # 如果 self.ann_file 是非本地路径则get_local_path方法会将其上面的数据下载到本地local_path,如果是那么直接返回local_path
             with self.file_client.get_local_path(self.ann_file) as local_path:
                 self.data_infos = self.load_annotations(local_path)
         else:
-            warnings.warn(
-                'The used MMCV version does not have get_local_path. '
-                f'We treat the {self.ann_file} as local paths and it '
-                'might cause errors if the path is not a local path. '
-                'Please use MMCV>= 1.3.16 if you meet errors.')
+            warnings.warn(f'正在使用的 MMCV 版本没有 get_local_path方法. 我们将 {self.ann_file} 视为本地路径,'
+                          '如果它不是本地路径，它可能会导致错误.如果遇到错误请使用 MMCV>= 1.3.16的版本.')
             self.data_infos = self.load_annotations(self.ann_file)
 
         if self.proposal_file is not None:
             if hasattr(self.file_client, 'get_local_path'):
-                with self.file_client.get_local_path(
-                        self.proposal_file) as local_path:
+                with self.file_client.get_local_path(self.proposal_file) as local_path:
                     self.proposals = self.load_proposals(local_path)
             else:
-                warnings.warn(
-                    'The used MMCV version does not have get_local_path. '
-                    f'We treat the {self.ann_file} as local paths and it '
-                    'might cause errors if the path is not a local path. '
-                    'Please use MMCV>= 1.3.16 if you meet errors.')
+                warnings.warn(f'正在使用的 MMCV 版本没有 get_local_path方法. 我们将 {self.ann_file} 视为本地路径,'
+                              '如果它不是本地路径，它可能会导致错误.如果遇到错误请使用 MMCV>= 1.3.16的版本.')
                 self.proposals = self.load_proposals(self.proposal_file)
         else:
             self.proposals = None
 
-        # filter images too small and containing no annotations
+        # 过滤宽或高小于指定尺寸且没有标注的图像(仅在训练阶段应用)
         if not test_mode:
             valid_inds = self._filter_imgs()
             self.data_infos = [self.data_infos[i] for i in valid_inds]
             if self.proposals is not None:
                 self.proposals = [self.proposals[i] for i in valid_inds]
-            # set group flag for the sampler
+            # 为采样数据设置组flag值
             self._set_group_flag()
 
-        # processing pipeline
+        # 初始化数据处理管道
         self.pipeline = Compose(pipeline)
 
     def __len__(self):
-        """Total number of samples of data."""
+        """数据样本总数."""
         return len(self.data_infos)
 
     def load_annotations(self, ann_file):
-        """Load annotation from annotation file."""
+        """从标注文件加载标注信息."""
         return mmcv.load(ann_file)
 
     def load_proposals(self, proposal_file):
@@ -141,31 +128,31 @@ class CustomDataset(Dataset):
         return mmcv.load(proposal_file)
 
     def get_ann_info(self, idx):
-        """Get annotation by index.
+        """根据索引获取标注信息中的ann字段.
 
         Args:
-            idx (int): Index of data.
+            idx (int): 指定索引.
 
         Returns:
-            dict: Annotation info of specified index.
+            dict: 指定索引的ann字段信息.
         """
 
         return self.data_infos[idx]['ann']
 
     def get_cat_ids(self, idx):
-        """Get category ids by index.
+        """根据索引获取类别id.
 
         Args:
-            idx (int): Index of data.
+            idx (int): 指定索引.
 
         Returns:
-            list[int]: All categories in the image of specified index.
+            list[int]: 指定索引的图片中的所有类别id.
         """
 
         return self.data_infos[idx]['ann']['labels'].astype(np.int).tolist()
 
     def pre_pipeline(self, results):
-        """Prepare results dict for pipeline."""
+        """为数据管道准备字典格式的数据."""
         results['img_prefix'] = self.img_prefix
         results['seg_prefix'] = self.seg_prefix
         results['proposal_file'] = self.proposal_file
@@ -174,10 +161,9 @@ class CustomDataset(Dataset):
         results['seg_fields'] = []
 
     def _filter_imgs(self, min_size=32):
-        """Filter images too small."""
+        """过滤宽或高小于指定尺寸太小的图像."""
         if self.filter_empty_gt:
-            warnings.warn(
-                'CustomDataset does not support filtering empty gt images.')
+            warnings.warn('CustomDataset基础类 不支持过滤空标签图像.')
         valid_inds = []
         for i, img_info in enumerate(self.data_infos):
             if min(img_info['width'], img_info['height']) >= min_size:
@@ -185,11 +171,7 @@ class CustomDataset(Dataset):
         return valid_inds
 
     def _set_group_flag(self):
-        """Set flag according to image aspect ratio.
-
-        Images with aspect ratio greater than 1 will be set as group 1,
-        otherwise group 0.
-        """
+        """根据图像宽高比设置flag.宽高比大于 1 的图像的flag值为 1,否则为 0."""
         self.flag = np.zeros(len(self), dtype=np.uint8)
         for i in range(len(self)):
             img_info = self.data_infos[i]
@@ -197,19 +179,18 @@ class CustomDataset(Dataset):
                 self.flag[i] = 1
 
     def _rand_another(self, idx):
-        """Get another random index from the same group as the given index."""
+        """从与给定索引相同的flag值中获取另一个随机索引."""
         pool = np.where(self.flag == self.flag[idx])[0]
         return np.random.choice(pool)
 
     def __getitem__(self, idx):
-        """Get training/test data after pipeline.
+        """获取经过数据增强管道后的 训练/测试 数据.
 
         Args:
-            idx (int): Index of data.
+            idx (int): 指定索引.
 
         Returns:
-            dict: Training/test data (with annotation if `test_mode` is set \
-                True).
+            dict: 训练/测试数据 (如果 `test_mode` 设置为 True，则带有标注信息).
         """
 
         if self.test_mode:
@@ -222,19 +203,37 @@ class CustomDataset(Dataset):
             return data
 
     def prepare_train_img(self, idx):
-        """Get training data and annotations after pipeline.
+        """获取经过数据增强后的训练数据与标注信息.
 
         Args:
-            idx (int): Index of data.
+            idx (int): 指定索引.
 
         Returns:
-            dict: Training data and annotation after pipeline with new keys \
-                introduced by pipeline.
+            dict: 增加新字段的标注信息.
+        results = {
+        'img_info': {'file_name': '000921.jpg', 'id': 754, 'width': 800, 'height': 600, 'filename': '000921.jpg'},
+        'ann_info': {'bboxes': array([[108., 350., 149., 455.],[ 68., 228., 129., 325.]], dtype=float32),
+        'labels': array([11,  0], dtype=int64), 'bboxes_ignore': array([], shape=(0, 4), dtype=float32),
+        'masks': [[], []], 'seg_map': '000921.png'},
+        以下六个key是在self.pre_pipeline中新增,并根据配置文件中的值初始化的
+        'img_prefix': 'd:/mmdetection/data/yexi/images/',
+        'seg_prefix': None,
+        'proposal_file': None,
+        'bbox_fields': [],
+        'mask_fields': [],
+        'seg_fields': []}
         """
 
         img_info = self.data_infos[idx]
         ann_info = self.get_ann_info(idx)
         results = dict(img_info=img_info, ann_info=ann_info)
+        """
+        results = {
+        'img_info': {'file_name': '000921.jpg', 'id': 754, 'width': 800, 'height': 600, 'filename': '000921.jpg'},
+        'ann_info': {'bboxes': array([[108., 350., 149., 455.],[ 68., 228., 129., 325.]], dtype=float32), 
+        'labels': array([11,  0], dtype=int64), 'bboxes_ignore': array([], shape=(0, 4), dtype=float32), 
+        'masks': [[], []], 'seg_map': '000921.png'}}
+        """
         if self.proposals is not None:
             results['proposals'] = self.proposals[idx]
         self.pre_pipeline(results)
@@ -260,23 +259,21 @@ class CustomDataset(Dataset):
 
     @classmethod
     def get_classes(cls, classes=None):
-        """Get class names of current dataset.
+        """获取当前数据集的类名.
 
         Args:
-            classes (Sequence[str] | str | None): If classes is None, use
-                default CLASSES defined by builtin dataset. If classes is a
-                string, take it as a file name. The file contains the name of
-                classes where each line contains one class name. If classes is
-                a tuple or list, override the CLASSES defined by the dataset.
+            classes (Sequence[str] | str | None): 如果 classes 为 None,则使用内置数据集定义的默认 CLASSES.
+                如果 classes 是字符串,则将其作为文件名.该文件包含类的名称,其中每一行包含一个类名.
+                如果 classes 是元组或列表,那么覆盖数据集定义的 CLASSES.
 
         Returns:
-            tuple[str] or list[str]: Names of categories of the dataset.
+            tuple[str] or list[str]: 数据集的类别名称.
         """
         if classes is None:
             return cls.CLASSES
 
         if isinstance(classes, str):
-            # take it as a file path
+            # 将其作为文件路径并加载其内容
             class_names = mmcv.list_from_file(classes)
         elif isinstance(classes, (tuple, list)):
             class_names = classes

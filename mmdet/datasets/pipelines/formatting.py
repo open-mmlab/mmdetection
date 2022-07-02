@@ -175,9 +175,8 @@ class ToDataContainer:
 class DefaultFormatBundle:
     """Default formatting bundle.
 
-    It simplifies the pipeline of formatting common fields, including "img",
-    "proposals", "gt_bboxes", "gt_labels", "gt_masks" and "gt_semantic_seg".
-    These fields are formatted as follows.
+    它简化了常用字段管道的格式，包括“img”、“proposals”、“gt_bboxes”、“gt_labels”、“gt_masks”和“gt_semantic_seg”。
+    这些字段被规范的操作步骤如下所示.
 
     - img: (1)transpose, (2)to tensor, (3)to DataContainer (stack=True)
     - proposals: (1)to tensor, (2)to DataContainer
@@ -189,12 +188,10 @@ class DefaultFormatBundle:
                        (3)to DataContainer (stack=True)
 
     Args:
-        img_to_float (bool): Whether to force the image to be converted to
-            float type. Default: True.
+        img_to_float (bool): 是否强制将图像转换为浮点类型.
         pad_val (dict): A dict for padding value in batch collating,
-            the default value is `dict(img=0, masks=0, seg=255)`.
-            Without this argument, the padding value of "gt_semantic_seg"
-            will be set to 0 by default, which should be 255.
+            默认值为 `dict(img=0, masks=0, seg=255)`.
+            如果没有这个参数，“gt_semantic_seg”的填充值将由默认的255设置为0.
     """
 
     def __init__(self,
@@ -217,12 +214,10 @@ class DefaultFormatBundle:
         if 'img' in results:
             img = results['img']
             if self.img_to_float is True and img.dtype == np.uint8:
-                # Normally, image is of uint8 type without normalization.
-                # At this time, it needs to be forced to be converted to
-                # flot32, otherwise the model training and inference
-                # will be wrong. Only used for YOLOX currently .
+                # 通常,uint8 类型的图像是没有标准化的,这时候需要强制转换为flot32,否则模型训练和推理会出错.
+                # 目前仅用于 YOLOX .
                 img = img.astype(np.float32)
-            # add default meta keys
+            # 设置一些默认的键值, 如果pipline中没有的话(Resize、Normalize 和 Pad)
             results = self._add_default_meta_keys(results)
             if len(img.shape) < 3:
                 img = np.expand_dims(img, -1)
@@ -248,9 +243,8 @@ class DefaultFormatBundle:
     def _add_default_meta_keys(self, results):
         """Add default meta keys.
 
-        We set default meta keys including `pad_shape`, `scale_factor` and
-        `img_norm_cfg` to avoid the case where no `Resize`, `Normalize` and
-        `Pad` are implemented during the whole pipeline.
+        我们设置了默认的 meta keys 其中包括 `pad_shape`, `scale_factor` and
+        `img_norm_cfg` ,主要是为了避免在整个pipline中没有实现 Resize、Normalize 和 Pad 的情况.
 
         Args:
             results (dict): Result dict contains the data to convert.
@@ -279,37 +273,33 @@ class DefaultFormatBundle:
 class Collect:
     """Collect data from the loader relevant to the specific task.
 
-    This is usually the last stage of the data loader pipeline. Typically keys
-    is set to some subset of "img", "proposals", "gt_bboxes",
-    "gt_bboxes_ignore", "gt_labels", and/or "gt_masks".
+    这通常是数据加载管道的最后阶段.
+    通常,键设置为{“img”、“proposals”、“gt_bboxes”、“gt_bboxes_ignore”、“gt_labels” and/or “gt_masks”}的某个子集.
 
-    The "img_meta" item is always populated.  The contents of the "img_meta"
-    dictionary depends on "meta_keys". By default this includes:
+    键“img_meta”的值总是会生成/填充。 它的内容取决于“meta_keys”。默认情况下，这包括:
 
-        - "img_shape": shape of the image input to the network as a tuple \
-            (h, w, c).  Note that images may be zero padded on the \
-            bottom/right if the batch tensor is larger than this shape.
+        - "img_shape": (h, w, c) 输入到网络的图像的形状。请注意，如果batch tensor大于此值,则图像可能会在右下角补零.
 
-        - "scale_factor": a float indicating the preprocessing scale
+        - "scale_factor": 在ori_shape -> img_shape时计算的缩放因子,它决定了gt_box的最终输出
 
-        - "flip": a boolean indicating if image flip transform was used
+        - "flip": 是否使用了图像翻转变换
 
-        - "filename": path to the image file
+        - "filename": 图像文件的绝对路径
 
-        - "ori_shape": original shape of the image as a tuple (h, w, c)
+        - "ori_shape": 输入图像的原始形状 (h, w, c)
 
-        - "pad_shape": image shape after padding
+        - "pad_shape": 填充后的图像形状
 
-        - "img_norm_cfg": a dict of normalization information:
+        - "img_norm_cfg": 包含归一化信息的字典:
 
-            - mean - per channel mean subtraction
-            - std - per channel std divisor
-            - to_rgb - bool indicating if bgr was converted to rgb
+            - mean - 每个通道的均值
+            - std - 每个通道的方差
+            - to_rgb - 是否将图像由 bgr 转换为 rgb
 
     Args:
-        keys (Sequence[str]): Keys of results to be collected in ``data``.
-        meta_keys (Sequence[str], optional): Meta keys to be converted to
-            ``mmcv.DataContainer`` and collected in ``data[img_metas]``.
+        keys (Sequence[str]): 要在“data”中收集的 results中 的键,其值也引用自results中的值.
+        meta_keys (Sequence[str], optional): 同上,只不过这些键值会被揉到一个dict中,并将该dict转换为
+            ``mmcv.DataContainer``, 最后将该结果作为``data[img_metas]``的值.
             Default: ``('filename', 'ori_filename', 'ori_shape', 'img_shape',
             'pad_shape', 'scale_factor', 'flip', 'flip_direction',
             'img_norm_cfg')``
@@ -324,8 +314,8 @@ class Collect:
         self.meta_keys = meta_keys
 
     def __call__(self, results):
-        """Call function to collect keys in results. The keys in ``meta_keys``
-        will be converted to :obj:mmcv.DataContainer.
+        """调用该函数以收集results中的键值. ``meta_keys``中的键及其对应的results中的值会被装进dict中
+        并转换为:obj:mmcv.DataContainer.
 
         Args:
             results (dict): Result dict contains the data to collect.

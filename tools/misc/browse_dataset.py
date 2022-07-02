@@ -16,7 +16,7 @@ from mmdet.utils import replace_cfg_vals, update_data_root
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Browse a dataset')
-    parser.add_argument('config', help='train config file path')
+    parser.add_argument('--config', help='train config file path',  default=r'D:\mmdetection\configs\retinanet\retinanet_r50_fpn_1x_coco.py')
     parser.add_argument(
         '--skip-type',
         type=str,

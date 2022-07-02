@@ -14,10 +14,10 @@ class GroupSampler(Sampler):
         self.dataset = dataset
         self.samples_per_gpu = samples_per_gpu
         self.flag = dataset.flag.astype(np.int64)
-        self.group_sizes = np.bincount(self.flag)
+        self.group_sizes = np.bincount(self.flag)  # 计算每个flag值得样本数
         self.num_samples = 0
-        for i, size in enumerate(self.group_sizes):
-            self.num_samples += int(np.ceil(
+        for i, size in enumerate(self.group_sizes):  # 单独计算每个flag值对应的样本最多有多少batch,并累加到一起
+            self.num_samples += int(np.ceil(         # 因为每个batch的flag值是一致的
                 size / self.samples_per_gpu)) * self.samples_per_gpu
 
     def __iter__(self):
@@ -25,20 +25,23 @@ class GroupSampler(Sampler):
         for i, size in enumerate(self.group_sizes):
             if size == 0:
                 continue
-            indice = np.where(self.flag == i)[0]
+            indice = np.where(self.flag == i)[0]  # 获取同属一个flag值的样本索引
             assert len(indice) == size
-            np.random.shuffle(indice)
-            num_extra = int(np.ceil(size / self.samples_per_gpu)
+            np.random.shuffle(indice)  # 打乱group内索引,(shuffle更细化的实现,相比于下面sample间的随机索引)
+            num_extra = int(np.ceil(size / self.samples_per_gpu)  # 每个group中最后一个sample需要额外补充的样本数
                             ) * self.samples_per_gpu - len(indice)
             indice = np.concatenate(
-                [indice, np.random.choice(indice, num_extra)])
+                [indice, np.random.choice(indice, num_extra)])  # 从该group中随机抽取补充样本
             indices.append(indice)
-        indices = np.concatenate(indices)
+        indices = np.concatenate(indices)  # 每个group的样本索引
         indices = [
             indices[i * self.samples_per_gpu:(i + 1) * self.samples_per_gpu]
-            for i in np.random.permutation(
+            for i in np.random.permutation(  # 打乱sample的索引,
                 range(len(indices) // self.samples_per_gpu))
         ]
+        # 这两次shuffle都是必须的,缺少任何一个都不是真正的shuffle训练,
+        # 例如缺少第一个shuffle,那么就会造成每个group中每个batch内部的顺序是固定的
+        # 例如缺少第二个shuffle,那么就会造成每个epoch中每个group间的顺序是固定的
         indices = np.concatenate(indices)
         indices = indices.astype(np.int64).tolist()
         assert len(indices) == self.num_samples

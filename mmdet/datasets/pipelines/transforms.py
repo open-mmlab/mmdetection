@@ -31,46 +31,31 @@ except ImportError:
 class Resize:
     """Resize images & bbox & mask.
 
-    This transform resizes the input image to some scale. Bboxes and masks are
-    then resized with the same scale factor. If the input dict contains the key
-    "scale", then the scale in the input dict is used, otherwise the specified
-    scale in the init method is used. If the input dict contains the key
-    "scale_factor" (if MultiScaleFlipAug does not give img_scale but
-    scale_factor), the actual scale will be computed by image shape and
-    scale_factor.
+    此变换是将输入图像的大小调整到一定比例。然后使用相同的比例因子调整box和mask的大小. 如果输入dict包含“scale”键,
+    则使用输入dict中的scale，否则使用__init__方法中指定的scale. 如果输入字典包含键“scale_factor”
+    (如果 MultiScaleFlipAug 不给出 img_scale 而是 scale_factor), 实际 scale 将由图像形状和 scale_factor 计算.
 
-    `img_scale` can either be a tuple (single-scale) or a list of tuple
-    (multi-scale). There are 3 multiscale modes:
+    `img_scale` 可以是元组（单尺度）或元组列表（多尺度）. 有 3 种多尺度模式:
 
-    - ``ratio_range is not None``: randomly sample a ratio from the ratio \
-      range and multiply it with the image scale.
-    - ``ratio_range is None`` and ``multiscale_mode == "range"``: randomly \
-      sample a scale from the multiscale range.
-    - ``ratio_range is None`` and ``multiscale_mode == "value"``: randomly \
-      sample a scale from multiple scales.
+    - ``ratio_range is not None``: 从ratio_range中随机采样一个ratio并将其与图像比例相乘.
+    - ``ratio_range is None`` and ``multiscale_mode == "range"``: 随机从多尺度范围内采样一个scale.
+    - ``ratio_range is None`` and ``multiscale_mode == "value"``: 随机从多个尺度中采样一个尺度.
 
     Args:
-        img_scale (tuple or list[tuple]): Images scales for resizing.
-        multiscale_mode (str): Either "range" or "value".
+        img_scale (tuple or list[tuple]): 图像缩放的目标尺寸.
+        multiscale_mode (str): "range" 或 "value".
         ratio_range (tuple[float]): (min_ratio, max_ratio)
-        keep_ratio (bool): Whether to keep the aspect ratio when resizing the
-            image.
-        bbox_clip_border (bool, optional): Whether to clip the objects outside
-            the border of the image. In some dataset like MOT17, the gt bboxes
-            are allowed to cross the border of images. Therefore, we don't
-            need to clip the gt bboxes in these cases. Defaults to True.
-        backend (str): Image resize backend, choices are 'cv2' and 'pillow'.
-            These two backends generates slightly different results. Defaults
-            to 'cv2'.
-        interpolation (str): Interpolation method, accepted values are
-            "nearest", "bilinear", "bicubic", "area", "lanczos" for 'cv2'
-            backend, "nearest", "bilinear" for 'pillow' backend.
-        override (bool, optional): Whether to override `scale` and
-            `scale_factor` so as to call resize twice. Default False. If True,
-            after the first resizing, the existed `scale` and `scale_factor`
-            will be ignored so the second resizing can be allowed.
-            This option is a work-around for multiple times of resize in DETR.
-            Defaults to False.
+        keep_ratio (bool): 调整图像大小时是否保持宽高比.
+        bbox_clip_border (bool, optional): 是否裁剪图像边界外的对象。在像 MOT17 这样的数据集中，允许 gt bboxes 超出图像的边界。
+            因此，在这种情况下，我们不需要裁剪 gt bbox。默认为True.
+        backend (str): resize操作的实现后端, 可选 'cv2' 和 'pillow'.这两个后端生成的结果略有不同.
+            默认 'cv2'.
+        interpolation (str): 插值方式, 后端为'cv2'的可选方式为
+            "nearest", "bilinear", "bicubic", "area", "lanczos"
+            后端为'cv2'的可选方式为"nearest", "bilinear" for 'pillow' backend.
+        override (bool, optional): 是否覆盖 `scale` 和 `scale_factor` 以调用 resize 两次。默认False。
+            如果为 True，则在第一次调整大小后，将忽略现有的 `scale` 和 `scale_factor`，以便允许第二次调整大小。
+            此参数是在 DETR 中多次调整大小的解决方法.
     """
 
     def __init__(self,
@@ -92,10 +77,10 @@ class Resize:
             assert mmcv.is_list_of(self.img_scale, tuple)
 
         if ratio_range is not None:
-            # mode 1: given a scale and a range of image ratio
+            # 情况 1: 给定一个图像比例和比率范围
             assert len(self.img_scale) == 1
         else:
-            # mode 2: given multiple scales or a range of scales
+            # 情况 2: 给定多个scale并在其中随机选取或两个scale(且为上下限,在其范围内随机抽取scale)
             assert multiscale_mode in ['value', 'range']
 
         self.backend = backend
@@ -109,15 +94,14 @@ class Resize:
 
     @staticmethod
     def random_select(img_scales):
-        """Randomly select an img_scale from given candidates.
+        """从给定的img_scales中随机选择一个 img_scale.
 
         Args:
-            img_scales (list[tuple]): Images scales for selection.
+            img_scales (list[tuple]): 用于选择的多个图像比例.
 
         Returns:
-            (tuple, int): Returns a tuple ``(img_scale, scale_dix)``, \
-                where ``img_scale`` is the selected image scale and \
-                ``scale_idx`` is the selected index in the given candidates.
+            (tuple, int): 返回一个元组``(img_scale，scale_dix)``，
+            其中``img_scale``是选定的图像比例, ``scale_idx``是给定候选中的选定索引.
         """
 
         assert mmcv.is_list_of(img_scales, tuple)
@@ -127,17 +111,15 @@ class Resize:
 
     @staticmethod
     def random_sample(img_scales):
-        """Randomly sample an img_scale when ``multiscale_mode=='range'``.
+        """当 ``multiscale_mode=='range'`` 时随机采样一个 img_scale.
+            img_scales = [(s1,s2), (s3,s4)] (s1,s2)为下限,(s3,s4)为上限, 最后返回(randint(s1,s2), randint(s3,s4))
 
         Args:
-            img_scales (list[tuple]): Images scale range for sampling.
-                There must be two tuples in img_scales, which specify the lower
-                and upper bound of image scales.
+            img_scales (list[tuple]): 用于采样的图像比例范围。 它必须有两个元组，它们指定图像比例的下限和上限.
 
         Returns:
-            (tuple, None): Returns a tuple ``(img_scale, None)``, where \
-                ``img_scale`` is sampled scale and None is just a placeholder \
-                to be consistent with :func:`random_select`.
+            (tuple, None): 返回一个元组 ``(img_scale, None)``，
+            其中  ``img_scale`` 是采样比例， None 只是一个占位符 以与:func:`random_select`保持一致.
         """
 
         assert mmcv.is_list_of(img_scales, tuple) and len(img_scales) == 2
@@ -154,22 +136,16 @@ class Resize:
 
     @staticmethod
     def random_sample_ratio(img_scale, ratio_range):
-        """Randomly sample an img_scale when ``ratio_range`` is specified.
-
-        A ratio will be randomly sampled from the range specified by
-        ``ratio_range``. Then it would be multiplied with ``img_scale`` to
-        generate sampled scale.
+        """
+        从“ratio_range”指定的范围内随机抽取一个ratio。然后将其与“img_scale”相乘并返回.
 
         Args:
-            img_scale (tuple): Images scale base to multiply with ratio.
-            ratio_range (tuple[float]): The minimum and maximum ratio to scale
-                the ``img_scale``.
+            img_scale (tuple): 基础图像比例,它将会乘以ratio.
+            ratio_range (tuple[float]): 缩放“img_scale”的最小和最大ratio.
 
         Returns:
-            (tuple, None): Returns a tuple ``(scale, None)``, where \
-                ``scale`` is sampled ratio multiplied with ``img_scale`` and \
-                None is just a placeholder to be consistent with \
-                :func:`random_select`.
+            (tuple, None): 返回一个元组 ``(scale, None)``，其中 ``scale`` 是 ratio 与 ``img_scale`` 的乘积，
+            None 只是一个与 :func:`random_select` 保持一致的占位符.
         """
 
         assert isinstance(img_scale, tuple) and len(img_scale) == 2
@@ -180,21 +156,17 @@ class Resize:
         return scale, None
 
     def _random_scale(self, results):
-        """Randomly sample an img_scale according to ``ratio_range`` and
-        ``multiscale_mode``.
+        """根据“ratio_range”和“multiscale_mode”随机采样一个img_scale.
 
-        If ``ratio_range`` is specified, a ratio will be sampled and be
-        multiplied with ``img_scale``.
-        If multiple scales are specified by ``img_scale``, a scale will be
-        sampled according to ``multiscale_mode``.
-        Otherwise, single scale will be used.
+        如果指定了“ratio_range”，则将在其范围内随机取一个值并与“img_scale”相乘.
+        如果“img_scale”指定了多个比例，则将根据“multiscale_mode”随机选取一个比例.
+        否则，将使用单一scale.
 
         Args:
             results (dict): Result dict from :obj:`dataset`.
 
         Returns:
-            dict: Two new keys 'scale` and 'scale_idx` are added into \
-                ``results``, which would be used by subsequent pipelines.
+            dict: 将两个新键 'scale` 和 'scale_idx` 添加到 results 中，后续数据管道将使用它们.
         """
 
         if self.ratio_range is not None:
@@ -213,23 +185,22 @@ class Resize:
         results['scale_idx'] = scale_idx
 
     def _resize_img(self, results):
-        """Resize images with ``results['scale']``."""
+        """根据``results['scale']``来调整图像大小."""
         for key in results.get('img_fields', ['img']):
             if self.keep_ratio:
-                img, scale_factor = mmcv.imrescale(
+                img, scale_factor = mmcv.imrescale(  # 图像将在目标范围内尽可能大地重新缩放
                     results[key],
                     results['scale'],
                     return_scale=True,
                     interpolation=self.interpolation,
                     backend=self.backend)
-                # the w_scale and h_scale has minor difference
-                # a real fix should be done in the mmcv.imrescale in the future
+                # w_scale 和 h_scale 有细微差别，未来应该在 mmcv.imrescale 中进行真正的修复
                 new_h, new_w = img.shape[:2]
                 h, w = results[key].shape[:2]
                 w_scale = new_w / w
                 h_scale = new_h / h
             else:
-                img, w_scale, h_scale = mmcv.imresize(
+                img, w_scale, h_scale = mmcv.imresize(  # 图像直接resize到目标尺寸
                     results[key],
                     results['scale'],
                     return_scale=True,
@@ -237,10 +208,10 @@ class Resize:
                     backend=self.backend)
             results[key] = img
 
-            scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],
+            scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],  # 方便后续resize box时使用
                                     dtype=np.float32)
             results['img_shape'] = img.shape
-            # in case that there is no padding
+            # 为了避免后续没有Pad操作
             results['pad_shape'] = img.shape
             results['scale_factor'] = scale_factor
             results['keep_ratio'] = self.keep_ratio
@@ -283,15 +254,17 @@ class Resize:
             results[key] = gt_seg
 
     def __call__(self, results):
-        """Call function to resize images, bounding boxes, masks, semantic
-        segmentation map.
-
+        """resize调整img、box、mask、seg的大小.
+        最终目的是要确保results内存在scale值,并据此来对img、box、mask等进行resize
+        作为参数,scale与scale_factor是不能同时存在的,但是作为返回参数results中是可以同时存在这两者的,以下为执行优先度(按顺序)
+        1.如果scale已经存在,那么直接进行后续一系列resize操作
+        2.如果scale_factor已经存在,那么将其与现有图像尺寸相乘的结果赋予scale.再进行后续一系列resize操作
+        3.如果这两者都不存在则根据配置文件初始化时传入的参数生成scale
         Args:
-            results (dict): Result dict from loading pipeline.
+            results (dict): 来自数据加载管道的Result字典.
 
         Returns:
-            dict: Resized results, 'img_shape', 'pad_shape', 'scale_factor', \
-                'keep_ratio' keys are added into result dict.
+            dict: 经过resize的 results,以下是新增键 'img_shape', 'pad_shape', 'scale_factor', 'keep_ratio'.
         """
 
         if 'scale' not in results:
@@ -305,10 +278,9 @@ class Resize:
                 self._random_scale(results)
         else:
             if not self.override:
-                assert 'scale_factor' not in results, (
-                    'scale and scale_factor cannot be both set.')
+                assert 'scale_factor' not in results, 'scale 和 scale_factor 不能同时指定.'
             else:
-                results.pop('scale')
+                results.pop('scale')  # 忽略scale以及可能存在的scale_factor
                 if 'scale_factor' in results:
                     results.pop('scale_factor')
                 self._random_scale(results)
@@ -331,40 +303,27 @@ class Resize:
 
 @PIPELINES.register_module()
 class RandomFlip:
-    """Flip the image & bbox & mask.
+    """翻转 image & box & mask.
 
-    If the input dict contains the key "flip", then the flag will be used,
-    otherwise it will be randomly decided by a ratio specified in the init
-    method.
+    如果输入的dict包含键“flip”，则使用该值，否则将由__init__方法中指定的flip_ratio随机决定.
 
-    When random flip is enabled, ``flip_ratio``/``direction`` can either be a
-    float/string or tuple of float/string. There are 3 flip modes:
+    启用随机翻转时，``flip_ratio````direction`` 可以是浮点/字符串或浮点/字符串的元组. 下面有3种翻转模式:
 
-    - ``flip_ratio`` is float, ``direction`` is string: the image will be
-        ``direction``ly flipped with probability of ``flip_ratio`` .
-        E.g., ``flip_ratio=0.5``, ``direction='horizontal'``,
-        then image will be horizontally flipped with probability of 0.5.
-    - ``flip_ratio`` is float, ``direction`` is list of string: the image will
-        be ``direction[i]``ly flipped with probability of
-        ``flip_ratio/len(direction)``.
-        E.g., ``flip_ratio=0.5``, ``direction=['horizontal', 'vertical']``,
-        then image will be horizontally flipped with probability of 0.25,
-        vertically with probability of 0.25.
-    - ``flip_ratio`` is list of float, ``direction`` is list of string:
-        given ``len(flip_ratio) == len(direction)``, the image will
-        be ``direction[i]``ly flipped with probability of ``flip_ratio[i]``.
-        E.g., ``flip_ratio=[0.3, 0.5]``, ``direction=['horizontal',
-        'vertical']``, then image will be horizontally flipped with probability
-        of 0.3, vertically with probability of 0.5.
+    - ``flip_ratio`` 为 float, ``direction`` 为 str: 图像将以“flip_ratio”的概率进行“direction”翻转 .
+        例如, ``flip_ratio=0.5``, ``direction='horizontal'``,
+        然后图像将以 0.5 的概率“水平”翻转.
+    - ``flip_ratio`` 为 float, ``direction`` 为 [str]: 图像将被“direction[i]”以“flip_ratio/len(direction)”的概率翻转.
+        例如, ``flip_ratio=0.5``, ``direction=['horizontal', 'vertical']``,
+        then 图像将以 0.25 的概率水平翻转，以 0.25 的概率垂直翻转.
+    - ``flip_ratio`` 为 [float], ``direction`` is [str]:
+        二者长度必须一致 ``len(flip_ratio) == len(direction)``, 图像将以“flip_ratio[i]”的概率进行“方向[i]”翻转.
+        例如, ``flip_ratio=[0.3, 0.5]``, ``direction=['horizontal', 'vertical']``,
+        图像将以 0.3 的概率水平翻转，以 0.5 的概率垂直翻转.
 
     Args:
-        flip_ratio (float | list[float], optional): The flipping probability.
-            Default: None.
-        direction(str | list[str], optional): The flipping direction. Options
-            are 'horizontal', 'vertical', 'diagonal'. Default: 'horizontal'.
-            If input is a list, the length must equal ``flip_ratio``. Each
-            element in ``flip_ratio`` indicates the flip probability of
-            corresponding direction.
+        flip_ratio (float | list[float], optional): 翻转概率.
+        direction(str | list[str], optional): 翻转方向. 可为 'horizontal', 'vertical', 'diagonal'.
+            如果输入是一个列表，长度必须等于“flip_ratio”. ``flip_ratio``中的每个元素表示对应方向的翻转概率.
     """
 
     def __init__(self, flip_ratio=None, direction='horizontal'):
@@ -394,16 +353,15 @@ class RandomFlip:
             assert len(self.flip_ratio) == len(self.direction)
 
     def bbox_flip(self, bboxes, img_shape, direction):
-        """Flip bboxes horizontally.
+        """翻转 bbox.
 
         Args:
             bboxes (numpy.ndarray): Bounding boxes, shape (..., 4*k)
             img_shape (tuple[int]): Image shape (height, width)
-            direction (str): Flip direction. Options are 'horizontal',
-                'vertical'.
+            direction (str): 翻转方向. 可选 'horizontal', 'vertical'.
 
         Returns:
-            numpy.ndarray: Flipped bounding boxes.
+            numpy.ndarray: 翻转后的box.
         """
 
         assert bboxes.shape[-1] % 4 == 0
@@ -428,23 +386,21 @@ class RandomFlip:
         return flipped
 
     def __call__(self, results):
-        """Call function to flip bounding boxes, masks, semantic segmentation
+        """调用函数来翻转 boxes, masks, seg
         maps.
 
         Args:
             results (dict): Result dict from loading pipeline.
 
         Returns:
-            dict: Flipped results, 'flip', 'flip_direction' keys are added \
-                into result dict.
+            dict: 翻转后的 results, 键'flip', 'flip_direction' 新增到results中.
         """
 
         if 'flip' not in results:
             if isinstance(self.direction, list):
-                # None means non-flip
+                # None 表示不翻转
                 direction_list = self.direction + [None]
             else:
-                # None means non-flip
                 direction_list = [self.direction, None]
 
             if isinstance(self.flip_ratio, list):
@@ -452,7 +408,7 @@ class RandomFlip:
                 flip_ratio_list = self.flip_ratio + [non_flip_ratio]
             else:
                 non_flip_ratio = 1 - self.flip_ratio
-                # exclude non-flip
+                # 计算单个方向翻转概率
                 single_ratio = self.flip_ratio / (len(direction_list) - 1)
                 flip_ratio_list = [single_ratio] * (len(direction_list) -
                                                     1) + [non_flip_ratio]
@@ -578,19 +534,16 @@ class RandomShift:
 
 @PIPELINES.register_module()
 class Pad:
-    """Pad the image & masks & segmentation map.
+    """填充 image & masks & seg.
 
-    There are two padding modes: (1) pad to a fixed size and (2) pad to the
-    minimum size that is divisible by some number.
-    Added keys are "pad_shape", "pad_fixed_size", "pad_size_divisor",
+    有两种填充模式: (1) 填充到固定尺寸 (2) 填充到可以被某个整数整除的最小尺寸.
+    新增的键是“pad_shape”,“pad_fixed_size”,“pad_size_divisor”,
 
     Args:
-        size (tuple, optional): Fixed padding size.
-        size_divisor (int, optional): The divisor of padded size.
-        pad_to_square (bool): Whether to pad the image into a square.
-            Currently only used for YOLOX. Default: False.
-        pad_val (dict, optional): A dict for padding value, the default
-            value is `dict(img=0, masks=0, seg=255)`.
+        size (tuple, optional): 填充模式(1)中的固定大小.
+        size_divisor (int, optional): 填充模式(2)中的的除数.
+        pad_to_square (bool): 是否将图像填充为正方形。目前仅用于 YOLOX.
+        pad_val (dict, optional): 字典格式的填充值.
     """
 
     def __init__(self,
@@ -612,24 +565,23 @@ class Pad:
 
         if pad_to_square:
             assert size is None and size_divisor is None, \
-                'The size and size_divisor must be None ' \
-                'when pad2square is True'
+                '当 pad2square=True 时,size 和 size_divisor必须为None'
         else:
             assert size is not None or size_divisor is not None, \
-                'only one of size and size_divisor should be valid'
+                'size 与 size_divisor 不能同时指定'
             assert size is None or size_divisor is None
 
     def _pad_img(self, results):
-        """Pad images according to ``self.size``."""
+        """根据 ``self.size``填充 images."""
         pad_val = self.pad_val.get('img', 0)
         for key in results.get('img_fields', ['img']):
-            if self.pad_to_square:
+            if self.pad_to_square:  # 该参数与模式(1)(2)并不冲突
                 max_size = max(results[key].shape[:2])
                 self.size = (max_size, max_size)
-            if self.size is not None:
+            if self.size is not None:  # 模式(1)
                 padded_img = mmcv.impad(
                     results[key], shape=self.size, pad_val=pad_val)
-            elif self.size_divisor is not None:
+            elif self.size_divisor is not None:  # 模式(2)
                 padded_img = mmcv.impad_to_multiple(
                     results[key], self.size_divisor, pad_val=pad_val)
             results[key] = padded_img
@@ -638,28 +590,27 @@ class Pad:
         results['pad_size_divisor'] = self.size_divisor
 
     def _pad_masks(self, results):
-        """Pad masks according to ``results['pad_shape']``."""
+        """根据 ``results['pad_shape']``填充 masks."""
         pad_shape = results['pad_shape'][:2]
         pad_val = self.pad_val.get('masks', 0)
         for key in results.get('mask_fields', []):
             results[key] = results[key].pad(pad_shape, pad_val=pad_val)
 
     def _pad_seg(self, results):
-        """Pad semantic segmentation map according to
-        ``results['pad_shape']``."""
+        """根据 ``results['pad_shape']``填充 seg."""
         pad_val = self.pad_val.get('seg', 255)
         for key in results.get('seg_fields', []):
             results[key] = mmcv.impad(
                 results[key], shape=results['pad_shape'][:2], pad_val=pad_val)
 
     def __call__(self, results):
-        """Call function to pad images, masks, semantic segmentation maps.
+        """调用函数来填充 images, masks, seg.
 
         Args:
             results (dict): Result dict from loading pipeline.
 
         Returns:
-            dict: Updated result dict.
+            dict: 更新 result dict.
         """
         self._pad_img(results)
         self._pad_masks(results)
@@ -677,15 +628,14 @@ class Pad:
 
 @PIPELINES.register_module()
 class Normalize:
-    """Normalize the image.
+    """标准化图像.
 
-    Added key is "img_norm_cfg".
+    新增键 "img_norm_cfg".
 
     Args:
         mean (sequence): Mean values of 3 channels.
         std (sequence): Std values of 3 channels.
-        to_rgb (bool): Whether to convert the image from BGR to RGB,
-            default is true.
+        to_rgb (bool): 是否将图像从 BGR 转换为 RGB.
     """
 
     def __init__(self, mean, std, to_rgb=True):
@@ -694,14 +644,13 @@ class Normalize:
         self.to_rgb = to_rgb
 
     def __call__(self, results):
-        """Call function to normalize images.
+        """调用函数以标准化图像.
 
         Args:
             results (dict): Result dict from loading pipeline.
 
         Returns:
-            dict: Normalized results, 'img_norm_cfg' key is added into
-                result dict.
+            dict: 标准化后的 results, 键'img_norm_cfg' 新增到 results中去.
         """
         for key in results.get('img_fields', ['img']):
             results[key] = mmcv.imnormalize(results[key], self.mean, self.std,

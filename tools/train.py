@@ -65,7 +65,7 @@ def parse_args():
     parser.add_argument('--local_rank', type=int, default=0)  # 本地进程编号,此参数 torch.distributed.launch 会自动传入
     parser.add_argument(
         '--auto-scale-lr',
-        action='store_true',
+        action='store_false',
         help='自动缩放学习率.')
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:  # 如果环境中没有 LOCAL_RANK,就设置它为当前的 local_rank
@@ -171,8 +171,7 @@ def main():
         val_dataset.pipeline = cfg.data.train.pipeline
         datasets.append(build_dataset(val_dataset))
     if cfg.checkpoint_config is not None:
-        # save mmdet version, config file content and class names in
-        # checkpoints as meta data
+        # 将mmdet版本、配置文件内容和识别类名作为为元数据保存到权重中
         cfg.checkpoint_config.meta = dict(
             mmdet_version=__version__ + get_git_hash()[:7],
             CLASSES=datasets[0].CLASSES)

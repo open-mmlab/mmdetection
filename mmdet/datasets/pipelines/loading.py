@@ -16,22 +16,14 @@ except ImportError:
 
 @PIPELINES.register_module()
 class LoadImageFromFile:
-    """Load an image from file.
-
-    Required keys are "img_prefix" and "img_info" (a dict that must contain the
-    key "filename"). Added or updated keys are "filename", "img", "img_shape",
-    "ori_shape" (same as `img_shape`), "pad_shape" (same as `img_shape`),
-    "scale_factor" (1.0) and "img_norm_cfg" (means=0 and stds=1).
-
+    """从文件中加载图像.
     Args:
-        to_float32 (bool): Whether to convert the loaded image to a float32
-            numpy array. If set to False, the loaded image is an uint8 array.
-            Defaults to False.
-        color_type (str): The flag argument for :func:`mmcv.imfrombytes`.
-            Defaults to 'color'.
-        file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:`mmcv.fileio.FileClient` for details.
-            Defaults to ``dict(backend='disk')``.
+        to_float32 (bool): 是否将加载的图像转换为 float32 numpy 数组. 如果设置为 False,则加载的图像是一个 uint8 数组.
+            默认为 False.
+        color_type (str): :func:`mmcv.imfrombytes`的标志参数.
+            默认为'color'.
+        file_client_args (dict): 实例化 FileClient 的参数.有关详细信息,请参阅:class:`mmcv.fileio.FileClient`.
+            默认为 ``dict(backend='disk')``.
     """
 
     def __init__(self,
@@ -46,19 +38,26 @@ class LoadImageFromFile:
         self.file_client = None
 
     def __call__(self, results):
-        """Call functions to load image and get image meta information.
+        """从results中加载图片并获取图片元信息.
 
         Args:
-            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
+            results (dict): 来自`mmdet.CustomDataset`对象的字典型数据.
+                必需的键是“img_info”,并且它的键值是一个必须包含“filename”的字典,
+                可选的键是“img_prefix”,如果存在那么将其值作为父目录与results['img_info']['filename']合并
 
+                更新的键是"filename",会将图片的绝对路径作为值代替原始文件中的filename字段的值
+                新增的键是"img",代表现在该张图片的数据
+                        "img_shape",代表现在该张图片的尺寸
+                        "ori_shape",代表原始该张图片的尺寸
+                        "img_fields",值为['img'],意义不明
         Returns:
-            dict: The dict contains loaded image and meta information.
+            dict: 包含已加载的图像和元信息的字典.
         """
 
         if self.file_client is None:
             self.file_client = mmcv.FileClient(**self.file_client_args)
 
-        if results['img_prefix'] is not None:
+        if results['img_prefix'] is not None:  # 如果有图像路径前缀那么将其合并到filename中
             filename = osp.join(results['img_prefix'],
                                 results['img_info']['filename'])
         else:
@@ -207,21 +206,20 @@ class LoadAnnotations:
     """Load multiple types of annotations.
 
     Args:
-        with_bbox (bool): Whether to parse and load the bbox annotation.
-             Default: True.
-        with_label (bool): Whether to parse and load the label annotation.
+        with_bbox (bool): 是否解析并加载 box信息.
             Default: True.
-        with_mask (bool): Whether to parse and load the mask annotation.
-             Default: False.
-        with_seg (bool): Whether to parse and load the semantic segmentation
-            annotation. Default: False.
-        poly2mask (bool): Whether to convert the instance masks from polygons
-            to bitmaps. Default: True.
-        denorm_bbox (bool): Whether to convert bbox from relative value to
-            absolute value. Only used in OpenImage Dataset.
+        with_label (bool): 是否解析并加载 label信息.
+            Default: True.
+        with_mask (bool): 是否解析并加载 mask信息.
             Default: False.
-        file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:`mmcv.fileio.FileClient` for details.
+        with_seg (bool): 是否解析并加载 语义分割信息.
+            Default: False.
+        poly2mask (bool): 是否将mask从多边形转换为二进制图.
+            Default: True.
+        denorm_bbox (bool): 是否将box坐标从相对值转换为绝对值. 仅在 OpenImage 数据集中使用.
+            Default: False.
+        file_client_args (dict): 实例化 FileClient 的参数.
+            有关详细信息,请参阅 :class:`mmcv.fileio.FileClient`.
             Defaults to ``dict(backend='disk')``.
     """
 
@@ -243,11 +241,14 @@ class LoadAnnotations:
         self.file_client = None
 
     def _load_bboxes(self, results):
-        """Private function to load bounding box annotations.
+        """加载标注框信息的私有函数.
 
         Args:
-            results (dict): Result dict from :obj:`mmdet.CustomDataset`.
-
+            results (dict): 来自 :obj:`mmdet.CustomDataset`的 Result字典.
+                新增的键'gt_bboxes',来自于 results['ann_info']['bboxes']
+                可能新增的键'gt_bboxes_ignore',来自于 results['ann_info'].get('bboxes_ignore', None)
+                可能更新的键'bbox_fields',extend(['gt_bboxes_ignore','gt_bboxes'])
+                可能新增的键'gt_is_group_ofs',来自于 results['ann_info'].get('gt_is_group_ofs', None)
         Returns:
             dict: The dict contains loaded bounding box annotations.
         """
@@ -378,14 +379,13 @@ class LoadAnnotations:
         return results
 
     def __call__(self, results):
-        """Call function to load multiple types annotations.
+        """加载多种类型的标注信息.
 
         Args:
             results (dict): Result dict from :obj:`mmdet.CustomDataset`.
 
         Returns:
-            dict: The dict contains loaded bounding box, label, mask and
-                semantic segmentation annotations.
+            dict: 包含box、label、mask和seg标注信息的Dict.
         """
 
         if self.with_bbox:

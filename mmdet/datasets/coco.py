@@ -60,32 +60,45 @@ class CocoDataset(CustomDataset):
                (191, 162, 208)]
 
     def load_annotations(self, ann_file):
-        """Load annotation from COCO style annotation file.
+        """从 COCO 格式标注文件加载标注信息.
 
         Args:
-            ann_file (str): Path of annotation file.
+            ann_file (str): 标注文件路径.
 
         Returns:
-            list[dict]: Annotation info from COCO api.
+            list[dict]: 来自 COCO api 的标注信息.
+            [{'file_name': '000001.jpg', 'id': 0, 'width': 800, 'height': 600, 'filename': '000001.jpg'},...,]
         """
 
         self.coco = COCO(ann_file)
-        # The order of returned `cat_ids` will not
-        # change with the order of the CLASSES
+        # 返回的 `cat_ids` 的id顺序不会随着 CLASSES 的顺序而改变,这与coco的API实现有关,并且返回的`cat_ids`是∈[1,90]的
         self.cat_ids = self.coco.get_cat_ids(cat_names=self.CLASSES)
 
-        self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
-        self.img_ids = self.coco.get_img_ids()
+        self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}  # coco_id:cls_ind
+        self.img_ids = self.coco.get_img_ids()  # 图片ids
         data_infos = []
         total_ann_ids = []
         for i in self.img_ids:
-            info = self.coco.load_imgs([i])[0]
+            info = self.coco.load_imgs([i])[0]  # [0]是因为返回的是一个List
+            """ 以coco数据集为例,info格式为以下,更多coco格式参考 https://www.cnblogs.com/mizone/p/16102858.html
+            info = {
+            'license': 3, 'file_name': '000000391895.jpg',
+            'coco_url': 'http://images.cocodataset.org/train2017/000000391895.jpg',
+            'height': 360, 'width': 640, 'date_captured': '2013-11-14 11:18:45',
+            'flickr_url': 'http://farm9.staticflickr.com/8186/8119368305_4e622c8349_z.jpg', 'id': 391895,
+            }
+            为了简化后续输出,我使用另一个coco格式的数据集代替coco数据集,其 'images' 字段单张图片内容如下
+            info = {
+            'file_name': '000001.jpg', 'id': 0, 'width': 800, 'height': 600,
+            }
+            """
             info['filename'] = info['file_name']
+            # info = {'file_name': '000001.jpg', 'id': 0, 'width': 800, 'height': 600, 'filename': '000001.jpg'}
             data_infos.append(info)
-            ann_ids = self.coco.get_ann_ids(img_ids=[i])
+            ann_ids = self.coco.get_ann_ids(img_ids=[i])  # [1, 2, 3, 4] 该张图片中所有的类别id∈[1,数据总类别数]
             total_ann_ids.extend(ann_ids)
         assert len(set(total_ann_ids)) == len(
-            total_ann_ids), f"Annotation ids in '{ann_file}' are not unique!"
+            total_ann_ids), f"“{ann_file}”中的标注 ID 不唯一的!(有重复的标注信息)"
         return data_infos
 
     def get_ann_info(self, idx):
@@ -95,12 +108,24 @@ class CocoDataset(CustomDataset):
             idx (int): Index of data.
 
         Returns:
-            dict: Annotation info of specified index.
+            dict: 经过转换的指定索引的标注信息dict.以下key都是在_parse_ann_info方法中新增的,然后根据 ann_info 中的值进行更新的
+        {
+        'bboxes': array([[434., 335., 519., 389.], [69., 283.,  98., 375.]], dtype=float32),
+        'labels': array([11,  8], dtype=int64), 'bboxes_ignore': array([], shape=(0, 4), dtype=float32),
+        'masks': [[], []], 'seg_map': '000610.png'
+        }
         """
 
         img_id = self.data_infos[idx]['id']
         ann_ids = self.coco.get_ann_ids(img_ids=[img_id])
         ann_info = self.coco.load_anns(ann_ids)
+        """
+        ann_info = [
+        {'segmentation': [], 'area': 4580, 'iscrowd': 0, 'image_id': 498, 'bbox': [434, 335, 85, 54],
+        'category_id': 12, 'id': 1812}, {'segmentation': [], 'area': 2658, 'iscrowd': 0, 'image_id': 498,
+        'bbox': [69, 283, 29, 92], 'category_id': 9, 'id': 1813}
+        ]
+        """
         return self._parse_ann_info(self.data_infos[idx], ann_info)
 
     def get_cat_ids(self, idx):
@@ -119,22 +144,21 @@ class CocoDataset(CustomDataset):
         return [ann['category_id'] for ann in ann_info]
 
     def _filter_imgs(self, min_size=32):
-        """Filter images too small or without ground truths."""
+        """过滤宽高太小或没有标注信息的图像."""
         valid_inds = []
-        # obtain images that contain annotation
+        # 获取包含标注信息的图像ids
         ids_with_ann = set(_['image_id'] for _ in self.coco.anns.values())
-        # obtain images that contain annotations of the required categories
+        # 获取包含自身类别标注信息的图像ids
         ids_in_cat = set()
         for i, class_id in enumerate(self.cat_ids):
             ids_in_cat |= set(self.coco.cat_img_map[class_id])
-        # merge the image id sets of the two conditions and use the merged set
-        # to filter out images if self.filter_empty_gt=True
+        # 合并两个条件的图像ids,(有标注信息的图像ids & 指定类别的标注信息)
         ids_in_cat &= ids_with_ann
 
         valid_img_ids = []
         for i, img_info in enumerate(self.data_infos):
             img_id = self.img_ids[i]
-            if self.filter_empty_gt and img_id not in ids_in_cat:
+            if self.filter_empty_gt and img_id not in ids_in_cat:  # 如果self.filter_empty_gt=True,则过滤该图像id
                 continue
             if min(img_info['width'], img_info['height']) >= min_size:
                 valid_inds.append(i)
@@ -143,11 +167,15 @@ class CocoDataset(CustomDataset):
         return valid_inds
 
     def _parse_ann_info(self, img_info, ann_info):
-        """Parse bbox and mask annotation.
-
+        """解析 bbox 和 mask 标注信息,并过滤一些不满足条件的标注信息.
+        ignore为True的
+        iscrowd为True的
+        box在图像内宽高度为0的
+        ann['area']小于1的,标注宽高小于1的
+        不在检测类别CLASSES中的
         Args:
-            ann_info (list[dict]): Annotation info of an image.
-            with_mask (bool): Whether to parse mask annotations.
+            ann_info (list[dict]): 单张图像的标注信息.
+            with_mask (bool): 是否解析 mask 标注信息.
 
         Returns:
             dict: A dict containing the following keys: bboxes, bboxes_ignore,\

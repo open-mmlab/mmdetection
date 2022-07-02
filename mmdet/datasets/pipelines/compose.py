@@ -8,11 +8,10 @@ from ..builder import PIPELINES
 
 @PIPELINES.register_module()
 class Compose:
-    """Compose multiple transforms sequentially.
+    """按顺序组合多个变换.
 
     Args:
-        transforms (Sequence[dict | callable]): Sequence of transform object or
-            config dict to be composed.
+        transforms (Sequence[dict | callable]): 要组合的变换对象或配置字典的序列.
     """
 
     def __init__(self, transforms):
@@ -28,7 +27,7 @@ class Compose:
                 raise TypeError('transform must be callable or a dict')
 
     def __call__(self, data):
-        """Call function to apply transforms sequentially.
+        """根据顺序调用transforms中各个数据操作.
 
         Args:
             data (dict): A result dict contains the data to transform.

@@ -95,53 +95,40 @@ def build_dataloader(dataset,
                      persistent_workers=False,
                      class_aware_sampler=None,
                      **kwargs):
-    """Build PyTorch DataLoader.
-
-    In distributed training, each GPU/process has a dataloader.
-    In non-distributed training, there is only one dataloader for all GPUs.
+    """构建 PyTorch 数据加载器。
+    在分布式训练中，每个 GPU/进程都有一个数据加载器。
+    在非分布式训练中，所有 GPU 共享一个数据加载器。(在mmdet中多卡训练一定是分布式训练)
 
     Args:
         dataset (Dataset): A PyTorch dataset.
-        samples_per_gpu (int): Number of training samples on each GPU, i.e.,
-            batch size of each GPU.
-        workers_per_gpu (int): How many subprocesses to use for data loading
-            for each GPU.
-        num_gpus (int): Number of GPUs. Only used in non-distributed training.
-        dist (bool): Distributed training/test or not. Default: True.
-        shuffle (bool): Whether to shuffle the data at every epoch.
-            Default: True.
-        seed (int, Optional): Seed to be used. Default: None.
-        runner_type (str): Type of runner. Default: `EpochBasedRunner`
-        persistent_workers (bool): If True, the data loader will not shutdown
-            the worker processes after a dataset has been consumed once.
-            This allows to maintain the workers `Dataset` instances alive.
-            This argument is only valid when PyTorch>=1.7.0. Default: False.
-        class_aware_sampler (dict): Whether to use `ClassAwareSampler`
-            during training. Default: None.
-        kwargs: any keyword argument to be used to initialize DataLoader
+        samples_per_gpu (int): 每个 GPU 的 bs.
+        workers_per_gpu (int): 每个 GPU 使用多少个子进程来加载数据(这个需要根据bs大小不同进行调节,过大过小都会降低训练速度).
+        num_gpus (int): GPU 数量。仅用于非分布式训练(默认为1).
+        dist (bool): 是否分布式训练/测试.
+        shuffle (bool): 是否在每个 epoch中 打乱数据加载顺序.
+        seed (int, Optional): 使用的随机数种子.
+        runner_type (str): runner的类型.
+        persistent_workers (bool): 使用数据集一次后，数据加载器不会关闭工作进程.
+            这会让`Dataset`的实例进程保持活跃状态.该参数仅在 PyTorch>=1.7.0 时有效.
+        class_aware_sampler (dict): 训练时是否使用 `ClassAwareSampler`.
+        kwargs: 用于初始化 DataLoader 的任何关键字参数
 
     Returns:
         DataLoader: A PyTorch dataloader.
     """
-    rank, world_size = get_dist_info()
+    rank, world_size = get_dist_info()  # 单卡->0,1 多卡->卡id,卡总数
 
     if dist:
-        # When model is :obj:`DistributedDataParallel`,
-        # `batch_size` of :obj:`dataloader` is the
-        # number of training samples on each GPU.
+        # 当模型为 DistributedDataParallel 时,dataloader 的 batch_size 为每个 GPU 上的训练样本数(samples_per_gpu)
         batch_size = samples_per_gpu
         num_workers = workers_per_gpu
     else:
-        # When model is obj:`DataParallel`
-        # the batch size is samples on all the GPUS
+        # 由于mmdet多卡仅支持DistributedDataParallel,所以这里默认单卡,即 num_gpus=1
         batch_size = num_gpus * samples_per_gpu
         num_workers = num_gpus * workers_per_gpu
 
-    if runner_type == 'IterBasedRunner':
-        # this is a batch sampler, which can yield
-        # a mini-batch indices each time.
-        # it can be used in both `DataParallel` and
-        # `DistributedDataParallel`
+    if runner_type == 'IterBasedRunner':  # 一般用于分割任务
+        # 这是一个batch采样器，每次可以产生一个batch索引,它可以在 `DataParallel` 和 `DistributedDataParallel` 中使用
         if shuffle:
             batch_sampler = InfiniteGroupBatchSampler(
                 dataset, batch_size, world_size, rank, seed=seed)
@@ -154,11 +141,10 @@ def build_dataloader(dataset,
                 seed=seed,
                 shuffle=False)
         batch_size = 1
-        sampler = None
+        sampler = None  # batch_sampler与sampler的本质一样,都是获取数据索引,具体使用哪一种取决于runner类型
     else:
         if class_aware_sampler is not None:
-            # ClassAwareSampler can be used in both distributed and
-            # non-distributed training.
+            # ClassAwareSampler 可用于分布式和非分布式训练.
             num_sample_class = class_aware_sampler.get('num_sample_class', 1)
             sampler = ClassAwareSampler(
                 dataset,
@@ -168,8 +154,7 @@ def build_dataloader(dataset,
                 seed=seed,
                 num_sample_class=num_sample_class)
         elif dist:
-            # DistributedGroupSampler will definitely shuffle the data to
-            # satisfy that images on each GPU are in the same group
+            # DistributedGroupSampler 会打乱数据以满足每个 GPU 上的图像在同一组中
             if shuffle:
                 sampler = DistributedGroupSampler(
                     dataset, samples_per_gpu, world_size, rank, seed=seed)
@@ -177,8 +162,7 @@ def build_dataloader(dataset,
                 sampler = DistributedSampler(
                     dataset, world_size, rank, shuffle=False, seed=seed)
         else:
-            sampler = GroupSampler(dataset,
-                                   samples_per_gpu) if shuffle else None
+            sampler = GroupSampler(dataset, samples_per_gpu) if shuffle else None
         batch_sampler = None
 
     init_fn = partial(

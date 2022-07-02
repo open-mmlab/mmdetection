@@ -35,16 +35,14 @@ def compat_runner_args(cfg):
 def compat_imgs_per_gpu(cfg):
     cfg = copy.deepcopy(cfg)
     if 'imgs_per_gpu' in cfg.data:
-        warnings.warn('"imgs_per_gpu" is deprecated in MMDet V2.0. '
-                      'Please use "samples_per_gpu" instead')
+        warnings.warn('"imgs_per_gpu" 在 MMDet V2.0 中已弃用.' '请改用 "samples_per_gpu"')
         if 'samples_per_gpu' in cfg.data:
             warnings.warn(
-                f'Got "imgs_per_gpu"={cfg.data.imgs_per_gpu} and '
-                f'"samples_per_gpu"={cfg.data.samples_per_gpu}, "imgs_per_gpu"'
-                f'={cfg.data.imgs_per_gpu} is used in this experiments')
+                f'得到两个参数 "imgs_per_gpu"={cfg.data.imgs_per_gpu} 和 '
+                f'"samples_per_gpu"={cfg.data.samples_per_gpu}, 本实验使用"imgs_per_gpu"'
+                f'={cfg.data.imgs_per_gpu}')
         else:
-            warnings.warn('Automatically set "samples_per_gpu"="imgs_per_gpu"='
-                          f'{cfg.data.imgs_per_gpu} in this experiments')
+            warnings.warn(f'在这个实验中自动设置"samples_per_gpu"="imgs_per_gpu"={cfg.data.imgs_per_gpu}')
         cfg.data.samples_per_gpu = cfg.data.imgs_per_gpu
     return cfg
 

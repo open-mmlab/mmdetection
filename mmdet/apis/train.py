@@ -116,13 +116,13 @@ def train_detector(model,
                    timestamp=None,
                    meta=None):
 
-    cfg = compat_cfg(cfg)  # 向下兼容的手段,增加已被弃用的字段  比如老参数"a"被新参数"a_"代替,那么就会把cfg中的"a_"删除并把值值赋予"a"
+    cfg = compat_cfg(cfg)  # 该函数会新建一些参数以保持配置的兼容性.
     logger = get_root_logger(log_level=cfg.log_level)  # 获取日志对象
 
     # 确保数据为list格式
-    dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]  # TODO 是否有必要
+    dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
 
-    runner_type = 'EpochBasedRunner' if 'runner' not in cfg else cfg.runner['type']  # TODO 是否有必要
+    runner_type = 'EpochBasedRunner' if 'runner' not in cfg else cfg.runner['type']
 
     train_dataloader_default_args = dict(
         samples_per_gpu=2,
@@ -136,7 +136,7 @@ def train_detector(model,
 
     train_loader_cfg = {
         **train_dataloader_default_args,
-        **cfg.data.get('train_dataloader', {})  # 仅有两个参数,即cfg文件中的samples_per_gpu workers_per_gpu会覆盖上面的两个值
+        **cfg.data.get('train_dataloader', {})  # 设置train_dataloader的一些默认值
     }
 
     data_loaders = [build_dataloader(ds, **train_loader_cfg) for ds in dataset]
