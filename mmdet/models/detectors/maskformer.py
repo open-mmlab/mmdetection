@@ -1,7 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import copy
+
 import mmcv
 import numpy as np
-import copy
 
 from mmdet.core import INSTANCE_OFFSET, bbox2result
 from mmdet.core.visualization import imshow_det_bboxes
