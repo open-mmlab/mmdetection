@@ -33,6 +33,7 @@ from .retinanet import RetinaNet
 from .rpn import RPN
 from .scnet import SCNet
 from .semi_base import SemiBaseDetector
+from .semi_mixup import SemiMixUpDetector
 from .single_stage import SingleStageDetector
 from .solo import SOLO
 from .solov2 import SOLOv2
@@ -55,5 +56,6 @@ __all__ = [
     'VFNet', 'DETR', 'TridentFasterRCNN', 'SparseRCNN', 'SCNet', 'SOLO',
     'SOLOv2', 'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet', 'YOLOX',
     'TwoStagePanopticSegmentor', 'PanopticFPN', 'QueryInst', 'LAD', 'TOOD',
-    'MaskFormer', 'DDOD', 'Mask2Former', 'SemiBaseDetector'
+    'MaskFormer', 'DDOD', 'Mask2Former', 'SemiBaseDetector',
+    'SemiMixUpDetector'
 ]

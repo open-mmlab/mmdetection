@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from collections import Sequence
 
+import numpy as np
 import torch
 
 from mmdet.core import bbox_project
@@ -9,7 +10,7 @@ from .base import BaseDetector
 
 
 @MODELS.register_module()
-class SemiBaseDetector(BaseDetector):
+class SemiMixUpDetector(BaseDetector):
 
     def __init__(self,
                  detector,
@@ -42,19 +43,51 @@ class SemiBaseDetector(BaseDetector):
             'unsup_student'] = self.project_pseudo_instances(
                 origin_pseudo_instances,
                 multi_batch_data_samples['unsup_student'])
+
+        multi_batch_inputs['unsup_student'], multi_batch_data_samples[
+            'unsup_student'] = self.mixup(
+                multi_batch_inputs['sup'], multi_batch_data_samples['sup'],
+                multi_batch_inputs['unsup_student'],
+                multi_batch_data_samples['unsup_student'])
+
         losses.update(
             **self.pseudo_loss(multi_batch_inputs['unsup_student'],
                                multi_batch_data_samples['unsup_student']))
         return losses
 
+    def mixup(self, sup_batch_inputs, sup_batch_data_samples,
+              unsup_batch_inputs, unsup_batch_data_samples):
+        sup_idx = int(np.random.choice(len(sup_batch_inputs), 1))
+        sup_inputs, sup_data_samples = sup_batch_inputs[
+            sup_idx], sup_batch_data_samples[sup_idx]
+        sup_h, sup_w = sup_batch_inputs.shape[-2:]
+        unsup_h, unsup_w = unsup_batch_inputs.shape[-2:]
+        h, w = max(sup_h, unsup_h), max(sup_w, unsup_w)
+        n, c = unsup_batch_inputs.shape[:2]
+        mixup_batch_inputs = unsup_batch_inputs.new_zeros((n, c, h, w))
+        mixup_batch_inputs[:, :, :sup_h, :sup_w] += 0.5 * sup_inputs
+        mixup_batch_inputs[:, :, :unsup_h, :
+                           unsup_w] += 0.5 * unsup_batch_inputs
+
+        for data_samples in unsup_batch_data_samples:
+            data_samples.gt_instances = data_samples.gt_instances.new(
+                bboxes=torch.cat([
+                    data_samples.gt_instances.bboxes,
+                    sup_data_samples.gt_instances.bboxes
+                ]),
+                labels=torch.cat([
+                    data_samples.gt_instances.labels,
+                    sup_data_samples.gt_instances.labels
+                ]))
+        return mixup_batch_inputs, unsup_batch_data_samples
+
     def gt_loss(self, batch_inputs, batch_data_samples):
-        gt_loss = {
+        return {
             'sup_' + k: v
             for k, v in self.weight(
                 self.student.loss(batch_inputs, batch_data_samples),
                 self.semi_train_cfg.get('sup_weight', 1.)).items()
         }
-        return gt_loss
 
     def pseudo_loss(self, batch_inputs, batch_data_samples):
         pseudo_instances_num = sum([

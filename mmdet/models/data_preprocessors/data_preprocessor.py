@@ -346,6 +346,8 @@ class MultiDataPreprocessor(nn.Module):
         self.data_preprocessor = MODELS.build(data_preprocessor)
 
     def forward(self, data, training):
+        if training is False:
+            return self.data_preprocessor(data, training)
         multi_data = {}
         for multi_results in data:
             for branch, results in multi_results.items():

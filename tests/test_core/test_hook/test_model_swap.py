@@ -73,7 +73,7 @@ class DummyDataset(Dataset):
         return dict(inputs=self.data[index], data_sample=self.label[index])
 
 
-class TestModelSwitchHook(TestCase):
+class TestModelSwapHook(TestCase):
 
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
@@ -106,7 +106,7 @@ class TestModelSwitchHook(TestCase):
             train_cfg=dict(by_epoch=True, max_epochs=2, val_interval=1),
             val_cfg=dict(),
             default_hooks=dict(logger=None),
-            custom_hooks=[dict(type='ModelSwitchHook')],
+            custom_hooks=[dict(type='ModelSwapHook')],
             experiment_name='test1')
         runner.train()
 
@@ -128,7 +128,7 @@ class TestModelSwitchHook(TestCase):
             default_scope='mmdet',
             load_from=osp.join(self.temp_dir.name, 'epoch_2.pth'),
             default_hooks=dict(logger=None),
-            custom_hooks=[dict(type='ModelSwitchHook')],
+            custom_hooks=[dict(type='ModelSwapHook')],
             experiment_name='test2')
         runner.test()
 
@@ -156,6 +156,6 @@ class TestModelSwitchHook(TestCase):
             default_scope='mmdet',
             load_from=osp.join(self.temp_dir.name, 'epoch_2.pth'),
             default_hooks=dict(logger=None),
-            custom_hooks=[dict(type='ModelSwitchHook')],
+            custom_hooks=[dict(type='ModelSwapHook')],
             experiment_name='test3')
         runner.test()
