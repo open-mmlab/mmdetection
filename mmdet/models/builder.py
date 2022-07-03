@@ -2,7 +2,7 @@
 import warnings
 
 from mmcv.cnn import MODELS as MMCV_MODELS
-from mmcv.cnn import RFSearch
+from mmcv.cnn import RFSearchHook
 from mmcv.utils import Registry
 
 MODELS = Registry('models', parent=MMCV_MODELS)
@@ -62,8 +62,8 @@ def build_detector(cfg, train_cfg=None, test_cfg=None):
     detector = DETECTORS.build(
         cfg, default_args=dict(train_cfg=train_cfg, test_cfg=test_cfg))
     if rfsearch_cfg is not None:
-        rfsearch_warp = RFSearch(
-            logdir=rfsearch_cfg.get('logdir', None),
+        rfsearch_warp = RFSearchHook(
+            logdir=rfsearch_cfg.get('logdir', cfg.work_dir),
             mode=rfsearch_cfg.get('mode', 'train'),
             config=rfsearch_cfg.get('config', None),
             rfstructure_file=rfsearch_cfg.get('rfstructure_file', None),

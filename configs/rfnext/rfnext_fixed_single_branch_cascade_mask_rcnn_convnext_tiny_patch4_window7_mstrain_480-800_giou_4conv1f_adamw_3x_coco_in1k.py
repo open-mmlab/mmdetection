@@ -80,7 +80,6 @@ model = dict(
             loss_bbox=dict(type='GIoULoss', loss_weight=10.0))
     ]),
     rfsearch_cfg=dict(
-        logdir='./search_log/convnext_cascade_maskrcnn',
         mode='fixed_single_branch',
         rfstructure_file=  # noqa
         './configs/rfnext/search_log/convnext_cascade_maskrcnn/local_search_config_step11.json',  # noqa

@@ -9,7 +9,6 @@ model = dict(
             type='Pretrained',
             checkpoint='open-mmlab://res2net101_v1d_26w_4s')),
     rfsearch_cfg=dict(
-        logdir='./search_log/cascade_mask_rcnn_r2_101_fpn_20e_coco',
         mode='search',
         rfstructure_file=None,
         config=dict(

@@ -10,7 +10,6 @@ model = dict(
             type='Pretrained', checkpoint='open-mmlab://msra/hrnetv2_w18')),
     neck=dict(type='HRFPN', in_channels=[18, 36, 72, 144], out_channels=256),
     rfsearch_cfg=dict(
-        logdir='./search_log/cascade_mask_rcnn_r2_101_fpn_20e_coco',
         mode='search',
         rfstructure_file=None,
         config=dict(

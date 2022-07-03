@@ -20,7 +20,6 @@ model = dict(
         out_channels=256,
         num_outs=5),
     rfsearch_cfg=dict(
-        logdir='./search_log/mask_rcnn_pvtv2-b0_fpn_1x_coco',
         mode='fixed_single_branch',
         rfstructure_file=  # noqa
         './configs/rfnext/search_log/mask_rcnn_pvtv2-b0_fpn_1x_coco/local_search_config_step10.json',  # noqa
