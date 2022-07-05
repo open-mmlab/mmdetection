@@ -3,17 +3,30 @@
 https://github.com/ZwwWayne/K-Net/blob/main/knet/det/mask_pseudo_sampler.py."""
 
 import torch
+from torch import Tensor
 
+from mmdet.core.bbox.assigners import AssignResult
 from .sampling_result import SamplingResult
 
 
 class MaskSamplingResult(SamplingResult):
     """Mask sampling result."""
 
-    def __init__(self, pos_inds, neg_inds, masks, gt_masks, assign_result,
-                 gt_flags):
+    def __init__(self,
+                 pos_inds: Tensor,
+                 neg_inds: Tensor,
+                 masks: Tensor,
+                 gt_masks: Tensor,
+                 assign_result: AssignResult,
+                 gt_flags: Tensor,
+                 avg_factor_with_neg: bool = True) -> None:
         self.pos_inds = pos_inds
         self.neg_inds = neg_inds
+        self.num_pos = max(pos_inds.numel(), 1)
+        self.num_neg = max(neg_inds.numel(), 1)
+        self.avg_factor = self.num_pos + self.num_neg \
+            if avg_factor_with_neg else self.num_pos
+
         self.pos_masks = masks[pos_inds]
         self.neg_masks = masks[neg_inds]
         self.pos_is_gt = gt_flags[pos_inds]
@@ -28,17 +41,12 @@ class MaskSamplingResult(SamplingResult):
         else:
             self.pos_gt_masks = gt_masks[self.pos_assigned_gt_inds, :]
 
-        if assign_result.labels is not None:
-            self.pos_gt_labels = assign_result.labels[pos_inds]
-        else:
-            self.pos_gt_labels = None
-
     @property
-    def masks(self):
-        """torch.Tensor: concatenated positive and negative boxes"""
+    def masks(self) -> Tensor:
+        """torch.Tensor: concatenated positive and negative masks."""
         return torch.cat([self.pos_masks, self.neg_masks])
 
-    def __nice__(self):
+    def __nice__(self) -> str:
         data = self.info.copy()
         data['pos_masks'] = data.pop('pos_masks').shape
         data['neg_masks'] = data.pop('neg_masks').shape
@@ -47,7 +55,7 @@ class MaskSamplingResult(SamplingResult):
         return '{\n' + body + '\n}'
 
     @property
-    def info(self):
+    def info(self) -> dict:
         """Returns a dictionary of info about the object."""
         return {
             'pos_inds': self.pos_inds,

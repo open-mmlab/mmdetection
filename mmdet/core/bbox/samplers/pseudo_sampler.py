@@ -29,11 +29,11 @@ class PseudoSampler(BaseSampler):
 
         Args:
             assign_result (:obj:`AssignResult`): Bbox assigning results.
-            pred_instances (:obj:`InstaceData`): Instances of model
+            pred_instances (:obj:`InstanceData`): Instances of model
                 predictions. It includes ``priors``, and the priors can
                 be anchors, points, or bboxes predicted by the model,
                 shape(n, 4).
-            gt_instances (:obj:`InstaceData`): Ground truth of instance
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
                 annotations. It usually includes ``bboxes`` and ``labels``
                 attributes.
 

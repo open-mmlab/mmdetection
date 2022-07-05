@@ -73,11 +73,11 @@ class TestDETRHead(TestCase):
             train_cfg=dict(
                 assigner=dict(
                     type='HungarianAssigner',
-                    cls_cost=dict(type='ClassificationCost', weight=1.),
-                    reg_cost=dict(
-                        type='BBoxL1Cost', weight=5.0, box_format='xywh'),
-                    iou_cost=dict(type='IoUCost', iou_mode='giou',
-                                  weight=2.0))),
+                    match_costs=[
+                        dict(type='ClassificationCost', weight=1.),
+                        dict(type='BBoxL1Cost', weight=5.0, box_format='xywh'),
+                        dict(type='IoUCost', iou_mode='giou', weight=2.0)
+                    ])),
             test_cfg=dict(max_per_img=100))
 
         detr_head = DETRHead(**config)
