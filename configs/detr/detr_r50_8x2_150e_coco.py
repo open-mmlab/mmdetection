@@ -70,9 +70,11 @@ model = dict(
     train_cfg=dict(
         assigner=dict(
             type='HungarianAssigner',
-            cls_cost=dict(type='ClassificationCost', weight=1.),
-            reg_cost=dict(type='BBoxL1Cost', weight=5.0, box_format='xywh'),
-            iou_cost=dict(type='IoUCost', iou_mode='giou', weight=2.0))),
+            match_costs=[
+                dict(type='ClassificationCost', weight=1.),
+                dict(type='BBoxL1Cost', weight=5.0, box_format='xywh'),
+                dict(type='IoUCost', iou_mode='giou', weight=2.0)
+            ])),
     test_cfg=dict(max_per_img=100))
 
 # train_pipeline, NOTE the img_scale and the Pad's size_divisor is different
@@ -91,13 +93,13 @@ train_pipeline = [
                 scales=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
                         (608, 1333), (640, 1333), (672, 1333), (704, 1333),
                         (736, 1333), (768, 1333), (800, 1333)],
-                resize_cfg=dict(type='Resize', keep_ratio=True))
+                keep_ratio=True)
         ],
                     [
                         dict(
                             type='RandomChoiceResize',
                             scales=[(400, 1333), (500, 1333), (600, 1333)],
-                            resize_cfg=dict(type='Resize', keep_ratio=True)),
+                            keep_ratio=True),
                         dict(
                             type='RandomCrop',
                             crop_type='absolute_range',
@@ -109,7 +111,7 @@ train_pipeline = [
                                     (576, 1333), (608, 1333), (640, 1333),
                                     (672, 1333), (704, 1333), (736, 1333),
                                     (768, 1333), (800, 1333)],
-                            resize_cfg=dict(type='Resize', keep_ratio=True))
+                            keep_ratio=True)
                     ]]),
     dict(type='PackDetInputs')
 ]

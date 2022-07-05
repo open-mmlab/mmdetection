@@ -3,7 +3,9 @@
 https://github.com/ZwwWayne/K-Net/blob/main/knet/det/mask_pseudo_sampler.py."""
 
 import torch
+from mmengine.data import InstanceData
 
+from mmdet.core.bbox.assigners import AssignResult
 from mmdet.registry import TASK_UTILS
 from .base_sampler import BaseSampler
 from .mask_sampling_result import MaskSamplingResult
@@ -24,21 +26,35 @@ class MaskPseudoSampler(BaseSampler):
         """Sample negative samples."""
         raise NotImplementedError
 
-    def sample(self, assign_result, masks, gt_masks, **kwargs):
+    def sample(self, assign_result: AssignResult, pred_instances: InstanceData,
+               gt_instances: InstanceData, *args, **kwargs):
         """Directly returns the positive and negative indices  of samples.
 
         Args:
-            assign_result (:obj:`AssignResult`): Assigned results
-            masks (torch.Tensor): Bounding boxes
-            gt_masks (torch.Tensor): Ground truth boxes
+            assign_result (:obj:`AssignResult`): Mask assigning results.
+            pred_instances (:obj:`InstanceData`): Instances of model
+                predictions. It includes ``scores`` and ``masks`` predicted
+                by the model.
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It usually includes ``labels`` and ``masks``
+                attributes.
+
         Returns:
             :obj:`SamplingResult`: sampler results
         """
+        pred_masks = pred_instances.masks
+        gt_masks = gt_instances.masks
         pos_inds = torch.nonzero(
             assign_result.gt_inds > 0, as_tuple=False).squeeze(-1).unique()
         neg_inds = torch.nonzero(
             assign_result.gt_inds == 0, as_tuple=False).squeeze(-1).unique()
-        gt_flags = masks.new_zeros(masks.shape[0], dtype=torch.uint8)
-        sampling_result = MaskSamplingResult(pos_inds, neg_inds, masks,
-                                             gt_masks, assign_result, gt_flags)
+        gt_flags = pred_masks.new_zeros(pred_masks.shape[0], dtype=torch.uint8)
+        sampling_result = MaskSamplingResult(
+            pos_inds=pos_inds,
+            neg_inds=neg_inds,
+            masks=pred_masks,
+            gt_masks=gt_masks,
+            assign_result=assign_result,
+            gt_flags=gt_flags,
+            avg_factor_with_neg=False)
         return sampling_result
