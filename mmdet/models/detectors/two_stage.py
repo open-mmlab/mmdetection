@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import warnings
-from typing import Tuple
+from typing import List, Tuple, Union
 
 import torch
 from torch import Tensor
@@ -62,6 +62,30 @@ class TwoStageDetector(BaseDetector):
 
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+
+    def _load_from_state_dict(self, state_dict: dict, prefix: str,
+                              local_metadata: dict, strict: bool,
+                              missing_keys: Union[List[str], str],
+                              unexpected_keys: Union[List[str], str],
+                              error_msgs: Union[List[str], str]) -> None:
+        """Exchange bbox_head key to rpn_head key when loading single-stage
+        weights into two-stage model."""
+        bbox_head_prefix = prefix + '.bbox_head' if prefix else 'bbox_head'
+        bbox_head_keys = [
+            k for k in state_dict.keys() if k.startswith(bbox_head_prefix)
+        ]
+        rpn_head_prefix = prefix + '.rpn_head' if prefix else 'rpn_head'
+        rpn_head_keys = [
+            k for k in state_dict.keys() if k.startswith(rpn_head_prefix)
+        ]
+        if len(bbox_head_keys) != 0 and len(rpn_head_keys) == 0:
+            for bbox_head_key in bbox_head_keys:
+                rpn_head_key = rpn_head_prefix + \
+                    bbox_head_key[len(bbox_head_prefix):]
+                state_dict[rpn_head_key] = state_dict.pop(bbox_head_key)
+        super()._load_from_state_dict(state_dict, prefix, local_metadata,
+                                      strict, missing_keys, unexpected_keys,
+                                      error_msgs)
 
     @property
     def with_rpn(self) -> bool:

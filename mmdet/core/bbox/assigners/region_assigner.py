@@ -1,5 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import List, Optional, Tuple
+
 import torch
+from mmengine import InstanceData
+from torch import Tensor
 
 from mmdet.core import anchor_inside_flags
 from mmdet.registry import TASK_UTILS
@@ -7,7 +11,11 @@ from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
 
-def calc_region(bbox, ratio, stride, featmap_size=None):
+def calc_region(
+        bbox: Tensor,
+        ratio: float,
+        stride: int,
+        featmap_size: Optional[Tuple[int, int]] = None) -> Tuple[Tensor]:
     """Calculate region of the box defined by the ratio, the ratio is from the
     center of the box to every edge."""
     # project bbox on the feature
@@ -24,7 +32,8 @@ def calc_region(bbox, ratio, stride, featmap_size=None):
     return (x1, y1, x2, y2)
 
 
-def anchor_ctr_inside_region_flags(anchors, stride, region):
+def anchor_ctr_inside_region_flags(anchors: Tensor, stride: int,
+                                   region: Tuple[Tensor]) -> Tensor:
     """Get the flag indicate whether anchor centers are inside regions."""
     x1, y1, x2, y2 = region
     f_anchors = anchors / stride
@@ -46,26 +55,27 @@ class RegionAssigner(BaseAssigner):
     - positive integer: positive sample, index (1-based) of assigned gt
 
     Args:
-        center_ratio: ratio of the region in the center of the bbox to
+        center_ratio (float): ratio of the region in the center of the bbox to
             define positive sample.
-        ignore_ratio: ratio of the region to define ignore samples.
+        ignore_ratio (float): ratio of the region to define ignore samples.
     """
 
-    def __init__(self, center_ratio=0.2, ignore_ratio=0.5):
+    def __init__(self,
+                 center_ratio: float = 0.2,
+                 ignore_ratio: float = 0.5) -> None:
         self.center_ratio = center_ratio
         self.ignore_ratio = ignore_ratio
 
     def assign(self,
-               mlvl_anchors,
-               mlvl_valid_flags,
-               gt_bboxes,
-               img_meta,
-               featmap_sizes,
-               anchor_scale,
-               anchor_strides,
-               gt_bboxes_ignore=None,
-               gt_labels=None,
-               allowed_border=0):
+               pred_instances: InstanceData,
+               gt_instances: InstanceData,
+               img_meta: dict,
+               featmap_sizes: List[Tuple[int, int]],
+               num_level_anchors: List[int],
+               anchor_scale: int,
+               anchor_strides: List[int],
+               gt_instances_ignore: Optional[InstanceData] = None,
+               allowed_border: int = 0) -> AssignResult:
         """Assign gt to anchors.
 
         This method assign a gt bbox to every bbox (proposal/anchor), each bbox
@@ -85,44 +95,55 @@ class RegionAssigner(BaseAssigner):
         5. Assign anchor outside of image to -1
 
         Args:
-            mlvl_anchors (list[Tensor]): Multi level anchors.
-            mlvl_valid_flags (list[Tensor]): Multi level valid flags.
-            gt_bboxes (Tensor): Ground truth bboxes of image
+            pred_instances (:obj:`InstanceData`): Instances of model
+                predictions. It includes ``priors``, and the priors can
+                be anchors or points, or the bboxes predicted by the
+                previous stage, has shape (n, 4). The bboxes predicted by
+                the current model or stage will be named ``bboxes``,
+                ``labels``, and ``scores``, the same as the ``InstanceData``
+                in other places.
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It usually includes ``bboxes``, with shape (k, 4),
+                and ``labels``, with shape (k, ).
             img_meta (dict): Meta info of image.
-            featmap_sizes (list[Tensor]): Feature mapsize each level
+            featmap_sizes (list[tuple[int, int]]): Feature map size each level.
+            num_level_anchors (list[int]): The number of anchors in each level.
             anchor_scale (int): Scale of the anchor.
             anchor_strides (list[int]): Stride of the anchor.
-            gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
-            gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
-                labelled as `ignored`, e.g., crowd boxes in COCO.
-            gt_labels (Tensor, optional): Label of gt_bboxes, shape (k, ).
+            gt_instances_ignore (:obj:`InstanceData`, optional): Instances
+                to be ignored during training. It includes ``bboxes``
+                attribute data that is ignored during training and testing.
+                Defaults to None.
             allowed_border (int, optional): The border to allow the valid
                 anchor. Defaults to 0.
 
         Returns:
             :obj:`AssignResult`: The assign result.
         """
-        if gt_bboxes_ignore is not None:
+        if gt_instances_ignore is not None:
             raise NotImplementedError
 
-        num_gts = gt_bboxes.shape[0]
-        num_bboxes = sum(x.shape[0] for x in mlvl_anchors)
+        num_gts = len(gt_instances)
+        num_bboxes = len(pred_instances)
+
+        gt_bboxes = gt_instances.bboxes
+        gt_labels = gt_instances.labels
+        flat_anchors = pred_instances.priors
+        flat_valid_flags = pred_instances.valid_flags
+        mlvl_anchors = torch.split(flat_anchors, num_level_anchors)
 
         if num_gts == 0 or num_bboxes == 0:
             # No ground truth or boxes, return empty assignment
             max_overlaps = gt_bboxes.new_zeros((num_bboxes, ))
             assigned_gt_inds = gt_bboxes.new_zeros((num_bboxes, ),
                                                    dtype=torch.long)
-            if gt_labels is None:
-                assigned_labels = None
-            else:
-                assigned_labels = gt_bboxes.new_full((num_bboxes, ),
-                                                     -1,
-                                                     dtype=torch.long)
+            assigned_labels = gt_bboxes.new_full((num_bboxes, ),
+                                                 -1,
+                                                 dtype=torch.long)
             return AssignResult(
-                num_gts,
-                assigned_gt_inds,
-                max_overlaps,
+                num_gts=num_gts,
+                gt_inds=assigned_gt_inds,
+                max_overlaps=max_overlaps,
                 labels=assigned_labels)
 
         num_lvls = len(mlvl_anchors)
@@ -141,9 +162,7 @@ class RegionAssigner(BaseAssigner):
         mlvl_assigned_gt_inds = []
         mlvl_ignore_flags = []
         for lvl in range(num_lvls):
-            h, w = featmap_sizes[lvl]
-            assert h * w == mlvl_anchors[lvl].shape[0]
-            assigned_gt_inds = gt_bboxes.new_full((h * w, ),
+            assigned_gt_inds = gt_bboxes.new_full((num_level_anchors[lvl], ),
                                                   0,
                                                   dtype=torch.long)
             ignore_flags = torch.zeros_like(assigned_gt_inds)
@@ -196,12 +215,10 @@ class RegionAssigner(BaseAssigner):
         # 4. (cont.) Assign -1 to ignore adjacent lvl
         for lvl in range(num_lvls):
             ignore_flags = mlvl_ignore_flags[lvl]
-            mlvl_assigned_gt_inds[lvl][ignore_flags] = -1
+            mlvl_assigned_gt_inds[lvl][ignore_flags == 1] = -1
 
         # 5. Assign -1 to anchor outside of image
         flat_assigned_gt_inds = torch.cat(mlvl_assigned_gt_inds)
-        flat_anchors = torch.cat(mlvl_anchors)
-        flat_valid_flags = torch.cat(mlvl_valid_flags)
         assert (flat_assigned_gt_inds.shape[0] == flat_anchors.shape[0] ==
                 flat_valid_flags.shape[0])
         inside_flags = anchor_inside_flags(flat_anchors, flat_valid_flags,
@@ -210,13 +227,13 @@ class RegionAssigner(BaseAssigner):
         outside_flags = ~inside_flags
         flat_assigned_gt_inds[outside_flags] = -1
 
-        if gt_labels is not None:
-            assigned_labels = torch.zeros_like(flat_assigned_gt_inds)
-            pos_flags = assigned_gt_inds > 0
-            assigned_labels[pos_flags] = gt_labels[
-                flat_assigned_gt_inds[pos_flags] - 1]
-        else:
-            assigned_labels = None
+        assigned_labels = torch.zeros_like(flat_assigned_gt_inds)
+        pos_flags = flat_assigned_gt_inds > 0
+        assigned_labels[pos_flags] = gt_labels[flat_assigned_gt_inds[pos_flags]
+                                               - 1]
 
         return AssignResult(
-            num_gts, flat_assigned_gt_inds, None, labels=assigned_labels)
+            num_gts=num_gts,
+            gt_inds=flat_assigned_gt_inds,
+            max_overlaps=None,
+            labels=assigned_labels)

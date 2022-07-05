@@ -9,17 +9,18 @@ from mmdet.core import DetDataSample
 from mmdet.testing import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
 
-register_all_modules()
-
 
 class TestSingleStageInstanceSegmentor(TestCase):
+
+    def setUp(self):
+        register_all_modules()
 
     @parameterized.expand([
         'solo/solo_r50_fpn_1x_coco.py',
         'solo/decoupled_solo_r50_fpn_1x_coco.py',
         'solo/decoupled_solo_light_r50_fpn_3x_coco.py',
         'solov2/solov2_r50_fpn_1x_coco.py',
-        'solov2/solov2_light_r18_fpn_3x_coco.py'
+        'solov2/solov2_light_r18_fpn_mstrain_3x_coco.py'
     ])
     def test_init(self, cfg_file):
         model = get_detector_cfg(cfg_file)
@@ -36,7 +37,7 @@ class TestSingleStageInstanceSegmentor(TestCase):
         ('solo/decoupled_solo_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
         ('solo/decoupled_solo_light_r50_fpn_3x_coco.py', ('cpu', 'cuda')),
         ('solov2/solov2_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
-        ('solov2/solov2_light_r18_fpn_3x_coco.py', ('cpu', 'cuda')),
+        ('solov2/solov2_light_r18_fpn_mstrain_3x_coco.py', ('cpu', 'cuda')),
     ])
     def test_single_stage_forward_loss_mode(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
@@ -69,7 +70,7 @@ class TestSingleStageInstanceSegmentor(TestCase):
         ('solo/decoupled_solo_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
         ('solo/decoupled_solo_light_r50_fpn_3x_coco.py', ('cpu', 'cuda')),
         ('solov2/solov2_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
-        ('solov2/solov2_light_r18_fpn_3x_coco.py', ('cpu', 'cuda')),
+        ('solov2/solov2_light_r18_fpn_mstrain_3x_coco.py', ('cpu', 'cuda')),
     ])
     def test_single_stage_forward_predict_mode(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)

@@ -60,6 +60,7 @@ test_pipeline = [
             dict(type='Collect', keys=['img', 'proposals']),
         ])
 ]
+# TODO support proposals input
 data = dict(
     train=dict(
         proposal_file=data_root +
@@ -73,5 +74,4 @@ data = dict(
         proposal_file=data_root +
         'proposals/crpn_r50_caffe_fpn_1x_val2017.pkl',
         pipeline=test_pipeline))
-optimizer_config = dict(
-    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
+optim_wrapper = dict(clip_grad=dict(max_norm=35, norm_type=2))

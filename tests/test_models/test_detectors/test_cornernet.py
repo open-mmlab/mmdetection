@@ -9,12 +9,11 @@ from mmdet.core import DetDataSample
 from mmdet.testing import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
 
-register_all_modules()
-
 
 class TestCornerNet(TestCase):
 
     def setUp(self) -> None:
+        register_all_modules()
         model_cfg = get_detector_cfg(
             'cornernet/cornernet_hourglass104_mstest_8x6_210e_coco.py')
 

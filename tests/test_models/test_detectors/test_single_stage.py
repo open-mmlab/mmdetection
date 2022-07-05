@@ -11,10 +11,11 @@ from mmdet.core import DetDataSample
 from mmdet.testing import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
 
-register_all_modules()
-
 
 class TestSingleStageDetector(TestCase):
+
+    def setUp(self):
+        register_all_modules()
 
     @parameterized.expand([
         'retinanet/retinanet_r18_fpn_1x_coco.py',

@@ -73,5 +73,4 @@ model = dict(
             max_per_img=2000,
             nms=dict(type='nms', iou_threshold=0.8),
             min_bbox_size=0)))
-optimizer_config = dict(
-    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
+optim_wrapper = dict(clip_grad=dict(max_norm=35, norm_type=2))
