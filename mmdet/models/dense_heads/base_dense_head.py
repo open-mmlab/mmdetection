@@ -15,6 +15,7 @@ from torch import Tensor
 from mmdet.core.post_processing.merge_augs import merge_aug_results
 from mmdet.core.utils import (InstanceList, OptMultiConfig, SampleList,
                               filter_scores_and_topk, select_single_mlvl)
+from ..utils.misc import unpack_gt_instances
 
 
 class BaseDenseHead(BaseModule, metaclass=ABCMeta):
@@ -83,14 +84,9 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         """
         outs = self(x)
 
-        batch_gt_instances = []
-        batch_gt_instances_ignore = []
-        batch_img_metas = []
-        for data_sample in batch_data_samples:
-            batch_img_metas.append(data_sample.metainfo)
-            batch_gt_instances.append(data_sample.gt_instances)
-            batch_gt_instances_ignore.append(
-                data_sample.get('ignored_instances', None))
+        outputs = unpack_gt_instances(batch_data_samples)
+        (batch_gt_instances, batch_gt_instances_ignore,
+         batch_img_metas) = outputs
 
         loss_inputs = outs + (batch_gt_instances, batch_img_metas,
                               batch_gt_instances_ignore)
@@ -127,14 +123,9 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 - predictions (list[:obj:`InstanceData`]): Detection
                   results of each image after the post process.
         """
-        batch_gt_instances = []
-        batch_gt_instances_ignore = []
-        batch_img_metas = []
-        for data_sample in batch_data_samples:
-            batch_img_metas.append(data_sample.metainfo)
-            batch_gt_instances.append(data_sample.gt_instances)
-            batch_gt_instances_ignore.append(
-                data_sample.get('ignored_instances', None))
+        outputs = unpack_gt_instances(batch_data_samples)
+        (batch_gt_instances, batch_gt_instances_ignore,
+         batch_img_metas) = outputs
 
         outs = self(x)
 

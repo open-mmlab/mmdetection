@@ -9,10 +9,11 @@ from mmdet.models import build_detector
 from mmdet.testing._utils import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
 
-register_all_modules()
-
 
 class TestTwoStagePanopticSegmentor(unittest.TestCase):
+
+    def setUp(self):
+        register_all_modules()
 
     def _create_model_cfg(self):
         cfg_file = 'panoptic_fpn/panoptic_fpn_r50_fpn_1x_coco.py'

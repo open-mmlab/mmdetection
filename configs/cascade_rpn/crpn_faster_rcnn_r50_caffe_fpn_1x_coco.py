@@ -17,7 +17,6 @@ model = dict(
                     strides=[4, 8, 16, 32, 64]),
                 adapt_cfg=dict(type='dilation', dilation=3),
                 bridged_feature=True,
-                sampling=False,
                 with_cls=False,
                 reg_decoded_bbox=True,
                 bbox_coder=dict(
@@ -33,7 +32,6 @@ model = dict(
                 feat_channels=256,
                 adapt_cfg=dict(type='offset'),
                 bridged_feature=False,
-                sampling=True,
                 with_cls=True,
                 reg_decoded_bbox=True,
                 bbox_coder=dict(
@@ -88,5 +86,4 @@ model = dict(
     test_cfg=dict(
         rpn=dict(max_per_img=300, nms=dict(iou_threshold=0.8)),
         rcnn=dict(score_thr=1e-3)))
-optimizer_config = dict(
-    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
+optim_wrapper = dict(clip_grad=dict(max_norm=35, norm_type=2))
