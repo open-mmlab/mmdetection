@@ -63,7 +63,6 @@ def build_detector(cfg, train_cfg=None, test_cfg=None):
         cfg, default_args=dict(train_cfg=train_cfg, test_cfg=test_cfg))
     if rfsearch_cfg is not None:
         rfsearch_warp = RFSearchHook(
-            logdir=rfsearch_cfg.get('logdir', cfg.work_dir),
             mode=rfsearch_cfg.get('mode', 'train'),
             config=rfsearch_cfg.get('config', None),
             rfstructure_file=rfsearch_cfg.get('rfstructure_file', None),

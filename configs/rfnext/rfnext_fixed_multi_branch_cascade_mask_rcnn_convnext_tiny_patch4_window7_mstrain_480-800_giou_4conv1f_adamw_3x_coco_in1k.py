@@ -15,9 +15,7 @@ model = dict(
         layer_scale_init_value=1.0,
         gap_before_final_norm=False,
         init_cfg=dict(
-            type='Pretrained',
-            checkpoint=  # noqa
-            'convnext-tiny_3rdparty_32xb128-noema_in1k_20220301-795e9634.pth',  # noqa
+            type='Pretrained', checkpoint=checkpoint_file,
             prefix='backbone.')),
     neck=dict(in_channels=[96, 192, 384, 768]),
     roi_head=dict(bbox_head=[
@@ -102,7 +100,6 @@ model = dict(
 custom_hooks = [
     dict(
         type='RFSearch',
-        logdir=model['rfsearch_cfg']['logdir'],
         config=model['rfsearch_cfg']['config'],
         mode=model['rfsearch_cfg']['mode'],
         # priority='VERY_HIGH',
