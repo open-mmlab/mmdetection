@@ -5,23 +5,13 @@ _base_ = [
 ]
 # model
 model = dict(
-    rpn_head=dict(
-        loss_bbox=dict(type='AlphaIoULoss', loss_weight=1.0)
-    ),
     roi_head=dict(
         bbox_head=dict(
-            loss_bbox=dict(type='AlphaIoULoss', loss_weight=1.0)
-        )
-    )
-)
+            reg_decoded_bbox=True,
+            loss_bbox=dict(type='AlphaIoULoss', loss_weight=10.0, eps=1e-9))))
 # data
 data = dict(samples_per_gpu=4)
 # runtime
 log_config = dict(
-    hooks=[
-        dict(type='TextLoggerHook'),
-        dict(type='TensorboardLoggerHook')
-    ]
-)
-# schedule
-optimizer = dict(lr=0.005)
+    hooks=[dict(type='TextLoggerHook'),
+           dict(type='TensorboardLoggerHook')])

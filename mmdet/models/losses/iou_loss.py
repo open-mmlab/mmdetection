@@ -6,7 +6,7 @@ import mmcv
 import torch
 import torch.nn as nn
 
-from mmdet.core import alpha_bbox_overlaps, bbox_overlaps
+from mmdet.core import bbox_overlaps
 from ..builder import LOSSES
 from .utils import weighted_loss
 
@@ -253,7 +253,6 @@ def alphaiou_loss(pred, target, alpha=3, eps=1e-9, mode='iou'):
               (torch.min(b1_y2, b2_y2) - torch.max(b1_y1, b2_y1)).clamp(0)
 
     # union
-
     w1, h1 = b1_x2 - b1_x1, b1_y2 - b1_y1 + eps
     w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1 + eps
     union = w1 * h1 + w2 * h2 - overlap + eps
@@ -292,9 +291,6 @@ def alphaiou_loss(pred, target, alpha=3, eps=1e-9, mode='iou'):
         loss = 1 - dious
         return loss
     else:
-        w1, h1 = b1_x2 - b1_x1, b1_y2 - b1_y1 + eps
-        w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1 + eps
-
         factor = 4 / math.pi**2
         v = factor * torch.pow(torch.atan(w2 / h2) - torch.atan(w1 / h1), 2)
 
@@ -302,19 +298,9 @@ def alphaiou_loss(pred, target, alpha=3, eps=1e-9, mode='iou'):
             alpha_ciou = (ious > 0.5).float() * v / (1 - ious + v)
 
         # CIoU
-        cious = ious - (rho2 / c2 + torch.pow(alpha_ciou * v, alpha))
+        cious = ious - (rho2 / c2 + torch.pow(alpha_ciou * v + eps, alpha))
         loss = 1 - cious
         return loss
-
-
-@weighted_loss
-def alphaiou_loss_v2(pred, target, alpha=3, eps=1e-9, mode='iou'):
-    assert mode in ['iou', 'iof', 'giou']
-    ious = alpha_bbox_overlaps(
-        pred, target, mode, alpha=alpha, is_aligned=True,
-        eps=eps).clamp(min=eps)
-    loss = 1 - ious
-    return loss
 
 
 @LOSSES.register_module()
@@ -590,7 +576,7 @@ class AlphaIoULoss(nn.Module):
             # giou_loss of shape (n,)
             assert weight.shape == pred.shape
             weight = weight.mean(-1)
-        loss = self.loss_weight * alphaiou_loss_v2(
+        loss = self.loss_weight * alphaiou_loss(
             pred,
             target,
             weight,
