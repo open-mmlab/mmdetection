@@ -15,8 +15,8 @@ class FPN(BaseModule):
     Detection <https://arxiv.org/abs/1612.03144>`_.
 
     Args:
-        in_channels (List[int]): Number of input channels per scale.
-        out_channels (int): Number of output channels (used at each scale)
+        in_channels (list[int]): Number of input channels per scale.
+        out_channels (int): Number of output channels (used at each scale).
         num_outs (int): Number of output scales.
         start_level (int): Index of the start input backbone level used to
             build the feature pyramid. Default: 0.
@@ -29,7 +29,7 @@ class FPN(BaseModule):
             Only the following options are allowed
 
             - 'on_input': Last feat map of neck inputs (i.e. backbone feature).
-            - 'on_lateral':  Last feature map after lateral convs.
+            - 'on_lateral': Last feature map after lateral convs.
             - 'on_output': The last output feature map after fpn convs.
         relu_before_extra_convs (bool): Whether to apply relu before the extra
             conv. Default: False.
@@ -37,10 +37,10 @@ class FPN(BaseModule):
             Default: False.
         conv_cfg (dict): Config dict for convolution layer. Default: None.
         norm_cfg (dict): Config dict for normalization layer. Default: None.
-        act_cfg (str): Config dict for activation layer in ConvModule.
+        act_cfg (dict): Config dict for activation layer in ConvModule.
             Default: None.
         upsample_cfg (dict): Config dict for interpolate layer.
-            Default: `dict(mode='nearest')`
+            Default: dict(mode='nearest').
         init_cfg (dict or list[dict], optional): Initialization config dict.
 
     Example:
@@ -85,14 +85,14 @@ class FPN(BaseModule):
         self.fp16_enabled = False
         self.upsample_cfg = upsample_cfg.copy()
 
-        if end_level == -1:
+        if end_level == -1 or end_level == self.num_ins - 1:
             self.backbone_end_level = self.num_ins
             assert num_outs >= self.num_ins - start_level
         else:
-            # if end_level < inputs, no extra level is allowed
-            self.backbone_end_level = end_level
-            assert end_level <= len(in_channels)
-            assert num_outs == end_level - start_level
+            # if end_level is not the last level, no extra level is allowed
+            self.backbone_end_level = end_level + 1
+            assert end_level < self.num_ins
+            assert num_outs == end_level - start_level + 1
         self.start_level = start_level
         self.end_level = end_level
         self.add_extra_convs = add_extra_convs
@@ -165,11 +165,12 @@ class FPN(BaseModule):
             # In some cases, fixing `scale factor` (e.g. 2) is preferred, but
             #  it cannot co-exist with `size` in `F.interpolate`.
             if 'scale_factor' in self.upsample_cfg:
-                laterals[i - 1] += F.interpolate(laterals[i],
-                                                 **self.upsample_cfg)
+                # fix runtime error of "+=" inplace operation in PyTorch 1.10
+                laterals[i - 1] = laterals[i - 1] + F.interpolate(
+                    laterals[i], **self.upsample_cfg)
             else:
                 prev_shape = laterals[i - 1].shape[2:]
-                laterals[i - 1] += F.interpolate(
+                laterals[i - 1] = laterals[i - 1] + F.interpolate(
                     laterals[i], size=prev_shape, **self.upsample_cfg)
 
         # build outputs

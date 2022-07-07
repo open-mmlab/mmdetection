@@ -1,5 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import warnings
+from pathlib import Path
 
 import mmcv
 import numpy as np
@@ -18,8 +19,8 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
     """Initialize a detector from config file.
 
     Args:
-        config (str or :obj:`mmcv.Config`): Config file path or the config
-            object.
+        config (str, :obj:`Path`, or :obj:`mmcv.Config`): Config file path,
+            :obj:`Path`, or the config object.
         checkpoint (str, optional): Checkpoint path. If left as None, the model
             will not load any weights.
         cfg_options (dict): Options to override some settings in the used
@@ -28,14 +29,17 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
     Returns:
         nn.Module: The constructed detector.
     """
-    if isinstance(config, str):
+    if isinstance(config, (str, Path)):
         config = mmcv.Config.fromfile(config)
     elif not isinstance(config, mmcv.Config):
         raise TypeError('config must be a filename or Config object, '
                         f'but got {type(config)}')
     if cfg_options is not None:
         config.merge_from_dict(cfg_options)
-    config.model.pretrained = None
+    if 'pretrained' in config.model:
+        config.model.pretrained = None
+    elif 'init_cfg' in config.model.backbone:
+        config.model.backbone.init_cfg = None
     config.model.train_cfg = None
     model = build_detector(config.model, test_cfg=config.get('test_cfg'))
     if checkpoint is not None:
@@ -214,7 +218,9 @@ def show_result_pyplot(model,
                        result,
                        score_thr=0.3,
                        title='result',
-                       wait_time=0):
+                       wait_time=0,
+                       palette=None,
+                       out_file=None):
     """Visualize the detection results on the image.
 
     Args:
@@ -224,8 +230,11 @@ def show_result_pyplot(model,
             (bbox, segm) or just bbox.
         score_thr (float): The threshold to visualize the bboxes and masks.
         title (str): Title of the pyplot figure.
-        wait_time (float): Value of waitKey param.
-                Default: 0.
+        wait_time (float): Value of waitKey param. Default: 0.
+        palette (str or tuple(int) or :obj:`Color`): Color.
+            The tuple of color should be in BGR order.
+        out_file (str or None): The path to write the image.
+            Default: None.
     """
     if hasattr(model, 'module'):
         model = model.module
@@ -236,5 +245,7 @@ def show_result_pyplot(model,
         show=True,
         wait_time=wait_time,
         win_name=title,
-        bbox_color=(72, 101, 241),
-        text_color=(72, 101, 241))
+        bbox_color=palette,
+        text_color=(200, 200, 200),
+        mask_color=palette,
+        out_file=out_file)

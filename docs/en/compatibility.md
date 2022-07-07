@@ -1,5 +1,39 @@
 # Compatibility of MMDetection 2.x
 
+## MMDetection 2.25.0
+
+In order to support Mask2Former for instance segmentation, the original config files of Mask2Former for panpotic segmentation need to be renamed [PR #7571](https://github.com/open-mmlab/mmdetection/pull/7571).
+
+<table align="center">
+    <thead>
+        <tr align='center'>
+            <td>before v2.25.0</td>
+            <td>after v2.25.0</td>
+        </tr>
+    </thead>
+    <tbody><tr valign='top'>
+    <th>
+
+```
+'mask2former_xxx_coco.py' represents config files for **panoptic segmentation**.
+```
+
+</th>
+    <th>
+
+```
+'mask2former_xxx_coco.py' represents config files for **instance segmentation**.
+'mask2former_xxx_coco-panoptic.py' represents config files for **panoptic segmentation**.
+```
+
+</th></tr>
+  </tbody></table>
+
+## MMDetection 2.21.0
+
+In order to support CPU training, the logic of scatter in batch collating has been changed. We recommend to use
+MMCV v1.4.4 or higher. For more details, please refer to [MMCV PR #1621](https://github.com/open-mmlab/mmcv/pull/1621).
+
 ## MMDetection 2.18.1
 
 ### MMCV compatibility
@@ -16,6 +50,7 @@ In order to support QueryInst, attn_feats is added into the returned tuple of DI
 ## MMDetection 2.14.0
 
 ### MMCV Version
+
 In order to fix the problem that the priority of EvalHook is too low, all hook priorities have been re-adjusted in 1.3.8, so MMDetection 2.14.0 needs to rely on the latest MMCV 1.3.8 version. For related information, please refer to [#1120](https://github.com/open-mmlab/mmcv/pull/1120), for related issues, please refer to [#5343](https://github.com/open-mmlab/mmdetection/issues/5343).
 
 ### SSD compatibility
@@ -91,11 +126,11 @@ which is more natural and accurate.
 - MMDetection 2.0 changes the order of class labels to reduce unused parameters in regression and mask branch more naturally (without +1 and -1).
   This effect all the classification layers of the model to have a different ordering of class labels. The final layers of regression branch and mask head no longer keep K+1 channels for K categories, and their class orders are consistent with the classification branch.
 
-  - In MMDetection 2.0, label "K" means background, and labels [0, K-1] correspond to the K = num_categories object categories.
+  - In MMDetection 2.0, label "K" means background, and labels \[0, K-1\] correspond to the K = num_categories object categories.
 
-  - In MMDetection 1.x and previous version, label "0" means background, and labels [1, K] correspond to the K categories.
+  - In MMDetection 1.x and previous version, label "0" means background, and labels \[1, K\] correspond to the K categories.
 
-  - **Note**: The class order of softmax RPN is still the same as that in 1.x in versions<=2.4.0 while sigmoid RPN is not affected. The class orders in all heads are unified since MMDetection v2.5.0.
+  - **Note**: The class order of softmax RPN is still the same as that in 1.x in versions\<=2.4.0 while sigmoid RPN is not affected. The class orders in all heads are unified since MMDetection v2.5.0.
 
 - Low quality matching in R-CNN is not used. In MMDetection 1.x and previous versions, the `max_iou_assigner` will match low quality boxes for each ground truth box in both RPN and R-CNN training. We observe this sometimes does not assign the most perfect GT box to some bounding boxes,
   thus MMDetection 2.0 do not allow low quality matching by default in R-CNN training in the new system. This sometimes may slightly improve the box AP (~0.1% absolute).
@@ -136,8 +171,8 @@ Details can be found in `configs/legacy`.
 
 ## pycocotools compatibility
 
-`mmpycocotools` is the OpenMMlab's folk of official `pycocotools`, which works for both MMDetection and Detectron2.
-Before [PR 4939](https://github.com/open-mmlab/mmdetection/pull/4939), since `pycocotools` and `mmpycocotool` have the same package name, if users already installed `pyccocotools` (installed Detectron2 first under the same environment), then the setup of MMDetection will skip installing `mmpycocotool`. Thus MMDetection fails due to the missing `mmpycocotools`.
+`mmpycocotools` is the OpenMMlab's fork of official `pycocotools`, which works for both MMDetection and Detectron2.
+Before [PR 4939](https://github.com/open-mmlab/mmdetection/pull/4939), since `pycocotools` and `mmpycocotool` have the same package name, if users already installed `pycocotools` (installed Detectron2 first under the same environment), then the setup of MMDetection will skip installing `mmpycocotool`. Thus MMDetection fails due to the missing `mmpycocotools`.
 If MMDetection is installed before Detectron2, they could work under the same environment.
 [PR 4939](https://github.com/open-mmlab/mmdetection/pull/4939) deprecates mmpycocotools in favor of official pycocotools.
 Users may install MMDetection and Detectron2 under the same environment after [PR 4939](https://github.com/open-mmlab/mmdetection/pull/4939), no matter what the installation order is.

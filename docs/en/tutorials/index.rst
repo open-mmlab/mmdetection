@@ -12,3 +12,6 @@
    pytorch2onnx.md
    onnx2tensorrt.md
    init_cfg.md
+   how_to.md
+   test_results_submission.md
+   useful_hooks.md

@@ -153,6 +153,7 @@ The code to convert the balloon dataset into coco format is as below.
 
 ```python
 import os.path as osp
+import mmcv
 
 def convert_balloon_to_coco(ann_file, out_file, image_prefix):
     data_infos = mmcv.load(ann_file)

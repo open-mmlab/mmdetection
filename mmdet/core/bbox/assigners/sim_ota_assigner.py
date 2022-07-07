@@ -119,7 +119,7 @@ class SimOTAAssigner(BaseAssigner):
         Returns:
             :obj:`AssignResult`: The assigned result.
         """
-        INF = 100000000
+        INF = 100000.0
         num_gt = gt_bboxes.size(0)
         num_bboxes = decoded_bboxes.size(0)
 
@@ -157,9 +157,12 @@ class SimOTAAssigner(BaseAssigner):
                           num_valid, 1, 1))
 
         valid_pred_scores = valid_pred_scores.unsqueeze(1).repeat(1, num_gt, 1)
-        cls_cost = F.binary_cross_entropy(
-            valid_pred_scores.sqrt_(), gt_onehot_label,
-            reduction='none').sum(-1)
+        cls_cost = (
+            F.binary_cross_entropy(
+                valid_pred_scores.to(dtype=torch.float32).sqrt_(),
+                gt_onehot_label,
+                reduction='none',
+            ).sum(-1).to(dtype=valid_pred_scores.dtype))
 
         cost_matrix = (
             cls_cost * self.cls_weight + iou_cost * self.iou_weight +
@@ -225,7 +228,7 @@ class SimOTAAssigner(BaseAssigner):
         return is_in_gts_or_centers, is_in_boxes_and_centers
 
     def dynamic_k_matching(self, cost, pairwise_ious, num_gt, valid_mask):
-        matching_matrix = torch.zeros_like(cost)
+        matching_matrix = torch.zeros_like(cost, dtype=torch.uint8)
         # select candidate topk ious for dynamic-k calculation
         candidate_topk = min(self.candidate_topk, pairwise_ious.size(0))
         topk_ious, _ = torch.topk(pairwise_ious, candidate_topk, dim=0)
@@ -233,8 +236,8 @@ class SimOTAAssigner(BaseAssigner):
         dynamic_ks = torch.clamp(topk_ious.sum(0).int(), min=1)
         for gt_idx in range(num_gt):
             _, pos_idx = torch.topk(
-                cost[:, gt_idx], k=dynamic_ks[gt_idx].item(), largest=False)
-            matching_matrix[:, gt_idx][pos_idx] = 1.0
+                cost[:, gt_idx], k=dynamic_ks[gt_idx], largest=False)
+            matching_matrix[:, gt_idx][pos_idx] = 1
 
         del topk_ious, dynamic_ks, pos_idx
 
@@ -242,10 +245,10 @@ class SimOTAAssigner(BaseAssigner):
         if prior_match_gt_mask.sum() > 0:
             cost_min, cost_argmin = torch.min(
                 cost[prior_match_gt_mask, :], dim=1)
-            matching_matrix[prior_match_gt_mask, :] *= 0.0
-            matching_matrix[prior_match_gt_mask, cost_argmin] = 1.0
+            matching_matrix[prior_match_gt_mask, :] *= 0
+            matching_matrix[prior_match_gt_mask, cost_argmin] = 1
         # get foreground mask inside box and center prior
-        fg_mask_inboxes = matching_matrix.sum(1) > 0.0
+        fg_mask_inboxes = matching_matrix.sum(1) > 0
         valid_mask[valid_mask.clone()] = fg_mask_inboxes
 
         matched_gt_inds = matching_matrix[fg_mask_inboxes, :].argmax(1)

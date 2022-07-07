@@ -54,6 +54,8 @@ class CustomDataset(Dataset):
 
     CLASSES = None
 
+    PALETTE = None
+
     def __init__(self,
                  ann_file,
                  pipeline,
@@ -72,8 +74,8 @@ class CustomDataset(Dataset):
         self.proposal_file = proposal_file
         self.test_mode = test_mode
         self.filter_empty_gt = filter_empty_gt
-        self.CLASSES = self.get_classes(classes)
         self.file_client = mmcv.FileClient(**file_client_args)
+        self.CLASSES = self.get_classes(classes)
 
         # join paths if data_root is specified
         if self.data_root is not None:
@@ -239,7 +241,7 @@ class CustomDataset(Dataset):
         return self.pipeline(results)
 
     def prepare_test_img(self, idx):
-        """Get testing data  after pipeline.
+        """Get testing data after pipeline.
 
         Args:
             idx (int): Index of data.
@@ -282,6 +284,25 @@ class CustomDataset(Dataset):
             raise ValueError(f'Unsupported type {type(classes)} of classes.')
 
         return class_names
+
+    def get_cat2imgs(self):
+        """Get a dict with class as key and img_ids as values, which will be
+        used in :class:`ClassAwareSampler`.
+
+        Returns:
+            dict[list]: A dict of per-label image list,
+            the item of the dict indicates a label index,
+            corresponds to the image index that contains the label.
+        """
+        if self.CLASSES is None:
+            raise ValueError('self.CLASSES can not be None')
+        # sort the label index
+        cat2imgs = {i: [] for i in range(len(self.CLASSES))}
+        for i in range(len(self)):
+            cat_ids = set(self.get_cat_ids(i))
+            for cat in cat_ids:
+                cat2imgs[cat].append(i)
+        return cat2imgs
 
     def format_results(self, results, **kwargs):
         """Place holder to format result to dataset specific output."""

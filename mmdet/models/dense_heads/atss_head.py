@@ -24,6 +24,7 @@ class ATSSHead(AnchorHead):
     def __init__(self,
                  num_classes,
                  in_channels,
+                 pred_kernel_size=3,
                  stacked_convs=4,
                  conv_cfg=None,
                  norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
@@ -42,6 +43,7 @@ class ATSSHead(AnchorHead):
                          std=0.01,
                          bias_prob=0.01)),
                  **kwargs):
+        self.pred_kernel_size = pred_kernel_size
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
@@ -85,15 +87,22 @@ class ATSSHead(AnchorHead):
                     padding=1,
                     conv_cfg=self.conv_cfg,
                     norm_cfg=self.norm_cfg))
+        pred_pad_size = self.pred_kernel_size // 2
         self.atss_cls = nn.Conv2d(
             self.feat_channels,
             self.num_anchors * self.cls_out_channels,
-            3,
-            padding=1)
+            self.pred_kernel_size,
+            padding=pred_pad_size)
         self.atss_reg = nn.Conv2d(
-            self.feat_channels, self.num_base_priors * 4, 3, padding=1)
+            self.feat_channels,
+            self.num_base_priors * 4,
+            self.pred_kernel_size,
+            padding=pred_pad_size)
         self.atss_centerness = nn.Conv2d(
-            self.feat_channels, self.num_base_priors * 1, 3, padding=1)
+            self.feat_channels,
+            self.num_base_priors * 1,
+            self.pred_kernel_size,
+            padding=pred_pad_size)
         self.scales = nn.ModuleList(
             [Scale(1.0) for _ in self.prior_generator.strides])
 

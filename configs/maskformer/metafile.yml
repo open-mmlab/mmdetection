@@ -1,0 +1,43 @@
+Collections:
+  - Name: MaskFormer
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - AdamW
+        - Weight Decay
+      Training Resources: 16x V100 GPUs
+      Architecture:
+        - MaskFormer
+    Paper:
+      URL: https://arxiv.org/pdf/2107.06278
+      Title: 'Per-Pixel Classification is Not All You Need for Semantic Segmentation'
+    README: configs/maskformer/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.22.0/mmdet/models/detectors/maskformer.py#L7
+      Version: v2.22.0
+
+Models:
+  - Name: maskformer_r50_mstrain_16x1_75e_coco
+    In Collection: MaskFormer
+    Config: configs/maskformer/maskformer_r50_mstrain_16x1_75e_coco.py
+    Metadata:
+      Training Memory (GB): 16.2
+      Epochs: 75
+    Results:
+    - Task: Panoptic Segmentation
+      Dataset: COCO
+      Metrics:
+        PQ: 46.9
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/maskformer/maskformer_r50_mstrain_16x1_75e_coco/maskformer_r50_mstrain_16x1_75e_coco_20220221_141956-bc2699cb.pth
+  - Name: maskformer_swin-l-p4-w12_mstrain_64x1_300e_coco
+    In Collection: MaskFormer
+    Config: configs/maskformer/maskformer_swin-l-p4-w12_mstrain_64x1_300e_coco.py
+    Metadata:
+      Training Memory (GB): 27.2
+      Epochs: 300
+    Results:
+    - Task: Panoptic Segmentation
+      Dataset: COCO
+      Metrics:
+        PQ: 53.2
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/maskformer/maskformer_swin-l-p4-w12_mstrain_64x1_300e_coco/maskformer_swin-l-p4-w12_mstrain_64x1_300e_coco_20220326_221612-061b4eb8.pth

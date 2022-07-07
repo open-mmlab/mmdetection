@@ -36,8 +36,8 @@ echo 'configs/foveabox/fovea_align_r50_fpn_gn-head_4x4_2x_coco.py' &
 GPUS=4  GPUS_PER_NODE=4  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab fovea_align_r50_fpn_gn-head_4x4_2x_coco configs/foveabox/fovea_align_r50_fpn_gn-head_4x4_2x_coco.py ./tools/work_dir/fovea_align_r50_fpn_gn-head_4x4_2x_coco --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &
 echo 'configs/mask_rcnn/mask_rcnn_r50_fpn_fp16_1x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab mask_rcnn_r50_fpn_fp16_1x_coco configs/mask_rcnn/mask_rcnn_r50_fpn_fp16_1x_coco.py ./tools/work_dir/mask_rcnn_r50_fpn_fp16_1x_coco --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &
-echo 'configs/fp16/retinanet_r50_fpn_fp16_1x_coco.py' &
-GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab retinanet_r50_fpn_fp16_1x_coco configs/fp16/retinanet_r50_fpn_fp16_1x_coco.py ./tools/work_dir/retinanet_r50_fpn_fp16_1x_coco --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &
+echo 'configs/retinanet/retinanet_r50_fpn_fp16_1x_coco.py' &
+GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab retinanet_r50_fpn_fp16_1x_coco configs/retinanet/retinanet_r50_fpn_fp16_1x_coco.py ./tools/work_dir/retinanet_r50_fpn_fp16_1x_coco --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &
 echo 'configs/free_anchor/retinanet_free_anchor_r50_fpn_1x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=2 ./tools/slurm_train.sh openmmlab retinanet_free_anchor_r50_fpn_1x_coco configs/free_anchor/retinanet_free_anchor_r50_fpn_1x_coco.py ./tools/work_dir/retinanet_free_anchor_r50_fpn_1x_coco --cfg-options checkpoint_config.max_keep_ckpts=1 >/dev/null &
 echo 'configs/fsaf/fsaf_r50_fpn_1x_coco.py' &

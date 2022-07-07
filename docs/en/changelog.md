@@ -1,5 +1,389 @@
 ## Changelog
 
+### v2.25.0 (31/5/2022)
+
+#### Highlights
+
+- Support dedicated `WandbLogger` hook
+- Support [ConvNeXt](configs/convnext), [DDOD](configs/ddod), [SOLOv2](configs/solov2)
+- Support [Mask2Former](configs/mask2former) for instance segmentation
+- Rename [config files of Mask2Former](configs/mask2former)
+
+#### Backwards incompatible changes
+
+- Rename [config files of Mask2Former](configs/mask2former) (#7571)
+
+  <table align="center">
+    <thead>
+        <tr align='center'>
+            <td>before v2.25.0</td>
+            <td>after v2.25.0</td>
+        </tr>
+    </thead>
+    <tbody><tr valign='top'>
+    <th>
+
+  - `mask2former_xxx_coco.py` represents config files for **panoptic segmentation**.
+
+  </th>
+    <th>
+
+  - `mask2former_xxx_coco.py` represents config files for **instance segmentation**.
+  - `mask2former_xxx_coco-panoptic.py` represents config files for **panoptic segmentation**.
+
+  </th></tr>
+  </tbody></table>
+
+#### New Features
+
+- Support [ConvNeXt](https://arxiv.org/abs/2201.03545) (#7281)
+- Support [DDOD](https://arxiv.org/abs/2107.02963) (#7279)
+- Support [SOLOv2](https://arxiv.org/abs/2003.10152) (#7441)
+- Support [Mask2Former](https://arxiv.org/abs/2112.01527) for instance segmentation (#7571, #8032)
+
+#### Bug Fixes
+
+- Enable YOLOX training on different devices (#7912)
+- Fix the log plot error when evaluation with `interval != 1` (#7784)
+- Fix RuntimeError of HTC (#8083)
+
+#### Improvements
+
+- Support dedicated `WandbLogger` hook (#7459)
+
+  Users can set
+
+  ```python
+  cfg.log_config.hooks = [
+    dict(type='MMDetWandbHook',
+         init_kwargs={'project': 'MMDetection-tutorial'},
+         interval=10,
+         log_checkpoint=True,
+         log_checkpoint_metadata=True,
+         num_eval_images=10)]
+  ```
+
+  in the config to use `MMDetWandbHook`. Example can be found in this [colab tutorial](https://colab.research.google.com/drive/1RCSXHZwDZvakFh3eo9RuNrJbCGqD0dru?usp=sharing#scrollTo=WTEdPDRaBz2C)
+
+- Add `AvoidOOM` to avoid OOM (#7434, #8091)
+
+  Try to use `AvoidCUDAOOM` to avoid GPU out of memory. It will first retry after calling `torch.cuda.empty_cache()`. If it still fails, it will then retry by converting the type of inputs to FP16 format. If it still fails, it will try to copy inputs from GPUs to CPUs to continue computing. Try AvoidOOM in code to make the code continue to run when GPU memory runs out:
+
+  ```python
+  from mmdet.utils import AvoidCUDAOOM
+
+  output = AvoidCUDAOOM.retry_if_cuda_oom(some_function)(input1, input2)
+  ```
+
+  Users can also try `AvoidCUDAOOM` as a decorator to make the code continue to run when GPU memory runs out:
+
+  ```python
+  from mmdet.utils import AvoidCUDAOOM
+
+  @AvoidCUDAOOM.retry_if_cuda_oom
+  def function(*args, **kwargs):
+      ...
+      return xxx
+  ```
+
+- Support reading `gpu_collect` from `cfg.evaluation.gpu_collect` (#7672)
+
+- Speedup the Video Inference by Accelerating data-loading Stage (#7832)
+
+- Support replacing the `${key}` with the value of `cfg.key` (#7492)
+
+- Accelerate result analysis in `analyze_result.py`. The evaluation time is speedup by 10 ~ 15 times and only tasks 10 ~ 15 minutes now. (#7891)
+
+- Support to set `block_dilations` in `DilatedEncoder` (#7812)
+
+- Support panoptic segmentation result analysis (#7922)
+
+- Release DyHead with Swin-Large backbone (#7733)
+
+- Documentations updating and adding
+
+  - Fix wrong default type of `act_cfg` in `SwinTransformer` (#7794)
+  - Fix text errors in the tutorials (#7959)
+  - Rewrite the [installation guide](docs/en/get_started.md) (#7897)
+  - [Useful hooks](docs/en/tutorials/useful_hooks.md) (#7810)
+  - Fix heading anchor in documentation  (#8006)
+  - Replace `markdownlint` with `mdformat` for avoiding installing ruby (#8009)
+
+#### Contributors
+
+A total of 20 developers contributed to this release.
+
+Thanks @ZwwWayne, @DarthThomas, @solyaH, @LutingWang, @chenxinfeng4, @Czm369, @Chenastron, @chhluo, @austinmw, @Shanyaliux @hellock, @Y-M-Y, @jbwang1997, @hhaAndroid, @Irvingao, @zhanggefan, @BIGWangYuDong, @Keiku, @PeterVennerstrom, @ayulockin
+
+### v2.24.0 (26/4/2022)
+
+#### Highlights
+
+- Support [Simple Copy-Paste is a Strong Data Augmentation Method for Instance Segmentation](https://arxiv.org/abs/2012.07177)
+- Support automatically scaling LR according to GPU number and samples per GPU
+- Support Class Aware Sampler that improves performance on OpenImages Dataset
+
+#### New Features
+
+- Support [Simple Copy-Paste is a Strong Data Augmentation Method for Instance Segmentation](https://arxiv.org/abs/2012.07177), see [example configs](configs/simple_copy_paste/mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_scp_32x2_270k_coco.py) (#7501)
+
+- Support Class Aware Sampler, users can set
+
+  ```python
+  data=dict(train_dataloader=dict(class_aware_sampler=dict(num_sample_class=1))))
+  ```
+
+  in the config to use `ClassAwareSampler`. Examples can be found in [the configs of OpenImages Dataset](https://github.com/open-mmlab/mmdetection/tree/master/configs/openimages/faster_rcnn_r50_fpn_32x2_cas_1x_openimages.py).  (#7436)
+
+- Support automatically scaling LR according to GPU number and samples per GPU. (#7482)
+  In each config, there is a corresponding config of auto-scaling LR as below,
+
+  ```python
+  auto_scale_lr = dict(enable=True, base_batch_size=N)
+  ```
+
+  where `N` is the batch size used for the current learning rate in the config (also equals to `samples_per_gpu` * gpu number to train this config).
+  By default, we set `enable=False` so that the original usages will not be affected. Users can set `enable=True` in each config or add `--auto-scale-lr` after the command line to enable this feature and should check the correctness of `base_batch_size` in customized configs.
+
+- Support setting dataloader arguments in config and add functions to handle config compatibility. (#7668)
+  The comparison between the old and new usages is as below.
+
+  <table align="center">
+    <thead>
+        <tr align='center'>
+            <td>v2.23.0</td>
+            <td>v2.24.0</td>
+        </tr>
+    </thead>
+    <tbody><tr valign='top'>
+    <th>
+
+  ```python
+  data = dict(
+      samples_per_gpu=64, workers_per_gpu=4,
+      train=dict(type='xxx', ...),
+      val=dict(type='xxx', samples_per_gpu=4, ...),
+      test=dict(type='xxx', ...),
+  )
+  ```
+
+  </th>
+    <th>
+
+  ```python
+  # A recommended config that is clear
+  data = dict(
+      train=dict(type='xxx', ...),
+      val=dict(type='xxx', ...),
+      test=dict(type='xxx', ...),
+      # Use different batch size during inference.
+      train_dataloader=dict(samples_per_gpu=64, workers_per_gpu=4),
+      val_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+      test_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+  )
+
+  # Old style still works but allows to set more arguments about data loaders
+  data = dict(
+      samples_per_gpu=64,  # only works for train_dataloader
+      workers_per_gpu=4,  # only works for train_dataloader
+      train=dict(type='xxx', ...),
+      val=dict(type='xxx', ...),
+      test=dict(type='xxx', ...),
+      # Use different batch size during inference.
+      val_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+      test_dataloader=dict(samples_per_gpu=8, workers_per_gpu=2),
+  )
+  ```
+
+  </th></tr>
+  </tbody></table>
+
+- Support memory profile hook. Users can use it to monitor the memory usages during training as below (#7560)
+
+  ```python
+  custom_hooks = [
+      dict(type='MemoryProfilerHook', interval=50)
+  ]
+  ```
+
+- Support to run on PyTorch with MLU chip (#7578)
+
+- Support re-spliting data batch with tag (#7641)
+
+- Support the `DiceCost` used by [K-Net](https://arxiv.org/abs/2106.14855) in `MaskHungarianAssigner` (#7716)
+
+- Support splitting COCO data for Semi-supervised object detection (#7431)
+
+- Support Pathlib for Config.fromfile (#7685)
+
+- Support to use file client in OpenImages dataset (#7433)
+
+- Add a probability parameter to Mosaic transformation (#7371)
+
+- Support specifying interpolation mode in `Resize` pipeline (#7585)
+
+#### Bug Fixes
+
+- Avoid invalid bbox after deform_sampling (#7567)
+- Fix the issue that argument color_theme does not take effect when exporting confusion matrix (#7701)
+- Fix the `end_level` in Necks, which should be the index of the end input backbone level (#7502)
+- Fix the bug that `mix_results` may be None in `MultiImageMixDataset` (#7530)
+- Fix the bug in ResNet plugin when two plugins are used (#7797)
+
+#### Improvements
+
+- Enhance `load_json_logs` of analyze_logs.py for resumed training logs (#7732)
+- Add argument `out_file` in image_demo.py (#7676)
+- Allow mixed precision training with `SimOTAAssigner` (#7516)
+- Updated INF to 100000.0 to be the same as that in the official YOLOX (#7778)
+- Add documentations of:
+  - how to get channels of a new backbone (#7642)
+  - how to unfreeze the backbone network (#7570)
+  - how to train fast_rcnn model (#7549)
+  - proposals in Deformable DETR (#7690)
+  - from-scratch install script in get_started.md (#7575)
+- Release pre-trained models of
+  - [Mask2Former](configs/mask2former) (#7595, #7709)
+  - RetinaNet with ResNet-18 and release models (#7387)
+  - RetinaNet with EfficientNet backbone (#7646)
+
+#### Contributors
+
+A total of 27 developers contributed to this release.
+Thanks @jovialio, @zhangsanfeng2022, @HarryZJ, @jamiechoi1995, @nestiank, @PeterH0323, @RangeKing, @Y-M-Y, @mattcasey02, @weiji14, @Yulv-git, @xiefeifeihu, @FANG-MING, @meng976537406, @nijkah, @sudz123, @CCODING04, @SheffieldCao, @Czm369, @BIGWangYuDong, @zytx121, @jbwang1997, @chhluo, @jshilong, @RangiLyu, @hhaAndroid, @ZwwWayne
+
+### v2.23.0 (28/3/2022)
+
+#### Highlights
+
+- Support Mask2Former: [Masked-attention Mask Transformer for Universal Image Segmentation](https://arxiv.org/abs/2112.01527)
+- Support EfficientNet: [EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks](https://arxiv.org/abs/1905.11946)
+- Support setting data root through environment variable `MMDET_DATASETS`, users don't have to modify the corresponding path in config files anymore.
+- Find a good recipe for fine-tuning high precision ResNet backbone pre-trained by Torchvision.
+
+#### New Features
+
+- Support [Mask2Former](configs/mask2former)(#6938)(#7466)(#7471)
+- Support [EfficientNet](configs/efficientnet) (#7514)
+- Support setting data root through environment variable `MMDET_DATASETS`, users don't have to modify the corresponding path in config files anymore. (#7386)
+- Support setting different seeds to different ranks (#7432)
+- Update the `dist_train.sh` so that the script can be used to support launching multi-node training on machines without slurm (#7415)
+- Find a good recipe for fine-tuning high precision ResNet backbone pre-trained by Torchvision (#7489)
+
+#### Bug Fixes
+
+- Fix bug in VOC unit test which removes the data directory (#7270)
+- Adjust the order of `get_classes` and `FileClient` (#7276)
+- Force the inputs of `get_bboxes` in yolox_head to float32 (#7324)
+- Fix misplaced arguments in LoadPanopticAnnotations (#7388)
+- Fix reduction=mean in CELoss. (#7449)
+- Update unit test of CrossEntropyCost (#7537)
+- Fix memory leaking in panpotic segmentation evaluation (#7538)
+- Fix the bug of shape broadcast in YOLOv3 (#7551)
+
+#### Improvements
+
+- Add Chinese version of onnx2tensorrt.md (#7219)
+- Update colab tutorials (#7310)
+- Update information about Localization Distillation (#7350)
+- Add Chinese version of `finetune.md` (#7178)
+- Update YOLOX log for non square input (#7235)
+- Add `nproc` in `coco_panoptic.py` for panoptic quality computing (#7315)
+- Allow to set channel_order in LoadImageFromFile (#7258)
+- Take point sample related functions out of mask_point_head (#7353)
+- Add instance evaluation for coco_panoptic (#7313)
+- Enhance the robustness of analyze_logs.py (#7407)
+- Supplementary notes of sync_random_seed (#7440)
+- Update docstring of cross entropy loss (#7472)
+- Update pascal voc result (#7503)
+- We create How-to documentation to record any questions about How to xxx. In this version, we added
+  - How to use Mosaic augmentation (#7507)
+  - How to use backbone in mmcls (#7438)
+  - How to produce and submit the prediction results of panoptic segmentation models on COCO test-dev set (#7430))
+
+#### Contributors
+
+A total of 27 developers contributed to this release.
+Thanks @ZwwWayne, @haofanwang, @shinya7y, @chhluo, @yangrisheng, @triple-Mu, @jbwang1997, @HikariTJU, @imflash217, @274869388, @zytx121, @matrixgame2018, @jamiechoi1995, @BIGWangYuDong, @JingweiZhang12, @Xiangxu-0103, @hhaAndroid, @jshilong, @osbm, @ceroytres, @bunge-bedstraw-herb, @Youth-Got, @daavoo, @jiangyitong, @RangiLyu, @CCODING04, @yarkable
+
+### v2.22.0 (24/2/2022)
+
+#### Highlights
+
+- Support MaskFormer: [Per-Pixel Classification is Not All You Need for Semantic Segmentation](https://arxiv.org/abs/2107.06278) (#7212)
+- Support DyHead: [Dynamic Head: Unifying Object Detection Heads with Attentions](https://arxiv.org/abs/2106.08322) (#6823)
+- Release a good recipe of using ResNet in object detectors pre-trained by [ResNet Strikes Back](https://arxiv.org/abs/2110.00476), which consistently brings about 3~4 mAP improvements over RetinaNet, Faster/Mask/Cascade Mask R-CNN (#7001)
+- Support [Open Images Dataset](https://storage.googleapis.com/openimages/web/index.html) (#6331)
+- Support TIMM backbone: [PyTorch Image Models](https://github.com/rwightman/pytorch-image-models) (#7020)
+
+#### New Features
+
+- Support [MaskFormer](configs/maskformer) (#7212)
+- Support [DyHead](configs/dyhead) (#6823)
+- Support [ResNet Strikes Back](configs/resnet_strikes_back) (#7001)
+- Support [OpenImages Dataset](configs/openimages) (#6331)
+- Support [TIMM backbone](configs/timm_example) (#7020)
+- Support visualization for Panoptic Segmentation (#7041)
+
+#### Breaking Changes
+
+In order to support the visualization for Panoptic Segmentation, the `num_classes` can not be `None` when using the `get_palette` function to determine whether to use the panoptic palette.
+
+#### Bug Fixes
+
+- Fix bug for the best checkpoints can not be saved when the `key_score` is None (#7101)
+- Fix MixUp transform filter boxes failing case (#7080)
+- Add missing properties in SABLHead (#7091)
+- Fix bug when NaNs exist in confusion matrix (#7147)
+- Fix PALETTE AttributeError in downstream task (#7230)
+
+#### Improvements
+
+- Speed up SimOTA matching (#7098)
+- Add Chinese translation of `docs_zh-CN/tutorials/init_cfg.md` (#7188)
+
+#### Contributors
+
+A total of 20 developers contributed to this release.
+Thanks @ZwwWayne, @hhaAndroid, @RangiLyu, @AronLin, @BIGWangYuDong, @jbwang1997, @zytx121, @chhluo, @shinya7y, @LuooChen, @dvansa, @siatwangmin, @del-zhenwu, @vikashranjan26, @haofanwang, @jamiechoi1995, @HJoonKwon, @yarkable, @zhijian-liu, @RangeKing
+
+### v2.21.0 (8/2/2022)
+
+### Breaking Changes
+
+To standardize the contents in config READMEs and meta files of OpenMMLab projects, the READMEs and meta files in each config directory have been significantly changed. The template will be released in the future, for now, you can refer to the examples of README for [algorithm](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/README.md), [dataset](https://github.com/open-mmlab/mmdetection/blob/master/configs/deepfashion/README.md) and [backbone](https://github.com/open-mmlab/mmdetection/blob/master/configs/regnet/README.md). To align with the standard, the configs in dcn are put into to two directories named `dcn` and `dcnv2`.
+
+#### New Features
+
+- Allow to customize colors of different classes during visualization (#6716)
+- Support CPU training (#7016)
+- Add download script of COCO, LVIS, and VOC dataset (#7015)
+
+#### Bug Fixes
+
+- Fix weight conversion issue of RetinaNet with Swin-S (#6973)
+- Update `__repr__` of `Compose` (#6951)
+- Fix BadZipFile Error when build docker (#6966)
+- Fix bug in non-distributed multi-gpu training/testing (#7019)
+- Fix bbox clamp in PyTorch 1.10 (#7074)
+- Relax the requirement of PALETTE in dataset wrappers (#7085)
+- Keep the same weights before reassign in the PAA head (#7032)
+- Update code demo in doc (#7092)
+
+#### Improvements
+
+- Speed-up training by allow to set variables of multi-processing (#6974, #7036)
+- Add links of Chinese tutorials in readme (#6897)
+- Disable cv2 multiprocessing by default for acceleration (#6867)
+- Deprecate the support for "python setup.py test" (#6998)
+- Re-organize metafiles and config readmes (#7051)
+- Fix None grad problem during training TOOD by adding `SigmoidGeometricMean` (#7090)
+
+#### Contributors
+
+A total of 26 developers contributed to this release.
+Thanks @del-zhenwu, @zimoqingfeng, @srishilesh, @imyhxy, @jenhaoyang, @jliu-ac, @kimnamu, @ShengliLiu, @garvan2021, @ciusji, @DIYer22, @kimnamu, @q3394101, @zhouzaida, @gaotongxiao, @topsy404, @AntoAndGar, @jbwang1997, @nijkah, @ZwwWayne, @Czm369, @jshilong, @RangiLyu, @BIGWangYuDong, @hhaAndroid, @AronLin
+
 ### v2.20.0 (27/12/2021)
 
 #### New Features
@@ -24,8 +408,8 @@
 
 #### Contributors
 
-A total of 12 developers contributed to this release.
-Thanks @ZwwWayne, @Czm369, @jshilong, @RangiLyu, @BIGWangYuDong, @hhaAndroid, @jamiechoi1995, @AronLin, @Keiku, @gkagkos, @fcakyon, @www516717402
+A total of 16 developers contributed to this release.
+Thanks @ZwwWayne, @Czm369, @jshilong, @RangiLyu, @BIGWangYuDong, @hhaAndroid, @jamiechoi1995, @AronLin, @Keiku, @gkagkos, @fcakyon, @www516717402, @vansin, @zactodd, @kimnamu, @jenhaoyang
 
 ### v2.19.1 (14/12/2021)
 
@@ -88,7 +472,6 @@ Thanks @ZwwWayne, @LJoson, @Czm369, @jshilong, @ZCMax, @RangiLyu, @BIGWangYuDong
 - Speed up training and reduce memory cost when using PhotoMetricDistortion. (#6442)
 - Make OHEM work with seesaw loss (#6514)
 
-
 #### Documents
 
 - Update README.md (#6567)
@@ -97,10 +480,6 @@ Thanks @ZwwWayne, @LJoson, @Czm369, @jshilong, @ZCMax, @RangiLyu, @BIGWangYuDong
 
 A total of 11 developers contributed to this release.
 Thanks @FloydHsiu, @RangiLyu, @ZwwWayne, @AndreaPi, @st9007a, @hachreak, @BIGWangYuDong, @hhaAndroid, @AronLin, @chhluo, @vealocia, @HarborYuan, @st9007a, @jshilong
-
-
-
-
 
 ### v2.18.1 (15/11/2021)
 
@@ -136,7 +515,6 @@ Thanks @FloydHsiu, @RangiLyu, @ZwwWayne, @AndreaPi, @st9007a, @hachreak, @BIGWan
 
 A total of 11 developers contributed to this release.
 Thanks @st9007a, @hachreak, @HarborYuan, @vealocia, @chhluo, @AndreaPi, @AronLin, @BIGWangYuDong, @hhaAndroid, @RangiLyu, @ZwwWayne
-
 
 ### v2.18.0 (27/10/2021)
 
@@ -185,7 +563,6 @@ Thanks @st9007a, @hachreak, @HarborYuan, @vealocia, @chhluo, @AndreaPi, @AronLin
 A total of 18 developers contributed to this release.
 Thanks @Boyden, @onnkeat, @st9007a, @vealocia, @yhcao6, @DapangpangX, @yellowdolphin, @cclauss, @kennymckormick,
 @pingguokiller, @collinzrj, @AndreaPi, @AronLin, @BIGWangYuDong, @hhaAndroid, @jshilong, @RangiLyu, @ZwwWayne
-
 
 ### v2.17.0 (28/9/2021)
 
@@ -243,6 +620,7 @@ Thanks @Boyden, @onnkeat, @st9007a, @vealocia, @yhcao6, @DapangpangX, @yellowdol
 - Support to resize multiple segmentation maps (#5747)
 
 #### Contributors
+
 A total of 24 developers contributed to this release.
 Thanks @morkovka1337, @HarborYuan, @guillaumefrd, @guigarfr, @www516717402, @gaotongxiao, @ypwhs, @MartaYang, @shinya7y, @justiceeem, @zhaojinjian0000, @VVsssssk, @aravind-anantha, @wangbo-zhao, @czczup, @whai362, @czczup, @marijnl, @AronLin, @BIGWangYuDong, @hhaAndroid, @jshilong, @RangiLyu, @ZwwWayne
 
@@ -470,7 +848,7 @@ MMDetection is going through big refactoring for more general and convenient usa
 In v2.12.0 MMDetection inevitably brings some BC-breakings, including the MMCV dependency, model initialization, model registry, and mask AP evaluation.
 
 - MMCV version. MMDetection v2.12.0 relies on the newest features in MMCV 1.3.3, including `BaseModule` for unified parameter initialization, model registry, and the CUDA operator `MultiScaleDeformableAttn` for [Deformable DETR](https://arxiv.org/abs/2010.04159). Note that MMCV 1.3.2 already contains all the features used by MMDet but has known issues. Therefore, we recommend users skip MMCV v1.3.2 and use v1.3.3, though v1.3.2 might work for most cases.
-- Unified model initialization (#4750). To unify the parameter initialization in OpenMMLab projects, MMCV supports `BaseModule` that accepts `init_cfg` to allow the modules' parameters initialized in a flexible and unified manner. Now the users need to explicitly call `model.init_weights()` in the training script to initialize the model (as in [here](https://github.com/open-mmlab/mmdetection/blob/master/tools/train.py#L162), previously this was handled by the detector. The models in MMDetection have been re-benchmarked to ensure accuracy based on PR #4750. **The downstream projects should update their code accordingly to use MMDetection v2.12.0**.
+- Unified model initialization (#4750). To unify the parameter initialization in OpenMMLab projects, MMCV supports `BaseModule` that accepts `init_cfg` to allow the modules' parameters initialized in a flexible and unified manner. Now the users need to explicitly call `model.init_weights()` in the training script to initialize the model (as in [here](https://github.com/open-mmlab/mmdetection/blob/master/tools/train.py#L162), previously this was handled by the detector. The models in MMDetection have been re-benchmarked to ensure accuracy based on PR #4750. __The downstream projects should update their code accordingly to use MMDetection v2.12.0__.
 - Unified model registry (#5059). To easily use backbones implemented in other OpenMMLab projects, MMDetection migrates to inherit the model registry created in MMCV (#760). In this way, as long as the backbone is supported in an OpenMMLab project and that project also uses the registry in MMCV, users can use that backbone in MMDetection by simply modifying the config without copying the code of that backbone into MMDetection.
 - Mask AP evaluation (#4898). Previous versions calculate the areas of masks through the bounding boxes when calculating the mask AP of small, medium, and large instances. To indeed use the areas of masks, we pop the key `bbox` during mask AP calculation. This change does not affect the overall mask AP evaluation and aligns the mask AP of similar models in other projects like Detectron2.
 
@@ -512,17 +890,17 @@ In v2.12.0 MMDetection inevitably brings some BC-breakings, including the MMCV d
 
 ### v2.11.0 (01/4/2021)
 
-**Highlights**
+__Highlights__
 
 - Support new method: [Localization Distillation for Object Detection](https://arxiv.org/pdf/2102.12252.pdf)
 - Support Pytorch2ONNX with batch inference and dynamic shape
 
-**New Features**
+__New Features__
 
 - Support [Localization Distillation for Object Detection](https://arxiv.org/pdf/2102.12252.pdf) (#4758)
 - Support Pytorch2ONNX with batch inference and dynamic shape for Faster-RCNN and mainstream one-stage detectors (#4796)
 
-**Improvements**
+__Improvements__
 
 - Support batch inference in head of RetinaNet (#4699)
 - Add batch dimension in second stage of Faster-RCNN (#4785)
@@ -532,7 +910,7 @@ In v2.12.0 MMDetection inevitably brings some BC-breakings, including the MMCV d
 - support dynamic shape for grid_anchor (#4684)
 - Move pycocotools version check to when it is used (#4880)
 
-**Bug Fixes**
+__Bug Fixes__
 
 - Fix a bug of TridentNet when doing the batch inference (#4717)
 - Fix a bug of Pytorch2ONNX in FASF (#4735)
@@ -740,16 +1118,16 @@ In v2.12.0 MMDetection inevitably brings some BC-breakings, including the MMCV d
 
 #### Backwards Incompatible Changes
 
-**FP16 related methods are imported from mmcv instead of mmdet. (#3766, #3822)**
+__FP16 related methods are imported from mmcv instead of mmdet. (#3766, #3822)__
 Mixed precision training utils in `mmdet.core.fp16` are moved to `mmcv.runner`, including `force_fp32`, `auto_fp16`, `wrap_fp16_model`, and `Fp16OptimizerHook`. A deprecation warning will be raised if users attempt to import those methods from `mmdet.core.fp16`, and will be finally removed in V2.10.0.
 
-**[0, N-1] represents foreground classes and N indicates background classes for all models. (#3221)**
+__\[0, N-1\] represents foreground classes and N indicates background classes for all models. (#3221)__
 Before v2.5.0, the background label for RPN is 0, and N for other heads. Now the behavior is consistent for all models. Thus `self.background_labels` in `dense_heads` is removed and all heads use `self.num_classes` to indicate the class index of background labels.
 This change has no effect on the pre-trained models in the v2.x model zoo, but will affect the training of all models with RPN heads. Two-stage detectors whose RPN head uses softmax will be affected because the order of categories is changed.
 
 **Only call `get_subset_by_classes` when `test_mode=True` and `self.filter_empty_gt=True` (#3695)**
 Function `get_subset_by_classes` in dataset is refactored and only filters out images when `test_mode=True` and `self.filter_empty_gt=True`.
-    In the original implementation, `get_subset_by_classes` is not related to the flag `self.filter_empty_gt` and will only be called when the classes is set during initialization no matter `test_mode` is `True` or `False`. This brings ambiguous behavior and potential bugs in many cases. After v2.5.0, if `filter_empty_gt=False`, no matter whether the classes are specified in a dataset, the dataset will use all the images in the annotations. If `filter_empty_gt=True` and `test_mode=True`, no matter whether the classes are specified, the dataset will call ``get_subset_by_classes` to check the images and filter out images containing no GT boxes. Therefore, the users should be responsible for the data filtering/cleaning process for the test dataset.
+In the original implementation, `get_subset_by_classes` is not related to the flag `self.filter_empty_gt` and will only be called when the classes is set during initialization no matter `test_mode` is `True` or `False`. This brings ambiguous behavior and potential bugs in many cases. After v2.5.0, if `filter_empty_gt=False`, no matter whether the classes are specified in a dataset, the dataset will use all the images in the annotations. If `filter_empty_gt=True` and `test_mode=True`, no matter whether the classes are specified, the dataset will call \`\`get_subset_by_classes\` to check the images and filter out images containing no GT boxes. Therefore, the users should be responsible for the data filtering/cleaning process for the test dataset.
 
 #### New Features
 
@@ -788,7 +1166,7 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 
 ### v2.4.0 (5/9/2020)
 
-**Highlights**
+__Highlights__
 
 - Fix lots of issues/bugs and reorganize the trouble shooting page
 - Support new methods [SABL](https://arxiv.org/abs/1912.04260), [YOLOv3](https://arxiv.org/abs/1804.02767), and [PAA Assign](https://arxiv.org/abs/2007.08103)
@@ -796,14 +1174,14 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 - Start to publish `mmdet` package to PyPI since v2.3.0
 - Switch model zoo to download.openmmlab.com
 
-**Backwards Incompatible Changes**
+__Backwards Incompatible Changes__
 
 - Support Batch Inference (#3564, #3686, #3705): Since v2.4.0, MMDetection could inference model with multiple images in a single GPU.
   This change influences all the test APIs in MMDetection and downstream codebases. To help the users migrate their code, we use `replace_ImageToTensor` (#3686) to convert legacy test data pipelines during dataset initialization.
 - Support RandomFlip with horizontal/vertical/diagonal direction (#3608): Since v2.4.0, MMDetection supports horizontal/vertical/diagonal flip in the data augmentation. This influences bounding box, mask, and image transformations in data augmentation process and the process that will map those data back to the original format.
 - Migrate to use `mmlvis` and `mmpycocotools` for COCO and LVIS dataset (#3727). The APIs are fully compatible with the original `lvis` and `pycocotools`. Users need to uninstall the existing pycocotools and lvis packages in their environment first and install `mmlvis` & `mmpycocotools`.
 
-**Bug Fixes**
+__Bug Fixes__
 
 - Fix default mean/std for onnx (#3491)
 - Fix coco evaluation and add metric items (#3497)
@@ -824,7 +1202,7 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 - Fix weight initialization bug in Res2Net DCN (#3714)
 - Fix bug in OHEMSampler (#3677)
 
-**New Features**
+__New Features__
 
 - Support Cutout augmentation (#3521)
 - Support evaluation on multiple datasets through ConcatDataset (#3522)
@@ -835,7 +1213,7 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 - Support to publish to Pypi in github-action (#3510)
 - Support custom imports (#3641)
 
-**Improvements**
+__Improvements__
 
 - Refactor common issues in documentation (#3530)
 - Add pytorch 1.6 to CI config (#3532)
@@ -850,14 +1228,14 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 
 ### v2.3.0 (5/8/2020)
 
-**Highlights**
+__Highlights__
 
 - The CUDA/C++ operators have been moved to `mmcv.ops`. For backward compatibility `mmdet.ops` is kept as warppers of `mmcv.ops`.
 - Support new methods [CornerNet](https://arxiv.org/abs/1808.01244), [DIOU](https://arxiv.org/abs/1911.08287)/[CIOU](https://arxiv.org/abs/2005.03572) loss, and new dataset: [LVIS V1](https://arxiv.org/abs/1908.03195)
 - Provide more detailed colab training tutorials and more complete documentation.
 - Support to convert RetinaNet from Pytorch to ONNX.
 
-**Bug Fixes**
+__Bug Fixes__
 
 - Fix the model initialization bug of DetectoRS (#3187)
 - Fix the bug of module names in NASFCOSHead (#3205)
@@ -873,7 +1251,7 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 - Fix test-time augmentation of RepPoints (#3435)
 - Fix runtimeError caused by incontiguous tensor in Res2Net+DCN (#3412)
 
-**New Features**
+__New Features__
 
 - Support [CornerNet](https://arxiv.org/abs/1808.01244) (#3036)
 - Support [DIOU](https://arxiv.org/abs/1911.08287)/[CIOU](https://arxiv.org/abs/2005.03572) loss (#3151)
@@ -882,7 +1260,7 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 - Support fp16 training of generalized focal loss (#3410)
 - Support to convert RetinaNet from Pytorch to ONNX (#3075)
 
-**Improvements**
+__Improvements__
 
 - Support to process ignore boxes in ATSS assigner (#3082)
 - Allow to crop images without ground truth in `RandomCrop` (#3153)
@@ -898,11 +1276,11 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 
 ### v2.2.0 (1/7/2020)
 
-**Highlights**
+__Highlights__
 
 - Support new methods: [DetectoRS](https://arxiv.org/abs/2006.02334), [PointRend](https://arxiv.org/abs/1912.08193), [Generalized Focal Loss](https://arxiv.org/abs/2006.04388), [Dynamic R-CNN](https://arxiv.org/abs/2004.06002)
 
-**Bug Fixes**
+__Bug Fixes__
 
 - Fix FreeAnchor when no gt in image (#3176)
 - Clean up deprecated usage of `register_module()` (#3092, #3161)
@@ -921,7 +1299,7 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 - Avoid nan in `iou_calculator` (#2975)
 - Prevent possible bugs in loading and transforms caused by shallow copy (#2967)
 
-**New Features**
+__New Features__
 
 - Add DetectoRS (#3064)
 - Support Generalize Focal Loss (#3097)
@@ -933,7 +1311,7 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 - Add `with_cp` for BasicBlock (#2891)
 - Add `stem_channels` argument for ResNet (#2954)
 
-**Improvements**
+__Improvements__
 
 - Add anchor free base head (#2867)
 - Migrate to github action (#3137)
@@ -946,13 +1324,13 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 
 ### v2.1.0 (8/6/2020)
 
-**Highlights**
+__Highlights__
 
 - Support new backbones: [RegNetX](https://arxiv.org/abs/2003.13678), [Res2Net](https://arxiv.org/abs/1904.01169)
 - Support new methods: [NASFCOS](https://arxiv.org/abs/1906.04423), [PISA](https://arxiv.org/abs/1904.04821), [GRoIE](https://arxiv.org/abs/2004.13665)
 - Support new dataset: [LVIS](https://arxiv.org/abs/1908.03195)
 
-**Bug Fixes**
+__Bug Fixes__
 
 - Change the CLI argument `--validate` to `--no-validate` to enable validation after training epochs by default. (#2651)
 - Add missing cython to docker file (#2713)
@@ -967,7 +1345,7 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 - Fix bug of `base_channels` of regnet (#2917)
 - Fix the bug of logger when loading pre-trained weights in base detector (#2936)
 
-**New Features**
+__New Features__
 
 - Add IoU models (#2666)
 - Add colab demo for inference
@@ -986,7 +1364,7 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 - Support LVIS dataset (#2088)
 - Support GRoIE (#2584)
 
-**Improvements**
+__Improvements__
 
 - Allow different x and y strides in anchor heads. (#2629)
 - Make FSAF loss more robust to no gt (#2680)
@@ -1009,24 +1387,24 @@ Function `get_subset_by_classes` in dataset is refactored and only filters out i
 
 In this release, we made lots of major refactoring and modifications.
 
-1. **Faster speed**. We optimize the training and inference speed for common models, achieving up to 30% speedup for training and 25% for inference. Please refer to [model zoo](model_zoo.md#comparison-with-detectron2) for details.
+1. __Faster speed__. We optimize the training and inference speed for common models, achieving up to 30% speedup for training and 25% for inference. Please refer to [model zoo](model_zoo.md#comparison-with-detectron2) for details.
 
-2. **Higher performance**. We change some default hyperparameters with no additional cost, which leads to a gain of performance for most models. Please refer to [compatibility](compatibility.md#training-hyperparameters) for details.
+2. __Higher performance__. We change some default hyperparameters with no additional cost, which leads to a gain of performance for most models. Please refer to [compatibility](compatibility.md#training-hyperparameters) for details.
 
-3. **More documentation and tutorials**. We add a bunch of documentation and tutorials to help users get started more smoothly. Read it [here](https://mmdetection.readthedocs.io/en/latest/).
+3. __More documentation and tutorials__. We add a bunch of documentation and tutorials to help users get started more smoothly. Read it [here](https://mmdetection.readthedocs.io/en/latest/).
 
-4. **Support PyTorch 1.5**. The support for 1.1 and 1.2 is dropped, and we switch to some new APIs.
+4. __Support PyTorch 1.5__. The support for 1.1 and 1.2 is dropped, and we switch to some new APIs.
 
-5. **Better configuration system**. Inheritance is supported to reduce the redundancy of configs.
+5. __Better configuration system__. Inheritance is supported to reduce the redundancy of configs.
 
-6. **Better modular design**. Towards the goal of simplicity and flexibility, we simplify some encapsulation while add more other configurable modules like BBoxCoder, IoUCalculator, OptimizerConstructor, RoIHead. Target computation is also included in heads and the call hierarchy is simpler.
+6. __Better modular design__. Towards the goal of simplicity and flexibility, we simplify some encapsulation while add more other configurable modules like BBoxCoder, IoUCalculator, OptimizerConstructor, RoIHead. Target computation is also included in heads and the call hierarchy is simpler.
 
 7. Support new methods: [FSAF](https://arxiv.org/abs/1903.00621) and PAFPN (part of [PAFPN](https://arxiv.org/abs/1803.01534)).
 
-**Breaking Changes**
+__Breaking Changes__
 Models training with MMDetection 1.x are not fully compatible with 2.0, please refer to the [compatibility doc](compatibility.md) for the details and how to migrate to the new version.
 
-**Improvements**
+__Improvements__
 
 - Unify cuda and cpp API for custom ops. (#2277)
 - New config files with inheritance. (#2216)
@@ -1047,7 +1425,7 @@ Models training with MMDetection 1.x are not fully compatible with 2.0, please r
 - Support PyTorch 1.5. (#2524)
 - Drop the support for Python 3.5 and use F-string in the codebase. (#2531)
 
-**Bug Fixes**
+__Bug Fixes__
 
 - Fix the scale factors for resized images without keep the aspect ratio. (#2039)
 - Check if max_num > 0 before slicing in NMS. (#2486)
@@ -1055,7 +1433,7 @@ Models training with MMDetection 1.x are not fully compatible with 2.0, please r
 - Fix the default value of assigned labels. (#2536)
 - Fix the evaluation of Cityscapes. (#2578)
 
-**New Features**
+__New Features__
 
 - Add deep_stem and avg_down option to ResNet, i.e., support ResNetV1d. (#2252)
 - Add L1 loss. (#2376)
@@ -1074,19 +1452,19 @@ Models training with MMDetection 1.x are not fully compatible with 2.0, please r
 
 ### v1.1.0 (24/2/2020)
 
-**Highlights**
+__Highlights__
 
 - Dataset evaluation is rewritten with a unified api, which is used by both evaluation hooks and test scripts.
 - Support new methods: [CARAFE](https://arxiv.org/abs/1905.02188).
 
-**Breaking Changes**
+__Breaking Changes__
 
 - The new MMDDP inherits from the official DDP, thus the `__init__` api is changed to be the same as official DDP.
 - The `mask_head` field in HTC config files is modified.
 - The evaluation and testing script is updated.
 - In all transforms, instance masks are stored as a numpy array shaped (n, h, w) instead of a list of (h, w) arrays, where n is the number of instances.
 
-**Bug Fixes**
+__Bug Fixes__
 
 - Fix IOU assigners when ignore_iof_thr > 0 and there is no pred boxes. (#2135)
 - Fix mAP evaluation when there are no ignored boxes. (#2116)
@@ -1098,7 +1476,7 @@ Models training with MMDetection 1.x are not fully compatible with 2.0, please r
 - Fix the bug that `pad_val` is unused in Pad transform. (#2093)
 - Fix the albumentation transform when there is no ground truth bbox. (#2032)
 
-**Improvements**
+__Improvements__
 
 - Use torch instead of numpy for random sampling. (#2094)
 - Migrate to the new MMDDP implementation in MMCV v0.3. (#2090)
@@ -1107,7 +1485,7 @@ Models training with MMDetection 1.x are not fully compatible with 2.0, please r
 - Rewrite dataset evaluation. (#2042, #2087, #2114, #2128)
 - Use numpy array for masks in transforms. (#2030)
 
-**New Features**
+__New Features__
 
 - Implement "CARAFE: Content-Aware ReAssembly of FEatures". (#1583)
 - Add `worker_init_fn()` in data_loader when seed is set. (#2066, #2111)
@@ -1117,14 +1495,14 @@ Models training with MMDetection 1.x are not fully compatible with 2.0, please r
 
 This release mainly improves the code quality and add more docstrings.
 
-**Highlights**
+__Highlights__
 
-- Documentation is online now: https://mmdetection.readthedocs.io.
+- Documentation is online now: <https://mmdetection.readthedocs.io>.
 - Support new models: [ATSS](https://arxiv.org/abs/1912.02424).
 - DCN is now available with the api `build_conv_layer` and `ConvModule` like the normal conv layer.
 - A tool to collect environment information is available for trouble shooting.
 
-**Bug Fixes**
+__Bug Fixes__
 
 - Fix the incompatibility of the latest numpy and pycocotools. (#2024)
 - Fix the case when distributed package is unavailable, e.g., on Windows. (#1985)
@@ -1135,7 +1513,7 @@ This release mainly improves the code quality and add more docstrings.
 - Fix the loaded shape of empty proposals. (#1819)
 - Fix the mask data type when using albumentation. (#1818)
 
-**Improvements**
+__Improvements__
 
 - Enhance AssignResult and SamplingResult. (#1995)
 - Add ability to overwrite existing module in Registry. (#1982)
@@ -1150,7 +1528,7 @@ This release mainly improves the code quality and add more docstrings.
 - Fix the color of the same class for mask visualization. (#1834)
 - Remove the option `keep_all_stages` in HTC and Cascade R-CNN. (#1806)
 
-**New Features**
+__New Features__
 
 - Add two test-time options `crop_mask` and `rle_mask_encode` for mask heads. (#2013)
 - Support loading grayscale images as single channel. (#1975)
@@ -1163,7 +1541,7 @@ This release mainly improves the code quality and add more docstrings.
 
 The RC1 release mainly focuses on improving the user experience, and fixing bugs.
 
-**Highlights**
+__Highlights__
 
 - Support new models: [FoveaBox](https://arxiv.org/abs/1904.03797), [RepPoints](https://arxiv.org/abs/1904.11490) and [FreeAnchor](https://arxiv.org/abs/1909.02466).
 - Add a Dockerfile.
@@ -1172,11 +1550,11 @@ The RC1 release mainly focuses on improving the user experience, and fixing bugs
 - Add lots of docstrings and unit tests.
 - Fix lots of bugs.
 
-**Breaking Changes**
+__Breaking Changes__
 
 - There was a bug for computing COCO-style mAP w.r.t different scales (AP_s, AP_m, AP_l), introduced by #621. (#1679)
 
-**Bug Fixes**
+__Bug Fixes__
 
 - Fix a sampling interval bug in Libra R-CNN. (#1800)
 - Fix the learning rate in SSD300 WIDER FACE. (#1781)
@@ -1208,7 +1586,7 @@ The RC1 release mainly focuses on improving the user experience, and fixing bugs
 - Fix FCOS when input images has no positive sample. (#1136)
 - Fix recursive imports. (#1099)
 
-**Improvements**
+__Improvements__
 
 - Print the config file and mmdet version in the log. (#1721)
 - Lint the code before compiling in travis CI. (#1715)
@@ -1233,7 +1611,7 @@ The RC1 release mainly focuses on improving the user experience, and fixing bugs
 - Allowing validation dataset for computing validation loss. (#1093)
 - Use `.scalar_type()` instead of `.type()` to suppress some warnings. (#1070)
 
-**New Features**
+__New Features__
 
 - Add an option `--with_ap` to compute the AP for each class. (#1549)
 - Implement "FreeAnchor: Learning to Match Anchors for Visual Object Detection". (#1391)

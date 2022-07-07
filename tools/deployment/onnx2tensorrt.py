@@ -201,7 +201,7 @@ if __name__ == '__main__':
         parsed directly from config file and are deprecated and will be \
         removed in future releases.')
     if not args.input_img:
-        args.input_img = osp.join(osp.dirname(__file__), '../demo/demo.jpg')
+        args.input_img = osp.join(osp.dirname(__file__), '../../demo/demo.jpg')
 
     cfg = Config.fromfile(args.config)
 
@@ -252,3 +252,15 @@ if __name__ == '__main__':
         show=args.show,
         workspace_size=args.workspace_size,
         verbose=args.verbose)
+
+    # Following strings of text style are from colorama package
+    bright_style, reset_style = '\x1b[1m', '\x1b[0m'
+    red_text, blue_text = '\x1b[31m', '\x1b[34m'
+    white_background = '\x1b[107m'
+
+    msg = white_background + bright_style + red_text
+    msg += 'DeprecationWarning: This tool will be deprecated in future. '
+    msg += blue_text + 'Welcome to use the unified model deployment toolbox '
+    msg += 'MMDeploy: https://github.com/open-mmlab/mmdeploy'
+    msg += reset_style
+    warnings.warn(msg)

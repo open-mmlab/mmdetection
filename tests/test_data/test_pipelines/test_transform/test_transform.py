@@ -10,7 +10,7 @@ from mmcv.utils import build_from_cfg
 
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.datasets.builder import PIPELINES
-from .utils import create_random_bboxes
+from .utils import create_full_masks, create_random_bboxes
 
 
 def test_resize():
@@ -900,6 +900,11 @@ def test_mosaic():
         transform = dict(type='Mosaic', img_scale=640)
         build_from_cfg(transform, PIPELINES)
 
+    # test assertion for invalid probability
+    with pytest.raises(AssertionError):
+        transform = dict(type='Mosaic', prob=1.5)
+        build_from_cfg(transform, PIPELINES)
+
     results = dict()
     img = mmcv.imread(
         osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
@@ -967,6 +972,33 @@ def test_mixup():
     assert results['gt_bboxes'].dtype == np.float32
     assert results['gt_bboxes_ignore'].dtype == np.float32
 
+    # test filter bbox :
+    # 2 boxes with sides 1 and 3 are filtered as min_bbox_size=5
+    gt_bboxes = np.array([[0, 0, 1, 1], [0, 0, 3, 3]], dtype=np.float32)
+    results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
+    results['gt_bboxes'] = gt_bboxes
+    results['gt_bboxes_ignore'] = np.array([], dtype=np.float32)
+    mixresults = results['mix_results'][0]
+    mixresults['gt_labels'] = copy.deepcopy(results['gt_labels'])
+    mixresults['gt_bboxes'] = copy.deepcopy(results['gt_bboxes'])
+    mixresults['gt_bboxes_ignore'] = copy.deepcopy(results['gt_bboxes_ignore'])
+    transform = dict(
+        type='MixUp',
+        img_scale=(10, 12),
+        ratio_range=(1.5, 1.5),
+        min_bbox_size=5,
+        skip_filter=False)
+    mixup_module = build_from_cfg(transform, PIPELINES)
+
+    results = mixup_module(results)
+
+    assert results['gt_bboxes'].shape[0] == 2
+    assert results['gt_labels'].shape[0] == 2
+    assert results['gt_labels'].shape[0] == results['gt_bboxes'].shape[0]
+    assert results['gt_labels'].dtype == np.int64
+    assert results['gt_bboxes'].dtype == np.float32
+    assert results['gt_bboxes_ignore'].dtype == np.float32
+
 
 def test_photo_metric_distortion():
     img = mmcv.imread(
@@ -993,3 +1025,77 @@ def test_photo_metric_distortion():
     results['img'] = img.astype(np.float32)
     results = distortion_module(results)
     assert results['img'].dtype == np.float32
+
+
+def test_copypaste():
+    dst_results, src_results = dict(), dict()
+    img = mmcv.imread(
+        osp.join(osp.dirname(__file__), '../../../data/color.jpg'), 'color')
+    dst_results['img'] = img.copy()
+    src_results['img'] = img.copy()
+
+    h, w, _ = img.shape
+
+    dst_bboxes = np.array([[0.2 * w, 0.2 * h, 0.4 * w, 0.4 * h],
+                           [0.5 * w, 0.5 * h, 0.6 * w, 0.6 * h]],
+                          dtype=np.float32)
+    src_bboxes = np.array([[0.1 * w, 0.1 * h, 0.3 * w, 0.5 * h],
+                           [0.4 * w, 0.4 * h, 0.7 * w, 0.7 * h],
+                           [0.8 * w, 0.8 * h, 0.9 * w, 0.9 * h]],
+                          dtype=np.float32)
+    dst_labels = np.ones(dst_bboxes.shape[0], dtype=np.int64)
+    src_labels = np.ones(src_bboxes.shape[0], dtype=np.int64) * 2
+    dst_masks = create_full_masks(dst_bboxes, w, h)
+    src_masks = create_full_masks(src_bboxes, w, h)
+    dst_results['gt_bboxes'] = dst_bboxes.copy()
+    src_results['gt_bboxes'] = src_bboxes.copy()
+    dst_results['gt_labels'] = dst_labels.copy()
+    src_results['gt_labels'] = src_labels.copy()
+    dst_results['gt_masks'] = copy.deepcopy(dst_masks)
+    src_results['gt_masks'] = copy.deepcopy(src_masks)
+
+    results = copy.deepcopy(dst_results)
+
+    transform = dict(type='CopyPaste', selected=False)
+    copypaste_module = build_from_cfg(transform, PIPELINES)
+
+    # test assertion for invalid mix_results
+    with pytest.raises(AssertionError):
+        copypaste_module(results)
+
+    results['mix_results'] = [copy.deepcopy(src_results)]
+    results = copypaste_module(results)
+    assert results['img'].shape[:2] == (h, w)
+    # one object of destination image is totally occluded
+    assert results['gt_bboxes'].shape[0] == \
+           dst_bboxes.shape[0] + src_bboxes.shape[0] - 1
+    assert results['gt_labels'].shape[0] == \
+           dst_labels.shape[0] + src_labels.shape[0] - 1
+    assert results['gt_masks'].masks.shape[0] == \
+           dst_masks.masks.shape[0] + src_masks.masks.shape[0] - 1
+
+    assert results['gt_labels'].dtype == np.int64
+    assert results['gt_bboxes'].dtype == np.float32
+    # the object of destination image is partially occluded
+    ori_bbox = dst_bboxes[0]
+    occ_bbox = results['gt_bboxes'][0]
+    ori_mask = dst_masks.masks[0]
+    occ_mask = results['gt_masks'].masks[0]
+    assert ori_mask.sum() > occ_mask.sum()
+    assert np.all(np.abs(occ_bbox - ori_bbox) <=
+                  copypaste_module.bbox_occluded_thr) or \
+        occ_mask.sum() > copypaste_module.mask_occluded_thr
+    # test copypaste with selected objects
+    transform = dict(type='CopyPaste')
+    copypaste_module = build_from_cfg(transform, PIPELINES)
+    results = copy.deepcopy(dst_results)
+    results['mix_results'] = [copy.deepcopy(src_results)]
+    copypaste_module(results)
+    # test copypaste with an empty source image
+    results = copy.deepcopy(dst_results)
+    valid_inds = [False] * src_bboxes.shape[0]
+    src_results['gt_bboxes'] = src_bboxes[valid_inds]
+    src_results['gt_labels'] = src_labels[valid_inds]
+    src_results['gt_masks'] = src_masks[valid_inds]
+    results['mix_results'] = [copy.deepcopy(src_results)]
+    copypaste_module(results)

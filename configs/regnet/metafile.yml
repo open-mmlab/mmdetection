@@ -1,6 +1,10 @@
-Collections:
-  - Name: RegNet
+Models:
+  - Name: mask_rcnn_regnetx-3.2GF_fpn_1x_coco
+    In Collection: Mask R-CNN
+    Config: configs/regnet/mask_rcnn_regnetx-3.2GF_fpn_1x_coco.py
     Metadata:
+      Training Memory (GB): 5.0
+      Epochs: 12
       Training Data: COCO
       Training Techniques:
         - SGD with Momentum
@@ -8,21 +12,6 @@ Collections:
       Training Resources: 8x V100 GPUs
       Architecture:
         - RegNet
-    Paper:
-      URL: https://arxiv.org/abs/2003.13678
-      Title: 'Designing Network Design Spaces'
-    README: configs/regnet/README.md
-    Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
-      Version: v2.1.0
-
-Models:
-  - Name: mask_rcnn_regnetx-3.2GF_fpn_1x_coco
-    In Collection: RegNet
-    Config: configs/regnet/mask_rcnn_regnetx-3.2GF_fpn_1x_coco.py
-    Metadata:
-      Training Memory (GB): 5.0
-      Epochs: 12
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -33,13 +22,27 @@ Models:
         Metrics:
           mask AP: 36.6
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-3.2GF_fpn_1x_coco/mask_rcnn_regnetx-3.2GF_fpn_1x_coco_20200520_163141-2a9d1814.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: mask_rcnn_regnetx-4GF_fpn_1x_coco
-    In Collection: RegNet
+    In Collection: Mask R-CNN
     Config: configs/regnet/mask_rcnn_regnetx-4GF_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 5.5
       Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -50,13 +53,27 @@ Models:
         Metrics:
           mask AP: 37.4
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-4GF_fpn_1x_coco/mask_rcnn_regnetx-4GF_fpn_1x_coco_20200517_180217-32e9c92d.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: mask_rcnn_regnetx-6.4GF_fpn_1x_coco
-    In Collection: RegNet
+    In Collection: Mask R-CNN
     Config: configs/regnet/mask_rcnn_regnetx-6.4GF_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.1
       Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -67,13 +84,27 @@ Models:
         Metrics:
           mask AP: 37.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-6.4GF_fpn_1x_coco/mask_rcnn_regnetx-6.4GF_fpn_1x_coco_20200517_180439-3a7aae83.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: mask_rcnn_regnetx-8GF_fpn_1x_coco
-    In Collection: RegNet
+    In Collection: Mask R-CNN
     Config: configs/regnet/mask_rcnn_regnetx-8GF_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.4
       Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -84,13 +115,27 @@ Models:
         Metrics:
           mask AP: 37.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-8GF_fpn_1x_coco/mask_rcnn_regnetx-8GF_fpn_1x_coco_20200517_180515-09daa87e.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: mask_rcnn_regnetx-12GF_fpn_1x_coco
-    In Collection: RegNet
+    In Collection: Mask R-CNN
     Config: configs/regnet/mask_rcnn_regnetx-12GF_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 7.4
       Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -101,13 +146,27 @@ Models:
         Metrics:
           mask AP: 38
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-12GF_fpn_1x_coco/mask_rcnn_regnetx-12GF_fpn_1x_coco_20200517_180552-b538bd8b.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: mask_rcnn_regnetx-3.2GF_fpn_mdconv_c3-c5_1x_coco
-    In Collection: RegNet
+    In Collection: Mask R-CNN
     Config: configs/regnet/mask_rcnn_regnetx-3.2GF_fpn_mdconv_c3-c5_1x_coco.py
     Metadata:
       Training Memory (GB): 5.0
       Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -118,143 +177,297 @@ Models:
         Metrics:
           mask AP: 36.6
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-3.2GF_fpn_mdconv_c3-c5_1x_coco/mask_rcnn_regnetx-3.2GF_fpn_mdconv_c3-c5_1x_coco_20200520_172726-75f40794.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: faster_rcnn_regnetx-3.2GF_fpn_1x_coco
-    In Collection: RegNet
+    In Collection: Faster R-CNN
     Config: configs/regnet/faster_rcnn_regnetx-3.2GF_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.5
       Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 39.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/faster_rcnn_regnetx-3.2GF_fpn_1x_coco/faster_rcnn_regnetx-3.2GF_fpn_1x_coco_20200517_175927-126fd9bf.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: faster_rcnn_regnetx-3.2GF_fpn_2x_coco
-    In Collection: RegNet
+    In Collection: Faster R-CNN
     Config: configs/regnet/faster_rcnn_regnetx-3.2GF_fpn_2x_coco.py
     Metadata:
       Training Memory (GB): 4.5
       Epochs: 24
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 41.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/faster_rcnn_regnetx-3.2GF_fpn_2x_coco/faster_rcnn_regnetx-3.2GF_fpn_2x_coco_20200520_223955-e2081918.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: retinanet_regnetx-800MF_fpn_1x_coco
-    In Collection: RegNet
+    In Collection: RetinaNet
     Config: configs/regnet/retinanet_regnetx-800MF_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 2.5
       Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 35.6
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/retinanet_regnetx-800MF_fpn_1x_coco/retinanet_regnetx-800MF_fpn_1x_coco_20200517_191403-f6f91d10.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: retinanet_regnetx-1.6GF_fpn_1x_coco
-    In Collection: RegNet
+    In Collection: RetinaNet
     Config: configs/regnet/retinanet_regnetx-1.6GF_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 3.3
       Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 37.3
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/retinanet_regnetx-1.6GF_fpn_1x_coco/retinanet_regnetx-1.6GF_fpn_1x_coco_20200517_191403-37009a9d.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: retinanet_regnetx-3.2GF_fpn_1x_coco
-    In Collection: RegNet
+    In Collection: RetinaNet
     Config: configs/regnet/retinanet_regnetx-3.2GF_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.2
       Epochs: 12
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 39.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/retinanet_regnetx-3.2GF_fpn_1x_coco/retinanet_regnetx-3.2GF_fpn_1x_coco_20200520_163141-cb1509e8.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: faster_rcnn_regnetx-400MF_fpn_mstrain_3x_coco
-    In Collection: RegNet
+    In Collection: Faster R-CNN
     Config: configs/regnet/faster_rcnn_regnetx-400MF_fpn_mstrain_3x_coco.py
     Metadata:
       Training Memory (GB): 2.3
       Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 37.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/faster_rcnn_regnetx-400MF_fpn_mstrain_3x_coco/faster_rcnn_regnetx-400MF_fpn_mstrain_3x_coco_20210526_095112-e1967c37.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: faster_rcnn_regnetx-800MF_fpn_mstrain_3x_coco
-    In Collection: RegNet
+    In Collection: Faster R-CNN
     Config: configs/regnet/faster_rcnn_regnetx-800MF_fpn_mstrain_3x_coco.py
     Metadata:
       Training Memory (GB): 2.8
       Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 38.8
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/faster_rcnn_regnetx-800MF_fpn_mstrain_3x_coco/faster_rcnn_regnetx-800MF_fpn_mstrain_3x_coco_20210526_095118-a2c70b20.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: faster_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco
-    In Collection: RegNet
+    In Collection: Faster R-CNN
     Config: configs/regnet/faster_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco.py
     Metadata:
       Training Memory (GB): 3.4
       Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 40.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/faster_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco/faster_rcnn_regnetx-1_20210526_095325-94aa46cc.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: faster_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco
-    In Collection: RegNet
+    In Collection: Faster R-CNN
     Config: configs/regnet/faster_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco.py
     Metadata:
       Training Memory (GB): 4.4
       Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 42.3
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/faster_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco/faster_rcnn_regnetx-3_20210526_095152-e16a5227.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: faster_rcnn_regnetx-4GF_fpn_mstrain_3x_coco
-    In Collection: RegNet
+    In Collection: Faster R-CNN
     Config: configs/regnet/faster_rcnn_regnetx-4GF_fpn_mstrain_3x_coco.py
     Metadata:
       Training Memory (GB): 4.9
       Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
         Metrics:
           box AP: 42.8
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/faster_rcnn_regnetx-4GF_fpn_mstrain_3x_coco/faster_rcnn_regnetx-4GF_fpn_mstrain_3x_coco_20210526_095201-65eaf841.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco
-    In Collection: RegNet
+    In Collection: Mask R-CNN
     Config: configs/regnet/mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco.py
     Metadata:
       Training Memory (GB): 5.0
       Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -265,13 +478,27 @@ Models:
         Metrics:
           mask AP: 38.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco/mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco_20200521_202221-99879813.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: mask_rcnn_regnetx-400MF_fpn_mstrain-poly_3x_coco
-    In Collection: RegNet
+    In Collection: Mask R-CNN
     Config: configs/regnet/mask_rcnn_regnetx-400MF_fpn_mstrain-poly_3x_coco.py
     Metadata:
       Training Memory (GB): 2.5
       Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -282,13 +509,27 @@ Models:
         Metrics:
           mask AP: 34.4
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-400MF_fpn_mstrain-poly_3x_coco/mask_rcnn_regnetx-400MF_fpn_mstrain-poly_3x_coco_20210601_235443-8aac57a4.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: mask_rcnn_regnetx-800MF_fpn_mstrain-poly_3x_coco
-    In Collection: RegNet
+    In Collection: Mask R-CNN
     Config: configs/regnet/mask_rcnn_regnetx-800MF_fpn_mstrain-poly_3x_coco.py
     Metadata:
       Training Memory (GB): 2.9
       Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -299,13 +540,27 @@ Models:
         Metrics:
           mask AP: 36.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-800MF_fpn_mstrain-poly_3x_coco/mask_rcnn_regnetx-800MF_fpn_mstrain-poly_3x_coco_20210602_210641-715d51f5.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: mask_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco
-    In Collection: RegNet
+    In Collection: Mask R-CNN
     Config: configs/regnet/mask_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco.py
     Metadata:
       Training Memory (GB): 3.6
       Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -316,13 +571,27 @@ Models:
         Metrics:
           mask AP: 37.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-1.6GF_fpn_mstrain-poly_3x_coco/mask_rcnn_regnetx-1_20210602_210641-6764cff5.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco
-    In Collection: RegNet
+    In Collection: Mask R-CNN
     Config: configs/regnet/mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco.py
     Metadata:
       Training Memory (GB): 5.0
       Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -333,13 +602,27 @@ Models:
         Metrics:
           mask AP: 38.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-1.6GF_fpn_mstrain-poly_3x_coco/mask_rcnn_regnetx-1_20210602_210641-6e63e19c.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco
-    In Collection: RegNet
+    In Collection: Mask R-CNN
     Config: configs/regnet/mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco.py
     Metadata:
       Training Memory (GB): 5.1
       Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -350,13 +633,27 @@ Models:
         Metrics:
           mask AP: 39.2
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/mask_rcnn_regnetx-4GF_fpn_mstrain-poly_3x_coco/mask_rcnn_regnetx-4GF_fpn_mstrain-poly_3x_coco_20210602_032621-00f0331c.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: cascade_mask_rcnn_regnetx-400MF_fpn_mstrain_3x_coco
-    In Collection: RegNet
+    In Collection: Cascade R-CNN
     Config: configs/regnet/cascade_mask_rcnn_regnetx-400MF_fpn_mstrain_3x_coco.py
     Metadata:
       Training Memory (GB): 4.3
       Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -367,13 +664,27 @@ Models:
         Metrics:
           mask AP: 36.4
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/cascade_mask_rcnn_regnetx-400MF_fpn_mstrain_3x_coco/cascade_mask_rcnn_regnetx-400MF_fpn_mstrain_3x_coco_20210715_211619-5142f449.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: cascade_mask_rcnn_regnetx-800MF_fpn_mstrain_3x_coco
-    In Collection: RegNet
+    In Collection: Cascade R-CNN
     Config: configs/regnet/cascade_mask_rcnn_regnetx-800MF_fpn_mstrain_3x_coco.py
     Metadata:
       Training Memory (GB): 4.8
       Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -384,13 +695,27 @@ Models:
         Metrics:
           mask AP: 37.6
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/cascade_mask_rcnn_regnetx-800MF_fpn_mstrain_3x_coco/cascade_mask_rcnn_regnetx-800MF_fpn_mstrain_3x_coco_20210715_211616-dcbd13f4.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: cascade_mask_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco
-    In Collection: RegNet
+    In Collection: Cascade R-CNN
     Config: configs/regnet/cascade_mask_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco.py
     Metadata:
       Training Memory (GB): 5.4
       Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -401,13 +726,27 @@ Models:
         Metrics:
           mask AP: 39.0
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/cascade_mask_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco/cascade_mask_rcnn_regnetx-1_20210715_211616-75f29a61.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: cascade_mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco
-    In Collection: RegNet
+    In Collection: Cascade R-CNN
     Config: configs/regnet/cascade_mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco.py
     Metadata:
       Training Memory (GB): 6.4
       Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -418,13 +757,27 @@ Models:
         Metrics:
           mask AP: 40.0
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/cascade_mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco/cascade_mask_rcnn_regnetx-3_20210715_211616-b9c2c58b.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0
 
   - Name: cascade_mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco
-    In Collection: RegNet
+    In Collection: Cascade R-CNN
     Config: configs/regnet/cascade_mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco.py
     Metadata:
       Training Memory (GB): 6.9
       Epochs: 36
+      Training Data: COCO
+      Training Techniques:
+        - SGD with Momentum
+        - Weight Decay
+      Training Resources: 8x V100 GPUs
+      Architecture:
+        - RegNet
     Results:
       - Task: Object Detection
         Dataset: COCO
@@ -435,3 +788,10 @@ Models:
         Metrics:
           mask AP: 40.0
     Weights: https://download.openmmlab.com/mmdetection/v2.0/regnet/cascade_mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco/cascade_mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco_20210715_212034-cbb1be4c.pth
+    Paper:
+      URL: https://arxiv.org/abs/2003.13678
+      Title: 'Designing Network Design Spaces'
+    README: configs/regnet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
+      Version: v2.1.0

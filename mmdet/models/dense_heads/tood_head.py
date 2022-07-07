@@ -9,6 +9,7 @@ from mmcv.runner import force_fp32
 from mmdet.core import (anchor_inside_flags, build_assigner, distance2bbox,
                         images_to_levels, multi_apply, reduce_mean, unmap)
 from mmdet.core.utils import filter_scores_and_topk
+from mmdet.models.utils import sigmoid_geometric_mean
 from ..builder import HEADS, build_loss
 from .atss_head import ATSSHead
 
@@ -245,7 +246,7 @@ class TOODHead(ATSSHead):
             # cls prediction and alignment
             cls_logits = self.tood_cls(cls_feat)
             cls_prob = self.cls_prob_module(feat)
-            cls_score = (cls_logits.sigmoid() * cls_prob.sigmoid()).sqrt()
+            cls_score = sigmoid_geometric_mean(cls_logits, cls_prob)
 
             # reg prediction and alignment
             if self.anchor_type == 'anchor_free':
@@ -267,6 +268,15 @@ class TOODHead(ATSSHead):
             reg_offset = self.reg_offset_module(feat)
             bbox_pred = self.deform_sampling(reg_bbox.contiguous(),
                                              reg_offset.contiguous())
+
+            # After deform_sampling, some boxes will become invalid (The
+            # left-top point is at the right or bottom of the right-bottom
+            # point), which will make the GIoULoss negative.
+            invalid_bbox_idx = (bbox_pred[:, [0]] > bbox_pred[:, [2]]) | \
+                               (bbox_pred[:, [1]] > bbox_pred[:, [3]])
+            invalid_bbox_idx = invalid_bbox_idx.expand_as(bbox_pred)
+            bbox_pred = torch.where(invalid_bbox_idx, reg_bbox, bbox_pred)
+
             cls_scores.append(cls_score)
             bbox_preds.append(bbox_pred)
         return tuple(cls_scores), tuple(bbox_preds)
@@ -276,7 +286,7 @@ class TOODHead(ATSSHead):
 
         Args:
             feat (Tensor): Feature
-            offset (Tensor): Spatial offset for for feature sampliing
+            offset (Tensor): Spatial offset for feature sampling
         """
         # it is an equivalent implementation of bilinear interpolation
         b, c, h, w = feat.shape

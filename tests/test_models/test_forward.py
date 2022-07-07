@@ -616,9 +616,10 @@ def test_detr_forward():
 
 
 def test_inference_detector():
+    from mmcv import ConfigDict
+
     from mmdet.apis import inference_detector
     from mmdet.models import build_detector
-    from mmcv import ConfigDict
 
     # small RetinaNet
     num_class = 3
@@ -672,8 +673,6 @@ def test_inference_detector():
     assert len(result) == 2 and len(result[0]) == num_class
 
 
-@pytest.mark.skipif(
-    not torch.cuda.is_available(), reason='requires CUDA support')
 def test_yolox_random_size():
     from mmdet.models import build_detector
     model = _get_detector_cfg('yolox/yolox_tiny_8x8_300e_coco.py')
@@ -699,3 +698,238 @@ def test_yolox_random_size():
         gt_labels=gt_labels,
         return_loss=True)
     assert detector._input_size == (64, 96)
+
+
+def test_maskformer_forward():
+    model_cfg = _get_detector_cfg(
+        'maskformer/maskformer_r50_mstrain_16x1_75e_coco.py')
+    base_channels = 32
+    model_cfg.backbone.depth = 18
+    model_cfg.backbone.init_cfg = None
+    model_cfg.backbone.base_channels = base_channels
+    model_cfg.panoptic_head.in_channels = [
+        base_channels * 2**i for i in range(4)
+    ]
+    model_cfg.panoptic_head.feat_channels = base_channels
+    model_cfg.panoptic_head.out_channels = base_channels
+    model_cfg.panoptic_head.pixel_decoder.encoder.\
+        transformerlayers.attn_cfgs.embed_dims = base_channels
+    model_cfg.panoptic_head.pixel_decoder.encoder.\
+        transformerlayers.ffn_cfgs.embed_dims = base_channels
+    model_cfg.panoptic_head.pixel_decoder.encoder.\
+        transformerlayers.ffn_cfgs.feedforward_channels = base_channels * 8
+    model_cfg.panoptic_head.pixel_decoder.\
+        positional_encoding.num_feats = base_channels // 2
+    model_cfg.panoptic_head.positional_encoding.\
+        num_feats = base_channels // 2
+    model_cfg.panoptic_head.transformer_decoder.\
+        transformerlayers.attn_cfgs.embed_dims = base_channels
+    model_cfg.panoptic_head.transformer_decoder.\
+        transformerlayers.ffn_cfgs.embed_dims = base_channels
+    model_cfg.panoptic_head.transformer_decoder.\
+        transformerlayers.ffn_cfgs.feedforward_channels = base_channels * 8
+    model_cfg.panoptic_head.transformer_decoder.\
+        transformerlayers.feedforward_channels = base_channels * 8
+
+    from mmdet.core import BitmapMasks
+    from mmdet.models import build_detector
+    detector = build_detector(model_cfg)
+
+    # Test forward train with non-empty truth batch
+    detector.train()
+    img_metas = [
+        {
+            'batch_input_shape': (128, 160),
+            'img_shape': (126, 160, 3),
+            'ori_shape': (63, 80, 3),
+            'pad_shape': (128, 160, 3)
+        },
+    ]
+    img = torch.rand((1, 3, 128, 160))
+    gt_bboxes = None
+    gt_labels = [
+        torch.tensor([10]).long(),
+    ]
+    thing_mask1 = np.zeros((1, 128, 160), dtype=np.int32)
+    thing_mask1[0, :50] = 1
+    gt_masks = [
+        BitmapMasks(thing_mask1, 128, 160),
+    ]
+    stuff_mask1 = torch.zeros((1, 128, 160)).long()
+    stuff_mask1[0, :50] = 10
+    stuff_mask1[0, 50:] = 100
+    gt_semantic_seg = [
+        stuff_mask1,
+    ]
+    losses = detector.forward(
+        img=img,
+        img_metas=img_metas,
+        gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels,
+        gt_masks=gt_masks,
+        gt_semantic_seg=gt_semantic_seg,
+        return_loss=True)
+    assert isinstance(losses, dict)
+    loss, _ = detector._parse_losses(losses)
+    assert float(loss.item()) > 0
+
+    # Test forward train with an empty truth batch
+    gt_bboxes = [
+        torch.empty((0, 4)).float(),
+    ]
+    gt_labels = [
+        torch.empty((0, )).long(),
+    ]
+    mask = np.zeros((0, 128, 160), dtype=np.uint8)
+    gt_masks = [
+        BitmapMasks(mask, 128, 160),
+    ]
+    gt_semantic_seg = [
+        torch.randint(0, 133, (0, 128, 160)),
+    ]
+    losses = detector.forward(
+        img,
+        img_metas,
+        gt_bboxes=gt_bboxes,
+        gt_labels=gt_labels,
+        gt_masks=gt_masks,
+        gt_semantic_seg=gt_semantic_seg,
+        return_loss=True)
+    assert isinstance(losses, dict)
+    loss, _ = detector._parse_losses(losses)
+    assert float(loss.item()) > 0
+
+    # Test forward test
+    detector.eval()
+    with torch.no_grad():
+        img_list = [g[None, :] for g in img]
+        batch_results = []
+        for one_img, one_meta in zip(img_list, img_metas):
+            result = detector.forward([one_img], [[one_meta]],
+                                      rescale=True,
+                                      return_loss=False)
+        batch_results.append(result)
+
+
+@pytest.mark.parametrize('cfg_file', [
+    'mask2former/mask2former_r50_lsj_8x2_50e_coco.py',
+    'mask2former/mask2former_r50_lsj_8x2_50e_coco-panoptic.py'
+])
+def test_mask2former_forward(cfg_file):
+    # Test Panoptic Segmentation and Instance Segmentation
+    model_cfg = _get_detector_cfg(cfg_file)
+    base_channels = 32
+    model_cfg.backbone.depth = 18
+    model_cfg.backbone.init_cfg = None
+    model_cfg.backbone.base_channels = base_channels
+    model_cfg.panoptic_head.in_channels = [
+        base_channels * 2**i for i in range(4)
+    ]
+    model_cfg.panoptic_head.feat_channels = base_channels
+    model_cfg.panoptic_head.out_channels = base_channels
+    model_cfg.panoptic_head.pixel_decoder.encoder.\
+        transformerlayers.attn_cfgs.embed_dims = base_channels
+    model_cfg.panoptic_head.pixel_decoder.encoder.\
+        transformerlayers.ffn_cfgs.embed_dims = base_channels
+    model_cfg.panoptic_head.pixel_decoder.encoder.\
+        transformerlayers.ffn_cfgs.feedforward_channels = base_channels * 4
+    model_cfg.panoptic_head.pixel_decoder.\
+        positional_encoding.num_feats = base_channels // 2
+    model_cfg.panoptic_head.positional_encoding.\
+        num_feats = base_channels // 2
+    model_cfg.panoptic_head.transformer_decoder.\
+        transformerlayers.attn_cfgs.embed_dims = base_channels
+    model_cfg.panoptic_head.transformer_decoder.\
+        transformerlayers.ffn_cfgs.embed_dims = base_channels
+    model_cfg.panoptic_head.transformer_decoder.\
+        transformerlayers.ffn_cfgs.feedforward_channels = base_channels * 8
+    model_cfg.panoptic_head.transformer_decoder.\
+        transformerlayers.feedforward_channels = base_channels * 8
+
+    num_stuff_classes = model_cfg.panoptic_head.num_stuff_classes
+
+    from mmdet.core import BitmapMasks
+    from mmdet.models import build_detector
+    detector = build_detector(model_cfg)
+
+    def _forward_train():
+        losses = detector.forward(
+            img,
+            img_metas,
+            gt_bboxes=gt_bboxes,
+            gt_labels=gt_labels,
+            gt_masks=gt_masks,
+            gt_semantic_seg=gt_semantic_seg,
+            return_loss=True)
+        assert isinstance(losses, dict)
+        loss, _ = detector._parse_losses(losses)
+        assert float(loss.item()) > 0
+
+    # Test forward train with non-empty truth batch
+    detector.train()
+    img_metas = [
+        {
+            'batch_input_shape': (128, 160),
+            'img_shape': (126, 160, 3),
+            'ori_shape': (63, 80, 3),
+            'pad_shape': (128, 160, 3)
+        },
+    ]
+    img = torch.rand((1, 3, 128, 160))
+    gt_bboxes = None
+    gt_labels = [
+        torch.tensor([10]).long(),
+    ]
+    thing_mask1 = np.zeros((1, 128, 160), dtype=np.int32)
+    thing_mask1[0, :50] = 1
+    gt_masks = [
+        BitmapMasks(thing_mask1, 128, 160),
+    ]
+    stuff_mask1 = torch.zeros((1, 128, 160)).long()
+    stuff_mask1[0, :50] = 10
+    stuff_mask1[0, 50:] = 100
+    gt_semantic_seg = [
+        stuff_mask1,
+    ]
+    _forward_train()
+
+    # Test forward train with non-empty truth batch and gt_semantic_seg=None
+    gt_semantic_seg = None
+    _forward_train()
+
+    # Test forward train with an empty truth batch
+    gt_bboxes = [
+        torch.empty((0, 4)).float(),
+    ]
+    gt_labels = [
+        torch.empty((0, )).long(),
+    ]
+    mask = np.zeros((0, 128, 160), dtype=np.uint8)
+    gt_masks = [
+        BitmapMasks(mask, 128, 160),
+    ]
+    gt_semantic_seg = [
+        torch.randint(0, 133, (0, 128, 160)),
+    ]
+    _forward_train()
+
+    # Test forward train with an empty truth batch and gt_semantic_seg=None
+    gt_semantic_seg = None
+    _forward_train()
+
+    # Test forward test
+    detector.eval()
+    with torch.no_grad():
+        img_list = [g[None, :] for g in img]
+        batch_results = []
+        for one_img, one_meta in zip(img_list, img_metas):
+            result = detector.forward([one_img], [[one_meta]],
+                                      rescale=True,
+                                      return_loss=False)
+
+            if num_stuff_classes > 0:
+                assert isinstance(result[0], dict)
+            else:
+                assert isinstance(result[0], tuple)
+
+        batch_results.append(result)

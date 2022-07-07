@@ -9,8 +9,9 @@ import mmcv
 import numpy as np
 from numpy import random
 
-from mmdet.core import PolygonMasks, find_inside_bboxes
+from mmdet.core import BitmapMasks, PolygonMasks, find_inside_bboxes
 from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
+from mmdet.utils import log_img_scale
 from ..builder import PIPELINES
 
 try:
@@ -61,6 +62,9 @@ class Resize:
         backend (str): Image resize backend, choices are 'cv2' and 'pillow'.
             These two backends generates slightly different results. Defaults
             to 'cv2'.
+        interpolation (str): Interpolation method, accepted values are
+            "nearest", "bilinear", "bicubic", "area", "lanczos" for 'cv2'
+            backend, "nearest", "bilinear" for 'pillow' backend.
         override (bool, optional): Whether to override `scale` and
             `scale_factor` so as to call resize twice. Default False. If True,
             after the first resizing, the existed `scale` and `scale_factor`
@@ -76,6 +80,7 @@ class Resize:
                  keep_ratio=True,
                  bbox_clip_border=True,
                  backend='cv2',
+                 interpolation='bilinear',
                  override=False):
         if img_scale is None:
             self.img_scale = None
@@ -98,6 +103,7 @@ class Resize:
         self.ratio_range = ratio_range
         self.keep_ratio = keep_ratio
         # TODO: refactor the override option in Resize
+        self.interpolation = interpolation
         self.override = override
         self.bbox_clip_border = bbox_clip_border
 
@@ -214,6 +220,7 @@ class Resize:
                     results[key],
                     results['scale'],
                     return_scale=True,
+                    interpolation=self.interpolation,
                     backend=self.backend)
                 # the w_scale and h_scale has minor difference
                 # a real fix should be done in the mmcv.imrescale in the future
@@ -226,6 +233,7 @@ class Resize:
                     results[key],
                     results['scale'],
                     return_scale=True,
+                    interpolation=self.interpolation,
                     backend=self.backend)
             results[key] = img
 
@@ -519,9 +527,9 @@ class RandomShift:
             random_shift_y = random.randint(-self.max_shift_px,
                                             self.max_shift_px)
             new_x = max(0, random_shift_x)
-            orig_x = max(0, -random_shift_x)
+            ori_x = max(0, -random_shift_x)
             new_y = max(0, random_shift_y)
-            orig_y = max(0, -random_shift_y)
+            ori_y = max(0, -random_shift_y)
 
             # TODO: support mask and semantic segmentation maps.
             for key in results.get('bbox_fields', []):
@@ -557,7 +565,7 @@ class RandomShift:
                 new_h = img_h - np.abs(random_shift_y)
                 new_w = img_w - np.abs(random_shift_x)
                 new_img[new_y:new_y + new_h, new_x:new_x + new_w] \
-                    = img[orig_y:orig_y + new_h, orig_x:orig_x + new_w]
+                    = img[ori_y:ori_y + new_h, ori_x:ori_x + new_w]
                 results[key] = new_img
 
         return results
@@ -1979,9 +1987,10 @@ class Mosaic:
 
     Args:
         img_scale (Sequence[int]): Image size after mosaic pipeline of single
-           image. Default to (640, 640).
+            image. The shape order should be (height, width).
+            Default to (640, 640).
         center_ratio_range (Sequence[float]): Center ratio range of mosaic
-           output. Default to (0.5, 1.5).
+            output. Default to (0.5, 1.5).
         min_bbox_size (int | float): The minimum pixel for filtering
             invalid bboxes after the mosaic pipeline. Default to 0.
         bbox_clip_border (bool, optional): Whether to clip the objects outside
@@ -1992,6 +2001,8 @@ class Mosaic:
             is True, the filter rule will not be applied, and the
             `min_bbox_size` is invalid. Default to True.
         pad_val (int): Pad value. Default to 114.
+        prob (float): Probability of applying this transformation.
+            Default to 1.0.
     """
 
     def __init__(self,
@@ -2000,14 +2011,20 @@ class Mosaic:
                  min_bbox_size=0,
                  bbox_clip_border=True,
                  skip_filter=True,
-                 pad_val=114):
+                 pad_val=114,
+                 prob=1.0):
         assert isinstance(img_scale, tuple)
+        assert 0 <= prob <= 1.0, 'The probability should be in range [0,1]. '\
+            f'got {prob}.'
+
+        log_img_scale(img_scale, skip_square=True)
         self.img_scale = img_scale
         self.center_ratio_range = center_ratio_range
         self.min_bbox_size = min_bbox_size
         self.bbox_clip_border = bbox_clip_border
         self.skip_filter = skip_filter
         self.pad_val = pad_val
+        self.prob = prob
 
     def __call__(self, results):
         """Call function to make a mosaic of image.
@@ -2018,6 +2035,9 @@ class Mosaic:
         Returns:
             dict: Result dict with mosaic transformed.
         """
+
+        if random.uniform(0, 1) > self.prob:
+            return results
 
         results = self._mosaic_transform(results)
         return results
@@ -2232,7 +2252,7 @@ class MixUp:
                 |             pad              |
                 +------------------------------+
 
-     The mixup transform steps are as follows::
+     The mixup transform steps are as follows:
 
         1. Another random image is picked by dataset and embedded in
            the top left patch(after padding and resizing)
@@ -2241,15 +2261,15 @@ class MixUp:
 
     Args:
         img_scale (Sequence[int]): Image output size after mixup pipeline.
-           Default: (640, 640).
+            The shape order should be (height, width). Default: (640, 640).
         ratio_range (Sequence[float]): Scale ratio of mixup image.
-           Default: (0.5, 1.5).
+            Default: (0.5, 1.5).
         flip_ratio (float): Horizontal flip ratio of mixup image.
-           Default: 0.5.
+            Default: 0.5.
         pad_val (int): Pad value. Default: 114.
         max_iters (int): The maximum number of iterations. If the number of
-           iterations is greater than `max_iters`, but gt_bbox is still
-           empty, then the iteration is terminated. Default: 15.
+            iterations is greater than `max_iters`, but gt_bbox is still
+            empty, then the iteration is terminated. Default: 15.
         min_bbox_size (float): Width and height threshold to filter bboxes.
             If the height or width of a box is smaller than this value, it
             will be removed. Default: 5.
@@ -2281,6 +2301,7 @@ class MixUp:
                  bbox_clip_border=True,
                  skip_filter=True):
         assert isinstance(img_scale, tuple)
+        log_img_scale(img_scale, skip_square=True)
         self.dynamic_scale = img_scale
         self.ratio_range = ratio_range
         self.flip_ratio = flip_ratio
@@ -2426,9 +2447,8 @@ class MixUp:
             keep_list = self._filter_box_candidates(retrieve_gt_bboxes.T,
                                                     cp_retrieve_gt_bboxes.T)
 
-            if keep_list.sum() >= 1.0:
-                retrieve_gt_labels = retrieve_gt_labels[keep_list]
-                cp_retrieve_gt_bboxes = cp_retrieve_gt_bboxes[keep_list]
+            retrieve_gt_labels = retrieve_gt_labels[keep_list]
+            cp_retrieve_gt_bboxes = cp_retrieve_gt_bboxes[keep_list]
 
         mixup_gt_bboxes = np.concatenate(
             (results['gt_bboxes'], cp_retrieve_gt_bboxes), axis=0)
@@ -2735,4 +2755,165 @@ class YOLOXHSVRandomAug:
         repr_str += f'(hue_delta={self.hue_delta}, '
         repr_str += f'saturation_delta={self.saturation_delta}, '
         repr_str += f'value_delta={self.value_delta})'
+        return repr_str
+
+
+@PIPELINES.register_module()
+class CopyPaste:
+    """Simple Copy-Paste is a Strong Data Augmentation Method for Instance
+    Segmentation The simple copy-paste transform steps are as follows:
+
+    1. The destination image is already resized with aspect ratio kept,
+       cropped and padded.
+    2. Randomly select a source image, which is also already resized
+       with aspect ratio kept, cropped and padded in a similar way
+       as the destination image.
+    3. Randomly select some objects from the source image.
+    4. Paste these source objects to the destination image directly,
+       due to the source and destination image have the same size.
+    5. Update object masks of the destination image, for some origin objects
+       may be occluded.
+    6. Generate bboxes from the updated destination masks and
+       filter some objects which are totally occluded, and adjust bboxes
+       which are partly occluded.
+    7. Append selected source bboxes, masks, and labels.
+
+    Args:
+        max_num_pasted (int): The maximum number of pasted objects.
+            Default: 100.
+        bbox_occluded_thr (int): The threshold of occluded bbox.
+            Default: 10.
+        mask_occluded_thr (int): The threshold of occluded mask.
+            Default: 300.
+        selected (bool): Whether select objects or not. If select is False,
+            all objects of the source image will be pasted to the
+            destination image.
+            Default: True.
+    """
+
+    def __init__(
+        self,
+        max_num_pasted=100,
+        bbox_occluded_thr=10,
+        mask_occluded_thr=300,
+        selected=True,
+    ):
+        self.max_num_pasted = max_num_pasted
+        self.bbox_occluded_thr = bbox_occluded_thr
+        self.mask_occluded_thr = mask_occluded_thr
+        self.selected = selected
+
+    def get_indexes(self, dataset):
+        """Call function to collect indexes.s.
+
+        Args:
+            dataset (:obj:`MultiImageMixDataset`): The dataset.
+        Returns:
+            list: Indexes.
+        """
+        return random.randint(0, len(dataset))
+
+    def __call__(self, results):
+        """Call function to make a copy-paste of image.
+
+        Args:
+            results (dict): Result dict.
+        Returns:
+            dict: Result dict with copy-paste transformed.
+        """
+
+        assert 'mix_results' in results
+        num_images = len(results['mix_results'])
+        assert num_images == 1, \
+            f'CopyPaste only supports processing 2 images, got {num_images}'
+        if self.selected:
+            selected_results = self._select_object(results['mix_results'][0])
+        else:
+            selected_results = results['mix_results'][0]
+        return self._copy_paste(results, selected_results)
+
+    def _select_object(self, results):
+        """Select some objects from the source results."""
+        bboxes = results['gt_bboxes']
+        labels = results['gt_labels']
+        masks = results['gt_masks']
+        max_num_pasted = min(bboxes.shape[0] + 1, self.max_num_pasted)
+        num_pasted = np.random.randint(0, max_num_pasted)
+        selected_inds = np.random.choice(
+            bboxes.shape[0], size=num_pasted, replace=False)
+
+        selected_bboxes = bboxes[selected_inds]
+        selected_labels = labels[selected_inds]
+        selected_masks = masks[selected_inds]
+
+        results['gt_bboxes'] = selected_bboxes
+        results['gt_labels'] = selected_labels
+        results['gt_masks'] = selected_masks
+        return results
+
+    def _copy_paste(self, dst_results, src_results):
+        """CopyPaste transform function.
+
+        Args:
+            dst_results (dict): Result dict of the destination image.
+            src_results (dict): Result dict of the source image.
+        Returns:
+            dict: Updated result dict.
+        """
+        dst_img = dst_results['img']
+        dst_bboxes = dst_results['gt_bboxes']
+        dst_labels = dst_results['gt_labels']
+        dst_masks = dst_results['gt_masks']
+
+        src_img = src_results['img']
+        src_bboxes = src_results['gt_bboxes']
+        src_labels = src_results['gt_labels']
+        src_masks = src_results['gt_masks']
+
+        if len(src_bboxes) == 0:
+            return dst_results
+
+        # update masks and generate bboxes from updated masks
+        composed_mask = np.where(np.any(src_masks.masks, axis=0), 1, 0)
+        updated_dst_masks = self.get_updated_masks(dst_masks, composed_mask)
+        updated_dst_bboxes = updated_dst_masks.get_bboxes()
+        assert len(updated_dst_bboxes) == len(updated_dst_masks)
+
+        # filter totally occluded objects
+        bboxes_inds = np.all(
+            np.abs(
+                (updated_dst_bboxes - dst_bboxes)) <= self.bbox_occluded_thr,
+            axis=-1)
+        masks_inds = updated_dst_masks.masks.sum(
+            axis=(1, 2)) > self.mask_occluded_thr
+        valid_inds = bboxes_inds | masks_inds
+
+        # Paste source objects to destination image directly
+        img = dst_img * (1 - composed_mask[..., np.newaxis]
+                         ) + src_img * composed_mask[..., np.newaxis]
+        bboxes = np.concatenate([updated_dst_bboxes[valid_inds], src_bboxes])
+        labels = np.concatenate([dst_labels[valid_inds], src_labels])
+        masks = np.concatenate(
+            [updated_dst_masks.masks[valid_inds], src_masks.masks])
+
+        dst_results['img'] = img
+        dst_results['gt_bboxes'] = bboxes
+        dst_results['gt_labels'] = labels
+        dst_results['gt_masks'] = BitmapMasks(masks, masks.shape[1],
+                                              masks.shape[2])
+
+        return dst_results
+
+    def get_updated_masks(self, masks, composed_mask):
+        assert masks.masks.shape[-2:] == composed_mask.shape[-2:], \
+            'Cannot compare two arrays of different size'
+        masks.masks = np.where(composed_mask, 0, masks.masks)
+        return masks
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'max_num_pasted={self.max_num_pasted}, '
+        repr_str += f'bbox_occluded_thr={self.bbox_occluded_thr}, '
+        repr_str += f'mask_occluded_thr={self.mask_occluded_thr}, '
+        repr_str += f'selected={self.selected}, '
         return repr_str

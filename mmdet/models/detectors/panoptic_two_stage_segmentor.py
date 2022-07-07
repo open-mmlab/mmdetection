@@ -1,7 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import mmcv
+import numpy as np
 import torch
 
-from mmdet.core import bbox2roi, multiclass_nms
+from mmdet.core import INSTANCE_OFFSET, bbox2roi, multiclass_nms
+from mmdet.core.visualization import imshow_det_bboxes
 from ..builder import DETECTORS, build_head
 from ..roi_heads.mask_heads.fcn_mask_head import _do_paste_mask
 from .two_stage import TwoStageDetector
@@ -201,3 +204,76 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
             result = dict(pan_results=pan_results)
             results.append(result)
         return results
+
+    def show_result(self,
+                    img,
+                    result,
+                    score_thr=0.3,
+                    bbox_color=(72, 101, 241),
+                    text_color=(72, 101, 241),
+                    mask_color=None,
+                    thickness=2,
+                    font_size=13,
+                    win_name='',
+                    show=False,
+                    wait_time=0,
+                    out_file=None):
+        """Draw `result` over `img`.
+
+        Args:
+            img (str or Tensor): The image to be displayed.
+            result (dict): The results.
+
+            score_thr (float, optional): Minimum score of bboxes to be shown.
+                Default: 0.3.
+            bbox_color (str or tuple(int) or :obj:`Color`):Color of bbox lines.
+               The tuple of color should be in BGR order. Default: 'green'.
+            text_color (str or tuple(int) or :obj:`Color`):Color of texts.
+               The tuple of color should be in BGR order. Default: 'green'.
+            mask_color (None or str or tuple(int) or :obj:`Color`):
+               Color of masks. The tuple of color should be in BGR order.
+               Default: None.
+            thickness (int): Thickness of lines. Default: 2.
+            font_size (int): Font size of texts. Default: 13.
+            win_name (str): The window name. Default: ''.
+            wait_time (float): Value of waitKey param.
+                Default: 0.
+            show (bool): Whether to show the image.
+                Default: False.
+            out_file (str or None): The filename to write the image.
+                Default: None.
+
+        Returns:
+            img (Tensor): Only if not `show` or `out_file`.
+        """
+        img = mmcv.imread(img)
+        img = img.copy()
+        pan_results = result['pan_results']
+        # keep objects ahead
+        ids = np.unique(pan_results)[::-1]
+        legal_indices = ids != self.num_classes  # for VOID label
+        ids = ids[legal_indices]
+        labels = np.array([id % INSTANCE_OFFSET for id in ids], dtype=np.int64)
+        segms = (pan_results[None] == ids[:, None, None])
+
+        # if out_file specified, do not show image in window
+        if out_file is not None:
+            show = False
+        # draw bounding boxes
+        img = imshow_det_bboxes(
+            img,
+            segms=segms,
+            labels=labels,
+            class_names=self.CLASSES,
+            bbox_color=bbox_color,
+            text_color=text_color,
+            mask_color=mask_color,
+            thickness=thickness,
+            font_size=font_size,
+            win_name=win_name,
+            show=show,
+            wait_time=wait_time,
+            out_file=out_file)
+
+        if not (show or out_file):
+            return img

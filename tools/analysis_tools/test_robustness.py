@@ -12,13 +12,13 @@ from mmcv.runner import (get_dist_info, init_dist, load_checkpoint,
                          wrap_fp16_model)
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
-from tools.analysis_tools.robustness_eval import get_results
 
 from mmdet import datasets
 from mmdet.apis import multi_gpu_test, set_random_seed, single_gpu_test
 from mmdet.core import eval_map
 from mmdet.datasets import build_dataloader, build_dataset
 from mmdet.models import build_detector
+from tools.analysis_tools.robustness_eval import get_results
 
 
 def coco_eval_with_return(result_files,

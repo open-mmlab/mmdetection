@@ -5,7 +5,7 @@ import torch
 from mmdet.models.dense_heads import TOODHead
 
 
-def test_paa_head_loss():
+def test_tood_head_loss():
     """Tests paa head loss when truth is empty and non-empty."""
 
     s = 256
