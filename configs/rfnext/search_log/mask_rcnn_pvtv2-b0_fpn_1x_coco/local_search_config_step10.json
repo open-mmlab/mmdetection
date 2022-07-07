@@ -11,7 +11,7 @@
         "S": 2,
         "finetune": false
     },
-    "model": {
+    "structure": {
         "module.backbone.layers.0.0.projection": 1,
         "module.backbone.layers.0.1.0.ffn.layers.1": 1,
         "module.backbone.layers.0.1.1.ffn.layers.1": 1,

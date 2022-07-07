@@ -11,7 +11,7 @@
         "S": 2,
         "finetune": false
     },
-    "model": {
+    "structure": {
         "module.backbone.stages.0.0.depthwise_conv": 1,
         "module.backbone.stages.0.1.depthwise_conv": 1,
         "module.backbone.stages.0.2.depthwise_conv": 1,

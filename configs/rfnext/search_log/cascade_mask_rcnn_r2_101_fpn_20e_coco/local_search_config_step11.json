@@ -11,7 +11,7 @@
         "S": 2,
         "finetune": false
     },
-    "model": {
+    "structure": {
         "module.backbone.layer2.0.convs.0": 1,
         "module.backbone.layer2.0.convs.1": 1,
         "module.backbone.layer2.0.convs.2": 1,

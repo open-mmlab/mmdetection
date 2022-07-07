@@ -43,7 +43,7 @@ optimizer_config = dict(grad_clip=None)
 
 custom_hooks = [
     dict(
-        type='RFSearch',
+        type='RFSearchHook',
         logdir=model['rfsearch_cfg']['logdir'],
         config=model['rfsearch_cfg']['config'],
         mode=model['rfsearch_cfg']['mode'],

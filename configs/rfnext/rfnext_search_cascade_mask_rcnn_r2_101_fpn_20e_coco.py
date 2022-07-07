@@ -29,7 +29,7 @@ model = dict(
 custom_hooks = [
     dict(type='NumClassCheckHook'),
     dict(
-        type='RFSearch',
+        type='RFSearchHook',
         logdir=model['rfsearch_cfg']['logdir'],
         config=model['rfsearch_cfg']['config'],
         mode=model['rfsearch_cfg']['mode'],
