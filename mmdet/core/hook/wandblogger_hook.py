@@ -235,7 +235,6 @@ class MMDetWandbHook(WandbLoggerHook):
             # Log the table
             self._log_eval_table(runner.epoch + 1)
 
-    @master_only
     def after_train_iter(self, runner):
         if self.get_mode(runner) == 'train':
             # An ugly patch. The iter-based eval hook will call the
