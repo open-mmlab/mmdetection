@@ -32,6 +32,8 @@ model = dict(
             act_cfg=dict(type='ReLU')),
         enforce_decoder_input_project=True))
 
+# optimizer
+
 # weight_decay = 0.01
 # norm_weight_decay = 0.0
 # embed_weight_decay = 0.0
@@ -44,24 +46,23 @@ custom_keys = {
     'query_embed': embed_multi
 }
 
-# optimizer
-optimizer = dict(
-    type='AdamW',
-    lr=6e-5,
-    weight_decay=0.01,
-    eps=1e-8,
-    betas=(0.9, 0.999),
+optim_wrapper = dict(
+    optimizer=dict(lr=6e-5, weight_decay=0.01),
     paramwise_cfg=dict(custom_keys=custom_keys, norm_decay_mult=0.0))
-optimizer_config = dict(grad_clip=dict(max_norm=0.01, norm_type=2))
 
-# learning policy
-lr_config = dict(
-    policy='step',
-    gamma=0.1,
-    by_epoch=True,
-    step=[250],
-    warmup='linear',
-    warmup_by_epoch=False,
-    warmup_ratio=1e-6,
-    warmup_iters=1500)
-runner = dict(type='EpochBasedRunner', max_epochs=300)
+max_epochs = 300
+
+# learning rate
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=1e-6, by_epoch=False, begin=0, end=1500),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=max_epochs,
+        by_epoch=True,
+        milestones=[250],
+        gamma=0.1)
+]
+
+train_cfg = dict(max_epochs=max_epochs)
