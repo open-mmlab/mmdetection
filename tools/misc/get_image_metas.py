@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-"""Get test image metas on a specific dataset.
+"""Get image metas on a specific dataset.
 
 Here is an example to run this script.
 
@@ -19,6 +19,11 @@ from mmcv import Config
 def parse_args():
     parser = argparse.ArgumentParser(description='Collect image metas')
     parser.add_argument('config', help='Config file path')
+    parser.add_argument(
+        '--dataset',
+        default='val',
+        choices=['train', 'val', 'test'],
+        help='Collect image metas from which dataset')
     parser.add_argument(
         '--out',
         default='validation-image-metas.pkl',
@@ -70,7 +75,8 @@ def get_image_metas(data_info, img_prefix):
             filename = osp.join(img_prefix, filename)
         img_bytes = file_client.get(filename)
         img = mmcv.imfrombytes(img_bytes, flag='color')
-        meta = dict(filename=filename, ori_shape=img.shape)
+        shape = img.shape
+        meta = dict(filename=filename, ori_shape=shape)
     else:
         raise NotImplementedError('Missing `filename` in data_info')
     return meta
@@ -82,8 +88,11 @@ def main():
 
     # load config files
     cfg = Config.fromfile(args.config)
-    ann_file = cfg.data.test.ann_file
-    img_prefix = cfg.data.test.img_prefix
+    dataloader_cfg = cfg.get(f'{args.dataset}_dataloader')
+    ann_file = osp.join(dataloader_cfg.dataset.data_root,
+                        dataloader_cfg.dataset.ann_file)
+    img_prefix = osp.join(dataloader_cfg.dataset.data_root,
+                          dataloader_cfg.dataset.data_prefix['img'])
 
     print(f'{"-" * 5} Start Processing {"-" * 5}')
     if ann_file.endswith('csv'):
@@ -106,9 +115,9 @@ def main():
     pool.close()
 
     # save image metas
-    root_path = cfg.data.test.ann_file.rsplit('/', 1)[0]
+    root_path = dataloader_cfg.dataset.ann_file.rsplit('/', 1)[0]
     save_path = osp.join(root_path, args.out)
-    mmcv.dump(image_metas, save_path)
+    mmcv.dump(image_metas, save_path, protocol=4)
     print(f'Image meta file save to: {save_path}')
 
 
