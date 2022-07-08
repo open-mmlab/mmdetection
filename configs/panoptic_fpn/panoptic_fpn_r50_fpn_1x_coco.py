@@ -33,13 +33,13 @@ model = dict(
         num_things_classes=80,
         num_stuff_classes=53),
     test_cfg=dict(
-        panoptic=dict(
+        rcnn=dict(
             score_thr=0.6,
-            max_per_img=100,
-            mask_thr_binary=0.5,
-            mask_overlap=0.5,
             nms=dict(type='nms', iou_threshold=0.5, class_agnostic=True),
-            stuff_area_limit=4096)))
+            max_per_img=100,
+            mask_thr_binary=0.5),
+        # used in HeuristicFusionHead
+        panoptic=dict(mask_overlap=0.5, stuff_area_limit=4096)))
 
 # Forced to remove NumClassCheckHook
 custom_hooks = []
