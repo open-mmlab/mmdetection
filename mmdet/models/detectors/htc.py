@@ -7,10 +7,10 @@ from .cascade_rcnn import CascadeRCNN
 class HybridTaskCascade(CascadeRCNN):
     """Implementation of `HTC <https://arxiv.org/abs/1901.07518>`_"""
 
-    def __init__(self, **kwargs):
-        super(HybridTaskCascade, self).__init__(**kwargs)
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
 
     @property
-    def with_semantic(self):
+    def with_semantic(self) -> bool:
         """bool: whether the detector has a semantic head"""
         return self.roi_head.with_semantic

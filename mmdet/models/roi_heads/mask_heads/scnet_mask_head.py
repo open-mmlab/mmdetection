@@ -13,8 +13,8 @@ class SCNetMaskHead(FCNMaskHead):
             ``SimplifiedBasicBlock``.
     """
 
-    def __init__(self, conv_to_res=True, **kwargs):
-        super(SCNetMaskHead, self).__init__(**kwargs)
+    def __init__(self, conv_to_res: bool = True, **kwargs) -> None:
+        super().__init__(**kwargs)
         self.conv_to_res = conv_to_res
         if conv_to_res:
             assert self.conv_kernel_size == 3
