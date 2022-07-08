@@ -225,9 +225,6 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         with_seg (bool): Whether to parse and load the semantic segmentation
             annotation. Defaults to False.
         poly2mask (bool): Whether to convert mask to bitmap. Default: True.
-        denorm_bbox (bool): Whether to convert bbox from relative value to
-            absolute value. Only used in OpenImage Dataset.
-            Default: False.
         imdecode_backend (str): The image decoding backend type. The backend
             argument for :func:``mmcv.imfrombytes``.
             See :fun:``mmcv.imfrombytes`` for details.
@@ -240,12 +237,10 @@ class LoadAnnotations(MMCV_LoadAnnotations):
     def __init__(self,
                  with_mask: bool = False,
                  poly2mask: bool = True,
-                 denorm_bbox: bool = False,
                  **kwargs) -> None:
         super(LoadAnnotations, self).__init__(**kwargs)
         self.with_mask = with_mask
         self.poly2mask = poly2mask
-        self.denorm_bbox = denorm_bbox
 
     def _load_bboxes(self, results: dict) -> None:
         """Private function to load bounding box annotations.
@@ -263,13 +258,6 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         results['gt_bboxes'] = np.array(
             gt_bboxes, dtype=np.float32).reshape((-1, 4))
         results['gt_ignore_flags'] = np.array(gt_ignore_flags, dtype=np.bool)
-
-        if self.denorm_bbox:
-            bbox_num = results['gt_bboxes'].shape[0]
-            if bbox_num != 0:
-                h, w = results['img_shape']
-                results['gt_bboxes'][:, 0::2] *= w
-                results['gt_bboxes'][:, 1::2] *= h
 
     def _load_labels(self, results: dict) -> None:
         """Private function to load label annotations.

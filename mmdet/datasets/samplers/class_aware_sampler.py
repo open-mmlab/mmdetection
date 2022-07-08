@@ -1,8 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
-from typing import Optional
+from typing import Dict, Iterator, Optional, Union
 
+import numpy as np
 import torch
+from mmengine.dataset import BaseDataset
 from mmengine.dist import get_dist_info, sync_random_seed
 from torch.utils.data import Sampler
 
@@ -24,27 +26,17 @@ class ClassAwareSampler(Sampler):
 
     Args:
         dataset: Dataset used for sampling.
-        samples_per_gpu (int): When model is :obj:`DistributedDataParallel`,
-            it is the number of training samples on each GPU.
-            When model is :obj:`DataParallel`, it is
-            `num_gpus * samples_per_gpu`.
-            Defaults to 1.
-        seed (int, optional): random seed used to shuffle the sampler if
-            ``shuffle=True``. This number should be identical across all
+        seed (int, optional): random seed used to shuffle the sampler.
+            This number should be identical across all
             processes in the distributed group. Defaults to None.
         num_sample_class (int): The number of samples taken from each
             per-label list. Defaults to 1.
-        round_up (bool): Whether to add extra samples to make the number of
-            samples evenly divisible by the world size. Defaults to True.
     """
 
     def __init__(self,
-                 dataset,
-                 samples_per_gpu: int = 1,
+                 dataset: BaseDataset,
                  seed: Optional[int] = None,
-                 num_sample_class=1,
-                 round_up: bool = True) -> None:
-        self.samples_per_gpu = samples_per_gpu  # TODO: consider to remove?
+                 num_sample_class: int = 1) -> None:
         rank, world_size = get_dist_info()
         self.rank = rank
         self.world_size = world_size
@@ -57,20 +49,14 @@ class ClassAwareSampler(Sampler):
         if seed is None:
             seed = sync_random_seed()
         self.seed = seed
-        self.round_up = round_up
 
         # The number of samples taken from each per-label list
         assert num_sample_class > 0 and isinstance(num_sample_class, int)
         self.num_sample_class = num_sample_class
         # Get per-label image list from dataset
-        assert hasattr(dataset, 'get_cat2imgs'), \
-            'dataset must have `get_cat2imgs` function'
-        self.cat_dict = dataset.get_cat2imgs()
+        self.cat_dict = self.get_cat2imgs()
 
-        self.num_samples = int(
-            math.ceil(
-                len(self.dataset) * 1.0 / world_size /
-                self.samples_per_gpu)) * self.samples_per_gpu
+        self.num_samples = int(math.ceil(len(self.dataset) * 1.0 / world_size))
         self.total_size = self.num_samples * self.world_size
 
         # get number of images containing each category
@@ -81,7 +67,26 @@ class ClassAwareSampler(Sampler):
         ]
         self.num_classes = len(self.valid_cat_inds)
 
-    def __iter__(self):
+    def get_cat2imgs(self) -> Dict[int, list]:
+        """Get a dict with class as key and img_ids as values.
+
+        Returns:
+            dict[int, list]: A dict of per-label image list,
+            the item of the dict indicates a label index,
+            corresponds to the image index that contains the label.
+        """
+        classes = self.dataset.metainfo.get('CLASSES', None)
+        if classes is None:
+            raise ValueError('dataset metainfo must contain CLASSES')
+        # sort the label index
+        cat2imgs = {i: [] for i in range(len(classes))}
+        for i in range(len(self.dataset)):
+            cat_ids = set(self.dataset.get_cat_ids(i))
+            for cat in cat_ids:
+                cat2imgs[cat].append(i)
+        return cat2imgs
+
+    def __iter__(self) -> Iterator[int]:
         # deterministically shuffle based on epoch
         g = torch.Generator()
         g.manual_seed(self.epoch + self.seed)
@@ -127,10 +132,20 @@ class ClassAwareSampler(Sampler):
 
         return iter(indices)
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """The number of samples in this rank."""
         return self.num_samples
 
-    def set_epoch(self, epoch):
+    def set_epoch(self, epoch: int) -> None:
+        """Sets the epoch for this sampler.
+
+        When :attr:`shuffle=True`, this ensures all replicas use a different
+        random ordering for each epoch. Otherwise, the next iteration of this
+        sampler will yield the same ordering.
+
+        Args:
+            epoch (int): Epoch number.
+        """
         self.epoch = epoch
 
 
@@ -152,17 +167,19 @@ class RandomCycleIter:
             for generating random numbers.
     """  # noqa: W605
 
-    def __init__(self, data, generator=None):
+    def __init__(self,
+                 data: Union[list, np.ndarray],
+                 generator: torch.Generator = None) -> None:
         self.data = data
         self.length = len(data)
         self.index = torch.randperm(self.length, generator=generator).numpy()
         self.i = 0
         self.generator = generator
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator:
         return self
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.data)
 
     def __next__(self):

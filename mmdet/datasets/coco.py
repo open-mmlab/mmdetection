@@ -158,7 +158,7 @@ class CocoDataset(BaseDataset):
             List[int]: All categories in the image of specified index.
         """
 
-        instances = self.data_list[idx]['instances']
+        instances = self.get_data_info(idx)['instances']
         return [instance['bbox_label'] for instance in instances]
 
     def filter_data(self) -> List[dict]:
