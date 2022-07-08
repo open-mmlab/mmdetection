@@ -62,6 +62,9 @@ class BaseSemanticHead(BaseModule, metaclass=ABCMeta):
                 data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
 
+        Args:
+            x (Tensor): Feature maps.
+
         Returns:
             Dict[str, Tensor]: The loss of semantic head.
         """
