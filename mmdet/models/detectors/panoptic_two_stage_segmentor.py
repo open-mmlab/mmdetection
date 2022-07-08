@@ -1,16 +1,15 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
-from typing import Dict, List, Tuple
+from typing import List
 
 import torch
 from mmengine.data import PixelData
 from torch import Tensor
 
-from mmdet.core import DetDataSample, bbox2roi, multiclass_nms
+from mmdet.core import DetDataSample
 from mmdet.core.utils import (ConfigType, OptConfigType, OptMultiConfig,
                               SampleList)
 from mmdet.registry import MODELS
-from ..roi_heads.mask_heads.fcn_mask_head import _do_paste_mask
 from .two_stage import TwoStageDetector
 
 
@@ -126,85 +125,6 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
 
         return losses
 
-    def _predict_mask(self,
-                      x: Tuple[Tensor],
-                      batch_img_metas: List[dict],
-                      det_bboxes: List[Tensor],
-                      det_labels: List[Tensor],
-                      rescale: bool = False) -> Dict[str, Tensor]:
-        """Simple test for mask head without augmentation.
-
-        Args:
-            x (Tuple[Tensor]): Tuple of multi-level img features.
-            batch_img_metas (List[dict]): List of image information.
-            det_bboxes (List[Tensor]): Detected bboxes of each image.
-            det_labels (List[Tensor]): Labels of the Detected bboxes of
-                each image.
-            rescale (bool): Whether to rescale the results.
-                Defaults to False.
-
-        Returns:
-            Dict[str, Tensor]: Usually returns a dictionary with keys:
-
-                - `mask_pred` (Tensor): Mask prediction.
-                - `mask_feats` (Tensor): Extract mask RoI features.
-                - `masks` (List[Tensor]): Instance masks.
-        """
-        img_shapes = tuple(meta['ori_shape']
-                           for meta in batch_img_metas) if rescale else tuple(
-                               meta['batch_input_shape']
-                               for meta in batch_img_metas)
-        scale_factors = tuple(meta['scale_factor'] for meta in batch_img_metas)
-
-        if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
-            masks = []
-            for img_shape in img_shapes:
-                out_shape = (0, self.roi_head.bbox_head.num_classes) \
-                    + img_shape[:2]
-                masks.append(det_bboxes[0].new_zeros(out_shape))
-            mask_pred = det_bboxes[0].new_zeros((0, 80, 28, 28))
-            mask_results = dict(
-                masks=masks, mask_pred=mask_pred, mask_feats=None)
-            return mask_results
-
-        _bboxes = [det_bboxes[i][:, :4] for i in range(len(det_bboxes))]
-        if rescale:
-            if not isinstance(scale_factors[0], float):
-                scale_factors = [
-                    det_bboxes[0].new_tensor(scale_factor).repeat((1, 2))
-                    for scale_factor in scale_factors
-                ]
-            _bboxes = [
-                _bboxes[i] * scale_factors[i] for i in range(len(_bboxes))
-            ]
-
-        mask_rois = bbox2roi(_bboxes)
-        mask_results = self.roi_head._mask_forward(x, mask_rois)
-        mask_pred = mask_results['mask_pred']
-        # split batch mask prediction back to each image
-        num_mask_roi_per_img = [len(det_bbox) for det_bbox in det_bboxes]
-        mask_preds = mask_pred.split(num_mask_roi_per_img, 0)
-
-        # resize the mask_preds to (K, H, W)
-        masks = []
-        for i in range(len(_bboxes)):
-            det_bbox = det_bboxes[i][:, :4]
-            det_label = det_labels[i]
-
-            mask_pred = mask_preds[i].sigmoid()
-
-            box_inds = torch.arange(mask_pred.shape[0])
-            mask_pred = mask_pred[box_inds, det_label][:, None]
-
-            img_h, img_w = img_shapes[i][:2]
-            mask_pred, _ = _do_paste_mask(
-                mask_pred, det_bbox, img_h, img_w, skip_empty=False)
-            masks.append(mask_pred)
-
-        mask_results['masks'] = masks
-
-        return mask_results
-
     def predict(self,
                 batch_inputs: Tensor,
                 batch_data_samples: SampleList,
@@ -242,36 +162,13 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
                 data_sample.proposals for data_sample in batch_data_samples
             ]
 
-        # instance data
-        roi_results_list = self.roi_head.predict_bbox(
-            x,
-            batch_img_metas,
-            rpn_results_list,
-            rcnn_test_cfg=None,
-            rescale=rescale)
+        results_list = self.roi_head.predict(
+            x, rpn_results_list, batch_data_samples, rescale=rescale)
 
         seg_preds = self.semantic_head.predict(x, batch_img_metas, rescale)
 
-        pan_cfg = self.test_cfg.panoptic
-        # class-wise predictions
-        det_bboxes = []
-        det_labels = []
-        for i in range(len(roi_results_list)):
-            bboxe = roi_results_list[i]['bboxes']
-            score = roi_results_list[i]['scores']
-            det_bbox, det_label = multiclass_nms(bboxe, score,
-                                                 pan_cfg.score_thr,
-                                                 pan_cfg.nms,
-                                                 pan_cfg.max_per_img)
-            det_bboxes.append(det_bbox)
-            det_labels.append(det_label)
-
-        mask_results = self._predict_mask(
-            x, batch_img_metas, det_bboxes, det_labels, rescale=rescale)
-        masks = mask_results['masks']
-
         results_list = self.panoptic_fusion_head.predict(
-            det_bboxes, det_labels, masks, seg_preds)
+            results_list, seg_preds)
 
         results_list = self.convert_to_datasample(results_list)
 
