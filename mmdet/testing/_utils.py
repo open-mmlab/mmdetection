@@ -8,6 +8,7 @@ from mmengine.data import BaseDataElement as PixelData
 from mmengine.data import InstanceData
 
 from mmdet.core import DetDataSample
+from mmdet.registry import TASK_UTILS
 
 
 def _get_config_directory():
@@ -43,6 +44,22 @@ def get_detector_cfg(fname):
     config = _get_config_module(fname)
     model = copy.deepcopy(config.model)
     return model
+
+
+def get_roi_head_cfg(fname):
+    """Grab configs necessary to create a roi_head.
+
+    These are deep copied to allow for safe modification of parameters without
+    influencing other tests.
+    """
+    config = _get_config_module(fname)
+    model = copy.deepcopy(config.model)
+
+    roi_head = model.roi_head
+    train_cfg = None if model.train_cfg is None else model.train_cfg.rcnn
+    test_cfg = None if model.test_cfg is None else model.test_cfg.rcnn
+    roi_head.update(dict(train_cfg=train_cfg, test_cfg=test_cfg))
+    return roi_head
 
 
 def _rand_bboxes(rng, num_boxes, w, h):
@@ -171,3 +188,73 @@ def demo_mm_inputs(batch_size=2,
 
         packed_inputs.append(mm_inputs)
     return packed_inputs
+
+
+def demo_mm_proposals(image_shapes, num_proposals):
+    """Create a list of fake porposals.
+
+    Args:
+        image_shapes (list[tuple[int]]): Batch image shapes.
+        num_proposals (int): The number of fake proposals.
+    """
+    rng = np.random.RandomState(0)
+
+    results = []
+    for img_shape in image_shapes:
+        result = InstanceData()
+        w, h = img_shape[1:]
+        proposals = _rand_bboxes(rng, num_proposals, w, h)
+        result.bboxes = torch.from_numpy(proposals).float()
+        result.scores = torch.from_numpy(rng.rand(num_proposals)).float()
+        result.labels = torch.zeros(num_proposals).long()
+        results.append(result)
+    return results
+
+
+def demo_mm_sampling_results(proposals_list,
+                             batch_gt_instances,
+                             batch_gt_instances_ignore=None,
+                             assigner_cfg=None,
+                             sampler_cfg=None,
+                             feats=None):
+    """Create sample results that can be passed to BBoxHead.get_targets."""
+    assert len(proposals_list) == len(batch_gt_instances)
+    if batch_gt_instances_ignore is None:
+        batch_gt_instances_ignore = [None for _ in batch_gt_instances]
+    else:
+        assert len(batch_gt_instances_ignore) == len(batch_gt_instances)
+
+    default_assigner_cfg = dict(
+        type='MaxIoUAssigner',
+        pos_iou_thr=0.5,
+        neg_iou_thr=0.5,
+        min_pos_iou=0.5,
+        ignore_iof_thr=-1)
+    assigner_cfg = assigner_cfg if assigner_cfg is not None \
+        else default_assigner_cfg
+    default_sampler_cfg = dict(
+        type='RandomSampler',
+        num=512,
+        pos_fraction=0.25,
+        neg_pos_ub=-1,
+        add_gt_as_proposals=True)
+    sampler_cfg = sampler_cfg if sampler_cfg is not None \
+        else default_sampler_cfg
+    bbox_assigner = TASK_UTILS.build(assigner_cfg)
+    bbox_sampler = TASK_UTILS.build(sampler_cfg)
+
+    sampling_results = []
+    for i in range(len(batch_gt_instances)):
+        if feats is not None:
+            feats = [lvl_feat[i][None] for lvl_feat in feats]
+        # rename proposals.bboxes to proposals.priors
+        proposals = proposals_list[i]
+        proposals.priors = proposals.pop('bboxes')
+
+        assign_result = bbox_assigner.assign(proposals, batch_gt_instances[i],
+                                             batch_gt_instances_ignore[i])
+        sampling_result = bbox_sampler.sample(
+            assign_result, proposals, batch_gt_instances[i], feats=feats)
+        sampling_results.append(sampling_result)
+
+    return sampling_results
