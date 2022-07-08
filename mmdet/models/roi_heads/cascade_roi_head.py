@@ -323,7 +323,8 @@ class CascadeRoIHead(BaseRoIHead):
                      batch_img_metas: List[dict],
                      rpn_results_list: InstanceList,
                      rcnn_test_cfg: ConfigType,
-                     rescale: bool = False) -> InstanceList:
+                     rescale: bool = False,
+                     **kwargs) -> InstanceList:
         """Perform forward propagation of the bbox head and predict detection
         results on the features of the upstream network.
 
@@ -357,7 +358,11 @@ class CascadeRoIHead(BaseRoIHead):
                 batch_img_metas, rois.device, task_type='bbox')
 
         rois, cls_scores, bbox_preds = self._refine_roi(
-            x, rois, batch_img_metas, num_proposals_per_img)
+            x=x,
+            rois=rois,
+            batch_img_metas=batch_img_metas,
+            num_proposals_per_img=num_proposals_per_img,
+            **kwargs)
 
         results_list = self.bbox_head[-1].predict_by_feat(
             rois=rois,
@@ -433,7 +438,7 @@ class CascadeRoIHead(BaseRoIHead):
 
     def _refine_roi(self, x: Tuple[Tensor], rois: Tensor,
                     batch_img_metas: List[dict],
-                    num_proposals_per_img: Sequence[int]) -> tuple:
+                    num_proposals_per_img: Sequence[int], **kwargs) -> tuple:
         """Multi-stage refinement of RoI.
 
         Args:
@@ -455,7 +460,8 @@ class CascadeRoIHead(BaseRoIHead):
         # "ms" in variable names means multi-stage
         ms_scores = []
         for stage in range(self.num_stages):
-            bbox_results = self._bbox_forward(stage, x, rois)
+            bbox_results = self._bbox_forward(
+                stage=stage, x=x, rois=rois, **kwargs)
 
             # split batch bbox prediction back to each image
             cls_scores = bbox_results['cls_score']

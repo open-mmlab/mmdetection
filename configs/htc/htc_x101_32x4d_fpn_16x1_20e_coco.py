@@ -13,7 +13,20 @@ model = dict(
         style='pytorch',
         init_cfg=dict(
             type='Pretrained', checkpoint='open-mmlab://resnext101_32x4d')))
-data = dict(samples_per_gpu=1, workers_per_gpu=1)
+
+train_dataloader = dict(batch_size=1, num_workers=1)
+
 # learning policy
-lr_config = dict(step=[16, 19])
-runner = dict(type='EpochBasedRunner', max_epochs=20)
+max_epochs = 20
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=max_epochs,
+        by_epoch=True,
+        milestones=[16, 19],
+        gamma=0.1)
+]
+train_cfg = dict(max_epochs=max_epochs)
