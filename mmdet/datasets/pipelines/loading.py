@@ -462,9 +462,6 @@ class LoadPanopticAnnotations(LoadAnnotations):
              Defaults to True.
         with_seg (bool): Whether to parse and load the semantic segmentation
             annotation. Defaults to False.
-        denorm_bbox (bool): Whether to convert bbox from relative value to
-            absolute value. Only used in OpenImage Dataset.
-            Defaults to False.
         imdecode_backend (str): The image decoding backend type. The backend
             argument for :func:``mmcv.imfrombytes``.
             See :fun:``mmcv.imfrombytes`` for details.
@@ -480,7 +477,6 @@ class LoadPanopticAnnotations(LoadAnnotations):
         with_label: bool = True,
         with_mask: bool = True,
         with_seg: bool = True,
-        denorm_bbox: bool = False,
         imdecode_backend: str = 'cv2',
         file_client_args: dict = dict(backend='disk')
     ) -> None:
@@ -499,7 +495,6 @@ class LoadPanopticAnnotations(LoadAnnotations):
             with_mask=with_mask,
             with_seg=with_seg,
             with_keypoints=False,
-            denorm_bbox=denorm_bbox,
             imdecode_backend=imdecode_backend,
             file_client_args=file_client_args)
 

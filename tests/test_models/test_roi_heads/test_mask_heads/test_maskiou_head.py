@@ -34,7 +34,7 @@ class TestMaskIoUHead(TestCase):
             num_classes=4,
             with_mask=True)
         proposals_list = demo_mm_proposals(
-            image_shapes=image_shapes, num_proposals=100)
+            image_shapes=image_shapes, num_proposals=100, device=device)
         batch_data_samples = []
         for i in range(len(packed_inputs)):
             batch_data_samples.append(
@@ -43,7 +43,9 @@ class TestMaskIoUHead(TestCase):
         train_cfg = ConfigDict(dict(mask_size=28, mask_thr_binary=0.5))
 
         # prepare ground truth
-        data_samples = [inputs['data_sample'] for inputs in packed_inputs]
+        data_samples = [
+            inputs['data_sample'].to(device=device) for inputs in packed_inputs
+        ]
         (batch_gt_instances, batch_gt_instances_ignore,
          _) = unpack_gt_instances(data_samples)
         sampling_results = demo_mm_sampling_results(

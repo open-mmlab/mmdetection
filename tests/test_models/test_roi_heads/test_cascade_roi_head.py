@@ -46,11 +46,11 @@ class TestCascadeRoIHead(TestCase):
 
         # When truth is non-empty then both cls, box, and mask loss
         # should be nonzero for random inputs
-        img_shape_list = [img_meta['img_shape'] for img_meta in img_metas]
-        proposal_list = demo_mm_proposals(img_shape_list, 100)
+        img_shape_list = [(3, s, s) for _ in img_metas]
+        proposal_list = demo_mm_proposals(img_shape_list, 100, device='cuda')
         packed_inputs = demo_mm_inputs(
             batch_size=1,
-            image_shapes=[(s, s, 3)],
+            image_shapes=[(3, s, s)],
             num_items=[1],
             num_classes=4,
             with_mask=True)
@@ -66,10 +66,10 @@ class TestCascadeRoIHead(TestCase):
 
         # When there is no truth, the cls loss should be nonzero but
         # there should be no box and mask loss.
-        proposal_list = demo_mm_proposals(img_shape_list, 100)
+        proposal_list = demo_mm_proposals(img_shape_list, 100, device='cuda')
         packed_inputs = demo_mm_inputs(
             batch_size=1,
-            image_shapes=[(s, s, 3)],
+            image_shapes=[(3, s, s)],
             num_items=[0],
             num_classes=4,
             with_mask=True)
