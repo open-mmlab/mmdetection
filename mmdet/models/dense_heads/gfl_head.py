@@ -1,39 +1,43 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import List, Optional, Sequence, Tuple
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, Scale
-from mmcv.runner import force_fp32
+from mmengine.config import ConfigDict
+from mmengine.data import InstanceData
+from torch import Tensor
 
-from mmdet.core import (anchor_inside_flags, bbox_overlaps, build_assigner,
-                        build_sampler, images_to_levels, multi_apply,
+from mmdet.core import (ConfigType, InstanceList, MultiConfig, OptConfigType,
+                        OptInstanceList, PseudoSampler, anchor_inside_flags,
+                        bbox_overlaps, images_to_levels, multi_apply,
                         reduce_mean, unmap)
 from mmdet.core.utils import filter_scores_and_topk
-from mmdet.registry import MODELS
-from ..builder import build_loss
+from mmdet.registry import MODELS, TASK_UTILS
 from .anchor_head import AnchorHead
 
 
 class Integral(nn.Module):
     """A fixed layer for calculating integral result from distribution.
 
-    This layer calculates the target location by :math: `sum{P(y_i) * y_i}`,
+    This layer calculates the target location by :math: ``sum{P(y_i) * y_i}``,
     P(y_i) denotes the softmax vector that represents the discrete distribution
     y_i denotes the discrete set, usually {0, 1, 2, ..., reg_max}
 
     Args:
-        reg_max (int): The maximal value of the discrete set. Default: 16. You
-            may want to reset it according to your new dataset or related
+        reg_max (int): The maximal value of the discrete set. Defaults to 16.
+            You may want to reset it according to your new dataset or related
             settings.
     """
 
-    def __init__(self, reg_max=16):
-        super(Integral, self).__init__()
+    def __init__(self, reg_max: int = 16) -> None:
+        super().__init__()
         self.reg_max = reg_max
         self.register_buffer('project',
                              torch.linspace(0, self.reg_max, self.reg_max + 1))
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
         """Forward feature from the regression head to get integral result of
         bounding box location.
 
@@ -68,17 +72,20 @@ class GFLHead(AnchorHead):
             category.
         in_channels (int): Number of channels in the input feature map.
         stacked_convs (int): Number of conv layers in cls and reg tower.
-            Default: 4.
-        conv_cfg (dict): dictionary to construct and config conv layer.
-            Default: None.
-        norm_cfg (dict): dictionary to construct and config norm layer.
-            Default: dict(type='GN', num_groups=32, requires_grad=True).
-        loss_qfl (dict): Config of Quality Focal Loss (QFL).
-        bbox_coder (dict): Config of bbox coder. Defaults
-            'DistancePointBBoxCoder'.
-        reg_max (int): Max value of integral set :math: `{0, ..., reg_max}`
-            in QFL setting. Default: 16.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Defaults to 4.
+        conv_cfg (:obj:`ConfigDict` or dict, optional): dictionary to construct
+            and config conv layer. Defaults to None.
+        norm_cfg (:obj:`ConfigDict` or dict): dictionary to construct and
+            config norm layer. Default: dict(type='GN', num_groups=32,
+            requires_grad=True).
+        loss_qfl (:obj:`ConfigDict` or dict): Config of Quality Focal Loss
+            (QFL).
+        bbox_coder (:obj:`ConfigDict` or dict): Config of bbox coder. Defaults
+             to 'DistancePointBBoxCoder'.
+        reg_max (int): Max value of integral set :math: ``{0, ..., reg_max}``
+            in QFL setting. Defaults to 16.
+        init_cfg (:obj:`ConfigDict` or dict or list[dict] or
+            list[:obj:`ConfigDict`]): Initialization config dict.
     Example:
         >>> self = GFLHead(11, 7)
         >>> feats = [torch.rand(1, 7, s, s) for s in [4, 8, 16, 32, 64]]
@@ -87,15 +94,17 @@ class GFLHead(AnchorHead):
     """
 
     def __init__(self,
-                 num_classes,
-                 in_channels,
-                 stacked_convs=4,
-                 conv_cfg=None,
-                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
-                 loss_dfl=dict(type='DistributionFocalLoss', loss_weight=0.25),
-                 bbox_coder=dict(type='DistancePointBBoxCoder'),
-                 reg_max=16,
-                 init_cfg=dict(
+                 num_classes: int,
+                 in_channels: int,
+                 stacked_convs: int = 4,
+                 conv_cfg: OptConfigType = None,
+                 norm_cfg: ConfigType = dict(
+                     type='GN', num_groups=32, requires_grad=True),
+                 loss_dfl: ConfigType = dict(
+                     type='DistributionFocalLoss', loss_weight=0.25),
+                 bbox_coder: ConfigType = dict(type='DistancePointBBoxCoder'),
+                 reg_max: int = 16,
+                 init_cfg: MultiConfig = dict(
                      type='Normal',
                      layer='Conv2d',
                      std=0.01,
@@ -104,31 +113,32 @@ class GFLHead(AnchorHead):
                          name='gfl_cls',
                          std=0.01,
                          bias_prob=0.01)),
-                 **kwargs):
+                 **kwargs) -> None:
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.reg_max = reg_max
-        super(GFLHead, self).__init__(
-            num_classes,
-            in_channels,
+        super().__init__(
+            num_classes=num_classes,
+            in_channels=in_channels,
             bbox_coder=bbox_coder,
             init_cfg=init_cfg,
             **kwargs)
 
-        self.sampling = False
         if self.train_cfg:
-            self.assigner = build_assigner(self.train_cfg.assigner)
-            # SSD sampling=False so use PseudoSampler
-            sampler_cfg = dict(type='PseudoSampler')
-            self.sampler = build_sampler(sampler_cfg, context=self)
+            self.assigner = TASK_UTILS.build(self.train_cfg.assigner)
+            if self.train_cfg.get('sampler', None) is not None:
+                self.sampler = TASK_UTILS.build(
+                    self.train_cfg['sampler'], default_args=dict(context=self))
+            else:
+                self.sampler = PseudoSampler(context=self)
 
         self.integral = Integral(self.reg_max)
-        self.loss_dfl = build_loss(loss_dfl)
+        self.loss_dfl = MODELS.build(loss_dfl)
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         """Initialize layers of the head."""
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.ReLU()
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
         for i in range(self.stacked_convs):
@@ -159,25 +169,26 @@ class GFLHead(AnchorHead):
         self.scales = nn.ModuleList(
             [Scale(1.0) for _ in self.prior_generator.strides])
 
-    def forward(self, feats):
+    def forward(self, x: Tuple[Tensor]) -> Tuple[List[Tensor]]:
         """Forward features from the upstream network.
 
         Args:
-            feats (tuple[Tensor]): Features from the upstream network, each is
+            x (tuple[Tensor]): Features from the upstream network, each is
                 a 4D-tensor.
 
         Returns:
             tuple: Usually a tuple of classification scores and bbox prediction
-                cls_scores (list[Tensor]): Classification and quality (IoU)
-                    joint scores for all scale levels, each is a 4D-tensor,
-                    the channel number is num_classes.
-                bbox_preds (list[Tensor]): Box distribution logits for all
-                    scale levels, each is a 4D-tensor, the channel number is
-                    4*(n+1), n is max value of integral set.
-        """
-        return multi_apply(self.forward_single, feats, self.scales)
 
-    def forward_single(self, x, scale):
+            - cls_scores (list[Tensor]): Classification and quality (IoU)
+              joint scores for all scale levels, each is a 4D-tensor,
+              the channel number is num_classes.
+            - bbox_preds (list[Tensor]): Box distribution logits for all
+              scale levels, each is a 4D-tensor, the channel number is
+              4*(n+1), n is max value of integral set.
+        """
+        return multi_apply(self.forward_single, x, self.scales)
+
+    def forward_single(self, x: Tensor, scale: Scale) -> Sequence[Tensor]:
         """Forward feature of a single scale level.
 
         Args:
@@ -187,11 +198,12 @@ class GFLHead(AnchorHead):
 
         Returns:
             tuple:
-                cls_score (Tensor): Cls and quality joint scores for a single
-                    scale level the channel number is num_classes.
-                bbox_pred (Tensor): Box distribution logits for a single scale
-                    level, the channel number is 4*(n+1), n is max value of
-                    integral set.
+
+            - cls_score (Tensor): Cls and quality joint scores for a single
+              scale level the channel number is num_classes.
+            - bbox_pred (Tensor): Box distribution logits for a single scale
+              level, the channel number is 4*(n+1), n is max value of
+              integral set.
         """
         cls_feat = x
         reg_feat = x
@@ -203,22 +215,25 @@ class GFLHead(AnchorHead):
         bbox_pred = scale(self.gfl_reg(reg_feat)).float()
         return cls_score, bbox_pred
 
-    def anchor_center(self, anchors):
+    def anchor_center(self, anchors: Tensor) -> Tensor:
         """Get anchor centers from anchors.
 
         Args:
-            anchors (Tensor): Anchor list with shape (N, 4), "xyxy" format.
+            anchors (Tensor): Anchor list with shape (N, 4), ``xyxy`` format.
 
         Returns:
-            Tensor: Anchor centers with shape (N, 2), "xy" format.
+            Tensor: Anchor centers with shape (N, 2), ``xy`` format.
         """
         anchors_cx = (anchors[..., 2] + anchors[..., 0]) / 2
         anchors_cy = (anchors[..., 3] + anchors[..., 1]) / 2
         return torch.stack([anchors_cx, anchors_cy], dim=-1)
 
-    def loss_single(self, anchors, cls_score, bbox_pred, labels, label_weights,
-                    bbox_targets, stride, num_total_samples):
-        """Compute loss of a single scale level.
+    def loss_by_feat_single(self, anchors: Tensor, cls_score: Tensor,
+                            bbox_pred: Tensor, labels: Tensor,
+                            label_weights: Tensor, bbox_targets: Tensor,
+                            stride: Tuple[int], avg_factor: int) -> dict:
+        """Calculate the loss of a single scale level based on the features
+        extracted by the detection head.
 
         Args:
             anchors (Tensor): Box reference for each scale level with shape
@@ -234,9 +249,12 @@ class GFLHead(AnchorHead):
                 (N, num_total_anchors)
             bbox_targets (Tensor): BBox regression targets of each anchor
                 weight shape (N, num_total_anchors, 4).
-            stride (tuple): Stride in this scale level.
-            num_total_samples (int): Number of positive samples that is
-                reduced over all GPUs.
+            stride (Tuple[int]): Stride in this scale level.
+            avg_factor (int): Average factor that is used to average
+                the loss. When using sampling method, avg_factor is usually
+                the sum of positive and negative priors. When using
+                `PseudoSampler`, `avg_factor` is usually equal to the number
+                of positive priors.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -300,19 +318,19 @@ class GFLHead(AnchorHead):
         loss_cls = self.loss_cls(
             cls_score, (labels, score),
             weight=label_weights,
-            avg_factor=num_total_samples)
+            avg_factor=avg_factor)
 
         return loss_cls, loss_bbox, loss_dfl, weight_targets.sum()
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def loss(self,
-             cls_scores,
-             bbox_preds,
-             gt_bboxes,
-             gt_labels,
-             img_metas,
-             gt_bboxes_ignore=None):
-        """Compute losses of the head.
+    def loss_by_feat(
+            self,
+            cls_scores: List[Tensor],
+            bbox_preds: List[Tensor],
+            batch_gt_instances: InstanceList,
+            batch_img_metas: List[dict],
+            batch_gt_instances_ignore: OptInstanceList = None) -> dict:
+        """Calculate the loss based on the features extracted by the detection
+        head.
 
         Args:
             cls_scores (list[Tensor]): Cls and quality scores for each scale
@@ -320,13 +338,15 @@ class GFLHead(AnchorHead):
             bbox_preds (list[Tensor]): Box distribution logits for each scale
                 level with shape (N, 4*(n+1), H, W), n is max value of integral
                 set.
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box
-            img_metas (list[dict]): Meta information of each image, e.g.,
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance.  It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            gt_bboxes_ignore (list[Tensor] | None): specify which bounding
-                boxes can be ignored when computing the loss.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], Optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -337,31 +357,24 @@ class GFLHead(AnchorHead):
 
         device = cls_scores[0].device
         anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, img_metas, device=device)
-        label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
+            featmap_sizes, batch_img_metas, device=device)
 
         cls_reg_targets = self.get_targets(
             anchor_list,
             valid_flag_list,
-            gt_bboxes,
-            img_metas,
-            gt_bboxes_ignore_list=gt_bboxes_ignore,
-            gt_labels_list=gt_labels,
-            label_channels=label_channels)
-        if cls_reg_targets is None:
-            return None
+            batch_gt_instances,
+            batch_img_metas,
+            batch_gt_instances_ignore=batch_gt_instances_ignore)
 
         (anchor_list, labels_list, label_weights_list, bbox_targets_list,
-         bbox_weights_list, num_total_pos, num_total_neg) = cls_reg_targets
+         bbox_weights_list, avg_factor) = cls_reg_targets
 
-        num_total_samples = reduce_mean(
-            torch.tensor(num_total_pos, dtype=torch.float,
-                         device=device)).item()
-        num_total_samples = max(num_total_samples, 1.0)
+        avg_factor = reduce_mean(
+            torch.tensor(avg_factor, dtype=torch.float, device=device)).item()
 
         losses_cls, losses_bbox, losses_dfl,\
             avg_factor = multi_apply(
-                self.loss_single,
+                self.loss_by_feat_single,
                 anchor_list,
                 cls_scores,
                 bbox_preds,
@@ -369,7 +382,7 @@ class GFLHead(AnchorHead):
                 label_weights_list,
                 bbox_targets_list,
                 self.prior_generator.strides,
-                num_total_samples=num_total_samples)
+                avg_factor=avg_factor)
 
         avg_factor = sum(avg_factor)
         avg_factor = reduce_mean(avg_factor).clamp_(min=1).item()
@@ -378,17 +391,18 @@ class GFLHead(AnchorHead):
         return dict(
             loss_cls=losses_cls, loss_bbox=losses_bbox, loss_dfl=losses_dfl)
 
-    def _get_bboxes_single(self,
-                           cls_score_list,
-                           bbox_pred_list,
-                           score_factor_list,
-                           mlvl_priors,
-                           img_meta,
-                           cfg,
-                           rescale=False,
-                           with_nms=True,
-                           **kwargs):
-        """Transform outputs of a single image into bbox predictions.
+    def _predict_by_feat_single(self,
+                                cls_score_list: List[Tensor],
+                                bbox_pred_list: List[Tensor],
+                                score_factor_list: List[Tensor],
+                                mlvl_priors: List[Tensor],
+                                img_meta: dict,
+                                cfg: ConfigDict,
+                                rescale: bool = False,
+                                with_nms: bool = True,
+                                **kwargs) -> InstanceData:
+        """Transform a single image's features extracted from the head into
+        bbox results.
 
         Args:
             cls_score_list (list[Tensor]): Box scores from all scale
@@ -403,26 +417,26 @@ class GFLHead(AnchorHead):
                 the priors of a single level in feature pyramid, has shape
                 (num_priors, 4).
             img_meta (dict): Image meta info.
-            cfg (mmcv.Config): Test / postprocessing configuration,
+            cfg (:obj: `ConfigDict`): Test / postprocessing configuration,
                 if None, test_cfg would be used.
             rescale (bool): If True, return boxes in original image space.
-                Default: False.
+                Defaults to False.
             with_nms (bool): If True, do nms before return boxes.
-                Default: True.
+                Defaults to True.
 
         Returns:
             tuple[Tensor]: Results of detected bboxes and labels. If with_nms
-                is False and mlvl_score_factor is None, return mlvl_bboxes and
-                mlvl_scores, else return mlvl_bboxes, mlvl_scores and
-                mlvl_score_factor. Usually with_nms is False is used for aug
-                test. If with_nms is True, then return the following format
+            is False and mlvl_score_factor is None, return mlvl_bboxes and
+            mlvl_scores, else return mlvl_bboxes, mlvl_scores and
+            mlvl_score_factor. Usually with_nms is False is used for aug
+            test. If with_nms is True, then return the following format
 
-                - det_bboxes (Tensor): Predicted bboxes with shape \
-                    [num_bboxes, 5], where the first 4 columns are bounding \
-                    box positions (tl_x, tl_y, br_x, br_y) and the 5-th \
-                    column are scores between 0 and 1.
-                - det_labels (Tensor): Predicted labels of the corresponding \
-                    box with shape [num_bboxes].
+            - det_bboxes (Tensor): Predicted bboxes with shape
+              [num_bboxes, 5], where the first 4 columns are bounding
+              box positions (tl_x, tl_y, br_x, br_y) and the 5-th
+              column are scores between 0 and 1.
+            - det_labels (Tensor): Predicted labels of the corresponding
+              box with shape [num_bboxes].
         """
         cfg = self.test_cfg if cfg is None else cfg
         img_shape = img_meta['img_shape']
@@ -462,31 +476,33 @@ class GFLHead(AnchorHead):
             mlvl_scores.append(scores)
             mlvl_labels.append(labels)
 
+        results = InstanceData()
+        results.bboxes = torch.cat(mlvl_bboxes)
+        results.scores = torch.cat(mlvl_scores)
+        results.labels = torch.cat(mlvl_labels)
+
         return self._bbox_post_process(
-            mlvl_scores,
-            mlvl_labels,
-            mlvl_bboxes,
-            img_meta['scale_factor'],
-            cfg,
+            results=results,
+            cfg=cfg,
             rescale=rescale,
-            with_nms=with_nms)
+            with_nms=with_nms,
+            img_meta=img_meta,
+            **kwargs)
 
     def get_targets(self,
-                    anchor_list,
-                    valid_flag_list,
-                    gt_bboxes_list,
-                    img_metas,
-                    gt_bboxes_ignore_list=None,
-                    gt_labels_list=None,
-                    label_channels=1,
-                    unmap_outputs=True):
+                    anchor_list: List[Tensor],
+                    valid_flag_list: List[Tensor],
+                    batch_gt_instances: InstanceList,
+                    batch_img_metas: List[dict],
+                    batch_gt_instances_ignore: OptInstanceList = None,
+                    unmap_outputs=True) -> tuple:
         """Get targets for GFL head.
 
         This method is almost the same as `AnchorHead.get_targets()`. Besides
         returning the targets as the parent method does, it also returns the
         anchors as the first element of the returned tuple.
         """
-        num_imgs = len(img_metas)
+        num_imgs = len(batch_img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs
 
         # anchor number of multi levels
@@ -500,28 +516,25 @@ class GFLHead(AnchorHead):
             valid_flag_list[i] = torch.cat(valid_flag_list[i])
 
         # compute targets for each image
-        if gt_bboxes_ignore_list is None:
-            gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
-        if gt_labels_list is None:
-            gt_labels_list = [None for _ in range(num_imgs)]
+        if batch_gt_instances_ignore is None:
+            batch_gt_instances_ignore = [None] * num_imgs
         (all_anchors, all_labels, all_label_weights, all_bbox_targets,
-         all_bbox_weights, pos_inds_list, neg_inds_list) = multi_apply(
-             self._get_target_single,
+         all_bbox_weights, pos_inds_list, neg_inds_list,
+         sampling_results_list) = multi_apply(
+             self._get_targets_single,
              anchor_list,
              valid_flag_list,
              num_level_anchors_list,
-             gt_bboxes_list,
-             gt_bboxes_ignore_list,
-             gt_labels_list,
-             img_metas,
-             label_channels=label_channels,
+             batch_gt_instances,
+             batch_img_metas,
+             batch_gt_instances_ignore,
              unmap_outputs=unmap_outputs)
-        # no valid anchors
-        if any([labels is None for labels in all_labels]):
-            return None
-        # sampled anchors of all images
-        num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
-        num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
+        # Get `avg_factor` of all images, which calculate in `SamplingResult`.
+        # When using sampling method, avg_factor is usually the sum of
+        # positive and negative priors. When using `PseudoSampler`,
+        # `avg_factor` is usually equal to the number of positive priors.
+        avg_factor = sum(
+            [results.avg_factor for results in sampling_results_list])
         # split targets to a list w.r.t. multiple levels
         anchors_list = images_to_levels(all_anchors, num_level_anchors)
         labels_list = images_to_levels(all_labels, num_level_anchors)
@@ -532,19 +545,16 @@ class GFLHead(AnchorHead):
         bbox_weights_list = images_to_levels(all_bbox_weights,
                                              num_level_anchors)
         return (anchors_list, labels_list, label_weights_list,
-                bbox_targets_list, bbox_weights_list, num_total_pos,
-                num_total_neg)
+                bbox_targets_list, bbox_weights_list, avg_factor)
 
-    def _get_target_single(self,
-                           flat_anchors,
-                           valid_flags,
-                           num_level_anchors,
-                           gt_bboxes,
-                           gt_bboxes_ignore,
-                           gt_labels,
-                           img_meta,
-                           label_channels=1,
-                           unmap_outputs=True):
+    def _get_targets_single(self,
+                            flat_anchors: Tensor,
+                            valid_flags: Tensor,
+                            num_level_anchors: List[int],
+                            gt_instances: InstanceData,
+                            img_meta: dict,
+                            gt_instances_ignore: Optional[InstanceData] = None,
+                            unmap_outputs: bool = True) -> tuple:
         """Compute regression, classification targets for anchors in a single
         image.
 
@@ -554,50 +564,60 @@ class GFLHead(AnchorHead):
             valid_flags (Tensor): Multi level valid flags of the image,
                 which are concatenated into a single tensor of
                     shape (num_anchors,).
-            num_level_anchors Tensor): Number of anchors of each scale level.
-            gt_bboxes (Tensor): Ground truth bboxes of the image,
-                shape (num_gts, 4).
-            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
-                ignored, shape (num_ignored_gts, 4).
-            gt_labels (Tensor): Ground truth labels of each box,
-                shape (num_gts,).
-            img_meta (dict): Meta info of the image.
-            label_channels (int): Channel of label.
+            num_level_anchors (list[int]): Number of anchors of each scale
+                level.
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            img_meta (dict): Meta information for current image.
+            gt_instances_ignore (:obj:`InstanceData`, optional): Instances
+                to be ignored during training. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
             unmap_outputs (bool): Whether to map outputs back to the original
-                set of anchors.
+                set of anchors. Defaults to True.
 
         Returns:
             tuple: N is the number of total anchors in the image.
-                anchors (Tensor): All anchors in the image with shape (N, 4).
-                labels (Tensor): Labels of all anchors in the image with shape
-                    (N,).
-                label_weights (Tensor): Label weights of all anchor in the
-                    image with shape (N,).
-                bbox_targets (Tensor): BBox targets of all anchors in the
-                    image with shape (N, 4).
-                bbox_weights (Tensor): BBox weights of all anchors in the
-                    image with shape (N, 4).
-                pos_inds (Tensor): Indices of positive anchor with shape
-                    (num_pos,).
-                neg_inds (Tensor): Indices of negative anchor with shape
-                    (num_neg,).
+
+            - anchors (Tensor): All anchors in the image with shape (N, 4).
+            - labels (Tensor): Labels of all anchors in the image with
+              shape (N,).
+            - label_weights (Tensor): Label weights of all anchor in the
+              image with shape (N,).
+            - bbox_targets (Tensor): BBox targets of all anchors in the
+              image with shape (N, 4).
+            - bbox_weights (Tensor): BBox weights of all anchors in the
+              image with shape (N, 4).
+            - pos_inds (Tensor): Indices of positive anchor with shape
+              (num_pos,).
+            - neg_inds (Tensor): Indices of negative anchor with shape
+              (num_neg,).
+            - sampling_result (:obj:`SamplingResult`): Sampling results.
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
-                                           self.train_cfg.allowed_border)
+                                           self.train_cfg['allowed_border'])
         if not inside_flags.any():
-            return (None, ) * 7
+            raise ValueError(
+                'There is no valid anchor inside the image boundary. Please '
+                'check the image size and anchor sizes, or set '
+                '``allowed_border`` to -1 to skip the condition.')
         # assign gt and sample anchors
         anchors = flat_anchors[inside_flags, :]
-
         num_level_anchors_inside = self.get_num_level_anchors_inside(
             num_level_anchors, inside_flags)
-        assign_result = self.assigner.assign(anchors, num_level_anchors_inside,
-                                             gt_bboxes, gt_bboxes_ignore,
-                                             gt_labels)
+        pred_instances = InstanceData(priors=anchors)
+        assign_result = self.assigner.assign(
+            pred_instances=pred_instances,
+            num_level_priors=num_level_anchors_inside,
+            gt_instances=gt_instances,
+            gt_instances_ignore=gt_instances_ignore)
 
-        sampling_result = self.sampler.sample(assign_result, anchors,
-                                              gt_bboxes)
+        sampling_result = self.sampler.sample(
+            assign_result=assign_result,
+            pred_instances=pred_instances,
+            gt_instances=gt_instances)
 
         num_valid_anchors = anchors.shape[0]
         bbox_targets = torch.zeros_like(anchors)
@@ -613,17 +633,12 @@ class GFLHead(AnchorHead):
             pos_bbox_targets = sampling_result.pos_gt_bboxes
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
-            if gt_labels is None:
-                # Only rpn gives gt_labels as None
-                # Foreground is the first class
-                labels[pos_inds] = 0
-            else:
-                labels[pos_inds] = gt_labels[
-                    sampling_result.pos_assigned_gt_inds]
-            if self.train_cfg.pos_weight <= 0:
+
+            labels[pos_inds] = sampling_result.pos_gt_labels
+            if self.train_cfg['pos_weight'] <= 0:
                 label_weights[pos_inds] = 1.0
             else:
-                label_weights[pos_inds] = self.train_cfg.pos_weight
+                label_weights[pos_inds] = self.train_cfg['pos_weight']
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
 
@@ -639,9 +654,12 @@ class GFLHead(AnchorHead):
             bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
 
         return (anchors, labels, label_weights, bbox_targets, bbox_weights,
-                pos_inds, neg_inds)
+                pos_inds, neg_inds, sampling_result)
 
-    def get_num_level_anchors_inside(self, num_level_anchors, inside_flags):
+    def get_num_level_anchors_inside(self, num_level_anchors: List[int],
+                                     inside_flags: Tensor) -> List[int]:
+        """Get the number of valid anchors in every level."""
+
         split_inside_flags = torch.split(inside_flags, num_level_anchors)
         num_level_anchors_inside = [
             int(flags.sum()) for flags in split_inside_flags

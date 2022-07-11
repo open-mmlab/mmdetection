@@ -2,12 +2,12 @@
 from typing import List, Optional
 
 import torch
-from mmcv.runner import force_fp32
-from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import bbox_overlaps, multi_apply
+from mmdet.core import (InstanceList, OptInstanceList, SampleList,
+                        bbox_overlaps, multi_apply)
 from mmdet.registry import MODELS
+from ..utils.misc import unpack_gt_instances
 from .paa_head import PAAHead, levels_to_images
 
 
@@ -16,16 +16,14 @@ class LADHead(PAAHead):
     """Label Assignment Head from the paper: `Improving Object Detection by
     Label Assignment Distillation <https://arxiv.org/pdf/2108.10520.pdf>`_"""
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'iou_preds'))
     def get_label_assignment(
-        self,
-        cls_scores: List[Tensor],
-        bbox_preds: List[Tensor],
-        iou_preds: List[Tensor],
-        batch_gt_instances: List[InstanceData],
-        batch_img_metas: List[dict],
-        batch_gt_instances_ignore: Optional[List[InstanceData]] = None
-    ) -> tuple:
+            self,
+            cls_scores: List[Tensor],
+            bbox_preds: List[Tensor],
+            iou_preds: List[Tensor],
+            batch_gt_instances: InstanceList,
+            batch_img_metas: List[dict],
+            batch_gt_instances_ignore: OptInstanceList = None) -> tuple:
         """Get label assignment (from teacher).
 
         Args:
@@ -48,18 +46,18 @@ class LADHead(PAAHead):
         Returns:
             tuple: Returns a tuple containing label assignment variables.
 
-                - labels (Tensor): Labels of all anchors, each with
-                    shape (num_anchors,).
-                - labels_weight (Tensor): Label weights of all anchor.
-                    each with shape (num_anchors,).
-                - bboxes_target (Tensor): BBox targets of all anchors.
-                    each with shape (num_anchors, 4).
-                - bboxes_weight (Tensor): BBox weights of all anchors.
-                    each with shape (num_anchors, 4).
-                - pos_inds_flatten (Tensor): Contains all index of positive
-                    sample in all anchor.
-                - pos_anchors (Tensor): Positive anchors.
-                - num_pos (int): Number of positive anchors.
+            - labels (Tensor): Labels of all anchors, each with
+              shape (num_anchors,).
+            - labels_weight (Tensor): Label weights of all anchor.
+              each with shape (num_anchors,).
+            - bboxes_target (Tensor): BBox targets of all anchors.
+              each with shape (num_anchors, 4).
+            - bboxes_weight (Tensor): BBox weights of all anchors.
+              each with shape (num_anchors, 4).
+            - pos_inds_flatten (Tensor): Contains all index of positive
+              sample in all anchor.
+            - pos_anchors (Tensor): Positive anchors.
+            - num_pos (int): Number of positive anchors.
         """
 
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
@@ -122,14 +120,8 @@ class LADHead(PAAHead):
                                     pos_anchors, num_pos)
         return label_assignment_results
 
-    def forward_train(
-            self,
-            x: List[Tensor],
-            label_assignment_results: tuple,
-            batch_gt_instances: List[InstanceData],
-            batch_img_metas: List[dict],
-            batch_gt_instances_ignore: Optional[List[InstanceData]] = None,
-            **kwargs):
+    def loss(self, x: List[Tensor], label_assignment_results: tuple,
+             batch_data_samples: SampleList) -> dict:
         """Forward train with the available label assignment (student receives
         from teacher).
 
@@ -137,36 +129,33 @@ class LADHead(PAAHead):
             x (list[Tensor]): Features from FPN.
             label_assignment_results (tuple): As the outputs defined in the
                 function `self.get_label_assignment`.
-            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
-                gt_instance.  It usually includes ``bboxes`` and ``labels``
-                attributes.
-            batch_img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
-                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
-                data that is ignored during training and testing.
-                Defaults to None.
+            batch_data_samples (list[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
 
         Returns:
             losses: (dict[str, Tensor]): A dictionary of loss components.
         """
+        outputs = unpack_gt_instances(batch_data_samples)
+        batch_gt_instances, batch_gt_instances_ignore, batch_img_metas \
+            = outputs
+
         outs = self(x)
         loss_inputs = outs + (batch_gt_instances, batch_img_metas)
-        losses = self.loss(
+        losses = self.loss_by_feat(
             *loss_inputs,
             batch_gt_instances_ignore=batch_gt_instances_ignore,
             label_assignment_results=label_assignment_results)
         return losses
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'iou_preds'))
-    def loss(self,
-             cls_scores: List[Tensor],
-             bbox_preds: List[Tensor],
-             iou_preds: List[Tensor],
-             batch_gt_instances: List[InstanceData],
-             batch_img_metas: List[dict],
-             batch_gt_instances_ignore: Optional[List[InstanceData]] = None,
-             label_assignment_results: Optional[tuple] = None) -> dict:
+    def loss_by_feat(self,
+                     cls_scores: List[Tensor],
+                     bbox_preds: List[Tensor],
+                     iou_preds: List[Tensor],
+                     batch_gt_instances: InstanceList,
+                     batch_img_metas: List[dict],
+                     batch_gt_instances_ignore: OptInstanceList = None,
+                     label_assignment_results: Optional[tuple] = None) -> dict:
         """Compute losses of the head.
 
         Args:

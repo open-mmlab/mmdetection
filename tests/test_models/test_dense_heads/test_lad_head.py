@@ -37,7 +37,8 @@ class TestLADHead(TestCase):
         s = 256
         img_metas = [{
             'img_shape': (s, s, 3),
-            'scale_factor': 1,
+            'pad_shape': (s, s, 3),
+            'scale_factor': 1
         }]
         train_cfg = Config(
             dict(
@@ -90,9 +91,9 @@ class TestLADHead(TestCase):
             batch_gt_instances_ignore)
 
         outs = teacher_model(feat)
-        empty_gt_losses = lad.loss(*outs, [gt_instances], img_metas,
-                                   batch_gt_instances_ignore,
-                                   label_assignment_results)
+        empty_gt_losses = lad.loss_by_feat(*outs, [gt_instances], img_metas,
+                                           batch_gt_instances_ignore,
+                                           label_assignment_results)
         # When there is no truth, the cls loss should be nonzero but there
         # should be no box loss.
         empty_cls_loss = empty_gt_losses['loss_cls']
@@ -118,9 +119,9 @@ class TestLADHead(TestCase):
         label_assignment_results = teacher_model.get_label_assignment(
             *outs_teacher, [gt_instances], img_metas,
             batch_gt_instances_ignore)
-        one_gt_losses = lad.loss(*outs, [gt_instances], img_metas,
-                                 batch_gt_instances_ignore,
-                                 label_assignment_results)
+        one_gt_losses = lad.loss_by_feat(*outs, [gt_instances], img_metas,
+                                         batch_gt_instances_ignore,
+                                         label_assignment_results)
         onegt_cls_loss = one_gt_losses['loss_cls']
         onegt_box_loss = one_gt_losses['loss_bbox']
         onegt_iou_loss = one_gt_losses['loss_iou']
@@ -163,5 +164,5 @@ class TestLADHead(TestCase):
                 nms=dict(type='nms', iou_threshold=0.6),
                 max_per_img=100))
         rescale = False
-        lad.get_results(
+        lad.predict_by_feat(
             cls_scores, bbox_preds, iou_preds, img_metas, cfg, rescale=rescale)

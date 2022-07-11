@@ -8,24 +8,26 @@ from parameterized import parameterized
 from mmdet import *  # noqa
 from mmdet.core import DetDataSample
 from mmdet.testing import demo_mm_inputs, get_detector_cfg
+from mmdet.utils import register_all_modules
 
 
 class TestKDSingleStageDetector(TestCase):
 
-    # TODO: waiting ``ld/ld_r18_gflv1_r101_fpn_coco_1x.py`` ready
-    @parameterized.expand(['lad/lad_r101_paa_r50_fpn_coco_1x.py'])
+    def setUp(self):
+        register_all_modules()
+
+    @parameterized.expand(['ld/ld_r18_gflv1_r101_fpn_coco_1x.py'])
     def test_init(self, cfg_file):
         model = get_detector_cfg(cfg_file)
         model.backbone.init_cfg = None
 
         from mmdet.models import build_detector
         detector = build_detector(model)
-        assert detector.backbone
-        assert detector.neck
-        assert detector.bbox_head
-        assert detector.device.type == 'cpu'
+        self.assertTrue(detector.backbone)
+        self.assertTrue(detector.neck)
+        self.assertTrue(detector.bbox_head)
 
-    @parameterized.expand([('lad/lad_r101_paa_r50_fpn_coco_1x.py', ('cpu',
+    @parameterized.expand([('ld/ld_r18_gflv1_r101_fpn_coco_1x.py', ('cpu',
                                                                     'cuda'))])
     def test_single_stage_forward_train(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
@@ -42,21 +44,15 @@ class TestKDSingleStageDetector(TestCase):
                     return unittest.skip('test requires GPU and torch+cuda')
                 detector = detector.cuda()
 
-            assert detector.device.type == device
-
             packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]])
+            batch_inputs, data_samples = detector.data_preprocessor(
+                packed_inputs, True)
 
             # Test forward train
-            losses = detector.forward(packed_inputs, return_loss=True)
-            assert isinstance(losses, dict)
+            losses = detector.forward(batch_inputs, data_samples, mode='loss')
+            self.assertIsInstance(losses, dict)
 
-            # Test forward_dummy
-            batch = torch.ones((1, 3, 64, 64)).to(device=device)
-            out = detector.forward_dummy(batch)
-            assert isinstance(out, tuple)
-            assert len(out) == 3
-
-    @parameterized.expand([('lad/lad_r101_paa_r50_fpn_coco_1x.py', ('cpu',
+    @parameterized.expand([('ld/ld_r18_gflv1_r101_fpn_coco_1x.py', ('cpu',
                                                                     'cuda'))])
     def test_single_stage_forward_test(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
@@ -73,14 +69,14 @@ class TestKDSingleStageDetector(TestCase):
                     return unittest.skip('test requires GPU and torch+cuda')
                 detector = detector.cuda()
 
-            assert detector.device.type == device
-
             packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]])
+            batch_inputs, data_samples = detector.data_preprocessor(
+                packed_inputs, False)
 
             # Test forward test
             detector.eval()
             with torch.no_grad():
                 batch_results = detector.forward(
-                    packed_inputs, return_loss=False)
-                assert len(batch_results) == 2
-                assert isinstance(batch_results[0], DetDataSample)
+                    batch_inputs, data_samples, mode='predict')
+                self.assertEqual(len(batch_results), 2)
+                self.assertIsInstance(batch_results[0], DetDataSample)
