@@ -1104,7 +1104,7 @@ class TestRandomShift(unittest.TestCase):
         transform = RandomShift(prob=1.0)
         results = transform(results)
 
-        self.assertEqualresults(['img'].shape[:2], (h, w))
+        self.assertEqual(results['img'].shape[:2], (h, w))
         self.assertEqual(results['gt_bboxes_labels'].shape[0],
                          results['gt_bboxes'].shape[0])
         self.assertEqual(results['gt_bboxes_labels'].dtype, np.int64)

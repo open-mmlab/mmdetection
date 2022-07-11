@@ -16,6 +16,11 @@ from mmdet.datasets.pipelines import (FilterAnnotations, LoadAnnotations,
                                       LoadMultiChannelImageFromFiles,
                                       LoadProposals)
 
+try:
+    import panopticapi
+except ImportError:
+    panopticapi = None
+
 
 class TestLoadAnnotations(unittest.TestCase):
 
@@ -66,22 +71,6 @@ class TestLoadAnnotations(unittest.TestCase):
         self.assertTrue((results['gt_ignore_flags'] == np.array([0, 0,
                                                                  1])).all())
         self.assertEqual(results['gt_ignore_flags'].dtype, np.bool)
-
-    def test_load_denorm_bboxes(self):
-        transform = LoadAnnotations(
-            with_bbox=True,
-            with_label=False,
-            with_seg=False,
-            with_mask=False,
-            denorm_bbox=True)
-        results = transform(copy.deepcopy(self.results))
-        self.assertIn('gt_bboxes', results)
-        self.assertTrue(
-            (results['gt_bboxes'] == np.array([[0, 0, 4000, 6000],
-                                               [4000, 3000, 44000, 36000],
-                                               [20000, 15000, 24000,
-                                                24000]])).all())
-        self.assertEqual(results['gt_bboxes'].dtype, np.float32)
 
     def test_load_labels(self):
         transform = LoadAnnotations(
@@ -261,9 +250,13 @@ class TestLoadPanopticAnnotations(unittest.TestCase):
     def tearDown(self):
         os.remove(self.seg_map_path)
 
-    def test_init(self):
+    @unittest.skipIf(panopticapi is not None, 'panopticapi is installed')
+    def test_init_without_panopticapi(self):
+        # test if panopticapi is not installed
         from mmdet.datasets.pipelines import LoadPanopticAnnotations
-        with self.assertRaises(ImportError):
+        with self.assertRaisesRegex(
+                ImportError,
+                'panopticapi is not installed, please install it by'):
             LoadPanopticAnnotations()
 
     def test_transform(self):

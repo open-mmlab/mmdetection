@@ -190,7 +190,7 @@ def demo_mm_inputs(batch_size=2,
     return packed_inputs
 
 
-def demo_mm_proposals(image_shapes, num_proposals):
+def demo_mm_proposals(image_shapes, num_proposals, device='cpu'):
     """Create a list of fake porposals.
 
     Args:
@@ -207,7 +207,7 @@ def demo_mm_proposals(image_shapes, num_proposals):
         result.bboxes = torch.from_numpy(proposals).float()
         result.scores = torch.from_numpy(rng.rand(num_proposals)).float()
         result.labels = torch.zeros(num_proposals).long()
-        results.append(result)
+        results.append(result.to(device))
     return results
 
 
