@@ -24,19 +24,22 @@ model = dict(
 
 # dataset settings
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(
+        type='LoadImageFromFile',
+        file_client_args={{_base_.file_client_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='RandomChoiceResize',
         scale=[(1333, 640), (1333, 800)],
-        resize_cfg=dict(type='Resize', keep_ratio=True)),
+        keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs')
 ]
 train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
 
 # training schedule for 2x
-train_cfg = dict(max_epochs=24)
+max_epochs = 24
+train_cfg = dict(max_epochs=max_epochs)
 
 # learning rate
 param_scheduler = [
@@ -44,7 +47,7 @@ param_scheduler = [
     dict(
         type='MultiStepLR',
         begin=0,
-        end=24,
+        end=max_epochs,
         by_epoch=True,
         milestones=[16, 22],
         gamma=0.1)

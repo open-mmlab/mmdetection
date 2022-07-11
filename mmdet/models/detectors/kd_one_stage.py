@@ -19,10 +19,23 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
     <https://arxiv.org/abs/1503.02531>`_.
 
     Args:
+        backbone (:obj:`ConfigDict` or dict): The backbone module.
+        neck (:obj:`ConfigDict` or dict): The neck module.
+        bbox_head (:obj:`ConfigDict` or dict): The bbox head module.
         teacher_config (:obj:`ConfigDict` | dict | str | Path): Config file
             path or the config object of teacher model.
         teacher_ckpt (str, optional): Checkpoint path of teacher model.
             If left as None, the model will not load any weights.
+            Defaults to True.
+        eval_teacher (bool): Set the train mode for teacher.
+            Defaults to True.
+        train_cfg (:obj:`ConfigDict` or dict, optional): The training config
+            of ATSS. Defaults to None.
+        test_cfg (:obj:`ConfigDict` or dict, optional): The testing config
+            of ATSS. Defaults to None.
+        data_preprocessor (:obj:`ConfigDict` or dict, optional): Config of
+            :class:`DetDataPreprocessor` to process the input data.
+            Defaults to None.
     """
 
     def __init__(
@@ -35,7 +48,7 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
         eval_teacher: bool = True,
         train_cfg: OptConfigType = None,
         test_cfg: OptConfigType = None,
-        preprocess_cfg: OptConfigType = None,
+        data_preprocessor: OptConfigType = None,
     ) -> None:
         super().__init__(
             backbone=backbone,
@@ -43,7 +56,7 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
             bbox_head=bbox_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
-            preprocess_cfg=preprocess_cfg)
+            data_preprocessor=data_preprocessor)
         self.eval_teacher = eval_teacher
         # Build teacher model
         if isinstance(teacher_config, (str, Path)):
@@ -53,8 +66,8 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
             load_checkpoint(
                 self.teacher_model, teacher_ckpt, map_location='cpu')
 
-    def forward_train(self, batch_inputs: Tensor,
-                      batch_data_samples: SampleList, **kwargs) -> dict:
+    def loss(self, batch_inputs: Tensor,
+             batch_data_samples: SampleList) -> dict:
         """
         Args:
             batch_inputs (Tensor): Input images of shape (N, C, H, W).
@@ -70,8 +83,7 @@ class KnowledgeDistillationSingleStageDetector(SingleStageDetector):
         with torch.no_grad():
             teacher_x = self.teacher_model.extract_feat(batch_inputs)
             out_teacher = self.teacher_model.bbox_head(teacher_x)
-        losses = self.bbox_head.forward_train(x, out_teacher,
-                                              batch_data_samples)
+        losses = self.bbox_head.loss(x, out_teacher, batch_data_samples)
         return losses
 
     def cuda(self, device: Optional[str] = None) -> nn.Module:
