@@ -29,22 +29,22 @@ mmdetection
 ├── data
 │   ├── DeepFashion
 │   │   ├── In-shop
-│   │   ├── Anno
-│   │   │   ├── segmentation
-│   │   │   |   ├── DeepFashion_segmentation_train.json
-│   │   │   |   ├── DeepFashion_segmentation_query.json
-│   │   │   |   ├── DeepFashion_segmentation_gallery.json
-│   │   │   ├── list_bbox_inshop.txt
-│   │   │   ├── list_description_inshop.json
-│   │   │   ├── list_item_inshop.txt
-│   │   │   └── list_landmarks_inshop.txt
-│   │   ├── Eval
-│   │   │   └── list_eval_partition.txt
-│   │   ├── Img
-│   │   │   ├── img
-│   │   │   │   ├──XXX.jpg
-│   │   │   ├── img_highres
-│   │   │   └── ├──XXX.jpg
+|   │   │   ├── Anno
+|   │   │   │   ├── segmentation
+|   │   │   │   |   ├── DeepFashion_segmentation_train.json
+|   │   │   │   |   ├── DeepFashion_segmentation_query.json
+|   │   │   │   |   ├── DeepFashion_segmentation_gallery.json
+|   │   │   │   ├── list_bbox_inshop.txt
+|   │   │   │   ├── list_description_inshop.json
+|   │   │   │   ├── list_item_inshop.txt
+|   │   │   │   └── list_landmarks_inshop.txt
+|   │   │   ├── Eval
+|   │   │   │   └── list_eval_partition.txt
+|   │   │   ├── Img
+|   │   │   │   ├── img
+|   │   │   │   │   ├──XXX.jpg
+|   │   │   │   ├── img_highres
+|   │   │   │   └── ├──XXX.jpg
 
 ```
 
