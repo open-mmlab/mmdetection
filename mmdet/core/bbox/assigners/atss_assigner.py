@@ -138,16 +138,15 @@ class ATSSAssigner(BaseAssigner):
         if self.alpha is None:
             # ATSSAssigner
             overlaps = self.iou_calculator(priors, gt_bboxes)
-            if ('cls_scores' in pred_instances
-                    or 'bbox_preds' in pred_instances):
+            if ('scores' in pred_instances or 'bboxes' in pred_instances):
                 warnings.warn(message)
 
         else:
             # Dynamic cost ATSSAssigner in DDOD
-            assert ('cls_scores' in pred_instances
-                    and 'bbox_preds' in pred_instances), message
-            cls_scores = pred_instances.cls_scores
-            bbox_preds = pred_instances.bbox_preds
+            assert ('scores' in pred_instances
+                    and 'bboxes' in pred_instances), message
+            cls_scores = pred_instances.scores
+            bbox_preds = pred_instances.bboxes
 
             # compute cls cost for bbox and GT
             cls_cost = torch.sigmoid(cls_scores[:, gt_labels])
