@@ -1,66 +1,70 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import List, Optional, Sequence, Tuple
+
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
-from mmcv.runner import force_fp32
+from mmengine.data import InstanceData
+from torch import Tensor
 
-from mmdet.core import (anchor_inside_flags, build_assigner, build_sampler,
-                        images_to_levels, multi_apply, reduce_mean, unmap)
+from mmdet.core import (ConfigType, InstanceList, OptConfigType,
+                        OptInstanceList, anchor_inside_flags, images_to_levels,
+                        multi_apply, reduce_mean, unmap)
 from mmdet.core.bbox import bbox_overlaps
-from ..builder import HEADS, build_loss
+from mmdet.registry import MODELS, TASK_UTILS
 from .anchor_head import AnchorHead
 
 EPS = 1e-12
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class DDODHead(AnchorHead):
-    """DDOD head decomposes conjunctions lying in most current one-stage
+    """Detection Head of `DDOD <https://arxiv.org/abs/2107.02963>`_.
+
+    DDOD head decomposes conjunctions lying in most current one-stage
     detectors via label assignment disentanglement, spatial feature
     disentanglement, and pyramid supervision disentanglement.
-
-    https://arxiv.org/abs/2107.02963
 
     Args:
         num_classes (int): Number of categories excluding the
             background category.
         in_channels (int): Number of channels in the input feature map.
-        stacked_convs (int): The number of stacked Conv. Default: 4.
-        conv_cfg (dict): Conv config of ddod head. Default: None.
-        use_dcn (bool): Use dcn, Same as ATSS when False. Default: True.
-        norm_cfg (dict): Normal config of ddod head. Default:
-            dict(type='GN', num_groups=32, requires_grad=True).
-        loss_iou (dict): Config of IoU loss. Default:
+        stacked_convs (int): The number of stacked Conv. Defaults to 4.
+        conv_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
+            convolution layer. Defaults to None.
+        use_dcn (bool): Use dcn, Same as ATSS when False. Defaults to True.
+        norm_cfg (:obj:`ConfigDict` or dict): Normal config of ddod head.
+            Defaults to dict(type='GN', num_groups=32, requires_grad=True).
+        loss_iou (:obj:`ConfigDict` or dict): Config of IoU loss. Defaults to
             dict(type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0).
     """
 
     def __init__(self,
-                 num_classes,
-                 in_channels,
-                 stacked_convs=4,
-                 conv_cfg=None,
-                 use_dcn=True,
-                 norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
-                 loss_iou=dict(
+                 num_classes: int,
+                 in_channels: int,
+                 stacked_convs: int = 4,
+                 conv_cfg: OptConfigType = None,
+                 use_dcn: bool = True,
+                 norm_cfg: ConfigType = dict(
+                     type='GN', num_groups=32, requires_grad=True),
+                 loss_iou: ConfigType = dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=True,
                      loss_weight=1.0),
-                 **kwargs):
+                 **kwargs) -> None:
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
         self.use_dcn = use_dcn
-        super(DDODHead, self).__init__(num_classes, in_channels, **kwargs)
+        super().__init__(num_classes, in_channels, **kwargs)
 
-        self.sampling = False
         if self.train_cfg:
-            self.cls_assigner = build_assigner(self.train_cfg.assigner)
-            self.reg_assigner = build_assigner(self.train_cfg.reg_assigner)
-            sampler_cfg = dict(type='PseudoSampler')
-            self.sampler = build_sampler(sampler_cfg, context=self)
-        self.loss_iou = build_loss(loss_iou)
+            self.cls_assigner = TASK_UTILS.build(self.train_cfg['assigner'])
+            self.reg_assigner = TASK_UTILS.build(
+                self.train_cfg['reg_assigner'])
+        self.loss_iou = MODELS.build(loss_iou)
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         """Initialize layers of the head."""
         self.relu = nn.ReLU(inplace=True)
         self.cls_convs = nn.ModuleList()
@@ -107,7 +111,7 @@ class DDODHead(AnchorHead):
             0. for _ in range(len(self.prior_generator.strides))
         ]
 
-    def init_weights(self):
+    def init_weights(self) -> None:
         """Initialize weights of the head."""
         for m in self.cls_convs:
             normal_init(m.conv, std=0.01)
@@ -118,28 +122,29 @@ class DDODHead(AnchorHead):
         bias_cls = bias_init_with_prob(0.01)
         normal_init(self.atss_cls, std=0.01, bias=bias_cls)
 
-    def forward(self, feats):
+    def forward(self, x: Tuple[Tensor]) -> Tuple[List[Tensor]]:
         """Forward features from the upstream network.
 
         Args:
-            feats (tuple[Tensor]): Features from the upstream network, each is
+            x (tuple[Tensor]): Features from the upstream network, each is
                 a 4D-tensor.
 
         Returns:
-            tuple: Usually a tuple of classification scores and bbox prediction
-                cls_scores (list[Tensor]): Classification scores for all scale
-                    levels, each is a 4D-tensor, the channels number is
-                    num_base_priors * num_classes.
-                bbox_preds (list[Tensor]): Box energies / deltas for all scale
-                    levels, each is a 4D-tensor, the channels number is
-                    num_base_priors * 4.
-                iou_preds (list[Tensor]): IoU scores for all scale levels,
-                    each is a 4D-tensor, the channels number is
-                    num_base_priors * 1.
-        """
-        return multi_apply(self.forward_single, feats, self.scales)
+            tuple: A tuple of classification scores, bbox predictions,
+            and iou predictions.
 
-    def forward_single(self, x, scale):
+            - cls_scores (list[Tensor]): Classification scores for all \
+            scale levels, each is a 4D-tensor, the channels number is \
+            num_base_priors * num_classes.
+            - bbox_preds (list[Tensor]): Box energies / deltas for all \
+            scale levels, each is a 4D-tensor, the channels number is \
+            num_base_priors * 4.
+            - iou_preds (list[Tensor]): IoU scores for all scale levels, \
+            each is a 4D-tensor, the channels number is num_base_priors * 1.
+        """
+        return multi_apply(self.forward_single, x, self.scales)
+
+    def forward_single(self, x: Tensor, scale: Scale) -> Sequence[Tensor]:
         """Forward feature of a single scale level.
 
         Args:
@@ -149,12 +154,13 @@ class DDODHead(AnchorHead):
 
         Returns:
             tuple:
-                - cls_score (Tensor): Cls scores for a single scale level \
-                    the channels number is num_base_priors * num_classes.
-                - bbox_pred (Tensor): Box energies / deltas for a single \
-                    scale level, the channels number is num_base_priors * 4.
-                - iou_pred (Tensor): Iou for a single scale level, the \
-                    channel number is (N, num_base_priors * 1, H, W).
+
+            - cls_score (Tensor): Cls scores for a single scale level \
+            the channels number is num_base_priors * num_classes.
+            - bbox_pred (Tensor): Box energies / deltas for a single \
+            scale level, the channels number is num_base_priors * 4.
+            - iou_pred (Tensor): Iou for a single scale level, the \
+            channel number is (N, num_base_priors * 1, H, W).
         """
         cls_feat = x
         reg_feat = x
@@ -168,8 +174,10 @@ class DDODHead(AnchorHead):
         iou_pred = self.atss_iou(reg_feat)
         return cls_score, bbox_pred, iou_pred
 
-    def loss_cls_single(self, cls_score, labels, label_weights,
-                        reweight_factor, num_total_samples):
+    def loss_cls_by_feat_single(self, cls_score: Tensor, labels: Tensor,
+                                label_weights: Tensor,
+                                reweight_factor: List[float],
+                                avg_factor: float) -> Tuple[Tensor]:
         """Compute cls loss of a single scale level.
 
         Args:
@@ -179,26 +187,33 @@ class DDODHead(AnchorHead):
                 (N, num_total_anchors).
             label_weights (Tensor): Label weights of each anchor with shape
                 (N, num_total_anchors)
-            reweight_factor (list[int]): Reweight factor for cls and reg
+            reweight_factor (List[float]): Reweight factor for cls and reg
                 loss.
-            num_total_samples (int): Number of positive samples that is
-                reduced over all GPUs.
+            avg_factor (float): Average factor that is used to average
+                the loss. When using sampling method, avg_factor is usually
+                the sum of positive and negative priors. When using
+                `PseudoSampler`, `avg_factor` is usually equal to the number
+                of positive priors.
 
         Returns:
-            tuple[Tensor]: A tuple of loss components.
+            Tuple[Tensor]: A tuple of loss components.
         """
         cls_score = cls_score.permute(0, 2, 3, 1).reshape(
             -1, self.cls_out_channels).contiguous()
         labels = labels.reshape(-1)
         label_weights = label_weights.reshape(-1)
         loss_cls = self.loss_cls(
-            cls_score, labels, label_weights, avg_factor=num_total_samples)
+            cls_score, labels, label_weights, avg_factor=avg_factor)
         return reweight_factor * loss_cls,
 
-    def loss_reg_single(self, anchors, bbox_pred, iou_pred, labels,
-                        label_weights, bbox_targets, bbox_weights,
-                        reweight_factor, num_total_samples):
-        """Compute reg loss of a single scale level.
+    def loss_reg_by_feat_single(self, anchors: Tensor, bbox_pred: Tensor,
+                                iou_pred: Tensor, labels,
+                                label_weights: Tensor, bbox_targets: Tensor,
+                                bbox_weights: Tensor,
+                                reweight_factor: List[float],
+                                avg_factor: float) -> Tuple[Tensor, Tensor]:
+        """Compute reg loss of a single scale level based on the features
+        extracted by the detection head.
 
         Args:
             anchors (Tensor): Box reference for each scale level with shape
@@ -215,12 +230,15 @@ class DDODHead(AnchorHead):
                 weight shape (N, num_total_anchors, 4).
             bbox_weights (Tensor): BBox weights of all anchors in the
                 image with shape (N, 4)
-            reweight_factor (list[int]): Reweight factor for cls and reg
+            reweight_factor (List[float]): Reweight factor for cls and reg
                 loss.
-            num_total_samples (int): Number of positive samples that is
-                reduced over all GPUs.
+            avg_factor (float): Average factor that is used to average
+                the loss. When using sampling method, avg_factor is usually
+                the sum of positive and negative priors. When using
+                `PseudoSampler`, `avg_factor` is usually equal to the number
+                of positive priors.
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            Tuple[Tensor, Tensor]: A tuple of loss components.
         """
         anchors = anchors.reshape(-1, 4)
         bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
@@ -255,24 +273,21 @@ class DDODHead(AnchorHead):
             loss_bbox = self.loss_bbox(
                 pos_decode_bbox_pred,
                 pos_decode_bbox_targets,
-                avg_factor=num_total_samples)
+                avg_factor=avg_factor)
 
             iou_targets[pos_inds] = bbox_overlaps(
                 pos_decode_bbox_pred.detach(),
                 pos_decode_bbox_targets,
                 is_aligned=True)
             loss_iou = self.loss_iou(
-                iou_pred,
-                iou_targets,
-                iou_weights,
-                avg_factor=num_total_samples)
+                iou_pred, iou_targets, iou_weights, avg_factor=avg_factor)
         else:
             loss_bbox = bbox_pred.sum() * 0
             loss_iou = iou_pred.sum() * 0
 
         return reweight_factor * loss_bbox, reweight_factor * loss_iou
 
-    def calc_reweight_factor(self, labels_list):
+    def calc_reweight_factor(self, labels_list: List[Tensor]) -> List[float]:
         """Compute reweight_factor for regression and classification loss."""
         # get pos samples for each level
         bg_class_ind = self.num_classes
@@ -291,16 +306,16 @@ class DDODHead(AnchorHead):
             reweight_factor_per_level.append(factor)
         return reweight_factor_per_level
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'iou_preds'))
-    def loss(self,
-             cls_scores,
-             bbox_preds,
-             iou_preds,
-             gt_bboxes,
-             gt_labels,
-             img_metas,
-             gt_bboxes_ignore=None):
-        """Compute losses of the head.
+    def loss_by_feat(
+            self,
+            cls_scores: List[Tensor],
+            bbox_preds: List[Tensor],
+            iou_preds: List[Tensor],
+            batch_gt_instances: InstanceList,
+            batch_img_metas: List[dict],
+            batch_gt_instances_ignore: OptInstanceList = None) -> dict:
+        """Calculate the loss based on the features extracted by the detection
+        head.
 
         Args:
             cls_scores (list[Tensor]): Box scores for each scale level
@@ -309,13 +324,15 @@ class DDODHead(AnchorHead):
                 level with shape (N, num_base_priors * 4, H, W)
             iou_preds (list[Tensor]): Score factor for all scale level,
                 each is a 4D-tensor, has shape (batch_size, 1, H, W).
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box
-            img_metas (list[dict]): Meta information of each image, e.g.,
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance.  It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            gt_bboxes_ignore (list[Tensor] | None): specify which bounding
-                boxes can be ignored when computing the loss.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], Optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -325,15 +342,14 @@ class DDODHead(AnchorHead):
 
         device = cls_scores[0].device
         anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, img_metas, device=device)
-        label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
+            featmap_sizes, batch_img_metas, device=device)
 
         # calculate common vars for cls and reg assigners at once
         targets_com = self.process_predictions_and_anchors(
-            anchor_list, valid_flag_list, cls_scores, bbox_preds, img_metas,
-            gt_bboxes_ignore)
+            anchor_list, valid_flag_list, cls_scores, bbox_preds,
+            batch_img_metas, batch_gt_instances_ignore)
         (anchor_list, valid_flag_list, num_level_anchors_list, cls_score_list,
-         bbox_pred_list, gt_bboxes_ignore_list) = targets_com
+         bbox_pred_list, batch_gt_instances_ignore) = targets_com
 
         # classification branch assigner
         cls_targets = self.get_cls_targets(
@@ -342,31 +358,26 @@ class DDODHead(AnchorHead):
             num_level_anchors_list,
             cls_score_list,
             bbox_pred_list,
-            gt_bboxes,
-            img_metas,
-            gt_bboxes_ignore_list=gt_bboxes_ignore_list,
-            gt_labels_list=gt_labels,
-            label_channels=label_channels)
-        if cls_targets is None:
-            return None
+            batch_gt_instances,
+            batch_img_metas,
+            batch_gt_instances_ignore=batch_gt_instances_ignore)
 
         (cls_anchor_list, labels_list, label_weights_list, bbox_targets_list,
-         bbox_weights_list, num_total_pos, num_total_neg) = cls_targets
+         bbox_weights_list, avg_factor) = cls_targets
 
-        num_total_samples = reduce_mean(
-            torch.tensor(num_total_pos, dtype=torch.float,
-                         device=device)).item()
-        num_total_samples = max(num_total_samples, 1.0)
+        avg_factor = reduce_mean(
+            torch.tensor(avg_factor, dtype=torch.float, device=device)).item()
+        avg_factor = max(avg_factor, 1.0)
 
         reweight_factor_per_level = self.calc_reweight_factor(labels_list)
 
         cls_losses_cls, = multi_apply(
-            self.loss_cls_single,
+            self.loss_cls_by_feat_single,
             cls_scores,
             labels_list,
             label_weights_list,
             reweight_factor_per_level,
-            num_total_samples=num_total_samples)
+            avg_factor=avg_factor)
 
         # regression branch assigner
         reg_targets = self.get_reg_targets(
@@ -375,26 +386,21 @@ class DDODHead(AnchorHead):
             num_level_anchors_list,
             cls_score_list,
             bbox_pred_list,
-            gt_bboxes,
-            img_metas,
-            gt_bboxes_ignore_list=gt_bboxes_ignore_list,
-            gt_labels_list=gt_labels,
-            label_channels=label_channels)
-        if reg_targets is None:
-            return None
+            batch_gt_instances,
+            batch_img_metas,
+            batch_gt_instances_ignore=batch_gt_instances_ignore)
 
         (reg_anchor_list, labels_list, label_weights_list, bbox_targets_list,
-         bbox_weights_list, num_total_pos, num_total_neg) = reg_targets
+         bbox_weights_list, avg_factor) = reg_targets
 
-        num_total_samples = reduce_mean(
-            torch.tensor(num_total_pos, dtype=torch.float,
-                         device=device)).item()
-        num_total_samples = max(num_total_samples, 1.0)
+        avg_factor = reduce_mean(
+            torch.tensor(avg_factor, dtype=torch.float, device=device)).item()
+        avg_factor = max(avg_factor, 1.0)
 
         reweight_factor_per_level = self.calc_reweight_factor(labels_list)
 
         reg_losses_bbox, reg_losses_iou = multi_apply(
-            self.loss_reg_single,
+            self.loss_reg_by_feat_single,
             reg_anchor_list,
             bbox_preds,
             iou_preds,
@@ -403,36 +409,43 @@ class DDODHead(AnchorHead):
             bbox_targets_list,
             bbox_weights_list,
             reweight_factor_per_level,
-            num_total_samples=num_total_samples)
+            avg_factor=avg_factor)
 
         return dict(
             loss_cls=cls_losses_cls,
             loss_bbox=reg_losses_bbox,
             loss_iou=reg_losses_iou)
 
-    def process_predictions_and_anchors(self, anchor_list, valid_flag_list,
-                                        cls_scores, bbox_preds, img_metas,
-                                        gt_bboxes_ignore_list):
+    def process_predictions_and_anchors(
+            self,
+            anchor_list: List[List[Tensor]],
+            valid_flag_list: List[List[Tensor]],
+            cls_scores: List[Tensor],
+            bbox_preds: List[Tensor],
+            batch_img_metas: List[dict],
+            batch_gt_instances_ignore: OptInstanceList = None) -> tuple:
         """Compute common vars for regression and classification targets.
 
         Args:
-            anchor_list (list[Tensor]): anchors of each image.
-            valid_flag_list (list[Tensor]): Valid flags of each image.
-            cls_scores (list[Tensor]): Classification scores for all scale
+            anchor_list (List[List[Tensor]]): anchors of each image.
+            valid_flag_list (List[List[Tensor]]): Valid flags of each image.
+            cls_scores (List[Tensor]): Classification scores for all scale
                 levels, each is a 4D-tensor, the channels number is
                 num_base_priors * num_classes.
             bbox_preds (list[Tensor]): Box energies / deltas for all scale
                 levels, each is a 4D-tensor, the channels number is
                 num_base_priors * 4.
-            img_metas (list[dict]): Meta information of each image, e.g.,
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            gt_bboxes_ignore_list (list[Tensor] | None): specify which bounding
-                boxes can be ignored when computing the loss.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], Optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
 
         Return:
             tuple[Tensor]: A tuple of common loss vars.
         """
-        num_imgs = len(img_metas)
+        num_imgs = len(batch_img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs
 
         # anchor number of multi levels
@@ -448,8 +461,8 @@ class DDODHead(AnchorHead):
             valid_flag_list_.append(torch.cat(valid_flag_list[i]))
 
         # compute targets for each image
-        if gt_bboxes_ignore_list is None:
-            gt_bboxes_ignore_list = [None for _ in range(num_imgs)]
+        if batch_gt_instances_ignore is None:
+            batch_gt_instances_ignore = [None for _ in range(num_imgs)]
 
         num_levels = len(cls_scores)
         cls_score_list = []
@@ -478,20 +491,18 @@ class DDODHead(AnchorHead):
             cls_score_list.append(cat_mlvl_cls_score)
             bbox_pred_list.append(cat_mlvl_bbox_pred)
         return (anchor_list_, valid_flag_list_, num_level_anchors_list,
-                cls_score_list, bbox_pred_list, gt_bboxes_ignore_list)
+                cls_score_list, bbox_pred_list, batch_gt_instances_ignore)
 
     def get_cls_targets(self,
-                        anchor_list,
-                        valid_flag_list,
-                        num_level_anchors_list,
-                        cls_score_list,
-                        bbox_pred_list,
-                        gt_bboxes_list,
-                        img_metas,
-                        gt_bboxes_ignore_list=None,
-                        gt_labels_list=None,
-                        label_channels=1,
-                        unmap_outputs=True):
+                        anchor_list: List[Tensor],
+                        valid_flag_list: List[Tensor],
+                        num_level_anchors_list: List[int],
+                        cls_score_list: List[Tensor],
+                        bbox_pred_list: List[Tensor],
+                        batch_gt_instances: InstanceList,
+                        batch_img_metas: List[dict],
+                        batch_gt_instances_ignore: OptInstanceList = None,
+                        unmap_outputs: bool = True) -> tuple:
         """Get cls targets for DDOD head.
 
         This method is almost the same as `AnchorHead.get_targets()`.
@@ -510,14 +521,15 @@ class DDODHead(AnchorHead):
             bbox_pred_list (list[Tensor]): Box energies / deltas for all scale
                 levels, each is a 4D-tensor, the channels number is
                 num_base_priors * 4.
-            gt_bboxes_list (list[Tensor]): Ground truth bboxes of each image.
-            img_metas (list[dict]): Meta information of each image, e.g.,
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            gt_bboxes_ignore_list (list[Tensor] | None): specify which bounding
-                boxes can be ignored when computing the loss.
-            gt_labels_list (list[Tensor]): class indices corresponding to
-                each box.
-            label_channels (int): Channel of label.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
             unmap_outputs (bool): Whether to map outputs back to the original
                 set of anchors.
 
@@ -525,26 +537,25 @@ class DDODHead(AnchorHead):
             tuple[Tensor]: A tuple of cls targets components.
         """
         (all_anchors, all_labels, all_label_weights, all_bbox_targets,
-         all_bbox_weights, pos_inds_list, neg_inds_list) = multi_apply(
-             self._get_target_single,
+         all_bbox_weights, pos_inds_list, neg_inds_list,
+         sampling_results_list) = multi_apply(
+             self._get_targets_single,
              anchor_list,
              valid_flag_list,
              cls_score_list,
              bbox_pred_list,
              num_level_anchors_list,
-             gt_bboxes_list,
-             gt_bboxes_ignore_list,
-             gt_labels_list,
-             img_metas,
-             label_channels=label_channels,
+             batch_gt_instances,
+             batch_img_metas,
+             batch_gt_instances_ignore,
              unmap_outputs=unmap_outputs,
              is_cls_assigner=True)
-        # no valid anchors
-        if any([labels is None for labels in all_labels]):
-            return None
-        # sampled anchors of all images
-        num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
-        num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
+        # Get `avg_factor` of all images, which calculate in `SamplingResult`.
+        # When using sampling method, avg_factor is usually the sum of
+        # positive and negative priors. When using `PseudoSampler`,
+        # `avg_factor` is usually equal to the number of positive priors.
+        avg_factor = sum(
+            [results.avg_factor for results in sampling_results_list])
         # split targets to a list w.r.t. multiple levels
         anchors_list = images_to_levels(all_anchors, num_level_anchors_list[0])
         labels_list = images_to_levels(all_labels, num_level_anchors_list[0])
@@ -555,21 +566,18 @@ class DDODHead(AnchorHead):
         bbox_weights_list = images_to_levels(all_bbox_weights,
                                              num_level_anchors_list[0])
         return (anchors_list, labels_list, label_weights_list,
-                bbox_targets_list, bbox_weights_list, num_total_pos,
-                num_total_neg)
+                bbox_targets_list, bbox_weights_list, avg_factor)
 
     def get_reg_targets(self,
-                        anchor_list,
-                        valid_flag_list,
-                        num_level_anchors_list,
-                        cls_score_list,
-                        bbox_pred_list,
-                        gt_bboxes_list,
-                        img_metas,
-                        gt_bboxes_ignore_list=None,
-                        gt_labels_list=None,
-                        label_channels=1,
-                        unmap_outputs=True):
+                        anchor_list: List[Tensor],
+                        valid_flag_list: List[Tensor],
+                        num_level_anchors_list: List[int],
+                        cls_score_list: List[Tensor],
+                        bbox_pred_list: List[Tensor],
+                        batch_gt_instances: InstanceList,
+                        batch_img_metas: List[dict],
+                        batch_gt_instances_ignore: OptInstanceList = None,
+                        unmap_outputs: bool = True) -> tuple:
         """Get reg targets for DDOD head.
 
         This method is almost the same as `AnchorHead.get_targets()` when
@@ -580,44 +588,49 @@ class DDODHead(AnchorHead):
         Args:
             anchor_list (list[Tensor]): anchors of each image.
             valid_flag_list (list[Tensor]): Valid flags of each image.
-            num_level_anchors (int): Number of anchors of each scale level.
-            cls_scores (list[Tensor]): Classification scores for all scale
+            num_level_anchors_list (list[Tensor]): Number of anchors of each
+                scale level of all image.
+            cls_score_list (list[Tensor]): Classification scores for all scale
                 levels, each is a 4D-tensor, the channels number is
                 num_base_priors * num_classes.
-            bbox_preds (list[Tensor]): Box energies / deltas for all scale
+            bbox_pred_list (list[Tensor]): Box energies / deltas for all scale
                 levels, each is a 4D-tensor, the channels number is
                 num_base_priors * 4.
-            gt_labels_list (list[Tensor]): class indices corresponding to
-                each box.
-            img_metas (list[dict]): Meta information of each image, e.g.,
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            gt_bboxes_ignore_list (list[Tensor] | None): specify which bounding
-                boxes can be ignored when computing the loss.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
+            unmap_outputs (bool): Whether to map outputs back to the original
+                set of anchors.
 
         Return:
             tuple[Tensor]: A tuple of reg targets components.
         """
         (all_anchors, all_labels, all_label_weights, all_bbox_targets,
-         all_bbox_weights, pos_inds_list, neg_inds_list) = multi_apply(
-             self._get_target_single,
+         all_bbox_weights, pos_inds_list, neg_inds_list,
+         sampling_results_list) = multi_apply(
+             self._get_targets_single,
              anchor_list,
              valid_flag_list,
              cls_score_list,
              bbox_pred_list,
              num_level_anchors_list,
-             gt_bboxes_list,
-             gt_bboxes_ignore_list,
-             gt_labels_list,
-             img_metas,
-             label_channels=label_channels,
+             batch_gt_instances,
+             batch_img_metas,
+             batch_gt_instances_ignore,
              unmap_outputs=unmap_outputs,
              is_cls_assigner=False)
-        # no valid anchors
-        if any([labels is None for labels in all_labels]):
-            return None
-        # sampled anchors of all images
-        num_total_pos = sum([max(inds.numel(), 1) for inds in pos_inds_list])
-        num_total_neg = sum([max(inds.numel(), 1) for inds in neg_inds_list])
+        # Get `avg_factor` of all images, which calculate in `SamplingResult`.
+        # When using sampling method, avg_factor is usually the sum of
+        # positive and negative priors. When using `PseudoSampler`,
+        # `avg_factor` is usually equal to the number of positive priors.
+        avg_factor = sum(
+            [results.avg_factor for results in sampling_results_list])
         # split targets to a list w.r.t. multiple levels
         anchors_list = images_to_levels(all_anchors, num_level_anchors_list[0])
         labels_list = images_to_levels(all_labels, num_level_anchors_list[0])
@@ -628,22 +641,19 @@ class DDODHead(AnchorHead):
         bbox_weights_list = images_to_levels(all_bbox_weights,
                                              num_level_anchors_list[0])
         return (anchors_list, labels_list, label_weights_list,
-                bbox_targets_list, bbox_weights_list, num_total_pos,
-                num_total_neg)
+                bbox_targets_list, bbox_weights_list, avg_factor)
 
-    def _get_target_single(self,
-                           flat_anchors,
-                           valid_flags,
-                           cls_scores,
-                           bbox_preds,
-                           num_level_anchors,
-                           gt_bboxes,
-                           gt_bboxes_ignore,
-                           gt_labels,
-                           img_meta,
-                           label_channels=1,
-                           unmap_outputs=True,
-                           is_cls_assigner=True):
+    def _get_targets_single(self,
+                            flat_anchors: Tensor,
+                            valid_flags: Tensor,
+                            cls_scores: Tensor,
+                            bbox_preds: Tensor,
+                            num_level_anchors: List[int],
+                            gt_instances: InstanceData,
+                            img_meta: dict,
+                            gt_instances_ignore: Optional[InstanceData] = None,
+                            unmap_outputs: bool = True,
+                            is_cls_assigner: bool = True) -> tuple:
         """Compute regression, classification targets for anchors in a single
         image.
 
@@ -658,41 +668,46 @@ class DDODHead(AnchorHead):
                 levels of the image.
             bbox_preds (Tensor): Box energies / deltas for all scale
                 levels of the image.
-            num_level_anchors (list[int]): Number of anchors of each
+            num_level_anchors (List[int]): Number of anchors of each
                 scale level.
-            gt_bboxes (Tensor): Ground truth bboxes of the image,
-                shape (num_gts, 4).
-            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
-                ignored, shape (num_ignored_gts, ).
-            gt_labels (Tensor): Ground truth labels of each box,
-                shape (num_gts, ).
-            img_meta (dict): Meta info of the image.
-            label_channels (int): Channel of label. Default: 1.
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It usually includes ``bboxes`` and ``labels``
+                attributes.
+            img_meta (dict): Meta information for current image.
+            gt_instances_ignore (:obj:`InstanceData`, optional): Instances
+                to be ignored during training. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
             unmap_outputs (bool): Whether to map outputs back to the original
-                set of anchors. Default: True.
+                set of anchors. Defaults to True.
             is_cls_assigner (bool): Classification or regression.
-                Default: True.
+                Defaults to True.
 
         Returns:
             tuple: N is the number of total anchors in the image.
-                - labels (Tensor): Labels of all anchors in the image with \
-                    shape (N, ).
-                - label_weights (Tensor): Label weights of all anchor in the \
-                    image with shape (N, ).
-                - bbox_targets (Tensor): BBox targets of all anchors in the \
-                    image with shape (N, 4).
-                - bbox_weights (Tensor): BBox weights of all anchors in the \
-                    image with shape (N, 4)
-                - pos_inds (Tensor): Indices of positive anchor with shape \
-                    (num_pos, ).
-                - neg_inds (Tensor): Indices of negative anchor with shape \
-                    (num_neg, ).
+            - anchors (Tensor): all anchors in the image with shape (N, 4).
+            - labels (Tensor): Labels of all anchors in the image with \
+            shape (N, ).
+            - label_weights (Tensor): Label weights of all anchor in the \
+            image with shape (N, ).
+            - bbox_targets (Tensor): BBox targets of all anchors in the \
+            image with shape (N, 4).
+            - bbox_weights (Tensor): BBox weights of all anchors in the \
+            image with shape (N, 4)
+            - pos_inds (Tensor): Indices of positive anchor with shape \
+            (num_pos, ).
+            - neg_inds (Tensor): Indices of negative anchor with shape \
+            (num_neg, ).
+            - sampling_result (:obj:`SamplingResult`): Sampling results.
         """
         inside_flags = anchor_inside_flags(flat_anchors, valid_flags,
                                            img_meta['img_shape'][:2],
-                                           self.train_cfg.allowed_border)
+                                           self.train_cfg['allowed_border'])
         if not inside_flags.any():
-            return (None, ) * 7
+            raise ValueError(
+                'There is no valid anchor inside the image boundary. Please '
+                'check the image size and anchor sizes, or set '
+                '``allowed_border`` to -1 to skip the condition.')
         # assign gt and sample anchors
         anchors = flat_anchors[inside_flags, :]
 
@@ -705,11 +720,18 @@ class DDODHead(AnchorHead):
 
         # decode prediction out of assigner
         bbox_preds_valid = self.bbox_coder.decode(anchors, bbox_preds_valid)
-        assign_result = assigner.assign(anchors, num_level_anchors_inside,
-                                        gt_bboxes, gt_bboxes_ignore, gt_labels,
-                                        cls_scores_valid, bbox_preds_valid)
-        sampling_result = self.sampler.sample(assign_result, anchors,
-                                              gt_bboxes)
+        pred_instances = InstanceData(
+            priors=anchors, bboxes=bbox_preds_valid, scores=cls_scores_valid)
+
+        assign_result = assigner.assign(
+            pred_instances=pred_instances,
+            num_level_priors=num_level_anchors_inside,
+            gt_instances=gt_instances,
+            gt_instances_ignore=gt_instances_ignore)
+        sampling_result = self.sampler.sample(
+            assign_result=assign_result,
+            pred_instances=pred_instances,
+            gt_instances=gt_instances)
 
         num_valid_anchors = anchors.shape[0]
         bbox_targets = torch.zeros_like(anchors)
@@ -722,25 +744,16 @@ class DDODHead(AnchorHead):
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
         if len(pos_inds) > 0:
-            if hasattr(self, 'bbox_coder'):
-                pos_bbox_targets = self.bbox_coder.encode(
-                    sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes)
-            else:
-                # used in VFNetHead
-                pos_bbox_targets = sampling_result.pos_gt_bboxes
+            pos_bbox_targets = self.bbox_coder.encode(
+                sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes)
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
-            if gt_labels is None:
-                # Only rpn gives gt_labels as None
-                # Foreground is the first class since v2.5.0
-                labels[pos_inds] = 0
-            else:
-                labels[pos_inds] = gt_labels[
-                    sampling_result.pos_assigned_gt_inds]
-            if self.train_cfg.pos_weight <= 0:
+
+            labels[pos_inds] = sampling_result.pos_gt_labels
+            if self.train_cfg['pos_weight'] <= 0:
                 label_weights[pos_inds] = 1.0
             else:
-                label_weights[pos_inds] = self.train_cfg.pos_weight
+                label_weights[pos_inds] = self.train_cfg['pos_weight']
         if len(neg_inds) > 0:
             label_weights[neg_inds] = 1.0
 
@@ -756,9 +769,10 @@ class DDODHead(AnchorHead):
             bbox_weights = unmap(bbox_weights, num_total_anchors, inside_flags)
 
         return (anchors, labels, label_weights, bbox_targets, bbox_weights,
-                pos_inds, neg_inds)
+                pos_inds, neg_inds, sampling_result)
 
-    def get_num_level_anchors_inside(self, num_level_anchors, inside_flags):
+    def get_num_level_anchors_inside(self, num_level_anchors: List[int],
+                                     inside_flags: Tensor) -> List[int]:
         """Get the anchors of each scale level inside.
 
         Args:
