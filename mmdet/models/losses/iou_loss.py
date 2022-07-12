@@ -238,7 +238,23 @@ def ciou_loss(pred, target, eps=1e-7):
 
 
 @weighted_loss
-def alphaiou_loss(pred, target, alpha=3, eps=1e-9, mode='iou'):
+def alphaiou_loss(pred, target, eps=1e-9, alpha=3, mode='iou'):
+    r"""`Implementation of paper  Alpha-IoU: A Family of Power
+    Intersection over Union Losses for Bounding Box Regression
+    <https://arxiv.org/abs/2110.13675>` _.
+
+    Code is modified from https://github.com/Jacobi93/Alpha-IoU.
+
+    Args:
+        pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
+                    shape (n, 4).
+        target (Tensor): Corredponding gt bboxes, shape (n, 4)
+        eps (float): Eps to avoid log(0).
+        alpha (int): adaptively reweighting the loss and gradient of IoU
+        mode (str): Options are "iou"(default), "giou", "diou" and "ciou"
+    Return:
+        Tensor: Loss tensor.
+    """
     # iou mode
     mode = mode.lower()
     assert mode in ('iou', 'ciou', 'giou', 'diou')
@@ -544,11 +560,25 @@ class CIoULoss(nn.Module):
 class AlphaIoULoss(nn.Module):
 
     def __init__(self,
-                 eps=1e-6,
+                 eps=1e-9,
                  reduction='mean',
                  loss_weight=1.0,
                  mode='iou',
                  alpha=3):
+        """AlphaIoULoss.
+
+        Computing the AlphaIoU loss between a set of predicted bboxes
+        and target bboxes.
+
+        Args:
+            eps (float): Eps to avoid log(0). We test serval exps and
+                        1e-9 performs better.
+            reduction (str): Options are "none", "mean" and "sum".
+            loss_weight (float): Weight of loss.
+            mode (str): the calculation method of IoU,
+                        options are "iou" (default), "giou", "diou" and "ciou".
+            alpha (int): adaptively reweighting the loss and gradient of IoU
+        """
         super(AlphaIoULoss, self).__init__()
         self.eps = eps
         self.reduction = reduction
