@@ -13,7 +13,7 @@ register_all_modules()
 class TestTwoStageBBox(TestCase):
 
     @parameterized.expand([
-        'semi/semi_base_faster_rcnn_ema.py',
+        'semi/soft_teacher_faster_rcnn_r50_fpn_coco_90k.py',
     ])
     def test_init(self, cfg_file):
         model = get_detector_cfg(cfg_file)

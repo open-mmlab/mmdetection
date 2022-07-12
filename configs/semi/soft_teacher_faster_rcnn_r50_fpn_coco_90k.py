@@ -4,7 +4,7 @@ _base_ = [
 ]
 
 model_wrapper = dict(
-    type='SemiBaseDetector',
+    type='SoftTeacher',
     detector='${model}',
     semi_train_cfg=dict(
         sup_weight=1.0,
@@ -43,6 +43,6 @@ optim_wrapper = dict(
 default_hooks = dict(checkpoint=dict(by_epoch=False, interval=10000))
 log_processor = dict(by_epoch=False)
 
-custom_hooks = [dict(type='ModelSwapHook')]
+custom_hooks = [dict(type='MeanTeacherHook')]
 
-# load_from = 'D:/GitLab/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
+load_from = 'D:/GitLab/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'

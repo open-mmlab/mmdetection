@@ -1,16 +1,33 @@
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = 'D:\\Datasets/data/coco/'
+data_root = 'data/coco/'
 file_client_args = dict(backend='disk')
 
 image_size = (200, 200)
+
+color_space = [
+    [dict(type='AutoContrast')],
+    [dict(type='Equalize')],
+    [dict(type='Invert')],
+    [dict(type='Sharpness')],
+    [dict(type='Posterize')],
+    [dict(type='Solarize')],
+    [dict(type='SolarizeAdd')],
+    [dict(type='Color')],
+    [dict(type='Contrast')],
+    [dict(type='Brightness')],
+]
+
+geometric = [[dict(type='Rotate')], [dict(type='ShearX')],
+             [dict(type='ShearY')], [dict(type='TranslateX')],
+             [dict(type='TranslateY')]]
 
 sup_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(type='Resize', scale=image_size, keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
-    dict(type='RandAugment', aug_num=1),
+    dict(type='RandAugment', aug_space=color_space, aug_num=1),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
     dict(type='MultiBranch', sup=dict(type='PackDetInputs'))
 ]
@@ -28,7 +45,8 @@ weak_pipeline = [
 strong_pipeline = [
     dict(type='Resize', scale=image_size, keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
-    dict(type='RandAugment', aug_num=2),
+    dict(type='RandAugment', aug_space=color_space, aug_num=1),
+    dict(type='RandAugment', aug_space=geometric, aug_num=1),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
     dict(
         type='PackDetInputs',
