@@ -4,7 +4,7 @@ from .cityscapes import CityscapesDataset
 from .coco import CocoDataset
 from .coco_panoptic import CocoPanopticDataset
 from .custom import CustomDataset
-from .dataset_wrappers import MultiImageMixDataset, SemiDataset
+from .dataset_wrappers import MultiImageMixDataset
 from .deepfashion import DeepFashionDataset
 from .lvis import LVISDataset, LVISV1Dataset, LVISV05Dataset
 from .openimages import OpenImagesChallengeDataset, OpenImagesDataset
@@ -22,6 +22,5 @@ __all__ = [
     'build_dataset', 'replace_ImageToTensor', 'get_loading_pipeline',
     'CocoPanopticDataset', 'MultiImageMixDataset', 'OpenImagesDataset',
     'OpenImagesChallengeDataset', 'AspectRatioBatchSampler',
-    'ClassAwareSampler', 'MultiSourceSampler', 'GroupMultiSourceSampler',
-    'SemiDataset'
+    'ClassAwareSampler', 'MultiSourceSampler', 'GroupMultiSourceSampler'
 ]

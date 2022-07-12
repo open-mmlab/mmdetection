@@ -2,12 +2,11 @@
 import collections
 import copy
 import math
-import warnings
 from collections import defaultdict
-from typing import Any, Sequence, Union
+from typing import Sequence, Union
 
 import numpy as np
-from mmengine.dataset import BaseDataset, ConcatDataset, force_full_init
+from mmengine.dataset import BaseDataset, force_full_init
 
 from mmdet.registry import DATASETS, TRANSFORMS
 
@@ -299,69 +298,3 @@ class MultiImageMixDataset:
             isinstance(skip_type_key, str) for skip_type_key in skip_type_keys
         ])
         self._skip_type_keys = skip_type_keys
-
-
-@DATASETS.register_module()
-class SemiDataset(ConcatDataset):
-    """A wrapper of multiple images mixed dataset."""
-
-    def __init__(self, sup, unsup):
-        super().__init__(datasets=[sup, unsup])
-        self.pseudo_keys = ('gt_bboxes', 'gt_bboxes_label', 'gt_ignore_flags')
-        self.id2pseudo_annos = {}
-
-    def __getitem__(self, idx):
-        if not self._fully_initialized:
-            warnings.warn('Please call `full_init` method manually to '
-                          'accelerate the speed.')
-            self.full_init()
-        dataset_idx, sample_idx = self._get_ori_dataset_idx(idx)
-
-        if not self._fully_initialized:
-            warnings.warn(
-                'Please call `full_init()` method manually to accelerate '
-                'the speed.')
-            self.full_init()
-
-        if self.datasets[dataset_idx].test_mode:
-            data = self.prepare_data(dataset_idx, sample_idx)
-            if data is None:
-                raise Exception('Test time pipline should not get `None` '
-                                'data_sample')
-            return data
-
-        for _ in range(self.datasets[dataset_idx].max_refetch + 1):
-            data = self.prepare_data(dataset_idx, sample_idx)
-            # Broken images or random augmentations may cause the returned data
-            # to be None
-            if data is None:
-                sample_idx = self._rand_another(dataset_idx)
-                continue
-            return data
-
-    def prepare_data(self, dataset_idx, sample_idx) -> Any:
-        """Get data processed by ``self.pipeline``."""
-        data_info = self.datasets[dataset_idx].get_data_info(sample_idx)
-        data_info['dataset'] = self
-        return self.datasets[dataset_idx].pipeline(data_info)
-
-    def _rand_another(self, dataset_idx) -> int:
-        """Get random index.
-
-        Returns:
-            int: Random index from 0 to ``len(self)-1``
-        """
-        return np.random.randint(0, len(self.datasets[dataset_idx]))
-
-    def update_pseudo_annos(self, image_id, pseudo_annos):
-        self.id2pseudo_annos[image_id] = pseudo_annos
-        """
-        if self.id2pseudo_annos.get(image_id, None) is None:
-            self.id2pseudo_annos[image_id] = pseudo_annos
-        else:
-            current_annos = self.id2pseudo_annos[image_id]
-            for key in self.pseudo_keys:
-                current_annos[key] += pseudo_annos[key]
-            self.id2pseudo_annos[image_id] = current_annos
-        """
-        return self.id2pseudo_annos[image_id]
