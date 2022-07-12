@@ -242,6 +242,8 @@ class SparseRoIHead(CascadeRoIHead):
             for i in range(num_imgs):
                 normalize_bbox_ccwh = bbox_xyxy_to_cxcywh(proposal_list[i] /
                                                           imgs_whwh[i])
+                # TODO bbox coordinate should be (x, y, x, y)
+                # and unnormalized
                 assign_result = self.bbox_assigner[stage].assign(
                     normalize_bbox_ccwh, cls_pred_list[i], gt_bboxes[i],
                     gt_labels[i], img_metas[i])

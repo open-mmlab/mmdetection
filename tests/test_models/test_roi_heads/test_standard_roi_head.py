@@ -4,12 +4,13 @@ from unittest import TestCase
 
 import torch
 from mmengine.config import Config
-from mmengine.data import InstanceData
 from parameterized import parameterized
 
-from mmdet.models.roi_heads import StandardRoIHead  # noqa
 from mmdet.registry import MODELS
-from mmdet.testing import demo_mm_inputs
+from mmdet.testing import demo_mm_inputs, demo_mm_proposals
+from mmdet.utils import register_all_modules
+
+register_all_modules()
 
 
 def _fake_roi_head(with_shared_head=False):
@@ -120,17 +121,6 @@ def _fake_roi_head(with_shared_head=False):
     return roi_head
 
 
-def _fake_proposals(img_metas, proposal_len):
-    """Create a fake proposal list."""
-    results = []
-    for i in range(len(img_metas)):
-        result = InstanceData(metainfo=img_metas[i])
-        proposal = torch.randn(proposal_len, 4).to(device='cuda')
-        result.bboxes = proposal
-        results.append(result)
-    return results
-
-
 class TestStandardRoIHead(TestCase):
 
     def test_init(self):
@@ -143,10 +133,10 @@ class TestStandardRoIHead(TestCase):
 
         # Mask R-CNN RoI head with shared_head
         roi_head_cfg = _fake_roi_head(with_shared_head=True)
-        rpn_head = MODELS.build(roi_head_cfg)
+        roi_head = MODELS.build(roi_head_cfg)
         self.assertTrue(roi_head.with_bbox)
         self.assertTrue(roi_head.with_mask)
-        self.assertTrue(rpn_head.with_shared_head)
+        self.assertTrue(roi_head.with_shared_head)
 
     @parameterized.expand([(False, ), (True, )])
     def test_standard_roi_head_loss(self, with_shared_head):
@@ -155,10 +145,6 @@ class TestStandardRoIHead(TestCase):
             # RoI pooling only support in GPU
             return unittest.skip('test requires GPU and torch+cuda')
         s = 256
-        img_metas = [{
-            'img_shape': (s, s, 3),
-            'scale_factor': 1,
-        }]
         roi_head_cfg = _fake_roi_head(with_shared_head=with_shared_head)
         roi_head = MODELS.build(roi_head_cfg)
         roi_head = roi_head.cuda()
@@ -176,18 +162,22 @@ class TestStandardRoIHead(TestCase):
 
         # When truth is non-empty then both cls, box, and mask loss
         # should be nonzero for random inputs
-        proposal_list = _fake_proposals(img_metas, 100)
+        image_shapes = [(3, s, s)]
         packed_inputs = demo_mm_inputs(
             batch_size=1,
-            image_shapes=[(s, s, 3)],
+            image_shapes=image_shapes,
             num_items=[1],
             num_classes=4,
             with_mask=True)
+        proposals_list = demo_mm_proposals(
+            image_shapes=image_shapes, num_proposals=100)
         batch_data_samples = []
         for i in range(len(packed_inputs)):
             batch_data_samples.append(
                 packed_inputs[i]['data_sample'].to(device='cuda'))
-        out = roi_head.loss(feats, proposal_list, batch_data_samples)
+            proposals_list[i] = proposals_list[i].to(device='cuda')
+
+        out = roi_head.loss(feats, proposals_list, batch_data_samples)
         loss_cls = out['loss_cls']
         loss_bbox = out['loss_bbox']
         loss_mask = out['loss_mask']
@@ -197,18 +187,20 @@ class TestStandardRoIHead(TestCase):
 
         # When there is no truth, the cls loss should be nonzero but
         # there should be no box and mask loss.
-        proposal_list = _fake_proposals(img_metas, 100)
         packed_inputs = demo_mm_inputs(
             batch_size=1,
-            image_shapes=[(s, s, 3)],
+            image_shapes=image_shapes,
             num_items=[0],
             num_classes=4,
             with_mask=True)
+        proposals_list = demo_mm_proposals(
+            image_shapes=image_shapes, num_proposals=100)
         batch_data_samples = []
         for i in range(len(packed_inputs)):
             batch_data_samples.append(
                 packed_inputs[i]['data_sample'].to(device='cuda'))
-        out = roi_head.loss(feats, proposal_list, batch_data_samples)
+            proposals_list[i] = proposals_list[i].to(device='cuda')
+        out = roi_head.loss(feats, proposals_list, batch_data_samples)
         empty_cls_loss = out['loss_cls']
         empty_bbox_loss = out['loss_bbox']
         empty_mask_loss = out['loss_mask']
@@ -219,4 +211,4 @@ class TestStandardRoIHead(TestCase):
             'there should be no box loss when there are no true boxes')
         self.assertEqual(
             empty_mask_loss.sum(), 0,
-            'there should be no box loss when there are no true boxes')
+            'there should be no mask loss when there are no true boxes')

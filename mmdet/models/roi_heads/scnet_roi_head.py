@@ -1,13 +1,17 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import numpy as np
+from typing import List, Optional, Tuple
+
 import torch
 import torch.nn.functional as F
+from mmengine.data import InstanceData
+from torch import Tensor
 
-from mmdet.core import (bbox2result, bbox2roi, bbox_mapping, merge_aug_bboxes,
-                        merge_aug_masks, multiclass_nms)
+from mmdet.core import bbox2roi
+from mmdet.core.utils import (ConfigType, InstanceList, OptConfigType,
+                              SampleList, SamplingResultList)
 from mmdet.registry import MODELS
-from ..builder import build_head, build_roi_extractor
 from ..utils.brick_wrappers import adaptive_avg_pool2d
+from ..utils.misc import empty_instances, unpack_gt_instances
 from .cascade_roi_head import CascadeRoIHead
 
 
@@ -25,54 +29,68 @@ class SCNetRoIHead(CascadeRoIHead):
     """
 
     def __init__(self,
-                 num_stages,
-                 stage_loss_weights,
-                 semantic_roi_extractor=None,
-                 semantic_head=None,
-                 feat_relay_head=None,
-                 glbctx_head=None,
-                 **kwargs):
-        super(SCNetRoIHead, self).__init__(num_stages, stage_loss_weights,
-                                           **kwargs)
+                 num_stages: int,
+                 stage_loss_weights: List[float],
+                 semantic_roi_extractor: OptConfigType = None,
+                 semantic_head: OptConfigType = None,
+                 feat_relay_head: OptConfigType = None,
+                 glbctx_head: OptConfigType = None,
+                 **kwargs) -> None:
+        super().__init__(
+            num_stages=num_stages,
+            stage_loss_weights=stage_loss_weights,
+            **kwargs)
         assert self.with_bbox and self.with_mask
         assert not self.with_shared_head  # shared head is not supported
 
         if semantic_head is not None:
-            self.semantic_roi_extractor = build_roi_extractor(
-                semantic_roi_extractor)
-            self.semantic_head = build_head(semantic_head)
+            self.semantic_roi_extractor = MODELS.build(semantic_roi_extractor)
+            self.semantic_head = MODELS.build(semantic_head)
 
         if feat_relay_head is not None:
-            self.feat_relay_head = build_head(feat_relay_head)
+            self.feat_relay_head = MODELS.build(feat_relay_head)
 
         if glbctx_head is not None:
-            self.glbctx_head = build_head(glbctx_head)
+            self.glbctx_head = MODELS.build(glbctx_head)
 
-    def init_mask_head(self, mask_roi_extractor, mask_head):
+    def init_mask_head(self, mask_roi_extractor: ConfigType,
+                       mask_head: ConfigType) -> None:
         """Initialize ``mask_head``"""
         if mask_roi_extractor is not None:
-            self.mask_roi_extractor = build_roi_extractor(mask_roi_extractor)
-            self.mask_head = build_head(mask_head)
+            self.mask_roi_extractor = MODELS.build(mask_roi_extractor)
+            self.mask_head = MODELS.build(mask_head)
 
+    # TODO move to base_roi_head later
     @property
-    def with_semantic(self):
+    def with_semantic(self) -> bool:
         """bool: whether the head has semantic head"""
         return hasattr(self,
                        'semantic_head') and self.semantic_head is not None
 
     @property
-    def with_feat_relay(self):
+    def with_feat_relay(self) -> bool:
         """bool: whether the head has feature relay head"""
         return (hasattr(self, 'feat_relay_head')
                 and self.feat_relay_head is not None)
 
     @property
-    def with_glbctx(self):
+    def with_glbctx(self) -> bool:
         """bool: whether the head has global context head"""
         return hasattr(self, 'glbctx_head') and self.glbctx_head is not None
 
-    def _fuse_glbctx(self, roi_feats, glbctx_feat, rois):
-        """Fuse global context feats with roi feats."""
+    def _fuse_glbctx(self, roi_feats: Tensor, glbctx_feat: Tensor,
+                     rois: Tensor) -> Tensor:
+        """Fuse global context feats with roi feats.
+
+        Args:
+            roi_feats (Tensor): RoI features.
+            glbctx_feat (Tensor): Global context feature..
+            rois (Tensor): RoIs with the shape (n, 5) where the first
+                column indicates batch id of each RoI.
+
+        Returns:
+            Tensor: Fused feature.
+        """
         assert roi_feats.size(0) == rois.size(0)
         img_inds = torch.unique(rois[:, 0].cpu(), sorted=True).long()
         fused_feats = torch.zeros_like(roi_feats)
@@ -81,10 +99,19 @@ class SCNetRoIHead(CascadeRoIHead):
             fused_feats[inds] = roi_feats[inds] + glbctx_feat[img_id]
         return fused_feats
 
-    def _slice_pos_feats(self, feats, sampling_results):
-        """Get features from pos rois."""
-        num_rois = [res.bboxes.size(0) for res in sampling_results]
-        num_pos_rois = [res.pos_bboxes.size(0) for res in sampling_results]
+    def _slice_pos_feats(self, feats: Tensor,
+                         sampling_results: SamplingResultList) -> Tensor:
+        """Get features from pos rois.
+
+        Args:
+            feats (Tensor): Input features.
+            sampling_results (list["obj:`SamplingResult`]): Sampling results.
+
+        Returns:
+            Tensor: Sliced features.
+        """
+        num_rois = [res.priors.size(0) for res in sampling_results]
+        num_pos_rois = [res.pos_priors.size(0) for res in sampling_results]
         inds = torch.zeros(sum(num_rois), dtype=torch.bool)
         start = 0
         for i in range(len(num_rois)):
@@ -95,16 +122,32 @@ class SCNetRoIHead(CascadeRoIHead):
         return sliced_feats
 
     def _bbox_forward(self,
-                      stage,
-                      x,
-                      rois,
-                      semantic_feat=None,
-                      glbctx_feat=None):
-        """Box head forward function used in both training and testing."""
+                      stage: int,
+                      x: Tuple[Tensor],
+                      rois: Tensor,
+                      semantic_feat: Optional[Tensor] = None,
+                      glbctx_feat: Optional[Tensor] = None) -> dict:
+        """Box head forward function used in both training and testing.
+
+        Args:
+            stage (int): The current stage in Cascade RoI Head.
+            x (tuple[Tensor]): List of multi-level img features.
+            rois (Tensor): RoIs with the shape (n, 5) where the first
+                column indicates batch id of each RoI.
+            semantic_feat (Tensor): Semantic feature. Defaults to None.
+            glbctx_feat (Tensor): Global context feature. Defaults to None.
+
+        Returns:
+             dict[str, Tensor]: Usually returns a dictionary with keys:
+
+                - `cls_score` (Tensor): Classification scores.
+                - `bbox_pred` (Tensor): Box energies / deltas.
+                - `bbox_feats` (Tensor): Extract bbox RoI features.
+        """
         bbox_roi_extractor = self.bbox_roi_extractor[stage]
         bbox_head = self.bbox_head[stage]
-        bbox_feats = bbox_roi_extractor(
-            x[:len(bbox_roi_extractor.featmap_strides)], rois)
+        bbox_feats = bbox_roi_extractor(x[:bbox_roi_extractor.num_inputs],
+                                        rois)
         if self.with_semantic and semantic_feat is not None:
             bbox_semantic_feat = self.semantic_roi_extractor([semantic_feat],
                                                              rois)
@@ -124,12 +167,27 @@ class SCNetRoIHead(CascadeRoIHead):
         return bbox_results
 
     def _mask_forward(self,
-                      x,
-                      rois,
-                      semantic_feat=None,
-                      glbctx_feat=None,
-                      relayed_feat=None):
-        """Mask head forward function used in both training and testing."""
+                      x: Tuple[Tensor],
+                      rois: Tensor,
+                      semantic_feat: Optional[Tensor] = None,
+                      glbctx_feat: Optional[Tensor] = None,
+                      relayed_feat: Optional[Tensor] = None) -> dict:
+        """Mask head forward function used in both training and testing.
+
+        Args:
+            stage (int): The current stage in Cascade RoI Head.
+            x (tuple[Tensor]): Tuple of multi-level img features.
+            rois (Tensor): RoIs with the shape (n, 5) where the first
+                column indicates batch id of each RoI.
+            semantic_feat (Tensor): Semantic feature. Defaults to None.
+            glbctx_feat (Tensor): Global context feature. Defaults to None.
+            relayed_feat (Tensor): Relayed feature. Defaults to None.
+
+        Returns:
+            dict: Usually returns a dictionary with keys:
+
+                - `mask_pred` (Tensor): Mask prediction.
+        """
         mask_feats = self.mask_roi_extractor(
             x[:self.mask_roi_extractor.num_inputs], rois)
         if self.with_semantic and semantic_feat is not None:
@@ -148,46 +206,80 @@ class SCNetRoIHead(CascadeRoIHead):
 
         return mask_results
 
-    def _bbox_forward_train(self,
-                            stage,
-                            x,
-                            sampling_results,
-                            gt_bboxes,
-                            gt_labels,
-                            rcnn_train_cfg,
-                            semantic_feat=None,
-                            glbctx_feat=None):
-        """Run forward function and calculate loss for box head in training."""
+    def bbox_loss(self,
+                  stage: int,
+                  x: Tuple[Tensor],
+                  sampling_results: SamplingResultList,
+                  semantic_feat: Optional[Tensor] = None,
+                  glbctx_feat: Optional[Tensor] = None) -> dict:
+        """Run forward function and calculate loss for box head in training.
+
+        Args:
+            stage (int): The current stage in Cascade RoI Head.
+            x (tuple[Tensor]): List of multi-level img features.
+            sampling_results (list["obj:`SamplingResult`]): Sampling results.
+            semantic_feat (Tensor): Semantic feature. Defaults to None.
+            glbctx_feat (Tensor): Global context feature. Defaults to None.
+
+        Returns:
+            dict: Usually returns a dictionary with keys:
+
+                - `cls_score` (Tensor): Classification scores.
+                - `bbox_pred` (Tensor): Box energies / deltas.
+                - `bbox_feats` (Tensor): Extract bbox RoI features.
+                - `loss_bbox` (dict): A dictionary of bbox loss components.
+                - `rois` (Tensor): RoIs with the shape (n, 5) where the first
+                  column indicates batch id of each RoI.
+                - `bbox_targets` (tuple):  Ground truth for proposals in a
+                  single image. Containing the following list of Tensors:
+                  (labels, label_weights, bbox_targets, bbox_weights)
+        """
         bbox_head = self.bbox_head[stage]
-        rois = bbox2roi([res.bboxes for res in sampling_results])
+        rois = bbox2roi([res.priors for res in sampling_results])
         bbox_results = self._bbox_forward(
             stage,
             x,
             rois,
             semantic_feat=semantic_feat,
             glbctx_feat=glbctx_feat)
+        bbox_results.update(rois=rois)
 
-        bbox_targets = bbox_head.get_targets(sampling_results, gt_bboxes,
-                                             gt_labels, rcnn_train_cfg)
-        loss_bbox = bbox_head.loss(bbox_results['cls_score'],
-                                   bbox_results['bbox_pred'], rois,
-                                   *bbox_targets)
+        bbox_loss_and_target = bbox_head.loss_and_target(
+            cls_score=bbox_results['cls_score'],
+            bbox_pred=bbox_results['bbox_pred'],
+            rois=rois,
+            sampling_results=sampling_results,
+            rcnn_train_cfg=self.train_cfg[stage])
 
-        bbox_results.update(
-            loss_bbox=loss_bbox, rois=rois, bbox_targets=bbox_targets)
+        bbox_results.update(bbox_loss_and_target)
         return bbox_results
 
-    def _mask_forward_train(self,
-                            x,
-                            sampling_results,
-                            gt_masks,
-                            rcnn_train_cfg,
-                            semantic_feat=None,
-                            glbctx_feat=None,
-                            relayed_feat=None):
-        """Run forward function and calculate loss for mask head in
-        training."""
-        pos_rois = bbox2roi([res.pos_bboxes for res in sampling_results])
+    def mask_loss(self,
+                  x: Tuple[Tensor],
+                  sampling_results: SamplingResultList,
+                  batch_gt_instances: InstanceList,
+                  semantic_feat: Optional[Tensor] = None,
+                  glbctx_feat: Optional[Tensor] = None,
+                  relayed_feat: Optional[Tensor] = None) -> dict:
+        """Run forward function and calculate loss for mask head in training.
+
+        Args:
+            x (tuple[Tensor]): Tuple of multi-level img features.
+            sampling_results (list["obj:`SamplingResult`]): Sampling results.
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes``, ``labels``, and
+                ``masks`` attributes.
+            semantic_feat (Tensor): Semantic feature. Defaults to None.
+            glbctx_feat (Tensor): Global context feature. Defaults to None.
+            relayed_feat (Tensor): Relayed feature. Defaults to None.
+
+        Returns:
+            dict: Usually returns a dictionary with keys:
+
+                - `mask_pred` (Tensor): Mask prediction.
+                - `loss_mask` (dict): A dictionary of mask loss components.
+        """
+        pos_rois = bbox2roi([res.pos_priors for res in sampling_results])
         mask_results = self._mask_forward(
             x,
             pos_rois,
@@ -195,107 +287,154 @@ class SCNetRoIHead(CascadeRoIHead):
             glbctx_feat=glbctx_feat,
             relayed_feat=relayed_feat)
 
-        mask_targets = self.mask_head.get_targets(sampling_results, gt_masks,
-                                                  rcnn_train_cfg)
-        pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
-        loss_mask = self.mask_head.loss(mask_results['mask_pred'],
-                                        mask_targets, pos_labels)
+        mask_loss_and_target = self.mask_head.loss_and_target(
+            mask_pred=mask_results['mask_pred'],
+            sampling_results=sampling_results,
+            batch_gt_instances=batch_gt_instances,
+            rcnn_train_cfg=self.train_cfg[-1])
+        mask_results.update(mask_loss_and_target)
 
-        mask_results = loss_mask
         return mask_results
 
-    def forward_train(self,
-                      x,
-                      img_metas,
-                      proposal_list,
-                      gt_bboxes,
-                      gt_labels,
-                      gt_bboxes_ignore=None,
-                      gt_masks=None,
-                      gt_semantic_seg=None):
-        """
+    def semantic_loss(self, x: Tuple[Tensor],
+                      batch_data_samples: SampleList) -> dict:
+        """Semantic segmentation loss.
+
         Args:
-            x (list[Tensor]): list of multi-level img features.
-            img_metas (list[dict]): list of image info dict where each dict
-                has: 'img_shape', 'scale_factor', 'flip', and may also contain
-                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
-                For details on the values of these keys see
-                `mmdet/datasets/pipelines/formatting.py:Collect`.
-            proposal_list (list[Tensors]): list of region proposals.
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box
-            gt_bboxes_ignore (None, list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss.
-            gt_masks (None, Tensor) : true segmentation masks for each box
-                used if the architecture supports a segmentation task.
-            gt_semantic_seg (None, list[Tensor]): semantic segmentation masks
-                used if the architecture supports semantic segmentation task.
+            x (Tuple[Tensor]): Tuple of multi-level img features.
+            batch_data_samples (list[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
 
         Returns:
-            dict[str, Tensor]: a dictionary of loss components
+            dict: Usually returns a dictionary with keys:
+
+                - `semantic_feat` (Tensor): Semantic feature.
+                - `loss_seg` (dict): Semantic segmentation loss.
         """
+        gt_semantic_segs = [
+            data_sample.gt_sem_seg.sem_seg
+            for data_sample in batch_data_samples
+        ]
+        gt_semantic_segs = torch.stack(gt_semantic_segs)
+        semantic_pred, semantic_feat = self.semantic_head(x)
+        loss_seg = self.semantic_head.loss(semantic_pred, gt_semantic_segs)
+
+        semantic_results = dict(loss_seg=loss_seg, semantic_feat=semantic_feat)
+
+        return semantic_results
+
+    def global_context_loss(self, x: Tuple[Tensor],
+                            batch_gt_instances: InstanceList) -> dict:
+        """Global context loss.
+
+        Args:
+            x (Tuple[Tensor]): Tuple of multi-level img features.
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance. It usually includes ``bboxes``, ``labels``, and
+                ``masks`` attributes.
+
+        Returns:
+            dict: Usually returns a dictionary with keys:
+
+                - `glbctx_feat` (Tensor): Global context feature.
+                - `loss_glbctx` (dict): Global context loss.
+        """
+        gt_labels = [
+            gt_instances.labels for gt_instances in batch_gt_instances
+        ]
+        mc_pred, glbctx_feat = self.glbctx_head(x)
+        loss_glbctx = self.glbctx_head.loss(mc_pred, gt_labels)
+        global_context_results = dict(
+            loss_glbctx=loss_glbctx, glbctx_feat=glbctx_feat)
+
+        return global_context_results
+
+    def loss(self, x: Tensor, rpn_results_list: InstanceList,
+             batch_data_samples: SampleList, **kwargs) -> dict:
+        """Perform forward propagation and loss calculation of the detection
+        roi on the features of the upstream network.
+
+        Args:
+            x (tuple[Tensor]): List of multi-level img features.
+            rpn_results_list (list[:obj:`InstanceData`]): List of region
+                proposals.
+            batch_data_samples (list[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components
+        """
+        assert len(rpn_results_list) == len(batch_data_samples)
+        outputs = unpack_gt_instances(batch_data_samples)
+        batch_gt_instances, batch_gt_instances_ignore, batch_img_metas \
+            = outputs
+
         losses = dict()
 
         # semantic segmentation branch
         if self.with_semantic:
-            semantic_pred, semantic_feat = self.semantic_head(x)
-            loss_seg = self.semantic_head.loss(semantic_pred, gt_semantic_seg)
-            losses['loss_semantic_seg'] = loss_seg
+            semantic_results = self.semantic_loss(
+                x=x, batch_data_samples=batch_data_samples)
+            losses['loss_semantic_seg'] = semantic_results['loss_seg']
+            semantic_feat = semantic_results['semantic_feat']
         else:
             semantic_feat = None
 
         # global context branch
         if self.with_glbctx:
-            mc_pred, glbctx_feat = self.glbctx_head(x)
-            loss_glbctx = self.glbctx_head.loss(mc_pred, gt_labels)
-            losses['loss_glbctx'] = loss_glbctx
+            global_context_results = self.global_context_loss(
+                x=x, batch_gt_instances=batch_gt_instances)
+            losses['loss_glbctx'] = global_context_results['loss_glbctx']
+            glbctx_feat = global_context_results['glbctx_feat']
         else:
             glbctx_feat = None
 
-        for i in range(self.num_stages):
-            self.current_stage = i
-            rcnn_train_cfg = self.train_cfg[i]
-            lw = self.stage_loss_weights[i]
+        results_list = rpn_results_list
+        num_imgs = len(batch_img_metas)
+        for stage in range(self.num_stages):
+            stage_loss_weight = self.stage_loss_weights[stage]
 
             # assign gts and sample proposals
             sampling_results = []
-            bbox_assigner = self.bbox_assigner[i]
-            bbox_sampler = self.bbox_sampler[i]
-            num_imgs = len(img_metas)
-            if gt_bboxes_ignore is None:
-                gt_bboxes_ignore = [None for _ in range(num_imgs)]
+            bbox_assigner = self.bbox_assigner[stage]
+            bbox_sampler = self.bbox_sampler[stage]
+            for i in range(num_imgs):
+                results = results_list[i]
+                # rename rpn_results.bboxes to rpn_results.priors
+                results.priors = results.pop('bboxes')
 
-            for j in range(num_imgs):
-                assign_result = bbox_assigner.assign(proposal_list[j],
-                                                     gt_bboxes[j],
-                                                     gt_bboxes_ignore[j],
-                                                     gt_labels[j])
+                assign_result = bbox_assigner.assign(
+                    results, batch_gt_instances[i],
+                    batch_gt_instances_ignore[i])
                 sampling_result = bbox_sampler.sample(
                     assign_result,
-                    proposal_list[j],
-                    gt_bboxes[j],
-                    gt_labels[j],
-                    feats=[lvl_feat[j][None] for lvl_feat in x])
+                    results,
+                    batch_gt_instances[i],
+                    feats=[lvl_feat[i][None] for lvl_feat in x])
                 sampling_results.append(sampling_result)
 
-            bbox_results = \
-                self._bbox_forward_train(
-                    i, x, sampling_results, gt_bboxes, gt_labels,
-                    rcnn_train_cfg, semantic_feat, glbctx_feat)
-            roi_labels = bbox_results['bbox_targets'][0]
+            # bbox head forward and loss
+            bbox_results = self.bbox_loss(
+                stage=stage,
+                x=x,
+                sampling_results=sampling_results,
+                semantic_feat=semantic_feat,
+                glbctx_feat=glbctx_feat)
 
             for name, value in bbox_results['loss_bbox'].items():
-                losses[f's{i}.{name}'] = (
-                    value * lw if 'loss' in name else value)
+                losses[f's{stage}.{name}'] = (
+                    value * stage_loss_weight if 'loss' in name else value)
 
-            # refine boxes
-            if i < self.num_stages - 1:
-                pos_is_gts = [res.pos_is_gt for res in sampling_results]
+            # refine bboxes
+            if stage < self.num_stages - 1:
+                bbox_head = self.bbox_head[stage]
                 with torch.no_grad():
-                    proposal_list = self.bbox_head[i].refine_bboxes(
-                        bbox_results['rois'], roi_labels,
-                        bbox_results['bbox_pred'], pos_is_gts, img_metas)
+                    results_list = bbox_head.refine_bboxes(
+                        sampling_results=sampling_results,
+                        bbox_results=bbox_results,
+                        batch_img_metas=batch_img_metas)
 
         if self.with_feat_relay:
             relayed_feat = self._slice_pos_feats(bbox_results['relayed_feat'],
@@ -304,303 +443,163 @@ class SCNetRoIHead(CascadeRoIHead):
         else:
             relayed_feat = None
 
-        mask_results = self._mask_forward_train(x, sampling_results, gt_masks,
-                                                rcnn_train_cfg, semantic_feat,
-                                                glbctx_feat, relayed_feat)
-        mask_lw = sum(self.stage_loss_weights)
-        losses['loss_mask'] = mask_lw * mask_results['loss_mask']
+        # mask head forward and loss
+        mask_results = self.mask_loss(
+            x=x,
+            sampling_results=sampling_results,
+            batch_gt_instances=batch_gt_instances,
+            semantic_feat=semantic_feat,
+            glbctx_feat=glbctx_feat,
+            relayed_feat=relayed_feat)
+        mask_stage_loss_weight = sum(self.stage_loss_weights)
+        losses['loss_mask'] = mask_stage_loss_weight * mask_results[
+            'loss_mask']['loss_mask']
 
         return losses
 
-    def simple_test(self, x, proposal_list, img_metas, rescale=False):
-        """Test without augmentation.
+    def predict(self,
+                x: Tuple[Tensor],
+                rpn_results_list: InstanceList,
+                batch_data_samples: SampleList,
+                rescale: bool = False) -> InstanceList:
+        """Perform forward propagation of the roi head and predict detection
+        results on the features of the upstream network.
 
         Args:
             x (tuple[Tensor]): Features from upstream network. Each
-                has shape (batch_size, c, h, w).
-            proposal_list (list(Tensor)): Proposals from rpn head.
-                Each has shape (num_proposals, 5), last dimension
-                5 represent (x1, y1, x2, y2, score).
-            img_metas (list[dict]): Meta information of images.
+                has shape (N, C, H, W).
+            rpn_results_list (list[:obj:`InstanceData`]): list of region
+                proposals.
+            batch_data_samples (List[:obj:`DetDataSample`]): The Data
+                Samples. It usually includes information such as
+                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
             rescale (bool): Whether to rescale the results to
-                the original image. Default: True.
+                the original image. Defaults to False.
 
         Returns:
-            list[list[np.ndarray]] or list[tuple]: When no mask branch,
-            it is bbox results of each image and classes with type
-            `list[list[np.ndarray]]`. The outer list
-            corresponds to each image. The inner list
-            corresponds to each class. When the model has mask branch,
-            it contains bbox results and mask results.
-            The outer list corresponds to each image, and first element
-            of tuple is bbox results, second element is mask results.
+            list[obj:`InstanceData`]: Detection results of each image.
+            Each item usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                    (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                    (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                    the last dimension 4 arrange as (x1, y1, x2, y2).
+                - masks (Tensor): Has a shape (num_instances, H, W).
         """
+        assert self.with_bbox, 'Bbox head must be implemented.'
+        batch_img_metas = [
+            data_samples.metainfo for data_samples in batch_data_samples
+        ]
+
         if self.with_semantic:
             _, semantic_feat = self.semantic_head(x)
         else:
             semantic_feat = None
 
         if self.with_glbctx:
-            mc_pred, glbctx_feat = self.glbctx_head(x)
+            _, glbctx_feat = self.glbctx_head(x)
         else:
             glbctx_feat = None
 
-        num_imgs = len(proposal_list)
-        img_shapes = tuple(meta['img_shape'] for meta in img_metas)
-        ori_shapes = tuple(meta['ori_shape'] for meta in img_metas)
-        scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
+        # TODO: nms_op in mmcv need be enhanced, the bbox result may get
+        #  difference when not rescale in bbox_head
 
-        # "ms" in variable names means multi-stage
-        ms_scores = []
-        rcnn_test_cfg = self.test_cfg
-
-        rois = bbox2roi(proposal_list)
-
-        if rois.shape[0] == 0:
-            # There is no proposal in the whole batch
-            bbox_results = [[
-                np.zeros((0, 5), dtype=np.float32)
-                for _ in range(self.bbox_head[-1].num_classes)
-            ]] * num_imgs
-
-            if self.with_mask:
-                mask_classes = self.mask_head.num_classes
-                segm_results = [[[] for _ in range(mask_classes)]
-                                for _ in range(num_imgs)]
-                results = list(zip(bbox_results, segm_results))
-            else:
-                results = bbox_results
-
-            return results
-
-        for i in range(self.num_stages):
-            bbox_head = self.bbox_head[i]
-            bbox_results = self._bbox_forward(
-                i,
-                x,
-                rois,
-                semantic_feat=semantic_feat,
-                glbctx_feat=glbctx_feat)
-            # split batch bbox prediction back to each image
-            cls_score = bbox_results['cls_score']
-            bbox_pred = bbox_results['bbox_pred']
-            num_proposals_per_img = tuple(len(p) for p in proposal_list)
-            rois = rois.split(num_proposals_per_img, 0)
-            cls_score = cls_score.split(num_proposals_per_img, 0)
-            bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
-            ms_scores.append(cls_score)
-
-            if i < self.num_stages - 1:
-                refine_rois_list = []
-                for j in range(num_imgs):
-                    if rois[j].shape[0] > 0:
-                        bbox_label = cls_score[j][:, :-1].argmax(dim=1)
-                        refine_rois = bbox_head.regress_by_class(
-                            rois[j], bbox_label, bbox_pred[j], img_metas[j])
-                        refine_rois_list.append(refine_rois)
-                rois = torch.cat(refine_rois_list)
-
-        # average scores of each image by stages
-        cls_score = [
-            sum([score[i] for score in ms_scores]) / float(len(ms_scores))
-            for i in range(num_imgs)
-        ]
-
-        # apply bbox post-processing to each image individually
-        det_bboxes = []
-        det_labels = []
-        for i in range(num_imgs):
-            det_bbox, det_label = self.bbox_head[-1].get_bboxes(
-                rois[i],
-                cls_score[i],
-                bbox_pred[i],
-                img_shapes[i],
-                scale_factors[i],
-                rescale=rescale,
-                cfg=rcnn_test_cfg)
-            det_bboxes.append(det_bbox)
-            det_labels.append(det_label)
-        det_bbox_results = [
-            bbox2result(det_bboxes[i], det_labels[i],
-                        self.bbox_head[-1].num_classes)
-            for i in range(num_imgs)
-        ]
+        # If it has the mask branch, the bbox branch does not need
+        # to be scaled to the original image scale, because the mask
+        # branch will scale both bbox and mask at the same time.
+        bbox_rescale = rescale if not self.with_mask else False
+        results_list = self.predict_bbox(
+            x=x,
+            semantic_feat=semantic_feat,
+            glbctx_feat=glbctx_feat,
+            batch_img_metas=batch_img_metas,
+            rpn_results_list=rpn_results_list,
+            rcnn_test_cfg=self.test_cfg,
+            rescale=bbox_rescale)
 
         if self.with_mask:
-            if all(det_bbox.shape[0] == 0 for det_bbox in det_bboxes):
-                mask_classes = self.mask_head.num_classes
-                det_segm_results = [[[] for _ in range(mask_classes)]
-                                    for _ in range(num_imgs)]
-            else:
-                if rescale and not isinstance(scale_factors[0], float):
-                    scale_factors = [
-                        torch.from_numpy(scale_factor).to(det_bboxes[0].device)
-                        for scale_factor in scale_factors
-                    ]
-                _bboxes = [
-                    det_bboxes[i][:, :4] *
-                    scale_factors[i] if rescale else det_bboxes[i]
-                    for i in range(num_imgs)
-                ]
-                mask_rois = bbox2roi(_bboxes)
+            results_list = self.predict_mask(
+                x=x,
+                semantic_heat=semantic_feat,
+                glbctx_feat=glbctx_feat,
+                batch_img_metas=batch_img_metas,
+                results_list=results_list,
+                rescale=rescale)
 
-                # get relay feature on mask_rois
-                bbox_results = self._bbox_forward(
-                    -1,
-                    x,
-                    mask_rois,
-                    semantic_feat=semantic_feat,
-                    glbctx_feat=glbctx_feat)
-                relayed_feat = bbox_results['relayed_feat']
-                relayed_feat = self.feat_relay_head(relayed_feat)
+        return results_list
 
-                mask_results = self._mask_forward(
-                    x,
-                    mask_rois,
-                    semantic_feat=semantic_feat,
-                    glbctx_feat=glbctx_feat,
-                    relayed_feat=relayed_feat)
-                mask_pred = mask_results['mask_pred']
+    def predict_mask(self,
+                     x: Tuple[Tensor],
+                     semantic_heat: Tensor,
+                     glbctx_feat: Tensor,
+                     batch_img_metas: List[dict],
+                     results_list: List[InstanceData],
+                     rescale: bool = False) -> List[InstanceData]:
+        """Perform forward propagation of the mask head and predict detection
+        results on the features of the upstream network.
 
-                # split batch mask prediction back to each image
-                num_bbox_per_img = tuple(len(_bbox) for _bbox in _bboxes)
-                mask_preds = mask_pred.split(num_bbox_per_img, 0)
+        Args:
+            x (tuple[Tensor]): Feature maps of all scale level.
+            semantic_feat (Tensor): Semantic feature.
+            glbctx_feat (Tensor): Global context feature.
+            batch_img_metas (list[dict]): List of image information.
+            results_list (list[:obj:`InstanceData`]): Detection results of
+                each image.
+            rescale (bool): If True, return boxes in original image space.
+                Defaults to False.
 
-                # apply mask post-processing to each image individually
-                det_segm_results = []
-                for i in range(num_imgs):
-                    if det_bboxes[i].shape[0] == 0:
-                        det_segm_results.append(
-                            [[] for _ in range(self.mask_head.num_classes)])
-                    else:
-                        segm_result = self.mask_head.get_seg_masks(
-                            mask_preds[i], _bboxes[i], det_labels[i],
-                            self.test_cfg, ori_shapes[i], scale_factors[i],
-                            rescale)
-                        det_segm_results.append(segm_result)
+        Returns:
+            list[:obj:`InstanceData`]: Detection results of each image
+            after the post process.
+            Each item usually contains following keys.
 
-        # return results
-        if self.with_mask:
-            return list(zip(det_bbox_results, det_segm_results))
-        else:
-            return det_bbox_results
+                - scores (Tensor): Classification scores, has a shape
+                  (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                  (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                  the last dimension 4 arrange as (x1, y1, x2, y2).
+                - masks (Tensor): Has a shape (num_instances, H, W).
+        """
+        bboxes = [res.bboxes for res in results_list]
+        mask_rois = bbox2roi(bboxes)
+        if mask_rois.shape[0] == 0:
+            results_list = empty_instances(
+                batch_img_metas=batch_img_metas,
+                device=mask_rois.device,
+                task_type='mask',
+                instance_results=results_list,
+                mask_thr_binary=self.test_cfg.mask_thr_binary)
+            return results_list
 
-    def aug_test(self, img_feats, proposal_list, img_metas, rescale=False):
-        if self.with_semantic:
-            semantic_feats = [
-                self.semantic_head(feat)[1] for feat in img_feats
-            ]
-        else:
-            semantic_feats = [None] * len(img_metas)
+        bboxes_results = self._bbox_forward(
+            stage=-1,
+            x=x,
+            rois=mask_rois,
+            semantic_feat=semantic_heat,
+            glbctx_feat=glbctx_feat)
+        relayed_feat = bboxes_results['relayed_feat']
+        relayed_feat = self.feat_relay_head(relayed_feat)
 
-        if self.with_glbctx:
-            glbctx_feats = [self.glbctx_head(feat)[1] for feat in img_feats]
-        else:
-            glbctx_feats = [None] * len(img_metas)
+        mask_results = self._mask_forward(
+            x=x,
+            rois=mask_rois,
+            semantic_feat=semantic_heat,
+            glbctx_feat=glbctx_feat,
+            relayed_feat=relayed_feat)
+        mask_pred = mask_results['mask_pred']
 
-        rcnn_test_cfg = self.test_cfg
-        aug_bboxes = []
-        aug_scores = []
-        for x, img_meta, semantic_feat, glbctx_feat in zip(
-                img_feats, img_metas, semantic_feats, glbctx_feats):
-            # only one image in the batch
-            img_shape = img_meta[0]['img_shape']
-            scale_factor = img_meta[0]['scale_factor']
-            flip = img_meta[0]['flip']
+        # split batch mask prediction back to each image
+        num_bbox_per_img = tuple(len(_bbox) for _bbox in bboxes)
+        mask_preds = mask_pred.split(num_bbox_per_img, 0)
 
-            proposals = bbox_mapping(proposal_list[0][:, :4], img_shape,
-                                     scale_factor, flip)
-            # "ms" in variable names means multi-stage
-            ms_scores = []
+        results_list = self.mask_head.predict_by_feat(
+            mask_preds=mask_preds,
+            results_list=results_list,
+            batch_img_metas=batch_img_metas,
+            rcnn_test_cfg=self.test_cfg,
+            rescale=rescale)
 
-            rois = bbox2roi([proposals])
-
-            if rois.shape[0] == 0:
-                # There is no proposal in the single image
-                aug_bboxes.append(rois.new_zeros(0, 4))
-                aug_scores.append(rois.new_zeros(0, 1))
-                continue
-
-            for i in range(self.num_stages):
-                bbox_head = self.bbox_head[i]
-                bbox_results = self._bbox_forward(
-                    i,
-                    x,
-                    rois,
-                    semantic_feat=semantic_feat,
-                    glbctx_feat=glbctx_feat)
-                ms_scores.append(bbox_results['cls_score'])
-                if i < self.num_stages - 1:
-                    bbox_label = bbox_results['cls_score'].argmax(dim=1)
-                    rois = bbox_head.regress_by_class(
-                        rois, bbox_label, bbox_results['bbox_pred'],
-                        img_meta[0])
-
-            cls_score = sum(ms_scores) / float(len(ms_scores))
-            bboxes, scores = self.bbox_head[-1].get_bboxes(
-                rois,
-                cls_score,
-                bbox_results['bbox_pred'],
-                img_shape,
-                scale_factor,
-                rescale=False,
-                cfg=None)
-            aug_bboxes.append(bboxes)
-            aug_scores.append(scores)
-
-        # after merging, bboxes will be rescaled to the original image size
-        merged_bboxes, merged_scores = merge_aug_bboxes(
-            aug_bboxes, aug_scores, img_metas, rcnn_test_cfg)
-        det_bboxes, det_labels = multiclass_nms(merged_bboxes, merged_scores,
-                                                rcnn_test_cfg.score_thr,
-                                                rcnn_test_cfg.nms,
-                                                rcnn_test_cfg.max_per_img)
-
-        det_bbox_results = bbox2result(det_bboxes, det_labels,
-                                       self.bbox_head[-1].num_classes)
-
-        if self.with_mask:
-            if det_bboxes.shape[0] == 0:
-                det_segm_results = [[]
-                                    for _ in range(self.mask_head.num_classes)]
-            else:
-                aug_masks = []
-                for x, img_meta, semantic_feat, glbctx_feat in zip(
-                        img_feats, img_metas, semantic_feats, glbctx_feats):
-                    img_shape = img_meta[0]['img_shape']
-                    scale_factor = img_meta[0]['scale_factor']
-                    flip = img_meta[0]['flip']
-                    _bboxes = bbox_mapping(det_bboxes[:, :4], img_shape,
-                                           scale_factor, flip)
-                    mask_rois = bbox2roi([_bboxes])
-                    # get relay feature on mask_rois
-                    bbox_results = self._bbox_forward(
-                        -1,
-                        x,
-                        mask_rois,
-                        semantic_feat=semantic_feat,
-                        glbctx_feat=glbctx_feat)
-                    relayed_feat = bbox_results['relayed_feat']
-                    relayed_feat = self.feat_relay_head(relayed_feat)
-                    mask_results = self._mask_forward(
-                        x,
-                        mask_rois,
-                        semantic_feat=semantic_feat,
-                        glbctx_feat=glbctx_feat,
-                        relayed_feat=relayed_feat)
-                    mask_pred = mask_results['mask_pred']
-                    aug_masks.append(mask_pred.sigmoid().cpu().numpy())
-                merged_masks = merge_aug_masks(aug_masks, img_metas,
-                                               self.test_cfg)
-                ori_shape = img_metas[0][0]['ori_shape']
-                det_segm_results = self.mask_head.get_seg_masks(
-                    merged_masks,
-                    det_bboxes,
-                    det_labels,
-                    rcnn_test_cfg,
-                    ori_shape,
-                    scale_factor=1.0,
-                    rescale=False)
-            return [(det_bbox_results, det_segm_results)]
-        else:
-            return [det_bbox_results]
+        return results_list

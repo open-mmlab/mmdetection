@@ -111,10 +111,15 @@ class CocoDataset(BaseDataset):
         data_info = {}
 
         img_path = osp.join(self.data_prefix['img'], img_info['file_name'])
-        seg_map_path = img_info['file_name'].replace('jpg', 'png')
+        if self.data_prefix.get('seg', None):
+            seg_map_path = osp.join(
+                self.data_prefix['seg'],
+                img_info['file_name'].replace('jpg', 'png'))
+        else:
+            seg_map_path = None
         data_info['img_path'] = img_path
         data_info['img_id'] = img_info['img_id']
-        data_info['seg_path'] = seg_map_path
+        data_info['seg_map_path'] = seg_map_path
         data_info['height'] = img_info['height']
         data_info['width'] = img_info['width']
 
@@ -158,7 +163,7 @@ class CocoDataset(BaseDataset):
             List[int]: All categories in the image of specified index.
         """
 
-        instances = self.data_list[idx]['instances']
+        instances = self.get_data_info(idx)['instances']
         return [instance['bbox_label'] for instance in instances]
 
     def filter_data(self) -> List[dict]:

@@ -75,11 +75,11 @@ class TestDeformableDETRHead(TestCase):
             train_cfg=dict(
                 assigner=dict(
                     type='HungarianAssigner',
-                    cls_cost=dict(type='FocalLossCost', weight=2.0),
-                    reg_cost=dict(
-                        type='BBoxL1Cost', weight=5.0, box_format='xywh'),
-                    iou_cost=dict(type='IoUCost', iou_mode='giou',
-                                  weight=2.0))),
+                    match_costs=[
+                        dict(type='FocalLossCost', weight=2.0),
+                        dict(type='BBoxL1Cost', weight=5.0, box_format='xywh'),
+                        dict(type='IoUCost', iou_mode='giou', weight=2.0)
+                    ])),
             test_cfg=dict(max_per_img=100))
 
         deformable_detr_head = DeformableDETRHead(**config)

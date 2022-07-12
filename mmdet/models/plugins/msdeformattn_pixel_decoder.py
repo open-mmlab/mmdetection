@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import List, Tuple, Union
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -7,8 +9,10 @@ from mmcv.cnn import (PLUGIN_LAYERS, Conv2d, ConvModule, caffe2_xavier_init,
 from mmcv.cnn.bricks.transformer import (build_positional_encoding,
                                          build_transformer_layer_sequence)
 from mmcv.runner import BaseModule, ModuleList
+from torch import Tensor
 
 from mmdet.core.anchor import MlvlPointGenerator
+from mmdet.core.utils.typing import ConfigType, OptMultiConfig
 from mmdet.models.utils.transformer import MultiScaleDeformableAttention
 
 
@@ -24,28 +28,30 @@ class MSDeformAttnPixelDecoder(BaseModule):
         feat_channels (int): Number of channels for feature.
         out_channels (int): Number of channels for output.
         num_outs (int): Number of output scales.
-        norm_cfg (:obj:`mmcv.ConfigDict` | dict): Config for normalization.
+        norm_cfg (:obj:`ConfigDict` or dict): Config for normalization.
             Defaults to dict(type='GN', num_groups=32).
-        act_cfg (:obj:`mmcv.ConfigDict` | dict): Config for activation.
+        act_cfg (:obj:`ConfigDict` or dict): Config for activation.
             Defaults to dict(type='ReLU').
-        encoder (:obj:`mmcv.ConfigDict` | dict): Config for transformer
+        encoder (:obj:`ConfigDict` or dict): Config for transformer
             encoder. Defaults to `DetrTransformerEncoder`.
-        positional_encoding (:obj:`mmcv.ConfigDict` | dict): Config for
+        positional_encoding (:obj:`ConfigDict` or dict): Config for
             transformer encoder position encoding. Defaults to
             dict(type='SinePositionalEncoding', num_feats=128,
             normalize=True).
-        init_cfg (:obj:`mmcv.ConfigDict` | dict): Initialization config dict.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict], optional): Initialization config dict. Defaults to None.
     """
 
     def __init__(self,
-                 in_channels=[256, 512, 1024, 2048],
-                 strides=[4, 8, 16, 32],
-                 feat_channels=256,
-                 out_channels=256,
-                 num_outs=3,
-                 norm_cfg=dict(type='GN', num_groups=32),
-                 act_cfg=dict(type='ReLU'),
-                 encoder=dict(
+                 in_channels: Union[List[int],
+                                    Tuple[int]] = [256, 512, 1024, 2048],
+                 strides: Union[List[int], Tuple[int]] = [4, 8, 16, 32],
+                 feat_channels: int = 256,
+                 out_channels: int = 256,
+                 num_outs: int = 3,
+                 norm_cfg: ConfigType = dict(type='GN', num_groups=32),
+                 act_cfg: ConfigType = dict(type='ReLU'),
+                 encoder: ConfigType = dict(
                      type='DetrTransformerEncoder',
                      num_layers=6,
                      transformerlayers=dict(
@@ -65,11 +71,11 @@ class MSDeformAttnPixelDecoder(BaseModule):
                          ffn_dropout=0.0,
                          operation_order=('self_attn', 'norm', 'ffn', 'norm')),
                      init_cfg=None),
-                 positional_encoding=dict(
+                 positional_encoding: ConfigType = dict(
                      type='SinePositionalEncoding',
                      num_feats=128,
                      normalize=True),
-                 init_cfg=None):
+                 init_cfg: OptMultiConfig = None) -> None:
         super().__init__(init_cfg=init_cfg)
         self.strides = strides
         self.num_input_levels = len(in_channels)
@@ -132,7 +138,7 @@ class MSDeformAttnPixelDecoder(BaseModule):
         self.num_outs = num_outs
         self.point_generator = MlvlPointGenerator(strides)
 
-    def init_weights(self):
+    def init_weights(self) -> None:
         """Initialize weights."""
         for i in range(0, self.num_encoder_levels):
             xavier_init(
@@ -158,7 +164,7 @@ class MSDeformAttnPixelDecoder(BaseModule):
                 if isinstance(attn, MultiScaleDeformableAttention):
                     attn.init_weights()
 
-    def forward(self, feats):
+    def forward(self, feats: List[Tensor]) -> Tuple[Tensor, Tensor]:
         """
         Args:
             feats (list[Tensor]): Feature maps of each level. Each has
@@ -167,9 +173,9 @@ class MSDeformAttnPixelDecoder(BaseModule):
         Returns:
             tuple: A tuple containing the following:
 
-            - mask_feature (Tensor): shape (batch_size, c, h, w).
-            - multi_scale_features (list[Tensor]): Multi scale \
-                    features, each in shape (batch_size, c, h, w).
+                - mask_feature (Tensor): shape (batch_size, c, h, w).
+                - multi_scale_features (list[Tensor]): Multi scale \
+                        features, each in shape (batch_size, c, h, w).
         """
         # generate padding mask for each level, for each image
         batch_size = feats[0].shape[0]

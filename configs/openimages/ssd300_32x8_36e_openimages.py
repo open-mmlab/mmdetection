@@ -9,10 +9,12 @@ model = dict(
 # dataset settings
 dataset_type = 'OpenImagesDataset'
 data_root = 'data/OpenImages/'
-img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[1, 1, 1], to_rgb=True)
+input_size = 300
 train_pipeline = [
-    dict(type='LoadImageFromFile', to_float32=True),
-    dict(type='LoadAnnotations', with_bbox=True, normed_bbox=True),
+    dict(
+        type='LoadImageFromFile',
+        file_client_args={{_base_.file_client_args}}),
+    dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PhotoMetricDistortion',
         brightness_delta=32,
@@ -21,61 +23,66 @@ train_pipeline = [
         hue_delta=18),
     dict(
         type='Expand',
-        mean=img_norm_cfg['mean'],
-        to_rgb=img_norm_cfg['to_rgb'],
+        mean={{_base_.model.data_preprocessor.mean}},
+        to_rgb={{_base_.model.data_preprocessor.bgr_to_rgb}},
         ratio_range=(1, 4)),
     dict(
         type='MinIoURandomCrop',
         min_ious=(0.1, 0.3, 0.5, 0.7, 0.9),
         min_crop_size=0.3),
-    dict(type='Resize', img_scale=(300, 300), keep_ratio=False),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
+    dict(type='Resize', scale=(input_size, input_size), keep_ratio=False),
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PackDetInputs')
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile'),
+    dict(type='Resize', scale=(input_size, input_size), keep_ratio=False),
+    # avoid bboxes being resized
+    dict(type='LoadAnnotations', with_bbox=True),
     dict(
-        type='MultiScaleFlipAug',
-        img_scale=(300, 300),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=False),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
-        ])
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor', 'instances'))
 ]
-data = dict(
-    samples_per_gpu=8,  # using 32 GPUS while training.
-    workers_per_gpu=0,  # workers_per_gpu > 0 may occur out of memory
-    train=dict(
+
+train_dataloader = dict(
+    batch_size=8,  # using 32 GPUS while training. total batch size is 32 x 8
+    batch_sampler=None,
+    dataset=dict(
         _delete_=True,
         type='RepeatDataset',
-        times=3,
+        times=3,  # repeat 3 times, total epochs are 12 x 3
         dataset=dict(
             type=dataset_type,
-            ann_file=data_root +
-            'annotations/oidv6-train-annotations-bbox.csv',
-            img_prefix=data_root + 'OpenImages/train/',
-            label_file=data_root +
-            'annotations/class-descriptions-boxable.csv',
-            hierarchy_file=data_root +
-            'annotations/bbox_labels_600_hierarchy.json',
-            pipeline=train_pipeline)),
-    val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
+            data_root=data_root,
+            ann_file='annotations/oidv6-train-annotations-bbox.csv',
+            data_prefix=dict(img='OpenImages/train/'),
+            label_file='annotations/class-descriptions-boxable.csv',
+            hierarchy_file='annotations/bbox_labels_600_hierarchy.json',
+            meta_file='annotations/train-image-metas.pkl',
+            pipeline=train_pipeline)))
+val_dataloader = dict(batch_size=8, dataset=dict(pipeline=test_pipeline))
+test_dataloader = dict(batch_size=8, dataset=dict(pipeline=test_pipeline))
+
 # optimizer
-optimizer = dict(type='SGD', lr=0.04, momentum=0.9, weight_decay=5e-4)
-optimizer_config = dict()
-# learning policy
-lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=20000,
-    warmup_ratio=0.001,
-    step=[8, 11])
+optim_wrapper = dict(
+    optimizer=dict(type='SGD', lr=0.04, momentum=0.9, weight_decay=5e-4))
+# learning rate
+param_scheduler = [
+    dict(
+        type='LinearLR',
+        start_factor=0.001,
+        by_epoch=False,
+        begin=0,
+        end=20000),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=12,
+        by_epoch=True,
+        milestones=[8, 11],
+        gamma=0.1)
+]
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.

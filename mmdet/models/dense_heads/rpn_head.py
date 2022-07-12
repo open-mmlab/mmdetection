@@ -11,34 +11,35 @@ from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core.utils import InstanceList, OptInstanceList, OptMultiConfig
+from mmdet.core.utils import InstanceList, MultiConfig, OptInstanceList
 from mmdet.registry import MODELS
 from .anchor_head import AnchorHead
 
 
 @MODELS.register_module()
 class RPNHead(AnchorHead):
-    """RPN head.
+    """Implementation of RPN head.
 
     Args:
         in_channels (int): Number of channels in the input feature map.
         num_classes (int): Number of categories excluding the background
             category. Defaults to 1.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+        init_cfg (:obj:`ConfigDict` or list[:obj:`ConfigDict`] or dict or \
+            list[dict]): Initialization config dict.
         num_convs (int): Number of convolution layers in the head.
-        Defaults to 1.
+            Defaults to 1.
     """  # noqa: W605
 
     def __init__(self,
                  in_channels: int,
                  num_classes: int = 1,
-                 init_cfg: OptMultiConfig = dict(
+                 init_cfg: MultiConfig = dict(
                      type='Normal', layer='Conv2d', std=0.01),
                  num_convs: int = 1,
                  **kwargs) -> None:
         self.num_convs = num_convs
         assert num_classes == 1
-        super(RPNHead, self).__init__(
+        super().__init__(
             num_classes=num_classes,
             in_channels=in_channels,
             init_cfg=init_cfg,
@@ -87,7 +88,7 @@ class RPNHead(AnchorHead):
                     level, the channels number is num_base_priors * 4.
         """
         x = self.rpn_conv(x)
-        x = F.relu(x, inplace=True)
+        x = F.relu(x)
         rpn_cls_score = self.rpn_cls(x)
         rpn_bbox_pred = self.rpn_reg(x)
         return rpn_cls_score, rpn_bbox_pred

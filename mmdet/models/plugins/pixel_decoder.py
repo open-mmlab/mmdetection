@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import List, Tuple, Union
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -6,6 +8,9 @@ from mmcv.cnn import PLUGIN_LAYERS, Conv2d, ConvModule, caffe2_xavier_init
 from mmcv.cnn.bricks.transformer import (build_positional_encoding,
                                          build_transformer_layer_sequence)
 from mmcv.runner import BaseModule, ModuleList
+from torch import Tensor
+
+from mmdet.core.utils.typing import ConfigType, OptMultiConfig
 
 
 @PLUGIN_LAYERS.register_module()
@@ -17,27 +22,27 @@ class PixelDecoder(BaseModule):
             input feature maps.
         feat_channels (int): Number channels for feature.
         out_channels (int): Number channels for output.
-        norm_cfg (:obj:`mmcv.ConfigDict` | dict): Config for normalization.
+        norm_cfg (:obj:`ConfigDict` or dict): Config for normalization.
             Defaults to dict(type='GN', num_groups=32).
-        act_cfg (:obj:`mmcv.ConfigDict` | dict): Config for activation.
+        act_cfg (:obj:`ConfigDict` or dict): Config for activation.
             Defaults to dict(type='ReLU').
-        encoder (:obj:`mmcv.ConfigDict` | dict): Config for transorformer
+        encoder (:obj:`ConfigDict` or dict): Config for transorformer
             encoder.Defaults to None.
-        positional_encoding (:obj:`mmcv.ConfigDict` | dict): Config for
+        positional_encoding (:obj:`ConfigDict` or dict): Config for
             transformer encoder position encoding. Defaults to
             dict(type='SinePositionalEncoding', num_feats=128,
             normalize=True).
-        init_cfg (:obj:`mmcv.ConfigDict` | dict):  Initialization config dict.
-            Default: None
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict], optional): Initialization config dict. Defaults to None.
     """
 
     def __init__(self,
-                 in_channels,
-                 feat_channels,
-                 out_channels,
-                 norm_cfg=dict(type='GN', num_groups=32),
-                 act_cfg=dict(type='ReLU'),
-                 init_cfg=None):
+                 in_channels: Union[List[int], Tuple[int]],
+                 feat_channels: int,
+                 out_channels: int,
+                 norm_cfg: ConfigType = dict(type='GN', num_groups=32),
+                 act_cfg: ConfigType = dict(type='ReLU'),
+                 init_cfg: OptMultiConfig = None) -> None:
         super().__init__(init_cfg=init_cfg)
         self.in_channels = in_channels
         self.num_inputs = len(in_channels)
@@ -76,7 +81,7 @@ class PixelDecoder(BaseModule):
         self.mask_feature = Conv2d(
             feat_channels, out_channels, kernel_size=3, stride=1, padding=1)
 
-    def init_weights(self):
+    def init_weights(self) -> None:
         """Initialize weights."""
         for i in range(0, self.num_inputs - 2):
             caffe2_xavier_init(self.lateral_convs[i].conv, bias=0)
@@ -85,16 +90,19 @@ class PixelDecoder(BaseModule):
         caffe2_xavier_init(self.mask_feature, bias=0)
         caffe2_xavier_init(self.last_feat_conv, bias=0)
 
-    def forward(self, feats, img_metas):
+    def forward(self, feats: List[Tensor],
+                batch_img_metas: List[dict]) -> Tuple[Tensor, Tensor]:
         """
         Args:
             feats (list[Tensor]): Feature maps of each level. Each has
                 shape of (batch_size, c, h, w).
-            img_metas (list[dict]): List of image information. Pass in
-                for creating more accurate padding mask. Not used here.
+            batch_img_metas (list[dict]): List of image information.
+                Pass in for creating more accurate padding mask. Not
+                used here.
 
         Returns:
-            tuple: a tuple containing the following:
+            tuple[Tensor, Tensor]: a tuple containing the following:
+
                 - mask_feature (Tensor): Shape (batch_size, c, h, w).
                 - memory (Tensor): Output of last stage of backbone.\
                         Shape (batch_size, c, h, w).
@@ -121,38 +129,38 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
             input feature maps.
         feat_channels (int): Number channels for feature.
         out_channels (int): Number channels for output.
-        norm_cfg (:obj:`mmcv.ConfigDict` | dict): Config for normalization.
+        norm_cfg (:obj:`ConfigDict` or dict): Config for normalization.
             Defaults to dict(type='GN', num_groups=32).
-        act_cfg (:obj:`mmcv.ConfigDict` | dict): Config for activation.
+        act_cfg (:obj:`ConfigDict` or dict): Config for activation.
             Defaults to dict(type='ReLU').
-        encoder (:obj:`mmcv.ConfigDict` | dict): Config for transorformer
-            encoder.Defaults to None.
-        positional_encoding (:obj:`mmcv.ConfigDict` | dict): Config for
+        encoder (:obj:`ConfigDict` or dict): Config for transorformer
+            encoder. Defaults to None.
+        positional_encoding (:obj:`ConfigDict` or dict): Config for
             transformer encoder position encoding. Defaults to
             dict(type='SinePositionalEncoding', num_feats=128,
             normalize=True).
-        init_cfg (:obj:`mmcv.ConfigDict` | dict):  Initialization config dict.
-            Default: None
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict], optional): Initialization config dict. Defaults to None.
     """
 
     def __init__(self,
-                 in_channels,
-                 feat_channels,
-                 out_channels,
-                 norm_cfg=dict(type='GN', num_groups=32),
-                 act_cfg=dict(type='ReLU'),
-                 encoder=None,
-                 positional_encoding=dict(
+                 in_channels: Union[List[int], Tuple[int]],
+                 feat_channels: int,
+                 out_channels: int,
+                 norm_cfg: ConfigType = dict(type='GN', num_groups=32),
+                 act_cfg: ConfigType = dict(type='ReLU'),
+                 encoder: ConfigType = None,
+                 positional_encoding: ConfigType = dict(
                      type='SinePositionalEncoding',
                      num_feats=128,
                      normalize=True),
-                 init_cfg=None):
-        super(TransformerEncoderPixelDecoder, self).__init__(
-            in_channels,
-            feat_channels,
-            out_channels,
-            norm_cfg,
-            act_cfg,
+                 init_cfg: OptMultiConfig = None) -> None:
+        super().__init__(
+            in_channels=in_channels,
+            feat_channels=feat_channels,
+            out_channels=out_channels,
+            norm_cfg=norm_cfg,
+            act_cfg=act_cfg,
             init_cfg=init_cfg)
         self.last_feat_conv = None
 
@@ -175,7 +183,7 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
             norm_cfg=norm_cfg,
             act_cfg=act_cfg)
 
-    def init_weights(self):
+    def init_weights(self) -> None:
         """Initialize weights."""
         for i in range(0, self.num_inputs - 2):
             caffe2_xavier_init(self.lateral_convs[i].conv, bias=0)
@@ -189,26 +197,28 @@ class TransformerEncoderPixelDecoder(PixelDecoder):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
 
-    def forward(self, feats, img_metas):
+    def forward(self, feats: List[Tensor],
+                batch_img_metas: List[dict]) -> Tuple[Tensor, Tensor]:
         """
         Args:
             feats (list[Tensor]): Feature maps of each level. Each has
                 shape of (batch_size, c, h, w).
-            img_metas (list[dict]): List of image information. Pass in
+            batch_img_metas (list[dict]): List of image information. Pass in
                 for creating more accurate padding mask.
 
         Returns:
             tuple: a tuple containing the following:
+
                 - mask_feature (Tensor): shape (batch_size, c, h, w).
                 - memory (Tensor): shape (batch_size, c, h, w).
         """
         feat_last = feats[-1]
         bs, c, h, w = feat_last.shape
-        input_img_h, input_img_w = img_metas[0]['batch_input_shape']
+        input_img_h, input_img_w = batch_img_metas[0]['batch_input_shape']
         padding_mask = feat_last.new_ones((bs, input_img_h, input_img_w),
                                           dtype=torch.float32)
         for i in range(bs):
-            img_h, img_w, _ = img_metas[i]['img_shape']
+            img_h, img_w = batch_img_metas[i]['img_shape']
             padding_mask[i, :img_h, :img_w] = 0
         padding_mask = F.interpolate(
             padding_mask.unsqueeze(1),

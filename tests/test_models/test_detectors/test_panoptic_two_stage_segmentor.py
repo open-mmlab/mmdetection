@@ -9,10 +9,11 @@ from mmdet.models import build_detector
 from mmdet.testing._utils import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
 
-register_all_modules()
-
 
 class TestTwoStagePanopticSegmentor(unittest.TestCase):
+
+    def setUp(self):
+        register_all_modules()
 
     def _create_model_cfg(self):
         cfg_file = 'panoptic_fpn/panoptic_fpn_r50_fpn_1x_coco.py'
@@ -95,37 +96,3 @@ class TestTwoStagePanopticSegmentor(unittest.TestCase):
 
         out = detector.forward(batch_inputs, data_samples, mode='tensor')
         self.assertIsInstance(out, tuple)
-
-    @parameterized.expand([('cpu', ), ('cuda', )])
-    def test_predict_mask(self, device):
-        model_cfg = self._create_model_cfg()
-        detector = build_detector(model_cfg)
-        if device == 'cuda' and not torch.cuda.is_available():
-            return unittest.skip('test requires GPU and torch+cuda')
-        detector = detector.to(device)
-
-        packed_inputs = demo_mm_inputs(
-            2, [[3, 128, 128], [3, 125, 130]],
-            sem_seg_output_strides=1,
-            with_mask=True,
-            with_semantic=True)
-        batch_inputs, batch_data_samples = detector.data_preprocessor(
-            packed_inputs, False)
-        batch_img_metas = [
-            data_sample.metainfo for data_sample in batch_data_samples
-        ]
-        det_bboxes = [
-            data_sample.gt_instances.bboxes
-            for data_sample in batch_data_samples
-        ]
-        det_labels = [
-            data_sample.gt_instances.labels
-            for data_sample in batch_data_samples
-        ]
-        x = detector.extract_feat(batch_inputs)
-        mask_results = detector._predict_mask(
-            x, batch_img_metas, det_bboxes, det_labels, rescale=True)
-        self.assertIsInstance(mask_results, dict)
-        mask_results = detector._predict_mask(
-            x, batch_img_metas, det_bboxes, det_labels, rescale=False)
-        self.assertIsInstance(mask_results, dict)

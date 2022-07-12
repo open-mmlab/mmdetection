@@ -52,10 +52,5 @@ custom_keys.update({
     for stage_id in range(len(depths) - 1)
 })
 # optimizer
-optimizer = dict(
-    type='AdamW',
-    lr=0.0001,
-    weight_decay=0.05,
-    eps=1e-8,
-    betas=(0.9, 0.999),
+optim_wrapper = dict(
     paramwise_cfg=dict(custom_keys=custom_keys, norm_decay_mult=0.0))

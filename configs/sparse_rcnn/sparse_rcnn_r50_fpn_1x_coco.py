@@ -78,6 +78,7 @@ model = dict(
             dict(
                 assigner=dict(
                     type='HungarianAssigner',
+                    # TODO update
                     cls_cost=dict(type='FocalLossCost', weight=2.0),
                     reg_cost=dict(type='BBoxL1Cost', weight=5.0),
                     iou_cost=dict(type='IoUCost', iou_mode='giou',

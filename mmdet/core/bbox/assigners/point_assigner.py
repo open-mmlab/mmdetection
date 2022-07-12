@@ -1,5 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Optional
+
 import torch
+from mmengine.data import InstanceData
 
 from mmdet.registry import TASK_UTILS
 from .assign_result import AssignResult
@@ -17,11 +20,15 @@ class PointAssigner(BaseAssigner):
     - positive integer: positive sample, index (1-based) of assigned gt
     """
 
-    def __init__(self, scale=4, pos_num=3):
+    def __init__(self, scale: int = 4, pos_num: int = 3) -> None:
         self.scale = scale
         self.pos_num = pos_num
 
-    def assign(self, points, gt_bboxes, gt_bboxes_ignore=None, gt_labels=None):
+    def assign(self,
+               pred_instances: InstanceData,
+               gt_instances: InstanceData,
+               gt_instances_ignore: Optional[InstanceData] = None,
+               **kwargs) -> AssignResult:
         """Assign gt to points.
 
         This method assign a gt bbox to every points set, each points set
@@ -37,17 +44,31 @@ class PointAssigner(BaseAssigner):
                 other gt bboxes
 
         Args:
-            points (Tensor): points to be assigned, shape(n, 3) while last
-                dimension stands for (x, y, stride).
-            gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
-            gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
-                labelled as `ignored`, e.g., crowd boxes in COCO.
-                NOTE: currently unused.
-            gt_labels (Tensor, optional): Label of gt_bboxes, shape (k, ).
+            pred_instances (:obj:`InstanceData`): Instances of model
+                predictions. It includes ``priors``, and the priors can
+                be anchors or points, or the bboxes predicted by the
+                previous stage, has shape (n, 4). The bboxes predicted by
+                the current model or stage will be named ``bboxes``,
+                ``labels``, and ``scores``, the same as the ``InstanceData``
+                in other places.
 
+
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It usually includes ``bboxes``, with shape (k, 4),
+                and ``labels``, with shape (k, ).
+            gt_instances_ignore (:obj:`InstanceData`, optional): Instances
+                to be ignored during training. It includes ``bboxes``
+                attribute data that is ignored during training and testing.
+                Defaults to None.
         Returns:
             :obj:`AssignResult`: The assign result.
         """
+        gt_bboxes = gt_instances.bboxes
+        gt_labels = gt_instances.labels
+        # points to be assigned, shape(n, 3) while last
+        # dimension stands for (x, y, stride).
+        points = pred_instances.priors
+
         num_points = points.shape[0]
         num_gts = gt_bboxes.shape[0]
 
@@ -56,14 +77,14 @@ class PointAssigner(BaseAssigner):
             assigned_gt_inds = points.new_full((num_points, ),
                                                0,
                                                dtype=torch.long)
-            if gt_labels is None:
-                assigned_labels = None
-            else:
-                assigned_labels = points.new_full((num_points, ),
-                                                  -1,
-                                                  dtype=torch.long)
+            assigned_labels = points.new_full((num_points, ),
+                                              -1,
+                                              dtype=torch.long)
             return AssignResult(
-                num_gts, assigned_gt_inds, None, labels=assigned_labels)
+                num_gts=num_gts,
+                gt_inds=assigned_gt_inds,
+                max_overlaps=None,
+                labels=assigned_labels)
 
         points_xy = points[:, :2]
         points_stride = points[:, 2]
@@ -120,15 +141,15 @@ class PointAssigner(BaseAssigner):
             assigned_gt_dist[min_dist_points_index] = min_dist[
                 less_than_recorded_index]
 
-        if gt_labels is not None:
-            assigned_labels = assigned_gt_inds.new_full((num_points, ), -1)
-            pos_inds = torch.nonzero(
-                assigned_gt_inds > 0, as_tuple=False).squeeze()
-            if pos_inds.numel() > 0:
-                assigned_labels[pos_inds] = gt_labels[
-                    assigned_gt_inds[pos_inds] - 1]
-        else:
-            assigned_labels = None
+        assigned_labels = assigned_gt_inds.new_full((num_points, ), -1)
+        pos_inds = torch.nonzero(
+            assigned_gt_inds > 0, as_tuple=False).squeeze()
+        if pos_inds.numel() > 0:
+            assigned_labels[pos_inds] = gt_labels[assigned_gt_inds[pos_inds] -
+                                                  1]
 
         return AssignResult(
-            num_gts, assigned_gt_inds, None, labels=assigned_labels)
+            num_gts=num_gts,
+            gt_inds=assigned_gt_inds,
+            max_overlaps=None,
+            labels=assigned_labels)

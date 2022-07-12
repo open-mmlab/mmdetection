@@ -1,53 +1,82 @@
 # dataset settings
 dataset_type = 'DeepFashionDataset'
 data_root = 'data/DeepFashion/In-shop/'
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+
+# file_client_args = dict(
+#     backend='petrel',
+#     path_mapping=dict({
+#         './data/': 's3://openmmlab/datasets/detection/',
+#         'data/': 's3://openmmlab/datasets/detection/'
+#     }))
+file_client_args = dict(backend='disk')
+
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
-    dict(type='Resize', img_scale=(750, 1101), keep_ratio=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks']),
+    dict(type='Resize', scale=(750, 1101), keep_ratio=True),
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='Resize', scale=(750, 1101), keep_ratio=True),
     dict(
-        type='MultiScaleFlipAug',
-        img_scale=(750, 1101),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
-        ])
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
 ]
-data = dict(
-    imgs_per_gpu=2,
-    workers_per_gpu=1,
-    train=dict(
+train_dataloader = dict(
+    batch_size=2,
+    num_workers=2,
+    persistent_workers=True,
+    sampler=dict(type='DefaultSampler', shuffle=True),
+    batch_sampler=dict(type='AspectRatioBatchSampler'),
+    dataset=dict(
+        type='RepeatDataset',
+        times=2,
+        dataset=dict(
+            type=dataset_type,
+            data_root=data_root,
+            ann_file='Anno/segmentation/DeepFashion_segmentation_train.json',
+            data_prefix=dict(img='Img/'),
+            filter_cfg=dict(filter_empty_gt=True, min_size=32),
+            pipeline=train_pipeline)))
+val_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    persistent_workers=True,
+    drop_last=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/DeepFashion_segmentation_query.json',
-        img_prefix=data_root + 'Img/',
-        pipeline=train_pipeline,
-        data_root=data_root),
-    val=dict(
+        data_root=data_root,
+        ann_file='Anno/segmentation/DeepFashion_segmentation_query.json',
+        data_prefix=dict(img='Img/'),
+        test_mode=True,
+        pipeline=test_pipeline))
+test_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    persistent_workers=True,
+    drop_last=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/DeepFashion_segmentation_query.json',
-        img_prefix=data_root + 'Img/',
-        pipeline=test_pipeline,
-        data_root=data_root),
-    test=dict(
-        type=dataset_type,
-        ann_file=data_root +
-        'annotations/DeepFashion_segmentation_gallery.json',
-        img_prefix=data_root + 'Img/',
-        pipeline=test_pipeline,
-        data_root=data_root))
-evaluation = dict(interval=5, metric=['bbox', 'segm'])
+        data_root=data_root,
+        ann_file='Anno/segmentation/DeepFashion_segmentation_gallery.json',
+        data_prefix=dict(img='Img/'),
+        test_mode=True,
+        pipeline=test_pipeline))
+
+val_evaluator = dict(
+    type='CocoMetric',
+    ann_file=data_root +
+    'Anno/segmentation/DeepFashion_segmentation_query.json',
+    metric=['bbox', 'segm'],
+    format_only=False)
+test_evaluator = dict(
+    type='CocoMetric',
+    ann_file=data_root +
+    'Anno/segmentation/DeepFashion_segmentation_gallery.json',
+    metric=['bbox', 'segm'],
+    format_only=False)

@@ -279,31 +279,47 @@ class RandomFlip(MMCV_RandomFlip):
 
 
 @TRANSFORMS.register_module()
-class RandomShift:
+class RandomShift(BaseTransform):
     """Shift the image and box given shift pixels and probability.
 
+    Required Keys:
+
+    - img
+    - gt_bboxes (np.float32)
+    - gt_bboxes_labels (np.int64)
+    - gt_ignore_flags (np.bool) (optional)
+
+    Modified Keys:
+
+    - img
+    - gt_bboxes
+    - gt_bboxes_labels
+    - gt_ignore_flags (np.bool) (optional)
+
     Args:
-        shift_ratio (float): Probability of shifts. Default 0.5.
-        max_shift_px (int): The max pixels for shifting. Default 32.
+        prob (float): Probability of shifts. Defaults to 0.5.
+        max_shift_px (int): The max pixels for shifting. Defaults to 32.
         filter_thr_px (int): The width and height threshold for filtering.
             The bbox and the rest of the targets below the width and
-            height threshold will be filtered. Default 1.
+            height threshold will be filtered. Defaults to 1.
     """
 
-    def __init__(self, shift_ratio=0.5, max_shift_px=32, filter_thr_px=1):
-        assert 0 <= shift_ratio <= 1
+    def __init__(self,
+                 prob: float = 0.5,
+                 max_shift_px: int = 32,
+                 filter_thr_px: int = 1) -> None:
+        assert 0 <= prob <= 1
         assert max_shift_px >= 0
-        self.shift_ratio = shift_ratio
+        self.prob = prob
         self.max_shift_px = max_shift_px
         self.filter_thr_px = int(filter_thr_px)
-        # The key correspondence from bboxes to labels.
-        self.bbox2label = {
-            'gt_bboxes': 'gt_labels',
-            'gt_bboxes_ignore': 'gt_labels_ignore'
-        }
 
-    def __call__(self, results):
-        """Call function to random shift images, bounding boxes.
+    @cache_randomness
+    def _random_prob(self) -> float:
+        return random.uniform(0, 1)
+
+    def transform(self, results: dict) -> dict:
+        """Transform function to random shift images, bounding boxes.
 
         Args:
             results (dict): Result dict from loading pipeline.
@@ -311,7 +327,7 @@ class RandomShift:
         Returns:
             dict: Shift results.
         """
-        if random.random() < self.shift_ratio:
+        if self._random_prob() < self.prob:
             img_shape = results['img'].shape[:2]
 
             random_shift_x = random.randint(-self.max_shift_px,
@@ -324,47 +340,49 @@ class RandomShift:
             ori_y = max(0, -random_shift_y)
 
             # TODO: support mask and semantic segmentation maps.
-            for key in results.get('bbox_fields', []):
-                bboxes = results[key].copy()
-                bboxes[..., 0::2] += random_shift_x
-                bboxes[..., 1::2] += random_shift_y
+            bboxes = results['gt_bboxes'].copy()
+            bboxes[..., 0::2] += random_shift_x
+            bboxes[..., 1::2] += random_shift_y
 
-                # clip border
-                bboxes[..., 0::2] = np.clip(bboxes[..., 0::2], 0, img_shape[1])
-                bboxes[..., 1::2] = np.clip(bboxes[..., 1::2], 0, img_shape[0])
+            # clip border
+            bboxes[..., 0::2] = np.clip(bboxes[..., 0::2], 0, img_shape[1])
+            bboxes[..., 1::2] = np.clip(bboxes[..., 1::2], 0, img_shape[0])
 
-                # remove invalid bboxes
-                bbox_w = bboxes[..., 2] - bboxes[..., 0]
-                bbox_h = bboxes[..., 3] - bboxes[..., 1]
-                valid_inds = (bbox_w > self.filter_thr_px) & (
-                    bbox_h > self.filter_thr_px)
-                # If the shift does not contain any gt-bbox area, skip this
-                # image.
-                if key == 'gt_bboxes' and not valid_inds.any():
-                    return results
-                bboxes = bboxes[valid_inds]
-                results[key] = bboxes
+            # remove invalid bboxes
+            bbox_w = bboxes[..., 2] - bboxes[..., 0]
+            bbox_h = bboxes[..., 3] - bboxes[..., 1]
+            valid_inds = (bbox_w > self.filter_thr_px) & (
+                bbox_h > self.filter_thr_px)
+            # If the shift does not contain any gt-bbox area, skip this
+            # image.
+            if not valid_inds.any():
+                return results
+            bboxes = bboxes[valid_inds]
+            results['gt_bboxes'] = bboxes
+            results['gt_bboxes_labels'] = results['gt_bboxes_labels'][
+                valid_inds]
 
-                # label fields. e.g. gt_labels and gt_labels_ignore
-                label_key = self.bbox2label.get(key)
-                if label_key in results:
-                    results[label_key] = results[label_key][valid_inds]
+            if results.get('gt_ignore_flags', None) is not None:
+                results['gt_ignore_flags'] = \
+                    results['gt_ignore_flags'][valid_inds]
 
-            for key in results.get('img_fields', ['img']):
-                img = results[key]
-                new_img = np.zeros_like(img)
-                img_h, img_w = img.shape[:2]
-                new_h = img_h - np.abs(random_shift_y)
-                new_w = img_w - np.abs(random_shift_x)
-                new_img[new_y:new_y + new_h, new_x:new_x + new_w] \
-                    = img[ori_y:ori_y + new_h, ori_x:ori_x + new_w]
-                results[key] = new_img
+            # shift img
+            img = results['img']
+            new_img = np.zeros_like(img)
+            img_h, img_w = img.shape[:2]
+            new_h = img_h - np.abs(random_shift_y)
+            new_w = img_w - np.abs(random_shift_x)
+            new_img[new_y:new_y + new_h, new_x:new_x + new_w] \
+                = img[ori_y:ori_y + new_h, ori_x:ori_x + new_w]
+            results['img'] = new_img
 
         return results
 
     def __repr__(self):
         repr_str = self.__class__.__name__
-        repr_str += f'(max_shift_px={self.max_shift_px}, '
+        repr_str += f'(prob={self.prob}, '
+        repr_str += f'max_shift_px={self.max_shift_px}, '
+        repr_str += f'filter_thr_px={self.filter_thr_px})'
         return repr_str
 
 

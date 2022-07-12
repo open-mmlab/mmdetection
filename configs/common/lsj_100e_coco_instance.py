@@ -16,7 +16,11 @@ file_client_args = dict(backend='disk')
 train_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
-    dict(type='RandomResize', scale=image_size, ratio_range=(0.1, 2.0)),
+    dict(
+        type='RandomResize',
+        scale=image_size,
+        ratio_range=(0.1, 2.0),
+        keep_ratio=True),
     dict(
         type='RandomCrop',
         crop_type='absolute_range',
@@ -42,7 +46,6 @@ train_dataloader = dict(
     num_workers=2,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
-    batch_sampler=dict(type='AspectRatioBatchSampler'),
     dataset=dict(
         type='RepeatDataset',
         times=4,  # simply change this from 2 to 16 for 50e - 400e training.
@@ -75,7 +78,10 @@ val_evaluator = dict(
     format_only=False)
 test_evaluator = val_evaluator
 
-train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=25, val_interval=5)
+max_epochs = 25
+
+train_cfg = dict(
+    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=5)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 
@@ -91,8 +97,16 @@ param_scheduler = [
     dict(
         type='MultiStepLR',
         begin=0,
-        end=12,
+        end=max_epochs,
         by_epoch=True,
         milestones=[22, 24],
         gamma=0.1)
 ]
+
+# only keep latest 2 checkpoints
+default_hooks = dict(checkpoint=dict(max_keep_ckpts=2))
+
+# NOTE: `auto_scale_lr` is for automatically scaling LR,
+# USER SHOULD NOT CHANGE ITS VALUES.
+# base_batch_size = (32 GPUs) x (2 samples per GPU)
+auto_scale_lr = dict(base_batch_size=64)

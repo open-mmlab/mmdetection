@@ -54,35 +54,34 @@ class DETRHead(AnchorFreeHead):
 
     _version = 2
 
-    def __init__(self,
-                 num_classes: int,
-                 in_channels: int,
-                 num_query: int = 100,
-                 num_reg_fcs: int = 2,
-                 transformer: OptConfigType = None,
-                 sync_cls_avg_factor: bool = False,
-                 positional_encoding: ConfigType = dict(
-                     type='SinePositionalEncoding',
-                     num_feats=128,
-                     normalize=True),
-                 loss_cls: ConfigType = dict(
-                     type='CrossEntropyLoss',
-                     bg_cls_weight=0.1,
-                     use_sigmoid=False,
-                     loss_weight=1.0,
-                     class_weight=1.0),
-                 loss_bbox: ConfigType = dict(type='L1Loss', loss_weight=5.0),
-                 loss_iou: ConfigType = dict(type='GIoULoss', loss_weight=2.0),
-                 train_cfg: ConfigType = dict(
-                     assigner=dict(
-                         type='HungarianAssigner',
-                         cls_cost=dict(type='ClassificationCost', weight=1.),
-                         reg_cost=dict(type='BBoxL1Cost', weight=5.0),
-                         iou_cost=dict(
-                             type='IoUCost', iou_mode='giou', weight=2.0))),
-                 test_cfg: ConfigType = dict(max_per_img=100),
-                 init_cfg: OptMultiConfig = None,
-                 **kwargs) -> None:
+    def __init__(
+            self,
+            num_classes: int,
+            in_channels: int,
+            num_query: int = 100,
+            num_reg_fcs: int = 2,
+            transformer: OptConfigType = None,
+            sync_cls_avg_factor: bool = False,
+            positional_encoding: ConfigType = dict(
+                type='SinePositionalEncoding', num_feats=128, normalize=True),
+            loss_cls: ConfigType = dict(
+                type='CrossEntropyLoss',
+                bg_cls_weight=0.1,
+                use_sigmoid=False,
+                loss_weight=1.0,
+                class_weight=1.0),
+            loss_bbox: ConfigType = dict(type='L1Loss', loss_weight=5.0),
+            loss_iou: ConfigType = dict(type='GIoULoss', loss_weight=2.0),
+            train_cfg: ConfigType = dict(
+                assigner=dict(
+                    type='HungarianAssigner',
+                    match_costs=[
+                        dict(type='ClassificationCost', weight=1.),
+                        dict(type='BBoxL1Cost', weight=5.0, box_format='xywh'),
+                        dict(type='IoUCost', iou_mode='giou', weight=2.0)
+                    ])),
+            test_cfg: ConfigType = dict(max_per_img=100),
+            init_cfg: OptMultiConfig = None) -> None:
         # NOTE here use `AnchorFreeHead` instead of `TransformerHead`,
         # since it brings inconvenience when the initialization of
         # `AnchorFreeHead` is called.
@@ -112,15 +111,6 @@ class DETRHead(AnchorFreeHead):
             assert 'assigner' in train_cfg, 'assigner should be provided '\
                 'when train_cfg is set.'
             assigner = train_cfg['assigner']
-            assert loss_cls['loss_weight'] == assigner['cls_cost']['weight'], \
-                'The classification weight for loss and matcher should be' \
-                'exactly the same.'
-            assert loss_bbox['loss_weight'] == assigner['reg_cost'][
-                'weight'], 'The regression L1 weight for loss and matcher ' \
-                'should be exactly the same.'
-            assert loss_iou['loss_weight'] == assigner['iou_cost']['weight'], \
-                'The regression iou weight for loss and matcher should be' \
-                'exactly the same.'
             self.assigner = TASK_UTILS.build(assigner)
             if train_cfg.get('sampler', None) is not None:
                 raise RuntimeError('DETR donot build sampler.')
@@ -496,10 +486,13 @@ class DETRHead(AnchorFreeHead):
         """
 
         num_bboxes = bbox_pred.size(0)
+        bbox_pred = bbox_cxcywh_to_xyxy(bbox_pred)
         pred_instances = InstanceData(scores=cls_score, bboxes=bbox_pred)
         # assigner and sampler
-        assign_result = self.assigner.assign(pred_instances, gt_instances,
-                                             None, img_meta)
+        assign_result = self.assigner.assign(
+            pred_instances=pred_instances,
+            gt_instances=gt_instances,
+            img_meta=img_meta)
 
         gt_bboxes = gt_instances.bboxes
         gt_labels = gt_instances.labels
@@ -603,7 +596,7 @@ class DETRHead(AnchorFreeHead):
     def predict(self,
                 x: Tuple[Tensor],
                 batch_data_samples: SampleList,
-                rescale: bool = False) -> InstanceList:
+                rescale: bool = True) -> InstanceList:
         """Perform forward propagation of the detection head and predict
         detection results on the features of the upstream network. Over-write
         because img_metas are needed as inputs for bbox_head.
@@ -615,7 +608,7 @@ class DETRHead(AnchorFreeHead):
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
             rescale (bool, optional): Whether to rescale the results.
-                Defaults to False.
+                Defaults to True.
 
         Returns:
             list[obj:`InstanceData`]: Detection results of each image
@@ -635,7 +628,7 @@ class DETRHead(AnchorFreeHead):
                         all_cls_scores_list: List[Tensor],
                         all_bbox_preds_list: List[Tensor],
                         batch_img_metas: List[dict],
-                        rescale: bool = False,
+                        rescale: bool = True,
                         **kwargs) -> InstanceList:
         """Transform network outputs for a batch into bbox predictions.
 
@@ -649,7 +642,7 @@ class DETRHead(AnchorFreeHead):
                 [nb_dec, bs, num_query, 4].
             batch_img_metas (list[dict]): Meta information of each image.
             rescale (bool, optional): If True, return boxes in original
-                image space. Default False.
+                image space. Defaults to True.
 
         Returns:
             list[:obj:`InstanceData`]: Object detection results of each image
@@ -681,7 +674,7 @@ class DETRHead(AnchorFreeHead):
                                 cls_score: Tensor,
                                 bbox_pred: Tensor,
                                 img_meta: dict,
-                                rescale: bool = False,
+                                rescale: bool = True,
                                 **kwargs) -> InstanceData:
         """Transform outputs from the last decoder layer into bbox predictions
         for each image.
@@ -694,7 +687,7 @@ class DETRHead(AnchorFreeHead):
                 shape [num_query, 4].
             img_meta (dict): Image meta info.
             rescale (bool): If True, return boxes in original image
-                space. Default False.
+                space. Default True.
 
         Returns:
             :obj:`InstanceData`: Detection results of each image

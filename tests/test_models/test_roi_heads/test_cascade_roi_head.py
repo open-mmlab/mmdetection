@@ -3,33 +3,11 @@ import unittest
 from unittest import TestCase
 
 import torch
-from mmengine.data import InstanceData
 from parameterized import parameterized
 
 from mmdet.models.roi_heads import StandardRoIHead  # noqa
 from mmdet.registry import MODELS
-from mmdet.testing import demo_mm_inputs, get_detector_cfg
-
-
-def _fake_roi_head(cfg_file):
-    """Set a fake roi head config."""
-    model = get_detector_cfg(cfg_file)
-    roi_head = model.roi_head
-    rcnn_train_cfg = model.train_cfg.rcnn if model.train_cfg is not None \
-        else None
-    roi_head.update(train_cfg=rcnn_train_cfg)
-    return roi_head
-
-
-def _fake_proposals(img_metas, proposal_len):
-    """Create a fake proposal list."""
-    results = []
-    for i in range(len(img_metas)):
-        result = InstanceData(metainfo=img_metas[i])
-        proposal = torch.randn(proposal_len, 4).to(device='cuda')
-        result.bboxes = proposal
-        results.append(result)
-    return results
+from mmdet.testing import demo_mm_inputs, demo_mm_proposals, get_roi_head_cfg
 
 
 class TestCascadeRoIHead(TestCase):
@@ -39,7 +17,7 @@ class TestCascadeRoIHead(TestCase):
     def test_init(self, cfg_file):
         """Test init standard RoI head."""
         # Normal Cascade Mask R-CNN RoI head
-        roi_head_cfg = _fake_roi_head(cfg_file)
+        roi_head_cfg = get_roi_head_cfg(cfg_file)
         roi_head = MODELS.build(roi_head_cfg)
         assert roi_head.with_bbox
         assert roi_head.with_mask
@@ -56,7 +34,7 @@ class TestCascadeRoIHead(TestCase):
             'img_shape': (s, s, 3),
             'scale_factor': 1,
         }]
-        roi_head_cfg = _fake_roi_head(cfg_file)
+        roi_head_cfg = get_roi_head_cfg(cfg_file)
         roi_head = MODELS.build(roi_head_cfg)
         roi_head = roi_head.cuda()
         feats = []
@@ -68,10 +46,11 @@ class TestCascadeRoIHead(TestCase):
 
         # When truth is non-empty then both cls, box, and mask loss
         # should be nonzero for random inputs
-        proposal_list = _fake_proposals(img_metas, 100)
+        img_shape_list = [(3, s, s) for _ in img_metas]
+        proposal_list = demo_mm_proposals(img_shape_list, 100, device='cuda')
         packed_inputs = demo_mm_inputs(
             batch_size=1,
-            image_shapes=[(s, s, 3)],
+            image_shapes=[(3, s, s)],
             num_items=[1],
             num_classes=4,
             with_mask=True)
@@ -87,10 +66,10 @@ class TestCascadeRoIHead(TestCase):
 
         # When there is no truth, the cls loss should be nonzero but
         # there should be no box and mask loss.
-        proposal_list = _fake_proposals(img_metas, 100)
+        proposal_list = demo_mm_proposals(img_shape_list, 100, device='cuda')
         packed_inputs = demo_mm_inputs(
             batch_size=1,
-            image_shapes=[(s, s, 3)],
+            image_shapes=[(3, s, s)],
             num_items=[0],
             num_classes=4,
             with_mask=True)

@@ -55,6 +55,7 @@ class SamplingResult(util_mixins.NiceRepr):
         self.neg_inds = neg_inds
         self.num_pos = max(pos_inds.numel(), 1)
         self.num_neg = max(neg_inds.numel(), 1)
+        self.avg_factor_with_neg = avg_factor_with_neg
         self.avg_factor = self.num_pos + self.num_neg \
             if avg_factor_with_neg else self.num_pos
         self.pos_priors = priors[pos_inds]

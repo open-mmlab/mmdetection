@@ -407,7 +407,7 @@ class ATSSHead(AnchorHead):
     def _get_targets_single(self,
                             flat_anchors: Tensor,
                             valid_flags: Tensor,
-                            num_level_anchors: Tensor,
+                            num_level_anchors: List[int],
                             gt_instances: InstanceData,
                             img_meta: dict,
                             gt_instances_ignore: Optional[InstanceData] = None,
@@ -421,7 +421,8 @@ class ATSSHead(AnchorHead):
             valid_flags (Tensor): Multi level valid flags of the image,
                 which are concatenated into a single tensor of
                     shape (num_anchors,).
-            num_level_anchors (Tensor): Number of anchors of each scale level.
+            num_level_anchors (List[int]): Number of anchors of each scale
+                level.
             gt_instances (:obj:`InstanceData`): Ground truth of instance
                 annotations. It usually includes ``bboxes`` and ``labels``
                 attributes.

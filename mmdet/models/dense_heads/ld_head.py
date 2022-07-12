@@ -1,10 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import torch
-from mmcv.runner import force_fp32
+from typing import List, Tuple
 
-from mmdet.core import bbox_overlaps, multi_apply, reduce_mean
+import torch
+from torch import Tensor
+
+from mmdet.core import (ConfigType, InstanceList, OptInstanceList, SampleList,
+                        bbox_overlaps, multi_apply, reduce_mean)
 from mmdet.registry import MODELS
-from ..builder import build_loss
+from ..utils.misc import unpack_gt_instances
 from .gfl_head import GFLHead
 
 
@@ -20,25 +23,30 @@ class LDHead(GFLHead):
         num_classes (int): Number of categories excluding the background
             category.
         in_channels (int): Number of channels in the input feature map.
-        loss_ld (dict): Config of Localization Distillation Loss (LD),
-            T is the temperature for distillation.
+        loss_ld (:obj:`ConfigDict` or dict): Config of Localization
+            Distillation Loss (LD), T is the temperature for distillation.
     """
 
     def __init__(self,
-                 num_classes,
-                 in_channels,
-                 loss_ld=dict(
+                 num_classes: int,
+                 in_channels: int,
+                 loss_ld: ConfigType = dict(
                      type='LocalizationDistillationLoss',
                      loss_weight=0.25,
                      T=10),
-                 **kwargs):
+                 **kwargs) -> dict:
 
-        super(LDHead, self).__init__(num_classes, in_channels, **kwargs)
-        self.loss_ld = build_loss(loss_ld)
+        super().__init__(
+            num_classes=num_classes, in_channels=in_channels, **kwargs)
+        self.loss_ld = MODELS.build(loss_ld)
 
-    def loss_single(self, anchors, cls_score, bbox_pred, labels, label_weights,
-                    bbox_targets, stride, soft_targets, num_total_samples):
-        """Compute loss of a single scale level.
+    def loss_by_feat_single(self, anchors: Tensor, cls_score: Tensor,
+                            bbox_pred: Tensor, labels: Tensor,
+                            label_weights: Tensor, bbox_targets: Tensor,
+                            stride: Tuple[int], soft_targets: Tensor,
+                            avg_factor: int):
+        """Calculate the loss of a single scale level based on the features
+        extracted by the detection head.
 
         Args:
             anchors (Tensor): Box reference for each scale level with shape
@@ -55,8 +63,12 @@ class LDHead(GFLHead):
             bbox_targets (Tensor): BBox regression targets of each anchor
                 weight shape (N, num_total_anchors, 4).
             stride (tuple): Stride in this scale level.
-            num_total_samples (int): Number of positive samples that is
-                reduced over all GPUs.
+            soft_targets (Tensor): Soft BBox regression targets.
+            avg_factor (int): Average factor that is used to average
+                the loss. When using sampling method, avg_factor is usually
+                the sum of positive and negative priors. When using
+                `PseudoSampler`, `avg_factor` is usually equal to the number
+                of positive priors.
 
         Returns:
             dict[tuple, Tensor]: Loss components and weight targets.
@@ -136,32 +148,19 @@ class LDHead(GFLHead):
         loss_cls = self.loss_cls(
             cls_score, (labels, score),
             weight=label_weights,
-            avg_factor=num_total_samples)
+            avg_factor=avg_factor)
 
         return loss_cls, loss_bbox, loss_dfl, loss_ld, weight_targets.sum()
 
-    def forward_train(self,
-                      x,
-                      out_teacher,
-                      img_metas,
-                      gt_bboxes,
-                      gt_labels=None,
-                      gt_bboxes_ignore=None,
-                      proposal_cfg=None,
-                      **kwargs):
+    def loss(self, x: List[Tensor], out_teacher: Tuple[Tensor],
+             batch_data_samples: SampleList) -> dict:
         """
         Args:
             x (list[Tensor]): Features from FPN.
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            gt_bboxes (Tensor): Ground truth bboxes of the image,
-                shape (num_gts, 4).
-            gt_labels (Tensor): Ground truth labels of each box,
-                shape (num_gts,).
-            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
-                ignored, shape (num_ignored_gts, 4).
-            proposal_cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used
+            out_teacher (tuple[Tensor]): The output of teacher.
+            batch_data_samples (list[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
 
         Returns:
             tuple[dict, list]: The loss components and proposals of each image.
@@ -169,28 +168,27 @@ class LDHead(GFLHead):
             - losses (dict[str, Tensor]): A dictionary of loss components.
             - proposal_list (list[Tensor]): Proposals of each image.
         """
-        outs = self(x)
-        soft_target = out_teacher[1]
-        if gt_labels is None:
-            loss_inputs = outs + (gt_bboxes, soft_target, img_metas)
-        else:
-            loss_inputs = outs + (gt_bboxes, gt_labels, soft_target, img_metas)
-        losses = self.loss(*loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
-        if proposal_cfg is None:
-            return losses
-        else:
-            proposal_list = self.get_bboxes(*outs, img_metas, cfg=proposal_cfg)
-            return losses, proposal_list
+        outputs = unpack_gt_instances(batch_data_samples)
+        batch_gt_instances, batch_gt_instances_ignore, batch_img_metas \
+            = outputs
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
-    def loss(self,
-             cls_scores,
-             bbox_preds,
-             gt_bboxes,
-             gt_labels,
-             soft_target,
-             img_metas,
-             gt_bboxes_ignore=None):
+        outs = self(x)
+        soft_targets = out_teacher[1]
+        loss_inputs = outs + (batch_gt_instances, batch_img_metas,
+                              soft_targets)
+        losses = self.loss_by_feat(
+            *loss_inputs, batch_gt_instances_ignore=batch_gt_instances_ignore)
+
+        return losses
+
+    def loss_by_feat(
+            self,
+            cls_scores: List[Tensor],
+            bbox_preds: List[Tensor],
+            batch_gt_instances: InstanceList,
+            batch_img_metas: List[dict],
+            soft_targets: List[Tensor],
+            batch_gt_instances_ignore: OptInstanceList = None) -> dict:
         """Compute losses of the head.
 
         Args:
@@ -199,13 +197,16 @@ class LDHead(GFLHead):
             bbox_preds (list[Tensor]): Box distribution logits for each scale
                 level with shape (N, 4*(n+1), H, W), n is max value of integral
                 set.
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box
-            img_metas (list[dict]): Meta information of each image, e.g.,
+            batch_gt_instances (list[:obj:`InstanceData`]): Batch of
+                gt_instance.  It usually includes ``bboxes`` and ``labels``
+                attributes.
+            soft_targets (list[Tensor]): Soft BBox regression targets.
+            batch_img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
-            gt_bboxes_ignore (list[Tensor] | None): specify which bounding
-                boxes can be ignored when computing the loss.
+            batch_gt_instances_ignore (list[:obj:`InstanceData`], Optional):
+                Batch of gt_instances_ignore. It includes ``bboxes`` attribute
+                data that is ignored during training and testing.
+                Defaults to None.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
@@ -216,31 +217,24 @@ class LDHead(GFLHead):
 
         device = cls_scores[0].device
         anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, img_metas, device=device)
-        label_channels = self.cls_out_channels if self.use_sigmoid_cls else 1
+            featmap_sizes, batch_img_metas, device=device)
 
         cls_reg_targets = self.get_targets(
             anchor_list,
             valid_flag_list,
-            gt_bboxes,
-            img_metas,
-            gt_bboxes_ignore_list=gt_bboxes_ignore,
-            gt_labels_list=gt_labels,
-            label_channels=label_channels)
-        if cls_reg_targets is None:
-            return None
+            batch_gt_instances,
+            batch_img_metas,
+            batch_gt_instances_ignore=batch_gt_instances_ignore)
 
         (anchor_list, labels_list, label_weights_list, bbox_targets_list,
-         bbox_weights_list, num_total_pos, num_total_neg) = cls_reg_targets
+         bbox_weights_list, avg_factor) = cls_reg_targets
 
-        num_total_samples = reduce_mean(
-            torch.tensor(num_total_pos, dtype=torch.float,
-                         device=device)).item()
-        num_total_samples = max(num_total_samples, 1.0)
+        avg_factor = reduce_mean(
+            torch.tensor(avg_factor, dtype=torch.float, device=device)).item()
 
         losses_cls, losses_bbox, losses_dfl, losses_ld, \
             avg_factor = multi_apply(
-                self.loss_single,
+                self.loss_by_feat_single,
                 anchor_list,
                 cls_scores,
                 bbox_preds,
@@ -248,8 +242,8 @@ class LDHead(GFLHead):
                 label_weights_list,
                 bbox_targets_list,
                 self.prior_generator.strides,
-                soft_target,
-                num_total_samples=num_total_samples)
+                soft_targets,
+                avg_factor=avg_factor)
 
         avg_factor = sum(avg_factor) + 1e-6
         avg_factor = reduce_mean(avg_factor).item()

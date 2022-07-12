@@ -1,11 +1,35 @@
 _base_ = [
     '../_base_/datasets/coco_panoptic.py', '../_base_/default_runtime.py'
 ]
+image_size = (1024, 1024)
+batch_augments = [
+    dict(
+        type='BatchFixedSizePad',
+        size=image_size,
+        img_pad_value=0,
+        pad_mask=True,
+        mask_pad_value=0,
+        pad_seg=True,
+        seg_pad_value=255)
+]
+data_preprocessor = dict(
+    type='DetDataPreprocessor',
+    mean=[123.675, 116.28, 103.53],
+    std=[58.395, 57.12, 57.375],
+    bgr_to_rgb=True,
+    pad_size_divisor=32,
+    pad_mask=True,
+    mask_pad_value=0,
+    pad_seg=True,
+    seg_pad_value=255,
+    batch_augments=batch_augments)
+
 num_things_classes = 80
 num_stuff_classes = 53
 num_classes = num_things_classes + num_stuff_classes
 model = dict(
     type='Mask2Former',
+    data_preprocessor=data_preprocessor,
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -118,12 +142,13 @@ model = dict(
         oversample_ratio=3.0,
         importance_sample_ratio=0.75,
         assigner=dict(
-            type='MaskHungarianAssigner',
-            cls_cost=dict(type='ClassificationCost', weight=2.0),
-            mask_cost=dict(
-                type='CrossEntropyLossCost', weight=5.0, use_sigmoid=True),
-            dice_cost=dict(
-                type='DiceCost', weight=5.0, pred_act=True, eps=1.0)),
+            type='HungarianAssigner',
+            match_costs=[
+                dict(type='ClassificationCost', weight=2.0),
+                dict(
+                    type='CrossEntropyLossCost', weight=5.0, use_sigmoid=True),
+                dict(type='DiceCost', weight=5.0, pred_act=True, eps=1.0)
+            ]),
         sampler=dict(type='MaskPseudoSampler')),
     test_cfg=dict(
         panoptic_on=True,
@@ -140,9 +165,7 @@ model = dict(
     init_cfg=None)
 
 # dataset settings
-image_size = (1024, 1024)
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+data_root = 'data/coco/'
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
     dict(
@@ -150,13 +173,13 @@ train_pipeline = [
         with_bbox=True,
         with_mask=True,
         with_seg=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='RandomFlip', prob=0.5),
     # large scale jittering
     dict(
-        type='Resize',
-        img_scale=image_size,
+        type='RandomResize',
+        scale=image_size,
         ratio_range=(0.1, 2.0),
-        multiscale_mode='range',
+        resize_type='Resize',
         keep_ratio=True),
     dict(
         type='RandomCrop',
@@ -164,50 +187,35 @@ train_pipeline = [
         crop_type='absolute',
         recompute_bbox=True,
         allow_negative_crop=True),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size=image_size),
-    dict(type='DefaultFormatBundle', img_to_float=True),
-    dict(
-        type='Collect',
-        keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks', 'gt_semantic_seg']),
+    dict(type='PackDetInputs')
 ]
-test_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(
-        type='MultiScaleFlipAug',
-        img_scale=(1333, 800),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
-        ])
-]
-data_root = 'data/coco/'
-data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
-    train=dict(pipeline=train_pipeline),
-    val=dict(
-        pipeline=test_pipeline,
-        ins_ann_file=data_root + 'annotations/instances_val2017.json',
-    ),
-    test=dict(
-        pipeline=test_pipeline,
-        ins_ann_file=data_root + 'annotations/instances_val2017.json',
-    ))
 
-embed_multi = dict(lr_mult=1.0, decay_mult=0.0)
+train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
+
+val_evaluator = [
+    dict(
+        type='CocoPanopticMetric',
+        ann_file=data_root + 'annotations/panoptic_val2017.json',
+        seg_prefix=data_root + 'annotations/panoptic_val2017/',
+    ),
+    dict(
+        type='CocoMetric',
+        ann_file=data_root + 'annotations/instances_val2017.json',
+        metric=['bbox', 'segm'],
+    )
+]
+test_evaluator = val_evaluator
+
 # optimizer
-optimizer = dict(
-    type='AdamW',
-    lr=0.0001,
-    weight_decay=0.05,
-    eps=1e-8,
-    betas=(0.9, 0.999),
+embed_multi = dict(lr_mult=1.0, decay_mult=0.0)
+optim_wrapper = dict(
+    type='OptimWrapper',
+    optimizer=dict(
+        type='AdamW',
+        lr=0.0001,
+        weight_decay=0.05,
+        eps=1e-8,
+        betas=(0.9, 0.999)),
     paramwise_cfg=dict(
         custom_keys={
             'backbone': dict(lr_mult=0.1, decay_mult=1.0),
@@ -215,39 +223,37 @@ optimizer = dict(
             'query_feat': embed_multi,
             'level_embed': embed_multi,
         },
-        norm_decay_mult=0.0))
-optimizer_config = dict(grad_clip=dict(max_norm=0.01, norm_type=2))
+        norm_decay_mult=0.0),
+    clip_grad=dict(max_norm=0.01, norm_type=2))
 
 # learning policy
-lr_config = dict(
-    policy='step',
-    gamma=0.1,
-    by_epoch=False,
-    step=[327778, 355092],
-    warmup='linear',
-    warmup_by_epoch=False,
-    warmup_ratio=1.0,  # no warmup
-    warmup_iters=10)
-
 max_iters = 368750
-runner = dict(type='IterBasedRunner', max_iters=max_iters)
-
-log_config = dict(
-    interval=50,
-    hooks=[
-        dict(type='TextLoggerHook', by_epoch=False),
-        dict(type='TensorboardLoggerHook', by_epoch=False)
-    ])
-interval = 5000
-workflow = [('train', interval)]
-checkpoint_config = dict(
-    by_epoch=False, interval=interval, save_last=True, max_keep_ckpts=3)
+param_scheduler = dict(
+    type='MultiStepLR',
+    begin=0,
+    end=max_iters,
+    by_epoch=False,
+    milestones=[327778, 355092],
+    gamma=0.1)
 
 # Before 365001th iteration, we do evaluation every 5000 iterations.
 # After 365000th iteration, we do evaluation every 368750 iterations,
 # which means that we do evaluation at the end of training.
+interval = 5000
 dynamic_intervals = [(max_iters // interval * interval + 1, max_iters)]
-evaluation = dict(
-    interval=interval,
-    dynamic_intervals=dynamic_intervals,
-    metric=['PQ', 'bbox', 'segm'])
+train_cfg = dict(
+    type='IterBasedTrainLoop',
+    max_iters=max_iters,
+    val_interval=interval,
+    dynamic_intervals=dynamic_intervals)
+val_cfg = dict(type='ValLoop')
+test_cfg = dict(type='TestLoop')
+
+default_hooks = dict(
+    checkpoint=dict(
+        type='CheckpointHook',
+        by_epoch=False,
+        save_last=True,
+        max_keep_ckpts=3,
+        interval=interval))
+log_processor = dict(type='LogProcessor', window_size=50, by_epoch=False)

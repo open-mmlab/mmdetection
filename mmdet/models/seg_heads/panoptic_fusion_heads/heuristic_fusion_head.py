@@ -2,11 +2,12 @@
 from typing import List
 
 import torch
-from mmengine.data import PixelData
+from mmengine.data import InstanceData, PixelData
 from torch import Tensor
 
 from mmdet.core.evaluation.panoptic_utils import INSTANCE_OFFSET
-from mmdet.core.utils import OptConfigType, OptMultiConfig, PixelList
+from mmdet.core.utils import (InstanceList, OptConfigType, OptMultiConfig,
+                              PixelList)
 from mmdet.registry import MODELS
 from .base_panoptic_fusion_head import BasePanopticFusionHead
 
@@ -34,29 +35,29 @@ class HeuristicFusionHead(BasePanopticFusionHead):
         return dict()
 
     def _lay_masks(self,
-                   bboxes: Tensor,
-                   labels: Tensor,
-                   masks: Tensor,
+                   mask_results: InstanceData,
                    overlap_thr: float = 0.5) -> Tensor:
         """Lay instance masks to a result map.
 
         Args:
-            bboxes (Tensor): The bboxes results, (K, 4).
-            labels (Tensor): The labels of bboxes, (K, ).
-            masks (Tensor): The instance masks, (K, H, W).
+            mask_results (:obj:`InstanceData`): Instance segmentation results,
+                each contains ``bboxes``, ``labels``, ``scores`` and ``masks``.
             overlap_thr (float): Threshold to determine whether two masks
                 overlap. default: 0.5.
 
         Returns:
             Tensor: The result map, (H, W).
         """
+        bboxes = mask_results.bboxes
+        scores = mask_results.scores
+        labels = mask_results.labels
+        masks = mask_results.masks
+
         num_insts = bboxes.shape[0]
         id_map = torch.zeros(
             masks.shape[-2:], device=bboxes.device, dtype=torch.long)
         if num_insts == 0:
             return id_map, labels
-
-        scores, bboxes = bboxes[:, -1], bboxes[:, :4]
 
         # Sort by score to use heuristic fusion
         order = torch.argsort(-scores)
@@ -92,23 +93,20 @@ class HeuristicFusionHead(BasePanopticFusionHead):
         assert instance_id == (len(instance_labels) + 1)
         return id_map, instance_labels
 
-    def _predict_single(self, det_bboxes: Tensor, det_labels: Tensor,
-                        mask_preds: Tensor, seg_preds: Tensor,
+    def _predict_single(self, mask_results: InstanceData, seg_preds: Tensor,
                         **kwargs) -> PixelData:
         """Fuse the results of instance and semantic segmentations.
 
         Args:
-            det_bboxes (Tensor): The bboxes results, (K, 4).
-            det_labels (Tensor): The labels of bboxes, (K,).
-            mask_preds (Tensor): The masks results, (K, H, W).
+            mask_results (:obj:`InstanceData`): Instance segmentation results,
+                each contains ``bboxes``, ``labels``, ``scores`` and ``masks``.
             seg_preds (Tensor): The semantic segmentation results,
                 (num_stuff + 1, H, W).
 
         Returns:
             Tensor: The panoptic segmentation result, (H, W).
         """
-        mask_preds = mask_preds >= self.test_cfg.mask_thr_binary
-        id_map, labels = self._lay_masks(det_bboxes, det_labels, mask_preds,
+        id_map, labels = self._lay_masks(mask_results,
                                          self.test_cfg.mask_overlap)
 
         seg_results = seg_preds.argmax(dim=0)
@@ -116,7 +114,7 @@ class HeuristicFusionHead(BasePanopticFusionHead):
 
         pan_results = seg_results
         instance_id = 1
-        for idx in range(det_labels.shape[0]):
+        for idx in range(len(mask_results)):
             _mask = id_map == (idx + 1)
             if _mask.sum() == 0:
                 continue
@@ -140,25 +138,23 @@ class HeuristicFusionHead(BasePanopticFusionHead):
         pan_results = PixelData(sem_seg=pan_results[None].int())
         return pan_results
 
-    def predict(self, det_bboxes_list: List[Tensor],
-                det_labels_list: List[Tensor], mask_preds_list: List[Tensor],
-                seg_preds_list: Tensor, **kwargs) -> PixelList:
+    def predict(self, mask_results_list: InstanceList,
+                seg_preds_list: List[Tensor], **kwargs) -> PixelList:
         """Predict results by fusing the results of instance and semantic
         segmentations.
 
         Args:
-            det_bboxes_list (List[Tensor]): List of bboxes results.
-            det_labels_list (List[Tensor]): List of labels of bboxes.
-            mask_preds_list (List[Tensor]): List of masks results.
+            mask_results_list (list[:obj:`InstanceData`]): Instance
+                segmentation results, each contains ``bboxes``, ``labels``,
+                ``scores`` and ``masks``.
             seg_preds_list (Tensor): List of semantic segmentation results.
 
         Returns:
             List[PixelData]: Panoptic segmentation result.
         """
         results_list = [
-            self._predict_single(det_bboxes_list[i], det_labels_list[i],
-                                 mask_preds_list[i], seg_preds_list[i])
-            for i in range(len(det_bboxes_list))
+            self._predict_single(mask_results_list[i], seg_preds_list[i])
+            for i in range(len(mask_results_list))
         ]
 
         return results_list

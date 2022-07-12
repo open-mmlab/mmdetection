@@ -9,10 +9,11 @@ from mmdet.core import DetDataSample
 from mmdet.testing import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
 
-register_all_modules()
-
 
 class TestTwoStageBBox(TestCase):
+
+    def setUp(self):
+        register_all_modules()
 
     @parameterized.expand([
         'faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py',
@@ -122,6 +123,9 @@ class TestTwoStageBBox(TestCase):
 
 
 class TestTwoStageMask(TestCase):
+
+    def setUp(self):
+        register_all_modules()
 
     @parameterized.expand([
         'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py',
