@@ -10,7 +10,7 @@ from mmdet.utils import register_all_modules
 register_all_modules()
 
 
-class TestTwoStageBBox(TestCase):
+class TestSoftTeacher(TestCase):
 
     @parameterized.expand([
         'semi/soft_teacher_faster_rcnn_r50_fpn_coco_90k.py',

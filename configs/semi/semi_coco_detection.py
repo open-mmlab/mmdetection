@@ -75,11 +75,11 @@ test_pipeline = [
 ]
 
 train_dataloader = dict(
-    batch_size=3,
-    num_workers=3,
+    batch_size=2,
+    num_workers=2,
     persistent_workers=True,
     sampler=dict(
-        type='GroupMultiSourceSampler', batch_size=3, source_ratio=[1, 2]),
+        type='GroupMultiSourceSampler', batch_size=2, source_ratio=[1, 1]),
     dataset=dict(
         type='SemiDataset',
         sup=dict(
