@@ -28,6 +28,22 @@ Note:
   - Use SGD rather than ADAM optimizer and add warmup and grad clip.
   - Use DistributedDataParallel as other models in MMDetection rather than using DataParallel.
 
+## CenterNet Update
+
+| Backbone  | Style | Lr schd | MS train | Mem (GB) | Box AP |                                                               Config                                                                |         Download         |
+| :-------: | :---: | :-----: | :------: | :------: | :----: | :---------------------------------------------------------------------------------------------------------------------------------: | :----------------------: |
+| ResNet-50 | caffe |   1x    |   True   |   3.3    |  40.2  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/centernet/centernet_update_r50_caffe_fpn_mstrain_1x_coco.py) | [model](<>) \| [log](<>) |
+
+CenterNet Update from the paper of [Probabilistic two-stage detection](https://arxiv.org/abs/2103.07461). The author has updated CenterNet to greatly improve performance and convergence speed.
+The [Details](https://github.com/xingyizhou/CenterNet2/blob/master/docs/MODEL_ZOO.md) are as follows:
+
+- Using top-left-right-bottom box encoding and GIoU Loss
+- Adding regression loss to the center 3x3 region
+- Adding more positive pixels for the heatmap loss whose regression loss is small and is within the center3x3 region
+- Using RetinaNet-style optimizer (SGD), learning rate rule (0.01 for each batch size 16), and schedule (12 epochs)
+- Added FPN neck layers, and assigns objects to FPN levels based on a fixed size range.
+- Using standard NMS instead of max pooling
+
 ## Citation
 
 ```latex
