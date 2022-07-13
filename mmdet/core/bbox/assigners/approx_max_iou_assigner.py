@@ -1,11 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Optional
+from typing import Optional, Union
 
 import torch
+from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 
-from mmdet.core.bbox.assigners.assign_result import AssignResult
 from mmdet.registry import TASK_UTILS
+from .assign_result import AssignResult
 from .max_iou_assigner import MaxIoUAssigner
 
 
@@ -38,19 +39,21 @@ class ApproxMaxIoUAssigner(MaxIoUAssigner):
         gpu_assign_thr (int): The upper bound of the number of GT for GPU
             assign. When the number of gt is above this threshold, will assign
             on CPU device. Negative values mean not assign on CPU.
+        iou_calculator (:obj:`ConfigDict` or dict): Config of overlaps
+            Calculator.
     """
 
     def __init__(
         self,
         pos_iou_thr: float,
-        neg_iou_thr: float,
+        neg_iou_thr: Union[float, tuple],
         min_pos_iou: float = .0,
         gt_max_assign_all: bool = True,
         ignore_iof_thr: float = -1,
         ignore_wrt_candidates: bool = True,
         match_low_quality: bool = True,
         gpu_assign_thr: int = -1,
-        iou_calculator: dict = dict(type='BboxOverlaps2D')
+        iou_calculator: Union[ConfigDict, dict] = dict(type='BboxOverlaps2D')
     ) -> None:
         self.pos_iou_thr = pos_iou_thr
         self.neg_iou_thr = neg_iou_thr
