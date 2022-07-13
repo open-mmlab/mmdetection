@@ -27,7 +27,7 @@ class DynamicRoIHead(StandardRoIHead):
         self.beta_history = []
 
     def loss(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
-             batch_data_samples: SampleList, **kwargs) -> dict:
+             batch_data_samples: SampleList) -> dict:
         """Forward function for training.
 
         Args:

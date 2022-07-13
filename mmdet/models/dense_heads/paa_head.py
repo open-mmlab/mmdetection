@@ -497,8 +497,7 @@ class PAAHead(ATSSHead):
                         batch_img_metas: Optional[List[dict]] = None,
                         cfg: OptConfigType = None,
                         rescale: bool = False,
-                        with_nms: bool = True,
-                        **kwargs) -> InstanceList:
+                        with_nms: bool = True) -> InstanceList:
         """Transform a batch of output features extracted from the head into
         bbox results.
 
@@ -507,10 +506,14 @@ class PAAHead(ATSSHead):
         assert with_nms, 'PAA only supports "with_nms=True" now and it ' \
                          'means PAAHead does not support ' \
                          'test-time augmentation'
-        return super(ATSSHead,
-                     self).predict_by_feat(cls_scores, bbox_preds,
-                                           score_factors, batch_img_metas, cfg,
-                                           rescale, with_nms, **kwargs)
+        return super().predict_by_feat(
+            cls_scores=cls_scores,
+            bbox_preds=bbox_preds,
+            score_factors=score_factors,
+            batch_img_metas=batch_img_metas,
+            cfg=cfg,
+            rescale=rescale,
+            with_nms=with_nms)
 
     def _predict_by_feat_single(self,
                                 cls_score_list: List[Tensor],
@@ -520,8 +523,7 @@ class PAAHead(ATSSHead):
                                 img_meta: dict,
                                 cfg: OptConfigType = None,
                                 rescale: bool = False,
-                                with_nms: bool = True,
-                                **kwargs) -> InstanceData:
+                                with_nms: bool = True) -> InstanceData:
         """Transform a single image's features extracted from the head into
         bbox results.
 
@@ -596,15 +598,14 @@ class PAAHead(ATSSHead):
         results.score_factors = torch.cat(mlvl_score_factors)
 
         return self._bbox_post_process(results, cfg, rescale, with_nms,
-                                       img_meta, **kwargs)
+                                       img_meta)
 
     def _bbox_post_process(self,
                            results: InstanceData,
                            cfg: ConfigType,
                            rescale: bool = False,
                            with_nms: bool = True,
-                           img_meta: Optional[dict] = None,
-                           **kwargs):
+                           img_meta: Optional[dict] = None):
         """bbox post-processing method.
 
         The boxes would be rescaled to the original image scale and do

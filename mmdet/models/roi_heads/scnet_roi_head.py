@@ -351,7 +351,7 @@ class SCNetRoIHead(CascadeRoIHead):
         return global_context_results
 
     def loss(self, x: Tensor, rpn_results_list: InstanceList,
-             batch_data_samples: SampleList, **kwargs) -> dict:
+             batch_data_samples: SampleList) -> dict:
         """Perform forward propagation and loss calculation of the detection
         roi on the features of the upstream network.
 

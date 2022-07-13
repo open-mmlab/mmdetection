@@ -68,7 +68,7 @@ class BaseRoIHead(BaseModule, metaclass=ABCMeta):
 
     @abstractmethod
     def loss(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
-             batch_data_samples: SampleList, **kwargs):
+             batch_data_samples: SampleList):
         """Perform forward propagation and loss calculation of the roi head on
         the features of the upstream network."""
 

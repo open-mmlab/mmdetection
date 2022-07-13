@@ -399,8 +399,7 @@ class GFLHead(AnchorHead):
                                 img_meta: dict,
                                 cfg: ConfigDict,
                                 rescale: bool = False,
-                                with_nms: bool = True,
-                                **kwargs) -> InstanceData:
+                                with_nms: bool = True) -> InstanceData:
         """Transform a single image's features extracted from the head into
         bbox results.
 
@@ -486,8 +485,7 @@ class GFLHead(AnchorHead):
             cfg=cfg,
             rescale=rescale,
             with_nms=with_nms,
-            img_meta=img_meta,
-            **kwargs)
+            img_meta=img_meta)
 
     def get_targets(self,
                     anchor_list: List[Tensor],

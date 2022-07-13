@@ -55,8 +55,7 @@ class BaseDetector(BaseModel, metaclass=ABCMeta):
     def forward(self,
                 batch_inputs: torch.Tensor,
                 batch_data_samples: OptSampleList = None,
-                mode: str = 'tensor',
-                **kwargs) -> ForwardResults:
+                mode: str = 'tensor') -> ForwardResults:
         """The unified entry for a forward process in both training and test.
 
         The method should accept three modes: "tensor", "predict" and "loss":
@@ -86,24 +85,24 @@ class BaseDetector(BaseModel, metaclass=ABCMeta):
             - If ``mode="loss"``, return a dict of tensor.
         """
         if mode == 'loss':
-            return self.loss(batch_inputs, batch_data_samples, **kwargs)
+            return self.loss(batch_inputs, batch_data_samples)
         elif mode == 'predict':
-            return self.predict(batch_inputs, batch_data_samples, **kwargs)
+            return self.predict(batch_inputs, batch_data_samples)
         elif mode == 'tensor':
-            return self._forward(batch_inputs, batch_data_samples, **kwargs)
+            return self._forward(batch_inputs, batch_data_samples)
         else:
             raise RuntimeError(f'Invalid mode "{mode}". '
                                'Only supports loss, predict and tensor mode')
 
     @abstractmethod
-    def loss(self, batch_inputs: Tensor, batch_data_samples: SampleList,
-             **kwargs) -> Union[dict, tuple]:
+    def loss(self, batch_inputs: Tensor,
+             batch_data_samples: SampleList) -> Union[dict, tuple]:
         """Calculate losses from a batch of inputs and data samples."""
         pass
 
     @abstractmethod
-    def predict(self, batch_inputs: Tensor, batch_data_samples: SampleList,
-                **kwargs) -> SampleList:
+    def predict(self, batch_inputs: Tensor,
+                batch_data_samples: SampleList) -> SampleList:
         """Predict results from a batch of inputs and data samples with post-
         processing."""
         pass
@@ -111,8 +110,7 @@ class BaseDetector(BaseModel, metaclass=ABCMeta):
     @abstractmethod
     def _forward(self,
                  batch_inputs: Tensor,
-                 batch_data_samples: OptSampleList = None,
-                 **kwargs):
+                 batch_data_samples: OptSampleList = None):
         """Network forward process.
 
         Usually includes backbone, neck and head forward without any post-

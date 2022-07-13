@@ -67,8 +67,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             if hasattr(m, 'conv_offset'):
                 constant_init(m.conv_offset, 0)
 
-    def loss(self, x: Tuple[Tensor], batch_data_samples: SampleList,
-             **kwargs) -> dict:
+    def loss(self, x: Tuple[Tensor], batch_data_samples: SampleList) -> dict:
         """Perform forward propagation and loss calculation of the detection
         head on the features of the upstream network.
 
@@ -99,11 +98,12 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         head."""
         pass
 
-    def loss_and_predict(self,
-                         x: Tuple[Tensor],
-                         batch_data_samples: SampleList,
-                         proposal_cfg: Optional[ConfigDict] = None,
-                         **kwargs) -> Tuple[dict, InstanceList]:
+    def loss_and_predict(
+        self,
+        x: Tuple[Tensor],
+        batch_data_samples: SampleList,
+        proposal_cfg: Optional[ConfigDict] = None
+    ) -> Tuple[dict, InstanceList]:
         """Perform forward propagation of the head, then calculate loss and
         predictions from the features and data samples.
 
@@ -174,8 +174,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                         batch_img_metas: Optional[List[dict]] = None,
                         cfg: Optional[ConfigDict] = None,
                         rescale: bool = False,
-                        with_nms: bool = True,
-                        **kwargs) -> InstanceList:
+                        with_nms: bool = True) -> InstanceList:
         """Transform a batch of output features extracted from the head into
         bbox results.
 
@@ -251,8 +250,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 img_meta=img_meta,
                 cfg=cfg,
                 rescale=rescale,
-                with_nms=with_nms,
-                **kwargs)
+                with_nms=with_nms)
             result_list.append(results)
         return result_list
 
@@ -264,8 +262,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                                 img_meta: dict,
                                 cfg: ConfigDict,
                                 rescale: bool = False,
-                                with_nms: bool = True,
-                                **kwargs) -> InstanceData:
+                                with_nms: bool = True) -> InstanceData:
         """Transform a single image's features extracted from the head into
         bbox results.
 
@@ -387,16 +384,14 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             cfg=cfg,
             rescale=rescale,
             with_nms=with_nms,
-            img_meta=img_meta,
-            **kwargs)
+            img_meta=img_meta)
 
     def _bbox_post_process(self,
                            results: InstanceData,
                            cfg: ConfigDict,
                            rescale: bool = False,
                            with_nms: bool = True,
-                           img_meta: Optional[dict] = None,
-                           **kwargs) -> InstanceData:
+                           img_meta: Optional[dict] = None) -> InstanceData:
         """bbox post-processing method.
 
         The boxes would be rescaled to the original image scale and do

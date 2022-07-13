@@ -112,8 +112,8 @@ class TwoStageDetector(BaseDetector):
             x = self.neck(x)
         return x
 
-    def _forward(self, batch_inputs: Tensor, batch_data_samples: SampleList,
-                 **kwargs) -> tuple:
+    def _forward(self, batch_inputs: Tensor,
+                 batch_data_samples: SampleList) -> tuple:
         """Network forward process. Usually includes backbone, neck and head
         forward without any post-processing.
 
@@ -140,8 +140,8 @@ class TwoStageDetector(BaseDetector):
         results = results + (roi_outs, )
         return results
 
-    def loss(self, batch_inputs: Tensor, batch_data_samples: SampleList,
-             **kwargs) -> dict:
+    def loss(self, batch_inputs: Tensor,
+             batch_data_samples: SampleList) -> dict:
         """Calculate losses from a batch of inputs and data samples.
 
         Args:
@@ -169,7 +169,7 @@ class TwoStageDetector(BaseDetector):
                     torch.zeros_like(data_sample.gt_instances.labels)
 
             rpn_losses, rpn_results_list = self.rpn_head.loss_and_predict(
-                x, rpn_data_samples, proposal_cfg=proposal_cfg, **kwargs)
+                x, rpn_data_samples, proposal_cfg=proposal_cfg)
             # avoid get same name with roi_head loss
             keys = rpn_losses.keys()
             for key in keys:
@@ -186,7 +186,7 @@ class TwoStageDetector(BaseDetector):
             ]
 
         roi_losses = self.roi_head.loss(x, rpn_results_list,
-                                        batch_data_samples, **kwargs)
+                                        batch_data_samples)
         losses.update(roi_losses)
 
         return losses
@@ -194,8 +194,7 @@ class TwoStageDetector(BaseDetector):
     def predict(self,
                 batch_inputs: Tensor,
                 batch_data_samples: SampleList,
-                rescale: bool = True,
-                **kwargs) -> SampleList:
+                rescale: bool = True) -> SampleList:
         """Predict results from a batch of inputs and data samples with post-
         processing.
 

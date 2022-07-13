@@ -27,14 +27,14 @@ class LAD(KnowledgeDistillationSingleStageDetector):
                  eval_teacher: bool = True,
                  train_cfg: OptConfigType = None,
                  test_cfg: OptConfigType = None,
-                 preprocess_cfg: OptConfigType = None) -> None:
+                 data_preprocessor: OptConfigType = None) -> None:
         super(KnowledgeDistillationSingleStageDetector, self).__init__(
             backbone=backbone,
             neck=neck,
             bbox_head=bbox_head,
             train_cfg=train_cfg,
             test_cfg=test_cfg,
-            preprocess_cfg=preprocess_cfg)
+            data_preprocessor=data_preprocessor)
         self.eval_teacher = eval_teacher
         self.teacher_model = nn.Module()
         self.teacher_model.backbone = MODELS.build(teacher_backbone)
@@ -60,8 +60,8 @@ class LAD(KnowledgeDistillationSingleStageDetector):
             x = self.teacher_model.neck(x)
         return x
 
-    def forward_train(self, batch_inputs: Tensor,
-                      batch_data_samples: SampleList, **kwargs) -> dict:
+    def loss(self, batch_inputs: Tensor,
+             batch_data_samples: SampleList) -> dict:
         """
         Args:
             batch_inputs (Tensor): Input images of shape (N, C, H, W).
@@ -87,8 +87,7 @@ class LAD(KnowledgeDistillationSingleStageDetector):
 
         # the student use the label assignment from the teacher to learn
         x = self.extract_feat(batch_inputs)
-        losses = self.bbox_head.forward_train(x, label_assignment_results,
-                                              batch_gt_instances,
-                                              batch_img_metas,
-                                              batch_gt_instances_ignore)
+        losses = self.bbox_head.loss(x, label_assignment_results,
+                                     batch_gt_instances, batch_img_metas,
+                                     batch_gt_instances_ignore)
         return losses

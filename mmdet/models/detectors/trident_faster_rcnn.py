@@ -35,33 +35,28 @@ class TridentFasterRCNN(FasterRCNN):
         self.num_branch = self.backbone.num_branch
         self.test_branch_idx = self.backbone.test_branch_idx
 
-    def _forward(self, batch_inputs: Tensor, batch_data_samples: SampleList,
-                 **kwargs) -> tuple:
+    def _forward(self, batch_inputs: Tensor,
+                 batch_data_samples: SampleList) -> tuple:
         """copy the ``batch_data_samples`` to fit multi-branch."""
         num_branch = self.num_branch \
             if self.training or self.test_branch_idx == -1 else 1
         trident_data_samples = batch_data_samples * num_branch
         return super()._forward(
-            batch_inputs=batch_inputs,
-            batch_data_samples=trident_data_samples,
-            **kwargs)
+            batch_inputs=batch_inputs, batch_data_samples=trident_data_samples)
 
-    def loss(self, batch_inputs: Tensor, batch_data_samples: SampleList,
-             **kwargs) -> dict:
+    def loss(self, batch_inputs: Tensor,
+             batch_data_samples: SampleList) -> dict:
         """copy the ``batch_data_samples`` to fit multi-branch."""
         num_branch = self.num_branch \
             if self.training or self.test_branch_idx == -1 else 1
         trident_data_samples = batch_data_samples * num_branch
         return super().loss(
-            batch_inputs=batch_inputs,
-            batch_data_samples=trident_data_samples,
-            **kwargs)
+            batch_inputs=batch_inputs, batch_data_samples=trident_data_samples)
 
     def predict(self,
                 batch_inputs: Tensor,
                 batch_data_samples: SampleList,
-                rescale: bool = True,
-                **kwargs) -> SampleList:
+                rescale: bool = True) -> SampleList:
         """copy the ``batch_data_samples`` to fit multi-branch."""
         num_branch = self.num_branch \
             if self.training or self.test_branch_idx == -1 else 1
@@ -69,8 +64,7 @@ class TridentFasterRCNN(FasterRCNN):
         return super().predict(
             batch_inputs=batch_inputs,
             batch_data_samples=trident_data_samples,
-            rescale=rescale,
-            **kwargs)
+            rescale=rescale)
 
     # TODO need to refactor
     def aug_test(self, imgs, img_metas, rescale=False):

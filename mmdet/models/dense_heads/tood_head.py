@@ -487,8 +487,7 @@ class TOODHead(ATSSHead):
                                 img_meta: dict,
                                 cfg: Optional[ConfigDict] = None,
                                 rescale: bool = False,
-                                with_nms: bool = True,
-                                **kwargs) -> InstanceData:
+                                with_nms: bool = True) -> InstanceData:
         """Transform a single image's features extracted from the head into
         bbox results.
 
@@ -573,8 +572,7 @@ class TOODHead(ATSSHead):
             cfg=cfg,
             rescale=rescale,
             with_nms=with_nms,
-            img_meta=img_meta,
-            **kwargs)
+            img_meta=img_meta)
 
     def get_targets(self,
                     cls_scores: List[List[Tensor]],

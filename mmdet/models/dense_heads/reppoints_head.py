@@ -493,8 +493,7 @@ class RepPointsHead(AnchorFreeHead):
                     batch_gt_instances_ignore: OptInstanceList = None,
                     stage: str = 'init',
                     unmap_outputs: bool = True,
-                    return_sampling_results: bool = False,
-                    **kwargs) -> tuple:
+                    return_sampling_results: bool = False) -> tuple:
         """Compute corresponding GT box and classification targets for
         proposals.
 
@@ -769,8 +768,7 @@ class RepPointsHead(AnchorFreeHead):
                                 img_meta: dict,
                                 cfg: ConfigDict,
                                 rescale: bool = False,
-                                with_nms: bool = True,
-                                **kwargs) -> InstanceData:
+                                with_nms: bool = True) -> InstanceData:
         """Transform outputs of a single image into bbox predictions.
 
         Args:
@@ -857,8 +855,7 @@ class RepPointsHead(AnchorFreeHead):
             cfg=cfg,
             rescale=rescale,
             with_nms=with_nms,
-            img_meta=img_meta,
-            **kwargs)
+            img_meta=img_meta)
 
     def _bbox_decode(self, points: Tensor, bbox_pred: Tensor, stride: int,
                      max_shape: Tuple[int, int]) -> Tensor:

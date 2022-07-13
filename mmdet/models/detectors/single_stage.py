@@ -4,7 +4,7 @@ from typing import List, Tuple, Union
 from torch import Tensor
 
 from mmdet.core.utils import (ConfigType, OptConfigType, OptMultiConfig,
-                              SampleList)
+                              OptSampleList, SampleList)
 from mmdet.registry import MODELS
 from .base import BaseDetector
 
@@ -60,8 +60,8 @@ class SingleStageDetector(BaseDetector):
                                       strict, missing_keys, unexpected_keys,
                                       error_msgs)
 
-    def loss(self, batch_inputs: Tensor, batch_data_samples: SampleList,
-             **kwargs) -> Union[dict, list]:
+    def loss(self, batch_inputs: Tensor,
+             batch_data_samples: SampleList) -> Union[dict, list]:
         """Calculate losses from a batch of inputs and data samples.
 
         Args:
@@ -75,14 +75,13 @@ class SingleStageDetector(BaseDetector):
             dict: A dictionary of loss components.
         """
         x = self.extract_feat(batch_inputs)
-        losses = self.bbox_head.loss(x, batch_data_samples, **kwargs)
+        losses = self.bbox_head.loss(x, batch_data_samples)
         return losses
 
     def predict(self,
                 batch_inputs: Tensor,
                 batch_data_samples: SampleList,
-                rescale: bool = True,
-                **kwargs) -> SampleList:
+                rescale: bool = True) -> SampleList:
         """Predict results from a batch of inputs and data samples with post-
         processing.
 
@@ -109,12 +108,14 @@ class SingleStageDetector(BaseDetector):
         """
         x = self.extract_feat(batch_inputs)
         results_list = self.bbox_head.predict(
-            x, batch_data_samples, rescale=rescale, **kwargs)
+            x, batch_data_samples, rescale=rescale)
         predictions = self.convert_to_datasample(results_list)
         return predictions
 
-    def _forward(self, batch_inputs: Tensor, *args, **kwargs) \
-            -> Tuple[List[Tensor]]:
+    def _forward(
+            self,
+            batch_inputs: Tensor,
+            batch_data_samples: OptSampleList = None) -> Tuple[List[Tensor]]:
         """Network forward process. Usually includes backbone, neck and head
         forward without any post-processing.
 

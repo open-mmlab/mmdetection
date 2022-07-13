@@ -528,8 +528,7 @@ class DETRHead(AnchorFreeHead):
                 neg_inds)
 
     # over-write because img_metas are needed as inputs for bbox_head.
-    def loss(self, x: Tuple[Tensor], batch_data_samples: SampleList,
-             **kwargs) -> dict:
+    def loss(self, x: Tuple[Tensor], batch_data_samples: SampleList) -> dict:
         """Perform forward propagation and loss calculation of the detection
         head on the features of the upstream network.
 
@@ -628,8 +627,7 @@ class DETRHead(AnchorFreeHead):
                         all_cls_scores_list: List[Tensor],
                         all_bbox_preds_list: List[Tensor],
                         batch_img_metas: List[dict],
-                        rescale: bool = True,
-                        **kwargs) -> InstanceList:
+                        rescale: bool = True) -> InstanceList:
         """Transform network outputs for a batch into bbox predictions.
 
         Args:
@@ -674,8 +672,7 @@ class DETRHead(AnchorFreeHead):
                                 cls_score: Tensor,
                                 bbox_pred: Tensor,
                                 img_meta: dict,
-                                rescale: bool = True,
-                                **kwargs) -> InstanceData:
+                                rescale: bool = True) -> InstanceData:
         """Transform outputs from the last decoder layer into bbox predictions
         for each image.
 
@@ -726,7 +723,6 @@ class DETRHead(AnchorFreeHead):
             assert img_meta.get('scale_factor') is not None
             det_bboxes /= det_bboxes.new_tensor(
                 img_meta['scale_factor']).repeat((1, 2))
-        det_bboxes = torch.cat((det_bboxes, scores.unsqueeze(1)), -1)
 
         results = InstanceData()
         results.bboxes = det_bboxes
