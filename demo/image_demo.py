@@ -39,14 +39,12 @@ def main(args):
 
     # TODO: Support inference of image directory.
     # build the model from a config file and a checkpoint file
-    model = init_detector(args.config, args.checkpoint, device=args.device)
+    model = init_detector(
+        args.config, args.checkpoint, palette=args.palette, device=args.device)
 
     # init visualizer
     visualizer = VISUALIZERS.build(model.cfg.visualizer)
-    visualizer.dataset_meta = {
-        'CLASSES': model.CLASSES,
-        'PALETTE': args.palette
-    }
+    visualizer.dataset_meta = model.dataset_meta
 
     # test a single image
     result = inference_detector(model, args.img)
@@ -70,10 +68,7 @@ async def async_main(args):
 
     # init visualizer
     visualizer = VISUALIZERS.build(model.cfg.visualizer)
-    visualizer.dataset_meta = {
-        'CLASSES': model.CLASSES,
-        'PALETTE': args.palette
-    }
+    visualizer.dataset_meta = model.dataset_meta
 
     # test a single image
     tasks = asyncio.create_task(async_inference_detector(model, args.img))
