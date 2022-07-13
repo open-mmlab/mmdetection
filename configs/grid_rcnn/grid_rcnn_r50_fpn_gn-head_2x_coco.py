@@ -4,6 +4,12 @@ _base_ = [
 # model settings
 model = dict(
     type='GridRCNN',
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        bgr_to_rgb=True,
+        pad_size_divisor=32),
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -119,13 +125,30 @@ model = dict(
             nms=dict(type='nms', iou_threshold=0.3),
             max_per_img=100)))
 # optimizer
-optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
-optimizer_config = dict(grad_clip=None)
-# learning policy
-lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=3665,
-    warmup_ratio=1.0 / 80,
-    step=[17, 23])
-runner = dict(type='EpochBasedRunner', max_epochs=25)
+optim_wrapper = dict(
+    type='OptimWrapper',
+    optimizer=dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001))
+
+# training schedule
+max_epochs = 25
+train_cfg = dict(
+    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
+val_cfg = dict(type='ValLoop')
+test_cfg = dict(type='TestLoop')
+
+# learning rate
+param_scheduler = [
+    dict(
+        type='LinearLR',
+        start_factor=1.0 / 80,
+        by_epoch=False,
+        begin=0,
+        end=3665),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=max_epochs,
+        by_epoch=True,
+        milestones=[17, 23],
+        gamma=0.1)
+]

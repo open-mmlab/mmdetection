@@ -182,7 +182,7 @@ class FCNMaskHead(BaseModule):
         """Calculate the loss based on the features extracted by the mask head.
 
         Args:
-             mask_pred (Tensor): Predicted foreground masks, has shape
+            mask_pred (Tensor): Predicted foreground masks, has shape
                 (num_pos, num_classes, h, w).
             sampling_results (List[obj:SamplingResult]): Assign results of
                 all images in a batch after sampling.
