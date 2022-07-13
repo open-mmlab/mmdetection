@@ -1,9 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 from mmcv.ops import point_sample
+from torch import Tensor
 
 
-def get_uncertainty(mask_pred, labels):
+def get_uncertainty(mask_pred: Tensor, labels: Tensor) -> Tensor:
     """Estimate uncertainty based on pred logits.
 
     We estimate uncertainty as L1 distance between 0.0 and the logits
@@ -13,7 +14,7 @@ def get_uncertainty(mask_pred, labels):
         mask_pred (Tensor): mask predication logits, shape (num_rois,
             num_classes, mask_height, mask_width).
 
-        labels (list[Tensor]): Either predicted or ground truth label for
+        labels (Tensor): Either predicted or ground truth label for
             each predicted mask, of length num_rois.
 
     Returns:
@@ -29,9 +30,9 @@ def get_uncertainty(mask_pred, labels):
     return -torch.abs(gt_class_logits)
 
 
-def get_uncertain_point_coords_with_randomness(mask_pred, labels, num_points,
-                                               oversample_ratio,
-                                               importance_sample_ratio):
+def get_uncertain_point_coords_with_randomness(
+        mask_pred: Tensor, labels: Tensor, num_points: int,
+        oversample_ratio: float, importance_sample_ratio: float) -> Tensor:
     """Get ``num_points`` most uncertain points with random points during
     train.
 
@@ -44,9 +45,9 @@ def get_uncertain_point_coords_with_randomness(mask_pred, labels, num_points,
         mask_pred (Tensor): A tensor of shape (num_rois, num_classes,
             mask_height, mask_width) for class-specific or class-agnostic
             prediction.
-        labels (list): The ground truth class for each instance.
+        labels (Tensor): The ground truth class for each instance.
         num_points (int): The number of points to sample.
-        oversample_ratio (int): Oversampling parameter.
+        oversample_ratio (float): Oversampling parameter.
         importance_sample_ratio (float): Ratio of points that are sampled
             via importnace sampling.
 

@@ -1,12 +1,12 @@
 _base_ = './mask_rcnn_r50_fpn_1x_coco.py'
-preprocess_cfg = dict(
+data_preprocessor = dict(
     mean=[103.530, 116.280, 123.675],
     std=[1.0, 1.0, 1.0],
-    to_rgb=False,
+    bgr_to_rgb=False,
     pad_size_divisor=32)
 model = dict(
     # use caffe img_norm
-    preprocess_cfg=preprocess_cfg,
+    data_preprocessor=data_preprocessor,
     backbone=dict(
         norm_cfg=dict(requires_grad=False),
         style='caffe',
@@ -18,8 +18,9 @@ train_pipeline = [
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
         type='RandomChoiceResize',
-        img_scale=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
-                   (1333, 768), (1333, 800)]),
+        scales=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
+                (1333, 768), (1333, 800)],
+        keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs'),
 ]
