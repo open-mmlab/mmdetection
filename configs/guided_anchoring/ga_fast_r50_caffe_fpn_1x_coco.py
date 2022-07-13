@@ -51,6 +51,7 @@ test_pipeline = [
             dict(type='Collect', keys=['img', 'proposals']),
         ])
 ]
+# TODO: support loading proposals
 data = dict(
     train=dict(
         proposal_file=data_root + 'proposals/ga_rpn_r50_fpn_1x_train2017.pkl',

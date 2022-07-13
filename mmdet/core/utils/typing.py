@@ -9,6 +9,7 @@ from mmengine.data import InstanceData, PixelData
 from ..bbox.samplers import SamplingResult
 from ..data_structures import DetDataSample
 
+# TODO: Need to avoid circular import with assigner and sampler
 # Type hint of config data
 ConfigType = Union[ConfigDict, dict]
 OptConfigType = Optional[ConfigType]
