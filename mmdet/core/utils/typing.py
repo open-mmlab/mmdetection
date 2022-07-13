@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 """Collecting some commonly used type hint in mmdetection."""
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import torch
 from mmengine.config import ConfigDict
@@ -31,3 +31,5 @@ OptSamplingResultList = Optional[SamplingResultList]
 
 ForwardResults = Union[Dict[str, torch.Tensor], List[DetDataSample],
                        Tuple[torch.Tensor], torch.Tensor]
+
+RangeType = Sequence[Tuple[int, int]]

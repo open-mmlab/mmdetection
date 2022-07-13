@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Dict, List, Sequence, Tuple
+from typing import Dict, List, Tuple
 
 import torch
 import torch.nn as nn
@@ -7,13 +7,11 @@ from mmcv.cnn import Scale
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import multi_apply, reduce_mean
+from mmdet.core import RangeType, multi_apply, reduce_mean
 from mmdet.core.utils import (ConfigType, InstanceList, MultiConfig,
                               OptInstanceList)
 from mmdet.registry import MODELS
 from .anchor_free_head import AnchorFreeHead
-
-RangeType = Sequence[Tuple[int, int]]
 
 INF = 1e8
 
