@@ -1,19 +1,27 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import warnings
 from pathlib import Path
+from typing import Optional, Sequence, Union
 
-import mmengine
 import numpy as np
 import torch
+import torch.nn as nn
 from mmcv.ops import RoIPool
 from mmcv.transforms import Compose
+from mmengine.config import Config
 from mmengine.runner import load_checkpoint
 
-from mmdet.core import get_classes
+from mmdet.core import DetDataSample, SampleList, get_classes
 from mmdet.models import build_detector
 
 
-def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
+def init_detector(
+    config: Union[str, Path, Config],
+    checkpoint: Optional[str] = None,
+    palette: str = 'coco',
+    device: str = 'cuda:0',
+    cfg_options: Optional[dict] = None,
+) -> nn.Module:
     """Initialize a detector from config file.
 
     Args:
@@ -21,51 +29,71 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
             :obj:`Path`, or the config object.
         checkpoint (str, optional): Checkpoint path. If left as None, the model
             will not load any weights.
+        palette (str): Color palette used for visualization. If palette
+            is stored in checkpoint, use checkpoint's palette first, otherwise
+            use externally passed palette. Currently, supports 'coco', 'voc',
+            'citys' and 'random'. Defaults to coco.
         device (str): The device where the anchors will be put on.
             Defaults to cuda:0.
-        cfg_options (dict): Options to override some settings in the used
-            config. Defaults to None.
+        cfg_options (dict, optional): Options to override some settings in
+            the used config.
 
     Returns:
         nn.Module: The constructed detector.
     """
     if isinstance(config, (str, Path)):
-        config = mmengine.Config.fromfile(config)
-    elif not isinstance(config, mmengine.Config):
+        config = Config.fromfile(config)
+    elif not isinstance(config, Config):
         raise TypeError('config must be a filename or Config object, '
                         f'but got {type(config)}')
     if cfg_options is not None:
         config.merge_from_dict(cfg_options)
-    if 'pretrained' in config.model:
-        config.model.pretrained = None
     elif 'init_cfg' in config.model.backbone:
         config.model.backbone.init_cfg = None
     config.model.train_cfg = None
     model = build_detector(config.model)
     if checkpoint is not None:
         checkpoint = load_checkpoint(model, checkpoint, map_location='cpu')
-        if 'CLASSES' in checkpoint.get('meta', {}):
-            model.CLASSES = checkpoint['meta']['CLASSES']
+
+        dataset_meta = checkpoint['meta'].get('dataset_meta', None)
+        # save the dataset_meta in the model for convenience
+        if 'dataset_meta' in checkpoint.get('meta', {}):
+            # mmdet 3.x
+            model.dataset_meta = dataset_meta
+        elif 'CLASSES' in checkpoint.get('meta', {}):
+            # < mmdet 3.x
+            classes = checkpoint['meta']['CLASSES']
+            model.dataset_meta = {'CLASSES': classes, 'PALETTE': palette}
         else:
             warnings.simplefilter('once')
-            warnings.warn('Class names are not saved in the checkpoint\'s '
-                          'meta data, use COCO classes by default.')
-            model.CLASSES = get_classes('coco')
+            warnings.warn(
+                'dataset_meta or class names are not saved in the '
+                'checkpoint\'s meta data, use COCO classes by default.')
+            model.dataset_meta = {
+                'CLASSES': get_classes('coco'),
+                'PALETTE': palette
+            }
+
     model.cfg = config  # save the config in the model for convenience
     model.to(device)
     model.eval()
     return model
 
 
-def inference_detector(model, imgs):
+ImagesType = Union[str, np.ndarray, Sequence[str], Sequence[np.ndarray]]
+
+
+def inference_detector(model: nn.Module,
+                       imgs: ImagesType) -> Union[DetDataSample, SampleList]:
     """Inference image(s) with the detector.
 
     Args:
         model (nn.Module): The loaded detector.
-        imgs (str/ndarray or list[str/ndarray] or tuple[str/ndarray]):
+        imgs (str, ndarray, Sequence[str/ndarray]):
            Either image files or loaded images.
 
     Returns:
+        :obj:`DetDataSample` or list[:obj:`DetDataSample`]:
         If imgs is a list or tuple, the same length list type results
         will be returned, otherwise return the detection results directly.
     """
@@ -105,8 +133,7 @@ def inference_detector(model, imgs):
 
     # forward the model
     with torch.no_grad():
-        inputs, data_sample = model.data_preprocessor(data, False)
-        results = model(inputs, data_sample, mode='predict')
+        results = model.test_step(data)
 
     if not is_batch:
         return results[0]
