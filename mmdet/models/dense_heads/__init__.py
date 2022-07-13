@@ -6,6 +6,7 @@ from .autoassign_head import AutoAssignHead
 from .cascade_rpn_head import CascadeRPNHead, StageCascadeRPNHead
 from .centernet_head import CenterNetHead
 from .centripetal_head import CentripetalHead
+from .conditional_detr_head import ConditionalDETRHead
 from .corner_head import CornerHead
 from .ddod_head import DDODHead
 from .deformable_detr_head import DeformableDETRHead
@@ -54,5 +55,5 @@ __all__ = [
     'AutoAssignHead', 'DETRHead', 'YOLOFHead', 'DeformableDETRHead',
     'SOLOHead', 'DecoupledSOLOHead', 'CenterNetHead', 'YOLOXHead',
     'DecoupledSOLOLightHead', 'LADHead', 'TOODHead', 'MaskFormerHead',
-    'Mask2FormerHead', 'SOLOV2Head', 'DDODHead'
+    'Mask2FormerHead', 'SOLOV2Head', 'DDODHead', 'ConditionalDETRHead'
 ]
