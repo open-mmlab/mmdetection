@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import copy
 import math
 import warnings
 from typing import Sequence
@@ -1165,3 +1166,286 @@ class DynamicConv(BaseModule):
             features = self.activation(features)
 
         return features
+
+
+def build_MLP(input_dim, hidden_dim, output_dim, num_layers):
+    # TODO: It can be implemented by add an out_channel arg of
+    #  mmcv.cnn.bricks.transformer.FFN
+    assert num_layers > 1, \
+        f'num_layers should be greater than 1 but got {num_layers}'
+    h = [hidden_dim] * (num_layers - 1)
+    layers = list()
+    for n, k in zip([input_dim] + h[:-1], h):
+        layers = layers.extend((nn.Linear(n, k), nn.ReLU()))
+    # Note that the relu func of MLP in original DETR repo is set
+    # 'inplace=False', however the ReLU cfg of FFN in mmdet is set
+    # 'inplace=True' by default.
+    layers.append(nn.Linear(hidden_dim, output_dim))
+    return nn.Sequential(*layers)
+
+
+class ConditionalDetrTransformerDecoderLayer(BaseTransformerLayer):
+
+    def __init__(self,
+                 attn_cfgs,
+                 feedforward_channels,
+                 ffn_drop=0.0,
+                 operation_order=None,
+                 act_cfg=dict(type='ReLU', inplace=True),
+                 norm_cfg=dict(type='LN'),
+                 num_fcs=2,
+                 is_first=False,
+                 **kwargs):
+        super(DetrTransformerDecoderLayer, self).__init__(
+            attn_cfgs=attn_cfgs,
+            feedforward_channels=feedforward_channels,
+            ffn_dropout=ffn_drop,
+            operation_order=operation_order,
+            act_cfg=act_cfg,
+            norm_cfg=norm_cfg,
+            ffn_num_fcs=num_fcs,
+            **kwargs)
+        assert set(operation_order) == set(
+            ['self_attn', 'norm', 'cross_attn', 'ffn'])
+        self._init_layers(is_first)
+
+    def _init_layers(self, is_first=False):
+        d_model = self.embed_dims
+        # qkv input projections for attns
+        proj_names = ('cq', 'ck', 'pk', 'v')
+        self.input_proj = nn.ModuleList([
+            nn.ModuleDict(
+                {name: nn.Linear(d_model, d_model)
+                 for name in proj_names}) for _ in range(self.num_attn)
+        ])
+        attn_order = [
+            layer for layer in self.operation_order if 'attn' in layer
+        ]
+        for i, layer in enumerate(attn_order):
+            if layer == 'self_attn' or (layer == 'cross_attn' and is_first):
+                self.input_proj[i]['pq'] = nn.Linear(d_model, d_model)
+            else:
+                self.input_proj[i]['pq'] = None
+
+        # sine embedded query projection for cross-attn
+        num_cross_attn = self.operation_order.count('cross_attn')
+        self.qpos_sine_proj = nn.ModuleList(
+            [nn.Linear(d_model, d_model) for _ in range(num_cross_attn)])
+
+    def forward(self,
+                query,
+                key,
+                value,
+                query_pos,
+                key_pos,
+                query_sine_embed,
+                attn_masks=None,
+                query_key_padding_mask=None,
+                key_padding_mask=None,
+                **kwargs):
+        norm_index = 0
+        attn_index = 0
+        cross_attn_index = 0
+        ffn_index = 0
+        identity = query
+        if attn_masks is None:
+            attn_masks = [None for _ in range(self.num_attn)]
+        elif isinstance(attn_masks, torch.Tensor):
+            attn_masks = [
+                copy.deepcopy(attn_masks) for _ in range(self.num_attn)
+            ]
+            warnings.warn(f'Use same attn_mask in all attentions in '
+                          f'{self.__class__.__name__} ')
+        else:
+            assert len(attn_masks) == self.num_attn, \
+                f'The length of attn_masks {len(attn_masks)} must be ' \
+                f'equal to the number of attention in operation_order' \
+                f' {self.num_attn}'
+
+        for layer in self.operation_order:
+            if layer == 'self_attn':
+                self.forward_self_attn(
+                    attn_index,
+                    query,
+                    query_pos,
+                    identity=identity if self.pre_norm else None,  # TODO
+                    attn_mask=attn_masks[attn_index],
+                    key_padding_mask=query_key_padding_mask**kwargs)
+                attn_index += 1
+                identity = query
+
+            elif layer == 'norm':
+                query = self.norms[norm_index](query)
+                norm_index += 1
+
+            elif layer == 'cross_attn':
+                self.forward_cross_attn(
+                    attn_index,
+                    cross_attn_index,
+                    query,
+                    key,
+                    value,
+                    query_pos,
+                    key_pos,
+                    query_sine_embed,
+                    identity=identity if self.pre_norm else None,
+                    attn_mask=attn_masks[attn_index],
+                    key_padding_mask=key_padding_mask)
+                attn_index += 1
+                cross_attn_index += 1
+                identity = query
+
+            elif layer == 'ffn':
+                query = self.ffns[ffn_index](
+                    query, identity if self.pre_norm else None)
+                ffn_index += 1
+
+        return query
+
+    def forward_self_attn(self, attn_index, query, query_pos, *args, **kwargs):
+        input_proj = self.input_proj[attn_index]
+        content_query = input_proj['cq'](query)
+        content_key = input_proj['ck'](query)
+        value = input_proj['v'](query)
+        spatial_query = input_proj['pq'](query_pos)
+        spatial_key = input_proj['pk'](query_pos)
+        return self.attentions[attn_index](content_query + spatial_query,
+                                           content_key + spatial_key, value,
+                                           *args, **kwargs)
+
+    def forward_cross_attn(self, attn_index, cross_attn_index, query, key,
+                           value, query_pos, key_pos, query_sine_embed, *args,
+                           **kwargs):
+        input_proj = self.input_proj[attn_index]
+        content_query = input_proj['cq'](query)
+        content_key = input_proj['ck'](key)  # key == value
+        value = input_proj['v'](value)
+        spatial_key = input_proj['pk'](key_pos)
+
+        # In the CondDETR repo, for the first decoder layer, the
+        # positional embedding predicted from the object query
+        # (the positional embedding) is concatenated into the
+        # original query (key) in DETR.
+        if input_proj['pq'] is not None:  # is_first
+            spatial_query = self.ca_qpos_proj(query_pos)
+            content_query += spatial_query
+            content_key += spatial_key
+
+        num_heads = self.attentions[attn_index].num_heads
+        assert query.size(0) == query_sine_embed.size(0)
+        num_queries, bs, _ = query.size()
+        num_features = value.size(0)
+        query_sine_embed = self.qpos_sine_proj[cross_attn_index](
+            query_sine_embed)
+
+        query = query.view(num_queries, bs, num_heads,
+                           self.embed_dims // num_heads)
+        query_sine_embed = query_sine_embed.view(num_queries, bs, num_heads,
+                                                 self.embed_dims // num_heads)
+        query = torch.cat([content_query, query_sine_embed],
+                          dim=3).view(num_queries, bs, self.embed_dims * 2)
+
+        content_key = content_key.view(num_features, bs, self.nhead,
+                                       self.embed_dims // num_heads)
+        spatial_key = spatial_key.view(num_features, bs, self.nhead,
+                                       self.embed_dims // num_heads)
+        key = torch.cat([content_key, spatial_key],
+                        dim=3).view(num_features, bs, self.embed_dims * 2)
+
+        return self.attentions[attn_index](query, key, value, *args**kwargs)
+
+
+class ConditionalDetrTransformerDecoder(DetrTransformerDecoder):
+
+    def __init__(self,
+                 *args,
+                 transformerlayers=None,
+                 num_layers=None,
+                 **kwargs):
+
+        if isinstance(transformerlayers, dict):
+            transformerlayers = [
+                copy.deepcopy(transformerlayers) for _ in range(num_layers)
+            ]
+        else:
+            assert isinstance(transformerlayers, list) and \
+                   len(transformerlayers) == num_layers
+        for i in range(len(transformerlayers)):
+            transformerlayers[i]['is_first'] = (i == 0)
+        super(ConditionalDetrTransformerDecoder, self).__init__(
+            *args, transformerlayers=None, num_layers=None, **kwargs)
+        self._init_layers()
+
+    def _init_layers(self):
+        """Initialize layers of the transformer decoder."""
+        self.query_scale = build_MLP(self.embed_dims, self.embed_dims,
+                                     self.embed_dims, 2)
+        self.ref_point_head = build_MLP(self.embed_dims, self.embed_dims, 2, 2)
+
+    @staticmethod
+    def gen_sineembed_for_position(pos_tensor):
+        scale = 2 * math.pi
+        dim_t = torch.arange(
+            128, dtype=torch.float32, device=pos_tensor.device)
+        dim_t = 10000**(2 * (dim_t // 2) / 128)
+        x_embed = pos_tensor[:, :, 0] * scale
+        y_embed = pos_tensor[:, :, 1] * scale
+        pos_x = x_embed[:, :, None] / dim_t
+        pos_y = y_embed[:, :, None] / dim_t
+        pos_x = torch.stack((pos_x[:, :, 0::2].sin(), pos_x[:, :, 1::2].cos()),
+                            dim=3).flatten(2)
+        pos_y = torch.stack((pos_y[:, :, 0::2].sin(), pos_y[:, :, 1::2].cos()),
+                            dim=3).flatten(2)
+        pos = torch.cat((pos_y, pos_x), dim=2)
+        return pos
+
+    def forward(self, query, query_pos, *args, **kwargs):
+        """Forward function for `ConditionalDetrTransformerDecoder`.
+
+        Args:
+            query (Tensor): Input query with shape
+                `(num_query, bs, embed_dims)`.
+
+        Returns:  TODO: Modified (List[Tensor, Tensor])
+            Tensor: Results with shape [1, num_query, bs, embed_dims] when
+                return_intermediate is `False`, otherwise it has shape
+                [num_layers, num_query, bs, embed_dims].
+        """
+        # TODO: match attribute dim
+        output = query
+        intermediate = []
+
+        reference_points_before_sigmoid = self.ref_point_head(query_pos)
+        reference_points = reference_points_before_sigmoid.sigmoid().transpose(
+            0, 1)
+
+        for lid, layer in enumerate(self.layers):
+            obj_center = reference_points[..., :2].transpose(0, 1)
+
+            if lid == 0:
+                # For the first decoder layer, we do not apply
+                # transformation over p_s
+                pos_transformation = 1
+            else:
+                pos_transformation = self.query_scale(output)
+
+            query_sine_embed = self.gen_sineembed_for_position(
+                obj_center)  # TODO: unify PE func
+            query_sine_embed = query_sine_embed * pos_transformation
+
+            output = layer(
+                output, *args, query_sine_embed=query_sine_embed, **kwargs)
+
+            if self.return_intermediate:
+                intermediate.append(self.norm(output))
+
+        if self.post_norm is not None:
+            output = self.post_norm(output)
+            if self.return_intermediate:
+                intermediate.pop()
+                intermediate.append(output)
+
+        if self.return_intermediate:
+            return torch.stack(intermediate).transpose(1, 2), reference_points
+
+        return output  # (TODO: delete this comment) .unsqueeze(0)
