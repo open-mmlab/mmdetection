@@ -47,8 +47,8 @@ class MaskFormer(SingleStageDetector):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
-    def loss(self, batch_inputs: Tensor, batch_data_samples: SampleList,
-             **kwargs) -> Dict[str, Tensor]:
+    def loss(self, batch_inputs: Tensor,
+             batch_data_samples: SampleList) -> Dict[str, Tensor]:
         """
         Args:
             batch_inputs (Tensor): Input images of shape (N, C, H, W).
@@ -61,14 +61,13 @@ class MaskFormer(SingleStageDetector):
             dict[str, Tensor]: a dictionary of loss components
         """
         x = self.extract_feat(batch_inputs)
-        losses = self.panoptic_head.loss(x, batch_data_samples, **kwargs)
+        losses = self.panoptic_head.loss(x, batch_data_samples)
         return losses
 
     def predict(self,
                 batch_inputs: Tensor,
                 batch_data_samples: SampleList,
-                rescale: bool = True,
-                **kwargs) -> SampleList:
+                rescale: bool = True) -> SampleList:
         """Predict results from a batch of inputs and data samples with post-
         processing.
 
@@ -101,13 +100,12 @@ class MaskFormer(SingleStageDetector):
         """
         feats = self.extract_feat(batch_inputs)
         mask_cls_results, mask_pred_results = self.panoptic_head.predict(
-            feats, batch_data_samples, **kwargs)
+            feats, batch_data_samples)
         results_list = self.panoptic_fusion_head.predict(
             mask_cls_results,
             mask_pred_results,
             batch_data_samples,
-            rescale=rescale,
-            **kwargs)
+            rescale=rescale)
         results = self.postprocess_result(results_list)
 
         return results
@@ -153,8 +151,8 @@ class MaskFormer(SingleStageDetector):
             results.append(result)
         return results
 
-    def _forward(self, batch_inputs: Tensor, batch_data_samples: SampleList,
-                 **kwargs) -> Tuple[List[Tensor]]:
+    def _forward(self, batch_inputs: Tensor,
+                 batch_data_samples: SampleList) -> Tuple[List[Tensor]]:
         """Network forward process. Usually includes backbone, neck and head
         forward without any post-processing.
 
@@ -169,6 +167,5 @@ class MaskFormer(SingleStageDetector):
             forward.
         """
         feats = self.extract_feat(batch_inputs)
-        results = self.panoptic_head.forward(feats, batch_data_samples,
-                                             **kwargs)
+        results = self.panoptic_head.forward(feats, batch_data_samples)
         return results

@@ -86,7 +86,7 @@ class StandardRoIHead(BaseRoIHead):
         return results
 
     def loss(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
-             batch_data_samples: SampleList, **kwargs) -> dict:
+             batch_data_samples: SampleList) -> dict:
         """Perform forward propagation and loss calculation of the detection
         roi on the features of the upstream network.
 
@@ -138,7 +138,7 @@ class StandardRoIHead(BaseRoIHead):
 
         return losses
 
-    def _bbox_forward(self, x: Tuple[Tensor], rois: Tensor, **kwargs) -> dict:
+    def _bbox_forward(self, x: Tuple[Tensor], rois: Tensor) -> dict:
         """Box head forward function used in both training and testing.
 
         Args:

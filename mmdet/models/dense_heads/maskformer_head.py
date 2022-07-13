@@ -567,8 +567,8 @@ class MaskFormerHead(AnchorFreeHead):
 
         return losses
 
-    def predict(self, x: Tuple[Tensor], batch_data_samples: SampleList,
-                **kwargs) -> Tuple[Tensor]:
+    def predict(self, x: Tuple[Tensor],
+                batch_data_samples: SampleList) -> Tuple[Tensor]:
         """Test without augmentaton.
 
         Args:

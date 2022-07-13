@@ -131,11 +131,12 @@ class RPNHead(AnchorHead):
     def _predict_by_feat_single(self,
                                 cls_score_list: List[Tensor],
                                 bbox_pred_list: List[Tensor],
+                                score_factor_list: List[Tensor],
                                 mlvl_priors: List[Tensor],
                                 img_meta: dict,
                                 cfg: ConfigDict,
                                 rescale: bool = False,
-                                **kwargs) -> InstanceData:
+                                with_nms: bool = True) -> InstanceData:
         """Transform a single image's features extracted from the head into
         bbox results.
 
@@ -146,6 +147,8 @@ class RPNHead(AnchorHead):
             bbox_pred_list (list[Tensor]): Box energies / deltas from
                 all scale levels of a single image, each item has shape
                 (num_priors * 4, H, W).
+            score_factor_list (list[Tensor]): Be compatible with
+                BaseDenseHead. Not used in RPNHead.
             mlvl_priors (list[Tensor]): Each element in the list is
                 the priors of a single level in feature pyramid. In all
                 anchor-based methods, it has shape (num_priors, 4). In
@@ -224,18 +227,14 @@ class RPNHead(AnchorHead):
         results.level_ids = torch.cat(level_ids)
 
         return self._bbox_post_process(
-            results=results,
-            cfg=cfg,
-            rescale=rescale,
-            img_meta=img_meta,
-            **kwargs)
+            results=results, cfg=cfg, rescale=rescale, img_meta=img_meta)
 
     def _bbox_post_process(self,
                            results: InstanceData,
                            cfg: ConfigDict,
                            rescale: bool = False,
-                           img_meta: Optional[dict] = None,
-                           **kwargs) -> InstanceData:
+                           with_nms: bool = True,
+                           img_meta: Optional[dict] = None) -> InstanceData:
         """bbox post-processing method.
 
         The boxes would be rescaled to the original image scale and do
@@ -247,6 +246,8 @@ class RPNHead(AnchorHead):
             cfg (ConfigDict): Test / postprocessing configuration.
             rescale (bool): If True, return boxes in original image space.
                 Defaults to False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default to True.
             img_meta (dict, optional): Image meta info. Defaults to None.
 
         Returns:
@@ -261,7 +262,7 @@ class RPNHead(AnchorHead):
                 - bboxes (Tensor): Has a shape (num_instances, 4),
                   the last dimension 4 arrange as (x1, y1, x2, y2).
         """
-
+        assert with_nms, '`with_nms` must be True in RPNHead'
         if rescale:
             assert img_meta.get('scale_factor') is not None
             results.bboxes /= results.bboxes.new_tensor(

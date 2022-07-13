@@ -97,7 +97,6 @@ class PISASSDHead(SSDHead):
             batch_gt_instances,
             batch_img_metas,
             batch_gt_instances_ignore=batch_gt_instances_ignore,
-            label_channels=1,
             unmap_outputs=False,
             return_sampling_results=True)
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,

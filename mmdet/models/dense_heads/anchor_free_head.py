@@ -13,13 +13,12 @@ from mmdet.core.utils import (ConfigType, InstanceList, MultiConfig,
                               OptConfigType, OptInstanceList)
 from mmdet.registry import MODELS, TASK_UTILS
 from .base_dense_head import BaseDenseHead
-from .dense_test_mixins import BBoxTestMixin
 
 StrideType = Union[Sequence[int], Sequence[Tuple[int, int]]]
 
 
 @MODELS.register_module()
-class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
+class AnchorFreeHead(BaseDenseHead):
     """Anchor-free head (FCOS, Fovea, RepPoints, etc.).
 
     Args:

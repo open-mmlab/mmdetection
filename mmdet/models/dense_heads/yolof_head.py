@@ -301,8 +301,7 @@ class YOLOFHead(AnchorHead):
                             gt_instances: InstanceData,
                             img_meta: dict,
                             gt_instances_ignore: Optional[InstanceData] = None,
-                            unmap_outputs: bool = True,
-                            **kwargs) -> tuple:
+                            unmap_outputs: bool = True) -> tuple:
         """Compute regression and classification targets for anchors in a
         single image.
 

@@ -13,11 +13,10 @@ from mmdet.core.utils import (ConfigType, InstanceList, OptConfigType,
                               OptInstanceList, OptMultiConfig)
 from mmdet.registry import MODELS, TASK_UTILS
 from .base_dense_head import BaseDenseHead
-from .dense_test_mixins import BBoxTestMixin
 
 
 @MODELS.register_module()
-class AnchorHead(BaseDenseHead, BBoxTestMixin):
+class AnchorHead(BaseDenseHead):
     """Anchor-based head (RPN, RetinaNet, SSD, etc.).
 
     Args:
@@ -201,8 +200,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                             gt_instances: InstanceData,
                             img_meta: dict,
                             gt_instances_ignore: Optional[InstanceData] = None,
-                            unmap_outputs: bool = True,
-                            **kwargs) -> tuple:
+                            unmap_outputs: bool = True) -> tuple:
         """Compute regression and classification targets for anchors in a
         single image.
 
@@ -303,8 +301,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                     batch_img_metas: List[dict],
                     batch_gt_instances_ignore: OptInstanceList = None,
                     unmap_outputs: bool = True,
-                    return_sampling_results: bool = False,
-                    **kwargs) -> tuple:
+                    return_sampling_results: bool = False) -> tuple:
         """Compute regression and classification targets for anchors in
         multiple images.
 

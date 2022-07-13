@@ -323,7 +323,6 @@ class SSDHead(AnchorHead):
             batch_gt_instances,
             batch_img_metas,
             batch_gt_instances_ignore=batch_gt_instances_ignore,
-            label_channels=1,
             unmap_outputs=True)
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          avg_factor) = cls_reg_targets
