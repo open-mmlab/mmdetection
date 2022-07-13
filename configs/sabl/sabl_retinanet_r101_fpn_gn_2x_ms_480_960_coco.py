@@ -59,9 +59,8 @@ train_pipeline = [
         file_client_args={{_base_.file_client_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
-        type='RandomResize',
-        scale=[(1333, 480), (1333, 960)],
-        resize_cfg=dict(type='Resize', keep_ratio=True)),
+        type='RandomResize', scale=[(1333, 480), (1333, 960)],
+        keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs')
 ]

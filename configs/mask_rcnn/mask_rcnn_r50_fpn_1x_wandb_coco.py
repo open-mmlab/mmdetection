@@ -1,3 +1,4 @@
+# TODO: Awaiting refactoring
 _base_ = [
     '../_base_/models/mask_rcnn_r50_fpn.py',
     '../_base_/datasets/coco_instance.py',
