@@ -1,81 +1,88 @@
 _base_ = [
     '../_base_/models/faster_rcnn_r50_caffe_c4.py',
+    '../_base_/schedules/schedule_1x.py', '../_base_/datasets/voc0712.py',
     '../_base_/default_runtime.py'
 ]
 model = dict(roi_head=dict(bbox_head=dict(num_classes=20)))
 
 # dataset settings
-dataset_type = 'VOCDataset'
-data_root = 'data/VOCdevkit/'
-img_norm_cfg = dict(
-    mean=[103.530, 116.280, 123.675], std=[1.0, 1.0, 1.0], to_rgb=False)
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(
+        type='LoadImageFromFile',
+        file_client_args={{_base_.file_client_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
-        type='Resize',
-        img_scale=[(1333, 480), (1333, 512), (1333, 544), (1333, 576),
-                   (1333, 608), (1333, 640), (1333, 672), (1333, 704),
-                   (1333, 736), (1333, 768), (1333, 800)],
-        multiscale_mode='value',
+        type='RandomChoiceResize',
+        scales=[(1333, 480), (1333, 512), (1333, 544), (1333, 576),
+                (1333, 608), (1333, 640), (1333, 672), (1333, 704),
+                (1333, 736), (1333, 768), (1333, 800)],
         keep_ratio=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
     dict(
-        type='MultiScaleFlipAug',
-        img_scale=(1333, 800),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
-        ])
+        type='LoadImageFromFile',
+        file_client_args={{_base_.file_client_args}}),
+    dict(type='Resize', scale=(1333, 800), keep_ratio=True),
+    # avoid bboxes being resized
+    dict(type='LoadAnnotations', with_bbox=True),
+    dict(
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
 ]
-data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
-    train=dict(
-        type=dataset_type,
-        ann_file=[
-            data_root + 'VOC2007/ImageSets/Main/trainval.txt',
-            data_root + 'VOC2012/ImageSets/Main/trainval.txt'
-        ],
-        img_prefix=[data_root + 'VOC2007/', data_root + 'VOC2012/'],
-        pipeline=train_pipeline),
-    val=dict(
-        type=dataset_type,
-        ann_file=data_root + 'VOC2007/ImageSets/Main/test.txt',
-        img_prefix=data_root + 'VOC2007/',
-        pipeline=test_pipeline),
-    test=dict(
-        type=dataset_type,
-        ann_file=data_root + 'VOC2007/ImageSets/Main/test.txt',
-        img_prefix=data_root + 'VOC2007/',
-        pipeline=test_pipeline))
+
+train_dataloader = dict(
+    sampler=dict(type='InfiniteSampler', shuffle=True),
+    dataset=dict(
+        _delete_=True,
+        type='ConcatDataset',
+        datasets=[
+            dict(
+                type='VOCDataset',
+                data_root={{_base_.data_root}},
+                ann_file='VOC2007/ImageSets/Main/trainval.txt',
+                data_prefix=dict(sub_data_root='VOC2007/'),
+                filter_cfg=dict(filter_empty_gt=True, min_size=32),
+                pipeline=train_pipeline),
+            dict(
+                type='VOCDataset',
+                data_root={{_base_.data_root}},
+                ann_file='VOC2012/ImageSets/Main/trainval.txt',
+                data_prefix=dict(sub_data_root='VOC2012/'),
+                filter_cfg=dict(filter_empty_gt=True, min_size=32),
+                pipeline=train_pipeline)
+        ]))
+
+val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
+test_dataloader = val_dataloader
+
+# training schedule for 18k
+max_iter = 18000
+train_cfg = dict(
+    _delete_=True,
+    type='IterBasedTrainLoop',
+    max_iters=max_iter,
+    val_interval=3000)
+
+# learning rate
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=100),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=max_iter,
+        by_epoch=False,
+        milestones=[12000, 16000],
+        gamma=0.1)
+]
 
 # optimizer
-optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
-optimizer_config = dict(grad_clip=None)
+optim_wrapper = dict(
+    type='OptimWrapper',
+    optimizer=dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001))
 
-# learning policy
-lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=100,
-    warmup_ratio=0.001,
-    step=[12000, 16000])
-
-# Runner type
-runner = dict(type='IterBasedRunner', max_iters=18000)
-
-checkpoint_config = dict(interval=3000)
-evaluation = dict(interval=3000, metric='mAP')
+default_hooks = dict(checkpoint=dict(by_epoch=False, interval=3000))
+log_processor = dict(by_epoch=False)
