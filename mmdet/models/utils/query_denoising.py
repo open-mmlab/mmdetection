@@ -97,11 +97,9 @@ class DnQueryGenerator(BaseModule):
             if self.label_noise_scale > 0:
                 p = torch.rand_like(known_labels_expand.float())
                 chosen_indice = torch.nonzero(
-                    p < (self.label_noise_scale * 0.5)).view(
-                        -1)  # half of bbox prob
-                new_label = torch.randint_like(
-                    chosen_indice, 0,
-                    self.num_classes)  # randomly put a new one here
+                    p < (self.label_noise_scale * 0.5)).view(-1)
+                new_label = torch.randint_like(chosen_indice, 0,
+                                               self.num_classes)
                 known_labels_expand.scatter_(0, chosen_indice, new_label)
             single_pad = int(max(known_num))  # TODO
 
@@ -139,7 +137,7 @@ class DnQueryGenerator(BaseModule):
 
             m = known_labels_expand.long().to('cuda')
             input_label_embed = label_enc(m)
-            input_bbox_embed = inverse_sigmoid(known_bbox_expand)
+            input_bbox_embed = inverse_sigmoid(known_bbox_expand, eps=1e-3)
 
             padding_label = torch.zeros(pad_size, self.hidden_dim).cuda()
             padding_bbox = torch.zeros(pad_size, 4).cuda()
@@ -206,7 +204,7 @@ def build_dn_generator(dn_args):
     Returns:
 
     """
-    if dn_args is None or not dn_args.pop('use_dn', False):
+    if dn_args is None:
         return None
     type = dn_args.pop('type')
     if type == 'DnQueryGenerator':
