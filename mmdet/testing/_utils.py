@@ -8,8 +8,8 @@ from mmengine.data import BaseDataElement as PixelData
 from mmengine.data import InstanceData
 
 from mmdet.core import DetDataSample
-from mmdet.utils import replace_cfg_vals
 from mmdet.registry import TASK_UTILS
+from mmdet.utils import replace_cfg_vals
 
 
 def _get_config_directory():

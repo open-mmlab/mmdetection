@@ -719,20 +719,19 @@ class LoadPseudoAnnos(BaseTransform):
         self.seg_ignore_label = seg_ignore_label
 
     def transform(self, results: dict) -> dict:
-        pseudo_annos = results['dataset'].id2pseudo_annos.get('image_id', None)
+        pseudo_annos = None
         results['gt_ignore_flags'] = np.zeros((0, ), dtype=bool)
         if self.with_bbox:
             if pseudo_annos is None:
                 results['gt_bboxes'] = np.zeros((0, 4), dtype=np.float32)
             else:
-                results['gt_bboxes'] = pseudo_annos.pred_instances.bboxes.cpu(
-                ).numpy()
+                results['gt_bboxes'] = pseudo_annos.pred_instances.bboxes
         if self.with_label:
             if pseudo_annos is None:
                 results['gt_bboxes_labels'] = np.zeros((0, ), dtype=np.int64)
             else:
-                results['gt_bboxes_labels'] = \
-                    pseudo_annos.pred_instances.labels.cpu().numpy()
+                results[
+                    'gt_bboxes_labels'] = pseudo_annos.pred_instances.labels
         if self.with_mask:
             if pseudo_annos is None:
                 h, w = results['img_shape']
@@ -746,7 +745,7 @@ class LoadPseudoAnnos(BaseTransform):
                 results['gt_seg_map'] = self.seg_ignore_label * np.ones(
                     (h, w), dtype=np.uint8)
             else:
-                results['gt_seg_map'] = pseudo_annos.seg_map.cpu().numpy()
+                results['gt_seg_map'] = pseudo_annos.seg_map
         return results
 
     def __repr__(self) -> str:

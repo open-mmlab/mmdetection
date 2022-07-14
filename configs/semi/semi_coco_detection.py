@@ -1,6 +1,6 @@
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
+data_root = '/home/SENSETIME/chenzeming.vendor/Datasets/data/coco/'
 file_client_args = dict(backend='disk')
 
 image_size = (200, 200)
@@ -75,30 +75,30 @@ test_pipeline = [
 ]
 
 train_dataloader = dict(
-    batch_size=2,
-    num_workers=2,
+    batch_size=3,
+    num_workers=3,
     persistent_workers=True,
     sampler=dict(
-        type='GroupMultiSourceSampler', batch_size=2, source_ratio=[1, 1]),
+        type='GroupMultiSourceSampler', batch_size=3, source_ratio=[1, 2]),
     dataset=dict(
-        type='SemiDataset',
-        sup=dict(
-            type=dataset_type,
-            data_root=data_root,
-            ann_file='coco_semi_annos/instances_train2017.1@10.json',
-            data_prefix=dict(img='train2017/'),
-            filter_cfg=dict(filter_empty_gt=True, min_size=32),
-            pipeline=sup_pipeline,
-        ),
-        unsup=dict(
-            type=dataset_type,
-            data_root=data_root,
-            ann_file='coco_semi_annos/'
-            'instances_train2017.1@10-unlabeled.json',
-            data_prefix=dict(img='train2017/'),
-            filter_cfg=dict(filter_empty_gt=True, min_size=32),
-            pipeline=unsup_pipeline,
-        )))
+        type='ConcatDataset',
+        datasets=[
+            dict(
+                type=dataset_type,
+                data_root=data_root,
+                ann_file='../coco_semi_annos/instances_train2017.1@10.json',
+                data_prefix=dict(img='train2017/'),
+                filter_cfg=dict(filter_empty_gt=True, min_size=32),
+                pipeline=sup_pipeline),
+            dict(
+                type=dataset_type,
+                data_root=data_root,
+                ann_file='../coco_semi_annos/'
+                'instances_train2017.1@10-unlabeled.json',
+                data_prefix=dict(img='train2017/'),
+                filter_cfg=dict(filter_empty_gt=True, min_size=32),
+                pipeline=unsup_pipeline)
+        ]))
 
 val_dataloader = dict(
     batch_size=1,

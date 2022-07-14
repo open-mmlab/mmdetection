@@ -35,16 +35,16 @@ class SemiBaseDetector(BaseDetector):
         losses = dict()
         losses.update(**self.gt_loss(multi_batch_inputs['sup'],
                                      multi_batch_data_samples['sup']))
-        origin_pseudo_instances = self.update_pseudo_instances(
+        origin_pseudo_instances, batch_info = self.get_pseudo_instances(
             multi_batch_inputs['unsup_teacher'],
             multi_batch_data_samples['unsup_teacher'])
         multi_batch_data_samples[
             'unsup_student'] = self.project_pseudo_instances(
                 origin_pseudo_instances,
                 multi_batch_data_samples['unsup_student'])
-        losses.update(
-            **self.pseudo_loss(multi_batch_inputs['unsup_student'],
-                               multi_batch_data_samples['unsup_student']))
+        losses.update(**self.pseudo_loss(
+            multi_batch_inputs['unsup_student'],
+            multi_batch_data_samples['unsup_student'], batch_info))
         return losses
 
     def gt_loss(self, batch_inputs, batch_data_samples):
@@ -56,7 +56,10 @@ class SemiBaseDetector(BaseDetector):
         }
         return gt_loss
 
-    def pseudo_loss(self, batch_inputs, batch_data_samples):
+    def pseudo_loss(self, batch_inputs, batch_data_samples, batch_info):
+        score_thr = self.semi_train_cfg.get('score_thr', 0.9)
+        batch_data_samples = self.filter_pseudo_instances(
+            batch_data_samples, score_thr)
         pseudo_instances_num = sum([
             len(data_samples.gt_instances)
             for data_samples in batch_data_samples
@@ -81,43 +84,45 @@ class SemiBaseDetector(BaseDetector):
                     losses[name] = loss * weight
         return losses
 
-    def filter_pseudo_instances(self, batch_data_samples):
+    def filter_pseudo_instances(self, batch_data_samples, score_thr):
         for data_samples in batch_data_samples:
             pseudo_bboxes = data_samples.gt_instances.bboxes
             instance_num = pseudo_bboxes.shape[0]
             if instance_num == 0:
                 continue
+
             w = pseudo_bboxes[:, 2] - pseudo_bboxes[:, 0]
             h = pseudo_bboxes[:, 3] - pseudo_bboxes[:, 1]
-            valid_mask = (w > self.semi_train_cfg.min_pseudo_bbox_wh[0]) & (
-                h > self.semi_train_cfg.min_pseudo_bbox_wh[1])
+            valid_size_flag = (
+                w > self.semi_train_cfg.min_pseudo_bbox_wh[0]) & (
+                    h > self.semi_train_cfg.min_pseudo_bbox_wh[1])
+            valid_score_flag = data_samples.gt_instances.scores > score_thr
+            valid_flag = valid_size_flag & valid_score_flag
             data_samples.gt_instances = data_samples.gt_instances.new(
-                bboxes=data_samples.gt_instances.bboxes[valid_mask],
-                labels=data_samples.gt_instances.labels[valid_mask])
+                scores=data_samples.gt_instances.scores[valid_flag],
+                bboxes=data_samples.gt_instances.bboxes[valid_flag],
+                labels=data_samples.gt_instances.labels[valid_flag])
         return batch_data_samples
 
-    def update_pseudo_instances(self, batch_inputs, batch_data_samples):
+    def get_pseudo_instances(self, batch_inputs, batch_data_samples):
         results_list = self.teacher.predict(batch_inputs, batch_data_samples)
         for data_samples, results in zip(batch_data_samples, results_list):
-            valid_flag = \
-                results.pred_instances.scores > self.semi_train_cfg.score_thr
             data_samples.gt_instances = data_samples.gt_instances.new(
-                bboxes=results.pred_instances.bboxes[valid_flag],
-                labels=results.pred_instances.labels[valid_flag])
-        return batch_data_samples
+                scores=results.pred_instances.scores,
+                bboxes=results.pred_instances.bboxes,
+                labels=results.pred_instances.labels)
+        return batch_data_samples, None
 
     def project_pseudo_instances(self, batch_pseudo_instances,
                                  batch_data_samples):
         for pseudo_instances, data_samples in zip(batch_pseudo_instances,
                                                   batch_data_samples):
-            pseudo_bboxes = bbox_project(
+            pseudo_instances.gt_instances.bboxes = bbox_project(
                 pseudo_instances.gt_instances.bboxes,
                 torch.tensor(data_samples.homography_matrix).to(
                     self.data_preprocessor.device), data_samples.img_shape)
-            pseudo_labels = pseudo_instances.gt_instances.labels
-            data_samples.gt_instances = data_samples.gt_instances.new(
-                bboxes=pseudo_bboxes, labels=pseudo_labels)
-        return self.filter_pseudo_instances(batch_data_samples)
+            data_samples.gt_instances = pseudo_instances.gt_instances
+        return batch_data_samples
 
     def predict(self, batch_inputs, batch_data_samples):
         if self.semi_test_cfg.get('infer_on', None) == 'teacher':
