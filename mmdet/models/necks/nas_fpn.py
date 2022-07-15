@@ -8,8 +8,8 @@ from mmcv.runner import ModuleList
 from mmengine.model import BaseModule
 from torch import Tensor
 
-from mmdet.core.utils import MultiConfig, OptConfigType
 from mmdet.registry import MODELS
+from mmdet.utils import MultiConfig, OptConfigType
 
 
 @MODELS.register_module()

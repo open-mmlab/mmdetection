@@ -6,12 +6,13 @@ import torch
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import (ConfigType, InstanceList, OptConfigType,
-                        OptInstanceList, levels_to_images, multi_apply,
-                        multiclass_nms)
-from mmdet.core.bbox.iou_calculators import bbox_overlaps
-from mmdet.models.dense_heads import ATSSHead
+from mmdet.data_elements.bbox import bbox_overlaps
 from mmdet.registry import MODELS
+from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
+                         OptInstanceList)
+from ..layers import multiclass_nms
+from ..utils import levels_to_images, multi_apply
+from . import ATSSHead
 
 EPS = 1e-12
 try:

@@ -5,12 +5,14 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor
 
-from mmdet.core import bbox2roi, merge_aug_masks
-from mmdet.core.utils import (InstanceList, OptConfigType, SampleList,
-                              SamplingResultList)
+from mmdet.data_elements import SampleList
+from mmdet.data_elements.bbox import bbox2roi
+from mmdet.models.test_time_augs import merge_aug_masks
 from mmdet.registry import MODELS
-from ..utils.brick_wrappers import adaptive_avg_pool2d
-from ..utils.misc import empty_instances, unpack_gt_instances
+from mmdet.utils import InstanceList, OptConfigType
+from ..layers import adaptive_avg_pool2d
+from ..task_modules.samplers import SamplingResult
+from ..utils import empty_instances, unpack_gt_instances
 from .cascade_roi_head import CascadeRoIHead
 
 
@@ -108,7 +110,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
     def bbox_loss(self,
                   stage: int,
                   x: Tuple[Tensor],
-                  sampling_results: SamplingResultList,
+                  sampling_results: List[SamplingResult],
                   semantic_feat: Optional[Tensor] = None) -> dict:
         """Run forward function and calculate loss for box head in training.
 
@@ -218,7 +220,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
     def mask_loss(self,
                   stage: int,
                   x: Tuple[Tensor],
-                  sampling_results: SamplingResultList,
+                  sampling_results: List[SamplingResult],
                   batch_gt_instances: InstanceList,
                   semantic_feat: Optional[Tensor] = None) -> dict:
         """Run forward function and calculate loss for mask head in training.

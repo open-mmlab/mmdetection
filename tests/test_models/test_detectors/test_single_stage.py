@@ -7,7 +7,7 @@ import torch
 from mmengine.logging import MessageHub
 from parameterized import parameterized
 
-from mmdet.core import DetDataSample
+from mmdet.data_elements import DetDataSample
 from mmdet.testing import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
 

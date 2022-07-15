@@ -10,12 +10,12 @@ from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import PseudoSampler, images_to_levels, multi_apply, unmap
-from mmdet.core.anchor.point_generator import MlvlPointGenerator
-from mmdet.core.utils import filter_scores_and_topk
-from mmdet.core.utils.typing import (ConfigType, InstanceList, MultiConfig,
-                                     OptInstanceList)
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.utils import ConfigType, InstanceList, MultiConfig, OptInstanceList
+from ..task_modules.prior_generators import MlvlPointGenerator
+from ..task_modules.samplers import PseudoSampler
+from ..utils import (filter_scores_and_topk, images_to_levels, multi_apply,
+                     unmap)
 from .anchor_free_head import AnchorFreeHead
 
 

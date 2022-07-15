@@ -11,9 +11,9 @@ from mmengine.data import InstanceData
 from mmengine.model import BaseModule
 from torch import Tensor
 
-from mmdet.core import (ConfigType, InstanceList, MultiConfig, OptConfigType,
-                        SamplingResultList)
+from mmdet.models.task_modules.samplers import SamplingResult
 from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, InstanceList, MultiConfig, OptConfigType
 
 
 @MODELS.register_module()
@@ -261,7 +261,7 @@ class GridHead(BaseModule):
                 (sub_x1, sub_y1, sub_x1 + half_size, sub_y1 + half_size))
         return sub_regions
 
-    def get_targets(self, sampling_results: SamplingResultList,
+    def get_targets(self, sampling_results: List[SamplingResult],
                     rcnn_train_cfg: ConfigDict) -> Tensor:
         """Calculate the ground truth for all samples in a batch according to
         the sampling_results.".
@@ -342,7 +342,7 @@ class GridHead(BaseModule):
         return sub_targets
 
     def loss(self, grid_pred: Tensor, sample_idx: Tensor,
-             sampling_results: SamplingResultList,
+             sampling_results: List[SamplingResult],
              rcnn_train_cfg: ConfigDict) -> dict:
         """Calculate the loss based on the features extracted by the grid head.
 

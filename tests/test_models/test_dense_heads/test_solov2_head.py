@@ -7,7 +7,7 @@ from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 
 from mmdet import *  # noqa
-from mmdet.core.mask import BitmapMasks
+from mmdet.data_elements.mask import BitmapMasks
 from mmdet.models.dense_heads import SOLOV2Head
 
 

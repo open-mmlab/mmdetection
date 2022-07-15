@@ -4,8 +4,10 @@ from typing import List, Tuple
 import torch
 from torch import Tensor
 
-from mmdet.core import ConfigType, InstanceList, SamplingResultList, bbox2roi
+from mmdet.data_elements.bbox import bbox2roi
 from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, InstanceList
+from ..task_modules.samplers import SamplingResult
 from ..utils.misc import empty_instances
 from .standard_roi_head import StandardRoIHead
 
@@ -65,8 +67,9 @@ class MaskScoringRoIHead(StandardRoIHead):
 
         return results
 
-    def mask_loss(self, x: Tuple[Tensor], sampling_results: SamplingResultList,
-                  bbox_feats, batch_gt_instances: InstanceList) -> dict:
+    def mask_loss(self, x: Tuple[Tensor],
+                  sampling_results: List[SamplingResult], bbox_feats,
+                  batch_gt_instances: InstanceList) -> dict:
         """Perform forward propagation and loss calculation of the mask head on
         the features of the upstream network.
 

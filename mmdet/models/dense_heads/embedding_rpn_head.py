@@ -3,8 +3,8 @@ import torch
 import torch.nn as nn
 from mmcv.runner import BaseModule
 
+from mmdet.data_elements.bbox import bbox_cxcywh_to_xyxy
 from mmdet.registry import MODELS
-from ...core import bbox_cxcywh_to_xyxy
 
 
 @MODELS.register_module()

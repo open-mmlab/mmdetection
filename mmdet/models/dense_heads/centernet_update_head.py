@@ -7,10 +7,11 @@ from mmcv.cnn import Scale
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import bbox2distance, multi_apply, reduce_mean
-from mmdet.core.utils import (ConfigType, InstanceList, OptConfigType,
-                              OptInstanceList)
+from mmdet.data_elements.bbox import bbox2distance
 from mmdet.registry import MODELS
+from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
+                         OptInstanceList, reduce_mean)
+from ..utils import multi_apply
 from .anchor_free_head import AnchorFreeHead
 
 INF = 1000000000

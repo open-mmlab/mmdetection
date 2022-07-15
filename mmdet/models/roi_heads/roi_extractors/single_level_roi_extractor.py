@@ -4,8 +4,8 @@ from typing import List, Optional, Tuple
 import torch
 from torch import Tensor
 
-from mmdet.core.utils.typing import ConfigType, OptMultiConfig
 from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, OptMultiConfig
 from .base_roi_extractor import BaseRoIExtractor
 
 

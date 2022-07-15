@@ -5,9 +5,9 @@ import torch
 from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 
-from mmdet.core.bbox import SamplingResult
 from mmdet.models.roi_heads.bbox_heads import (BBoxHead, Shared2FCBBoxHead,
                                                Shared4Conv1FCBBoxHead)
+from mmdet.models.task_modules.samplers import SamplingResult
 
 
 class TestBboxHead(TestCase):

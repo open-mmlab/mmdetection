@@ -8,10 +8,10 @@ from mmcv.cnn import (ConvModule, bias_init_with_prob, constant_init, is_norm,
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import (ConfigType, InstanceList, OptInstanceList,
-                        anchor_inside_flags, levels_to_images, multi_apply,
-                        reduce_mean, unmap)
 from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, InstanceList, OptInstanceList, reduce_mean
+from ..task_modules.prior_generators import anchor_inside_flags
+from ..utils import levels_to_images, multi_apply, unmap
 from .anchor_head import AnchorHead
 
 INF = 1e8

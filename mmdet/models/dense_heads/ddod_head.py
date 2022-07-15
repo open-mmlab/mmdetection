@@ -7,11 +7,12 @@ from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import (ConfigType, InstanceList, OptConfigType,
-                        OptInstanceList, anchor_inside_flags, images_to_levels,
-                        multi_apply, reduce_mean, unmap)
-from mmdet.core.bbox import bbox_overlaps
+from mmdet.data_elements.bbox import bbox_overlaps
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
+                         OptInstanceList, reduce_mean)
+from ..task_modules.prior_generators import anchor_inside_flags
+from ..utils import images_to_levels, multi_apply, unmap
 from .anchor_head import AnchorHead
 
 EPS = 1e-12

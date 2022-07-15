@@ -4,12 +4,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
-from mmcv.runner import BaseModule, ModuleList, force_fp32
+from mmengine.model import BaseModule, ModuleList
 
-from mmdet.core import build_sampler, fast_nms, images_to_levels, multi_apply
-from mmdet.core.utils import select_single_mlvl
-from mmdet.registry import MODELS
+from mmdet.registry import MODELS, TASK_UTILS
 from ..builder import build_loss
+from ..layers import fast_nms
+from ..utils import images_to_levels, multi_apply, select_single_mlvl
 from .anchor_head import AnchorHead
 
 
@@ -84,7 +84,7 @@ class YOLACTHead(AnchorHead):
             **kwargs)
         if self.use_ohem:
             sampler_cfg = dict(type='PseudoSampler')
-            self.sampler = build_sampler(sampler_cfg, context=self)
+            self.sampler = TASK_UTILS.build(sampler_cfg, context=self)
             self.sampling = False
 
     def _init_layers(self):
@@ -137,7 +137,6 @@ class YOLACTHead(AnchorHead):
         coeff_pred = self.conv_coeff(x).tanh()
         return cls_score, bbox_pred, coeff_pred
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds'))
     def loss(self,
              cls_scores,
              bbox_preds,
@@ -294,7 +293,6 @@ class YOLACTHead(AnchorHead):
             avg_factor=num_total_samples)
         return loss_cls[None], loss_bbox
 
-    @force_fp32(apply_to=('cls_scores', 'bbox_preds', 'coeff_preds'))
     def get_bboxes(self,
                    cls_scores,
                    bbox_preds,
@@ -506,7 +504,6 @@ class YOLACTSegmHead(BaseModule):
         """
         return self.segm_conv(x)
 
-    @force_fp32(apply_to=('segm_pred', ))
     def loss(self, segm_pred, gt_masks, gt_labels):
         """Compute loss of the head.
 
@@ -740,7 +737,6 @@ class YOLACTProtonet(BaseModule):
             mask_pred_list.append(mask_pred)
         return mask_pred_list
 
-    @force_fp32(apply_to=('mask_pred', ))
     def loss(self, mask_pred, gt_masks, gt_bboxes, img_meta, sampling_results):
         """Compute loss of the head.
 

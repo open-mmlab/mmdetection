@@ -7,11 +7,11 @@ import torch.nn.functional as F
 from mmcv.ops import point_sample, rel_roi_point_to_rel_img_point
 from torch import Tensor
 
-from mmdet.core import bbox2roi
-from mmdet.core.utils.typing import (ConfigType, InstanceList,
-                                     SamplingResultList)
+from mmdet.data_elements.bbox import bbox2roi
 from mmdet.registry import MODELS
-from ..utils.misc import empty_instances
+from mmdet.utils import ConfigType, InstanceList
+from ..task_modules.samplers import SamplingResult
+from ..utils import empty_instances
 from .standard_roi_head import StandardRoIHead
 
 
@@ -28,8 +28,8 @@ class PointRendRoIHead(StandardRoIHead):
         """Initialize ``point_head``"""
         self.point_head = MODELS.build(point_head)
 
-    def mask_loss(self, x: Tuple[Tensor], sampling_results: SamplingResultList,
-                  bbox_feats: Tensor,
+    def mask_loss(self, x: Tuple[Tensor],
+                  sampling_results: List[SamplingResult], bbox_feats: Tensor,
                   batch_gt_instances: InstanceList) -> dict:
         """Run forward function and calculate loss for mask head and point head
         in training."""
@@ -50,7 +50,7 @@ class PointRendRoIHead(StandardRoIHead):
         return mask_results
 
     def _mask_point_loss(self, x: Tuple[Tensor],
-                         sampling_results: SamplingResultList,
+                         sampling_results: List[SamplingResult],
                          mask_pred: Tensor,
                          batch_gt_instances: InstanceList) -> dict:
         """Run forward function and calculate loss for point head in

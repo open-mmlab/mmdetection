@@ -1,13 +1,16 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 import torch
 from torch import Tensor
 
-from mmdet.core import InstanceList, SampleList, SamplingResultList, bbox2roi
+from mmdet.data_elements import SampleList
+from mmdet.data_elements.bbox import bbox2roi
 from mmdet.models.losses import SmoothL1Loss
+from mmdet.models.task_modules.samplers import SamplingResult
 from mmdet.registry import MODELS
+from mmdet.utils import InstanceList
 from ..utils.misc import unpack_gt_instances
 from .standard_roi_head import StandardRoIHead
 
@@ -93,7 +96,7 @@ class DynamicRoIHead(StandardRoIHead):
         return losses
 
     def bbox_loss(self, x: Tuple[Tensor],
-                  sampling_results: SamplingResultList) -> dict:
+                  sampling_results: List[SamplingResult]) -> dict:
         """Perform forward propagation and loss calculation of the bbox head on
         the features of the upstream network.
 

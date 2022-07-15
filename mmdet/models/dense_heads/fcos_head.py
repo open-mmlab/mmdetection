@@ -7,10 +7,10 @@ from mmcv.cnn import Scale
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import RangeType, multi_apply, reduce_mean
-from mmdet.core.utils import (ConfigType, InstanceList, MultiConfig,
-                              OptInstanceList)
 from mmdet.registry import MODELS
+from mmdet.utils import (ConfigType, InstanceList, MultiConfig,
+                         OptInstanceList, RangeType, reduce_mean)
+from ..utils import multi_apply
 from .anchor_free_head import AnchorFreeHead
 
 INF = 1e8

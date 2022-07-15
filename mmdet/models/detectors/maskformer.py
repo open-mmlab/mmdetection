@@ -3,10 +3,9 @@ from typing import Dict, List, Tuple
 
 from torch import Tensor
 
-from mmdet.core import DetDataSample
-from mmdet.core.utils import (ConfigType, OptConfigType, OptMultiConfig,
-                              SampleList)
+from mmdet.data_elements import DetDataSample, SampleList
 from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from .single_stage import SingleStageDetector
 
 

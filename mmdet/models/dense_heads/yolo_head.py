@@ -14,11 +14,11 @@ from mmcv.cnn import (ConvModule, bias_init_with_prob, constant_init, is_norm,
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import (PseudoSampler, filter_scores_and_topk,
-                        images_to_levels, multi_apply)
-from mmdet.core.utils.typing import (ConfigType, InstanceList, OptConfigType,
-                                     OptInstanceList)
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
+                         OptInstanceList)
+from ..task_modules.samplers import PseudoSampler
+from ..utils import filter_scores_and_topk, images_to_levels, multi_apply
 from .base_dense_head import BaseDenseHead
 
 

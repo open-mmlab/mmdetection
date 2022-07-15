@@ -8,13 +8,12 @@ from mmcv.cnn import Scale, bias_init_with_prob, normal_init
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import InstanceList, OptInstanceList, multi_apply
-from mmdet.core.anchor.point_generator import MlvlPointGenerator
-from mmdet.core.bbox import bbox_overlaps
-from mmdet.models.dense_heads.atss_head import reduce_mean
-from mmdet.models.dense_heads.fcos_head import FCOSHead
-from mmdet.models.dense_heads.paa_head import levels_to_images
+from mmdet.data_elements.bbox import bbox_overlaps
 from mmdet.registry import MODELS
+from mmdet.utils import InstanceList, OptInstanceList, reduce_mean
+from ..task_modules.prior_generators import MlvlPointGenerator
+from ..utils import levels_to_images, multi_apply
+from .fcos_head import FCOSHead
 
 EPS = 1e-12
 

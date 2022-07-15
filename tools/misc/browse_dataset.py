@@ -6,8 +6,8 @@ import mmcv
 import numpy as np
 from mmcv import Config, DictAction
 
-from mmdet.core.utils import mask2ndarray
 from mmdet.datasets.builder import build_dataset
+from mmdet.models.utils import mask2ndarray
 from mmdet.registry import VISUALIZERS
 from mmdet.utils import register_all_modules
 

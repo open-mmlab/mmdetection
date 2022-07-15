@@ -4,7 +4,7 @@ import unittest
 import torch
 from parameterized import parameterized
 
-from mmdet.core import DetDataSample
+from mmdet.data_elements import DetDataSample
 from mmdet.models import build_detector
 from mmdet.testing._utils import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules

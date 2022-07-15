@@ -11,8 +11,9 @@ from mmcv.transforms import Compose
 from mmengine.config import Config
 from mmengine.runner import load_checkpoint
 
-from mmdet.core import DetDataSample, SampleList, get_classes
-from mmdet.models import build_detector
+from ..data_elements import DetDataSample, SampleList
+from ..evaluation import get_classes
+from ..models import build_detector
 
 
 def init_detector(

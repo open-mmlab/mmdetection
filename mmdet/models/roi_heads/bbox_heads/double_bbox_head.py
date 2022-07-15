@@ -6,9 +6,9 @@ from mmcv.cnn import ConvModule
 from mmengine.model import BaseModule, ModuleList
 from torch import Tensor
 
-from mmdet.core import ConfigType, MultiConfig, OptConfigType, OptMultiConfig
 from mmdet.models.backbones.resnet import Bottleneck
 from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, MultiConfig, OptConfigType, OptMultiConfig
 from .bbox_head import BBoxHead
 
 

@@ -4,7 +4,7 @@ from unittest import TestCase
 import torch
 from mmengine.data import InstanceData
 
-from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
+from mmdet.evaluation import bbox_overlaps
 from mmdet.models.dense_heads import CornerHead
 
 

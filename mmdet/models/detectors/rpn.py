@@ -5,8 +5,9 @@ import warnings
 import torch
 from torch import Tensor
 
-from mmdet.core import ConfigType, OptConfigType, OptMultiConfig, SampleList
+from mmdet.data_elements import SampleList
 from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from .single_stage import SingleStageDetector
 
 

@@ -11,12 +11,13 @@ from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import (ConfigType, InstanceList, OptConfigType,
-                        OptInstanceList, anchor_inside_flags, distance2bbox,
-                        images_to_levels, multi_apply, reduce_mean, unmap)
-from mmdet.core.utils import filter_scores_and_topk
-from mmdet.models.utils import sigmoid_geometric_mean
+from mmdet.data_elements.bbox import distance2bbox
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
+                         OptInstanceList, reduce_mean)
+from ..task_modules.prior_generators import anchor_inside_flags
+from ..utils import (filter_scores_and_topk, images_to_levels, multi_apply,
+                     sigmoid_geometric_mean, unmap)
 from .atss_head import ATSSHead
 
 
@@ -459,7 +460,7 @@ class TOODHead(ATSSHead):
         (anchor_list, labels_list, label_weights_list, bbox_targets_list,
          alignment_metrics_list) = cls_reg_targets
 
-        losses_cls, losses_bbox,\
+        losses_cls, losses_bbox, \
             cls_avg_factors, bbox_avg_factors = multi_apply(
                 self.loss_by_feat_single,
                 anchor_list,
@@ -539,7 +540,6 @@ class TOODHead(ATSSHead):
         for cls_score, bbox_pred, priors, stride in zip(
                 cls_score_list, bbox_pred_list, mlvl_priors,
                 self.prior_generator.strides):
-
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
 
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4) * stride[0]

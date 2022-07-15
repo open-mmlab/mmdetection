@@ -8,11 +8,13 @@ from mmengine.data import InstanceData
 from mmengine.model import BaseModule
 from torch import Tensor
 
-from mmdet.core import (ConfigType, InstanceList, MultiConfig, OptConfigType,
-                        OptInstanceList, PseudoSampler, anchor_inside_flags,
-                        calc_region, images_to_levels, multi_apply,
-                        multiclass_nms, unmap)
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.utils import (ConfigType, InstanceList, MultiConfig, OptConfigType,
+                         OptInstanceList)
+from ..layers import multiclass_nms
+from ..task_modules.prior_generators import anchor_inside_flags, calc_region
+from ..task_modules.samplers import PseudoSampler
+from ..utils import images_to_levels, multi_apply, unmap
 from .anchor_head import AnchorHead
 
 

@@ -8,7 +8,7 @@ from mmengine.data import InstanceData
 from parameterized import parameterized
 
 from mmdet import *  # noqa
-from mmdet.core.mask import BitmapMasks
+from mmdet.data_elements.mask import BitmapMasks
 from mmdet.models.dense_heads import (DecoupledSOLOHead,
                                       DecoupledSOLOLightHead, SOLOHead)
 
