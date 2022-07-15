@@ -2,11 +2,17 @@ _base_ = '../_base_/default_runtime.py'
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+
 image_size = (1024, 1024)
 
 file_client_args = dict(backend='disk')
+# comment out the code below to use different file client
+# file_client_args = dict(
+#     backend='petrel',
+#     path_mapping=dict({
+#         './data/': 's3://openmmlab/datasets/detection/',
+#         'data/': 's3://openmmlab/datasets/detection/'
+#     }))
 
 # Standard Scale Jittering (SSJ) resizes and crops an image
 # with a resize range of 0.8 to 1.25 of the original image size.
@@ -14,10 +20,9 @@ train_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
-        type='Resize',
-        img_scale=image_size,
+        type='RandomResize',
+        scale=image_size,
         ratio_range=(0.8, 1.25),
-        multiscale_mode='range',
         keep_ratio=True),
     dict(
         type='RandomCrop',
@@ -26,64 +31,83 @@ train_pipeline = [
         recompute_bbox=True,
         allow_negative_crop=True),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size=image_size),  # padding to image_size leads 0.5+ mAP
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks']),
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PackDetInputs')
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='Resize', scale=(1333, 800), keep_ratio=True),
     dict(
-        type='MultiScaleFlipAug',
-        img_scale=(1333, 800),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
-        ])
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
 ]
 
-data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
-    train=dict(
+train_dataloader = dict(
+    batch_size=2,
+    num_workers=2,
+    persistent_workers=True,
+    sampler=dict(type='InfiniteSampler'),
+    dataset=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_train2017.json',
-        img_prefix=data_root + 'train2017/',
-        pipeline=train_pipeline),
-    val=dict(
+        data_root=data_root,
+        ann_file='annotations/instances_train2017.json',
+        data_prefix=dict(img='train2017/'),
+        filter_cfg=dict(filter_empty_gt=True, min_size=32),
+        pipeline=train_pipeline))
+val_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    persistent_workers=True,
+    drop_last=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
-        pipeline=test_pipeline),
-    test=dict(
-        type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
+        data_root=data_root,
+        ann_file='annotations/instances_val2017.json',
+        data_prefix=dict(img='val2017/'),
+        test_mode=True,
         pipeline=test_pipeline))
+test_dataloader = val_dataloader
 
-evaluation = dict(interval=6000, metric=['bbox', 'segm'])
+val_evaluator = dict(
+    type='CocoMetric',
+    ann_file=data_root + 'annotations/instances_val2017.json',
+    metric=['bbox', 'segm'],
+    format_only=False)
+test_evaluator = val_evaluator
 
-# optimizer assumes batch_size = (32 GPUs) x (2 samples per GPU)
-optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0.00004)
-optimizer_config = dict(grad_clip=None)
-
-# lr steps at [0.9, 0.95, 0.975] of the maximum iterations
-lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=1000,
-    warmup_ratio=0.001,
-    step=[243000, 256500, 263250])
-checkpoint_config = dict(interval=6000)
 # The model is trained by 270k iterations with batch_size 64,
 # which is roughly equivalent to 144 epochs.
-runner = dict(type='IterBasedRunner', max_iters=270000)
+
+max_iters = 270000
+train_cfg = dict(
+    type='IterBasedTrainLoop', max_iters=max_iters, val_interval=10000)
+val_cfg = dict(type='ValLoop')
+test_cfg = dict(type='TestLoop')
+
+# optimizer assumes bs=64
+optim_wrapper = dict(
+    type='OptimWrapper',
+    optimizer=dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=0.00004))
+
+# learning rate policy
+# lr steps at [0.9, 0.95, 0.975] of the maximum iterations
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0,
+        end=1000),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=270000,
+        by_epoch=False,
+        milestones=[243000, 256500, 263250],
+        gamma=0.1)
+]
+
+default_hooks = dict(checkpoint=dict(by_epoch=False, interval=10000))
+log_processor = dict(by_epoch=False)
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
