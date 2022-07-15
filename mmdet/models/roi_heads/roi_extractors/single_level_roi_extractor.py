@@ -78,6 +78,8 @@ class SingleRoIExtractor(BaseRoIExtractor):
         Returns:
             Tensor: RoI feature.
         """
+        # convert fp32 to fp16 when amp is on
+        rois = rois.type_as(feats[0])
         out_size = self.roi_layers[0].output_size
         num_levels = len(feats)
         roi_feats = feats[0].new_zeros(

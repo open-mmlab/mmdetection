@@ -12,21 +12,16 @@ model = dict(
         init_cfg=dict(
             type='Pretrained', checkpoint='./mocov2_r50_800ep_pretrain.pth')))
 
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(
+        type='LoadImageFromFile',
+        file_client_args={{_base_.file_client_args}}),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
-        type='Resize',
-        img_scale=[(1333, 640), (1333, 800)],
-        multiscale_mode='range',
+        type='RandomResize', scale=[(1333, 640), (1333, 800)],
         keep_ratio=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks'])
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PackDetInputs')
 ]
 
-data = dict(train=dict(pipeline=train_pipeline))
+train_dataloader = dict(dataset=dict(pipeline=train_pipeline))

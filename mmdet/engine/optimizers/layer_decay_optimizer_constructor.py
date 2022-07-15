@@ -1,10 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import json
+from typing import List
 
-from mmcv.runner import DefaultOptimizerConstructor, get_dist_info
+import torch.nn as nn
+from mmengine.dist import get_dist_info
+from mmengine.optim import DefaultOptimWrapperConstructor
 
+from mmdet.registry import OPTIM_WRAPPER_CONSTRUCTORS
 from mmdet.utils import get_root_logger
-from .builder import OPTIMIZER_BUILDERS
 
 
 def get_layer_id_for_convnext(var_name, max_layer_id):
@@ -75,12 +78,13 @@ def get_stage_id_for_convnext(var_name, max_stage_id):
         return max_stage_id - 1
 
 
-@OPTIMIZER_BUILDERS.register_module()
-class LearningRateDecayOptimizerConstructor(DefaultOptimizerConstructor):
+@OPTIM_WRAPPER_CONSTRUCTORS.register_module()
+class LearningRateDecayOptimizerConstructor(DefaultOptimWrapperConstructor):
     # Different learning rates are set for different layers of backbone.
     # Note: Currently, this optimizer constructor is built for ConvNeXt.
 
-    def add_params(self, params, module, **kwargs):
+    def add_params(self, params: List[dict], module: nn.Module,
+                   **kwargs) -> None:
         """Add all parameters of module to the params list.
 
         The parameters of the given module will be added to the list of param
