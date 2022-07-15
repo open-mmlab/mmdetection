@@ -33,7 +33,7 @@ class TestPackDetInputs(unittest.TestCase):
             'img': rng.rand(300, 400),
             'gt_seg_map': rng.rand(300, 400),
             'gt_masks':
-            BitmapMasks(rng.rand(3, 300, 400), height=300, width=400),
+            BitmapMasks(rng.rand(2, 300, 400), height=300, width=400),
             'gt_bboxes_labels': rng.rand(3, ),
             'gt_ignore_flags': np.array([0, 0, 1], dtype=np.bool),
             'proposals': rng.rand(2, 4)

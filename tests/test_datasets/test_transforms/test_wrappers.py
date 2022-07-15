@@ -45,7 +45,6 @@ class TestMultiBranch(unittest.TestCase):
             }, {
                 'bbox': [50, 50, 60, 80],
                 'bbox_label': 2,
-                'mask': [[50, 50, 60, 50, 60, 80, 50, 80]],
                 'ignore_flag': 1
             }]
         }
