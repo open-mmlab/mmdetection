@@ -73,8 +73,8 @@ class PackDetInputs(BaseTransform):
             packed_results['inputs'] = to_tensor(img)
 
         if 'gt_ignore_flags' in results:
-            vaild_idx = np.where(results['gt_ignore_flags'] == 0)
-            ignore_idx = np.where(results['gt_ignore_flags'] == 1)
+            vaild_idx = np.where(results['gt_ignore_flags'] == 0)[0]
+            ignore_idx = np.where(results['gt_ignore_flags'] == 1)[0]
 
         data_sample = DetDataSample()
         instance_data = InstanceData()
@@ -84,13 +84,8 @@ class PackDetInputs(BaseTransform):
             if key not in results:
                 continue
             if key == 'gt_masks':
-                if 'gt_ignore_flags' in results:
-                    instance_data[
-                        self.mapping_table[key]] = results[key][vaild_idx]
-                    ignore_instance_data[
-                        self.mapping_table[key]] = results[key][ignore_idx]
-                else:
-                    instance_data[self.mapping_table[key]] = results[key]
+                # no need to consider gt_ignore_flags
+                instance_data[self.mapping_table[key]] = results[key]
             else:
                 if 'gt_ignore_flags' in results:
                     instance_data[self.mapping_table[key]] = to_tensor(
