@@ -4,7 +4,7 @@ import torch
 from mmengine.data import PixelData
 from mmengine.testing import assert_allclose
 
-from mmdet.core.data_structures import DetDataSample
+from mmdet.data_elements import DetDataSample
 from mmdet.models.seg_heads import PanopticFPNHead
 
 

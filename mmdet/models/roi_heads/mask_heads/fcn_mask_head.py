@@ -13,11 +13,11 @@ from mmengine.model import BaseModule, ModuleList
 from torch import Tensor
 from torch.nn.modules.utils import _pair
 
-from mmdet.core import mask_target
-from mmdet.core.utils import (ConfigType, InstanceList, OptConfigType,
-                              OptMultiConfig, SamplingResultList)
+from mmdet.data_elements.mask import mask_target
+from mmdet.models.task_modules.samplers import SamplingResult
 from mmdet.models.utils import empty_instances
 from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, InstanceList, OptConfigType, OptMultiConfig
 
 BYTES_PER_FLOAT = 4
 # TODO: This memory limit may be too much or too little. It would be better to
@@ -149,7 +149,7 @@ class FCNMaskHead(BaseModule):
         mask_pred = self.conv_logits(x)
         return mask_pred
 
-    def get_targets(self, sampling_results: SamplingResultList,
+    def get_targets(self, sampling_results: List[SamplingResult],
                     batch_gt_instances: InstanceList,
                     rcnn_train_cfg: ConfigDict) -> Tensor:
         """Calculate the ground truth for all samples in a batch according to
@@ -176,7 +176,7 @@ class FCNMaskHead(BaseModule):
         return mask_targets
 
     def loss_and_target(self, mask_pred: Tensor,
-                        sampling_results: SamplingResultList,
+                        sampling_results: List[SamplingResult],
                         batch_gt_instances: InstanceList,
                         rcnn_train_cfg: ConfigDict) -> dict:
         """Calculate the loss based on the features extracted by the mask head.

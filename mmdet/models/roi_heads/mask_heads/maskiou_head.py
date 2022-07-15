@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 import torch
@@ -11,9 +11,9 @@ from mmengine.model import BaseModule
 from torch import Tensor
 from torch.nn.modules.utils import _pair
 
-from mmdet.core import (ConfigType, InstanceList, OptMultiConfig,
-                        SamplingResultList)
+from mmdet.models.task_modules.samplers import SamplingResult
 from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, InstanceList, OptMultiConfig
 
 
 @MODELS.register_module()
@@ -116,7 +116,7 @@ class MaskIoUHead(BaseModule):
 
     def loss_and_target(self, mask_iou_pred: Tensor, mask_pred: Tensor,
                         mask_targets: Tensor,
-                        sampling_results: SamplingResultList,
+                        sampling_results: List[SamplingResult],
                         batch_gt_instances: InstanceList,
                         rcnn_train_cfg: ConfigDict) -> dict:
         """Calculate the loss and targets of MaskIoUHead.
@@ -154,7 +154,7 @@ class MaskIoUHead(BaseModule):
             loss_mask_iou = mask_iou_pred.sum() * 0
         return dict(loss_mask_iou=loss_mask_iou)
 
-    def get_targets(self, sampling_results: SamplingResultList,
+    def get_targets(self, sampling_results: List[SamplingResult],
                     batch_gt_instances: InstanceList, mask_pred: Tensor,
                     mask_targets: Tensor,
                     rcnn_train_cfg: ConfigDict) -> Tensor:

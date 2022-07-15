@@ -1,8 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # Copyright (c) 2019 Western Digital Corporation or its affiliates.
 
-from mmdet.core.utils.typing import ConfigType, OptConfigType, OptMultiConfig
 from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from .single_stage import SingleStageDetector
 
 

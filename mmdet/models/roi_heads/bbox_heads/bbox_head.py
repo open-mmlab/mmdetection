@@ -10,12 +10,12 @@ from mmengine.model import BaseModule
 from torch import Tensor
 from torch.nn.modules.utils import _pair
 
-from mmdet.core import multi_apply, multiclass_nms
-from mmdet.core.utils import (ConfigType, InstanceList, OptMultiConfig,
-                              SamplingResultList)
+from mmdet.models.layers import build_linear_layer, multiclass_nms
 from mmdet.models.losses import accuracy
-from mmdet.models.utils import build_linear_layer, empty_instances
+from mmdet.models.task_modules.samplers import SamplingResult
+from mmdet.models.utils import empty_instances, multi_apply
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.utils import ConfigType, InstanceList, OptMultiConfig
 
 
 @MODELS.register_module()
@@ -212,7 +212,7 @@ class BBoxHead(BaseModule):
         return labels, label_weights, bbox_targets, bbox_weights
 
     def get_targets(self,
-                    sampling_results: SamplingResultList,
+                    sampling_results: List[SamplingResult],
                     rcnn_train_cfg: ConfigDict,
                     concat: bool = True) -> tuple:
         """Calculate the ground truth for all samples in a batch according to
@@ -275,7 +275,7 @@ class BBoxHead(BaseModule):
                         cls_score: Tensor,
                         bbox_pred: Tensor,
                         rois: Tensor,
-                        sampling_results: SamplingResultList,
+                        sampling_results: List[SamplingResult],
                         rcnn_train_cfg: ConfigDict,
                         reduction_override: Optional[str] = None) -> dict:
         """Calculate the loss based on the features extracted by the bbox head.
@@ -493,7 +493,7 @@ class BBoxHead(BaseModule):
             results.labels = det_labels
         return results
 
-    def refine_bboxes(self, sampling_results: SamplingResultList,
+    def refine_bboxes(self, sampling_results: List[SamplingResult],
                       bbox_results: dict,
                       batch_img_metas: List[dict]) -> InstanceList:
         """Refine bboxes during training.
@@ -517,8 +517,9 @@ class BBoxHead(BaseModule):
         Example:
             >>> # xdoctest: +REQUIRES(module:kwarray)
             >>> import numpy as np
-            >>> from mmdet.core.bbox.demodata import random_boxes
-            >>> from mmdet.core.bbox.samplers import SamplingResult
+            >>> from mmdet.models.task_modules.samplers.
+            ... sampling_result import random_boxes
+            >>> from mmdet.models.task_modules.samplers import SamplingResult
             >>> self = BBoxHead(reg_class_agnostic=True)
             >>> n_roi = 2
             >>> n_img = 4

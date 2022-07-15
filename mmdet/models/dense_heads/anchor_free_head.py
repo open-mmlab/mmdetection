@@ -7,11 +7,11 @@ from mmcv.cnn import ConvModule
 from numpy import ndarray
 from torch import Tensor
 
-from mmdet.core import multi_apply
-from mmdet.core.anchor.point_generator import MlvlPointGenerator
-from mmdet.core.utils import (ConfigType, InstanceList, MultiConfig,
-                              OptConfigType, OptInstanceList)
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.utils import (ConfigType, InstanceList, MultiConfig, OptConfigType,
+                         OptInstanceList)
+from ..task_modules.prior_generators import MlvlPointGenerator
+from ..utils import multi_apply
 from .base_dense_head import BaseDenseHead
 
 StrideType = Union[Sequence[int], Sequence[Tuple[int, int]]]

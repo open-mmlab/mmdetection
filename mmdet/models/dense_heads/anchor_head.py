@@ -7,11 +7,13 @@ import torch.nn as nn
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import (AnchorGenerator, PseudoSampler, anchor_inside_flags,
-                        images_to_levels, multi_apply, unmap)
-from mmdet.core.utils import (ConfigType, InstanceList, OptConfigType,
-                              OptInstanceList, OptMultiConfig)
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
+                         OptInstanceList, OptMultiConfig)
+from ..task_modules.prior_generators import (AnchorGenerator,
+                                             anchor_inside_flags)
+from ..task_modules.samplers import PseudoSampler
+from ..utils import images_to_levels, multi_apply, unmap
 from .base_dense_head import BaseDenseHead
 
 

@@ -6,10 +6,11 @@ import torch.nn.functional as F
 from mmengine.data import InstanceData, PixelData
 from torch import Tensor
 
-from mmdet.core.evaluation.panoptic_utils import INSTANCE_OFFSET
-from mmdet.core.mask import mask2bbox
-from mmdet.core.utils import OptConfigType, OptMultiConfig, SampleList
+from mmdet.data_elements import SampleList
+from mmdet.data_elements.mask import mask2bbox
+from mmdet.evaluation.functional import INSTANCE_OFFSET
 from mmdet.registry import MODELS
+from mmdet.utils import OptConfigType, OptMultiConfig
 from .base_panoptic_fusion_head import BasePanopticFusionHead
 
 

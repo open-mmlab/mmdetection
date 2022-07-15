@@ -7,10 +7,11 @@ from mmcv.cnn import ConvModule, Scale
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import (ConfigType, InstanceList, MultiConfig, OptConfigType,
-                        OptInstanceList, anchor_inside_flags, images_to_levels,
-                        multi_apply, reduce_mean, unmap)
 from mmdet.registry import MODELS
+from mmdet.utils import (ConfigType, InstanceList, MultiConfig, OptConfigType,
+                         OptInstanceList, reduce_mean)
+from ..task_modules.prior_generators import anchor_inside_flags
+from ..utils import images_to_levels, multi_apply, unmap
 from .anchor_head import AnchorHead
 
 
@@ -299,7 +300,7 @@ class ATSSHead(AnchorHead):
         avg_factor = reduce_mean(
             torch.tensor(avg_factor, dtype=torch.float, device=device)).item()
 
-        losses_cls, losses_bbox, loss_centerness,\
+        losses_cls, losses_bbox, loss_centerness, \
             bbox_avg_factor = multi_apply(
                 self.loss_by_feat_single,
                 anchor_list,

@@ -5,8 +5,8 @@ CPUS_PER_TASK=${4:-2}
 
 echo 'configs/atss/atss_r50_fpn_1x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=$CPUS_PRE_TASK tools/slurm_test.sh $PARTITION atss_r50_fpn_1x_coco configs/atss/atss_r50_fpn_1x_coco.py $CHECKPOINT_DIR/atss_r50_fpn_1x_coco_20200209-985f7bd0.pth --work-dir $WORK_DIR/atss_r50_fpn_1x_coco --cfg-option env_cfg.dist_cfg.port=29666  &
-echo 'configs/autoassign/autoassign_r50_fpn_8x2_1x_coco.py' &
-GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=$CPUS_PRE_TASK tools/slurm_test.sh $PARTITION autoassign_r50_fpn_8x2_1x_coco configs/autoassign/autoassign_r50_fpn_8x2_1x_coco.py $CHECKPOINT_DIR/auto_assign_r50_fpn_1x_coco_20210413_115540-5e17991f.pth --work-dir $WORK_DIR/autoassign_r50_fpn_8x2_1x_coco --cfg-option env_cfg.dist_cfg.port=29667  &
+echo 'configs/autoassign/autoassign_r50_caffe_fpn_8x2_1x_coco.py' &
+GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=$CPUS_PRE_TASK tools/slurm_test.sh $PARTITION autoassign_r50_caffe_fpn_8x2_1x_coco configs/autoassign/autoassign_r50_caffe_fpn_8x2_1x_coco.py $CHECKPOINT_DIR/auto_assign_r50_fpn_1x_coco_20210413_115540-5e17991f.pth --work-dir $WORK_DIR/autoassign_r50_caffe_fpn_8x2_1x_coco --cfg-option env_cfg.dist_cfg.port=29667  &
 echo 'configs/carafe/faster_rcnn_r50_fpn_carafe_1x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=$CPUS_PRE_TASK tools/slurm_test.sh $PARTITION faster_rcnn_r50_fpn_carafe_1x_coco configs/carafe/faster_rcnn_r50_fpn_carafe_1x_coco.py $CHECKPOINT_DIR/faster_rcnn_r50_fpn_carafe_1x_coco_bbox_mAP-0.386_20200504_175733-385a75b7.pth --work-dir $WORK_DIR/faster_rcnn_r50_fpn_carafe_1x_coco --cfg-option env_cfg.dist_cfg.port=29668  &
 echo 'configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py' &

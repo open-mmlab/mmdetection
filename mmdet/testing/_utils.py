@@ -7,8 +7,8 @@ import torch
 from mmengine.data import BaseDataElement as PixelData
 from mmengine.data import InstanceData
 
-from mmdet.core import DetDataSample
-from mmdet.registry import TASK_UTILS
+from ..data_elements import DetDataSample
+from ..registry import TASK_UTILS
 
 
 def _get_config_directory():
@@ -75,7 +75,7 @@ def _rand_bboxes(rng, num_boxes, w, h):
 
 
 def _rand_masks(rng, num_boxes, bboxes, img_w, img_h):
-    from mmdet.core.mask import BitmapMasks
+    from mmdet.data_elements.mask import BitmapMasks
     masks = np.zeros((num_boxes, img_h, img_w))
     for i, bbox in enumerate(bboxes):
         bbox = bbox.astype(np.int32)
@@ -107,7 +107,6 @@ def demo_mm_inputs(batch_size=2,
         with_semantic (bool): whether to return semantic.
             Defaults to False.
     """
-    # from mmdet.core import BitmapMasks
     rng = np.random.RandomState(0)
 
     if isinstance(image_shapes, list):

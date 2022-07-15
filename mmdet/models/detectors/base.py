@@ -1,14 +1,16 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from abc import ABCMeta, abstractmethod
-from typing import Union
+from typing import Dict, List, Tuple, Union
 
 import torch
 from mmengine.model import BaseModel
 from torch import Tensor
 
-from mmdet.core import DetDataSample, InstanceList
-from mmdet.core.utils import (ForwardResults, OptConfigType, OptMultiConfig,
-                              OptSampleList, SampleList)
+from mmdet.data_elements import DetDataSample, OptSampleList, SampleList
+from mmdet.utils import InstanceList, OptConfigType, OptMultiConfig
+
+ForwardResults = Union[Dict[str, torch.Tensor], List[DetDataSample],
+                       Tuple[torch.Tensor], torch.Tensor]
 
 
 class BaseDetector(BaseModel, metaclass=ABCMeta):

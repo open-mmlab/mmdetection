@@ -7,7 +7,7 @@ from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 from mmengine.model import BaseModule
 
 from mmdet.registry import MODELS
-from ..utils import CSPLayer
+from ..layers import CSPLayer
 
 
 @MODELS.register_module()

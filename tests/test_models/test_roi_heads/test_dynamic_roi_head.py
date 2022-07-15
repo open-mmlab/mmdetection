@@ -20,6 +20,7 @@ class TestDynamicRoIHead(TestCase):
         roi_head = MODELS.build(self.roi_head_cfg)
         self.assertTrue(roi_head.with_bbox)
 
+    # TODO: CI Failed
     def test_dynamic_roi_head_loss(self):
         """Tests trident roi head predict."""
         if not torch.cuda.is_available():

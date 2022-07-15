@@ -11,12 +11,14 @@ from mmengine.data import InstanceData
 from mmengine.model import BaseModule, ModuleList
 from torch import Tensor
 
-from mmdet.core import (ConfigType, InstanceList, MultiConfig, OptInstanceList,
-                        OptMultiConfig, PseudoSampler, RegionAssigner,
-                        SampleList, images_to_levels, multi_apply)
-from mmdet.core.utils import select_single_mlvl
+from mmdet.data_elements import SampleList
 from mmdet.registry import MODELS, TASK_UTILS
-from ..utils.misc import unpack_gt_instances
+from mmdet.utils import (ConfigType, InstanceList, MultiConfig,
+                         OptInstanceList, OptMultiConfig)
+from ..task_modules.assigners import RegionAssigner
+from ..task_modules.samplers import PseudoSampler
+from ..utils import (images_to_levels, multi_apply, select_single_mlvl,
+                     unpack_gt_instances)
 from .base_dense_head import BaseDenseHead
 from .rpn_head import RPNHead
 

@@ -13,11 +13,10 @@ from mmcv.runner import ModuleList
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import reduce_mean
-from mmdet.core.utils.typing import (ConfigType, OptConfigType, OptMultiConfig,
-                                     SampleList)
-from mmdet.models.utils import get_uncertain_point_coords_with_randomness
+from mmdet.data_elements import SampleList
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig, reduce_mean
+from ..utils import get_uncertain_point_coords_with_randomness
 from .anchor_free_head import AnchorFreeHead
 from .maskformer_head import MaskFormerHead
 
@@ -104,10 +103,10 @@ class Mask2FormerHead(MaskFormerHead):
         self.num_classes = self.num_things_classes + self.num_stuff_classes
         self.num_queries = num_queries
         self.num_transformer_feat_level = num_transformer_feat_level
-        self.num_heads = transformer_decoder.transformerlayers.\
+        self.num_heads = transformer_decoder.transformerlayers. \
             attn_cfgs.num_heads
         self.num_transformer_decoder_layers = transformer_decoder.num_layers
-        assert pixel_decoder.encoder.transformerlayers.\
+        assert pixel_decoder.encoder.transformerlayers. \
             attn_cfgs.num_levels == num_transformer_feat_level
         pixel_decoder_ = copy.deepcopy(pixel_decoder)
         pixel_decoder_.update(

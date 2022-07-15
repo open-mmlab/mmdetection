@@ -88,6 +88,7 @@ class TestSCNetRoIHead(TestCase):
             elif 'loss_bbox' in name or 'loss_mask' in name:
                 self.assertEqual(value.sum(), 0)
 
+    # TODO: CI Failed
     @parameterized.expand(['scnet/scnet_r50_fpn_1x_coco.py'])
     def test_scnet_roi_head_predict(self, cfg_file):
         if not torch.cuda.is_available():

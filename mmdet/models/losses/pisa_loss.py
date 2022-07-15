@@ -6,7 +6,9 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
-from mmdet.core import BaseBBoxCoder, SamplingResult, bbox_overlaps
+from mmdet.data_elements.bbox import bbox_overlaps
+from ..task_modules.coders import BaseBBoxCoder
+from ..task_modules.samplers import SamplingResult
 
 
 @mmcv.jit(derivate=True, coderize=True)

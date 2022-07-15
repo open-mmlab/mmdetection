@@ -12,7 +12,7 @@ atss = dict(
     metric=dict(bbox_mAP=39.4),
 )
 autoassign = dict(
-    config='configs/autoassign/autoassign_r50_fpn_8x2_1x_coco.py',
+    config='configs/autoassign/autoassign_r50_caffe_fpn_8x2_1x_coco.py',
     checkpoint='auto_assign_r50_fpn_1x_coco_20210413_115540-5e17991f.pth',
     url='https://download.openmmlab.com/mmdetection/v2.0/autoassign/auto_assign_r50_fpn_1x_coco/auto_assign_r50_fpn_1x_coco_20210413_115540-5e17991f.pth', # noqa
     eval='bbox',

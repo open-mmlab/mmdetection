@@ -5,10 +5,10 @@ import cv2
 import mmcv
 import numpy as np
 import torch
+from mmcv.transforms import Compose
 from torchvision.transforms import functional as F
 
 from mmdet.apis import init_detector
-from mmdet.datasets.pipelines import Compose
 
 try:
     import ffmpegcv

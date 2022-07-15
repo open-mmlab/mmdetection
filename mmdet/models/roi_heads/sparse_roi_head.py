@@ -2,8 +2,8 @@
 import numpy as np
 import torch
 
-from mmdet.core import bbox2result, bbox2roi, bbox_xyxy_to_cxcywh
-from mmdet.core.bbox.samplers import PseudoSampler
+from mmdet.data_elements.bbox import bbox2result, bbox2roi, bbox_xyxy_to_cxcywh
+from mmdet.models.task_modules.samplers import PseudoSampler
 from mmdet.registry import MODELS
 from .cascade_roi_head import CascadeRoIHead
 

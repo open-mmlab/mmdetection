@@ -10,6 +10,7 @@ Import:
   - configs/convnext/metafile.yml
   - configs/dcn/metafile.yml
   - configs/dcnv2/metafile.yml
+  - configs/ddod/metafile.yml
   - configs/deformable_detr/metafile.yml
   - configs/detectors/metafile.yml
   - configs/detr/metafile.yml
@@ -38,7 +39,9 @@ Import:
   - configs/lad/metafile.yml
   - configs/ld/metafile.yml
   - configs/libra_rcnn/metafile.yml
+  - configs/mask2former/metafile.yml
   - configs/mask_rcnn/metafile.yml
+  - configs/maskformer/metafile.yml
   - configs/ms_rcnn/metafile.yml
   - configs/nas_fcos/metafile.yml
   - configs/nas_fpn/metafile.yml
@@ -54,13 +57,16 @@ Import:
   - configs/reppoints/metafile.yml
   - configs/res2net/metafile.yml
   - configs/resnest/metafile.yml
+  - configs/resnet_strikes_back/metafile.yml
   - configs/retinanet/metafile.yml
   - configs/sabl/metafile.yml
   - configs/scnet/metafile.yml
   - configs/scratch/metafile.yml
   - configs/seesaw_loss/metafile.yml
+  - configs/simple_copy_paste/metafile.yml
   - configs/sparse_rcnn/metafile.yml
   - configs/solo/metafile.yml
+  - configs/solov2/metafile.yml
   - configs/ssd/metafile.yml
   - configs/swin/metafile.yml
   - configs/tridentnet/metafile.yml

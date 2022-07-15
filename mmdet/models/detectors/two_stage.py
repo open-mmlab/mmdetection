@@ -6,9 +6,9 @@ from typing import List, Tuple, Union
 import torch
 from torch import Tensor
 
-from mmdet.core.utils import (ConfigType, OptConfigType, OptMultiConfig,
-                              SampleList)
+from mmdet.data_elements import SampleList
 from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from .base import BaseDetector
 
 

@@ -4,10 +4,11 @@ from typing import List, Optional, Tuple
 import torch
 from torch import Tensor
 
-from mmdet.core import bbox2roi
-from mmdet.core.utils import (ConfigType, InstanceList, SampleList,
-                              SamplingResultList)
+from mmdet.data_elements import SampleList
+from mmdet.data_elements.bbox import bbox2roi
 from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, InstanceList
+from ..task_modules.samplers import SamplingResult
 from ..utils.misc import unpack_gt_instances
 from .standard_roi_head import StandardRoIHead
 
@@ -35,9 +36,9 @@ class GridRoIHead(StandardRoIHead):
         self.grid_head = MODELS.build(grid_head)
 
     def _random_jitter(self,
-                       sampling_results: SamplingResultList,
+                       sampling_results: List[SamplingResult],
                        batch_img_metas: List[dict],
-                       amplitude: float = 0.15) -> SamplingResultList:
+                       amplitude: float = 0.15) -> List[SamplingResult]:
         """Ramdom jitter positive proposals for training.
 
         Args:
@@ -171,7 +172,7 @@ class GridRoIHead(StandardRoIHead):
 
     def bbox_loss(self,
                   x: Tuple[Tensor],
-                  sampling_results: SamplingResultList,
+                  sampling_results: List[SamplingResult],
                   batch_img_metas: Optional[List[dict]] = None) -> dict:
         """Perform forward propagation and loss calculation of the bbox head on
         the features of the upstream network.

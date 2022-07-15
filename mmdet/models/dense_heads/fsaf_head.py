@@ -6,12 +6,12 @@ import torch
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import (anchor_inside_flags, images_to_levels, multi_apply,
-                        unmap)
-from mmdet.core.utils import InstanceList, OptInstanceList, OptMultiConfig
 from mmdet.registry import MODELS
+from mmdet.utils import InstanceList, OptInstanceList, OptMultiConfig
 from ..losses.accuracy import accuracy
 from ..losses.utils import weight_reduce_loss
+from ..task_modules.prior_generators import anchor_inside_flags
+from ..utils import images_to_levels, multi_apply, unmap
 from .retina_head import RetinaHead
 
 

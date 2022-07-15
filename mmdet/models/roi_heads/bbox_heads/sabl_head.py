@@ -4,12 +4,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
-from mmcv.runner import BaseModule, force_fp32
+from mmengine.model import BaseModule
 
-from mmdet.core import build_bbox_coder, multi_apply, multiclass_nms
 from mmdet.models.builder import build_loss
+from mmdet.models.layers import multiclass_nms
 from mmdet.models.losses import accuracy
-from mmdet.registry import MODELS
+from mmdet.models.utils import multi_apply
+from mmdet.registry import MODELS, TASK_UTILS
 
 
 @MODELS.register_module()
@@ -111,7 +112,7 @@ class SABLHead(BaseModule):
         assert self.reg_class_agnostic
         self.norm_cfg = norm_cfg
 
-        self.bbox_coder = build_bbox_coder(bbox_coder)
+        self.bbox_coder = TASK_UTILS.build(bbox_coder)
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox_cls = build_loss(loss_bbox_cls)
         self.loss_bbox_reg = build_loss(loss_bbox_reg)
@@ -482,7 +483,6 @@ class SABLHead(BaseModule):
 
         return losses
 
-    @force_fp32(apply_to=('cls_score', 'bbox_pred'))
     def get_bboxes(self,
                    rois,
                    cls_score,
@@ -524,7 +524,6 @@ class SABLHead(BaseModule):
 
             return det_bboxes, det_labels
 
-    @force_fp32(apply_to=('bbox_preds', ))
     def refine_bboxes(self, rois, labels, bbox_preds, pos_is_gts, img_metas):
         """Refine bboxes during training.
 
@@ -570,7 +569,6 @@ class SABLHead(BaseModule):
 
         return bboxes_list
 
-    @force_fp32(apply_to=('bbox_pred', ))
     def regress_by_class(self, rois, label, bbox_pred, img_meta):
         """Regress the bbox for the predicted class. Used in Cascade R-CNN.
 

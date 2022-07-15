@@ -4,11 +4,12 @@ from typing import List, Optional, Tuple
 import torch
 from torch import Tensor
 
-from mmdet.core import bbox2roi
-from mmdet.core.utils import (ConfigType, InstanceList, SampleList,
-                              SamplingResultList)
+from mmdet.data_elements import DetDataSample
+from mmdet.data_elements.bbox import bbox2roi
 from mmdet.registry import MODELS, TASK_UTILS
-from ..utils.misc import empty_instances, unpack_gt_instances
+from mmdet.utils import ConfigType, InstanceList
+from ..task_modules.samplers import SamplingResult
+from ..utils import empty_instances, unpack_gt_instances
 from .base_roi_head import BaseRoIHead
 
 
@@ -86,7 +87,7 @@ class StandardRoIHead(BaseRoIHead):
         return results
 
     def loss(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
-             batch_data_samples: SampleList) -> dict:
+             batch_data_samples: List[DetDataSample]) -> dict:
         """Perform forward propagation and loss calculation of the detection
         roi on the features of the upstream network.
 
@@ -165,7 +166,7 @@ class StandardRoIHead(BaseRoIHead):
         return bbox_results
 
     def bbox_loss(self, x: Tuple[Tensor],
-                  sampling_results: SamplingResultList) -> dict:
+                  sampling_results: List[SamplingResult]) -> dict:
         """Perform forward propagation and loss calculation of the bbox head on
         the features of the upstream network.
 
@@ -194,8 +195,8 @@ class StandardRoIHead(BaseRoIHead):
         bbox_results.update(loss_bbox=bbox_loss_and_target['loss_bbox'])
         return bbox_results
 
-    def mask_loss(self, x: Tuple[Tensor], sampling_results: SamplingResultList,
-                  bbox_feats: Tensor,
+    def mask_loss(self, x: Tuple[Tensor],
+                  sampling_results: List[SamplingResult], bbox_feats: Tensor,
                   batch_gt_instances: InstanceList) -> dict:
         """Perform forward propagation and loss calculation of the mask head on
         the features of the upstream network.

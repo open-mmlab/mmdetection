@@ -1,13 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from abc import ABCMeta, abstractmethod
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 from mmcv.runner import BaseModule
 from torch import Tensor
 
-from mmdet.core.utils import (InstanceList, OptInstanceList, OptMultiConfig,
-                              OptSamplingResultList, SampleList)
-from ..utils.misc import unpack_gt_instances
+from mmdet.data_elements import SampleList
+from mmdet.utils import InstanceList, OptInstanceList, OptMultiConfig
+from ..task_modules.samplers import SamplingResult
+from ..utils import unpack_gt_instances
 
 
 class BaseMaskHead(BaseModule, metaclass=ABCMeta):
@@ -31,7 +32,7 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
     def loss(self,
              x: Union[List[Tensor], Tuple[Tensor]],
              batch_data_samples: SampleList,
-             positive_infos: OptSamplingResultList = None,
+             positive_infos: Optional[List[SamplingResult]] = None,
              **kwargs) -> dict:
         """Perform forward propagation and loss calculation of the mask head on
         the features of the upstream network.

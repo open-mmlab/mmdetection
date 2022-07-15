@@ -11,8 +11,8 @@ from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core.utils import InstanceList, MultiConfig, OptInstanceList
 from mmdet.registry import MODELS
+from mmdet.utils import InstanceList, MultiConfig, OptInstanceList
 from .anchor_head import AnchorHead
 
 

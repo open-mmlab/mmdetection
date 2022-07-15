@@ -7,8 +7,8 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmengine.model import BaseModule
 
-from mmdet.core.utils import OptMultiConfig
 from mmdet.registry import MODELS
+from mmdet.utils import OptMultiConfig
 
 
 @MODELS.register_module()

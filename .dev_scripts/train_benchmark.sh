@@ -6,8 +6,8 @@ echo 'configs/albu_example/mask_rcnn_r50_fpn_albu_1x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=$CPUS_PRE_TASK ./tools/slurm_train.sh $PARTITION mask_rcnn_r50_fpn_albu_1x_coco configs/albu_example/mask_rcnn_r50_fpn_albu_1x_coco.py $WORK_DIR/mask_rcnn_r50_fpn_albu_1x_coco --cfg-options default_hooks.checkpoint.max_keep_ckpts=1 &
 echo 'configs/atss/atss_r50_fpn_1x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=$CPUS_PRE_TASK ./tools/slurm_train.sh $PARTITION atss_r50_fpn_1x_coco configs/atss/atss_r50_fpn_1x_coco.py $WORK_DIR/atss_r50_fpn_1x_coco --cfg-options default_hooks.checkpoint.max_keep_ckpts=1 &
-echo 'configs/autoassign/autoassign_r50_fpn_8x2_1x_coco.py' &
-GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=$CPUS_PRE_TASK ./tools/slurm_train.sh $PARTITION autoassign_r50_fpn_8x2_1x_coco configs/autoassign/autoassign_r50_fpn_8x2_1x_coco.py $WORK_DIR/autoassign_r50_fpn_8x2_1x_coco --cfg-options default_hooks.checkpoint.max_keep_ckpts=1 &
+echo 'configs/autoassign/autoassign_r50_caffe_fpn_8x2_1x_coco.py' &
+GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=$CPUS_PRE_TASK ./tools/slurm_train.sh $PARTITION autoassign_r50_caffe_fpn_8x2_1x_coco configs/autoassign/autoassign_r50_caffe_fpn_8x2_1x_coco.py $WORK_DIR/autoassign_r50_caffe_fpn_8x2_1x_coco --cfg-options default_hooks.checkpoint.max_keep_ckpts=1 &
 echo 'configs/carafe/faster_rcnn_r50_fpn_carafe_1x_coco.py' &
 GPUS=8  GPUS_PER_NODE=8  CPUS_PER_TASK=$CPUS_PRE_TASK ./tools/slurm_train.sh $PARTITION faster_rcnn_r50_fpn_carafe_1x_coco configs/carafe/faster_rcnn_r50_fpn_carafe_1x_coco.py $WORK_DIR/faster_rcnn_r50_fpn_carafe_1x_coco --cfg-options default_hooks.checkpoint.max_keep_ckpts=1 &
 echo 'configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py' &

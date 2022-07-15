@@ -12,8 +12,8 @@ from mmengine.logging import MessageHub
 from mmengine.model import ImgDataPreprocessor
 from torch import Tensor
 
-from mmdet.core.data_structures import DetDataSample
-from mmdet.core.mask import BitmapMasks
+from mmdet.data_elements import DetDataSample
+from mmdet.data_elements.mask import BitmapMasks
 from mmdet.registry import MODELS
 
 

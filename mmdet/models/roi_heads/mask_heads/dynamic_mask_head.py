@@ -1,11 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 import torch.nn as nn
-from mmcv.runner import auto_fp16, force_fp32
 
-from mmdet.core import mask_target
+from mmdet.data_elements.mask import mask_target
 from mmdet.models.dense_heads.atss_head import reduce_mean
-from mmdet.models.utils import build_transformer
+from mmdet.models.layers import build_transformer
 from mmdet.registry import MODELS
 from .fcn_mask_head import FCNMaskHead
 
@@ -88,7 +87,6 @@ class DynamicMaskHead(FCNMaskHead):
                 nn.init.xavier_uniform_(p)
             nn.init.constant_(self.conv_logits.bias, 0.)
 
-    @auto_fp16()
     def forward(self, roi_feat, proposal_feat):
         """Forward function of DynamicMaskHead.
 
@@ -121,7 +119,6 @@ class DynamicMaskHead(FCNMaskHead):
         mask_pred = self.conv_logits(x)
         return mask_pred
 
-    @force_fp32(apply_to=('mask_pred', ))
     def loss(self, mask_pred, mask_targets, labels):
         num_pos = labels.new_ones(labels.size()).float().sum()
         avg_factor = torch.clamp(reduce_mean(num_pos), min=1.).item()

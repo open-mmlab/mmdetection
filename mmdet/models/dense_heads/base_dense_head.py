@@ -12,10 +12,11 @@ from mmengine.data import InstanceData
 from mmengine.model import BaseModule
 from torch import Tensor
 
-from mmdet.core.post_processing.merge_augs import merge_aug_results
-from mmdet.core.utils import (InstanceList, OptMultiConfig, SampleList,
-                              filter_scores_and_topk, select_single_mlvl)
-from ..utils.misc import unpack_gt_instances
+from mmdet.data_elements import SampleList
+from mmdet.utils import InstanceList, OptMultiConfig
+from ..test_time_augs import merge_aug_results
+from ..utils import (filter_scores_and_topk, select_single_mlvl,
+                     unpack_gt_instances)
 
 
 class BaseDenseHead(BaseModule, metaclass=ABCMeta):

@@ -7,11 +7,13 @@ from mmengine.data import InstanceData
 from mmengine.model import ModuleList
 from torch import Tensor
 
-from mmdet.core import bbox2roi, merge_aug_masks
-from mmdet.core.utils import (ConfigType, InstanceList, MultiConfig,
-                              OptConfigType, OptMultiConfig, SampleList,
-                              SamplingResultList)
+from mmdet.data_elements import SampleList
+from mmdet.data_elements.bbox import bbox2roi
+from mmdet.models.task_modules.samplers import SamplingResult
+from mmdet.models.test_time_augs import merge_aug_masks
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.utils import (ConfigType, InstanceList, MultiConfig, OptConfigType,
+                         OptMultiConfig)
 from ..utils.misc import empty_instances, unpack_gt_instances
 from .base_roi_head import BaseRoIHead
 
@@ -146,7 +148,7 @@ class CascadeRoIHead(BaseRoIHead):
         return bbox_results
 
     def bbox_loss(self, stage: int, x: Tuple[Tensor],
-                  sampling_results: SamplingResultList) -> dict:
+                  sampling_results: List[SamplingResult]) -> dict:
         """Run forward function and calculate loss for box head in training.
 
         Args:
@@ -208,7 +210,7 @@ class CascadeRoIHead(BaseRoIHead):
         return mask_results
 
     def mask_loss(self, stage: int, x: Tuple[Tensor],
-                  sampling_results: SamplingResultList,
+                  sampling_results: List[SamplingResult],
                   batch_gt_instances: InstanceList) -> dict:
         """Run forward function and calculate loss for mask head in training.
 

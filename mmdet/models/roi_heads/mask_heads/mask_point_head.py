@@ -1,23 +1,23 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # Modified from https://github.com/facebookresearch/detectron2/tree/master/projects/PointRend/point_head/point_head.py  # noqa
 
-from typing import Tuple
+from typing import List, Tuple
 
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmcv.ops import point_sample, rel_roi_point_to_rel_img_point
+from mmengine.data import InstanceData
 from mmengine.model import BaseModule
 from torch import Tensor
 
-from mmdet.core import bbox2roi
-from mmdet.core.utils.typing import (ConfigType, InstanceData, InstanceList,
-                                     MultiConfig, OptConfigType,
-                                     SamplingResultList)
+from mmdet.data_elements.bbox import bbox2roi
 from mmdet.models.builder import build_loss
+from mmdet.models.task_modules.samplers import SamplingResult
 from mmdet.models.utils import (get_uncertain_point_coords_with_randomness,
                                 get_uncertainty)
 from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, InstanceList, MultiConfig, OptConfigType
 
 
 @MODELS.register_module()
@@ -118,7 +118,7 @@ class MaskPointHead(BaseModule):
         return self.fc_logits(x)
 
     def get_targets(self, rois: Tensor, rel_roi_points: Tensor,
-                    sampling_results: SamplingResultList,
+                    sampling_results: List[SamplingResult],
                     batch_gt_instances: InstanceList,
                     cfg: ConfigType) -> Tensor:
         """Get training targets of MaskPointHead for all images.
@@ -182,7 +182,7 @@ class MaskPointHead(BaseModule):
         return point_targets
 
     def loss_and_target(self, point_pred: Tensor, rel_roi_points: Tensor,
-                        sampling_results: SamplingResultList,
+                        sampling_results: List[SamplingResult],
                         batch_gt_instances: InstanceList,
                         cfg: ConfigType) -> dict:
         """Calculate loss for MaskPointHead.

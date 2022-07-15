@@ -5,7 +5,7 @@ import torch
 from mmcv import ConfigDict
 from mmengine import InstanceData
 
-from mmdet.core import DetDataSample
+from mmdet.data_elements import DetDataSample
 from mmdet.models.dense_heads import DETRHead
 
 

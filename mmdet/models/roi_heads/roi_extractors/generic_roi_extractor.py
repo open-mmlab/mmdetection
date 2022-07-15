@@ -4,8 +4,8 @@ from typing import Optional, Tuple
 from mmcv.cnn.bricks import build_plugin_layer
 from torch import Tensor
 
-from mmdet.core.utils.typing import OptConfigType
 from mmdet.registry import MODELS
+from mmdet.utils import OptConfigType
 from .base_roi_extractor import BaseRoIExtractor
 
 
