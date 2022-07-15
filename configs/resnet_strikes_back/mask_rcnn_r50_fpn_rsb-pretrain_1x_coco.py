@@ -10,9 +10,6 @@ model = dict(
         init_cfg=dict(
             type='Pretrained', prefix='backbone.', checkpoint=checkpoint)))
 
-optimizer = dict(
-    _delete_=True,
-    type='AdamW',
-    lr=0.0002,
-    weight_decay=0.05,
+optim_wrapper = dict(
+    optimizer=dict(_delete_=True, type='AdamW', lr=0.0002, weight_decay=0.05),
     paramwise_cfg=dict(norm_decay_mult=0., bypass_duplicate=True))
