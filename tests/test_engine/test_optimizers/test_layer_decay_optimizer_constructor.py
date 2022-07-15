@@ -146,19 +146,23 @@ def test_learning_rate_decay_optimizer_constructor():
     # Test lr wd for ConvNeXT
     backbone = ToyConvNeXt()
     model = PseudoDataParallel(ToyDetector(backbone))
-    optimizer_cfg = dict(
-        type='AdamW', lr=base_lr, betas=(0.9, 0.999), weight_decay=0.05)
+    optim_wrapper_cfg = dict(
+        type='OptimWrapper',
+        optimizer=dict(
+            type='AdamW', lr=base_lr, betas=(0.9, 0.999), weight_decay=0.05))
     # stagewise decay
     stagewise_paramwise_cfg = dict(
         decay_rate=decay_rate, decay_type='stage_wise', num_layers=6)
     optim_constructor = LearningRateDecayOptimizerConstructor(
-        optimizer_cfg, stagewise_paramwise_cfg)
-    optimizer = optim_constructor(model)
-    check_optimizer_lr_wd(optimizer, expected_stage_wise_lr_wd_convnext)
+        optim_wrapper_cfg, stagewise_paramwise_cfg)
+    optim_wrapper = optim_constructor(model)
+    check_optimizer_lr_wd(optim_wrapper.optimizer,
+                          expected_stage_wise_lr_wd_convnext)
     # layerwise decay
     layerwise_paramwise_cfg = dict(
         decay_rate=decay_rate, decay_type='layer_wise', num_layers=6)
     optim_constructor = LearningRateDecayOptimizerConstructor(
-        optimizer_cfg, layerwise_paramwise_cfg)
-    optimizer = optim_constructor(model)
-    check_optimizer_lr_wd(optimizer, expected_layer_wise_lr_wd_convnext)
+        optim_wrapper_cfg, layerwise_paramwise_cfg)
+    optim_wrapper = optim_constructor(model)
+    check_optimizer_lr_wd(optim_wrapper.optimizer,
+                          expected_layer_wise_lr_wd_convnext)

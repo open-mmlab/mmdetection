@@ -32,7 +32,6 @@ class BaseRoIExtractor(BaseModule, metaclass=ABCMeta):
         self.roi_layers = self.build_roi_layers(roi_layer, featmap_strides)
         self.out_channels = out_channels
         self.featmap_strides = featmap_strides
-        self.fp16_enabled = False
 
     @property
     def num_inputs(self) -> int:
