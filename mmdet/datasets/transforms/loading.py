@@ -659,9 +659,25 @@ class FilterAnnotations(BaseTransform):
         Returns:
             dict: Updated result dict.
         """
-        assert 'gt_bboxes' in results
-        gt_bboxes = results['gt_bboxes']
-        if gt_bboxes.shape[0] == 0:
+        # gt_masks may not match with gt_bboxes, because gt_masks
+        # will not add into instances if ignore is True
+        if 'gt_ignore_flags' in results and 'gt_masks' in results:
+            vaild_idx = np.where(results['gt_ignore_flags'] == 0)[0]
+            keys = ('gt_bboxes', 'gt_bboxes_labels', 'gt_ignore_flags')
+            for key in keys:
+                if key in results:
+                    results[key] = results[key][vaild_idx]
+
+        if self.by_box:
+            assert 'gt_bboxes' in results
+            gt_bboxes = results['gt_bboxes']
+            instance_num = gt_bboxes.shape[0]
+        if self.by_mask:
+            assert 'gt_masks' in results
+            gt_masks = results['gt_masks']
+            instance_num = len(gt_masks)
+
+        if instance_num == 0:
             return results
 
         tests = []

@@ -15,11 +15,10 @@ train_pipeline = [
         file_client_args={{_base_.file_client_args}}),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
-        # TODO: Update after mmcv.RandomChoiceResize finish refactor
         type='RandomChoiceResize',
         scales=[(768, 512), (768, 480), (768, 448), (768, 416), (768, 384),
                 (768, 352)],
-        resize_cfg=dict(type='Resize', keep_ratio=True)),
+        keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs')
 ]

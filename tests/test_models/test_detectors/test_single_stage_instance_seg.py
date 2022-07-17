@@ -20,7 +20,8 @@ class TestSingleStageInstanceSegmentor(TestCase):
         'solo/decoupled_solo_r50_fpn_1x_coco.py',
         'solo/decoupled_solo_light_r50_fpn_3x_coco.py',
         'solov2/solov2_r50_fpn_1x_coco.py',
-        'solov2/solov2_light_r18_fpn_mstrain_3x_coco.py'
+        'solov2/solov2_light_r18_fpn_mstrain_3x_coco.py',
+        'yolact/yolact_r50_1x8_coco.py',
     ])
     def test_init(self, cfg_file):
         model = get_detector_cfg(cfg_file)
@@ -31,6 +32,8 @@ class TestSingleStageInstanceSegmentor(TestCase):
         self.assertTrue(detector.backbone)
         self.assertTrue(detector.neck)
         self.assertTrue(detector.mask_head)
+        if detector.with_bbox:
+            self.assertTrue(detector.bbox_head)
 
     @parameterized.expand([
         ('solo/solo_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
@@ -38,6 +41,7 @@ class TestSingleStageInstanceSegmentor(TestCase):
         ('solo/decoupled_solo_light_r50_fpn_3x_coco.py', ('cpu', 'cuda')),
         ('solov2/solov2_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
         ('solov2/solov2_light_r18_fpn_mstrain_3x_coco.py', ('cpu', 'cuda')),
+        ('yolact/yolact_r50_1x8_coco.py', ('cpu', 'cuda')),
     ])
     def test_single_stage_forward_loss_mode(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
@@ -71,6 +75,7 @@ class TestSingleStageInstanceSegmentor(TestCase):
         ('solo/decoupled_solo_light_r50_fpn_3x_coco.py', ('cpu', 'cuda')),
         ('solov2/solov2_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
         ('solov2/solov2_light_r18_fpn_mstrain_3x_coco.py', ('cpu', 'cuda')),
+        ('yolact/yolact_r50_1x8_coco.py', ('cpu', 'cuda')),
     ])
     def test_single_stage_forward_predict_mode(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
@@ -101,3 +106,33 @@ class TestSingleStageInstanceSegmentor(TestCase):
                     batch_inputs, data_samples, mode='predict')
                 self.assertEqual(len(batch_results), 2)
                 self.assertIsInstance(batch_results[0], DetDataSample)
+
+    @parameterized.expand([
+        ('solo/solo_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
+        ('solo/decoupled_solo_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
+        ('solo/decoupled_solo_light_r50_fpn_3x_coco.py', ('cpu', 'cuda')),
+        ('solov2/solov2_r50_fpn_1x_coco.py', ('cpu', 'cuda')),
+        ('solov2/solov2_light_r18_fpn_mstrain_3x_coco.py', ('cpu', 'cuda')),
+        ('yolact/yolact_r50_1x8_coco.py', ('cpu', 'cuda')),
+    ])
+    def test_single_stage_forward_tensor_mode(self, cfg_file, devices):
+        model = get_detector_cfg(cfg_file)
+        model.backbone.init_cfg = None
+
+        from mmdet.models import build_detector
+        assert all([device in ['cpu', 'cuda'] for device in devices])
+
+        for device in devices:
+            detector = build_detector(model)
+
+            if device == 'cuda':
+                if not torch.cuda.is_available():
+                    return unittest.skip('test requires GPU and torch+cuda')
+                detector = detector.cuda()
+
+            packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]])
+            batch_inputs, data_samples = detector.data_preprocessor(
+                packed_inputs, False)
+            batch_results = detector.forward(
+                batch_inputs, data_samples, mode='tensor')
+            self.assertIsInstance(batch_results, tuple)

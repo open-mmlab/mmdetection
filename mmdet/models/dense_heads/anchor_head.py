@@ -383,6 +383,9 @@ class AnchorHead(BaseDenseHead):
         # `avg_factor` is usually equal to the number of positive priors.
         avg_factor = sum(
             [results.avg_factor for results in sampling_results_list])
+        # update `_raw_positive_infos`, which will be used when calling
+        # `get_positive_infos`.
+        self._raw_positive_infos.update(sampling_results=sampling_results_list)
         # split targets to a list w.r.t. multiple levels
         labels_list = images_to_levels(all_labels, num_level_anchors)
         label_weights_list = images_to_levels(all_label_weights,

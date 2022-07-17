@@ -1,13 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from abc import ABCMeta, abstractmethod
-from typing import List, Optional, Tuple, Union
+from typing import List, Tuple, Union
 
-from mmcv.runner import BaseModule
+from mmengine.model import BaseModule
 from torch import Tensor
 
 from mmdet.data_elements import SampleList
 from mmdet.utils import InstanceList, OptInstanceList, OptMultiConfig
-from ..task_modules.samplers import SamplingResult
 from ..utils import unpack_gt_instances
 
 
@@ -32,7 +31,7 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
     def loss(self,
              x: Union[List[Tensor], Tuple[Tensor]],
              batch_data_samples: SampleList,
-             positive_infos: Optional[List[SamplingResult]] = None,
+             positive_infos: OptInstanceList = None,
              **kwargs) -> dict:
         """Perform forward propagation and loss calculation of the mask head on
         the features of the upstream network.
@@ -43,20 +42,20 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
             batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
                 the meta information of each image and corresponding
                 annotations.
-            positive_infos (list[:obj:``], optional): Information
+            positive_infos (list[:obj:`InstanceData`], optional): Information
                 of positive samples. Used when the label assignment is
-                done outside the MaskHead, e.g., in BboxHead in
+                done outside the MaskHead, e.g., BboxHead in
                 YOLACT or CondInst, etc. When the label assignment is done in
-                MaskHead, it would be None, like SOLO. All values
+                MaskHead, it would be None, like SOLO or SOLOv2. All values
                 in it should have shape (num_positive_samples, *).
 
+
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            dict: A dictionary of loss components.
         """
         if positive_infos is None:
             outs = self(x)
         else:
-            # TODO: Currently not checked
             outs = self(x, positive_infos)
 
         assert isinstance(outs, tuple), 'Forward results should be a tuple, ' \
@@ -84,7 +83,7 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
                 x: Tuple[Tensor],
                 batch_data_samples: SampleList,
                 rescale: bool = False,
-                bbox_results_list: OptInstanceList = None,
+                results_list: OptInstanceList = None,
                 **kwargs) -> InstanceList:
         """Test function without test-time augmentation.
 
@@ -96,7 +95,7 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
-            bbox_results_list (list[obj:`InstanceData`], optional): Detection
+            results_list (list[obj:`InstanceData`], optional): Detection
                 results of each image after the post process. Only exist
                 if there is a `bbox_head`, like `YOLACT`, `CondInst`, etc.
 
@@ -114,13 +113,16 @@ class BaseMaskHead(BaseModule, metaclass=ABCMeta):
         batch_img_metas = [
             data_samples.metainfo for data_samples in batch_data_samples
         ]
+        if results_list is None:
+            outs = self(x)
+        else:
+            outs = self(x, results_list)
 
-        outs = self(x)
         results_list = self.predict_by_feat(
             *outs,
             batch_img_metas=batch_img_metas,
             rescale=rescale,
-            bbox_results_list=bbox_results_list,
+            results_list=results_list,
             **kwargs)
 
         return results_list

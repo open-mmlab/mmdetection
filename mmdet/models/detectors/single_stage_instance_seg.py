@@ -1,10 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
-from typing import List, Tuple
+from typing import Tuple
 
 from torch import Tensor
 
-from mmdet.data_elements import SampleList
+from mmdet.data_elements import OptSampleList, SampleList
 from mmdet.registry import MODELS
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from .base import BaseDetector
@@ -63,8 +63,10 @@ class SingleStageInstanceSegmentor(BaseDetector):
             x = self.neck(x)
         return x
 
-    def _forward(self, batch_inputs: Tensor, *args, **kwargs) \
-            -> Tuple[List[Tensor]]:
+    def _forward(self,
+                 batch_inputs: Tensor,
+                 batch_data_samples: OptSampleList = None,
+                 **kwargs) -> tuple:
         """Network forward process. Usually includes backbone, neck and head
         forward without any post-processing.
 
@@ -72,17 +74,27 @@ class SingleStageInstanceSegmentor(BaseDetector):
             batch_inputs (Tensor): Inputs with shape (N, C, H, W).
 
         Returns:
-            tuple[list]: A tuple of features from ``bbox_head`` forward.
+            tuple: A tuple of features from ``bbox_head`` forward.
         """
         outs = ()
         # backbone
         x = self.extract_feat(batch_inputs)
         # bbox_head
+        positive_infos = None
         if self.with_bbox:
-            # TODO: current not supported
-            pass
+            assert batch_data_samples is not None
+            bbox_outs = self.bbox_head.forward(x)
+            outs = outs + (bbox_outs, )
+            # It is necessary to use `bbox_head.loss` to update
+            # `_raw_positive_infos` which will be used in `get_positive_infos`
+            # positive_infos will be used in the following mask head.
+            _ = self.bbox_head.loss(x, batch_data_samples, **kwargs)
+            positive_infos = self.bbox_head.get_positive_infos()
         # mask_head
-        mask_outs = self.mask_head.forward(x)
+        if positive_infos is None:
+            mask_outs = self.mask_head.forward(x)
+        else:
+            mask_outs = self.mask_head.forward(x, positive_infos)
         outs = outs + (mask_outs, )
         return outs
 
@@ -97,20 +109,19 @@ class SingleStageInstanceSegmentor(BaseDetector):
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            dict: A dictionary of loss components.
         """
         x = self.extract_feat(batch_inputs)
         losses = dict()
 
-        # TODO: Check the logic in CondInst and YOLACT
         positive_infos = None
         # CondInst and YOLACT have bbox_head
         if self.with_bbox:
             bbox_losses = self.bbox_head.loss(x, batch_data_samples, **kwargs)
-            # TODO: enhance the logic when refactor YOLACT
-            if bbox_losses.get('positive_infos', None) is not None:
-                positive_infos = bbox_losses.pop('positive_infos')
             losses.update(bbox_losses)
+            # get positive information from bbox head, which will be used
+            # in the following mask head.
+            positive_infos = self.bbox_head.get_positive_infos()
 
         mask_loss = self.mask_head.loss(
             x, batch_data_samples, positive_infos=positive_infos, **kwargs)
@@ -123,7 +134,7 @@ class SingleStageInstanceSegmentor(BaseDetector):
     def predict(self,
                 batch_inputs: Tensor,
                 batch_data_samples: SampleList,
-                rescale: bool = False,
+                rescale: bool = True,
                 **kwargs) -> SampleList:
         """Perform forward propagation of the mask head and predict mask
         results on the features of the upstream network.
@@ -142,27 +153,27 @@ class SingleStageInstanceSegmentor(BaseDetector):
             'pred_instances'. And the ``pred_instances`` usually
             contains following keys.
 
-                - scores (Tensor): Classification scores, has a shape
-                    (num_instance, )
-                - labels (Tensor): Labels of bboxes, has a shape
-                    (num_instances, ).
-                - bboxes (Tensor): Has a shape (num_instances, 4),
-                    the last dimension 4 arrange as (x1, y1, x2, y2).
-                - masks (Tensor): Has a shape (num_instances, H, W).
+            - scores (Tensor): Classification scores, has a shape
+                (num_instance, )
+            - labels (Tensor): Labels of bboxes, has a shape
+                (num_instances, ).
+            - bboxes (Tensor): Has a shape (num_instances, 4),
+                the last dimension 4 arrange as (x1, y1, x2, y2).
+            - masks (Tensor): Has a shape (num_instances, H, W).
         """
         x = self.extract_feat(batch_inputs)
         if self.with_bbox:
-            # TODO: currently not checked
-            bbox_results_list = self.bbox_head.predict(
-                x, batch_data_samples, rescale=rescale)
+            # the bbox branch does not need to be scaled to the original
+            # image scale, because the mask branch will scale both bbox
+            # and mask at the same time.
+            bbox_rescale = rescale if not self.with_mask else False
+            results_list = self.bbox_head.predict(
+                x, batch_data_samples, rescale=bbox_rescale)
         else:
-            bbox_results_list = None
+            results_list = None
 
         results_list = self.mask_head.predict(
-            x,
-            batch_data_samples,
-            rescale=rescale,
-            bbox_results_list=bbox_results_list)
+            x, batch_data_samples, rescale=rescale, results_list=results_list)
 
         # connvert to DetDataSample
         results_list = self.convert_to_datasample(results_list)
