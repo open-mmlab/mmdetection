@@ -658,6 +658,15 @@ class FilterAnnotations(BaseTransform):
         Returns:
             dict: Updated result dict.
         """
+        # gt_masks may not match with gt_bboxes, because gt_masks
+        # will not add into instances if ignore is True
+        if 'gt_ignore_flags' in results and 'gt_masks' in results:
+            vaild_idx = np.where(results['gt_ignore_flags'] == 0)[0]
+            keys = ('gt_bboxes', 'gt_bboxes_labels', 'gt_ignore_flags')
+            for key in keys:
+                if key in results:
+                    results[key] = results[key][vaild_idx]
+
         if self.by_box:
             assert 'gt_bboxes' in results
             gt_bboxes = results['gt_bboxes']

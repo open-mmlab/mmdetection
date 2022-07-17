@@ -337,7 +337,7 @@ class FCNMaskHead(BaseModule):
             # In AugTest, has been activated before
             mask_pred = bboxes.new_tensor(mask_pred)
 
-        if rescale:
+        if rescale:  # in-placed rescale the bboxes
             bboxes /= scale_factor
         else:
             w_scale, h_scale = scale_factor[0, 0], scale_factor[0, 1]
