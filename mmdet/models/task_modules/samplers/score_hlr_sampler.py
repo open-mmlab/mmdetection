@@ -1,9 +1,15 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from typing import Union
+
 import torch
 from mmcv.ops import nms_match
+from mmengine.data import InstanceData
+from numpy import ndarray
+from torch import Tensor
 
 from mmdet.data_elements.bbox import bbox2roi
 from mmdet.registry import TASK_UTILS
+from ..assigners import AssignResult
 from .base_sampler import BaseSampler
 from .sampling_result import SamplingResult
 
@@ -20,28 +26,34 @@ class ScoreHLRSampler(BaseSampler):
     Args:
         num (int): Total number of sampled RoIs.
         pos_fraction (float): Fraction of positive samples.
-        context (:class:`BaseRoIHead`): RoI head that the sampler belongs to.
+        context (:obj:`BaseRoIHead`): RoI head that the sampler belongs to.
         neg_pos_ub (int): Upper bound of the ratio of num negative to num
-            positive, -1 means no upper bound.
+            positive, -1 means no upper bound. Defaults to -1.
         add_gt_as_proposals (bool): Whether to add ground truth as proposals.
-        k (float): Power of the non-linear mapping.
-        bias (float): Shift of the non-linear mapping.
+            Defaults to True.
+        k (float): Power of the non-linear mapping. Defaults to 0.5
+        bias (float): Shift of the non-linear mapping. Defaults to 0.
         score_thr (float): Minimum score that a negative sample is to be
-            considered as valid bbox.
+            considered as valid bbox. Defaults to 0.05.
+        iou_thr (float): IoU threshold for NMS match. Defaults to 0.5.
     """
 
     def __init__(self,
-                 num,
-                 pos_fraction,
+                 num: int,
+                 pos_fraction: float,
                  context,
-                 neg_pos_ub=-1,
-                 add_gt_as_proposals=True,
-                 k=0.5,
-                 bias=0,
-                 score_thr=0.05,
-                 iou_thr=0.5,
-                 **kwargs):
-        super().__init__(num, pos_fraction, neg_pos_ub, add_gt_as_proposals)
+                 neg_pos_ub: int = -1,
+                 add_gt_as_proposals: bool = True,
+                 k: float = 0.5,
+                 bias: float = 0,
+                 score_thr: float = 0.05,
+                 iou_thr: float = 0.5,
+                 **kwargs) -> None:
+        super().__init__(
+            num=num,
+            pos_fraction=pos_fraction,
+            neg_pos_ub=neg_pos_ub,
+            add_gt_as_proposals=add_gt_as_proposals)
         self.k = k
         self.bias = bias
         self.score_thr = score_thr
@@ -60,7 +72,8 @@ class ScoreHLRSampler(BaseSampler):
             self.bbox_head = context.bbox_head[context.current_stage]
 
     @staticmethod
-    def random_choice(gallery, num):
+    def random_choice(gallery: Union[Tensor, ndarray, list],
+                      num: int) -> Union[Tensor, ndarray]:
         """Randomly select some elements from the gallery.
 
         If `gallery` is a Tensor, the returned indices will be a Tensor;
@@ -68,7 +81,7 @@ class ScoreHLRSampler(BaseSampler):
         ndarray.
 
         Args:
-            gallery (Tensor | ndarray | list): indices pool.
+            gallery (Tensor or ndarray or list): indices pool.
             num (int): expected sample num.
 
         Returns:
@@ -89,21 +102,26 @@ class ScoreHLRSampler(BaseSampler):
             rand_inds = rand_inds.cpu().numpy()
         return rand_inds
 
-    def _sample_pos(self, assign_result, num_expected, **kwargs):
-        """Randomly sample some positive samples."""
+    def _sample_pos(self, assign_result: AssignResult, num_expected: int,
+                    **kwargs) -> Union[Tensor, ndarray]:
+        """Randomly sample some positive samples.
+
+        Args:
+            assign_result (:obj:`AssignResult`): Bbox assigning results.
+            num_expected (int): The number of expected positive samples
+
+        Returns:
+            Tensor or ndarray: sampled indices.
+        """
         pos_inds = torch.nonzero(assign_result.gt_inds > 0).flatten()
         if pos_inds.numel() <= num_expected:
             return pos_inds
         else:
             return self.random_choice(pos_inds, num_expected)
 
-    def _sample_neg(self,
-                    assign_result,
-                    num_expected,
-                    bboxes,
-                    feats=None,
-                    img_meta=None,
-                    **kwargs):
+    def _sample_neg(self, assign_result: AssignResult, num_expected: int,
+                    bboxes: Tensor, feats: Tensor,
+                    **kwargs) -> Union[Tensor, ndarray]:
         """Sample negative samples.
 
         Score-HLR sampler is done in the following steps:
@@ -124,7 +142,9 @@ class ScoreHLRSampler(BaseSampler):
             num_expected (int): Expected number of samples.
             bboxes (Tensor): bbox to be sampled.
             feats (Tensor): Features come from FPN.
-            img_meta (dict): Meta information dictionary.
+
+        Returns:
+            Tensor or ndarray: sampled indices.
         """
         neg_inds = torch.nonzero(assign_result.gt_inds == 0).flatten()
         num_neg = neg_inds.size(0)
@@ -213,40 +233,43 @@ class ScoreHLRSampler(BaseSampler):
 
             return neg_inds[select_inds], neg_label_weights
 
-    def sample(self,
-               assign_result,
-               bboxes,
-               gt_bboxes,
-               gt_labels=None,
-               img_meta=None,
-               **kwargs):
+    def sample(self, assign_result: AssignResult, pred_instances: InstanceData,
+               gt_instances: InstanceData, **kwargs) -> SamplingResult:
         """Sample positive and negative bboxes.
 
         This is a simple implementation of bbox sampling given candidates,
         assigning results and ground truth bboxes.
 
         Args:
-            assign_result (:obj:`AssignResult`): Bbox assigning results.
-            bboxes (Tensor): Boxes to be sampled from.
-            gt_bboxes (Tensor): Ground truth bboxes.
-            gt_labels (Tensor, optional): Class labels of ground truth bboxes.
+            assign_result (:obj:`AssignResult`): Assigning results.
+            pred_instances (:obj:`InstanceData`): Instances of model
+                predictions. It includes ``priors``, and the priors can
+                be anchors or points, or the bboxes predicted by the
+                previous stage, has shape (n, 4). The bboxes predicted by
+                the current model or stage will be named ``bboxes``,
+                ``labels``, and ``scores``, the same as the ``InstanceData``
+                in other places.
+            gt_instances (:obj:`InstanceData`): Ground truth of instance
+                annotations. It usually includes ``bboxes``, with shape (k, 4),
+                and ``labels``, with shape (k, ).
 
         Returns:
-            tuple[:obj:`SamplingResult`, Tensor]: Sampling result and negative
-                label weights.
+            :obj:`SamplingResult`: Sampling result.
         """
-        bboxes = bboxes[:, :4]
+        gt_bboxes = gt_instances.bboxes
+        priors = pred_instances.priors
+        gt_labels = gt_instances.labels
 
-        gt_flags = bboxes.new_zeros((bboxes.shape[0], ), dtype=torch.uint8)
-        if self.add_gt_as_proposals:
-            bboxes = torch.cat([gt_bboxes, bboxes], dim=0)
+        gt_flags = priors.new_zeros((priors.shape[0], ), dtype=torch.uint8)
+        if self.add_gt_as_proposals and len(gt_bboxes) > 0:
+            priors = torch.cat([gt_bboxes, priors], dim=0)
             assign_result.add_gt_(gt_labels)
-            gt_ones = bboxes.new_ones(gt_bboxes.shape[0], dtype=torch.uint8)
+            gt_ones = priors.new_ones(gt_bboxes.shape[0], dtype=torch.uint8)
             gt_flags = torch.cat([gt_ones, gt_flags])
 
         num_expected_pos = int(self.num * self.pos_fraction)
         pos_inds = self.pos_sampler._sample_pos(
-            assign_result, num_expected_pos, bboxes=bboxes, **kwargs)
+            assign_result, num_expected_pos, bboxes=priors, **kwargs)
         num_sampled_pos = pos_inds.numel()
         num_expected_neg = self.num - num_sampled_pos
         if self.neg_pos_ub >= 0:
@@ -255,11 +278,13 @@ class ScoreHLRSampler(BaseSampler):
             if num_expected_neg > neg_upper_bound:
                 num_expected_neg = neg_upper_bound
         neg_inds, neg_label_weights = self.neg_sampler._sample_neg(
-            assign_result,
-            num_expected_neg,
-            bboxes,
-            img_meta=img_meta,
-            **kwargs)
+            assign_result, num_expected_neg, bboxes=priors, **kwargs)
 
-        return SamplingResult(pos_inds, neg_inds, bboxes, gt_bboxes,
-                              assign_result, gt_flags), neg_label_weights
+        sampling_result = SamplingResult(
+            pos_inds=pos_inds,
+            neg_inds=neg_inds,
+            priors=priors,
+            gt_bboxes=gt_bboxes,
+            assign_result=assign_result,
+            gt_flags=gt_flags)
+        return sampling_result, neg_label_weights
