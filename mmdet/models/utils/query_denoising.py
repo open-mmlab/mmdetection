@@ -44,7 +44,10 @@ class DnQueryGenerator(BaseModule):
             assert group_queries is not None, \
                 'group_queries should be provided when using ' \
                 'dynamic dn groups'
-            num_groups = self.num_dn // group_queries
+            if group_queries == 0:
+                num_groups = 1
+            else:
+                num_groups = self.num_dn // group_queries
         else:
             num_groups = self.num_dn
         return int(num_groups)
@@ -63,13 +66,14 @@ class DnQueryGenerator(BaseModule):
             TODO
         """
         # TODO: temp only support for CDN
+        # TODO: temp assert gt_labels is not None and label_enc is not None
         if self.training:
             if gt_labels is not None:
                 assert len(gt_bboxes) == len(gt_labels), \
                     f'the length of provided gt_labels ' \
                     f'{len(gt_labels)} should be equal to' \
                     f' that of gt_bboxes {len(gt_bboxes)}'
-            assert label_enc is not None
+            assert gt_labels is not None and label_enc is not None
             batch_size = len(gt_bboxes)
 
             known = [torch.ones_like(labels) for labels in gt_labels]
