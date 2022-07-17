@@ -10,19 +10,19 @@ from mmdet.testing import demo_mm_inputs, demo_mm_proposals, get_roi_head_cfg
 from mmdet.utils import register_all_modules
 
 
-class TestDynamicRoIHead(TestCase):
+class TestPISARoIHead(TestCase):
 
     def setUp(self):
         register_all_modules()
         self.roi_head_cfg = get_roi_head_cfg(
-            'dynamic_rcnn/dynamic_rcnn_r50_fpn_1x_coco.py')
+            'pisa/pisa_faster_rcnn_r50_fpn_1x_coco.py')
 
     def test_init(self):
         roi_head = MODELS.build(self.roi_head_cfg)
         self.assertTrue(roi_head.with_bbox)
 
     @parameterized.expand(['cpu', 'cuda'])
-    def test_dynamic_roi_head_loss(self, device):
+    def test_pisa_roi_head(self, device):
         """Tests trident roi head predict."""
         if not torch.cuda.is_available() and device == 'cuda':
             # RoI pooling only support in GPU

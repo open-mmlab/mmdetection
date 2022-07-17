@@ -130,11 +130,12 @@ class DynamicRoIHead(StandardRoIHead):
         pos_inds = bbox_targets[3][:, 0].nonzero().squeeze(1)
         num_pos = len(pos_inds)
         num_imgs = len(sampling_results)
-        cur_target = bbox_targets[2][pos_inds, :2].abs().mean(dim=1)
-        beta_topk = min(self.train_cfg.dynamic_rcnn.beta_topk * num_imgs,
-                        num_pos)
-        cur_target = torch.kthvalue(cur_target, beta_topk)[0].item()
-        self.beta_history.append(cur_target)
+        if num_pos > 0:
+            cur_target = bbox_targets[2][pos_inds, :2].abs().mean(dim=1)
+            beta_topk = min(self.train_cfg.dynamic_rcnn.beta_topk * num_imgs,
+                            num_pos)
+            cur_target = torch.kthvalue(cur_target, beta_topk)[0].item()
+            self.beta_history.append(cur_target)
 
         return bbox_results
 
@@ -151,7 +152,7 @@ class DynamicRoIHead(StandardRoIHead):
         self.bbox_assigner.pos_iou_thr = new_iou_thr
         self.bbox_assigner.neg_iou_thr = new_iou_thr
         self.bbox_assigner.min_pos_iou = new_iou_thr
-        if (np.median(self.beta_history) < EPS):
+        if (not self.beta_history) or (np.median(self.beta_history) < EPS):
             # avoid 0 or too small value for new_beta
             new_beta = self.bbox_head.loss_bbox.beta
         else:

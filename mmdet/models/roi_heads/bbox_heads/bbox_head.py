@@ -102,16 +102,19 @@ class BBoxHead(BaseModule):
     # TODO: Create a SeasawBBoxHead to simplified logic in BBoxHead
     @property
     def custom_cls_channels(self) -> bool:
+        """get custom_cls_channels from loss_cls."""
         return getattr(self.loss_cls, 'custom_cls_channels', False)
 
     # TODO: Create a SeasawBBoxHead to simplified logic in BBoxHead
     @property
     def custom_activation(self) -> bool:
+        """get custom_activation from loss_cls."""
         return getattr(self.loss_cls, 'custom_activation', False)
 
     # TODO: Create a SeasawBBoxHead to simplified logic in BBoxHead
     @property
     def custom_accuracy(self) -> bool:
+        """get custom_accuracy from loss_cls."""
         return getattr(self.loss_cls, 'custom_accuracy', False)
 
     def forward(self, x: Tuple[Tensor]) -> tuple:
@@ -233,24 +236,24 @@ class BBoxHead(BaseModule):
             Tuple[Tensor]: Ground truth for proposals in a single image.
             Containing the following list of Tensors:
 
-                - labels (list[Tensor],Tensor): Gt_labels for all
-                  proposals in a batch, each tensor in list has
-                  shape (num_proposals,) when `concat=False`, otherwise
-                  just a single tensor has shape (num_all_proposals,).
-                - label_weights (list[Tensor]): Labels_weights for
-                  all proposals in a batch, each tensor in list has
-                  shape (num_proposals,) when `concat=False`, otherwise
-                  just a single tensor has shape (num_all_proposals,).
-                - bbox_targets (list[Tensor],Tensor): Regression target
-                  for all proposals in a batch, each tensor in list
-                  has shape (num_proposals, 4) when `concat=False`,
-                  otherwise just a single tensor has shape
-                  (num_all_proposals, 4), the last dimension 4 represents
-                  [tl_x, tl_y, br_x, br_y].
-                - bbox_weights (list[tensor],Tensor): Regression weights for
-                  all proposals in a batch, each tensor in list has shape
-                  (num_proposals, 4) when `concat=False`, otherwise just a
-                  single tensor has shape (num_all_proposals, 4).
+            - labels (list[Tensor],Tensor): Gt_labels for all
+                proposals in a batch, each tensor in list has
+                shape (num_proposals,) when `concat=False`, otherwise
+                just a single tensor has shape (num_all_proposals,).
+            - label_weights (list[Tensor]): Labels_weights for
+                all proposals in a batch, each tensor in list has
+                shape (num_proposals,) when `concat=False`, otherwise
+                just a single tensor has shape (num_all_proposals,).
+            - bbox_targets (list[Tensor],Tensor): Regression target
+                for all proposals in a batch, each tensor in list
+                has shape (num_proposals, 4) when `concat=False`,
+                otherwise just a single tensor has shape
+                (num_all_proposals, 4), the last dimension 4 represents
+                [tl_x, tl_y, br_x, br_y].
+            - bbox_weights (list[tensor],Tensor): Regression weights for
+                all proposals in a batch, each tensor in list has shape
+                (num_proposals, 4) when `concat=False`, otherwise just a
+                single tensor has shape (num_all_proposals, 4).
         """
         pos_priors_list = [res.pos_priors for res in sampling_results]
         neg_priors_list = [res.neg_priors for res in sampling_results]
@@ -305,7 +308,50 @@ class BBoxHead(BaseModule):
         """
 
         cls_reg_targets = self.get_targets(sampling_results, rcnn_train_cfg)
-        (labels, label_weights, bbox_targets, bbox_weights) = cls_reg_targets
+        losses = self.loss(cls_score, bbox_pred, rois, *cls_reg_targets)
+
+        # cls_reg_targets is only for cascade rcnn
+        return dict(loss_bbox=losses, bbox_targets=cls_reg_targets)
+
+    def loss(self,
+             cls_score: Tensor,
+             bbox_pred: Tensor,
+             rois: Tensor,
+             labels: Tensor,
+             label_weights: Tensor,
+             bbox_targets: Tensor,
+             bbox_weights: Tensor,
+             reduction_override: Optional[str] = None) -> dict:
+        """Calculate the loss based on the network predictions and targets.
+
+        Args:
+            cls_score (Tensor): Classification prediction
+                results of all class, has shape
+                (batch_size * num_proposals_single_image, num_classes)
+            bbox_pred (Tensor): Regression prediction results,
+                has shape
+                (batch_size * num_proposals_single_image, 4), the last
+                dimension 4 represents [tl_x, tl_y, br_x, br_y].
+            rois (Tensor): RoIs with the shape
+                (batch_size * num_proposals_single_image, 5) where the first
+                column indicates batch id of each RoI.
+            labels (Tensor): Gt_labels for all proposals in a batch, has
+                shape (batch_size * num_proposals_single_image, ).
+            label_weights (Tensor): Labels_weights for all proposals in a
+                batch, has shape (batch_size * num_proposals_single_image, ).
+            bbox_targets (Tensor): Regression target for all proposals in a
+                batch, has shape (batch_size * num_proposals_single_image, 4),
+                the last dimension 4 represents [tl_x, tl_y, br_x, br_y].
+            bbox_weights (Tensor): Regression weights for all proposals in a
+                batch, has shape (batch_size * num_proposals_single_image, 4).
+            reduction_override (str, optional): The reduction
+                method used to override the original reduction
+                method of the loss. Options are "none",
+                "mean" and "sum". Defaults to None,
+
+        Returns:
+            dict: A dictionary of loss.
+        """
 
         losses = dict()
 
@@ -356,8 +402,7 @@ class BBoxHead(BaseModule):
             else:
                 losses['loss_bbox'] = bbox_pred[pos_inds].sum()
 
-        # cls_reg_targets is only for cascade rcnn
-        return dict(loss_bbox=losses, bbox_targets=cls_reg_targets)
+        return losses
 
     def predict_by_feat(self,
                         rois: Tuple[Tensor],
