@@ -448,9 +448,11 @@ class SparseRoIHead(CascadeRoIHead):
             for img_id in range(len(batch_img_metas)):
                 # add positive information in InstanceData to predict
                 # mask results in `mask_head`.
+                proposals = bbox_results['detached_proposals'][img_id]
                 topk_inds = topk_inds_list[img_id]
                 attn_feats = bbox_results['attn_feats'][img_id]
 
+                results_list[img_id].proposals = proposals
                 results_list[img_id].topk_inds = topk_inds
                 results_list[img_id].attn_feats = attn_feats
         return results_list
@@ -498,7 +500,7 @@ class SparseRoIHead(CascadeRoIHead):
               the last dimension 4 arrange as (x1, y1, x2, y2).
             - masks (Tensor): Has a shape (num_instances, H, W).
         """
-        proposal_list = [res.bboxes for res in results_list]
+        proposal_list = [res.pop('proposals') for res in results_list]
         topk_inds_list = [res.pop('topk_inds') for res in results_list]
         attn_feats = torch.cat(
             [res.pop('attn_feats')[None, ...] for res in results_list])
