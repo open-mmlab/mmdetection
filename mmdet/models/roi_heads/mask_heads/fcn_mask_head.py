@@ -146,8 +146,8 @@ class FCNMaskHead(BaseModule):
             x = self.upsample(x)
             if self.upsample_method == 'deconv':
                 x = self.relu(x)
-        mask_pred = self.conv_logits(x)
-        return mask_pred
+        mask_preds = self.conv_logits(x)
+        return mask_preds
 
     def get_targets(self, sampling_results: List[SamplingResult],
                     batch_gt_instances: InstanceList,
@@ -175,14 +175,14 @@ class FCNMaskHead(BaseModule):
                                    gt_masks, rcnn_train_cfg)
         return mask_targets
 
-    def loss_and_target(self, mask_pred: Tensor,
+    def loss_and_target(self, mask_preds: Tensor,
                         sampling_results: List[SamplingResult],
                         batch_gt_instances: InstanceList,
                         rcnn_train_cfg: ConfigDict) -> dict:
         """Calculate the loss based on the features extracted by the mask head.
 
         Args:
-            mask_pred (Tensor): Predicted foreground masks, has shape
+            mask_preds (Tensor): Predicted foreground masks, has shape
                 (num_pos, num_classes, h, w).
             sampling_results (List[obj:SamplingResult]): Assign results of
                 all images in a batch after sampling.
@@ -202,14 +202,15 @@ class FCNMaskHead(BaseModule):
         pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
 
         loss = dict()
-        if mask_pred.size(0) == 0:
-            loss_mask = mask_pred.sum()
+        if mask_preds.size(0) == 0:
+            loss_mask = mask_preds.sum()
         else:
             if self.class_agnostic:
-                loss_mask = self.loss_mask(mask_pred, mask_targets,
+                loss_mask = self.loss_mask(mask_preds, mask_targets,
                                            torch.zeros_like(pos_labels))
             else:
-                loss_mask = self.loss_mask(mask_pred, mask_targets, pos_labels)
+                loss_mask = self.loss_mask(mask_preds, mask_targets,
+                                           pos_labels)
         loss['loss_mask'] = loss_mask
         # TODO: which algorithm requires mask_targets?
         return dict(loss_mask=loss, mask_targets=mask_targets)
@@ -264,7 +265,7 @@ class FCNMaskHead(BaseModule):
                     mask_thr_binary=rcnn_test_cfg.mask_thr_binary)[0]
             else:
                 im_mask = self._predict_by_feat_single(
-                    mask_pred=mask_preds[img_id],
+                    mask_preds=mask_preds[img_id],
                     bboxes=bboxes,
                     labels=results.labels,
                     img_meta=img_meta,
@@ -275,17 +276,17 @@ class FCNMaskHead(BaseModule):
         return results_list
 
     def _predict_by_feat_single(self,
-                                mask_pred: Tensor,
+                                mask_preds: Tensor,
                                 bboxes: Tensor,
                                 labels: Tensor,
                                 img_meta: dict,
                                 rcnn_test_cfg: ConfigDict,
                                 rescale: bool = False,
                                 activate_map: bool = False) -> Tensor:
-        """Get segmentation masks from mask_pred and bboxes.
+        """Get segmentation masks from mask_preds and bboxes.
 
         Args:
-            mask_pred (Tensor): Predicted foreground masks, has shape
+            mask_preds (Tensor): Predicted foreground masks, has shape
                 (n, num_classes, h, w).
             bboxes (Tensor): Predicted bboxes, has shape (n, 4)
             labels (Tensor): Labels of bboxes, has shape (n, )
@@ -309,7 +310,7 @@ class FCNMaskHead(BaseModule):
             >>> # Create example instance of FCN Mask Head.
             >>> self = FCNMaskHead(num_classes=C, num_convs=0)
             >>> inputs = torch.rand(N, self.in_channels, H, W)
-            >>> mask_pred = self.forward(inputs)
+            >>> mask_preds = self.forward(inputs)
             >>> # Each input is associated with some bounding box
             >>> bboxes = torch.Tensor([[1, 1, 42, 42 ]] * N)
             >>> labels = torch.randint(0, C, size=(N,))
@@ -321,7 +322,7 @@ class FCNMaskHead(BaseModule):
             ...             'ori_shape': ori_shape}
             >>> # Encoded masks are a list for each category.
             >>> encoded_masks = self._get_seg_masks_single(
-            ...     mask_pred, bboxes, labels,
+            ...     mask_preds, bboxes, labels,
             ...     img_meta, rcnn_test_cfg, rescale)
             >>> assert encoded_masks.size()[0] == N
             >>> assert encoded_masks.size()[1:] == ori_shape
@@ -332,10 +333,10 @@ class FCNMaskHead(BaseModule):
         device = bboxes.device
 
         if not activate_map:
-            mask_pred = mask_pred.sigmoid()
+            mask_preds = mask_preds.sigmoid()
         else:
             # In AugTest, has been activated before
-            mask_pred = bboxes.new_tensor(mask_pred)
+            mask_preds = bboxes.new_tensor(mask_preds)
 
         if rescale:  # in-placed rescale the bboxes
             bboxes /= scale_factor
@@ -344,7 +345,7 @@ class FCNMaskHead(BaseModule):
             img_h = np.round(img_h * h_scale.item()).astype(np.int32)
             img_w = np.round(img_w * w_scale.item()).astype(np.int32)
 
-        N = len(mask_pred)
+        N = len(mask_preds)
         # The actual implementation split the input into chunks,
         # and paste them chunk by chunk.
         if device.type == 'cpu':
@@ -376,11 +377,11 @@ class FCNMaskHead(BaseModule):
             dtype=torch.bool if threshold >= 0 else torch.uint8)
 
         if not self.class_agnostic:
-            mask_pred = mask_pred[range(N), labels][:, None]
+            mask_preds = mask_preds[range(N), labels][:, None]
 
         for inds in chunks:
             masks_chunk, spatial_inds = _do_paste_mask(
-                mask_pred[inds],
+                mask_preds[inds],
                 bboxes[inds],
                 img_h,
                 img_w,

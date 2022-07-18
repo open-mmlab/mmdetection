@@ -54,11 +54,11 @@ class MaskScoringRoIHead(StandardRoIHead):
         if self.with_mask:
             mask_rois = rois[:100]
             mask_results = self._mask_forward(x, mask_rois)
-            results = results + (mask_results['mask_pred'], )
+            results = results + (mask_results['mask_preds'], )
 
             # mask iou head
             cls_score = bbox_results['cls_score'][:100]
-            mask_preds = mask_results['mask_pred']
+            mask_preds = mask_results['mask_preds']
             mask_feats = mask_results['mask_feats']
             _, labels = cls_score[:, :self.bbox_head.num_classes].max(dim=1)
             mask_iou_preds = self.mask_iou_head(
@@ -84,7 +84,7 @@ class MaskScoringRoIHead(StandardRoIHead):
         Returns:
             dict: Usually returns a dictionary with keys:
 
-                - `mask_pred` (Tensor): Mask prediction.
+                - `mask_preds` (Tensor): Mask prediction.
                 - `mask_feats` (Tensor): Extract mask RoI features.
                 - `mask_targets` (Tensor): Mask target of each positive\
                     proposals in the image.
@@ -114,7 +114,7 @@ class MaskScoringRoIHead(StandardRoIHead):
                 x, pos_inds=pos_inds, bbox_feats=bbox_feats)
 
         mask_loss_and_target = self.mask_head.loss_and_target(
-            mask_pred=mask_results['mask_pred'],
+            mask_preds=mask_results['mask_preds'],
             sampling_results=sampling_results,
             batch_gt_instances=batch_gt_instances,
             rcnn_train_cfg=self.train_cfg)
@@ -125,8 +125,8 @@ class MaskScoringRoIHead(StandardRoIHead):
 
         # mask iou head forward and loss
         pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
-        pos_mask_pred = mask_results['mask_pred'][
-            range(mask_results['mask_pred'].size(0)), pos_labels]
+        pos_mask_pred = mask_results['mask_preds'][
+            range(mask_results['mask_preds'].size(0)), pos_labels]
         mask_iou_pred = self.mask_iou_head(mask_results['mask_feats'],
                                            pos_mask_pred)
         pos_mask_iou_pred = mask_iou_pred[range(mask_iou_pred.size(0)),
@@ -179,7 +179,7 @@ class MaskScoringRoIHead(StandardRoIHead):
             return results_list
 
         mask_results = self._mask_forward(x, mask_rois)
-        mask_preds = mask_results['mask_pred']
+        mask_preds = mask_results['mask_preds']
         mask_feats = mask_results['mask_feats']
         # get mask scores with mask iou head
         labels = torch.cat([res.labels for res in results_list])

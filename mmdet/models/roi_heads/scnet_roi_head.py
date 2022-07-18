@@ -187,7 +187,7 @@ class SCNetRoIHead(CascadeRoIHead):
         Returns:
             dict: Usually returns a dictionary with keys:
 
-                - `mask_pred` (Tensor): Mask prediction.
+                - `mask_preds` (Tensor): Mask prediction.
         """
         mask_feats = self.mask_roi_extractor(
             x[:self.mask_roi_extractor.num_inputs], rois)
@@ -202,8 +202,8 @@ class SCNetRoIHead(CascadeRoIHead):
             mask_feats = self._fuse_glbctx(mask_feats, glbctx_feat, rois)
         if self.with_feat_relay and relayed_feat is not None:
             mask_feats = mask_feats + relayed_feat
-        mask_pred = self.mask_head(mask_feats)
-        mask_results = dict(mask_pred=mask_pred)
+        mask_preds = self.mask_head(mask_feats)
+        mask_results = dict(mask_preds=mask_preds)
 
         return mask_results
 
@@ -277,7 +277,7 @@ class SCNetRoIHead(CascadeRoIHead):
         Returns:
             dict: Usually returns a dictionary with keys:
 
-                - `mask_pred` (Tensor): Mask prediction.
+                - `mask_preds` (Tensor): Mask prediction.
                 - `loss_mask` (dict): A dictionary of mask loss components.
         """
         pos_rois = bbox2roi([res.pos_priors for res in sampling_results])
@@ -289,7 +289,7 @@ class SCNetRoIHead(CascadeRoIHead):
             relayed_feat=relayed_feat)
 
         mask_loss_and_target = self.mask_head.loss_and_target(
-            mask_pred=mask_results['mask_pred'],
+            mask_preds=mask_results['mask_preds'],
             sampling_results=sampling_results,
             batch_gt_instances=batch_gt_instances,
             rcnn_train_cfg=self.train_cfg[-1])
@@ -590,11 +590,11 @@ class SCNetRoIHead(CascadeRoIHead):
             semantic_feat=semantic_heat,
             glbctx_feat=glbctx_feat,
             relayed_feat=relayed_feat)
-        mask_pred = mask_results['mask_pred']
+        mask_preds = mask_results['mask_preds']
 
         # split batch mask prediction back to each image
         num_bbox_per_img = tuple(len(_bbox) for _bbox in bboxes)
-        mask_preds = mask_pred.split(num_bbox_per_img, 0)
+        mask_preds = mask_preds.split(num_bbox_per_img, 0)
 
         results_list = self.mask_head.predict_by_feat(
             mask_preds=mask_preds,

@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -146,9 +146,9 @@ class BBoxHead(BaseModule):
         bbox_pred = self.fc_reg(x) if self.with_reg else None
         return cls_score, bbox_pred
 
-    def _get_target_single(self, pos_priors: Tensor, neg_priors: Tensor,
-                           pos_gt_bboxes: Tensor, pos_gt_labels: Tensor,
-                           cfg: ConfigDict) -> tuple:
+    def _get_targets_single(self, pos_priors: Tensor, neg_priors: Tensor,
+                            pos_gt_bboxes: Tensor, pos_gt_labels: Tensor,
+                            cfg: ConfigDict) -> tuple:
         """Calculate the ground truth for proposals in the single image
         according to the sampling results.
 
@@ -223,7 +223,7 @@ class BBoxHead(BaseModule):
 
         Almost the same as the implementation in bbox_head, we passed
         additional parameters pos_inds_list and neg_inds_list to
-        `_get_target_single` function.
+        `_get_targets_single` function.
 
         Args:
             sampling_results (List[obj:SamplingResult]): Assign results of
@@ -260,7 +260,7 @@ class BBoxHead(BaseModule):
         pos_gt_bboxes_list = [res.pos_gt_bboxes for res in sampling_results]
         pos_gt_labels_list = [res.pos_gt_labels for res in sampling_results]
         labels, label_weights, bbox_targets, bbox_weights = multi_apply(
-            self._get_target_single,
+            self._get_targets_single,
             pos_priors_list,
             neg_priors_list,
             pos_gt_bboxes_list,
@@ -280,6 +280,7 @@ class BBoxHead(BaseModule):
                         rois: Tensor,
                         sampling_results: List[SamplingResult],
                         rcnn_train_cfg: ConfigDict,
+                        concat: bool = True,
                         reduction_override: Optional[str] = None) -> dict:
         """Calculate the loss based on the features extracted by the bbox head.
 
@@ -297,6 +298,8 @@ class BBoxHead(BaseModule):
             sampling_results (List[obj:SamplingResult]): Assign results of
                 all images in a batch after sampling.
             rcnn_train_cfg (obj:ConfigDict): `train_cfg` of RCNN.
+            concat (bool): Whether to concatenate the results of all
+                the images in a single batch. Defaults to True.
             reduction_override (str, optional): The reduction
                 method used to override the original reduction
                 method of the loss. Options are "none",
@@ -307,7 +310,8 @@ class BBoxHead(BaseModule):
                 The targets are only used for cascade rcnn.
         """
 
-        cls_reg_targets = self.get_targets(sampling_results, rcnn_train_cfg)
+        cls_reg_targets = self.get_targets(
+            sampling_results, rcnn_train_cfg, concat=concat)
         losses = self.loss(cls_score, bbox_pred, rois, *cls_reg_targets)
 
         # cls_reg_targets is only for cascade rcnn
@@ -538,13 +542,18 @@ class BBoxHead(BaseModule):
             results.labels = det_labels
         return results
 
-    def refine_bboxes(self, sampling_results: List[SamplingResult],
+    def refine_bboxes(self, sampling_results: Union[List[SamplingResult],
+                                                    InstanceList],
                       bbox_results: dict,
                       batch_img_metas: List[dict]) -> InstanceList:
         """Refine bboxes during training.
 
         Args:
-            sampling_results (List[:obj:`SamplingResult`]): Sampling results.
+            sampling_results (List[:obj:`SamplingResult`] or
+                List[:obj:`InstanceData`]): Sampling results.
+                :obj:`SamplingResult` is the real sampling results
+                calculate from bbox_head, while :obj:`InstanceData` is
+                fake sampling results, e.g., in Sparse R-CNN or QueryInst, etc.
             bbox_results (dict): Usually is a dictionary with keys:
 
                 - `cls_score` (Tensor): Classification scores.

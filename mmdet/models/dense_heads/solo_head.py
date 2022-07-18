@@ -201,7 +201,7 @@ class SOLOHead(BaseMaskHead):
 
             mask_feat = F.interpolate(
                 mask_feat, scale_factor=2, mode='bilinear')
-            mask_pred = self.conv_mask_list[i](mask_feat)
+            mask_preds = self.conv_mask_list[i](mask_feat)
 
             # cls branch
             for j, cls_layer in enumerate(self.cls_convs):
@@ -216,15 +216,15 @@ class SOLOHead(BaseMaskHead):
             if not self.training:
                 feat_wh = feats[0].size()[-2:]
                 upsampled_size = (feat_wh[0] * 2, feat_wh[1] * 2)
-                mask_pred = F.interpolate(
-                    mask_pred.sigmoid(), size=upsampled_size, mode='bilinear')
+                mask_preds = F.interpolate(
+                    mask_preds.sigmoid(), size=upsampled_size, mode='bilinear')
                 cls_pred = cls_pred.sigmoid()
                 # get local maximum
                 local_max = F.max_pool2d(cls_pred, 2, stride=1, padding=1)
                 keep_mask = local_max[:, :, :-1, :-1] == cls_pred
                 cls_pred = cls_pred * keep_mask
 
-            mlvl_mask_preds.append(mask_pred)
+            mlvl_mask_preds.append(mask_preds)
             mlvl_cls_preds.append(cls_pred)
         return mlvl_mask_preds, mlvl_cls_preds
 

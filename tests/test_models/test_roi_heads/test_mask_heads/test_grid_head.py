@@ -39,6 +39,8 @@ class TestGridHead(TestCase):
             batch_data_samples.append(
                 packed_inputs[i]['data_sample'].to(device=device))
             proposals_list[i] = proposals_list[i].to(device=device)
+            packed_inputs[i]['data_sample'] = \
+                packed_inputs[i]['data_sample'].to(device=device)
         train_cfg = ConfigDict(dict(pos_radius=1))
 
         # prepare ground truth

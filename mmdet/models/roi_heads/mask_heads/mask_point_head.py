@@ -215,7 +215,7 @@ class MaskPointHead(BaseModule):
 
         return dict(loss_point=loss_point, point_target=point_target)
 
-    def get_roi_rel_points_train(self, mask_pred: Tensor, labels: Tensor,
+    def get_roi_rel_points_train(self, mask_preds: Tensor, labels: Tensor,
                                  cfg: ConfigType) -> Tensor:
         """Get ``num_points`` most uncertain points with random points during
         train.
@@ -226,7 +226,7 @@ class MaskPointHead(BaseModule):
         input.
 
         Args:
-            mask_pred (Tensor): A tensor of shape (num_rois, num_classes,
+            mask_preds (Tensor): A tensor of shape (num_rois, num_classes,
                 mask_height, mask_width) for class-specific or class-agnostic
                 prediction.
             labels (Tensor): The ground truth class for each instance.
@@ -237,19 +237,19 @@ class MaskPointHead(BaseModule):
             that contains the coordinates sampled points.
         """
         point_coords = get_uncertain_point_coords_with_randomness(
-            mask_pred, labels, cfg.num_points, cfg.oversample_ratio,
+            mask_preds, labels, cfg.num_points, cfg.oversample_ratio,
             cfg.importance_sample_ratio)
         return point_coords
 
-    def get_roi_rel_points_test(self, mask_pred: Tensor, pred_label: Tensor,
+    def get_roi_rel_points_test(self, mask_preds: Tensor, label_preds: Tensor,
                                 cfg: ConfigType) -> Tuple[Tensor, Tensor]:
         """Get ``num_points`` most uncertain points during test.
 
         Args:
-            mask_pred (Tensor): A tensor of shape (num_rois, num_classes,
+            mask_preds (Tensor): A tensor of shape (num_rois, num_classes,
                 mask_height, mask_width) for class-specific or class-agnostic
                 prediction.
-            pred_label (Tensor): The predication class for each instance.
+            label_preds (Tensor): The predication class for each instance.
             cfg (:obj:`ConfigDict` or dict): Testing config of point head.
 
         Returns:
@@ -263,7 +263,7 @@ class MaskPointHead(BaseModule):
               most uncertain points from the [mask_height, mask_width] grid.
         """
         num_points = cfg.subdivision_num_points
-        uncertainty_map = get_uncertainty(mask_pred, pred_label)
+        uncertainty_map = get_uncertainty(mask_preds, label_preds)
         num_rois, _, mask_height, mask_width = uncertainty_map.shape
 
         # During ONNX exporting, the type of each elements of 'shape' is
