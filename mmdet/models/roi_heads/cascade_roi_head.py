@@ -480,7 +480,7 @@ class CascadeRoIHead(BaseRoIHead):
                 if isinstance(bbox_preds, torch.Tensor):
                     bbox_preds = bbox_preds.split(num_proposals_per_img, 0)
                 else:
-                    bbox_preds = self.bbox_head.bbox_pred_split(
+                    bbox_preds = self.bbox_head[stage].bbox_pred_split(
                         bbox_preds, num_proposals_per_img)
             else:
                 bbox_preds = (None, ) * len(batch_img_metas)

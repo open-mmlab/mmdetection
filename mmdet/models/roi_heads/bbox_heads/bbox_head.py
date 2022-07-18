@@ -312,7 +312,12 @@ class BBoxHead(BaseModule):
 
         cls_reg_targets = self.get_targets(
             sampling_results, rcnn_train_cfg, concat=concat)
-        losses = self.loss(cls_score, bbox_pred, rois, *cls_reg_targets)
+        losses = self.loss(
+            cls_score,
+            bbox_pred,
+            rois,
+            *cls_reg_targets,
+            reduction_override=reduction_override)
 
         # cls_reg_targets is only for cascade rcnn
         return dict(loss_bbox=losses, bbox_targets=cls_reg_targets)
