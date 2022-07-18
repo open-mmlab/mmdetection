@@ -144,7 +144,8 @@ class TestFilterAnnotations(unittest.TestCase):
             'gt_ignore_flags':
             np.array([0, 0, 1], dtype=np.bool8),
             'gt_masks':
-            BitmapMasks(rng.rand(3, 224, 224), height=224, width=224),
+            # ignore label will not add into `gt_masks`
+            BitmapMasks(rng.rand(2, 224, 224), height=224, width=224),
         }
 
     def test_transform(self):
@@ -168,13 +169,11 @@ class TestFilterAnnotations(unittest.TestCase):
         transform = FilterAnnotations(min_gt_bbox_wh=(15, 15), )
         results = transform(copy.deepcopy(self.results))
         self.assertIsInstance(results, dict)
-        self.assertTrue((results['gt_bboxes_labels'] == np.array([2,
-                                                                  3])).all())
-        self.assertTrue((results['gt_bboxes'] == np.array([[20, 20, 40, 40],
-                                                           [40, 40, 80,
-                                                            80]])).all())
-        self.assertTrue(len(results['gt_masks']) == 2)
-        self.assertTrue(len(results['gt_ignore_flags'] == 2))
+        self.assertTrue((results['gt_bboxes_labels'] == np.array([2])).all())
+        self.assertTrue((results['gt_bboxes'] == np.array([[20, 20, 40,
+                                                            40]])).all())
+        self.assertTrue(len(results['gt_masks']) == 1)
+        self.assertTrue(len(results['gt_ignore_flags'] == 1))
 
     def test_repr(self):
         transform = FilterAnnotations(

@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import List, Sequence, Tuple
+from typing import List, Sequence, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -27,7 +27,7 @@ class CascadeRoIHead(BaseRoIHead):
 
     def __init__(self,
                  num_stages: int,
-                 stage_loss_weights: List[float],
+                 stage_loss_weights: Union[List[float], Tuple[float]],
                  bbox_roi_extractor: OptMultiConfig = None,
                  bbox_head: OptMultiConfig = None,
                  mask_roi_extractor: OptMultiConfig = None,
@@ -197,16 +197,16 @@ class CascadeRoIHead(BaseRoIHead):
         Returns:
             dict: Usually returns a dictionary with keys:
 
-                - `mask_pred` (Tensor): Mask prediction.
+                - `mask_preds` (Tensor): Mask prediction.
         """
         mask_roi_extractor = self.mask_roi_extractor[stage]
         mask_head = self.mask_head[stage]
         mask_feats = mask_roi_extractor(x[:mask_roi_extractor.num_inputs],
                                         rois)
         # do not support caffe_c4 model anymore
-        mask_pred = mask_head(mask_feats)
+        mask_preds = mask_head(mask_feats)
 
-        mask_results = dict(mask_pred=mask_pred)
+        mask_results = dict(mask_preds=mask_preds)
         return mask_results
 
     def mask_loss(self, stage: int, x: Tuple[Tensor],
@@ -225,7 +225,7 @@ class CascadeRoIHead(BaseRoIHead):
         Returns:
             dict: Usually returns a dictionary with keys:
 
-                - `mask_pred` (Tensor): Mask prediction.
+                - `mask_preds` (Tensor): Mask prediction.
                 - `loss_mask` (dict): A dictionary of mask loss components.
         """
         pos_rois = bbox2roi([res.pos_priors for res in sampling_results])
@@ -234,7 +234,7 @@ class CascadeRoIHead(BaseRoIHead):
         mask_head = self.mask_head[stage]
 
         mask_loss_and_target = mask_head.loss_and_target(
-            mask_pred=mask_results['mask_pred'],
+            mask_preds=mask_results['mask_preds'],
             sampling_results=sampling_results,
             batch_gt_instances=batch_gt_instances,
             rcnn_train_cfg=self.train_cfg[stage])
@@ -419,7 +419,7 @@ class CascadeRoIHead(BaseRoIHead):
         aug_masks = []
         for stage in range(self.num_stages):
             mask_results = self._mask_forward(stage, x, mask_rois)
-            mask_preds = mask_results['mask_pred']
+            mask_preds = mask_results['mask_preds']
             # split batch mask prediction back to each image
             mask_preds = mask_preds.split(num_mask_rois_per_img, 0)
             aug_masks.append([m.sigmoid().detach() for m in mask_preds])

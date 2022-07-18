@@ -113,7 +113,7 @@ class GridRoIHead(StandardRoIHead):
         if self.with_mask:
             mask_rois = rois[:100]
             mask_results = self._mask_forward(x, mask_rois)
-            results = results + (mask_results['mask_pred'], )
+            results = results + (mask_results['mask_preds'], )
         return results
 
     def loss(self, x: Tuple[Tensor], rpn_results_list: InstanceList,

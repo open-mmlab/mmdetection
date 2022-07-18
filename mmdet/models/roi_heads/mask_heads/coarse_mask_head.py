@@ -105,6 +105,6 @@ class CoarseMaskHead(FCNMaskHead):
         x = x.flatten(1)
         for fc in self.fcs:
             x = self.relu(fc(x))
-        mask_pred = self.fc_logits(x).view(
+        mask_preds = self.fc_logits(x).view(
             x.size(0), self.num_classes, *self.output_size)
-        return mask_pred
+        return mask_preds

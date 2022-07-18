@@ -91,18 +91,18 @@ class MaskIoUHead(BaseModule):
         self.max_pool = MaxPool2d(2, 2)
         self.loss_iou = MODELS.build(loss_iou)
 
-    def forward(self, mask_feat: Tensor, mask_pred: Tensor) -> Tensor:
+    def forward(self, mask_feat: Tensor, mask_preds: Tensor) -> Tensor:
         """Forward function.
 
         Args:
             mask_feat (Tensor): Mask features from upstream models.
-            mask_pred (Tensor): Mask predictions from mask head.
+            mask_preds (Tensor): Mask predictions from mask head.
 
         Returns:
             Tensor: Mask IoU predictions.
         """
-        mask_pred = mask_pred.sigmoid()
-        mask_pred_pooled = self.max_pool(mask_pred.unsqueeze(1))
+        mask_preds = mask_preds.sigmoid()
+        mask_pred_pooled = self.max_pool(mask_preds.unsqueeze(1))
 
         x = torch.cat((mask_feat, mask_pred_pooled), 1)
 
@@ -114,7 +114,7 @@ class MaskIoUHead(BaseModule):
         mask_iou = self.fc_mask_iou(x)
         return mask_iou
 
-    def loss_and_target(self, mask_iou_pred: Tensor, mask_pred: Tensor,
+    def loss_and_target(self, mask_iou_pred: Tensor, mask_preds: Tensor,
                         mask_targets: Tensor,
                         sampling_results: List[SamplingResult],
                         batch_gt_instances: InstanceList,
@@ -124,7 +124,7 @@ class MaskIoUHead(BaseModule):
         Args:
             mask_iou_pred (Tensor): Mask IoU predictions results, has shape
                 (num_pos, num_classes)
-            mask_pred (Tensor): Mask predictions from mask head, has shape
+            mask_preds (Tensor): Mask predictions from mask head, has shape
                 (num_pos, mask_size, mask_size).
             mask_targets (Tensor): The ground truth masks assigned with
                 predictions, has shape
@@ -142,7 +142,7 @@ class MaskIoUHead(BaseModule):
         mask_iou_targets = self.get_targets(
             sampling_results=sampling_results,
             batch_gt_instances=batch_gt_instances,
-            mask_pred=mask_pred,
+            mask_preds=mask_preds,
             mask_targets=mask_targets,
             rcnn_train_cfg=rcnn_train_cfg)
 
@@ -155,7 +155,7 @@ class MaskIoUHead(BaseModule):
         return dict(loss_mask_iou=loss_mask_iou)
 
     def get_targets(self, sampling_results: List[SamplingResult],
-                    batch_gt_instances: InstanceList, mask_pred: Tensor,
+                    batch_gt_instances: InstanceList, mask_preds: Tensor,
                     mask_targets: Tensor,
                     rcnn_train_cfg: ConfigDict) -> Tensor:
         """Compute target of mask IoU.
@@ -171,7 +171,7 @@ class MaskIoUHead(BaseModule):
             sampling_results (list[:obj:`SamplingResult`]): sampling results.
             batch_gt_instances (list[:obj:`InstanceData`]): Batch of
                 gt_instance.  It includes ``masks`` inside.
-            mask_pred (Tensor): Predicted masks of each positive proposal,
+            mask_preds (Tensor): Predicted masks of each positive proposal,
                 shape (num_pos, h, w).
             mask_targets (Tensor): Gt mask of each positive proposal,
                 binary map of the shape (num_pos, h, w).
@@ -193,11 +193,11 @@ class MaskIoUHead(BaseModule):
         area_ratios = torch.cat(list(area_ratios))
         assert mask_targets.size(0) == area_ratios.size(0)
 
-        mask_pred = (mask_pred > rcnn_train_cfg.mask_thr_binary).float()
-        mask_pred_areas = mask_pred.sum((-1, -2))
+        mask_preds = (mask_preds > rcnn_train_cfg.mask_thr_binary).float()
+        mask_pred_areas = mask_preds.sum((-1, -2))
 
-        # mask_pred and mask_targets are binary maps
-        overlap_areas = (mask_pred * mask_targets).sum((-1, -2))
+        # mask_preds and mask_targets are binary maps
+        overlap_areas = (mask_preds * mask_targets).sum((-1, -2))
 
         # compute the mask area of the whole instance
         gt_full_areas = mask_targets.sum((-1, -2)) / (area_ratios + 1e-7)

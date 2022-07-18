@@ -6,6 +6,12 @@ num_stages = 6
 num_proposals = 100
 model = dict(
     type='SparseRCNN',
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        bgr_to_rgb=True,
+        pad_size_divisor=32),
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -78,19 +84,18 @@ model = dict(
             dict(
                 assigner=dict(
                     type='HungarianAssigner',
-                    # TODO update
-                    cls_cost=dict(type='FocalLossCost', weight=2.0),
-                    reg_cost=dict(type='BBoxL1Cost', weight=5.0),
-                    iou_cost=dict(type='IoUCost', iou_mode='giou',
-                                  weight=2.0)),
+                    match_costs=[
+                        dict(type='FocalLossCost', weight=2.0),
+                        dict(type='BBoxL1Cost', weight=5.0, box_format='xyxy'),
+                        dict(type='IoUCost', iou_mode='giou', weight=2.0)
+                    ]),
                 sampler=dict(type='PseudoSampler'),
                 pos_weight=1) for _ in range(num_stages)
         ]),
     test_cfg=dict(rpn=None, rcnn=dict(max_per_img=num_proposals)))
 
 # optimizer
-optimizer = dict(_delete_=True, type='AdamW', lr=0.000025, weight_decay=0.0001)
-optimizer_config = dict(_delete_=True, grad_clip=dict(max_norm=1, norm_type=2))
-# learning policy
-lr_config = dict(policy='step', step=[8, 11])
-runner = dict(type='EpochBasedRunner', max_epochs=12)
+optim_wrapper = dict(
+    optimizer=dict(
+        _delete_=True, type='AdamW', lr=0.000025, weight_decay=0.0001),
+    clip_grad=dict(max_norm=1, norm_type=2))

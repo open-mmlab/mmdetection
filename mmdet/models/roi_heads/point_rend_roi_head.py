@@ -42,7 +42,7 @@ class PointRendRoIHead(StandardRoIHead):
         mask_point_results = self._mask_point_loss(
             x=x,
             sampling_results=sampling_results,
-            mask_pred=mask_results['mask_pred'],
+            mask_preds=mask_results['mask_preds'],
             batch_gt_instances=batch_gt_instances)
         mask_results['loss_mask'].update(
             loss_point=mask_point_results['loss_point'])
@@ -51,18 +51,18 @@ class PointRendRoIHead(StandardRoIHead):
 
     def _mask_point_loss(self, x: Tuple[Tensor],
                          sampling_results: List[SamplingResult],
-                         mask_pred: Tensor,
+                         mask_preds: Tensor,
                          batch_gt_instances: InstanceList) -> dict:
         """Run forward function and calculate loss for point head in
         training."""
         pos_labels = torch.cat([res.pos_gt_labels for res in sampling_results])
         rel_roi_points = self.point_head.get_roi_rel_points_train(
-            mask_pred, pos_labels, cfg=self.train_cfg)
+            mask_preds, pos_labels, cfg=self.train_cfg)
         rois = bbox2roi([res.pos_bboxes for res in sampling_results])
 
         fine_grained_point_feats = self._get_fine_grained_point_feats(
             x, rois, rel_roi_points)
-        coarse_point_feats = point_sample(mask_pred, rel_roi_points)
+        coarse_point_feats = point_sample(mask_preds, rel_roi_points)
         mask_point_pred = self.point_head(fine_grained_point_feats,
                                           coarse_point_feats)
 
@@ -76,22 +76,22 @@ class PointRendRoIHead(StandardRoIHead):
         return loss_and_target
 
     def _mask_point_forward_test(self, x: Tuple[Tensor], rois: Tensor,
-                                 label_pred: Tensor,
-                                 mask_pred: Tensor) -> Tensor:
+                                 label_preds: Tensor,
+                                 mask_preds: Tensor) -> Tensor:
         """Mask refining process with point head in testing.
 
         Args:
             x (tuple[Tensor]): Feature maps of all scale level.
             rois (Tensor): shape (num_rois, 5).
-            label_pred (Tensor): The predication class for each rois.
-            mask_pred (Tensor): The predication coarse masks of
+            label_preds (Tensor): The predication class for each rois.
+            mask_preds (Tensor): The predication coarse masks of
                 shape (num_rois, num_classes, small_size, small_size).
 
         Returns:
             Tensor: The refined masks of shape (num_rois, num_classes,
             large_size, large_size).
         """
-        refined_mask_pred = mask_pred.clone()
+        refined_mask_pred = mask_preds.clone()
         for subdivision_step in range(self.test_cfg.subdivision_steps):
             refined_mask_pred = F.interpolate(
                 refined_mask_pred,
@@ -109,11 +109,11 @@ class PointRendRoIHead(StandardRoIHead):
                 continue
             point_indices, rel_roi_points = \
                 self.point_head.get_roi_rel_points_test(
-                    refined_mask_pred, label_pred, cfg=self.test_cfg)
+                    refined_mask_pred, label_preds, cfg=self.test_cfg)
 
             fine_grained_point_feats = self._get_fine_grained_point_feats(
                 x=x, rois=rois, rel_roi_points=rel_roi_points)
-            coarse_point_feats = point_sample(mask_pred, rel_roi_points)
+            coarse_point_feats = point_sample(mask_preds, rel_roi_points)
             mask_point_pred = self.point_head(fine_grained_point_feats,
                                               coarse_point_feats)
 
@@ -209,7 +209,7 @@ class PointRendRoIHead(StandardRoIHead):
             return results_list
 
         mask_results = self._mask_forward(x, mask_rois)
-        mask_preds = mask_results['mask_pred']
+        mask_preds = mask_results['mask_preds']
         # split batch mask prediction back to each image
         num_mask_rois_per_img = [len(res) for res in results_list]
         mask_preds = mask_preds.split(num_mask_rois_per_img, 0)

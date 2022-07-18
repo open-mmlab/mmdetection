@@ -83,7 +83,7 @@ class StandardRoIHead(BaseRoIHead):
         if self.with_mask:
             mask_rois = rois[:100]
             mask_results = self._mask_forward(x, mask_rois)
-            results = results + (mask_results['mask_pred'], )
+            results = results + (mask_results['mask_preds'], )
         return results
 
     def loss(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
@@ -212,7 +212,7 @@ class StandardRoIHead(BaseRoIHead):
         Returns:
             dict: Usually returns a dictionary with keys:
 
-                - `mask_pred` (Tensor): Mask prediction.
+                - `mask_preds` (Tensor): Mask prediction.
                 - `mask_feats` (Tensor): Extract mask RoI features.
                 - `mask_targets` (Tensor): Mask target of each positive\
                     proposals in the image.
@@ -241,7 +241,7 @@ class StandardRoIHead(BaseRoIHead):
                 x, pos_inds=pos_inds, bbox_feats=bbox_feats)
 
         mask_loss_and_target = self.mask_head.loss_and_target(
-            mask_pred=mask_results['mask_pred'],
+            mask_preds=mask_results['mask_preds'],
             sampling_results=sampling_results,
             batch_gt_instances=batch_gt_instances,
             rcnn_train_cfg=self.train_cfg)
@@ -267,7 +267,7 @@ class StandardRoIHead(BaseRoIHead):
         Returns:
             dict[str, Tensor]: Usually returns a dictionary with keys:
 
-                - `mask_pred` (Tensor): Mask prediction.
+                - `mask_preds` (Tensor): Mask prediction.
                 - `mask_feats` (Tensor): Extract mask RoI features.
         """
         assert ((rois is not None) ^
@@ -281,8 +281,8 @@ class StandardRoIHead(BaseRoIHead):
             assert bbox_feats is not None
             mask_feats = bbox_feats[pos_inds]
 
-        mask_pred = self.mask_head(mask_feats)
-        mask_results = dict(mask_pred=mask_pred, mask_feats=mask_feats)
+        mask_preds = self.mask_head(mask_feats)
+        mask_results = dict(mask_preds=mask_preds, mask_feats=mask_feats)
         return mask_results
 
     def predict_bbox(self,
@@ -394,7 +394,7 @@ class StandardRoIHead(BaseRoIHead):
             return results_list
 
         mask_results = self._mask_forward(x, mask_rois)
-        mask_preds = mask_results['mask_pred']
+        mask_preds = mask_results['mask_preds']
         # split batch mask prediction back to each image
         num_mask_rois_per_img = [len(res) for res in results_list]
         mask_preds = mask_preds.split(num_mask_rois_per_img, 0)

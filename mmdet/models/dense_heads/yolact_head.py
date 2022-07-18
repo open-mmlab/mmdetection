@@ -728,9 +728,9 @@ class YOLACTProtonet(BaseMaskHead):
             pos_coeffs = positive_infos[idx].coeffs
 
             # Linearly combine the prototypes with the mask coefficients
-            mask_pred = cur_prototypes @ pos_coeffs.t()
-            mask_pred = torch.sigmoid(mask_pred)
-            mask_pred_list.append(mask_pred)
+            mask_preds = cur_prototypes @ pos_coeffs.t()
+            mask_preds = torch.sigmoid(mask_preds)
+            mask_pred_list.append(mask_preds)
         return mask_pred_list, segm_preds
 
     def loss_by_feat(self, mask_preds: List[Tensor], segm_preds: List[Tensor],
@@ -776,7 +776,7 @@ class YOLACTProtonet(BaseMaskHead):
         for idx in range(num_imgs):
             img_meta = batch_img_metas[idx]
 
-            (mask_pred, pos_mask_targets, segm_targets, num_pos,
+            (mask_preds, pos_mask_targets, segm_targets, num_pos,
              gt_bboxes_for_reweight) = self._get_targets_single(
                  croped_mask_pred[idx], segm_preds[idx],
                  batch_gt_instances[idx], positive_infos[idx])
@@ -794,11 +794,11 @@ class YOLACTProtonet(BaseMaskHead):
             # mask loss
             total_pos += num_pos
             if num_pos == 0 or pos_mask_targets is None:
-                loss = mask_pred.sum() * 0.
+                loss = mask_preds.sum() * 0.
             else:
-                mask_pred = torch.clamp(mask_pred, 0, 1)
+                mask_preds = torch.clamp(mask_preds, 0, 1)
                 loss = F.binary_cross_entropy(
-                    mask_pred, pos_mask_targets,
+                    mask_preds, pos_mask_targets,
                     reduction='none') * self.loss_mask_weight
 
                 h, w = img_meta['img_shape'][:2]
@@ -821,13 +821,13 @@ class YOLACTProtonet(BaseMaskHead):
 
         return losses
 
-    def _get_targets_single(self, mask_pred: Tensor, segm_pred: Tensor,
+    def _get_targets_single(self, mask_preds: Tensor, segm_pred: Tensor,
                             gt_instances: InstanceData,
                             positive_info: InstanceData):
         """Compute targets for predictions of single image.
 
         Args:
-            mask_pred (Tensor): Predicted prototypes with shape
+            mask_preds (Tensor): Predicted prototypes with shape
                 (num_classes, H, W).
             segm_pred (Tensor): Predicted semantic segmentation map
                 with shape (num_classes, H, W).
@@ -850,7 +850,7 @@ class YOLACTProtonet(BaseMaskHead):
         Returns:
             tuple: Usually returns a tuple containing learning targets.
 
-            - mask_pred (Tensor): Positive predicted mask with shape
+            - mask_preds (Tensor): Positive predicted mask with shape
               (num_pos, mask_h, mask_w).
             - pos_mask_targets (Tensor): Positive mask targets with shape
               (num_pos, mask_h, mask_w).
@@ -866,7 +866,7 @@ class YOLACTProtonet(BaseMaskHead):
         gt_masks = gt_instances.masks.to_tensor(
             dtype=torch.bool, device=device).float()
         if gt_masks.size(0) == 0:
-            return mask_pred, None, None, 0, None
+            return mask_preds, None, None, 0, None
 
         # process with semantic segmentation targets
         if segm_pred is not None:
@@ -893,13 +893,13 @@ class YOLACTProtonet(BaseMaskHead):
         if num_pos > self.max_masks_to_train:
             perm = torch.randperm(num_pos)
             select = perm[:self.max_masks_to_train]
-            mask_pred = mask_pred[select]
+            mask_preds = mask_preds[select]
             pos_assigned_gt_inds = pos_assigned_gt_inds[select]
             num_pos = self.max_masks_to_train
 
         gt_bboxes_for_reweight = gt_bboxes[pos_assigned_gt_inds]
 
-        mask_h, mask_w = mask_pred.shape[-2:]
+        mask_h, mask_w = mask_preds.shape[-2:]
         gt_masks = F.interpolate(
             gt_masks.unsqueeze(0), (mask_h, mask_w),
             mode='bilinear',
@@ -907,7 +907,7 @@ class YOLACTProtonet(BaseMaskHead):
         gt_masks = gt_masks.gt(0.5).float()
         pos_mask_targets = gt_masks[pos_assigned_gt_inds]
 
-        return (mask_pred, pos_mask_targets, segm_targets, num_pos,
+        return (mask_preds, pos_mask_targets, segm_targets, num_pos,
                 gt_bboxes_for_reweight)
 
     def crop_mask_preds(self, mask_preds: List[Tensor],
@@ -927,15 +927,15 @@ class YOLACTProtonet(BaseMaskHead):
             list: The cropped masks.
         """
         croped_mask_preds = []
-        for img_meta, mask_pred, cur_info in zip(batch_img_metas, mask_preds,
-                                                 positive_infos):
+        for img_meta, mask_preds, cur_info in zip(batch_img_metas, mask_preds,
+                                                  positive_infos):
             bboxes_for_cropping = copy.deepcopy(cur_info.bboxes)
             h, w = img_meta['img_shape'][:2]
             bboxes_for_cropping[:, 0::2] /= w
             bboxes_for_cropping[:, 1::2] /= h
-            mask_pred = self.crop_single(mask_pred, bboxes_for_cropping)
-            mask_pred = mask_pred.permute(2, 0, 1).contiguous()
-            croped_mask_preds.append(mask_pred)
+            mask_preds = self.crop_single(mask_preds, bboxes_for_cropping)
+            mask_preds = mask_preds.permute(2, 0, 1).contiguous()
+            croped_mask_preds.append(mask_preds)
         return croped_mask_preds
 
     def crop_single(self,
@@ -1051,8 +1051,8 @@ class YOLACTProtonet(BaseMaskHead):
             img_meta = batch_img_metas[img_id]
             results = results_list[img_id]
             bboxes = results.bboxes
-            mask_pred = croped_mask_pred[img_id]
-            if bboxes.shape[0] == 0 or mask_pred.shape[0] == 0:
+            mask_preds = croped_mask_pred[img_id]
+            if bboxes.shape[0] == 0 or mask_preds.shape[0] == 0:
                 results_list[img_id] = empty_instances(
                     [img_meta],
                     bboxes.device,
@@ -1060,7 +1060,7 @@ class YOLACTProtonet(BaseMaskHead):
                     instance_results=[results])[0]
             else:
                 im_mask = self._predict_by_feat_single(
-                    mask_pred=croped_mask_pred[img_id],
+                    mask_preds=croped_mask_pred[img_id],
                     bboxes=bboxes,
                     img_meta=img_meta,
                     rescale=rescale)
@@ -1068,7 +1068,7 @@ class YOLACTProtonet(BaseMaskHead):
         return results_list
 
     def _predict_by_feat_single(self,
-                                mask_pred: Tensor,
+                                mask_preds: Tensor,
                                 bboxes: Tensor,
                                 img_meta: dict,
                                 rescale: bool,
@@ -1077,7 +1077,7 @@ class YOLACTProtonet(BaseMaskHead):
         mask results.
 
         Args:
-            mask_pred (Tensor): Predicted prototypes, has shape [H, W, N].
+            mask_preds (Tensor): Predicted prototypes, has shape [H, W, N].
             bboxes (Tensor): Bbox coords in relative point form with
                 shape [N, 4].
             img_meta (dict): Meta information of each image, e.g.,
@@ -1111,7 +1111,7 @@ class YOLACTProtonet(BaseMaskHead):
             img_w = np.round(img_w * w_scale.item()).astype(np.int32)
 
         masks = F.interpolate(
-            mask_pred.unsqueeze(0), (img_h, img_w),
+            mask_preds.unsqueeze(0), (img_h, img_w),
             mode='bilinear',
             align_corners=False).squeeze(0) > cfg.mask_thr
 
