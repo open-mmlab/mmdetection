@@ -75,8 +75,6 @@ model = dict(
 env_cfg = dict(cudnn_benchmark=True)
 
 # dataset settings
-dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
 input_size = 320
 train_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -90,7 +88,7 @@ train_pipeline = [
         type='MinIoURandomCrop',
         min_ious=(0.1, 0.3, 0.5, 0.7, 0.9),
         min_crop_size=0.3),
-    dict(type='Resize', img_scale=(input_size, input_size), keep_ratio=False),
+    dict(type='Resize', scale=(input_size, input_size), keep_ratio=False),
     dict(type='RandomFlip', prob=0.5),
     dict(
         type='PhotoMetricDistortion',
@@ -117,22 +115,13 @@ train_dataloader = dict(
         type='RepeatDataset',
         times=5,
         dataset=dict(
-            type=dataset_type,
-            data_root=data_root,
+            type={{_base_.dataset_type}},
+            data_root={{_base_.data_root}},
             ann_file='annotations/instances_train2017.json',
             data_prefix=dict(img='train2017/'),
             filter_cfg=dict(filter_empty_gt=True, min_size=32),
             pipeline=train_pipeline)))
-val_dataloader = dict(
-    batch_size=8,
-    num_workers=2,
-    dataset=dict(
-        type=dataset_type,
-        data_root=data_root,
-        ann_file='annotations/instances_val2017.json',
-        data_prefix=dict(img='val2017/'),
-        test_mode=True,
-        pipeline=test_pipeline))
+val_dataloader = dict(batch_size=8, dataset=dict(pipeline=test_pipeline))
 test_dataloader = val_dataloader
 
 # training schedule
@@ -146,6 +135,7 @@ param_scheduler = [
     dict(
         type='CosineAnnealingLR',
         begin=0,
+        T_max=max_epochs,
         end=max_epochs,
         by_epoch=True,
         eta_min=0)
