@@ -101,6 +101,15 @@ def pytorch2onnx(model,
 
     model.forward = origin_forward
 
+    # get the custom op path
+    ort_custom_op_path = ''
+    try:
+        from mmcv.ops import get_onnxruntime_op_path
+        ort_custom_op_path = get_onnxruntime_op_path()
+    except (ImportError, ModuleNotFoundError):
+        warnings.warn('If input model has custom op from mmcv, \
+            you may have to build mmcv with ONNXRuntime from source.')
+
     if do_simplify:
         import onnxsim
 
