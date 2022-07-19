@@ -9,8 +9,8 @@ from six.moves import map, zip
 from torch.autograd import Function
 from torch.nn import functional as F
 
-from mmdet.data_elements import SampleList
-from mmdet.data_elements.mask import BitmapMasks, PolygonMasks
+from mmdet.structures import SampleList
+from mmdet.structures.mask import BitmapMasks, PolygonMasks
 from mmdet.utils import OptInstanceList
 
 

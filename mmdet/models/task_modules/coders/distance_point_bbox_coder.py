@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from mmdet.data_elements.bbox import bbox2distance, distance2bbox
 from mmdet.registry import TASK_UTILS
+from mmdet.structures.bbox import bbox2distance, distance2bbox
 from .base_bbox_coder import BaseBBoxCoder
 
 

@@ -9,10 +9,10 @@ from mmengine.data import BaseDataElement as PixelData
 from mmengine.data import InstanceData
 from mmengine.dist import master_only
 
-from ..data_elements import DetDataSample
-from ..data_elements.mask import bitmap_to_polygon
 from ..evaluation import INSTANCE_OFFSET
 from ..registry import VISUALIZERS
+from ..structures import DetDataSample
+from ..structures.mask import bitmap_to_polygon
 from .palette import _get_adaptive_scales, get_palette
 
 

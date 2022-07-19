@@ -7,9 +7,9 @@ import numpy as np
 from mmengine.data import BaseDataElement as PixelData
 from mmengine.data import InstanceData
 
-from mmdet.data_elements import DetDataSample
-from mmdet.data_elements.mask import BitmapMasks
 from mmdet.datasets.transforms import PackDetInputs
+from mmdet.structures import DetDataSample
+from mmdet.structures.mask import BitmapMasks
 
 
 class TestPackDetInputs(unittest.TestCase):

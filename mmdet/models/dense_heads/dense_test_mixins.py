@@ -7,7 +7,7 @@ import torch
 from mmcv.ops import batched_nms
 from mmengine.data import InstanceData
 
-from mmdet.data_elements.bbox import bbox_mapping_back
+from mmdet.structures.bbox import bbox_mapping_back
 from ..test_time_augs import merge_aug_proposals
 
 if sys.version_info >= (3, 7):

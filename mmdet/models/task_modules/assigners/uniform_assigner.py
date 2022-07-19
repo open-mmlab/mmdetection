@@ -4,8 +4,8 @@ from typing import Optional
 import torch
 from mmengine.data import InstanceData
 
-from mmdet.data_elements.bbox import bbox_xyxy_to_cxcywh
 from mmdet.registry import TASK_UTILS
+from mmdet.structures.bbox import bbox_xyxy_to_cxcywh
 from mmdet.utils import ConfigType
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner

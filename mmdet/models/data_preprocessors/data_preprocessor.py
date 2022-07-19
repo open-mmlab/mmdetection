@@ -12,8 +12,8 @@ from mmengine.logging import MessageHub
 from mmengine.model import ImgDataPreprocessor
 from torch import Tensor
 
-from mmdet.data_elements import DetDataSample
 from mmdet.registry import MODELS
+from mmdet.structures import DetDataSample
 
 
 @MODELS.register_module()

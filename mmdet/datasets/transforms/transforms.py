@@ -16,10 +16,10 @@ from mmcv.transforms.utils import avoid_cache_randomness, cache_randomness
 from mmengine.dataset import BaseDataset
 from numpy import random
 
-from mmdet.data_elements.bbox import find_inside_bboxes
-from mmdet.data_elements.mask import BitmapMasks, PolygonMasks
 from mmdet.evaluation.functional import bbox_overlaps
 from mmdet.registry import TRANSFORMS
+from mmdet.structures.bbox import find_inside_bboxes
+from mmdet.structures.mask import BitmapMasks, PolygonMasks
 from mmdet.utils import log_img_scale
 
 try:

@@ -2,7 +2,7 @@
 import numpy as np
 from mmengine.testing import assert_allclose
 
-from mmdet.data_elements.mask import BitmapMasks, PolygonMasks
+from mmdet.structures.mask import BitmapMasks, PolygonMasks
 
 
 def create_random_bboxes(num_bboxes, img_w, img_h):

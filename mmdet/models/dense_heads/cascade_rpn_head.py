@@ -11,8 +11,8 @@ from mmengine.data import InstanceData
 from mmengine.model import BaseModule, ModuleList
 from torch import Tensor
 
-from mmdet.data_elements import SampleList
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.structures import SampleList
 from mmdet.utils import (ConfigType, InstanceList, MultiConfig,
                          OptInstanceList, OptMultiConfig)
 from ..task_modules.assigners import RegionAssigner

@@ -4,9 +4,9 @@ import unittest
 
 import numpy as np
 
-from mmdet.data_elements.mask import BitmapMasks, PolygonMasks
 from mmdet.datasets.transforms import (GeomTransform, Rotate, ShearX, ShearY,
                                        TranslateX, TranslateY)
+from mmdet.structures.mask import BitmapMasks, PolygonMasks
 from .utils import check_result_same, construct_toy_data
 
 

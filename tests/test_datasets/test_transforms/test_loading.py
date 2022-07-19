@@ -9,12 +9,12 @@ from unittest.mock import MagicMock, Mock, patch
 import mmcv
 import numpy as np
 
-from mmdet.data_elements.mask import BitmapMasks, PolygonMasks
 from mmdet.datasets.transforms import (FilterAnnotations, LoadAnnotations,
                                        LoadImageFromNDArray,
                                        LoadMultiChannelImageFromFiles,
                                        LoadProposals)
 from mmdet.evaluation import INSTANCE_OFFSET
+from mmdet.structures.mask import BitmapMasks, PolygonMasks
 
 try:
     import panopticapi

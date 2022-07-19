@@ -6,8 +6,8 @@ import mmcv
 import torch
 import torch.nn as nn
 
-from mmdet.data_elements.bbox import bbox_overlaps
 from mmdet.registry import MODELS
+from mmdet.structures.bbox import bbox_overlaps
 from .utils import weighted_loss
 
 

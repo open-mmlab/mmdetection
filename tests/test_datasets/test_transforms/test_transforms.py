@@ -7,8 +7,6 @@ import mmcv
 import numpy as np
 from mmcv.transforms import LoadImageFromFile
 
-from mmdet.data_elements.bbox import bbox_project
-from mmdet.data_elements.mask import BitmapMasks
 from mmdet.datasets.transforms import (CopyPaste, CutOut, Expand,
                                        MinIoURandomCrop, MixUp, Mosaic, Pad,
                                        PhotoMetricDistortion, RandomAffine,
@@ -17,6 +15,8 @@ from mmdet.datasets.transforms import (CopyPaste, CutOut, Expand,
                                        SegRescale, YOLOXHSVRandomAug)
 from mmdet.evaluation import bbox_overlaps
 from mmdet.registry import TRANSFORMS
+from mmdet.structures.bbox import bbox_project
+from mmdet.structures.mask import BitmapMasks
 from .utils import create_full_masks, create_random_bboxes
 
 try:

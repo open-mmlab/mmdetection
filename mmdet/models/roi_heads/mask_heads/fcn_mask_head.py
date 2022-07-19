@@ -13,10 +13,10 @@ from mmengine.model import BaseModule, ModuleList
 from torch import Tensor
 from torch.nn.modules.utils import _pair
 
-from mmdet.data_elements.mask import mask_target
 from mmdet.models.task_modules.samplers import SamplingResult
 from mmdet.models.utils import empty_instances
 from mmdet.registry import MODELS
+from mmdet.structures.mask import mask_target
 from mmdet.utils import ConfigType, InstanceList, OptConfigType, OptMultiConfig
 
 BYTES_PER_FLOAT = 4

@@ -3,10 +3,10 @@ from typing import List, Tuple
 
 from torch import Tensor
 
-from mmdet.data_elements import DetDataSample
-from mmdet.data_elements.bbox import bbox2roi
 from mmdet.models.task_modules import SamplingResult
 from mmdet.registry import MODELS
+from mmdet.structures import DetDataSample
+from mmdet.structures.bbox import bbox2roi
 from mmdet.utils import InstanceList
 from ..losses.pisa_loss import carl_loss, isr_p
 from ..utils import unpack_gt_instances

@@ -8,8 +8,8 @@ import numpy as np
 from mmcv.transforms import BaseTransform
 from mmcv.transforms.utils import cache_randomness
 
-from mmdet.data_elements.bbox import bbox_project
 from mmdet.registry import TRANSFORMS
+from mmdet.structures.bbox import bbox_project
 from .augment_wrappers import _MAX_LEVEL, level_to_mag
 
 

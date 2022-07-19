@@ -7,9 +7,9 @@ from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 from parameterized import parameterized
 
-from mmdet.data_elements.mask import mask_target
 from mmdet.models.roi_heads.mask_heads import MaskIoUHead
 from mmdet.models.utils import unpack_gt_instances
+from mmdet.structures.mask import mask_target
 from mmdet.testing import (demo_mm_inputs, demo_mm_proposals,
                            demo_mm_sampling_results)
 

@@ -10,8 +10,8 @@ import numpy as np
 from mmengine.logging import MMLogger
 from terminaltables import AsciiTable
 
-from mmdet.data_elements.mask import encode_mask_results
 from mmdet.registry import METRICS
+from mmdet.structures.mask import encode_mask_results
 from ..functional import eval_recalls
 from .coco_metric import CocoMetric
 

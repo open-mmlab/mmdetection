@@ -6,7 +6,7 @@ import pytest
 import torch
 
 from mmdet.apis import inference_detector, init_detector
-from mmdet.data_elements import DetDataSample
+from mmdet.structures import DetDataSample
 from mmdet.utils import register_all_modules
 
 # TODO: Waiting to fix multiple call error bug

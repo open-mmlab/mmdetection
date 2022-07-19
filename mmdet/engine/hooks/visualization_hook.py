@@ -8,8 +8,8 @@ from mmengine.hooks import Hook
 from mmengine.runner import Runner
 from mmengine.visualization import Visualizer
 
-from mmdet.data_elements import DetDataSample
 from mmdet.registry import HOOKS
+from mmdet.structures import DetDataSample
 
 
 @HOOKS.register_module()

@@ -7,9 +7,9 @@ from mmengine.data import InstanceData
 from mmengine.model import BaseModule
 from torch import Tensor
 
-from mmdet.data_elements.bbox import bbox_cxcywh_to_xyxy
-from mmdet.data_elements.det_data_sample import SampleList
 from mmdet.registry import MODELS
+from mmdet.structures.bbox import bbox_cxcywh_to_xyxy
+from mmdet.structures.det_data_sample import SampleList
 from mmdet.utils import InstanceList, OptConfigType
 
 

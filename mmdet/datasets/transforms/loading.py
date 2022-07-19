@@ -8,8 +8,8 @@ from mmcv.transforms import BaseTransform
 from mmcv.transforms import LoadAnnotations as MMCV_LoadAnnotations
 from mmcv.transforms import LoadImageFromFile
 
-from mmdet.data_elements.mask import BitmapMasks, PolygonMasks
 from mmdet.registry import TRANSFORMS
+from mmdet.structures.mask import BitmapMasks, PolygonMasks
 
 
 @TRANSFORMS.register_module()

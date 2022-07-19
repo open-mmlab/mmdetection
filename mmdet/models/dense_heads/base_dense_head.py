@@ -12,7 +12,7 @@ from mmengine.data import InstanceData
 from mmengine.model import BaseModule
 from torch import Tensor
 
-from mmdet.data_elements import SampleList
+from mmdet.structures import SampleList
 from mmdet.utils import InstanceList, OptMultiConfig
 from ..test_time_augs import merge_aug_results
 from ..utils import (filter_scores_and_topk, select_single_mlvl,
