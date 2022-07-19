@@ -4,7 +4,9 @@ _base_ = [
 ]
 
 image_size = (1024, 1024)
-batch_augments = [dict(type='BatchFixedSizePad', size=image_size)]
+batch_augments = [
+    dict(type='BatchFixedSizePad', size=image_size, pad_mask=True)
+]
 norm_cfg = dict(type='SyncBN', requires_grad=True)
 # Use MMSyncBN that handles empty tensor in head. It can be changed to
 # SyncBN after https://github.com/pytorch/pytorch/issues/36530 is fixed
@@ -13,10 +15,6 @@ head_norm_cfg = dict(type='MMSyncBN', requires_grad=True)
 model = dict(
     # the model is trained from scratch, so init_cfg is None
     data_preprocessor=dict(
-        type='DetDataPreprocessor',
-        mean=[123.675, 116.28, 103.53],
-        std=[58.395, 57.12, 57.375],
-        bgr_to_rgb=True,
         # pad_size_divisor=32 is unnecessary in training but necessary
         # in testing.
         pad_size_divisor=32,

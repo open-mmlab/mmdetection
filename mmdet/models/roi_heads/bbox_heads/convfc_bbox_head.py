@@ -6,7 +6,7 @@ from mmcv.cnn import ConvModule
 from mmengine.config import ConfigDict
 from torch import Tensor
 
-from mmdet.models.utils import build_linear_layer
+from mmdet.models.layers import build_linear_layer
 from mmdet.registry import MODELS
 from .bbox_head import BBoxHead
 

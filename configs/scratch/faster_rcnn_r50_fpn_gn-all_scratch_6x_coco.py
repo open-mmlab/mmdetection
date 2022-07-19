@@ -16,9 +16,24 @@ model = dict(
             type='Shared4Conv1FCBBoxHead',
             conv_out_channels=256,
             norm_cfg=norm_cfg)))
-# optimizer
-optimizer = dict(paramwise_cfg=dict(norm_decay_mult=0))
-optimizer_config = dict(_delete_=True, grad_clip=None)
-# learning policy
-lr_config = dict(warmup_ratio=0.1, step=[65, 71])
-runner = dict(type='EpochBasedRunner', max_epochs=73)
+
+optim_wrapper = dict(paramwise_cfg=dict(norm_decay_mult=0.))
+
+max_epochs = 73
+
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=max_epochs,
+        by_epoch=True,
+        milestones=[65, 71],
+        gamma=0.1)
+]
+
+train_cfg = dict(max_epochs=max_epochs)
+
+# only keep latest 3 checkpoints
+default_hooks = dict(checkpoint=dict(max_keep_ckpts=3))

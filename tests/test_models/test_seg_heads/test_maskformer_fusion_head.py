@@ -4,8 +4,8 @@ import unittest
 import torch
 from mmengine.config import Config
 
-from mmdet.core.data_structures import DetDataSample
 from mmdet.models.seg_heads.panoptic_fusion_heads import MaskFormerFusionHead
+from mmdet.structures import DetDataSample
 
 
 class TestMaskFormerFusionHead(unittest.TestCase):

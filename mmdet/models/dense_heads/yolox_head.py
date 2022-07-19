@@ -12,11 +12,13 @@ from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import (MlvlPointGenerator, PseudoSampler, bbox_xyxy_to_cxcywh,
-                        multi_apply, reduce_mean)
-from mmdet.core.utils.typing import (ConfigType, OptConfigType,
-                                     OptInstanceList, OptMultiConfig)
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.structures.bbox import bbox_xyxy_to_cxcywh
+from mmdet.utils import (ConfigType, OptConfigType, OptInstanceList,
+                         OptMultiConfig, reduce_mean)
+from ..task_modules.prior_generators import MlvlPointGenerator
+from ..task_modules.samplers import PseudoSampler
+from ..utils import multi_apply
 from .base_dense_head import BaseDenseHead
 
 
@@ -351,8 +353,7 @@ class YOLOXHead(BaseDenseHead):
                            cfg: ConfigDict,
                            rescale: bool = False,
                            with_nms: bool = True,
-                           img_meta: Optional[dict] = None,
-                           **kwargs) -> InstanceData:
+                           img_meta: Optional[dict] = None) -> InstanceData:
         """bbox post-processing method.
 
         The boxes would be rescaled to the original image scale and do

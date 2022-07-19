@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from mmdet.core.utils import ConfigType, OptConfigType, OptMultiConfig
 from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from .panoptic_two_stage_segmentor import TwoStagePanopticSegmentor
 
 

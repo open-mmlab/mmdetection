@@ -1,13 +1,16 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 import torch
 from torch import Tensor
 
-from mmdet.core import InstanceList, SampleList, SamplingResultList, bbox2roi
 from mmdet.models.losses import SmoothL1Loss
+from mmdet.models.task_modules.samplers import SamplingResult
 from mmdet.registry import MODELS
+from mmdet.structures import SampleList
+from mmdet.structures.bbox import bbox2roi
+from mmdet.utils import InstanceList
 from ..utils.misc import unpack_gt_instances
 from .standard_roi_head import StandardRoIHead
 
@@ -27,7 +30,7 @@ class DynamicRoIHead(StandardRoIHead):
         self.beta_history = []
 
     def loss(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
-             batch_data_samples: SampleList, **kwargs) -> dict:
+             batch_data_samples: SampleList) -> dict:
         """Forward function for training.
 
         Args:
@@ -93,7 +96,7 @@ class DynamicRoIHead(StandardRoIHead):
         return losses
 
     def bbox_loss(self, x: Tuple[Tensor],
-                  sampling_results: SamplingResultList) -> dict:
+                  sampling_results: List[SamplingResult]) -> dict:
         """Perform forward propagation and loss calculation of the bbox head on
         the features of the upstream network.
 
@@ -127,11 +130,12 @@ class DynamicRoIHead(StandardRoIHead):
         pos_inds = bbox_targets[3][:, 0].nonzero().squeeze(1)
         num_pos = len(pos_inds)
         num_imgs = len(sampling_results)
-        cur_target = bbox_targets[2][pos_inds, :2].abs().mean(dim=1)
-        beta_topk = min(self.train_cfg.dynamic_rcnn.beta_topk * num_imgs,
-                        num_pos)
-        cur_target = torch.kthvalue(cur_target, beta_topk)[0].item()
-        self.beta_history.append(cur_target)
+        if num_pos > 0:
+            cur_target = bbox_targets[2][pos_inds, :2].abs().mean(dim=1)
+            beta_topk = min(self.train_cfg.dynamic_rcnn.beta_topk * num_imgs,
+                            num_pos)
+            cur_target = torch.kthvalue(cur_target, beta_topk)[0].item()
+            self.beta_history.append(cur_target)
 
         return bbox_results
 
@@ -148,7 +152,7 @@ class DynamicRoIHead(StandardRoIHead):
         self.bbox_assigner.pos_iou_thr = new_iou_thr
         self.bbox_assigner.neg_iou_thr = new_iou_thr
         self.bbox_assigner.min_pos_iou = new_iou_thr
-        if (np.median(self.beta_history) < EPS):
+        if (not self.beta_history) or (np.median(self.beta_history) < EPS):
             # avoid 0 or too small value for new_beta
             new_beta = self.bbox_head.loss_bbox.beta
         else:

@@ -12,11 +12,10 @@ from mmengine.data import InstanceData
 from mmengine.model import BaseModule
 from torch import Tensor
 
-from mmdet.core import mask_matrix_nms, multi_apply
-from mmdet.core.utils import (ConfigType, InstanceList, MultiConfig,
-                              OptConfigType, center_of_mass,
-                              generate_coordinate)
-from mmdet.models.builder import HEADS
+from mmdet.utils import ConfigType, InstanceList, MultiConfig, OptConfigType
+from ..builder import HEADS
+from ..layers import mask_matrix_nms
+from ..utils import center_of_mass, generate_coordinate, multi_apply
 from .solo_head import SOLOHead
 
 

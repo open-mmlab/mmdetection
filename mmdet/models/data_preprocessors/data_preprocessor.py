@@ -12,9 +12,8 @@ from mmengine.logging import MessageHub
 from mmengine.model import ImgDataPreprocessor
 from torch import Tensor
 
-from mmdet.core.data_structures import DetDataSample
-from mmdet.core.mask import BitmapMasks
 from mmdet.registry import MODELS
+from mmdet.structures import DetDataSample
 
 
 @MODELS.register_module()
@@ -150,9 +149,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         """Pad gt_masks to shape of batch_input_shape."""
         if 'masks' in batch_data_samples[0].gt_instances:
             for data_samples in batch_data_samples:
-                # BitmapMasks
                 masks = data_samples.gt_instances.masks
-                assert isinstance(masks, BitmapMasks)
                 data_samples.gt_instances.masks = masks.pad(
                     data_samples.batch_input_shape,
                     pad_val=self.mask_pad_value)
@@ -321,9 +318,7 @@ class BatchFixedSizePad(nn.Module):
 
             if self.pad_mask:
                 for data_samples in batch_data_samples:
-                    # BitmapMasks
                     masks = data_samples.gt_instances.masks
-                    assert isinstance(masks, BitmapMasks)
                     data_samples.gt_instances.masks = masks.pad(
                         (dst_h, dst_w), pad_val=self.mask_pad_value)
 

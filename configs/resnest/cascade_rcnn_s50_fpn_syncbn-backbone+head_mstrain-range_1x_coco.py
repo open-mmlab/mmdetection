@@ -1,6 +1,11 @@
 _base_ = '../cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py'
 norm_cfg = dict(type='SyncBN', requires_grad=True)
 model = dict(
+    # use ResNeSt img_norm
+    data_preprocessor=dict(
+        mean=[123.68, 116.779, 103.939],
+        std=[58.393, 57.12, 57.375],
+        bgr_to_rgb=True),
     backbone=dict(
         type='ResNeSt',
         stem_channels=64,
@@ -74,43 +79,17 @@ model = dict(
                     loss_weight=1.0),
                 loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0))
         ], ))
-# # use ResNeSt img_norm
-img_norm_cfg = dict(
-    mean=[123.68, 116.779, 103.939], std=[58.393, 57.12, 57.375], to_rgb=True)
+
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
     dict(
-        type='LoadAnnotations',
-        with_bbox=True,
-        with_mask=False,
-        poly2mask=False),
+        type='LoadImageFromFile',
+        file_client_args={{_base_.file_client_args}}),
+    dict(type='LoadAnnotations', with_bbox=True),
     dict(
-        type='Resize',
-        img_scale=[(1333, 640), (1333, 800)],
-        multiscale_mode='range',
+        type='RandomResize', scale=[(1333, 640), (1333, 800)],
         keep_ratio=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PackDetInputs')
 ]
-test_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(
-        type='MultiScaleFlipAug',
-        img_scale=(1333, 800),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
-        ])
-]
-data = dict(
-    train=dict(pipeline=train_pipeline),
-    val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
+
+train_dataloader = dict(dataset=dict(pipeline=train_pipeline))

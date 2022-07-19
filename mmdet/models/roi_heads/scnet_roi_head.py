@@ -6,12 +6,13 @@ import torch.nn.functional as F
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import bbox2roi
-from mmdet.core.utils import (ConfigType, InstanceList, OptConfigType,
-                              SampleList, SamplingResultList)
 from mmdet.registry import MODELS
-from ..utils.brick_wrappers import adaptive_avg_pool2d
-from ..utils.misc import empty_instances, unpack_gt_instances
+from mmdet.structures import SampleList
+from mmdet.structures.bbox import bbox2roi
+from mmdet.utils import ConfigType, InstanceList, OptConfigType
+from ..layers import adaptive_avg_pool2d
+from ..task_modules.samplers import SamplingResult
+from ..utils import empty_instances, unpack_gt_instances
 from .cascade_roi_head import CascadeRoIHead
 
 
@@ -92,7 +93,10 @@ class SCNetRoIHead(CascadeRoIHead):
             Tensor: Fused feature.
         """
         assert roi_feats.size(0) == rois.size(0)
-        img_inds = torch.unique(rois[:, 0].cpu(), sorted=True).long()
+        # RuntimeError: isDifferentiableType(variable.scalar_type())
+        # INTERNAL ASSERT FAILED if detach() is not used when calling
+        # roi_head.predict().
+        img_inds = torch.unique(rois[:, 0].detach().cpu(), sorted=True).long()
         fused_feats = torch.zeros_like(roi_feats)
         for img_id in img_inds:
             inds = (rois[:, 0] == img_id.item())
@@ -100,7 +104,7 @@ class SCNetRoIHead(CascadeRoIHead):
         return fused_feats
 
     def _slice_pos_feats(self, feats: Tensor,
-                         sampling_results: SamplingResultList) -> Tensor:
+                         sampling_results: List[SamplingResult]) -> Tensor:
         """Get features from pos rois.
 
         Args:
@@ -186,7 +190,7 @@ class SCNetRoIHead(CascadeRoIHead):
         Returns:
             dict: Usually returns a dictionary with keys:
 
-                - `mask_pred` (Tensor): Mask prediction.
+                - `mask_preds` (Tensor): Mask prediction.
         """
         mask_feats = self.mask_roi_extractor(
             x[:self.mask_roi_extractor.num_inputs], rois)
@@ -201,15 +205,15 @@ class SCNetRoIHead(CascadeRoIHead):
             mask_feats = self._fuse_glbctx(mask_feats, glbctx_feat, rois)
         if self.with_feat_relay and relayed_feat is not None:
             mask_feats = mask_feats + relayed_feat
-        mask_pred = self.mask_head(mask_feats)
-        mask_results = dict(mask_pred=mask_pred)
+        mask_preds = self.mask_head(mask_feats)
+        mask_results = dict(mask_preds=mask_preds)
 
         return mask_results
 
     def bbox_loss(self,
                   stage: int,
                   x: Tuple[Tensor],
-                  sampling_results: SamplingResultList,
+                  sampling_results: List[SamplingResult],
                   semantic_feat: Optional[Tensor] = None,
                   glbctx_feat: Optional[Tensor] = None) -> dict:
         """Run forward function and calculate loss for box head in training.
@@ -256,7 +260,7 @@ class SCNetRoIHead(CascadeRoIHead):
 
     def mask_loss(self,
                   x: Tuple[Tensor],
-                  sampling_results: SamplingResultList,
+                  sampling_results: List[SamplingResult],
                   batch_gt_instances: InstanceList,
                   semantic_feat: Optional[Tensor] = None,
                   glbctx_feat: Optional[Tensor] = None,
@@ -276,7 +280,7 @@ class SCNetRoIHead(CascadeRoIHead):
         Returns:
             dict: Usually returns a dictionary with keys:
 
-                - `mask_pred` (Tensor): Mask prediction.
+                - `mask_preds` (Tensor): Mask prediction.
                 - `loss_mask` (dict): A dictionary of mask loss components.
         """
         pos_rois = bbox2roi([res.pos_priors for res in sampling_results])
@@ -288,7 +292,7 @@ class SCNetRoIHead(CascadeRoIHead):
             relayed_feat=relayed_feat)
 
         mask_loss_and_target = self.mask_head.loss_and_target(
-            mask_pred=mask_results['mask_pred'],
+            mask_preds=mask_results['mask_preds'],
             sampling_results=sampling_results,
             batch_gt_instances=batch_gt_instances,
             rcnn_train_cfg=self.train_cfg[-1])
@@ -351,7 +355,7 @@ class SCNetRoIHead(CascadeRoIHead):
         return global_context_results
 
     def loss(self, x: Tensor, rpn_results_list: InstanceList,
-             batch_data_samples: SampleList, **kwargs) -> dict:
+             batch_data_samples: SampleList) -> dict:
         """Perform forward propagation and loss calculation of the detection
         roi on the features of the upstream network.
 
@@ -589,11 +593,11 @@ class SCNetRoIHead(CascadeRoIHead):
             semantic_feat=semantic_heat,
             glbctx_feat=glbctx_feat,
             relayed_feat=relayed_feat)
-        mask_pred = mask_results['mask_pred']
+        mask_preds = mask_results['mask_preds']
 
         # split batch mask prediction back to each image
         num_bbox_per_img = tuple(len(_bbox) for _bbox in bboxes)
-        mask_preds = mask_pred.split(num_bbox_per_img, 0)
+        mask_preds = mask_preds.split(num_bbox_per_img, 0)
 
         results_list = self.mask_head.predict_by_feat(
             mask_preds=mask_preds,

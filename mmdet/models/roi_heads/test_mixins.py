@@ -4,8 +4,9 @@ import sys
 
 import torch
 
-from mmdet.core import (bbox2roi, bbox_mapping, merge_aug_bboxes,
-                        merge_aug_masks, multiclass_nms)
+from mmdet.models.layers import multiclass_nms
+from mmdet.models.test_time_augs import merge_aug_bboxes, merge_aug_masks
+from mmdet.structures.bbox import bbox2roi, bbox_mapping
 
 if sys.version_info >= (3, 7):
     from mmdet.utils.contextmanagers import completed

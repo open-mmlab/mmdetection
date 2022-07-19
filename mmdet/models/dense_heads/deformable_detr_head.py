@@ -8,10 +8,10 @@ import torch.nn.functional as F
 from mmcv.cnn import Linear, bias_init_with_prob, constant_init
 from torch import Tensor
 
-from mmdet.core import (InstanceList, OptConfigType, OptInstanceList,
-                        multi_apply)
-from mmdet.models.utils.transformer import inverse_sigmoid
 from mmdet.registry import MODELS
+from mmdet.utils import InstanceList, OptConfigType, OptInstanceList
+from ..layers import inverse_sigmoid
+from ..utils import multi_apply
 from .detr_head import DETRHead
 
 

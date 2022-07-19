@@ -7,9 +7,9 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmengine.model import BaseModule
 
-from mmdet.core.utils import ConfigType, OptMultiConfig
 from mmdet.registry import MODELS
-from ..utils import ResLayer
+from mmdet.utils import ConfigType, OptMultiConfig
+from ..layers import ResLayer
 from .resnet import BasicBlock
 
 

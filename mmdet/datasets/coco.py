@@ -110,6 +110,7 @@ class CocoDataset(BaseDataset):
 
         data_info = {}
 
+        # TODO: need to change data_prefix['img'] to data_prefix['img_path']
         img_path = osp.join(self.data_prefix['img'], img_info['file_name'])
         if self.data_prefix.get('seg', None):
             seg_map_path = osp.join(
@@ -146,7 +147,10 @@ class CocoDataset(BaseDataset):
                 instance['ignore_flag'] = 0
             instance['bbox'] = bbox
             instance['bbox_label'] = self.cat2label[ann['category_id']]
-            if ann.get('segmentation', None):
+
+            # TODO: Verify if there is a problem with offline evaluation？
+            # ignore segmentation if iscrowd is 1
+            if ann.get('segmentation', None) and instance['ignore_flag'] == 0:
                 instance['mask'] = ann['segmentation']
 
             instances.append(instance)

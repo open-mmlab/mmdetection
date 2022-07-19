@@ -4,11 +4,12 @@ from typing import List, Optional, Tuple
 import torch
 from torch import Tensor
 
-from mmdet.core import bbox2roi
-from mmdet.core.utils import (ConfigType, InstanceList, SampleList,
-                              SamplingResultList)
 from mmdet.registry import MODELS, TASK_UTILS
-from ..utils.misc import empty_instances, unpack_gt_instances
+from mmdet.structures import DetDataSample
+from mmdet.structures.bbox import bbox2roi
+from mmdet.utils import ConfigType, InstanceList
+from ..task_modules.samplers import SamplingResult
+from ..utils import empty_instances, unpack_gt_instances
 from .base_roi_head import BaseRoIHead
 
 
@@ -82,11 +83,11 @@ class StandardRoIHead(BaseRoIHead):
         if self.with_mask:
             mask_rois = rois[:100]
             mask_results = self._mask_forward(x, mask_rois)
-            results = results + (mask_results['mask_pred'], )
+            results = results + (mask_results['mask_preds'], )
         return results
 
     def loss(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
-             batch_data_samples: SampleList, **kwargs) -> dict:
+             batch_data_samples: List[DetDataSample]) -> dict:
         """Perform forward propagation and loss calculation of the detection
         roi on the features of the upstream network.
 
@@ -138,7 +139,7 @@ class StandardRoIHead(BaseRoIHead):
 
         return losses
 
-    def _bbox_forward(self, x: Tuple[Tensor], rois: Tensor, **kwargs) -> dict:
+    def _bbox_forward(self, x: Tuple[Tensor], rois: Tensor) -> dict:
         """Box head forward function used in both training and testing.
 
         Args:
@@ -165,7 +166,7 @@ class StandardRoIHead(BaseRoIHead):
         return bbox_results
 
     def bbox_loss(self, x: Tuple[Tensor],
-                  sampling_results: SamplingResultList) -> dict:
+                  sampling_results: List[SamplingResult]) -> dict:
         """Perform forward propagation and loss calculation of the bbox head on
         the features of the upstream network.
 
@@ -194,8 +195,8 @@ class StandardRoIHead(BaseRoIHead):
         bbox_results.update(loss_bbox=bbox_loss_and_target['loss_bbox'])
         return bbox_results
 
-    def mask_loss(self, x: Tuple[Tensor], sampling_results: SamplingResultList,
-                  bbox_feats: Tensor,
+    def mask_loss(self, x: Tuple[Tensor],
+                  sampling_results: List[SamplingResult], bbox_feats: Tensor,
                   batch_gt_instances: InstanceList) -> dict:
         """Perform forward propagation and loss calculation of the mask head on
         the features of the upstream network.
@@ -211,7 +212,7 @@ class StandardRoIHead(BaseRoIHead):
         Returns:
             dict: Usually returns a dictionary with keys:
 
-                - `mask_pred` (Tensor): Mask prediction.
+                - `mask_preds` (Tensor): Mask prediction.
                 - `mask_feats` (Tensor): Extract mask RoI features.
                 - `mask_targets` (Tensor): Mask target of each positive\
                     proposals in the image.
@@ -240,7 +241,7 @@ class StandardRoIHead(BaseRoIHead):
                 x, pos_inds=pos_inds, bbox_feats=bbox_feats)
 
         mask_loss_and_target = self.mask_head.loss_and_target(
-            mask_pred=mask_results['mask_pred'],
+            mask_preds=mask_results['mask_preds'],
             sampling_results=sampling_results,
             batch_gt_instances=batch_gt_instances,
             rcnn_train_cfg=self.train_cfg)
@@ -266,7 +267,7 @@ class StandardRoIHead(BaseRoIHead):
         Returns:
             dict[str, Tensor]: Usually returns a dictionary with keys:
 
-                - `mask_pred` (Tensor): Mask prediction.
+                - `mask_preds` (Tensor): Mask prediction.
                 - `mask_feats` (Tensor): Extract mask RoI features.
         """
         assert ((rois is not None) ^
@@ -280,8 +281,8 @@ class StandardRoIHead(BaseRoIHead):
             assert bbox_feats is not None
             mask_feats = bbox_feats[pos_inds]
 
-        mask_pred = self.mask_head(mask_feats)
-        mask_results = dict(mask_pred=mask_pred, mask_feats=mask_feats)
+        mask_preds = self.mask_head(mask_feats)
+        mask_results = dict(mask_preds=mask_preds, mask_feats=mask_feats)
         return mask_results
 
     def predict_bbox(self,
@@ -393,7 +394,7 @@ class StandardRoIHead(BaseRoIHead):
             return results_list
 
         mask_results = self._mask_forward(x, mask_rois)
-        mask_preds = mask_results['mask_pred']
+        mask_preds = mask_results['mask_preds']
         # split batch mask prediction back to each image
         num_mask_rois_per_img = [len(res) for res in results_list]
         mask_preds = mask_preds.split(num_mask_rois_per_img, 0)

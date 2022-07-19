@@ -5,11 +5,12 @@ from typing import Tuple
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
+from mmengine.config import ConfigDict
 from mmengine.model import BaseModule
 from torch import Tensor
 
-from mmdet.core.utils.typing import ConfigDict, MultiConfig, OptConfigType
 from mmdet.registry import MODELS
+from mmdet.utils import MultiConfig, OptConfigType
 
 
 @MODELS.register_module()
@@ -107,7 +108,7 @@ class FusedSemanticHead(BaseModule):
         Returns:
             tuple[Tensor]:
 
-                - mask_pred (Tensor): Predicted mask logits.
+                - mask_preds (Tensor): Predicted mask logits.
                 - x (Tensor): Fused feature.
         """
         x = self.lateral_convs[self.fusion_level](feats[self.fusion_level])
@@ -122,15 +123,15 @@ class FusedSemanticHead(BaseModule):
         for i in range(self.num_convs):
             x = self.convs[i](x)
 
-        mask_pred = self.conv_logits(x)
+        mask_preds = self.conv_logits(x)
         x = self.conv_embedding(x)
-        return mask_pred, x
+        return mask_preds, x
 
-    def loss(self, mask_pred: Tensor, labels: Tensor) -> Tensor:
+    def loss(self, mask_preds: Tensor, labels: Tensor) -> Tensor:
         """Loss function.
 
         Args:
-            mask_pred (Tensor): Predicted mask logits.
+            mask_preds (Tensor): Predicted mask logits.
             labels (Tensor): Ground truth.
 
         Returns:
@@ -139,5 +140,5 @@ class FusedSemanticHead(BaseModule):
         labels = F.interpolate(
             labels.float(), scale_factor=self.seg_scale_factor, mode='nearest')
         labels = labels.squeeze(1).long()
-        loss_semantic_seg = self.criterion(mask_pred, labels)
+        loss_semantic_seg = self.criterion(mask_preds, labels)
         return loss_semantic_seg

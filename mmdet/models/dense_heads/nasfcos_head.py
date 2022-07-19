@@ -4,9 +4,9 @@ import copy
 import torch.nn as nn
 from mmcv.cnn import ConvModule, Scale
 
-from mmdet.core import OptMultiConfig
 from mmdet.models.dense_heads.fcos_head import FCOSHead
 from mmdet.registry import MODELS
+from mmdet.utils import OptMultiConfig
 
 
 @MODELS.register_module()

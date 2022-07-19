@@ -6,10 +6,9 @@ import torch
 from mmengine.data import PixelData
 from torch import Tensor
 
-from mmdet.core import DetDataSample
-from mmdet.core.utils import (ConfigType, OptConfigType, OptMultiConfig,
-                              SampleList)
 from mmdet.registry import MODELS
+from mmdet.structures import DetDataSample, SampleList
+from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from .two_stage import TwoStageDetector
 
 
@@ -71,8 +70,8 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         return hasattr(self, 'panoptic_fusion_head') and \
             self.panoptic_fusion_head is not None
 
-    def loss(self, batch_inputs: Tensor, batch_data_samples: SampleList,
-             **kwargs) -> dict:
+    def loss(self, batch_inputs: Tensor,
+             batch_data_samples: SampleList) -> dict:
         """
         Args:
             batch_inputs (Tensor): Input images of shape (N, C, H, W).
@@ -99,7 +98,7 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
                     torch.zeros_like(data_sample.gt_instances.labels)
 
             rpn_losses, rpn_results_list = self.rpn_head.loss_and_predict(
-                x, rpn_data_samples, proposal_cfg=proposal_cfg, **kwargs)
+                x, rpn_data_samples, proposal_cfg=proposal_cfg)
             # avoid get same name with roi_head loss
             keys = rpn_losses.keys()
             for key in keys:
@@ -116,11 +115,10 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
             ]
 
         roi_losses = self.roi_head.loss(x, rpn_results_list,
-                                        batch_data_samples, **kwargs)
+                                        batch_data_samples)
         losses.update(roi_losses)
 
-        semantic_loss = self.semantic_head.loss(x, batch_data_samples,
-                                                **kwargs)
+        semantic_loss = self.semantic_head.loss(x, batch_data_samples)
         losses.update(semantic_loss)
 
         return losses
@@ -128,8 +126,7 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
     def predict(self,
                 batch_inputs: Tensor,
                 batch_data_samples: SampleList,
-                rescale: bool = True,
-                **kwargs) -> SampleList:
+                rescale: bool = True) -> SampleList:
         """Predict results from a batch of inputs and data samples with post-
         processing.
 
@@ -175,8 +172,8 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         return results_list
 
     # TODO the code has not been verified and needs to be refactored later.
-    def _forward(self, batch_inputs: Tensor, batch_data_samples: SampleList,
-                 **kwargs) -> tuple:
+    def _forward(self, batch_inputs: Tensor,
+                 batch_data_samples: SampleList) -> tuple:
         """Network forward process. Usually includes backbone, neck and head
         forward without any post-processing.
 

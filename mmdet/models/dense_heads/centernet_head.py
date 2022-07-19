@@ -5,18 +5,16 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import bias_init_with_prob, normal_init
 from mmcv.ops import batched_nms
-from mmcv.runner import force_fp32
 from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import multi_apply
-from mmdet.core.utils import (ConfigType, InstanceList, OptConfigType,
-                              OptInstanceList, OptMultiConfig)
-from mmdet.models.utils import gaussian_radius, gen_gaussian_target
 from mmdet.registry import MODELS
-from ..utils.gaussian_target import (get_local_maximum, get_topk_from_heatmap,
-                                     transpose_and_gather_feat)
+from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
+                         OptInstanceList, OptMultiConfig)
+from ..utils import (gaussian_radius, gen_gaussian_target, get_local_maximum,
+                     get_topk_from_heatmap, multi_apply,
+                     transpose_and_gather_feat)
 from .base_dense_head import BaseDenseHead
 
 
@@ -126,7 +124,6 @@ class CenterNetHead(BaseDenseHead):
         offset_pred = self.offset_head(x)
         return center_heatmap_pred, wh_pred, offset_pred
 
-    @force_fp32(apply_to=('center_heatmap_preds', 'wh_preds', 'offset_preds'))
     def loss_by_feat(
             self,
             center_heatmap_preds: List[Tensor],
@@ -272,7 +269,6 @@ class CenterNetHead(BaseDenseHead):
             wh_offset_target_weight=wh_offset_target_weight)
         return target_result, avg_factor
 
-    @force_fp32(apply_to=('center_heatmap_preds', 'wh_preds', 'offset_preds'))
     def predict_by_feat(self,
                         center_heatmap_preds: List[Tensor],
                         wh_preds: List[Tensor],

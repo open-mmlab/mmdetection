@@ -5,7 +5,10 @@ data_root = 'data/cityscapes/'
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='RandomResize', scale=[(2048, 800), (2048, 1024)]),
+    dict(
+        type='RandomResize',
+        scale=[(2048, 800), (2048, 1024)],
+        keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs')
 ]

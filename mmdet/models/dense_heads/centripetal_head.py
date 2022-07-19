@@ -6,11 +6,11 @@ from mmcv.cnn import ConvModule, normal_init
 from mmcv.ops import DeformConv2d
 from torch import Tensor
 
-from mmdet.core import multi_apply
-from mmdet.core.utils import (ConfigType, InstanceList, OptInstanceList,
-                              OptMultiConfig)
 from mmdet.registry import MODELS
+from mmdet.utils import (ConfigType, InstanceList, OptInstanceList,
+                         OptMultiConfig)
 from ..builder import build_loss
+from ..utils import multi_apply
 from .corner_head import CornerHead
 
 

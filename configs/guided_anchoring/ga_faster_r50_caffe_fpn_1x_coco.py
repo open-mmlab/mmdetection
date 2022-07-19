@@ -61,5 +61,4 @@ model = dict(
             sampler=dict(type='RandomSampler', num=256))),
     test_cfg=dict(
         rpn=dict(nms_post=1000, max_per_img=300), rcnn=dict(score_thr=1e-3)))
-optimizer_config = dict(
-    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
+optim_wrapper = dict(clip_grad=dict(max_norm=35, norm_type=2))

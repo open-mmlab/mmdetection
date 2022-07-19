@@ -4,10 +4,10 @@ from typing import Dict, List, Union
 import torch
 from torch import Tensor
 
-from mmdet.core import multi_apply
-from mmdet.core.utils import InstanceList, OptInstanceList
 from mmdet.registry import MODELS
+from mmdet.utils import InstanceList, OptInstanceList
 from ..losses import CrossEntropyLoss, SmoothL1Loss, carl_loss, isr_p
+from ..utils import multi_apply
 from .ssd_head import SSDHead
 
 
@@ -97,7 +97,6 @@ class PISASSDHead(SSDHead):
             batch_gt_instances,
             batch_img_metas,
             batch_gt_instances_ignore=batch_gt_instances_ignore,
-            label_channels=1,
             unmap_outputs=False,
             return_sampling_results=True)
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,

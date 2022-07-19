@@ -3,7 +3,9 @@ _base_ = [
     '../common/lsj_100e_coco_instance.py'
 ]
 image_size = (1024, 1024)
-batch_augments = [dict(type='BatchFixedSizePad', size=image_size)]
+batch_augments = [
+    dict(type='BatchFixedSizePad', size=image_size, pad_mask=True)
+]
 
 model = dict(data_preprocessor=dict(batch_augments=batch_augments))
 

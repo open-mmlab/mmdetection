@@ -3,8 +3,8 @@ from abc import ABCMeta, abstractmethod
 
 from mmcv.runner import BaseModule
 
-from mmdet.core.utils import OptConfigType, OptMultiConfig
 from mmdet.registry import MODELS
+from mmdet.utils import OptConfigType, OptMultiConfig
 
 
 @MODELS.register_module()

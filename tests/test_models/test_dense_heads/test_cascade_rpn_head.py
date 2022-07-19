@@ -5,8 +5,8 @@ import torch
 from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 
-from mmdet.core.data_structures import DetDataSample
 from mmdet.models.dense_heads import CascadeRPNHead
+from mmdet.structures import DetDataSample
 
 rpn_weight = 0.7
 cascade_rpn_config = ConfigDict(

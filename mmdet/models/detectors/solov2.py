@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from mmdet.core.utils import ConfigType, OptConfigType, OptMultiConfig
+from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from ..builder import DETECTORS
 from .single_stage_instance_seg import SingleStageInstanceSegmentor
 

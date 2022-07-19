@@ -4,10 +4,11 @@ from typing import List, Tuple
 import torch
 from torch import Tensor
 
-from mmdet.core import (ConfigType, InstanceList, OptInstanceList, SampleList,
-                        bbox_overlaps, multi_apply, reduce_mean)
 from mmdet.registry import MODELS
-from ..utils.misc import unpack_gt_instances
+from mmdet.structures import SampleList
+from mmdet.structures.bbox import bbox_overlaps
+from mmdet.utils import ConfigType, InstanceList, OptInstanceList, reduce_mean
+from ..utils import multi_apply, unpack_gt_instances
 from .gfl_head import GFLHead
 
 

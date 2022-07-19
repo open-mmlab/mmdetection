@@ -58,5 +58,4 @@ model = dict(
         assigner=dict(neg_iou_thr=0.5, min_pos_iou=0.0),
         center_ratio=0.2,
         ignore_ratio=0.5))
-optimizer_config = dict(
-    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
+optim_wrapper = dict(clip_grad=dict(max_norm=35, norm_type=2))

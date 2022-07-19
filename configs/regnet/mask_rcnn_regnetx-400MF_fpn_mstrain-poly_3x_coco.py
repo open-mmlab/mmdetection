@@ -21,6 +21,6 @@ model = dict(
         out_channels=256,
         num_outs=5))
 
-optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.00005)
-optimizer_config = dict(
-    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
+optim_wrapper = dict(
+    optimizer=dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.00005),
+    clip_grad=dict(max_norm=35, norm_type=2))

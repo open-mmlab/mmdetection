@@ -7,11 +7,10 @@ import mmcv
 import numpy as np
 from mmcv import Config, DictAction
 
-from mmdet.core.evaluation import eval_map
-from mmdet.core.visualization import imshow_gt_det_bboxes
 from mmdet.datasets import build_dataset, get_loading_pipeline
-from mmdet.datasets.api_wrappers import pq_compute_single_core
+from mmdet.evaluation import eval_map, pq_compute_single_core
 from mmdet.utils import replace_cfg_vals, update_data_root
+from mmdet.visualization import imshow_gt_det_bboxes
 
 
 def bbox_map_eval(det_result, annotation, nproc=4):

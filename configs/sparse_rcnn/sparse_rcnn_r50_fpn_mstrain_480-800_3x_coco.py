@@ -1,23 +1,34 @@
 _base_ = './sparse_rcnn_r50_fpn_1x_coco.py'
 
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
-min_values = (480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800)
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(
+        type='LoadImageFromFile',
+        file_client_args={{_base_.file_client_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
-        type='Resize',
-        img_scale=[(1333, value) for value in min_values],
-        multiscale_mode='value',
+        type='RandomChoiceResize',
+        scales=[(480, 1333), (512, 1333), (544, 1333), (576, 1333),
+                (608, 1333), (640, 1333), (672, 1333), (704, 1333),
+                (736, 1333), (768, 1333), (800, 1333)],
         keep_ratio=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PackDetInputs')
 ]
 
-data = dict(train=dict(pipeline=train_pipeline))
-lr_config = dict(policy='step', step=[27, 33])
-runner = dict(type='EpochBasedRunner', max_epochs=36)
+train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
+
+# learning policy
+max_epochs = 36
+train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=max_epochs)
+
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=max_epochs,
+        by_epoch=True,
+        milestones=[27, 33],
+        gamma=0.1)
+]

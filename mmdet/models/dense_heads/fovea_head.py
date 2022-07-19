@@ -10,10 +10,9 @@ from mmengine.data import InstanceData
 from mmengine.model import BaseModule
 from torch import Tensor
 
-from mmdet.core import (InstanceList, OptInstanceList, OptMultiConfig,
-                        multi_apply)
-from mmdet.core.utils import filter_scores_and_topk
 from mmdet.registry import MODELS
+from mmdet.utils import InstanceList, OptInstanceList, OptMultiConfig
+from ..utils import filter_scores_and_topk, multi_apply
 from .anchor_free_head import AnchorFreeHead
 
 INF = 1e8
@@ -392,8 +391,7 @@ class FoveaHead(AnchorFreeHead):
                                 img_meta: dict,
                                 cfg: Optional[ConfigDict] = None,
                                 rescale: bool = False,
-                                with_nms: bool = True,
-                                **kwargs) -> InstanceData:
+                                with_nms: bool = True) -> InstanceData:
         """Transform a single image's features extracted from the head into
         bbox results.
 
@@ -477,8 +475,7 @@ class FoveaHead(AnchorFreeHead):
             cfg=cfg,
             rescale=rescale,
             with_nms=with_nms,
-            img_meta=img_meta,
-            **kwargs)
+            img_meta=img_meta)
 
     def _bbox_decode(self, priors: Tensor, bbox_pred: Tensor, base_len: int,
                      max_shape: int) -> Tensor:
