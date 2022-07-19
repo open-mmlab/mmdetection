@@ -670,6 +670,7 @@ class FilterAnnotations(BaseTransform):
             tests.append((w > self.min_gt_bbox_wh[0])
                          & (h > self.min_gt_bbox_wh[1]))
         if self.by_mask:
+            assert 'gt_masks' in results
             gt_masks = results['gt_masks']
             tests.append(gt_masks.areas >= self.min_gt_mask_area)
 
