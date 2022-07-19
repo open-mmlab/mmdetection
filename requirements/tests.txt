@@ -12,8 +12,8 @@ memory_profiler
 -e git+https://github.com/open-mmlab/mmtracking#egg=mmtrack
 onnx==1.7.0
 onnxruntime>=1.8.0
-protobuf<=3.20.1
 parameterized
+protobuf<=3.20.1
 psutil
 pytest
 ubelt

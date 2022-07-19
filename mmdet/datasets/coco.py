@@ -148,9 +148,7 @@ class CocoDataset(BaseDataset):
             instance['bbox'] = bbox
             instance['bbox_label'] = self.cat2label[ann['category_id']]
 
-            # TODO: Verify if there is a problem with offline evaluation？
-            # ignore segmentation if iscrowd is 1
-            if ann.get('segmentation', None) and instance['ignore_flag'] == 0:
+            if ann.get('segmentation', None):
                 instance['mask'] = ann['segmentation']
 
             instances.append(instance)

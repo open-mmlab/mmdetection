@@ -51,6 +51,8 @@ class ATSSAssigner(BaseAssigner):
 
     Args:
         topk (int): number of priors selected in each level
+        alpha (float, optional): param of cost rate for each proposal only
+            in DDOD. Defaults to None.
         iou_calculator (:obj:`ConfigDict` or dict): Config dict for iou
             calculator. Defaults to ``dict(type='BboxOverlaps2D')``
         ignore_iof_thr (float): IoF threshold for ignoring bboxes (if
@@ -60,7 +62,7 @@ class ATSSAssigner(BaseAssigner):
 
     def __init__(self,
                  topk: int,
-                 alpha=None,
+                 alpha: Optional[float] = None,
                  iou_calculator: ConfigType = dict(type='BboxOverlaps2D'),
                  ignore_iof_thr: float = -1) -> None:
         self.topk = topk
@@ -68,6 +70,7 @@ class ATSSAssigner(BaseAssigner):
         self.iou_calculator = TASK_UTILS.build(iou_calculator)
         self.ignore_iof_thr = ignore_iof_thr
 
+    # https://github.com/sfzhang15/ATSS/blob/master/atss_core/modeling/rpn/atss/loss.py
     def assign(
             self,
             pred_instances: InstanceData,
@@ -123,6 +126,11 @@ class ATSSAssigner(BaseAssigner):
         INF = 100000000
         priors = priors[:, :4]
         num_gt, num_priors = gt_bboxes.size(0), priors.size(0)
+
+        message = 'Invalid alpha parameter because cls_scores or ' \
+                  'bbox_preds are None. If you want to use the ' \
+                  'cost-based ATSSAssigner,  please set cls_scores, ' \
+                  'bbox_preds and self.alpha at the same time. '
 
         # compute iou between all bbox and gt
         if self.alpha is None:

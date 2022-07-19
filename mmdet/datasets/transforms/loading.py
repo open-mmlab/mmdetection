@@ -638,7 +638,6 @@ class FilterAnnotations(BaseTransform):
     def __init__(self,
                  min_gt_bbox_wh: Tuple[int, int] = (1, 1),
                  min_gt_mask_area: int = 1,
-                 keep_empty: bool = True,
                  by_box: bool = True,
                  by_mask: bool = False,
                  keep_empty: bool = True) -> None:
@@ -659,25 +658,9 @@ class FilterAnnotations(BaseTransform):
         Returns:
             dict: Updated result dict.
         """
-        # gt_masks may not match with gt_bboxes, because gt_masks
-        # will not add into instances if ignore is True
-        if 'gt_ignore_flags' in results and 'gt_masks' in results:
-            vaild_idx = np.where(results['gt_ignore_flags'] == 0)[0]
-            keys = ('gt_bboxes', 'gt_bboxes_labels', 'gt_ignore_flags')
-            for key in keys:
-                if key in results:
-                    results[key] = results[key][vaild_idx]
-
-        if self.by_box:
-            assert 'gt_bboxes' in results
-            gt_bboxes = results['gt_bboxes']
-            instance_num = gt_bboxes.shape[0]
-        if self.by_mask:
-            assert 'gt_masks' in results
-            gt_masks = results['gt_masks']
-            instance_num = len(gt_masks)
-
-        if instance_num == 0:
+        assert 'gt_bboxes' in results
+        gt_bboxes = results['gt_bboxes']
+        if gt_bboxes.shape[0] == 0:
             return results
 
         tests = []
@@ -687,6 +670,7 @@ class FilterAnnotations(BaseTransform):
             tests.append((w > self.min_gt_bbox_wh[0])
                          & (h > self.min_gt_bbox_wh[1]))
         if self.by_mask:
+            assert 'gt_masks' in results
             gt_masks = results['gt_masks']
             tests.append(gt_masks.areas >= self.min_gt_mask_area)
 
@@ -694,22 +678,16 @@ class FilterAnnotations(BaseTransform):
         for t in tests[1:]:
             keep = keep & t
 
-        keys = ('gt_bboxes', 'gt_labels', 'gt_masks')
-        for key in keys:
-            if key in results:
-                results[key] = results[key][keep]
         if not keep.any():
             if self.keep_empty:
                 return None
-            else:
-                return results
-        else:
-            keys = ('gt_bboxes', 'gt_bboxes_labels', 'gt_masks',
-                    'gt_ignore_flags')
-            for key in keys:
-                if key in results:
-                    results[key] = results[key][keep]
-            return results
+
+        keys = ('gt_bboxes', 'gt_bboxes_labels', 'gt_masks', 'gt_ignore_flags')
+        for key in keys:
+            if key in results:
+                results[key] = results[key][keep]
+
+        return results
 
     def __repr__(self):
         return self.__class__.__name__ + \

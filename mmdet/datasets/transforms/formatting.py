@@ -84,8 +84,13 @@ class PackDetInputs(BaseTransform):
             if key not in results:
                 continue
             if key == 'gt_masks':
-                # no need to consider gt_ignore_flags
-                instance_data[self.mapping_table[key]] = results[key]
+                if 'gt_ignore_flags' in results:
+                    instance_data[
+                        self.mapping_table[key]] = results[key][vaild_idx]
+                    ignore_instance_data[
+                        self.mapping_table[key]] = results[key][ignore_idx]
+                else:
+                    instance_data[self.mapping_table[key]] = results[key]
             else:
                 if 'gt_ignore_flags' in results:
                     instance_data[self.mapping_table[key]] = to_tensor(
