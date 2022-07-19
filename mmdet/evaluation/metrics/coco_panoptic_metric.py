@@ -12,10 +12,10 @@ from mmengine.fileio import dump, load
 from mmengine.logging import MMLogger, print_log
 from terminaltables import AsciiTable
 
-from mmdet.core.evaluation import INSTANCE_OFFSET
-from mmdet.datasets.api_wrappers import (COCOPanoptic, pq_compute_multi_core,
-                                         pq_compute_single_core)
+from mmdet.datasets.api_wrappers import COCOPanoptic
 from mmdet.registry import METRICS
+from ..functional import (INSTANCE_OFFSET, pq_compute_multi_core,
+                          pq_compute_single_core)
 
 try:
     import panopticapi
