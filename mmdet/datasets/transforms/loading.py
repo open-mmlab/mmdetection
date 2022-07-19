@@ -638,7 +638,6 @@ class FilterAnnotations(BaseTransform):
     def __init__(self,
                  min_gt_bbox_wh: Tuple[int, int] = (1, 1),
                  min_gt_mask_area: int = 1,
-                 keep_empty: bool = True,
                  by_box: bool = True,
                  by_mask: bool = False,
                  keep_empty: bool = True) -> None:

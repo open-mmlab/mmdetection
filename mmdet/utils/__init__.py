@@ -7,6 +7,7 @@ from .logger import get_caller_name, get_root_logger, log_img_scale
 from .memory import AvoidCUDAOOM, AvoidOOM
 from .misc import find_latest_checkpoint, update_data_root
 from .parallel import MMDataParallel, MMDistributedDataParallel
+from .replace_cfg_vals import replace_cfg_vals
 from .setup_env import register_all_modules, setup_multi_processes
 from .split_batch import split_batch
 from .typing import (ConfigType, InstanceList, MultiConfig, OptConfigType,
