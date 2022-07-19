@@ -99,17 +99,13 @@ class CocoPanopticMetric(BaseMetric):
         self.nproc = nproc
         self.seg_prefix = seg_prefix
 
+        self.cat_ids = None
+        self.cat2label = None
         if ann_file:
             self._coco_api = COCOPanoptic(ann_file)
-            self.cat_ids = None
-            self.cat2label = None
-            self.img_ids = self._coco_api.get_img_ids()
             self.categories = self._coco_api.cats
         else:
             self._coco_api = None
-            self.cat_ids = None
-            self.img_ids = None
-            self.cat2label = None
             self.categories = None
 
     def __del__(self) -> None:
