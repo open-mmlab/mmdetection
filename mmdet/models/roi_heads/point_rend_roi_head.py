@@ -7,8 +7,8 @@ import torch.nn.functional as F
 from mmcv.ops import point_sample, rel_roi_point_to_rel_img_point
 from torch import Tensor
 
-from mmdet.data_elements.bbox import bbox2roi
 from mmdet.registry import MODELS
+from mmdet.structures.bbox import bbox2roi
 from mmdet.utils import ConfigType, InstanceList
 from ..task_modules.samplers import SamplingResult
 from ..utils import empty_instances

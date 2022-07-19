@@ -13,8 +13,8 @@ from mmcv.runner import ModuleList
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.data_elements import SampleList
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.structures import SampleList
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig, reduce_mean
 from ..utils import get_uncertain_point_coords_with_randomness
 from .anchor_free_head import AnchorFreeHead

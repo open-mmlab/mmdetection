@@ -5,7 +5,7 @@ import torch
 from mmcv.ops.nms import batched_nms
 from torch import Tensor
 
-from mmdet.data_elements.bbox import bbox_overlaps
+from mmdet.structures.bbox import bbox_overlaps
 from mmdet.utils import ConfigType
 
 

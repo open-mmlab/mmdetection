@@ -6,8 +6,8 @@ import torch
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.data_elements.bbox import bbox_overlaps
 from mmdet.registry import MODELS
+from mmdet.structures.bbox import bbox_overlaps
 from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
                          OptInstanceList)
 from ..layers import multiclass_nms

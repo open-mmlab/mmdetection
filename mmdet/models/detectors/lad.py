@@ -6,8 +6,8 @@ import torch.nn as nn
 from mmengine.runner import load_checkpoint
 from torch import Tensor
 
-from mmdet.data_elements import SampleList
 from mmdet.registry import MODELS
+from mmdet.structures import SampleList
 from mmdet.utils import ConfigType, OptConfigType
 from ..utils.misc import unpack_gt_instances
 from .kd_one_stage import KnowledgeDistillationSingleStageDetector

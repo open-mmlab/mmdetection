@@ -4,8 +4,8 @@ from typing import List, Tuple
 import torch
 from torch import Tensor
 
-from mmdet.data_elements.bbox import bbox2roi
 from mmdet.registry import MODELS
+from mmdet.structures.bbox import bbox2roi
 from mmdet.utils import ConfigType, InstanceList
 from ..task_modules.samplers import SamplingResult
 from ..utils.misc import empty_instances

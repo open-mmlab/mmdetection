@@ -6,7 +6,7 @@ import torch
 from mmengine.model import BaseModel
 from torch import Tensor
 
-from mmdet.data_elements import DetDataSample, OptSampleList, SampleList
+from mmdet.structures import DetDataSample, OptSampleList, SampleList
 from mmdet.utils import InstanceList, OptConfigType, OptMultiConfig
 
 ForwardResults = Union[Dict[str, torch.Tensor], List[DetDataSample],

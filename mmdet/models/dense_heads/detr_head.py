@@ -9,9 +9,9 @@ from mmcv.cnn.bricks.transformer import FFN, build_positional_encoding
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.data_elements import SampleList
-from mmdet.data_elements.bbox import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.structures import SampleList
+from mmdet.structures.bbox import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
 from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
                          OptInstanceList, OptMultiConfig, reduce_mean)
 from ..layers import build_transformer

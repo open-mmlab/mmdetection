@@ -3,9 +3,9 @@ import numpy as np
 import pytest
 import torch
 
-from mmdet.data_elements.bbox import bbox_overlaps
 from mmdet.evaluation import bbox_overlaps as recall_overlaps
 from mmdet.models.task_modules import BboxOverlaps2D
+from mmdet.structures.bbox import bbox_overlaps
 
 
 def test_bbox_overlaps_2d(eps=1e-7):

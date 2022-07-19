@@ -13,7 +13,7 @@ from mmcv.runner.hooks.checkpoint import CheckpointHook
 from mmcv.runner.hooks.logger.wandb import WandbLoggerHook
 from mmcv.utils import digit_version
 
-from mmdet.data_elements.mask import polygon_to_bitmap
+from mmdet.structures.mask import polygon_to_bitmap
 
 
 # TODO: delete

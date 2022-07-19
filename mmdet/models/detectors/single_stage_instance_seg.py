@@ -4,8 +4,8 @@ from typing import Tuple
 
 from torch import Tensor
 
-from mmdet.data_elements import OptSampleList, SampleList
 from mmdet.registry import MODELS
+from mmdet.structures import OptSampleList, SampleList
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from .base import BaseDetector
 

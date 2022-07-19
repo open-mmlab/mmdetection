@@ -7,8 +7,8 @@ from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 
 from mmdet import *  # noqa
-from mmdet.data_elements.mask import BitmapMasks
 from mmdet.models.dense_heads import SOLOV2Head
+from mmdet.structures.mask import BitmapMasks
 
 
 def _rand_masks(num_items, bboxes, img_w, img_h):

@@ -8,8 +8,8 @@ from mmcv.cnn import Scale, bias_init_with_prob, normal_init
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.data_elements.bbox import bbox_overlaps
 from mmdet.registry import MODELS
+from mmdet.structures.bbox import bbox_overlaps
 from mmdet.utils import InstanceList, OptInstanceList, reduce_mean
 from ..task_modules.prior_generators import MlvlPointGenerator
 from ..utils import levels_to_images, multi_apply

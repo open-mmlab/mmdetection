@@ -7,7 +7,7 @@ import torch
 from mmengine.data import BaseDataElement as PixelData
 from mmengine.data import InstanceData
 
-from mmdet.data_elements import DetDataSample
+from mmdet.structures import DetDataSample
 
 
 def _equal(a, b):

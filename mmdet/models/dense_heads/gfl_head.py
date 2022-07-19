@@ -9,8 +9,8 @@ from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.data_elements.bbox import bbox_overlaps
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.structures.bbox import bbox_overlaps
 from mmdet.utils import (ConfigType, InstanceList, MultiConfig, OptConfigType,
                          OptInstanceList, reduce_mean)
 from ..task_modules.prior_generators import anchor_inside_flags

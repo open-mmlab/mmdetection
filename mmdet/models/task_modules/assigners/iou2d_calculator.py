@@ -1,8 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
-from mmdet.data_elements.bbox import bbox_overlaps
 from mmdet.registry import TASK_UTILS
+from mmdet.structures.bbox import bbox_overlaps
 
 
 def cast_tensor_type(x, scale=1., dtype=None):

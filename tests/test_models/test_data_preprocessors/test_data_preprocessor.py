@@ -4,10 +4,10 @@ from unittest import TestCase
 import torch
 from mmengine.logging import MessageHub
 
-from mmdet.data_elements import DetDataSample
 from mmdet.models.data_preprocessors import (BatchFixedSizePad,
                                              BatchSyncRandomResize,
                                              DetDataPreprocessor)
+from mmdet.structures import DetDataSample
 from mmdet.testing import demo_mm_inputs
 
 

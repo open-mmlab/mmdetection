@@ -13,8 +13,8 @@ from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.data_elements.bbox import bbox_xyxy_to_cxcywh
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.structures.bbox import bbox_xyxy_to_cxcywh
 from mmdet.utils import (ConfigType, OptConfigType, OptInstanceList,
                          OptMultiConfig, reduce_mean)
 from ..task_modules.prior_generators import MlvlPointGenerator

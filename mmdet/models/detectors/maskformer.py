@@ -3,8 +3,8 @@ from typing import Dict, List, Tuple
 
 from torch import Tensor
 
-from mmdet.data_elements import DetDataSample, SampleList
 from mmdet.registry import MODELS
+from mmdet.structures import DetDataSample, SampleList
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from .single_stage import SingleStageDetector
 

@@ -8,8 +8,8 @@ from mmengine.config import Config
 from mmengine.runner import load_checkpoint
 from torch import Tensor
 
-from mmdet.data_elements import SampleList
 from mmdet.registry import MODELS
+from mmdet.structures import SampleList
 from mmdet.utils import ConfigType, OptConfigType
 from .single_stage import SingleStageDetector
 

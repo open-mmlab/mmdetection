@@ -7,8 +7,8 @@ import torch.nn.functional as F
 from mmengine.model import ModuleList
 from torch import Tensor
 
-from mmdet.data_elements import SampleList
 from mmdet.registry import MODELS
+from mmdet.structures import SampleList
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from ..layers import ConvUpsample
 from ..utils import interpolate_as

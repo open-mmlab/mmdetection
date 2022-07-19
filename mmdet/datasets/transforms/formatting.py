@@ -6,8 +6,8 @@ from mmcv.transforms.base import BaseTransform
 from mmengine.data import BaseDataElement as PixelData
 from mmengine.data import InstanceData
 
-from mmdet.data_elements import DetDataSample
 from mmdet.registry import TRANSFORMS
+from mmdet.structures import DetDataSample
 
 
 @TRANSFORMS.register_module()

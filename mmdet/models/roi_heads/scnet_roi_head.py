@@ -6,9 +6,9 @@ import torch.nn.functional as F
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.data_elements import SampleList
-from mmdet.data_elements.bbox import bbox2roi
 from mmdet.registry import MODELS
+from mmdet.structures import SampleList
+from mmdet.structures.bbox import bbox2roi
 from mmdet.utils import ConfigType, InstanceList, OptConfigType
 from ..layers import adaptive_avg_pool2d
 from ..task_modules.samplers import SamplingResult
@@ -93,7 +93,10 @@ class SCNetRoIHead(CascadeRoIHead):
             Tensor: Fused feature.
         """
         assert roi_feats.size(0) == rois.size(0)
-        img_inds = torch.unique(rois[:, 0].cpu(), sorted=True).long()
+        # RuntimeError: isDifferentiableType(variable.scalar_type())
+        # INTERNAL ASSERT FAILED if detach() is not used when calling
+        # roi_head.predict().
+        img_inds = torch.unique(rois[:, 0].detach().cpu(), sorted=True).long()
         fused_feats = torch.zeros_like(roi_feats)
         for img_id in img_inds:
             inds = (rois[:, 0] == img_id.item())

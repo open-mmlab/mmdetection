@@ -6,8 +6,8 @@ import torch.nn.functional as F
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.data_elements.bbox import bbox_overlaps
 from mmdet.registry import MODELS
+from mmdet.structures.bbox import bbox_overlaps
 from mmdet.utils import InstanceList, OptConfigType, OptInstanceList
 from ..utils import multi_apply
 from .retina_head import RetinaHead

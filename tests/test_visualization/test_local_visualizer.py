@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from mmengine.data import InstanceData
 
-from mmdet.data_elements import DetDataSample
+from mmdet.structures import DetDataSample
 from mmdet.visualization import DetLocalVisualizer
 
 

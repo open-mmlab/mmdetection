@@ -5,10 +5,10 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor
 
-from mmdet.data_elements import SampleList
-from mmdet.data_elements.bbox import bbox2roi
 from mmdet.models.test_time_augs import merge_aug_masks
 from mmdet.registry import MODELS
+from mmdet.structures import SampleList
+from mmdet.structures.bbox import bbox2roi
 from mmdet.utils import InstanceList, OptConfigType
 from ..layers import adaptive_avg_pool2d
 from ..task_modules.samplers import SamplingResult

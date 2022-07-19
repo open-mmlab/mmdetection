@@ -4,8 +4,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from mmdet.data_elements.bbox import bbox_rescale
 from mmdet.registry import TASK_UTILS
+from mmdet.structures.bbox import bbox_rescale
 from .base_bbox_coder import BaseBBoxCoder
 
 
