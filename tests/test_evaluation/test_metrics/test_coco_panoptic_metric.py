@@ -193,16 +193,33 @@ class TestCocoPanopticMetric(unittest.TestCase):
                 'file_name':
                 'fake_name1.jpg',
                 'seg_map_path':
-                osp.join(self.gt_seg_dir, 'fake_name1.png')
+                osp.join(self.gt_seg_dir, 'fake_name1.png'),
+                'img_path':
+                'xxx/fake_name1.jpg'
             }
         }]
 
+        # with tmpfile, without json
         metric = CocoPanopticMetric(
             ann_file=None,
-            seg_prefix=None,
+            seg_prefix=self.gt_seg_dir,
             classwise=False,
             nproc=1,
             outfile_prefix=None)
+
+        metric.dataset_meta = self.dataset_meta
+        metric.process(data_batch, deepcopy(self.predictions))
+        eval_results = metric.evaluate(size=1)
+        self.assertDictEqual(eval_results, self.target)
+
+        # without tmpfile and json
+        outfile_prefix = f'{self.tmp_dir.name}/test'
+        metric = CocoPanopticMetric(
+            ann_file=None,
+            seg_prefix=self.gt_seg_dir,
+            classwise=False,
+            nproc=1,
+            outfile_prefix=outfile_prefix)
 
         metric.dataset_meta = self.dataset_meta
         metric.process(data_batch, deepcopy(self.predictions))
@@ -215,10 +232,11 @@ class TestCocoPanopticMetric(unittest.TestCase):
             'input': None,
             'data_sample': {
                 'img_id': 0,
-                'ori_shape': (60, 80)
+                'ori_shape': (60, 80),
+                'img_path': 'xxx/fake_name1.jpg'
             }
         }]
-
+        # with tmpfile and json
         metric = CocoPanopticMetric(
             ann_file=self.gt_json_path,
             seg_prefix=self.gt_seg_dir,
@@ -243,8 +261,8 @@ class TestCocoPanopticMetric(unittest.TestCase):
         eval_results = metric.evaluate(size=1)
         self.assertDictEqual(eval_results, self.target)
 
-        # test outfile_prefix
-        outfile_prefix = f'{self.tmp_dir.name}/test'
+        # without tmpfile, with json
+        outfile_prefix = f'{self.tmp_dir.name}/test1'
         metric = CocoPanopticMetric(
             ann_file=self.gt_json_path,
             seg_prefix=self.gt_seg_dir,
@@ -262,7 +280,8 @@ class TestCocoPanopticMetric(unittest.TestCase):
             'input': None,
             'data_sample': {
                 'img_id': 0,
-                'ori_shape': (60, 80)
+                'ori_shape': (60, 80),
+                'img_path': 'xxx/fake_name1.jpg'
             }
         }]
         with self.assertRaises(AssertionError):

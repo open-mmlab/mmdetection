@@ -239,12 +239,14 @@ class CocoPanopticMetric(BaseMetric):
     def _parse_predictions(self,
                            pred: dict,
                            img_id: int,
+                           segm_file: str,
                            label2cat=None) -> dict:
         """Parse panoptic segmentation predictions.
 
         Args:
             pred (dict): Panoptic segmentation predictions.
-            img_id (int): image id.
+            img_id (int): Image id.
+            segm_file (str): Segmentation file name.
             label2cat (dict): Mapping from label to category id.
                 Defaults to None.
 
@@ -278,7 +280,6 @@ class CocoPanopticMetric(BaseMetric):
         # evaluation script uses 0 for VOID label.
         pan[pan % INSTANCE_OFFSET == len(self.dataset_meta['CLASSES'])] = VOID
         pan = id2rgb(pan).astype(np.uint8)
-        segm_file = f'{img_id:0>12d}.png'
         mmcv.imwrite(pan[:, :, ::-1], osp.join(self.seg_out_dir, segm_file))
         result = {
             'image_id': img_id,
@@ -304,8 +305,10 @@ class CocoPanopticMetric(BaseMetric):
         for data, pred in zip(data_batch, predictions):
             # parse pred
             img_id = data['data_sample']['img_id']
-            result = self._parse_predictions(pred, img_id)
-            segm_file = result['file_name']
+            segm_file = osp.basename(data['data_sample']['img_path']).replace(
+                'jpg', 'png')
+            result = self._parse_predictions(
+                pred=pred, img_id=img_id, segm_file=segm_file)
 
             # parse gt
             gt = dict()
@@ -364,14 +367,20 @@ class CocoPanopticMetric(BaseMetric):
         for data, pred in zip(data_batch, predictions):
             # parse pred
             img_id = data['data_sample']['img_id']
-            result = self._parse_predictions(pred, img_id, label2cat)
+            segm_file = osp.basename(data['data_sample']['img_path']).replace(
+                'jpg', 'png')
+            result = self._parse_predictions(
+                pred=pred,
+                img_id=img_id,
+                segm_file=segm_file,
+                label2cat=label2cat)
 
             # parse gt
             gt = dict()
             gt['image_id'] = img_id
             gt['width'] = data['data_sample']['ori_shape'][1]
             gt['height'] = data['data_sample']['ori_shape'][0]
-            gt['file_name'] = result['file_name']
+            gt['file_name'] = segm_file
             gt['segments_info'] = self._coco_api.imgToAnns[img_id]
 
             pq_stats = pq_compute_single_core(
@@ -394,7 +403,10 @@ class CocoPanopticMetric(BaseMetric):
         for data, pred in zip(data_batch, predictions):
             # parse pred
             img_id = data['data_sample']['img_id']
-            result = self._parse_predictions(pred, img_id)
+            segm_file = osp.basename(data['data_sample']['img_path']).replace(
+                'jpg', 'png')
+            result = self._parse_predictions(
+                pred=pred, img_id=img_id, segm_file=segm_file)
 
             # parse gt
             gt = dict()
