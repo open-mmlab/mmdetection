@@ -37,18 +37,18 @@ class CocoPanopticMetric(BaseMetric):
     https://cocodataset.org/#panoptic-eval for more details.
 
     Args:
-        ann_file (str, optional): Path to the coco format annotation file.
+        ann_file (str): Path to the coco format annotation file.
             If not specified, ground truth annotations from the dataset will
             be converted to coco format. Defaults to None.
         seg_prefix (str, optional): Path to the directory which contains the
-            coco panoptic segmentation mask. If not specified, ground truth
-            annotations from the dataset will be converted to coco format.
-            Defaults to None.
+            coco panoptic segmentation mask. It should be specified when
+            evaluate. Defaults to None.
         classwise (bool): Whether to evaluate the metric class-wise.
             Defaults to False.
-        outfile_prefix (str | None): The prefix of json files. It includes
+        outfile_prefix (str, optional): The prefix of json files. It includes
             the file path and the prefix of filename, e.g., "a/b/prefix".
-            If not specified, a temp file will be created. Defaults to None.
+            If not specified, a temp file will be created.
+            It should be specified when format_only is True. Defaults to None.
         format_only (bool): Format the output results without perform
             evaluation. It is useful when you want to format the result
             to a specific format and submit it to the test server.
@@ -90,6 +90,8 @@ class CocoPanopticMetric(BaseMetric):
             'be saved to a temp directory which will be cleaned up at the end.'
 
         self.tmp_dir = None
+        # outfile_prefix should be prefix of a path which points to a shared
+        # storage when train or test with multi nodes.
         self.outfile_prefix = outfile_prefix
         if outfile_prefix is None:
             self.tmp_dir = tempfile.TemporaryDirectory()
@@ -232,6 +234,17 @@ class CocoPanopticMetric(BaseMetric):
                            pred: dict,
                            img_id: int,
                            label2cat=None) -> dict:
+        """Parse panoptic segmentation predictions.
+
+        Args:
+            pred (dict): Panoptic segmentation predictions.
+            img_id (int): image id.
+            label2cat (dict): Mapping from label to category id.
+                Defaults to None.
+
+        Returns:
+            dict: Parsed predictions.
+        """
         result = dict()
         result['img_id'] = img_id
         # shape (1, H, W) -> (H, W)
@@ -271,6 +284,12 @@ class CocoPanopticMetric(BaseMetric):
 
     def process_with_tmpfile_without_json(self, data_batch: Sequence[dict],
                                           predictions: Sequence[dict]) -> None:
+        """Process gts and predictions when ``outfile_prefix`` and ``ann_file``
+        are not set.
+
+        In this case, gts are from dataset. And the ``pq_stats`` is computed
+        here.
+        """
         categories = dict()
         for id, name in enumerate(self.dataset_meta['CLASSES']):
             isthing = 1 if name in self.dataset_meta['THING_CLASSES'] else 0
@@ -326,6 +345,11 @@ class CocoPanopticMetric(BaseMetric):
 
     def process_with_tmpfile_with_json(self, data_batch: Sequence[dict],
                                        predictions: Sequence[dict]):
+        """Process gts and predictions when ``outfile_prefix`` is not set.
+
+        In this case, gts are from a json file. And the ``pq_stats`` is
+        computed here.
+        """
         categories = self.categories
         cat_ids = self._coco_api.get_cat_ids(
             cat_names=self.dataset_meta['CLASSES'])
@@ -356,7 +380,11 @@ class CocoPanopticMetric(BaseMetric):
 
     def process_without_tmpfile(self, data_batch: Sequence[dict],
                                 predictions: Sequence[dict]):
-        # process_without_tmpfile_without_json
+        """Process gts and predictions when ``outfile_prefix`` is set.
+
+        The predictions will be saved to directory specified by
+        ``outfile_predfix``.
+        """
         for data, pred in zip(data_batch, predictions):
             # parse pred
             img_id = data['data_sample']['img_id']
@@ -375,6 +403,16 @@ class CocoPanopticMetric(BaseMetric):
 
     def process(self, data_batch: Sequence[dict],
                 predictions: Sequence[dict]) -> None:
+        """Process one batch of data samples and predictions. The processed
+        results should be stored in ``self.results``, which will be used to
+        compute the metrics when all batches have been processed.
+
+        Args:
+            data_batch (Sequence[dict]): A batch of data
+                from the dataloader.
+            predictions (Sequence[dict]): A batch of outputs from
+                the model.
+        """
         if self.tmp_dir is None:
             self.process_without_tmpfile(data_batch, predictions)
         else:
@@ -387,7 +425,13 @@ class CocoPanopticMetric(BaseMetric):
         """Compute the metrics from processed results.
 
         Args:
-            results (list): The processed results of each batch.
+            results (list): The processed results of each batch. There
+                are two cases:
+
+                - When ``outfile_prefix`` is not provided, the elements in
+                  results are pq_stats which can be summed directly to get PQ.
+                - When ``outfile_prefix`` is provided, the elements in
+                  results are tuples like (gt, pred).
 
         Returns:
             Dict[str, float]: The computed metrics. The keys are the names of
