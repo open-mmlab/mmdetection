@@ -56,6 +56,9 @@ class CocoPanopticMetric(BaseMetric):
         nproc (int): Number of processes for panoptic quality computing.
             Defaults to 32. When ``nproc`` exceeds the number of cpu cores,
             the number of cpu cores is used.
+        file_client_args (dict): Arguments to instantiate a FileClient.
+            See :class:`mmcv.fileio.FileClient` for details.
+            Defaults to ``dict(backend='disk')``.
         collect_device (str): Device name used for collecting results from
             different ranks during distributed training. Must be 'cpu' or
             'gpu'. Defaults to 'cpu'.
@@ -73,6 +76,7 @@ class CocoPanopticMetric(BaseMetric):
                  format_only: bool = False,
                  outfile_prefix: Optional[str] = None,
                  nproc: int = 32,
+                 file_client_args: dict = dict(backend='disk'),
                  collect_device: str = 'cpu',
                  prefix: Optional[str] = None) -> None:
         if panopticapi is None:
@@ -109,6 +113,8 @@ class CocoPanopticMetric(BaseMetric):
         else:
             self._coco_api = None
             self.categories = None
+
+        self.file_client = mmcv.FileClient(**file_client_args)
 
     def __del__(self) -> None:
         """Clean up."""
@@ -339,7 +345,7 @@ class CocoPanopticMetric(BaseMetric):
                 gt_folder=self.seg_prefix,
                 pred_folder=self.seg_out_dir,
                 categories=categories,
-                file_client=None)
+                file_client=self.file_client)
 
             self.results.append(pq_stats)
 
@@ -374,7 +380,7 @@ class CocoPanopticMetric(BaseMetric):
                 gt_folder=self.seg_prefix,
                 pred_folder=self.seg_out_dir,
                 categories=categories,
-                file_client=None)
+                file_client=self.file_client)
 
             self.results.append(pq_stats)
 
@@ -464,7 +470,7 @@ class CocoPanopticMetric(BaseMetric):
             self.categories = self._coco_api.cats
 
             # convert predictions to coco format and dump to json file
-            json_filename, seg_out_dir = self.result2json(
+            json_filename, pred_folder = self.result2json(
                 results=preds, outfile_prefix=self.outfile_prefix)
 
             if self.format_only:
@@ -492,13 +498,12 @@ class CocoPanopticMetric(BaseMetric):
                                     ' with id: {}'.format(img_id))
                 matched_annotations_list.append((gt_ann, pred_json[img_id]))
 
-            pred_folder = seg_out_dir
-            # TODO add file_client
             pq_stat = pq_compute_multi_core(
                 matched_annotations_list,
                 gt_folder,
                 pred_folder,
                 self.categories,
+                file_client=self.file_client,
                 nproc=self.nproc)
 
         else:
