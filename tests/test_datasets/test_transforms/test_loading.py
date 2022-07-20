@@ -417,22 +417,20 @@ class TestLoadProposals(unittest.TestCase):
 
 class TestLoadPseudoAnnos(unittest.TestCase):
 
-    def setUp(self):
-        """Setup the model and optimizer which are used in every test method.
-
-        TestCase calls functions in this order: setUp() -> testMethod() ->
-        tearDown() -> cleanUp()
-        """
-        self.img_path = []
-        for i in range(4):
-            img_channel_path = f'./part_{i}.jpg'
-            img_channel = np.zeros((10, 10), dtype=np.uint8)
-            mmcv.imwrite(img_channel, img_channel_path)
-            self.img_path.append(img_channel_path)
-        self.results = {'img_path': self.img_path}
-
     def test_transform(self):
-        LoadPseudoAnnos()
+        transform = LoadPseudoAnnos(
+            with_bbox=True, with_label=True, with_mask=True, with_seg=True)
+        results = {'img_shape': (224, 224)}
+        results = transform(results)
+        self.assertEqual(results['gt_bboxes'].dtype, np.float32)
+        self.assertEqual(results['gt_bboxes'].shape[-1], 4)
+        self.assertEqual(results['gt_ignore_flags'].dtype, bool)
+        self.assertEqual(results['gt_bboxes_labels'].dtype, np.int64)
+        self.assertEqual(results['gt_masks'].masks.dtype, np.uint8)
+        self.assertEqual(results['gt_masks'].masks.shape[-2:],
+                         results['img_shape'])
+        self.assertEqual(results['gt_seg_map'].dtype, np.uint8)
+        self.assertEqual(results['gt_seg_map'].shape, results['img_shape'])
 
     def test_repr(self):
         transform = LoadPseudoAnnos()
@@ -440,4 +438,5 @@ class TestLoadPseudoAnnos(unittest.TestCase):
             repr(transform), 'LoadPseudoAnnos(with_bbox=True, '
             'with_label=True, '
             'with_mask=False, '
-            'with_seg=False)')
+            'with_seg=False, '
+            'seg_ignore_label=255)')
