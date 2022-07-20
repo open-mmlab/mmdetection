@@ -1267,9 +1267,10 @@ class DinoTransformerDecoder(DeformableDetrTransformerDecoder):
 
             if reg_branches is not None:
                 tmp = reg_branches[lid](output)
-                assert reference_points.shape[
-                    -1] == 4  # TODO: should do earlier
-                new_reference_points = tmp + inverse_sigmoid(reference_points)
+                assert reference_points.shape[-1] == 4
+                # TODO: should do earlier
+                new_reference_points = tmp + inverse_sigmoid(
+                    reference_points, eps=1e-3)
                 new_reference_points = new_reference_points.sigmoid()
                 reference_points = new_reference_points.detach()
 
@@ -1294,7 +1295,11 @@ class DinoTransformer(DeformableDetrTransformer):
         super(DinoTransformer, self).__init__(*args, **kwargs)
 
     def init_layers(self):
-        super().init_layers()
+        """Initialize layers of the DinoTransformer."""
+        self.level_embeds = nn.Parameter(
+            torch.Tensor(self.num_feature_levels, self.embed_dims))
+        self.enc_output = nn.Linear(self.embed_dims, self.embed_dims)
+        self.enc_output_norm = nn.LayerNorm(self.embed_dims)
         self.query_embed = nn.Embedding(self.two_stage_num_proposals,
                                         self.embed_dims)
 
@@ -1371,7 +1376,8 @@ class DinoTransformer(DeformableDetrTransformer):
             output_memory) + output_proposals
         cls_out_features = cls_branches[self.decoder.num_layers].out_features
         topk = self.two_stage_num_proposals
-        topk_indices = torch.topk(enc_outputs_class[..., 0], topk, dim=1)[1]
+        # NOTE In DeformDETR, enc_outputs_class[..., 0] is used for topk TODO
+        topk_indices = torch.topk(enc_outputs_class.max(-1)[0], topk, dim=1)[1]
         # topk_proposal = torch.gather(
         #     output_proposals, 1,
         #     topk_indices.unsqueeze(-1).repeat(1, 1, 4)).sigmoid()
@@ -1391,9 +1397,14 @@ class DinoTransformer(DeformableDetrTransformer):
 
         query = self.query_embed.weight[:, None, :].repeat(1, bs,
                                                            1).transpose(0, 1)
-        query = torch.cat([dn_label_query, query], dim=1)
-        reference_points = torch.cat([dn_bbox_query, topk_coords_unact],
-                                     dim=1).sigmoid()
+        if dn_label_query is not None:
+            query = torch.cat([dn_label_query, query], dim=1)
+        if dn_bbox_query is not None:
+            reference_points = torch.cat([dn_bbox_query, topk_coords_unact],
+                                         dim=1)
+        else:
+            reference_points = topk_coords_unact
+        reference_points = reference_points.sigmoid()
 
         # decoder
         query = query.permute(1, 0, 2)

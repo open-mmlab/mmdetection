@@ -43,7 +43,7 @@ model = dict(
                     type='BaseTransformerLayer',
                     attn_cfgs=dict(
                         type='MultiScaleDeformableAttention', embed_dims=256),
-                    feedforward_channels=1024,
+                    feedforward_channels=2048,  # 1024 for DeformDETR
                     ffn_dropout=0.1,
                     operation_order=('self_attn', 'norm', 'ffn', 'norm'))),
             decoder=dict(
@@ -62,15 +62,15 @@ model = dict(
                             type='MultiScaleDeformableAttention',
                             embed_dims=256)
                     ],
-                    feedforward_channels=1024,
+                    feedforward_channels=2048,  # 1024 for DeformDETR
                     ffn_dropout=0.1,
                     operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
                                      'ffn', 'norm')))),
         positional_encoding=dict(
             type='SinePositionalEncoding',
             num_feats=128,
-            normalize=True,
-            offset=-0.5),
+            temperature=20,
+            normalize=True),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -86,7 +86,7 @@ model = dict(
             cls_cost=dict(type='FocalLossCost', weight=2.0),
             reg_cost=dict(type='BBoxL1Cost', weight=5.0, box_format='xywh'),
             iou_cost=dict(type='IoUCost', iou_mode='giou', weight=2.0))),
-    test_cfg=dict(max_per_img=100))
+    test_cfg=dict(max_per_img=300))  # TODO: Originally 100
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 # train_pipeline, NOTE the img_scale and the Pad's size_divisor is different
@@ -177,7 +177,7 @@ optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
 lr_config = dict(policy='step', step=[40])
 runner = dict(type='EpochBasedRunner', max_epochs=50)
 
-# NOTE: `auto_scale_lr` is for automatically scaling LR,
-# USER SHOULD NOT CHANGE ITS VALUES.
-# base_batch_size = (16 GPUs) x (2 samples per GPU)
-auto_scale_lr = dict(base_batch_size=32)
+# # NOTE: `auto_scale_lr` is for automatically scaling LR,
+# # USER SHOULD NOT CHANGE ITS VALUES.
+# # base_batch_size = (16 GPUs) x (2 samples per GPU)
+# auto_scale_lr = dict(base_batch_size=32)

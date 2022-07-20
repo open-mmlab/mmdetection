@@ -25,9 +25,11 @@ class DINOHead(DeformableDETRHead):
 
     def _init_layers(self):
         super()._init_layers()
-        # NOTE The original repo of DINO set the
-        # num_embeddings 92 for coco
-        self.label_embedding = nn.Embedding(self.cls_out_channels + 1,
+        # NOTE The original repo of DINO set the num_embeddings 92 for coco,
+        # 91 (0~90) of which represents target classes and the 92 (91)
+        # indicates [Unknown] class. However, the embedding of unknown class
+        # is not used in the original DINO
+        self.label_embedding = nn.Embedding(self.cls_out_channels,
                                             self.embed_dims)
 
     def init_denoising(self, dn_cfg):
@@ -49,7 +51,7 @@ class DINOHead(DeformableDETRHead):
         assert self.dn_generator is not None, '"dn_cfg" must be set'
         dn_label_query, dn_bbox_query, attn_mask, dn_meta = \
             self.dn_generator(gt_bboxes, gt_labels, self.label_embedding)
-        outs = self(x, dn_label_query, dn_bbox_query, attn_mask, img_metas)
+        outs = self(x, img_metas, dn_label_query, dn_bbox_query, attn_mask)
         if gt_labels is None:
             loss_inputs = outs + (gt_bboxes, img_metas, dn_meta)
         else:
@@ -57,8 +59,12 @@ class DINOHead(DeformableDETRHead):
         losses = self.loss(*loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
         return losses
 
-    def forward(self, mlvl_feats, dn_label_query, dn_bbox_query, attn_mask,
-                img_metas):
+    def forward(self,
+                mlvl_feats,
+                img_metas,
+                dn_label_query=None,
+                dn_bbox_query=None,
+                attn_mask=None):
         batch_size = mlvl_feats[0].size(0)
         input_img_h, input_img_w = img_metas[0]['batch_input_shape']
         img_masks = mlvl_feats[0].new_ones(
