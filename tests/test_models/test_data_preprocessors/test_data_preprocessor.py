@@ -292,6 +292,51 @@ class TestMultiDataPreprocessor(TestCase):
             std=[58.395, 57.12, 57.375],
             bgr_to_rgb=True,
             pad_size_divisor=32)
+        self.multi_data = [
+            {
+                'sup': {
+                    'inputs': torch.randint(0, 256, (3, 224, 224)),
+                    'data_sample': DetDataSample()
+                }
+            },
+            {
+                'unsup_teacher': {
+                    'inputs': torch.randint(0, 256, (3, 400, 600)),
+                    'data_sample': DetDataSample()
+                },
+                'unsup_student': {
+                    'inputs': torch.randint(0, 256, (3, 700, 500)),
+                    'data_sample': DetDataSample()
+                }
+            },
+            {
+                'unsup_teacher': {
+                    'inputs': torch.randint(0, 256, (3, 600, 400)),
+                    'data_sample': DetDataSample()
+                },
+                'unsup_student': {
+                    'inputs': torch.randint(0, 256, (3, 500, 700)),
+                    'data_sample': DetDataSample()
+                }
+            },
+        ]
+        self.data = [{
+            'inputs': torch.randint(0, 256, (3, 224, 224)),
+            'data_sample': DetDataSample()
+        }]
 
     def test_multi_data_preprocessor(self):
-        MultiDataPreprocessor(self.data_preprocessor)
+        processor = MultiDataPreprocessor(self.data_preprocessor)
+        # test processing multi_data when training
+        multi_inputs, multi_data_samples = processor(
+            self.multi_data, training=True)
+        self.assertEqual(multi_inputs['sup'].shape, (1, 3, 224, 224))
+        self.assertEqual(multi_inputs['unsup_teacher'].shape, (2, 3, 608, 608))
+        self.assertEqual(multi_inputs['unsup_student'].shape, (2, 3, 704, 704))
+        self.assertEqual(len(multi_data_samples['sup']), 1)
+        self.assertEqual(len(multi_data_samples['unsup_teacher']), 2)
+        self.assertEqual(len(multi_data_samples['unsup_student']), 2)
+        # test processing data when testing
+        inputs, data_samples = processor(self.data)
+        self.assertEqual(inputs.shape, (1, 3, 224, 224))
+        self.assertEqual(len(data_samples), 1)

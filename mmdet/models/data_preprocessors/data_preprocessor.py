@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import random
 from numbers import Number
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
@@ -14,6 +14,7 @@ from torch import Tensor
 
 from mmdet.registry import MODELS
 from mmdet.structures import DetDataSample
+from mmdet.utils import ConfigType
 
 
 @MODELS.register_module()
@@ -337,12 +338,33 @@ class BatchFixedSizePad(nn.Module):
 
 @MODELS.register_module()
 class MultiDataPreprocessor(nn.Module):
+    """DataPreprocessor wrapper for multi-branch data.
 
-    def __init__(self, data_preprocessor):
+    Args:
+        data_preprocessor (:obj:`ConfigDict` or dict): Config of
+        :class:`DetDataPreprocessor` to process the input data.
+    """
+
+    def __init__(self, data_preprocessor: ConfigType) -> None:
         super().__init__()
         self.data_preprocessor = MODELS.build(data_preprocessor)
 
-    def forward(self, data, training):
+    def forward(
+        self,
+        data: Sequence[dict],
+        training: bool = False
+    ) -> Tuple[Dict[torch.Tensor], Dict[Optional[list]]]:
+        """Perform normalization、padding and bgr2rgb conversion based on
+        ``BaseDataPreprocessor`` for multi-branch data.
+
+        Args:
+            data (Sequence[dict]): data sampled from dataloader.
+            training (bool): Whether to enable training time augmentation.
+
+        Returns:
+            Tuple[Dict[torch.Tensor], Dict[Optional[list]]]: Each tuple of
+            zip(dict, dict) is the data in the same format as the model input.
+        """
         if training is False:
             return self.data_preprocessor(data, training)
         multi_data = {}
