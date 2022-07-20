@@ -239,19 +239,19 @@ def ciou_loss(pred, target, eps=1e-7):
 
 @weighted_loss
 def alphaiou_loss(pred, target, eps=1e-9, alpha=3, mode='iou'):
-    r"""`Implementation of paper  Alpha-IoU: A Family of Power
-    Intersection over Union Losses for Bounding Box Regression
+    r"""`Implementation of paper  Alpha-IoU
     <https://arxiv.org/abs/2110.13675>` _.
 
     Code is modified from https://github.com/Jacobi93/Alpha-IoU.
 
     Args:
         pred (Tensor): Predicted bboxes of format (x1, y1, x2, y2),
-                    shape (n, 4).
+            shape (n, 4).
         target (Tensor): Corredponding gt bboxes, shape (n, 4)
         eps (float): Eps to avoid log(0).
         alpha (int): adaptively reweighting the loss and gradient of IoU
         mode (str): Options are "iou"(default), "giou", "diou" and "ciou"
+
     Return:
         Tensor: Loss tensor.
     """
@@ -269,8 +269,8 @@ def alphaiou_loss(pred, target, eps=1e-9, alpha=3, mode='iou'):
               (torch.min(b1_y2, b2_y2) - torch.max(b1_y1, b2_y1)).clamp(0)
 
     # union
-    w1, h1 = b1_x2 - b1_x1, b1_y2 - b1_y1 + eps
-    w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1 + eps
+    w1, h1 = b1_x2 - b1_x1, b1_y2 - b1_y1
+    w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1
     union = w1 * h1 + w2 * h2 - overlap + eps
 
     # change conventional iou to alpha pow
@@ -558,6 +558,20 @@ class CIoULoss(nn.Module):
 
 @LOSSES.register_module()
 class AlphaIoULoss(nn.Module):
+    """AlphaIoULoss.
+
+    Computing the AlphaIoU loss between a set of predicted bboxes
+    and target bboxes.
+
+    Args:
+        eps (float): Eps to avoid log(0). We test serval exps and
+                    1e-9 performs better.
+        reduction (str): Options are "none", "mean" and "sum".
+        loss_weight (float): Weight of loss.
+        mode (str): the calculation method of IoU,
+                    options are "iou" (default), "giou", "diou" and "ciou".
+        alpha (int): adaptively reweighting the loss and gradient of IoU
+    """
 
     def __init__(self,
                  eps=1e-9,
@@ -565,20 +579,6 @@ class AlphaIoULoss(nn.Module):
                  loss_weight=1.0,
                  mode='iou',
                  alpha=3):
-        """AlphaIoULoss.
-
-        Computing the AlphaIoU loss between a set of predicted bboxes
-        and target bboxes.
-
-        Args:
-            eps (float): Eps to avoid log(0). We test serval exps and
-                        1e-9 performs better.
-            reduction (str): Options are "none", "mean" and "sum".
-            loss_weight (float): Weight of loss.
-            mode (str): the calculation method of IoU,
-                        options are "iou" (default), "giou", "diou" and "ciou".
-            alpha (int): adaptively reweighting the loss and gradient of IoU
-        """
         super(AlphaIoULoss, self).__init__()
         self.eps = eps
         self.reduction = reduction
