@@ -3,8 +3,8 @@ from collections import Sequence
 
 import torch
 
-from mmdet.core import bbox_project
 from mmdet.registry import MODELS
+from mmdet.structures.bbox import bbox_project
 from .base import BaseDetector
 
 

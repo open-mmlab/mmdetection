@@ -1,12 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from typing import Optional, Sequence
 
+import torch.nn as nn
 from mmengine.hooks import Hook
 from mmengine.model import is_model_wrapper
+from mmengine.runner import Runner
 
 from mmdet.registry import HOOKS
-
-DATA_BATCH = Optional[Sequence[dict]]
 
 
 @HOOKS.register_module()
@@ -35,7 +35,7 @@ class MeanTeacherHook(Hook):
         self.momentum = momentum
         self.interval = interval
 
-    def before_run(self, runner):
+    def before_run(self, runner: Runner) -> None:
         """To check that teacher model and student model exist."""
         model = runner.model
         if is_model_wrapper(model):
@@ -47,9 +47,9 @@ class MeanTeacherHook(Hook):
             self.momentum_update(model, 1)
 
     def after_train_iter(self,
-                         runner,
+                         runner: Runner,
                          batch_idx: int,
-                         data_batch: DATA_BATCH = None,
+                         data_batch: Optional[Sequence[dict]] = None,
                          outputs: Optional[dict] = None) -> None:
         """Update teacher's parameter every self.interval iterations."""
         if (runner.iter + 1) % self.interval != 0:
@@ -59,7 +59,9 @@ class MeanTeacherHook(Hook):
             model = model.module
         self.momentum_update(model, self.momentum)
 
-    def momentum_update(self, model, momentum):
+    def momentum_update(self, model: nn.Module, momentum: float) -> None:
+        """Compute the moving average of the parameters using exponential
+        moving average."""
         for (src_name, src_param), (dst_name, dst_param) \
                 in zip(model.student.named_parameters(),
                        model.teacher.named_parameters()):

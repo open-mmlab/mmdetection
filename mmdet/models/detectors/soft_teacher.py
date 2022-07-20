@@ -4,9 +4,9 @@ import copy
 import torch
 from mmengine.data import InstanceData
 
-from mmdet.core import bbox2roi, bbox_project
 from mmdet.models.losses import accuracy
 from mmdet.registry import MODELS
+from mmdet.structures.bbox import bbox2roi, bbox_project
 from ..utils.misc import unpack_gt_instances
 from .semi_base import SemiBaseDetector
 
