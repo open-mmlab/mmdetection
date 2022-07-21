@@ -80,7 +80,7 @@ async def async_main(args):
         'result',
         img,
         pred_sample=result[0],
-        show=True,
+        show=args.out_file is None,
         wait_time=0,
         out_file=args.out_file,
         pred_score_thr=args.score_thr)
