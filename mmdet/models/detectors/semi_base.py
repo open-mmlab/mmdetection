@@ -1,37 +1,67 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from collections import Sequence
+from typing import Dict, Optional
 
 import torch
+from mmengine.model import ExponentialMovingAverage
+from torch import Tensor
 
 from mmdet.registry import MODELS
+from mmdet.structures import SampleList
 from mmdet.structures.bbox import bbox_project
+from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from .base import BaseDetector
 
 
 @MODELS.register_module()
 class SemiBaseDetector(BaseDetector):
+    """Base class for semi-supervsed detectors.
+
+    Semi-supervised detectors typically consisting of a teacher model
+    updated by exponential moving average and a student model updated
+    by gradient descent.
+
+    Args:
+        backbone (:obj:`ConfigDict` or dict): The backbone config.
+        neck (:obj:`ConfigDict` or dict): The neck config.
+        bbox_head (:obj:`ConfigDict` or dict): The bbox head config.
+        train_cfg (:obj:`ConfigDict` or dict, optional): The training config.
+        test_cfg (:obj:`ConfigDict` or dict, optional): The testing config.
+        data_preprocessor (:obj:`ConfigDict` or dict, optional): Config of
+            :class:`DetDataPreprocessor` to process the input data.
+            Defaults to None.
+        init_cfg (:obj:`ConfigDict` or list[:obj:`ConfigDict`] or dict or
+            list[dict], optional): Initialization config dict.
+            Defaults to None.
+    """
 
     def __init__(self,
-                 detector,
-                 semi_train_cfg=None,
-                 semi_test_cfg=None,
-                 data_preprocessor=None,
-                 init_cfg=None):
+                 detector: ConfigType,
+                 semi_train_cfg: OptConfigType = None,
+                 semi_test_cfg: OptConfigType = None,
+                 data_preprocessor: OptConfigType = None,
+                 init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
             data_preprocessor=data_preprocessor, init_cfg=init_cfg)
-        self.teacher = MODELS.build(detector)
         self.student = MODELS.build(detector)
+        self.teacher = ExponentialMovingAverage(self.student)
         self.semi_train_cfg = semi_train_cfg
         self.semi_test_cfg = semi_test_cfg
-        self.freeze(self.teacher)
 
-    @staticmethod
-    def freeze(model):
-        model.eval()
-        for param in model.parameters():
-            param.requires_grad = False
+    def loss(self, multi_batch_inputs: Dict[torch.Tensor],
+             multi_batch_data_samples: Dict[Optional[list]]) -> dict:
+        """Calculate losses from multi-branch inputs and data samples.
 
-    def loss(self, multi_batch_inputs, multi_batch_data_samples):
+        Args:
+            multi_batch_inputs (Dict[Tensor]): The dict of multi-branch
+                input images of shape (N, C, H, W).
+                Each item should usually be mean centered and std scaled.
+            multi_batch_data_samples (Dict[List[:obj:`DetDataSample`]]):
+                The dict of multi-branch data samples.
+
+        Returns:
+            dict: A dictionary of loss components
+        """
         losses = dict()
         losses.update(**self.gt_loss(multi_batch_inputs['sup'],
                                      multi_batch_data_samples['sup']))
@@ -47,7 +77,21 @@ class SemiBaseDetector(BaseDetector):
             multi_batch_data_samples['unsup_student'], batch_info))
         return losses
 
-    def gt_loss(self, batch_inputs, batch_data_samples):
+    def gt_loss(self, batch_inputs: Tensor,
+                batch_data_samples: SampleList) -> dict:
+        """Calculate losses from a batch of inputs and ground-truth data
+        samples.
+
+        Args:
+            batch_inputs (Tensor): Input images of shape (N, C, H, W).
+                These should usually be mean centered and std scaled.
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+
+        Returns:
+            dict: A dictionary of loss components
+        """
         gt_loss = {
             'sup_' + k: v
             for k, v in self.weight(
@@ -56,10 +100,28 @@ class SemiBaseDetector(BaseDetector):
         }
         return gt_loss
 
-    def pseudo_loss(self, batch_inputs, batch_data_samples, batch_info):
+    def pseudo_loss(self,
+                    batch_inputs: Tensor,
+                    batch_data_samples: SampleList,
+                    batch_info: Optional[dict] = None) -> dict:
+        """Calculate losses from a batch of inputs and data samples.
+
+        Args:
+            batch_inputs (Tensor): Input images of shape (N, C, H, W).
+                These should usually be mean centered and std scaled.
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+            batch_info (dict): Batch information of teacher model
+                forward propagation process. Defaults to None.
+
+        Returns:
+            dict: A dictionary of loss components
+        """
         score_thr = self.semi_train_cfg.get('score_thr', 0.9)
         batch_data_samples = self.filter_pseudo_instances(
             batch_data_samples, score_thr)
+
         pseudo_instances_num = sum([
             len(data_samples.gt_instances)
             for data_samples in batch_data_samples
@@ -75,7 +137,8 @@ class SemiBaseDetector(BaseDetector):
         return pseudo_loss
 
     @staticmethod
-    def weight(losses, weight):
+    def weight(losses: dict, weight: float) -> dict:
+        """Weight loss for different branches."""
         for name, loss in losses.items():
             if 'loss' in name:
                 if isinstance(loss, Sequence):
@@ -85,6 +148,7 @@ class SemiBaseDetector(BaseDetector):
         return losses
 
     def filter_pseudo_instances(self, batch_data_samples, score_thr):
+        """Filter pseudo instances from teacher model."""
         for data_samples in batch_data_samples:
             pseudo_bboxes = data_samples.gt_instances.bboxes
             instance_num = pseudo_bboxes.shape[0]
@@ -105,6 +169,7 @@ class SemiBaseDetector(BaseDetector):
         return batch_data_samples
 
     def get_pseudo_instances(self, batch_inputs, batch_data_samples):
+        """Get pseudo instances from teacher model."""
         results_list = self.teacher.predict(batch_inputs, batch_data_samples)
         for data_samples, results in zip(batch_data_samples, results_list):
             data_samples.gt_instances = data_samples.gt_instances.new(
@@ -115,6 +180,7 @@ class SemiBaseDetector(BaseDetector):
 
     def project_pseudo_instances(self, batch_pseudo_instances,
                                  batch_data_samples):
+        """Project pseudo instances."""
         for pseudo_instances, data_samples in zip(batch_pseudo_instances,
                                                   batch_data_samples):
             pseudo_instances.gt_instances.bboxes = bbox_project(
@@ -125,6 +191,31 @@ class SemiBaseDetector(BaseDetector):
         return batch_data_samples
 
     def predict(self, batch_inputs, batch_data_samples):
+        """Predict results from a batch of inputs and data samples with post-
+        processing.
+
+        Args:
+            batch_inputs (Tensor): Inputs with shape (N, C, H, W).
+            batch_data_samples (List[:obj:`DetDataSample`]): The Data
+                Samples. It usually includes information such as
+                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+            rescale (bool): Whether to rescale the results.
+                Defaults to True.
+
+        Returns:
+            list[:obj:`DetDataSample`]: Return the detection results of the
+            input images. The returns value is DetDataSample,
+            which usually contain 'pred_instances'. And the
+            ``pred_instances`` usually contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                    (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                    (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                    the last dimension 4 arrange as (x1, y1, x2, y2).
+                - masks (Tensor): Has a shape (num_instances, H, W).
+        """
         if self.semi_test_cfg.get('infer_on', None) == 'teacher':
             return self.teacher(
                 batch_inputs, batch_data_samples, mode='predict')
@@ -133,9 +224,28 @@ class SemiBaseDetector(BaseDetector):
                 batch_inputs, batch_data_samples, mode='predict')
 
     def _forward(self, batch_inputs, batch_data_samples):
+        """Network forward process. Usually includes backbone, neck and head
+        forward without any post-processing.
+
+        Args:
+            batch_inputs (Tensor): Inputs with shape (N, C, H, W).
+
+        Returns:
+            tuple: A tuple of features from ``rpn_head`` and ``roi_head``
+            forward.
+        """
         return self.student(batch_inputs, batch_data_samples, mode='tensor')
 
     def extract_feat(self, batch_inputs):
+        """Extract features.
+
+        Args:
+            batch_inputs (Tensor): Image tensor with shape (N, C, H ,W).
+
+        Returns:
+            tuple[Tensor]: Multi-level features that may have
+            different resolutions.
+        """
         return self.student.extract_feat(batch_inputs)
 
     def _load_from_state_dict(
@@ -148,6 +258,8 @@ class SemiBaseDetector(BaseDetector):
         unexpected_keys,
         error_msgs,
     ):
+        """Exchange bbox_head key to rpn_head key when loading single-stage
+        weights into two-stage model."""
         if not any([
                 'student' in key or 'teacher' in key
                 for key in state_dict.keys()

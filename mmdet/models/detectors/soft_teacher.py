@@ -1,25 +1,31 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
+from typing import Optional, Tuple
 
 import torch
 from mmengine.data import InstanceData
+from torch import Tensor
 
 from mmdet.models.losses import accuracy
 from mmdet.registry import MODELS
+from mmdet.structures import SampleList
 from mmdet.structures.bbox import bbox2roi, bbox_project
+from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from ..utils.misc import unpack_gt_instances
 from .semi_base import SemiBaseDetector
 
 
 @MODELS.register_module()
 class SoftTeacher(SemiBaseDetector):
+    r"""Implementation of `End-to-End Semi-Supervised Object Detection
+    with Soft Teacher <https://arxiv.org/abs/2106.09018>`_"""
 
     def __init__(self,
-                 detector,
-                 semi_train_cfg=None,
-                 semi_test_cfg=None,
-                 data_preprocessor=None,
-                 init_cfg=None):
+                 detector: ConfigType,
+                 semi_train_cfg: OptConfigType = None,
+                 semi_test_cfg: OptConfigType = None,
+                 data_preprocessor: OptConfigType = None,
+                 init_cfg: OptMultiConfig = None) -> None:
         super().__init__(
             detector=detector,
             semi_train_cfg=semi_train_cfg,
@@ -27,7 +33,22 @@ class SoftTeacher(SemiBaseDetector):
             data_preprocessor=data_preprocessor,
             init_cfg=init_cfg)
 
-    def pseudo_loss(self, batch_inputs, batch_data_samples, batch_info):
+    def pseudo_loss(self, batch_inputs: Tensor, batch_data_samples: SampleList,
+                    batch_info: dict) -> dict:
+        """Calculate losses from a batch of inputs and data samples.
+
+        Args:
+            batch_inputs (Tensor): Input images of shape (N, C, H, W).
+                These should usually be mean centered and std scaled.
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+            batch_info (dict): Batch information of teacher model
+                forward propagation process. Defaults to None.
+
+        Returns:
+            dict: A dictionary of loss components
+        """
         x = self.student.extract_feat(batch_inputs)
 
         losses = {}
@@ -53,7 +74,10 @@ class SoftTeacher(SemiBaseDetector):
         }
         return pseudo_loss
 
-    def get_pseudo_instances(self, batch_inputs, batch_data_samples):
+    def get_pseudo_instances(
+            self, batch_inputs: Tensor, batch_data_samples: SampleList
+    ) -> Tuple[SampleList, Optional[dict]]:
+        """Get pseudo instances from teacher model."""
         assert self.teacher.with_bbox, 'Bbox head must be implemented.'
         x = self.teacher.extract_feat(batch_inputs)
 
@@ -96,6 +120,8 @@ class SoftTeacher(SemiBaseDetector):
         return batch_data_samples, batch_info
 
     def unsup_rpn_loss(self, x, batch_data_samples):
+        """Calculate rpn loss from a batch of inputs and pseudo data
+        samples."""
         rpn_data_samples = copy.deepcopy(batch_data_samples)
         for data_samples in rpn_data_samples:
             if data_samples.gt_instances.bboxes.shape[0] > 0:
@@ -122,6 +148,8 @@ class SoftTeacher(SemiBaseDetector):
 
     def unsup_rcnn_cls_loss(self, x, unsup_rpn_results_list,
                             batch_data_samples, batch_info):
+        """Calculate cls loss from a batch of inputs and pseudo data
+        samples."""
         rpn_results_list = copy.deepcopy(unsup_rpn_results_list)
         cls_data_samples = copy.deepcopy(batch_data_samples)
         for data_samples in cls_data_samples:
@@ -209,6 +237,8 @@ class SoftTeacher(SemiBaseDetector):
 
     def unsup_rcnn_reg_loss(self, x, unsup_rpn_results_list,
                             batch_data_samples):
+        """Calculate reg loss from a batch of inputs and pseudo data
+        samples."""
         rpn_results_list = copy.deepcopy(unsup_rpn_results_list)
         reg_data_samples = copy.deepcopy(batch_data_samples)
         for data_samples in reg_data_samples:
@@ -223,6 +253,7 @@ class SoftTeacher(SemiBaseDetector):
         return {'loss_bbox': roi_losses['loss_bbox']}
 
     def compute_uncertainty_with_aug(self, x, batch_data_samples):
+        """compute_uncertainty_with_aug."""
         auged_results_list = self.aug_box(batch_data_samples,
                                           self.semi_train_cfg.jitter_times,
                                           self.semi_train_cfg.jitter_scale)
@@ -276,6 +307,7 @@ class SoftTeacher(SemiBaseDetector):
 
     @staticmethod
     def aug_box(batch_data_samples, times, frac):
+        """compute_uncertainty_with_aug."""
 
         def _aug_single(box):
             box_scale = box[:, 2:4] - box[:, :2]
