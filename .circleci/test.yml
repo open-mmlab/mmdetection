@@ -1,0 +1,199 @@
+version: 2.1
+
+# the default pipeline parameters, which will be updated according to
+# the results of the path-filtering orb
+parameters:
+  lint_only:
+    type: boolean
+    default: true
+
+jobs:
+  lint:
+    docker:
+      - image: cimg/python:3.7.4
+    steps:
+      - checkout
+      - run:
+          name: Install pre-commit hook
+          command: |
+            pip install pre-commit
+            pre-commit install
+      - run:
+          name: Linting
+          command: pre-commit run --all-files
+      - run:
+          name: Check docstring coverage
+          command: |
+            pip install interrogate
+            interrogate -v --ignore-init-method --ignore-module --ignore-nested-functions --ignore-magic --ignore-regex "__repr__" --fail-under 85 mmdet
+
+  build_cpu:
+    parameters:
+      # The python version must match available image tags in
+      # https://circleci.com/developer/images/image/cimg/python
+      python:
+        type: string
+      torch:
+        type: string
+      torchvision:
+        type: string
+      mmcv:
+        type: string
+    docker:
+      - image: cimg/python:<< parameters.python >>
+    resource_class: large
+    steps:
+      - checkout
+      - run:
+          name: Install Libraries
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 libgl1-mesa-glx libjpeg-dev zlib1g-dev libtinfo-dev libncurses5
+      - run:
+          name: Configure Python & pip
+          command: |
+            pip install --upgrade pip
+            pip install wheel
+      - run:
+          name: Install PyTorch
+          command: |
+            python -V
+            python -m pip install torch==<< parameters.torch >>+cpu torchvision==<< parameters.torchvision >>+cpu -f https://download.pytorch.org/whl/torch_stable.html
+      - when:
+          condition:
+            equal: [ "3.9.0", << parameters.python >> ]
+          steps:
+            - run: pip install "protobuf <= 3.20.1" && sudo apt-get update && sudo apt-get -y install libprotobuf-dev protobuf-compiler cmake
+      - run:
+          name: Install mmdet dependencies
+          command: |
+            python -m pip install git+ssh://git@github.com/open-mmlab/mmengine.git@main
+            python -m pip install << parameters.mmcv >>
+            pip install -r requirements/tests.txt -r requirements/optional.txt
+            pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
+            pip install git+https://github.com/cocodataset/panopticapi.git
+      - run:
+          name: Build and install
+          command: |
+            pip install -e .
+      - run:
+          name: Run unittests
+          command: |
+            python -m coverage run --branch --source mmdet -m pytest tests/
+            python -m coverage xml
+            python -m coverage report -m
+
+  build_cuda:
+    parameters:
+      torch:
+        type: string
+      cuda:
+        type: enum
+        enum: ["10.1", "10.2", "11.1"]
+      cudnn:
+        type: integer
+        default: 7
+      mmcv:
+        type: string
+    machine:
+      image: ubuntu-2004-cuda-11.4:202110-01
+      # docker_layer_caching: true
+    resource_class: gpu.nvidia.small
+    steps:
+      - checkout
+      - run:
+          # CLoning repos in VM since Docker doesn't have access to the private key
+          name: Clone Repos
+          command: |
+            git clone -b main --depth 1 ssh://git@github.com/open-mmlab/mmengine.git /home/circleci/mmengine
+      - run:
+          name: Build Docker image
+          command: |
+            docker build .circleci/docker -t mmdetection:gpu --build-arg PYTORCH=<< parameters.torch >> --build-arg CUDA=<< parameters.cuda >> --build-arg CUDNN=<< parameters.cudnn >>
+            docker run --gpus all -t -d -v /home/circleci/project:/mmdetection -v /home/circleci/mmengine:/mmengine -w /mmdetection --name mmdetection mmdetection:gpu
+      - run:
+          name: Install mmdet dependencies
+          # pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu101/torch${{matrix.torch_version}}/index.html
+          command: |
+            docker exec mmdetection pip install -e /mmengine
+            docker exec mmdetection pip install << parameters.mmcv >>
+            pip install -r requirements/tests.txt -r requirements/optional.txt
+            pip install pycocotools
+            pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
+            pip install git+https://github.com/cocodataset/panopticapi.git
+            python -c 'import mmcv; print(mmcv.__version__)'
+      - run:
+          name: Build and install
+          command: |
+            docker exec mmdetection pip install -e .
+      - run:
+          name: Run unittests
+          command: |
+            docker exec mmdetection python -m pytest tests/
+
+workflows:
+  pr_stage_lint:
+    when: << pipeline.parameters.lint_only >>
+    jobs:
+      - lint:
+          name: lint
+          filters:
+            branches:
+              ignore:
+                - dev-3.x
+  pr_stage_test:
+    when:
+      not:
+        << pipeline.parameters.lint_only >>
+    jobs:
+      - lint:
+          name: lint
+          filters:
+            branches:
+              ignore:
+                - dev-3.x
+      - build_cpu:
+          name: minimum_version_cpu
+          torch: 1.6.0
+          torchvision: 0.7.0
+          python: 3.6.9  # The lowest python 3.6.x version available on CircleCI images
+          mmcv: https://download.openmmlab.com/mmcv/dev-2.x/cpu/torch1.6.0/mmcv_full-2.0.0rc0-cp36-cp36m-manylinux1_x86_64.whl
+          requires:
+            - lint
+      - build_cpu:
+          name: maximum_version_cpu
+          torch: 1.9.0
+          torchvision: 0.10.0
+          python: 3.9.0
+          mmcv: https://download.openmmlab.com/mmcv/dev-2.x/cpu/torch1.9.0/mmcv_full-2.0.0rc0-cp39-cp39-manylinux1_x86_64.whl
+          requires:
+            - minimum_version_cpu
+      - hold:
+          type: approval
+          requires:
+            - maximum_version_cpu
+      - build_cuda:
+          name: mainstream_version_gpu
+          torch: 1.8.1
+          # Use double quotation mark to explicitly specify its type
+          # as string instead of number
+          cuda: "10.2"
+          mmcv: https://download.openmmlab.com/mmcv/dev-2.x/cu102/torch1.8.0/mmcv_full-2.0.0rc0-cp37-cp37m-manylinux1_x86_64.whl
+          requires:
+            - hold
+  merge_stage_test:
+    when:
+      not:
+        << pipeline.parameters.lint_only >>
+    jobs:
+      - build_cuda:
+          name: minimum_version_gpu
+          torch: 1.6.0
+          # Use double quotation mark to explicitly specify its type
+          # as string instead of number
+          mmcv: https://download.openmmlab.com/mmcv/dev-2.x/cu101/torch1.6.0/mmcv_full-2.0.0rc0-cp37-cp37m-manylinux1_x86_64.whl
+          cuda: "10.1"
+          filters:
+            branches:
+              only:
+                - dev-3.x
