@@ -5,6 +5,8 @@ import cv2
 import torch
 
 from mmdet.apis import inference_detector, init_detector
+from mmdet.registry import VISUALIZERS
+from mmdet.utils import register_all_modules
 
 
 def parse_args():
@@ -24,9 +26,16 @@ def parse_args():
 def main():
     args = parse_args()
 
-    device = torch.device(args.device)
+    # register all modules in mmdet into the registries
+    register_all_modules()
 
+    # build the model from a config file and a checkpoint file
+    device = torch.device(args.device)
     model = init_detector(args.config, args.checkpoint, device=device)
+
+    # init visualizer
+    visualizer = VISUALIZERS.build(model.cfg.visulizer)
+    visualizer.datast_meta = model.dataset_meta
 
     camera = cv2.VideoCapture(args.camera_id)
 
@@ -39,8 +48,13 @@ def main():
         if ch == 27 or ch == ord('q') or ch == ord('Q'):
             break
 
-        model.show_result(
-            img, result, score_thr=args.score_thr, wait_time=1, show=True)
+        visualizer.add_datasample(
+            name='result',
+            image=img,
+            pred_sample=result[0],
+            pred_score_thr=args.score_thr,
+            wait_time=1,
+            show=True)
 
 
 if __name__ == '__main__':
