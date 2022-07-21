@@ -53,6 +53,8 @@ def plot_curve(log_dicts, args):
     for i, log_dict in enumerate(log_dicts):
         epochs = list(log_dict.keys())
         for j, metric in enumerate(metrics):
+            if 'mAP' in metric:
+                metric = 'coco/' + metric
             print(f'plot curve of {args.json_logs[i]}, metric is {metric}')
             if metric not in log_dict[epochs[int(args.eval_interval) - 1]]:
                 if 'mAP' in metric:
@@ -70,20 +72,15 @@ def plot_curve(log_dicts, args):
                 ys = []
                 for epoch in epochs:
                     ys += log_dict[epoch][metric]
-                    if 'val' in log_dict[epoch]['mode']:
-                        xs.append(epoch)
+                    xs += [epoch]
                 plt.xlabel('epoch')
                 plt.plot(xs, ys, label=legend[i * num_metrics + j], marker='o')
             else:
                 xs = []
                 ys = []
-                num_iters_per_epoch = log_dict[epochs[0]]['iter'][-2]
                 for epoch in epochs:
-                    iters = log_dict[epoch]['iter']
-                    if log_dict[epoch]['mode'][-1] == 'val':
-                        iters = iters[:-1]
-                    xs.append(
-                        np.array(iters) + (epoch - 1) * num_iters_per_epoch)
+                    iters = log_dict[epoch]['step']
+                    xs.append(np.array(iters))
                     ys.append(np.array(log_dict[epoch][metric][:len(iters)]))
                 xs = np.concatenate(xs)
                 ys = np.concatenate(ys)
@@ -172,19 +169,22 @@ def load_json_logs(json_logs):
     log_dicts = [dict() for _ in json_logs]
     for json_log, log_dict in zip(json_logs, log_dicts):
         with open(json_log, 'r') as log_file:
+            epoch = 1
             for i, line in enumerate(log_file):
                 log = json.loads(line.strip())
-                # skip the first training info line
-                if i == 0:
+                # skip lines only contains one key
+                if not len(log) > 1:
                     continue
-                # skip lines without `epoch` field
-                if 'epoch' not in log:
-                    continue
-                epoch = log.pop('epoch')
+
                 if epoch not in log_dict:
                     log_dict[epoch] = defaultdict(list)
+
                 for k, v in log.items():
                     log_dict[epoch][k].append(v)
+
+                if 'epoch' in log.keys():
+                    epoch = log['epoch'] + 1
+
     return log_dicts
 
 
