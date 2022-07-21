@@ -140,7 +140,7 @@ workflows:
           filters:
             branches:
               ignore:
-                - main
+                - master
   pr_stage_test:
     when:
       not:
@@ -151,7 +151,7 @@ workflows:
           filters:
             branches:
               ignore:
-                - main
+                - master
       - build_cpu:
           name: minimum_version_cpu
           torch: 1.6.0
@@ -196,4 +196,4 @@ workflows:
           filters:
             branches:
               only:
-                - main
+                - master
