@@ -56,7 +56,7 @@ def main(args):
         'result',
         img,
         pred_sample=result,
-        show=True,
+        show=args.out_file is None,
         wait_time=0,
         out_file=args.out_file,
         pred_score_thr=args.score_thr)
