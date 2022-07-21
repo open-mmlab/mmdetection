@@ -26,7 +26,7 @@ workflows:
             tools/.* lint_only false
             configs/.* lint_only false
             .circleci/.* lint_only false
-          base-revision: master
+          base-revision: dev-3.x
           # this is the path of the configuration we should trigger once
           # path filtering and pipeline parameter value updates are
           # complete. In this case, we are using the parent dynamic
