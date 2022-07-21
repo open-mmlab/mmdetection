@@ -37,7 +37,7 @@ class CocoPanopticMetric(BaseMetric):
     https://cocodataset.org/#panoptic-eval for more details.
 
     Args:
-        ann_file (str): Path to the coco format annotation file.
+        ann_file (str, optional): Path to the coco format annotation file.
             If not specified, ground truth annotations from the dataset will
             be converted to coco format. Defaults to None.
         seg_prefix (str, optional): Path to the directory which contains the
@@ -94,7 +94,7 @@ class CocoPanopticMetric(BaseMetric):
             'be saved to a temp directory which will be cleaned up at the end.'
 
         self.tmp_dir = None
-        # outfile_prefix should be prefix of a path which points to a shared
+        # outfile_prefix should be a prefix of a path which points to a shared
         # storage when train or test with multi nodes.
         self.outfile_prefix = outfile_prefix
         if outfile_prefix is None:
@@ -289,80 +289,26 @@ class CocoPanopticMetric(BaseMetric):
 
         return result
 
-    def process_with_tmpfile_without_json(self, data_batch: Sequence[dict],
-                                          predictions: Sequence[dict]) -> None:
-        """Process gts and predictions when ``outfile_prefix`` and ``ann_file``
-        are not set.
+    def _process_with_tmpfile(self, data_batch: Sequence[dict],
+                              predictions: Sequence[dict]):
+        """Process gts and predictions when ``outfile_prefix`` is not set, gts
+        are from dataset or a json file which is defined by ``ann_file``.
 
-        In this case, gts are from dataset. And the ``pq_stats`` is computed
-        here.
+        Intermediate results, ``pq_stats``, are computed here and put into
+        ``self.results``.
         """
-        categories = dict()
-        for id, name in enumerate(self.dataset_meta['CLASSES']):
-            isthing = 1 if name in self.dataset_meta['THING_CLASSES'] else 0
-            categories[id] = {'id': id, 'name': name, 'isthing': isthing}
-
-        for data, pred in zip(data_batch, predictions):
-            # parse pred
-            img_id = data['data_sample']['img_id']
-            segm_file = osp.basename(data['data_sample']['img_path']).replace(
-                'jpg', 'png')
-            result = self._parse_predictions(
-                pred=pred, img_id=img_id, segm_file=segm_file)
-
-            # parse gt
-            gt = dict()
-            gt['image_id'] = img_id
-            gt['width'] = data['data_sample']['ori_shape'][1]
-            gt['height'] = data['data_sample']['ori_shape'][0]
-            gt['file_name'] = segm_file
-            seg_map_path = osp.join(self.seg_prefix, segm_file)
-            pan_png = mmcv.imread(seg_map_path).squeeze()
-            pan_png = pan_png[:, :, ::-1]
-            pan_png = rgb2id(pan_png)
-            segments_info = []
-
-            for segment_info in data['data_sample']['segments_info']:
-                id = segment_info['id']
-                label = segment_info['category']
-                mask = pan_png == id
-                isthing = categories[label]['isthing']
-                if isthing:
-                    iscrowd = 1 if not segment_info['is_thing'] else 0
-                else:
-                    iscrowd = 0
-
-                new_segment_info = {
-                    'id': id,
-                    'category_id': label,
-                    'isthing': isthing,
-                    'iscrowd': iscrowd,
-                    'area': mask.sum()
-                }
-                segments_info.append(new_segment_info)
-            gt['segments_info'] = segments_info
-
-            pq_stats = pq_compute_single_core(
-                proc_id=0,
-                annotation_set=[(gt, result)],
-                gt_folder=self.seg_prefix,
-                pred_folder=self.seg_out_dir,
-                categories=categories,
-                file_client=self.file_client)
-
-            self.results.append(pq_stats)
-
-    def process_with_tmpfile_with_json(self, data_batch: Sequence[dict],
-                                       predictions: Sequence[dict]):
-        """Process gts and predictions when ``outfile_prefix`` is not set.
-
-        In this case, gts are from a json file. And the ``pq_stats`` is
-        computed here.
-        """
-        categories = self.categories
-        cat_ids = self._coco_api.get_cat_ids(
-            cat_names=self.dataset_meta['CLASSES'])
-        label2cat = {i: cat_id for i, cat_id in enumerate(cat_ids)}
+        if self._coco_api is None:
+            categories = dict()
+            for id, name in enumerate(self.dataset_meta['CLASSES']):
+                isthing = 1 if name in self.dataset_meta['THING_CLASSES']\
+                    else 0
+                categories[id] = {'id': id, 'name': name, 'isthing': isthing}
+            label2cat = None
+        else:
+            categories = self.categories
+            cat_ids = self._coco_api.get_cat_ids(
+                cat_names=self.dataset_meta['CLASSES'])
+            label2cat = {i: cat_id for i, cat_id in enumerate(cat_ids)}
 
         for data, pred in zip(data_batch, predictions):
             # parse pred
@@ -381,7 +327,38 @@ class CocoPanopticMetric(BaseMetric):
             gt['width'] = data['data_sample']['ori_shape'][1]
             gt['height'] = data['data_sample']['ori_shape'][0]
             gt['file_name'] = segm_file
-            gt['segments_info'] = self._coco_api.imgToAnns[img_id]
+
+            if self._coco_api is None:
+                # get segments_info from data_sample
+                seg_map_path = osp.join(self.seg_prefix, segm_file)
+                pan_png = mmcv.imread(seg_map_path).squeeze()
+                pan_png = pan_png[:, :, ::-1]
+                pan_png = rgb2id(pan_png)
+                segments_info = []
+
+                for segment_info in data['data_sample']['segments_info']:
+                    id = segment_info['id']
+                    label = segment_info['category']
+                    mask = pan_png == id
+                    isthing = categories[label]['isthing']
+                    if isthing:
+                        iscrowd = 1 if not segment_info['is_thing'] else 0
+                    else:
+                        iscrowd = 0
+
+                    new_segment_info = {
+                        'id': id,
+                        'category_id': label,
+                        'isthing': isthing,
+                        'iscrowd': iscrowd,
+                        'area': mask.sum()
+                    }
+                    segments_info.append(new_segment_info)
+            else:
+                # get segments_info from annotation file
+                segments_info = self._coco_api.imgToAnns[img_id]
+
+            gt['segments_info'] = segments_info
 
             pq_stats = pq_compute_single_core(
                 proc_id=0,
@@ -393,12 +370,13 @@ class CocoPanopticMetric(BaseMetric):
 
             self.results.append(pq_stats)
 
-    def process_without_tmpfile(self, data_batch: Sequence[dict],
-                                predictions: Sequence[dict]):
+    def _process_without_tmpfile(self, data_batch: Sequence[dict],
+                                 predictions: Sequence[dict]):
         """Process gts and predictions when ``outfile_prefix`` is set.
 
         The predictions will be saved to directory specified by
-        ``outfile_predfix``.
+        ``outfile_predfix``. The matched pair (gt, result) will be put into
+        ``self.results``.
         """
         for data, pred in zip(data_batch, predictions):
             # parse pred
@@ -413,7 +391,9 @@ class CocoPanopticMetric(BaseMetric):
             gt['image_id'] = img_id
             gt['width'] = data['data_sample']['ori_shape'][1]
             gt['height'] = data['data_sample']['ori_shape'][0]
+
             if self._coco_api is None:
+                # get segments_info from dataset
                 gt['segments_info'] = data['data_sample']['segments_info']
                 gt['seg_map_path'] = data['data_sample']['seg_map_path']
 
@@ -432,12 +412,9 @@ class CocoPanopticMetric(BaseMetric):
                 the model.
         """
         if self.tmp_dir is None:
-            self.process_without_tmpfile(data_batch, predictions)
+            self._process_without_tmpfile(data_batch, predictions)
         else:
-            if self._coco_api is None:
-                self.process_with_tmpfile_without_json(data_batch, predictions)
-            else:
-                self.process_with_tmpfile_with_json(data_batch, predictions)
+            self._process_with_tmpfile(data_batch, predictions)
 
     def compute_metrics(self, results: list) -> Dict[str, float]:
         """Compute the metrics from processed results.
@@ -458,7 +435,7 @@ class CocoPanopticMetric(BaseMetric):
         logger: MMLogger = MMLogger.get_current_instance()
 
         if self.tmp_dir is None:
-            # collect all the results, then do evaluation
+            # do evaluation after collect all the results
 
             # split gt and prediction list
             gts, preds = zip(*results)
@@ -519,7 +496,7 @@ class CocoPanopticMetric(BaseMetric):
                 nproc=self.nproc)
 
         else:
-            # do evaluation in process
+            # aggregate the results generated in process
             if self._coco_api is None:
                 categories = dict()
                 for id, name in enumerate(self.dataset_meta['CLASSES']):
