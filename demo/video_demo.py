@@ -43,7 +43,7 @@ def main():
 
     # init visualizer
     visualizer = VISUALIZERS.build(model.cfg.visualizer)
-    visualizer.datast_meta = model.dataset_meta
+    visualizer.dataset_meta = model.dataset_meta
 
     video_reader = mmcv.VideoReader(args.video)
     video_writer = None
