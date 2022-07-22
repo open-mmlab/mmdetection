@@ -289,8 +289,8 @@ class CocoPanopticMetric(BaseMetric):
 
         return result
 
-    def _process_with_tmpfile(self, data_batch: Sequence[dict],
-                              predictions: Sequence[dict]):
+    def _compute_batch_pq_stats(self, data_batch: Sequence[dict],
+                                predictions: Sequence[dict]):
         """Process gts and predictions when ``outfile_prefix`` is not set, gts
         are from dataset or a json file which is defined by ``ann_file``.
 
@@ -370,8 +370,8 @@ class CocoPanopticMetric(BaseMetric):
 
             self.results.append(pq_stats)
 
-    def _process_without_tmpfile(self, data_batch: Sequence[dict],
-                                 predictions: Sequence[dict]):
+    def _process_gt_and_predictions(self, data_batch: Sequence[dict],
+                                    predictions: Sequence[dict]):
         """Process gts and predictions when ``outfile_prefix`` is set.
 
         The predictions will be saved to directory specified by
@@ -411,10 +411,13 @@ class CocoPanopticMetric(BaseMetric):
             predictions (Sequence[dict]): A batch of outputs from
                 the model.
         """
+        # If ``self.tmp_dir`` is none, it will compute pq_stats here,
+        # otherwise, it will save gt and predictions to self.results.
         if self.tmp_dir is None:
-            self._process_without_tmpfile(data_batch, predictions)
+
+            self._process_gt_and_predictions(data_batch, predictions)
         else:
-            self._process_with_tmpfile(data_batch, predictions)
+            self._compute_batch_pq_stats(data_batch, predictions)
 
     def compute_metrics(self, results: list) -> Dict[str, float]:
         """Compute the metrics from processed results.
