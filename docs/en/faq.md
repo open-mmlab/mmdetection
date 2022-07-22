@@ -6,42 +6,11 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - Compatibility issue between MMCV and MMDetection; "ConvWS is already registered in conv layer"; "AssertionError: MMCV==xxx is used but incompatible. Please install mmcv>=xxx, \<=xxx."
 
-  Compatible MMDetection and MMCV versions are shown as below. Please choose the correct version of MMCV to avoid installation issues.
+  Compatible MMDetection 3.x and MMCV versions are shown as below. Please choose the correct version of MMCV to avoid installation issues.
 
-| MMDetection version |        MMCV version        |
-| :-----------------: | :------------------------: |
-|       master        | mmcv-full>=1.3.17, \<1.6.0 |
-|       2.25.0        | mmcv-full>=1.3.17, \<1.6.0 |
-|       2.24.1        | mmcv-full>=1.3.17, \<1.6.0 |
-|       2.24.0        | mmcv-full>=1.3.17, \<1.6.0 |
-|       2.23.0        | mmcv-full>=1.3.17, \<1.5.0 |
-|       2.22.0        | mmcv-full>=1.3.17, \<1.5.0 |
-|       2.21.0        | mmcv-full>=1.3.17, \<1.5.0 |
-|       2.20.0        | mmcv-full>=1.3.17, \<1.5.0 |
-|       2.19.1        | mmcv-full>=1.3.17, \<1.5.0 |
-|       2.19.0        | mmcv-full>=1.3.17, \<1.5.0 |
-|       2.18.0        | mmcv-full>=1.3.17, \<1.4.0 |
-|       2.17.0        | mmcv-full>=1.3.14, \<1.4.0 |
-|       2.16.0        | mmcv-full>=1.3.8, \<1.4.0  |
-|       2.15.1        | mmcv-full>=1.3.8, \<1.4.0  |
-|       2.15.0        | mmcv-full>=1.3.8, \<1.4.0  |
-|       2.14.0        | mmcv-full>=1.3.8, \<1.4.0  |
-|       2.13.0        | mmcv-full>=1.3.3, \<1.4.0  |
-|       2.12.0        | mmcv-full>=1.3.3, \<1.4.0  |
-|       2.11.0        | mmcv-full>=1.2.4, \<1.4.0  |
-|       2.10.0        | mmcv-full>=1.2.4, \<1.4.0  |
-|        2.9.0        | mmcv-full>=1.2.4, \<1.4.0  |
-|        2.8.0        | mmcv-full>=1.2.4, \<1.4.0  |
-|        2.7.0        | mmcv-full>=1.1.5, \<1.4.0  |
-|        2.6.0        | mmcv-full>=1.1.5, \<1.4.0  |
-|        2.5.0        | mmcv-full>=1.1.5, \<1.4.0  |
-|        2.4.0        | mmcv-full>=1.1.1, \<1.4.0  |
-|        2.3.0        |      mmcv-full==1.0.5      |
-|      2.3.0rc0       |      mmcv-full>=1.0.2      |
-|        2.2.1        |        mmcv==0.6.2         |
-|        2.2.0        |        mmcv==0.6.2         |
-|        2.1.0        |   mmcv>=0.5.9, \<=0.6.1    |
-|        2.0.0        |   mmcv>=0.5.1, \<=0.5.8    |
+| MMDetection version | MMCV version |
+| :-----------------: | :----------: |
+|       dev-3.x       | mmcv>=2.0.0  |
 
 - "No module named 'mmcv.ops'"; "No module named 'mmcv.\_ext'".
 
