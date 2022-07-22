@@ -34,7 +34,7 @@ def main():
     model = init_detector(args.config, args.checkpoint, device=device)
 
     # init visualizer
-    visualizer = VISUALIZERS.build(model.cfg.visulizer)
+    visualizer = VISUALIZERS.build(model.cfg.visualizer)
     visualizer.datast_meta = model.dataset_meta
 
     camera = cv2.VideoCapture(args.camera_id)
