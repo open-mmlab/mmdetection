@@ -14,6 +14,7 @@ except ImportError:
     imageio = None
 
 
+# TODO verify after refactoring analyze_results.py
 def parse_args():
     parser = argparse.ArgumentParser(description='Create GIF for demo')
     parser.add_argument(
