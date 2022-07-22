@@ -23,6 +23,7 @@ def parse_args():
     return args
 
 
+# TODO verify on camera
 def main():
     args = parse_args()
 
