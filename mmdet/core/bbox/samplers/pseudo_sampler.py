@@ -32,8 +32,10 @@ class PseudoSampler(BaseSampler):
         Returns:
             :obj:`SamplingResult`: sampler results
         """
+        # 在所有样本中正样本索引,(gt_ind 正数为gt索引,从1开始∈[1,len(gt)],0为负样本,-1为背景)
         pos_inds = torch.nonzero(
             assign_result.gt_inds > 0, as_tuple=False).squeeze(-1).unique()
+        # 在所有样本中负样本索引
         neg_inds = torch.nonzero(
             assign_result.gt_inds == 0, as_tuple=False).squeeze(-1).unique()
         gt_flags = bboxes.new_zeros(bboxes.shape[0], dtype=torch.uint8)

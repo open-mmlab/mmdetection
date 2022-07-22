@@ -5,21 +5,18 @@ from mmdet.utils import util_mixins
 
 
 class AssignResult(util_mixins.NiceRepr):
-    """Stores assignments between predicted and truth boxes.
+    """存储预测框和真实框之间的匹配结果.
 
     Attributes:
-        num_gts (int): the number of truth boxes considered when computing this
-            assignment
+        num_gts (int): 真实框的数量
 
-        gt_inds (LongTensor): for each predicted box indicates the 1-based
-            index of the assigned truth box. 0 means unassigned and -1 means
-            ignore.
+        gt_inds (LongTensor): 代表所有box对应的样本属性∈[-1,len(class)],已被过滤过
+            其中-1为背景,0为负样本,其余为正样本(gt)索引.shape为(feat_h*feat_w*A*self.num_levels)
 
-        max_overlaps (FloatTensor): the iou between the predicted box and its
-            assigned truth box.
+        max_overlaps (FloatTensor): anchor与所有gt的最大iou,shape同上.,已被过滤过
 
-        labels (None | LongTensor): If specified, for each predicted box
-            indicates the category label of the assigned truth box.
+        labels (None | LongTensor): 如果指定,代表所有box对应的样本属性∈[-1,len(class)-1],
+            其中-1为背景或负样本,其余为正样本(gt)所属类别.shape同上,已被过滤过
 
     Example:
         >>> # An assign result between 4 predicted boxes and 9 true boxes
@@ -39,7 +36,6 @@ class AssignResult(util_mixins.NiceRepr):
         <AssignResult(num_gts=9, gt_inds.shape=(7,), max_overlaps.shape=(7,),
                       labels.shape=(7,))>
     """
-
     def __init__(self, num_gts, gt_inds, max_overlaps, labels=None):
         self.num_gts = num_gts
         self.gt_inds = gt_inds

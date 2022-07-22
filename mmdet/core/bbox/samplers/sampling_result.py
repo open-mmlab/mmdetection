@@ -41,7 +41,9 @@ class SamplingResult(util_mixins.NiceRepr):
         else:
             if len(gt_bboxes.shape) < 2:
                 gt_bboxes = gt_bboxes.view(-1, 4)
-
+            # 注意pos_ind是所有样本中正样本的索引∈[0,len(num_box)-1],
+            # 而pos_assigned_gt_ind是正样本所对应gt的索引∈[0,len(gt)-1],
+            # 二者长度相同,但所代表的含义不同
             self.pos_gt_bboxes = gt_bboxes[self.pos_assigned_gt_inds.long(), :]
 
         if assign_result.labels is not None:

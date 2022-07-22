@@ -11,33 +11,31 @@ from .builder import PRIOR_GENERATORS
 
 @PRIOR_GENERATORS.register_module()
 class AnchorGenerator:
-    """Standard anchor generator for 2D anchor-based detectors.
+    """用于 2D anchor-based 的检测网络的标准anchor生成器.
 
     Args:
-        strides (list[int] | list[tuple[int, int]]): Strides of anchors
-            in multiple feature levels in order (w, h).
-        ratios (list[float]): The list of ratios between the height and width
-            of anchors in a single level.
-        scales (list[int] | None): Anchor scales for anchors in a single level.
-            It cannot be set at the same time if `octave_base_scale` and
-            `scales_per_octave` are set.
-        base_sizes (list[int] | None): The basic sizes
-            of anchors in multiple levels.
-            If None is given, strides will be used as base_sizes.
-            (If strides are non square, the shortest stride is taken.)
+        strides (list[int] | list[tuple[int, int]]): 按(w, h)顺序在多个特征级别中的anchor的下采样倍数.
+        ratios (list[float]): 在单个层级上的anchor的高宽比列表.
+        scales (list[int] | None): 单个层级中的不同大小的基础anchor尺寸.
+            它不能与 (`octave_base_scale` 和 `scales_per_octave`)同时设置.
+        base_sizes (list[int] | None): 多层级anchor的基本尺寸.
+            如果没有给出,将用strides代替.(如果stride在w和h方向上不一致,则采用最小的stride.)
         scale_major (bool): Whether to multiply scales first when generating
             base anchors. If true, the anchors in the same row will have the
             same scales. By default it is True in V2.0
-        octave_base_scale (int): The base scale of octave.
-        scales_per_octave (int): Number of scales for each octave.
-            `octave_base_scale` and `scales_per_octave` are usually used in
-            retinanet and the `scales` should be None when they are set.
-        centers (list[tuple[float, float]] | None): The centers of the anchor
-            relative to the feature grid center in multiple feature levels.
-            By default it is set to be None and not used. If a list of tuple of
-            float is given, they will be used to shift the centers of anchors.
-        center_offset (float): The offset of center in proportion to anchors'
-            width and height. By default it is 0 in V2.0.
+        octave_base_scale (int): anchor的基础尺寸,需要配合strides使用.
+        scales_per_octave (int): 单个层级下anchor的不同尺寸个数.
+            `octave_base_scale` and `scales_per_octave` 通常在retinanet中使用
+            同时在这两个参数被设置时, 参数`scales` 应该为 None.
+        centers (list[tuple[float, float]] | None): 多个级别特征中anchor中心相对于grid中心的偏移
+            默认情况下,它设置为 None 并且不使用. 如果给出一个浮点元组列表,它们将用于anchor的中心偏移量.
+        center_offset (float): 相对于grid左上角的anchor中心的偏移量.
+            两者区别在于以下几点.
+            centers                                             center_offset
+            以grid中心为参考点                                    以grid左上角为参考点
+            ∈[0,grid_size],单位是px,绝对值                        ∈[0,1],单位是anchor的基础尺寸(base_sizes),相对值
+            与Strides长度对齐,因为它是每个层级上的偏移量              仅仅是一个float,代表所有层级上的偏移量
+            与center_offset互斥,不能同时设置
 
     Examples:
         >>> from mmdet.core import AnchorGenerator
@@ -80,7 +78,7 @@ class AnchorGenerator:
                 'The number of strides should be the same as centers, got ' \
                 f'{strides} and {centers}'
 
-        # calculate base sizes of anchors
+        # 计算anchor的基础尺寸
         self.strides = [_pair(stride) for stride in strides]
         self.base_sizes = [min(stride) for stride in self.strides
                            ] if base_sizes is None else base_sizes
@@ -129,11 +127,10 @@ class AnchorGenerator:
         return len(self.strides)
 
     def gen_base_anchors(self):
-        """Generate base anchors.
+        """生成基础anchor.
 
         Returns:
-            list(torch.Tensor): Base anchors of a feature grid in multiple \
-                feature levels.
+            list(torch.Tensor): 多个特征图中基于grid的基础anchor[(9,4)*len(strides)].
         """
         multi_level_base_anchors = []
         for i, base_size in enumerate(self.base_sizes):
@@ -153,18 +150,16 @@ class AnchorGenerator:
                                       scales,
                                       ratios,
                                       center=None):
-        """Generate base anchors of a single level.
+        """生成单个层级上的基础anchor.
 
         Args:
-            base_size (int | float): Basic size of an anchor.
-            scales (torch.Tensor): Scales of the anchor.
-            ratios (torch.Tensor): The ratio between between the height
-                and width of anchors in a single level.
-            center (tuple[float], optional): The center of the base anchor
-                related to a single feature grid. Defaults to None.
+            base_size (int | float): anchor的基本尺寸.
+            scales (torch.Tensor): anchor的不同大小尺寸系数,需要配合base_size使用.
+            ratios (torch.Tensor): 单个层级上anchor的高宽比.
+            center (tuple[float], optional): 单个级别特征中anchor中心相对于grid中心的偏移,基于grid.
 
         Returns:
-            torch.Tensor: Anchors in a single-level feature maps.
+            torch.Tensor: 单个层级特征图上的anchor,shape一般为(9,4) 三种长宽比,三种尺寸组合的基础anchor.
         """
         w = base_size
         h = base_size
@@ -224,16 +219,13 @@ class AnchorGenerator:
             device (str): The device where the anchors will be put on.
 
         Return:
-            list[torch.Tensor]: Anchors in multiple feature levels. \
-                The sizes of each tensor should be [N, 4], where \
-                N = width * height * num_base_anchors, width and height \
-                are the sizes of the corresponding feature level, \
-                num_base_anchors is the number of anchors for that level.
+            list[torch.Tensor]: [(feat_h*feat_w*A,4)]*self.num_levels.
+            注意并非简单复制,feat_h*feat_w随着层级不同而不同
         """
         assert self.num_levels == len(featmap_sizes)
         multi_level_anchors = []
         for i in range(self.num_levels):
-            anchors = self.single_level_grid_priors(
+            anchors = self.single_level_grid_priors(  # (feat_h*feat_w*A,4)
                 featmap_sizes[i], level_idx=i, dtype=dtype, device=device)
             multi_level_anchors.append(anchors)
         return multi_level_anchors
@@ -263,17 +255,15 @@ class AnchorGenerator:
         base_anchors = self.base_anchors[level_idx].to(device).to(dtype)
         feat_h, feat_w = featmap_size
         stride_w, stride_h = self.strides[level_idx]
-        # First create Range with the default dtype, than convert to
-        # target `dtype` for onnx exporting.
+        # 获取特征图上所有grid坐标.直接使用torch.meshgrid的方式是否更简洁?
         shift_x = torch.arange(0, feat_w, device=device).to(dtype) * stride_w
         shift_y = torch.arange(0, feat_h, device=device).to(dtype) * stride_h
 
         shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
         shifts = torch.stack([shift_xx, shift_yy, shift_xx, shift_yy], dim=-1)
-        # first feat_w elements correspond to the first row of shifts
-        # add A anchors (1, A, 4) to K shifts (K, 1, 4) to get
-        # shifted anchors (K, A, 4), reshape to (K*A, 4)
 
+        # 将bace_anchor -> (1,A,4) 以及grid坐标 -> (feat_h*feat_w,1,4).然后利用广播机制将二者
+        # 相加得到单层特征图上的所有anchor坐标信息(feat_h*feat_w,A,4),然后reshape为(feat_h*feat_w*A,4)
         all_anchors = base_anchors[None, :, :] + shifts[:, None, :]
         all_anchors = all_anchors.view(-1, 4)
         # first A rows correspond to A anchors of (0, 0) in feature map,
@@ -390,8 +380,11 @@ class AnchorGenerator:
         return all_anchors
 
     def valid_flags(self, featmap_sizes, pad_shape, device='cuda'):
-        """Generate valid flags of anchors in multiple feature levels.
-
+        """在多个层级的特征图上生成有效的anchor索引.
+            在pipline中,Pad只负责将单一图像填充到指定尺寸(或者能被某一个整数整除),
+            并没有将一个batch的图像统一到相同尺寸,这步操作是在...mmcv\mmcv\parallel\collate.py
+            中实现的,为了对齐最大尺寸.在Dataloader中的collate阶段会将较小图片进行padding,
+            所以有些图片可能就会产生一些无意义像素.这一步就是为了将该无意义区域的anchor过滤掉的
         Args:
             featmap_sizes (list(tuple)): List of feature map sizes in
                 multiple feature levels.
@@ -399,7 +392,7 @@ class AnchorGenerator:
             device (str): Device where the anchors will be put on.
 
         Return:
-            list(torch.Tensor): Valid flags of anchors in multiple levels.
+            list(torch.Tensor): 多层特征图上有效anchor的mask,[(f_h*f_w*A)]*self.num_levels.
         """
         assert self.num_levels == len(featmap_sizes)
         multi_level_flags = []
@@ -432,8 +425,7 @@ class AnchorGenerator:
                 Defaults to 'cuda'.
 
         Returns:
-            torch.Tensor: The valid flags of each anchor in a single level \
-                feature map.
+            torch.Tensor: 单层特征图上所有的有效anchor.(f_h*f_w*A) 1有效,0无效.
         """
         feat_h, feat_w = featmap_size
         valid_h, valid_w = valid_size
@@ -444,7 +436,7 @@ class AnchorGenerator:
         valid_y[:valid_h] = 1
         valid_xx, valid_yy = self._meshgrid(valid_x, valid_y)
         valid = valid_xx & valid_yy
-        valid = valid[:, None].expand(valid.size(0),
+        valid = valid[:, None].expand(valid.size(0),  # (f_h*f_w,1) -> (f_h*f_w,A) -> (f_h*f_w*A)
                                       num_base_anchors).contiguous().view(-1)
         return valid
 

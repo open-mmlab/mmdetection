@@ -22,14 +22,13 @@ def anchor_inside_flags(flat_anchors,
                         valid_flags,
                         img_shape,
                         allowed_border=0):
-    """Check whether the anchors are inside the border.
+    """检查anchor是否在图像边界内.
 
     Args:
         flat_anchors (torch.Tensor): Flatten anchors, shape (n, 4).
         valid_flags (torch.Tensor): An existing valid flags of anchors.
         img_shape (tuple(int)): Shape of current image.
-        allowed_border (int, optional): The border to allow the valid anchor.
-            Defaults to 0.
+        allowed_border (int, optional): 有效anchor的边界.
 
     Returns:
         torch.Tensor: Flags indicating whether the anchors are inside a \
