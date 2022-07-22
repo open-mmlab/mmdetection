@@ -35,7 +35,7 @@ def main():
 
     # init visualizer
     visualizer = VISUALIZERS.build(model.cfg.visualizer)
-    visualizer.datast_meta = model.dataset_meta
+    visualizer.dataset_meta = model.dataset_meta
 
     camera = cv2.VideoCapture(args.camera_id)
 
