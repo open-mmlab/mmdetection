@@ -5,6 +5,8 @@ import cv2
 import mmcv
 
 from mmdet.apis import inference_detector, init_detector
+from mmdet.registry import VISUALIZERS
+from mmdet.utils import register_all_modules
 
 
 def parse_args():
@@ -33,7 +35,15 @@ def main():
         ('Please specify at least one operation (save/show the '
          'video) with the argument "--out" or "--show"')
 
+    # register all modules in mmdet into the registries
+    register_all_modules()
+
+    # build the model from a config file and a checkpoint file
     model = init_detector(args.config, args.checkpoint, device=args.device)
+
+    # init visualizer
+    visualizer = VISUALIZERS.build(model.cfg.visualizer)
+    visualizer.datast_meta = model.dataset_meta
 
     video_reader = mmcv.VideoReader(args.video)
     video_writer = None
@@ -45,7 +55,14 @@ def main():
 
     for frame in mmcv.track_iter_progress(video_reader):
         result = inference_detector(model, frame)
-        frame = model.show_result(frame, result, score_thr=args.score_thr)
+        visualizer.add_datasample(
+            name='video',
+            image=frame,
+            pred_sample=result,
+            show=False,
+            pred_score_thr=args.score_thr)
+        frame = visualizer.get_image()
+
         if args.show:
             cv2.namedWindow('video', 0)
             mmcv.imshow(frame, 'video', args.wait_time)
