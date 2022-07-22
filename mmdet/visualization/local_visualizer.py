@@ -330,8 +330,10 @@ class DetLocalVisualizer(Visualizer):
             drawn_img = np.concatenate((gt_img_data, pred_img_data), axis=1)
         elif gt_img_data is not None:
             drawn_img = gt_img_data
-        else:
+        elif pred_img_data is not None:
             drawn_img = pred_img_data
+        else:
+            drawn_img = image
 
         # It is convenient for users to obtain the drawn image.
         # For example, the user wants to obtain the drawn image and
