@@ -333,6 +333,11 @@ class DetLocalVisualizer(Visualizer):
         else:
             drawn_img = pred_img_data
 
+        # It is convenient for users to obtain the drawn image.
+        # For example, the user wants to obtain the drawn image and
+        # save it as a video during video inference.
+        self.set_image(drawn_img)
+
         if show:
             self.show(drawn_img, win_name=name, wait_time=wait_time)
 
