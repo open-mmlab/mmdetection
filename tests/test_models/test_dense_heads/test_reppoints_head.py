@@ -5,8 +5,8 @@ from mmcv import ConfigDict
 from mmengine import InstanceData
 from parameterized import parameterized
 
-from mmdet.core import DetDataSample
 from mmdet.models.dense_heads import RepPointsHead
+from mmdet.structures import DetDataSample
 
 
 class TestRepPointsHead(unittest.TestCase):

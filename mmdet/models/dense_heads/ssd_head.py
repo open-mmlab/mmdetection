@@ -7,11 +7,11 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 from torch import Tensor
 
-from mmdet.core import PseudoSampler, multi_apply
-from mmdet.core.utils import (ConfigType, InstanceList, MultiConfig,
-                              OptInstanceList)
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.utils import ConfigType, InstanceList, MultiConfig, OptInstanceList
 from ..losses import smooth_l1_loss
+from ..task_modules.samplers import PseudoSampler
+from ..utils import multi_apply
 from .anchor_head import AnchorHead
 
 
@@ -323,7 +323,6 @@ class SSDHead(AnchorHead):
             batch_gt_instances,
             batch_img_metas,
             batch_gt_instances_ignore=batch_gt_instances_ignore,
-            label_channels=1,
             unmap_outputs=True)
         (labels_list, label_weights_list, bbox_targets_list, bbox_weights_list,
          avg_factor) = cls_reg_targets

@@ -10,7 +10,8 @@ from mmcv.cnn.bricks import ConvModule, DropPath
 from mmcv.runner import BaseModule, Sequential
 
 from mmdet.registry import MODELS
-from ..utils import InvertedResidual, SELayer, make_divisible
+from ..layers import InvertedResidual, SELayer
+from ..utils import make_divisible
 
 
 class EdgeResidual(BaseModule):

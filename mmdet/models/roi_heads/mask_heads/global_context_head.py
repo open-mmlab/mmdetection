@@ -6,9 +6,9 @@ from mmcv.cnn import ConvModule
 from mmengine.model import BaseModule
 from torch import Tensor
 
-from mmdet.core.utils.typing import MultiConfig, OptConfigType
-from mmdet.models.utils import ResLayer, SimplifiedBasicBlock
+from mmdet.models.layers import ResLayer, SimplifiedBasicBlock
 from mmdet.registry import MODELS
+from mmdet.utils import MultiConfig, OptConfigType
 
 
 @MODELS.register_module()

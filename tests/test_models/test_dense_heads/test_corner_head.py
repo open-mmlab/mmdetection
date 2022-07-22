@@ -4,7 +4,7 @@ from unittest import TestCase
 import torch
 from mmengine.data import InstanceData
 
-from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
+from mmdet.evaluation import bbox_overlaps
 from mmdet.models.dense_heads import CornerHead
 
 
@@ -93,7 +93,8 @@ class TestCornerHead(TestCase):
         twogt_off_loss = sum(two_gt_losses['off_loss'])
         self.assertTrue(twogt_det_loss.item() > 0,
                         'det loss should be non-zero')
-        self.assertTrue(twogt_push_loss.item() > 0,
+        # F.relu limits push loss larger than or equal to 0.
+        self.assertTrue(twogt_push_loss.item() >= 0,
                         'push loss should be non-zero')
         self.assertTrue(twogt_pull_loss.item() > 0,
                         'pull loss should be non-zero')

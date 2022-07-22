@@ -7,8 +7,8 @@ from mmengine import Config
 from mmengine.data import InstanceData
 
 from mmdet import *  # noqa
-from mmdet.core import levels_to_images
 from mmdet.models.dense_heads import PAAHead, paa_head
+from mmdet.models.utils import levels_to_images
 
 
 class TestPAAHead(TestCase):

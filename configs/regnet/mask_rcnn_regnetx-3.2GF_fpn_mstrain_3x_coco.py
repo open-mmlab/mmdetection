@@ -4,6 +4,11 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 model = dict(
+    data_preprocessor=dict(
+        # The mean and std are used in PyCls when training RegNets
+        mean=[103.53, 116.28, 123.675],
+        std=[57.375, 57.12, 58.395],
+        bgr_to_rgb=False),
     backbone=dict(
         _delete_=True,
         type='RegNet',
@@ -20,47 +25,38 @@ model = dict(
         in_channels=[96, 192, 432, 1008],
         out_channels=256,
         num_outs=5))
-img_norm_cfg = dict(
-    # The mean and std are used in PyCls when training RegNets
-    mean=[103.53, 116.28, 123.675],
-    std=[57.375, 57.12, 58.395],
-    to_rgb=False)
+
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(
+        type='LoadImageFromFile',
+        file_client_args={{_base_.file_client_args}}),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
-        type='Resize',
-        img_scale=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
-                   (1333, 768), (1333, 800)],
-        multiscale_mode='value',
+        type='RandomChoiceResize',
+        scales=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
+                (1333, 768), (1333, 800)],
         keep_ratio=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks']),
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PackDetInputs')
 ]
-test_pipeline = [
-    dict(type='LoadImageFromFile'),
+
+train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
+
+optim_wrapper = dict(
+    optimizer=dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.00005),
+    clip_grad=dict(max_norm=35, norm_type=2))
+
+# learning policy
+max_epochs = 36
+train_cfg = dict(max_epochs=max_epochs)
+param_scheduler = [
     dict(
-        type='MultiScaleFlipAug',
-        img_scale=(1333, 800),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
-        ])
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=max_epochs,
+        by_epoch=True,
+        milestones=[28, 34],
+        gamma=0.1)
 ]
-data = dict(
-    train=dict(pipeline=train_pipeline),
-    val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
-optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.00005)
-lr_config = dict(step=[28, 34])
-runner = dict(type='EpochBasedRunner', max_epochs=36)
-optimizer_config = dict(
-    _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))

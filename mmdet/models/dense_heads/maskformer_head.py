@@ -10,11 +10,11 @@ from mmcv.cnn.bricks.transformer import (build_positional_encoding,
 from mmengine.data import InstanceData, PixelData
 from torch import Tensor
 
-from mmdet.core import multi_apply, reduce_mean
-from mmdet.core.utils.typing import (ConfigType, InstanceList, OptConfigType,
-                                     OptMultiConfig, SampleList)
-from mmdet.models.utils import preprocess_panoptic_gt
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.structures import SampleList
+from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
+                         OptMultiConfig, reduce_mean)
+from ..utils import multi_apply, preprocess_panoptic_gt
 from .anchor_free_head import AnchorFreeHead
 
 
@@ -567,8 +567,8 @@ class MaskFormerHead(AnchorFreeHead):
 
         return losses
 
-    def predict(self, x: Tuple[Tensor], batch_data_samples: SampleList,
-                **kwargs) -> Tuple[Tensor]:
+    def predict(self, x: Tuple[Tensor],
+                batch_data_samples: SampleList) -> Tuple[Tensor]:
         """Test without augmentaton.
 
         Args:

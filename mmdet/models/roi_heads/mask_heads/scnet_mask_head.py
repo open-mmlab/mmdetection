@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from mmdet.models.utils import ResLayer, SimplifiedBasicBlock
+from mmdet.models.layers import ResLayer, SimplifiedBasicBlock
 from mmdet.registry import MODELS
 from .fcn_mask_head import FCNMaskHead
 

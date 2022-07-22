@@ -50,4 +50,4 @@ model = dict(
         norm_cfg=norm_cfg,
         skip_inds=[(0, 1, 2, 3), (0, 1, 2), (0, 1), (0, ), ()]))
 
-evaluation = dict(interval=2)
+train_cfg = dict(val_interval=2)

@@ -7,7 +7,7 @@ from mmcv.ops.modulated_deform_conv import ModulatedDeformConv2d
 from mmcv.runner import BaseModule
 
 from mmdet.registry import MODELS
-from ..utils import DyReLU
+from ..layers import DyReLU
 
 # Reference:
 # https://github.com/microsoft/DynamicHead

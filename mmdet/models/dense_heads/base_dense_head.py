@@ -12,10 +12,11 @@ from mmengine.data import InstanceData
 from mmengine.model import BaseModule
 from torch import Tensor
 
-from mmdet.core.post_processing.merge_augs import merge_aug_results
-from mmdet.core.utils import (InstanceList, OptMultiConfig, SampleList,
-                              filter_scores_and_topk, select_single_mlvl)
-from ..utils.misc import unpack_gt_instances
+from mmdet.structures import SampleList
+from mmdet.utils import InstanceList, OptMultiConfig
+from ..test_time_augs import merge_aug_results
+from ..utils import (filter_scores_and_topk, select_single_mlvl,
+                     unpack_gt_instances)
 
 
 class BaseDenseHead(BaseModule, metaclass=ABCMeta):
@@ -57,6 +58,9 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
     def __init__(self, init_cfg: OptMultiConfig = None) -> None:
         super().__init__(init_cfg=init_cfg)
+        # `_raw_positive_infos` will be used in `get_positive_infos`, which
+        # can get positive information.
+        self._raw_positive_infos = dict()
 
     def init_weights(self) -> None:
         """Initialize the weights."""
@@ -67,8 +71,33 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             if hasattr(m, 'conv_offset'):
                 constant_init(m.conv_offset, 0)
 
-    def loss(self, x: Tuple[Tensor], batch_data_samples: SampleList,
-             **kwargs) -> dict:
+    def get_positive_infos(self) -> InstanceList:
+        """Get positive information from sampling results.
+
+        Returns:
+            list[:obj:`InstanceData`]: Positive information of each image,
+            usually including positive bboxes, positive labels, positive
+            priors, etc.
+        """
+        if len(self._raw_positive_infos) == 0:
+            return None
+
+        sampling_results = self._raw_positive_infos.get(
+            'sampling_results', None)
+        assert sampling_results is not None
+        positive_infos = []
+        for sampling_result in enumerate(sampling_results):
+            pos_info = InstanceData()
+            pos_info.bboxes = sampling_result.pos_gt_bboxes
+            pos_info.labels = sampling_result.pos_gt_labels
+            pos_info.priors = sampling_result.pos_priors
+            pos_info.pos_assigned_gt_inds = \
+                sampling_result.pos_assigned_gt_inds
+            pos_info.pos_inds = sampling_result.pos_inds
+            positive_infos.append(pos_info)
+        return positive_infos
+
+    def loss(self, x: Tuple[Tensor], batch_data_samples: SampleList) -> dict:
         """Perform forward propagation and loss calculation of the detection
         head on the features of the upstream network.
 
@@ -99,11 +128,12 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         head."""
         pass
 
-    def loss_and_predict(self,
-                         x: Tuple[Tensor],
-                         batch_data_samples: SampleList,
-                         proposal_cfg: Optional[ConfigDict] = None,
-                         **kwargs) -> Tuple[dict, InstanceList]:
+    def loss_and_predict(
+        self,
+        x: Tuple[Tensor],
+        batch_data_samples: SampleList,
+        proposal_cfg: Optional[ConfigDict] = None
+    ) -> Tuple[dict, InstanceList]:
         """Perform forward propagation of the head, then calculate loss and
         predictions from the features and data samples.
 
@@ -174,8 +204,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                         batch_img_metas: Optional[List[dict]] = None,
                         cfg: Optional[ConfigDict] = None,
                         rescale: bool = False,
-                        with_nms: bool = True,
-                        **kwargs) -> InstanceList:
+                        with_nms: bool = True) -> InstanceList:
         """Transform a batch of output features extracted from the head into
         bbox results.
 
@@ -236,10 +265,13 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
         for img_id in range(len(batch_img_metas)):
             img_meta = batch_img_metas[img_id]
-            cls_score_list = select_single_mlvl(cls_scores, img_id)
-            bbox_pred_list = select_single_mlvl(bbox_preds, img_id)
+            cls_score_list = select_single_mlvl(
+                cls_scores, img_id, detach=True)
+            bbox_pred_list = select_single_mlvl(
+                bbox_preds, img_id, detach=True)
             if with_score_factors:
-                score_factor_list = select_single_mlvl(score_factors, img_id)
+                score_factor_list = select_single_mlvl(
+                    score_factors, img_id, detach=True)
             else:
                 score_factor_list = [None for _ in range(num_levels)]
 
@@ -251,8 +283,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 img_meta=img_meta,
                 cfg=cfg,
                 rescale=rescale,
-                with_nms=with_nms,
-                **kwargs)
+                with_nms=with_nms)
             result_list.append(results)
         return result_list
 
@@ -264,8 +295,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                                 img_meta: dict,
                                 cfg: ConfigDict,
                                 rescale: bool = False,
-                                with_nms: bool = True,
-                                **kwargs) -> InstanceData:
+                                with_nms: bool = True) -> InstanceData:
         """Transform a single image's features extracted from the head into
         bbox results.
 
@@ -387,16 +417,14 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             cfg=cfg,
             rescale=rescale,
             with_nms=with_nms,
-            img_meta=img_meta,
-            **kwargs)
+            img_meta=img_meta)
 
     def _bbox_post_process(self,
                            results: InstanceData,
                            cfg: ConfigDict,
                            rescale: bool = False,
                            with_nms: bool = True,
-                           img_meta: Optional[dict] = None,
-                           **kwargs) -> InstanceData:
+                           img_meta: Optional[dict] = None) -> InstanceData:
         """bbox post-processing method.
 
         The boxes would be rescaled to the original image scale and do

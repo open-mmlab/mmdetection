@@ -5,6 +5,7 @@ from .atss_head import ATSSHead
 from .autoassign_head import AutoAssignHead
 from .cascade_rpn_head import CascadeRPNHead, StageCascadeRPNHead
 from .centernet_head import CenterNetHead
+from .centernet_update_head import CenterNetUpdateHead
 from .centripetal_head import CentripetalHead
 from .corner_head import CornerHead
 from .ddod_head import DDODHead
@@ -37,7 +38,7 @@ from .solov2_head import SOLOV2Head
 from .ssd_head import SSDHead
 from .tood_head import TOODHead
 from .vfnet_head import VFNetHead
-from .yolact_head import YOLACTHead, YOLACTProtonet, YOLACTSegmHead
+from .yolact_head import YOLACTHead, YOLACTProtonet
 from .yolo_head import YOLOV3Head
 from .yolof_head import YOLOFHead
 from .yolox_head import YOLOXHead
@@ -48,11 +49,11 @@ __all__ = [
     'SSDHead', 'FCOSHead', 'RepPointsHead', 'FoveaHead',
     'FreeAnchorRetinaHead', 'ATSSHead', 'FSAFHead', 'NASFCOSHead',
     'PISARetinaHead', 'PISASSDHead', 'GFLHead', 'CornerHead', 'YOLACTHead',
-    'YOLACTSegmHead', 'YOLACTProtonet', 'YOLOV3Head', 'PAAHead',
-    'SABLRetinaHead', 'CentripetalHead', 'VFNetHead', 'StageCascadeRPNHead',
-    'CascadeRPNHead', 'EmbeddingRPNHead', 'LDHead', 'CascadeRPNHead',
-    'AutoAssignHead', 'DETRHead', 'YOLOFHead', 'DeformableDETRHead',
-    'SOLOHead', 'DecoupledSOLOHead', 'CenterNetHead', 'YOLOXHead',
+    'YOLACTProtonet', 'YOLOV3Head', 'PAAHead', 'SABLRetinaHead',
+    'CentripetalHead', 'VFNetHead', 'StageCascadeRPNHead', 'CascadeRPNHead',
+    'EmbeddingRPNHead', 'LDHead', 'CascadeRPNHead', 'AutoAssignHead',
+    'DETRHead', 'YOLOFHead', 'DeformableDETRHead', 'SOLOHead',
+    'DecoupledSOLOHead', 'CenterNetHead', 'YOLOXHead',
     'DecoupledSOLOLightHead', 'LADHead', 'TOODHead', 'MaskFormerHead',
-    'Mask2FormerHead', 'SOLOV2Head', 'DDODHead'
+    'Mask2FormerHead', 'SOLOV2Head', 'DDODHead', 'CenterNetUpdateHead'
 ]

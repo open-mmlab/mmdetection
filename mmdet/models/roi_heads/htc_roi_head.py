@@ -5,12 +5,14 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor
 
-from mmdet.core import bbox2roi, merge_aug_masks
-from mmdet.core.utils import (InstanceList, OptConfigType, SampleList,
-                              SamplingResultList)
+from mmdet.models.test_time_augs import merge_aug_masks
 from mmdet.registry import MODELS
-from ..utils.brick_wrappers import adaptive_avg_pool2d
-from ..utils.misc import empty_instances, unpack_gt_instances
+from mmdet.structures import SampleList
+from mmdet.structures.bbox import bbox2roi
+from mmdet.utils import InstanceList, OptConfigType
+from ..layers import adaptive_avg_pool2d
+from ..task_modules.samplers import SamplingResult
+from ..utils import empty_instances, unpack_gt_instances
 from .cascade_roi_head import CascadeRoIHead
 
 
@@ -108,7 +110,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
     def bbox_loss(self,
                   stage: int,
                   x: Tuple[Tensor],
-                  sampling_results: SamplingResultList,
+                  sampling_results: List[SamplingResult],
                   semantic_feat: Optional[Tensor] = None) -> dict:
         """Run forward function and calculate loss for box head in training.
 
@@ -169,7 +171,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         Returns:
             dict: Usually returns a dictionary with keys:
 
-                - `mask_pred` (Tensor): Mask prediction.
+                - `mask_preds` (Tensor): Mask prediction.
         """
         mask_roi_extractor = self.mask_roi_extractor[stage]
         mask_head = self.mask_head[stage]
@@ -195,30 +197,31 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
                 for i in range(stage):
                     last_feat = self.mask_head[i](
                         mask_feats, last_feat, return_logits=False)
-                mask_pred = mask_head(mask_feats, last_feat, return_feat=False)
+                mask_preds = mask_head(
+                    mask_feats, last_feat, return_feat=False)
             else:
-                mask_pred = mask_head(mask_feats, return_feat=False)
+                mask_preds = mask_head(mask_feats, return_feat=False)
 
-            mask_results = dict(mask_pred=mask_pred)
+            mask_results = dict(mask_preds=mask_preds)
         else:
             aug_masks = []
             last_feat = None
             for i in range(self.num_stages):
                 mask_head = self.mask_head[i]
                 if self.mask_info_flow:
-                    mask_pred, last_feat = mask_head(mask_feats, last_feat)
+                    mask_preds, last_feat = mask_head(mask_feats, last_feat)
                 else:
-                    mask_pred = mask_head(mask_feats)
-            aug_masks.append(mask_pred)
+                    mask_preds = mask_head(mask_feats)
+            aug_masks.append(mask_preds)
 
-            mask_results = dict(mask_pred=aug_masks)
+            mask_results = dict(mask_preds=aug_masks)
 
         return mask_results
 
     def mask_loss(self,
                   stage: int,
                   x: Tuple[Tensor],
-                  sampling_results: SamplingResultList,
+                  sampling_results: List[SamplingResult],
                   batch_gt_instances: InstanceList,
                   semantic_feat: Optional[Tensor] = None) -> dict:
         """Run forward function and calculate loss for mask head in training.
@@ -236,7 +239,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         Returns:
             dict: Usually returns a dictionary with keys:
 
-                - `mask_pred` (Tensor): Mask prediction.
+                - `mask_preds` (Tensor): Mask prediction.
                 - `loss_mask` (dict): A dictionary of mask loss components.
         """
         pos_rois = bbox2roi([res.pos_priors for res in sampling_results])
@@ -249,7 +252,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
 
         mask_head = self.mask_head[stage]
         mask_loss_and_target = mask_head.loss_and_target(
-            mask_pred=mask_results['mask_pred'],
+            mask_preds=mask_results['mask_preds'],
             sampling_results=sampling_results,
             batch_gt_instances=batch_gt_instances,
             rcnn_train_cfg=self.train_cfg[stage])
@@ -258,7 +261,7 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         return mask_results
 
     def loss(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
-             batch_data_samples: SampleList, **kwargs) -> dict:
+             batch_data_samples: SampleList) -> dict:
         """Perform forward propagation and loss calculation of the detection
         roi on the features of the upstream network.
 
@@ -495,8 +498,8 @@ class HybridTaskCascadeRoIHead(CascadeRoIHead):
         # split batch mask prediction back to each image
         aug_masks = [[
             mask.sigmoid().detach()
-            for mask in mask_pred.split(num_mask_rois_per_img, 0)
-        ] for mask_pred in mask_results['mask_pred']]
+            for mask in mask_preds.split(num_mask_rois_per_img, 0)
+        ] for mask_preds in mask_results['mask_preds']]
 
         merged_masks = []
         for i in range(num_imgs):

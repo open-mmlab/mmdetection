@@ -1,12 +1,21 @@
 _base_ = [
     '../_base_/models/retinanet_r50_fpn.py',
+    '../_base_/schedules/schedule_1x.py',
     '../_base_/datasets/coco_detection.py', '../_base_/default_runtime.py'
 ]
 
-cudnn_benchmark = True
+image_size = (896, 896)
+batch_augments = [dict(type='BatchFixedSizePad', size=image_size)]
 norm_cfg = dict(type='BN', requires_grad=True)
 checkpoint = 'https://download.openmmlab.com/mmclassification/v0/efficientnet/efficientnet-b3_3rdparty_8xb32-aa_in1k_20220119-5b4887a0.pth'  # noqa
 model = dict(
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        bgr_to_rgb=True,
+        pad_size_divisor=32,
+        batch_augments=batch_augments),
     backbone=dict(
         _delete_=True,
         type='EfficientNet',
@@ -31,62 +40,56 @@ model = dict(
     train_cfg=dict(assigner=dict(neg_iou_thr=0.5)))
 
 # dataset settings
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
-img_size = (896, 896)
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(
+        type='LoadImageFromFile',
+        file_client_args={{_base_.file_client_args}}),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
-        type='Resize',
-        img_scale=img_size,
+        type='RandomResize',
+        scale=image_size,
         ratio_range=(0.8, 1.2),
         keep_ratio=True),
-    dict(type='RandomCrop', crop_size=img_size),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size=img_size),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels']),
+    dict(type='RandomCrop', crop_size=image_size),
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
     dict(
-        type='MultiScaleFlipAug',
-        img_scale=img_size,
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size=img_size),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
-        ])
+        type='LoadImageFromFile',
+        file_client_args={{_base_.file_client_args}}),
+    dict(type='Resize', scale=image_size, keep_ratio=True),
+    dict(
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
 ]
-data = dict(
-    samples_per_gpu=4,
-    workers_per_gpu=4,
-    train=dict(pipeline=train_pipeline),
-    val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
+train_dataloader = dict(
+    batch_size=4, num_workers=4, dataset=dict(pipeline=train_pipeline))
+val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
+test_dataloader = val_dataloader
+
 # optimizer
-optimizer_config = dict(grad_clip=None)
-optimizer = dict(
-    type='SGD',
-    lr=0.04,
-    momentum=0.9,
-    weight_decay=0.0001,
+optim_wrapper = dict(
+    optimizer=dict(lr=0.04),
     paramwise_cfg=dict(norm_decay_mult=0, bypass_duplicate=True))
+
 # learning policy
-lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=1000,
-    warmup_ratio=0.1,
-    step=[8, 11])
-# runtime settings
-runner = dict(type='EpochBasedRunner', max_epochs=12)
+max_epochs = 12
+param_scheduler = [
+    dict(type='LinearLR', start_factor=0.1, by_epoch=False, begin=0, end=1000),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=max_epochs,
+        by_epoch=True,
+        milestones=[8, 11],
+        gamma=0.1)
+]
+train_cfg = dict(max_epochs=max_epochs)
+
+# cudnn_benchmark=True can accelerate fix-size training
+env_cfg = dict(cudnn_benchmark=True)
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.

@@ -36,5 +36,16 @@ model = dict(
         in_channels=[32, 64, 128, 256],
         out_channels=256))
 # learning policy
-lr_config = dict(step=[16, 19])
-runner = dict(type='EpochBasedRunner', max_epochs=20)
+max_epochs = 20
+train_cfg = dict(max_epochs=max_epochs)
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=max_epochs,
+        by_epoch=True,
+        milestones=[16, 19],
+        gamma=0.1)
+]

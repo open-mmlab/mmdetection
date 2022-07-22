@@ -8,8 +8,8 @@ from matplotlib.ticker import MultipleLocator
 from mmcv import Config, DictAction
 from mmcv.ops import nms
 
-from mmdet.core.evaluation.bbox_overlaps import bbox_overlaps
 from mmdet.datasets import build_dataset
+from mmdet.evaluation import bbox_overlaps
 from mmdet.utils import replace_cfg_vals, update_data_root
 
 

@@ -10,11 +10,10 @@ from mmcv.cnn import ConvModule
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import mask_matrix_nms, multi_apply
-from mmdet.core.utils import (ConfigType, InstanceList, MultiConfig,
-                              OptConfigType, center_of_mass,
-                              generate_coordinate)
 from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, InstanceList, MultiConfig, OptConfigType
+from ..layers import mask_matrix_nms
+from ..utils import center_of_mass, generate_coordinate, multi_apply
 from .base_mask_head import BaseMaskHead
 
 
@@ -209,7 +208,7 @@ class SOLOHead(BaseMaskHead):
 
             mask_feat = F.interpolate(
                 mask_feat, scale_factor=2, mode='bilinear')
-            mask_pred = self.conv_mask_list[i](mask_feat)
+            mask_preds = self.conv_mask_list[i](mask_feat)
 
             # cls branch
             for j, cls_layer in enumerate(self.cls_convs):
@@ -224,15 +223,15 @@ class SOLOHead(BaseMaskHead):
             if not self.training:
                 feat_wh = feats[0].size()[-2:]
                 upsampled_size = (feat_wh[0] * 2, feat_wh[1] * 2)
-                mask_pred = F.interpolate(
-                    mask_pred.sigmoid(), size=upsampled_size, mode='bilinear')
+                mask_preds = F.interpolate(
+                    mask_preds.sigmoid(), size=upsampled_size, mode='bilinear')
                 cls_pred = cls_pred.sigmoid()
                 # get local maximum
                 local_max = F.max_pool2d(cls_pred, 2, stride=1, padding=1)
                 keep_mask = local_max[:, :, :-1, :-1] == cls_pred
                 cls_pred = cls_pred * keep_mask
 
-            mlvl_mask_preds.append(mask_pred)
+            mlvl_mask_preds.append(mask_preds)
             mlvl_cls_preds.append(cls_pred)
         return mlvl_mask_preds, mlvl_cls_preds
 
@@ -1142,7 +1141,7 @@ class DecoupledSOLOLightHead(DecoupledSOLOHead):
         self.cls_convs = nn.ModuleList()
 
         for i in range(self.stacked_convs):
-            if self.dcn_cfg is not None\
+            if self.dcn_cfg is not None \
                     and i == self.stacked_convs - 1:
                 conv_cfg = self.dcn_cfg
             else:

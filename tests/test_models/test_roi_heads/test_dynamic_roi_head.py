@@ -3,6 +3,7 @@ import unittest
 from unittest import TestCase
 
 import torch
+from parameterized import parameterized
 
 from mmdet.registry import MODELS
 from mmdet.testing import demo_mm_inputs, demo_mm_proposals, get_roi_head_cfg
@@ -20,19 +21,20 @@ class TestDynamicRoIHead(TestCase):
         roi_head = MODELS.build(self.roi_head_cfg)
         self.assertTrue(roi_head.with_bbox)
 
-    def test_dynamic_roi_head_loss(self):
+    @parameterized.expand(['cpu', 'cuda'])
+    def test_dynamic_roi_head_loss(self, device):
         """Tests trident roi head predict."""
-        if not torch.cuda.is_available():
+        if not torch.cuda.is_available() and device == 'cuda':
             # RoI pooling only support in GPU
             return unittest.skip('test requires GPU and torch+cuda')
         roi_head = MODELS.build(self.roi_head_cfg)
-        roi_head = roi_head.cuda()
+        roi_head = roi_head.to(device=device)
         s = 256
         feats = []
         for i in range(len(roi_head.bbox_roi_extractor.featmap_strides)):
             feats.append(
                 torch.rand(1, 256, s // (2**(i + 2)),
-                           s // (2**(i + 2))).to(device='cuda'))
+                           s // (2**(i + 2))).to(device=device))
 
         image_shapes = [(3, s, s)]
         packed_inputs = demo_mm_inputs(
@@ -46,8 +48,8 @@ class TestDynamicRoIHead(TestCase):
         batch_data_samples = []
         for i in range(len(packed_inputs)):
             batch_data_samples.append(
-                packed_inputs[i]['data_sample'].to(device='cuda'))
-            proposals_list[i] = proposals_list[i].to(device='cuda')
+                packed_inputs[i]['data_sample'].to(device=device))
+            proposals_list[i] = proposals_list[i].to(device=device)
         out = roi_head.loss(feats, proposals_list, batch_data_samples)
         loss_cls = out['loss_cls']
         loss_bbox = out['loss_bbox']
@@ -65,8 +67,8 @@ class TestDynamicRoIHead(TestCase):
         batch_data_samples = []
         for i in range(len(packed_inputs)):
             batch_data_samples.append(
-                packed_inputs[i]['data_sample'].to(device='cuda'))
-            proposals_list[i] = proposals_list[i].to(device='cuda')
+                packed_inputs[i]['data_sample'].to(device=device))
+            proposals_list[i] = proposals_list[i].to(device=device)
         out = roi_head.loss(feats, proposals_list, batch_data_samples)
         empty_cls_loss = out['loss_cls']
         empty_bbox_loss = out['loss_bbox']

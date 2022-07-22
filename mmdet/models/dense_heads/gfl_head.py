@@ -9,12 +9,14 @@ from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import (ConfigType, InstanceList, MultiConfig, OptConfigType,
-                        OptInstanceList, PseudoSampler, anchor_inside_flags,
-                        bbox_overlaps, images_to_levels, multi_apply,
-                        reduce_mean, unmap)
-from mmdet.core.utils import filter_scores_and_topk
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.structures.bbox import bbox_overlaps
+from mmdet.utils import (ConfigType, InstanceList, MultiConfig, OptConfigType,
+                         OptInstanceList, reduce_mean)
+from ..task_modules.prior_generators import anchor_inside_flags
+from ..task_modules.samplers import PseudoSampler
+from ..utils import (filter_scores_and_topk, images_to_levels, multi_apply,
+                     unmap)
 from .anchor_head import AnchorHead
 
 
@@ -399,8 +401,7 @@ class GFLHead(AnchorHead):
                                 img_meta: dict,
                                 cfg: ConfigDict,
                                 rescale: bool = False,
-                                with_nms: bool = True,
-                                **kwargs) -> InstanceData:
+                                with_nms: bool = True) -> InstanceData:
         """Transform a single image's features extracted from the head into
         bbox results.
 
@@ -486,8 +487,7 @@ class GFLHead(AnchorHead):
             cfg=cfg,
             rescale=rescale,
             with_nms=with_nms,
-            img_meta=img_meta,
-            **kwargs)
+            img_meta=img_meta)
 
     def get_targets(self,
                     anchor_list: List[Tensor],

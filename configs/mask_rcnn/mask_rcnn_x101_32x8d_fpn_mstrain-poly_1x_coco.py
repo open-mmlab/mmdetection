@@ -1,11 +1,12 @@
 _base_ = './mask_rcnn_r101_fpn_1x_coco.py'
-preprocess_cfg = dict(
-    mean=[103.530, 116.280, 123.675],
-    std=[57.375, 57.120, 58.395],
-    to_rgb=False,
-    pad_size_divisor=32)
+
 model = dict(
-    preprocess_cfg=preprocess_cfg,
+    # ResNeXt-101-32x8d model trained with Caffe2 at FB,
+    # so the mean and std need to be changed.
+    data_preprocessor=dict(
+        mean=[103.530, 116.280, 123.675],
+        std=[57.375, 57.120, 58.395],
+        bgr_to_rgb=False),
     backbone=dict(
         type='ResNeXt',
         depth=101,
@@ -20,10 +21,10 @@ model = dict(
             type='Pretrained',
             checkpoint='open-mmlab://detectron2/resnext101_32x8d')))
 
-dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(
+        type='LoadImageFromFile',
+        file_client_args={{_base_.file_client_args}}),
     dict(
         type='LoadAnnotations',
         with_bbox=True,
@@ -31,8 +32,9 @@ train_pipeline = [
         poly2mask=False),
     dict(
         type='RandomChoiceResize',
-        img_scale=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
-                   (1333, 768), (1333, 800)]),
+        scales=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
+                (1333, 768), (1333, 800)],
+        keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs'),
 ]

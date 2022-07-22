@@ -12,15 +12,13 @@ from mmengine.data import InstanceData
 from mmengine.model import BaseModule
 from torch import Tensor
 
-from mmdet.core import multi_apply
-from mmdet.core.utils import (ConfigType, InstanceList, OptConfigType,
-                              OptInstanceList, OptMultiConfig)
 from mmdet.registry import MODELS
+from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
+                         OptInstanceList, OptMultiConfig)
 from ..builder import build_loss
-from ..utils import gaussian_radius, gen_gaussian_target
-from ..utils.gaussian_target import (gather_feat, get_local_maximum,
-                                     get_topk_from_heatmap,
-                                     transpose_and_gather_feat)
+from ..utils import (gather_feat, gaussian_radius, gen_gaussian_target,
+                     get_local_maximum, get_topk_from_heatmap, multi_apply,
+                     transpose_and_gather_feat)
 from .base_dense_head import BaseDenseHead
 
 

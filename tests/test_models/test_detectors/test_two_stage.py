@@ -5,7 +5,7 @@ from unittest import TestCase
 import torch
 from parameterized import parameterized
 
-from mmdet.core import DetDataSample
+from mmdet.structures import DetDataSample
 from mmdet.testing import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
 
@@ -17,7 +17,8 @@ class TestTwoStageBBox(TestCase):
 
     @parameterized.expand([
         'faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py',
-        'cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py'
+        'cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py',
+        'sparse_rcnn/sparse_rcnn_r50_fpn_1x_coco.py',
     ])
     def test_init(self, cfg_file):
         model = get_detector_cfg(cfg_file)
@@ -34,13 +35,15 @@ class TestTwoStageBBox(TestCase):
         self.assertTrue(detector.roi_head)
 
         # if rpn.num_classes > 1, force set rpn.num_classes = 1
-        model.rpn_head.num_classes = 2
-        detector = build_detector(model)
-        self.assertEqual(detector.rpn_head.num_classes, 1)
+        if hasattr(model.rpn_head, 'num_classes'):
+            model.rpn_head.num_classes = 2
+            detector = build_detector(model)
+            self.assertEqual(detector.rpn_head.num_classes, 1)
 
     @parameterized.expand([
         'faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py',
-        'cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py'
+        'cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py',
+        'sparse_rcnn/sparse_rcnn_r50_fpn_1x_coco.py',
     ])
     def test_two_stage_forward_loss_mode(self, cfg_file):
         model = get_detector_cfg(cfg_file)
@@ -66,7 +69,8 @@ class TestTwoStageBBox(TestCase):
 
     @parameterized.expand([
         'faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py',
-        'cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py'
+        'cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py',
+        'sparse_rcnn/sparse_rcnn_r50_fpn_1x_coco.py',
     ])
     def test_single_stage_forward_predict_mode(self, cfg_file):
         model = get_detector_cfg(cfg_file)
@@ -96,7 +100,8 @@ class TestTwoStageBBox(TestCase):
 
     @parameterized.expand([
         'faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py',
-        'cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py'
+        'cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py',
+        'sparse_rcnn/sparse_rcnn_r50_fpn_1x_coco.py',
     ])
     def test_single_stage_forward_tensor_mode(self, cfg_file):
         model = get_detector_cfg(cfg_file)
@@ -129,7 +134,8 @@ class TestTwoStageMask(TestCase):
 
     @parameterized.expand([
         'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py',
-        'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py'
+        'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
+        'queryinst/queryinst_r50_fpn_1x_coco.py'
     ])
     def test_init(self, cfg_file):
         model = get_detector_cfg(cfg_file)
@@ -147,13 +153,15 @@ class TestTwoStageMask(TestCase):
         self.assertTrue(detector.roi_head.mask_head)
 
         # if rpn.num_classes > 1, force set rpn.num_classes = 1
-        model.rpn_head.num_classes = 2
-        detector = build_detector(model)
-        self.assertEqual(detector.rpn_head.num_classes, 1)
+        if hasattr(model.rpn_head, 'num_classes'):
+            model.rpn_head.num_classes = 2
+            detector = build_detector(model)
+            self.assertEqual(detector.rpn_head.num_classes, 1)
 
     @parameterized.expand([
         'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py',
-        'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py'
+        'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
+        'queryinst/queryinst_r50_fpn_1x_coco.py'
     ])
     def test_single_stage_forward_loss_mode(self, cfg_file):
         model = get_detector_cfg(cfg_file)
@@ -179,7 +187,8 @@ class TestTwoStageMask(TestCase):
 
     @parameterized.expand([
         'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py',
-        'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py'
+        'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
+        'queryinst/queryinst_r50_fpn_1x_coco.py'
     ])
     def test_single_stage_forward_predict_mode(self, cfg_file):
         model = get_detector_cfg(cfg_file)
@@ -208,7 +217,8 @@ class TestTwoStageMask(TestCase):
 
     @parameterized.expand([
         'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py',
-        'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py'
+        'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
+        'queryinst/queryinst_r50_fpn_1x_coco.py'
     ])
     def test_single_stage_forward_tensor_mode(self, cfg_file):
         model = get_detector_cfg(cfg_file)

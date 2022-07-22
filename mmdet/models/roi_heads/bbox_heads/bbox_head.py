@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -10,12 +10,12 @@ from mmengine.model import BaseModule
 from torch import Tensor
 from torch.nn.modules.utils import _pair
 
-from mmdet.core import multi_apply, multiclass_nms
-from mmdet.core.utils import (ConfigType, InstanceList, OptMultiConfig,
-                              SamplingResultList)
+from mmdet.models.layers import build_linear_layer, multiclass_nms
 from mmdet.models.losses import accuracy
-from mmdet.models.utils import build_linear_layer, empty_instances
+from mmdet.models.task_modules.samplers import SamplingResult
+from mmdet.models.utils import empty_instances, multi_apply
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.utils import ConfigType, InstanceList, OptMultiConfig
 
 
 @MODELS.register_module()
@@ -102,16 +102,19 @@ class BBoxHead(BaseModule):
     # TODO: Create a SeasawBBoxHead to simplified logic in BBoxHead
     @property
     def custom_cls_channels(self) -> bool:
+        """get custom_cls_channels from loss_cls."""
         return getattr(self.loss_cls, 'custom_cls_channels', False)
 
     # TODO: Create a SeasawBBoxHead to simplified logic in BBoxHead
     @property
     def custom_activation(self) -> bool:
+        """get custom_activation from loss_cls."""
         return getattr(self.loss_cls, 'custom_activation', False)
 
     # TODO: Create a SeasawBBoxHead to simplified logic in BBoxHead
     @property
     def custom_accuracy(self) -> bool:
+        """get custom_accuracy from loss_cls."""
         return getattr(self.loss_cls, 'custom_accuracy', False)
 
     def forward(self, x: Tuple[Tensor]) -> tuple:
@@ -143,9 +146,9 @@ class BBoxHead(BaseModule):
         bbox_pred = self.fc_reg(x) if self.with_reg else None
         return cls_score, bbox_pred
 
-    def _get_target_single(self, pos_priors: Tensor, neg_priors: Tensor,
-                           pos_gt_bboxes: Tensor, pos_gt_labels: Tensor,
-                           cfg: ConfigDict) -> tuple:
+    def _get_targets_single(self, pos_priors: Tensor, neg_priors: Tensor,
+                            pos_gt_bboxes: Tensor, pos_gt_labels: Tensor,
+                            cfg: ConfigDict) -> tuple:
         """Calculate the ground truth for proposals in the single image
         according to the sampling results.
 
@@ -212,7 +215,7 @@ class BBoxHead(BaseModule):
         return labels, label_weights, bbox_targets, bbox_weights
 
     def get_targets(self,
-                    sampling_results: SamplingResultList,
+                    sampling_results: List[SamplingResult],
                     rcnn_train_cfg: ConfigDict,
                     concat: bool = True) -> tuple:
         """Calculate the ground truth for all samples in a batch according to
@@ -220,7 +223,7 @@ class BBoxHead(BaseModule):
 
         Almost the same as the implementation in bbox_head, we passed
         additional parameters pos_inds_list and neg_inds_list to
-        `_get_target_single` function.
+        `_get_targets_single` function.
 
         Args:
             sampling_results (List[obj:SamplingResult]): Assign results of
@@ -233,31 +236,31 @@ class BBoxHead(BaseModule):
             Tuple[Tensor]: Ground truth for proposals in a single image.
             Containing the following list of Tensors:
 
-                - labels (list[Tensor],Tensor): Gt_labels for all
-                  proposals in a batch, each tensor in list has
-                  shape (num_proposals,) when `concat=False`, otherwise
-                  just a single tensor has shape (num_all_proposals,).
-                - label_weights (list[Tensor]): Labels_weights for
-                  all proposals in a batch, each tensor in list has
-                  shape (num_proposals,) when `concat=False`, otherwise
-                  just a single tensor has shape (num_all_proposals,).
-                - bbox_targets (list[Tensor],Tensor): Regression target
-                  for all proposals in a batch, each tensor in list
-                  has shape (num_proposals, 4) when `concat=False`,
-                  otherwise just a single tensor has shape
-                  (num_all_proposals, 4), the last dimension 4 represents
-                  [tl_x, tl_y, br_x, br_y].
-                - bbox_weights (list[tensor],Tensor): Regression weights for
-                  all proposals in a batch, each tensor in list has shape
-                  (num_proposals, 4) when `concat=False`, otherwise just a
-                  single tensor has shape (num_all_proposals, 4).
+            - labels (list[Tensor],Tensor): Gt_labels for all
+                proposals in a batch, each tensor in list has
+                shape (num_proposals,) when `concat=False`, otherwise
+                just a single tensor has shape (num_all_proposals,).
+            - label_weights (list[Tensor]): Labels_weights for
+                all proposals in a batch, each tensor in list has
+                shape (num_proposals,) when `concat=False`, otherwise
+                just a single tensor has shape (num_all_proposals,).
+            - bbox_targets (list[Tensor],Tensor): Regression target
+                for all proposals in a batch, each tensor in list
+                has shape (num_proposals, 4) when `concat=False`,
+                otherwise just a single tensor has shape
+                (num_all_proposals, 4), the last dimension 4 represents
+                [tl_x, tl_y, br_x, br_y].
+            - bbox_weights (list[tensor],Tensor): Regression weights for
+                all proposals in a batch, each tensor in list has shape
+                (num_proposals, 4) when `concat=False`, otherwise just a
+                single tensor has shape (num_all_proposals, 4).
         """
         pos_priors_list = [res.pos_priors for res in sampling_results]
         neg_priors_list = [res.neg_priors for res in sampling_results]
         pos_gt_bboxes_list = [res.pos_gt_bboxes for res in sampling_results]
         pos_gt_labels_list = [res.pos_gt_labels for res in sampling_results]
         labels, label_weights, bbox_targets, bbox_weights = multi_apply(
-            self._get_target_single,
+            self._get_targets_single,
             pos_priors_list,
             neg_priors_list,
             pos_gt_bboxes_list,
@@ -275,8 +278,9 @@ class BBoxHead(BaseModule):
                         cls_score: Tensor,
                         bbox_pred: Tensor,
                         rois: Tensor,
-                        sampling_results: SamplingResultList,
+                        sampling_results: List[SamplingResult],
                         rcnn_train_cfg: ConfigDict,
+                        concat: bool = True,
                         reduction_override: Optional[str] = None) -> dict:
         """Calculate the loss based on the features extracted by the bbox head.
 
@@ -294,6 +298,8 @@ class BBoxHead(BaseModule):
             sampling_results (List[obj:SamplingResult]): Assign results of
                 all images in a batch after sampling.
             rcnn_train_cfg (obj:ConfigDict): `train_cfg` of RCNN.
+            concat (bool): Whether to concatenate the results of all
+                the images in a single batch. Defaults to True.
             reduction_override (str, optional): The reduction
                 method used to override the original reduction
                 method of the loss. Options are "none",
@@ -304,8 +310,57 @@ class BBoxHead(BaseModule):
                 The targets are only used for cascade rcnn.
         """
 
-        cls_reg_targets = self.get_targets(sampling_results, rcnn_train_cfg)
-        (labels, label_weights, bbox_targets, bbox_weights) = cls_reg_targets
+        cls_reg_targets = self.get_targets(
+            sampling_results, rcnn_train_cfg, concat=concat)
+        losses = self.loss(
+            cls_score,
+            bbox_pred,
+            rois,
+            *cls_reg_targets,
+            reduction_override=reduction_override)
+
+        # cls_reg_targets is only for cascade rcnn
+        return dict(loss_bbox=losses, bbox_targets=cls_reg_targets)
+
+    def loss(self,
+             cls_score: Tensor,
+             bbox_pred: Tensor,
+             rois: Tensor,
+             labels: Tensor,
+             label_weights: Tensor,
+             bbox_targets: Tensor,
+             bbox_weights: Tensor,
+             reduction_override: Optional[str] = None) -> dict:
+        """Calculate the loss based on the network predictions and targets.
+
+        Args:
+            cls_score (Tensor): Classification prediction
+                results of all class, has shape
+                (batch_size * num_proposals_single_image, num_classes)
+            bbox_pred (Tensor): Regression prediction results,
+                has shape
+                (batch_size * num_proposals_single_image, 4), the last
+                dimension 4 represents [tl_x, tl_y, br_x, br_y].
+            rois (Tensor): RoIs with the shape
+                (batch_size * num_proposals_single_image, 5) where the first
+                column indicates batch id of each RoI.
+            labels (Tensor): Gt_labels for all proposals in a batch, has
+                shape (batch_size * num_proposals_single_image, ).
+            label_weights (Tensor): Labels_weights for all proposals in a
+                batch, has shape (batch_size * num_proposals_single_image, ).
+            bbox_targets (Tensor): Regression target for all proposals in a
+                batch, has shape (batch_size * num_proposals_single_image, 4),
+                the last dimension 4 represents [tl_x, tl_y, br_x, br_y].
+            bbox_weights (Tensor): Regression weights for all proposals in a
+                batch, has shape (batch_size * num_proposals_single_image, 4).
+            reduction_override (str, optional): The reduction
+                method used to override the original reduction
+                method of the loss. Options are "none",
+                "mean" and "sum". Defaults to None,
+
+        Returns:
+            dict: A dictionary of loss.
+        """
 
         losses = dict()
 
@@ -356,8 +411,7 @@ class BBoxHead(BaseModule):
             else:
                 losses['loss_bbox'] = bbox_pred[pos_inds].sum()
 
-        # cls_reg_targets is only for cascade rcnn
-        return dict(loss_bbox=losses, bbox_targets=cls_reg_targets)
+        return losses
 
     def predict_by_feat(self,
                         rois: Tuple[Tensor],
@@ -493,13 +547,18 @@ class BBoxHead(BaseModule):
             results.labels = det_labels
         return results
 
-    def refine_bboxes(self, sampling_results: SamplingResultList,
+    def refine_bboxes(self, sampling_results: Union[List[SamplingResult],
+                                                    InstanceList],
                       bbox_results: dict,
                       batch_img_metas: List[dict]) -> InstanceList:
         """Refine bboxes during training.
 
         Args:
-            sampling_results (List[:obj:`SamplingResult`]): Sampling results.
+            sampling_results (List[:obj:`SamplingResult`] or
+                List[:obj:`InstanceData`]): Sampling results.
+                :obj:`SamplingResult` is the real sampling results
+                calculate from bbox_head, while :obj:`InstanceData` is
+                fake sampling results, e.g., in Sparse R-CNN or QueryInst, etc.
             bbox_results (dict): Usually is a dictionary with keys:
 
                 - `cls_score` (Tensor): Classification scores.
@@ -517,8 +576,9 @@ class BBoxHead(BaseModule):
         Example:
             >>> # xdoctest: +REQUIRES(module:kwarray)
             >>> import numpy as np
-            >>> from mmdet.core.bbox.demodata import random_boxes
-            >>> from mmdet.core.bbox.samplers import SamplingResult
+            >>> from mmdet.models.task_modules.samplers.
+            ... sampling_result import random_boxes
+            >>> from mmdet.models.task_modules.samplers import SamplingResult
             >>> self = BBoxHead(reg_class_agnostic=True)
             >>> n_roi = 2
             >>> n_img = 4

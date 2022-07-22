@@ -5,8 +5,8 @@ import torch.nn as nn
 from mmengine.model import BaseModule
 from torch import Tensor
 
-from mmdet.core.utils.typing import MultiConfig
 from mmdet.registry import MODELS
+from mmdet.utils import MultiConfig
 
 
 @MODELS.register_module()

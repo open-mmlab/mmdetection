@@ -8,7 +8,7 @@ from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmdet.models.backbones import ResNet, ResNetV1d
 from mmdet.models.backbones.resnet import BasicBlock, Bottleneck
-from mmdet.models.utils import ResLayer, SimplifiedBasicBlock
+from mmdet.models.layers import ResLayer, SimplifiedBasicBlock
 from .utils import check_norm_state, is_block, is_norm
 
 

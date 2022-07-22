@@ -1,13 +1,12 @@
 _base_ = './mask_rcnn_r101_fpn_1x_coco.py'
-preprocess_cfg = dict(
-    mean=[103.530, 116.280, 123.675],
-    std=[57.375, 57.120, 58.395],
-    to_rgb=False,
-    pad_size_divisor=32)
+
 model = dict(
     # ResNeXt-101-32x8d model trained with Caffe2 at FB,
     # so the mean and std need to be changed.
-    preprocess_cfg=preprocess_cfg,
+    data_preprocessor=dict(
+        mean=[103.530, 116.280, 123.675],
+        std=[57.375, 57.120, 58.395],
+        bgr_to_rgb=False),
     backbone=dict(
         type='ResNeXt',
         depth=101,

@@ -5,7 +5,7 @@ import torch.nn as nn
 from mmengine.model import BaseModule
 
 from mmdet.models.backbones import ResNet
-from mmdet.models.utils import ResLayer as _ResLayer
+from mmdet.models.layers import ResLayer as _ResLayer
 from mmdet.registry import MODELS
 
 

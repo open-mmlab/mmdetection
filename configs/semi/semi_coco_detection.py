@@ -1,6 +1,6 @@
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = '/home/SENSETIME/chenzeming.vendor/Datasets/data/coco/'
+data_root = 'D:/Datasets/data/coco/'
 file_client_args = dict(backend='disk')
 
 image_size = (200, 200)
@@ -75,11 +75,11 @@ test_pipeline = [
 ]
 
 train_dataloader = dict(
-    batch_size=3,
-    num_workers=3,
+    batch_size=2,
+    num_workers=2,
     persistent_workers=True,
     sampler=dict(
-        type='GroupMultiSourceSampler', batch_size=3, source_ratio=[1, 2]),
+        type='GroupMultiSourceSampler', batch_size=2, source_ratio=[1, 1]),
     dataset=dict(
         type='ConcatDataset',
         datasets=[

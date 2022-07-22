@@ -1,9 +1,18 @@
-_base_ = '../_base_/default_runtime.py'
-
+_base_ = [
+    '../_base_/datasets/coco_instance.py', '../_base_/default_runtime.py'
+]
+img_norm_cfg = dict(
+    mean=[123.68, 116.78, 103.94], std=[58.40, 57.12, 57.38], to_rgb=True)
 # model settings
-img_size = 550
+input_size = 550
 model = dict(
     type='YOLACT',
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=img_norm_cfg['mean'],
+        std=img_norm_cfg['std'],
+        bgr_to_rgb=img_norm_cfg['to_rgb'],
+        pad_mask=True),
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -56,11 +65,8 @@ model = dict(
         num_protos=32,
         num_classes=80,
         max_masks_to_train=100,
-        loss_mask_weight=6.125),
-    segm_head=dict(
-        type='YOLACTSegmHead',
-        num_classes=80,
-        in_channels=256,
+        loss_mask_weight=6.125,
+        with_seg_branch=True,
         loss_segm=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
     # training and testing settings
@@ -72,6 +78,7 @@ model = dict(
             min_pos_iou=0.,
             ignore_iof_thr=-1,
             gt_max_assign_all=False),
+        sampler=dict(type='PseudoSampler'),  # YOLACT should use PseudoSampler
         # smoothl1_beta=1.,
         allowed_border=-1,
         pos_weight=-1,
@@ -81,16 +88,16 @@ model = dict(
         nms_pre=1000,
         min_bbox_size=0,
         score_thr=0.05,
+        mask_thr=0.5,
         iou_thr=0.5,
         top_k=200,
-        max_per_img=100))
+        max_per_img=100,
+        mask_thr_binary=0.5))
 # dataset settings
-dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
-img_norm_cfg = dict(
-    mean=[123.68, 116.78, 103.94], std=[58.40, 57.12, 57.38], to_rgb=True)
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(
+        type='LoadImageFromFile',
+        file_client_args={{_base_.file_client_args}}),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(4.0, 4.0)),
     dict(
@@ -102,62 +109,61 @@ train_pipeline = [
         type='MinIoURandomCrop',
         min_ious=(0.1, 0.3, 0.5, 0.7, 0.9),
         min_crop_size=0.3),
-    dict(type='Resize', img_scale=(img_size, img_size), keep_ratio=False),
-    dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='Resize', scale=(input_size, input_size), keep_ratio=False),
+    dict(type='RandomFlip', prob=0.5),
     dict(
         type='PhotoMetricDistortion',
         brightness_delta=32,
         contrast_range=(0.5, 1.5),
         saturation_range=(0.5, 1.5),
         hue_delta=18),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks']),
+    dict(type='PackDetInputs')
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile'),
+    dict(type='Resize', scale=(input_size, input_size), keep_ratio=False),
     dict(
-        type='MultiScaleFlipAug',
-        img_scale=(img_size, img_size),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=False),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
-        ])
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
 ]
-data = dict(
-    samples_per_gpu=8,
-    workers_per_gpu=4,
-    train=dict(
-        type=dataset_type,
-        ann_file=data_root + 'annotations/instances_train2017.json',
-        img_prefix=data_root + 'train2017/',
-        pipeline=train_pipeline),
-    val=dict(
-        type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
-        pipeline=test_pipeline),
-    test=dict(
-        type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
-        pipeline=test_pipeline))
+train_dataloader = dict(
+    batch_size=8,
+    num_workers=4,
+    batch_sampler=None,
+    dataset=dict(pipeline=train_pipeline))
+val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
+test_dataloader = val_dataloader
+
+max_epochs = 55
+# training schedule for 55e
+train_cfg = dict(
+    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
+val_cfg = dict(type='ValLoop')
+test_cfg = dict(type='TestLoop')
+
+# learning rate
+param_scheduler = [
+    dict(type='LinearLR', start_factor=0.1, by_epoch=False, begin=0, end=500),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=max_epochs,
+        by_epoch=True,
+        milestones=[20, 42, 49, 52],
+        gamma=0.1)
+]
+
 # optimizer
-optimizer = dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4)
-optimizer_config = dict()
-# learning policy
-lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=500,
-    warmup_ratio=0.1,
-    step=[20, 42, 49, 52])
-runner = dict(type='EpochBasedRunner', max_epochs=55)
-cudnn_benchmark = True
-evaluation = dict(metric=['bbox', 'segm'])
+optim_wrapper = dict(
+    type='OptimWrapper',
+    optimizer=dict(type='SGD', lr=1e-3, momentum=0.9, weight_decay=5e-4))
+
+custom_hooks = [
+    dict(type='CheckInvalidLossHook', interval=50, priority='VERY_LOW')
+]
+
+env_cfg = dict(cudnn_benchmark=True)
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.

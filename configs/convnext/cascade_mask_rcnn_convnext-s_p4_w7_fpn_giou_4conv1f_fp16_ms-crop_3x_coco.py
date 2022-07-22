@@ -18,15 +18,8 @@ model = dict(
             type='Pretrained', checkpoint=checkpoint_file,
             prefix='backbone.')))
 
-optimizer = dict(
-    _delete_=True,
-    constructor='LearningRateDecayOptimizerConstructor',
-    type='AdamW',
-    lr=0.0002,
-    betas=(0.9, 0.999),
-    weight_decay=0.05,
-    paramwise_cfg={
-        'decay_rate': 0.7,
-        'decay_type': 'layer_wise',
-        'num_layers': 12
-    })
+optim_wrapper = dict(paramwise_cfg={
+    'decay_rate': 0.7,
+    'decay_type': 'layer_wise',
+    'num_layers': 12
+})

@@ -7,17 +7,18 @@ import torch.nn as nn
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.core import (AnchorGenerator, PseudoSampler, anchor_inside_flags,
-                        images_to_levels, multi_apply, unmap)
-from mmdet.core.utils import (ConfigType, InstanceList, OptConfigType,
-                              OptInstanceList, OptMultiConfig)
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
+                         OptInstanceList, OptMultiConfig)
+from ..task_modules.prior_generators import (AnchorGenerator,
+                                             anchor_inside_flags)
+from ..task_modules.samplers import PseudoSampler
+from ..utils import images_to_levels, multi_apply, unmap
 from .base_dense_head import BaseDenseHead
-from .dense_test_mixins import BBoxTestMixin
 
 
 @MODELS.register_module()
-class AnchorHead(BaseDenseHead, BBoxTestMixin):
+class AnchorHead(BaseDenseHead):
     """Anchor-based head (RPN, RetinaNet, SSD, etc.).
 
     Args:
@@ -201,8 +202,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                             gt_instances: InstanceData,
                             img_meta: dict,
                             gt_instances_ignore: Optional[InstanceData] = None,
-                            unmap_outputs: bool = True,
-                            **kwargs) -> tuple:
+                            unmap_outputs: bool = True) -> tuple:
         """Compute regression and classification targets for anchors in a
         single image.
 
@@ -303,8 +303,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                     batch_img_metas: List[dict],
                     batch_gt_instances_ignore: OptInstanceList = None,
                     unmap_outputs: bool = True,
-                    return_sampling_results: bool = False,
-                    **kwargs) -> tuple:
+                    return_sampling_results: bool = False) -> tuple:
         """Compute regression and classification targets for anchors in
         multiple images.
 
@@ -384,6 +383,9 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
         # `avg_factor` is usually equal to the number of positive priors.
         avg_factor = sum(
             [results.avg_factor for results in sampling_results_list])
+        # update `_raw_positive_infos`, which will be used when calling
+        # `get_positive_infos`.
+        self._raw_positive_infos.update(sampling_results=sampling_results_list)
         # split targets to a list w.r.t. multiple levels
         labels_list = images_to_levels(all_labels, num_level_anchors)
         label_weights_list = images_to_levels(all_label_weights,
