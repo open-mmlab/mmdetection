@@ -85,7 +85,11 @@ class DetLocalVisualizer(Visualizer):
                  mask_color: Optional[Union[str, Tuple[int]]] = None,
                  line_width: Union[int, float] = 3,
                  alpha: float = 0.8):
-        super().__init__(name, image, vis_backends, save_dir)
+        super().__init__(
+            name=name,
+            image=image,
+            vis_backends=vis_backends,
+            save_dir=save_dir)
         self.bbox_color = bbox_color
         self.text_color = text_color
         self.mask_color = mask_color
@@ -369,8 +373,11 @@ class DetLocalVisualizer(Visualizer):
             drawn_img = np.concatenate((gt_img_data, pred_img_data), axis=1)
         elif gt_img_data is not None:
             drawn_img = gt_img_data
-        else:
+        elif pred_img_data is not None:
             drawn_img = pred_img_data
+        else:
+            # Display the original image directly if nothing is drawn.
+            drawn_img = image
 
         # It is convenient for users to obtain the drawn image.
         # For example, the user wants to obtain the drawn image and

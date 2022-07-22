@@ -48,7 +48,7 @@ class TestDetLocalVisualizer(TestCase):
         # test gt_instances
         gt_instances = InstanceData()
         gt_instances.bboxes = _rand_bboxes(num_bboxes, h, w)
-        gt_instances.labels = torch.randint(0, num_class, (5, ))
+        gt_instances.labels = torch.randint(0, num_class, (num_bboxes, ))
         gt_det_data_sample = DetDataSample()
         gt_det_data_sample.gt_instances = gt_instances
         #
@@ -66,8 +66,8 @@ class TestDetLocalVisualizer(TestCase):
         # test gt_instances and pred_instances
         pred_instances = InstanceData()
         pred_instances.bboxes = _rand_bboxes(num_bboxes, h, w)
-        pred_instances.labels = torch.randint(0, num_class, (5, ))
-        pred_instances.scores = torch.rand((5, ))
+        pred_instances.labels = torch.randint(0, num_class, (num_bboxes, ))
+        pred_instances.scores = torch.rand((num_bboxes, ))
         pred_det_data_sample = DetDataSample()
         pred_det_data_sample.pred_instances = pred_instances
 
