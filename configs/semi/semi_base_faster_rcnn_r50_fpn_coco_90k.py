@@ -7,11 +7,12 @@ model_wrapper = dict(
     type='SemiBaseDetector',
     detector='${model}',
     semi_train_cfg=dict(
+        freeze_teacher=True,
         sup_weight=1.0,
         unsup_weight=1.0,
-        score_thr=0.5,
+        cls_pseudo_thr=0.9,
         min_pseudo_bbox_wh=(1e-2, 1e-2)),
-    semi_test_cfg=dict(infer_on='teacher'),
+    semi_test_cfg=dict(predict_on='teacher'),
     data_preprocessor=dict(
         type='MultiDataPreprocessor',
         data_preprocessor='${model.data_preprocessor}',
@@ -45,5 +46,4 @@ log_processor = dict(by_epoch=False)
 
 custom_hooks = [dict(type='MeanTeacherHook')]
 
-load_from = '/home/SENSETIME/chenzeming.vendor/Documents/gitlib/' \
-            'faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
+load_from = 'D:/GitLab/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'

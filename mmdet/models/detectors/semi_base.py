@@ -1,9 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import copy
 from collections import Sequence
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
-from mmengine.model import ExponentialMovingAverage
+import torch.nn as nn
 from torch import Tensor
 
 from mmdet.registry import MODELS
@@ -22,11 +23,11 @@ class SemiBaseDetector(BaseDetector):
     by gradient descent.
 
     Args:
-        backbone (:obj:`ConfigDict` or dict): The backbone config.
-        neck (:obj:`ConfigDict` or dict): The neck config.
-        bbox_head (:obj:`ConfigDict` or dict): The bbox head config.
-        train_cfg (:obj:`ConfigDict` or dict, optional): The training config.
-        test_cfg (:obj:`ConfigDict` or dict, optional): The testing config.
+        detector (:obj:`ConfigDict` or dict): The detector config.
+        semi_train_cfg (:obj:`ConfigDict` or dict, optional):
+            The semi-supervised training config.
+        semi_test_cfg (:obj:`ConfigDict` or dict, optional):
+            The semi-supervised testing config.
         data_preprocessor (:obj:`ConfigDict` or dict, optional): Config of
             :class:`DetDataPreprocessor` to process the input data.
             Defaults to None.
@@ -44,19 +45,28 @@ class SemiBaseDetector(BaseDetector):
         super().__init__(
             data_preprocessor=data_preprocessor, init_cfg=init_cfg)
         self.student = MODELS.build(detector)
-        self.teacher = ExponentialMovingAverage(self.student)
+        self.teacher = MODELS.build(detector)
         self.semi_train_cfg = semi_train_cfg
         self.semi_test_cfg = semi_test_cfg
+        if self.semi_train_cfg.get('freeze_teacher', True) is True:
+            self.freeze(self.teacher)
 
-    def loss(self, multi_batch_inputs: Dict[torch.Tensor],
-             multi_batch_data_samples: Dict[Optional[list]]) -> dict:
+    @staticmethod
+    def freeze(model: nn.Module):
+        """Freeze the model."""
+        model.eval()
+        for param in model.parameters():
+            param.requires_grad = False
+
+    def loss(self, multi_batch_inputs: Dict[str, Tensor],
+             multi_batch_data_samples: Dict[str, SampleList]) -> dict:
         """Calculate losses from multi-branch inputs and data samples.
 
         Args:
-            multi_batch_inputs (Dict[Tensor]): The dict of multi-branch
-                input images of shape (N, C, H, W).
-                Each item should usually be mean centered and std scaled.
-            multi_batch_data_samples (Dict[List[:obj:`DetDataSample`]]):
+            multi_batch_inputs (Dict[str, Tensor]): The dict of multi-branch
+                input images, each value with shape (N, C, H, W).
+                Each value should usually be mean centered and std scaled.
+            multi_batch_data_samples (Dict[str, List[:obj:`DetDataSample`]]):
                 The dict of multi-branch data samples.
 
         Returns:
@@ -104,23 +114,27 @@ class SemiBaseDetector(BaseDetector):
                     batch_inputs: Tensor,
                     batch_data_samples: SampleList,
                     batch_info: Optional[dict] = None) -> dict:
-        """Calculate losses from a batch of inputs and data samples.
+        """Calculate losses from a batch of inputs and pseudo data samples.
 
         Args:
             batch_inputs (Tensor): Input images of shape (N, C, H, W).
                 These should usually be mean centered and std scaled.
             batch_data_samples (List[:obj:`DetDataSample`]): The batch
                 data samples. It usually includes information such
-                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`,
+                which are `pseudo_instance` or `pseudo_panoptic_seg`
+                or `pseudo_sem_seg` in fact.
             batch_info (dict): Batch information of teacher model
                 forward propagation process. Defaults to None.
 
         Returns:
             dict: A dictionary of loss components
         """
-        score_thr = self.semi_train_cfg.get('score_thr', 0.9)
-        batch_data_samples = self.filter_pseudo_instances(
-            batch_data_samples, score_thr)
+        for data_samples in batch_data_samples:
+            if data_samples.gt_instances.bboxes.shape[0] > 0:
+                data_samples.gt_instances = data_samples.gt_instances[
+                    data_samples.gt_instances.scores >
+                    self.semi_train_cfg.cls_pseudo_thr]
 
         pseudo_instances_num = sum([
             len(data_samples.gt_instances)
@@ -128,6 +142,7 @@ class SemiBaseDetector(BaseDetector):
         ])
         unsup_weight = self.semi_train_cfg.get(
             'unsup_weight', 1.) if pseudo_instances_num > 0 else 0.
+
         pseudo_loss = {
             'unsup_' + k: v
             for k, v in self.weight(
@@ -147,50 +162,45 @@ class SemiBaseDetector(BaseDetector):
                     losses[name] = loss * weight
         return losses
 
-    def filter_pseudo_instances(self, batch_data_samples, score_thr):
-        """Filter pseudo instances from teacher model."""
+    def filter_pseudo_instances(self,
+                                batch_data_samples: SampleList) -> SampleList:
+        """Filter invalid pseudo instances from teacher model."""
         for data_samples in batch_data_samples:
             pseudo_bboxes = data_samples.gt_instances.bboxes
-            instance_num = pseudo_bboxes.shape[0]
-            if instance_num == 0:
-                continue
-
-            w = pseudo_bboxes[:, 2] - pseudo_bboxes[:, 0]
-            h = pseudo_bboxes[:, 3] - pseudo_bboxes[:, 1]
-            valid_size_flag = (
-                w > self.semi_train_cfg.min_pseudo_bbox_wh[0]) & (
-                    h > self.semi_train_cfg.min_pseudo_bbox_wh[1])
-            valid_score_flag = data_samples.gt_instances.scores > score_thr
-            valid_flag = valid_size_flag & valid_score_flag
-            data_samples.gt_instances = data_samples.gt_instances.new(
-                scores=data_samples.gt_instances.scores[valid_flag],
-                bboxes=data_samples.gt_instances.bboxes[valid_flag],
-                labels=data_samples.gt_instances.labels[valid_flag])
+            if pseudo_bboxes.shape[0] > 0:
+                w = pseudo_bboxes[:, 2] - pseudo_bboxes[:, 0]
+                h = pseudo_bboxes[:, 3] - pseudo_bboxes[:, 1]
+                data_samples.gt_instances = data_samples.gt_instances[
+                    (w > self.semi_train_cfg.min_pseudo_bbox_wh[0])
+                    & (h > self.semi_train_cfg.min_pseudo_bbox_wh[1])]
         return batch_data_samples
 
-    def get_pseudo_instances(self, batch_inputs, batch_data_samples):
+    @torch.no_grad()
+    def get_pseudo_instances(
+            self, batch_inputs: Tensor, batch_data_samples: SampleList
+    ) -> Tuple[SampleList, Optional[dict]]:
         """Get pseudo instances from teacher model."""
-        results_list = self.teacher.predict(batch_inputs, batch_data_samples)
+        results_list = self.teacher(
+            batch_inputs, batch_data_samples, mode='predict')
         for data_samples, results in zip(batch_data_samples, results_list):
-            data_samples.gt_instances = data_samples.gt_instances.new(
-                scores=results.pred_instances.scores,
-                bboxes=results.pred_instances.bboxes,
-                labels=results.pred_instances.labels)
+            data_samples.gt_instances = results.pred_instances
         return batch_data_samples, None
 
-    def project_pseudo_instances(self, batch_pseudo_instances,
-                                 batch_data_samples):
+    def project_pseudo_instances(self, batch_pseudo_instances: SampleList,
+                                 batch_data_samples: SampleList) -> SampleList:
         """Project pseudo instances."""
         for pseudo_instances, data_samples in zip(batch_pseudo_instances,
                                                   batch_data_samples):
-            pseudo_instances.gt_instances.bboxes = bbox_project(
-                pseudo_instances.gt_instances.bboxes,
+            data_samples.gt_instances = copy.deepcopy(
+                pseudo_instances.gt_instances)
+            data_samples.gt_instances.bboxes = bbox_project(
+                data_samples.gt_instances.bboxes,
                 torch.tensor(data_samples.homography_matrix).to(
                     self.data_preprocessor.device), data_samples.img_shape)
-            data_samples.gt_instances = pseudo_instances.gt_instances
-        return batch_data_samples
+        return self.filter_pseudo_instances(batch_data_samples)
 
-    def predict(self, batch_inputs, batch_data_samples):
+    def predict(self, batch_inputs: Tensor,
+                batch_data_samples: SampleList) -> SampleList:
         """Predict results from a batch of inputs and data samples with post-
         processing.
 
@@ -216,14 +226,15 @@ class SemiBaseDetector(BaseDetector):
                     the last dimension 4 arrange as (x1, y1, x2, y2).
                 - masks (Tensor): Has a shape (num_instances, H, W).
         """
-        if self.semi_test_cfg.get('infer_on', None) == 'teacher':
+        if self.semi_test_cfg.get('predict_on', 'teacher') == 'teacher':
             return self.teacher(
                 batch_inputs, batch_data_samples, mode='predict')
         else:
             return self.student(
                 batch_inputs, batch_data_samples, mode='predict')
 
-    def _forward(self, batch_inputs, batch_data_samples):
+    def _forward(self, batch_inputs: Tensor,
+                 batch_data_samples: SampleList) -> SampleList:
         """Network forward process. Usually includes backbone, neck and head
         forward without any post-processing.
 
@@ -234,9 +245,14 @@ class SemiBaseDetector(BaseDetector):
             tuple: A tuple of features from ``rpn_head`` and ``roi_head``
             forward.
         """
-        return self.student(batch_inputs, batch_data_samples, mode='tensor')
+        if self.semi_test_cfg.get('forward_on', 'teacher') == 'teacher':
+            return self.teacher(
+                batch_inputs, batch_data_samples, mode='tensor')
+        else:
+            return self.student(
+                batch_inputs, batch_data_samples, mode='tensor')
 
-    def extract_feat(self, batch_inputs):
+    def extract_feat(self, batch_inputs: Tensor) -> Tuple[Tensor]:
         """Extract features.
 
         Args:
@@ -246,20 +262,17 @@ class SemiBaseDetector(BaseDetector):
             tuple[Tensor]: Multi-level features that may have
             different resolutions.
         """
-        return self.student.extract_feat(batch_inputs)
+        if self.semi_test_cfg.get('extract_feat_on', 'teacher') == 'teacher':
+            return self.teacher.module.extract_feat(batch_inputs)
+        else:
+            return self.student.extract_feat(batch_inputs)
 
-    def _load_from_state_dict(
-        self,
-        state_dict,
-        prefix,
-        local_metadata,
-        strict,
-        missing_keys,
-        unexpected_keys,
-        error_msgs,
-    ):
-        """Exchange bbox_head key to rpn_head key when loading single-stage
-        weights into two-stage model."""
+    def _load_from_state_dict(self, state_dict: dict, prefix: str,
+                              local_metadata: dict, strict: bool,
+                              missing_keys: Union[List[str], str],
+                              unexpected_keys: Union[List[str], str],
+                              error_msgs: Union[List[str], str]) -> None:
+        """Add teacher and student prefixes to model parameter names."""
         if not any([
                 'student' in key or 'teacher' in key
                 for key in state_dict.keys()

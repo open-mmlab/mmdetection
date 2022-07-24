@@ -353,7 +353,7 @@ class MultiDataPreprocessor(nn.Module):
         self,
         data: Sequence[dict],
         training: bool = False
-    ) -> Tuple[Dict[torch.Tensor], Dict[Optional[list]]]:
+    ) -> Tuple[Dict[str, torch.Tensor], Dict[str, Optional[list]]]:
         """Perform normalization、padding and bgr2rgb conversion based on
         ``BaseDataPreprocessor`` for multi-branch data.
 

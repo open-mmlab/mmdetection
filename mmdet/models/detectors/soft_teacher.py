@@ -1,16 +1,15 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import torch
 from mmengine.data import InstanceData
 from torch import Tensor
 
-from mmdet.models.losses import accuracy
 from mmdet.registry import MODELS
 from mmdet.structures import SampleList
 from mmdet.structures.bbox import bbox2roi, bbox_project
-from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
+from mmdet.utils import ConfigType, InstanceList, OptConfigType, OptMultiConfig
 from ..utils.misc import unpack_gt_instances
 from .semi_base import SemiBaseDetector
 
@@ -18,7 +17,21 @@ from .semi_base import SemiBaseDetector
 @MODELS.register_module()
 class SoftTeacher(SemiBaseDetector):
     r"""Implementation of `End-to-End Semi-Supervised Object Detection
-    with Soft Teacher <https://arxiv.org/abs/2106.09018>`_"""
+    with Soft Teacher <https://arxiv.org/abs/2106.09018>`_
+
+    Args:
+        detector (:obj:`ConfigDict` or dict): The detector config.
+        semi_train_cfg (:obj:`ConfigDict` or dict, optional):
+            The semi-supervised training config.
+        semi_test_cfg (:obj:`ConfigDict` or dict, optional):
+            The semi-supervised testing config.
+        data_preprocessor (:obj:`ConfigDict` or dict, optional): Config of
+            :class:`DetDataPreprocessor` to process the input data.
+            Defaults to None.
+        init_cfg (:obj:`ConfigDict` or list[:obj:`ConfigDict`] or dict or
+            list[dict], optional): Initialization config dict.
+            Defaults to None.
+    """
 
     def __init__(self,
                  detector: ConfigType,
@@ -33,16 +46,20 @@ class SoftTeacher(SemiBaseDetector):
             data_preprocessor=data_preprocessor,
             init_cfg=init_cfg)
 
-    def pseudo_loss(self, batch_inputs: Tensor, batch_data_samples: SampleList,
-                    batch_info: dict) -> dict:
-        """Calculate losses from a batch of inputs and data samples.
+    def pseudo_loss(self,
+                    batch_inputs: Tensor,
+                    batch_data_samples: SampleList,
+                    batch_info: Optional[dict] = None) -> dict:
+        """Calculate losses from a batch of inputs and pseudo data samples.
 
         Args:
             batch_inputs (Tensor): Input images of shape (N, C, H, W).
                 These should usually be mean centered and std scaled.
             batch_data_samples (List[:obj:`DetDataSample`]): The batch
                 data samples. It usually includes information such
-                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`,
+                which are `pseudo_instance` or `pseudo_panoptic_seg`
+                or `pseudo_sem_seg` in fact.
             batch_info (dict): Batch information of teacher model
                 forward propagation process. Defaults to None.
 
@@ -54,52 +71,44 @@ class SoftTeacher(SemiBaseDetector):
         losses = {}
         rpn_losses, rpn_results_list = self.unsup_rpn_loss(
             x, batch_data_samples)
-        losses.update(rpn_losses)
-        losses.update(
-            self.unsup_rcnn_cls_loss(x, rpn_results_list, batch_data_samples,
-                                     batch_info))
-        losses.update(
-            self.unsup_rcnn_reg_loss(x, rpn_results_list, batch_data_samples))
-
-        pseudo_instances_num = sum([
-            len(data_samples.gt_instances)
-            for data_samples in batch_data_samples
-        ])
-        unsup_weight = self.semi_train_cfg.get(
-            'unsup_weight', 1.) if pseudo_instances_num > 0 else 0.
-
+        losses.update(**rpn_losses)
+        losses.update(**self.unsup_rcnn_cls_loss(
+            x, rpn_results_list, batch_data_samples, batch_info))
+        losses.update(**self.unsup_rcnn_reg_loss(x, rpn_results_list,
+                                                 batch_data_samples))
         pseudo_loss = {
             'unsup_' + k: v
-            for k, v in self.weight(losses, unsup_weight).items()
+            for k, v in self.weight(
+                losses, self.semi_train_cfg.get('unsup_weight', 1.)).items()
         }
         return pseudo_loss
 
+    @torch.no_grad()
     def get_pseudo_instances(
             self, batch_inputs: Tensor, batch_data_samples: SampleList
     ) -> Tuple[SampleList, Optional[dict]]:
         """Get pseudo instances from teacher model."""
-        assert self.teacher.with_bbox, 'Bbox head must be implemented.'
-        x = self.teacher.extract_feat(batch_inputs)
+        assert self.teacher.module.with_bbox, 'Bbox head must be implemented.'
+        x = self.teacher.module.extract_feat(batch_inputs)
 
         # If there are no pre-defined proposals, use RPN to get proposals
         if batch_data_samples[0].get('proposals', None) is None:
-            rpn_results_list = self.teacher.rpn_head.predict(
+            rpn_results_list = self.teacher.module.rpn_head.predict(
                 x, batch_data_samples, rescale=False)
         else:
             rpn_results_list = [
                 data_sample.proposals for data_sample in batch_data_samples
             ]
 
-        results_list = self.teacher.roi_head.predict(
+        results_list = self.teacher.module.roi_head.predict(
             x, rpn_results_list, batch_data_samples, rescale=False)
 
         for data_samples, results in zip(batch_data_samples, results_list):
             data_samples.gt_instances = results
-
-        score_thr = self.semi_train_cfg.get('pseudo_label_initial_score_thr',
-                                            0.5)
-        batch_data_samples = self.filter_pseudo_instances(
-            batch_data_samples, score_thr)
+            if data_samples.gt_instances.bboxes.shape[0] > 0:
+                data_samples.gt_instances = data_samples.gt_instances[
+                    data_samples.gt_instances.scores >
+                    self.semi_train_cfg.pseudo_label_initial_score_thr]
 
         reg_uncs_list = self.compute_uncertainty_with_aug(
             x, batch_data_samples)
@@ -119,21 +128,31 @@ class SoftTeacher(SemiBaseDetector):
                     self.data_preprocessor.device))
         return batch_data_samples, batch_info
 
-    def unsup_rpn_loss(self, x, batch_data_samples):
-        """Calculate rpn loss from a batch of inputs and pseudo data
-        samples."""
+    def unsup_rpn_loss(self, x: Tuple[Tensor],
+                       batch_data_samples: SampleList) -> dict:
+        """Calculate unsupervised rpn loss from a batch of inputs and pseudo
+        data samples.
+
+        Args:
+            x (tuple[Tensor]): Features from FPN.
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`,
+                which are `pseudo_instance` or `pseudo_panoptic_seg`
+                or `pseudo_sem_seg` in fact.
+        Returns:
+            dict: A dictionary of rpn loss components
+        """
+
         rpn_data_samples = copy.deepcopy(batch_data_samples)
         for data_samples in rpn_data_samples:
             if data_samples.gt_instances.bboxes.shape[0] > 0:
                 data_samples.gt_instances = data_samples.gt_instances[
                     data_samples.gt_instances.scores >
                     self.semi_train_cfg.rpn_pseudo_thr]
-            else:
-                continue
 
         proposal_cfg = self.student.train_cfg.get('rpn_proposal',
                                                   self.student.test_cfg.rpn)
-
         # set cat_id of gt_labels to 0 in RPN
         for data_sample in rpn_data_samples:
             data_sample.gt_instances.labels = \
@@ -146,10 +165,29 @@ class SoftTeacher(SemiBaseDetector):
                 rpn_losses[f'rpn_{key}'] = rpn_losses.pop(key)
         return rpn_losses, rpn_results_list
 
-    def unsup_rcnn_cls_loss(self, x, unsup_rpn_results_list,
-                            batch_data_samples, batch_info):
-        """Calculate cls loss from a batch of inputs and pseudo data
-        samples."""
+    def unsup_rcnn_cls_loss(self, x: Tuple[Tensor],
+                            unsup_rpn_results_list: InstanceList,
+                            batch_data_samples: SampleList,
+                            batch_info: dict) -> dict:
+        """Calculate classification loss from a batch of inputs and pseudo data
+        samples.
+
+        Args:
+            x (tuple[Tensor]): List of multi-level img features.
+            unsup_rpn_results_list (list[:obj:`InstanceData`]):
+                List of region proposals.
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`,
+                which are `pseudo_instance` or `pseudo_panoptic_seg`
+                or `pseudo_sem_seg` in fact.
+            batch_info (dict): Batch information of teacher model
+                forward propagation process.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of rcnn
+                classification loss components
+        """
         rpn_results_list = copy.deepcopy(unsup_rpn_results_list)
         cls_data_samples = copy.deepcopy(batch_data_samples)
         for data_samples in cls_data_samples:
@@ -157,9 +195,7 @@ class SoftTeacher(SemiBaseDetector):
                 data_samples.gt_instances = data_samples.gt_instances[
                     data_samples.gt_instances.scores >
                     self.semi_train_cfg.cls_pseudo_thr]
-            else:
-                continue
-        assert len(rpn_results_list) == len(batch_data_samples)
+
         outputs = unpack_gt_instances(batch_data_samples)
         batch_gt_instances, batch_gt_instances_ignore, _ = outputs
 
@@ -184,9 +220,8 @@ class SoftTeacher(SemiBaseDetector):
         selected_bboxes = [res.priors for res in sampling_results]
         rois = bbox2roi(selected_bboxes)
         bbox_results = self.student.roi_head._bbox_forward(x, rois)
-        labels, label_weights, bbox_targets, bbox_weights = \
-            self.student.roi_head.bbox_head.get_targets(
-                sampling_results, self.student.train_cfg.rcnn)
+        cls_reg_targets = self.student.roi_head.bbox_head.get_targets(
+            sampling_results, self.student.train_cfg.rcnn)
 
         selected_results_list = []
         for bboxes, data_samples, homography_matrix, img_shape in zip(
@@ -200,7 +235,7 @@ class SoftTeacher(SemiBaseDetector):
                                 self.data_preprocessor.device), img_shape)))
 
         with torch.no_grad():
-            results_list = self.teacher.roi_head.predict_bbox(
+            results_list = self.teacher.module.roi_head.predict_bbox(
                 batch_info['feat'],
                 [data_samples.metainfo for data_samples in batch_data_samples],
                 selected_results_list,
@@ -208,37 +243,40 @@ class SoftTeacher(SemiBaseDetector):
                 rescale=False)
             bg_score = torch.cat(
                 [results.scores[:, -1] for results in results_list])
-            neg_inds = labels == self.student.roi_head.bbox_head.num_classes
-            label_weights[neg_inds] = bg_score[neg_inds].detach()
+            neg_inds = cls_reg_targets[
+                0] == self.student.roi_head.bbox_head.num_classes
+            cls_reg_targets[1][neg_inds] = bg_score[neg_inds].detach()
 
-        cls_score = bbox_results['cls_score']
-        losses = dict()
-        if cls_score is not None:
-            avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
-            if cls_score.numel() > 0:
-                loss_cls_ = self.student.roi_head.bbox_head.loss_cls(
-                    cls_score,
-                    labels,
-                    label_weights,
-                    avg_factor=avg_factor,
-                    reduction_override='none')
-                if isinstance(loss_cls_, dict):
-                    losses.update(loss_cls_)
-                else:
-                    losses['loss_cls'] = loss_cls_
-                if self.student.roi_head.bbox_head.custom_activation:
-                    acc_ = self.loss_cls.get_accuracy(cls_score, labels)
-                    losses.update(acc_)
-                else:
-                    losses['acc'] = accuracy(cls_score, labels)
+        losses = self.student.roi_head.bbox_head.loss(
+            bbox_results['cls_score'],
+            bbox_results['bbox_pred'],
+            rois,
+            *cls_reg_targets,
+            reduction_override='none')
         losses['loss_cls'] = losses['loss_cls'].sum() / max(
-            label_weights.sum(), 1.0)
+            cls_reg_targets[1].sum(), 1.0)
         return losses
 
-    def unsup_rcnn_reg_loss(self, x, unsup_rpn_results_list,
-                            batch_data_samples):
-        """Calculate reg loss from a batch of inputs and pseudo data
-        samples."""
+    def unsup_rcnn_reg_loss(self, x: Tuple[Tensor],
+                            unsup_rpn_results_list: InstanceList,
+                            batch_data_samples: SampleList) -> dict:
+        """Calculate rcnn regression loss from a batch of inputs and pseudo
+        data samples.
+
+        Args:
+            x (tuple[Tensor]): List of multi-level img features.
+            unsup_rpn_results_list (list[:obj:`InstanceData`]):
+                List of region proposals.
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`,
+                which are `pseudo_instance` or `pseudo_panoptic_seg`
+                or `pseudo_sem_seg` in fact.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of rcnn
+                regression loss components
+        """
         rpn_results_list = copy.deepcopy(unsup_rpn_results_list)
         reg_data_samples = copy.deepcopy(batch_data_samples)
         for data_samples in reg_data_samples:
@@ -246,14 +284,26 @@ class SoftTeacher(SemiBaseDetector):
                 data_samples.gt_instances = data_samples.gt_instances[
                     data_samples.gt_instances.reg_uncs <
                     self.semi_train_cfg.reg_pseudo_thr]
-            else:
-                continue
         roi_losses = self.student.roi_head.loss(x, rpn_results_list,
                                                 reg_data_samples)
         return {'loss_bbox': roi_losses['loss_bbox']}
 
-    def compute_uncertainty_with_aug(self, x, batch_data_samples):
-        """compute_uncertainty_with_aug."""
+    def compute_uncertainty_with_aug(
+            self, x: Tuple[Tensor],
+            batch_data_samples: SampleList) -> List[Tensor]:
+        """Compute uncertainty with augmented bboxes.
+
+        Args:
+            x (tuple[Tensor]): List of multi-level img features.
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`,
+                which are `pseudo_instance` or `pseudo_panoptic_seg`
+                or `pseudo_sem_seg` in fact.
+
+        Returns:
+            list[Tensor]: A list of uncertainty for pseudo bboxes.
+        """
         auged_results_list = self.aug_box(batch_data_samples,
                                           self.semi_train_cfg.jitter_times,
                                           self.semi_train_cfg.jitter_scale)
@@ -263,10 +313,11 @@ class SoftTeacher(SemiBaseDetector):
             for auged in auged_results_list
         ]
 
-        self.teacher.roi_head.test_cfg = None
-        results_list = self.teacher.roi_head.predict(
+        self.teacher.module.roi_head.test_cfg = None
+        results_list = self.teacher.module.roi_head.predict(
             x, auged_results_list, batch_data_samples, rescale=False)
-        self.teacher.roi_head.test_cfg = self.teacher.test_cfg.rcnn
+        self.teacher.module.roi_head.test_cfg = \
+            self.teacher.module.test_cfg.rcnn
 
         reg_channel = max(
             [results.bboxes.shape[-1] for results in results_list]) // 4
@@ -307,7 +358,7 @@ class SoftTeacher(SemiBaseDetector):
 
     @staticmethod
     def aug_box(batch_data_samples, times, frac):
-        """compute_uncertainty_with_aug."""
+        """Augment bboxes with jitter."""
 
         def _aug_single(box):
             box_scale = box[:, 2:4] - box[:, :2]
