@@ -7,6 +7,7 @@ import torch
 from mmengine.data import BaseDataElement as PixelData
 from mmengine.data import InstanceData
 
+from mmdet.utils import replace_cfg_vals
 from ..registry import TASK_UTILS
 from ..structures import DetDataSample
 
@@ -42,6 +43,7 @@ def get_detector_cfg(fname):
     influencing other tests.
     """
     config = _get_config_module(fname)
+    config = replace_cfg_vals(config)
     model = copy.deepcopy(config.model)
     return model
 

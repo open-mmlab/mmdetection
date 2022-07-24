@@ -7,7 +7,8 @@ from .dataset_wrappers import MultiImageMixDataset
 from .deepfashion import DeepFashionDataset
 from .lvis import LVISDataset, LVISV1Dataset, LVISV05Dataset
 from .openimages import OpenImagesChallengeDataset, OpenImagesDataset
-from .samplers import AspectRatioBatchSampler, ClassAwareSampler
+from .samplers import (AspectRatioBatchSampler, ClassAwareSampler,
+                       GroupMultiSourceSampler, MultiSourceSampler)
 from .utils import get_loading_pipeline
 from .voc import VOCDataset
 from .wider_face import WIDERFaceDataset
@@ -19,5 +20,6 @@ __all__ = [
     'WIDERFaceDataset', 'DATASETS', 'PIPELINES', 'build_dataset',
     'get_loading_pipeline', 'CocoPanopticDataset', 'MultiImageMixDataset',
     'OpenImagesDataset', 'OpenImagesChallengeDataset',
-    'AspectRatioBatchSampler', 'ClassAwareSampler'
+    'AspectRatioBatchSampler', 'ClassAwareSampler', 'MultiSourceSampler',
+    'GroupMultiSourceSampler'
 ]

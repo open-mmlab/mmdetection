@@ -12,7 +12,7 @@ import numpy as np
 from mmdet.datasets.transforms import (FilterAnnotations, LoadAnnotations,
                                        LoadImageFromNDArray,
                                        LoadMultiChannelImageFromFiles,
-                                       LoadProposals)
+                                       LoadProposals, LoadPseudoAnnos)
 from mmdet.evaluation import INSTANCE_OFFSET
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 
@@ -182,6 +182,9 @@ class TestFilterAnnotations(unittest.TestCase):
         )
         self.assertEqual(
             repr(transform), ('FilterAnnotations(min_gt_bbox_wh=(1, 1), '
+                              'min_gt_mask_area=1, '
+                              'by_box=True, '
+                              'by_mask=False, '
                               'keep_empty=False)'))
 
 
@@ -410,3 +413,30 @@ class TestLoadProposals(unittest.TestCase):
         transform = LoadProposals()
         self.assertEqual(
             repr(transform), 'LoadProposals(num_max_proposals=None)')
+
+
+class TestLoadPseudoAnnos(unittest.TestCase):
+
+    def test_transform(self):
+        transform = LoadPseudoAnnos(
+            with_bbox=True, with_label=True, with_mask=True, with_seg=True)
+        results = {'img_shape': (224, 224)}
+        results = transform(results)
+        self.assertEqual(results['gt_bboxes'].dtype, np.float32)
+        self.assertEqual(results['gt_bboxes'].shape[-1], 4)
+        self.assertEqual(results['gt_ignore_flags'].dtype, bool)
+        self.assertEqual(results['gt_bboxes_labels'].dtype, np.int64)
+        self.assertEqual(results['gt_masks'].masks.dtype, np.uint8)
+        self.assertEqual(results['gt_masks'].masks.shape[-2:],
+                         results['img_shape'])
+        self.assertEqual(results['gt_seg_map'].dtype, np.uint8)
+        self.assertEqual(results['gt_seg_map'].shape, results['img_shape'])
+
+    def test_repr(self):
+        transform = LoadPseudoAnnos()
+        self.assertEqual(
+            repr(transform), 'LoadPseudoAnnos(with_bbox=True, '
+            'with_label=True, '
+            'with_mask=False, '
+            'with_seg=False, '
+            'seg_ignore_label=255)')

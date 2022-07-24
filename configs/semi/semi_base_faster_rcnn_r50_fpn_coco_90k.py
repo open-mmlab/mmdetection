@@ -45,5 +45,3 @@ default_hooks = dict(checkpoint=dict(by_epoch=False, interval=10000))
 log_processor = dict(by_epoch=False)
 
 custom_hooks = [dict(type='MeanTeacherHook')]
-
-load_from = 'D:/GitLab/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
