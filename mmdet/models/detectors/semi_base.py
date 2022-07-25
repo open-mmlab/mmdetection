@@ -50,6 +50,8 @@ class SemiBaseDetector(BaseDetector):
         self.semi_test_cfg = semi_test_cfg
         if self.semi_train_cfg.get('freeze_teacher', True) is True:
             self.freeze(self.teacher)
+            self._ddp_params_and_buffers_to_ignore = list(
+                self.teacher.state_dict().keys())
 
     @staticmethod
     def freeze(model: nn.Module):
