@@ -24,7 +24,6 @@ def parse_args():
     return args
 
 
-# TODO verify on camera
 def main():
     args = parse_args()
 
@@ -46,6 +45,7 @@ def main():
         ret_val, img = camera.read()
         result = inference_detector(model, img)
 
+        # TODO fix exit problem
         ch = cv2.waitKey(1)
         if ch == 27 or ch == ord('q') or ch == ord('Q'):
             break
