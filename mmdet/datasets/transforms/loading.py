@@ -320,6 +320,48 @@ class LoadAnnotations(MMCV_LoadAnnotations):
                 valid_polygons.append(polygon)
         return valid_polygons
 
+    def _process_masks(self, results: dict) -> list:
+        """Process gt_masks and filter invalid polygons.
+
+        Args:
+            results (dict): Result dict from :obj:``mmcv.BaseDataset``.
+
+        Returns:
+            list: Processed gt_masks.
+        """
+        gt_masks = []
+        for instance in results['instances']:
+            gt_mask = instance['mask']
+            # If the annotation of segmentation mask is invalid,
+            # ignore the whole instance.
+            if isinstance(gt_mask, list):
+                gt_mask = [
+                    np.array(polygon) for polygon in gt_mask
+                    if len(polygon) % 2 == 0 and len(polygon) >= 6
+                ]
+                if len(gt_mask) == 0:
+                    # ignore this instance and set gt_mask to a fake mask
+                    instance['ignore_flag'] = 1
+                    gt_mask = [np.zeros(6)]
+            elif isinstance(gt_mask, dict):
+                if not (gt_mask.get('counts') is not None
+                        and gt_mask.get('size') is not None
+                        and isinstance(gt_mask['counts'], list)):
+                    # ignore this instance and set gt_mask to a fake mask
+                    instance['ignore_flag'] = 1
+                    gt_mask = [np.zeros(6)]
+                if not self.poly2mask:
+                    # deal with invalid polygons
+                    gt_mask = [np.zeros(6)]
+                    instance['ignore_flag'] = 1
+            else:
+                if not self.poly2mask:
+                    # deal with invalid polygons
+                    gt_mask = [np.arange(6)]
+                    instance['ignore_flag'] = 1
+            gt_masks.append(gt_mask)
+        return gt_masks
+
     def _load_masks(self, results: dict) -> None:
         """Private function to load mask annotations.
 
@@ -328,17 +370,13 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         """
 
         h, w = results['img_shape']
-        gt_masks = []
-        for instance in results['instances']:
-            if 'mask' in instance:
-                gt_masks.append(instance['mask'])
+        gt_masks = self._process_masks(results)
         if self.poly2mask:
             gt_masks = BitmapMasks(
                 [self._poly2mask(mask, h, w) for mask in gt_masks], h, w)
         else:
-            gt_masks = PolygonMasks(
-                [self.process_polygons(polygons) for polygons in gt_masks], h,
-                w)
+            # fake polygon masks will be ignored in `PackDetInputs`
+            gt_masks = PolygonMasks([mask for mask in gt_masks], h, w)
         results['gt_masks'] = gt_masks
 
     def transform(self, results: dict) -> dict:
