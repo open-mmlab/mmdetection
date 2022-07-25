@@ -1413,6 +1413,7 @@ class DinoTransformer(DeformableDetrTransformer):
             query=query,
             key=None,
             value=memory,
+            attn_masks=attn_mask,
             key_padding_mask=mask_flatten,
             reference_points=reference_points,
             spatial_shapes=spatial_shapes,
