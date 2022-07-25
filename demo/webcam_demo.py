@@ -2,6 +2,7 @@
 import argparse
 
 import cv2
+import mmcv
 import torch
 
 from mmdet.apis import inference_detector, init_detector
@@ -49,10 +50,11 @@ def main():
         if ch == 27 or ch == ord('q') or ch == ord('Q'):
             break
 
+        img = mmcv.imconvert(img, 'bgr', 'rgb')
         visualizer.add_datasample(
             name='result',
             image=img,
-            pred_sample=result[0],
+            pred_sample=result,
             pred_score_thr=args.score_thr,
             wait_time=1,
             show=True)
