@@ -2,6 +2,7 @@
 import torch
 from mmcv.runner import BaseModule
 
+from mmdet.core import bbox_xyxy_to_cxcywh
 from .transformer import inverse_sigmoid
 
 
@@ -52,7 +53,11 @@ class DnQueryGenerator(BaseModule):
             num_groups = self.num_dn
         return int(num_groups)
 
-    def forward(self, gt_bboxes, gt_labels=None, label_enc=None):
+    def forward(self,
+                gt_bboxes,
+                gt_labels=None,
+                label_enc=None,
+                img_metas=None):
         """
 
         Args:
@@ -67,14 +72,27 @@ class DnQueryGenerator(BaseModule):
         """
         # TODO: temp only support for CDN
         # TODO: temp assert gt_labels is not None and label_enc is not None
+
         if self.training:
             if gt_labels is not None:
                 assert len(gt_bboxes) == len(gt_labels), \
                     f'the length of provided gt_labels ' \
                     f'{len(gt_labels)} should be equal to' \
                     f' that of gt_bboxes {len(gt_bboxes)}'
-            assert gt_labels is not None and label_enc is not None
+            assert gt_labels is not None \
+                   and label_enc is not None \
+                   and img_metas is not None  # TODO: adjust args
             batch_size = len(gt_bboxes)
+
+            # convert bbox
+            gt_bboxes_list = []
+            for img_meta, bboxes in zip(img_metas, gt_bboxes):
+                img_h, img_w, _ = img_meta['img_shape']
+                factor = bboxes.new_tensor([img_w, img_h, img_w,
+                                            img_h]).unsqueeze(0)
+                bboxes_normalized = bbox_xyxy_to_cxcywh(bboxes) / factor
+                gt_bboxes_list.append(bboxes_normalized)
+            gt_bboxes = gt_bboxes_list
 
             known = [torch.ones_like(labels) for labels in gt_labels]
             known_num = [sum(k) for k in known]
