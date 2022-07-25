@@ -9,7 +9,8 @@ model = dict(
         num_stages=4,
         out_indices=(1, 2, 3),
         frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=False),
+        # norm_cfg=dict(type='BN', requires_grad=False),
+        norm_cfg=dict(type='FrozenBatchNorm2d'),  # should use BN instead
         norm_eval=True,
         style='pytorch',
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
@@ -19,6 +20,7 @@ model = dict(
         kernel_size=1,
         out_channels=256,
         act_cfg=None,
+        conv_cfg=dict(type='Conv2d', bias=True),  # should be deleted
         norm_cfg=dict(type='GN', num_groups=32),
         num_outs=4),
     bbox_head=dict(
@@ -31,7 +33,7 @@ model = dict(
         with_box_refine=True,
         dn_cfg=dict(
             type='CdnQueryGenerator',
-            noise_scale=dict(label=0.5, box=0.4),
+            noise_scale=dict(label=0.5, box=1.0),  # 0.5, 0.4 for DN-DETR
             group_cfg=dict(dynamic=True, num_groups=None, num_dn_queries=100)),
         transformer=dict(
             type='DinoTransformer',
@@ -42,9 +44,11 @@ model = dict(
                 transformerlayers=dict(
                     type='BaseTransformerLayer',
                     attn_cfgs=dict(
-                        type='MultiScaleDeformableAttention', embed_dims=256),
+                        type='MultiScaleDeformableAttention',
+                        embed_dims=256,
+                        dropout=0.0),  # 0.1 for DeformDETR
                     feedforward_channels=2048,  # 1024 for DeformDETR
-                    ffn_dropout=0.1,
+                    ffn_dropout=0.0,  # 0.1 for DeformDETR
                     operation_order=('self_attn', 'norm', 'ffn', 'norm'))),
             decoder=dict(
                 type='DinoTransformerDecoder',
@@ -57,13 +61,14 @@ model = dict(
                             type='MultiheadAttention',
                             embed_dims=256,
                             num_heads=8,
-                            dropout=0.1),
+                            dropout=0.0),  # 0.1 for DeformDETR
                         dict(
                             type='MultiScaleDeformableAttention',
-                            embed_dims=256)
+                            embed_dims=256,
+                            dropout=0.0),  # 0.1 for DeformDETR
                     ],
                     feedforward_channels=2048,  # 1024 for DeformDETR
-                    ffn_dropout=0.1,
+                    ffn_dropout=0.0,  # 0.1 for DeformDETR
                     operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
                                      'ffn', 'norm')))),
         positional_encoding=dict(
@@ -76,7 +81,7 @@ model = dict(
             use_sigmoid=True,
             gamma=2.0,
             alpha=0.25,
-            loss_weight=2.0),
+            loss_weight=1.0),  # 2.0 in DeformDETR
         loss_bbox=dict(type='L1Loss', loss_weight=5.0),
         loss_iou=dict(type='GIoULoss', loss_weight=2.0)),
     # training and testing settings
@@ -156,7 +161,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=1,
+    samples_per_gpu=2,
     workers_per_gpu=2,
     train=dict(filter_empty_gt=False, pipeline=train_pipeline),
     val=dict(pipeline=test_pipeline),
@@ -174,8 +179,8 @@ optimizer = dict(
         }))
 optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
 # learning policy
-lr_config = dict(policy='step', step=[40])
-runner = dict(type='EpochBasedRunner', max_epochs=50)
+lr_config = dict(policy='step', step=[11])
+runner = dict(type='EpochBasedRunner', max_epochs=12)
 
 # # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # # USER SHOULD NOT CHANGE ITS VALUES.
