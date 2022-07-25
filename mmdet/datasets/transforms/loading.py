@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import mmcv
 import numpy as np
@@ -302,23 +302,6 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             rle = mask_ann
         mask = maskUtils.decode(rle)
         return mask
-
-    def process_polygons(self, polygons: List[list]) -> List[np.ndarray]:
-        """Convert polygons to list of ndarray and filter invalid polygons.
-
-        Args:
-            polygons (list[list]): Polygons of one instance.
-
-        Returns:
-            list[np.ndarray]: Processed polygons.
-        """
-
-        polygons = [np.array(p) for p in polygons]
-        valid_polygons = []
-        for polygon in polygons:
-            if len(polygon) % 2 == 0 and len(polygon) >= 6:
-                valid_polygons.append(polygon)
-        return valid_polygons
 
     def _process_masks(self, results: dict) -> list:
         """Process gt_masks and filter invalid polygons.
