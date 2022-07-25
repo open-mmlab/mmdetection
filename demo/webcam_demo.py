@@ -45,19 +45,21 @@ def main():
         ret_val, img = camera.read()
         result = inference_detector(model, img)
 
-        # TODO fix exit problem
-        ch = cv2.waitKey(1)
-        if ch == 27 or ch == ord('q') or ch == ord('Q'):
-            break
-
         img = mmcv.imconvert(img, 'bgr', 'rgb')
         visualizer.add_datasample(
             name='result',
             image=img,
             pred_sample=result,
             pred_score_thr=args.score_thr,
-            wait_time=1,
-            show=True)
+            show=False)
+
+        img = visualizer.get_image()
+        img = mmcv.imconvert(img, 'bgr', 'rgb')
+        cv2.imshow('result', img)
+
+        ch = cv2.waitKey(1)
+        if ch == 27 or ch == ord('q') or ch == ord('Q'):
+            break
 
 
 if __name__ == '__main__':
