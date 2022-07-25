@@ -50,7 +50,8 @@ class DINOHead(DeformableDETRHead):
         assert proposal_cfg is None, '"proposal_cfg" must be None'
         assert self.dn_generator is not None, '"dn_cfg" must be set'
         dn_label_query, dn_bbox_query, attn_mask, dn_meta = \
-            self.dn_generator(gt_bboxes, gt_labels, self.label_embedding)
+            self.dn_generator(gt_bboxes, gt_labels,
+                              self.label_embedding, img_metas)
         outs = self(x, img_metas, dn_label_query, dn_bbox_query, attn_mask)
         if gt_labels is None:
             loss_inputs = outs + (gt_bboxes, img_metas, dn_meta)
@@ -83,9 +84,6 @@ class DINOHead(DeformableDETRHead):
                 self.positional_encoding(mlvl_masks[-1]))
 
         query_embeds = None
-        if not self.as_two_stage:
-            query_embeds = self.query_embedding.weight
-
         hs, inter_references, topk_score, topk_anchor = \
             self.transformer(
                 mlvl_feats,
@@ -191,9 +189,18 @@ class DINOHead(DeformableDETRHead):
             dn_losses_cls, dn_losses_bbox, dn_losses_iou = self.loss_dn(
                 dn_cls_scores, dn_bbox_preds, gt_bboxes_list, gt_labels_list,
                 img_metas, dn_meta)
-            loss_dict['dn_loss_cls'] = dn_losses_cls
-            loss_dict['dn_loss_bbox'] = dn_losses_bbox
-            loss_dict['dn_loss_iou'] = dn_losses_iou
+            # collate denoising loss
+            loss_dict['dn_loss_cls'] = dn_losses_cls[-1]
+            loss_dict['dn_loss_bbox'] = dn_losses_bbox[-1]
+            loss_dict['dn_loss_iou'] = dn_losses_iou[-1]
+            num_dec_layer = 0
+            for loss_cls_i, loss_bbox_i, loss_iou_i in zip(
+                    dn_losses_cls[:-1], dn_losses_bbox[:-1],
+                    dn_losses_iou[:-1]):
+                loss_dict[f'd{num_dec_layer}.dn_loss_cls'] = loss_cls_i
+                loss_dict[f'd{num_dec_layer}.dn_loss_bbox'] = loss_bbox_i
+                loss_dict[f'd{num_dec_layer}.dn_loss_iou'] = loss_iou_i
+                num_dec_layer += 1
 
         return loss_dict
 
