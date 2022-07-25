@@ -2,7 +2,7 @@
 
 In this section we demonstrate how to prepare an environment with PyTorch.
 
-MMDetection 3.x works on Linux, Windows and macOS. It requires Python 3.6+, CUDA 9.2+ and PyTorch 1.6+.
+MMDetection works on Linux, Windows and macOS. It requires Python 3.6+, CUDA 9.2+ and PyTorch 1.5+.
 
 ```{note}
 If you are experienced with PyTorch and have already installed it, just skip this part and jump to the [next section](#installation). Otherwise, you can follow these steps for the preparation.
@@ -33,7 +33,7 @@ conda install pytorch torchvision cpuonly -c pytorch
 
 # Installation
 
-We recommend that users follow our best practices to install MMDetection 3.x . However, the whole process is highly customizable. See [Customize Installation](#customize-installation) section for more information.
+We recommend that users follow our best practices to install MMDetection. However, the whole process is highly customizable. See [Customize Installation](#customize-installation) section for more information.
 
 ## Best Practices
 
@@ -41,20 +41,15 @@ We recommend that users follow our best practices to install MMDetection 3.x . H
 
 ```shell
 pip install -U openmim
-# wait for more pre-compiled pkgs to release
-mim install mmcv-full==2.0.0rc0
+mim install mmcv-full
 ```
 
-**Step 1.** Install [MMEngine](https://github.com/open-mmlab/mmengine).
+**Step 1.** Install MMDetection.
+
+Case a: If you develop and run mmdet directly, install it from source:
 
 ```shell
-pip install git+https://github.com/open-mmlab/mmengine.git
-```
-
-**Step 2.** Install MMDetection 3.x .
-
-```shell
-git clone -b dev-3.x https://github.com/open-mmlab/mmdetection.git
+git clone https://github.com/open-mmlab/mmdetection.git
 cd mmdetection
 pip install -v -e .
 # "-v" means verbose, or more output
@@ -62,9 +57,15 @@ pip install -v -e .
 # thus any local modifications made to the code will take effect without reinstallation.
 ```
 
+Case b: If you use mmdet as a dependency or third-party package, install it with pip:
+
+```shell
+pip install mmdet
+```
+
 ## Verify the installation
 
-To verify whether MMDetection 3.x is installed correctly, we provide some sample codes to run an inference demo.
+To verify whether MMDetection is installed correctly, we provide some sample codes to run an inference demo.
 
 **Step 1.** We need to download config and checkpoint files.
 
@@ -76,11 +77,26 @@ The downloading will take several seconds or more, depending on your network env
 
 **Step 2.** Verify the inference demo.
 
+Option (a). If you install mmdetection from source, just run the following command.
+
 ```shell
 python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_320_300e_coco.py yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu --out-file result.jpg
 ```
 
 You will see a new image `result.jpg` on your current folder, where bounding boxes are plotted on cars, benches, etc.
+
+Option (b). If you install mmdetection with pip, open you python interpreter and copy&paste the following codes.
+
+```python
+from mmdet.apis import init_detector, inference_detector
+
+config_file = 'yolov3_mobilenetv2_320_300e_coco.py'
+checkpoint_file = 'yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth'
+model = init_detector(config_file, checkpoint_file, device='cpu')  # or device='cuda:0'
+inference_detector(model, 'demo/cat.jpg')
+```
+
+You will see a list of arrays printed, indicating the detected bounding boxes.
 
 ## Customize Installation
 
@@ -106,8 +122,7 @@ To install MMCV with pip instead of MIM, please follow [MMCV installation guides
 For example, the following command install mmcv-full built for PyTorch 1.10.x and CUDA 11.3.
 
 ```shell
-# TODO update
-pip install mmcv-full -f https://download.openmmlab.com/mmcv/dev-2.x/cu101/torch1.6.0/mmcv_full-2.0.0rc0-cp37-cp37m-manylinux1_x86_64.whl
+pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu113/torch1.10/index.html
 ```
 
 ### Install on CPU-only platforms
@@ -148,14 +163,13 @@ thus we only need to install MMCV and MMDetection with the following commands.
 
 ```shell
 !pip3 install openmim
-# wait for more pre-built pkgs to release
-!mim install mmcv-full==2.0.0rc0
+!mim install mmcv-full
 ```
 
-**Step 2.** Install MMDetection 3.x from the source.
+**Step 2.** Install MMDetection from the source.
 
 ```shell
-!git clone -b dev-3.x https://github.com/open-mmlab/mmdetection.git
+!git clone https://github.com/open-mmlab/mmdetection.git
 %cd mmdetection
 !pip install -e .
 ```
@@ -165,7 +179,6 @@ thus we only need to install MMCV and MMDetection with the following commands.
 ```python
 import mmdet
 print(mmdet.__version__)
-# TODO update
 # Example output: 2.23.0
 ```
 
