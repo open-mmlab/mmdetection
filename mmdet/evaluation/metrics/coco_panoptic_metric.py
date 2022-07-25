@@ -411,10 +411,9 @@ class CocoPanopticMetric(BaseMetric):
             predictions (Sequence[dict]): A batch of outputs from
                 the model.
         """
-        # If ``self.tmp_dir`` is none, it will compute pq_stats here,
-        # otherwise, it will save gt and predictions to self.results.
+        # If ``self.tmp_dir`` is none, it will save gt and predictions to
+        # self.results, otherwise, it will compute pq_stats here.
         if self.tmp_dir is None:
-
             self._process_gt_and_predictions(data_batch, predictions)
         else:
             self._compute_batch_pq_stats(data_batch, predictions)
