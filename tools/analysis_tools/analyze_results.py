@@ -7,11 +7,14 @@ import numpy as np
 from mmengine.config import Config, DictAction
 from mmengine.fileio import load
 from mmengine.utils import ProgressBar, check_file_exist, mkdir_or_exist
+from mmengine.data import InstanceData
 
-from mmdet.datasets import build_dataset, get_loading_pipeline
+from mmdet.datasets import get_loading_pipeline
 from mmdet.evaluation import eval_map, pq_compute_single_core
+from mmdet.registry import DATASETS
+from mmdet.structures import DetDataSample
 from mmdet.utils import replace_cfg_vals, update_data_root
-from mmdet.visualization import imshow_gt_det_bboxes
+from mmdet.visualization import DetLocalVisualizer
 
 
 def bbox_map_eval(det_result, annotation, nproc=4):
@@ -89,6 +92,7 @@ class ResultVisualizer:
         self.wait_time = wait_time
         self.score_thr = score_thr
         self.overlay_gt_pred = overlay_gt_pred
+        self.visualizer = DetLocalVisualizer()
 
     def _save_image_gts_results(self,
                                 dataset,
@@ -111,33 +115,36 @@ class ResultVisualizer:
 
         for performance_info in performances:
             index, performance = performance_info
-            data_info = dataset.prepare_train_img(index)
+            data_info = dataset[index]
+            data_info['gt_instances'] = data_info['instances']
 
             # calc save file path
-            filename = data_info['filename']
-            if data_info['img_prefix'] is not None:
-                filename = osp.join(data_info['img_prefix'], filename)
-            else:
-                filename = data_info['filename']
+            filename = data_info['img_path']
             fname, name = osp.splitext(osp.basename(filename))
             save_filename = fname + '_' + str(round(performance, 3)) + name
             out_file = osp.join(out_dir, save_filename)
-            imshow_gt_det_bboxes(
+
+            gt_instances = InstanceData()
+            gt_instances.bboxes = data_info['gt_bboxes']
+            gt_instances.labels = data_info['gt_bboxes_labels']
+            gt_samples = DetDataSample()
+            gt_samples.gt_instances = gt_instances
+
+            pred_instances = InstanceData()
+            pred_instances.bboxes = results[index]['pred_instances']['bboxes']
+            pred_instances.labels = results[index]['pred_instances']['labels']
+            pred_instances.scores = results[index]['pred_instances']['scores']
+            pred_samples = DetDataSample()
+            pred_samples.pred_instances = pred_instances
+
+            self.visualizer.add_datasample(
+                'image',
                 data_info['img'],
-                data_info,
-                results[index],
-                dataset.CLASSES,
-                gt_bbox_color=dataset.PALETTE,
-                gt_text_color=(200, 200, 200),
-                gt_mask_color=dataset.PALETTE,
-                det_bbox_color=dataset.PALETTE,
-                det_text_color=(200, 200, 200),
-                det_mask_color=dataset.PALETTE,
+                gt_samples,
+                pred_samples,
                 show=self.show,
-                score_thr=self.score_thr,
-                wait_time=self.wait_time,
-                out_file=out_file,
-                overlay_gt_pred=self.overlay_gt_pred)
+                pred_score_thr=self.score_thr,
+                out_file=out_file)
 
     def evaluate_and_show(self,
                           dataset,
@@ -157,20 +164,18 @@ class ResultVisualizer:
             eval_fn (callable, optional): Eval function, Default: None.
         """
 
+        self.visualizer.dataset_meta = dataset.metainfo
+
         assert topk > 0
         if (topk * 2) > len(dataset):
             topk = len(dataset) // 2
 
-        if isinstance(results[0], dict):
-            good_samples, bad_samples = self.panoptic_evaluate(
-                dataset, results, topk=topk)
-        elif isinstance(results[0], list):
-            good_samples, bad_samples = self.detection_evaluate(
-                dataset, results, topk=topk)
-        else:
-            raise 'The format of result is not supported yet. ' \
-                'Current dict for panoptic segmentation and list ' \
-                'for object detection are supported.'
+        # TODO: Waiting for panoptic segmentation reconstruction to test.
+        # good_samples, bad_samples = self.panoptic_evaluate(
+        #     dataset, results, topk=topk)
+
+        good_samples, bad_samples = self.detection_evaluate(
+            dataset, results, topk=topk)
 
         good_dir = osp.abspath(osp.join(show_dir, 'good'))
         bad_dir = osp.abspath(osp.join(show_dir, 'bad'))
@@ -197,6 +202,7 @@ class ResultVisualizer:
                     samples's indices in dataset and model's
                     performance on them.
         """
+
         if eval_fn is None:
             eval_fn = bbox_map_eval
         else:
@@ -204,11 +210,28 @@ class ResultVisualizer:
 
         prog_bar = ProgressBar(len(results))
         _mAPs = {}
+        data_info = {}
         for i, (result, ) in enumerate(zip(results)):
+
             # self.dataset[i] should not call directly
             # because there is a risk of mismatch
-            data_info = dataset.prepare_train_img(i)
-            mAP = eval_fn(result, data_info['ann_info'])
+            data_info = dataset.prepare_data(i)
+            data_info['bboxes'] = data_info['gt_bboxes']
+            data_info['labels'] = data_info['gt_bboxes_labels']
+
+            pred = result['pred_instances']
+            pred_bboxes = pred['bboxes'].cpu().numpy()
+            pred_scores = pred['scores'].cpu().numpy()
+            pred_labels = pred['labels'].cpu().numpy()
+
+            dets = []
+            for label in range(len(dataset.metainfo['CLASSES'])):
+                index = np.where(pred_labels == label)[0]
+                pred_bbox_scores = np.hstack(
+                    [pred_bboxes[index], pred_scores[index].reshape((-1, 1))])
+                dets.append(pred_bbox_scores)
+            mAP = eval_fn(dets, data_info)
+
             _mAPs[i] = mAP
             prog_bar.update()
         # descending select topk image
@@ -218,6 +241,7 @@ class ResultVisualizer:
 
         return good_mAPs, bad_mAPs
 
+    # TODO: Waiting for panoptic segmentation reconstruction to test.
     def panoptic_evaluate(self, dataset, results, topk=20):
         """Evaluation for panoptic segmentation.
 
@@ -248,8 +272,8 @@ class ResultVisualizer:
         pqs = {}
         prog_bar = ProgressBar(len(results))
         for i in range(len(results)):
-            data_info = dataset.prepare_train_img(i)
-            image_id = data_info['img_info']['id']
+            data_info = dataset[i]
+            image_id = data_info['img_id']
             gt_ann = {
                 'image_id': image_id,
                 'segments_info': gt_json[image_id],
@@ -341,15 +365,17 @@ def main():
 
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
-    cfg.data.test.test_mode = True
+    cfg.test_dataloader.dataset.test_mode = True
 
-    cfg.data.test.pop('samples_per_gpu', 0)
-    if cfg.data.train.type in ('MultiImageMixDataset', 'ClassBalancedDataset',
-                               'RepeatDataset', 'ConcatDataset'):
-        cfg.data.test.pipeline = get_loading_pipeline(
-            cfg.data.train.dataset.pipeline)
+    cfg.test_dataloader.pop('batch_size', 0)
+    if cfg.train_dataloader.dataset.type in ('MultiImageMixDataset',
+                                             'ClassBalancedDataset',
+                                             'RepeatDataset', 'ConcatDataset'):
+        cfg.test_dataloader.dataset.pipeline = get_loading_pipeline(
+            cfg.train_dataloader.dataset.pipeline)
     else:
-        cfg.data.test.pipeline = get_loading_pipeline(cfg.data.train.pipeline)
+        cfg.test_dataloader.dataset.pipeline = get_loading_pipeline(
+            cfg.train_dataloader.dataset.pipeline)
 
     dataset = build_dataset(cfg.data.test)
     outputs = load(args.prediction_path)
