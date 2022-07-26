@@ -526,8 +526,6 @@ class DETRHead(AnchorFreeHead):
         # DETR regress the relative position of boxes (cxcywh) in the image.
         # Thus the learning target should be normalized by the image size, also
         # the box format should be converted from defaultly x1y1x2y2 to cxcywh.
-        factor = bbox_pred.new_tensor([img_w, img_h, img_w,
-                                       img_h]).unsqueeze(0)
         pos_gt_bboxes_normalized = pos_gt_bboxes / factor
         pos_gt_bboxes_targets = bbox_xyxy_to_cxcywh(pos_gt_bboxes_normalized)
         bbox_targets[pos_inds] = pos_gt_bboxes_targets
