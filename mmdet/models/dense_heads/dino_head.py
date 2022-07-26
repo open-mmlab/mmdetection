@@ -217,6 +217,14 @@ class DINOHead(DeformableDETRHead):
 
     def loss_dn_single(self, dn_cls_scores, dn_bbox_preds, gt_bboxes_list,
                        gt_labels_list, img_metas, dn_meta):
+        if dn_cls_scores.size(1) < 1:
+            loss_cls = torch.zeros(
+                1, dtype=dn_cls_scores.dtype, device=dn_cls_scores.device)
+            loss_bbox = torch.zeros(
+                1, dtype=dn_bbox_preds.dtype, device=dn_bbox_preds.device)
+            loss_iou = torch.zeros(
+                1, dtype=dn_bbox_preds.dtype, device=dn_bbox_preds.device)
+            return loss_cls, loss_bbox, loss_iou
         num_imgs = dn_cls_scores.size(0)
         bbox_preds_list = [dn_bbox_preds[i] for i in range(num_imgs)]
         cls_reg_targets = self.get_dn_target(bbox_preds_list, gt_bboxes_list,
@@ -331,7 +339,7 @@ class DINOHead(DeformableDETRHead):
 
     @staticmethod
     def extract_dn_outputs(all_cls_scores, all_bbox_preds, dn_meta):
-        if dn_meta and dn_meta['pad_size'] > 0:
+        if dn_meta is not None:
             denoising_cls_scores = all_cls_scores[:, :, :
                                                   dn_meta['pad_size'], :]
             denoising_bbox_preds = all_bbox_preds[:, :, :
