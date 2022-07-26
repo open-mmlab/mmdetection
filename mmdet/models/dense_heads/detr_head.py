@@ -485,13 +485,12 @@ class DETRHead(AnchorFreeHead):
             - pos_inds (Tensor): Sampled positive indices for each image.
             - neg_inds (Tensor): Sampled negative indices for each image.
         """
-
-        num_bboxes = bbox_pred.size(0)
-        # convert bbox_pred from xywh, normalized to xyxy, unnormalized
-        bbox_pred = bbox_cxcywh_to_xyxy(bbox_pred)
         img_h, img_w = img_meta['img_shape']
         factor = bbox_pred.new_tensor([img_w, img_h, img_w,
                                        img_h]).unsqueeze(0)
+        num_bboxes = bbox_pred.size(0)
+        # convert bbox_pred from xywh, normalized to xyxy, unnormalized
+        bbox_pred = bbox_cxcywh_to_xyxy(bbox_pred)
         bbox_pred = bbox_pred * factor
 
         pred_instances = InstanceData(scores=cls_score, bboxes=bbox_pred)
