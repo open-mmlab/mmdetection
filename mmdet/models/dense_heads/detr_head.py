@@ -520,7 +520,6 @@ class DETRHead(AnchorFreeHead):
         bbox_targets = torch.zeros_like(bbox_pred)
         bbox_weights = torch.zeros_like(bbox_pred)
         bbox_weights[pos_inds] = 1.0
-        img_h, img_w = img_meta['img_shape']
 
         # DETR regress the relative position of boxes (cxcywh) in the image.
         # Thus the learning target should be normalized by the image size, also
