@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import sys
+
 import cv2
 import matplotlib.pyplot as plt
 import mmcv
@@ -350,6 +352,8 @@ def imshow_det_bboxes(img,
 
     stream, _ = canvas.print_to_buffer()
     buffer = np.frombuffer(stream, dtype='uint8')
+    if sys.platform == 'darwin':
+        width, height = canvas.get_width_height(physical=True)
     img_rgba = buffer.reshape(height, width, 4)
     rgb, alpha = np.split(img_rgba, [3], axis=2)
     img = rgb.astype('uint8')
