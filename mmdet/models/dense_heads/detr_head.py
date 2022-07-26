@@ -487,7 +487,13 @@ class DETRHead(AnchorFreeHead):
         """
 
         num_bboxes = bbox_pred.size(0)
+        # convert bbox_pred from xywh, normalized to xyxy, unnormalized
         bbox_pred = bbox_cxcywh_to_xyxy(bbox_pred)
+        img_h, img_w = img_meta['img_shape']
+        factor = bbox_pred.new_tensor([img_w, img_h, img_w,
+                                       img_h]).unsqueeze(0)
+        bbox_pred = bbox_pred * factor
+
         pred_instances = InstanceData(scores=cls_score, bboxes=bbox_pred)
         # assigner and sampler
         assign_result = self.assigner.assign(
