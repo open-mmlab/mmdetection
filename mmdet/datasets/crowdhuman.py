@@ -18,7 +18,6 @@ from .base_det_dataset import BaseDetDataset
 @DATASETS.register_module()
 class CrowdHumanDataset(BaseDetDataset):
     r"""Dataset for CrowdHuman.
-
     Args:
         data_root (str): The root directory for
             ``data_prefix`` and ``ann_file``.
@@ -62,7 +61,6 @@ class CrowdHumanDataset(BaseDetDataset):
 
     def load_data_list(self) -> List[dict]:
         """Load annotations from an annotation file named as ``self.ann_file``
-
         Returns:
             List[dict]: A list of annotation.
         """  # noqa: E501
@@ -96,10 +94,8 @@ class CrowdHumanDataset(BaseDetDataset):
 
     def parse_data_info(self, raw_data_info: dict) -> Union[dict, List[dict]]:
         """Parse raw annotation to target format.
-
         Args:
             raw_data_info (dict): Raw data information load from ``ann_file``
-
         Returns:
             Union[dict, List[dict]]: Parsed annotation.
         """
