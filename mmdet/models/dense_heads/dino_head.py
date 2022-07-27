@@ -14,14 +14,27 @@ from .deformable_detr_head import DeformableDETRHead
 @HEADS.register_module()
 class DINOHead(DeformableDETRHead):
 
-    def __init__(self, *args, dn_cfg=None, **kwargs):
-        super(DINOHead, self).__init__(*args, **kwargs)
-        self._init_layers()
-        self.init_denoising(dn_cfg)
+    def __init__(self,
+                 *args,
+                 num_query=100,
+                 dn_cfg=None,
+                 transformer=None,
+                 **kwargs):
+
+        if 'two_stage_num_proposals' in transformer:
+            assert transformer['two_stage_num_proposals'] == num_query, \
+                'two_stage_num_proposals must be equal to num_query for DINO'
+        else:
+            transformer['two_stage_num_proposals'] = num_query
+        super(DINOHead, self).__init__(
+            *args, num_query=num_query, transformer=transformer, **kwargs)
+
         assert self.as_two_stage, \
             'as_two_stage must be True for DINO'
         assert self.with_box_refine, \
             'with_box_refine must be True for DINO'
+        self._init_layers()
+        self.init_denoising(dn_cfg)
 
     def _init_layers(self):
         super()._init_layers()

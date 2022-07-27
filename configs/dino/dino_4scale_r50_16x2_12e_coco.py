@@ -37,7 +37,6 @@ model = dict(
             group_cfg=dict(dynamic=True, num_groups=None, num_dn_queries=100)),
         transformer=dict(
             type='DinoTransformer',
-            two_stage_num_proposals=900,
             encoder=dict(
                 type='DetrTransformerEncoder',
                 num_layers=6,
