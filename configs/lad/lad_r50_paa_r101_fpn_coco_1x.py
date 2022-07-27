@@ -4,14 +4,14 @@ _base_ = [
 ]
 teacher_ckpt = 'http://download.openmmlab.com/mmdetection/v2.0/paa/paa_r101_fpn_1x_coco/paa_r101_fpn_1x_coco_20200821-0a1825a4.pth'  # noqa
 
-preprocess_cfg = dict(
-    mean=[123.675, 116.28, 103.53],
-    std=[58.395, 57.12, 57.375],
-    to_rgb=True,
-    pad_size_divisor=32)
 model = dict(
-    preprocess_cfg=preprocess_cfg,
     type='LAD',
+    data_preprocessor=dict(
+        type='DetDataPreprocessor',
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        bgr_to_rgb=True,
+        pad_size_divisor=32),
     # student
     backbone=dict(
         type='ResNet',
@@ -123,10 +123,8 @@ model = dict(
         nms=dict(type='nms', iou_threshold=0.6),
         max_per_img=100))
 train_dataloader = dict(batch_size=8, num_workers=4)
-optim_wrapper = dict(optimizer=dict(lr=0.01))
+optim_wrapper = dict(type='AmpOptimWrapper', optimizer=dict(lr=0.01))
 
-# TODO: MMEngine does not support fp16 yet.
-# fp16 = dict(loss_scale=512.)
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (8 samples per GPU)
