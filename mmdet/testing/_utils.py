@@ -4,8 +4,7 @@ from os.path import dirname, exists, join
 
 import numpy as np
 import torch
-from mmengine.data import BaseDataElement as PixelData
-from mmengine.data import InstanceData
+from mmengine.data import InstanceData, PixelData
 
 from ..registry import TASK_UTILS
 from ..structures import DetDataSample
