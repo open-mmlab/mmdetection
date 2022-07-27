@@ -9,10 +9,12 @@
 - Fix mdformat version to support python3.6 (#8195)
 - Fix GPG key error in Dockerfile (#8215)
 - Fix `WandbLoggerHook` error (#8273)
+- Fix Pytorch 1.10 incompatibility issues (#8439)
 
 #### Improvements
 
-- Add `mim` to extras_require in setup.py (#8194)
+- Add `mim` to `extras_require` in setup.py (#8194)
+- Support get image shape on macOS (#8434)
 - Add test commands of `mim` in CI (#8230 & #8240)
 - Update `maskformer` to be compatible when cfg is a dictionary (#8263)
 - Clean `Pillow` version check in CI (#8229)
@@ -20,15 +22,14 @@
 #### Documents
 
 - Change example hook name in tutorials (#8118)
-- Update reference (#8264)
 - Update projects (#8120)
 - Update metafile and release new models (#8294)
-- Update QQ group qrcode (#8370)
+- Add download link in tutorials (#8391)
 
 #### Contributors
 
-A total of 13 developers contributed to this release.
-Thanks @ZwwWayne, @ayulockin, @Mxbonn, @p-mishra1, @Youth-Got, @MiXaiLL76, @chhluo, @jbwang1997, @atinfinity, @shinya7y, @duanzhihua, @STLAND-admin, @BIGWangYuDong
+A total of 15 developers contributed to this release.
+Thanks @ZwwWayne, @ayulockin, @Mxbonn, @p-mishra1, @Youth-Got, @MiXaiLL76, @chhluo, @jbwang1997, @atinfinity, @shinya7y, @duanzhihua, @STLAND-admin, @BIGWangYuDong, @grimoire, @xiaoyuan0203
 
 ### v2.25.0 (31/5/2022)
 
