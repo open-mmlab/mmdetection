@@ -14,7 +14,11 @@ from mmdet.registry import DATASETS
 class CrowdHumanDataset(BaseDataset):
     """Dataset for CrowdHuman."""
 
-    METAINFO = {'CLASSES': ['person']}
+    METAINFO = {
+        'CLASSES': ('person', ),
+        # PALETTE is a list of color tuples, which is used for visualization.
+        'PALETTE': [(220, 20, 60)]
+    }
 
     def __init__(self, file_client_args: dict = dict(backend='disk'),
                  **kwargs):
