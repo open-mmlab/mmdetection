@@ -246,7 +246,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         """Private function to load bounding box annotations.
 
         Args:
-            results (dict): Result dict from :obj:``mmcv.BaseDataset``.
+            results (dict): Result dict from :obj:``mmengine.BaseDataset``.
         Returns:
             dict: The dict contains loaded bounding box annotations.
         """
@@ -263,7 +263,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         """Private function to load label annotations.
 
         Args:
-            results (dict): Result dict from :obj :obj:``mmcv.BaseDataset``.
+            results (dict): Result dict from :obj:``mmengine.BaseDataset``.
 
         Returns:
             dict: The dict contains loaded label annotations.
@@ -307,12 +307,13 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         """Process gt_masks and filter invalid polygons.
 
         Args:
-            results (dict): Result dict from :obj:``mmcv.BaseDataset``.
+            results (dict): Result dict from :obj:``mmengine.BaseDataset``.
 
         Returns:
             list: Processed gt_masks.
         """
         gt_masks = []
+        gt_ignore_flags = []
         for instance in results['instances']:
             gt_mask = instance['mask']
             # If the annotation of segmentation mask is invalid,
@@ -343,13 +344,16 @@ class LoadAnnotations(MMCV_LoadAnnotations):
                     gt_mask = [np.arange(6)]
                     instance['ignore_flag'] = 1
             gt_masks.append(gt_mask)
+            # re-process gt_ignore_flags
+            gt_ignore_flags.append(instance['ignore_flag'])
+        results['gt_ignore_flags'] = np.array(gt_ignore_flags, dtype=np.bool)
         return gt_masks
 
     def _load_masks(self, results: dict) -> None:
         """Private function to load mask annotations.
 
         Args:
-            results (dict): Result dict from :obj:``mmcv.BaseDataset``.
+            results (dict): Result dict from :obj:``mmengine.BaseDataset``.
         """
 
         h, w = results['img_shape']
@@ -366,7 +370,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         """Function to load multiple types annotations.
 
         Args:
-            results (dict): Result dict from :obj:``mmcv.BaseDataset``.
+            results (dict): Result dict from :obj:``mmengine.BaseDataset``.
 
         Returns:
             dict: The dict contains loaded bounding box, label and
