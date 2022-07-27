@@ -537,7 +537,7 @@ yolof = dict(
 )
 yolox = dict(
     config='configs/yolox/yolox_tiny_8x8_300e_coco.py',
-    checkpoint='yolox_tiny_8x8_300e_coco_20210806_234250-4ff3b67e.pth',  # noqa
+    checkpoint='yolox_tiny_8x8_300e_coco_20211124_171234-b4047906.pth',  # noqa
     url='https://download.openmmlab.com/mmdetection/v2.0/yolox/yolox_tiny_8x8_300e_coco/yolox_tiny_8x8_300e_coco_20211124_171234-b4047906.pth', # noqa
     eval='bbox',
     metric=dict(bbox_mAP=31.8),
