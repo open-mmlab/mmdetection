@@ -51,6 +51,8 @@ class DnQueryGenerator(BaseModule):
                 num_groups = self.num_dn // group_queries
         else:
             num_groups = self.num_dn
+        if num_groups < 1:
+            num_groups = 1
         return int(num_groups)
 
     def forward(self,
