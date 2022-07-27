@@ -128,7 +128,7 @@ class GFLHead(AnchorHead):
             **kwargs)
 
         if self.train_cfg:
-            self.assigner = TASK_UTILS.build(self.train_cfg.assigner)
+            self.assigner = TASK_UTILS.build(self.train_cfg['assigner'])
             if self.train_cfg.get('sampler', None) is not None:
                 self.sampler = TASK_UTILS.build(
                     self.train_cfg['sampler'], default_args=dict(context=self))
@@ -369,10 +369,12 @@ class GFLHead(AnchorHead):
             batch_gt_instances_ignore=batch_gt_instances_ignore)
 
         (anchor_list, labels_list, label_weights_list, bbox_targets_list,
-         bbox_weights_list, avg_factor) = cls_reg_targets
+         bbox_weights_list, num_total_pos, num_total_neg) = cls_reg_targets
 
-        avg_factor = reduce_mean(
-            torch.tensor(avg_factor, dtype=torch.float, device=device)).item()
+        num_total_pos = reduce_mean(
+            torch.tensor(num_total_pos, dtype=torch.float,
+                         device=device)).item()
+        num_total_pos = max(num_total_pos, 1.0)
 
         losses_cls, losses_bbox, losses_dfl,\
             avg_factor = multi_apply(
@@ -384,7 +386,7 @@ class GFLHead(AnchorHead):
                 label_weights_list,
                 bbox_targets_list,
                 self.prior_generator.strides,
-                avg_factor=avg_factor)
+                avg_factor=num_total_pos)
 
         avg_factor = sum(avg_factor)
         avg_factor = reduce_mean(avg_factor).clamp_(min=1).item()
@@ -529,12 +531,8 @@ class GFLHead(AnchorHead):
              batch_img_metas,
              batch_gt_instances_ignore,
              unmap_outputs=unmap_outputs)
-        # Get `avg_factor` of all images, which calculate in `SamplingResult`.
-        # When using sampling method, avg_factor is usually the sum of
-        # positive and negative priors. When using `PseudoSampler`,
-        # `avg_factor` is usually equal to the number of positive priors.
-        avg_factor = sum(
-            [results.avg_factor for results in sampling_results_list])
+        num_total_pos = sum((inds.numel() for inds in pos_inds_list))
+        num_total_neg = sum((inds.numel() for inds in neg_inds_list))
         # split targets to a list w.r.t. multiple levels
         anchors_list = images_to_levels(all_anchors, num_level_anchors)
         labels_list = images_to_levels(all_labels, num_level_anchors)
@@ -545,7 +543,8 @@ class GFLHead(AnchorHead):
         bbox_weights_list = images_to_levels(all_bbox_weights,
                                              num_level_anchors)
         return (anchors_list, labels_list, label_weights_list,
-                bbox_targets_list, bbox_weights_list, avg_factor)
+                bbox_targets_list, bbox_weights_list, num_total_pos,
+                num_total_neg)
 
     def _get_targets_single(self,
                             flat_anchors: Tensor,

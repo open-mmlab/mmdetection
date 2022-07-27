@@ -228,10 +228,12 @@ class LDHead(GFLHead):
             batch_gt_instances_ignore=batch_gt_instances_ignore)
 
         (anchor_list, labels_list, label_weights_list, bbox_targets_list,
-         bbox_weights_list, avg_factor) = cls_reg_targets
+         bbox_weights_list, num_total_pos, num_total_neg) = cls_reg_targets
 
-        avg_factor = reduce_mean(
-            torch.tensor(avg_factor, dtype=torch.float, device=device)).item()
+        num_total_pos = reduce_mean(
+            torch.tensor(num_total_pos, dtype=torch.float,
+                         device=device)).item()
+        num_total_pos = max(num_total_pos, 1.0)
 
         losses_cls, losses_bbox, losses_dfl, losses_ld, \
             avg_factor = multi_apply(
@@ -244,7 +246,7 @@ class LDHead(GFLHead):
                 bbox_targets_list,
                 self.prior_generator.strides,
                 soft_targets,
-                avg_factor=avg_factor)
+                avg_factor=num_total_pos)
 
         avg_factor = sum(avg_factor) + 1e-6
         avg_factor = reduce_mean(avg_factor).item()
