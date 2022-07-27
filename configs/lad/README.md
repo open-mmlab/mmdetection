@@ -31,7 +31,7 @@ Distillation.
 
 - Meaning of Config name: lad_r50(student model)\_paa(based on paa)\_r101(teacher model)\_fpn(neck)\_coco(dataset)\_1x(12 epoch).py
 - Results may fluctuate by about 0.2 mAP.
-- 2 GPUs are used, 8 samples per gpu.
+- 2 GPUs are used, 8 samples per GPU.
 
 ## Citation
 
