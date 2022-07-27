@@ -4,8 +4,7 @@ import os.path as osp
 import unittest
 
 import numpy as np
-from mmengine.data import BaseDataElement as PixelData
-from mmengine.data import InstanceData
+from mmengine.data import InstanceData, PixelData
 
 from mmdet.datasets.transforms import PackDetInputs
 from mmdet.structures import DetDataSample

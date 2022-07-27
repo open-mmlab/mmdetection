@@ -3,8 +3,7 @@ import numpy as np
 from mmcv.parallel import DataContainer as DC
 from mmcv.transforms import to_tensor
 from mmcv.transforms.base import BaseTransform
-from mmengine.data import BaseDataElement as PixelData
-from mmengine.data import InstanceData
+from mmengine.data import InstanceData, PixelData
 
 from mmdet.registry import TRANSFORMS
 from mmdet.structures import DetDataSample

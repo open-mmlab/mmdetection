@@ -4,9 +4,9 @@ from typing import Dict, List, Optional, Tuple, Union
 import cv2
 import mmcv
 import numpy as np
+import torch
 from mmengine import Visualizer
-from mmengine.data import BaseDataElement as PixelData
-from mmengine.data import InstanceData
+from mmengine.data import InstanceData, PixelData
 from mmengine.dist import master_only
 
 from ..evaluation import INSTANCE_OFFSET
@@ -45,7 +45,7 @@ class DetLocalVisualizer(Visualizer):
         >>> import numpy as np
         >>> import torch
         >>> from mmengine.data import InstanceData
-        >>> from mmdet.data_elements import DetDataSample
+        >>> from mmdet.structures import DetDataSample
         >>> from mmdet.visualization import DetLocalVisualizer
 
         >>> det_local_visualizer = DetLocalVisualizer()
@@ -85,7 +85,11 @@ class DetLocalVisualizer(Visualizer):
                  mask_color: Optional[Union[str, Tuple[int]]] = None,
                  line_width: Union[int, float] = 3,
                  alpha: float = 0.8):
-        super().__init__(name, image, vis_backends, save_dir)
+        super().__init__(
+            name=name,
+            image=image,
+            vis_backends=vis_backends,
+            save_dir=save_dir)
         self.bbox_color = bbox_color
         self.text_color = text_color
         self.mask_color = mask_color
@@ -113,6 +117,7 @@ class DetLocalVisualizer(Visualizer):
             np.ndarray: the drawn image which channel is RGB.
         """
         self.set_image(image)
+
         if 'bboxes' in instances:
             bboxes = instances.bboxes
             labels = instances.labels
@@ -158,11 +163,17 @@ class DetLocalVisualizer(Visualizer):
         if 'masks' in instances:
             labels = instances.labels
             masks = instances.masks
+            if isinstance(masks, torch.Tensor):
+                masks = masks.numpy()
+
             max_label = int(max(labels) if len(labels) > 0 else 0)
             mask_color = palette if self.mask_color is None \
                 else self.mask_color
             mask_palette = get_palette(mask_color, max_label + 1)
             colors = [mask_palette[label] for label in labels]
+
+            text_palette = get_palette(self.text_color, max_label + 1)
+            text_colors = [text_palette[label] for label in labels]
 
             polygons = []
             for i, mask in enumerate(masks):
@@ -171,9 +182,41 @@ class DetLocalVisualizer(Visualizer):
             self.draw_polygons(polygons, edge_colors='w', alpha=self.alpha)
             self.draw_binary_masks(masks, colors=colors, alphas=self.alpha)
 
+            if 'bboxes' not in instances or instances.bboxes.sum() == 0:
+                # instances.bboxes.sum()==0 represent dummy bboxes.
+                # A typical example of SOLO does not exist bbox branch.
+                areas = []
+                positions = []
+                for mask in masks:
+                    _, _, stats, centroids = cv2.connectedComponentsWithStats(
+                        mask.astype(np.uint8), connectivity=8)
+                    largest_id = np.argmax(stats[1:, -1]) + 1
+                    positions.append(centroids[largest_id])
+                    areas.append(stats[largest_id, -1])
+                areas = np.stack(areas, axis=0)
+                scales = _get_adaptive_scales(areas)
+
+                for i, (pos, label) in enumerate(zip(positions, labels)):
+                    label_text = classes[
+                        label] if classes is not None else f'class {label}'
+                    if 'scores' in instances:
+                        score = round(float(instances.scores[i]) * 100, 1)
+                        label_text += f': {score}'
+
+                    self.draw_texts(
+                        label_text,
+                        pos,
+                        colors=text_colors[i],
+                        font_sizes=int(13 * scales[i]),
+                        horizontal_alignments='center',
+                        bboxes=[{
+                            'facecolor': 'black',
+                            'alpha': 0.8,
+                            'pad': 0.7,
+                            'edgecolor': 'none'
+                        }])
         return self.get_image()
 
-    # TODO: Waiting for panoptic segmentation reconstruction to test.
     def _draw_panoptic_seg(self, image: np.ndarray,
                            panoptic_seg: ['PixelData'],
                            classes: Optional[List[str]]) -> np.ndarray:
@@ -191,7 +234,7 @@ class DetLocalVisualizer(Visualizer):
         # TODO: Is there a way to bypass？
         num_classes = len(classes)
 
-        panoptic_seg = panoptic_seg.panoptic_seg
+        panoptic_seg = panoptic_seg.sem_seg[0]
         ids = np.unique(panoptic_seg)[::-1]
         legal_indices = ids != num_classes  # for VOID label
         ids = ids[legal_indices]
@@ -202,7 +245,6 @@ class DetLocalVisualizer(Visualizer):
         max_label = int(max(labels) if len(labels) > 0 else 0)
         mask_palette = get_palette(self.mask_color, max_label + 1)
         colors = [mask_palette[label] for label in labels]
-        colors = np.array(colors, dtype=np.uint8)
 
         self.set_image(image)
 
@@ -243,7 +285,7 @@ class DetLocalVisualizer(Visualizer):
                     'pad': 0.7,
                     'edgecolor': 'none'
                 }],
-                horizontal_alignment='center')
+                horizontal_alignments='center')
         return self.get_image()
 
     @master_only
@@ -324,14 +366,23 @@ class DetLocalVisualizer(Visualizer):
                                             'visualizing panoptic ' \
                                             'segmentation results.'
                 pred_img_data = self._draw_panoptic_seg(
-                    pred_img_data, pred_sample.pred_panoptic_seg, classes)
+                    pred_img_data,
+                    pred_sample.pred_panoptic_seg.cpu().numpy(), classes)
 
         if gt_img_data is not None and pred_img_data is not None:
             drawn_img = np.concatenate((gt_img_data, pred_img_data), axis=1)
         elif gt_img_data is not None:
             drawn_img = gt_img_data
-        else:
+        elif pred_img_data is not None:
             drawn_img = pred_img_data
+        else:
+            # Display the original image directly if nothing is drawn.
+            drawn_img = image
+
+        # It is convenient for users to obtain the drawn image.
+        # For example, the user wants to obtain the drawn image and
+        # save it as a video during video inference.
+        self.set_image(drawn_img)
 
         if show:
             self.show(drawn_img, win_name=name, wait_time=wait_time)

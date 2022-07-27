@@ -3,9 +3,7 @@ from unittest import TestCase
 import numpy as np
 import pytest
 import torch
-# TODO: will use real PixelData once it is added in mmengine
-from mmengine.data import BaseDataElement as PixelData
-from mmengine.data import InstanceData
+from mmengine.data import InstanceData, PixelData
 
 from mmdet.structures import DetDataSample
 

@@ -1,10 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-# TODO: will use real PixelData once it is added in mmengine
 from typing import List, Optional
 
-from mmengine.data import BaseDataElement
-from mmengine.data import BaseDataElement as PixelData
-from mmengine.data import InstanceData
+from mmengine.data import BaseDataElement, InstanceData, PixelData
 
 
 class DetDataSample(BaseDataElement):
@@ -30,7 +27,7 @@ class DetDataSample(BaseDataElement):
          >>> import torch
          >>> import numpy as np
          >>> from mmengine.data import InstanceData
-         >>> from mmdet.data_elements import DetDataSample
+         >>> from mmdet.structures import DetDataSample
 
          >>> data_sample = DetDataSample()
          >>> img_meta = dict(img_shape=(800, 1196, 3),
