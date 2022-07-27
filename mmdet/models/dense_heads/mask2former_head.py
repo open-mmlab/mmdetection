@@ -169,9 +169,9 @@ class Mask2FormerHead(MaskFormerHead):
             if p.dim() > 1:
                 nn.init.xavier_normal_(p)
 
-    def _get_target_single(self, cls_score: Tensor, mask_pred: Tensor,
-                           gt_instances: InstanceData,
-                           img_meta: dict) -> Tuple[Tensor]:
+    def _get_targets_single(self, cls_score: Tensor, mask_pred: Tensor,
+                            gt_instances: InstanceData,
+                            img_meta: dict) -> Tuple[Tensor]:
         """Compute classification and mask targets for one image.
 
         Args:
