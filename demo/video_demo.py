@@ -3,6 +3,7 @@ import argparse
 
 import cv2
 import mmcv
+from mmcv.transforms import Compose
 
 from mmdet.apis import inference_detector, init_detector
 from mmdet.registry import VISUALIZERS
@@ -41,6 +42,10 @@ def main():
     # build the model from a config file and a checkpoint file
     model = init_detector(args.config, args.checkpoint, device=args.device)
 
+    # build test pipeline
+    model.cfg.test_dataloader.dataset.pipeline[0].type = 'LoadImageFromNDArray'
+    test_pipeline = Compose(model.cfg.test_dataloader.dataset.pipeline)
+
     # init visualizer
     visualizer = VISUALIZERS.build(model.cfg.visualizer)
     visualizer.dataset_meta = model.dataset_meta
@@ -54,7 +59,7 @@ def main():
             (video_reader.width, video_reader.height))
 
     for frame in mmcv.track_iter_progress(video_reader):
-        result = inference_detector(model, frame)
+        result = inference_detector(model, frame, test_pipeline=test_pipeline)
         visualizer.add_datasample(
             name='video',
             image=frame,
