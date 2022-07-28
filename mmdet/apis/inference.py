@@ -84,14 +84,18 @@ def init_detector(
 ImagesType = Union[str, np.ndarray, Sequence[str], Sequence[np.ndarray]]
 
 
-def inference_detector(model: nn.Module,
-                       imgs: ImagesType) -> Union[DetDataSample, SampleList]:
+def inference_detector(
+    model: nn.Module,
+    imgs: ImagesType,
+    test_pipeline: Optional[Compose] = None
+) -> Union[DetDataSample, SampleList]:
     """Inference image(s) with the detector.
 
     Args:
         model (nn.Module): The loaded detector.
         imgs (str, ndarray, Sequence[str/ndarray]):
            Either image files or loaded images.
+        test_pipeline (:obj:`Compose`): Test pipeline.
 
     Returns:
         :obj:`DetDataSample` or list[:obj:`DetDataSample`]:
@@ -107,12 +111,14 @@ def inference_detector(model: nn.Module,
 
     cfg = model.cfg
 
-    if isinstance(imgs[0], np.ndarray):
-        cfg = cfg.copy()
-        # set loading pipeline type
-        cfg.test_dataloader.dataset.pipeline[0].type = 'LoadImageFromNDArray'
+    if test_pipeline is None:
+        if isinstance(imgs[0], np.ndarray):
+            cfg = cfg.copy()
+            # set loading pipeline type
+            cfg.test_dataloader.dataset.pipeline[
+                0].type = 'LoadImageFromNDArray'
 
-    test_pipeline = Compose(cfg.test_dataloader.dataset.pipeline)
+        test_pipeline = Compose(cfg.test_dataloader.dataset.pipeline)
 
     data = []
     for img in imgs:
