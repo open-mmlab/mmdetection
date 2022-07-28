@@ -3,6 +3,7 @@ import argparse
 import logging
 import os
 import os.path as osp
+import warnings
 
 from mmengine.config import Config, DictAction
 from mmengine.logging import print_log
@@ -21,6 +22,10 @@ def parse_args():
         action='store_true',
         default=False,
         help='enable automatic-mixed-precision training')
+    parser.add_argument(
+        '--auto-scale-lr',
+        action='store_true',
+        help='enable automatically scaling LR.')
     parser.add_argument(
         '--cfg-options',
         nargs='+',
@@ -80,6 +85,18 @@ def main():
                 f'`OptimWrapper` but got {optim_wrapper}.')
             cfg.optim_wrapper.type = 'AmpOptimWrapper'
             cfg.optim_wrapper.loss_scale = 'dynamic'
+
+    # enable automatically scaling LR
+    if args.auto_scale_lr:
+        if 'auto_scale_lr' in cfg and \
+                'enable' in cfg.auto_scale_lr and \
+                'base_batch_size' in cfg.auto_scale_lr:
+            cfg.auto_scale_lr.enable = True
+        else:
+            warnings.warn('Can not find "auto_scale_lr" or '
+                          '"auto_scale_lr.enable" or '
+                          '"auto_scale_lr.base_batch_size" in your'
+                          ' configuration file.')
 
     # build the runner from config
     if 'runner_type' not in cfg:
