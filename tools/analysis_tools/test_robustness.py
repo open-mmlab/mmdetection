@@ -17,11 +17,8 @@ from mmengine.utils import is_str
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
-from mmdet import datasets
-from mmdet.apis import multi_gpu_test, set_random_seed, single_gpu_test
-from mmdet.datasets import build_dataloader, build_dataset
-from mmdet.evaluation import eval_map
-from mmdet.models import build_detector
+from mmdet.registry import RUNNERS
+from mmdet.utils import register_all_modules
 from tools.analysis_tools.robustness_eval import get_results
 
 
@@ -120,32 +117,15 @@ def parse_args():
         default=[0, 1, 2, 3, 4, 5],
         help='corruption severity levels')
     parser.add_argument(
-        '--eval',
-        type=str,
-        nargs='+',
-        choices=['proposal', 'proposal_fast', 'bbox', 'segm', 'keypoints'],
-        help='eval types')
-    parser.add_argument(
-        '--iou-thr',
-        type=float,
-        default=0.5,
-        help='IoU threshold for pascal voc evaluation')
-    parser.add_argument(
         '--summaries',
         type=bool,
         default=False,
         help='Print summaries for every corruption and severity')
-    parser.add_argument(
-        '--workers', type=int, default=32, help='workers per gpu')
     parser.add_argument('--show', action='store_true', help='show results')
     parser.add_argument(
         '--show-dir', help='directory where painted images will be saved')
     parser.add_argument(
-        '--show-score-thr',
-        type=float,
-        default=0.3,
-        help='score threshold (default: 0.3)')
-    parser.add_argument('--tmpdir', help='tmp dir for writing some results')
+        '--wait-time', type=float, default=2, help='the interval of show (s)')
     parser.add_argument('--seed', type=int, default=None, help='random seed')
     parser.add_argument(
         '--launcher',
@@ -182,8 +162,32 @@ def parse_args():
     return args
 
 
+def trigger_visualization_hook(cfg, args):
+    default_hooks = cfg.default_hooks
+    if 'visualization' in default_hooks:
+        visualization_hook = default_hooks['visualization']
+        # Turn on visualization
+        visualization_hook['draw'] = True
+        if args.show:
+            visualization_hook['show'] = True
+            visualization_hook['wait_time'] = args.wait_time
+        if args.show_dir:
+            visualization_hook['test_out_dir'] = args.show_dir
+    else:
+        raise RuntimeError(
+            'VisualizationHook must be included in default_hooks.'
+            'refer to usage '
+            '"visualization=dict(type=\'VisualizationHook\')"')
+
+    return cfg
+
+
 def main():
     args = parse_args()
+
+    # register all modules in mmdet into the registries
+    # do not init the default scope here because it will be init in the runner
+    register_all_modules(init_default_scope=False)
 
     assert args.out or args.show or args.show_dir, \
         ('Please specify at least one operation (save or show the results) '
@@ -195,24 +199,38 @@ def main():
     cfg = Config.fromfile(args.config)
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
-    # set cudnn_benchmark
-    if cfg.get('cudnn_benchmark', False):
-        torch.backends.cudnn.benchmark = True
-    cfg.model.pretrained = None
-    cfg.data.test.test_mode = True
-    if args.workers == 0:
-        args.workers = cfg.data.workers_per_gpu
 
-    # init distributed env first, since logger depends on the dist info.
-    if args.launcher == 'none':
-        distributed = False
+    # work_dir is determined in this priority: CLI > segment in file > filename
+    if args.work_dir is not None:
+        # update configs according to CLI args if args.work_dir is not None
+        cfg.work_dir = args.work_dir
+    elif cfg.get('work_dir', None) is None:
+        # use config filename as default work_dir if cfg.work_dir is None
+        cfg.work_dir = osp.join('./work_dirs',
+                                osp.splitext(osp.basename(args.config))[0])
+
+    cfg.model.backbone.init_cfg.type = None
+    cfg.test_dataloader.dataset.test_mode = True
+
+    cfg.load_from = args.checkpoint
+    if args.show or args.show_dir:
+        cfg = trigger_visualization_hook(cfg, args)
+
+    if args.out:
+        test_evaluator = dict(
+            type='DumpResults',
+            out_file_path='robust.pkl',
+        )
+        cfg.test_evaluator = [cfg.test_evaluator, test_evaluator]
+
+    # build the runner from config
+    if 'runner_type' not in cfg:
+        # build the default runner
+        runner = Runner.from_cfg(cfg)
     else:
-        distributed = True
-        init_dist(args.launcher, **cfg.dist_params)
-
-    # set random seeds
-    if args.seed is not None:
-        set_random_seed(args.seed)
+        # build customized runner from the registry
+        # if 'runner_type' is set in the cfg
+        runner = RUNNERS.build(cfg)
 
     if 'all' in args.corruptions:
         corruptions = [
@@ -249,7 +267,6 @@ def main():
     else:
         corruptions = args.corruptions
 
-    rank, _ = get_dist_info()
     aggregated_results = {}
     for corr_i, corruption in enumerate(corruptions):
         aggregated_results[corruption] = {}
@@ -260,7 +277,7 @@ def main():
                     aggregated_results[corruptions[0]][0]
                 continue
 
-            test_data_cfg = copy.deepcopy(cfg.data.test)
+            test_loader_cfg = copy.deepcopy(cfg.test_dataloader)
             # assign corruption and severity
             if corruption_severity > 0:
                 corruption_trans = dict(
@@ -369,7 +386,10 @@ def main():
                 # save results after each evaluation
                 dump(aggregated_results, eval_results_filename)
 
+    rank, _ = get_dist_info()
     if rank == 0:
+        eval_results_filename = (
+            osp.splitext(args.out)[0] + '_results' + osp.splitext(args.out)[1])
         # print final results
         print('\nAggregated results:')
         prints = args.final_prints
