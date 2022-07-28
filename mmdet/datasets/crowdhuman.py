@@ -1,11 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import json
+import logging
 import os.path as osp
 from typing import List, Union
 
 import mmcv
 from mmengine.dataset import BaseDataset
 from mmengine.fileio import FileClient
+from mmengine.logging import print_log
 
 from mmdet.registry import DATASETS
 
@@ -20,22 +22,24 @@ class CrowdHumanDataset(BaseDataset):
         'PALETTE': [(220, 20, 60)]
     }
 
-    def __init__(self, file_client_args: dict = dict(backend='disk'),
+    def __init__(self,
+                 data_root,
+                 file_client_args: dict = dict(backend='disk'),
                  **kwargs):
-        assert 'data_root' in kwargs, \
-            f"{self.__class__.__name__} needs parameter: 'data_root' \n"
-        assert osp.exists(kwargs['data_root']), \
-            "'data_root' is not valid: Please enter the correct parameter \n"
-        self.id_hw_path = osp.join(kwargs['data_root'], 'id_hw.json')
-        self.id_hw_exist_flag = True
+        self.id_hw_path = osp.join(data_root, 'id_hw.json')
+        self.id_hw_exist = False
         if not osp.isfile(self.id_hw_path):
+            print_log(
+                'id_hw file does not exist, prepare to collect '
+                'image height and width...',
+                level=logging.INFO)
             self.file_client = FileClient(**file_client_args)
-            self.id_hw_exist_flag = False
             self.id_hw = {}
         else:
+            self.id_hw_exist = True
             with open(self.id_hw_path, 'r') as id_hw_file:
                 self.id_hw = json.load(id_hw_file)
-        super().__init__(**kwargs)
+        super().__init__(data_root=data_root, **kwargs)
 
     def load_data_list(self) -> List[dict]:
         """Load annotations from an annotation file named as ``self.ann_file``
@@ -46,7 +50,7 @@ class CrowdHumanDataset(BaseDataset):
         with open(self.ann_file, 'r') as file:
             anno_strs = file.readlines()
 
-        print('loading CrowdHuman annotation...')
+        print_log('loading CrowdHuman annotation...', level=logging.INFO)
         data_list = []
         prog_bar = mmcv.ProgressBar(len(anno_strs))
         for i, anno_str in enumerate(anno_strs):
@@ -54,12 +58,12 @@ class CrowdHumanDataset(BaseDataset):
             parsed_data_info = self.parse_data_info(anno_dict)
             data_list.append(parsed_data_info)
             prog_bar.update()
-        if not self.id_hw_exist_flag:
+        if not self.id_hw_exist:
             with open(self.id_hw_path, 'w', encoding='utf-8') as file:
                 json.dump(self.id_hw, file, indent=4)
-            print(f'\nsave id_hw in {self.data_root}')
-        del self.id_hw, self.id_hw_exist_flag, self.id_hw_path
-        print('Done')
+            print_log(f'\nsave id_hw in {self.data_root}', level=logging.INFO)
+        del self.id_hw, self.id_hw_exist, self.id_hw_path
+        print_log('\nDone', level=logging.INFO)
         return data_list
 
     def parse_data_info(self, raw_data_info: dict) -> Union[dict, List[dict]]:
@@ -77,7 +81,7 @@ class CrowdHumanDataset(BaseDataset):
         data_info['img_path'] = img_path
         data_info['img_id'] = raw_data_info['ID']
 
-        if not self.id_hw_exist_flag:
+        if not self.id_hw_exist:
             img_bytes = self.file_client.get(img_path)
             img = mmcv.imfrombytes(img_bytes, backend='cv2')
             data_info['height'], data_info['width'] = img.shape[:2]
@@ -129,15 +133,4 @@ if __name__ == '__main__':
         data_prefix=dict(img='Images/'),
         pipeline=train_pipeline)
     data = dataset.__getitem__(1)
-    print(data)
-    print('down!')
-
-# if __name__ == '__main__':
-#     dataset = CrowdHumanDataset(
-#         data_root=r'C:\Users\25469\Desktop',
-#         ann_file='test_annotation_train.odgt',
-#         data_prefix=dict(img='Images/'),
-#         # filter_cfg=dict(filter_empty_gt=True, min_size=32),
-#         pipeline=[])
-#     print(len(dataset))
-#     print('down!')
+    print_log('complete the test', level=logging.INFO)
