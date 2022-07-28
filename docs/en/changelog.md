@@ -1,5 +1,36 @@
 ## Changelog
 
+### v2.25.1 (29/7/2022)
+
+#### Bug Fixes
+
+- Fix single GPU distributed training of cuda device specifying (#8176)
+- Fix PolygonMask bug in FilterAnnotations (#8136)
+- Fix mdformat version to support python3.6 (#8195)
+- Fix GPG key error in Dockerfile (#8215)
+- Fix `WandbLoggerHook` error (#8273)
+- Fix Pytorch 1.10 incompatibility issues (#8439)
+
+#### Improvements
+
+- Add `mim` to `extras_require` in setup.py (#8194)
+- Support get image shape on macOS (#8434)
+- Add test commands of `mim` in CI (#8230 & #8240)
+- Update `maskformer` to be compatible when cfg is a dictionary (#8263)
+- Clean `Pillow` version check in CI (#8229)
+
+#### Documents
+
+- Change example hook name in tutorials (#8118)
+- Update projects (#8120)
+- Update metafile and release new models (#8294)
+- Add download link in tutorials (#8391)
+
+#### Contributors
+
+A total of 15 developers contributed to this release.
+Thanks @ZwwWayne, @ayulockin, @Mxbonn, @p-mishra1, @Youth-Got, @MiXaiLL76, @chhluo, @jbwang1997, @atinfinity, @shinya7y, @duanzhihua, @STLAND-admin, @BIGWangYuDong, @grimoire, @xiaoyuan0203
+
 ### v2.25.0 (31/5/2022)
 
 #### Highlights
