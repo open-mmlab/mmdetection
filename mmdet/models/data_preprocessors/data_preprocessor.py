@@ -7,6 +7,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from mmengine.data import PixelData
 from mmengine.dist import barrier, broadcast, get_dist_info
 from mmengine.logging import MessageHub
 from mmengine.model import BaseDataPreprocessor, ImgDataPreprocessor
@@ -163,11 +164,12 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                 gt_sem_seg = data_samples.gt_sem_seg.sem_seg
                 h, w = gt_sem_seg.shape[-2:]
                 pad_h, pad_w = data_samples.batch_input_shape
-                data_samples.gt_sem_seg.sem_seg = F.pad(
+                gt_sem_seg = F.pad(
                     gt_sem_seg,
                     pad=(0, max(pad_w - w, 0), 0, max(pad_h - h, 0)),
                     mode='constant',
                     value=self.seg_pad_value)
+                data_samples.gt_sem_seg = PixelData(sem_seg=gt_sem_seg)
 
 
 @MODELS.register_module()
@@ -327,11 +329,12 @@ class BatchFixedSizePad(nn.Module):
                 for data_samples in batch_data_samples:
                     gt_sem_seg = data_samples.gt_sem_seg.sem_seg
                     h, w = gt_sem_seg.shape[-2:]
-                    data_samples.gt_sem_seg.sem_seg = F.pad(
+                    gt_sem_seg = F.pad(
                         gt_sem_seg,
                         pad=(0, max(0, dst_w - w), 0, max(0, dst_h - h)),
                         mode='constant',
                         value=self.seg_pad_value)
+                    data_samples.gt_sem_seg = PixelData(sem_seg=gt_sem_seg)
 
         return batch_inputs, batch_data_samples
 
