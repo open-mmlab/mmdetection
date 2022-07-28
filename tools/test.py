@@ -43,6 +43,7 @@ def parse_args():
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
         help='job launcher')
+    parser.add_argument('--tta', action='store_true')
     parser.add_argument('--local_rank', type=int, default=0)
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
@@ -106,6 +107,22 @@ def main():
         # if 'runner_type' is set in the cfg
         runner = RUNNERS.build(cfg)
 
+    if not args.tta:
+        cfg.load_from = args.checkpoint
+        runner = Runner.from_cfg(cfg)
+    else:
+        cfg.load_from = None
+        cfg.test_dataloader.dataset.pipeline = cfg.tta_cfg.test_pipeline
+
+        cfg.tta_cfg.tta_wrapper.module = cfg.model
+        cfg.model = cfg.tta_cfg.tta_wrapper
+        runner = Runner.from_cfg(cfg)
+        if runner.distributed:
+            load_checkpoint(runner.model.module.module,  args.checkpoint)
+        else:
+            load_checkpoint(runner.model.module,  args.checkpoint)
+
+    runner.test()
     # start testing
     runner.test()
 
