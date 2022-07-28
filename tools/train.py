@@ -3,6 +3,7 @@ import argparse
 import logging
 import os
 import os.path as osp
+import warnings
 
 from mmengine.config import Config, DictAction
 from mmengine.logging import print_log
