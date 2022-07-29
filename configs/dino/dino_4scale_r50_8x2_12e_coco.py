@@ -27,6 +27,7 @@ model = dict(
         type='DINOHead',
         num_query=900,
         num_classes=80,
+        num_feature_levels=4,
         in_channels=2048,  # TODO
         sync_cls_avg_factor=True,
         as_two_stage=True,
@@ -45,6 +46,7 @@ model = dict(
                     attn_cfgs=dict(
                         type='MultiScaleDeformableAttention',
                         embed_dims=256,
+                        num_levels=4,
                         dropout=0.0),  # 0.1 for DeformDETR
                     feedforward_channels=2048,  # 1024 for DeformDETR
                     ffn_dropout=0.0,  # 0.1 for DeformDETR
@@ -64,6 +66,7 @@ model = dict(
                         dict(
                             type='MultiScaleDeformableAttention',
                             embed_dims=256,
+                            num_levels=4,
                             dropout=0.0),  # 0.1 for DeformDETR
                     ],
                     feedforward_channels=2048,  # 1024 for DeformDETR
