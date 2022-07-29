@@ -15,8 +15,8 @@ jobs:
           stale-pr-message: 'This PR is marked as stale because there has been no activity in the past 45 days. It will be closed in 10 days if the stale label is not removed or if there is no further updates.'
           close-issue-message: 'This issue is closed because it has been stale for 5 days. Please open a new issue if you have similar issues or you have any new updates now.'
           close-pr-message: 'This PR is closed because it has been stale for 10 days. Please reopen this PR if you have any updates and want to keep contributing the code.'
-          # only issues/PRS with ALL these labels are checked
-          only-labels: 'invalid, awaiting response'
+          # only issues/PRS with any of invalid and awaiting response labels are checked
+          any-of-labels: 'invalid, awaiting response'
           days-before-issue-stale: 7
           days-before-pr-stale: 45
           days-before-issue-close: 5
