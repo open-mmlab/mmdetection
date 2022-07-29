@@ -3,7 +3,6 @@ import argparse
 import logging
 import os
 import os.path as osp
-import warnings
 
 from mmengine.config import Config, DictAction
 from mmengine.logging import print_log
@@ -93,10 +92,10 @@ def main():
                 'base_batch_size' in cfg.auto_scale_lr:
             cfg.auto_scale_lr.enable = True
         else:
-            warnings.warn('Can not find "auto_scale_lr" or '
-                          '"auto_scale_lr.enable" or '
-                          '"auto_scale_lr.base_batch_size" in your'
-                          ' configuration file.')
+            raise RuntimeError('Can not find "auto_scale_lr" or '
+                               '"auto_scale_lr.enable" or '
+                               '"auto_scale_lr.base_batch_size" in your'
+                               ' configuration file.')
 
     # build the runner from config
     if 'runner_type' not in cfg:
