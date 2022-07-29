@@ -44,6 +44,8 @@ def main(args):
 
     # init visualizer
     visualizer = VISUALIZERS.build(model.cfg.visualizer)
+    # the dataset_meta is loaded from the checkpoint and
+    # then pass to the model in init_detector
     visualizer.dataset_meta = model.dataset_meta
 
     # test a single image
