@@ -111,6 +111,12 @@ class DINOHead(DeformableDETRHead):
             )
         hs = hs.permute(0, 2, 1, 3)
 
+        if dn_label_query.size(1) == 0:
+            # NOTE: If there is no target in the image, the parameters of
+            # label_embedding won't be used in producing loss, which raises
+            # RuntimeError when using distributed mode.
+            hs[0] += self.label_embedding.weight[0, 0] * 0.0
+
         outputs_classes = []
         outputs_coords = []
 
@@ -230,14 +236,6 @@ class DINOHead(DeformableDETRHead):
 
     def loss_dn_single(self, dn_cls_scores, dn_bbox_preds, gt_bboxes_list,
                        gt_labels_list, img_metas, dn_meta):
-        if dn_cls_scores.size(1) < 1:
-            loss_cls = torch.zeros(
-                1, dtype=dn_cls_scores.dtype, device=dn_cls_scores.device)
-            loss_bbox = torch.zeros(
-                1, dtype=dn_bbox_preds.dtype, device=dn_bbox_preds.device)
-            loss_iou = torch.zeros(
-                1, dtype=dn_bbox_preds.dtype, device=dn_bbox_preds.device)
-            return loss_cls, loss_bbox, loss_iou
         num_imgs = dn_cls_scores.size(0)
         bbox_preds_list = [dn_bbox_preds[i] for i in range(num_imgs)]
         cls_reg_targets = self.get_dn_target(bbox_preds_list, gt_bboxes_list,
@@ -260,8 +258,14 @@ class DINOHead(DeformableDETRHead):
                 cls_scores.new_tensor([cls_avg_factor]))
         cls_avg_factor = max(cls_avg_factor, 1)
 
-        loss_cls = self.loss_cls(
-            cls_scores, labels, label_weights, avg_factor=cls_avg_factor)
+        if len(cls_scores) > 0:
+            loss_cls = self.loss_cls(
+                cls_scores, labels, label_weights, avg_factor=cls_avg_factor)
+        else:
+            loss_cls = torch.zeros(  # TODO: How to better return zero loss
+                1,
+                dtype=cls_scores.dtype,
+                device=cls_scores.device)
 
         # Compute the average number of gt boxes across all gpus, for
         # normalization purposes
