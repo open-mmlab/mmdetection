@@ -90,6 +90,7 @@ async def async_main(args):
 
 if __name__ == '__main__':
     args = parse_args()
+    assert not args.async_test, 'async inference is not supported yet.'
     if args.async_test:
         asyncio.run(async_main(args))
     else:
