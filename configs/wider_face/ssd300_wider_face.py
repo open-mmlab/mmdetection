@@ -16,3 +16,5 @@ lr_config = dict(
 # runtime settings
 runner = dict(type='EpochBasedRunner', max_epochs=24)
 log_config = dict(interval=1)
+
+# TODO add auto-scale-lr after a series of experiments
