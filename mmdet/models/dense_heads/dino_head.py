@@ -111,7 +111,7 @@ class DINOHead(DeformableDETRHead):
             )
         hs = hs.permute(0, 2, 1, 3)
 
-        if dn_label_query.size(1) == 0:
+        if dn_label_query is not None and dn_label_query.size(1) == 0:
             # NOTE: If there is no target in the image, the parameters of
             # label_embedding won't be used in producing loss, which raises
             # RuntimeError when using distributed mode.
