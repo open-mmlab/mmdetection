@@ -14,7 +14,12 @@ from mmdet.registry import DATASETS
 
 @DATASETS.register_module()
 class CrowdHumanDataset(BaseDataset):
-    """Dataset for CrowdHuman."""
+    r"""Dataset for CrowdHuman.
+
+    Args:
+        data_root (str): The root directory for ``data_prefix`` and
+            ``ann_file``.
+    """
 
     METAINFO = {
         'CLASSES': ('person', ),
@@ -22,10 +27,7 @@ class CrowdHumanDataset(BaseDataset):
         'PALETTE': [(220, 20, 60)]
     }
 
-    def __init__(self,
-                 data_root,
-                 file_client_args: dict = dict(backend='disk'),
-                 **kwargs):
+    def __init__(self, data_root, **kwargs):
         self.id_hw_path = osp.join(data_root, 'id_hw.json')
         self.id_hw_exist = False
         if not osp.isfile(self.id_hw_path):
@@ -33,7 +35,7 @@ class CrowdHumanDataset(BaseDataset):
                 'id_hw file does not exist, prepare to collect '
                 'image height and width...',
                 level=logging.INFO)
-            self.file_client = FileClient(**file_client_args)
+            self.file_client = FileClient()
             self.id_hw = {}
         else:
             self.id_hw_exist = True
@@ -102,6 +104,10 @@ class CrowdHumanDataset(BaseDataset):
             instance['bbox'] = bbox
             instance['bbox_label'] = 0
 
+            # Record the full bbox(fbox), head bbox(hbox) and visible
+            # bbox(vbox) as additional information. If you need to use
+            # this information, you just need to design the pipeline
+            # instead of overriding the CrowdHumanDataset.
             instance['fbox'] = bbox
             hbox = ann['hbox']
             instance['hbox'] = [
