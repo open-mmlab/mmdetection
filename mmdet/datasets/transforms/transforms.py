@@ -3005,3 +3005,24 @@ class RandomErasing(BaseTransform):
         repr_str += f'mask_border_value={self.mask_border_value}, '
         repr_str += f'seg_ignore_label={self.seg_ignore_label})'
         return repr_str
+
+
+@TRANSFORMS.register_module()
+class CropBoxes(BaseTransform):
+    """Make sure boxes are within the image range."""
+
+    @autocast_box_type()
+    def transform(self, results: dict) -> dict:
+        gt_bboxes = results['gt_bboxes'].copy()
+        gt_bboxes = np.maximum(gt_bboxes, 0)
+        gt_bboxes[:, 2] = np.minimum(gt_bboxes[:, 2],
+                                     results['img_shape'][1] - 1)
+        gt_bboxes[:, 3] = np.minimum(gt_bboxes[:, 3],
+                                     results['img_shape'][0] - 1)
+        results['gt_bboxes'] = gt_bboxes
+        del gt_bboxes
+        return results
+
+    def __repr__(self) -> str:
+        repr_str = self.__class__.__name__
+        return repr_str
