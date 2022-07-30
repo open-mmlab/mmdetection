@@ -3580,4 +3580,3 @@ class CachedMixUp(BaseTransform):
         repr_str += f'max_cached_images={self.max_cached_images}, '
         repr_str += f'random_pop={self.random_pop}, '
         repr_str += f'prob={self.prob})'
-        return repr_str
