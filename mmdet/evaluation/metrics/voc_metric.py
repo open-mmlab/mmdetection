@@ -65,7 +65,7 @@ class VOCMetric(BaseMetric):
                 f"metric should be one of 'recall', 'mAP', but got {metric}.")
         self.metric = metric
         self.proposal_nums = proposal_nums
-        assert eval_mode in ['area, 11points'], \
+        assert eval_mode in ['area', '11points'], \
             'Unrecognized mode, only "area" and "11points" are supported'
         self.eval_mode = eval_mode
 
