@@ -1,0 +1,25 @@
+name: 'Close stale issues and PRs'
+
+on:
+  schedule:
+    # check issue and pull request once every day
+    - cron: '25 11 * * *'
+
+jobs:
+  invalid-stale-close:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v4
+        with:
+          stale-issue-message: 'This issue is marked as stale because it has been marked as invalid or awaiting response for 7 days without any further response. It will be closed in 5 days if the stale label is not removed or if there is no further response.'
+          stale-pr-message: 'This PR is marked as stale because there has been no activity in the past 45 days. It will be closed in 10 days if the stale label is not removed or if there is no further updates.'
+          close-issue-message: 'This issue is closed because it has been stale for 5 days. Please open a new issue if you have similar issues or you have any new updates now.'
+          close-pr-message: 'This PR is closed because it has been stale for 10 days. Please reopen this PR if you have any updates and want to keep contributing the code.'
+          # only issues/PRS with any of invalid and awaiting response labels are checked
+          any-of-labels: 'invalid, awaiting response'
+          days-before-issue-stale: 7
+          days-before-pr-stale: 45
+          days-before-issue-close: 5
+          days-before-pr-close: 10
+          # automatically remove the stale label when the issues or the pull reqquests are updated or commented
+          remove-stale-when-updated: true
