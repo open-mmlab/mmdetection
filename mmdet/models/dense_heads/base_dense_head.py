@@ -310,7 +310,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                       **kwargs):
         """
         Args:
-            x (list[Tensor]): Features from FPN.
+            x (list[Tensor]): 来自FPN的特征图.
             img_metas (list[dict]): Meta information of each image, e.g.,
                 image size, scaling factor, etc.
             gt_bboxes (Tensor): Ground truth bboxes of the image,

@@ -407,7 +407,7 @@ class LoadAnnotations:
         repr_str += f'with_mask={self.with_mask}, '
         repr_str += f'with_seg={self.with_seg}, '
         repr_str += f'poly2mask={self.poly2mask}, '
-        repr_str += f'poly2mask={self.file_client_args})'
+        repr_str += f'file_client_args={self.file_client_args})'
         return repr_str
 
 
@@ -564,7 +564,7 @@ class LoadProposals:
 
     def __repr__(self):
         return self.__class__.__name__ + \
-               f'(num_max_proposals={self.num_max_proposals})'
+            f'(num_max_proposals={self.num_max_proposals})'
 
 
 @PIPELINES.register_module()
@@ -625,19 +625,21 @@ class FilterAnnotations:
         for t in tests[1:]:
             keep = keep & t
 
+        keep = keep.nonzero()[0]
+
         keys = ('gt_bboxes', 'gt_labels', 'gt_masks')
         for key in keys:
             if key in results:
                 results[key] = results[key][keep]
-        if not keep.any():
+        if keep.size == 0:
             if self.keep_empty:
                 return None
         return results
 
     def __repr__(self):
         return self.__class__.__name__ + \
-               f'(min_gt_bbox_wh={self.min_gt_bbox_wh},' \
-               f'(min_gt_mask_area={self.min_gt_mask_area},' \
-               f'(by_box={self.by_box},' \
-               f'(by_mask={self.by_mask},' \
-               f'always_keep={self.always_keep})'
+            f'(min_gt_bbox_wh={self.min_gt_bbox_wh},' \
+            f'min_gt_mask_area={self.min_gt_mask_area},' \
+            f'by_box={self.by_box},' \
+            f'by_mask={self.by_mask},' \
+            f'always_keep={self.always_keep})'

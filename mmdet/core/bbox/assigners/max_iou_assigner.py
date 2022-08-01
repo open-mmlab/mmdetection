@@ -9,38 +9,29 @@ from .base_assigner import BaseAssigner
 
 @BBOX_ASSIGNERS.register_module()
 class MaxIoUAssigner(BaseAssigner):
-    """Assign a corresponding gt bbox or background to each bbox.
+    """为每个 box 分配一个对应的 gt 或 背景.
 
-    Each proposals will be assigned with `-1`, or a semi-positive integer
-    indicating the ground truth index.
+    每个box都会被分配一个label,∈[-1,len(gt)-1].
 
-    - -1: negative sample, no assigned gt
-    - semi-positive integer: positive sample, index (0-based) of assigned gt
+    - -1: 没有分配 gt 的负样本
+    - [0,len(gt)-1]]: 代表gt索引的正样本
 
     Args:
-        pos_iou_thr (float): IoU threshold for positive bboxes.
-        neg_iou_thr (float or tuple): IoU threshold for negative bboxes.
-        min_pos_iou (float): Minimum iou for a bbox to be considered as a
-            positive bbox. Positive samples can have smaller IoU than
-            pos_iou_thr due to the 4th step (assign max IoU sample to each gt).
-            `min_pos_iou` is set to avoid assigning bboxes that have extremely
-            small iou with GT as positive samples. It brings about 0.3 mAP
-            improvements in 1x schedule but does not affect the performance of
-            3x schedule. More comparisons can be found in
+        pos_iou_thr (float): 正样本 的 IoU 阈值.
+        neg_iou_thr (float or tuple): 负样本 的 IoU 阈值.
+        min_pos_iou (float): 将 box 视为正样本 的最小 IoU 阈值.
+            由于在第 4 步(将最大 IoU 样本分配给每个 gt),正样本的 IoU 可能小于 pos_iou_thr.
+            `min_pos_iou` 的设置主要为避免将与 GT 具有极小 iou 的 box 被分配为正样本.
+            它在 1x(12epoch) 的训练中带来了 0.3 mAP 的提升,但不影响 3x 的性能. 更多比较参考:
             `PR #7464 <https://github.com/open-mmlab/mmdetection/pull/7464>`_.
-        gt_max_assign_all (bool): Whether to assign all bboxes with the same
-            highest overlap with some gt to that gt.
-        ignore_iof_thr (float): IoF threshold for ignoring bboxes (if
-            `gt_bboxes_ignore` is specified). Negative values mean not
-            ignoring any bboxes.
-        ignore_wrt_candidates (bool): Whether to compute the iof between
-            `bboxes` and `gt_bboxes_ignore`, or the contrary.
-        match_low_quality (bool): Whether to allow low quality matches. This is
-            usually allowed for RPN and single stage detectors, but not allowed
-            in the second stage. Details are demonstrated in Step 4.
-        gpu_assign_thr (int): The upper bound of the number of GT for GPU
-            assign. When the number of gt is above this threshold, will assign
-            on CPU device. Negative values mean not assign on CPU.
+        gt_max_assign_all (bool): 是否将 与某个gt具有相同最高IOU的所有 box 分配给该 gt.
+        ignore_iof_thr (float): 忽略 box 的 IoF 阈值(如果指定了 `gt_bboxes_ignore`).
+            负值意味着不忽略任何 box.
+        ignore_wrt_candidates (bool): 计算iof时,True表示f为box.False表示f为gt.
+        match_low_quality (bool): 是否允许低质量匹配产生. 这对于RPN和单阶段检测模型通常是允许的,
+            但在二阶段是不允许的. 详情参阅步骤 4.
+        gpu_assign_thr (int): GPU分配的GT数量上限. 当 gt 的数量高于此阈值时, 将在 CPU 设备上分配.
+            负值表示不在 CPU 上分配.
     """
 
     def __init__(self,
@@ -76,9 +67,8 @@ class MaxIoUAssigner(BaseAssigner):
         1. 将每个 bbox 归类为背景
         2. 将哪些与所有 gts 的iou都小于 neg_iou_thr的bbox都计为0
         3. 对于每个 bbox，如果与其最近的gt 的iou  >= pos_iou_thr，则将该gt类别分配给该 bbox
-        4. for each gt bbox, assign its nearest proposals (may be more than
-           one) to itself
-4
+        4. 对于每个 gt, 分配与其有最大IOU的box(可能不止一个)给它
+
         Args:
             bboxes (Tensor): Bounding boxes to be assigned, shape(n, 4).
             gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
@@ -109,8 +99,9 @@ class MaxIoUAssigner(BaseAssigner):
             if gt_labels is not None:
                 gt_labels = gt_labels.cpu()
 
-        overlaps = self.iou_calculator(gt_bboxes, bboxes)
+        overlaps = self.iou_calculator(gt_bboxes, bboxes)  # 计算gt与box的IOU
 
+        # 和gt_bboxes_ignore的IOU大于ignore_iof_thr的 所有box与所有gt的IOU都被设置-1
         if (self.ignore_iof_thr > 0 and gt_bboxes_ignore is not None
                 and gt_bboxes_ignore.numel() > 0 and bboxes.numel() > 0):
             if self.ignore_wrt_candidates:
@@ -124,6 +115,7 @@ class MaxIoUAssigner(BaseAssigner):
             overlaps[:, ignore_max_overlaps > self.ignore_iof_thr] = -1
 
         assign_result = self.assign_wrt_overlaps(overlaps, gt_labels)
+        # 迁移回GPU设备
         if assign_on_cpu:
             assign_result.gt_inds = assign_result.gt_inds.to(device)
             assign_result.max_overlaps = assign_result.max_overlaps.to(device)
@@ -143,13 +135,13 @@ class MaxIoUAssigner(BaseAssigner):
         """
         num_gts, num_bboxes = overlaps.size(0), overlaps.size(1)
 
-        # 步骤 1. 初始化为-1(背景)
+        # 步骤 1. 初始化样本值为-1(背景).注:0代表负样本,正数代表分配给该box的gt索引
         assigned_gt_inds = overlaps.new_full((num_bboxes, ),
                                              -1,
                                              dtype=torch.long)
 
         if num_gts == 0 or num_bboxes == 0:
-            # No ground truth or boxes, return empty assignment
+            # gt 或 box数量为0,则返回一个空的AssignResult
             max_overlaps = overlaps.new_zeros((num_bboxes, ))
             if num_gts == 0:
                 # 没有gt,所有anchor都初始化为背景
@@ -183,7 +175,7 @@ class MaxIoUAssigner(BaseAssigner):
             assigned_gt_inds[(max_overlaps >= self.neg_iou_thr[0])
                              & (max_overlaps < self.neg_iou_thr[1])] = 0
 
-        # 步骤 3. 分配正样本: 高于pos_iou_thr的anchor.注意这里的正样本值属于[1,len(class)]
+        # 步骤 3. 分配正样本: 高于pos_iou_thr的anchor.注意这里的正样本值属于[1,len(gt)]
         pos_inds = max_overlaps >= self.pos_iou_thr
         assigned_gt_inds[pos_inds] = argmax_overlaps[pos_inds] + 1
 
@@ -210,8 +202,8 @@ class MaxIoUAssigner(BaseAssigner):
         else:
             assigned_labels = None
 
-        # assigned_gt_inds代表所有box对应的样本属性[-1,len(class)],其中-1为背景,0为负样本,其余为正样本索引
+        # assigned_gt_inds代表所有box对应的样本属性[-1,len(gt)],其中-1为背景,0为负样本,其余为分配的gt索引
         # max_overlaps代表单个anchor与所有gt的最大iou,shape为(n,)
-        # assigned_labels 代表所有box对应的样本属性[-1,len(class)-1],其中-1为背景或负样本,其余为正样本所属类别
+        # assigned_labels 代表所有box对应的样本属性[-1,len(class)-1],其中-1为背景或负样本,其余为分配的gt类别
         return AssignResult(
             num_gts, assigned_gt_inds, max_overlaps, labels=assigned_labels)

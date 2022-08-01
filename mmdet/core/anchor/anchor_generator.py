@@ -23,18 +23,17 @@ class AnchorGenerator:
         scale_major (bool): Whether to multiply scales first when generating
             base anchors. If true, the anchors in the same row will have the
             same scales. By default it is True in V2.0
-        octave_base_scale (int): anchor的基础尺寸,需要配合strides使用.
+        octave_base_scale (int): anchor的基础尺寸,需要和scales_per_octave配合strides使用.
         scales_per_octave (int): 单个层级下anchor的不同尺寸个数.
             `octave_base_scale` and `scales_per_octave` 通常在retinanet中使用
-            同时在这两个参数被设置时, 参数`scales` 应该为 None.
-        centers (list[tuple[float, float]] | None): 多个级别特征中anchor中心相对于grid中心的偏移
+            同时在这两个参数被设置时, 参数`scales` 必须为 None.
+        centers (list[tuple[float, float]] | None): 多个级别特征中anchor中心相对于grid左上角的偏移
             默认情况下,它设置为 None 并且不使用. 如果给出一个浮点元组列表,它们将用于anchor的中心偏移量.
         center_offset (float): 相对于grid左上角的anchor中心的偏移量.
             两者区别在于以下几点.
             centers                                             center_offset
-            以grid中心为参考点                                    以grid左上角为参考点
             ∈[0,grid_size],单位是px,绝对值                        ∈[0,1],单位是anchor的基础尺寸(base_sizes),相对值
-            与Strides长度对齐,因为它是每个层级上的偏移量              仅仅是一个float,代表所有层级上的偏移量
+            与Strides长度呼应,因为它是每个层级上的偏移量              仅仅是一个float,代表所有层级上的偏移量
             与center_offset互斥,不能同时设置
 
     Examples:
@@ -86,11 +85,11 @@ class AnchorGenerator:
             'The number of strides should be the same as base sizes, got ' \
             f'{self.strides} and {self.base_sizes}'
 
-        # calculate scales of anchors
+        # 计算anchor的尺寸
         assert ((octave_base_scale is not None
                  and scales_per_octave is not None) ^ (scales is not None)), \
-            'scales and octave_base_scale with scales_per_octave cannot' \
-            ' be set at the same time'
+            '"scales" 和 "octave_base_scale 及 scales_per_octave" 不能同时设置'
+        # self.scales要么由scales直接提供,要么由 scales_per_octave 和 octave_base_scale
         if scales is not None:
             self.scales = torch.Tensor(scales)
         elif octave_base_scale is not None and scales_per_octave is not None:
@@ -99,8 +98,7 @@ class AnchorGenerator:
             scales = octave_scales * octave_base_scale
             self.scales = torch.Tensor(scales)
         else:
-            raise ValueError('Either scales or octave_base_scale with '
-                             'scales_per_octave should be set')
+            raise ValueError('"scales" 和 "octave_base_scale 及 scales_per_octave" 必须设置一个')
 
         self.octave_base_scale = octave_base_scale
         self.scales_per_octave = scales_per_octave
@@ -108,17 +106,17 @@ class AnchorGenerator:
         self.scale_major = scale_major
         self.centers = centers
         self.center_offset = center_offset
-        self.base_anchors = self.gen_base_anchors()
+        # 生成各个层级上的基础anchor列表 [[[x1, y1, x2, y2] * anchor_type] * num_levels]
+        self.base_anchors = self.gen_base_anchors()  # anchor坐标随着level变化而变化
 
     @property
     def num_base_anchors(self):
-        """list[int]: total number of base anchors in a feature grid"""
+        """list[int]: 返回各个层级特征点上的基础anchor数量"""
         return self.num_base_priors
 
     @property
     def num_base_priors(self):
-        """list[int]: The number of priors (anchors) at a point
-        on the feature grid"""
+        """list[int]: 返回各个层级特征点上的先验(anchor)数量"""
         return [base_anchors.size(0) for base_anchors in self.base_anchors]
 
     @property
@@ -156,7 +154,7 @@ class AnchorGenerator:
             base_size (int | float): anchor的基本尺寸.
             scales (torch.Tensor): anchor的不同大小尺寸系数,需要配合base_size使用.
             ratios (torch.Tensor): 单个层级上anchor的高宽比.
-            center (tuple[float], optional): 单个级别特征中anchor中心相对于grid中心的偏移,基于grid.
+            center (tuple[float], optional): 单个级别特征中anchor中心相对于grid左上角的偏移,基于grid.
 
         Returns:
             torch.Tensor: 单个层级特征图上的anchor,shape一般为(9,4) 三种长宽比,三种尺寸组合的基础anchor.
@@ -220,7 +218,7 @@ class AnchorGenerator:
 
         Return:
             list[torch.Tensor]: [(feat_h*feat_w*A,4)]*self.num_levels.
-            注意并非简单复制,feat_h*feat_w随着层级不同而不同
+            注意并非简单复制,feat_h*feat_w随着层级不同而不同,以及具体anchor尺寸也不同
         """
         assert self.num_levels == len(featmap_sizes)
         multi_level_anchors = []
@@ -235,21 +233,19 @@ class AnchorGenerator:
                                  level_idx,
                                  dtype=torch.float32,
                                  device='cuda'):
-        """Generate grid anchors of a single level.
+        """生成单层级特征图上的所有anchor.
 
         Note:
             This function is usually called by method ``self.grid_priors``.
 
         Args:
-            featmap_size (tuple[int]): Size of the feature maps.
-            level_idx (int): The index of corresponding feature map level.
-            dtype (obj:`torch.dtype`): Date type of points.Defaults to
-                ``torch.float32``.
-            device (str, optional): The device the tensor will be put on.
-                Defaults to 'cuda'.
+            featmap_size (tuple[int]): 特征图的大小.
+            level_idx (int): 特征图对应层别的索引.
+            dtype (obj:`torch.dtype`): 生成数据的类型.默认``torch.float32``.
+            device (str, optional): 在什么设备上生成数据.默认为 'cuda'.
 
         Returns:
-            torch.Tensor: Anchors in the overall feature maps.
+            torch.Tensor: 覆盖特征图的anchor, (feat_h*feat_w*A,4).
         """
 
         base_anchors = self.base_anchors[level_idx].to(device).to(dtype)
@@ -266,8 +262,6 @@ class AnchorGenerator:
         # 相加得到单层特征图上的所有anchor坐标信息(feat_h*feat_w,A,4),然后reshape为(feat_h*feat_w*A,4)
         all_anchors = base_anchors[None, :, :] + shifts[:, None, :]
         all_anchors = all_anchors.view(-1, 4)
-        # first A rows correspond to A anchors of (0, 0) in feature map,
-        # then (0, 1), (0, 2), ...
         return all_anchors
 
     def sparse_priors(self,
@@ -384,12 +378,12 @@ class AnchorGenerator:
             在pipline中,Pad只负责将单一图像填充到指定尺寸(或者能被某一个整数整除),
             并没有将一个batch的图像统一到相同尺寸,这步操作是在...mmcv\mmcv\parallel\collate.py
             中实现的,为了对齐最大尺寸.在Dataloader中的collate阶段会将较小图片进行padding,
-            所以有些图片可能就会产生一些无意义像素.这一步就是为了将该无意义区域的anchor过滤掉的
+            所以有些图片可能就会产生一些无意义像素.而这里就是为了将该无意义区域的anchor过滤掉的
         Args:
             featmap_sizes (list(tuple)): List of feature map sizes in
                 multiple feature levels.
-            pad_shape (tuple): The padded shape of the image.
-            device (str): Device where the anchors will be put on.
+            pad_shape (tuple): pipline中图像pad后的shape.
+            device (str): 在该设备上生成flags.
 
         Return:
             list(torch.Tensor): 多层特征图上有效anchor的mask,[(f_h*f_w*A)]*self.num_levels.
@@ -406,7 +400,7 @@ class AnchorGenerator:
                                                   (valid_feat_h, valid_feat_w),
                                                   self.num_base_anchors[i],
                                                   device=device)
-            multi_level_flags.append(flags)
+            multi_level_flags.append(flags)  # (f_h*f_w*A)
         return multi_level_flags
 
     def single_level_valid_flags(self,
@@ -414,15 +408,13 @@ class AnchorGenerator:
                                  valid_size,
                                  num_base_anchors,
                                  device='cuda'):
-        """Generate the valid flags of anchor in a single feature map.
+        """在单层特征图中生成anchor的有效mask.
 
         Args:
-            featmap_size (tuple[int]): The size of feature maps, arrange
-                as (h, w).
-            valid_size (tuple[int]): The valid size of the feature maps.
-            num_base_anchors (int): The number of base anchors.
-            device (str, optional): Device where the flags will be put on.
-                Defaults to 'cuda'.
+            featmap_size (tuple[int]): 特征图的尺寸, (h, w).
+            valid_size (tuple[int]): 特征图的有效尺寸.
+            num_base_anchors (int): 单个特征点上基础anchor的数量.
+            device (str, optional): mask将要生成的设备.默认为 'cuda'.
 
         Returns:
             torch.Tensor: 单层特征图上所有的有效anchor.(f_h*f_w*A) 1有效,0无效.

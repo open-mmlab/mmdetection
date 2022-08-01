@@ -22,7 +22,7 @@ def build_dp(model, device='cuda', dim=0, *args, **kwargs):
         nn.Module: 并行化的模型.
     """
     if device == 'cuda':
-        model = model.cuda()
+        model = model.cuda(kwargs['device_ids'][0])
     elif device == 'mlu':
         from mmcv.device.mlu import MLUDataParallel
         dp_factory['mlu'] = MLUDataParallel

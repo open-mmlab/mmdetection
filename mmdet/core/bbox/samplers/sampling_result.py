@@ -5,7 +5,7 @@ from mmdet.utils import util_mixins
 
 
 class SamplingResult(util_mixins.NiceRepr):
-    """Bbox sampling result.
+    """box分配结果.
 
     Example:
         >>> # xdoctest: +IGNORE_WANT
@@ -29,6 +29,10 @@ class SamplingResult(util_mixins.NiceRepr):
         self.neg_inds = neg_inds
         self.pos_bboxes = bboxes[pos_inds]
         self.neg_bboxes = bboxes[neg_inds]
+        # 取值0、1,表示正样本是gt还是proposal.
+        # 在多阶段网络中可能会将gt在第二阶段添加进proposal以此来加快训练初期的loss收敛
+        # 因为在训练初期,RPN等网络可能无法提供高质量及足够数量的proposal
+        # 一般第一阶段都为0,第二阶段如果该proposal是gt添加进来的则为1否则为0.
         self.pos_is_gt = gt_flags[pos_inds]
 
         self.num_gts = gt_bboxes.shape[0]

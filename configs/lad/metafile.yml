@@ -6,7 +6,7 @@ Collections:
         - Label Assignment Distillation
         - SGD with Momentum
         - Weight Decay
-      Training Resources: 8x V100 GPUs
+      Training Resources: 2x V100 GPUs
       Architecture:
         - FPN
         - ResNet
@@ -19,24 +19,27 @@ Collections:
       Version: v2.19.0
 
 Models:
-  - Name: lad_r50_paa_r101_fpn_coco_1x
-    In Collection: Label Assignment Distillation
-    Config: configs/lad/lad_r50_paa_r101_fpn_coco_1x.py
-    Metadata:
-      Teacher: R-101
-    Results:
-      - Task: Object Detection
-        Dataset: COCO
-        Metrics:
-          box AP: 41.6
-
   - Name: lad_r101_paa_r50_fpn_coco_1x
     In Collection: Label Assignment Distillation
     Config: configs/lad/lad_r101_paa_r50_fpn_coco_1x.py
     Metadata:
-      Teacher: R-50
+      Training Memory (GB): 12.4
+      Epochs: 12
     Results:
-      - Task: Object Detection
-        Dataset: COCO
-        Metrics:
-          box AP: 43.2
+    - Task: Object Detection
+      Dataset: COCO
+      Metrics:
+        box AP: 43.2
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/lad/lad_r101_paa_r50_fpn_coco_1x/lad_r101_paa_r50_fpn_coco_1x_20220708_124357-9407ac54.pth
+  - Name: lad_r50_paa_r101_fpn_coco_1x
+    In Collection: Label Assignment Distillation
+    Config: configs/lad/lad_r50_paa_r101_fpn_coco_1x.py
+    Metadata:
+      Training Memory (GB): 8.9
+      Epochs: 12
+    Results:
+    - Task: Object Detection
+      Dataset: COCO
+      Metrics:
+        box AP: 41.4
+    Weights: https://download.openmmlab.com/mmdetection/v2.0/lad/lad_r50_paa_r101_fpn_coco_1x/lad_r50_paa_r101_fpn_coco_1x_20220708_124246-74c76ff0.pth

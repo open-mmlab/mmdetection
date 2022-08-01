@@ -6,7 +6,7 @@ import mmcv
 import numpy as np
 import pytest
 
-from mmdet.core.mask import BitmapMasks
+from mmdet.core.mask import BitmapMasks, PolygonMasks
 from mmdet.datasets.pipelines import (FilterAnnotations, LoadImageFromFile,
                                       LoadImageFromWebcam,
                                       LoadMultiChannelImageFromFiles)
@@ -117,4 +117,16 @@ def test_filter_annotations(target, kwargs):
     results = filter_ann(results)
     if results is not None:
         results = results['gt_bboxes'].shape[0]
+    assert results == target
+
+    polygons = [[np.array([2.0, 10.0, 4.0, 10.0, 4.0, 14.0, 2.0, 14.0])],
+                [np.array([2.0, 10.0, 2.1, 10.0, 2.1, 10.1, 2.0, 10.1])]]
+    polygon_masks = PolygonMasks(polygons, 24, 24)
+
+    results = dict(gt_bboxes=bboxes, gt_masks=polygon_masks)
+    results = filter_ann(results)
+
+    if results is not None:
+        results = len(results.get('gt_masks').masks)
+
     assert results == target

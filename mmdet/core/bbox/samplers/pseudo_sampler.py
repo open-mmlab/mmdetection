@@ -8,7 +8,7 @@ from .sampling_result import SamplingResult
 
 @BBOX_SAMPLERS.register_module()
 class PseudoSampler(BaseSampler):
-    """A pseudo sampler that does not do sampling actually."""
+    """一个实际上不进行采样的伪采样器."""
 
     def __init__(self, **kwargs):
         pass
@@ -22,15 +22,15 @@ class PseudoSampler(BaseSampler):
         raise NotImplementedError
 
     def sample(self, assign_result, bboxes, gt_bboxes, *args, **kwargs):
-        """Directly returns the positive and negative indices  of samples.
+        """直接返回样本的正负索引.
 
         Args:
-            assign_result (:obj:`AssignResult`): Assigned results
-            bboxes (torch.Tensor): Bounding boxes
-            gt_bboxes (torch.Tensor): Ground truth boxes
+            assign_result (:obj:`AssignResult`): box分配的结果
+            bboxes (torch.Tensor): box
+            gt_bboxes (torch.Tensor): gt
 
         Returns:
-            :obj:`SamplingResult`: sampler results
+            :obj:`SamplingResult`: 采样的结果
         """
         # 在所有样本中正样本索引,(gt_ind 正数为gt索引,从1开始∈[1,len(gt)],0为负样本,-1为背景)
         pos_inds = torch.nonzero(

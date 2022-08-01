@@ -146,7 +146,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/grid_rcnn">Grid R-CNN (CVPR'2019)</a></li>
             <li><a href="configs/guided_anchoring">Guided Anchoring (CVPR'2019)</a></li>
             <li><a href="configs/fsaf">FSAF (CVPR'2019)</a></li>
-            <li><a href="configs/centernet">CenterNet (CVPR'2019)</a></li>
+            <li><a href="configs/centernet">CenterNet (ArXiv'2019)</a></li>
             <li><a href="configs/libra_rcnn">Libra R-CNN (CVPR'2019)</a></li>
             <li><a href="configs/tridentnet">TridentNet (ICCV'2019)</a></li>
             <li><a href="configs/fcos">FCOS (ICCV'2019)</a></li>
@@ -166,7 +166,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
             <li><a href="configs/vfnet">VarifocalNet (CVPR'2021)</a></li>
             <li><a href="configs/sparse_rcnn">Sparse R-CNN (CVPR'2021)</a></li>
             <li><a href="configs/yolof">YOLOF (CVPR'2021)</a></li>
-            <li><a href="configs/yolox">YOLOX (CVPR'2021)</a></li>
+            <li><a href="configs/yolox">YOLOX (ArXiv'2021)</a></li>
             <li><a href="configs/deformable_detr">Deformable DETR (ICLR'2021)</a></li>
             <li><a href="configs/tood">TOOD (ICCV'2021)</a></li>
             <li><a href="configs/ddod">DDOD (ACM MM'2021)</a></li>
@@ -182,18 +182,18 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="configs/instaboost">InstaBoost (ICCV'2019)</a></li>
           <li><a href="configs/solo">SOLO (ECCV'2020)</a></li>
           <li><a href="configs/point_rend">PointRend (CVPR'2020)</a></li>
-          <li><a href="configs/detectors">DetectoRS (ArXiv'2020)</a></li>
+          <li><a href="configs/detectors">DetectoRS (CVPR'2021)</a></li>
           <li><a href="configs/solov2">SOLOv2 (NeurIPS'2020)</a></li>
           <li><a href="configs/scnet">SCNet (AAAI'2021)</a></li>
           <li><a href="configs/queryinst">QueryInst (ICCV'2021)</a></li>
-          <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
+          <li><a href="configs/mask2former">Mask2Former (CVPR'2022)</a></li>
         </ul>
       </td>
       <td>
         <ul>
           <li><a href="configs/panoptic_fpn">Panoptic FPN (CVPR'2019)</a></li>
           <li><a href="configs/maskformer">MaskFormer (NeurIPS'2021)</a></li>
-          <li><a href="configs/mask2former">Mask2Former (ArXiv'2021)</a></li>
+          <li><a href="configs/mask2former">Mask2Former (CVPR'2022)</a></li>
         </ul>
       </td>
       <td>
@@ -253,12 +253,12 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
         <li><a href="configs/gcnet">GCNet (ICCVW'2019)</a></li>
         <li><a href="configs/res2net">Res2Net (TPAMI'2020)</a></li>
         <li><a href="configs/regnet">RegNet (CVPR'2020)</a></li>
-        <li><a href="configs/resnest">ResNeSt (ArXiv'2020)</a></li>
+        <li><a href="configs/resnest">ResNeSt (CVPRW'2022)</a></li>
         <li><a href="configs/pvt">PVT (ICCV'2021)</a></li>
-        <li><a href="configs/swin">Swin (CVPR'2021)</a></li>
-        <li><a href="configs/pvt">PVTv2 (ArXiv'2021)</a></li>
-        <li><a href="configs/resnet_strikes_back">ResNet strikes back (ArXiv'2021)</a></li>
-        <li><a href="configs/efficientnet">EfficientNet (ArXiv'2021)</a></li>
+        <li><a href="configs/swin">Swin (ICCV'2021)</a></li>
+        <li><a href="configs/pvt">PVTv2 (CVMJ'2022)</a></li>
+        <li><a href="configs/resnet_strikes_back">ResNet strikes back (NeurIPSW'2021)</a></li>
+        <li><a href="configs/efficientnet">EfficientNet (ICML'2019)</a></li>
         <li><a href="configs/convnext">ConvNeXt (CVPR'2022)</a></li>
       </ul>
       </td>
@@ -288,7 +288,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="configs/gn+ws">Weight Standardization (ArXiv'2019)</a></li>
           <li><a href="configs/pisa">Prime Sample Attention (CVPR'2020)</a></li>
           <li><a href="configs/strong_baselines">Strong Baselines (CVPR'2021)</a></li>
-          <li><a href="configs/resnet_strikes_back">Resnet strikes back (ArXiv'2021)</a></li>
+          <li><a href="configs/resnet_strikes_back">Resnet strikes back (NeurIPSW'2021)</a></li>
         </ul>
       </td>
     </tr>

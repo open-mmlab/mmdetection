@@ -31,8 +31,7 @@ def multi_apply(func, *args, **kwargs):
 
 
 def unmap(data, count, inds, fill=0):
-    """Unmap a subset of item (data) back to the original set of items (of size
-    count)"""
+    """将数据集映射回原始数据集上去)"""
     if data.dim() == 1:
         ret = data.new_full((count, ), fill)
         ret[inds.type(torch.bool)] = data

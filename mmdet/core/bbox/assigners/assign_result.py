@@ -10,10 +10,10 @@ class AssignResult(util_mixins.NiceRepr):
     Attributes:
         num_gts (int): 真实框的数量
 
-        gt_inds (LongTensor): 代表所有box对应的样本属性∈[-1,len(class)],已被过滤过
+        gt_inds (LongTensor): 代表所有box对应的样本属性∈[-1,len(gt)],已被过滤过
             其中-1为背景,0为负样本,其余为正样本(gt)索引.shape为(feat_h*feat_w*A*self.num_levels)
 
-        max_overlaps (FloatTensor): anchor与所有gt的最大iou,shape同上.,已被过滤过
+        max_overlaps (FloatTensor): anchor与所有gt的最大iou,shape同上.已被过滤过
 
         labels (None | LongTensor): 如果指定,代表所有box对应的样本属性∈[-1,len(class)-1],
             其中-1为背景或负样本,其余为正样本(gt)所属类别.shape同上,已被过滤过
@@ -186,7 +186,7 @@ class AssignResult(util_mixins.NiceRepr):
         return self
 
     def add_gt_(self, gt_labels):
-        """Add ground truth as assigned results.
+        """多阶段目标检测,在训练roi head时需要用到,将gt也添加到proposal中.将被sampler调用。
 
         Args:
             gt_labels (torch.Tensor): Labels of gt boxes

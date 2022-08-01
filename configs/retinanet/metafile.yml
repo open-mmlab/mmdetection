@@ -123,7 +123,7 @@ Models:
           box AP: 37.4
     Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r50_fpn_2x_coco/retinanet_r50_fpn_2x_coco_20200131-fdb43119.pth
 
-  - Name: retinanet_r50_fpn_mstrain_3x_coco
+  - Name: retinanet_r50_fpn_mstrain_640-800_3x_coco
     In Collection: RetinaNet
     Config: configs/retinanet/retinanet_r50_fpn_mstrain_640-800_3x_coco.py
     Metadata:
@@ -157,7 +157,7 @@ Models:
 
   - Name: retinanet_r101_caffe_fpn_mstrain_3x_coco
     In Collection: RetinaNet
-    Config: configs/retinanet/retinanet_r101_caffe_fpn_1x_coco.py
+    Config: configs/retinanet/retinanet_r101_caffe_fpn_mstrain_3x_coco.py
     Metadata:
       Epochs: 36
     Results:
@@ -207,9 +207,9 @@ Models:
           box AP: 38.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_r101_fpn_2x_coco/retinanet_r101_fpn_2x_coco_20200131-5560aee8.pth
 
-  - Name: retinanet_r101_fpn_mstrain_3x_coco
+  - Name: retinanet_r101_fpn_mstrain_640-800_3x_coco
     In Collection: RetinaNet
-    Config: configs/retinanet/retinanet_r101_fpn_2x_coco.py
+    Config: configs/retinanet/retinanet_r101_fpn_mstrain_640-800_3x_coco.py
     Metadata:
       Epochs: 36
     Results:
@@ -299,7 +299,7 @@ Models:
           box AP: 40.8
     Weights: https://download.openmmlab.com/mmdetection/v2.0/retinanet/retinanet_x101_64x4d_fpn_2x_coco/retinanet_x101_64x4d_fpn_2x_coco_20200131-bca068ab.pth
 
-  - Name: retinanet_x101_64x4d_fpn_mstrain_3x_coco
+  - Name: retinanet_x101_64x4d_fpn_mstrain_640-800_3x_coco
     In Collection: RetinaNet
     Config: configs/retinanet/retinanet_x101_64x4d_fpn_mstrain_640-800_3x_coco.py
     Metadata:
