@@ -58,11 +58,11 @@ class TestBboxMode(TestCase):
             register_bbox_mode('BB', B)
 
         @register_bbox_mode('A', force=True)
-        class AA(ToyBaseInstanceBoxes):  # noqa
+        class AAA(ToyBaseInstanceBoxes):
             pass
 
-        self.assertIs(bbox_modes['a'], AA)
-        self.assertEqual(_bbox_mode_to_name[AA], 'a')
+        self.assertIs(bbox_modes['a'], AAA)
+        self.assertEqual(_bbox_mode_to_name[AAA], 'a')
         register_bbox_mode('BB', B, force=True)
         self.assertIs(bbox_modes['bb'], B)
         self.assertEqual(_bbox_mode_to_name[B], 'bb')
