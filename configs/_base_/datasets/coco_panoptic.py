@@ -59,6 +59,7 @@ val_evaluator = dict(
     type='CocoPanopticMetric',
     ann_file=data_root + 'annotations/panoptic_val2017.json',
     seg_prefix=data_root + 'annotations/panoptic_val2017/',
+    file_client_args=file_client_args,
 )
 test_evaluator = val_evaluator
 
