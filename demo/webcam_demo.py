@@ -2,9 +2,12 @@
 import argparse
 
 import cv2
+import mmcv
 import torch
 
 from mmdet.apis import inference_detector, init_detector
+from mmdet.registry import VISUALIZERS
+from mmdet.utils import register_all_modules
 
 
 def parse_args():
@@ -24,9 +27,18 @@ def parse_args():
 def main():
     args = parse_args()
 
-    device = torch.device(args.device)
+    # register all modules in mmdet into the registries
+    register_all_modules()
 
+    # build the model from a config file and a checkpoint file
+    device = torch.device(args.device)
     model = init_detector(args.config, args.checkpoint, device=device)
+
+    # init visualizer
+    visualizer = VISUALIZERS.build(model.cfg.visualizer)
+    # the dataset_meta is loaded from the checkpoint and
+    # then pass to the model in init_detector
+    visualizer.dataset_meta = model.dataset_meta
 
     camera = cv2.VideoCapture(args.camera_id)
 
@@ -35,12 +47,21 @@ def main():
         ret_val, img = camera.read()
         result = inference_detector(model, img)
 
+        img = mmcv.imconvert(img, 'bgr', 'rgb')
+        visualizer.add_datasample(
+            name='result',
+            image=img,
+            pred_sample=result,
+            pred_score_thr=args.score_thr,
+            show=False)
+
+        img = visualizer.get_image()
+        img = mmcv.imconvert(img, 'bgr', 'rgb')
+        cv2.imshow('result', img)
+
         ch = cv2.waitKey(1)
         if ch == 27 or ch == ord('q') or ch == ord('Q'):
             break
-
-        model.show_result(
-            img, result, score_thr=args.score_thr, wait_time=1, show=True)
 
 
 if __name__ == '__main__':
