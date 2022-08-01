@@ -55,15 +55,15 @@ def init_detector(
     model = build_detector(config.model)
     if checkpoint is not None:
         checkpoint = load_checkpoint(model, checkpoint, map_location='cpu')
-
-        dataset_meta = checkpoint['meta'].get('dataset_meta', None)
+        # Weights converted from elsewhere may not have meta fields.
+        checkpoint_meta = checkpoint.get('meta', {})
         # save the dataset_meta in the model for convenience
-        if 'dataset_meta' in checkpoint.get('meta', {}):
+        if 'dataset_meta' in checkpoint_meta:
             # mmdet 3.x
-            model.dataset_meta = dataset_meta
-        elif 'CLASSES' in checkpoint.get('meta', {}):
+            model.dataset_meta = checkpoint_meta['dataset_meta']
+        elif 'CLASSES' in checkpoint_meta:
             # < mmdet 3.x
-            classes = checkpoint['meta']['CLASSES']
+            classes = checkpoint_meta['CLASSES']
             model.dataset_meta = {'CLASSES': classes, 'PALETTE': palette}
         else:
             warnings.simplefilter('once')
