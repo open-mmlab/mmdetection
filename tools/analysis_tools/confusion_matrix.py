@@ -3,10 +3,11 @@ import os
 
 import matplotlib.pyplot as plt
 import mmcv
+import mmengine
 import numpy as np
 from matplotlib.ticker import MultipleLocator
-from mmcv import Config, DictAction
 from mmcv.ops import nms
+from mmengine import Config, DictAction
 
 from mmdet.evaluation import bbox_overlaps
 from mmdet.registry import DATASETS
@@ -86,8 +87,6 @@ def calculate_confusion_matrix(dataset,
         else:
             res_bboxes = per_img_res['pred_instances']
         gts = dataset.get_data_info(idx)['instances']
-        # gt_bboxes = ann['bboxes']
-        # labels = ann['labels']
         analyze_per_img_dets(confusion_matrix, gts, res_bboxes, score_thr,
                              tp_iou_thr, nms_iou_thr)
         prog_bar.update()
@@ -253,7 +252,7 @@ def main():
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
 
-    results = mmcv.load(args.prediction_path)
+    results = mmengine.fileio.load(args.prediction_path)
 
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
