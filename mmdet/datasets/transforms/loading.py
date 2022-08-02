@@ -586,17 +586,40 @@ class LoadProposals(BaseTransform):
         """
 
         proposals = results['proposals']
-        assert proposals.shape[1] in (4, 5), ('proposals should have shapes '
-                                              '(n, 4) or (n, 5), but found'
-                                              f'{proposals.shape}')
-        proposals = proposals[:, :4].astype(np.float32)
+        bboxes = proposals['bboxes'].astype(np.float32)
 
+        from mmengine.data import InstanceData
+        _results = InstanceData()
+
+        if bboxes.shape[1] == 4:
+            _results.bboxes = bboxes
+            if 'scores' in proposals:
+                _results.scores = proposals['scores'].astype(np.float32)
+            else:
+                _results.scores = np.zeros(bboxes.shape[0], dtype=np.float32)
+        elif bboxes.shape[1] == 5:
+            _results.bboxes = bboxes[:, :4]
+            _results.scores = bboxes[:, 4]
+        else:
+            raise AttributeError('proposals should have shapes (n, 4) or '
+                                 f'(n, 5), but found {proposals.shape}')
+
+        if 'labels' in proposals:
+            _results.labels = proposals['labels'].astype(np.float32)
+        else:
+            _results.labels = np.zeros(bboxes.shape[0], dtype=np.float32)
         if self.num_max_proposals is not None:
-            proposals = proposals[:self.num_max_proposals]
+            _results = _results[:self.num_max_proposals]
 
-        if len(proposals) == 0:
-            proposals = np.array([[0, 0, 0, 0]], dtype=np.float32)
-        results['proposals'] = proposals
+        if len(_results) == 0:
+            _results = InstanceData()
+            _results.bboxes = np.zeros((0, 4), dtype=np.float32)
+            _results.scores = np.zeros(0, dtype=np.float32)
+            _results.labels = np.zeros(0, dtype=np.float32)
+
+        results['proposals'] = _results.bboxes
+        results['proposals_scores'] = _results.bboxes
+        results['proposals_labels'] = _results.labels
         return results
 
     def __repr__(self):

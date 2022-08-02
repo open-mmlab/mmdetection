@@ -17,7 +17,6 @@ class OpenImagesDataset(BaseDataset):
     """Open Images dataset for detection.
 
     Args:
-        ann_file (str): Annotation file path.
         label_file (str): File path of the label description file that
             maps the classes names in MID format to their short
             descriptions.
@@ -33,7 +32,6 @@ class OpenImagesDataset(BaseDataset):
     METAINFO: dict = dict(DATASET_TYPE='oid_v6')
 
     def __init__(self,
-                 ann_file: str,
                  label_file: str,
                  meta_file: str,
                  hierarchy_file: str,
@@ -46,7 +44,7 @@ class OpenImagesDataset(BaseDataset):
         self.image_level_ann_file = image_level_ann_file
         self.file_client_args = file_client_args
         self.file_client = FileClient(**file_client_args)
-        super().__init__(ann_file=ann_file, **kwargs)
+        super().__init__(**kwargs)
 
     def load_data_list(self) -> List[dict]:
         """Load annotations from an annotation file named as ``self.ann_file``

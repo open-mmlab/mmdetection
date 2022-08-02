@@ -3,14 +3,13 @@ import copy
 import os.path as osp
 from typing import List, Union
 
-from mmengine.dataset import BaseDataset
-
 from mmdet.registry import DATASETS
 from .api_wrappers import COCO
+from .base_det_dataset import BaseDetDataset
 
 
 @DATASETS.register_module()
-class CocoDataset(BaseDataset):
+class CocoDataset(BaseDetDataset):
     """Dataset for COCO."""
 
     METAINFO = {
@@ -61,7 +60,8 @@ class CocoDataset(BaseDataset):
         Returns:
             List[dict]: A list of annotation.
         """  # noqa: E501
-        self.coco = self.COCOAPI(self.ann_file)
+        with self.file_client.get_local_path(self.ann_file) as local_path:
+            self.coco = self.COCOAPI(local_path)
         # The order of returned `cat_ids` will not
         # change with the order of the CLASSES
         self.cat_ids = self.coco.get_cat_ids(
