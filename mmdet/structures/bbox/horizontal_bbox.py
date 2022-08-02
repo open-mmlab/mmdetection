@@ -20,7 +20,8 @@ class HoriInstanceBoxes(BaseInstanceBoxes):
     the left-top and right-bottom points of horizontal boxes.
 
     Args:
-        bboxes (Tensor or np.ndarray): The box data with shape (..., 4).
+        bboxes (Tensor or np.ndarray or Sequence): The box data with
+            shape (..., 4).
         dtype (torch.dtype, Optional): data type of bboxes.
         device (str or torch.device, Optional): device of bboxes.
         pattern (str, Optional): the pattern of bboxes. If pattern is 'cxcywh',
@@ -34,21 +35,12 @@ class HoriInstanceBoxes(BaseInstanceBoxes):
                  dtype: torch.dtype = None,
                  device: DeviceType = None,
                  pattern: Optional[str] = None) -> None:
-        if isinstance(bboxes, np.ndarray):
-            bboxes = torch.from_numpy(bboxes)
-        assert isinstance(bboxes, Tensor)
-        if device is not None or dtype is not None:
-            bboxes = bboxes.to(dtype=dtype, device=device)
-
+        super().__init__(bboxes=bboxes, dtype=dtype, device=device)
         if isinstance(pattern, str):
+            if pattern not in ('xyxy', 'cxcywh'):
+                raise ValueError(f'Get invalid pattern {pattern}.')
             if pattern == 'cxcywh':
-                bboxes = self.cxcywh_to_xyxy(bboxes)
-            else:
-                raise ValueError(f'invalide pattern {pattern}')
-
-        assert bboxes.dim() >= 2
-        assert bboxes.size(-1) == self._bbox_dim
-        self.tensor = bboxes
+                self.tensor = self.cxcywh_to_xyxy(self.tensor)
 
     @staticmethod
     def cxcywh_to_xyxy(bboxes: Tensor) -> Tensor:
@@ -107,7 +99,7 @@ class HoriInstanceBoxes(BaseInstanceBoxes):
         return bboxes[..., 3] - bboxes[..., 1]
 
     def flip(self: T,
-             img_shape: Tuple[float, float],
+             img_shape: Tuple[int, int],
              direction: str = 'horizontal') -> T:
         """Flip bboxes horizontally or vertically.
 
@@ -117,7 +109,7 @@ class HoriInstanceBoxes(BaseInstanceBoxes):
                 "vertical" and "diagonal". Defaults to "horizontal"
 
         Returns:
-            T: Flipped boxes.
+            T: Flipped boxes with the same shape as the original boxes.
         """
         assert direction in ['horizontal', 'vertical', 'diagonal']
         bboxes = self.tensor
@@ -143,7 +135,7 @@ class HoriInstanceBoxes(BaseInstanceBoxes):
                 is horizontal distance and the second is vertical distance.
 
         Returns:
-            T: Translated boxes.
+            T: Translated boxes with the same shape as the original boxes.
         """
         bboxes = self.tensor
         assert len(distances) == 2
@@ -157,25 +149,27 @@ class HoriInstanceBoxes(BaseInstanceBoxes):
             img_shape (Tuple[int, int]): A tuple of image height and width.
 
         Returns:
-            T: Cliped boxes.
+            T: Cliped boxes with the same shape as the original boxes.
         """
         bboxes = self.tensor
         bboxes[..., 0::2] = bboxes[:, 0::2].clamp(0, img_shape[1])
         bboxes[..., 1::2] = bboxes[:, 1::2].clamp(0, img_shape[0])
         return type(self)(bboxes)
 
-    def rotate(self: T, center: Tuple[float, float], angle: float,
-               img_shape: Tuple[int, int]):
+    def rotate(self: T,
+               center: Tuple[float, float],
+               angle: float,
+               img_shape: Optional[Tuple[int, int]] = None) -> T:
         """Rotate all boxes.
 
         Args:
             center (Tuple[float, float]): Rotation origin.
             angle (float): Rotation angle.
-            img_shape (Tuple[int, int], Optional): image shape.
-                Defaults to None.
+            img_shape (Tuple[int, int], Optional): A tuple of image height
+                and width. Defaults to None.
 
         Returns:
-            T: Rotated boxes.
+            T: Rotated boxes with the same shape as the original boxes.
         """
         bboxes = self.tensor
         rotation_matrix = bboxes.new_tensor(
@@ -195,17 +189,17 @@ class HoriInstanceBoxes(BaseInstanceBoxes):
 
     def project(self: T,
                 homography_matrix: Union[Tensor, np.ndarray],
-                img_shape: Tuple[int, int] = None) -> T:
+                img_shape: Optional[Tuple[int, int]] = None) -> T:
         """Geometric transformation for bbox.
 
         Args:
-            homography_matrix (Tensor or np.ndarray):
+            homography_matrix (Tensor or np.ndarray]):
                 Shape (3, 3) for geometric transformation.
-            img_shape (Tuple[int, int], optional): Image shape.
-                Defaults to None.
+            img_shape (Tuple[int, int], Optional): A tuple of image height
+                and width. Defaults to None.
 
         Returns:
-            T: Converted bboxes.
+            T: Converted bboxes with the same shape as the original boxes.
         """
         bboxes = self.tensor
         if isinstance(homography_matrix, np.ndarray):
@@ -231,6 +225,7 @@ class HoriInstanceBoxes(BaseInstanceBoxes):
 
         Args:
             bboxes (Tensor): Shape (..., 4) for bboxes.
+
         Returns:
             Tensor: Shape (..., 4, 2) for corners.
         """
@@ -245,6 +240,7 @@ class HoriInstanceBoxes(BaseInstanceBoxes):
 
         Args:
             corners (Tensor): Shape (..., 4, 2) for corners.
+
         Returns:
             Tensor: Shape (..., 4) for bboxes.
         """
@@ -252,76 +248,73 @@ class HoriInstanceBoxes(BaseInstanceBoxes):
         max_xy = corners.max(dim=-2)[0]
         return torch.cat([min_xy, max_xy], dim=-1)
 
-    def rescale(self: T, rescale_factor: Tuple[float, float]) -> T:
+    def rescale(self: T, scale_factor: Tuple[float, float]) -> T:
         """Rescale boxes w.r.t. rescale_factor.
 
         Args:
-            rescale_factor (Tuple[float, float]): factors for scaling boxes.
+            scale_factor (Tuple[float, float]): factors for scaling boxes.
                 The length should be 2.
 
         Returns:
-            T: Rescaled boxes.
+            T: Rescaled boxes with the same shape as the original boxes.
         """
         bboxes = self.tensor
-        assert len(rescale_factor) == 2
-        bboxes = bboxes * bboxes.new_tensor(rescale_factor).repeat(2)
+        assert len(scale_factor) == 2
+        bboxes = bboxes * bboxes.new_tensor(scale_factor).repeat(2)
         return type(self)(bboxes)
 
-    def rescale_size(self: T, rescale_factor: Tuple[float, float]) -> T:
-        """Only rescale the box shape. The centers of boxes are unchanged.
+    def resize_bboxes(self: T, scale_factor: Tuple[float, float]) -> T:
+        """Resize the box width and height w.r.t scale_factor.
 
         Args:
-            rescale_factor (Tuple[float, float]): factors for scaling box
+            scale_factor (Tuple[float, float]): factors for scaling box
                 shapes. The length should be 2.
 
         Returns:
-            Tensor: Rescaled bboxes.
+            Tensor: Resized bboxes with the same shape as the original boxes.
         """
         bboxes = self.tensor
-        assert len(rescale_factor) == 2
+        assert len(scale_factor) == 2
         ctrs = (bboxes[..., 2:] + bboxes[..., :2]) / 2
         wh = bboxes[..., 2:] - bboxes[..., :2]
-        rescale_factor = bboxes.new_tensor(rescale_factor)
-        wh = wh * rescale_factor
+        scale_factor = bboxes.new_tensor(scale_factor)
+        wh = wh * scale_factor
         xy1 = ctrs - 0.5 * wh
         xy2 = ctrs + 0.5 * wh
         return torch.cat([xy1, xy2], dim=-1)
 
-    def is_bboxes_inside(self, border: tuple) -> torch.BoolTensor:
+    def is_bboxes_inside(self, img_shape: Tuple[int, int]) -> torch.BoolTensor:
         """Find bboxes as long as a part of bboxes is inside an region.
 
         Args:
-            border (tuple): A tuple of region border. Allows input
-                (x_min, y_min, x_max, y_max) or (x_max, y_max).
+            img_shape (Tuple[int, int]): A tuple of image height and width.
 
         Returns:
-            BoolTensor: Index of the remaining bboxes.
+            BoolTensor: Index of the remaining bboxes. Assuming the original
+            boxes have shape (a0, a1, ..., bbox_dim), the output has shape
+            (a0, a1, ...).
         """
-        if len(border) == 2:
-            x_min, y_min, x_max, y_max = 0, 0, border[0], border[1]
-        else:
-            x_min, y_min, x_max, y_max = border
+        img_h, img_w = img_shape
         bboxes = self.tensor
-        return (bboxes[..., 0] < x_max) & (bboxes[..., 2] > x_min) \
-            & (bboxes[..., 1] < y_max) & (bboxes[..., 3] > y_min)
+        return (bboxes[..., 0] < img_w) & (bboxes[..., 2] > 0) \
+            & (bboxes[..., 1] < img_h) & (bboxes[..., 3] > 0)
 
     def find_inside_points(self, points: Tensor) -> torch.BoolTensor:
         """Find inside box points.
 
         Args:
-            points (Tensor): points coordinates. has shape of (m, 2).
+            points (Tensor): Points coordinates. Has shape of (m, 2).
 
         Returns:
-            BoolTensor: Index of inside box points. has shape of (m, n)
-                where n is the length of flattened boxes.
+            BoolTensor: Index of inside box points. Has shape of (m, n)
+                where n is the length of the boxes after flattening.
         """
         bboxes = self.tensor
         if bboxes.dim() > 2:
             bboxes = bboxes.flatten(end_dim=-2)
-        assert points.dim() == 2 and points.size(1) == 2
 
         bboxes = bboxes[None, :, :]
         points = points[:, None, :]
         x_min, y_min, x_max, y_max = bboxes.unbind(dim=-1)
-        return (points[0] > x_min) & (points[0] < x_max) & \
-            (points[1] > y_min) & (points[1] < y_max)
+        return (points[..., 0] > x_min) & (points[..., 0] < x_max) & \
+            (points[..., 1] > y_min) & (points[..., 1] < y_max)

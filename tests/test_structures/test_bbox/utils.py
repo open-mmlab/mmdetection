@@ -36,10 +36,10 @@ class ToyBaseInstanceBoxes(BaseInstanceBoxes):
     def project(self, homography_matrix, img_shape=None):
         pass
 
-    def rescale(self, rescale_factor):
+    def rescale(self, scale_factor):
         pass
 
-    def rescale_size(self, rescale_factor):
+    def resize_bboxes(self, scale_factor):
         pass
 
     def is_bboxes_inside(self, img_shape):

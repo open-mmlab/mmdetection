@@ -88,11 +88,11 @@ def register_bbox_mode(name: str,
     return _register
 
 
-def _register_mode_converter(src_mode: str,
-                             dst_mode: str,
-                             converter: Callable,
-                             force: bool = False) -> None:
-    """Register a mode converter.
+def _register_bbox_mode_converter(src_mode: str,
+                                  dst_mode: str,
+                                  converter: Callable,
+                                  force: bool = False) -> None:
+    """Register a box mode converter.
 
     Args:
         src_mode (str): The name of source box mode.
@@ -115,11 +115,11 @@ def _register_mode_converter(src_mode: str,
     bbox_mode_converters[converter_name] = converter
 
 
-def register_mode_converter(src_mode: str,
-                            dst_mode: str,
-                            converter: Optional[Callable] = None,
-                            force: bool = False) -> Callable:
-    """Register a mode converter.
+def register_bbox_mode_converter(src_mode: str,
+                                 dst_mode: str,
+                                 converter: Optional[Callable] = None,
+                                 force: bool = False) -> Callable:
+    """Register a box mode converter.
 
     A record will be added to ``bbox_mode_converters``, whose key is
     '{src_mode}2{dst_mode}' and value is the convert function.  It can be
@@ -150,7 +150,7 @@ def register_mode_converter(src_mode: str,
     # use it as a normal method:
     # register_convert_func(src_mode, dst_mode, convert_func=Func)
     if converter is not None:
-        _register_mode_converter(
+        _register_bbox_mode_converter(
             src_mode=src_mode,
             dst_mode=dst_mode,
             converter=converter,
@@ -159,7 +159,7 @@ def register_mode_converter(src_mode: str,
 
     # use it as a decorator: @register_bbox_mode(name)
     def _register(func):
-        _register_mode_converter(
+        _register_bbox_mode_converter(
             src_mode=src_mode, dst_mode=dst_mode, converter=func, force=force)
         return func
 

@@ -204,9 +204,9 @@ class TestBaseInstanceBoxes(TestCase):
         # unbind
         bboxes_list = bboxes.unbind(dim=1)
         self.assertEqual(len(bboxes_list), 4)
-        for bbox in bboxes_list:
+        for box in bboxes_list:
             self.assertIsInstance(box, ToyBaseInstanceBoxes)
-            self.assertEqual(tuple(box.size()), (3, 1, 4))
+            self.assertEqual(tuple(box.size()), (3, 4))
         with self.assertRaises(AssertionError):
             bboxes_list = bboxes.unbind(dim=2)
         # flatten
@@ -226,6 +226,28 @@ class TestBaseInstanceBoxes(TestCase):
         self.assertEqual(tuple(new_bboxes.size()), (1, 3, 4, 4))
         with self.assertRaises(AssertionError):
             new_bboxes = bboxes.unsqueeze(3)
+        # cat
+        with self.assertRaises(ValueError):
+            ToyBaseInstanceBoxes.cat([])
+        bbox_list = []
+        bbox_list.append(ToyBaseInstanceBoxes(torch.rand(3, 4, 4)))
+        bbox_list.append(ToyBaseInstanceBoxes(torch.rand(1, 4, 4)))
+        with self.assertRaises(AssertionError):
+            ToyBaseInstanceBoxes.cat(bbox_list, dim=2)
+        cat_bboxes = ToyBaseInstanceBoxes.cat(bbox_list, dim=0)
+        self.assertIsInstance(cat_bboxes, ToyBaseInstanceBoxes)
+        self.assertEqual((cat_bboxes.size()), (4, 4, 4))
+        # stack
+        with self.assertRaises(ValueError):
+            ToyBaseInstanceBoxes.stack([])
+        bbox_list = []
+        bbox_list.append(ToyBaseInstanceBoxes(torch.rand(3, 4, 4)))
+        bbox_list.append(ToyBaseInstanceBoxes(torch.rand(3, 4, 4)))
+        with self.assertRaises(AssertionError):
+            ToyBaseInstanceBoxes.stack(bbox_list, dim=3)
+        stack_bboxes = ToyBaseInstanceBoxes.stack(bbox_list, dim=1)
+        self.assertIsInstance(stack_bboxes, ToyBaseInstanceBoxes)
+        self.assertEqual((stack_bboxes.size()), (3, 2, 4, 4))
 
     def test_misc(self):
         bboxes = ToyBaseInstanceBoxes(torch.rand(3, 4, 4))
@@ -234,14 +256,14 @@ class TestBaseInstanceBoxes(TestCase):
         # __repr__
         repr(bboxes)
         # create_empty_bboxes
-        new_bboxes = bboxes.create_empty_bboxes()
+        new_bboxes = bboxes.create_empty_bbox()
         self.assertEqual(tuple(new_bboxes.size()), (0, 4))
         self.assertEqual(bboxes.dtype, new_bboxes.dtype)
         self.assertEqual(bboxes.device, new_bboxes.device)
-        new_bboxes = bboxes.create_empty_bboxes(dtype=torch.uint8)
+        new_bboxes = bboxes.create_empty_bbox(dtype=torch.uint8)
         self.assertEqual(new_bboxes.dtype, torch.uint8)
         if torch.cuda.is_available():
-            new_bboxes = bboxes.create_empty_bboxes(device='cuda')
+            new_bboxes = bboxes.create_empty_bbox(device='cuda')
             self.assertTrue(new_bboxes.tensor.is_cuda())
         # create_fake_bboxes
         new_bboxes = bboxes.create_fake_bboxes((3, 4, 4), 1)

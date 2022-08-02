@@ -7,7 +7,7 @@ from mmdet.structures.bbox.bbox_mode import (_bbox_mode_to_name,
                                              bbox_mode_converters, bbox_modes,
                                              convert_bbox_mode, get_bbox_mode,
                                              register_bbox_mode,
-                                             register_mode_converter)
+                                             register_bbox_mode_converter)
 from .utils import ToyBaseInstanceBoxes
 
 
@@ -68,7 +68,7 @@ class TestBboxMode(TestCase):
         self.assertEqual(_bbox_mode_to_name[B], 'bb')
         self.assertEqual(len(bbox_modes), len(_bbox_mode_to_name))
 
-    def test_register_mode_converter(self):
+    def test_register_bbox_mode_converter(self):
 
         @register_bbox_mode('A')
         class A(ToyBaseInstanceBoxes):
@@ -83,7 +83,7 @@ class TestBboxMode(TestCase):
             pass
 
         # test usage of decorator
-        @register_mode_converter('A', 'B')
+        @register_bbox_mode_converter('A', 'B')
         def converter_A(bboxes):
             return bboxes
 
@@ -91,27 +91,27 @@ class TestBboxMode(TestCase):
         def converter_B(bboxes):
             return bboxes
 
-        register_mode_converter('B' 'A', converter_B)
+        register_bbox_mode_converter('B' 'A', converter_B)
 
         # register uncallable object
         with self.assertRaises(AssertionError):
-            register_mode_converter('A', 'C', 'uncallable str')
+            register_bbox_mode_converter('A', 'C', 'uncallable str')
 
         # test register unregistered bbox mode
         with self.assertRaises(AssertionError):
 
-            @register_mode_converter('A', 'D')
+            @register_bbox_mode_converter('A', 'D')
             def converter_C(bboxes):
                 return bboxes
 
         # test register registered converter
         with self.assertRaises(KeyError):
 
-            @register_mode_converter('A', 'B')
+            @register_bbox_mode_converter('A', 'B')
             def converter_D(bboxes):
                 return bboxes
 
-        @register_mode_converter('A', 'B', force=True)
+        @register_bbox_mode_converter('A', 'B', force=True)
         def converter_E(bboxes):
             return bboxes
 
@@ -155,7 +155,7 @@ class TestBboxMode(TestCase):
 
         converter = MagicMock()
         converter.return_value = torch.rand(3, 4, 4)
-        register_mode_converter('A', 'B', converter)
+        register_bbox_mode_converter('A', 'B', converter)
 
         bboxes_a = A(torch.rand(3, 4, 4))
         th_bboxes_a = bboxes_a.tensor
