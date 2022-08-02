@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import json
 import logging
+import os
 import os.path as osp
 from typing import List, Union
 
@@ -17,8 +18,9 @@ class CrowdHumanDataset(BaseDataset):
     r"""Dataset for CrowdHuman.
 
     Args:
-        data_root (str): The root directory for ``data_prefix`` and
-            ``ann_file``.
+        data_root (str): The root directory for
+        ``data_prefix`` and ``ann_file``.
+        ann_file (str): Annotation file path.
     """
 
     METAINFO = {
@@ -27,8 +29,15 @@ class CrowdHumanDataset(BaseDataset):
         'PALETTE': [(220, 20, 60)]
     }
 
-    def __init__(self, data_root, **kwargs):
-        self.id_hw_path = osp.join(data_root, 'id_hw.json')
+    def __init__(self, data_root, ann_file, **kwargs):
+        # id_hw file is an additional annotation information which record the
+        # size of each image. This file is automatically created when you
+        # first load the CrowdHuman dataset by mmdet
+        ann_file_name = os.path.basename(ann_file)
+        if 'train' in ann_file_name:
+            self.id_hw_path = osp.join(data_root, 'id_hw_train.json')
+        elif 'val' in ann_file_name:
+            self.id_hw_path = osp.join(data_root, 'id_hw_val.json')
         self.id_hw_exist = False
         if not osp.isfile(self.id_hw_path):
             print_log(
@@ -41,7 +50,7 @@ class CrowdHumanDataset(BaseDataset):
             self.id_hw_exist = True
             with open(self.id_hw_path, 'r') as id_hw_file:
                 self.id_hw = json.load(id_hw_file)
-        super().__init__(data_root=data_root, **kwargs)
+        super().__init__(data_root=data_root, ann_file=ann_file, **kwargs)
 
     def load_data_list(self) -> List[dict]:
         """Load annotations from an annotation file named as ``self.ann_file``
