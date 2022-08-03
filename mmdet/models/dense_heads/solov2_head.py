@@ -554,8 +554,10 @@ class SOLOV2Head(SOLOHead):
         num_pos = 0
         for img_pos_masks in pos_masks:
             for lvl_img_pos_masks in img_pos_masks:
-                num_pos += lvl_img_pos_masks.count_nonzero()
-
+                # Fix `Tensor` object has no attribute `count_nonzero()`
+                # in PyTorch 1.6, the type of `lvl_img_pos_masks`
+                # should be `torch.bool`.
+                num_pos += lvl_img_pos_masks.nonzero().numel()
         loss_mask = []
         for lvl_mask_preds, lvl_mask_targets in zip(mlvl_mask_preds,
                                                     mlvl_mask_targets):
