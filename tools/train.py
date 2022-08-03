@@ -28,7 +28,7 @@ def parse_args():
     parser.add_argument(
         '--auto-resume',
         action='store_true',
-        help='resume from the latest checkpoint automatically')
+        help='resume from the latest checkpoint in the work_dir automatically')
     parser.add_argument(
         '--cfg-options',
         nargs='+',
