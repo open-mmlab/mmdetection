@@ -69,14 +69,12 @@ class SingleStageDetector(BaseDetector):
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
                 For details on the values of these keys see
                 :class:`mmdet.datasets.pipelines.Collect`.
-            gt_bboxes (list[Tensor]): Each item are the truth boxes for each
-                image in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): Class indices corresponding to each box
-            gt_bboxes_ignore (None | list[Tensor]): Specify which bounding
-                boxes can be ignored when computing the loss.
+            gt_bboxes (list[Tensor]): 每个元素都是 [x1, y1, x2, y2] 格式的gt.
+            gt_labels (list[Tensor]): 每个gt对应的label
+            gt_bboxes_ignore (None | list[Tensor]): 计算损失时可以忽略的gt.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components.
+            dict[str, Tensor]: loss的结构字典.
         """
         super(SingleStageDetector, self).forward_train(img, img_metas)
         x = self.extract_feat(img)
@@ -85,18 +83,16 @@ class SingleStageDetector(BaseDetector):
         return losses
 
     def simple_test(self, img, img_metas, rescale=False):
-        """Test function without test-time augmentation.
+        """没有TTA的测试方法,len(TTA)=1.
 
         Args:
-            img (torch.Tensor): Images with shape (N, C, H, W).
-            img_metas (list[dict]): List of image information.
-            rescale (bool, optional): Whether to rescale the results.
-                Defaults to False.
+            img (torch.Tensor): 输入shape (N, C, H, W).
+            img_metas (list[dict]): batch张图像信息.
+            rescale (bool, optional): 是否缩放box.
 
         Returns:
-            list[list[np.ndarray]]: BBox results of each image and classes.
-                The outer list corresponds to each image. The inner list
-                corresponds to each class.
+            list[list[np.ndarray]]: 每张图像的检测结果.
+                外层列表对应每张图片. 内部列表对应每个类.
         """
         feat = self.extract_feat(img)
         results_list = self.bbox_head.simple_test(

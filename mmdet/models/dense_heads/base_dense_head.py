@@ -38,45 +38,39 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                    rescale=False,
                    with_nms=True,
                    **kwargs):
-        """Transform network outputs of a batch into bbox results.
+        """将网络输出转换为 box 结果.
 
-        Note: When score_factors is not None, the cls_scores are
-        usually multiplied by it then obtain the real score used in NMS,
-        such as CenterNess in FCOS, IoU branch in ATSS.
+        注意: 当 score_factors 不为 None时, cls_scores 通常乘以它,
+        然后得到 NMS 中使用的真正scores,如 FCOS 中的 CenterNess，ATSS 中的 IoU 分支.
+        在有些网络中会输出obj_score(上面的score_factors),代表了目标置信度(比如YOLO系列).
+        它一般会与网络输出的cls_score相乘作为box的socre参与NMS,以及后续的结果中
+        如果网络没有obj_score,则直接使用cls_score作为box的socre
 
         Args:
-            cls_scores (list[Tensor]): Classification scores for all
-                scale levels, each is a 4D-tensor, has shape
-                (batch_size, num_priors * num_classes, H, W).
-            bbox_preds (list[Tensor]): Box energies / deltas for all
-                scale levels, each is a 4D-tensor, has shape
-                (batch_size, num_priors * 4, H, W).
-            score_factors (list[Tensor], Optional): Score factor for
-                all scale level, each is a 4D-tensor, has shape
-                (batch_size, num_priors * 1, H, W). Default None.
-            img_metas (list[dict], Optional): Image meta info. Default None.
-            cfg (mmcv.Config, Optional): Test / postprocessing configuration,
-                if None, test_cfg would be used.  Default None.
-            rescale (bool): If True, return boxes in original image space.
-                Default False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default True.
+            cls_scores (list[Tensor]): 所有特征层级上预测的类别概率, shape为
+                (B, A * C, H, W). 其中H、W随着层级不同而不同
+            bbox_preds (list[Tensor]): 所有特征层级上预测的回归结果, shape为
+                (B, A * 4, H, W).
+            score_factors (list[Tensor], Optional): 所有特征层级上预测的目标概率,
+                shape为(B, A * 1, H, W). 默认为None,即网络不输出该结果
+            img_metas (list[dict], Optional): 图像元信息.
+            cfg (mmcv.Config, Optional): 测试 / 后处理 配置,
+                如果为 None, test_cfg 将被使用.
+            rescale (bool): 如果为 True, 则将box*ori_h/new_h以适配原始图像的尺寸.
+            with_nms (bool): 如果为 True, 在返回box之前做 nms.
 
         Returns:
-            list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class label of
-                the corresponding box.
+            list[list[Tensor, Tensor]]: result_list 中的每一项都是 2 元组.
+                第一项是形状为 (n, 5) 的“boxes”,其中 5 代表 (x1, y1, x2, y2, score).
+                第二项是形状为 (n, ) 的“labels”.
         """
         assert len(cls_scores) == len(bbox_preds)
 
         if score_factors is None:
-            # e.g. Retina, FreeAnchor, Foveabox, etc.
+            # 比如像 Retina, FreeAnchor, Foveabox,这样的模型是没有输出obj_score的.
             with_score_factors = False
         else:
-            # e.g. FCOS, PAA, ATSS, AutoAssign, etc.
+            # 比如像 FCOS, PAA, ATSS, AutoAssign,这样的模型则相反.
             with_score_factors = True
             assert len(cls_scores) == len(score_factors)
 
@@ -116,51 +110,41 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                            rescale=False,
                            with_nms=True,
                            **kwargs):
-        """Transform outputs of a single image into bbox predictions.
+        """将单个图像的输出转换为 predict_bbox.
 
         Args:
-            cls_score_list (list[Tensor]): Box scores from all scale
-                levels of a single image, each item has shape
-                (num_priors * num_classes, H, W).
-            bbox_pred_list (list[Tensor]): Box energies / deltas from
-                all scale levels of a single image, each item has shape
-                (num_priors * 4, H, W).
-            score_factor_list (list[Tensor]): Score factor from all scale
-                levels of a single image, each item has shape
-                (num_priors * 1, H, W).
-            mlvl_priors (list[Tensor]): Each element in the list is
-                the priors of a single level in feature pyramid. In all
-                anchor-based methods, it has shape (num_priors, 4). In
-                all anchor-free methods, it has shape (num_priors, 2)
-                when `with_stride=True`, otherwise it still has shape
-                (num_priors, 4).
-            img_meta (dict): Image meta info.
-            cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
+            cls_score_list (list[Tensor]): 来自单个图像的所有层级别的box score,
+                每个元素shape 为 (A * C, H, W).
+            bbox_pred_list (list[Tensor]): 来自单个图像的所有层级别的box回归结果
+                每个元素shape 为 (A * 4, H, W).
+            score_factor_list (list[Tensor]): 来自单个图像的所有层级别的box置信度
+                每个元素shape (A * 1, H, W).
+            mlvl_priors (list[Tensor]): 网络生成的多层级先验.在所有anchor-base的
+                网络中,它的shape为(num_priors, 4). 在所有anchor-free的
+                网络中,当with_stride=True时,它的shape为(num_priors, 2)
+                否则它的shape仍然为(num_priors, 4).
+            img_meta (dict): 图像元信息.
+            cfg (mmcv.Config): 测试 / 后处理 配置,
+                如果为 None, test_cfg 将被使用.
+            rescale (bool): 如果为 True, 则将box*ori_h/new_h以适配原始图像的尺寸.
+            with_nms (bool): 如果为 True, 对box做nms.
 
         Returns:
-            tuple[Tensor]: Results of detected bboxes and labels. If with_nms
-                is False and mlvl_score_factor is None, return mlvl_bboxes and
-                mlvl_scores, else return mlvl_bboxes, mlvl_scores and
-                mlvl_score_factor. Usually with_nms is False is used for aug
-                test. If with_nms is True, then return the following format
+            tuple[Tensor]: 检测到的box和label的结果.
+                If with_nms is False and mlvl_score_factor is None:
+                    return mlvl_bboxes and mlvl_scores,
+                else:
+                    return mlvl_bboxes, mlvl_scores and mlvl_score_factor.
+                with_nms 为 False 时一般在aug test中使用.
+                如果with_nms 为 True, 则返回以下格式的数据
 
-                - det_bboxes (Tensor): Predicted bboxes with shape \
-                    [num_bboxes, 5], where the first 4 columns are bounding \
-                    box positions (tl_x, tl_y, br_x, br_y) and the 5-th \
-                    column are scores between 0 and 1.
-                - det_labels (Tensor): Predicted labels of the corresponding \
-                    box with shape [num_bboxes].
+                - det_bboxes (Tensor): 预测 boxes, shape为[num_bboxes, 5],
+                    5代表 (x1, y1, x2, y2, score).
+                - det_labels (Tensor): 预测 label, shape为[num_bboxes].
         """
         if score_factor_list[0] is None:
-            # e.g. Retina, FreeAnchor, etc.
             with_score_factors = False
         else:
-            # e.g. FCOS, PAA, ATSS, etc.
             with_score_factors = True
 
         cfg = self.test_cfg if cfg is None else cfg
@@ -177,9 +161,12 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         for level_idx, (cls_score, bbox_pred, score_factor, priors) in \
                 enumerate(zip(cls_score_list, bbox_pred_list,
                               score_factor_list, mlvl_priors)):
-
+            # 确保分类分支与回归分支的尺寸一致
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-
+            # (A*4,H,W) -> (H,W,A*4) -> (H*W*A,4)
+            # 注意,这里三处的permute->reshape的操作本质都一样
+            # 都是将单层特征图上的所有"box属性"都铺平,最后一个维度全是box的属性
+            # bbox_pred:修正系数,score_factor:目标置信度,cls_score:分类置信度
             bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
             if with_score_factors:
                 score_factor = score_factor.permute(1, 2,
@@ -189,16 +176,15 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             if self.use_sigmoid_cls:
                 scores = cls_score.sigmoid()
             else:
-                # remind that we set FG labels to [0, num_class-1]
-                # since mmdet v2.0
-                # BG cat_id: num_class
+                # 注意,从v2.0开始mmdet将前景的标签设置为 [0, num_class-1]
+                # 背景id: num_class
+                # 注意该种情况仅在self.use_sigmoid_cls为False的时候
+                # 详情参考class AnchorHead 构造方法中
                 scores = cls_score.softmax(-1)[:, :-1]
 
-            # After https://github.com/open-mmlab/mmdetection/pull/6268/,
-            # this operation keeps fewer bboxes under the same `nms_pre`.
-            # There is no difference in performance for most models. If you
-            # find a slight drop in performance, you can set a larger
-            # `nms_pre` than before.
+            # 在 https://github.com/open-mmlab/mmdetection/pull/6268/ 这之后
+            # 此操作在相同的 `nms_pre` 下保留更少的 box.大多数模型的性能没有差异.
+            # 如果你发现性能略有下降, 你可以设置比以前更大的 `nms_pre`.
             results = filter_scores_and_topk(
                 scores, cfg.score_thr, nms_pre,
                 dict(bbox_pred=bbox_pred, priors=priors))
@@ -233,45 +219,36 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                            with_nms=True,
                            mlvl_score_factors=None,
                            **kwargs):
-        """bbox post-processing method.
+        """box后处理方法.
 
-        The boxes would be rescaled to the original image scale and do
-        the nms operation. Usually `with_nms` is False is used for aug test.
+        这些框将被重新缩放到原始图像尺寸下并执行nms操作.通常 `with_nms`为False时用于aug test.
 
         Args:
-            mlvl_scores (list[Tensor]): Box scores from all scale
-                levels of a single image, each item has shape
-                (num_bboxes, ).
-            mlvl_labels (list[Tensor]): Box class labels from all scale
-                levels of a single image, each item has shape
-                (num_bboxes, ).
-            mlvl_bboxes (list[Tensor]): Decoded bboxes from all scale
-                levels of a single image, each item has shape (num_bboxes, 4).
-            scale_factor (ndarray, optional): Scale factor of the image arange
-                as (w_scale, h_scale, w_scale, h_scale).
-            cfg (mmcv.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used.
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            with_nms (bool): If True, do nms before return boxes.
-                Default: True.
-            mlvl_score_factors (list[Tensor], optional): Score factor from
-                all scale levels of a single image, each item has shape
-                (num_bboxes, ). Default: None.
+            mlvl_scores (list[Tensor]): 来自单个图像的所有层别的box score,其中元素
+                shape为(num_bboxes, ).
+            mlvl_labels (list[Tensor]): 来自单个图像的所有层别的box label,其中元素
+                shape为(num_bboxes, ).
+            mlvl_bboxes (list[Tensor]): 来自单个图像的所有层别的box(x1 y1 x2 y2),
+                其中元素shape为(num_bboxes, 4).
+            scale_factor (ndarray, optional): 图像在Resize阶段的缩放因子,其格式为
+                (w_scale, h_scale, w_scale, h_scale).
+            cfg (mmcv.Config): 测试 / 后处理 配置,
+                如果为 None, test_cfg 将被使用.
+            rescale (bool): 如果为 True, 则将box*ori_h/new_h以适配原始图像的尺寸.
+            with_nms (bool): 如果为 True, 对box做nms.
+            mlvl_score_factors (list[Tensor], optional): 来自单个图像的
+            所有层级的obj_score, 其中元素shape为(num_bboxes, ). 默认为None.
 
         Returns:
-            tuple[Tensor]: Results of detected bboxes and labels. If with_nms
-                is False and mlvl_score_factor is None, return mlvl_bboxes and
-                mlvl_scores, else return mlvl_bboxes, mlvl_scores and
-                mlvl_score_factor. Usually with_nms is False is used for aug
-                test. If with_nms is True, then return the following format
+            tuple[Tensor]: 检测到的box和label的结果.
+                If with_nms is False:
+                    return mlvl_bboxes, mlvl_scores, mlvl_labels
+                else: 则返回以下格式的数据
 
-                - det_bboxes (Tensor): Predicted bboxes with shape \
-                    [num_bboxes, 5], where the first 4 columns are bounding \
-                    box positions (tl_x, tl_y, br_x, br_y) and the 5-th \
-                    column are scores between 0 and 1.
-                - det_labels (Tensor): Predicted labels of the corresponding \
-                    box with shape [num_bboxes].
+                - det_bboxes (Tensor): 预测 boxes shape [num_bboxes, 5],
+                    5代表 (x1, y1, x2, y2, score).
+                - det_labels (Tensor): 预测 label, shape为[num_bboxes].
+
         """
         assert len(mlvl_scores) == len(mlvl_bboxes) == len(mlvl_labels)
 
@@ -341,21 +318,17 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
             return losses, proposal_list
 
     def simple_test(self, feats, img_metas, rescale=False):
-        """Test function without test-time augmentation.
+        """没有TTA的测试方法,len(TTA)=1.
 
         Args:
-            feats (tuple[torch.Tensor]): Multi-level features from the
-                upstream network, each is a 4D-tensor.
-            img_metas (list[dict]): List of image information.
-            rescale (bool, optional): Whether to rescale the results.
-                Defaults to False.
+            feats (tuple[torch.Tensor]): 来自上游网络的多级特征,每个都是 4D 张量.
+            img_metas (list[dict]): batch张图像信息.
+            rescale (bool, optional): 是否缩放box.
 
         Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is ``bboxes`` with shape (n, 5),
-                where 5 represent (tl_x, tl_y, br_x, br_y, score).
-                The shape of the second tensor in the tuple is ``labels``
-                with shape (n, ).
+            list[tuple[Tensor, Tensor]]: result_list 中的每一项都是 2 元组.
+                第一项是形状为 (n, 5) 的“boxes”,其中 5 代表 (x1, y1, x2, y2, score).
+                第二项是形状为 (n, ) 的“labels”.
         """
         return self.simple_test_bboxes(feats, img_metas, rescale=rescale)
 

@@ -22,99 +22,33 @@ from mmdet.utils import (build_ddp, build_dp, compat_cfg, get_device,
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description='MMDet test (and eval) a model')
-    parser.add_argument('config', help='test config file path')
-    parser.add_argument('checkpoint', help='checkpoint file')
-    parser.add_argument(
-        '--work-dir',
-        help='the directory to save the file containing evaluation metrics')
-    parser.add_argument('--out', help='output result file in pickle format')
-    parser.add_argument(
-        '--fuse-conv-bn',
-        action='store_true',
-        help='Whether to fuse conv and bn, this will slightly increase'
-        'the inference speed')
-    parser.add_argument(
-        '--gpu-ids',
-        type=int,
-        nargs='+',
-        help='(Deprecated, please use --gpu-id) ids of gpus to use '
-        '(only applicable to non-distributed training)')
-    parser.add_argument(
-        '--gpu-id',
-        type=int,
-        default=0,
-        help='id of gpu to use '
-        '(only applicable to non-distributed testing)')
-    parser.add_argument(
-        '--format-only',
-        action='store_true',
-        help='Format the output results without perform evaluation. It is'
-        'useful when you want to format the result to a specific format and '
-        'submit it to the test server')
-    parser.add_argument(
-        '--eval',
-        type=str,
-        nargs='+',
-        help='evaluation metrics, which depends on the dataset, e.g., "bbox",'
-        ' "segm", "proposal" for COCO, and "mAP", "recall" for PASCAL VOC')
-    parser.add_argument('--show', action='store_true', help='show results')
-    parser.add_argument(
-        '--show-dir', help='directory where painted images will be saved')
-    parser.add_argument(
-        '--show-score-thr',
-        type=float,
-        default=0.3,
-        help='score threshold (default: 0.3)')
-    parser.add_argument(
-        '--gpu-collect',
-        action='store_true',
-        help='whether to use gpu to collect results.')
-    parser.add_argument(
-        '--tmpdir',
-        help='tmp directory used for collecting results from multiple '
-        'workers, available when gpu-collect is not specified')
-    parser.add_argument(
-        '--cfg-options',
-        nargs='+',
-        action=DictAction,
-        help='override some settings in the used config, the key-value pair '
-        'in xxx=yyy format will be merged into config file. If the value to '
-        'be overwritten is a list, it should be like key="[a,b]" or key=a,b '
-        'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
-        'Note that the quotation marks are necessary and that no white space '
-        'is allowed.')
-    parser.add_argument(
-        '--options',
-        nargs='+',
-        action=DictAction,
-        help='custom options for evaluation, the key-value pair in xxx=yyy '
-        'format will be kwargs for dataset.evaluate() function (deprecate), '
-        'change to --eval-options instead.')
-    parser.add_argument(
-        '--eval-options',
-        nargs='+',
-        action=DictAction,
-        help='custom options for evaluation, the key-value pair in xxx=yyy '
-        'format will be kwargs for dataset.evaluate() function')
-    parser.add_argument(
-        '--launcher',
-        choices=['none', 'pytorch', 'slurm', 'mpi'],
-        default='none',
-        help='job launcher')
+    parser = argparse.ArgumentParser(description='MMDet test (and eval) a model')
+    parser.add_argument('config', help='测试配置文件路径')
+    parser.add_argument('checkpoint', help='模型文件')
+    parser.add_argument('--work-dir', help='保存包含评估指标的文件的目录')
+    parser.add_argument('--out', help='以pickle格式输出结果文件')
+    parser.add_argument('--fuse-conv-bn', action='store_true', help='是否融合conv和bn, 这将略微提高推理速度')
+    parser.add_argument('--gpu-id', type=int, default=0, help='GPU的索引(仅适用于非分布式训练)')
+    parser.add_argument('--format-only', action='store_true', help='格式化输出结果而不执行评估. '
+                        '当您想将结果格式化为特定格式并将其提交到测试服务器时,它很有用')
+    parser.add_argument('--eval', type=str, nargs='+', help='评估指标, 取决于数据集.'
+                        '例如, COCO: "bbox", "segm", "proposal", VOC: "mAP", "recall"')
+    parser.add_argument('--show', action='store_true', help='是否显示结果')
+    parser.add_argument('--show-dir', help='将保存绘制图像的目录')
+    parser.add_argument('--show-score-thr', type=float, default=0.3, help='分数阈值(默认值：0.3)')
+    parser.add_argument('--gpu-collect', action='store_true', help='是否使用gpu收集结果.')
+    parser.add_argument('--tmpdir', help='临时目录，用于从多个 workers 收集结果,在未指定 gpu-collect 时可用')
+    parser.add_argument('--cfg-options', nargs='+', action=DictAction, help='覆盖配置中的一些设置, 通过键值对的方式'
+                        'xxx=yyy. 如果被覆盖的值是一个列表,它应该像 key="[a,b]" 或 key=a,b 格式'
+                        '它也允许嵌套的list tuple值,例如key="[(a,b),(c,d)]" 注意引号是必须的,不能有空格.')
+    parser.add_argument('--eval-options', nargs='+', action=DictAction,
+                        help='用于评估的自定义选项, xxx=yyy格式的键值对将是dataset.evaluate()方法的参数')
+    parser.add_argument('--launcher', choices=['none', 'pytorch', 'slurm', 'mpi'], default='none', help='任务启动方式')
     parser.add_argument('--local_rank', type=int, default=0)
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
 
-    if args.options and args.eval_options:
-        raise ValueError(
-            '--options and --eval-options cannot be both '
-            'specified, --options is deprecated in favor of --eval-options')
-    if args.options:
-        warnings.warn('--options is deprecated in favor of --eval-options')
-        args.eval_options = args.options
     return args
 
 
@@ -123,36 +57,36 @@ def main():
 
     assert args.out or args.eval or args.format_only or args.show \
         or args.show_dir, \
-        ('Please specify at least one operation (save/eval/format/show the '
-         'results / save the results) with the argument "--out", "--eval"'
-         ', "--format-only", "--show" or "--show-dir"')
+        ('请使用以下参数 "--out", "--eval", "--format-only", "--show" or "--show-dir"'
+         '指定至少一项操作 (save/eval/format/show the results/save the results) ')
 
     if args.eval and args.format_only:
-        raise ValueError('--eval and --format_only cannot be both specified')
+        raise ValueError('--eval 和 --format_only 不能同时指定')
 
     if args.out is not None and not args.out.endswith(('.pkl', '.pickle')):
-        raise ValueError('The output file must be a pkl file.')
+        raise ValueError('输出文件必须是pkl格式.')
 
     cfg = Config.fromfile(args.config)
 
     # replace the ${key} with the value of cfg.key
     cfg = replace_cfg_vals(cfg)
 
-    # update data root according to MMDET_DATASETS
+    # 更新cfg.data_root,如果MMDET_DATASETS存在环境变量中
     update_data_root(cfg)
 
-    if args.cfg_options is not None:
+    if args.cfg_options is not None:  # 更新cfg_options中的配置信息到cfg中去
         cfg.merge_from_dict(args.cfg_options)
 
-    cfg = compat_cfg(cfg)
+    cfg = compat_cfg(cfg)  # 该函数会新建一些参数以保持配置的兼容性.
 
-    # set multi-process settings
+    # 设置多进程配置
     setup_multi_processes(cfg)
 
-    # set cudnn_benchmark
+    # 设置 cudnn_benchmark 在那些输入固定的模型中(比如SSD300),开启该参数后训练会更快
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
 
+    # 这里pretrained参数设置为None是因为后面需要加载测试模型参数,没有必要加载初始化模型
     if 'pretrained' in cfg.model:
         cfg.model.pretrained = None
     elif 'init_cfg' in cfg.model.backbone:
@@ -168,16 +102,9 @@ def main():
             if cfg.model.neck.rfp_backbone.get('pretrained'):
                 cfg.model.neck.rfp_backbone.pretrained = None
 
-    if args.gpu_ids is not None:
-        cfg.gpu_ids = args.gpu_ids[0:1]
-        warnings.warn('`--gpu-ids` is deprecated, please use `--gpu-id`. '
-                      'Because we only support single GPU mode in '
-                      'non-distributed testing. Use the first GPU '
-                      'in `gpu_ids` now.')
-    else:
-        cfg.gpu_ids = [args.gpu_id]
+    cfg.gpu_ids = [args.gpu_id]  # 在非分布式测试中只支持单GPU模式
     cfg.device = get_device()
-    # init distributed env first, since logger depends on the dist info.
+    # 首先初始化分布式环境, 因为 logger 会依赖分布式信息.
     if args.launcher == 'none':
         distributed = False
     else:
@@ -187,11 +114,12 @@ def main():
     test_dataloader_default_args = dict(
         samples_per_gpu=1, workers_per_gpu=2, dist=distributed, shuffle=False)
 
-    # in case the test dataset is concatenated
+    # 如果测试数据集是多个合并在一起时
     if isinstance(cfg.data.test, dict):
         cfg.data.test.test_mode = True
         if cfg.data.test_dataloader.get('samples_per_gpu', 1) > 1:
-            # Replace 'ImageToTensor' to 'DefaultFormatBundle'
+            # 在bs>1时,将测试配置中'ImageToTensor'替换为'DefaultFormatBundle',
+            # 主要是考虑到需要将多张图片Collect同一尺寸,因为bs=1时不需要考虑这个
             cfg.data.test.pipeline = replace_ImageToTensor(
                 cfg.data.test.pipeline)
     elif isinstance(cfg.data.test, list):
@@ -217,7 +145,7 @@ def main():
     dataset = build_dataset(cfg.data.test)
     data_loader = build_dataloader(dataset, **test_loader_cfg)
 
-    # build the model and load checkpoint
+    # 构建模型并加载权重
     cfg.model.train_cfg = None
     model = build_detector(cfg.model, test_cfg=cfg.get('test_cfg'))
     fp16_cfg = cfg.get('fp16', None)
@@ -226,8 +154,7 @@ def main():
     checkpoint = load_checkpoint(model, args.checkpoint, map_location='cpu')
     if args.fuse_conv_bn:
         model = fuse_conv_bn(model)
-    # old versions did not save class info in checkpoints, this walkaround is
-    # for backward compatibility
+    # 旧版本框架在训练过程中没有在权重文件中保存类信息,这里是为了兼容旧版本
     if 'CLASSES' in checkpoint.get('meta', {}):
         model.CLASSES = checkpoint['meta']['CLASSES']
     else:
@@ -247,10 +174,11 @@ def main():
             model, data_loader, args.tmpdir, args.gpu_collect
             or cfg.evaluation.get('gpu_collect', False))
 
+    # 返回当前显卡索引,总卡数
     rank, _ = get_dist_info()
     if rank == 0:
         if args.out:
-            print(f'\nwriting results to {args.out}')
+            print(f'\n正在将测试结果写入 {args.out}')
             mmcv.dump(outputs, args.out)
         kwargs = {} if args.eval_options is None else args.eval_options
         if args.format_only:

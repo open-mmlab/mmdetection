@@ -85,21 +85,18 @@ def flip_tensor(src_tensor, flip_direction):
 
 
 def select_single_mlvl(mlvl_tensors, batch_id, detach=True):
-    """Extract a multi-scale single image tensor from a multi-scale batch
-    tensor based on batch index.
+    """根据batch索引从多尺度张量[(N C H W)] * num_level中提取多尺度单张图像张量.
 
-    Note: The default value of detach is True, because the proposal gradient
-    needs to be detached during the training of the two-stage model. E.g
-    Cascade Mask R-CNN.
+    注意: detach默认为 True, 因为在两阶段模型的训练过程中需要截断proposal的梯度.
+        比如 Cascade Mask R-CNN.
 
     Args:
-        mlvl_tensors (list[Tensor]): Batch tensor for all scale levels,
-           each is a 4D-tensor.
-        batch_id (int): Batch index.
-        detach (bool): Whether detach gradient. Default True.
+        mlvl_tensors (list[Tensor]): 所有层级的张量(N C H W) * num_level,
+        batch_id (int): Batch 索引.
+        detach (bool): 是否截断输入的梯度.
 
     Returns:
-        list[Tensor]: Multi-scale single image tensor.
+        list[Tensor]: 单张图像的多尺度张量.
     """
     assert isinstance(mlvl_tensors, (list, tuple))
     num_levels = len(mlvl_tensors)
@@ -116,35 +113,33 @@ def select_single_mlvl(mlvl_tensors, batch_id, detach=True):
 
 
 def filter_scores_and_topk(scores, score_thr, topk, results=None):
-    """Filter results using score threshold and topk candidates.
+    """使用score_thr和topk过滤results.
 
     Args:
-        scores (Tensor): The scores, shape (num_bboxes, K).
-        score_thr (float): The score filter threshold.
-        topk (int): The number of topk candidates.
-        results (dict or list or Tensor, Optional): The results to
-           which the filtering rule is to be applied. The shape
-           of each item is (num_bboxes, N).
+        scores (Tensor): box cls_scores, shape (num_bboxes, K).
+        score_thr (float): box cls_scores的过滤阈值.
+        topk (int): 前k个结果.
+        results (dict or list or Tensor, Optional): 要应用过滤规则的结果.
+            每个元素的shape (num_bboxes, N).
 
     Returns:
-        tuple: Filtered results
+        tuple: 过滤后的结果,该结果也是根据score排过序的
 
-            - scores (Tensor): The scores after being filtered, \
-                shape (num_bboxes_filtered, ).
-            - labels (Tensor): The class labels, shape \
-                (num_bboxes_filtered, ).
-            - anchor_idxs (Tensor): The anchor indexes, shape \
-                (num_bboxes_filtered, ).
-            - filtered_results (dict or list or Tensor, Optional): \
-                The filtered results. The shape of each item is \
-                (num_bboxes_filtered, N).
+            - scores (Tensor): 过滤后的score, shape (num_bboxes_filtered, ).
+            - labels (Tensor): 过滤后的label, shape (num_bboxes_filtered, ).
+            - anchor_idxs (Tensor): anchor索引, shape  (num_bboxes_filtered, ).
+            - filtered_results (dict or list or Tensor, Optional):
+                过滤后的结果. 每个元素的shape (num_bboxes_filtered, N).
     """
     valid_mask = scores > score_thr
     scores = scores[valid_mask]
+    # 因为valid_mask为二维数据,所以valid_idxs的shape为(n,2)
+    # 其中2的第一列为box维度上的索引,第二列为cls维度上的索引
+    # 同时 n <= num_box*k
     valid_idxs = torch.nonzero(valid_mask)
 
     num_topk = min(topk, valid_idxs.size(0))
-    # torch.sort is actually faster than .topk (at least on GPUs)
+    # 实际上torch.sort要比.topk更快 (至少在GPU上是这样)
     scores, idxs = scores.sort(descending=True)
     scores = scores[:num_topk]
     topk_idxs = valid_idxs[idxs[:num_topk]]

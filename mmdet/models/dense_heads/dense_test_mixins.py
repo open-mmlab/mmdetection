@@ -20,18 +20,14 @@ class BBoxTestMixin(object):
         etc.
 
         Args:
-            feats (tuple[torch.Tensor]): Multi-level features from the
-                upstream network, each is a 4D-tensor.
-            img_metas (list[dict]): List of image information.
-            rescale (bool, optional): Whether to rescale the results.
-                Defaults to False.
+            feats (tuple[torch.Tensor]): 来自上游网络的多级特征,每个都是 4D 张量.
+            img_metas (list[dict]): batch张图像信息.
+            rescale (bool, optional): 是否缩放box.
 
         Returns:
-            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is ``bboxes`` with shape (n, 5),
-                where 5 represent (tl_x, tl_y, br_x, br_y, score).
-                The shape of the second tensor in the tuple is ``labels``
-                with shape (n,)
+            list[tuple[Tensor, Tensor]]: result_list 中的每一项都是 2 元组.
+                第一项是形状为 (n, 5) 的“boxes”,其中 5 代表 (x1, y1, x2, y2, score).
+                第二项是形状为 (n, ) 的“labels”.
         """
         outs = self.forward(feats)
         results_list = self.get_bboxes(

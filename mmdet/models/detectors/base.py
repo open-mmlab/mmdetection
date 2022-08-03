@@ -112,12 +112,10 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
     def forward_test(self, imgs, img_metas, **kwargs):
         """
         Args:
-            imgs (List[Tensor]): the outer list indicates test-time
-                augmentations and inner Tensor should have a shape NxCxHxW,
-                which contains all images in the batch.
-            img_metas (List[List[dict]]): the outer list indicates test-time
-                augs (multiscale, flip, etc.) and the inner list indicates
-                images in a batch.
+            imgs (List[Tensor]): 外部列表表示不同TTA方式.
+                内部张量的shape为 NxCxHxW,表示整个batch的Tensor
+            img_metas (List[List[dict]]): 外部列表表示不同TTA方式.
+                内部列表表示批量图像的信息.
         """
         for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
             if not isinstance(var, list):
@@ -128,27 +126,22 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
             raise ValueError(f'num of augmentations ({len(imgs)}) '
                              f'!= num of image meta ({len(img_metas)})')
 
-        # NOTE the batched image size information may be useful, e.g.
-        # in DETR, this is needed for the construction of masks, which is
-        # then used for the transformer_head.
+        # 注意批处理的图像大小有时候是需要该信息的,例如在 DETR中
+        # 这是构建mask所必需的,然后将其用于transformer_head.
         for img, img_meta in zip(imgs, img_metas):
             batch_size = len(img_meta)
             for img_id in range(batch_size):
                 img_meta[img_id]['batch_input_shape'] = tuple(img.size()[-2:])
 
+        # TTA只有一种,表示无TTA
         if num_augs == 1:
-            # proposals (List[List[Tensor]]): the outer list indicates
-            # test-time augs (multiscale, flip, etc.) and the inner list
-            # indicates images in a batch.
-            # The Tensor should have a shape Px4, where P is the number of
-            # proposals.
+            # proposals (List[List[Tensor]]): 外部列表表示不同TTA方式. 并且内部列表表示批量图像.
+            # 其中Tensor 的 shape应该是 Px4, 其中 P 是proposals的数量
             if 'proposals' in kwargs:
                 kwargs['proposals'] = kwargs['proposals'][0]
             return self.simple_test(imgs[0], img_metas[0], **kwargs)
         else:
-            assert imgs[0].size(0) == 1, 'aug test does not support ' \
-                                         'inference with batch size ' \
-                                         f'{imgs[0].size(0)}'
+            assert imgs[0].size(0) == 1, f'TTA不支持batch大于1的推理 {imgs[0].size(0)}'
             # TODO: support test augmentation for predefined proposals
             assert 'proposals' not in kwargs
             return self.aug_test(imgs, img_metas, **kwargs)

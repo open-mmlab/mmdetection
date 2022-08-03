@@ -53,7 +53,7 @@ model = dict(
         pos_weight=-1,  # 正样本权重,仅在适用于分类Loss ...\models\dense_heads\anchor_head.py _get_targets_single(...)
         debug=False),
     test_cfg=dict(
-        nms_pre=1000,
+        nms_pre=1000,  # 注意是在单层特征图上对nms之前的box数量进行限制
         min_bbox_size=0,
         score_thr=0.05,
         nms=dict(type='nms', iou_threshold=0.5),

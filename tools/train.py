@@ -26,47 +26,19 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
     parser.add_argument('--config', help='模型文件路径', default=r'D:\mmdetection\configs\retinanet\retinanet_r50_fpn_1x_coco.py')
     parser.add_argument('--work-dir', help='存储日志和模型的目录')
-    parser.add_argument(
-        '--resume-from', help='恢复训练的目录')
-    parser.add_argument(
-        '--auto-resume',
-        action='store_true',
-        help='自动从最近的保存点恢复训练')
-    parser.add_argument(
-        '--no-validate',
-        action='store_true',
-        help='训练时是否不进行验证')
-    parser.add_argument(
-        '--gpu-id',
-        type=int,
-        default=0,
-        help='GPU的索引(仅适用于非分布式训练)')
+    parser.add_argument('--resume-from', help='恢复训练的目录')
+    parser.add_argument('--auto-resume', action='store_true', help='自动从最近的保存点恢复训练')
+    parser.add_argument('--no-validate', action='store_true', help='训练时是否不进行验证')
+    parser.add_argument('--gpu-id', type=int, default=0, help='GPU的索引(仅适用于非分布式训练)')
     parser.add_argument('--seed', type=int, default=None, help='random seed')
-    parser.add_argument(
-        '--diff-seed',
-        action='store_true',
-        help='是否为不同的ranks设置不同的种子')
-    parser.add_argument(
-        '--deterministic',
-        action='store_true',
-        help='是否固定CUDNN后端算法.以减少网络输出的随机性')
-    parser.add_argument(
-        '--cfg-options',
-        nargs='+',
-        action=DictAction,
-        help='覆盖配置中的一些设置, 通过键值对的方式 '
-        'xxx=yyy. 如果被覆盖的值是一个列表,它应该像 key="[a,b]" 或 key=a,b 格式'
-        '它也允许嵌套的list tuple值,例如key="[(a,b),(c,d)]" 注意引号是必须的,不能有空格.')
-    parser.add_argument(
-        '--launcher',
-        choices=['none', 'pytorch', 'slurm', 'mpi'],
-        default='none',
-        help='分布式训练使用的启动器')
+    parser.add_argument('--diff-seed', action='store_true', help='是否为不同的ranks设置不同的种子')
+    parser.add_argument('--deterministic',action='store_true',help='是否固定CUDNN后端算法.以减少网络输出的随机性')
+    parser.add_argument('--cfg-options', nargs='+', action=DictAction, help='覆盖配置中的一些设置, 通过键值对的方式'
+                        'xxx=yyy. 如果被覆盖的值是一个列表,它应该像 key="[a,b]" 或 key=a,b 格式'
+                        '它也允许嵌套的list tuple值,例如key="[(a,b),(c,d)]" 注意引号是必须的,不能有空格.')
+    parser.add_argument('--launcher', choices=['none', 'pytorch', 'slurm', 'mpi'], default='none', help='分布式训练使用的启动器')
     parser.add_argument('--local_rank', type=int, default=0)  # 本地进程编号,此参数 torch.distributed.launch 会自动传入
-    parser.add_argument(
-        '--auto-scale-lr',
-        action='store_false',
-        help='自动缩放学习率.')
+    parser.add_argument('--auto-scale-lr', action='store_false', help='自动缩放学习率.')
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:  # 如果环境中没有 LOCAL_RANK,就设置它为当前的 local_rank
         os.environ['LOCAL_RANK'] = str(args.local_rank)

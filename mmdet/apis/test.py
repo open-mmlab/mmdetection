@@ -40,6 +40,8 @@ def single_gpu_test(model,
 
             for i, (img, img_meta) in enumerate(zip(imgs, img_metas)):
                 h, w, _ = img_meta['img_shape']
+                # 由于pipline中的Pad与Collect操作会在图像右边下边填充像素
+                # 所以这里仅仅截取在Resize操作之后的图像进行显示
                 img_show = img[:h, :w, :]
 
                 ori_h, ori_w = img_meta['ori_shape'][:-1]

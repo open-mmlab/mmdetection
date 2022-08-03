@@ -36,23 +36,22 @@ class Resize:
     (如果 MultiScaleFlipAug 不给出 img_scale 而是 scale_factor), 实际 scale 将由图像形状和 scale_factor 计算.
 
     `img_scale` 可以是元组（单尺度）或元组列表（多尺度）. 有 3 种多尺度模式:
-
-    - ``ratio_range is not None``: 从ratio_range中随机采样一个ratio并将其与图像比例相乘.
-    - ``ratio_range is None`` and ``multiscale_mode == "range"``: 随机从多尺度范围内采样一个scale.
-    - ``ratio_range is None`` and ``multiscale_mode == "value"``: 随机从多个尺度中采样一个尺度.
+        1.ratio_range 不为 None: 从ratio_range中随机采样一个ratio并将其与图像比例相乘.
+        2.ratio_range 为 None 且 multiscale_mode == "range": 随机从多尺度范围内采样一个scale.
+        3.ratio_range 为 None 且 multiscale_mode == "value": 随机从多个尺度中采样一个尺度.
 
     Args:
         img_scale (tuple or list[tuple]): 图像缩放的目标尺寸.
         multiscale_mode (str): "range" 或 "value".
         ratio_range (tuple[float]): (min_ratio, max_ratio)
         keep_ratio (bool): 调整图像大小时是否保持宽高比.
-        bbox_clip_border (bool, optional): 是否裁剪图像边界外的对象。在像 MOT17 这样的数据集中，允许 gt bboxes 超出图像的边界。
-            因此，在这种情况下，我们不需要裁剪 gt bbox。默认为True.
+        bbox_clip_border (bool, optional): 是否裁剪图像边界外的对象.在像 MOT17 这样的数据集中,允许 gt 超出图像的边界.
+            因此,在这种情况下,我们不需要裁剪 gt.默认为True.
         backend (str): resize操作的实现后端, 可选 'cv2' 和 'pillow'.这两个后端生成的结果略有不同.
             默认 'cv2'.
-        interpolation (str): 插值方式, 后端为'cv2'的可选方式为
-            "nearest", "bilinear", "bicubic", "area", "lanczos"
-            后端为'cv2'的可选方式为"nearest", "bilinear" for 'pillow' backend.
+        interpolation (str): 插值方式.
+            后端为 'cv2' 的可选方式为"nearest", "bilinear", "bicubic", "area", "lanczos"
+            后端为 'pillow' 的可选方式为"nearest", "bilinear".
         override (bool, optional): 是否覆盖 `scale` 和 `scale_factor` 以调用 resize 两次。默认False。
             如果为 True，则在第一次调整大小后，将忽略现有的 `scale` 和 `scale_factor`，以便允许第二次调整大小。
             此参数是在 DETR 中多次调整大小的解决方法.
@@ -77,10 +76,10 @@ class Resize:
             assert mmcv.is_list_of(self.img_scale, tuple)
 
         if ratio_range is not None:
-            # 情况 1: 给定一个图像比例和比率范围
+            # 模式 1: 给定一个图像比例和比率范围
             assert len(self.img_scale) == 1
         else:
-            # 情况 2: 给定多个scale并在其中随机选取或两个scale(且为上下限,在其范围内随机抽取scale)
+            # 模式 2 3: 给定多个scale并在其中随机选取或两个scale(且为上下限,在其范围内随机抽取scale)
             assert multiscale_mode in ['value', 'range']
 
         self.backend = backend
@@ -112,7 +111,7 @@ class Resize:
     @staticmethod
     def random_sample(img_scales):
         """当 ``multiscale_mode=='range'`` 时随机采样一个 img_scale.
-            img_scales = [(s1,s2), (s3,s4)] (s1,s2)为下限,(s3,s4)为上限, 最后返回(randint(s1,s2), randint(s3,s4))
+            img_scales = [(s1,s2), (s3,s4)] (s1,s2)为下限,(s3,s4)为上限, 最后返回(randint(s2,s4), randint(s1,s3))
 
         Args:
             img_scales (list[tuple]): 用于采样的图像比例范围。 它必须有两个元组，它们指定图像比例的下限和上限.
@@ -137,7 +136,7 @@ class Resize:
     @staticmethod
     def random_sample_ratio(img_scale, ratio_range):
         """
-        从“ratio_range”指定的范围内随机抽取一个ratio。然后将其与“img_scale”相乘并返回.
+        从“ratio_range”指定的范围内随机抽取一个ratio.然后将其与“img_scale”相乘并返回.
 
         Args:
             img_scale (tuple): 基础图像比例,它将会乘以ratio.
@@ -257,9 +256,13 @@ class Resize:
         """resize调整img、box、mask、seg的大小.
         最终目的是要确保results内存在scale值,并据此来对img、box、mask等进行resize
         作为参数,scale与scale_factor是不能同时存在的,但是作为返回参数results中是可以同时存在这两者的,以下为执行优先度(按顺序)
-        1.如果scale已经存在,那么直接进行后续一系列resize操作
-        2.如果scale_factor已经存在,那么将其与现有图像尺寸相乘的结果赋予scale.再进行后续一系列resize操作
-        3.如果这两者都不存在则根据配置文件初始化时传入的参数生成scale
+        1.如果scale已经存在,根据self.override参数进行不同操作:
+            override=True,直接弹出results中 'scale' 与 'scale_factor'参数,重新根据初始化参数进行采样
+            override=False,此时results中'scale_factor'参数不能存在,因为scale_factor是依据scale和图像原始尺寸生成的
+        2.如果scale不存在,根据scale_factor参数进行不同操作:
+            scale_factor存在,那么它必须为float,且将其与img_shape的值相乘后赋予results['scale']
+            scale_factor不存在,直接根据初始化参数进行采样
+        3.最后进行一系列resize操作
         Args:
             results (dict): 来自数据加载管道的Result字典.
 
@@ -315,7 +318,7 @@ class RandomFlip:
     - ``flip_ratio`` 为 float, ``direction`` 为 [str]: 图像将被“direction[i]”以“flip_ratio/len(direction)”的概率翻转.
         例如, ``flip_ratio=0.5``, ``direction=['horizontal', 'vertical']``,
         then 图像将以 0.25 的概率水平翻转，以 0.25 的概率垂直翻转.
-    - ``flip_ratio`` 为 [float], ``direction`` is [str]:
+    - ``flip_ratio`` 为 [float], ``direction`` 为 [str]:
         二者长度必须一致 ``len(flip_ratio) == len(direction)``, 图像将以“flip_ratio[i]”的概率进行“方向[i]”翻转.
         例如, ``flip_ratio=[0.3, 0.5]``, ``direction=['horizontal', 'vertical']``,
         图像将以 0.3 的概率水平翻转，以 0.5 的概率垂直翻转.
@@ -398,7 +401,7 @@ class RandomFlip:
 
         if 'flip' not in results:
             if isinstance(self.direction, list):
-                # None 表示不翻转
+                # + [None] 表示添加一个不翻转操作
                 direction_list = self.direction + [None]
             else:
                 direction_list = [self.direction, None]
@@ -581,7 +584,7 @@ class Pad:
             if self.size is not None:  # 模式(1)
                 padded_img = mmcv.impad(
                     results[key], shape=self.size, pad_val=pad_val)
-            elif self.size_divisor is not None:  # 模式(2)
+            elif self.size_divisor is not None:  # 模式(2) 默认右边下边填充像素
                 padded_img = mmcv.impad_to_multiple(
                     results[key], self.size_divisor, pad_val=pad_val)
             results[key] = padded_img

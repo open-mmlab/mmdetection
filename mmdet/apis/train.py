@@ -122,7 +122,7 @@ def train_detector(model,
     # 确保数据为list格式
     dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
 
-    runner_type = 'EpochBasedRunner' if 'runner' not in cfg else cfg.runner['type']
+    runner_type = cfg.runner['type']
 
     train_dataloader_default_args = dict(
         samples_per_gpu=2,

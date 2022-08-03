@@ -13,15 +13,13 @@ from mmdet.models.roi_heads.mask_heads import FusedSemanticHead
 
 
 def replace_ImageToTensor(pipelines):
-    """Replace the ImageToTensor transform in a data pipeline to
-    DefaultFormatBundle, which is normally useful in batch inference.
+    """将数据管道中的 ImageToTensor 转换替换为 DefaultFormatBundle, 主要在批量推理场景下使用.
 
     Args:
-        pipelines (list[dict]): Data pipeline configs.
+        pipelines (list[dict]): 数据管道配置.
 
     Returns:
-        list: The new pipeline list with all ImageToTensor replaced by
-            DefaultFormatBundle.
+        list: 将所有 ImageToTensor 替换为 DefaultFormatBundle 的新数据管道配置.
 
     Examples:
         >>> pipelines = [
@@ -64,10 +62,8 @@ def replace_ImageToTensor(pipelines):
                 pipeline['transforms'])
         elif pipeline['type'] == 'ImageToTensor':
             warnings.warn(
-                '"ImageToTensor" pipeline is replaced by '
-                '"DefaultFormatBundle" for batch inference. It is '
-                'recommended to manually replace it in the test '
-                'data pipeline in your config file.', UserWarning)
+                '"ImageToTensor" 操作已被替换为 "DefaultFormatBundle",主要用于批量推理.'
+                '不过还是建议在你的测试配置文件中手动替换它.', UserWarning)
             pipelines[i] = {'type': 'DefaultFormatBundle'}
     return pipelines
 
