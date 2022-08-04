@@ -104,13 +104,8 @@ class PackDetInputs(BaseTransform):
         data_sample.ignored_instances = ignore_instance_data
 
         if 'proposals' in results:
-            bboxes = to_tensor(results['proposals'])
-            proposals = InstanceData(bboxes=bboxes)
-            if 'proposals_scores' in results:
-                proposals.scores = to_tensor(results['proposals_scores'])
-            if 'proposals_labels' in results:
-                proposals.labels = to_tensor(results['proposals_labels'])
-            data_sample.proposals = proposals
+            # the type of proposal should be `InstanceData`
+            data_sample.proposals = results['proposals'].to_tensor()
 
         if 'gt_seg_map' in results:
             gt_sem_seg_data = dict(

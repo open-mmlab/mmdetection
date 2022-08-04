@@ -145,6 +145,7 @@ class Resize(MMCV_Resize):
 
         Args:
             results (dict): Result dict from loading pipeline.
+
         Returns:
             dict: Resized results, 'img', 'gt_bboxes', 'gt_seg_map',
             'scale', 'scale_factor', 'height', 'width', and 'keep_ratio' keys

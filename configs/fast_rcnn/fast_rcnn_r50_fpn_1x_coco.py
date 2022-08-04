@@ -11,20 +11,7 @@ train_pipeline = [
     dict(type='LoadProposals', num_max_proposals=2000),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
-        type='TransformBroadcaster',
-        mapping=dict(
-            # process `gt_bboxes` and `proposals` with same transforms
-            gt_bboxes=['gt_bboxes', 'proposals'],
-            # necessary keys that need update during processing
-            # TODO: enhance logic in mmengine or mmdet
-            ori_shape=['ori_shape', ...],
-            img_shape=['img_shape', ...],
-            scale_factor=['scale_factor', ...],
-            flip=['flip', ...],
-            flip_direction=['flip_direction', ...]),
-        share_random_params=True,
-        allow_nonexist_keys=True,
-        auto_remap=True,
+        type='ProposalBroadcaster',
         transforms=[
             dict(type='Resize', scale=(1333, 800), keep_ratio=True),
             dict(type='RandomFlip', prob=0.5),
@@ -37,19 +24,7 @@ test_pipeline = [
         file_client_args={{_base_.file_client_args}}),
     dict(type='LoadProposals', num_max_proposals=None),
     dict(
-        type='TransformBroadcaster',
-        mapping=dict(
-            # process `gt_bboxes` and `proposals` with same transforms
-            gt_bboxes=['gt_bboxes', 'proposals'],
-            # necessary keys that need update during processing
-            # TODO: enhance logic in mmengine or mmdet
-            ori_shape=['ori_shape', ...],
-            img_shape=['img_shape', ...],
-            scale_factor=['scale_factor', ...],
-        ),
-        share_random_params=True,
-        allow_nonexist_keys=True,
-        auto_remap=True,
+        type='ProposalBroadcaster',
         transforms=[
             dict(type='Resize', scale=(1333, 800), keep_ratio=True),
         ]),

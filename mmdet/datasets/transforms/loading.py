@@ -7,6 +7,7 @@ import pycocotools.mask as maskUtils
 from mmcv.transforms import BaseTransform
 from mmcv.transforms import LoadAnnotations as MMCV_LoadAnnotations
 from mmcv.transforms import LoadImageFromFile
+from mmengine.data import InstanceData
 
 from mmdet.registry import TRANSFORMS
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
@@ -584,11 +585,9 @@ class LoadProposals(BaseTransform):
         Returns:
             dict: The dict contains loaded proposal annotations.
         """
-
         proposals = results['proposals']
         bboxes = proposals['bboxes'].astype(np.float32)
 
-        from mmengine.data import InstanceData
         _results = InstanceData()
 
         if bboxes.shape[1] == 4:
@@ -617,9 +616,7 @@ class LoadProposals(BaseTransform):
             _results.scores = np.zeros(0, dtype=np.float32)
             _results.labels = np.zeros(0, dtype=np.float32)
 
-        results['proposals'] = _results.bboxes
-        results['proposals_scores'] = _results.bboxes
-        results['proposals_labels'] = _results.labels
+        results['proposals'] = _results
         return results
 
     def __repr__(self):
