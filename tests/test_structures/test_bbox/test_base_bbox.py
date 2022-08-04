@@ -4,54 +4,54 @@ import numpy as np
 import torch
 from mmengine.testing import assert_allclose
 
-from .utils import ToyBaseInstanceBoxes
+from .utils import ToyBaseBoxes
 
 
-class TestBaseInstanceBoxes(TestCase):
+class TestBaseBoxes(TestCase):
 
     def test_init(self):
         bbox_tensor = torch.rand((3, 4, 4))
-        bboxes = ToyBaseInstanceBoxes(bbox_tensor)
+        bboxes = ToyBaseBoxes(bbox_tensor)
         self.assertIs(bbox_tensor, bboxes.tensor)
 
-        bboxes = ToyBaseInstanceBoxes(bbox_tensor, dtype=torch.float64)
+        bboxes = ToyBaseBoxes(bbox_tensor, dtype=torch.float64)
         self.assertEqual(bboxes.tensor.dtype, torch.float64)
 
         if torch.cuda.is_available():
-            bboxes = ToyBaseInstanceBoxes(bbox_tensor, device='cuda')
+            bboxes = ToyBaseBoxes(bbox_tensor, device='cuda')
             self.assertTrue(bboxes.tensor.is_cuda())
 
         with self.assertRaises(AssertionError):
             bbox_tensor = torch.rand((4, ))
-            bboxes = ToyBaseInstanceBoxes(bbox_tensor)
+            bboxes = ToyBaseBoxes(bbox_tensor)
 
         with self.assertRaises(AssertionError):
             bbox_tensor = torch.rand((3, 4, 3))
-            bboxes = ToyBaseInstanceBoxes(bbox_tensor)
+            bboxes = ToyBaseBoxes(bbox_tensor)
 
     def test_getitem(self):
-        bboxes = ToyBaseInstanceBoxes(torch.rand(3, 4, 4))
+        bboxes = ToyBaseBoxes(torch.rand(3, 4, 4))
 
         # test single dimension index
         # int
         new_bboxes = bboxes[0]
-        self.assertIsInstance(new_bboxes, ToyBaseInstanceBoxes)
+        self.assertIsInstance(new_bboxes, ToyBaseBoxes)
         self.assertEqual(new_bboxes.tensor.shape, (4, 4))
         # list
         new_bboxes = bboxes[[0, 2]]
-        self.assertIsInstance(new_bboxes, ToyBaseInstanceBoxes)
+        self.assertIsInstance(new_bboxes, ToyBaseBoxes)
         self.assertEqual(new_bboxes.tensor.shape, (2, 4, 4))
         # slice
         new_bboxes = bboxes[0:2]
-        self.assertIsInstance(new_bboxes, ToyBaseInstanceBoxes)
+        self.assertIsInstance(new_bboxes, ToyBaseBoxes)
         self.assertEqual(new_bboxes.tensor.shape, (2, 4, 4))
         # torch.LongTensor
         new_bboxes = bboxes[torch.LongTensor([0, 1])]
-        self.assertIsInstance(new_bboxes, ToyBaseInstanceBoxes)
+        self.assertIsInstance(new_bboxes, ToyBaseBoxes)
         self.assertEqual(new_bboxes.tensor.shape, (2, 4, 4))
         # torch.BoolTensor
         new_bboxes = bboxes[torch.BoolTensor([True, False, True])]
-        self.assertIsInstance(new_bboxes, ToyBaseInstanceBoxes)
+        self.assertIsInstance(new_bboxes, ToyBaseBoxes)
         self.assertEqual(new_bboxes.tensor.shape, (2, 4, 4))
         with self.assertRaises(AssertionError):
             index = torch.rand((2, 4, 4)) > 0
@@ -60,65 +60,65 @@ class TestBaseInstanceBoxes(TestCase):
         # test multiple dimension index
         # select single box
         new_bboxes = bboxes[1, 2]
-        self.assertIsInstance(new_bboxes, ToyBaseInstanceBoxes)
+        self.assertIsInstance(new_bboxes, ToyBaseBoxes)
         self.assertEqual(new_bboxes.tensor.shape, (1, 4))
         # select the last dimension
         with self.assertRaises(AssertionError):
             new_bboxes = bboxes[1, 2, 1]
         # has Ellipsis
         new_bboxes = bboxes[None, ...]
-        self.assertIsInstance(new_bboxes, ToyBaseInstanceBoxes)
+        self.assertIsInstance(new_bboxes, ToyBaseBoxes)
         self.assertEqual(new_bboxes.tensor.shape, (1, 3, 4, 4))
         with self.assertRaises(AssertionError):
             new_bboxes = bboxes[..., None]
 
     def test_setitem(self):
-        values = ToyBaseInstanceBoxes(torch.rand(3, 4, 4))
+        values = ToyBaseBoxes(torch.rand(3, 4, 4))
         tensor = torch.rand(3, 4, 4)
 
-        # only support BaseInstanceBoxes type
+        # only support BaseBoxes type
         with self.assertRaises(AssertionError):
-            bboxes = ToyBaseInstanceBoxes(torch.rand(3, 4, 4))
+            bboxes = ToyBaseBoxes(torch.rand(3, 4, 4))
             bboxes[0:2] = tensor[0:2]
 
         # test single dimension index
         # int
-        bboxes = ToyBaseInstanceBoxes(torch.rand(3, 4, 4))
+        bboxes = ToyBaseBoxes(torch.rand(3, 4, 4))
         bboxes[1] = values[1]
         assert_allclose(bboxes.tensor[1], values.tensor[1])
         # list
-        bboxes = ToyBaseInstanceBoxes(torch.rand(3, 4, 4))
+        bboxes = ToyBaseBoxes(torch.rand(3, 4, 4))
         bboxes[[1, 2]] = values[[1, 2]]
         assert_allclose(bboxes.tensor[[1, 2]], values.tensor[[1, 2]])
         # slice
-        bboxes = ToyBaseInstanceBoxes(torch.rand(3, 4, 4))
+        bboxes = ToyBaseBoxes(torch.rand(3, 4, 4))
         bboxes[0:2] = values[0:2]
         assert_allclose(bboxes.tensor[0:2], values.tensor[0:2])
         # torch.BoolTensor
-        bboxes = ToyBaseInstanceBoxes(torch.rand(3, 4, 4))
+        bboxes = ToyBaseBoxes(torch.rand(3, 4, 4))
         index = torch.rand(3, 4) > 0.5
         bboxes[index] = values[index]
         assert_allclose(bboxes.tensor[index], values.tensor[index])
 
         # multiple dimension index
-        bboxes = ToyBaseInstanceBoxes(torch.rand(3, 4, 4))
+        bboxes = ToyBaseBoxes(torch.rand(3, 4, 4))
         bboxes[0:2, 0:2] = values[0:2, 0:2]
         assert_allclose(bboxes.tensor[0:2, 0:2], values.tensor[0:2, 0:2])
         # select single box
-        bboxes = ToyBaseInstanceBoxes(torch.rand(3, 4, 4))
+        bboxes = ToyBaseBoxes(torch.rand(3, 4, 4))
         bboxes[1, 1] = values[1, 1]
         assert_allclose(bboxes.tensor[1, 1], values.tensor[1, 1])
         # select the last dimension
         with self.assertRaises(AssertionError):
-            bboxes = ToyBaseInstanceBoxes(torch.rand(3, 4, 4))
+            bboxes = ToyBaseBoxes(torch.rand(3, 4, 4))
             bboxes[1, 1, 1] = values[1, 1, 1]
         # has Ellipsis
-        bboxes = ToyBaseInstanceBoxes(torch.rand(3, 4, 4))
+        bboxes = ToyBaseBoxes(torch.rand(3, 4, 4))
         bboxes[0:2, ...] = values[0:2, ...]
         assert_allclose(bboxes.tensor[0:2, ...], values.tensor[0:2, ...])
 
     def test_tensor_like_functions(self):
-        bboxes = ToyBaseInstanceBoxes(torch.rand(3, 4, 4))
+        bboxes = ToyBaseBoxes(torch.rand(3, 4, 4))
         # new_tensor
         bboxes.new_tensor([1, 2, 3])
         # new_full
@@ -189,7 +189,7 @@ class TestBaseInstanceBoxes(TestCase):
         # split
         bboxes_list = bboxes.split(1, dim=0)
         for box in bboxes_list:
-            self.assertIsInstance(box, ToyBaseInstanceBoxes)
+            self.assertIsInstance(box, ToyBaseBoxes)
             self.assertEqual(tuple(box.size()), (1, 4, 4))
         bboxes_list = bboxes.split([1, 2], dim=0)
         with self.assertRaises(AssertionError):
@@ -198,14 +198,14 @@ class TestBaseInstanceBoxes(TestCase):
         bboxes_list = bboxes.split(3, dim=1)
         self.assertEqual(len(bboxes_list), 2)
         for box in bboxes_list:
-            self.assertIsInstance(box, ToyBaseInstanceBoxes)
+            self.assertIsInstance(box, ToyBaseBoxes)
         with self.assertRaises(AssertionError):
             bboxes_list = bboxes.split(3, dim=2)
         # unbind
         bboxes_list = bboxes.unbind(dim=1)
         self.assertEqual(len(bboxes_list), 4)
         for box in bboxes_list:
-            self.assertIsInstance(box, ToyBaseInstanceBoxes)
+            self.assertIsInstance(box, ToyBaseBoxes)
             self.assertEqual(tuple(box.size()), (3, 4))
         with self.assertRaises(AssertionError):
             bboxes_list = bboxes.unbind(dim=2)
@@ -215,42 +215,42 @@ class TestBaseInstanceBoxes(TestCase):
         with self.assertRaises(AssertionError):
             new_bboxes = bboxes.flatten(end_dim=2)
         # squeeze
-        bboxes = ToyBaseInstanceBoxes(torch.rand(1, 3, 1, 4, 4))
+        bboxes = ToyBaseBoxes(torch.rand(1, 3, 1, 4, 4))
         new_bboxes = bboxes.squeeze()
         self.assertEqual(tuple(new_bboxes.size()), (3, 4, 4))
         new_bboxes = bboxes.squeeze(dim=2)
         self.assertEqual(tuple(new_bboxes.size()), (1, 3, 4, 4))
         # unsqueeze
-        bboxes = ToyBaseInstanceBoxes(torch.rand(3, 4, 4))
+        bboxes = ToyBaseBoxes(torch.rand(3, 4, 4))
         new_bboxes = bboxes.unsqueeze(0)
         self.assertEqual(tuple(new_bboxes.size()), (1, 3, 4, 4))
         with self.assertRaises(AssertionError):
             new_bboxes = bboxes.unsqueeze(3)
         # cat
         with self.assertRaises(ValueError):
-            ToyBaseInstanceBoxes.cat([])
+            ToyBaseBoxes.cat([])
         bbox_list = []
-        bbox_list.append(ToyBaseInstanceBoxes(torch.rand(3, 4, 4)))
-        bbox_list.append(ToyBaseInstanceBoxes(torch.rand(1, 4, 4)))
+        bbox_list.append(ToyBaseBoxes(torch.rand(3, 4, 4)))
+        bbox_list.append(ToyBaseBoxes(torch.rand(1, 4, 4)))
         with self.assertRaises(AssertionError):
-            ToyBaseInstanceBoxes.cat(bbox_list, dim=2)
-        cat_bboxes = ToyBaseInstanceBoxes.cat(bbox_list, dim=0)
-        self.assertIsInstance(cat_bboxes, ToyBaseInstanceBoxes)
+            ToyBaseBoxes.cat(bbox_list, dim=2)
+        cat_bboxes = ToyBaseBoxes.cat(bbox_list, dim=0)
+        self.assertIsInstance(cat_bboxes, ToyBaseBoxes)
         self.assertEqual((cat_bboxes.size()), (4, 4, 4))
         # stack
         with self.assertRaises(ValueError):
-            ToyBaseInstanceBoxes.stack([])
+            ToyBaseBoxes.stack([])
         bbox_list = []
-        bbox_list.append(ToyBaseInstanceBoxes(torch.rand(3, 4, 4)))
-        bbox_list.append(ToyBaseInstanceBoxes(torch.rand(3, 4, 4)))
+        bbox_list.append(ToyBaseBoxes(torch.rand(3, 4, 4)))
+        bbox_list.append(ToyBaseBoxes(torch.rand(3, 4, 4)))
         with self.assertRaises(AssertionError):
-            ToyBaseInstanceBoxes.stack(bbox_list, dim=3)
-        stack_bboxes = ToyBaseInstanceBoxes.stack(bbox_list, dim=1)
-        self.assertIsInstance(stack_bboxes, ToyBaseInstanceBoxes)
+            ToyBaseBoxes.stack(bbox_list, dim=3)
+        stack_bboxes = ToyBaseBoxes.stack(bbox_list, dim=1)
+        self.assertIsInstance(stack_bboxes, ToyBaseBoxes)
         self.assertEqual((stack_bboxes.size()), (3, 2, 4, 4))
 
     def test_misc(self):
-        bboxes = ToyBaseInstanceBoxes(torch.rand(3, 4, 4))
+        bboxes = ToyBaseBoxes(torch.rand(3, 4, 4))
         # __len__
         self.assertEqual(len(bboxes), 3)
         # __repr__

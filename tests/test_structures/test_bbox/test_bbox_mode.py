@@ -8,7 +8,7 @@ from mmdet.structures.bbox.bbox_mode import (_bbox_mode_to_name,
                                              convert_bbox_mode, get_bbox_mode,
                                              register_bbox_mode,
                                              register_bbox_mode_converter)
-from .utils import ToyBaseInstanceBoxes
+from .utils import ToyBaseBoxes
 
 
 class TestBboxMode(TestCase):
@@ -31,16 +31,16 @@ class TestBboxMode(TestCase):
     def test_register_bbox_mode(self):
         # test usage of decorator
         @register_bbox_mode('A')
-        class A(ToyBaseInstanceBoxes):
+        class A(ToyBaseBoxes):
             pass
 
         # test usage of normal function
-        class B(ToyBaseInstanceBoxes):
+        class B(ToyBaseBoxes):
             pass
 
         register_bbox_mode('B', B)
 
-        # register class without inheriting from BaseInstanceBoxes
+        # register class without inheriting from BaseBoxes
         with self.assertRaises(AssertionError):
 
             @register_bbox_mode('C')
@@ -51,14 +51,14 @@ class TestBboxMode(TestCase):
         with self.assertRaises(KeyError):
 
             @register_bbox_mode('A')
-            class AA(ToyBaseInstanceBoxes):
+            class AA(ToyBaseBoxes):
                 pass
 
         with self.assertRaises(KeyError):
             register_bbox_mode('BB', B)
 
         @register_bbox_mode('A', force=True)
-        class AAA(ToyBaseInstanceBoxes):
+        class AAA(ToyBaseBoxes):
             pass
 
         self.assertIs(bbox_modes['a'], AAA)
@@ -71,15 +71,15 @@ class TestBboxMode(TestCase):
     def test_register_bbox_mode_converter(self):
 
         @register_bbox_mode('A')
-        class A(ToyBaseInstanceBoxes):
+        class A(ToyBaseBoxes):
             pass
 
         @register_bbox_mode('B')
-        class B(ToyBaseInstanceBoxes):
+        class B(ToyBaseBoxes):
             pass
 
         @register_bbox_mode('C')
-        class C(ToyBaseInstanceBoxes):
+        class C(ToyBaseBoxes):
             pass
 
         # test usage of decorator
@@ -120,7 +120,7 @@ class TestBboxMode(TestCase):
     def test_get_bbox_mode(self):
 
         @register_bbox_mode('A')
-        class A(ToyBaseInstanceBoxes):
+        class A(ToyBaseBoxes):
             pass
 
         mode_name, mode_cls = get_bbox_mode('A')
@@ -131,7 +131,7 @@ class TestBboxMode(TestCase):
         self.assertIs(mode_cls, A)
 
         # get unregistered mode
-        class B(ToyBaseInstanceBoxes):
+        class B(ToyBaseBoxes):
             pass
 
         with self.assertRaises(AssertionError):
@@ -142,15 +142,15 @@ class TestBboxMode(TestCase):
     def test_convert_bbox_mode(self):
 
         @register_bbox_mode('A')
-        class A(ToyBaseInstanceBoxes):
+        class A(ToyBaseBoxes):
             pass
 
         @register_bbox_mode('B')
-        class B(ToyBaseInstanceBoxes):
+        class B(ToyBaseBoxes):
             pass
 
         @register_bbox_mode('C')
-        class C(ToyBaseInstanceBoxes):
+        class C(ToyBaseBoxes):
             pass
 
         converter = MagicMock()

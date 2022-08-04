@@ -5,9 +5,9 @@ import numpy as np
 import torch
 from torch import Tensor
 
-from .base_bbox import BaseInstanceBoxes
+from .base_bbox import BaseBoxes
 
-BoxType = Union[np.ndarray, Tensor, BaseInstanceBoxes]
+BoxType = Union[np.ndarray, Tensor, BaseBoxes]
 
 bbox_modes: dict = {}
 bbox_mode_converters: dict = {}
@@ -25,7 +25,7 @@ def _register_bbox_mode(name: str,
         force (bool): Whether to override an existing class with the same
             name. Defaults to False.
     """
-    assert issubclass(bbox_mode, BaseInstanceBoxes)
+    assert issubclass(bbox_mode, BaseBoxes)
     name = name.lower()
 
     if not force and (name in bbox_modes or bbox_mode in _bbox_mode_to_name):
@@ -60,15 +60,15 @@ def register_bbox_mode(name: str,
 
     Examples:
         >>> from mmdet.structures.bbox import register_bbox_mode
-        >>> from mmdet.structures.bbox import BaseInstanceBoxes
+        >>> from mmdet.structures.bbox import BaseBoxes
 
         >>> # as a decorator
         >>> @register_bbox_mode('hbox')
-        >>> class HoriInstanceBoxes(BaseInstanceBoxes):
+        >>> class HoriBoxes(BaseBoxes):
         >>>     pass
 
         >>> # as a normal function
-        >>> class RotInstanceBoxes(BaseInstanceBoxes):
+        >>> class RotInstanceBoxes(BaseBoxes):
         >>>     pass
         >>> register_bbox_mode('rbox', RotInstanceBoxes)
     """
@@ -180,13 +180,13 @@ def get_bbox_mode(mode: Union[str, type]) -> Tuple[str, type]:
         assert mode_name in bbox_modes, \
             f"Mode {mode_name} hasn't been registered in bbox_modes."
         mode_cls = bbox_modes[mode_name]
-    elif issubclass(mode, BaseInstanceBoxes):
+    elif issubclass(mode, BaseBoxes):
         assert mode in _bbox_mode_to_name, \
             f"Mode {mode} hasn't been registered in bbox_modes."
         mode_name = _bbox_mode_to_name[mode]
         mode_cls = mode
     else:
-        raise KeyError('Expect str or BaseInstanceBoxes subclass inputs, '
+        raise KeyError('Expect str or BaseBoxes subclass inputs, '
                        f'but get {type(mode)}.')
     return mode_name, mode_cls
 
@@ -197,11 +197,11 @@ def convert_bbox_mode(bboxes: BoxType,
                       dst_mode: Union[str, type] = None) -> BoxType:
     """Convert bboxes from source mode to destination mode.
 
-    If bboxes is a instance of BaseInstanceBoxes, the src_mode will be set
+    If bboxes is a instance of BaseBoxes, the src_mode will be set
     as the mode of bboxes.
 
     Args:
-        bboxes (np.ndarray or Tensor or BaseInstanceBoxes): boxes need to
+        bboxes (np.ndarray or Tensor or BaseBoxes): boxes need to
             convert.
         src_mode (str or type, Optional): source box mode. Defaults to None.
         dst_mode (str or type, Optional): destination box mode. Defaults to
@@ -212,7 +212,7 @@ def convert_bbox_mode(bboxes: BoxType,
 
     is_bbox_cls = False
     is_numpy = False
-    if isinstance(bboxes, BaseInstanceBoxes):
+    if isinstance(bboxes, BaseBoxes):
         src_mode_name, _ = get_bbox_mode(type(bboxes))
         is_bbox_cls = True
     elif isinstance(bboxes, (Tensor, np.ndarray)):
@@ -221,7 +221,7 @@ def convert_bbox_mode(bboxes: BoxType,
         if isinstance(bboxes, np.ndarray):
             is_numpy = True
     else:
-        raise TypeError('bboxes needs to be BaseInstanceBoxes, Tensor or '
+        raise TypeError('bboxes needs to be BaseBoxes, Tensor or '
                         f'ndarray, but get {type(bboxes)}.')
 
     if src_mode_name == dst_mode_name:

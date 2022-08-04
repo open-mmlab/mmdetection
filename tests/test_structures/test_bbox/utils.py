@@ -1,7 +1,7 @@
-from mmdet.structures.bbox import BaseInstanceBoxes
+from mmdet.structures.bbox import BaseBoxes
 
 
-class ToyBaseInstanceBoxes(BaseInstanceBoxes):
+class ToyBaseBoxes(BaseBoxes):
 
     _bbox_dim = 4
 

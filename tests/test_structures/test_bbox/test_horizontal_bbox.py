@@ -5,38 +5,36 @@ import numpy as np
 import torch
 from mmengine.testing import assert_allclose
 
-from mmdet.structures.bbox import HoriInstanceBoxes
+from mmdet.structures.bbox import HoriBoxes
 
 
-class TestHoriInstanceBoxes(TestCase):
+class TestHoriBoxes(TestCase):
 
     def test_init(self):
         th_bboxes = torch.Tensor([10, 10, 20, 20]).reshape(1, 1, 4)
         th_bboxes_cxcywh = torch.Tensor([15, 15, 10, 10]).reshape(1, 1, 4)
 
-        bboxes = HoriInstanceBoxes(th_bboxes)
+        bboxes = HoriBoxes(th_bboxes)
         assert_allclose(bboxes.tensor, th_bboxes)
-        bboxes = HoriInstanceBoxes(th_bboxes, pattern='xyxy')
+        bboxes = HoriBoxes(th_bboxes, pattern='xyxy')
         assert_allclose(bboxes.tensor, th_bboxes)
-        bboxes = HoriInstanceBoxes(th_bboxes_cxcywh, pattern='cxcywh')
+        bboxes = HoriBoxes(th_bboxes_cxcywh, pattern='cxcywh')
         assert_allclose(bboxes.tensor, th_bboxes)
         with self.assertRaises(ValueError):
-            bboxes = HoriInstanceBoxes(th_bboxes, pattern='invalid')
+            bboxes = HoriBoxes(th_bboxes, pattern='invalid')
 
     def test_cxcywh(self):
         th_bboxes = torch.Tensor([10, 10, 20, 20]).reshape(1, 1, 4)
         th_bboxes_cxcywh = torch.Tensor([15, 15, 10, 10]).reshape(1, 1, 4)
-        bboxes = HoriInstanceBoxes(th_bboxes)
+        bboxes = HoriBoxes(th_bboxes)
 
-        assert_allclose(
-            HoriInstanceBoxes.xyxy_to_cxcywh(th_bboxes), th_bboxes_cxcywh)
-        assert_allclose(th_bboxes,
-                        HoriInstanceBoxes.cxcywh_to_xyxy(th_bboxes_cxcywh))
+        assert_allclose(HoriBoxes.xyxy_to_cxcywh(th_bboxes), th_bboxes_cxcywh)
+        assert_allclose(th_bboxes, HoriBoxes.cxcywh_to_xyxy(th_bboxes_cxcywh))
         assert_allclose(bboxes.cxcywh, th_bboxes_cxcywh)
 
     def test_propoerty(self):
         th_bboxes = torch.Tensor([10, 10, 20, 20]).reshape(1, 1, 4)
-        bboxes = HoriInstanceBoxes(th_bboxes)
+        bboxes = HoriBoxes(th_bboxes)
 
         # Centers
         centers = torch.Tensor([15, 15]).reshape(1, 1, 2)
@@ -54,7 +52,7 @@ class TestHoriInstanceBoxes(TestCase):
     def test_flip(self):
         th_bboxes = torch.Tensor([10, 10, 20, 20]).reshape(1, 1, 4)
         img_shape = [50, 85]
-        bboxes = HoriInstanceBoxes(th_bboxes)
+        bboxes = HoriBoxes(th_bboxes)
 
         # horizontal flip
         flipped_bboxes_th = torch.Tensor([65, 10, 75, 20]).reshape(1, 1, 4)
@@ -71,7 +69,7 @@ class TestHoriInstanceBoxes(TestCase):
 
     def test_translate(self):
         th_bboxes = torch.Tensor([10, 10, 20, 20]).reshape(1, 1, 4)
-        bboxes = HoriInstanceBoxes(th_bboxes)
+        bboxes = HoriBoxes(th_bboxes)
 
         translated_bboxes = bboxes.translate([23, 46])
         translated_bboxes_th = torch.Tensor([33, 56, 43, 66]).reshape(1, 1, 4)
@@ -84,7 +82,7 @@ class TestHoriInstanceBoxes(TestCase):
     def test_clip(self):
         th_bboxes = torch.Tensor([10, 10, 20, 20]).reshape(1, 1, 4)
         img_shape = [13, 14]
-        bboxes = HoriInstanceBoxes(th_bboxes)
+        bboxes = HoriBoxes(th_bboxes)
 
         cliped_bboxes = bboxes.clip(img_shape)
         cliped_bboxes_th = torch.Tensor([10, 10, 14, 13]).reshape(1, 1, 4)
@@ -94,7 +92,7 @@ class TestHoriInstanceBoxes(TestCase):
         th_bboxes = torch.Tensor([10, 10, 20, 20]).reshape(1, 1, 4)
         center = (15, 15)
         angle = 45
-        bboxes = HoriInstanceBoxes(th_bboxes)
+        bboxes = HoriBoxes(th_bboxes)
 
         rotated_bboxes = bboxes.rotate(center, angle)
         rotated_bboxes_th = torch.Tensor([
@@ -106,13 +104,13 @@ class TestHoriInstanceBoxes(TestCase):
     def test_project(self):
         th_bboxes = torch.Tensor([10, 10, 20, 20]).reshape(1, 1, 4)
         matrix = np.random.rand(3, 3)
-        bboxes = HoriInstanceBoxes(th_bboxes)
+        bboxes = HoriBoxes(th_bboxes)
         bboxes.project(matrix)
 
     def test_rescale(self):
         th_bboxes = torch.Tensor([10, 10, 20, 20]).reshape(1, 1, 4)
         scale_factor = [0.4, 0.8]
-        bboxes = HoriInstanceBoxes(th_bboxes)
+        bboxes = HoriBoxes(th_bboxes)
 
         rescaled_bboxes = bboxes.rescale(scale_factor)
         rescaled_bboxes_th = torch.Tensor([4, 8, 8, 16]).reshape(1, 1, 4)
@@ -124,7 +122,7 @@ class TestHoriInstanceBoxes(TestCase):
     def test_resize_bboxes(self):
         th_bboxes = torch.Tensor([10, 10, 20, 20]).reshape(1, 1, 4)
         scale_factor = [0.4, 0.8]
-        bboxes = HoriInstanceBoxes(th_bboxes)
+        bboxes = HoriBoxes(th_bboxes)
 
         resized_bboxes = bboxes.resize_bboxes(scale_factor)
         resized_bboxes_th = torch.Tensor([13, 11, 17, 19]).reshape(1, 1, 4)
@@ -134,7 +132,7 @@ class TestHoriInstanceBoxes(TestCase):
         th_bboxes = torch.Tensor([[10, 10, 20, 20], [-5, -5, 15, 15],
                                   [45, 45, 55, 55]]).reshape(1, 3, 4)
         img_shape = [30, 30]
-        bboxes = HoriInstanceBoxes(th_bboxes)
+        bboxes = HoriBoxes(th_bboxes)
 
         index = bboxes.is_bboxes_inside(img_shape)
         index_th = torch.BoolTensor([True, True, False]).reshape(1, 3)
@@ -143,7 +141,7 @@ class TestHoriInstanceBoxes(TestCase):
 
     def test_find_inside_points(self):
         th_bboxes = torch.Tensor([10, 10, 20, 20]).reshape(1, 1, 4)
-        bboxes = HoriInstanceBoxes(th_bboxes)
+        bboxes = HoriBoxes(th_bboxes)
         points = torch.Tensor([[0, 0], [0, 15], [15, 0], [15, 15]])
         index = bboxes.find_inside_points(points)
         index_th = torch.BoolTensor([False, False, False, True]).reshape(4, 1)

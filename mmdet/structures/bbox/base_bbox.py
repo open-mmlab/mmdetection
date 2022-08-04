@@ -12,17 +12,17 @@ IndexType = Union[slice, int, list, torch.LongTensor, torch.cuda.LongTensor,
                   torch.BoolTensor, torch.cuda.BoolTensor]
 
 
-class BaseInstanceBoxes(metaclass=ABCMeta):
-    """BaseInstanceBoxes is a base class that defines the data shape and some
-    commonly used abstract methods of 2D boxes. Basic tensor-like functions are
-    implemented in BaseInstanceBoxes so that users can treat its instance as a
-    normal tensor in most cases.
+class BaseBoxes(metaclass=ABCMeta):
+    """BaseBoxes is a base class that defines the data shape and some commonly
+    used abstract methods of 2D boxes. Basic tensor-like functions are
+    implemented in BaseBoxes so that users can treat its instance as a normal
+    tensor in most cases.
 
-    When initializing a box instance, BaseInstanceBoxes will verify the
-    validity of box data shape w.r.t the class attribute ``_bbox_dim``.
-    The tensor with the dimension >= 2 and the length of the last dimension
-    being ``_bbox_dim`` is regarded as the valid box tensor. BaseInstance
-    restores the data tensor at the field ``tensor``.
+    When initializing a box instance, BaseBoxes will verify the validity
+    of box data shape w.r.t the class attribute ``_bbox_dim``.  The tensor
+    with the dimension >= 2 and the length of the last dimension being
+    ``_bbox_dim`` is regarded as the valid box tensor. BaseBoxes restores
+    the data tensor at the field ``tensor``.
 
     Args:
         bboxes (Tensor or np.ndarray or Sequence): The box data with shape

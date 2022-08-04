@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from torch import Tensor
 
-from .base_bbox import BaseInstanceBoxes
+from .base_bbox import BaseBoxes
 from .bbox_mode import register_bbox_mode
 
 T = TypeVar('T')
@@ -14,7 +14,7 @@ DeviceType = Union[str, torch.device]
 
 
 @register_bbox_mode(name='hbbox')
-class HoriInstanceBoxes(BaseInstanceBoxes):
+class HoriBoxes(BaseBoxes):
     """The horizontal box class used in MMDetection by default. The box data
     shape should be (..., 4). The last dimension indicates the coordinates of
     the left-top and right-bottom points of horizontal boxes.
