@@ -13,15 +13,69 @@ from mmdet.testing import FastStopTrainingHook  # noqa: F401,F403
 from mmdet.utils import register_all_modules, replace_cfg_vals
 
 
+# TODO: Support full ceph
+def replace_to_ceph(cfg):
+    file_client_args = dict(
+        backend='petrel',
+        path_mapping=dict({
+            './data/': 's3://openmmlab/datasets/detection/',
+            'data/': 's3://openmmlab/datasets/detection/'
+        }))
+
+    def _process_pipeline(dataset, name):
+
+        def replace_img(pipeline):
+            if pipeline['type'] == 'LoadImageFromFile':
+                pipeline['file_client_args'] = file_client_args
+
+        def replace_ann(pipeline):
+            if pipeline['type'] == 'LoadAnnotations' or pipeline[
+                    'type'] == 'LoadPanopticAnnotations':
+                pipeline['file_client_args'] = file_client_args
+
+        if 'pipeline' in dataset:
+            replace_img(dataset.pipeline[0])
+            replace_ann(dataset.pipeline[1])
+            if 'dataset' in dataset:
+                # dataset wrapper
+                replace_img(dataset.dataset.pipeline[0])
+                replace_ann(dataset.dataset.pipeline[1])
+        else:
+            # dataset wrapper
+            replace_img(dataset.dataset.pipeline[0])
+            replace_ann(dataset.dataset.pipeline[1])
+
+    def _process_evaluator(evaluator, name):
+        if evaluator['type'] == 'CocoPanopticMetric':
+            evaluator['file_client_args'] = file_client_args
+
+    # half ceph
+    _process_pipeline(cfg.train_dataloader.dataset, cfg.filename)
+    _process_pipeline(cfg.val_dataloader.dataset, cfg.filename)
+    _process_pipeline(cfg.test_dataloader.dataset, cfg.filename)
+    _process_evaluator(cfg.val_evaluator, cfg.filename)
+    _process_evaluator(cfg.test_evaluator, cfg.filename)
+
+
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument('config', help='test config file path')
     parser.add_argument('--work-dir', help='the dir to save logs and models')
+    parser.add_argument('--ceph', action='store_true')
+    parser.add_argument('--save-ckpt', action='store_true')
     parser.add_argument(
         '--amp',
         action='store_true',
         default=False,
         help='enable automatic-mixed-precision training')
+    parser.add_argument(
+        '--auto-scale-lr',
+        action='store_true',
+        help='enable automatically scaling LR.')
+    parser.add_argument(
+        '--auto-resume',
+        action='store_true',
+        help='resume from the latest checkpoint in the work_dir automatically')
     parser.add_argument(
         '--cfg-options',
         nargs='+',
@@ -56,16 +110,32 @@ def fast_train_model(config_name, args, logger=None):
     # work_dir is determined in this priority: CLI > segment in file > filename
     if args.work_dir is not None:
         # update configs according to CLI args if args.work_dir is not None
-        cfg.work_dir = args.work_dir
+        cfg.work_dir = osp.join(args.work_dir,
+                                osp.splitext(osp.basename(config_name))[0])
     elif cfg.get('work_dir', None) is None:
         # use config filename as default work_dir if cfg.work_dir is None
         cfg.work_dir = osp.join('./work_dirs',
-                                osp.splitext(osp.basename(args.config))[0])
+                                osp.splitext(osp.basename(config_name))[0])
+
+    ckpt_hook = cfg.default_hooks.checkpoint
+    by_epoch = ckpt_hook.get('by_epoch', True)
+    fast_stop_hook = dict(type='FastStopTrainingHook')
+    fast_stop_hook['by_epoch'] = by_epoch
+    if args.save_ckpt:
+        if by_epoch:
+            interval = 1
+            stop_iter_or_epoch = 2
+        else:
+            interval = 4
+            stop_iter_or_epoch = 10
+        fast_stop_hook['stop_iter_or_epoch'] = stop_iter_or_epoch
+        fast_stop_hook['save_ckpt'] = True
+        ckpt_hook.interval = interval
 
     if 'custom_hooks' in cfg:
-        cfg.custom_hooks.append(dict(type='FastStopTrainingHook'))
+        cfg.custom_hooks.append(fast_stop_hook)
     else:
-        custom_hooks = [dict(type='FastStopTrainingHook')]
+        custom_hooks = [fast_stop_hook]
         cfg.custom_hooks = custom_hooks
 
     # TODO: temporary plan
@@ -87,6 +157,23 @@ def fast_train_model(config_name, args, logger=None):
                 f'`OptimWrapper` but got {optim_wrapper}.')
             cfg.optim_wrapper.type = 'AmpOptimWrapper'
             cfg.optim_wrapper.loss_scale = 'dynamic'
+
+    # enable automatically scaling LR
+    if args.auto_scale_lr:
+        if 'auto_scale_lr' in cfg and \
+                'enable' in cfg.auto_scale_lr and \
+                'base_batch_size' in cfg.auto_scale_lr:
+            cfg.auto_scale_lr.enable = True
+        else:
+            raise RuntimeError('Can not find "auto_scale_lr" or '
+                               '"auto_scale_lr.enable" or '
+                               '"auto_scale_lr.base_batch_size" in your'
+                               ' configuration file.')
+
+    if args.ceph:
+        replace_to_ceph(cfg)
+
+    cfg.resume = args.auto_resume
 
     # build the runner from config
     if 'runner_type' not in cfg:
