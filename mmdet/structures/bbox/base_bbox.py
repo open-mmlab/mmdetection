@@ -410,12 +410,16 @@ class BaseInstanceBoxes(metaclass=ABCMeta):
         pass
 
     @abstractclassmethod
-    def rescale(self: T, scale_factor: Tuple[float, float]) -> T:
+    def rescale(self: T,
+                scale_factor: Tuple[float, float],
+                mapping_back=False) -> T:
         """Rescale boxes w.r.t. rescale_factor.
 
         Args:
             scale_factor (Tuple[float, float]): factors for scaling boxes.
                 The length should be 2.
+            mapping_back (bool): Mapping back the rescaled bboxes.
+                Defaults to False.
 
         Returns:
             T: Rescaled boxes with the same shape as the original boxes.

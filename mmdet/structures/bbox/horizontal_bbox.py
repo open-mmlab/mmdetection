@@ -152,8 +152,10 @@ class HoriInstanceBoxes(BaseInstanceBoxes):
             T: Cliped boxes with the same shape as the original boxes.
         """
         bboxes = self.tensor
-        bboxes[..., 0::2] = bboxes[:, 0::2].clamp(0, img_shape[1])
-        bboxes[..., 1::2] = bboxes[:, 1::2].clamp(0, img_shape[0])
+        clipped_w = bboxes[..., 0::2].clamp(0, img_shape[1])
+        clipped_h = bboxes[..., 1::2].clamp(0, img_shape[0])
+        bboxes = torch.stack([clipped_w, clipped_h], dim=-1)
+        bboxes = bboxes.flatten(start_dim=-2)
         return type(self)(bboxes)
 
     def rotate(self: T,
@@ -173,7 +175,7 @@ class HoriInstanceBoxes(BaseInstanceBoxes):
         """
         bboxes = self.tensor
         rotation_matrix = bboxes.new_tensor(
-            cv2.getRotationMatrix2D(angle, center, 1))
+            cv2.getRotationMatrix2D(center, angle, 1))
 
         corners = self.bbox2corner(bboxes)
         corners = torch.cat(
@@ -183,8 +185,10 @@ class HoriInstanceBoxes(BaseInstanceBoxes):
         corners = torch.transpose(corners_T, -1, -2)
         bboxes = self.corner2bbox(corners)
         if img_shape is not None:
-            bboxes[..., 0::2] = bboxes[..., 0::2].clamp(0, img_shape[1])
-            bboxes[..., 1::2] = bboxes[..., 1::2].clamp(0, img_shape[0])
+            clipped_w = bboxes[..., 0::2].clamp(0, img_shape[1])
+            clipped_h = bboxes[..., 1::2].clamp(0, img_shape[0])
+            bboxes = torch.stack([clipped_w, clipped_h], dim=-1)
+            bboxes = bboxes.flatten(start_dim=-2)
         return type(self)(bboxes)
 
     def project(self: T,
@@ -214,8 +218,10 @@ class HoriInstanceBoxes(BaseInstanceBoxes):
         corners = corners[..., :2] / corners[..., 2:3]
         bboxes = self.corner2bbox(corners)
         if img_shape is not None:
-            bboxes[..., 0::2] = bboxes[..., 0::2].clamp(0, img_shape[1])
-            bboxes[..., 1::2] = bboxes[..., 1::2].clamp(0, img_shape[0])
+            clipped_w = bboxes[..., 0::2].clamp(0, img_shape[1])
+            clipped_h = bboxes[..., 1::2].clamp(0, img_shape[0])
+            bboxes = torch.stack([clipped_w, clipped_h], dim=-1)
+            bboxes = bboxes.flatten(start_dim=-2)
         return type(self)(bboxes)
 
     @staticmethod
@@ -248,19 +254,25 @@ class HoriInstanceBoxes(BaseInstanceBoxes):
         max_xy = corners.max(dim=-2)[0]
         return torch.cat([min_xy, max_xy], dim=-1)
 
-    def rescale(self: T, scale_factor: Tuple[float, float]) -> T:
+    def rescale(self: T,
+                scale_factor: Tuple[float, float],
+                mapping_back=False) -> T:
         """Rescale boxes w.r.t. rescale_factor.
 
         Args:
             scale_factor (Tuple[float, float]): factors for scaling boxes.
                 The length should be 2.
+            mapping_back (bool): Mapping back the rescaled bboxes.
+                Defaults to False.
 
         Returns:
             T: Rescaled boxes with the same shape as the original boxes.
         """
         bboxes = self.tensor
         assert len(scale_factor) == 2
-        bboxes = bboxes * bboxes.new_tensor(scale_factor).repeat(2)
+        scale_factor = bboxes.new_tensor(scale_factor).repeat(2)
+        bboxes = bboxes / scale_factor if mapping_back else \
+            bboxes * scale_factor
         return type(self)(bboxes)
 
     def resize_bboxes(self: T, scale_factor: Tuple[float, float]) -> T:
@@ -281,7 +293,8 @@ class HoriInstanceBoxes(BaseInstanceBoxes):
         wh = wh * scale_factor
         xy1 = ctrs - 0.5 * wh
         xy2 = ctrs + 0.5 * wh
-        return torch.cat([xy1, xy2], dim=-1)
+        bboxes = torch.cat([xy1, xy2], dim=-1)
+        return type(self)(bboxes)
 
     def is_bboxes_inside(self, img_shape: Tuple[int, int]) -> torch.BoolTensor:
         """Find bboxes as long as a part of bboxes is inside an region.
