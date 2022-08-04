@@ -4,16 +4,18 @@ from typing import List, Tuple, Union
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import PLUGIN_LAYERS, Conv2d, ConvModule, caffe2_xavier_init
+from mmcv.cnn import Conv2d, ConvModule
 from mmcv.cnn.bricks.transformer import (build_positional_encoding,
                                          build_transformer_layer_sequence)
-from mmcv.runner import BaseModule, ModuleList
+from mmengine.model import BaseModule, ModuleList
+from mmengine.model.utils import caffe2_xavier_init
 from torch import Tensor
 
+from mmdet.registry import MODELS
 from mmdet.utils import ConfigType, OptMultiConfig
 
 
-@PLUGIN_LAYERS.register_module()
+@MODELS.register_module()
 class PixelDecoder(BaseModule):
     """Pixel decoder with a structure like fpn.
 
@@ -120,7 +122,7 @@ class PixelDecoder(BaseModule):
         return mask_feature, memory
 
 
-@PLUGIN_LAYERS.register_module()
+@MODELS.register_module()
 class TransformerEncoderPixelDecoder(PixelDecoder):
     """Pixel decoder with transormer encoder inside.
 

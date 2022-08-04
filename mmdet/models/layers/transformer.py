@@ -6,15 +6,15 @@ from typing import Sequence
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import (build_activation_layer, build_conv_layer,
-                      build_norm_layer, xavier_init)
+from mmcv.cnn import build_activation_layer, build_conv_layer, build_norm_layer
 from mmcv.cnn.bricks.registry import (TRANSFORMER_LAYER,
                                       TRANSFORMER_LAYER_SEQUENCE)
 from mmcv.cnn.bricks.transformer import (BaseTransformerLayer,
                                          TransformerLayerSequence,
                                          build_transformer_layer_sequence)
-from mmcv.runner.base_module import BaseModule
 from mmcv.utils import to_2tuple
+from mmengine.model import BaseModule
+from mmengine.model.utils import xavier_init
 from torch.nn.init import normal_
 
 from .builder import TRANSFORMER

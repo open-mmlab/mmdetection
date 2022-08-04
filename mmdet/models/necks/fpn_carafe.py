@@ -1,8 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch.nn as nn
-from mmcv.cnn import ConvModule, build_upsample_layer, xavier_init
+from mmcv.cnn import ConvModule, build_upsample_layer
 from mmcv.ops.carafe import CARAFEPack
-from mmcv.runner import BaseModule, ModuleList
+from mmengine.model import BaseModule, ModuleList
+from mmengine.model.utils import xavier_init
 
 from mmdet.registry import MODELS
 

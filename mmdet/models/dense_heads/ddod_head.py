@@ -3,8 +3,9 @@ from typing import List, Optional, Sequence, Tuple
 
 import torch
 import torch.nn as nn
-from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init
+from mmcv.cnn import ConvModule, Scale
 from mmengine.data import InstanceData
+from mmengine.model.utils import bias_init_with_prob, normal_init
 from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS

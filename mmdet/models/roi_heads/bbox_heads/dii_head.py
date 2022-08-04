@@ -3,10 +3,10 @@ from typing import List
 
 import torch
 import torch.nn as nn
-from mmcv.cnn import (bias_init_with_prob, build_activation_layer,
-                      build_norm_layer)
+from mmcv.cnn import build_activation_layer, build_norm_layer
 from mmcv.cnn.bricks.transformer import FFN, MultiheadAttention
 from mmengine.config import ConfigDict
+from mmengine.model.utils import bias_init_with_prob
 from torch import Tensor
 
 from mmdet.models.layers import build_transformer
