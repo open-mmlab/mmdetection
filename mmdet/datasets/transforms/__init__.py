@@ -10,7 +10,7 @@ from .geometric import (GeomTransform, Rotate, ShearX, ShearY, TranslateX,
 from .instaboost import InstaBoost
 from .loading import (FilterAnnotations, LoadAnnotations, LoadImageFromNDArray,
                       LoadMultiChannelImageFromFiles, LoadPanopticAnnotations,
-                      LoadProposals)
+                      LoadProposals, LoadPseudoAnnotations)
 from .transforms import (Albu, CopyPaste, CutOut, Expand, MinIoURandomCrop,
                          MixUp, Mosaic, Normalize, Pad, PhotoMetricDistortion,
                          RandomAffine, RandomCenterCropPad, RandomCrop,
@@ -30,5 +30,5 @@ __all__ = [
     'RandomAffine', 'YOLOXHSVRandomAug', 'CopyPaste', 'FilterAnnotations',
     'Pad', 'GeomTransform', 'ColorTransform', 'RandAugment', 'Sharpness',
     'Solarize', 'SolarizeAdd', 'Posterize', 'AutoContrast', 'Invert',
-    'MultiBranch'
+    'MultiBranch', 'LoadPseudoAnnotations'
 ]
