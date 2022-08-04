@@ -11,13 +11,13 @@ from mmdet.datasets.transforms import (CopyPaste, CutOut, Expand,
                                        MinIoURandomCrop, MixUp, Mosaic, Pad,
                                        PhotoMetricDistortion, RandomAffine,
                                        RandomCenterCropPad, RandomCrop,
-                                       RandomFlip, RandomShift, Resize,
-                                       SegRescale, YOLOXHSVRandomAug)
+                                       RandomErasing, RandomFlip, RandomShift,
+                                       Resize, SegRescale, YOLOXHSVRandomAug)
 from mmdet.evaluation import bbox_overlaps
 from mmdet.registry import TRANSFORMS
 from mmdet.structures.bbox import bbox_project
 from mmdet.structures.mask import BitmapMasks
-from .utils import create_full_masks, create_random_bboxes
+from .utils import construct_toy_data, create_full_masks, create_random_bboxes
 
 try:
     import albumentations
@@ -1116,3 +1116,36 @@ class TestRandomShift(unittest.TestCase):
             repr(transform), ('RandomShift(prob=0.5, '
                               'max_shift_px=32, '
                               'filter_thr_px=1)'))
+
+
+class TestRandomErasing(unittest.TestCase):
+
+    def setUp(self):
+        """Setup the model and optimizer which are used in every test method.
+
+        TestCase calls functions in this order: setUp() -> testMethod() ->
+        tearDown() -> cleanUp()
+        """
+        self.results = construct_toy_data(poly2mask=True)
+
+    def test_transform(self):
+        transform = RandomErasing(
+            n_patches=(1, 5), ratio=(0.2, 0.5), img_border_value=0)
+        results = transform(copy.deepcopy(self.results))
+        self.assertTrue(results['img'].sum() < self.results['img'].sum())
+
+        transform = RandomErasing(
+            n_patches=1, ratio=0.999, img_border_value=255)
+        results = transform(copy.deepcopy(self.results))
+        self.assertTrue(results['img'].sum() > self.results['img'].sum())
+
+    def test_repr(self):
+        transform = RandomErasing(n_patches=(1, 5), ratio=(0, 0.2))
+        self.assertEqual(
+            repr(transform), ('RandomErasing(n_patches=(1, 5), '
+                              'ratio=(0, 0.2), '
+                              'squared=True, '
+                              'bbox_erased_thr=0.9, '
+                              'img_border_value=128, '
+                              'mask_border_value=0, '
+                              'seg_ignore_label=255)'))
