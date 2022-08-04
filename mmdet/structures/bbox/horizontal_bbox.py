@@ -14,7 +14,7 @@ DeviceType = Union[str, torch.device]
 
 
 @register_bbox_mode(name='hbbox')
-class HoriBoxes(BaseBoxes):
+class HorizontalBoxes(BaseBoxes):
     """The horizontal box class used in MMDetection by default. The box data
     shape should be (..., 4). The last dimension indicates the coordinates of
     the left-top and right-bottom points of horizontal boxes.

@@ -64,7 +64,7 @@ def register_bbox_mode(name: str,
 
         >>> # as a decorator
         >>> @register_bbox_mode('hbox')
-        >>> class HoriBoxes(BaseBoxes):
+        >>> class HorizontalBoxes(BaseBoxes):
         >>>     pass
 
         >>> # as a normal function
