@@ -9,8 +9,8 @@ from mmcv.cnn import Conv2d, build_plugin_layer
 from mmcv.cnn.bricks.transformer import (build_positional_encoding,
                                          build_transformer_layer_sequence)
 from mmcv.ops import point_sample
-from mmcv.runner import ModuleList
 from mmengine.data import InstanceData
+from mmengine.model import ModuleList
 from mmengine.model.utils import caffe2_xavier_init
 from torch import Tensor
 

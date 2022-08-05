@@ -1,17 +1,16 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch.nn as nn
-from mmcv.utils import Registry, build_from_cfg
+from mmengine.registry import build_from_cfg
 
-TRANSFORMER = Registry('Transformer')
-LINEAR_LAYERS = Registry('linear layers')
+from mmdet.registry import MODELS
 
 
 def build_transformer(cfg, default_args=None):
     """Builder for Transformer."""
-    return build_from_cfg(cfg, TRANSFORMER, default_args)
+    return build_from_cfg(cfg, MODELS, default_args)
 
 
-LINEAR_LAYERS.register_module('Linear', module=nn.Linear)
+MODELS.register_module('Linear', module=nn.Linear)
 
 
 def build_linear_layer(cfg, *args, **kwargs):
@@ -37,10 +36,10 @@ def build_linear_layer(cfg, *args, **kwargs):
         cfg_ = cfg.copy()
 
     layer_type = cfg_.pop('type')
-    if layer_type not in LINEAR_LAYERS:
+    if layer_type not in MODELS:
         raise KeyError(f'Unrecognized linear type {layer_type}')
     else:
-        linear_layer = LINEAR_LAYERS.get(layer_type)
+        linear_layer = MODELS.get(layer_type)
 
     layer = linear_layer(*args, **kwargs, **cfg_)
 

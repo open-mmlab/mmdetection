@@ -2,10 +2,10 @@
 from unittest import TestCase
 
 import torch
-from mmcv.cnn import (ConvModule, DepthwiseSeparableConvModule,
-                      bias_init_with_prob)
+from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 from mmengine.config import Config
 from mmengine.data import InstanceData
+from mmengine.model.utils import bias_init_with_prob
 from mmengine.testing import assert_allclose
 
 from mmdet.models.dense_heads import YOLOXHead
