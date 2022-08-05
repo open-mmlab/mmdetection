@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 
 import numpy as np
 from mmcv.transforms import BaseTransform, Compose
+from mmcv.transforms.utils import cache_randomness
 
 from mmdet.registry import TRANSFORMS
 
@@ -55,6 +56,10 @@ class MultiBranch(BaseTransform):
 class ShuffledSequence(Compose):
     """Shuffle the transform Sequence."""
 
+    @cache_randomness
+    def _random_permutation(self):
+        return np.random.permutation(len(self.transforms))
+
     def transform(self, results: Dict) -> Optional[Dict]:
         """Transform function to apply transforms shuffled sequentially.
 
@@ -64,7 +69,7 @@ class ShuffledSequence(Compose):
         Returns:
             dict or None: Transformed results.
         """
-        order = np.random.permutation(len(self.transforms))
+        order = self._random_permutation()
         for idx in order:
             t = self.transforms[idx]
             results = t(results)
