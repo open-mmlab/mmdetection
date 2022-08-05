@@ -151,11 +151,9 @@ class HorizontalBoxes(BaseBoxes):
         Returns:
             T: Cliped boxes with the same shape as the original boxes.
         """
-        bboxes = self.tensor
-        clipped_w = bboxes[..., 0::2].clamp(0, img_shape[1])
-        clipped_h = bboxes[..., 1::2].clamp(0, img_shape[0])
-        bboxes = torch.stack([clipped_w, clipped_h], dim=-1)
-        bboxes = bboxes.flatten(start_dim=-2)
+        bboxes = self.tensor.clone()
+        bboxes[..., 0::2] = bboxes[..., 0::2].clamp(0, img_shape[1])
+        bboxes[..., 1::2] = bboxes[..., 1::2].clamp(0, img_shape[0])
         return type(self)(bboxes)
 
     def rotate(self: T,
@@ -185,10 +183,8 @@ class HorizontalBoxes(BaseBoxes):
         corners = torch.transpose(corners_T, -1, -2)
         bboxes = self.corner2bbox(corners)
         if img_shape is not None:
-            clipped_w = bboxes[..., 0::2].clamp(0, img_shape[1])
-            clipped_h = bboxes[..., 1::2].clamp(0, img_shape[0])
-            bboxes = torch.stack([clipped_w, clipped_h], dim=-1)
-            bboxes = bboxes.flatten(start_dim=-2)
+            bboxes[..., 0::2] = bboxes[..., 0::2].clamp(0, img_shape[1])
+            bboxes[..., 1::2] = bboxes[..., 1::2].clamp(0, img_shape[0])
         return type(self)(bboxes)
 
     def project(self: T,
@@ -218,10 +214,8 @@ class HorizontalBoxes(BaseBoxes):
         corners = corners[..., :2] / corners[..., 2:3]
         bboxes = self.corner2bbox(corners)
         if img_shape is not None:
-            clipped_w = bboxes[..., 0::2].clamp(0, img_shape[1])
-            clipped_h = bboxes[..., 1::2].clamp(0, img_shape[0])
-            bboxes = torch.stack([clipped_w, clipped_h], dim=-1)
-            bboxes = bboxes.flatten(start_dim=-2)
+            bboxes[..., 0::2] = bboxes[..., 0::2].clamp(0, img_shape[1])
+            bboxes[..., 1::2] = bboxes[..., 1::2].clamp(0, img_shape[0])
         return type(self)(bboxes)
 
     @staticmethod
