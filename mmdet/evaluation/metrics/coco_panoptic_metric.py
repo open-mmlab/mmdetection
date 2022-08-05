@@ -93,6 +93,8 @@ class CocoPanopticMetric(BaseMetric):
             'None when format_only is True, otherwise the result files will'
             'be saved to a temp directory which will be cleaned up at the end.'
 
+        self.file_client_args = file_client_args
+        self.file_client = FileClient(**file_client_args)
         self.tmp_dir = None
         # outfile_prefix should be a prefix of a path which points to a shared
         # storage when train or test with multi nodes.
@@ -103,19 +105,13 @@ class CocoPanopticMetric(BaseMetric):
         # the directory to save predicted panoptic segmentation mask
         self.seg_out_dir = f'{self.outfile_prefix}.panoptic'
         self.nproc = nproc
-        self.file_client_args = file_client_args
-        self.file_client = FileClient(**file_client_args)
-        if ann_file is not None:
-            with self.file_client.get_local_path(ann_file) as local_path:
-                self._coco_api = COCOPanoptic(local_path)
-        else:
-            self._coco_api = None
         self.seg_prefix = seg_prefix
 
         self.cat_ids = None
         self.cat2label = None
         if ann_file:
-            self._coco_api = COCOPanoptic(ann_file)
+            with self.file_client.get_local_path(ann_file) as local_path:
+                self._coco_api = COCOPanoptic(local_path)
             self.categories = self._coco_api.cats
         else:
             self._coco_api = None
