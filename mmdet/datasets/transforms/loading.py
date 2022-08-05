@@ -696,8 +696,8 @@ class FilterAnnotations(BaseTransform):
 
 
 @TRANSFORMS.register_module()
-class LoadPseudoAnnotations(BaseTransform):
-    """Load Pseudo Annotations.
+class LoadEmptyAnnotations(BaseTransform):
+    """Load Empty Annotations.
 
     Added Keys:
     - gt_bboxes (np.float32)
@@ -733,7 +733,7 @@ class LoadPseudoAnnotations(BaseTransform):
         self.seg_ignore_label = seg_ignore_label
 
     def transform(self, results: dict) -> dict:
-        """Transform function to load pseudo annotations.
+        """Transform function to load empty annotations.
 
         Args:
             results (dict): Result dict.

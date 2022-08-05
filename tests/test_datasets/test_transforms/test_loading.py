@@ -10,9 +10,10 @@ import mmcv
 import numpy as np
 
 from mmdet.datasets.transforms import (FilterAnnotations, LoadAnnotations,
+                                       LoadEmptyAnnotations,
                                        LoadImageFromNDArray,
                                        LoadMultiChannelImageFromFiles,
-                                       LoadProposals, LoadPseudoAnnotations)
+                                       LoadProposals)
 from mmdet.evaluation import INSTANCE_OFFSET
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 
@@ -412,10 +413,10 @@ class TestLoadProposals(unittest.TestCase):
             repr(transform), 'LoadProposals(num_max_proposals=None)')
 
 
-class TestLoadPseudoAnnotations(unittest.TestCase):
+class TestLoadEmptyAnnotations(unittest.TestCase):
 
     def test_transform(self):
-        transform = LoadPseudoAnnotations(
+        transform = LoadEmptyAnnotations(
             with_bbox=True, with_label=True, with_mask=True, with_seg=True)
         results = {'img_shape': (224, 224)}
         results = transform(results)
@@ -430,9 +431,9 @@ class TestLoadPseudoAnnotations(unittest.TestCase):
         self.assertEqual(results['gt_seg_map'].shape, results['img_shape'])
 
     def test_repr(self):
-        transform = LoadPseudoAnnotations()
+        transform = LoadEmptyAnnotations()
         self.assertEqual(
-            repr(transform), 'LoadPseudoAnnotations(with_bbox=True, '
+            repr(transform), 'LoadEmptyAnnotations(with_bbox=True, '
             'with_label=True, '
             'with_mask=False, '
             'with_seg=False, '
