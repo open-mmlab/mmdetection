@@ -10,9 +10,9 @@ from mmcv.cnn import build_activation_layer, build_conv_layer, build_norm_layer
 from mmcv.cnn.bricks.transformer import (BaseTransformerLayer,
                                          TransformerLayerSequence,
                                          build_transformer_layer_sequence)
-from mmcv.utils import to_2tuple
 from mmengine.model import BaseModule
 from mmengine.model.utils import xavier_init
+from mmengine.utils import to_2tuple
 from torch.nn.init import normal_
 
 from mmdet.registry import MODELS
