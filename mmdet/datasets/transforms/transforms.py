@@ -2916,7 +2916,7 @@ class RandomErasing(BaseTransform):
             of the bbox to be erased. When the proportion of the area where the
             bbox is erased is greater than the threshold, the bbox will be
             removed. Defaults to 0.9.
-        img_border_value (int | float | tuple): The filled values for
+        img_border_value (int or float or tuple): The filled values for
             image border. If float, the same fill value will be used for
             all the three channels of image. If tuple, it should be 3 elements.
             Defaults to 128.
@@ -2953,6 +2953,7 @@ class RandomErasing(BaseTransform):
         self.mask_border_value = mask_border_value
         self.seg_ignore_label = seg_ignore_label
 
+    @cache_randomness
     def _get_patches(self, img_shape: Tuple[int, int]) -> List[list]:
         """Get patches for random erasing."""
         patches = []
@@ -2990,7 +2991,7 @@ class RandomErasing(BaseTransform):
         bbox_areas = (bboxes[:, 2] - bboxes[:, 0]) * (
             bboxes[:, 3] - bboxes[:, 1])
         bboxes_erased_ratio = inter_areas.sum(-1) / bbox_areas
-        valid_inds = bboxes_erased_ratio > self.bbox_erased_thr
+        valid_inds = bboxes_erased_ratio < self.bbox_erased_thr
         results['gt_bboxes'] = bboxes[valid_inds]
         results['gt_bboxes_labels'] = results['gt_bboxes_labels'][valid_inds]
         results['gt_ignore_flags'] = results['gt_ignore_flags'][valid_inds]
