@@ -5,15 +5,15 @@ from collections import defaultdict
 from typing import Dict, List, Optional
 
 import numpy as np
-from mmengine.dataset import BaseDataset
-from mmengine.fileio import FileClient, load
+from mmengine.fileio import load
 from mmengine.utils import is_abs
 
 from mmdet.registry import DATASETS
+from .base_det_dataset import BaseDetDataset
 
 
 @DATASETS.register_module()
-class OpenImagesDataset(BaseDataset):
+class OpenImagesDataset(BaseDetDataset):
     """Open Images dataset for detection.
 
     Args:
@@ -36,14 +36,11 @@ class OpenImagesDataset(BaseDataset):
                  meta_file: str,
                  hierarchy_file: str,
                  image_level_ann_file: Optional[str] = None,
-                 file_client_args: dict = dict(backend='disk'),
                  **kwargs) -> None:
         self.label_file = label_file
         self.meta_file = meta_file
         self.hierarchy_file = hierarchy_file
         self.image_level_ann_file = image_level_ann_file
-        self.file_client_args = file_client_args
-        self.file_client = FileClient(**file_client_args)
         super().__init__(**kwargs)
 
     def load_data_list(self) -> List[dict]:

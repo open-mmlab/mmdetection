@@ -29,12 +29,6 @@ class BaseDetDataset(BaseDataset):
         self.file_client = FileClient(**file_client_args)
         super().__init__(*args, **kwargs)
 
-    # @property
-    # def proposal_file(self) -> str:
-    #     if self.proposal_file is not None:
-    #         proposal_file = self.data_prefix.get('proposal_file', None)
-    #     return proposal_file
-
     def full_init(self) -> None:
         """Load annotation file and set ``BaseDataset._fully_initialized`` to
         True.
@@ -79,7 +73,8 @@ class BaseDetDataset(BaseDataset):
         """
 
         The proposal file is a list with a
-        dict[img_path: dict(bboxes, scores, labels)]
+        dict[img_path: dict | InstanceData: (bboxes, scores, *)] or
+
 
         Required Keys:
         - img_path

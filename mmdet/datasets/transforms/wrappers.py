@@ -114,7 +114,7 @@ class ProposalBroadcaster(BaseTransform):
         outputs = self._process_output(outputs)
         return outputs
 
-    def _process_input(self, data: dict) -> List[dict, dict]:
+    def _process_input(self, data: dict) -> list:
         """Scatter the broadcasting targets to a list of inputs of the wrapped
         transforms.
 
@@ -125,12 +125,11 @@ class ProposalBroadcaster(BaseTransform):
             list[dict, dict]: A list of input data.
         """
         cp_data = copy.deepcopy(data)
-        proposals = cp_data['proposals'].bboxes
-        cp_data['gt_bboxes'] = proposals
+        cp_data['gt_bboxes'] = cp_data['proposals']
         scatters = [data, cp_data]
         return scatters
 
-    def _apply_transforms(self, inputs: List[dict, dict]) -> List[dict, dict]:
+    def _apply_transforms(self, inputs: list) -> list:
         """Apply ``self.transforms``.
 
         Args:
@@ -144,7 +143,7 @@ class ProposalBroadcaster(BaseTransform):
             output_scatters = [self.transforms(_input) for _input in inputs]
         return output_scatters
 
-    def _process_output(self, output_scatters: List[dict, dict]) -> dict:
+    def _process_output(self, output_scatters: list) -> dict:
         """Gathering and renaming data items.
 
         Args:
@@ -158,6 +157,5 @@ class ProposalBroadcaster(BaseTransform):
                isinstance(output_scatters[0], dict) and \
                len(output_scatters) == 2
         outputs = output_scatters[0]
-        proposals = output_scatters[1]['gt_bboxes']
-        outputs['proposals'].bboxes = proposals
+        outputs['proposals'] = output_scatters[1]['gt_bboxes']
         return outputs

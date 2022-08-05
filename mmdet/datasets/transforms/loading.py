@@ -7,7 +7,7 @@ import pycocotools.mask as maskUtils
 from mmcv.transforms import BaseTransform
 from mmcv.transforms import LoadAnnotations as MMCV_LoadAnnotations
 from mmcv.transforms import LoadImageFromFile
-from mmengine.data import InstanceData
+from mmengine.data import BaseDataElement
 
 from mmdet.registry import TRANSFORMS
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
@@ -586,37 +586,30 @@ class LoadProposals(BaseTransform):
             dict: The dict contains loaded proposal annotations.
         """
         proposals = results['proposals']
+        # the type of proposals should be `dict` or `InstanceData`
+        assert isinstance(proposals, dict) \
+               or isinstance(proposals, BaseDataElement)
         bboxes = proposals['bboxes'].astype(np.float32)
+        assert bboxes.shape[1] == 4, \
+            f'Proposals should have shapes (n, 4), but found {proposals.shape}'
 
-        _results = InstanceData()
-
-        if bboxes.shape[1] == 4:
-            _results.bboxes = bboxes
-            if 'scores' in proposals:
-                _results.scores = proposals['scores'].astype(np.float32)
-            else:
-                _results.scores = np.zeros(bboxes.shape[0], dtype=np.float32)
-        elif bboxes.shape[1] == 5:
-            _results.bboxes = bboxes[:, :4]
-            _results.scores = bboxes[:, 4]
+        if 'scores' in proposals:
+            scores = proposals['scores'].astype(np.float32)
+            assert bboxes.shape[0] == scores.shape[0]
         else:
-            raise AttributeError('proposals should have shapes (n, 4) or '
-                                 f'(n, 5), but found {proposals.shape}')
+            scores = np.zeros(bboxes.shape[0], dtype=np.float32)
 
-        if 'labels' in proposals:
-            _results.labels = proposals['labels'].astype(np.float32)
-        else:
-            _results.labels = np.zeros(bboxes.shape[0], dtype=np.float32)
         if self.num_max_proposals is not None:
-            _results = _results[:self.num_max_proposals]
+            # proposals should sort by scores during dumping the proposals
+            bboxes = bboxes[:self.num_max_proposals]
+            scores = scores[:self.num_max_proposals]
 
-        if len(_results) == 0:
-            _results = InstanceData()
-            _results.bboxes = np.zeros((0, 4), dtype=np.float32)
-            _results.scores = np.zeros(0, dtype=np.float32)
-            _results.labels = np.zeros(0, dtype=np.float32)
+        if len(bboxes) == 0:
+            bboxes = np.zeros((0, 4), dtype=np.float32)
+            scores = np.zeros(0, dtype=np.float32)
 
-        results['proposals'] = _results
+        results['proposals'] = bboxes
+        results['proposals_scores'] = scores
         return results
 
     def __repr__(self):

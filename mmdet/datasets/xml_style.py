@@ -4,14 +4,13 @@ import xml.etree.ElementTree as ET
 from typing import List, Optional, Union
 
 import mmcv
-from mmengine.dataset import BaseDataset
-from mmengine.fileio import FileClient
 
 from mmdet.registry import DATASETS
+from .base_det_dataset import BaseDetDataset
 
 
 @DATASETS.register_module()
-class XMLDataset(BaseDataset):
+class XMLDataset(BaseDetDataset):
     """XML dataset for detection.
 
     Args:
@@ -25,12 +24,9 @@ class XMLDataset(BaseDataset):
     def __init__(self,
                  img_subdir: str = 'JPEGImages',
                  ann_subdir: str = 'Annotations',
-                 file_client_args: dict = dict(backend='disk'),
                  **kwargs) -> None:
         self.img_subdir = img_subdir
         self.ann_subdir = ann_subdir
-        self.file_client_args = file_client_args
-        self.file_client = FileClient(**file_client_args)
         super().__init__(**kwargs)
 
     @property
