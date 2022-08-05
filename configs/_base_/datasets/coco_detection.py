@@ -57,6 +57,7 @@ val_evaluator = dict(
     type='CocoMetric',
     ann_file=data_root + 'annotations/instances_val2017.json',
     metric='bbox',
+    file_client_args=file_client_args,
     format_only=False)
 test_evaluator = val_evaluator
 
@@ -79,5 +80,6 @@ test_evaluator = val_evaluator
 #     type='CocoMetric',
 #     metric='bbox',
 #     format_only=True,
+#     file_client_args=file_client_args,
 #     ann_file=data_root + 'annotations/image_info_test-dev2017.json',
 #     outfile_prefix='./work_dirs/coco_detection/test')

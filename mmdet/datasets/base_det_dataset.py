@@ -14,6 +14,7 @@ class BaseDetDataset(BaseDataset):
     """Base dataset for detection.
 
     Args:
+        proposal_file (str, optional): Proposals file path. Defaults to None.
         file_client_args (dict): Arguments to instantiate a FileClient.
             See :class:`mmengine.fileio.FileClient` for details.
             Defaults to ``dict(backend='disk')``.
@@ -70,16 +71,17 @@ class BaseDetDataset(BaseDataset):
         self._fully_initialized = True
 
     def load_proposals(self) -> None:
-        """
+        """Load proposals from proposals file.
 
-        The proposal file is a list with a
-        dict[img_path: dict | InstanceData: (bboxes, scores, *)] or
+        The `proposals_list` should be a list with the same length as
+        `data_list`. Each item should be a dict[img_path: proposals]. And the
+        `proposals` should be a `dict` or :obj:`InstanceData` usually
+        contains following keys.
 
-
-        Required Keys:
-        - img_path
-        - proposal
-
+            - bboxes (np.ndarry): Has a shape (num_instances, 4),
+              the last dimension 4 arrange as (x1, y1, x2, y2).
+            - scores (np.ndarry): Classification scores, has a shape
+              (num_instance, ).
         """
         if not is_abs(self.proposal_file) and self.proposal_file:
             self.proposal_file = osp.join(self.data_root, self.proposal_file)
