@@ -1,4 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from .loops import MultiValLoop
+from .loops import TeacherStudentValLoop
 
-__all__ = ['MultiValLoop']
+__all__ = ['TeacherStudentValLoop']

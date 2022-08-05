@@ -7,17 +7,8 @@ from mmdet.registry import LOOPS
 
 
 @LOOPS.register_module()
-class MultiValLoop(ValLoop):
-    """Multi-loop for validation.
-
-    Args:
-        runner (Runner): A reference of runner.
-        dataloader (Dataloader or dict): A dataloader object or a dict to
-            build a dataloader.
-        evaluator (Evaluator or dict or list): Used for computing metrics.
-        fp16 (bool): Whether to enable fp16 validation. Defaults to
-            False.
-    """
+class TeacherStudentValLoop(ValLoop):
+    """Loop for validation of model teacher and student."""
 
     def run(self):
         """Launch validation for model teacher and student."""

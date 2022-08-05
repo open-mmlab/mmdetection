@@ -73,7 +73,7 @@ class DummyDataset(Dataset):
         return dict(inputs=self.data[index], data_sample=self.label[index])
 
 
-class TestMultiValLoop(TestCase):
+class TestTeacherStudentValLoop(TestCase):
 
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
@@ -104,7 +104,7 @@ class TestMultiValLoop(TestCase):
             optim_wrapper=OptimWrapper(
                 torch.optim.Adam(ToyModel().parameters())),
             train_cfg=dict(by_epoch=True, max_epochs=2, val_interval=1),
-            val_cfg=dict(type='MultiValLoop'),
+            val_cfg=dict(type='TeacherStudentValLoop'),
             default_hooks=dict(logger=dict(type='LoggerHook', interval=1)),
             experiment_name='test1')
         runner.train()
