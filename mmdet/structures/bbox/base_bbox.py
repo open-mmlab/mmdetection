@@ -13,16 +13,29 @@ IndexType = Union[slice, int, list, torch.LongTensor, torch.cuda.LongTensor,
 
 
 class BaseBoxes(metaclass=ABCMeta):
-    """BaseBoxes is a base class that defines the data shape and some commonly
-    used abstract methods of 2D boxes. Basic tensor-like functions are
-    implemented in BaseBoxes so that users can treat its instance as a normal
-    tensor in most cases.
+    """The base class for 2D box modes.
 
-    When initializing a box instance, BaseBoxes will verify the validity
-    of box data shape w.r.t the class attribute ``_bbox_dim``.  The tensor
-    with the dimension >= 2 and the length of the last dimension being
-    ``_bbox_dim`` is regarded as the valid box tensor. BaseBoxes restores
-    the data tensor at the field ``tensor``.
+    The functions of ``BaseBoxes`` lie in three fields:
+
+    - Verify the tensor shape.
+    - Support tensor-like operations.
+    - Define abstract functions for 2D boxes.
+
+    In ``__init__`` , ``BaseBoxes`` verifies the validity of the data shape
+    w.r.t ``_bbox_dim``. The tensor with the dimension >= 2 and the length
+    of the last dimension being ``_bbox_dim`` will be regarded as valid.
+    ``BaseBoxes`` will restore them at the field ``tensor``. It's necessary
+    to override ``_bbox_dim`` in subclass to guarantee the data shape is
+    correct.
+
+    There are many basic tensor-like functions implemented in ``BaseBoxes``.
+    In most cases, users can operate ``BaseBoxes`` instance like a normal
+    tensor. To protect the validity of data shape, All tensor-like functions
+    cannot modify the last dimension of ``self.tensor``.
+
+    When designing a new box mode, users need to inherit from ``BaseBoxes``
+    and override abstract methods and specify the ``_bbox_dim``. Then,
+    register the new box mode by using the decorator ``register_bbox_mode``.
 
     Args:
         bboxes (Tensor or np.ndarray or Sequence): The box data with shape
@@ -31,7 +44,8 @@ class BaseBoxes(metaclass=ABCMeta):
         device (str or torch.device, Optional): device of bboxes.
     """
 
-    # The last dimension length, need to override it at subclass.
+    # Used to verify the last dimension length
+    # Should override it in subclass.
     _bbox_dim: int = 0
 
     def __init__(self,
@@ -364,7 +378,7 @@ class BaseBoxes(metaclass=ABCMeta):
 
     @abstractclassmethod
     def clip(self: T, img_shape: Tuple[int, int]) -> T:
-        """Clip boxes according to border.
+        """Clip boxes according to the image shape.
 
         Args:
             img_shape (Tuple[int, int]): A tuple of image height and width.
@@ -441,7 +455,7 @@ class BaseBoxes(metaclass=ABCMeta):
 
     @abstractclassmethod
     def is_bboxes_inside(self, img_shape: Tuple[int, int]) -> torch.BoolTensor:
-        """Find bboxes as long as a part of bboxes is inside an region.
+        """Find bboxes inside the image.
 
         Args:
             img_shape (Tuple[int, int]): A tuple of image height and width.

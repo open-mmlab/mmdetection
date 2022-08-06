@@ -15,9 +15,20 @@ DeviceType = Union[str, torch.device]
 
 @register_bbox_mode(name='hbbox')
 class HorizontalBoxes(BaseBoxes):
-    """The horizontal box class used in MMDetection by default. The box data
-    shape should be (..., 4). The last dimension indicates the coordinates of
-    the left-top and right-bottom points of horizontal boxes.
+    """The horizontal box class used in MMDetection by default.
+
+    The ``_bbox_dim`` of ``HorizontalBoxes`` is 4, which means the input
+    should have shape of (a0, a1, ..., 4). Two formats of box tensor are
+    supported in ``HorizontalBoxes``:
+
+    - 'xyxy': Each row of data indicates (x1, y1, x2, y2), which are the
+      coordinates of the right-top and left-bottom points.
+    - 'cxcywh': Each row of data indicates (x, y, w, h), where (x, y) are the
+      coordinates of the box centers and (w, h) are the width and height.
+
+    ``HorizontalBoxes`` only restores 'xyxy' format of data. If the format of
+    the input is 'cxcywh', users need to input ``pattern='cxcywh'`` and The
+    code will convert 'cxcywh' inputs to 'xyxy' automatically.
 
     Args:
         bboxes (Tensor or np.ndarray or Sequence): The box data with
@@ -143,7 +154,7 @@ class HorizontalBoxes(BaseBoxes):
         return type(self)(bboxes)
 
     def clip(self: T, img_shape: Tuple[int, int]) -> T:
-        """Clip boxes according to border.
+        """Clip boxes according to the image shape.
 
         Args:
             img_shape (Tuple[int, int]): A tuple of image height and width.
@@ -231,7 +242,7 @@ class HorizontalBoxes(BaseBoxes):
         """
         x1, y1, x2, y2 = torch.split(bboxes, 1, dim=-1)
         corners = torch.cat([x1, y1, x2, y1, x1, y2, x2, y2], dim=-1)
-        return corners.reshape(*corners.shape[:-1], 4, 2)
+        return corners.view(*corners.shape[:-1], 4, 2)
 
     @staticmethod
     def corner2bbox(corners: Tensor) -> Tensor:
@@ -291,7 +302,10 @@ class HorizontalBoxes(BaseBoxes):
         return type(self)(bboxes)
 
     def is_bboxes_inside(self, img_shape: Tuple[int, int]) -> torch.BoolTensor:
-        """Find bboxes as long as a part of bboxes is inside an region.
+        """Find bboxes inside the image.
+
+        In ``HorizontalBoxes``, as long as a part of the box is inside the
+        image, this box will be regarded as True.
 
         Args:
             img_shape (Tuple[int, int]): A tuple of image height and width.
