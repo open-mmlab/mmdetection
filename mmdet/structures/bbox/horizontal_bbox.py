@@ -13,7 +13,7 @@ T = TypeVar('T')
 DeviceType = Union[str, torch.device]
 
 
-@register_bbox_mode(name='hbbox')
+@register_bbox_mode(name='hbox')
 class HorizontalBoxes(BaseBoxes):
     """The horizontal box class used in MMDetection by default.
 
