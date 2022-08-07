@@ -186,13 +186,13 @@ class HorizontalBoxes(BaseBoxes):
         rotation_matrix = bboxes.new_tensor(
             cv2.getRotationMatrix2D(center, angle, 1))
 
-        corners = self.bbox2corner(bboxes)
+        corners = self.hbbox2corner(bboxes)
         corners = torch.cat(
             [corners, corners.new_ones(*corners.shape[:-1], 1)], dim=-1)
         corners_T = torch.transpose(corners, -1, -2)
         corners_T = torch.matmul(rotation_matrix, corners_T)
         corners = torch.transpose(corners_T, -1, -2)
-        bboxes = self.corner2bbox(corners)
+        bboxes = self.corner2hbbox(corners)
         if img_shape is not None:
             bboxes[..., 0::2] = bboxes[..., 0::2].clamp(0, img_shape[1])
             bboxes[..., 1::2] = bboxes[..., 1::2].clamp(0, img_shape[0])
@@ -215,7 +215,7 @@ class HorizontalBoxes(BaseBoxes):
         bboxes = self.tensor
         if isinstance(homography_matrix, np.ndarray):
             homography_matrix = bboxes.new_tensor(homography_matrix)
-        corners = self.bbox2corner(bboxes)
+        corners = self.hbbox2corner(bboxes)
         corners = torch.cat(
             [corners, corners.new_ones(*corners.shape[:-1], 1)], dim=-1)
         corners_T = torch.transpose(corners, -1, -2)
@@ -223,14 +223,14 @@ class HorizontalBoxes(BaseBoxes):
         corners = torch.transpose(corners_T, -1, -2)
         # Convert to homogeneous coordinates by normalization
         corners = corners[..., :2] / corners[..., 2:3]
-        bboxes = self.corner2bbox(corners)
+        bboxes = self.corner2hbbox(corners)
         if img_shape is not None:
             bboxes[..., 0::2] = bboxes[..., 0::2].clamp(0, img_shape[1])
             bboxes[..., 1::2] = bboxes[..., 1::2].clamp(0, img_shape[0])
         return type(self)(bboxes)
 
     @staticmethod
-    def bbox2corner(bboxes: Tensor) -> Tensor:
+    def hbbox2corner(bboxes: Tensor) -> Tensor:
         """Convert bbox coordinates from (x1, y1, x2, y2) to corners ((x1, y1),
         (x2, y1), (x1, y2), (x2, y2)).
 
@@ -245,7 +245,7 @@ class HorizontalBoxes(BaseBoxes):
         return corners.view(*corners.shape[:-1], 4, 2)
 
     @staticmethod
-    def corner2bbox(corners: Tensor) -> Tensor:
+    def corner2hbbox(corners: Tensor) -> Tensor:
         """Convert bbox coordinates from corners ((x1, y1), (x2, y1), (x1, y2),
         (x2, y2)) to (x1, y1, x2, y2).
 
