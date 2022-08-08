@@ -4,7 +4,7 @@ from typing import List, Optional, Sequence, Tuple, Type, TypeVar, Union
 
 import numpy as np
 import torch
-from torch import Tensor
+from torch import BoolTensor, Tensor
 
 T = TypeVar('T')
 DeviceType = Union[str, torch.device]
@@ -39,7 +39,7 @@ class BaseBoxes(metaclass=ABCMeta):
 
     Args:
         bboxes (Tensor or np.ndarray or Sequence): The box data with shape
-            (a0, a1, ..., bbox_dim).
+            (..., _bbox_dim).
         dtype (torch.dtype, Optional): data type of bboxes.
         device (str or torch.device, Optional): device of bboxes.
     """
@@ -226,6 +226,10 @@ class BaseBoxes(metaclass=ABCMeta):
         """Reload ``view`` from self.tensor."""
         return type(self)(self.tensor.view(shape))
 
+    def reshape(self: T, *shape: Tuple[int]) -> T:
+        """Reload ``reshape`` from self.tensor."""
+        return type(self)(self.tensor.reshape(shape))
+
     def expand(self: T, *sizes: Tuple[int]) -> T:
         """Reload ``expand`` from self.tensor."""
         return type(self)(self.tensor.expand(sizes))
@@ -397,7 +401,7 @@ class BaseBoxes(metaclass=ABCMeta):
 
         Args:
             center (Tuple[float, float]): Rotation origin.
-            angle (float): Rotation angle.
+            angle (float): Rotation angle represented in degrees.
             img_shape (Tuple[int, int], Optional): A tuple of image height
                 and width. Defaults to None.
 
@@ -454,7 +458,7 @@ class BaseBoxes(metaclass=ABCMeta):
         pass
 
     @abstractclassmethod
-    def is_bboxes_inside(self, img_shape: Tuple[int, int]) -> torch.BoolTensor:
+    def is_bboxes_inside(self, img_shape: Tuple[int, int]) -> BoolTensor:
         """Find bboxes inside the image.
 
         Args:
@@ -462,13 +466,12 @@ class BaseBoxes(metaclass=ABCMeta):
 
         Returns:
             BoolTensor: Index of the remaining bboxes. Assuming the original
-            boxes have shape (a0, a1, ..., bbox_dim), the output has shape
-            (a0, a1, ...).
+            boxes have shape (m, n, bbox_dim), the output has shape (m, n).
         """
         pass
 
     @abstractclassmethod
-    def find_inside_points(self, points: Tensor) -> torch.BoolTensor:
+    def find_inside_points(self, points: Tensor) -> BoolTensor:
         """Find inside box points.
 
         Args:

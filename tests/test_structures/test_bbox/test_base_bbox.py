@@ -168,6 +168,13 @@ class TestBaseBoxes(TestCase):
         self.assertEqual(tuple(new_bboxes.size()), (12, 4))
         with self.assertRaises(AssertionError):
             new_bboxes = bboxes.view(-1)
+        # reshape
+        new_bboxes = bboxes.reshape(12, 4)
+        self.assertEqual(tuple(new_bboxes.size()), (12, 4))
+        new_bboxes = bboxes.reshape(-1, 4)
+        self.assertEqual(tuple(new_bboxes.size()), (12, 4))
+        with self.assertRaises(AssertionError):
+            new_bboxes = bboxes.reshape(-1)
         # expand
         new_bboxes = bboxes[None, ...].expand(4, -1, -1, -1)
         self.assertEqual(tuple(new_bboxes.size()), (4, 3, 4, 4))

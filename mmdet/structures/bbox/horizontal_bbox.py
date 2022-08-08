@@ -4,7 +4,7 @@ from typing import Optional, Tuple, TypeVar, Union
 import cv2
 import numpy as np
 import torch
-from torch import Tensor
+from torch import BoolTensor, Tensor
 
 from .base_bbox import BaseBoxes
 from .bbox_mode import register_bbox_mode
@@ -17,9 +17,9 @@ DeviceType = Union[str, torch.device]
 class HorizontalBoxes(BaseBoxes):
     """The horizontal box class used in MMDetection by default.
 
-    The ``_bbox_dim`` of ``HorizontalBoxes`` is 4, which means the input
-    should have shape of (a0, a1, ..., 4). Two formats of box tensor are
-    supported in ``HorizontalBoxes``:
+    The ``_bbox_dim`` of ``HorizontalBoxes`` is 4, which means the length of
+    the last dimension of the input should be 4. Two formats of box tensor
+    are supported in ``HorizontalBoxes``:
 
     - 'xyxy': Each row of data indicates (x1, y1, x2, y2), which are the
       coordinates of the right-top and left-bottom points.
@@ -58,10 +58,11 @@ class HorizontalBoxes(BaseBoxes):
         """Convert bbox coordinates from (cx, cy, w, h) to (x1, y1, x2, y2).
 
         Args:
-            bbox (Tensor): Shape (n, 4) for bboxes.
+            bboxes (Tensor): cxcywh format bboxes tensor with shape of
+                (..., 4).
 
         Returns:
-            Tensor: Converted bboxes.
+            Tensor: xyxy format bboxes tensor with shape of (..., 4).
         """
         ctr, wh = bboxes.split((2, 2), dim=-1)
         return torch.cat([(ctr - wh / 2), (ctr + wh / 2)], dim=-1)
@@ -71,10 +72,10 @@ class HorizontalBoxes(BaseBoxes):
         """Convert bbox coordinates from (x1, y1, x2, y2) to (cx, cy, w, h).
 
         Args:
-            bbox (Tensor): Shape (n, 4) for bboxes.
+            bboxes (Tensor): xyxy format bboxes tensor with shape of (..., 4).
 
         Returns:
-            Tensor: Converted bboxes.
+            Tensor: cxcywh format bboxes tensor with shape of (..., 4).
         """
         xy1, xy2 = bboxes.split((2, 2), dim=-1)
         return torch.cat([(xy2 + xy1) / 2, (xy2 - xy1)], dim=-1)
@@ -175,7 +176,7 @@ class HorizontalBoxes(BaseBoxes):
 
         Args:
             center (Tuple[float, float]): Rotation origin.
-            angle (float): Rotation angle.
+            angle (float): Rotation angle represented in degrees.
             img_shape (Tuple[int, int], Optional): A tuple of image height
                 and width. Defaults to None.
 
@@ -235,14 +236,14 @@ class HorizontalBoxes(BaseBoxes):
         (x2, y1), (x1, y2), (x2, y2)).
 
         Args:
-            bboxes (Tensor): Shape (..., 4) for bboxes.
+            bboxes (Tensor): Horizontal box tensor with shape of (..., 4).
 
         Returns:
-            Tensor: Shape (..., 4, 2) for corners.
+            Tensor: Corner tensor with shape of (..., 4, 2).
         """
         x1, y1, x2, y2 = torch.split(bboxes, 1, dim=-1)
         corners = torch.cat([x1, y1, x2, y1, x1, y2, x2, y2], dim=-1)
-        return corners.view(*corners.shape[:-1], 4, 2)
+        return corners.reshape(*corners.shape[:-1], 4, 2)
 
     @staticmethod
     def corner2hbbox(corners: Tensor) -> Tensor:
@@ -250,10 +251,10 @@ class HorizontalBoxes(BaseBoxes):
         (x2, y2)) to (x1, y1, x2, y2).
 
         Args:
-            corners (Tensor): Shape (..., 4, 2) for corners.
+            corners (Tensor): Corner tensor with shape of (..., 4, 2).
 
         Returns:
-            Tensor: Shape (..., 4) for bboxes.
+            Tensor: Horizontal box tensor with shape of (..., 4).
         """
         min_xy = corners.min(dim=-2)[0]
         max_xy = corners.max(dim=-2)[0]
@@ -301,7 +302,7 @@ class HorizontalBoxes(BaseBoxes):
         bboxes = torch.cat([xy1, xy2], dim=-1)
         return type(self)(bboxes)
 
-    def is_bboxes_inside(self, img_shape: Tuple[int, int]) -> torch.BoolTensor:
+    def is_bboxes_inside(self, img_shape: Tuple[int, int]) -> BoolTensor:
         """Find bboxes inside the image.
 
         In ``HorizontalBoxes``, as long as a part of the box is inside the
@@ -312,15 +313,14 @@ class HorizontalBoxes(BaseBoxes):
 
         Returns:
             BoolTensor: Index of the remaining bboxes. Assuming the original
-            boxes have shape (a0, a1, ..., bbox_dim), the output has shape
-            (a0, a1, ...).
+            horizontal boxes have shape (m, n, 4), the output has shape (m, n).
         """
         img_h, img_w = img_shape
         bboxes = self.tensor
         return (bboxes[..., 0] < img_w) & (bboxes[..., 2] > 0) \
             & (bboxes[..., 1] < img_h) & (bboxes[..., 3] > 0)
 
-    def find_inside_points(self, points: Tensor) -> torch.BoolTensor:
+    def find_inside_points(self, points: Tensor) -> BoolTensor:
         """Find inside box points.
 
         Args:
