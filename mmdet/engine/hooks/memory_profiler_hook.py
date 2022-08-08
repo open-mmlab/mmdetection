@@ -95,7 +95,7 @@ class MemoryProfilerHook(Hook):
 
         Args:
             runner (:obj:`Runner`): The runner of the validation process.
-            batch_idx (int): The index of the current batch in the train loop.
+            batch_idx (int): The index of the current batch in the val loop.
             data_batch (Sequence[dict], optional): Data from dataloader.
                 Defaults to None.
             outputs (Union[Sequence[:obj:`BaseDataElement`], dict], optional):
@@ -114,7 +114,7 @@ class MemoryProfilerHook(Hook):
 
         Args:
             runner (:obj:`Runner`): The runner of the testing process.
-            batch_idx (int): The index of the current batch in the train loop.
+            batch_idx (int): The index of the current batch in the test loop.
             data_batch (Sequence[dict], optional): Data from dataloader.
                 Defaults to None.
             outputs (Union[Sequence[:obj:`BaseDataElement`], dict], optional):
