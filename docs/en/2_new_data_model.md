@@ -20,8 +20,7 @@ Usually we recommend to use the first two methods which are usually easier than 
 
 In this note, we give an example for converting the data into COCO format.
 
-**Note**: MMDetection only supports evaluating mask AP of dataset in COCO format for now.
-So for instance segmentation task users should convert the data into coco format.
+**Note**: Datasets and metrics have been decoupled except CityScapes since MMDetection 3.0 . So users can use VOC as dataset and COCO metric as metric, or use VOC as dataset and use VOC metric and COCO metric as metric simultaneously now.
 
 ### COCO annotation format
 
@@ -206,7 +205,7 @@ def convert_balloon_to_coco(ann_file, out_file, image_prefix):
 
 ```
 
-Using the function above, users can successfully convert the annotation file into json format, then we can use `CocoDataset` to train and evaluate the model.
+Using the function above, users can successfully convert the annotation file into json format, then we can use `CocoDataset` to train and evaluate the model with `CocoMetric`.
 
 ## Prepare a config
 
@@ -224,20 +223,23 @@ model = dict(
 
 # Modify dataset related settings
 dataset_type = 'COCODataset'
-classes = ('balloon',)
-data = dict(
-    train=dict(
-        img_prefix='balloon/train/',
-        classes=classes,
-        ann_file='balloon/train/annotation_coco.json'),
-    val=dict(
-        img_prefix='balloon/val/',
-        classes=classes,
-        ann_file='balloon/val/annotation_coco.json'),
-    test=dict(
-        img_prefix='balloon/val/',
-        classes=classes,
-        ann_file='balloon/val/annotation_coco.json'))
+data_root='data/balloon/'
+train_dataloader = dict(
+    dataset=dict(
+        data_root=data_root,
+        ann_file='train/annotation_coco.json',
+        data_prefix=dict(img='train/')))
+val_dataloader = dict(
+    dataset=dict(
+        data_root=data_root,
+        ann_file='val/annotation_coco.json',
+        data_prefix=dict(img='val/')))
+test_dataloader = val_dataloader
+
+# Modify metric related settings
+val_evaluator = dict(
+    ann_file=data_root + 'val/annotation_coco.json')
+test_evaluator = val_evaluator
 
 # We can use the pre-trained Mask RCNN model to obtain higher performance
 load_from = 'checkpoints/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco_bbox_mAP-0.408__segm_mAP-0.37_20200504_163245-42aa3d00.pth'
@@ -258,7 +260,7 @@ For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).
 To test the trained model, you can simply run
 
 ```shell
-python tools/test.py configs/balloon/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py work_dirs/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon/latest.pth --eval bbox segm
+python tools/test.py configs/balloon/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py work_dirs/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon/latest.pth
 ```
 
 For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).
