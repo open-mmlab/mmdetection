@@ -1,0 +1,103 @@
+{
+    "/tmp/tmp4_s_hfe3/cityscapes/gtFine/val/lindau/lindau_000000_000019_gtFine_instanceIds.png": {
+        "groundTruth": {
+            "bicycle": [],
+            "bus": [],
+            "car": [],
+            "motorcycle": [],
+            "person": [
+                {
+                    "distConf": 0.0,
+                    "instID": 24000,
+                    "labelID": 24,
+                    "matchedPred": [
+                        {
+                            "confidence": 1.0,
+                            "imgName": "/tmp/tmp4_s_hfe3/test.results/lindau_000000_000019_gtFine_instanceIds_0_person.png",
+                            "intersection": 100,
+                            "labelID": 24,
+                            "pixelCount": 100,
+                            "predID": 0,
+                            "voidIntersection": 0
+                        }
+                    ],
+                    "medDist": -1,
+                    "pixelCount": 100
+                }
+            ],
+            "rider": [],
+            "train": [],
+            "truck": []
+        },
+        "prediction": {
+            "bicycle": [],
+            "bus": [],
+            "car": [],
+            "motorcycle": [],
+            "person": [
+                {
+                    "confidence": 1.0,
+                    "imgName": "/tmp/tmp4_s_hfe3/test.results/lindau_000000_000019_gtFine_instanceIds_0_person.png",
+                    "labelID": 24,
+                    "matchedGt": [
+                        {
+                            "distConf": 0.0,
+                            "instID": 24000,
+                            "intersection": 100,
+                            "labelID": 24,
+                            "medDist": -1,
+                            "pixelCount": 100
+                        }
+                    ],
+                    "pixelCount": 100,
+                    "predID": 0,
+                    "voidIntersection": 0
+                }
+            ],
+            "rider": [],
+            "train": [],
+            "truck": []
+        }
+    },
+    "/tmp/tmp4_s_hfe3/cityscapes/gtFine/val/lindau/lindau_000000_000020_gtFine_instanceIds.png": {
+        "groundTruth": {
+            "bicycle": [],
+            "bus": [],
+            "car": [],
+            "motorcycle": [],
+            "person": [
+                {
+                    "distConf": 0.0,
+                    "instID": 24001,
+                    "labelID": 24,
+                    "matchedPred": [],
+                    "medDist": -1,
+                    "pixelCount": 100
+                }
+            ],
+            "rider": [],
+            "train": [],
+            "truck": []
+        },
+        "prediction": {
+            "bicycle": [],
+            "bus": [],
+            "car": [],
+            "motorcycle": [],
+            "person": [],
+            "rider": [
+                {
+                    "confidence": 0.98,
+                    "imgName": "/tmp/tmp4_s_hfe3/test.results/lindau_000000_000020_gtFine_instanceIds_0_rider.png",
+                    "labelID": 25,
+                    "matchedGt": [],
+                    "pixelCount": 100,
+                    "predID": 0,
+                    "voidIntersection": 0
+                }
+            ],
+            "train": [],
+            "truck": []
+        }
+    }
+}
