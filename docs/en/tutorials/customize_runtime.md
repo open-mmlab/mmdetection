@@ -145,7 +145,7 @@ Tricks not implemented by the optimizer should be implemented through optimizer 
 - __Use momentum schedule to accelerate model convergence__:
   We support momentum scheduler to modify model's momentum according to learning rate, which could make the model converge in a faster way.
   Momentum scheduler is usually used with LR scheduler, for example, the following config is used in 3D detection to accelerate convergence.
-  For more details, please refer to the implementation of [CosineAnnealingLR](https://github.com/open-mmlab/mmengine/blob/6ebb7ed481614b8ef08aabe27f6d88f750eb65dd/mmengine/optim/scheduler/lr_scheduler.py#L42) and [CosineAnnealingBetas](https://github.com/open-mmlab/mmdetection3d/blob/4b4a7e4d671c2d86cf8262f7f8b664633e14ce73/mmdet3d/engine/scheduler/betas_scheduler.py#L23).
+  For more details, please refer to the implementation of [CosineAnnealingLR](https://github.com/open-mmlab/mmengine/blob/6ebb7ed481614b8ef08aabe27f6d88f750eb65dd/mmengine/optim/scheduler/lr_scheduler.py#L42) and [CosineAnnealingMomentum](https://github.com/open-mmlab/mmengine/blob/9b2a0e02da840b474f41c9bbc35335dab39eb844/mmengine/optim/scheduler/momentum_scheduler.py#L70).
 
   ```python
   param_scheduler = [
@@ -168,7 +168,7 @@ Tricks not implemented by the optimizer should be implemented through optimizer 
           convert_to_iter_based=True),
       # momentum scheduler
       dict(
-          type='CosineAnnealingBetas',
+          type='CosineAnnealingMomentum',
           T_max=8,
           eta_min=0.85 / 0.95,
           begin=0,
@@ -176,7 +176,7 @@ Tricks not implemented by the optimizer should be implemented through optimizer 
           by_epoch=True,
           convert_to_iter_based=True),
       dict(
-          type='CosineAnnealingBetas',
+          type='CosineAnnealingMomentum',
           T_max=12,
           eta_min=1,
           begin=8,
@@ -218,14 +218,29 @@ We support many other learning rate schedule [here](https://github.com/open-mmla
 
   ```
 
-## Customize workflow
+## Customize train loop
 
-# TODO
+By default, `EpochBasedTrainLoop` is used in `train_cfg` and validation is done after every train epoch, as follows.
 
 ```python
-train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=12, val_interval=1)
-val_cfg = dict(type='ValLoop')
-test_cfg = dict(type='TestLoop')
+train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=12, val_begin=1, val_interval=1)
+```
+
+Actually, [`IterBasedTrainLoop`](https://github.com/open-mmlab/mmengine/blob/9b2a0e02da840b474f41c9bbc35335dab39eb844/mmengine/runner/loops.py#L183%5D) is also supported and validation can be done dynamically, see the following example.
+
+```python
+# Before 365001th iteration, we do evaluation every 5000 iterations.
+# After 365000th iteration, we do evaluation every 368750 iteraions,
+# which means that we do evaluation at the end of training.
+
+interval = 5000
+max_iters = 368750
+dynamic_intervals = [(max_iters // interval * interval + 1, max_iters)]
+train_cfg = dict(
+    type='IterBasedTrainLoop',
+    max_iters=max_iters,
+    val_interval=interval,
+    dynamic_intervals=dynamic_intervals)
 ```
 
 ## Customize hooks
@@ -255,72 +270,23 @@ class MyHook(Hook):
 
     def after_train(self, runner) -> None:
 
-    def before_val(self, runner) -> None:
-
-    def after_val(self, runner) -> None:
-
-    def before_test(self, runner) -> None:
-
-    def after_test(self, runner) -> None:
-
-    def before_save_checkpoint(self, runner, checkpoint: dict) -> None:
-
-    def after_load_checkpoint(self, runner, checkpoint: dict) -> None:
-
     def before_train_epoch(self, runner) -> None:
 
-    def before_val_epoch(self, runner) -> None:
-
-    def before_test_epoch(self, runner) -> None:
-
     def after_train_epoch(self, runner) -> None:
-
-    def after_val_epoch(self,
-                        runner,
-                        metrics: Optional[Dict[str, float]] = None) -> None:
-
-    def after_test_epoch(self,
-                         runner,
-                         metrics: Optional[Dict[str, float]] = None) -> None:
 
     def before_train_iter(self,
                           runner,
                           batch_idx: int,
                           data_batch: DATA_BATCH = None) -> None:
 
-    def before_val_iter(self,
-                        runner,
-                        batch_idx: int,
-                        data_batch: DATA_BATCH = None) -> None:
-
-    def before_test_iter(self,
-                         runner,
-                         batch_idx: int,
-                         data_batch: DATA_BATCH = None) -> None:
-
     def after_train_iter(self,
                          runner,
                          batch_idx: int,
                          data_batch: DATA_BATCH = None,
                          outputs: Optional[dict] = None) -> None:
-
-    def after_val_iter(self,
-                       runner,
-                       batch_idx: int,
-                       data_batch: DATA_BATCH = None,
-                       outputs: Optional[Sequence[BaseDataElement]] = None) \
-            -> None:
-
-    def after_test_iter(
-            self,
-            runner,
-            batch_idx: int,
-            data_batch: DATA_BATCH = None,
-            outputs: Optional[Sequence[BaseDataElement]] = None) -> None:
-
 ```
 
-Depending on the functionality of the hook, the users need to specify what the hook will do at each stage of the training in `before_run`, `after_run`, `before_epoch`, `after_epoch`, `before_iter`, and etc..
+Depending on the functionality of the hook, the users need to specify what the hook will do at each stage of the training in `before_run`, `after_run`, `before_train`, `after_train` , `before_train_epoch`, `after_train_epoch`, `before_train_iter`, and `after_train_iter`.
 
 #### 2. Register the new hook
 
@@ -376,40 +342,46 @@ custom_hooks = [dict(type='NumClassCheckHook')]
 
 There are some common hooks that are registered through `default_hooks`, they are
 
-- IterTimerHook
-- LoggerHook
-- ParamSchedulerHook
-- CheckpointHook
-- DistSamplerSeedHook
-- DetVisualizationHook
+- `IterTimerHook`: A hook that logs 'data_time' for loading data and 'time' a model train step.
+- `LoggerHook`: A hook that Collect logs from different components of `Runner` and write them to terminal, JSON file, tensorboard and wandb .etc.
+- `ParamSchedulerHook`: A hook to update some hyper-parameters in optimizer, e.g., learning rate and momentum.
+- `CheckpointHook`: A hook that saves checkpoints periodically.
+- `DistSamplerSeedHook`: A hook that sets the seed for sampler and batch_sampler.
+- `DetVisualizationHook`: A hook used to visualize validation and testing process prediction results.
 
-In those hooks, only the logger hook has the `VERY_LOW` priority, others' priority are `NORMAL`.
-The above-mentioned tutorials already covers how to modify `optimizer_config`, `momentum_config`, and `lr_config`.
-Here we reveals how what we can do with `LoggerHook` and `CheckpointHook`.
+`IterTimerHook`, `ParamSchedulerHook` and `DistSamplerSeedHook` are simple and no need to be modified, so here we reveals how what we can do with `LoggerHook`, `CheckpointHook` and `DetVisualizationHook`.
 
-#### Checkpoint config
+#### CheckpointHook
 
-The MMengine runner will use `checkpoint_config` to initialize [`CheckpointHook`](https://github.com/open-mmlab/mmengine/blob/6ebb7ed481614b8ef08aabe27f6d88f750eb65dd/mmengine/hooks/checkpoint_hook.py#L19).
+Except saving checkpoints periodically, [`CheckpointHook`](https://github.com/open-mmlab/mmengine/blob/6ebb7ed481614b8ef08aabe27f6d88f750eb65dd/mmengine/hooks/checkpoint_hook.py#L19) provides other options such as `max_keep_ckpts`, `save_optimizer` and etc. The users could set `max_keep_ckpts` to only save only small number of checkpoints or decide whether to store state dict of optimizer by `save_optimizer`. More details of the arguments are [here](https://github.com/open-mmlab/mmengine/blob/6ebb7ed481614b8ef08aabe27f6d88f750eb65dd/mmengine/hooks/checkpoint_hook.py#L19)
 
 ```python
 default_hooks = dict(
-    checkpoint=dict(type='CheckpointHook', interval=1))
+    checkpoint=dict(
+        type='CheckpointHook',
+        interval=1,
+        max_keep_ckpts=3,
+        save_optimizer=True))
 ```
 
-The users could set `max_keep_ckpts` to only save only small number of checkpoints or decide whether to store state dict of optimizer by `save_optimizer`. More details of the arguments are [here](https://github.com/open-mmlab/mmengine/blob/6ebb7ed481614b8ef08aabe27f6d88f750eb65dd/mmengine/hooks/checkpoint_hook.py#L19)
+#### LoggerHook
 
-#### Log config
-
-The `log_config` wraps multiple logger hooks and enables to set intervals. Now MMCV supports `WandbLoggerHook`, `MlflowLoggerHook`, and `TensorboardLoggerHook`.
-The detail usages can be found in the [doc](https://mmcv.readthedocs.io/en/latest/api.html#mmcv.runner.LoggerHook).
+The `LoggerHook` enables to set intervals. And the detail usages can be found in the [docstring](https://github.com/open-mmlab/mmengine/blob/9b2a0e02da840b474f41c9bbc35335dab39eb844/mmengine/hooks/logger_hook.py#L18).
 
 ```python
-log_config = dict(
-    interval=50,
-    hooks=[
-        dict(type='TextLoggerHook'),
-        dict(type='TensorboardLoggerHook')
-    ])
+default_hooks = dict(logger=dict(type='LoggerHook', interval=50))
 ```
 
-# TODO Visualizer
+#### DetVisualizationHook
+
+`DetVisualizationHook` use `DetLocalVisualizer` to visualize prediction results, and `DetLocalVisualizer` current supports different backends, e.g., `TensorboardVisBackend` and `WandbVisBackend` (see [docstring](https://github.com/open-mmlab/mmengine/blob/main/mmengine/visualization/vis_backend.py) for more detail). The users could add multi backbends to do visualization, as follows.
+
+```python
+default_hooks = dict(
+    visualization=dict(type='DetVisualizationHook', draw=True))
+
+vis_backends = [dict(type='LocalVisBackend'),
+                dict(type='TensorboardVisBackend')]
+visualizer = dict(
+    type='DetLocalVisualizer', vis_backends=vis_backends, name='visualizer')
+```
