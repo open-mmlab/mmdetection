@@ -1,0 +1,191 @@
+2022-08-09T11:27:49.368589Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:0 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {0}
+2022-08-09T11:27:49.368641Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:1 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {1}
+2022-08-09T11:27:49.368648Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:2 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {2}
+2022-08-09T11:27:49.368654Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:3 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {3}
+2022-08-09T11:27:49.368660Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:4 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {4}
+2022-08-09T11:27:49.368665Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:5 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {5}
+2022-08-09T11:27:49.368671Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:6 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {6}
+2022-08-09T11:27:49.368679Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:7 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {7}
+2022-08-09T11:27:49.368686Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:8 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {8}
+2022-08-09T11:27:49.368692Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:9 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {9}
+2022-08-09T11:27:49.368698Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:10 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {10}
+2022-08-09T11:27:49.368704Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:11 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {11}
+2022-08-09T11:27:49.368710Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:12 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {12}
+2022-08-09T11:27:49.368716Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:13 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {13}
+2022-08-09T11:27:49.368723Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:14 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {14}
+2022-08-09T11:27:49.368731Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:15 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {15}
+2022-08-09T11:27:49.368739Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:16 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {16}
+2022-08-09T11:27:49.368746Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:17 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {17}
+2022-08-09T11:27:49.368755Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:18 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {18}
+2022-08-09T11:27:49.368761Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:19 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {19}
+2022-08-09T11:27:49.368769Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:20 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {20}
+2022-08-09T11:27:49.368878Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:21 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {21}
+2022-08-09T11:27:49.368916Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:22 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {22}
+2022-08-09T11:27:49.368924Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:23 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {23}
+2022-08-09T11:27:49.368930Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:24 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {24}
+2022-08-09T11:27:49.368938Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:25 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {25}
+2022-08-09T11:27:49.368947Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:26 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {26}
+2022-08-09T11:27:49.368954Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:27 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {27}
+2022-08-09T11:27:49.368961Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:28 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {28}
+2022-08-09T11:27:49.368970Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:29 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {29}
+2022-08-09T11:27:49.368978Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:30 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {30}
+2022-08-09T11:27:49.368986Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:31 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {31}
+2022-08-09T11:27:49.368993Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:32 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {32}
+2022-08-09T11:27:49.369002Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:33 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {33}
+2022-08-09T11:27:49.369010Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:34 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {34}
+2022-08-09T11:27:49.369025Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:35 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {35}
+2022-08-09T11:27:49.369033Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:36 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {36}
+2022-08-09T11:27:49.369040Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:37 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {37}
+2022-08-09T11:27:49.369048Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:38 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {38}
+2022-08-09T11:27:49.369056Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:39 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {39}
+2022-08-09T11:27:49.369064Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:40 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {40}
+2022-08-09T11:27:49.369072Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:41 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {41}
+2022-08-09T11:27:49.369080Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:42 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {42}
+2022-08-09T11:27:49.369094Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:43 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {43}
+2022-08-09T11:27:49.369100Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:44 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {44}
+2022-08-09T11:27:49.369107Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:45 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {45}
+2022-08-09T11:27:49.369115Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:46 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {46}
+2022-08-09T11:27:49.369123Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:47 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {47}
+2022-08-09T11:27:49.369132Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:48 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {48}
+2022-08-09T11:27:49.369140Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:49 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {49}
+2022-08-09T11:27:49.369148Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:50 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {50}
+2022-08-09T11:27:49.369157Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:51 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {51}
+2022-08-09T11:27:49.369165Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:52 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {52}
+2022-08-09T11:27:49.369173Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:53 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {53}
+2022-08-09T11:27:49.369179Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:54 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {54}
+2022-08-09T11:27:49.369188Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:55 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {55}
+2022-08-09T11:27:49.369195Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:56 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {56}
+2022-08-09T11:27:49.369204Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:57 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {57}
+2022-08-09T11:27:49.369211Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:58 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {58}
+2022-08-09T11:27:49.369219Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:59 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {59}
+2022-08-09T11:27:49.369227Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:60 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {60}
+2022-08-09T11:27:49.369234Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:61 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {61}
+2022-08-09T11:27:49.369241Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:62 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {62}
+2022-08-09T11:27:49.369251Z popart:popart 224400.224400 D: Device: Device Type:ipu Connection Type:always Id:63 Version:<unknown-ipu-unattached> NumIPUs:1 NumTilesPerIPU:1472 DeviceIds: {63}
+[19:27:49.876] [poptorch::python] [critical] ImportError: ImportError: KeyboardInterrupt: 
+
+At:
+  /localdata/cn-customer-engineering/hudi/popart_build/popart/install_dir/python/popart/_internal/ir/__init__.py(31): <module>
+  <frozen importlib._bootstrap>(219): _call_with_frames_removed
+  <frozen importlib._bootstrap_external>(678): exec_module
+  <frozen importlib._bootstrap>(665): _load_unlocked
+  <frozen importlib._bootstrap>(955): _find_and_load_unlocked
+  <frozen importlib._bootstrap>(971): _find_and_load
+  <frozen importlib._bootstrap>(219): _call_with_frames_removed
+  <frozen importlib._bootstrap_external>(922): create_module
+  <frozen importlib._bootstrap>(571): module_from_spec
+  <frozen importlib._bootstrap>(658): _load_unlocked
+  <frozen importlib._bootstrap>(955): _find_and_load_unlocked
+  <frozen importlib._bootstrap>(971): _find_and_load
+  /localdata/cn-customer-engineering/hudi/popart_build/popart/install_dir/python/popart/__init__.py(35): <module>
+  <frozen importlib._bootstrap>(219): _call_with_frames_removed
+  <frozen importlib._bootstrap_external>(678): exec_module
+  <frozen importlib._bootstrap>(665): _load_unlocked
+  <frozen importlib._bootstrap>(955): _find_and_load_unlocked
+  <frozen importlib._bootstrap>(971): _find_and_load
+  /localdata/cn-customer-engineering/hudi/mmcv/mmcv/device/ipu/utils.py(5): <module>
+  <frozen importlib._bootstrap>(219): _call_with_frames_removed
+  <frozen importlib._bootstrap_external>(678): exec_module
+  <frozen importlib._bootstrap>(665): _load_unlocked
+  <frozen importlib._bootstrap>(955): _find_and_load_unlocked
+  <frozen importlib._bootstrap>(971): _find_and_load
+  /localdata/cn-customer-engineering/hudi/mmcv/mmcv/device/ipu/model_wrapper.py(15): <module>
+  <frozen importlib._bootstrap>(219): _call_with_frames_removed
+  <frozen importlib._bootstrap_external>(678): exec_module
+  <frozen importlib._bootstrap>(665): _load_unlocked
+  <frozen importlib._bootstrap>(955): _find_and_load_unlocked
+  <frozen importlib._bootstrap>(971): _find_and_load
+  /localdata/cn-customer-engineering/hudi/mmcv/mmcv/device/ipu/__init__.py(7): <module>
+  <frozen importlib._bootstrap>(219): _call_with_frames_removed
+  <frozen importlib._bootstrap_external>(678): exec_module
+  <frozen importlib._bootstrap>(665): _load_unlocked
+  <frozen importlib._bootstrap>(955): _find_and_load_unlocked
+  <frozen importlib._bootstrap>(971): _find_and_load
+  <frozen importlib._bootstrap>(219): _call_with_frames_removed
+  <frozen importlib._bootstrap>(1023): _handle_fromlist
+  /localdata/cn-customer-engineering/hudi/mmcv/mmcv/device/__init__.py(2): <module>
+  <frozen importlib._bootstrap>(219): _call_with_frames_removed
+  <frozen importlib._bootstrap_external>(678): exec_module
+  <frozen importlib._bootstrap>(665): _load_unlocked
+  <frozen importlib._bootstrap>(955): _find_and_load_unlocked
+  <frozen importlib._bootstrap>(971): _find_and_load
+  /localdata/cn-customer-engineering/hudi/mmcv/mmcv/runner/__init__.py(45): <module>
+  <frozen importlib._bootstrap>(219): _call_with_frames_removed
+  <frozen importlib._bootstrap_external>(678): exec_module
+  <frozen importlib._bootstrap>(665): _load_unlocked
+  <frozen importlib._bootstrap>(955): _find_and_load_unlocked
+  <frozen importlib._bootstrap>(971): _find_and_load
+  tools/train.py(13): <module>
+
+
+Traceback (most recent call last):
+  File "tools/train.py", line 13, in <module>
+    from mmcv.runner import get_dist_info, init_dist
+  File "/localdata/cn-customer-engineering/hudi/mmcv/mmcv/runner/__init__.py", line 45, in <module>
+    from mmcv.device import ipu  # isort:skip  # noqa
+  File "/localdata/cn-customer-engineering/hudi/mmcv/mmcv/device/__init__.py", line 2, in <module>
+    from . import ipu, mlu, mps
+  File "/localdata/cn-customer-engineering/hudi/mmcv/mmcv/device/ipu/__init__.py", line 7, in <module>
+    from .model_wrapper import ipu_model_wrapper
+  File "/localdata/cn-customer-engineering/hudi/mmcv/mmcv/device/ipu/model_wrapper.py", line 15, in <module>
+    from .utils import compare_ndarray, model_sharding, recomputation_checkpoint
+  File "/localdata/cn-customer-engineering/hudi/mmcv/mmcv/device/ipu/utils.py", line 5, in <module>
+    import popart
+  File "/localdata/cn-customer-engineering/hudi/popart_build/popart/install_dir/python/popart/__init__.py", line 35, in <module>
+    from popart_core import *
+ImportError: ImportError: KeyboardInterrupt: 
+
+At:
+  /localdata/cn-customer-engineering/hudi/popart_build/popart/install_dir/python/popart/_internal/ir/__init__.py(31): <module>
+  <frozen importlib._bootstrap>(219): _call_with_frames_removed
+  <frozen importlib._bootstrap_external>(678): exec_module
+  <frozen importlib._bootstrap>(665): _load_unlocked
+  <frozen importlib._bootstrap>(955): _find_and_load_unlocked
+  <frozen importlib._bootstrap>(971): _find_and_load
+  <frozen importlib._bootstrap>(219): _call_with_frames_removed
+  <frozen importlib._bootstrap_external>(922): create_module
+  <frozen importlib._bootstrap>(571): module_from_spec
+  <frozen importlib._bootstrap>(658): _load_unlocked
+  <frozen importlib._bootstrap>(955): _find_and_load_unlocked
+  <frozen importlib._bootstrap>(971): _find_and_load
+  /localdata/cn-customer-engineering/hudi/popart_build/popart/install_dir/python/popart/__init__.py(35): <module>
+  <frozen importlib._bootstrap>(219): _call_with_frames_removed
+  <frozen importlib._bootstrap_external>(678): exec_module
+  <frozen importlib._bootstrap>(665): _load_unlocked
+  <frozen importlib._bootstrap>(955): _find_and_load_unlocked
+  <frozen importlib._bootstrap>(971): _find_and_load
+  /localdata/cn-customer-engineering/hudi/mmcv/mmcv/device/ipu/utils.py(5): <module>
+  <frozen importlib._bootstrap>(219): _call_with_frames_removed
+  <frozen importlib._bootstrap_external>(678): exec_module
+  <frozen importlib._bootstrap>(665): _load_unlocked
+  <frozen importlib._bootstrap>(955): _find_and_load_unlocked
+  <frozen importlib._bootstrap>(971): _find_and_load
+  /localdata/cn-customer-engineering/hudi/mmcv/mmcv/device/ipu/model_wrapper.py(15): <module>
+  <frozen importlib._bootstrap>(219): _call_with_frames_removed
+  <frozen importlib._bootstrap_external>(678): exec_module
+  <frozen importlib._bootstrap>(665): _load_unlocked
+  <frozen importlib._bootstrap>(955): _find_and_load_unlocked
+  <frozen importlib._bootstrap>(971): _find_and_load
+  /localdata/cn-customer-engineering/hudi/mmcv/mmcv/device/ipu/__init__.py(7): <module>
+  <frozen importlib._bootstrap>(219): _call_with_frames_removed
+  <frozen importlib._bootstrap_external>(678): exec_module
+  <frozen importlib._bootstrap>(665): _load_unlocked
+  <frozen importlib._bootstrap>(955): _find_and_load_unlocked
+  <frozen importlib._bootstrap>(971): _find_and_load
+  <frozen importlib._bootstrap>(219): _call_with_frames_removed
+  <frozen importlib._bootstrap>(1023): _handle_fromlist
+  /localdata/cn-customer-engineering/hudi/mmcv/mmcv/device/__init__.py(2): <module>
+  <frozen importlib._bootstrap>(219): _call_with_frames_removed
+  <frozen importlib._bootstrap_external>(678): exec_module
+  <frozen importlib._bootstrap>(665): _load_unlocked
+  <frozen importlib._bootstrap>(955): _find_and_load_unlocked
+  <frozen importlib._bootstrap>(971): _find_and_load
+  /localdata/cn-customer-engineering/hudi/mmcv/mmcv/runner/__init__.py(45): <module>
+  <frozen importlib._bootstrap>(219): _call_with_frames_removed
+  <frozen importlib._bootstrap_external>(678): exec_module
+  <frozen importlib._bootstrap>(665): _load_unlocked
+  <frozen importlib._bootstrap>(955): _find_and_load_unlocked
+  <frozen importlib._bootstrap>(971): _find_and_load
+  tools/train.py(13): <module>
+
+

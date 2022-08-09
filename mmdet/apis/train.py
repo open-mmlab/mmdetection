@@ -159,8 +159,15 @@ def train_detector(model,
             device_ids=[int(os.environ['LOCAL_RANK'])],
             broadcast_buffers=False,
             find_unused_parameters=find_unused_parameters)
-    else:
+    elif not cfg.ipu_replicas:
         model = build_dp(model, cfg.device, device_ids=cfg.gpu_ids)
+    else:
+        cfg.runner['options_cfg']['replicationFactor'] = cfg.ipu_replicas
+        cfg.runner['fp16_cfg'] = cfg.pop('fp16', None)
+
+    # hdDebug, temporarily add replace_bn, replace_bn should be before building optimizer
+    from mmcv.device.ipu.utils import replace_bn
+    replace_bn(model)
 
     # build optimizer
     auto_scale_lr(cfg, distributed, logger)
