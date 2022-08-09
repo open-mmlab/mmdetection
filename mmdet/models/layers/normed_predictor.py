@@ -5,6 +5,8 @@ import torch.nn.functional as F
 
 from mmdet.registry import MODELS
 
+MODELS.register_module('Linear', module=nn.Linear)
+
 
 @MODELS.register_module(name='NormedLinear')
 class NormedLinear(nn.Linear):
