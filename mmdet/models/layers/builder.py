@@ -2,17 +2,8 @@
 import warnings
 
 import torch.nn as nn
-from mmengine.registry import build_from_cfg
 
 from mmdet.registry import MODELS
-
-
-def build_transformer(cfg, default_args=None):
-    """Builder for Transformer."""
-    warnings.warn('DeprecationWarning: "build_transformer" will be deprecated'
-                  'soon, please use "MODELS.build" instead')
-    return build_from_cfg(cfg, MODELS, default_args)
-
 
 MODELS.register_module('Linear', module=nn.Linear)
 
@@ -45,7 +36,7 @@ def build_linear_layer(cfg, *args, **kwargs):
     if layer_type not in MODELS:
         raise KeyError(f'Unrecognized linear type {layer_type}')
     else:
-        linear_layer = MODELS.build(layer_type)
+        linear_layer = MODELS.get(layer_type)
 
     layer = linear_layer(*args, **kwargs, **cfg_)
 

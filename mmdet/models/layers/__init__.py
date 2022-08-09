@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from .bbox_nms import fast_nms, multiclass_nms
 from .brick_wrappers import AdaptiveAvgPool2d, adaptive_avg_pool2d
-from .builder import build_linear_layer, build_transformer
+from .builder import build_linear_layer
 from .conv_upsample import ConvUpsample
 from .csp_layer import CSPLayer
 from .dropblock import DropBlock
@@ -24,7 +24,7 @@ __all__ = [
     'PixelDecoder', 'TransformerEncoderPixelDecoder',
     'MSDeformAttnPixelDecoder', 'ResLayer', 'DetrTransformerDecoderLayer',
     'DetrTransformerDecoder', 'Transformer', 'PatchMerging',
-    'build_transformer', 'build_linear_layer', 'SinePositionalEncoding',
+    'build_linear_layer', 'SinePositionalEncoding',
     'LearnedPositionalEncoding', 'DynamicConv', 'SimplifiedBasicBlock',
     'NormedLinear', 'NormedConv2d', 'InvertedResidual', 'SELayer',
     'ConvUpsample', 'CSPLayer', 'adaptive_avg_pool2d', 'AdaptiveAvgPool2d',
