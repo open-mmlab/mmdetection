@@ -68,6 +68,6 @@ class MultiStageTrainLoop(BaseLoop):
         for loop in self._loop_stages:
             self._cur_loop = loop
             model = loop.run()
-            self._previous_epochs += loop.epochs
-            self._previous_iters += loop.iters
+            self._previous_epochs += loop.epoch
+            self._previous_iters += loop.iter
         return model
