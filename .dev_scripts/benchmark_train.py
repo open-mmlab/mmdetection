@@ -9,52 +9,8 @@ from mmengine.logging import MMLogger, print_log
 from mmengine.registry import RUNNERS
 from mmengine.runner import Runner
 
-from mmdet.testing import FastStopTrainingHook  # noqa: F401,F403
+from mmdet.testing import replace_to_ceph
 from mmdet.utils import register_all_modules, replace_cfg_vals
-
-
-# TODO: Support full ceph
-def replace_to_ceph(cfg):
-    file_client_args = dict(
-        backend='petrel',
-        path_mapping=dict({
-            './data/': 's3://openmmlab/datasets/detection/',
-            'data/': 's3://openmmlab/datasets/detection/'
-        }))
-
-    def _process_pipeline(dataset, name):
-
-        def replace_img(pipeline):
-            if pipeline['type'] == 'LoadImageFromFile':
-                pipeline['file_client_args'] = file_client_args
-
-        def replace_ann(pipeline):
-            if pipeline['type'] == 'LoadAnnotations' or pipeline[
-                    'type'] == 'LoadPanopticAnnotations':
-                pipeline['file_client_args'] = file_client_args
-
-        if 'pipeline' in dataset:
-            replace_img(dataset.pipeline[0])
-            replace_ann(dataset.pipeline[1])
-            if 'dataset' in dataset:
-                # dataset wrapper
-                replace_img(dataset.dataset.pipeline[0])
-                replace_ann(dataset.dataset.pipeline[1])
-        else:
-            # dataset wrapper
-            replace_img(dataset.dataset.pipeline[0])
-            replace_ann(dataset.dataset.pipeline[1])
-
-    def _process_evaluator(evaluator, name):
-        if evaluator['type'] == 'CocoPanopticMetric':
-            evaluator['file_client_args'] = file_client_args
-
-    # half ceph
-    _process_pipeline(cfg.train_dataloader.dataset, cfg.filename)
-    _process_pipeline(cfg.val_dataloader.dataset, cfg.filename)
-    _process_pipeline(cfg.test_dataloader.dataset, cfg.filename)
-    _process_evaluator(cfg.val_evaluator, cfg.filename)
-    _process_evaluator(cfg.test_evaluator, cfg.filename)
 
 
 def parse_args():
@@ -73,7 +29,7 @@ def parse_args():
         action='store_true',
         help='enable automatically scaling LR.')
     parser.add_argument(
-        '--auto-resume',
+        '--resume',
         action='store_true',
         help='resume from the latest checkpoint in the work_dir automatically')
     parser.add_argument(
@@ -173,7 +129,7 @@ def fast_train_model(config_name, args, logger=None):
     if args.ceph:
         replace_to_ceph(cfg)
 
-    cfg.resume = args.auto_resume
+    cfg.resume = args.resume
 
     # build the runner from config
     if 'runner_type' not in cfg:

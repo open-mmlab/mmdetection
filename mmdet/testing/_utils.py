@@ -256,3 +256,48 @@ def demo_mm_sampling_results(proposals_list,
         sampling_results.append(sampling_result)
 
     return sampling_results
+
+
+# TODO: Support full ceph
+def replace_to_ceph(cfg):
+    file_client_args = dict(
+        backend='petrel',
+        path_mapping=dict({
+            './data/': 's3://openmmlab/datasets/detection/',
+            'data/': 's3://openmmlab/datasets/detection/'
+        }))
+
+    # TODO: name is a reserved interface, which will be used later.
+    def _process_pipeline(dataset, name):
+
+        def replace_img(pipeline):
+            if pipeline['type'] == 'LoadImageFromFile':
+                pipeline['file_client_args'] = file_client_args
+
+        def replace_ann(pipeline):
+            if pipeline['type'] == 'LoadAnnotations' or pipeline[
+                    'type'] == 'LoadPanopticAnnotations':
+                pipeline['file_client_args'] = file_client_args
+
+        if 'pipeline' in dataset:
+            replace_img(dataset.pipeline[0])
+            replace_ann(dataset.pipeline[1])
+            if 'dataset' in dataset:
+                # dataset wrapper
+                replace_img(dataset.dataset.pipeline[0])
+                replace_ann(dataset.dataset.pipeline[1])
+        else:
+            # dataset wrapper
+            replace_img(dataset.dataset.pipeline[0])
+            replace_ann(dataset.dataset.pipeline[1])
+
+    def _process_evaluator(evaluator, name):
+        if evaluator['type'] == 'CocoPanopticMetric':
+            evaluator['file_client_args'] = file_client_args
+
+    # half ceph
+    _process_pipeline(cfg.train_dataloader.dataset, cfg.filename)
+    _process_pipeline(cfg.val_dataloader.dataset, cfg.filename)
+    _process_pipeline(cfg.test_dataloader.dataset, cfg.filename)
+    _process_evaluator(cfg.val_evaluator, cfg.filename)
+    _process_evaluator(cfg.test_evaluator, cfg.filename)

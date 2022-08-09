@@ -9,6 +9,7 @@ from mmengine.logging import MMLogger
 from mmengine.registry import RUNNERS
 from mmengine.runner import Runner
 
+from mmdet.testing import replace_to_ceph
 from mmdet.utils import register_all_modules, replace_cfg_vals
 
 
@@ -16,7 +17,7 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument('config', help='test config file path')
     parser.add_argument('checkpoint_root', help='Checkpoint file root path')
-    parser.add_argument('--work-dir', help='the dir to save logs and models')
+    parser.add_argument('--work-dir', help='the dir to save logs')
     parser.add_argument('--ceph', action='store_true')
     parser.add_argument(
         '--cfg-options',
@@ -39,50 +40,6 @@ def parse_args():
         os.environ['LOCAL_RANK'] = str(args.local_rank)
     args = parser.parse_args()
     return args
-
-
-# TODO: Support full ceph
-def replace_to_ceph(cfg):
-    file_client_args = dict(
-        backend='petrel',
-        path_mapping=dict({
-            './data/': 's3://openmmlab/datasets/detection/',
-            'data/': 's3://openmmlab/datasets/detection/'
-        }))
-
-    def _process_pipeline(dataset, name):
-
-        def replace_img(pipeline):
-            if pipeline['type'] == 'LoadImageFromFile':
-                pipeline['file_client_args'] = file_client_args
-
-        def replace_ann(pipeline):
-            if pipeline['type'] == 'LoadAnnotations' or pipeline[
-                    'type'] == 'LoadPanopticAnnotations':
-                pipeline['file_client_args'] = file_client_args
-
-        if 'pipeline' in dataset:
-            replace_img(dataset.pipeline[0])
-            replace_ann(dataset.pipeline[1])
-            if 'dataset' in dataset:
-                # dataset wrapper
-                replace_img(dataset.dataset.pipeline[0])
-                replace_ann(dataset.dataset.pipeline[1])
-        else:
-            # dataset wrapper
-            replace_img(dataset.dataset.pipeline[0])
-            replace_ann(dataset.dataset.pipeline[1])
-
-    def _process_evaluator(evaluator, name):
-        if evaluator['type'] == 'CocoPanopticMetric':
-            evaluator['file_client_args'] = file_client_args
-
-    # half ceph
-    _process_pipeline(cfg.train_dataloader.dataset, cfg.filename)
-    _process_pipeline(cfg.val_dataloader.dataset, cfg.filename)
-    _process_pipeline(cfg.test_dataloader.dataset, cfg.filename)
-    _process_evaluator(cfg.val_evaluator, cfg.filename)
-    _process_evaluator(cfg.test_evaluator, cfg.filename)
 
 
 # TODO: Need to refactor test.py so that it can be reused.
