@@ -240,7 +240,6 @@ class HorizontalBoxes(BaseBoxes):
             changes the width and the height of bboxes, but ``rescale_`` also
             rescales the box centers simultaneously.
 
-
         Args:
             scale_factor (Tuple[float, float]): factors for scaling boxes.
                 The length should be 2.
@@ -307,7 +306,7 @@ class HorizontalBoxes(BaseBoxes):
 
         Returns:
             BoolTensor: Index of inside box points. Assuming the boxes has
-            shape of (n, bbox_dim), if ``is_aligned`` is False. The index has
+            shape of (n, 4), if ``is_aligned`` is False. The index has
             shape of (m, n). If ``is_aligned`` is True, m should be equal to n
             and the index has shape of (m, ).
         """
@@ -317,6 +316,8 @@ class HorizontalBoxes(BaseBoxes):
         if not is_aligned:
             bboxes = bboxes[None, :, :]
             points = points[:, None, :]
+        else:
+            assert bboxes.size(0) == points.size(0)
 
         x_min, y_min, x_max, y_max = bboxes.unbind(dim=-1)
         return (points[..., 0] > x_min) & (points[..., 0] < x_max) & \

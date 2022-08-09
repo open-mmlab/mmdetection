@@ -420,7 +420,6 @@ class BaseBoxes(metaclass=ABCMeta):
             changes the width and the height of bboxes, but ``rescale_`` also
             rescales the box centers simultaneously.
 
-
         Args:
             scale_factor (Tuple[float, float]): factors for scaling boxes.
                 The length should be 2.
