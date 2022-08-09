@@ -26,7 +26,7 @@ def parse_args():
         action='store_true',
         help='enable automatically scaling LR.')
     parser.add_argument(
-        '--auto-resume',
+        '--resume',
         action='store_true',
         help='resume from the latest checkpoint in the work_dir automatically')
     parser.add_argument(
@@ -101,7 +101,7 @@ def main():
                                '"auto_scale_lr.base_batch_size" in your'
                                ' configuration file.')
 
-    cfg.resume = args.auto_resume
+    cfg.resume = args.resume
 
     # build the runner from config
     if 'runner_type' not in cfg:
