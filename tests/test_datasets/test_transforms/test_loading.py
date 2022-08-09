@@ -174,8 +174,8 @@ class TestFilterAnnotations(unittest.TestCase):
         self.assertTrue((results['gt_bboxes'] == np.array([[20, 20, 40, 40],
                                                            [40, 40, 80,
                                                             80]])).all())
-        self.assertTrue(len(results['gt_masks']) == 2)
-        self.assertTrue(len(results['gt_ignore_flags'] == 2))
+        self.assertEqual(len(results['gt_masks']), 2)
+        self.assertEqual(len(results['gt_ignore_flags']), 2)
 
     def test_repr(self):
         transform = FilterAnnotations(
