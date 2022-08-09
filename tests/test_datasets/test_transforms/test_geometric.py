@@ -113,10 +113,10 @@ class TestShearX(unittest.TestCase):
     def test_shearx(self):
         # test assertion for invalid value of min_mag
         with self.assertRaises(AssertionError):
-            transform = ShearX(prob=0.5, level=2, min_mag=-0.3)
+            transform = ShearX(prob=0.5, level=2, min_mag=-30.)
         # test assertion for invalid value of max_mag
         with self.assertRaises(AssertionError):
-            transform = ShearX(prob=0.5, level=2, max_mag=1.2)
+            transform = ShearX(prob=0.5, level=2, max_mag=100.)
 
         # test case when no shear horizontally (level=0)
         transform = ShearX(
@@ -133,7 +133,7 @@ class TestShearX(unittest.TestCase):
         transform = ShearX(
             prob=1.0,
             level=10,
-            max_mag=1.0,
+            max_mag=45.,
             reversal_prob=1.0,
             img_border_value=self.img_border_value)
         results_sheared = transform(copy.deepcopy(self.results_mask))
@@ -168,7 +168,7 @@ class TestShearX(unittest.TestCase):
             repr(transform), ('ShearX(prob=0.5, '
                               'level=10, '
                               'min_mag=0.0, '
-                              'max_mag=0.3, '
+                              'max_mag=30.0, '
                               'reversal_prob=0.5, '
                               'img_border_value=(128.0, 128.0, 128.0), '
                               'mask_border_value=0, '
@@ -194,10 +194,10 @@ class TestShearY(unittest.TestCase):
     def test_sheary(self):
         # test assertion for invalid value of min_mag
         with self.assertRaises(AssertionError):
-            transform = ShearY(prob=0.5, level=2, min_mag=-0.3)
+            transform = ShearY(prob=0.5, level=2, min_mag=-30.)
         # test assertion for invalid value of max_mag
         with self.assertRaises(AssertionError):
-            transform = ShearY(prob=0.5, level=2, max_mag=1.2)
+            transform = ShearY(prob=0.5, level=2, max_mag=100.)
 
         # test case when no shear vertically (level=0)
         transform = ShearY(
@@ -211,7 +211,7 @@ class TestShearY(unittest.TestCase):
                           self.check_keys)
 
         # test shear vertically, magnitude=1
-        transform = ShearY(prob=1., level=10, max_mag=1., reversal_prob=0.)
+        transform = ShearY(prob=1., level=10, max_mag=45., reversal_prob=0.)
         results_sheared = transform(copy.deepcopy(self.results_mask))
         results_gt = copy.deepcopy(self.results_mask)
         img_gt = np.array(
@@ -242,7 +242,7 @@ class TestShearY(unittest.TestCase):
             repr(transform), ('ShearY(prob=0.5, '
                               'level=10, '
                               'min_mag=0.0, '
-                              'max_mag=0.3, '
+                              'max_mag=30.0, '
                               'reversal_prob=0.5, '
                               'img_border_value=(128.0, 128.0, 128.0), '
                               'mask_border_value=0, '
@@ -383,10 +383,10 @@ class TestTranslateX(unittest.TestCase):
     def test_translatex(self):
         # test assertion for invalid value of min_mag
         with self.assertRaises(AssertionError):
-            transform = TranslateX(prob=0.5, level=2, min_mag=-100.0)
+            transform = TranslateX(prob=0.5, level=2, min_mag=-1.)
         # test assertion for invalid value of max_mag
         with self.assertRaises(AssertionError):
-            transform = TranslateX(prob=0.5, level=2, max_mag=1100.0)
+            transform = TranslateX(prob=0.5, level=2, max_mag=1.1)
 
         # test case when level=0 (without translate aug)
         transform = TranslateX(
@@ -402,7 +402,7 @@ class TestTranslateX(unittest.TestCase):
         transform = TranslateX(
             prob=1.0,
             level=10,
-            max_mag=1.0,
+            max_mag=0.3,
             reversal_prob=0.0,
             img_border_value=self.img_border_value,
             seg_ignore_label=self.seg_ignore_label)
@@ -436,7 +436,7 @@ class TestTranslateX(unittest.TestCase):
             repr(transform), ('TranslateX(prob=0.5, '
                               'level=5, '
                               'min_mag=0.0, '
-                              'max_mag=150.0, '
+                              'max_mag=0.1, '
                               'reversal_prob=0.5, '
                               'img_border_value=(128.0, 128.0, 128.0), '
                               'mask_border_value=0, '
@@ -462,10 +462,10 @@ class TestTranslateY(unittest.TestCase):
     def test_translatey(self):
         # test assertion for invalid value of min_mag
         with self.assertRaises(AssertionError):
-            transform = TranslateY(prob=0.5, level=2, min_mag=-100.0)
+            transform = TranslateY(prob=0.5, level=2, min_mag=-1.0)
         # test assertion for invalid value of max_mag
         with self.assertRaises(AssertionError):
-            transform = TranslateY(prob=0.5, level=2, max_mag=1100.0)
+            transform = TranslateY(prob=0.5, level=2, max_mag=1.1)
 
         # test case when level=0 (without translate aug)
         transform = TranslateY(
@@ -481,7 +481,7 @@ class TestTranslateY(unittest.TestCase):
         transform = TranslateY(
             prob=1.0,
             level=10,
-            max_mag=1.0,
+            max_mag=0.4,
             reversal_prob=0.0,
             seg_ignore_label=self.seg_ignore_label)
 
@@ -514,7 +514,7 @@ class TestTranslateY(unittest.TestCase):
             repr(transform), ('TranslateX(prob=0.5, '
                               'level=5, '
                               'min_mag=0.0, '
-                              'max_mag=150.0, '
+                              'max_mag=0.1, '
                               'reversal_prob=0.5, '
                               'img_border_value=(128.0, 128.0, 128.0), '
                               'mask_border_value=0, '
