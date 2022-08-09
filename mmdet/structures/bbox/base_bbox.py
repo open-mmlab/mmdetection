@@ -40,8 +40,10 @@ class BaseBoxes(metaclass=ABCMeta):
     Args:
         bboxes (Tensor or np.ndarray or Sequence): The box data with shape
             (..., _bbox_dim).
-        dtype (torch.dtype, Optional): data type of bboxes.
+        dtype (torch.dtype, Optional): data type of bboxes. Defaults to None.
         device (str or torch.device, Optional): device of bboxes.
+            Default to None.
+        clone (bool): Whether clone ``bboxes`` or not. Defaults to True.
     """
 
     # Used to verify the last dimension length
@@ -51,7 +53,8 @@ class BaseBoxes(metaclass=ABCMeta):
     def __init__(self,
                  bboxes: Union[Tensor, np.ndarray, Sequence],
                  dtype: Optional[torch.dtype] = None,
-                 device: Optional[DeviceType] = None) -> None:
+                 device: Optional[DeviceType] = None,
+                 clone: bool = True) -> None:
         if isinstance(bboxes, (np.ndarray, Tensor, Sequence)):
             bboxes = torch.as_tensor(bboxes)
         else:
@@ -60,6 +63,8 @@ class BaseBoxes(metaclass=ABCMeta):
 
         if device is not None or dtype is not None:
             bboxes = bboxes.to(dtype=dtype, device=device)
+        if clone:
+            bboxes = bboxes.clone()  # To avoid potential bugs
 
         assert bboxes.dim() >= 2 and bboxes.size(-1) == self.bbox_dim, \
             ('The bboxes dimension must >= 2 and the length of the last '
@@ -99,7 +104,7 @@ class BaseBoxes(metaclass=ABCMeta):
         empty_bboxes = self.tensor.new_zeros((0, self._bbox_dim),
                                              dtype=dtype,
                                              device=device)
-        return type(self)(empty_bboxes)
+        return type(self)(empty_bboxes, clone=False)
 
     def create_fake_bboxes(self: T,
                            sizes: Tuple[int],
@@ -120,7 +125,7 @@ class BaseBoxes(metaclass=ABCMeta):
         """
         fake_bboxes = self.tensor.new_full(
             sizes, fill, dtype=dtype, device=device)
-        return type(self)(fake_bboxes)
+        return type(self)(fake_bboxes, clone=False)
 
     def __getitem__(self: T, index: IndexType) -> T:
         """Rewrite getitem to protect the last dimension shape."""
@@ -135,7 +140,7 @@ class BaseBoxes(metaclass=ABCMeta):
         bboxes = bboxes[index]
         if bboxes.dim() == 1:
             bboxes = bboxes.reshape(1, -1)
-        return type(self)(bboxes)
+        return type(self)(bboxes, clone=False)
 
     def __setitem__(self: T, index: IndexType, values: Union[Tensor, T]) -> T:
         """Rewrite setitem to protect the last dimension shape."""
@@ -204,51 +209,51 @@ class BaseBoxes(metaclass=ABCMeta):
 
     def to(self: T, *args, **kwargs) -> T:
         """Reload ``to`` from self.tensor."""
-        return type(self)(self.tensor.to(*args, **kwargs))
+        return type(self)(self.tensor.to(*args, **kwargs), clone=False)
 
     def cpu(self: T) -> T:
         """Reload ``cpu`` from self.tensor."""
-        return type(self)(self.tensor.cpu())
+        return type(self)(self.tensor.cpu(), clone=False)
 
     def cuda(self: T, *args, **kwargs) -> T:
         """Reload ``cuda`` from self.tensor."""
-        return type(self)(self.tensor.cuda(*args, **kwargs))
+        return type(self)(self.tensor.cuda(*args, **kwargs), clone=False)
 
     def clone(self: T) -> T:
         """Reload ``clone`` from self.tensor."""
-        return type(self)(self.tensor.clone())
+        return type(self)(self.tensor)
 
     def detach(self: T) -> T:
         """Reload ``detach`` from self.tensor."""
-        return type(self)(self.tensor.detach())
+        return type(self)(self.tensor.detach(), clone=False)
 
     def view(self: T, *shape: Tuple[int]) -> T:
         """Reload ``view`` from self.tensor."""
-        return type(self)(self.tensor.view(shape))
+        return type(self)(self.tensor.view(shape), clone=False)
 
     def reshape(self: T, *shape: Tuple[int]) -> T:
         """Reload ``reshape`` from self.tensor."""
-        return type(self)(self.tensor.reshape(shape))
+        return type(self)(self.tensor.reshape(shape), clone=False)
 
     def expand(self: T, *sizes: Tuple[int]) -> T:
         """Reload ``expand`` from self.tensor."""
-        return type(self)(self.tensor.expand(sizes))
+        return type(self)(self.tensor.expand(sizes), clone=False)
 
     def repeat(self: T, *sizes: Tuple[int]) -> T:
         """Reload ``repeat`` from self.tensor."""
-        return type(self)(self.tensor.repeat(sizes))
+        return type(self)(self.tensor.repeat(sizes), clone=False)
 
     def transpose(self: T, dim0: int, dim1: int) -> T:
         """Reload ``transpose`` from self.tensor."""
         ndim = self.tensor.dim()
         assert dim0 != -1 and dim0 != ndim - 1
         assert dim1 != -1 and dim1 != ndim - 1
-        return type(self)(self.tensor.transpose(dim0, dim1))
+        return type(self)(self.tensor.transpose(dim0, dim1), clone=False)
 
     def permute(self: T, *dims: Tuple[int]) -> T:
         """Reload ``permute`` from self.tensor."""
         assert dims[-1] == -1 or dims[-1] == self.tensor.dim() - 1
-        return type(self)(self.tensor.permute(dims))
+        return type(self)(self.tensor.permute(dims), clone=False)
 
     def split(self: T,
               split_size_or_sections: Union[int, Sequence[int]],
@@ -256,35 +261,35 @@ class BaseBoxes(metaclass=ABCMeta):
         """Reload ``split`` from self.tensor."""
         assert dim != -1 and dim != self.tensor.dim() - 1
         bboxes_list = self.tensor.split(split_size_or_sections, dim=dim)
-        return [type(self)(bboxes) for bboxes in bboxes_list]
+        return [type(self)(bboxes, clone=False) for bboxes in bboxes_list]
 
     def chunk(self: T, chunks: int, dim: int = 0) -> List[T]:
         """Reload ``chunk`` from self.tensor."""
         assert dim != -1 and dim != self.tensor.dim() - 1
         bboxes_list = self.tensor.chunk(chunks, dim=dim)
-        return [type(self)(bboxes) for bboxes in bboxes_list]
+        return [type(self)(bboxes, clone=False) for bboxes in bboxes_list]
 
     def unbind(self: T, dim: int = 0) -> T:
         """Reload ``unbind`` from self.tensor."""
         assert dim != -1 and dim != self.tensor.dim() - 1
         bboxes_list = self.tensor.unbind(dim=dim)
-        return [type(self)(bboxes) for bboxes in bboxes_list]
+        return [type(self)(bboxes, clone=False) for bboxes in bboxes_list]
 
     def flatten(self: T, start_dim: int = 0, end_dim: int = -2) -> T:
         """Reload ``flatten`` from self.tensor."""
         assert end_dim != -1 and end_dim != self.tensor.dim() - 1
-        return type(self)(self.tensor.flatten(start_dim, end_dim))
+        return type(self)(self.tensor.flatten(start_dim, end_dim), clone=False)
 
     def squeeze(self: T, dim: Optional[int] = None) -> T:
         """Reload ``squeeze`` from self.tensor."""
-        bboxes = self.tensor.squeeze() if dim is None else self.tensor.squeeze(
-            dim)
-        return type(self)(bboxes)
+        bboxes = self.tensor.squeeze() if dim is None else \
+            self.tensor.squeeze(dim)
+        return type(self)(bboxes, clone=False)
 
     def unsqueeze(self: T, dim: int) -> T:
         """Reload ``unsqueeze`` from self.tensor."""
         assert dim != -1 and dim != self.tensor.dim()
-        return type(self)(self.tensor.unsqueeze(dim))
+        return type(self)(self.tensor.unsqueeze(dim), clone=False)
 
     @classmethod
     def cat(cls: Type[T], bbox_list: Sequence[T], dim: int = 0) -> T:
@@ -307,7 +312,7 @@ class BaseBoxes(metaclass=ABCMeta):
         assert all(isinstance(bboxes, cls) for bboxes in bbox_list)
 
         th_bbox_list = [bboxes.tensor for bboxes in bbox_list]
-        return cls(torch.cat(th_bbox_list, dim=dim))
+        return cls(torch.cat(th_bbox_list, dim=dim), clone=False)
 
     @classmethod
     def stack(cls: Type[T], bbox_list: Sequence[T], dim: int = 0) -> T:
@@ -329,7 +334,7 @@ class BaseBoxes(metaclass=ABCMeta):
         assert all(isinstance(bboxes, cls) for bboxes in bbox_list)
 
         th_bbox_list = [bboxes.tensor for bboxes in bbox_list]
-        return cls(torch.stack(th_bbox_list, dim=dim))
+        return cls(torch.stack(th_bbox_list, dim=dim), clone=False)
 
     @abstractproperty
     def centers(self) -> Tensor:
@@ -352,108 +357,91 @@ class BaseBoxes(metaclass=ABCMeta):
         pass
 
     @abstractclassmethod
-    def flip(self: T,
-             img_shape: Tuple[int, int],
-             direction: str = 'horizontal') -> T:
-        """Flip bboxes horizontally or vertically.
+    def flip_(self,
+              img_shape: Tuple[int, int],
+              direction: str = 'horizontal') -> None:
+        """Inplace flip bboxes horizontally or vertically.
 
         Args:
             img_shape (Tuple[int, int]): A tuple of image height and width.
             direction (str): Flip direction, options are "horizontal",
                 "vertical" and "diagonal". Defaults to "horizontal"
-
-        Returns:
-            T: Flipped boxes with the same shape as the original boxes.
         """
         pass
 
     @abstractclassmethod
-    def translate(self: T, distances: Tuple[float, float]) -> T:
-        """Translate bboxes.
+    def translate_(self, distances: Tuple[float, float]) -> None:
+        """Inplace translate bboxes.
 
         Args:
             distances (Tuple[float, float]): translate distances. The first
                 is horizontal distance and the second is vertical distance.
-
-        Returns:
-            T: Translated boxes with the same shape as the original boxes.
         """
         pass
 
     @abstractclassmethod
-    def clip(self: T, img_shape: Tuple[int, int]) -> T:
-        """Clip boxes according to the image shape.
+    def clip_(self, img_shape: Tuple[int, int]) -> None:
+        """Inplace clip boxes according to the image shape.
 
         Args:
             img_shape (Tuple[int, int]): A tuple of image height and width.
-
-        Returns:
-            T: Cliped boxes with the same shape as the original boxes.
         """
         pass
 
     @abstractclassmethod
-    def rotate(self: T,
-               center: Tuple[float, float],
-               angle: float,
-               img_shape: Optional[Tuple[int, int]] = None) -> T:
-        """Rotate all boxes.
+    def rotate_(self, center: Tuple[float, float], angle: float) -> None:
+        """Inplace rotate all boxes.
 
         Args:
             center (Tuple[float, float]): Rotation origin.
             angle (float): Rotation angle represented in degrees.
-            img_shape (Tuple[int, int], Optional): A tuple of image height
-                and width. Defaults to None.
-
-        Returns:
-            T: Rotated boxes with the same shape as the original boxes.
         """
         pass
 
     @abstractclassmethod
-    def project(self: T,
-                homography_matrix: Union[Tensor, np.ndarray],
-                img_shape: Optional[Tuple[int, int]] = None) -> T:
-        """Geometric transformation for bbox.
+    def project_(self, homography_matrix: Union[Tensor, np.ndarray]) -> None:
+        """Inplace geometric transformation for bbox.
 
         Args:
             homography_matrix (Tensor or np.ndarray]):
                 Shape (3, 3) for geometric transformation.
-            img_shape (Tuple[int, int], Optional): A tuple of image height
-                and width. Defaults to None.
-
-        Returns:
-            T: Converted bboxes with the same shape as the original boxes.
         """
         pass
 
     @abstractclassmethod
-    def rescale(self: T,
-                scale_factor: Tuple[float, float],
-                mapping_back=False) -> T:
-        """Rescale boxes w.r.t. rescale_factor.
+    def rescale_(self,
+                 scale_factor: Tuple[float, float],
+                 mapping_back=False) -> None:
+        """Inplace rescale boxes w.r.t. rescale_factor.
+
+        Note:
+            Both ``rescale_`` and ``resize_`` will enlarge or shrink bboxes
+            w.r.t ``scale_facotr``. The difference is that ``resize_`` only
+            changes the width and the height of bboxes, but ``rescale_`` also
+            rescales the box centers simultaneously.
+
 
         Args:
             scale_factor (Tuple[float, float]): factors for scaling boxes.
                 The length should be 2.
             mapping_back (bool): Mapping back the rescaled bboxes.
                 Defaults to False.
-
-        Returns:
-            T: Rescaled boxes with the same shape as the original boxes.
         """
         pass
 
     @abstractclassmethod
-    def resize_bboxes(self: T, scale_factor: Tuple[float, float]) -> T:
-        """Resize the box width and height w.r.t scale_factor.
+    def resize_(self, scale_factor: Tuple[float, float]) -> None:
+        """Inplace resize the box width and height w.r.t scale_factor.
+
+        Note:
+            Both ``rescale_`` and ``resize_`` will enlarge or shrink bboxes
+            w.r.t ``scale_facotr``. The difference is that ``resize_`` only
+            changes the width and the height of bboxes, but ``rescale_`` also
+            rescales the box centers simultaneously.
 
         Args:
             scale_factor (Tuple[float, float]): factors for scaling box
                 shapes. The length should be 2.
-
-        Returns:
-            Tensor: Resized bboxes with the same shape as the original boxes.
         """
         pass
 
@@ -471,14 +459,21 @@ class BaseBoxes(metaclass=ABCMeta):
         pass
 
     @abstractclassmethod
-    def find_inside_points(self, points: Tensor) -> BoolTensor:
-        """Find inside box points.
+    def find_inside_points(self,
+                           points: Tensor,
+                           is_aligned: bool = False) -> BoolTensor:
+        """Find inside box points. Require bboxes dimension must be 2.
 
         Args:
             points (Tensor): Points coordinates. Has shape of (m, 2).
+            is_aligned (bool): Whether ``points`` has been aligned with bboxes
+                or not. If True, the length of bboxes and ``points`` should be
+                the same. Defaults to False.
 
         Returns:
-            BoolTensor: Index of inside box points. Has shape of (m, n)
-                where n is the length of the boxes after flattening.
+            BoolTensor: Index of inside box points. Assuming the boxes has
+            shape of (n, bbox_dim), if ``is_aligned`` is False. The index has
+            shape of (m, n). If ``is_aligned`` is True, m should be equal to n
+            and the index has shape of (m, ).
         """
         pass

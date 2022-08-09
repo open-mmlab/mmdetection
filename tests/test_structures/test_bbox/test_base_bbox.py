@@ -12,7 +12,6 @@ class TestBaseBoxes(TestCase):
     def test_init(self):
         bbox_tensor = torch.rand((3, 4, 4))
         bboxes = ToyBaseBoxes(bbox_tensor)
-        self.assertIs(bbox_tensor, bboxes.tensor)
 
         bboxes = ToyBaseBoxes(bbox_tensor, dtype=torch.float64)
         self.assertEqual(bboxes.tensor.dtype, torch.float64)

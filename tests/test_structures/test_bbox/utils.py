@@ -21,29 +21,29 @@ class ToyBaseBoxes(BaseBoxes):
     def heights(self):
         pass
 
-    def flip(self, img_shape, direction='horizontal'):
+    def flip_(self, img_shape, direction='horizontal'):
         pass
 
-    def translate(self, distances):
+    def translate_(self, distances):
         pass
 
-    def clip(self, img_shape):
+    def clip_(self, img_shape):
         pass
 
-    def rotate(self, center, angle, img_shape):
+    def rotate_(self, center, angle):
         pass
 
-    def project(self, homography_matrix, img_shape=None):
+    def project_(self, homography_matrix):
         pass
 
-    def rescale(self, scale_factor):
+    def rescale_(self, scale_factor):
         pass
 
-    def resize_bboxes(self, scale_factor):
+    def resize_(self, scale_factor):
         pass
 
     def is_bboxes_inside(self, img_shape):
         pass
 
-    def find_inside_points(self, points):
+    def find_inside_points(self, points, is_aligned=False):
         pass
