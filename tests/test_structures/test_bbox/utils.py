@@ -3,7 +3,7 @@ from mmdet.structures.bbox import BaseBoxes
 
 class ToyBaseBoxes(BaseBoxes):
 
-    _bbox_dim = 4
+    bbox_dim = 4
 
     @property
     def centers(self):
