@@ -5,9 +5,11 @@ import torch
 
 from mmdet.structures.bbox.bbox_mode import (_bbox_mode_to_name,
                                              bbox_mode_converters, bbox_modes,
-                                             convert_bbox_mode, get_bbox_mode,
-                                             register_bbox_mode,
+                                             convert_bbox_mode,
+                                             convert_mask_to_bbox_mode,
+                                             get_bbox_mode, register_bbox_mode,
                                              register_bbox_mode_converter)
+from mmdet.structures.mask import BitmapMasks, PolygonMasks
 from .utils import ToyBaseBoxes
 
 
@@ -189,3 +191,19 @@ class TestBboxMode(TestCase):
         # test other type
         with self.assertRaises(TypeError):
             convert_bbox_mode([[1, 2, 3, 4]], src_mode='A', dst_mode='B')
+
+    def test_convert_mask_to_box_mode(self):
+
+        @register_bbox_mode('A')
+        class A(ToyBaseBoxes):
+            pass
+
+        A.from_bitmap_masks = MagicMock()
+        A.from_polygon_masks = MagicMock()
+
+        bitmap_masks = BitmapMasks.random()
+        convert_mask_to_bbox_mode(bitmap_masks, A)
+        self.assertTrue(A.from_bitmap_masks.called)
+        polygon_masks = PolygonMasks.random()
+        convert_mask_to_bbox_mode(polygon_masks, A)
+        self.assertTrue(A.from_polygon_masks.called)

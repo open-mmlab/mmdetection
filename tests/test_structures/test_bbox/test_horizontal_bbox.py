@@ -6,6 +6,7 @@ import torch
 from mmengine.testing import assert_allclose
 
 from mmdet.structures.bbox import HorizontalBoxes
+from mmdet.structures.mask import BitmapMasks, PolygonMasks
 
 
 class TestHorizontalBoxes(TestCase):
@@ -113,12 +114,6 @@ class TestHorizontalBoxes(TestCase):
         bboxes.rescale_(scale_factor)
         rescaled_bboxes_th = torch.Tensor([4, 8, 8, 16]).reshape(1, 1, 4)
         assert_allclose(bboxes.tensor, rescaled_bboxes_th)
-        # mapping back
-        th_bboxes = torch.Tensor([10, 10, 20, 20]).reshape(1, 1, 4)
-        bboxes = HorizontalBoxes(th_bboxes)
-        bboxes.rescale_(scale_factor, mapping_back=True)
-        rescaled_bboxes_th = torch.Tensor([25, 12.5, 50, 25]).reshape(1, 1, 4)
-        assert_allclose(bboxes.tensor, rescaled_bboxes_th)
 
     def test_resize(self):
         scale_factor = [0.4, 0.8]
@@ -150,3 +145,9 @@ class TestHorizontalBoxes(TestCase):
         index = bboxes.find_inside_points(points, is_aligned=True)
         index_th = torch.BoolTensor([False, False, False, True])
         assert_allclose(index, index_th)
+
+    def test_from_masks(self):
+        bitmap_masks = BitmapMasks.random()
+        HorizontalBoxes.from_bitmap_masks(bitmap_masks)
+        polygon_masks = PolygonMasks.random()
+        HorizontalBoxes.from_polygon_masks(polygon_masks)

@@ -5,9 +5,11 @@ import numpy as np
 import torch
 from torch import Tensor
 
+from mmdet.structures.mask.structures import BitmapMasks, PolygonMasks
 from .base_bbox import BaseBoxes
 
 BoxType = Union[np.ndarray, Tensor, BaseBoxes]
+MaskType = Union[BitmapMasks, PolygonMasks]
 
 bbox_modes: dict = {}
 bbox_mode_converters: dict = {}
@@ -240,3 +242,25 @@ def convert_bbox_mode(bboxes: BoxType,
         return bboxes.numpy()
     else:
         return converter(bboxes)
+
+
+def convert_mask_to_bbox_mode(masks: MaskType,
+                              dst_mode: Union[str, type]) -> BaseBoxes:
+    """Convert mask structures to destination box mode.
+
+    Args:
+        masks (:obj:`BitmapMasks` or :obj:`PolygonMasks`): Masks with length
+            of n.
+        dst_mode (str or type): Destination box mode.
+
+    Returns:
+        :obj:`BaseBoxes`: Converted boxes with shape of (n, bbox_dim).
+    """
+    _, dst_mode_cls = get_bbox_mode(dst_mode)
+    if isinstance(masks, BitmapMasks):
+        return dst_mode_cls.from_bitmap_masks(masks)
+    elif isinstance(masks, PolygonMasks):
+        return dst_mode_cls.from_polygon_masks(masks)
+    else:
+        raise TypeError('Only support mask type of `BitmapMasks` '
+                        f'and `PolygonMasks`, but get {type(masks)}.')

@@ -1,10 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from abc import ABCMeta, abstractclassmethod, abstractproperty
+from abc import ABCMeta, abstractmethod, abstractproperty, abstractstaticmethod
 from typing import List, Optional, Sequence, Tuple, Type, TypeVar, Union
 
 import numpy as np
 import torch
 from torch import BoolTensor, Tensor
+
+from mmdet.structures.mask.structures import BitmapMasks, PolygonMasks
 
 T = TypeVar('T')
 DeviceType = Union[str, torch.device]
@@ -111,7 +113,7 @@ class BaseBoxes(metaclass=ABCMeta):
         Args:
             sizes (Tuple[int]): The size of fake boxes. The last value must
                 be equal with ``self.bbox_dim``.
-            fill (float): filling value. Defaults to None.
+            fill (float): filling value. Defaults to 0.
             dtype (torch.dtype, Optional): data type of bboxes.
             device (str or torch.device, Optional): device of bboxes.
 
@@ -351,7 +353,7 @@ class BaseBoxes(metaclass=ABCMeta):
         """Return a tensor representing the heights of boxes."""
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def flip_(self,
               img_shape: Tuple[int, int],
               direction: str = 'horizontal') -> None:
@@ -364,7 +366,7 @@ class BaseBoxes(metaclass=ABCMeta):
         """
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def translate_(self, distances: Tuple[float, float]) -> None:
         """Inplace translate bboxes.
 
@@ -374,7 +376,7 @@ class BaseBoxes(metaclass=ABCMeta):
         """
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def clip_(self, img_shape: Tuple[int, int]) -> None:
         """Inplace clip boxes according to the image shape.
 
@@ -383,7 +385,7 @@ class BaseBoxes(metaclass=ABCMeta):
         """
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def rotate_(self, center: Tuple[float, float], angle: float) -> None:
         """Inplace rotate all boxes.
 
@@ -393,7 +395,7 @@ class BaseBoxes(metaclass=ABCMeta):
         """
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def project_(self, homography_matrix: Union[Tensor, np.ndarray]) -> None:
         """Inplace geometric transformation for bbox.
 
@@ -403,10 +405,8 @@ class BaseBoxes(metaclass=ABCMeta):
         """
         pass
 
-    @abstractclassmethod
-    def rescale_(self,
-                 scale_factor: Tuple[float, float],
-                 mapping_back=False) -> None:
+    @abstractmethod
+    def rescale_(self, scale_factor: Tuple[float, float]) -> None:
         """Inplace rescale boxes w.r.t. rescale_factor.
 
         Note:
@@ -418,12 +418,10 @@ class BaseBoxes(metaclass=ABCMeta):
         Args:
             scale_factor (Tuple[float, float]): factors for scaling boxes.
                 The length should be 2.
-            mapping_back (bool): Mapping back the rescaled bboxes.
-                Defaults to False.
         """
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def resize_(self, scale_factor: Tuple[float, float]) -> None:
         """Inplace resize the box width and height w.r.t scale_factor.
 
@@ -439,7 +437,7 @@ class BaseBoxes(metaclass=ABCMeta):
         """
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def is_bboxes_inside(self, img_shape: Tuple[int, int]) -> BoolTensor:
         """Find bboxes inside the image.
 
@@ -447,16 +445,17 @@ class BaseBoxes(metaclass=ABCMeta):
             img_shape (Tuple[int, int]): A tuple of image height and width.
 
         Returns:
-            BoolTensor: Index of the remaining bboxes. Assuming the original
-            boxes have shape (m, n, bbox_dim), the output has shape (m, n).
+            BoolTensor: A BoolTensor indicating whether the box is inside
+            the image. Assuming the original boxes have shape (m, n, bbox_dim),
+            the output has shape (m, n).
         """
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def find_inside_points(self,
                            points: Tensor,
                            is_aligned: bool = False) -> BoolTensor:
-        """Find inside box points. Require bboxes dimension must be 2.
+        """Find inside box points. Boxes dimension must be 2.
 
         Args:
             points (Tensor): Points coordinates. Has shape of (m, 2).
@@ -465,9 +464,60 @@ class BaseBoxes(metaclass=ABCMeta):
                 the same. Defaults to False.
 
         Returns:
-            BoolTensor: Index of inside box points. Assuming the boxes has
-            shape of (n, bbox_dim), if ``is_aligned`` is False. The index has
-            shape of (m, n). If ``is_aligned`` is True, m should be equal to n
-            and the index has shape of (m, ).
+            BoolTensor: A BoolTensor indicating whether the box is inside
+            the image. Assuming the boxes has shape of (n, bbox_dim), if
+            ``is_aligned`` is False. The index has shape of (m, n). If
+            ``is_aligned`` is True, m should be equal to n and the index
+            has shape of (m, ).
+        """
+        pass
+
+    @abstractstaticmethod
+    def bbox_overlaps(bboxes1: 'BaseBoxes',
+                      bboxes2: 'BaseBoxes',
+                      mode: str = 'iou',
+                      is_aligned: bool = False,
+                      eps: float = 1e-6) -> Tensor:
+        """Calculate overlap between two set of boxes with their modes
+        converted to the present box mode.
+
+        Args:
+            bboxes1 (:obj:`BaseBoxes`): BaseBoxes with shape of (m, bbox_dim)
+                or empty.
+            bboxes2 (:obj:`BaseBoxes`): BaseBoxes with shape of (n, bbox_dim)
+                or empty.
+            mode (str): "iou" (intersection over union), "iof" (intersection
+                over foreground). Defaults to "iou".
+            is_aligned (bool): If True, then m and n must be equal. Defaults
+                to False.
+            eps (float): A value added to the denominator for numerical
+                stability. Defaults to 1e-6.
+
+        Returns:
+            Tensor: shape (m, n) if ``is_aligned`` is False else shape (m,)
+        """
+        pass
+
+    @abstractstaticmethod
+    def from_bitmap_masks(masks: BitmapMasks) -> 'BaseBoxes':
+        """Create boxes from ``BitmapMasks``.
+
+        Args:
+            masks (:obj:`BitmapMasks`): BitmapMasks with length of n.
+
+        Returns:
+            :obj:`BaseBoxes`: Converted boxes with shape of (n, bbox_dim).
+        """
+        pass
+
+    @abstractstaticmethod
+    def from_polygon_masks(masks: PolygonMasks) -> 'BaseBoxes':
+        """Create boxes from ``PolygonMasks``.
+
+        Args:
+            masks (:obj:`BitmapMasks`): PolygonMasks with length of n.
+
+        Returns:
+            :obj:`BaseBoxes`: Converted boxes with shape of (n, bbox_dim).
         """
         pass

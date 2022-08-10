@@ -6,8 +6,10 @@ import numpy as np
 import torch
 from torch import BoolTensor, Tensor
 
+from mmdet.structures.mask.structures import BitmapMasks, PolygonMasks
 from .base_bbox import BaseBoxes
 from .bbox_mode import register_bbox_mode
+from .bbox_overlaps import bbox_overlaps
 
 T = TypeVar('T')
 DeviceType = Union[str, torch.device]
@@ -22,7 +24,7 @@ class HorizontalBoxes(BaseBoxes):
     are supported in ``HorizontalBoxes``:
 
     - 'xyxy': Each row of data indicates (x1, y1, x2, y2), which are the
-      coordinates of the right-top and left-bottom points.
+      coordinates of the left-top and right-bottom points.
     - 'cxcywh': Each row of data indicates (x, y, w, h), where (x, y) are the
       coordinates of the box centers and (w, h) are the width and height.
 
@@ -229,9 +231,7 @@ class HorizontalBoxes(BaseBoxes):
         max_xy = corners.max(dim=-2)[0]
         return torch.cat([min_xy, max_xy], dim=-1)
 
-    def rescale_(self,
-                 scale_factor: Tuple[float, float],
-                 mapping_back=False) -> None:
+    def rescale_(self, scale_factor: Tuple[float, float]) -> None:
         """Inplace rescale boxes w.r.t. rescale_factor.
 
         Note:
@@ -243,14 +243,11 @@ class HorizontalBoxes(BaseBoxes):
         Args:
             scale_factor (Tuple[float, float]): factors for scaling boxes.
                 The length should be 2.
-            mapping_back (bool): Mapping back the rescaled bboxes.
-                Defaults to False.
         """
         bboxes = self.tensor
         assert len(scale_factor) == 2
         scale_factor = bboxes.new_tensor(scale_factor).repeat(2)
-        self.tensor = bboxes / scale_factor if mapping_back else \
-            bboxes * scale_factor
+        self.tensor = bboxes * scale_factor
 
     def resize_(self, scale_factor: Tuple[float, float]) -> None:
         """Inplace resize the box width and height w.r.t scale_factor.
@@ -279,14 +276,17 @@ class HorizontalBoxes(BaseBoxes):
         """Find bboxes inside the image.
 
         In ``HorizontalBoxes``, as long as a part of the box is inside the
-        image, this box will be regarded as True.
+        image, this box will be regarded as True. In order to guarantee the
+        selected boxes have a non-zero areas inside the region, we set the
+        edge cases as False.
 
         Args:
             img_shape (Tuple[int, int]): A tuple of image height and width.
 
         Returns:
-            BoolTensor: Index of the remaining bboxes. Assuming the original
-            horizontal boxes have shape (m, n, 4), the output has shape (m, n).
+            BoolTensor: A BoolTensor indicating whether the box is inside
+            the image. Assuming the original boxes have shape (m, n, 4),
+            the output has shape (m, n).
         """
         img_h, img_w = img_shape
         bboxes = self.tensor
@@ -296,7 +296,7 @@ class HorizontalBoxes(BaseBoxes):
     def find_inside_points(self,
                            points: Tensor,
                            is_aligned: bool = False) -> BoolTensor:
-        """Find inside box points. Bboxes dimension must be 2.
+        """Find inside box points. Boxes dimension must be 2.
 
         Args:
             points (Tensor): Points coordinates. Has shape of (m, 2).
@@ -305,10 +305,10 @@ class HorizontalBoxes(BaseBoxes):
                 the same. Defaults to False.
 
         Returns:
-            BoolTensor: Index of inside box points. Assuming the boxes has
-            shape of (n, 4), if ``is_aligned`` is False. The index has
-            shape of (m, n). If ``is_aligned`` is True, m should be equal to n
-            and the index has shape of (m, ).
+            BoolTensor: A BoolTensor indicating whether the box is inside the
+            image. Assuming the boxes has shape of (n, 4), if ``is_aligned``
+            is False. The index has shape of (m, n). If ``is_aligned`` is True,
+            m should be equal to n and the index has shape of (m, ).
         """
         bboxes = self.tensor
         assert bboxes.dim() == 2, 'bboxes dimension must be 2.'
@@ -320,5 +320,88 @@ class HorizontalBoxes(BaseBoxes):
             assert bboxes.size(0) == points.size(0)
 
         x_min, y_min, x_max, y_max = bboxes.unbind(dim=-1)
-        return (points[..., 0] > x_min) & (points[..., 0] < x_max) & \
-            (points[..., 1] > y_min) & (points[..., 1] < y_max)
+        return (points[..., 0] >= x_min) & (points[..., 0] <= x_max) & \
+            (points[..., 1] >= y_min) & (points[..., 1] <= y_max)
+
+    @staticmethod
+    def bbox_overlaps(bboxes1: BaseBoxes,
+                      bboxes2: BaseBoxes,
+                      mode: str = 'iou',
+                      is_aligned: bool = False,
+                      eps: float = 1e-6) -> Tensor:
+        """Calculate overlap between two set of boxes with their modes
+        converted to ``HorizontalBoxes``.
+
+        Args:
+            bboxes1 (:obj:`BaseBoxes`): BaseBoxes with shape of (m, bbox_dim)
+                or empty.
+            bboxes2 (:obj:`BaseBoxes`): BaseBoxes with shape of (n, bbox_dim)
+                or empty.
+            mode (str): "iou" (intersection over union), "iof" (intersection
+                over foreground). Defaults to "iou".
+            is_aligned (bool): If True, then m and n must be equal. Defaults
+                to False.
+            eps (float): A value added to the denominator for numerical
+                stability. Defaults to 1e-6.
+
+        Returns:
+            Tensor: shape (m, n) if ``is_aligned`` is False else shape (m,)
+        """
+        bboxes1 = bboxes1.convert_to('hbox')
+        bboxes2 = bboxes2.convert_to('hbox')
+        return bbox_overlaps(
+            bboxes1.tensor,
+            bboxes2.tensor,
+            mode=mode,
+            is_aligned=is_aligned,
+            eps=eps)
+
+    @staticmethod
+    def from_bitmap_masks(masks: BitmapMasks) -> 'HorizontalBoxes':
+        """Create boxes from ``BitmapMasks``.
+
+        Args:
+            masks (:obj:`BitmapMasks`): BitmapMasks with length of n.
+
+        Returns:
+            :obj:`HorizontalBoxes`: Converted boxes with shape of (n, 4).
+        """
+        num_masks = len(masks)
+        boxes = np.zeros((num_masks, 4), dtype=np.float32)
+        x_any = masks.masks.any(axis=1)
+        y_any = masks.masks.any(axis=2)
+        for idx in range(num_masks):
+            x = np.where(x_any[idx, :])[0]
+            y = np.where(y_any[idx, :])[0]
+            if len(x) > 0 and len(y) > 0:
+                # use +1 for x_max and y_max so that the right and bottom
+                # boundary of instance masks are fully included by the box
+                boxes[idx, :] = np.array([x[0], y[0], x[-1] + 1, y[-1] + 1],
+                                         dtype=np.float32)
+        return HorizontalBoxes(boxes)
+
+    @staticmethod
+    def from_polygon_masks(masks: PolygonMasks) -> 'HorizontalBoxes':
+        """Create boxes from ``PolygonMasks``.
+
+        Args:
+            masks (:obj:`BitmapMasks`): PolygonMasks
+
+        Returns:
+            :obj:`HorizontalBoxes`: Converted boxes with shape of (n, 4).
+        """
+        num_masks = len(masks)
+        boxes = np.zeros((num_masks, 4), dtype=np.float32)
+        for idx, poly_per_obj in enumerate(masks.masks):
+            # simply use a number that is big enough for comparison with
+            # coordinates
+            xy_min = np.array([masks.width * 2, masks.height * 2],
+                              dtype=np.float32)
+            xy_max = np.zeros(2, dtype=np.float32)
+            for p in poly_per_obj:
+                xy = np.array(p).reshape(-1, 2).astype(np.float32)
+                xy_min = np.minimum(xy_min, np.min(xy, axis=0))
+                xy_max = np.maximum(xy_max, np.max(xy, axis=0))
+            boxes[idx, :2] = xy_min
+            boxes[idx, 2:] = xy_max
+        return HorizontalBoxes(boxes)

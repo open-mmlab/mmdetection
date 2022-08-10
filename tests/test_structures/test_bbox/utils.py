@@ -47,3 +47,16 @@ class ToyBaseBoxes(BaseBoxes):
 
     def find_inside_points(self, points, is_aligned=False):
         pass
+
+    def bbox_overlaps(bboxes1,
+                      bboxes2,
+                      mode='iou',
+                      is_aligned=False,
+                      eps=1e-6):
+        pass
+
+    def from_bitmap_masks(masks):
+        pass
+
+    def from_polygon_masks(masks):
+        pass
