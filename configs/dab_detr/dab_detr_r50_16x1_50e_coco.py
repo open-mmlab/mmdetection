@@ -9,18 +9,22 @@ model = dict(
         num_stages=4,
         out_indices=(3, ),
         frozen_stages=1,
-        norm_cfg=dict(type='BN', requires_grad=False),
+        norm_cfg=dict(
+            type='FrozenBN2d',
+            requires_grad=False),  # register torch.ops.FrozenBatchNorm2d
         norm_eval=True,
         style='pytorch',
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
     bbox_head=dict(
         type='DABDETRHead',
         num_query=300,
-        num_classes=80,
+        num_classes=91,  # TODO: to match official repo, use 91
         in_channels=2048,
-        num_patterns=0,
+        iter_update=True,
+        random_refpoints_xy=False,
         transformer=dict(
             type='DabDetrTransformer',
+            num_patterns=0,
             encoder=dict(
                 type='DabDetrTransformerEncoder',
                 num_layers=6,
@@ -35,6 +39,7 @@ model = dict(
                     ],
                     feedforward_channels=2048,
                     ffn_dropout=0.1,
+                    act_cfg=dict(type='PReLU'),  # PReLU as default activations
                     operation_order=('self_attn', 'norm', 'ffn', 'norm'))),
             decoder=dict(
                 type='DabDetrTransformerDecoder',
@@ -55,24 +60,30 @@ model = dict(
                     sa_dropout=0.1,
                     ca_dropout=0.1,
                     keep_query_pos=False,
+                    act_cfg=dict(type='PReLU'),  # PReLU as default activations
                     operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
                                      'ffn', 'norm')),
             )),
         positional_encoding=dict(
-            type='SinePositionalEncoding', num_feats=128, normalize=True),
+            type='SinePositionalEncodingHW',
+            num_feats=128,
+            temperatureH=20,
+            temperatureW=20,
+            normalize=True),  # use pos_hw
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
             gamma=2.0,
             alpha=0.25,
-            loss_weight=2.0),
+            loss_weight=1.0
+        ),  # weights of cls cost and cls loss can't be different for DETRHead
         loss_bbox=dict(type='L1Loss', loss_weight=5.0),
         loss_iou=dict(type='GIoULoss', loss_weight=2.0)),
     # training and testing settings
     train_cfg=dict(
         assigner=dict(
             type='HungarianAssigner',
-            cls_cost=dict(type='ClassificationCost', weight=1.),
+            cls_cost=dict(type='FocalLossCost', weight=2.),  # use focal cost
             reg_cost=dict(type='BBoxL1Cost', weight=5.0, box_format='xywh'),
             iou_cost=dict(type='IoUCost', iou_mode='giou', weight=2.0))),
     test_cfg=dict(max_per_img=100))
@@ -140,11 +151,13 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
-    train=dict(pipeline=train_pipeline),
-    val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
+    samples_per_gpu=1,  # batch_size = 1 * 16
+    workers_per_gpu=0,  # workers_per_gpu is set to 0 for debug, default 2
+    train=dict(
+        continuous_categories=False,  # customized parameter for 91 classes
+        pipeline=train_pipeline),
+    val=dict(continuous_categories=False, pipeline=test_pipeline),
+    test=dict(continuous_categories=False, pipeline=test_pipeline))
 # optimizer
 optimizer = dict(
     type='AdamW',

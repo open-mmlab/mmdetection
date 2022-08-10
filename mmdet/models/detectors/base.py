@@ -245,9 +245,17 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
                   DDP, it means the batch size on each GPU), which is used for
                   averaging the logs.
         """
+        if True:
+            img_id = int(data['img_metas'][0]['ori_filename'][:-4])
+            data_origin_path = f'/home/ps/ssd/big_data/xqz/mmdetection/data/' \
+                               f'coco/data_origin_id_{img_id}.pth'
+            data_origin = torch.load(data_origin_path)
+            data_origin['img'] = data_origin['img'].cuda()
+            data_origin['gt_bboxes'][0] = data_origin['gt_bboxes'][0].cuda()
+            data_origin['gt_labels'][0] = data_origin['gt_labels'][0].cuda()
+            data.update(data_origin)
         losses = self(**data)
         loss, log_vars = self._parse_losses(losses)
-
         outputs = dict(
             loss=loss, log_vars=log_vars, num_samples=len(data['img_metas']))
 

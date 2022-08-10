@@ -8,6 +8,7 @@ from .centernet_head import CenterNetHead
 from .centripetal_head import CentripetalHead
 from .conditional_detr_head import ConditionalDETRHead
 from .corner_head import CornerHead
+from .dab_detr_head import DABDETRHead
 from .ddod_head import DDODHead
 from .deformable_detr_head import DeformableDETRHead
 from .detr_head import DETRHead
@@ -55,5 +56,6 @@ __all__ = [
     'AutoAssignHead', 'DETRHead', 'YOLOFHead', 'DeformableDETRHead',
     'SOLOHead', 'DecoupledSOLOHead', 'CenterNetHead', 'YOLOXHead',
     'DecoupledSOLOLightHead', 'LADHead', 'TOODHead', 'MaskFormerHead',
-    'Mask2FormerHead', 'SOLOV2Head', 'DDODHead', 'ConditionalDETRHead'
+    'Mask2FormerHead', 'SOLOV2Head', 'DDODHead', 'ConditionalDETRHead',
+    'DABDETRHead'
 ]

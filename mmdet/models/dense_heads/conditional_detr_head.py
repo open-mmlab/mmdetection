@@ -18,7 +18,7 @@ class ConditionalDETRHead(DETRHead):
     def init_weights(self):
         """Initialize weights of the Conditional DETR head."""
         self.transformer.init_weights()
-        if self.loss_cls.use_sigmoid:  # TODO: WHY???  for focal loss?
+        if self.loss_cls.use_sigmoid:
             bias_init = bias_init_with_prob(0.01)
             nn.init.constant_(self.fc_cls.bias, bias_init)
         constant_init(self.fc_reg, 0., bias=0.)

@@ -59,6 +59,18 @@ class CocoDataset(CustomDataset):
                (95, 54, 80), (128, 76, 255), (201, 57, 1), (246, 0, 122),
                (191, 162, 208)]
 
+    # MODIFICATION
+    def __init__(self,
+                 *args,
+                 continuous_categories=True,
+                 filter_not_empty_gt=False,
+                 **kwargs):
+        self.continuous_categories = continuous_categories
+        self.filter_not_empty_gt = filter_not_empty_gt
+        super(CocoDataset, self).__init__(*args, **kwargs)
+
+    # MODIFICATION
+
     def load_annotations(self, ann_file):
         """Load annotation from COCO style annotation file.
 
@@ -74,7 +86,27 @@ class CocoDataset(CustomDataset):
         # change with the order of the CLASSES
         self.cat_ids = self.coco.get_cat_ids(cat_names=self.CLASSES)
 
-        self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
+        # MODIFICATION
+        if self.continuous_categories:
+            self.cat2label = {
+                cat_id: i
+                for i, cat_id in enumerate(self.cat_ids)
+            }
+        else:
+            self.cat2label = {
+                cat_id: cat_id
+                for cat_id in range(self.cat_ids[-1] + 1)
+            }
+            classes_ = []
+            for i in range(self.cat_ids[-1] + 1):
+                if i in self.cat_ids:
+                    classes_.append(self.CLASSES[self.cat_ids.index(i)])
+                else:
+                    classes_.append('')
+            self.CLASSES = tuple(classes_)
+            self.cat_ids = list(range(self.cat_ids[-1] + 1))
+        # MODIFICATION
+
         self.img_ids = self.coco.get_img_ids()
         data_infos = []
         total_ann_ids = []
@@ -134,6 +166,13 @@ class CocoDataset(CustomDataset):
         valid_img_ids = []
         for i, img_info in enumerate(self.data_infos):
             img_id = self.img_ids[i]
+            # MODIFICATION
+            if self.filter_not_empty_gt:
+                if img_id not in ids_in_cat:
+                    valid_inds.append(i)
+                    valid_img_ids.append(img_id)
+                continue
+            # MODIFICATION
             if self.filter_empty_gt and img_id not in ids_in_cat:
                 continue
             if min(img_info['width'], img_info['height']) >= min_size:

@@ -6,6 +6,7 @@ from .cascade_rcnn import CascadeRCNN
 from .centernet import CenterNet
 from .conditional_detr import ConditionalDETR
 from .cornernet import CornerNet
+from .dab_detr import DABDETR
 from .ddod import DDOD
 from .deformable_detr import DeformableDETR
 from .detr import DETR
@@ -55,5 +56,5 @@ __all__ = [
     'VFNet', 'DETR', 'TridentFasterRCNN', 'SparseRCNN', 'SCNet', 'SOLO',
     'SOLOv2', 'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet', 'YOLOX',
     'TwoStagePanopticSegmentor', 'PanopticFPN', 'QueryInst', 'LAD', 'TOOD',
-    'MaskFormer', 'DDOD', 'Mask2Former', 'ConditionalDETR'
+    'MaskFormer', 'DDOD', 'Mask2Former', 'ConditionalDETR', 'DABDETR'
 ]

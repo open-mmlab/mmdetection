@@ -39,7 +39,7 @@ class DETRHead(AnchorFreeHead):
             regression loss. Default `L1Loss`.
         loss_iou (obj:`mmcv.ConfigDict`|dict): Config of the
             regression iou loss. Default `GIoULoss`.
-        tran_cfg (obj:`mmcv.ConfigDict`|dict): Training config of
+        train_cfg (obj:`mmcv.ConfigDict`|dict): Training config of
             transformer head.
         test_cfg (obj:`mmcv.ConfigDict`|dict): Testing config of
             transformer head.
@@ -49,35 +49,36 @@ class DETRHead(AnchorFreeHead):
 
     _version = 2
 
-    def __init__(self,
-                 num_classes,
-                 in_channels,
-                 num_query=100,
-                 num_reg_fcs=2,
-                 transformer=None,
-                 sync_cls_avg_factor=False,
-                 positional_encoding=dict(
-                     type='SinePositionalEncoding',
-                     num_feats=128,
-                     normalize=True),
-                 loss_cls=dict(
-                     type='CrossEntropyLoss',
-                     bg_cls_weight=0.1,
-                     use_sigmoid=False,
-                     loss_weight=1.0,
-                     class_weight=1.0),
-                 loss_bbox=dict(type='L1Loss', loss_weight=5.0),
-                 loss_iou=dict(type='GIoULoss', loss_weight=2.0),
-                 train_cfg=dict(
-                     assigner=dict(
-                         type='HungarianAssigner',
-                         cls_cost=dict(type='ClassificationCost', weight=1.),
-                         reg_cost=dict(type='BBoxL1Cost', weight=5.0),
-                         iou_cost=dict(
-                             type='IoUCost', iou_mode='giou', weight=2.0))),
-                 test_cfg=dict(max_per_img=100),
-                 init_cfg=None,
-                 **kwargs):
+    # dab-detr adds kwargs 'iter_update', 'random_refpoints_xy' only
+
+    def __init__(
+            self,
+            num_classes,
+            in_channels,  # connect with backbone
+            num_query=100,
+            num_reg_fcs=2,
+            transformer=None,
+            sync_cls_avg_factor=False,
+            positional_encoding=dict(
+                type='SinePositionalEncoding', num_feats=128, normalize=True),
+            loss_cls=dict(
+                type='CrossEntropyLoss',
+                bg_cls_weight=0.1,
+                use_sigmoid=False,
+                loss_weight=1.0,
+                class_weight=1.0),
+            loss_bbox=dict(type='L1Loss', loss_weight=5.0),
+            loss_iou=dict(type='GIoULoss', loss_weight=2.0),
+            train_cfg=dict(
+                assigner=dict(
+                    type='HungarianAssigner',
+                    cls_cost=dict(type='ClassificationCost', weight=1.),
+                    reg_cost=dict(type='BBoxL1Cost', weight=5.0),
+                    iou_cost=dict(type='IoUCost', iou_mode='giou',
+                                  weight=2.0))),
+            test_cfg=dict(max_per_img=100),
+            init_cfg=None,
+            **kwargs):
         # NOTE here use `AnchorFreeHead` instead of `TransformerHead`,
         # since it brings inconvenience when the initialization of
         # `AnchorFreeHead` is called.
@@ -107,9 +108,6 @@ class DETRHead(AnchorFreeHead):
             assert 'assigner' in train_cfg, 'assigner should be provided '\
                 'when train_cfg is set.'
             assigner = train_cfg['assigner']
-            assert loss_cls['loss_weight'] == assigner['cls_cost']['weight'], \
-                'The classification weight for loss and matcher should be' \
-                'exactly the same.'
             assert loss_bbox['loss_weight'] == assigner['reg_cost'][
                 'weight'], 'The regression L1 weight for loss and matcher ' \
                 'should be exactly the same.'
@@ -213,7 +211,7 @@ class DETRHead(AnchorFreeHead):
                 - all_cls_scores_list (list[Tensor]): Classification scores \
                     for each scale level. Each is a 4D-tensor with shape \
                     [nb_dec, bs, num_query, cls_out_channels]. Note \
-                    `cls_out_channels` should includes background.
+                    `cls_out_channels` should include background.
                 - all_bbox_preds_list (list[Tensor]): Sigmoid regression \
                     outputs for each scale level. Each is a 4D-tensor with \
                     normalized coordinate format (cx, cy, w, h) and shape \
@@ -224,7 +222,7 @@ class DETRHead(AnchorFreeHead):
         return multi_apply(self.forward_single, feats, img_metas_list)
 
     def forward_single(self, x, img_metas):
-        """"Forward function for a single feature level.
+        """Forward function for a single feature level.
 
         Args:
             x (Tensor): Input feature from backbone's single stage, shape
@@ -234,7 +232,7 @@ class DETRHead(AnchorFreeHead):
         Returns:
             all_cls_scores (Tensor): Outputs from the classification head,
                 shape [nb_dec, bs, num_query, cls_out_channels]. Note
-                cls_out_channels should includes background.
+                cls_out_channels should include background.
             all_bbox_preds (Tensor): Sigmoid outputs from the regression
                 head with normalized coordinate format (cx, cy, w, h).
                 Shape [nb_dec, bs, num_query, 4].
@@ -338,7 +336,7 @@ class DETRHead(AnchorFreeHead):
                     gt_labels_list,
                     img_metas,
                     gt_bboxes_ignore_list=None):
-        """"Loss function for outputs from a single decoder layer of a single
+        """Loss function for outputs from a single decoder layer of a single
         feature level.
 
         Args:
@@ -423,7 +421,7 @@ class DETRHead(AnchorFreeHead):
                     gt_labels_list,
                     img_metas,
                     gt_bboxes_ignore_list=None):
-        """"Compute regression and classification targets for a batch image.
+        """Compute regression and classification targets for a batch image.
 
         Outputs from a single decoder layer of a single feature level are used.
 
@@ -533,8 +531,9 @@ class DETRHead(AnchorFreeHead):
         img_h, img_w, _ = img_meta['img_shape']
 
         # DETR regress the relative position of boxes (cxcywh) in the image.
-        # Thus the learning target should be normalized by the image size, also
-        # the box format should be converted from defaultly x1y1x2y2 to cxcywh.
+        # Thus, the learning target should be normalized by the image size,
+        # also the box format should be converted from defaultly x1y1x2y2
+        # to cxcywh.
         factor = bbox_pred.new_tensor([img_w, img_h, img_w,
                                        img_h]).unsqueeze(0)
         pos_gt_bboxes_normalized = sampling_result.pos_gt_bboxes / factor
