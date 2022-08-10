@@ -17,15 +17,15 @@ class BaseBoxes(metaclass=ABCMeta):
 
     The functions of ``BaseBoxes`` lie in three fields:
 
-    - Verify the tensor shape.
+    - Verify the boxes shape.
     - Support tensor-like operations.
     - Define abstract functions for 2D boxes.
 
     In ``__init__`` , ``BaseBoxes`` verifies the validity of the data shape
-    w.r.t ``_bbox_dim``. The tensor with the dimension >= 2 and the length
-    of the last dimension being ``_bbox_dim`` will be regarded as valid.
+    w.r.t ``bbox_dim``. The tensor with the dimension >= 2 and the length
+    of the last dimension being ``bbox_dim`` will be regarded as valid.
     ``BaseBoxes`` will restore them at the field ``tensor``. It's necessary
-    to override ``_bbox_dim`` in subclass to guarantee the data shape is
+    to override ``bbox_dim`` in subclass to guarantee the data shape is
     correct.
 
     There are many basic tensor-like functions implemented in ``BaseBoxes``.
@@ -34,12 +34,12 @@ class BaseBoxes(metaclass=ABCMeta):
     cannot modify the last dimension of ``self.tensor``.
 
     When designing a new box mode, users need to inherit from ``BaseBoxes``
-    and override abstract methods and specify the ``_bbox_dim``. Then,
+    and override abstract methods and specify the ``bbox_dim``. Then,
     register the new box mode by using the decorator ``register_bbox_mode``.
 
     Args:
         bboxes (Tensor or np.ndarray or Sequence): The box data with shape
-            (..., _bbox_dim).
+            (..., bbox_dim).
         dtype (torch.dtype, Optional): data type of bboxes. Defaults to None.
         device (str or torch.device, Optional): device of bboxes.
             Default to None.
@@ -48,7 +48,7 @@ class BaseBoxes(metaclass=ABCMeta):
 
     # Used to verify the last dimension length
     # Should override it in subclass.
-    _bbox_dim: int = 0
+    bbox_dim: int = 0
 
     def __init__(self,
                  bboxes: Union[Tensor, np.ndarray, Sequence],
@@ -84,11 +84,6 @@ class BaseBoxes(metaclass=ABCMeta):
         from .bbox_mode import convert_bbox_mode
         return convert_bbox_mode(self, dst_mode=dst_mode)
 
-    @property
-    def bbox_dim(self) -> int:
-        """Return the value of ``self._bbox_dim``"""
-        return self._bbox_dim
-
     def create_empty_bbox(self: T,
                           dtype: Optional[torch.dtype] = None,
                           device: Optional[DeviceType] = None) -> T:
@@ -101,7 +96,7 @@ class BaseBoxes(metaclass=ABCMeta):
         Returns:
             T: Empty box with shape of (0, bbox_dim).
         """
-        empty_bboxes = self.tensor.new_zeros((0, self._bbox_dim),
+        empty_bboxes = self.tensor.new_zeros((0, self.bbox_dim),
                                              dtype=dtype,
                                              device=device)
         return type(self)(empty_bboxes, clone=False)

@@ -17,7 +17,7 @@ DeviceType = Union[str, torch.device]
 class HorizontalBoxes(BaseBoxes):
     """The horizontal box class used in MMDetection by default.
 
-    The ``_bbox_dim`` of ``HorizontalBoxes`` is 4, which means the length of
+    The ``bbox_dim`` of ``HorizontalBoxes`` is 4, which means the length of
     the last dimension of the input should be 4. Two formats of box tensor
     are supported in ``HorizontalBoxes``:
 
@@ -41,7 +41,7 @@ class HorizontalBoxes(BaseBoxes):
             the `bboxes` will convert to 'xyxy' pattern. Defaults to None.
     """
 
-    _bbox_dim: int = 4
+    bbox_dim: int = 4
 
     def __init__(self,
                  bboxes: Union[Tensor, np.ndarray],
