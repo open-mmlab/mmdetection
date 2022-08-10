@@ -82,10 +82,7 @@ def calculate_confusion_matrix(dataset,
     assert len(dataset) == len(results)
     prog_bar = mmcv.ProgressBar(len(results))
     for idx, per_img_res in enumerate(results):
-        if isinstance(per_img_res, tuple):
-            res_bboxes, _ = per_img_res
-        else:
-            res_bboxes = per_img_res['pred_instances']
+        res_bboxes = per_img_res['pred_instances']
         gts = dataset.get_data_info(idx)['instances']
         analyze_per_img_dets(confusion_matrix, gts, res_bboxes, score_thr,
                              tp_iou_thr, nms_iou_thr)
