@@ -74,8 +74,8 @@ options_cfg = dict(
 )
 
 ipu_model_cfg = dict(
-    split_edges=[
-        dict(layer_to_call='backbone.conv_res_block5', ipu_id=1),
+    train_split_edges=[
+        dict(layer_to_call='backbone.identity', ipu_id=1),
         dict(layer_to_call='neck', ipu_id=2),
         dict(layer_to_call='bbox_head', ipu_id=3),
     ])

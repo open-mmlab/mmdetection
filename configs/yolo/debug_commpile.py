@@ -1,7 +1,7 @@
 _base_ = './yolov3_d53_mstrain-608_273e_coco.py'
 # dataset settings
 IM_SIZE = 320
-custom_hooks = [dict(type='NumClassCheckHook'), dict(type='BNToIPUBN'), dict(type='BNToFP32')]
+# custom_hooks = [dict(type='NumClassCheckHook'), dict(type='BNToIPUBN'), dict(type='BNToFP32')]
 img_norm_cfg = dict(mean=[0, 0, 0], std=[255., 255., 255.], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -25,7 +25,7 @@ train_pipeline = [
                       gt_labels=dict(dim=0, num=96),
                       gt_bboxes_ignore=dict(dim=0, num=20))),
     dict(type='IPUCollect', keys=['img', 'gt_bboxes', 'gt_labels'], meta_on=True),
-    dict(type='GetTargetsOutsideForYolo', featmap_sizes=[IM_SIZE//32, IM_SIZE//16, IM_SIZE//8])
+    # dict(type='GetTargetsOutsideForYolo', featmap_sizes=[IM_SIZE//32, IM_SIZE//16, IM_SIZE//8])
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -52,14 +52,14 @@ data = dict(
 
 model = dict(
     backbone=dict(
-        type='IPUDarknet',
-        serial_num=1,
+        type='Darknet',
         depth=53,
         out_indices=(3, 4, 5),
         init_cfg=dict(type='Pretrained', checkpoint='open-mmlab://darknet53')))
 
 # ipu settings
 optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0005, max_grad_norm=35)
+# optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0005)
 
 options_cfg = dict(
     randomSeed=42,
@@ -84,8 +84,8 @@ ipu_model_cfg = dict(
 runner = dict(type='IPUEpochBasedRunner',
               ipu_model_cfg=ipu_model_cfg,
               options_cfg=options_cfg,
-              img_norm_cfg=img_norm_cfg,
-              max_grad_norm=35)
+              img_norm_cfg=img_norm_cfg,)
+            #   max_grad_norm=35)
 
 fp16 = dict(loss_scale=512.0, velocity_accum_type='half')
 # fp16 = dict(loss_scale=512.0)

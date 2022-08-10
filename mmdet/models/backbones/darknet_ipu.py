@@ -8,6 +8,14 @@ from ..builder import BACKBONES
 from .darknet import Darknet
 
 
+class myidentity(torch.nn.Module):
+    def forward(self, x: torch.Tensor):
+        add_value = x.new_tensor(1e-6)
+        x = x + add_value
+        x = x - add_value
+        return x
+
+
 @BACKBONES.register_module()
 class IPUDarknet(Darknet):
     """IPUDarknet backbone.
@@ -25,8 +33,9 @@ class IPUDarknet(Darknet):
         self.serial_num = serial_num
         super().__init__(**kwargs)
         assert len(self.cr_blocks) == 6
-        self.identity = torch.nn.Identity()
-        poptorch.BeginBlock(self.identity, 'identity_on_bb',1)
+        # self.identity = torch.nn.Identity()
+        self.identity = myidentity()
+        # poptorch.BeginBlock(self.identity, 'identity_on_bb',1)
     
     def forward(self, x):
         batch_size = x.shape[0]
@@ -47,10 +56,11 @@ class IPUDarknet(Darknet):
             x = self.conv_res_block3(x)
             b3_out_list.append(x)
             x = self.conv_res_block4(x)
-            b4_out_list.append(x)
             x = poptorch.block_point(x, 0, i, "Stop", True)
+            b4_out_list.append(x)
         b3_out = torch.cat(b3_out_list, dim=0)
-        b3_out = self.identity(b3_out)
+
+        b4_out_list[0] = self.identity(b4_out_list[0])
 
         b5_out_list = []
         for i in range(self.serial_num):

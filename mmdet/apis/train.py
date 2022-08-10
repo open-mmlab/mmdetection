@@ -172,6 +172,10 @@ def train_detector(model,
     # build optimizer
     auto_scale_lr(cfg, distributed, logger)
     optimizer = build_optimizer(model, cfg.optimizer)
+    # import poptorch
+    # assert cfg.optimizer.pop('type') == 'SGD'
+    # optimizer = poptorch.optim.SGD(model.parameters(),
+    #                                 **cfg.optimizer)
 
     runner = build_runner(
         cfg.runner,
