@@ -14,7 +14,6 @@ from mmdet.structures import SampleList
 from mmdet.structures.bbox import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
 from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
                          OptInstanceList, OptMultiConfig, reduce_mean)
-from ..layers import build_transformer
 from ..utils import multi_apply
 from .anchor_free_head import AnchorFreeHead
 
@@ -134,7 +133,7 @@ class DETRHead(AnchorFreeHead):
         self.activate = build_activation_layer(self.act_cfg)
         self.positional_encoding = build_positional_encoding(
             positional_encoding)
-        self.transformer = build_transformer(transformer)
+        self.transformer = MODELS.build(transformer)
         self.embed_dims = self.transformer.embed_dims
         assert 'num_feats' in positional_encoding
         num_feats = positional_encoding['num_feats']

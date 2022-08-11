@@ -5,11 +5,11 @@ from typing import List, Optional, Sequence, Tuple, Union
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import (ConvModule, DepthwiseSeparableConvModule,
-                      bias_init_with_prob)
+from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 from mmcv.ops.nms import batched_nms
 from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
+from mmengine.model.utils import bias_init_with_prob
 from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS

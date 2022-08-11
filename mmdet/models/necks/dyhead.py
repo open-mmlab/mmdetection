@@ -1,10 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import (build_activation_layer, build_norm_layer, constant_init,
-                      normal_init)
+from mmcv.cnn import build_activation_layer, build_norm_layer
 from mmcv.ops.modulated_deform_conv import ModulatedDeformConv2d
-from mmcv.runner import BaseModule
+from mmengine.model import BaseModule
+from mmengine.model.utils import constant_init, normal_init
 
 from mmdet.registry import MODELS
 from ..layers import DyReLU

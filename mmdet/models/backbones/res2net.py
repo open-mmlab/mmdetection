@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
 from mmcv.cnn import build_conv_layer, build_norm_layer
-from mmcv.runner import Sequential
+from mmengine.model import Sequential
 
 from mmdet.registry import MODELS
 from .resnet import Bottleneck as _Bottleneck

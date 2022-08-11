@@ -1,9 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch.nn as nn
 import torch.utils.checkpoint as cp
-from mmcv.cnn import (build_conv_layer, build_norm_layer, constant_init,
-                      kaiming_init)
-from mmcv.runner import Sequential, load_checkpoint
+from mmcv.cnn import build_conv_layer, build_norm_layer
+from mmcv.runner import load_checkpoint
+from mmengine.model import Sequential
+from mmengine.model.utils import constant_init, kaiming_init
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmdet.registry import MODELS
