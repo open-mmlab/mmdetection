@@ -2,7 +2,7 @@
 from mmcv.cnn import build_conv_layer, build_norm_layer
 from mmcv.runner import BaseModule, Sequential
 from torch import nn as nn
-
+from copy import deepcopy
 
 class ResLayer(Sequential):
     """ResLayer to build ResNet style backbone.
@@ -33,6 +33,7 @@ class ResLayer(Sequential):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN'),
                  downsample_first=True,
+                 dilation_type=None,
                  **kwargs):
         self.block = block
 
@@ -62,6 +63,9 @@ class ResLayer(Sequential):
 
         layers = []
         if downsample_first:
+            kwargs1 = deepcopy(kwargs)
+            if dilation_type == 'detr' and kwargs1['dilation'] == 2:
+                kwargs1['dilation'] = 1
             layers.append(
                 block(
                     inplanes=inplanes,
