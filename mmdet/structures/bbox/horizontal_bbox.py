@@ -305,10 +305,10 @@ class HorizontalBoxes(BaseBoxes):
                 the same. Defaults to False.
 
         Returns:
-            BoolTensor: A BoolTensor indicating whether the box is inside the
-            image. Assuming the boxes has shape of (n, 4), if ``is_aligned``
-            is False. The index has shape of (m, n). If ``is_aligned`` is True,
-            m should be equal to n and the index has shape of (m, ).
+            BoolTensor: A BoolTensor indicating whether a point is inside
+            boxes. Assuming the boxes has shape of (n, 4), if ``is_aligned``
+            is False. The index has shape of (m, n). If ``is_aligned`` is
+            True, m should be equal to n and the index has shape of (m, ).
         """
         bboxes = self.tensor
         assert bboxes.dim() == 2, 'bboxes dimension must be 2.'
