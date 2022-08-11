@@ -11,7 +11,7 @@ from mmdet.structures.mask.structures import BitmapMasks, PolygonMasks
 T = TypeVar('T')
 DeviceType = Union[str, torch.device]
 IndexType = Union[slice, int, list, torch.LongTensor, torch.cuda.LongTensor,
-                  torch.BoolTensor, torch.cuda.BoolTensor]
+                  torch.BoolTensor, torch.cuda.BoolTensor, np.ndarray]
 
 
 class BaseBoxes(metaclass=ABCMeta):
@@ -127,6 +127,8 @@ class BaseBoxes(metaclass=ABCMeta):
     def __getitem__(self: T, index: IndexType) -> T:
         """Rewrite getitem to protect the last dimension shape."""
         bboxes = self.tensor
+        if isinstance(index, np.ndarray):
+            index = torch.as_tensor(index)
         if isinstance(index, Tensor) and index.dtype == torch.bool:
             assert index.dim() < bboxes.dim()
         elif isinstance(index, tuple):
@@ -141,9 +143,12 @@ class BaseBoxes(metaclass=ABCMeta):
 
     def __setitem__(self: T, index: IndexType, values: Union[Tensor, T]) -> T:
         """Rewrite setitem to protect the last dimension shape."""
-        assert type(values) is type(self)
+        assert type(values) is type(self), \
+            'The value to be set must be the same box mode as self'
         values = values.tensor
 
+        if isinstance(index, np.ndarray):
+            index = torch.as_tensor(index)
         if isinstance(index, Tensor) and index.dtype == torch.bool:
             assert index.dim() < self.tensor.dim()
         elif isinstance(index, tuple):

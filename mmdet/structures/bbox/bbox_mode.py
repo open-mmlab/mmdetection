@@ -12,8 +12,8 @@ BoxType = Union[np.ndarray, Tensor, BaseBoxes]
 MaskType = Union[BitmapMasks, PolygonMasks]
 
 bbox_modes: dict = {}
+_bbox_mode_to_name: dict = {}
 bbox_mode_converters: dict = {}
-_bbox_mode_to_name: dict = {mode: name for name, mode in bbox_modes.items()}
 
 
 def _register_bbox_mode(name: str,
@@ -90,35 +90,32 @@ def register_bbox_mode(name: str,
     return _register
 
 
-def _register_bbox_mode_converter(src_mode: str,
-                                  dst_mode: str,
+def _register_bbox_mode_converter(src_mode: Union[str, type],
+                                  dst_mode: Union[str, type],
                                   converter: Callable,
                                   force: bool = False) -> None:
     """Register a box mode converter.
 
     Args:
-        src_mode (str): The name of source box mode.
-        dst_mode (str): The name of destination box mode.
+        src_mode (str or type): source box mode name or class.
+        dst_mode (str or type): destination box mode name or class.
         converter (Callable): Convert function.
         force (bool): Whether to override an existing class with the same
             name. Defaults to False.
     """
     assert callable(converter)
-    assert isinstance(src_mode, str)
-    assert isinstance(dst_mode, str)
-    src_mode, dst_mode = src_mode.lower(), dst_mode.lower()
-    assert src_mode in bbox_modes and dst_mode in bbox_modes, \
-        'Boxes mode should be register'
+    src_mode_name, _ = get_bbox_mode(src_mode)
+    dst_mode_name, _ = get_bbox_mode(dst_mode)
 
-    converter_name = src_mode + '2' + dst_mode
+    converter_name = src_mode_name + '2' + dst_mode_name
     if not force and converter_name in bbox_mode_converters:
         raise KeyError('convert function has been registered.')
 
     bbox_mode_converters[converter_name] = converter
 
 
-def register_bbox_mode_converter(src_mode: str,
-                                 dst_mode: str,
+def register_bbox_mode_converter(src_mode: Union[str, type],
+                                 dst_mode: Union[str, type],
                                  converter: Optional[Callable] = None,
                                  force: bool = False) -> Callable:
     """Register a box mode converter.
@@ -128,8 +125,8 @@ def register_bbox_mode_converter(src_mode: str,
     used as a decorator or a normal function.
 
     Args:
-        src_mode (str): The name of source box mode.
-        dst_mode (str): The name of destination box mode.
+        src_mode (str or type): The name of source box mode.
+        dst_mode (str or type): The name of destination box mode.
         converter (Callable, Optional): Convert function. Defaults to None.
         force (bool): Whether to override an existing class with the same
             name. Defaults to False.
@@ -175,7 +172,7 @@ def get_bbox_mode(mode: Union[str, type]) -> Tuple[str, type]:
         mode (str or type): Single box mode name or class.
 
     Returns:
-        Union[str, type]: A tuple of box mode name and class.
+        Tuple[str, type]: A tuple of box mode name and class.
     """
     if isinstance(mode, str):
         mode_name = mode.lower()
@@ -203,11 +200,15 @@ def convert_bbox_mode(bboxes: BoxType,
     as the mode of bboxes.
 
     Args:
-        bboxes (np.ndarray or Tensor or BaseBoxes): boxes need to
+        bboxes (np.ndarray or Tensor or :obj:`BaseBoxes`): boxes need to
             convert.
         src_mode (str or type, Optional): source box mode. Defaults to None.
         dst_mode (str or type, Optional): destination box mode. Defaults to
             None.
+
+    Returns:
+        Union[np.ndarray, Tensor, :obj:`BaseBoxes`]: Converted boxes. It's type
+        is consistent with the input's type.
     """
     assert dst_mode is not None
     dst_mode_name, dst_mode_cls = get_bbox_mode(dst_mode)
