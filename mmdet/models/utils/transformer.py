@@ -27,8 +27,13 @@ except ImportError:
         '`MultiScaleDeformableAttention` in MMCV has been moved to '
         '`mmcv.ops.multi_scale_deform_attn`, please update your MMCV')
     from mmcv.cnn.bricks.transformer import MultiScaleDeformableAttention
-
-
+#########################################################
+#for conditional detr
+from mmcv.cnn.bricks.drop import build_dropout
+from mmcv.cnn.bricks.registry import ATTENTION
+from mmcv.utils import  deprecated_api_warning
+from .c_attention import CMultiheadAttention
+##########################################################
 def nlc_to_nchw(x, hw_shape):
     """Convert [N, L, C] shape tensor to [N, C, H, W] shape tensor.
 
@@ -620,6 +625,563 @@ class Transformer(BaseModule):
         memory = memory.permute(1, 2, 0).reshape(bs, c, h, w)
         return out_dec, memory
 
+
+def inverse_sigmoid(x, eps=1e-5):
+    """Inverse function of sigmoid.
+
+    Args:
+        x (Tensor): The tensor to do the
+            inverse.
+        eps (float): EPS avoid numerical
+            overflow. Defaults 1e-5.
+    Returns:
+        Tensor: The x has passed the inverse
+            function of sigmoid, has same
+            shape with input.
+    """
+    x = x.clamp(min=0, max=1)
+    x1 = x.clamp(min=eps)
+    x2 = (1 - x).clamp(min=eps)
+    return torch.log(x1 / x2)
+
+class MLP(nn.Module):
+    """ Very simple multi-layer perceptron (also called FFN)"""
+
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
+        super().__init__()
+        self.num_layers = num_layers
+        h = [hidden_dim] * (num_layers - 1)
+        self.layers = nn.ModuleList(nn.Linear(n, k) for n, k in zip([input_dim] + h, h + [output_dim]))
+
+    def forward(self, x):
+        for i, layer in enumerate(self.layers):
+            x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
+        return x
+
+def gen_sineembed_for_position(pos_tensor):
+    # n_query, bs, _ = pos_tensor.size()
+    # sineembed_tensor = torch.zeros(n_query, bs, 256)
+    scale = 2 * math.pi
+    dim_t = torch.arange(128, dtype=torch.float32, device=pos_tensor.device)
+    dim_t = 10000 ** (2 * (dim_t // 2) / 128)
+    x_embed = pos_tensor[:, :, 0] * scale
+    y_embed = pos_tensor[:, :, 1] * scale
+    pos_x = x_embed[:, :, None] / dim_t
+    pos_y = y_embed[:, :, None] / dim_t
+    pos_x = torch.stack((pos_x[:, :, 0::2].sin(), pos_x[:, :, 1::2].cos()), dim=3).flatten(2)
+    pos_y = torch.stack((pos_y[:, :, 0::2].sin(), pos_y[:, :, 1::2].cos()), dim=3).flatten(2)
+    if pos_tensor.size(-1) == 2:
+        pos = torch.cat((pos_y, pos_x), dim=2)
+    elif pos_tensor.size(-1) == 4:
+        w_embed = pos_tensor[:, :, 2] * scale
+        pos_w = w_embed[:, :, None] / dim_t
+        pos_w = torch.stack((pos_w[:, :, 0::2].sin(), pos_w[:, :, 1::2].cos()), dim=3).flatten(2)
+
+        h_embed = pos_tensor[:, :, 3] * scale
+        pos_h = h_embed[:, :, None] / dim_t
+        pos_h = torch.stack((pos_h[:, :, 0::2].sin(), pos_h[:, :, 1::2].cos()), dim=3).flatten(2)
+
+        pos = torch.cat((pos_y, pos_x, pos_w, pos_h), dim=2)
+    else:
+        raise ValueError("Unknown pos_tensor shape(-1):{}".format(pos_tensor.size(-1)))
+    return pos
+
+
+
+
+@ATTENTION.register_module()
+class FMultiheadAttention(BaseModule):
+    """A wrapper for ``torch.nn.MultiheadAttention``.
+
+    This module implements MultiheadAttention with identity connection,
+    and positional encoding  is also passed as input.
+
+    Args:
+        embed_dims (int): The embedding dimension.
+        num_heads (int): Parallel attention heads.
+        attn_drop (float): A Dropout layer on attn_output_weights.
+            Default: 0.0.
+        proj_drop (float): A Dropout layer after `nn.MultiheadAttention`.
+            Default: 0.0.
+        dropout_layer (obj:`ConfigDict`): The dropout_layer used
+            when adding the shortcut.
+        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+            Default: None.
+        batch_first (bool): When it is True,  Key, Query and Value are shape of
+            (batch, n, embed_dim), otherwise (n, batch, embed_dim).
+             Default to False.
+    """
+
+    def __init__(self,
+                 embed_dims,
+                 num_heads,
+                 attn_drop=0.,
+                 proj_drop=0.,
+                 dropout_layer=dict(type='Dropout', drop_prob=0.),
+                 init_cfg=None,
+                 batch_first=False,
+                 **kwargs):
+        super().__init__(init_cfg)
+        if 'dropout' in kwargs:
+            warnings.warn(
+                'The arguments `dropout` in MultiheadAttention '
+                'has been deprecated, now you can separately '
+                'set `attn_drop`(float), proj_drop(float), '
+                'and `dropout_layer`(dict) ', DeprecationWarning)
+            attn_drop = kwargs['dropout']
+            dropout_layer['drop_prob'] = kwargs.pop('dropout')
+
+        # Decoder Self-Attention
+        self.sa_qcontent_proj = nn.Linear(embed_dims, embed_dims)
+        self.sa_qpos_proj = nn.Linear(embed_dims, embed_dims)
+        self.sa_kcontent_proj = nn.Linear(embed_dims, embed_dims)
+        self.sa_kpos_proj = nn.Linear(embed_dims, embed_dims)
+        self.sa_v_proj = nn.Linear(embed_dims, embed_dims)
+        self.self_attn = CMultiheadAttention(embed_dims, num_heads, attn_drop, vdim=embed_dims,**kwargs)
+
+        self.embed_dims = embed_dims
+        self.num_heads = num_heads
+
+        self.batch_first = batch_first
+        self.proj_drop = nn.Dropout(proj_drop)
+        self.dropout_layer = build_dropout(
+            dropout_layer) if dropout_layer else nn.Identity()
+
+    @deprecated_api_warning({'residual': 'identity'},
+                            cls_name='CMultiheadAttention')
+    def forward(self,
+                query,
+                key=None,
+                value=None,
+                identity=None,
+                query_pos=None,
+                key_pos=None,
+                attn_mask=None,
+                key_padding_mask=None,
+                **kwargs):
+        if identity is None:
+            identity = query
+        q_content = self.sa_qcontent_proj(query)
+        q_pos = self.sa_qpos_proj(query_pos)
+
+        k_content = self.sa_kcontent_proj(query)
+        k_pos = self.sa_kpos_proj(query_pos)
+        v = self.sa_v_proj(query)
+
+        # num_queries, bs, n_model = q_content.shape
+        # hw, _, _ = k_content.shape
+
+        q = q_content + q_pos
+        k = k_content + k_pos
+
+        if self.batch_first:
+            q = q.transpose(0, 1)
+            k = k.transpose(0, 1)
+            v = v.transpose(0, 1)
+
+        out = self.self_attn(
+            query=q,
+            key=k,
+            value=v,
+            attn_mask=attn_mask,
+            key_padding_mask=key_padding_mask)[0]
+
+        if self.batch_first:
+            out = out.transpose(0, 1)
+
+        return identity + self.dropout_layer(self.proj_drop(out))
+
+
+
+@ATTENTION.register_module()
+class PMultiheadAttention(BaseModule):
+    """A wrapper for ``torch.nn.MultiheadAttention``.
+
+    This module implements MultiheadAttention with identity connection,
+    and positional encoding  is also passed as input.
+
+    Args:
+        embed_dims (int): The embedding dimension.
+        num_heads (int): Parallel attention heads.
+        attn_drop (float): A Dropout layer on attn_output_weights.
+            Default: 0.0.
+        proj_drop (float): A Dropout layer after `nn.MultiheadAttention`.
+            Default: 0.0.
+        dropout_layer (obj:`ConfigDict`): The dropout_layer used
+            when adding the shortcut.
+        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+            Default: None.
+        batch_first (bool): When it is True,  Key, Query and Value are shape of
+            (batch, n, embed_dim), otherwise (n, batch, embed_dim).
+             Default to False.
+    """
+
+    def __init__(self,
+                 embed_dims,
+                 num_heads,
+                 attn_drop=0.,
+                 proj_drop=0.,
+                 dropout_layer=dict(type='Dropout', drop_prob=0.),
+                 init_cfg=None,
+                 batch_first=False,
+                 keep_query_pos=False,
+                 **kwargs):
+        super().__init__(init_cfg)
+        if 'dropout' in kwargs:
+            warnings.warn(
+                'The arguments `dropout` in MultiheadAttention '
+                'has been deprecated, now you can separately '
+                'set `attn_drop`(float), proj_drop(float), '
+                'and `dropout_layer`(dict) ', DeprecationWarning)
+            attn_drop = kwargs['dropout']
+            dropout_layer['drop_prob'] = kwargs.pop('dropout')
+
+        # Decoder Cross-Attention
+        self.ca_qcontent_proj = nn.Linear(embed_dims, embed_dims)
+        self.ca_qpos_proj = nn.Linear(embed_dims, embed_dims)
+        self.ca_kcontent_proj = nn.Linear(embed_dims, embed_dims)
+        self.ca_kpos_proj = nn.Linear(embed_dims, embed_dims)
+        self.ca_v_proj = nn.Linear(embed_dims, embed_dims)
+        self.ca_qpos_sine_proj = nn.Linear(embed_dims, embed_dims)
+        self.cross_attn = CMultiheadAttention(embed_dims * 2, num_heads, attn_drop, vdim=embed_dims,**kwargs)
+
+        self.embed_dims = embed_dims
+        self.num_heads = num_heads
+
+        self.batch_first = batch_first
+        self.proj_drop = nn.Dropout(proj_drop)
+        self.dropout_layer = build_dropout(
+            dropout_layer) if dropout_layer else nn.Identity()
+        self.keep_query_pos = keep_query_pos
+    @deprecated_api_warning({'residual': 'identity'},
+                            cls_name='CMultiheadAttention')
+    def forward(self,
+                query,
+                key=None,
+                value=None,
+                identity=None,
+                query_pos=None,
+                key_pos=None,
+                attn_mask=None,
+                key_padding_mask=None,
+                query_sine_embed=None,
+                is_first=None,
+                **kwargs):
+        if identity is None:
+            identity = query
+        # ========== Begin of Cross-Attention =============
+        # Apply projections here
+        # shape: num_queries x batch_size x 256
+        q_content = self.ca_qcontent_proj(query)
+        k_content = self.ca_kcontent_proj(key)
+        v = self.ca_v_proj(key)
+
+        num_queries, bs, n_model = q_content.shape
+        hw, _, _ = k_content.shape
+
+        k_pos = self.ca_kpos_proj(key_pos)
+
+        if is_first or self.keep_query_pos:
+            q_pos = self.ca_qpos_proj(query_pos)
+            q = q_content + q_pos
+            k = k_content + k_pos
+        else:
+            q = q_content
+            k = k_content
+
+        q = q.view(num_queries, bs, self.num_heads, n_model//self.num_heads)
+        query_sine_embed = self.ca_qpos_sine_proj(query_sine_embed)
+        query_sine_embed = query_sine_embed.view(num_queries, bs, self.num_heads, n_model//self.num_heads)
+        q = torch.cat([q, query_sine_embed], dim=3).view(num_queries, bs, n_model * 2)
+        k = k.view(hw, bs, self.num_heads, n_model//self.num_heads)
+        k_pos = k_pos.view(hw, bs, self.num_heads, n_model//self.num_heads)
+        k = torch.cat([k, k_pos], dim=3).view(hw, bs, n_model * 2)
+
+        if self.batch_first:
+            q = q.transpose(0, 1)
+            k = k.transpose(0, 1)
+            v = v.transpose(0, 1)
+
+        out = self.cross_attn(
+            query=q,
+            key=k,
+            value=v,
+            attn_mask=attn_mask,
+            key_padding_mask=key_padding_mask)[0]
+
+        if self.batch_first:
+            out = out.transpose(0, 1)
+
+        return identity + self.dropout_layer(self.proj_drop(out))
+
+
+@TRANSFORMER.register_module()
+class CTransformer(BaseModule):
+    """Implements the DETR transformer.
+
+    Following the official DETR implementation, this module copy-paste
+    from torch.nn.Transformer with modifications:
+
+        * positional encodings are passed in MultiheadAttention
+        * extra LN at the end of encoder is removed
+        * decoder returns a stack of activations from all decoding layers
+
+    Args:
+        encoder (`mmcv.ConfigDict` | Dict): Config of
+            TransformerEncoder. Defaults to None.
+        decoder ((`mmcv.ConfigDict` | Dict)): Config of
+            TransformerDecoder. Defaults to None
+        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+            Defaults to None.
+    """
+
+    def __init__(self, encoder=None, decoder=None, init_cfg=None):
+        super(CTransformer, self).__init__(init_cfg=init_cfg)
+        self.encoder = build_transformer_layer_sequence(encoder)
+        self.decoder = build_transformer_layer_sequence(decoder)
+        self.embed_dims = self.encoder.embed_dims
+
+    def init_weights(self):
+        # follow the official DETR to init parameters
+        for m in self.modules():
+            if hasattr(m, 'weight') and m.weight.dim() > 1:
+                xavier_init(m, distribution='uniform')
+        self._is_init = True
+
+    def forward(self, x, mask, query_embed, pos_embed):
+        """Forward function for `Transformer`.
+
+        Args:
+            x (Tensor): Input query with shape [bs, c, h, w] where
+                c = embed_dims.
+            mask (Tensor): The key_padding_mask used for encoder and decoder,
+                with shape [bs, h, w].
+            query_embed (Tensor): The query embedding for decoder, with shape
+                [num_query, c].
+            pos_embed (Tensor): The positional encoding for encoder and
+                decoder, with the same shape as `x`.
+
+        Returns:
+            tuple[Tensor]: results of decoder containing the following tensor.
+
+                - out_dec: Output from decoder. If return_intermediate_dec \
+                      is True output has shape [num_dec_layers, bs,
+                      num_query, embed_dims], else has shape [1, bs, \
+                      num_query, embed_dims].
+                - memory: Output results from encoder, with shape \
+                      [bs, embed_dims, h, w].
+        """
+        bs, c, h, w = x.shape
+        # use `view` instead of `flatten` for dynamically exporting to ONNX
+        x = x.view(bs, c, -1).permute(2, 0, 1)  # [bs, c, h, w] -> [h*w, bs, c]
+        pos_embed = pos_embed.view(bs, c, -1).permute(2, 0, 1)
+        query_embed = query_embed.unsqueeze(1).repeat(
+            1, bs, 1)  # [num_query, dim] -> [num_query, bs, dim]
+        mask = mask.view(bs, -1)  # [bs, h, w] -> [bs, h*w]
+        memory = self.encoder(
+            query=x,
+            key=None,
+            value=None,
+            query_pos=pos_embed,
+            query_key_padding_mask=mask)
+        target = torch.zeros_like(query_embed)
+        # out_dec: [num_layers, num_query, bs, dim]
+        out_dec,reference_points = self.decoder(
+            query=target,
+            key=memory,
+            value=memory,
+            key_pos=pos_embed,
+            query_pos=query_embed,
+            key_padding_mask=mask)
+        out_dec = out_dec.transpose(1, 2)
+        memory = memory.permute(1, 2, 0).reshape(bs, c, h, w)
+        return out_dec, memory,reference_points
+
+
+@TRANSFORMER_LAYER_SEQUENCE.register_module()
+class CDetrTransformerDecoder(TransformerLayerSequence):
+    """Implements the decoder in DETR transformer.
+
+    Args:
+        return_intermediate (bool): Whether to return intermediate outputs.
+        post_norm_cfg (dict): Config of last normalization layer. Default：
+            `LN`.
+    """
+
+    def __init__(self,
+                 *args,
+                 post_norm_cfg=dict(type='LN'),
+                 return_intermediate=False,
+                 d_model=256,
+                 **kwargs):
+
+        super(CDetrTransformerDecoder, self).__init__(*args, **kwargs)
+        self.return_intermediate = return_intermediate
+        if post_norm_cfg is not None:
+            self.post_norm = build_norm_layer(post_norm_cfg,
+                                              self.embed_dims)[1]
+        else:
+            self.post_norm = None
+        self.query_scale = MLP(d_model, d_model, d_model, 2)
+        self.ref_point_head = MLP(d_model, d_model, 2, 2)
+        for layer_id in range(kwargs['num_layers'] - 1):
+            self.layers[layer_id + 1].attentions[1].ca_qpos_proj = None
+
+    def forward(self, query, *args, **kwargs):
+        """Forward function for `TransformerDecoder`.
+
+        Args:
+            query (Tensor): Input query with shape
+                `(num_query, bs, embed_dims)`.
+
+        Returns:
+            Tensor: Results with shape [1, num_query, bs, embed_dims] when
+                return_intermediate is `False`, otherwise it has shape
+                [num_layers, num_query, bs, embed_dims].
+        """
+        reference_points_before_sigmoid = self.ref_point_head(kwargs['query_pos'])  # [num_queries, batch_size, 2]
+        reference_points = reference_points_before_sigmoid.sigmoid().transpose(0, 1)
+
+        if not self.return_intermediate:
+            x = super().forward(query, *args, **kwargs)
+            if self.post_norm:
+                x = self.post_norm(x)[None]
+            return x
+
+        intermediate = []
+        for layer_id,layer in enumerate(self.layers):
+            obj_center = reference_points[..., :2].transpose(0, 1)
+            if layer_id == 0:
+                pos_transformation = 1
+            else:
+                pos_transformation = self.query_scale(query)
+            # get sine embedding for the query vector
+            query_sine_embed = gen_sineembed_for_position(obj_center)
+            # apply transformation
+            query_sine_embed = query_sine_embed * pos_transformation
+
+            #query = layer(query,  *args, **kwargs)
+            query = layer(query, query_sine_embed,is_first=(layer_id == 0), *args, **kwargs)
+            if self.return_intermediate:
+                if self.post_norm is not None:
+                    intermediate.append(self.post_norm(query))
+                else:
+                    intermediate.append(query)
+        return torch.stack(intermediate), reference_points
+
+@TRANSFORMER_LAYER.register_module()
+class CDetrTransformerDecoderLayer(BaseTransformerLayer):
+    """Implements decoder layer in DETR transformer.
+
+    Args:
+        attn_cfgs (list[`mmcv.ConfigDict`] | list[dict] | dict )):
+            Configs for self_attention or cross_attention, the order
+            should be consistent with it in `operation_order`. If it is
+            a dict, it would be expand to the number of attention in
+            `operation_order`.
+        feedforward_channels (int): The hidden dimension for FFNs.
+        ffn_dropout (float): Probability of an element to be zeroed
+            in ffn. Default 0.0.
+        operation_order (tuple[str]): The execution order of operation
+            in transformer. Such as ('self_attn', 'norm', 'ffn', 'norm').
+            Default：None
+        act_cfg (dict): The activation config for FFNs. Default: `LN`
+        norm_cfg (dict): Config dict for normalization layer.
+            Default: `LN`.
+        ffn_num_fcs (int): The number of fully-connected layers in FFNs.
+            Default：2.
+    """
+
+    def __init__(self,
+                 attn_cfgs,
+                 feedforward_channels,
+                 ffn_dropout=0.0,
+                 operation_order=None,
+                 act_cfg=dict(type='ReLU', inplace=True),
+                 norm_cfg=dict(type='LN'),
+                 ffn_num_fcs=2,
+                 **kwargs):
+        super(CDetrTransformerDecoderLayer, self).__init__(
+            attn_cfgs=attn_cfgs,
+            feedforward_channels=feedforward_channels,
+            ffn_dropout=ffn_dropout,
+            operation_order=operation_order,
+            act_cfg=act_cfg,
+            norm_cfg=norm_cfg,
+            ffn_num_fcs=ffn_num_fcs,
+            **kwargs)
+        assert len(operation_order) == 6
+        assert set(operation_order) == set(
+            ['self_attn', 'norm', 'cross_attn', 'ffn'])
+
+    def forward(self,query, query_sine_embed, is_first,  key=None,
+                value=None,
+                query_pos=None,
+                key_pos=None,
+                attn_masks=None,
+                query_key_padding_mask=None,
+                key_padding_mask=None,*args, **kwargs):
+        #return super(CDetrTransformerDecoderLayer, self).forward(query,*args,**kwargs)
+        norm_index = 0
+        attn_index = 0
+        ffn_index = 0
+        identity = query
+        if attn_masks is None:
+            attn_masks = [None for _ in range(self.num_attn)]
+        elif isinstance(attn_masks, torch.Tensor):
+            attn_masks = [
+                copy.deepcopy(attn_masks) for _ in range(self.num_attn)
+            ]
+            warnings.warn(f'Use same attn_mask in all attentions in '
+                          f'{self.__class__.__name__} ')
+        else:
+            assert len(attn_masks) == self.num_attn, f'The length of ' \
+                                                     f'attn_masks {len(attn_masks)} must be equal ' \
+                                                     f'to the number of attention in ' \
+                                                     f'operation_order {self.num_attn}'
+
+        for layer in self.operation_order:
+            if layer == 'self_attn':
+                temp_key = temp_value = query
+                query = self.attentions[attn_index](
+                    query,
+                    temp_key,
+                    temp_value,
+                    identity if self.pre_norm else None,
+                    query_pos=query_pos,
+                    key_pos=query_pos,
+                    attn_mask=attn_masks[attn_index],
+                    key_padding_mask=query_key_padding_mask,
+                    **kwargs)
+                attn_index += 1
+                identity = query
+
+            elif layer == 'norm':
+                query = self.norms[norm_index](query)
+                norm_index += 1
+
+            elif layer == 'cross_attn':
+                query = self.attentions[attn_index](
+                    query=query,
+                    key=key,
+                    value=value,
+                    identity = identity if self.pre_norm else None,
+                    query_pos=query_pos,
+                    key_pos=key_pos,
+                    attn_mask=attn_masks[attn_index],
+                    key_padding_mask=key_padding_mask,
+                    query_sine_embed=query_sine_embed,
+                    is_first=is_first,
+                    **kwargs)
+                attn_index += 1
+                identity = query
+
+            elif layer == 'ffn':
+                query = self.ffns[ffn_index](
+                    query, identity if self.pre_norm else None)
+                ffn_index += 1
+
+        return query
 
 @TRANSFORMER_LAYER_SEQUENCE.register_module()
 class DeformableDetrTransformerDecoder(TransformerLayerSequence):

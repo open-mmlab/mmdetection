@@ -388,7 +388,8 @@ class ResNet(BaseModule):
                  with_cp=False,
                  zero_init_residual=True,
                  pretrained=None,
-                 init_cfg=None):
+                 init_cfg=None,
+                 dilation_type=None):
         super(ResNet, self).__init__(init_cfg)
         self.zero_init_residual = zero_init_residual
         if depth not in self.arch_settings:
@@ -480,7 +481,8 @@ class ResNet(BaseModule):
                 norm_cfg=norm_cfg,
                 dcn=dcn,
                 plugins=stage_plugins,
-                init_cfg=block_init_cfg)
+                init_cfg=block_init_cfg,
+                dilation_type=dilation_type)
             self.inplanes = planes * self.block.expansion
             layer_name = f'layer{i + 1}'
             self.add_module(layer_name, res_layer)
