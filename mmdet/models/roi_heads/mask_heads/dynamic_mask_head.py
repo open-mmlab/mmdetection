@@ -6,7 +6,6 @@ import torch.nn as nn
 from mmengine.config import ConfigDict
 from torch import Tensor
 
-from mmdet.models.layers import build_transformer
 from mmdet.models.task_modules import SamplingResult
 from mmdet.registry import MODELS
 from mmdet.utils import ConfigType, InstanceList, OptConfigType, reduce_mean
@@ -86,7 +85,7 @@ class DynamicMaskHead(FCNMaskHead):
             'DynamicMaskHead only support class_agnostic=False'
         self.fp16_enabled = False
 
-        self.instance_interactive_conv = build_transformer(dynamic_conv_cfg)
+        self.instance_interactive_conv = MODELS.build(dynamic_conv_cfg)
 
     def init_weights(self) -> None:
         """Use xavier initialization for all weight parameter and set
