@@ -73,10 +73,9 @@ class BaseDetDataset(BaseDataset):
     def load_proposals(self) -> None:
         """Load proposals from proposals file.
 
-        The `proposals_list` should be a list with the same length as
-        `data_list`. Each item should be a dict[img_path: proposals]. And the
-        `proposals` should be a `dict` or :obj:`InstanceData` usually
-        contains following keys.
+        The `proposals_list` should be a dict[img_path: proposals]
+        with the same length as `data_list`. And the `proposals` should be
+        a `dict` or :obj:`InstanceData` usually contains following keys.
 
             - bboxes (np.ndarry): Has a shape (num_instances, 4),
               the last dimension 4 arrange as (x1, y1, x2, y2).

@@ -95,9 +95,11 @@ class DumpProposals(BaseMetric):
             dict: An empty dict.
         """
         logger: MMLogger = MMLogger.get_current_instance()
-
+        dump_results = {}
+        for result in results:
+            dump_results.update(result)
         dump(
-            results,
+            dump_results,
             file=self.proposals_file,
             file_client_args=self.file_client_args)
         logger.info(f'Results are saved at {self.proposals_file}')
