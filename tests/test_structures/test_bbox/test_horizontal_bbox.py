@@ -148,6 +148,19 @@ class TestHorizontalBoxes(TestCase):
 
     def test_from_masks(self):
         bitmap_masks = BitmapMasks.random()
-        HorizontalBoxes.from_bitmap_masks(bitmap_masks)
+        bboxes = HorizontalBoxes.from_bitmap_masks(bitmap_masks)
+        self.assertIsInstance(bboxes, HorizontalBoxes)
+        self.assertEqual(len(bboxes), len(bitmap_masks))
         polygon_masks = PolygonMasks.random()
-        HorizontalBoxes.from_polygon_masks(polygon_masks)
+        bboxes = HorizontalBoxes.from_polygon_masks(polygon_masks)
+        self.assertIsInstance(bboxes, HorizontalBoxes)
+        self.assertEqual(len(bboxes), len(bitmap_masks))
+        # zero length masks
+        bitmap_masks = BitmapMasks.random(num_masks=0)
+        bboxes = HorizontalBoxes.from_bitmap_masks(bitmap_masks)
+        self.assertIsInstance(bboxes, HorizontalBoxes)
+        self.assertEqual(len(bboxes), 0)
+        polygon_masks = PolygonMasks.random(num_masks=0)
+        bboxes = HorizontalBoxes.from_polygon_masks(polygon_masks)
+        self.assertIsInstance(bboxes, HorizontalBoxes)
+        self.assertEqual(len(bboxes), 0)
