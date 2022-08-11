@@ -327,22 +327,18 @@ class LoadAnnotations(MMCV_LoadAnnotations):
                     # ignore this instance and set gt_mask to a fake mask
                     instance['ignore_flag'] = 1
                     gt_mask = [np.zeros(6)]
-            elif isinstance(gt_mask, dict):
-                if not (gt_mask.get('counts') is not None
-                        and gt_mask.get('size') is not None
-                        and isinstance(gt_mask['counts'], list)):
+            else:
+                if isinstance(gt_mask, dict) and \
+                        not (gt_mask.get('counts') is not None and
+                             gt_mask.get('size') is not None and
+                             isinstance(gt_mask['counts'], list)):
                     # ignore this instance and set gt_mask to a fake mask
                     instance['ignore_flag'] = 1
                     gt_mask = [np.zeros(6)]
                 if not self.poly2mask:
                     # deal with invalid polygons
+                    instance['ignore_flag'] = 1
                     gt_mask = [np.zeros(6)]
-                    instance['ignore_flag'] = 1
-            else:
-                if not self.poly2mask:
-                    # deal with invalid polygons
-                    gt_mask = [np.arange(6)]
-                    instance['ignore_flag'] = 1
             gt_masks.append(gt_mask)
             # re-process gt_ignore_flags
             gt_ignore_flags.append(instance['ignore_flag'])
