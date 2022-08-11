@@ -5,11 +5,11 @@ from inspect import signature
 from typing import List, Optional, Tuple
 
 import torch
-from mmcv.cnn.utils.weight_init import constant_init
 from mmcv.ops import batched_nms
 from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
 from mmengine.model import BaseModule
+from mmengine.model.utils import constant_init
 from torch import Tensor
 
 from mmdet.structures import SampleList

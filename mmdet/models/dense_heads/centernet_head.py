@@ -3,10 +3,10 @@ from typing import List, Optional, Tuple
 
 import torch
 import torch.nn as nn
-from mmcv.cnn import bias_init_with_prob, normal_init
 from mmcv.ops import batched_nms
 from mmengine.config import ConfigDict
 from mmengine.data import InstanceData
+from mmengine.model.utils import bias_init_with_prob, normal_init
 from torch import Tensor
 
 from mmdet.registry import MODELS

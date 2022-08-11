@@ -6,7 +6,6 @@ from mmcv.cnn import ConvModule
 from mmengine.config import ConfigDict
 from torch import Tensor
 
-from mmdet.models.layers import build_linear_layer
 from mmdet.registry import MODELS
 from .bbox_head import BBoxHead
 
@@ -87,17 +86,17 @@ class ConvFCBBoxHead(BBoxHead):
                 cls_channels = self.loss_cls.get_cls_channels(self.num_classes)
             else:
                 cls_channels = self.num_classes + 1
-            self.fc_cls = build_linear_layer(
-                self.cls_predictor_cfg,
-                in_features=self.cls_last_dim,
-                out_features=cls_channels)
+            cls_predictor_cfg_ = self.cls_predictor_cfg.copy()
+            cls_predictor_cfg_.update(
+                in_features=self.cls_last_dim, out_features=cls_channels)
+            self.fc_cls = MODELS.build(cls_predictor_cfg_)
         if self.with_reg:
             out_dim_reg = (4 if self.reg_class_agnostic else 4 *
                            self.num_classes)
-            self.fc_reg = build_linear_layer(
-                self.reg_predictor_cfg,
-                in_features=self.reg_last_dim,
-                out_features=out_dim_reg)
+            reg_predictor_cfg_ = self.reg_predictor_cfg.copy()
+            reg_predictor_cfg_.update(
+                in_features=self.reg_last_dim, out_features=out_dim_reg)
+            self.fc_reg = MODELS.build(reg_predictor_cfg_)
 
         if init_cfg is None:
             # when init_cfg is None,

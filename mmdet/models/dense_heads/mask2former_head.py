@@ -5,12 +5,11 @@ from typing import List, Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import Conv2d, build_plugin_layer, caffe2_xavier_init
-from mmcv.cnn.bricks.transformer import (build_positional_encoding,
-                                         build_transformer_layer_sequence)
+from mmcv.cnn import Conv2d
 from mmcv.ops import point_sample
-from mmcv.runner import ModuleList
 from mmengine.data import InstanceData
+from mmengine.model import ModuleList
+from mmengine.model.utils import caffe2_xavier_init
 from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS
@@ -113,9 +112,8 @@ class Mask2FormerHead(MaskFormerHead):
             in_channels=in_channels,
             feat_channels=feat_channels,
             out_channels=out_channels)
-        self.pixel_decoder = build_plugin_layer(pixel_decoder_)[1]
-        self.transformer_decoder = build_transformer_layer_sequence(
-            transformer_decoder)
+        self.pixel_decoder = MODELS.build(pixel_decoder_)
+        self.transformer_decoder = MODELS.build(transformer_decoder)
         self.decoder_embed_dims = self.transformer_decoder.embed_dims
 
         self.decoder_input_projs = ModuleList()
@@ -128,8 +126,7 @@ class Mask2FormerHead(MaskFormerHead):
                         feat_channels, self.decoder_embed_dims, kernel_size=1))
             else:
                 self.decoder_input_projs.append(nn.Identity())
-        self.decoder_positional_encoding = build_positional_encoding(
-            positional_encoding)
+        self.decoder_positional_encoding = MODELS.build(positional_encoding)
         self.query_embed = nn.Embedding(self.num_queries, feat_channels)
         self.query_feat = nn.Embedding(self.num_queries, feat_channels)
         # from low resolution to high resolution

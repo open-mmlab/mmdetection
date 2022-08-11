@@ -2,7 +2,7 @@
 import pytest
 import torch
 import torch.nn.functional as F
-from mmcv.cnn import constant_init
+from mmengine.model.utils import constant_init
 
 from mmdet.models.layers import DyReLU, SELayer
 
