@@ -126,3 +126,4 @@ work_dirs/
 /report*
 /report
 report/debug.cbor
+/custom_ops/

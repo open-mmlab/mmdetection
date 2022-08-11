@@ -58,9 +58,9 @@ class IPUDarknet(Darknet):
             x = self.conv_res_block4(x)
             x = poptorch.block_point(x, 0, i, "Stop", True)
             b4_out_list.append(x)
-        b3_out = torch.cat(b3_out_list, dim=0)
+        # b3_out = torch.cat(b3_out_list, dim=0)
 
-        b4_out_list[0] = self.identity(b4_out_list[0])
+        # b4_out_list[0] = self.identity(b4_out_list[0])
 
         b5_out_list = []
         for i in range(self.serial_num):
@@ -70,7 +70,7 @@ class IPUDarknet(Darknet):
             x = poptorch.block_point(x, 1, i, "Stop", True)
             b5_out_list.append(x)
 
-
+        b3_out = torch.cat(b3_out_list, dim=0)
         b4_out = torch.cat(b4_out_list, dim=0)
         b5_out = torch.cat(b5_out_list, dim=0)
         return b3_out, b4_out, b5_out

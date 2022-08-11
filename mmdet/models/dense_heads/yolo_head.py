@@ -19,6 +19,24 @@ from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
 
 
+def remap_tensor(inp, bwd_clone_layout=False):
+    import ctypes
+    import poptorch
+    ctypes.cdll.LoadLibrary("/localdata/cn-customer-engineering/hudi/mmdetection_hudi/custom_ops/custom_ops.so")
+    # ctypes.cdll.LoadLibrary('custom_ops/custom_ops.so')
+    org_type = inp.dtype
+    result = poptorch.custom_op([inp],
+                                "RemapCE",
+                                "ai.graphcore",
+                                1,
+                                example_outputs=[inp],
+                                attributes={'grain_size': 8,
+                                            'bwd_clone_layout': int(bwd_clone_layout)}
+                                )[0]
+    # return result.to(org_type)
+    return result
+
+
 @HEADS.register_module()
 class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
     """YOLOV3Head Paper link: https://arxiv.org/abs/1804.02767.
@@ -391,6 +409,9 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         target_wh = target_map[..., 2:4]
         target_conf = target_map[..., 4]
         target_label = target_map[..., 5:]
+
+        pred_xy, pred_wh, pred_conf, pred_label, target_xy, target_wh, target_conf, target_label = \
+            [remap_tensor(ele) for ele in [pred_xy, pred_wh, pred_conf, pred_label, target_xy, target_wh, target_conf, target_label]]
 
         loss_cls = self.loss_cls(pred_label, target_label, weight=pos_mask)
         loss_conf = self.loss_conf(
