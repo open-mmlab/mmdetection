@@ -9,7 +9,6 @@ from mmcv.transforms import BaseTransform
 from mmcv.transforms.utils import cache_randomness
 
 from mmdet.registry import TRANSFORMS
-from mmdet.structures.bbox import bbox_project
 from .augment_wrappers import _MAX_LEVEL, level_to_mag
 
 
@@ -24,7 +23,7 @@ class GeomTransform(BaseTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -135,9 +134,9 @@ class GeomTransform(BaseTransform):
 
     def _transform_bboxes(self, results: dict, mag: float) -> None:
         """Transform the bboxes."""
-        results['gt_bboxes'] = bbox_project(results['gt_bboxes'],
-                                            self.homography_matrix,
-                                            results['img_shape'])
+        bboxes = results['gt_bboxes']
+        bboxes.project_(self.homography_matrix)
+        bboxes.clip_(results['img_shape'])
 
     def _record_homography_matrix(self, results: dict) -> None:
         """Record the homography matrix for the geometric transformation."""
@@ -204,7 +203,7 @@ class ShearX(GeomTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -514,6 +513,14 @@ class Rotate(GeomTransform):
             border_value=self.seg_ignore_label,
             interpolation='nearest')
 
+    def _transform_bboxes(self, results: dict, mag: float) -> None:
+        """Rotate the bboxes."""
+        img_shape = results['img_shape']
+        center = ((img_shape[1] - 1) * 0.5, (img_shape[0] - 1) * 0.5)
+        bboxes = results['gt_bboxes']
+        bboxes.rotate_(center, mag)
+        bboxes.clip_(results['img_shape'])
+
 
 @TRANSFORMS.register_module()
 class TranslateX(GeomTransform):
@@ -522,7 +529,7 @@ class TranslateX(GeomTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -618,6 +625,12 @@ class TranslateX(GeomTransform):
             direction='horizontal',
             border_value=self.seg_ignore_label,
             interpolation='nearest')
+
+    def _transform_bboxes(self, results: dict, mag: float) -> None:
+        """Translate the bboxes horizontally."""
+        bboxes = results['gt_bboxes']
+        bboxes.translate_([mag, 0])
+        bboxes.clip_(results['img_shape'])
 
 
 @TRANSFORMS.register_module()
@@ -723,3 +736,9 @@ class TranslateY(GeomTransform):
             direction='vertical',
             border_value=self.seg_ignore_label,
             interpolation='nearest')
+
+    def _transform_bboxes(self, results: dict, mag: float) -> None:
+        """Translate the bboxes vertically."""
+        bboxes = results['gt_bboxes']
+        bboxes.translate_([0, mag])
+        bboxes.clip_(results['img_shape'])

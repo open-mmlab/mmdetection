@@ -8,12 +8,14 @@ from unittest.mock import MagicMock, Mock, patch
 
 import mmcv
 import numpy as np
+import torch
 
 from mmdet.datasets.transforms import (FilterAnnotations, LoadAnnotations,
                                        LoadImageFromNDArray,
                                        LoadMultiChannelImageFromFiles,
                                        LoadProposals)
 from mmdet.evaluation import INSTANCE_OFFSET
+from mmdet.structures.bbox import HorizontalBoxes
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 
 try:
@@ -63,11 +65,12 @@ class TestLoadAnnotations(unittest.TestCase):
         )
         results = transform(copy.deepcopy(self.results))
         self.assertIn('gt_bboxes', results)
-        self.assertTrue((results['gt_bboxes'] == np.array([[0, 0, 10, 20],
-                                                           [10, 10, 110, 120],
-                                                           [50, 50, 60,
-                                                            80]])).all())
-        self.assertEqual(results['gt_bboxes'].dtype, np.float32)
+        self.assertTrue(
+            (results['gt_bboxes'].numpy() == np.array([[0, 0, 10, 20],
+                                                       [10, 10, 110, 120],
+                                                       [50, 50, 60,
+                                                        80]])).all())
+        self.assertEqual(results['gt_bboxes'].dtype, torch.float32)
         self.assertTrue((results['gt_ignore_flags'] == np.array([0, 0,
                                                                  1])).all())
         self.assertEqual(results['gt_ignore_flags'].dtype, np.bool)
@@ -140,12 +143,14 @@ class TestFilterAnnotations(unittest.TestCase):
             'gt_bboxes_labels':
             np.array([1, 2, 3], dtype=np.int64),
             'gt_bboxes':
-            np.array([[10, 10, 20, 20], [20, 20, 40, 40], [40, 40, 80, 80]]),
+            HorizontalBoxes(
+                [[10, 10, 20, 20], [20, 20, 40, 40], [40, 40, 80, 80]],
+                dtype=torch.float32),
             'gt_ignore_flags':
             np.array([0, 0, 1], dtype=np.bool8),
             'gt_masks':
             # ignore label will not add into `gt_masks`
-            BitmapMasks(rng.rand(2, 224, 224), height=224, width=224),
+            BitmapMasks(rng.rand(3, 224, 224), height=224, width=224),
         }
 
     def test_transform(self):
@@ -169,11 +174,14 @@ class TestFilterAnnotations(unittest.TestCase):
         transform = FilterAnnotations(min_gt_bbox_wh=(15, 15), )
         results = transform(copy.deepcopy(self.results))
         self.assertIsInstance(results, dict)
-        self.assertTrue((results['gt_bboxes_labels'] == np.array([2])).all())
-        self.assertTrue((results['gt_bboxes'] == np.array([[20, 20, 40,
-                                                            40]])).all())
-        self.assertTrue(len(results['gt_masks']) == 1)
-        self.assertTrue(len(results['gt_ignore_flags'] == 1))
+        self.assertTrue((results['gt_bboxes_labels'] == np.array([2,
+                                                                  3])).all())
+        self.assertTrue(
+            (results['gt_bboxes'].numpy() == np.array([[20, 20, 40, 40],
+                                                       [40, 40, 80,
+                                                        80]])).all())
+        self.assertTrue(len(results['gt_masks']) == 2)
+        self.assertTrue(len(results['gt_ignore_flags'] == 2))
 
     def test_repr(self):
         transform = FilterAnnotations(
@@ -237,8 +245,8 @@ class TestLoadPanopticAnnotations(unittest.TestCase):
             (seg_map == 1 + 10 * INSTANCE_OFFSET).astype(np.uint8),
             (seg_map == 4 + 11 * INSTANCE_OFFSET).astype(np.uint8),
         ], 10, 10)
-        self.gt_bboxes = np.array([[0, 0, 10, 5], [0, 5, 5, 10]],
-                                  dtype=np.float32)
+        self.gt_bboxes = HorizontalBoxes([[0, 0, 10, 5], [0, 5, 5, 10]],
+                                         dtype=torch.float32)
         self.gt_bboxes_labels = np.array([0, 1], dtype=np.int64)
         self.gt_ignore_flags = np.array([0, 1], dtype=bool)
         self.gt_seg_map = np.zeros((10, 10), dtype=np.int32)
@@ -298,7 +306,8 @@ class TestLoadPanopticAnnotations(unittest.TestCase):
             results = transform(copy.deepcopy(self.results))
             self.assertTrue(
                 (results['gt_masks'].masks == self.gt_mask.masks).all())
-            self.assertTrue((results['gt_bboxes'] == self.gt_bboxes).all())
+            self.assertTrue(
+                (results['gt_bboxes'].tensor == self.gt_bboxes.tensor).all())
             self.assertTrue(
                 (results['gt_bboxes_labels'] == self.gt_bboxes_labels).all())
             self.assertTrue(

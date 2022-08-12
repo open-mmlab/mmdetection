@@ -3,9 +3,11 @@ import copy
 import unittest
 
 import numpy as np
+import torch
 
 from mmdet.datasets.transforms import (GeomTransform, Rotate, ShearX, ShearY,
                                        TranslateX, TranslateY)
+from mmdet.structures.bbox import HorizontalBoxes
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 from .utils import check_result_same, construct_toy_data
 
@@ -145,7 +147,8 @@ class TestShearX(unittest.TestCase):
         img_gt[2, 0, :] = np.array(self.img_border_value)
         img_gt[2, 1, :] = np.array(self.img_border_value)
         results_gt['img'] = img_gt
-        results_gt['gt_bboxes'] = np.array([[1, 0, 4, 2]], dtype=np.float32)
+        results_gt['gt_bboxes'] = HorizontalBoxes([[1, 0, 4, 2]],
+                                                  dtype=torch.float32)
         results_gt['gt_bboxes_labels'] = np.array([13], dtype=np.int64)
         gt_masks = np.array([[0, 1, 0, 0], [0, 0, 1, 1], [0, 0, 0, 1]],
                             dtype=np.uint8)[None, :, :]
@@ -219,7 +222,8 @@ class TestShearY(unittest.TestCase):
             dtype=np.uint8)
         img_gt = np.stack([img_gt, img_gt, img_gt], axis=-1)
         results_gt['img'] = img_gt
-        results_gt['gt_bboxes'] = np.array([[1, 0, 2, 1]], dtype=np.float32)
+        results_gt['gt_bboxes'] = HorizontalBoxes([[1, 0, 2, 1]],
+                                                  dtype=torch.float32)
         results_gt['gt_bboxes_labels'] = np.array([13], dtype=np.int64)
         gt_masks = np.array([[0, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0]],
                             dtype=np.uint8)[None, :, :]
@@ -300,8 +304,8 @@ class TestRotate(unittest.TestCase):
         img_gt = np.stack([img_gt, img_gt, img_gt], axis=-1)
         results_gt = copy.deepcopy(self.results_mask)
         results_gt['img'] = img_gt
-        results_gt['gt_bboxes'] = np.array([[0.5, 0.5, 2.5, 1.5]],
-                                           dtype=np.float32)
+        results_gt['gt_bboxes'] = HorizontalBoxes([[0.5, 0.5, 2.5, 1.5]],
+                                                  dtype=torch.float32)
         gt_masks = np.array([[0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]],
                             dtype=np.uint8)[None, :, :]
         results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)
@@ -334,8 +338,8 @@ class TestRotate(unittest.TestCase):
         img_gt = np.stack([img_gt, img_gt, img_gt], axis=-1)
         results_gt = copy.deepcopy(self.results_mask)
         results_gt['img'] = img_gt
-        results_gt['gt_bboxes'] = np.array([[0.5, 0.5, 2.5, 1.5]],
-                                           dtype=np.float32)
+        results_gt['gt_bboxes'] = HorizontalBoxes([[0.5, 0.5, 2.5, 1.5]],
+                                                  dtype=torch.float32)
         gt_masks = np.array([[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0]],
                             dtype=np.uint8)[None, :, :]
         results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)
@@ -413,7 +417,8 @@ class TestTranslateX(unittest.TestCase):
         img_gt[:, 3, :] = np.array(self.img_border_value)
         results_gt = copy.deepcopy(self.results_mask)
         results_gt['img'] = img_gt
-        results_gt['gt_bboxes'] = np.array([[0, 0, 1, 2]], dtype=np.float32)
+        results_gt['gt_bboxes'] = HorizontalBoxes([[0, 0, 1, 2]],
+                                                  dtype=torch.float32)
         gt_masks = np.array([[1, 0, 0, 0], [1, 1, 0, 0], [1, 0, 0, 0]],
                             dtype=np.uint8)[None, :, :]
         results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)
@@ -491,7 +496,8 @@ class TestTranslateY(unittest.TestCase):
         img_gt = np.stack([img_gt, img_gt, img_gt], axis=-1)
         results_gt = copy.deepcopy(self.results_mask)
         results_gt['img'] = img_gt
-        results_gt['gt_bboxes'] = np.array([[1, 0, 2, 1]], dtype=np.float32)
+        results_gt['gt_bboxes'] = HorizontalBoxes([[1, 0, 2, 1]],
+                                                  dtype=torch.float32)
         gt_masks = np.array([[0, 1, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0]],
                             dtype=np.uint8)[None, :, :]
         results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)
