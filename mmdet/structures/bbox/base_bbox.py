@@ -119,6 +119,8 @@ class BaseBoxes(metaclass=ABCMeta):
             assert index.dim() < bboxes.dim()
         elif isinstance(index, tuple):
             assert len(index) < bboxes.dim()
+            # `Ellipsis`(...) is commonly used in index like [None, ...].
+            # When `Ellipsis` is in index, it must be the last item.
             if Ellipsis in index:
                 assert index[-1] is Ellipsis
 
@@ -139,6 +141,8 @@ class BaseBoxes(metaclass=ABCMeta):
             assert index.dim() < self.tensor.dim()
         elif isinstance(index, tuple):
             assert len(index) < self.tensor.dim()
+            # `Ellipsis`(...) is commonly used in index like [None, ...].
+            # When `Ellipsis` is in index, it must be the last item.
             if Ellipsis in index:
                 assert index[-1] is Ellipsis
 
