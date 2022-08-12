@@ -261,16 +261,6 @@ class TestBaseBoxes(TestCase):
         self.assertEqual(len(bboxes), 3)
         # __repr__
         repr(bboxes)
-        # create_empty_bboxes
-        new_bboxes = bboxes.create_empty_bbox()
-        self.assertEqual(tuple(new_bboxes.size()), (0, 4))
-        self.assertEqual(bboxes.dtype, new_bboxes.dtype)
-        self.assertEqual(bboxes.device, new_bboxes.device)
-        new_bboxes = bboxes.create_empty_bbox(dtype=torch.uint8)
-        self.assertEqual(new_bboxes.dtype, torch.uint8)
-        if torch.cuda.is_available():
-            new_bboxes = bboxes.create_empty_bbox(device='cuda')
-            self.assertTrue(new_bboxes.tensor.is_cuda())
         # create_fake_bboxes
         new_bboxes = bboxes.create_fake_bboxes((3, 4, 4), 1)
         self.assertEqual(tuple(new_bboxes.size()), (3, 4, 4))

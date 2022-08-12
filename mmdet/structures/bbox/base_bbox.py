@@ -68,6 +68,9 @@ class BaseBoxes(metaclass=ABCMeta):
         if clone:
             bboxes = bboxes.clone()  # To avoid potential bugs
 
+        if bboxes.numel() == 0:
+            bboxes = bboxes.reshape((-1, self.bbox_dim))
+
         assert bboxes.dim() >= 2 and bboxes.size(-1) == self.bbox_dim, \
             ('The bboxes dimension must >= 2 and the length of the last '
              f'dimension must be {self.bbox_dim}, but get bboxes with '
@@ -85,23 +88,6 @@ class BaseBoxes(metaclass=ABCMeta):
         """
         from .bbox_mode import convert_bbox_mode
         return convert_bbox_mode(self, dst_mode=dst_mode)
-
-    def create_empty_bbox(self: T,
-                          dtype: Optional[torch.dtype] = None,
-                          device: Optional[DeviceType] = None) -> T:
-        """Create an empty box with shape of (0, bbox_dim).
-
-        Args:
-            dtype (torch.dtype, Optional): data type of bboxes.
-            device (str or torch.device, Optional): device of bboxes.
-
-        Returns:
-            T: Empty box with shape of (0, bbox_dim).
-        """
-        empty_bboxes = self.tensor.new_zeros((0, self.bbox_dim),
-                                             dtype=dtype,
-                                             device=device)
-        return type(self)(empty_bboxes, clone=False)
 
     def create_fake_bboxes(self: T,
                            sizes: Tuple[int],
