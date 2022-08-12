@@ -89,7 +89,7 @@ class Resize:
                 self.img_scale = img_scale
             else:
                 self.img_scale = [img_scale]
-            assert mmcv.is_list_of(self.img_scale, tuple)
+            assert mmcv.is_list_of(self.img_scale, tuple) or mmcv.is_list_of(self.img_scale, list)
 
         if ratio_range is not None:
             # mode 1: given a scale and a range of image ratio
@@ -2013,7 +2013,7 @@ class Mosaic:
                  skip_filter=True,
                  pad_val=114,
                  prob=1.0):
-        assert isinstance(img_scale, tuple)
+        assert isinstance(img_scale, tuple) or isinstance(img_scale, list)
         assert 0 <= prob <= 1.0, 'The probability should be in range [0,1]. '\
             f'got {prob}.'
 
