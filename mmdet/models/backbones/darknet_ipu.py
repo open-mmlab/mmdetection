@@ -4,10 +4,16 @@
 import torch
 import poptorch
 
+<<<<<<< HEAD
+=======
+from mmcv.device.ipu import IPUIdentity
+
+>>>>>>> tmp
 from ..builder import BACKBONES
 from .darknet import Darknet
 
 
+<<<<<<< HEAD
 class myidentity(torch.nn.Module):
     def forward(self, x: torch.Tensor):
         add_value = x.new_tensor(1e-6)
@@ -16,6 +22,8 @@ class myidentity(torch.nn.Module):
         return x
 
 
+=======
+>>>>>>> tmp
 @BACKBONES.register_module()
 class IPUDarknet(Darknet):
     """Darknet backbone(IPU version), has one more argument named serial_num. This backbone
@@ -35,7 +43,11 @@ class IPUDarknet(Darknet):
         self.serial_num = serial_num
         super().__init__(**kwargs)
         assert len(self.cr_blocks) == 6
+<<<<<<< HEAD
         self.identity = myidentity()
+=======
+        self.identity = IPUIdentity()
+>>>>>>> tmp
     
     def forward(self, x):
         if self.training:
@@ -84,4 +96,9 @@ class IPUDarknet(Darknet):
 
         b4_out = torch.cat(b4_out_list, dim=0)
         b5_out = torch.cat(b5_out_list, dim=0)
+<<<<<<< HEAD
         return b3_out, b4_out, b5_out
+=======
+        return b3_out, b4_out, b5_out
+    
+>>>>>>> tmp

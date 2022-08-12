@@ -164,10 +164,15 @@ def train_detector(model,
     else:
         cfg.runner['options_cfg']['replicationFactor'] = cfg.ipu_replicas
         cfg.runner['fp16_cfg'] = cfg.pop('fp16', None)
+<<<<<<< HEAD
 
     # hdDebug, temporarily add replace_bn, replace_bn should be before building optimizer
     from mmcv.device.ipu.utils import replace_bn
     replace_bn(model)
+=======
+        from mmcv.device.ipu.utils import replace_bn
+        replace_bn(model)
+>>>>>>> tmp
 
     # build optimizer
     auto_scale_lr(cfg, distributed, logger)

@@ -10,17 +10,28 @@ from .formating import to_tensor
 
 @PIPELINES.register_module()
 class BGR2RGB:
+<<<<<<< HEAD
     """Convert normalized image back to int8
     """
 
     def __call__(self, results):
         """Call convert normalized image back to uint8
+=======
+    """Convert channel of image from bgr to rgb."""
+
+    def __call__(self, results):
+        """Call Convert channel of image from bgr to rgb
+>>>>>>> tmp
 
         Args:
             results (dict): Result dict from loading pipeline.
 
         Returns:
+<<<<<<< HEAD
             dict: Converted results, results['img'] has been converted to uint8.
+=======
+            dict: Converted results, results['img'] has been converted from bgr to rgb.
+>>>>>>> tmp
         """
         img_bgr = results['img']
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
@@ -55,6 +66,10 @@ class IPUFormatBundle:
             the default value is `dict(img=0, masks=0, seg=255)`.
             Without this argument, the padding value of "gt_semantic_seg"
             will be set to 0 by default, which should be 255.
+<<<<<<< HEAD
+=======
+        pad_dic (dict): A dict for padding dim and shape.
+>>>>>>> tmp
     """
 
     def __init__(self,
@@ -77,8 +92,13 @@ class IPUFormatBundle:
         for key, padding in self.pad_dic.items():
             dims = results[key].shape
             target_dim = padding.get('dim',0)
+<<<<<<< HEAD
             pad_num = padding['num'] - dims[target_dim]
             assert pad_num >= 0, f"{key}: target padding num is {padding['num']}, but current dim is {dims[target_dim]}"
+=======
+            pad_num = padding['shape'] - dims[target_dim]
+            assert pad_num >= 0, f"{key}: target padding shape is {padding['shape']}, but current shape is {dims[target_dim]}"
+>>>>>>> tmp
             pad_tuples = [(0, 0)]*len(dims)
             pad_tuples[target_dim] = (0, pad_num)
             results[key] = np.pad(results[key], pad_tuples, 'constant', constant_values=(0, 0))
@@ -144,6 +164,25 @@ class IPUFormatBundle:
 
 @PIPELINES.register_module()
 class IPUCollect:
+<<<<<<< HEAD
+=======
+    """IPU version Collect.
+    The additional feature is:
+        1. meta_tensor_keys specify tensors which will be converted to
+        torch.Tensor
+        2. meta_on determines whether remove img_metas from results
+    Args:
+        keys (Sequence[str]): Keys of results to be collected in ``data``.
+        meta_keys (Sequence[str], optional): Meta keys to be converted to
+            ``mmcv.DataContainer`` and collected in ``data[img_metas]``.
+            Default: ``('filename', 'ori_filename', 'ori_shape', 'img_shape',
+            'pad_shape', 'scale_factor', 'flip', 'flip_direction',
+            'img_norm_cfg')``
+        meta_tensor_keys (tuple[str]): keys of data which will be converted
+            to torch.Tensor
+        meta_on (bool): whether remove img_metas from results or not.
+    """
+>>>>>>> tmp
     def __init__(self,
                  keys,
                  meta_keys=('filename', 'ori_filename', 'ori_shape',
@@ -186,7 +225,14 @@ class IPUCollect:
 
 @PIPELINES.register_module()
 class GetTargetsOutsideForYolo:
+<<<<<<< HEAD
     """Convert normalized image back to int8
+=======
+    """Make anchors and match them with groud truth in YoloV3's method.
+    Args:
+        featmap_sizes (list[int,]): Static featmap size of output tensor of yolo's head.
+        num_levels (int): number of feature levels.
+>>>>>>> tmp
     """
     def __init__(self, featmap_sizes, num_levels=3):
         s1, s2, s3 = featmap_sizes
@@ -195,13 +241,21 @@ class GetTargetsOutsideForYolo:
         self.model = None
 
     def __call__(self, results):
+<<<<<<< HEAD
         """Call convert normalized image back to uint8
+=======
+        """Call generate targets for YoloV3 training
+>>>>>>> tmp
 
         Args:
             results (dict): Result dict from loading pipeline.
 
         Returns:
+<<<<<<< HEAD
             dict: Converted results, results['img'] has been converted to uint8.
+=======
+            dict: Converted results, target_maps_list and neg_maps_list contained.
+>>>>>>> tmp
         """
         img = results['img']
         gt_bboxes = results['gt_bboxes']
@@ -226,4 +280,10 @@ class GetTargetsOutsideForYolo:
         return target_maps_list, neg_maps_list
 
     def set_model_in_ipu_mode(self, model):
+<<<<<<< HEAD
+=======
+        """The specific implementation is in the external model,
+        so this function is used to set target yolo model.
+        """
+>>>>>>> tmp
         self.model = model
