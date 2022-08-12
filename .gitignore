@@ -122,3 +122,9 @@ work_dirs/
 *.pth
 *.py~
 *.sh~
+
+/report*
+/report
+report/debug.cbor
+/custom_ops/
+/engine_cache

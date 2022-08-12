@@ -59,7 +59,8 @@ class SingleStageDetector(BaseDetector):
                       img_metas,
                       gt_bboxes,
                       gt_labels,
-                      gt_bboxes_ignore=None):
+                      gt_bboxes_ignore=None,
+                      **kwargs):
         """
         Args:
             img (Tensor): Input images of shape (N, C, H, W).
@@ -81,10 +82,10 @@ class SingleStageDetector(BaseDetector):
         super(SingleStageDetector, self).forward_train(img, img_metas)
         x = self.extract_feat(img)
         losses = self.bbox_head.forward_train(x, img_metas, gt_bboxes,
-                                              gt_labels, gt_bboxes_ignore)
+                                              gt_labels, gt_bboxes_ignore, **kwargs)
         return losses
 
-    def simple_test(self, img, img_metas, rescale=False):
+    def simple_test(self, img, img_metas, rescale=False, post_process=True):
         """Test function without test-time augmentation.
 
         Args:
@@ -92,6 +93,8 @@ class SingleStageDetector(BaseDetector):
             img_metas (list[dict]): List of image information.
             rescale (bool, optional): Whether to rescale the results.
                 Defaults to False.
+            post_process (bool): Whether to do post processing the
+                inference results. It will convert the output to a list.
 
         Returns:
             list[list[np.ndarray]]: BBox results of each image and classes.
@@ -101,9 +104,14 @@ class SingleStageDetector(BaseDetector):
         feat = self.extract_feat(img)
         results_list = self.bbox_head.simple_test(
             feat, img_metas, rescale=rescale)
+        if post_process:
+            return self.post_process(results_list)
+        return results_list
+
+    def post_process(self, results):
         bbox_results = [
             bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
-            for det_bboxes, det_labels in results_list
+            for det_bboxes, det_labels in results
         ]
         return bbox_results
 
