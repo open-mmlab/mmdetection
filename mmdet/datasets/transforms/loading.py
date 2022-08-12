@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import mmcv
 import numpy as np
@@ -246,7 +246,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         """Private function to load bounding box annotations.
 
         Args:
-            results (dict): Result dict from :obj:``mmcv.BaseDataset``.
+            results (dict): Result dict from :obj:``mmengine.BaseDataset``.
         Returns:
             dict: The dict contains loaded bounding box annotations.
         """
@@ -263,7 +263,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         """Private function to load label annotations.
 
         Args:
-            results (dict): Result dict from :obj :obj:``mmcv.BaseDataset``.
+            results (dict): Result dict from :obj:``mmengine.BaseDataset``.
 
         Returns:
             dict: The dict contains loaded label annotations.
@@ -303,49 +303,71 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         mask = maskUtils.decode(rle)
         return mask
 
-    def process_polygons(self, polygons: List[list]) -> List[np.ndarray]:
-        """Convert polygons to list of ndarray and filter invalid polygons.
+    def _process_masks(self, results: dict) -> list:
+        """Process gt_masks and filter invalid polygons.
 
         Args:
-            polygons (list[list]): Polygons of one instance.
+            results (dict): Result dict from :obj:``mmengine.BaseDataset``.
 
         Returns:
-            list[np.ndarray]: Processed polygons.
+            list: Processed gt_masks.
         """
-
-        polygons = [np.array(p) for p in polygons]
-        valid_polygons = []
-        for polygon in polygons:
-            if len(polygon) % 2 == 0 and len(polygon) >= 6:
-                valid_polygons.append(polygon)
-        return valid_polygons
+        gt_masks = []
+        gt_ignore_flags = []
+        for instance in results['instances']:
+            gt_mask = instance['mask']
+            # If the annotation of segmentation mask is invalid,
+            # ignore the whole instance.
+            if isinstance(gt_mask, list):
+                gt_mask = [
+                    np.array(polygon) for polygon in gt_mask
+                    if len(polygon) % 2 == 0 and len(polygon) >= 6
+                ]
+                if len(gt_mask) == 0:
+                    # ignore this instance and set gt_mask to a fake mask
+                    instance['ignore_flag'] = 1
+                    gt_mask = [np.zeros(6)]
+            elif not self.poly2mask:
+                # `PolygonMasks` requires a ploygon of format List[np.array],
+                # other formats are invalid.
+                instance['ignore_flag'] = 1
+                gt_mask = [np.zeros(6)]
+            elif isinstance(gt_mask, dict) and \
+                    not (gt_mask.get('counts') is not None and
+                         gt_mask.get('size') is not None and
+                         isinstance(gt_mask['counts'], list)):
+                # if gt_mask is a dict, it should include `counts` and `size`,
+                # so that `BitmapMasks` can uncompressed RLE
+                instance['ignore_flag'] = 1
+                gt_mask = [np.zeros(6)]
+            gt_masks.append(gt_mask)
+            # re-process gt_ignore_flags
+            gt_ignore_flags.append(instance['ignore_flag'])
+        results['gt_ignore_flags'] = np.array(gt_ignore_flags, dtype=np.bool)
+        return gt_masks
 
     def _load_masks(self, results: dict) -> None:
         """Private function to load mask annotations.
 
         Args:
-            results (dict): Result dict from :obj:``mmcv.BaseDataset``.
+            results (dict): Result dict from :obj:``mmengine.BaseDataset``.
         """
 
         h, w = results['img_shape']
-        gt_masks = []
-        for instance in results['instances']:
-            if 'mask' in instance:
-                gt_masks.append(instance['mask'])
+        gt_masks = self._process_masks(results)
         if self.poly2mask:
             gt_masks = BitmapMasks(
                 [self._poly2mask(mask, h, w) for mask in gt_masks], h, w)
         else:
-            gt_masks = PolygonMasks(
-                [self.process_polygons(polygons) for polygons in gt_masks], h,
-                w)
+            # fake polygon masks will be ignored in `PackDetInputs`
+            gt_masks = PolygonMasks([mask for mask in gt_masks], h, w)
         results['gt_masks'] = gt_masks
 
     def transform(self, results: dict) -> dict:
         """Function to load multiple types annotations.
 
         Args:
-            results (dict): Result dict from :obj:``mmcv.BaseDataset``.
+            results (dict): Result dict from :obj:``mmengine.BaseDataset``.
 
         Returns:
             dict: The dict contains loaded bounding box, label and
