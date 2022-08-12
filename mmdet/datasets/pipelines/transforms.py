@@ -591,19 +591,15 @@ class Pad:
             Currently only used for YOLOX. Default: False.
         pad_val (dict, optional): A dict for padding value, the default
             value is `dict(img=0, masks=0, seg=255)`.
-        adaptive_pad_val (bool): Whether to set pad value of image data
-        to mean of image.
     """
 
     def __init__(self,
                  size=None,
                  size_divisor=None,
                  pad_to_square=False,
-                 pad_val=dict(img=0, masks=0, seg=255),
-                 adaptive_pad_val=False):
+                 pad_val=dict(img=0, masks=0, seg=255)):
         self.size = size
         self.size_divisor = size_divisor
-        self.adaptive_pad_val = adaptive_pad_val
         if isinstance(pad_val, float) or isinstance(pad_val, int):
             warnings.warn(
                 'pad_val of float type is deprecated now, '
@@ -626,8 +622,6 @@ class Pad:
     def _pad_img(self, results):
         """Pad images according to ``self.size``."""
         pad_val = self.pad_val.get('img', 0)
-        if self.adaptive_pad_val:
-            pad_val = float(results['img'].mean())
         for key in results.get('img_fields', ['img']):
             if self.pad_to_square:
                 max_size = max(results[key].shape[:2])
