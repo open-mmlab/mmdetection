@@ -205,6 +205,10 @@ class BaseBoxes(metaclass=ABCMeta):
         """Reload ``dtype`` from self.tensor."""
         return self.tensor.dtype
 
+    @property
+    def shape(self) -> torch.Size:
+        return self.tensor.shape
+
     def numpy(self) -> np.ndarray:
         """Reload ``numpy`` from self.tensor."""
         return self.tensor.numpy()
@@ -396,7 +400,8 @@ class BaseBoxes(metaclass=ABCMeta):
 
         Args:
             center (Tuple[float, float]): Rotation origin.
-            angle (float): Rotation angle represented in degrees.
+            angle (float): Rotation angle represented in degrees. Positive
+                values mean clockwise rotation.
         """
         pass
 
