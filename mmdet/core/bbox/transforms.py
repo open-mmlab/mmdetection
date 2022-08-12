@@ -114,7 +114,7 @@ def roi2bbox(rois):
 
 
 def bbox2result(bboxes, labels, num_classes):
-    """Convert detection results to a list of numpy arrays.
+    """将检测结果转换为numpy数组列表,[np].
 
     Args:
         bboxes (torch.Tensor | np.ndarray): shape (n, 5)

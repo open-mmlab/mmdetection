@@ -4,7 +4,7 @@ import numpy as np
 
 
 def palette_val(palette):
-    """Convert palette to matplotlib palette.
+    """将调色板转换为 matplotlib 调色板(∈[0,1]).
 
     Args:
         palette List[tuple]: A list of color tuples.
@@ -59,5 +59,5 @@ def get_palette(palette, num_classes):
         raise TypeError(f'Invalid type for palette: {type(palette)}')
 
     assert len(dataset_palette) >= num_classes, \
-        'The length of palette should not be less than `num_classes`.'
+        '调色板的长度不应小于`num_classes`,否则可能会使两个类的检测框使用同一颜色.'
     return dataset_palette

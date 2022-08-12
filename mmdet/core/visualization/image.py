@@ -83,19 +83,17 @@ def draw_bboxes(ax, bboxes, color='g', alpha=0.8, thickness=2):
 
     Args:
         ax (matplotlib.Axes): The input axes.
-        bboxes (ndarray): The input bounding boxes with the shape
-            of (n, 4).
-        color (list[tuple] | matplotlib.color): the colors for each
-            bounding boxes.
-        alpha (float): Transparency of bounding boxes. Default: 0.8.
-        thickness (int): Thickness of lines. Default: 2.
+        bboxes (ndarray): 边界框的shape (n, 4).
+        color (list[tuple] | matplotlib.color): 每个边界框的颜色.
+        alpha (float): 边界框的透明度. 默认: 0.8.
+        thickness (int): 线条粗细. 默认: 2.
 
     Returns:
         matplotlib.Axes: The result axes.
     """
     polygons = []
     for i, bbox in enumerate(bboxes):
-        bbox_int = bbox.astype(np.int32)
+        bbox_int = bbox.astype(np.int32)  # 逆时针输入各个顶点
         poly = [[bbox_int[0], bbox_int[1]], [bbox_int[0], bbox_int[3]],
                 [bbox_int[2], bbox_int[3]], [bbox_int[2], bbox_int[1]]]
         np_poly = np.array(poly).reshape((4, 2))
@@ -124,15 +122,14 @@ def draw_labels(ax,
 
     Args:
         ax (matplotlib.Axes): The input axes.
-        labels (ndarray): The labels with the shape of (n, ).
-        positions (ndarray): The positions to draw each labels.
-        scores (ndarray): The scores for each labels.
-        class_names (list[str]): The class names.
-        color (list[tuple] | matplotlib.color): The colors for labels.
-        font_size (int): Font size of texts. Default: 8.
-        scales (list[float]): Scales of texts. Default: None.
-        horizontal_alignment (str): The horizontal alignment method of
-            texts. Default: 'left'.
+        labels (ndarray): labels的 shape (n, ).
+        positions (ndarray): 每个label的左上角坐标.
+        scores (ndarray): 每个label对应检测框的置信度.
+        class_names (list[str]): 总类别列表.
+        color (list[tuple] | matplotlib.color): label的颜色.
+        font_size (int): 文本的字体大小.
+        scales (list[float]): 文本的尺度.
+        horizontal_alignment (str): 文本的水平对齐方法.
 
     Returns:
         matplotlib.Axes: The result axes.
@@ -220,36 +217,30 @@ def imshow_det_bboxes(img,
                       show=True,
                       wait_time=0,
                       out_file=None):
-    """Draw bboxes and class labels (with scores) on an image.
+    """在图像上绘制 检测框及其所属类别(带有置信度).
 
     Args:
-        img (str | ndarray): The image to be displayed.
-        bboxes (ndarray): Bounding boxes (with scores), shaped (n, 4) or
-            (n, 5).
-        labels (ndarray): Labels of bboxes.
+        img (str | ndarray): 要显示的图像.
+        bboxes (ndarray): 检测框(带有置信度), shaped (n, 4) or (n, 5).
+        labels (ndarray): 检测框所属类别.
         segms (ndarray | None): Masks, shaped (n,h,w) or None.
-        class_names (list[str]): Names of each classes.
-        score_thr (float): Minimum score of bboxes to be shown. Default: 0.
-        bbox_color (list[tuple] | tuple | str | None): Colors of bbox lines.
-           If a single color is given, it will be applied to all classes.
-           The tuple of color should be in RGB order. Default: 'green'.
-        text_color (list[tuple] | tuple | str | None): Colors of texts.
-           If a single color is given, it will be applied to all classes.
-           The tuple of color should be in RGB order. Default: 'green'.
-        mask_color (list[tuple] | tuple | str | None, optional): Colors of
-           masks. If a single color is given, it will be applied to all
-           classes. The tuple of color should be in RGB order.
-           Default: None.
-        thickness (int): Thickness of lines. Default: 2.
-        font_size (int): Font size of texts. Default: 13.
-        show (bool): Whether to show the image. Default: True.
-        win_name (str): The window name. Default: ''.
-        wait_time (float): Value of waitKey param. Default: 0.
-        out_file (str, optional): The filename to write the image.
-            Default: None.
+        class_names (list[str]): 识别类别的列表.
+        score_thr (float): 显示检测框的置信度阈值,低于该值的检测框将不予显示.
+        bbox_color (list[tuple] | tuple | str | None): 检测框的线条颜色.
+           如果给出单一颜色,它将应用于所有类别.颜色的元组应该是 RGB 顺序.
+        text_color (list[tuple] | tuple | str | None): 文本的颜色.
+           如果给出单一颜色,它将应用于所有类别.颜色的元组应该是 RGB 顺序.
+        mask_color (list[tuple] | tuple | str | None, optional): mask颜色
+           如果给出单一颜色,它将应用于所有类别.颜色的元组应该是 RGB 顺序.
+        thickness (int): 线条粗细. Default: 2.
+        font_size (int): 文本的字体大小. Default: 13.
+        show (bool): 是否显示图片. Default: True.
+        win_name (str): 如果显示图片时,窗口的名称. Default: ''.
+        wait_time (float): 间隔时间.默认为: 0ms.意为无限等待.
+        out_file (str, optional): 图像保存的文件名.
 
     Returns:
-        ndarray: The image with bboxes drawn on it.
+        ndarray: 绘制了检测框的图像.
     """
     assert bboxes is None or bboxes.ndim == 2, \
         f' bboxes ndim should be 2, but its ndim is {bboxes.ndim}.'
@@ -304,9 +295,9 @@ def imshow_det_bboxes(img,
         draw_bboxes(ax, bboxes, colors, alpha=0.8, thickness=thickness)
 
         horizontal_alignment = 'left'
-        positions = bboxes[:, :2].astype(np.int32) + thickness
+        positions = bboxes[:, :2].astype(np.int32) + thickness  # label向右下偏移thickness
         areas = (bboxes[:, 3] - bboxes[:, 1]) * (bboxes[:, 2] - bboxes[:, 0])
-        scales = _get_adaptive_scales(areas)
+        scales = _get_adaptive_scales(areas)  # 根据检测框面积来适应性调整它上面的文本尺寸
         scores = bboxes[:, 4] if bboxes.shape[1] == 5 else None
         draw_labels(
             ax,
@@ -348,9 +339,12 @@ def imshow_det_bboxes(img,
                 scales=scales,
                 horizontal_alignment=horizontal_alignment)
 
+    # 注意:该操作并非显示图像！！！
+    # 它仅仅是将img放到plt画板上,后续将上面绘制的box label等覆盖上去
+    # 因为之前的绘制操作并非基于img,覆盖完成之后方便后续的显示或保存.
     plt.imshow(img)
 
-    stream, _ = canvas.print_to_buffer()
+    stream, _ = canvas.print_to_buffer()  # 这一步执行覆盖操作
     buffer = np.frombuffer(stream, dtype='uint8')
     if sys.platform == 'darwin':
         width, height = canvas.get_width_height(physical=True)

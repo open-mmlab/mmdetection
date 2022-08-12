@@ -95,8 +95,11 @@ class SingleStageDetector(BaseDetector):
                 外层列表对应每张图片. 内部列表对应每个类.
         """
         feat = self.extract_feat(img)
+        # results_list为一个batch的结果,[(box,label)]*batch
         results_list = self.bbox_head.simple_test(
             feat, img_metas, rescale=rescale)
+        # bbox_results为一个转换后的结果[[box]*num_class]*batch
+        # 当不存在某个class的box时,该box的shape为(0, 5)
         bbox_results = [
             bbox2result(det_bboxes, det_labels, self.bbox_head.num_classes)
             for det_bboxes, det_labels in results_list

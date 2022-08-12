@@ -9,11 +9,11 @@ from .compose import Compose
 
 @PIPELINES.register_module()
 class MultiScaleFlipAug:
-    """Test-time augmentation with multiple scales and flipping.
+    """包含多尺度和翻转的TTA.
 
     An example configuration is as followed:
 
-    .. code-block::
+    .. 该参数通常具有以下格式::
 
         img_scale=[(1333, 400), (1333, 800)],
         flip=True,
@@ -26,10 +26,9 @@ class MultiScaleFlipAug:
             dict(type='Collect', keys=['img']),
         ]
 
-    After MultiScaleFLipAug with above configuration, the results are wrapped
-    into lists of the same length as followed:
+    使用上述配置的 MultiScaleFLipAug 之后,数据的内部元素将被包装到相同长度的列表中,如下所示:
 
-    .. code-block::
+    .. 经过TTA处理之后的data格式::
 
         dict(
             img=[...],
@@ -40,15 +39,13 @@ class MultiScaleFlipAug:
         )
 
     Args:
-        transforms (list[dict]): Transforms to apply in each augmentation.
-        img_scale (tuple | list[tuple] | None): Images scales for resizing.
-        scale_factor (float | list[float] | None): Scale factors for resizing.
-        flip (bool): Whether apply flip augmentation. Default: False.
-        flip_direction (str | list[str]): Flip augmentation directions,
-            options are "horizontal", "vertical" and "diagonal". If
-            flip_direction is a list, multiple flip augmentations will be
-            applied. It has no effect when flip == False. Default:
-            "horizontal".
+        transforms (list[dict]): 在每个增强中应用的数据变换.
+        img_scale (tuple | list[tuple] | None): 图像缩放的最大尺寸(各边).
+        scale_factor (float | list[float] | None): 图像调整大小的各边比例因子.
+        flip (bool): 是否应用翻转增强. Default: False.
+        flip_direction (str | list[str]): 翻转方向,可选 "horizontal",
+            "vertical" and "diagonal". 如果 flip_direction 是一个列表,
+            将应用多个翻转增强.当 flip == False时将忽略该参数. Default:"horizontal".
     """
 
     def __init__(self,
@@ -59,7 +56,7 @@ class MultiScaleFlipAug:
                  flip_direction='horizontal'):
         self.transforms = Compose(transforms)
         assert (img_scale is None) ^ (scale_factor is None), (
-            'Must have but only one variable can be set')
+            '二者必须且只能存在一个')
         if img_scale is not None:
             self.img_scale = img_scale if isinstance(img_scale,
                                                      list) else [img_scale]
@@ -76,21 +73,20 @@ class MultiScaleFlipAug:
         assert mmcv.is_list_of(self.flip_direction, str)
         if not self.flip and self.flip_direction != ['horizontal']:
             warnings.warn(
-                'flip_direction has no effect when flip is set to False')
+                '当 flip 设置为 False 时, 参数flip_direction会被忽略')
         if (self.flip
                 and not any([t['type'] == 'RandomFlip' for t in transforms])):
             warnings.warn(
-                'flip has no effect when RandomFlip is not in transforms')
+                '当 RandomFlip 不在transforms中时, flip参数无效')
 
     def __call__(self, results):
-        """Call function to apply test time augment transforms on results.
+        """对results进行TTA操作.
 
         Args:
             results (dict): Result dict contains the data to transform.
 
         Returns:
-           dict[str: list]: The augmented data, where each value is wrapped
-               into a list.
+           dict[str: list]: The augmented data, 每个值都包含在一个列表中.
         """
 
         aug_data = []
@@ -106,7 +102,7 @@ class MultiScaleFlipAug:
                 _results['flip_direction'] = direction
                 data = self.transforms(_results)
                 aug_data.append(data)
-        # list of dict to dict of list
+        # list of dict to dict of list [{}]*n -> {[]*n} ,n代指TTA数量
         aug_data_dict = {key: [] for key in aug_data[0]}
         for data in aug_data:
             for key, val in data.items():

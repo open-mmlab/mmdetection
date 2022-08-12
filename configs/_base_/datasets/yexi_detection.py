@@ -34,8 +34,8 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
+    samples_per_gpu=3,
+    workers_per_gpu=3,
     train=dict(
         type=dataset_type,
         ann_file=data_root + 'yexi_train.json',
@@ -50,8 +50,8 @@ data = dict(
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'yexi_test.json',
+        ann_file=data_root + 'yexi_val.json',
         img_prefix=data_root + 'images/',
         classes=classes,
         pipeline=test_pipeline))
-evaluation = dict(interval=1, metric='bbox')
+evaluation = dict(interval=1, metric='bbox', classwise=True)

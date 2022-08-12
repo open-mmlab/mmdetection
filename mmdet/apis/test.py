@@ -34,6 +34,14 @@ def single_gpu_test(model,
                 img_tensor = data['img'][0]
             else:
                 img_tensor = data['img'][0].data[0]
+            # bs=1时,在['img']后[0]的原因是在test阶段MultiScaleFlipAug会将data中的各个value
+            # 都用list包住,如果应用了翻转或者多尺度的话,那么列表中就会有多个数据
+            # bs!=1时,mmdet会自动将pipline中的ImageToTensor替换为DefaultFormatBundle(如果必要的话)
+            # 它会将数据在外面包一层DataContainer,而如果要获取数据则需要使用DataContainer的.data方法,
+            # 这也是上面data['img'][0]后接.data的原因,而在其之后仍需[0]的原因在于
+            # mmdet会默认对Dataloader使用DP模式,而此时就会将数据分为n个GPU添加进[]中去
+            # 即:如果是多卡DP的话,那么[]内部则是属于各个卡的数据
+            # 但由于mmdet默认多卡为DDP模式,所以DP始终为单卡模式,即[]内只有一个卡的数据,所以这里需要再进行[0]
             img_metas = data['img_metas'][0].data[0]
             imgs = tensor2imgs(img_tensor, **img_metas[0]['img_norm_cfg'])
             assert len(imgs) == len(img_metas)

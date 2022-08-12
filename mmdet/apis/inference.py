@@ -16,18 +16,15 @@ from mmdet.models import build_detector
 
 
 def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
-    """Initialize a detector from config file.
+    """从配置文件初始化检测模型.
 
     Args:
-        config (str, :obj:`Path`, or :obj:`mmcv.Config`): Config file path,
-            :obj:`Path`, or the config object.
-        checkpoint (str, optional): Checkpoint path. If left as None, the model
-            will not load any weights.
-        cfg_options (dict): Options to override some settings in the used
-            config.
+        config (str, :obj:`Path`, or :obj:`mmcv.Config`): 配置文件路径,或配置对象.
+        checkpoint (str, optional): 权重路径. 如果为None, 模型不会加载任何权重.
+        cfg_options (dict): 覆盖所用配置中的某些设置的选项.
 
     Returns:
-        nn.Module: The constructed detector.
+        nn.Module: 初始化后的检测模型.
     """
     if isinstance(config, (str, Path)):
         config = mmcv.Config.fromfile(config)
@@ -40,8 +37,8 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
         config.model.pretrained = None
     elif 'init_cfg' in config.model.backbone:
         config.model.backbone.init_cfg = None
-    config.model.train_cfg = None
-    model = build_detector(config.model, test_cfg=config.get('test_cfg'))
+    config.model.train_cfg = None  # 避免构建只在train才使用的方法,build_assigner等
+    model = build_detector(config.model)
     if checkpoint is not None:
         checkpoint = load_checkpoint(model, checkpoint, map_location='cpu')
         if 'CLASSES' in checkpoint.get('meta', {}):
@@ -50,7 +47,7 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
             warnings.simplefilter('once')
             warnings.warn('Class names are not saved in the checkpoint\'s '
                           'meta data, use COCO classes by default.')
-            model.CLASSES = get_classes('coco')
+            model.CLASSES = get_classes('coco')  # 初始化为coco的80类
     model.cfg = config  # save the config in the model for convenience
     model.to(device)
     model.eval()
@@ -91,16 +88,15 @@ class LoadImage:
 
 
 def inference_detector(model, imgs):
-    """Inference image(s) with the detector.
+    """使用检测模型推理单(多)幅图像.
 
     Args:
-        model (nn.Module): The loaded detector.
+        model (nn.Module): 已加载的检测器模型.
         imgs (str/ndarray or list[str/ndarray] or tuple[str/ndarray]):
-           Either image files or loaded images.
+           图像文件路径或已加载的numpy数据,可为单个str/np 或者[str/np,]/(str/np,).
 
     Returns:
-        If imgs is a list or tuple, the same length list type results
-        will be returned, otherwise return the detection results directly.
+        如果 imgs 是列表或元组, 则返回相同长度的列表类型结果, 否则直接返回检测结果.
     """
 
     if isinstance(imgs, (list, tuple)):
@@ -114,7 +110,7 @@ def inference_detector(model, imgs):
 
     if isinstance(imgs[0], np.ndarray):
         cfg = cfg.copy()
-        # set loading pipeline type
+        # 如果参数img是numpy型数据,那么切换数据加载方式
         cfg.data.test.pipeline[0].type = 'LoadImageFromWebcam'
 
     cfg.data.test.pipeline = replace_ImageToTensor(cfg.data.test.pipeline)
@@ -122,30 +118,33 @@ def inference_detector(model, imgs):
 
     datas = []
     for img in imgs:
-        # prepare data
+        # 准备数据,当img为numpy数据时,代表它已是无需加载的
         if isinstance(img, np.ndarray):
-            # directly add img
+            # 直接添加img
             data = dict(img=img)
         else:
-            # add information into dict
+            # 否则需要通过LoadImageFromFile来从路径中加载图片
             data = dict(img_info=dict(filename=img), img_prefix=None)
         # build the data pipeline
         data = test_pipeline(data)
         datas.append(data)
 
     data = collate(datas, samples_per_gpu=len(imgs))
-    # just get the actual data from DataContainer
+    # {'img_metas':[DC([]),], 'img':[DC[tensor(bs, 3, 480, 640),],]}
+    # 最外面的[]是TTA数量,里面的[]中的数据是GPU数量的数据,TTA与bs不能同时大于1
+    # inference_detector 默认单卡推理,所以DC包裹的列表长度为1
+    # 此处的.data[0]意为从DataContainer(.data)获取第一张卡([0])的数据
     data['img_metas'] = [img_metas.data[0] for img_metas in data['img_metas']]
     data['img'] = [img.data[0] for img in data['img']]
     if next(model.parameters()).is_cuda:
-        # scatter to specified GPU
+        # 将数据分配到指定的 GPU
         data = scatter(data, [device])[0]
     else:
         for m in model.modules():
             assert not isinstance(
                 m, RoIPool
             ), 'CPU inference with RoIPool is not supported currently.'
-
+    print()
     # forward the model
     with torch.no_grad():
         results = model(return_loss=False, rescale=True, **data)
@@ -221,19 +220,17 @@ def show_result_pyplot(model,
                        wait_time=0,
                        palette=None,
                        out_file=None):
-    """Visualize the detection results on the image.
+    """在图像上绘制检测结果.
 
     Args:
-        model (nn.Module): The loaded detector.
-        img (str or np.ndarray): Image filename or loaded image.
-        result (tuple[list] or list): The detection result, can be either
-            (bbox, segm) or just bbox.
-        score_thr (float): The threshold to visualize the bboxes and masks.
-        title (str): Title of the pyplot figure.
-        wait_time (float): Value of waitKey param. Default: 0.
-        palette (str or tuple(int) or :obj:`Color`): Color.
-            The tuple of color should be in BGR order.
-        out_file (str or None): The path to write the image.
+        model (nn.Module): 加载的检测模型.
+        img (str or np.ndarray): 图像文件名或加载的图像数据.
+        result (tuple[list] or list): 检测结果,可以是 (bbox, segm) 或只是 bbox.
+        score_thr (float): boxes 和 mask 的置信度显示阈值.
+        title (str): 图像展示窗口的标题.
+        wait_time (float): waitKey 参数的值. 默认为: 0ms.意为无限等待
+        palette (str or tuple(int) or :obj:`Color`): 颜色, 如果是元组应按 BGR 顺序.
+        out_file (str or None): 图片保存的路径.
             Default: None.
     """
     if hasattr(model, 'module'):

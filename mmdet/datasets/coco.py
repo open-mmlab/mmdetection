@@ -421,36 +421,29 @@ class CocoDataset(CustomDataset):
                           proposal_nums=(100, 300, 1000),
                           iou_thrs=None,
                           metric_items=None):
-        """Instance segmentation and object detection evaluation in COCO
-        protocol.
+        """以COCO的方式来测试实例分割和目标检测的精度.
 
         Args:
-            results (list[list | tuple | dict]): Testing results of the
-                dataset.
-            result_files (dict[str, str]): a dict contains json file path.
-            coco_gt (COCO): COCO API object with ground truth annotation.
-            metric (str | list[str]): Metrics to be evaluated. Options are
+            results (list[list | tuple | dict]): 数据集的测试结果.
+            result_files (dict[str, str]): 一个包含json文件路径的 dict .
+            coco_gt (COCO): 实例化的COCO对象,比如COCO(ann_file).
+            metric (str | list[str]): 评估指标. 以下为可选项
                 'bbox', 'segm', 'proposal', 'proposal_fast'.
-            logger (logging.Logger | str | None): Logger used for printing
-                related information during evaluation. Default: None.
-            classwise (bool): Whether to evaluating the AP for each class.
-            proposal_nums (Sequence[int]): Proposal number used for evaluating
-                recalls, such as recall@100, recall@1000.
-                Default: (100, 300, 1000).
-            iou_thrs (Sequence[float], optional): IoU threshold used for
-                evaluating recalls/mAPs. If set to a list, the average of all
-                IoUs will also be computed. If not specified, [0.50, 0.55,
-                0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95] will be used.
-                Default: None.
-            metric_items (list[str] | str, optional): Metric items that will
-                be returned. If not specified, ``['AR@100', 'AR@300',
-                'AR@1000', 'AR_s@1000', 'AR_m@1000', 'AR_l@1000' ]`` will be
-                used when ``metric=='proposal'``, ``['mAP', 'mAP_50', 'mAP_75',
-                'mAP_s', 'mAP_m', 'mAP_l']`` will be used when
-                ``metric=='bbox' or metric=='segm'``.
+            logger (logging.Logger | str | None): 用于在测试期间打印相关信息的Logger.
+            classwise (bool): 是否测试每个类的AP.
+            proposal_nums (Sequence[int]): 用于计算召回率的最大预测数,代表最多取前n个框
+                比如 recall@100, recall@1000.
+            iou_thrs (Sequence[float], optional): 用于计算估recall/mAP的 IoU 阈值.
+                如果设置为列表,还将计算所有 IoU 的平均值.如未指定,将使用0.5:0.95:0.05
+                [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95].
+            metric_items (list[str] | str, optional): 将返回的指标项. 如未指定,
+                当``metric=='proposal'``时,使用``['AR@100', 'AR@300', 'AR@1000',
+                'AR_s@1000', 'AR_m@1000', 'AR_l@1000' ]``.
+                当``metric=='bbox' or metric=='segm'``时,使用``['mAP', 'mAP_50',
+                'mAP_75', 'mAP_s', 'mAP_m', 'mAP_l']``.
 
         Returns:
-            dict[str, float]: COCO style evaluation metric.
+            dict[str, float]: COCO格式的测试指标.
         """
         if iou_thrs is None:
             iou_thrs = np.linspace(
@@ -626,35 +619,29 @@ class CocoDataset(CustomDataset):
                  proposal_nums=(100, 300, 1000),
                  iou_thrs=None,
                  metric_items=None):
-        """Evaluation in COCO protocol.
+        """以COCO格式来计算精度.
 
         Args:
-            results (list[list | tuple]): Testing results of the dataset.
-            metric (str | list[str]): Metrics to be evaluated. Options are
+            results (list[list | tuple]): 数据集的测试结果.
+            metric (str | list[str]): 评估指标. 以下为可选项
                 'bbox', 'segm', 'proposal', 'proposal_fast'.
-            logger (logging.Logger | str | None): Logger used for printing
-                related information during evaluation. Default: None.
-            jsonfile_prefix (str | None): The prefix of json files. It includes
-                the file path and the prefix of filename, e.g., "a/b/prefix".
-                If not specified, a temp file will be created. Default: None.
-            classwise (bool): Whether to evaluating the AP for each class.
-            proposal_nums (Sequence[int]): Proposal number used for evaluating
-                recalls, such as recall@100, recall@1000.
-                Default: (100, 300, 1000).
-            iou_thrs (Sequence[float], optional): IoU threshold used for
-                evaluating recalls/mAPs. If set to a list, the average of all
-                IoUs will also be computed. If not specified, [0.50, 0.55,
-                0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95] will be used.
-                Default: None.
-            metric_items (list[str] | str, optional): Metric items that will
-                be returned. If not specified, ``['AR@100', 'AR@300',
-                'AR@1000', 'AR_s@1000', 'AR_m@1000', 'AR_l@1000' ]`` will be
-                used when ``metric=='proposal'``, ``['mAP', 'mAP_50', 'mAP_75',
-                'mAP_s', 'mAP_m', 'mAP_l']`` will be used when
-                ``metric=='bbox' or metric=='segm'``.
+            logger (logging.Logger | str | None): 用于在测试期间打印相关信息的Logger.
+            jsonfile_prefix (str | None): json文件的前缀. 它包括文件路径和文件名的前缀,
+                比如, "a/b/prefix".如未指定, 将创建一个临时文件.
+            classwise (bool): 是否测试每个类的AP.
+            proposal_nums (Sequence[int]): 用于计算召回率的最大预测数,代表最多取前n个框
+                比如 recall@100, recall@1000.
+            iou_thrs (Sequence[float], optional): 用于评估recall/mAP的 IoU 阈值.
+                如果设置为列表,还将计算所有 IoU 的平均值.如未指定,将使用0.5:0.95:0.05
+                [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95].
+            metric_items (list[str] | str, optional): 将返回的指标项. 如未指定,
+                当``metric=='proposal'``时,使用``['AR@100', 'AR@300', 'AR@1000',
+                'AR_s@1000', 'AR_m@1000', 'AR_l@1000' ]``.
+                当``metric=='bbox' or metric=='segm'``时,使用``['mAP', 'mAP_50',
+                'mAP_75', 'mAP_s', 'mAP_m', 'mAP_l']``.
 
         Returns:
-            dict[str, float]: COCO style evaluation metric.
+            dict[str, float]: COCO格式的测试指标.
         """
 
         metrics = metric if isinstance(metric, list) else [metric]

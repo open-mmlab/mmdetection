@@ -23,8 +23,8 @@ from mmdet.utils import (build_ddp, build_dp, compat_cfg, get_device,
 
 def parse_args():
     parser = argparse.ArgumentParser(description='MMDet test (and eval) a model')
-    parser.add_argument('config', help='测试配置文件路径')
-    parser.add_argument('checkpoint', help='模型文件')
+    parser.add_argument('--config', help='测试配置文件路径',default=r'D:\mmdetection\configs\retinanet\retinanet_r50_fpn_1x_coco.py')
+    parser.add_argument('--checkpoint', help='模型文件',default=r'D:\mmdetection\tools\work_dirs\retinanet_r50_fpn_1x_coco\epoch_12.pth')
     parser.add_argument('--work-dir', help='保存包含评估指标的文件的目录')
     parser.add_argument('--out', help='以pickle格式输出结果文件')
     parser.add_argument('--fuse-conv-bn', action='store_true', help='是否融合conv和bn, 这将略微提高推理速度')
@@ -33,7 +33,7 @@ def parse_args():
                         '当您想将结果格式化为特定格式并将其提交到测试服务器时,它很有用')
     parser.add_argument('--eval', type=str, nargs='+', help='评估指标, 取决于数据集.'
                         '例如, COCO: "bbox", "segm", "proposal", VOC: "mAP", "recall"')
-    parser.add_argument('--show', action='store_true', help='是否显示结果')
+    parser.add_argument('--show', action='store_true', help='是否显示结果',default=True)
     parser.add_argument('--show-dir', help='将保存绘制图像的目录')
     parser.add_argument('--show-score-thr', type=float, default=0.3, help='分数阈值(默认值：0.3)')
     parser.add_argument('--gpu-collect', action='store_true', help='是否使用gpu收集结果.')
@@ -57,8 +57,13 @@ def main():
 
     assert args.out or args.eval or args.format_only or args.show \
         or args.show_dir, \
-        ('请使用以下参数 "--out", "--eval", "--format-only", "--show" or "--show-dir"'
-         '指定至少一项操作 (save/eval/format/show the results/save the results) ')
+        ('请至少指定一项操作 "--out", "--eval", "--format-only", "--show" or "--show-dir"\n'
+         '其中分别代表,1.将检测结果保存为pickle文件\n'
+         '          2.仅仅计算box/seg等的精度\n'
+         '          3.将检测结果保存为COCO格式,以便提交给服务器\n'
+         '          4.将检测结果绘制到原始图片上去,并显示出来\n'
+         '          5.将检测结果绘制到原始图片上去,并保存下来\n'
+         '          注! eval 与 format-only 同时指定会报错,指定 show-dir 则忽略 show ')
 
     if args.eval and args.format_only:
         raise ValueError('--eval 和 --format_only 不能同时指定')
@@ -147,7 +152,7 @@ def main():
 
     # 构建模型并加载权重
     cfg.model.train_cfg = None
-    model = build_detector(cfg.model, test_cfg=cfg.get('test_cfg'))
+    model = build_detector(cfg.model)
     fp16_cfg = cfg.get('fp16', None)
     if fp16_cfg is not None:
         wrap_fp16_model(model)
