@@ -1,1 +1,0 @@
-python3 tools/test.py configs/yolo/yolov3_d53_320_273e_coco_ipu.py work_dirs/yolov3_dark_ipu_serial6_part1_noPMD_bnFP32_accFP32_TOut/epoch_273.pth --work-dir work_dirs/yolov3_dark_ipu_serial6_part1_noPMD_bnFP32_accFP32_TOut --eval bbox --ipu
