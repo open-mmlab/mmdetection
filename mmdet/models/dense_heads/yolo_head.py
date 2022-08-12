@@ -216,11 +216,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                               rescale=False,
                               with_nms=True):
         """Transform network output for a batch into bbox predictions.
-<<<<<<< HEAD
-        It is an IPU version.
-=======
         It is an IPU static version.
->>>>>>> tmp
 
         Args:
             pred_maps (list[Tensor]): Raw predictions for a batch of images.

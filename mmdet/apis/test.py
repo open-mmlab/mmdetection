@@ -37,10 +37,6 @@ def ipu_test(model,
             else:
                 img_tensor = data['img'][0].data[0]
             img_metas = data['img_metas'][0]
-<<<<<<< HEAD
-            # imgs = tensor2imgs(img_tensor, **img_metas[0]['img_norm_cfg'])
-=======
->>>>>>> tmp
             imgs = [ele.numpy().transpose(1, 2, 0) for ele in img_tensor]
             imgs = [np.ascontiguousarray(img) for img in imgs]
             assert len(imgs) == len(img_metas)
