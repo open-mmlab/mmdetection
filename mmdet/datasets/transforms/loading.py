@@ -327,18 +327,19 @@ class LoadAnnotations(MMCV_LoadAnnotations):
                     # ignore this instance and set gt_mask to a fake mask
                     instance['ignore_flag'] = 1
                     gt_mask = [np.zeros(6)]
-            else:
-                if isinstance(gt_mask, dict) and \
-                        not (gt_mask.get('counts') is not None and
-                             gt_mask.get('size') is not None and
-                             isinstance(gt_mask['counts'], list)):
-                    # ignore this instance and set gt_mask to a fake mask
-                    instance['ignore_flag'] = 1
-                    gt_mask = [np.zeros(6)]
-                if not self.poly2mask:
-                    # deal with invalid polygons
-                    instance['ignore_flag'] = 1
-                    gt_mask = [np.zeros(6)]
+            elif not self.poly2mask:
+                # `PolygonMasks` requires a ploygon of format List[np.array],
+                # other formats are invalid.
+                instance['ignore_flag'] = 1
+                gt_mask = [np.zeros(6)]
+            elif isinstance(gt_mask, dict) and \
+                    not (gt_mask.get('counts') is not None and
+                         gt_mask.get('size') is not None and
+                         isinstance(gt_mask['counts'], list)):
+                # if gt_mask is a dict, it should include `counts` and `size`,
+                # so that `BitmapMasks` can uncompressed RLE
+                instance['ignore_flag'] = 1
+                gt_mask = [np.zeros(6)]
             gt_masks.append(gt_mask)
             # re-process gt_ignore_flags
             gt_ignore_flags.append(instance['ignore_flag'])
