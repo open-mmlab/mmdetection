@@ -10,6 +10,7 @@ import torch.nn.functional as F
 from mmcv.cnn import (ConvModule, bias_init_with_prob, constant_init, is_norm,
                       normal_init)
 from mmcv.runner import force_fp32
+from mmcv.device.ipu import slice_statically, nms_ipu, remap_tensor
 
 from mmdet.core import (build_assigner, build_bbox_coder,
                         build_prior_generator, build_sampler, images_to_levels,
@@ -17,24 +18,6 @@ from mmdet.core import (build_assigner, build_bbox_coder,
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
-
-
-def remap_tensor(inp, bwd_clone_layout=False):
-    import ctypes
-    import poptorch
-    ctypes.cdll.LoadLibrary("/localdata/cn-customer-engineering/hudi/mmdetection_hudi/custom_ops/custom_ops.so")
-    # ctypes.cdll.LoadLibrary('custom_ops/custom_ops.so')
-    org_type = inp.dtype
-    result = poptorch.custom_op([inp],
-                                "RemapCE",
-                                "ai.graphcore",
-                                1,
-                                example_outputs=[inp],
-                                attributes={'grain_size': 8,
-                                            'bwd_clone_layout': int(bwd_clone_layout)}
-                                )[0]
-    # return result.to(org_type)
-    return result
 
 
 @HEADS.register_module()
@@ -99,7 +82,8 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                  test_cfg=None,
                  init_cfg=dict(
                      type='Normal', std=0.01,
-                     override=dict(name='convs_pred'))):
+                     override=dict(name='convs_pred')),
+                 static=False):
         super(YOLOV3Head, self).__init__(init_cfg)
         # Check params
         assert (len(in_channels) == len(out_channels) == len(featmap_strides))
@@ -110,6 +94,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         self.featmap_strides = featmap_strides
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+        self.static = static
         if self.train_cfg:
             self.assigner = build_assigner(self.train_cfg.assigner)
             if hasattr(self.train_cfg, 'sampler'):
@@ -222,6 +207,123 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             pred_maps.append(pred_map)
 
         return tuple(pred_maps),
+
+    @force_fp32(apply_to=('pred_maps', ))
+    def get_bboxes_statically(self,
+                              pred_maps,
+                              img_metas,
+                              cfg=None,
+                              rescale=False,
+                              with_nms=True):
+        """Transform network output for a batch into bbox predictions.
+        It is an IPU version.
+
+        Args:
+            pred_maps (list[Tensor]): Raw predictions for a batch of images.
+            img_metas (list[dict]): Meta information of each image, e.g.,
+                image size, scaling factor, etc.
+            cfg (mmcv.Config | None): Test / postprocessing configuration,
+                if None, test_cfg would be used. Default: None.
+            rescale (bool): If True, return boxes in original image space.
+                Default: False.
+            with_nms (bool): If True, do nms before return boxes.
+                Default: True.
+
+        Returns:
+            list[tuple[Tensor, Tensor]]: Each item in result_list is 2-tuple.
+                The first item is an (n, 5) tensor, where 5 represent
+                (tl_x, tl_y, br_x, br_y, score) and the score between 0 and 1.
+                The shape of the second tensor in the tuple is (n,), and
+                each element represents the class label of the corresponding
+                box.
+        """
+        assert with_nms, "NMS is hardcoded in the IPU implementation"
+        # There is no fp16 in the trace phase, so force_fp32 does not take effect
+        pred_maps = [ele.float() for ele in pred_maps]
+
+        assert len(pred_maps) == self.num_levels
+        cfg = self.test_cfg if cfg is None else cfg
+
+        num_imgs = len(img_metas)
+        featmap_sizes = [pred_map.shape[-2:] for pred_map in pred_maps]
+
+        mlvl_anchors = self.prior_generator.grid_priors(
+            featmap_sizes, device=pred_maps[0].device)
+        flatten_preds = []
+        flatten_strides = []
+        for pred, stride in zip(pred_maps, self.featmap_strides):
+            pred = pred.permute(0, 2, 3, 1).reshape(num_imgs, -1,
+                                                    self.num_attrib)
+            pred_logits = torch.sigmoid(pred[..., :2])
+            pred = torch.cat([pred_logits, pred[..., 2:]], dim=-1)
+            flatten_preds.append(pred)
+            flatten_strides.append(
+                pred.new_tensor(stride).expand(pred.size(1)))
+
+        flatten_preds = torch.cat(flatten_preds, dim=1)
+        flatten_bbox_preds = flatten_preds[..., :4]
+        flatten_objectness = flatten_preds[..., 4].sigmoid()
+        flatten_cls_scores = flatten_preds[..., 5:].sigmoid()
+        flatten_anchors = torch.cat(mlvl_anchors)
+        flatten_strides = torch.cat(flatten_strides)
+        flatten_bboxes = self.bbox_coder.decode(flatten_anchors,
+                                                flatten_bbox_preds,
+                                                flatten_strides.unsqueeze(-1))
+
+        if rescale:
+            scale_factors = [img_meta['scale_factor'].unsqueeze(0).unsqueeze(0) for img_meta in img_metas]
+            scale_factors = torch.cat(scale_factors, dim=0)
+            flatten_bboxes = flatten_bboxes / scale_factors
+
+        padding = flatten_bboxes.new_zeros(num_imgs, flatten_bboxes.shape[1],
+                                           1)
+        flatten_cls_scores = torch.cat([flatten_cls_scores, padding], dim=-1)
+
+        det_results = []
+        for (bboxes, scores, objectness) in zip(flatten_bboxes,
+                                                flatten_cls_scores,
+                                                flatten_objectness):
+            # Filtering out all predictions with conf < conf_thr
+            conf_thr = cfg.get('conf_thr', -1)
+            if conf_thr > 0:
+                conf_inds = objectness >= conf_thr
+                bboxes = bboxes.float() * conf_inds.unsqueeze(-1)
+                scores = scores.float() * conf_inds.unsqueeze(-1)
+                objectness = objectness.float() * conf_inds
+
+            # last column is background
+            num_class_exclude_groud = scores.shape[-1] - 1
+            det_bboxes_list = []
+            det_labels_list = []
+            for i in range(num_class_exclude_groud):
+                mask_by_score_thr = scores[:, i] > cfg.score_thr
+                single_class_score = scores[:, i] * objectness
+                single_class_bboxes = bboxes.clone() * mask_by_score_thr.unsqueeze(-1)
+                single_class_score = single_class_score * mask_by_score_thr
+                iou_thrd = cfg.nms['iou_threshold']
+                num_dets = cfg.max_per_img
+                single_class_bboxes = remap_tensor(single_class_bboxes)
+                single_class_score = remap_tensor(single_class_score)
+                _, det_boxes, boxes_keep = nms_ipu(single_class_bboxes,
+                                                   single_class_score,
+                                                   iou_thrd,
+                                                   num_dets)
+                det_scores = slice_statically(single_class_score, boxes_keep, dim=0).unsqueeze(-1)
+                valid_flags = (boxes_keep>=0).unsqueeze(-1)
+                det_scores = det_scores * valid_flags
+                det_bboxes = torch.cat([det_boxes, det_scores], dim=1)
+                det_labels = torch.ones([det_bboxes.shape[0]], dtype=torch.long) * i
+                det_bboxes_list.append(det_bboxes)
+                det_labels_list.append(det_labels)
+            _det_bboxes = torch.cat(det_bboxes_list, dim=0)
+            _det_labels = torch.cat(det_labels_list, dim=0)
+
+            det_scores = _det_bboxes[:, 4]
+            keep = torch.topk(det_scores, k=cfg.max_per_img).indices
+            det_bboxes = slice_statically(_det_bboxes, keep, dim=0)
+            det_labels = slice_statically(_det_labels, keep, dim=0)
+            det_results.append(tuple([det_bboxes, det_labels]))
+        return det_results
 
     @force_fp32(apply_to=('pred_maps', ))
     def get_bboxes(self,

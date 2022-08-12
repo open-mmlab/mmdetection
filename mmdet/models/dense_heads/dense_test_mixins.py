@@ -34,8 +34,12 @@ class BBoxTestMixin(object):
                 with shape (n,)
         """
         outs = self.forward(feats)
-        results_list = self.get_bboxes(
-            *outs, img_metas=img_metas, rescale=rescale)
+        if self.static:
+            results_list = self.get_bboxes_statically(
+                *outs, img_metas=img_metas, rescale=rescale)
+        else:
+            results_list = self.get_bboxes(
+                *outs, img_metas=img_metas, rescale=rescale)
         return results_list
 
     def aug_test_bboxes(self, feats, img_metas, rescale=False):

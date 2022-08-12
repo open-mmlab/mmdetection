@@ -127,3 +127,4 @@ work_dirs/
 /report
 report/debug.cbor
 /custom_ops/
+/engine_cache
