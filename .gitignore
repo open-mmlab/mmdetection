@@ -123,8 +123,5 @@ work_dirs/
 *.py~
 *.sh~
 
-/report*
-/report
-report/debug.cbor
-/custom_ops/
+# IPU
 /engine_cache
