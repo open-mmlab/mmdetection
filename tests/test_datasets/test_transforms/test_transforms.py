@@ -221,7 +221,7 @@ class TestMinIoURandomCrop(unittest.TestCase):
         gt_bboxes = create_random_bboxes(1, results['img_shape'][1],
                                          results['img_shape'][0])
         results['gt_labels'] = np.ones(gt_bboxes.shape[0], dtype=np.int64)
-        results['gt_bboxes'] = HorizontalBoxes(gt_bboxes)
+        results['gt_bboxes'] = HorizontalBoxes(gt_bboxes, dtype=torch.float32)
         transform = MinIoURandomCrop()
         results = transform.transform(copy.deepcopy(results))
 
@@ -236,8 +236,7 @@ class TestMinIoURandomCrop(unittest.TestCase):
             patch.reshape(-1, 4), results['gt_bboxes'].numpy()).reshape(-1)
         mode = transform.mode
         if mode == 1:
-            self.assertTrue(
-                (results['gt_bboxes'].tensor == gt_bboxes.tensor).all())
+            self.assertTrue((results['gt_bboxes'].numpy() == gt_bboxes).all())
         else:
             self.assertTrue((ious >= mode).all())
 
