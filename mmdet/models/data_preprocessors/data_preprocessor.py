@@ -14,7 +14,6 @@ from torch import Tensor
 
 from mmdet.registry import MODELS
 from mmdet.structures import DetDataSample
-from mmdet.structures.bbox import BaseBoxes
 
 
 @MODELS.register_module()
@@ -71,7 +70,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                  seg_pad_value: int = 255,
                  bgr_to_rgb: bool = False,
                  rgb_to_bgr: bool = False,
-                 with_bbox_mode: bool = False,
+                 with_box_wrapped: bool = False,
                  batch_augments: Optional[List[dict]] = None):
         super().__init__(
             mean=mean,
@@ -89,7 +88,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         self.mask_pad_value = mask_pad_value
         self.pad_seg = pad_seg
         self.seg_pad_value = seg_pad_value
-        self.with_bbox_mode = with_bbox_mode
+        self.with_box_wrapped = with_box_wrapped
 
     def forward(self,
                 data: Sequence[dict],
@@ -121,9 +120,12 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                     'pad_shape': pad_shape
                 })
 
-                if not self.with_bbox_mode and 'bboxes' in data_samples:
-                    if isinstance(data_samples.bboxes, BaseBoxes):
-                        data_samples.bboxes = data_samples.bboxes.tensor
+                # TODO: remove this part when all mode adapted BaseBoxes.
+                if ('gt_instances' in data_samples
+                        and 'bboxes' in data_samples.gt_instances):
+                    if not self.with_box_wrapped:
+                        data_samples.gt_instances.bboxes = \
+                            data_samples.gt_instances.bboxes.tensor
 
             if self.pad_mask:
                 self.pad_gt_masks(batch_data_samples)

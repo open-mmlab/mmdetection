@@ -9,6 +9,7 @@ from mmengine.data import InstanceData
 
 from ..registry import TASK_UTILS
 from ..structures import DetDataSample
+from ..structures.bbox import HorizontalBoxes
 
 
 def _get_config_directory():
@@ -91,7 +92,8 @@ def demo_mm_inputs(batch_size=2,
                    num_classes=10,
                    sem_seg_output_strides=1,
                    with_mask=False,
-                   with_semantic=False):
+                   with_semantic=False,
+                   with_box_wrapped=False):
     """Create a superset of inputs needed to run test or train batches.
 
     Args:
@@ -150,7 +152,11 @@ def demo_mm_inputs(batch_size=2,
 
         bboxes = _rand_bboxes(rng, num_boxes, w, h)
         labels = rng.randint(1, num_classes, size=num_boxes)
-        gt_instances.bboxes = torch.FloatTensor(bboxes)
+        # TODO: remove this part when all model adapted with BaseBoxes
+        if with_box_wrapped:
+            gt_instances.bboxes = HorizontalBoxes(bboxes, dtype=torch.float32)
+        else:
+            gt_instances.bboxes = torch.FloatTensor(bboxes)
         gt_instances.labels = torch.LongTensor(labels)
 
         if with_mask:
