@@ -17,7 +17,7 @@ from mmengine.dataset import BaseDataset
 from numpy import random
 
 from mmdet.registry import TRANSFORMS
-from mmdet.structures.bbox import HorizontalBoxes, convert_mask_to_bbox_mode
+from mmdet.structures.bbox import HorizontalBoxes
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 from mmdet.utils import log_img_scale
 
@@ -631,7 +631,7 @@ class RandomCrop(BaseTransform):
             bboxes.translate_([-offset_w, -offset_h])
             if self.bbox_clip_border:
                 bboxes.clip_(img_shape[:2])
-            valid_inds = bboxes.is_bboxes_inside(img_shape[:2]).numpy()
+            valid_inds = bboxes.is_inside(img_shape[:2]).numpy()
             # If the crop does not contain any gt-bbox area and
             # allow_negative_crop is False, skip this image.
             if (not valid_inds.any() and not allow_negative_crop):
@@ -652,8 +652,8 @@ class RandomCrop(BaseTransform):
                     valid_inds.nonzero()[0]].crop(
                         np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
                 if self.recompute_bbox:
-                    results['gt_bboxes'] = convert_mask_to_bbox_mode(
-                        results['gt_masks'], type(results['gt_bboxes']))
+                    results['gt_bboxes'] = results['gt_masks'].get_bboxes(
+                        type(results['gt_bboxes']))
 
         # crop semantic seg
         if results.get('gt_seg_map', None) is not None:
@@ -1128,7 +1128,7 @@ class MinIoURandomCrop(BaseTransform):
                 # Line or point crop is not allowed
                 if patch[2] == patch[0] or patch[3] == patch[1]:
                     continue
-                overlaps = boxes.bbox_overlaps(
+                overlaps = boxes.overlaps(
                     HorizontalBoxes(patch.reshape(-1, 4)),
                     boxes).numpy().reshape(-1)
                 if len(overlaps) > 0 and overlaps.min() < min_iou:
@@ -1764,7 +1764,7 @@ class RandomCenterCropPad(BaseTransform):
                 ])
                 if self.bbox_clip_border:
                     gt_bboxes.clip_([new_h, new_w])
-                keep = gt_bboxes.is_bboxes_inside([new_h, new_w]).numpy()
+                keep = gt_bboxes.is_inside([new_h, new_w]).numpy()
                 gt_bboxes = gt_bboxes[keep]
 
                 results['gt_bboxes'] = gt_bboxes
@@ -2109,7 +2109,7 @@ class Mosaic(BaseTransform):
         if self.bbox_clip_border:
             mosaic_bboxes.clip_([2 * self.img_scale[0], 2 * self.img_scale[1]])
         # remove outside bboxes
-        inside_inds = mosaic_bboxes.is_bboxes_inside(
+        inside_inds = mosaic_bboxes.is_inside(
             [2 * self.img_scale[0], 2 * self.img_scale[1]]).numpy()
         mosaic_bboxes = mosaic_bboxes[inside_inds]
         mosaic_bboxes_labels = mosaic_bboxes_labels[inside_inds]
@@ -2390,8 +2390,7 @@ class MixUp(BaseTransform):
             (results['gt_ignore_flags'], retrieve_gt_ignore_flags), axis=0)
 
         # remove outside bbox
-        inside_inds = mixup_gt_bboxes.is_bboxes_inside([target_h,
-                                                        target_w]).numpy()
+        inside_inds = mixup_gt_bboxes.is_inside([target_h, target_w]).numpy()
         mixup_gt_bboxes = mixup_gt_bboxes[inside_inds]
         mixup_gt_bboxes_labels = mixup_gt_bboxes_labels[inside_inds]
         mixup_gt_ignore_flags = mixup_gt_ignore_flags[inside_inds]
@@ -2528,7 +2527,7 @@ class RandomAffine(BaseTransform):
             if self.bbox_clip_border:
                 bboxes.clip_([height, width])
             # remove outside bbox
-            valid_index = bboxes.is_bboxes_inside([height, width]).numpy()
+            valid_index = bboxes.is_inside([height, width]).numpy()
             results['gt_bboxes'] = bboxes[valid_index]
             results['gt_bboxes_labels'] = results['gt_bboxes_labels'][
                 valid_index]
@@ -2787,8 +2786,7 @@ class CopyPaste(BaseTransform):
         # update masks and generate bboxes from updated masks
         composed_mask = np.where(np.any(src_masks.masks, axis=0), 1, 0)
         updated_dst_masks = self._get_updated_masks(dst_masks, composed_mask)
-        updated_dst_bboxes = convert_mask_to_bbox_mode(updated_dst_masks,
-                                                       type(dst_bboxes))
+        updated_dst_bboxes = updated_dst_masks.get_bboxes(type(dst_bboxes))
         assert len(updated_dst_bboxes) == len(updated_dst_masks)
 
         # filter totally occluded objects
