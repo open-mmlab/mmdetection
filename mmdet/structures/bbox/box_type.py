@@ -14,7 +14,7 @@ _box_type_to_name: dict = {}
 box_converters: dict = {}
 
 
-def _register_box_type(name: str, box_type: Type, force: bool = False) -> None:
+def _register_box(name: str, box_type: Type, force: bool = False) -> None:
     """Register a box type.
 
     Args:
@@ -39,9 +39,9 @@ def _register_box_type(name: str, box_type: Type, force: bool = False) -> None:
     _box_type_to_name[box_type] = name
 
 
-def register_box_type(name: str,
-                      box_type: Type = None,
-                      force: bool = False) -> Union[Type, Callable]:
+def register_box(name: str,
+                 box_type: Type = None,
+                 force: bool = False) -> Union[Type, Callable]:
     """Register a box type.
 
     A record will be added to ``bbox_types``, whose key is the box type name
@@ -75,12 +75,12 @@ def register_box_type(name: str,
 
     # use it as a normal method: register_bbox_mode(name, bbox_mode=BBoxCls)
     if box_type is not None:
-        _register_box_type(name=name, box_type=box_type, force=force)
+        _register_box(name=name, box_type=box_type, force=force)
         return box_type
 
     # use it as a decorator: @register_bbox_mode(name)
     def _register(cls):
-        _register_box_type(name=name, box_type=cls, force=force)
+        _register_box(name=name, box_type=cls, force=force)
         return cls
 
     return _register

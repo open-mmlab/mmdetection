@@ -5,9 +5,8 @@ import torch
 
 from mmdet.structures.bbox.box_type import (_box_type_to_name, box_converters,
                                             box_types, convert_box_type,
-                                            get_box_type,
-                                            register_box_converter,
-                                            register_box_type)
+                                            get_box_type, register_box,
+                                            register_box_converter)
 from .utils import ToyBaseBoxes
 
 
@@ -28,9 +27,9 @@ class TestBboxMode(TestCase):
         box_converters.update(self.box_converters)
         _box_type_to_name.update(self._box_type_to_name)
 
-    def test_register_box_type(self):
+    def test_register_box(self):
         # test usage of decorator
-        @register_box_type('A')
+        @register_box('A')
         class A(ToyBaseBoxes):
             pass
 
@@ -38,47 +37,47 @@ class TestBboxMode(TestCase):
         class B(ToyBaseBoxes):
             pass
 
-        register_box_type('B', B)
+        register_box('B', B)
 
         # register class without inheriting from BaseBoxes
         with self.assertRaises(AssertionError):
 
-            @register_box_type('C')
+            @register_box('C')
             class C:
                 pass
 
         # test register registered class
         with self.assertRaises(KeyError):
 
-            @register_box_type('A')
+            @register_box('A')
             class AA(ToyBaseBoxes):
                 pass
 
         with self.assertRaises(KeyError):
-            register_box_type('BB', B)
+            register_box('BB', B)
 
-        @register_box_type('A', force=True)
+        @register_box('A', force=True)
         class AAA(ToyBaseBoxes):
             pass
 
         self.assertIs(box_types['a'], AAA)
         self.assertEqual(_box_type_to_name[AAA], 'a')
-        register_box_type('BB', B, force=True)
+        register_box('BB', B, force=True)
         self.assertIs(box_types['bb'], B)
         self.assertEqual(_box_type_to_name[B], 'bb')
         self.assertEqual(len(box_types), len(_box_type_to_name))
 
     def test_register_box_converter(self):
 
-        @register_box_type('A')
+        @register_box('A')
         class A(ToyBaseBoxes):
             pass
 
-        @register_box_type('B')
+        @register_box('B')
         class B(ToyBaseBoxes):
             pass
 
-        @register_box_type('C')
+        @register_box('C')
         class C(ToyBaseBoxes):
             pass
 
@@ -119,7 +118,7 @@ class TestBboxMode(TestCase):
 
     def test_get_box_type(self):
 
-        @register_box_type('A')
+        @register_box('A')
         class A(ToyBaseBoxes):
             pass
 
@@ -141,15 +140,15 @@ class TestBboxMode(TestCase):
 
     def test_convert_box_type(self):
 
-        @register_box_type('A')
+        @register_box('A')
         class A(ToyBaseBoxes):
             pass
 
-        @register_box_type('B')
+        @register_box('B')
         class B(ToyBaseBoxes):
             pass
 
-        @register_box_type('C')
+        @register_box('C')
         class C(ToyBaseBoxes):
             pass
 

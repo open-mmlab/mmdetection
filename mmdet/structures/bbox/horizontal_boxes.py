@@ -9,14 +9,14 @@ from torch import BoolTensor, Tensor
 from mmdet.structures.mask.structures import BitmapMasks, PolygonMasks
 from .base_boxes import BaseBoxes
 from .bbox_overlaps import bbox_overlaps
-from .box_type import register_box_type
+from .box_type import register_box
 
 T = TypeVar('T')
 DeviceType = Union[str, torch.device]
 MaskType = Union[BitmapMasks, PolygonMasks]
 
 
-@register_box_type(name='hbox')
+@register_box(name='hbox')
 class HorizontalBoxes(BaseBoxes):
     """The horizontal box class used in MMDetection by default.
 

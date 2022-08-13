@@ -1,8 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from .base_boxes import BaseBoxes
 from .bbox_overlaps import bbox_overlaps
-from .box_type import (convert_box_type, get_box_type, register_box_converter,
-                       register_box_type)
+from .box_type import (convert_box_type, get_box_type, register_box,
+                       register_box_converter)
 from .horizontal_boxes import HorizontalBoxes
 from .transforms import (bbox2corner, bbox2distance, bbox2result, bbox2roi,
                          bbox_cxcywh_to_xyxy, bbox_flip, bbox_mapping,
@@ -15,6 +15,6 @@ __all__ = [
     'bbox2roi', 'roi2bbox', 'bbox2result', 'distance2bbox', 'bbox2distance',
     'bbox_rescale', 'bbox_cxcywh_to_xyxy', 'bbox_xyxy_to_cxcywh',
     'find_inside_bboxes', 'bbox2corner', 'corner2bbox', 'bbox_project',
-    'BaseBoxes', 'convert_box_type', 'get_box_type', 'register_box_type',
+    'BaseBoxes', 'convert_box_type', 'get_box_type', 'register_box',
     'register_box_converter', 'HorizontalBoxes'
 ]
