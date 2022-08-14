@@ -8,7 +8,7 @@ _base_ = [
 model = dict(
     backbone=dict(
         depth=18,
-        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet18')),
+        init_cfg=dict(_delete_=True)),
     neck=dict(in_channels=[64, 128, 256, 512]))
 optim_wrapper = dict(
     optimizer=dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001))

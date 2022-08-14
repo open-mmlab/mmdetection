@@ -102,16 +102,16 @@ class DetDataPreprocessor(ImgDataPreprocessor):
             Tuple[torch.Tensor, Optional[list]]: Data in the same format as the
             model input.
         """
-        batch_inputs, batch_data_samples = super().forward(
-            data=data, training=training)
+        data = super().forward(data=data, training=training)
+        inputs, data_samples = data['inputs'], data['data_samples']
         batch_pad_shape = self._get_pad_shape(data)
 
-        if batch_data_samples is not None:
+        if data_samples is not None:
             # NOTE the batched image size information may be useful, e.g.
             # in DETR, this is needed for the construction of masks, which is
             # then used for the transformer_head.
-            batch_input_shape = tuple(batch_inputs[0].size()[-2:])
-            for data_samples, pad_shape in zip(batch_data_samples,
+            batch_input_shape = tuple(inputs[0].size()[-2:])
+            for data_samples, pad_shape in zip(data_samples,
                                                batch_pad_shape):
                 data_samples.set_metainfo({
                     'batch_input_shape': batch_input_shape,
@@ -119,22 +119,22 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                 })
 
             if self.pad_mask:
-                self.pad_gt_masks(batch_data_samples)
+                self.pad_gt_masks(data_samples)
 
             if self.pad_seg:
-                self.pad_gt_sem_seg(batch_data_samples)
+                self.pad_gt_sem_seg(data_samples)
 
         if training and self.batch_augments is not None:
             for batch_aug in self.batch_augments:
-                batch_inputs, batch_data_samples = batch_aug(
-                    batch_inputs, batch_data_samples)
+                inputs, data_samples = batch_aug(
+                    inputs, data_samples)
 
-        return batch_inputs, batch_data_samples
+        return data
 
     def _get_pad_shape(self, data: Sequence[dict]) -> List[tuple]:
         """Get the pad_shape of each image based on data and
         pad_size_divisor."""
-        ori_inputs = [_data['inputs'] for _data in data]
+        ori_inputs = [_data for _data in data['inputs']]
         batch_pad_shape = []
         for ori_input in ori_inputs:
             pad_h = int(np.ceil(ori_input.shape[1] /

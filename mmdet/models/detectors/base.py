@@ -55,8 +55,8 @@ class BaseDetector(BaseModel, metaclass=ABCMeta):
                 or (hasattr(self, 'mask_head') and self.mask_head is not None))
 
     def forward(self,
-                batch_inputs: torch.Tensor,
-                batch_data_samples: OptSampleList = None,
+                inputs: torch.Tensor,
+                data_samples: OptSampleList = None,
                 mode: str = 'tensor') -> ForwardResults:
         """The unified entry for a forward process in both training and test.
 
@@ -73,9 +73,9 @@ class BaseDetector(BaseModel, metaclass=ABCMeta):
         optimizer updating, which are done in the :meth:`train_step`.
 
         Args:
-            batch_inputs (torch.Tensor): The input tensor with shape
+            inputs (torch.Tensor): The input tensor with shape
                 (N, C, ...) in general.
-            batch_data_samples (list[:obj:`DetDataSample`], optional): The
+            data_samples (list[:obj:`DetDataSample`], optional): The
                 annotation data of every samples. Defaults to None.
             mode (str): Return what kind of value. Defaults to 'tensor'.
 
@@ -87,11 +87,11 @@ class BaseDetector(BaseModel, metaclass=ABCMeta):
             - If ``mode="loss"``, return a dict of tensor.
         """
         if mode == 'loss':
-            return self.loss(batch_inputs, batch_data_samples)
+            return self.loss(inputs, data_samples)
         elif mode == 'predict':
-            return self.predict(batch_inputs, batch_data_samples)
+            return self.predict(inputs, data_samples)
         elif mode == 'tensor':
-            return self._forward(batch_inputs, batch_data_samples)
+            return self._forward(inputs, data_samples)
         else:
             raise RuntimeError(f'Invalid mode "{mode}". '
                                'Only supports loss, predict and tensor mode')
@@ -125,10 +125,14 @@ class BaseDetector(BaseModel, metaclass=ABCMeta):
         """Extract features from images."""
         pass
 
-    def convert_to_datasample(self, results_list: InstanceList) -> SampleList:
+    def convert_to_datasample(
+            self,
+            data_samples: SampleList,
+            data_instances: InstanceList) -> SampleList:
         """ Convert results list to `DetDataSample`.
         Args:
-            results_list (list[:obj:`InstanceData`]): Detection results of
+            inputs (list[:obj:`DetDataSample`]): The input data.
+            data_instances (list[:obj:`InstanceData`]): Detection results of
                 each image.
 
         Returns:
@@ -144,9 +148,6 @@ class BaseDetector(BaseModel, metaclass=ABCMeta):
                 - bboxes (Tensor): Has a shape (num_instances, 4),
                     the last dimension 4 arrange as (x1, y1, x2, y2).
             """
-        out_results_list = []
-        for i in range(len(results_list)):
-            result = DetDataSample()
-            result.pred_instances = results_list[i]
-            out_results_list.append(result)
-        return out_results_list
+        for data_sample, pred_instances in zip(data_samples, data_instances):
+            data_sample.pred_instances = pred_instances
+        return data_samples
