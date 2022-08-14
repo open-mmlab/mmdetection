@@ -126,6 +126,11 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                     if not self.with_box_wrapped:
                         data_samples.gt_instances.bboxes = \
                             data_samples.gt_instances.bboxes.tensor
+                if ('ignored_instances' in data_samples
+                        and 'bboxes' in data_samples.ignored_instances):
+                    if not self.with_box_wrapped:
+                        data_samples.ignored_instances.bboxes = \
+                            data_samples.ignored_instances.bboxes.tensor
 
             if self.pad_mask:
                 self.pad_gt_masks(batch_data_samples)
