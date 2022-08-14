@@ -1,4 +1,4 @@
-_base_ = ['./dino_4scale_r50_16x2_12e_coco.py']
+_base_ = ['./dino_4scale_r50_8x2_12e_coco.py']
 
 model = dict(
     backbone=dict(out_indices=(0, 1, 2, 3)),
