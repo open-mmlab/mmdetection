@@ -23,7 +23,7 @@ class GeomTransform(BaseTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (BaseBoxes) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -202,7 +202,7 @@ class ShearX(GeomTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (BaseBoxes) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -316,7 +316,7 @@ class ShearY(GeomTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (BaseBoxes) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -430,7 +430,7 @@ class Rotate(GeomTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (BaseBoxes) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -544,7 +544,7 @@ class TranslateX(GeomTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (BaseBoxes) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -660,7 +660,7 @@ class TranslateY(GeomTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 

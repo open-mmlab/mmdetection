@@ -211,7 +211,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
 
     Added Keys:
 
-    - gt_bboxes (BaseBoxes)
+    - gt_bboxes (BaseBoxes[torch.float32])
     - gt_bboxes_labels (np.int64)
     - gt_masks (BitmapMasks | PolygonMasks)
     - gt_seg_map (np.uint8)
@@ -474,7 +474,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
 
     Added Keys:
 
-    - gt_bboxes (BaseBoxes)
+    - gt_bboxes (BaseBoxes[torch.float32])
     - gt_bboxes_labels (np.int64)
     - gt_masks (BitmapMasks | PolygonMasks)
     - gt_seg_map (np.uint8)
@@ -640,7 +640,7 @@ class FilterAnnotations(BaseTransform):
 
     Required Keys:
 
-    - gt_bboxes (BaseBoxes) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_ignore_flags (np.bool) (optional)
@@ -695,9 +695,9 @@ class FilterAnnotations(BaseTransform):
 
         tests = []
         if self.by_box:
-            tests.append((gt_bboxes.widths > self.min_gt_bbox_wh[0]).numpy()
-                         &
-                         (gt_bboxes.heights > self.min_gt_bbox_wh[1]).numpy())
+            tests.append(
+                ((gt_bboxes.widths > self.min_gt_bbox_wh[0]) &
+                 (gt_bboxes.heights > self.min_gt_bbox_wh[1])).numpy())
         if self.by_mask:
             assert 'gt_masks' in results
             gt_masks = results['gt_masks']

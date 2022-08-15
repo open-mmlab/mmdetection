@@ -49,7 +49,7 @@ class Resize(MMCV_Resize):
     Required Keys:
 
     - img
-    - gt_bboxes (BaseBoxes) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -195,7 +195,7 @@ class RandomFlip(MMCV_RandomFlip):
     Required Keys:
 
     - img
-    - gt_bboxes (BaseBoxes) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -278,7 +278,7 @@ class RandomShift(BaseTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (BaseBoxes)
+    - gt_bboxes (BaseBoxes[torch.float32])
     - gt_bboxes_labels (np.int64)
     - gt_ignore_flags (np.bool) (optional)
 
@@ -386,7 +386,7 @@ class Pad(MMCV_Pad):
     Required Keys:
 
     - img
-    - gt_bboxes (BaseBoxes) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -509,7 +509,7 @@ class RandomCrop(BaseTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (BaseBoxes) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_ignore_flags (np.bool) (optional)
@@ -925,7 +925,7 @@ class Expand(BaseTransform):
 
     - img
     - img_shape
-    - gt_bboxes (BaseBoxes) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -1049,7 +1049,7 @@ class MinIoURandomCrop(BaseTransform):
 
     - img
     - img_shape
-    - gt_bboxes (BaseBoxes) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_ignore_flags (np.bool) (optional)
@@ -1254,13 +1254,13 @@ class Albu(BaseTransform):
     Required Keys:
 
     - img (np.uint8)
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (HorizontalBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
 
     Modified Keys:
 
     - img (np.uint8)
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (HorizontalBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - img_shape (tuple)
 
@@ -1536,7 +1536,7 @@ class RandomCenterCropPad(BaseTransform):
 
     - img (np.float32)
     - img_shape (tuple)
-    - gt_bboxes (BaseBoxes) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_ignore_flags (np.bool) (optional)
 
@@ -1544,7 +1544,7 @@ class RandomCenterCropPad(BaseTransform):
 
     - img (np.float32)
     - img_shape (tuple)
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_ignore_flags (np.bool) (optional)
 
@@ -1972,7 +1972,7 @@ class Mosaic(BaseTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (BaseBoxes) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_ignore_flags (np.bool) (optional)
     - mix_results (List[dict])
@@ -2224,7 +2224,7 @@ class MixUp(BaseTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (BaseBoxes) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_ignore_flags (np.bool) (optional)
     - mix_results (List[dict])
@@ -2424,7 +2424,7 @@ class RandomAffine(BaseTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (BaseBoxes) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_ignore_flags (np.bool) (optional)
 
@@ -2665,7 +2665,7 @@ class CopyPaste(BaseTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (BaseBoxes) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_ignore_flags (np.bool) (optional)
     - gt_masks (BitmapMasks) (optional)
