@@ -9,8 +9,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import (ConvModule, bias_init_with_prob, constant_init, is_norm,
                       normal_init)
+from mmcv.device.ipu import nms_ipu, remap_tensor, slice_statically
 from mmcv.runner import force_fp32
-from mmcv.device.ipu import slice_statically, nms_ipu, remap_tensor
 
 from mmdet.core import (build_assigner, build_bbox_coder,
                         build_prior_generator, build_sampler, images_to_levels,
@@ -215,8 +215,8 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                               cfg=None,
                               rescale=False,
                               with_nms=True):
-        """Transform network output for a batch into bbox predictions.
-        It is an IPU static version.
+        """Transform network output for a batch into bbox predictions. It is an
+        IPU static version.
 
         Args:
             pred_maps (list[Tensor]): Raw predictions for a batch of images.
@@ -237,8 +237,9 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                 each element represents the class label of the corresponding
                 box.
         """
-        assert with_nms, "NMS is hardcoded in the IPU implementation"
-        # There is no fp16 in the trace phase, so force_fp32 does not take effect
+        assert with_nms, 'NMS is hardcoded in the IPU implementation'
+        # There is no fp16 in the trace phase,
+        # so force_fp32 does not take effect
         pred_maps = [ele.float() for ele in pred_maps]
 
         assert len(pred_maps) == self.num_levels
@@ -271,7 +272,11 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                                                 flatten_strides.unsqueeze(-1))
 
         if rescale:
-            scale_factors = [img_meta['scale_factor'].unsqueeze(0).unsqueeze(0) for img_meta in img_metas]
+            scale_factors = []
+            for img_meta in img_metas:
+                scale_factor = img_meta['scale_factor'].unsqueeze(0)
+                scale_factor = scale_factor.unsqueeze(0)
+                scale_factors.append(scale_factor)
             scale_factors = torch.cat(scale_factors, dim=0)
             flatten_bboxes = flatten_bboxes / scale_factors
 
@@ -298,7 +303,8 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             for i in range(num_class_exclude_groud):
                 mask_by_score_thr = scores[:, i] > cfg.score_thr
                 single_class_score = scores[:, i] * objectness
-                single_class_bboxes = bboxes.clone() * mask_by_score_thr.unsqueeze(-1)
+                single_class_bboxes = bboxes.clone() * \
+                    mask_by_score_thr.unsqueeze(-1)
                 single_class_score = single_class_score * mask_by_score_thr
                 iou_thrd = cfg.nms['iou_threshold']
                 num_dets = cfg.max_per_img
@@ -306,13 +312,14 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                 single_class_score = remap_tensor(single_class_score)
                 _, det_boxes, boxes_keep = nms_ipu(single_class_bboxes,
                                                    single_class_score,
-                                                   iou_thrd,
-                                                   num_dets)
-                det_scores = slice_statically(single_class_score, boxes_keep, dim=0).unsqueeze(-1)
-                valid_flags = (boxes_keep>=0).unsqueeze(-1)
+                                                   iou_thrd, num_dets)
+                det_scores = slice_statically(
+                    single_class_score, boxes_keep, dim=0).unsqueeze(-1)
+                valid_flags = (boxes_keep >= 0).unsqueeze(-1)
                 det_scores = det_scores * valid_flags
                 det_bboxes = torch.cat([det_boxes, det_scores], dim=1)
-                det_labels = torch.ones([det_bboxes.shape[0]], dtype=torch.long) * i
+                det_labels = torch.ones([det_bboxes.shape[0]],
+                                        dtype=torch.long) * i
                 det_bboxes_list.append(det_bboxes)
                 det_labels_list.append(det_labels)
             _det_bboxes = torch.cat(det_bboxes_list, dim=0)
@@ -458,9 +465,8 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             responsible_flag_list = []
             for img_id in range(len(img_metas)):
                 responsible_flag_list.append(
-                    self.prior_generator.responsible_flags(featmap_sizes,
-                                                        gt_bboxes[img_id],
-                                                        device))
+                    self.prior_generator.responsible_flags(
+                        featmap_sizes, gt_bboxes[img_id], device))
 
         # if target_maps_list is None or neg_maps_list is None:
             target_maps_list, neg_maps_list = self.get_targets(
@@ -512,8 +518,14 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         target_conf = target_map[..., 4]
         target_label = target_map[..., 5:]
 
-        pred_xy, pred_wh, pred_conf, pred_label, target_xy, target_wh, target_conf, target_label = \
-            [remap_tensor(ele) for ele in [pred_xy, pred_wh, pred_conf, pred_label, target_xy, target_wh, target_conf, target_label]]
+        pred_xy = remap_tensor(pred_xy)
+        pred_wh = remap_tensor(pred_wh)
+        pred_conf = remap_tensor(pred_conf)
+        pred_label = remap_tensor(pred_label)
+        target_xy = remap_tensor(target_xy)
+        target_wh = remap_tensor(target_wh)
+        target_conf = remap_tensor(target_conf)
+        target_label = remap_tensor(target_label)
 
         loss_cls = self.loss_cls(pred_label, target_label, weight=pos_mask)
         loss_conf = self.loss_conf(
@@ -522,19 +534,6 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         loss_wh = self.loss_wh(pred_wh, target_wh, weight=pos_mask)
 
         return loss_cls, loss_conf, loss_xy, loss_wh
-
-    def pre_get_targets(self, gt_bboxes, gt_labels):
-        mlvl_anchors = self.prior_generator.grid_priors(featmap_sizes, device='cpu')
-        anchor_list = [mlvl_anchors for _ in range(1)]
-        responsible_flag_list = []
-        for img_id in range(1):
-            responsible_flag_list.append(
-                self.prior_generator.responsible_flags(featmap_sizes,
-                                                    gt_bboxes[img_id], device='cpu'))
-        target_maps_list, neg_maps_list = self.get_targets(
-                anchor_list, responsible_flag_list, gt_bboxes, gt_labels)#[gt_bboxes.shape(96,4),], [gt_labels.shape(96),]
-        return target_maps_list, neg_maps_list
-
 
     def get_targets(self, anchor_list, responsible_flag_list, gt_bboxes_list,
                     gt_labels_list):
