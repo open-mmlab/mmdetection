@@ -6,6 +6,7 @@ import tempfile
 import time
 
 import mmcv
+import numpy as np
 import torch
 import torch.distributed as dist
 from mmcv.image import tensor2imgs
@@ -14,11 +15,7 @@ from mmcv.runner import get_dist_info
 from mmdet.core import encode_mask_results
 
 
-def ipu_test(model,
-             data_loader,
-             show=False,
-             out_dir=None,
-             show_score_thr=0.3):
+def ipu_test(model, data_loader, show=False, out_dir=None, show_score_thr=0.3):
     model.eval()
     results = []
     dataset = data_loader.dataset
