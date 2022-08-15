@@ -8,13 +8,16 @@ https://mmengine.readthedocs.io/en/latest/tutorials/registry.html.
 
 from mmengine.registry import DATA_SAMPLERS as MMENGINE_DATA_SAMPLERS
 from mmengine.registry import DATASETS as MMENGINE_DATASETS
+from mmengine.registry import EVALUATOR as MMENGINE_EVALUATOR
 from mmengine.registry import HOOKS as MMENGINE_HOOKS
+from mmengine.registry import LOG_PROCESSORS as MMENGINE_LOG_PROCESSORS
 from mmengine.registry import LOOPS as MMENGINE_LOOPS
 from mmengine.registry import METRICS as MMENGINE_METRICS
 from mmengine.registry import MODEL_WRAPPERS as MMENGINE_MODEL_WRAPPERS
 from mmengine.registry import MODELS as MMENGINE_MODELS
 from mmengine.registry import \
     OPTIM_WRAPPER_CONSTRUCTORS as MMENGINE_OPTIM_WRAPPER_CONSTRUCTORS
+from mmengine.registry import OPTIM_WRAPPERS as MMENGINE_OPTIM_WRAPPERS
 from mmengine.registry import OPTIMIZERS as MMENGINE_OPTIMIZERS
 from mmengine.registry import PARAM_SCHEDULERS as MMENGINE_PARAM_SCHEDULERS
 from mmengine.registry import \
@@ -53,6 +56,8 @@ WEIGHT_INITIALIZERS = Registry(
 
 # manage all kinds of optimizers like `SGD` and `Adam`
 OPTIMIZERS = Registry('optimizer', parent=MMENGINE_OPTIMIZERS)
+# manage optimizer wrapper
+OPTIM_WRAPPERS = Registry('optim_wrapper', parent=MMENGINE_OPTIM_WRAPPERS)
 # manage constructors that customize the optimization hyperparameters.
 OPTIM_WRAPPER_CONSTRUCTORS = Registry(
     'optimizer constructor', parent=MMENGINE_OPTIM_WRAPPER_CONSTRUCTORS)
@@ -61,6 +66,8 @@ PARAM_SCHEDULERS = Registry(
     'parameter scheduler', parent=MMENGINE_PARAM_SCHEDULERS)
 # manage all kinds of metrics
 METRICS = Registry('metric', parent=MMENGINE_METRICS)
+# manage evaluator
+EVALUATOR = Registry('evaluator', parent=MMENGINE_EVALUATOR)
 
 # manage task-specific modules like anchor generators and box coders
 TASK_UTILS = Registry('task util', parent=MMENGINE_TASK_UTILS)
@@ -69,3 +76,6 @@ TASK_UTILS = Registry('task util', parent=MMENGINE_TASK_UTILS)
 VISUALIZERS = Registry('visualizer', parent=MMENGINE_VISUALIZERS)
 # manage visualizer backend
 VISBACKENDS = Registry('vis_backend', parent=MMENGINE_VISBACKENDS)
+
+# manage logprocessor
+LOG_PROCESSORS = Registry('log_processor', parent=MMENGINE_LOG_PROCESSORS)
