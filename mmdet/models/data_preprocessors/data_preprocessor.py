@@ -337,7 +337,7 @@ class BatchFixedSizePad(nn.Module):
 
 
 @MODELS.register_module()
-class MultiDataPreprocessor(nn.Module):
+class MultiBranchDataPreprocessor(nn.Module):
     """DataPreprocessor wrapper for multi-branch data.
 
     Args:
@@ -368,15 +368,15 @@ class MultiDataPreprocessor(nn.Module):
 
         if training is False:
             return self.data_preprocessor(data, training)
-        multi_data = {}
+        multi_branch_data = {}
         for multi_results in data:
             for branch, results in multi_results.items():
-                if multi_data.get(branch, None) is None:
-                    multi_data[branch] = [results]
+                if multi_branch_data.get(branch, None) is None:
+                    multi_branch_data[branch] = [results]
                 else:
-                    multi_data[branch].append(results)
+                    multi_branch_data[branch].append(results)
         multi_batch_inputs, multi_batch_data_samples = {}, {}
-        for branch, data in multi_data.items():
+        for branch, data in multi_branch_data.items():
             multi_batch_inputs[branch], multi_batch_data_samples[
                 branch] = self.data_preprocessor(data, training)
         return multi_batch_inputs, multi_batch_data_samples
@@ -397,8 +397,7 @@ class MultiDataPreprocessor(nn.Module):
             nn.Module: The model itself.
         """
 
-        self.data_preprocessor._device = torch.device(device)
-        return super().to(device)
+        return self.data_preprocessor.to(device, args, kwargs)
 
     def cuda(self, *args, **kwargs) -> nn.Module:
         """Overrides this method to set the :attr:`device`
@@ -407,9 +406,7 @@ class MultiDataPreprocessor(nn.Module):
             nn.Module: The model itself.
         """
 
-        self.data_preprocessor._device = torch.device(
-            torch.cuda.current_device())
-        return super().cuda()
+        return self.data_preprocessor.cuda(args, kwargs)
 
     def cpu(self, *args, **kwargs) -> nn.Module:
         """Overrides this method to set the :attr:`device`
@@ -418,5 +415,4 @@ class MultiDataPreprocessor(nn.Module):
             nn.Module: The model itself.
         """
 
-        self.data_preprocessor._device = torch.device('cpu')
-        return super().cpu()
+        return self.data_preprocessor.cpu(args, kwargs)

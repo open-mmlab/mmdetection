@@ -7,7 +7,7 @@ from mmengine.logging import MessageHub
 from mmdet.models.data_preprocessors import (BatchFixedSizePad,
                                              BatchSyncRandomResize,
                                              DetDataPreprocessor,
-                                             MultiDataPreprocessor)
+                                             MultiBranchDataPreprocessor)
 from mmdet.structures import DetDataSample
 from mmdet.testing import demo_mm_inputs
 
@@ -278,7 +278,7 @@ class TestDetDataPreprocessor(TestCase):
                              seg_pad_sum)
 
 
-class TestMultiDataPreprocessor(TestCase):
+class TestMultiBranchDataPreprocessor(TestCase):
 
     def setUp(self):
         """Setup the model and optimizer which are used in every test method.
@@ -326,7 +326,7 @@ class TestMultiDataPreprocessor(TestCase):
         }]
 
     def test_multi_data_preprocessor(self):
-        processor = MultiDataPreprocessor(self.data_preprocessor)
+        processor = MultiBranchDataPreprocessor(self.data_preprocessor)
         # test processing multi_data when training
         multi_inputs, multi_data_samples = processor(
             self.multi_data, training=True)
