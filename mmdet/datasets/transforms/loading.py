@@ -697,7 +697,7 @@ class FilterAnnotations(BaseTransform):
 
 @TRANSFORMS.register_module()
 class LoadEmptyAnnotations(BaseTransform):
-    """Load Empty Annotations.
+    """Load Empty Annotations for unlabeled images.
 
     Added Keys:
     - gt_bboxes (np.float32)
@@ -746,6 +746,7 @@ class LoadEmptyAnnotations(BaseTransform):
         if self.with_label:
             results['gt_bboxes_labels'] = np.zeros((0, ), dtype=np.int64)
         if self.with_mask:
+            # TODO: support PolygonMasks
             h, w = results['img_shape']
             gt_masks = np.zeros((0, h, w), dtype=np.uint8)
             results['gt_masks'] = BitmapMasks(gt_masks, h, w)
