@@ -57,18 +57,18 @@ def register_box(name: str,
             name. Defaults to False.
 
     Examples:
-        >>> from mmdet.structures.bbox import register_box_type
+        >>> from mmdet.structures.bbox import register_box
         >>> from mmdet.structures.bbox import BaseBoxes
 
         >>> # as a decorator
-        >>> @register_box_type('hbox')
+        >>> @register_box('hbox')
         >>> class HorizontalBoxes(BaseBoxes):
         >>>     pass
 
         >>> # as a normal function
         >>> class RotatedBoxes(BaseBoxes):
         >>>     pass
-        >>> register_box_type('rbox', RotatedBoxes)
+        >>> register_box('rbox', RotatedBoxes)
     """
     if not isinstance(force, bool):
         raise TypeError(f'force must be a boolean, but got {type(force)}')
