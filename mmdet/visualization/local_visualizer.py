@@ -251,7 +251,6 @@ class DetLocalVisualizer(Visualizer):
             self,
             name: str,
             image: np.ndarray,
-            gt_sample: Optional['DetDataSample'] = None,
             pred_sample: Optional['DetDataSample'] = None,
             draw_gt: bool = True,
             draw_pred: bool = True,
@@ -275,8 +274,6 @@ class DetLocalVisualizer(Visualizer):
         Args:
             name (str): The image identifier.
             image (np.ndarray): The image to draw.
-            gt_sample (:obj:`DetDataSample`, optional): GT DetDataSample.
-                Defaults to None.
             pred_sample (:obj:`DetDataSample`, optional): Prediction
                 DetDataSample. Defaults to None.
             draw_gt (bool): Whether to draw GT DetDataSample. Default to True.
@@ -295,20 +292,20 @@ class DetLocalVisualizer(Visualizer):
         gt_img_data = None
         pred_img_data = None
 
-        if draw_gt and gt_sample is not None:
+        if draw_gt and pred_sample is not None:
             gt_img_data = image
-            if 'gt_instances' in gt_sample:
+            if 'gt_instances' in pred_sample:
                 gt_img_data = self._draw_instances(image,
-                                                   gt_sample.gt_instances,
+                                                   pred_sample.gt_instances,
                                                    classes, palette)
 
-            if 'gt_panoptic_seg' in gt_sample:
+            if 'gt_panoptic_seg' in pred_sample:
                 assert classes is not None, 'class information is ' \
                                             'not provided when ' \
                                             'visualizing panoptic ' \
                                             'segmentation results.'
                 gt_img_data = self._draw_panoptic_seg(
-                    gt_img_data, gt_sample.gt_panoptic_seg, classes)
+                    gt_img_data, pred_sample.gt_panoptic_seg, classes)
 
         if draw_pred and pred_sample is not None:
             pred_img_data = image
