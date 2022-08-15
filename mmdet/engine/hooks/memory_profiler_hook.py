@@ -1,11 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence
 
 from mmengine.data import BaseDataElement
 from mmengine.hooks import Hook
 from mmengine.runner import Runner
 
 from mmdet.registry import HOOKS
+
+DATA_BATCH = Optional[Sequence[dict]]
 
 
 @HOOKS.register_module()
@@ -37,13 +39,39 @@ class MemoryProfilerHook(Hook):
 
         self.interval = interval
 
-    def _after_iter(self,
-                    runner: Runner,
-                    batch_idx: int,
-                    data_batch: Optional[Sequence[dict]] = None,
-                    outputs: Optional[Union[Sequence[BaseDataElement],
-                                            dict]] = None,
-                    mode: str = 'train') -> None:
+    def _record_memory_information(self, runner: Runner) -> None:
+        """Regularly record memory information.
+
+        Args:
+            runner (:obj:`Runner`): The runner of the training or evaluation
+                process.
+        """
+        # in Byte
+        virtual_memory = self._virtual_memory()
+        swap_memory = self._swap_memory()
+        # in MB
+        process_memory = self._memory_usage()[0]
+        factor = 1024 * 1024
+        runner.logger.info(
+            'Memory information '
+            'available_memory: '
+            f'{round(virtual_memory.available / factor)} MB, '
+            'used_memory: '
+            f'{round(virtual_memory.used / factor)} MB, '
+            f'memory_utilization: {virtual_memory.percent} %, '
+            'available_swap_memory: '
+            f'{round((swap_memory.total - swap_memory.used) / factor)}'
+            ' MB, '
+            f'used_swap_memory: {round(swap_memory.used / factor)} MB, '
+            f'swap_memory_utilization: {swap_memory.percent} %, '
+            'current_process_memory: '
+            f'{round(process_memory)} MB')
+
+    def after_train_iter(self,
+                         runner: Runner,
+                         batch_idx: int,
+                         data_batch: DATA_BATCH = None,
+                         outputs: Optional[dict] = None) -> None:
         """Regularly record memory information.
 
         Args:
@@ -55,23 +83,42 @@ class MemoryProfilerHook(Hook):
                 Outputs from model. Defaults to None.
         """
         if self.every_n_inner_iters(batch_idx, self.interval):
-            # in Byte
-            virtual_memory = self._virtual_memory()
-            swap_memory = self._swap_memory()
-            # in MB
-            process_memory = self._memory_usage()[0]
-            factor = 1024 * 1024
-            runner.logger.info(
-                'Memory information '
-                'available_memory: '
-                f'{round(virtual_memory.available / factor)} MB, '
-                'used_memory: '
-                f'{round(virtual_memory.used / factor)} MB, '
-                f'memory_utilization: {virtual_memory.percent} %, '
-                'available_swap_memory: '
-                f'{round((swap_memory.total - swap_memory.used) / factor)}'
-                ' MB, '
-                f'used_swap_memory: {round(swap_memory.used / factor)} MB, '
-                f'swap_memory_utilization: {swap_memory.percent} %, '
-                'current_process_memory: '
-                f'{round(process_memory)} MB')
+            self._record_memory_information(runner)
+
+    def after_val_iter(
+            self,
+            runner: Runner,
+            batch_idx: int,
+            data_batch: DATA_BATCH = None,
+            outputs: Optional[Sequence[BaseDataElement]] = None) -> None:
+        """Regularly record memory information.
+
+        Args:
+            runner (:obj:`Runner`): The runner of the validation process.
+            batch_idx (int): The index of the current batch in the val loop.
+            data_batch (Sequence[dict], optional): Data from dataloader.
+                Defaults to None.
+            outputs (Union[Sequence[:obj:`BaseDataElement`], dict], optional):
+                Outputs from model. Defaults to None.
+        """
+        if self.every_n_inner_iters(batch_idx, self.interval):
+            self._record_memory_information(runner)
+
+    def after_test_iter(
+            self,
+            runner: Runner,
+            batch_idx: int,
+            data_batch: DATA_BATCH = None,
+            outputs: Optional[Sequence[BaseDataElement]] = None) -> None:
+        """Regularly record memory information.
+
+        Args:
+            runner (:obj:`Runner`): The runner of the testing process.
+            batch_idx (int): The index of the current batch in the test loop.
+            data_batch (Sequence[dict], optional): Data from dataloader.
+                Defaults to None.
+            outputs (Union[Sequence[:obj:`BaseDataElement`], dict], optional):
+                Outputs from model. Defaults to None.
+        """
+        if self.every_n_inner_iters(batch_idx, self.interval):
+            self._record_memory_information(runner)
