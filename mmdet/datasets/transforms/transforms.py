@@ -2941,7 +2941,7 @@ class RandomErasing(BaseTransform):
         else:
             n_patches = (n_patches, n_patches)
         if isinstance(ratio, tuple):
-            assert len(ratio) == 2 and 0 <= ratio[0] < ratio[1] < 1
+            assert len(ratio) == 2 and 0 <= ratio[0] < ratio[1] <= 1
         else:
             ratio = (ratio, ratio)
 
@@ -2990,7 +2990,7 @@ class RandomErasing(BaseTransform):
         inter_areas = wh[:, :, 0] * wh[:, :, 1]
         bbox_areas = (bboxes[:, 2] - bboxes[:, 0]) * (
             bboxes[:, 3] - bboxes[:, 1])
-        bboxes_erased_ratio = inter_areas.sum(-1) / bbox_areas
+        bboxes_erased_ratio = inter_areas.sum(-1) / (bbox_areas + 1e-7)
         valid_inds = bboxes_erased_ratio < self.bbox_erased_thr
         results['gt_bboxes'] = bboxes[valid_inds]
         results['gt_bboxes_labels'] = results['gt_bboxes_labels'][valid_inds]

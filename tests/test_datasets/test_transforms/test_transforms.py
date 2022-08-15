@@ -1138,6 +1138,16 @@ class TestRandomErasing(unittest.TestCase):
             n_patches=1, ratio=0.999, img_border_value=255)
         results = transform(copy.deepcopy(self.results))
         self.assertTrue(results['img'].sum() > self.results['img'].sum())
+        # test empty results
+        empty_results = copy.deepcopy(self.results)
+        empty_results['gt_bboxes'] = np.zeros((0, 4), dtype=np.float32)
+        empty_results['gt_bboxes_labels'] = np.zeros((0, ), dtype=np.int64)
+        empty_results['gt_masks'] = empty_results['gt_masks'][False]
+        empty_results['gt_ignore_flags'] = np.zeros((0, ), dtype=bool)
+        empty_results['gt_seg_map'] = np.ones_like(
+            empty_results['gt_seg_map']) * 255
+        results = transform(copy.deepcopy(empty_results))
+        self.assertTrue(results['img'].sum() > self.results['img'].sum())
 
     def test_repr(self):
         transform = RandomErasing(n_patches=(1, 5), ratio=(0, 0.2))
