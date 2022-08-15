@@ -16,6 +16,7 @@ from torch import Tensor
 from mmdet.registry import MODELS
 from mmdet.structures import DetDataSample
 from mmdet.utils import ConfigType
+from mmdet.structures.bbox import BaseBoxes
 
 
 @MODELS.register_module()
@@ -58,6 +59,8 @@ class DetDataPreprocessor(ImgDataPreprocessor):
             Defaults to False.
         rgb_to_bgr (bool): whether to convert image from RGB to RGB.
             Defaults to False.
+        with_box_wrapped (bool): Whether to keep the ``BaseBoxes`` wrapper of
+            bboxes data.
         batch_augments (list[dict], optional): Batch-level augmentations
     """
 
@@ -125,14 +128,16 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                 # TODO: remove this part when all mode adapted BaseBoxes.
                 if ('gt_instances' in data_samples
                         and 'bboxes' in data_samples.gt_instances):
+                    bboxes = data_samples.gt_instances.bboxes
                     if not self.with_box_wrapped:
-                        data_samples.gt_instances.bboxes = \
-                            data_samples.gt_instances.bboxes.tensor
+                        data_samples.gt_instances.bboxes = bboxes.tensor \
+                            if isinstance(bboxes, BaseBoxes) else bboxes
                 if ('ignored_instances' in data_samples
                         and 'bboxes' in data_samples.ignored_instances):
+                    bboxes = data_samples.ignored_instances.bboxes
                     if not self.with_box_wrapped:
-                        data_samples.ignored_instances.bboxes = \
-                            data_samples.ignored_instances.bboxes.tensor
+                        data_samples.ignored_instances.bboxes = bboxes.tensor \
+                            if isinstance(bboxes, BaseBoxes) else bboxes
 
             if self.pad_mask:
                 self.pad_gt_masks(batch_data_samples)
