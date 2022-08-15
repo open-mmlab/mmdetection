@@ -3,9 +3,11 @@ import copy
 import unittest
 
 import numpy as np
+import torch
 
 from mmdet.datasets.transforms import (GeomTransform, Rotate, ShearX, ShearY,
                                        TranslateX, TranslateY)
+from mmdet.structures.bbox import HorizontalBoxes
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 from .utils import check_result_same, construct_toy_data
 
@@ -113,10 +115,10 @@ class TestShearX(unittest.TestCase):
     def test_shearx(self):
         # test assertion for invalid value of min_mag
         with self.assertRaises(AssertionError):
-            transform = ShearX(prob=0.5, level=2, min_mag=-30.)
+            transform = ShearX(prob=0.5, level=2, min_mag=-0.3)
         # test assertion for invalid value of max_mag
         with self.assertRaises(AssertionError):
-            transform = ShearX(prob=0.5, level=2, max_mag=100.)
+            transform = ShearX(prob=0.5, level=2, max_mag=1.2)
 
         # test case when no shear horizontally (level=0)
         transform = ShearX(
@@ -133,7 +135,7 @@ class TestShearX(unittest.TestCase):
         transform = ShearX(
             prob=1.0,
             level=10,
-            max_mag=45.,
+            max_mag=1.0,
             reversal_prob=1.0,
             img_border_value=self.img_border_value)
         results_sheared = transform(copy.deepcopy(self.results_mask))
@@ -145,7 +147,8 @@ class TestShearX(unittest.TestCase):
         img_gt[2, 0, :] = np.array(self.img_border_value)
         img_gt[2, 1, :] = np.array(self.img_border_value)
         results_gt['img'] = img_gt
-        results_gt['gt_bboxes'] = np.array([[1, 0, 4, 2]], dtype=np.float32)
+        results_gt['gt_bboxes'] = HorizontalBoxes([[1, 0, 4, 2]],
+                                                  dtype=torch.float32)
         results_gt['gt_bboxes_labels'] = np.array([13], dtype=np.int64)
         gt_masks = np.array([[0, 1, 0, 0], [0, 0, 1, 1], [0, 0, 0, 1]],
                             dtype=np.uint8)[None, :, :]
@@ -168,7 +171,7 @@ class TestShearX(unittest.TestCase):
             repr(transform), ('ShearX(prob=0.5, '
                               'level=10, '
                               'min_mag=0.0, '
-                              'max_mag=30.0, '
+                              'max_mag=0.3, '
                               'reversal_prob=0.5, '
                               'img_border_value=(128.0, 128.0, 128.0), '
                               'mask_border_value=0, '
@@ -194,10 +197,10 @@ class TestShearY(unittest.TestCase):
     def test_sheary(self):
         # test assertion for invalid value of min_mag
         with self.assertRaises(AssertionError):
-            transform = ShearY(prob=0.5, level=2, min_mag=-30.)
+            transform = ShearY(prob=0.5, level=2, min_mag=-0.3)
         # test assertion for invalid value of max_mag
         with self.assertRaises(AssertionError):
-            transform = ShearY(prob=0.5, level=2, max_mag=100.)
+            transform = ShearY(prob=0.5, level=2, max_mag=1.2)
 
         # test case when no shear vertically (level=0)
         transform = ShearY(
@@ -211,7 +214,7 @@ class TestShearY(unittest.TestCase):
                           self.check_keys)
 
         # test shear vertically, magnitude=1
-        transform = ShearY(prob=1., level=10, max_mag=45., reversal_prob=0.)
+        transform = ShearY(prob=1., level=10, max_mag=1., reversal_prob=0.)
         results_sheared = transform(copy.deepcopy(self.results_mask))
         results_gt = copy.deepcopy(self.results_mask)
         img_gt = np.array(
@@ -219,7 +222,8 @@ class TestShearY(unittest.TestCase):
             dtype=np.uint8)
         img_gt = np.stack([img_gt, img_gt, img_gt], axis=-1)
         results_gt['img'] = img_gt
-        results_gt['gt_bboxes'] = np.array([[1, 0, 2, 1]], dtype=np.float32)
+        results_gt['gt_bboxes'] = HorizontalBoxes([[1, 0, 2, 1]],
+                                                  dtype=torch.float32)
         results_gt['gt_bboxes_labels'] = np.array([13], dtype=np.int64)
         gt_masks = np.array([[0, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0]],
                             dtype=np.uint8)[None, :, :]
@@ -242,7 +246,7 @@ class TestShearY(unittest.TestCase):
             repr(transform), ('ShearY(prob=0.5, '
                               'level=10, '
                               'min_mag=0.0, '
-                              'max_mag=30.0, '
+                              'max_mag=0.3, '
                               'reversal_prob=0.5, '
                               'img_border_value=(128.0, 128.0, 128.0), '
                               'mask_border_value=0, '
@@ -300,8 +304,8 @@ class TestRotate(unittest.TestCase):
         img_gt = np.stack([img_gt, img_gt, img_gt], axis=-1)
         results_gt = copy.deepcopy(self.results_mask)
         results_gt['img'] = img_gt
-        results_gt['gt_bboxes'] = np.array([[0.5, 0.5, 2.5, 1.5]],
-                                           dtype=np.float32)
+        results_gt['gt_bboxes'] = HorizontalBoxes([[0.5, 0.5, 2.5, 1.5]],
+                                                  dtype=torch.float32)
         gt_masks = np.array([[0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]],
                             dtype=np.uint8)[None, :, :]
         results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)
@@ -334,8 +338,8 @@ class TestRotate(unittest.TestCase):
         img_gt = np.stack([img_gt, img_gt, img_gt], axis=-1)
         results_gt = copy.deepcopy(self.results_mask)
         results_gt['img'] = img_gt
-        results_gt['gt_bboxes'] = np.array([[0.5, 0.5, 2.5, 1.5]],
-                                           dtype=np.float32)
+        results_gt['gt_bboxes'] = HorizontalBoxes([[0.5, 0.5, 2.5, 1.5]],
+                                                  dtype=torch.float32)
         gt_masks = np.array([[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0]],
                             dtype=np.uint8)[None, :, :]
         results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)
@@ -383,10 +387,10 @@ class TestTranslateX(unittest.TestCase):
     def test_translatex(self):
         # test assertion for invalid value of min_mag
         with self.assertRaises(AssertionError):
-            transform = TranslateX(prob=0.5, level=2, min_mag=-1.)
+            transform = TranslateX(prob=0.5, level=2, min_mag=-100.0)
         # test assertion for invalid value of max_mag
         with self.assertRaises(AssertionError):
-            transform = TranslateX(prob=0.5, level=2, max_mag=1.1)
+            transform = TranslateX(prob=0.5, level=2, max_mag=1100.0)
 
         # test case when level=0 (without translate aug)
         transform = TranslateX(
@@ -402,7 +406,7 @@ class TestTranslateX(unittest.TestCase):
         transform = TranslateX(
             prob=1.0,
             level=10,
-            max_mag=0.3,
+            max_mag=1.0,
             reversal_prob=0.0,
             img_border_value=self.img_border_value,
             seg_ignore_label=self.seg_ignore_label)
@@ -413,7 +417,8 @@ class TestTranslateX(unittest.TestCase):
         img_gt[:, 3, :] = np.array(self.img_border_value)
         results_gt = copy.deepcopy(self.results_mask)
         results_gt['img'] = img_gt
-        results_gt['gt_bboxes'] = np.array([[0, 0, 1, 2]], dtype=np.float32)
+        results_gt['gt_bboxes'] = HorizontalBoxes([[0, 0, 1, 2]],
+                                                  dtype=torch.float32)
         gt_masks = np.array([[1, 0, 0, 0], [1, 1, 0, 0], [1, 0, 0, 0]],
                             dtype=np.uint8)[None, :, :]
         results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)
@@ -436,7 +441,7 @@ class TestTranslateX(unittest.TestCase):
             repr(transform), ('TranslateX(prob=0.5, '
                               'level=5, '
                               'min_mag=0.0, '
-                              'max_mag=0.1, '
+                              'max_mag=150.0, '
                               'reversal_prob=0.5, '
                               'img_border_value=(128.0, 128.0, 128.0), '
                               'mask_border_value=0, '
@@ -462,10 +467,10 @@ class TestTranslateY(unittest.TestCase):
     def test_translatey(self):
         # test assertion for invalid value of min_mag
         with self.assertRaises(AssertionError):
-            transform = TranslateY(prob=0.5, level=2, min_mag=-1.0)
+            transform = TranslateY(prob=0.5, level=2, min_mag=-100.0)
         # test assertion for invalid value of max_mag
         with self.assertRaises(AssertionError):
-            transform = TranslateY(prob=0.5, level=2, max_mag=1.1)
+            transform = TranslateY(prob=0.5, level=2, max_mag=1100.0)
 
         # test case when level=0 (without translate aug)
         transform = TranslateY(
@@ -481,7 +486,7 @@ class TestTranslateY(unittest.TestCase):
         transform = TranslateY(
             prob=1.0,
             level=10,
-            max_mag=0.4,
+            max_mag=1.0,
             reversal_prob=0.0,
             seg_ignore_label=self.seg_ignore_label)
 
@@ -491,7 +496,8 @@ class TestTranslateY(unittest.TestCase):
         img_gt = np.stack([img_gt, img_gt, img_gt], axis=-1)
         results_gt = copy.deepcopy(self.results_mask)
         results_gt['img'] = img_gt
-        results_gt['gt_bboxes'] = np.array([[1, 0, 2, 1]], dtype=np.float32)
+        results_gt['gt_bboxes'] = HorizontalBoxes([[1, 0, 2, 1]],
+                                                  dtype=torch.float32)
         gt_masks = np.array([[0, 1, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0]],
                             dtype=np.uint8)[None, :, :]
         results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)
@@ -514,7 +520,7 @@ class TestTranslateY(unittest.TestCase):
             repr(transform), ('TranslateX(prob=0.5, '
                               'level=5, '
                               'min_mag=0.0, '
-                              'max_mag=0.1, '
+                              'max_mag=150.0, '
                               'reversal_prob=0.5, '
                               'img_border_value=(128.0, 128.0, 128.0), '
                               'mask_border_value=0, '

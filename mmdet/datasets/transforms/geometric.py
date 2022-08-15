@@ -9,7 +9,6 @@ from mmcv.transforms import BaseTransform
 from mmcv.transforms.utils import cache_randomness
 
 from mmdet.registry import TRANSFORMS
-from mmdet.structures.bbox import bbox_project
 from .augment_wrappers import _MAX_LEVEL, level_to_mag
 
 
@@ -24,7 +23,7 @@ class GeomTransform(BaseTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -135,9 +134,9 @@ class GeomTransform(BaseTransform):
 
     def _transform_bboxes(self, results: dict, mag: float) -> None:
         """Transform the bboxes."""
-        results['gt_bboxes'] = bbox_project(results['gt_bboxes'],
-                                            self.homography_matrix,
-                                            results['img_shape'])
+        bboxes = results['gt_bboxes']
+        bboxes.project_(self.homography_matrix)
+        bboxes.clip_(results['img_shape'])
 
     def _record_homography_matrix(self, results: dict) -> None:
         """Record the homography matrix for the geometric transformation."""
@@ -204,7 +203,7 @@ class ShearX(GeomTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -225,10 +224,10 @@ class ShearX(GeomTransform):
         level (int, optional): The level should be in range [0, _MAX_LEVEL].
             If level is None, it will generate from [0, _MAX_LEVEL] randomly.
             Defaults to None.
-        min_mag (float): The minimum angle for the horizontal shear.
+        min_mag (float): The minimum magnitude for the horizontal shear.
             Defaults to 0.0.
-        max_mag (float): The maximum angle for the horizontal shear.
-            Defaults to 30.0.
+        max_mag (float): The maximum magnitude for the horizontal shear.
+            Defaults to 0.3.
         reversal_prob (float): The probability that reverses the horizontal
             shear magnitude. Should be in range [0,1]. Defaults to 0.5.
         img_border_value (int | float | tuple): The filled values for
@@ -249,18 +248,16 @@ class ShearX(GeomTransform):
                  prob: float = 1.0,
                  level: Optional[int] = None,
                  min_mag: float = 0.0,
-                 max_mag: float = 30.0,
+                 max_mag: float = 0.3,
                  reversal_prob: float = 0.5,
                  img_border_value: Union[int, float, tuple] = 128,
                  mask_border_value: int = 0,
                  seg_ignore_label: int = 255,
                  interpolation: str = 'bilinear') -> None:
-        assert 0. <= min_mag <= 90., \
-            f'min_mag angle for ShearX should be ' \
-            f'in range [0, 90], got {min_mag}.'
-        assert 0. <= max_mag <= 90., \
-            f'max_mag angle for ShearX should be ' \
-            f'in range [0, 90], got {max_mag}.'
+        assert 0. <= min_mag <= 1., f'min_mag for ShearX ' \
+                                    f'should be in range [0,1], got {min_mag}.'
+        assert 0. <= max_mag <= 1., f'max_mag for ShearX ' \
+                                    f'should be in range [0,1], got {max_mag}.'
         super().__init__(
             prob=prob,
             level=level,
@@ -271,13 +268,6 @@ class ShearX(GeomTransform):
             mask_border_value=mask_border_value,
             seg_ignore_label=seg_ignore_label,
             interpolation=interpolation)
-
-    @cache_randomness
-    def _get_mag(self):
-        """Get the magnitude of the transform."""
-        mag = level_to_mag(self.level, self.min_mag, self.max_mag)
-        mag = np.tan(mag * np.pi / 180)
-        return -mag if np.random.rand() > self.reversal_prob else mag
 
     def _get_homography_matrix(self, results: dict, mag: float) -> np.ndarray:
         """Get the homography matrix for ShearX."""
@@ -339,10 +329,10 @@ class ShearY(GeomTransform):
         level (int, optional): The level should be in range [0,_MAX_LEVEL].
             If level is None, it will generate from [0, _MAX_LEVEL] randomly.
             Defaults to None.
-        min_mag (float): The minimum angle for the vertical shear.
+        min_mag (float): The minimum magnitude for the vertical shear.
             Defaults to 0.0.
-        max_mag (float): The maximum angle for the vertical shear.
-            Defaults to 30.0.
+        max_mag (float): The maximum magnitude for the vertical shear.
+            Defaults to 0.3.
         reversal_prob (float): The probability that reverses the vertical
             shear magnitude. Should be in range [0,1]. Defaults to 0.5.
         img_border_value (int | float | tuple): The filled values for
@@ -363,18 +353,16 @@ class ShearY(GeomTransform):
                  prob: float = 1.0,
                  level: Optional[int] = None,
                  min_mag: float = 0.0,
-                 max_mag: float = 30.,
+                 max_mag: float = 0.3,
                  reversal_prob: float = 0.5,
                  img_border_value: Union[int, float, tuple] = 128,
                  mask_border_value: int = 0,
                  seg_ignore_label: int = 255,
                  interpolation: str = 'bilinear') -> None:
-        assert 0. <= min_mag <= 90., \
-            f'min_mag angle for ShearY should be ' \
-            f'in range [0, 90], got {min_mag}.'
-        assert 0. <= max_mag <= 90., \
-            f'max_mag angle for ShearY should be ' \
-            f'in range [0, 90], got {max_mag}.'
+        assert 0. <= min_mag <= 1., \
+            f'min_mag for ShearY should be in range [0,1], got {min_mag}.'
+        assert 0. <= max_mag <= 1., \
+            f'max_mag for ShearY should be in range [0,1], got {max_mag}.'
         super().__init__(
             prob=prob,
             level=level,
@@ -385,13 +373,6 @@ class ShearY(GeomTransform):
             mask_border_value=mask_border_value,
             seg_ignore_label=seg_ignore_label,
             interpolation=interpolation)
-
-    @cache_randomness
-    def _get_mag(self):
-        """Get the magnitude of the transform."""
-        mag = level_to_mag(self.level, self.min_mag, self.max_mag)
-        mag = np.tan(mag * np.pi / 180)
-        return -mag if np.random.rand() > self.reversal_prob else mag
 
     def _get_homography_matrix(self, results: dict, mag: float) -> np.ndarray:
         """Get the homography matrix for ShearY."""
@@ -453,9 +434,9 @@ class Rotate(GeomTransform):
         level (int, optional): The level should be in range [0, _MAX_LEVEL].
             If level is None, it will generate from [0, _MAX_LEVEL] randomly.
             Defaults to None.
-        min_mag (float): The maximum angle for rotation.
+        min_mag (float): The maximum angles for rotation.
             Defaults to 0.0.
-        max_mag (float): The maximum angle for rotation.
+        max_mag (float): The maximum angles for rotation.
             Defaults to 30.0.
         reversal_prob (float): The probability that reverses the rotation
             magnitude. Should be in range [0,1]. Defaults to 0.5.
@@ -531,6 +512,14 @@ class Rotate(GeomTransform):
             border_value=self.seg_ignore_label,
             interpolation='nearest')
 
+    def _transform_bboxes(self, results: dict, mag: float) -> None:
+        """Rotate the bboxes."""
+        img_shape = results['img_shape']
+        center = ((img_shape[1] - 1) * 0.5, (img_shape[0] - 1) * 0.5)
+        bboxes = results['gt_bboxes']
+        bboxes.rotate_(center, mag)
+        bboxes.clip_(results['img_shape'])
+
 
 @TRANSFORMS.register_module()
 class TranslateX(GeomTransform):
@@ -539,7 +528,7 @@ class TranslateX(GeomTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -560,10 +549,10 @@ class TranslateX(GeomTransform):
         level (int, optional): The level should be in range [0, _MAX_LEVEL].
             If level is None, it will generate from [0, _MAX_LEVEL] randomly.
             Defaults to None.
-        min_mag (float): The minimum pixel's offset ratio for horizontal
-            translation. Defaults to 0.0.
-        max_mag (float): The maximum pixel's offset ratio for horizontal
-            translation. Defaults to 0.1.
+        min_mag (float): The minimum pixel's offset for horizontal translation.
+            Defaults to 0.0.
+        max_mag (float): The maximum pixel's offset for horizontal translation.
+            Defaults to 150.0.
         reversal_prob (float): The probability that reverses the horizontal
             translation magnitude. Should be in range [0,1]. Defaults to 0.5.
         img_border_value (int | float | tuple): The filled values for
@@ -584,18 +573,16 @@ class TranslateX(GeomTransform):
                  prob: float = 1.0,
                  level: Optional[int] = None,
                  min_mag: float = 0.0,
-                 max_mag: float = 0.1,
+                 max_mag: float = 150.0,
                  reversal_prob: float = 0.5,
                  img_border_value: Union[int, float, tuple] = 128,
                  mask_border_value: int = 0,
                  seg_ignore_label: int = 255,
                  interpolation: str = 'bilinear') -> None:
-        assert 0. <= min_mag <= 1., \
-            f'min_mag ratio for TranslateX should be ' \
-            f'in range [0, 1], got {min_mag}.'
-        assert 0. <= max_mag <= 1., \
-            f'max_mag ratio for TranslateX should be ' \
-            f'in range [0, 1], got {max_mag}.'
+        assert 0. <= min_mag <= 1000., f'min_mag for TranslateX should be ' \
+                                       f'in range [0, 1000], got {min_mag}.'
+        assert 0. <= max_mag <= 1000., f'max_mag for TranslateX should be ' \
+                                       f'in range [0, 1000], got {max_mag}.'
         super().__init__(
             prob=prob,
             level=level,
@@ -609,12 +596,10 @@ class TranslateX(GeomTransform):
 
     def _get_homography_matrix(self, results: dict, mag: float) -> np.ndarray:
         """Get the homography matrix for TranslateX."""
-        mag = int(results['img_shape'][1] * mag)
         return np.array([[1, 0, mag], [0, 1, 0], [0, 0, 1]], dtype=np.float32)
 
     def _transform_img(self, results: dict, mag: float) -> None:
         """Translate the image horizontally."""
-        mag = int(results['img_shape'][1] * mag)
         results['img'] = mmcv.imtranslate(
             results['img'],
             mag,
@@ -624,7 +609,6 @@ class TranslateX(GeomTransform):
 
     def _transform_masks(self, results: dict, mag: float) -> None:
         """Translate the masks horizontally."""
-        mag = int(results['img_shape'][1] * mag)
         results['gt_masks'] = results['gt_masks'].translate(
             results['img_shape'],
             mag,
@@ -634,13 +618,18 @@ class TranslateX(GeomTransform):
 
     def _transform_seg(self, results: dict, mag: float) -> None:
         """Translate the segmentation map horizontally."""
-        mag = int(results['img_shape'][1] * mag)
         results['gt_seg_map'] = mmcv.imtranslate(
             results['gt_seg_map'],
             mag,
             direction='horizontal',
             border_value=self.seg_ignore_label,
             interpolation='nearest')
+
+    def _transform_bboxes(self, results: dict, mag: float) -> None:
+        """Translate the bboxes horizontally."""
+        bboxes = results['gt_bboxes']
+        bboxes.translate_([mag, 0])
+        bboxes.clip_(results['img_shape'])
 
 
 @TRANSFORMS.register_module()
@@ -671,10 +660,10 @@ class TranslateY(GeomTransform):
         level (int, optional): The level should be in range [0, _MAX_LEVEL].
             If level is None, it will generate from [0, _MAX_LEVEL] randomly.
             Defaults to None.
-        min_mag (float): The minimum pixel's offset ratio for vertical
-            translation. Defaults to 0.0.
-        max_mag (float): The maximum pixel's offset ratio for vertical
-            translation. Defaults to 0.1.
+        min_mag (float): The minimum pixel's offset for vertical translation.
+            Defaults to 0.0.
+        max_mag (float): The maximum pixel's offset for vertical translation.
+            Defaults to 150.0.
         reversal_prob (float): The probability that reverses the vertical
             translation magnitude. Should be in range [0,1]. Defaults to 0.5.
         img_border_value (int | float | tuple): The filled values for
@@ -695,18 +684,16 @@ class TranslateY(GeomTransform):
                  prob: float = 1.0,
                  level: Optional[int] = None,
                  min_mag: float = 0.0,
-                 max_mag: float = 0.1,
+                 max_mag: float = 150.0,
                  reversal_prob: float = 0.5,
                  img_border_value: Union[int, float, tuple] = 128,
                  mask_border_value: int = 0,
                  seg_ignore_label: int = 255,
                  interpolation: str = 'bilinear') -> None:
-        assert 0. <= min_mag <= 1., \
-            f'min_mag ratio for TranslateY should be ' \
-            f'in range [0,1], got {min_mag}.'
-        assert 0. <= max_mag <= 1., \
-            f'max_mag ratio for TranslateY should be ' \
-            f'in range [0,1], got {max_mag}.'
+        assert 0. <= min_mag <= 1000., f'min_mag for TranslateY should be ' \
+                                       f'in range [0,1000], got {min_mag}.'
+        assert 0. <= max_mag <= 1000., f'max_mag for TranslateY should be ' \
+                                       f'in range [0,1000], got {max_mag}.'
         super().__init__(
             prob=prob,
             level=level,
@@ -720,12 +707,10 @@ class TranslateY(GeomTransform):
 
     def _get_homography_matrix(self, results: dict, mag: float) -> np.ndarray:
         """Get the homography matrix for TranslateY."""
-        mag = int(results['img_shape'][0] * mag)
         return np.array([[1, 0, 0], [0, 1, mag], [0, 0, 1]], dtype=np.float32)
 
     def _transform_img(self, results: dict, mag: float) -> None:
         """Translate the image vertically."""
-        mag = int(results['img_shape'][0] * mag)
         results['img'] = mmcv.imtranslate(
             results['img'],
             mag,
@@ -735,7 +720,6 @@ class TranslateY(GeomTransform):
 
     def _transform_masks(self, results: dict, mag: float) -> None:
         """Translate masks vertically."""
-        mag = int(results['img_shape'][0] * mag)
         results['gt_masks'] = results['gt_masks'].translate(
             results['img_shape'],
             mag,
@@ -745,10 +729,15 @@ class TranslateY(GeomTransform):
 
     def _transform_seg(self, results: dict, mag: float) -> None:
         """Translate segmentation map vertically."""
-        mag = int(results['img_shape'][0] * mag)
         results['gt_seg_map'] = mmcv.imtranslate(
             results['gt_seg_map'],
             mag,
             direction='vertical',
             border_value=self.seg_ignore_label,
             interpolation='nearest')
+
+    def _transform_bboxes(self, results: dict, mag: float) -> None:
+        """Translate the bboxes vertically."""
+        bboxes = results['gt_bboxes']
+        bboxes.translate_([0, mag])
+        bboxes.clip_(results['img_shape'])

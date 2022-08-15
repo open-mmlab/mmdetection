@@ -82,7 +82,7 @@ class PackDetInputs(BaseTransform):
         for key in self.mapping_table.keys():
             if key not in results:
                 continue
-            if key == 'gt_masks':
+            if key in ('gt_bboxes', 'gt_masks'):
                 if 'gt_ignore_flags' in results:
                     instance_data[
                         self.mapping_table[key]] = results[key][vaild_idx]
