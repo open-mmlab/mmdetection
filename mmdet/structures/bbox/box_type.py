@@ -73,12 +73,12 @@ def register_box(name: str,
     if not isinstance(force, bool):
         raise TypeError(f'force must be a boolean, but got {type(force)}')
 
-    # use it as a normal method: register_bbox_mode(name, bbox_mode=BBoxCls)
+    # use it as a normal method: register_box(name, box_type=BoxCls)
     if box_type is not None:
         _register_box(name=name, box_type=box_type, force=force)
         return box_type
 
-    # use it as a decorator: @register_bbox_mode(name)
+    # use it as a decorator: @register_box(name)
     def _register(cls):
         _register_box(name=name, box_type=cls, force=force)
         return cls
@@ -144,7 +144,7 @@ def register_box_converter(src_type: Union[str, type],
         raise TypeError(f'force must be a boolean, but got {type(force)}')
 
     # use it as a normal method:
-    # register_convert_func(src_mode, dst_mode, convert_func=Func)
+    # register_box_converter(src_type, dst_type, converter=Func)
     if converter is not None:
         _register_box_converter(
             src_type=src_type,
@@ -153,7 +153,7 @@ def register_box_converter(src_type: Union[str, type],
             force=force)
         return converter
 
-    # use it as a decorator: @register_bbox_mode(name)
+    # use it as a decorator: @register_box_converter(name)
     def _register(func):
         _register_box_converter(
             src_type=src_type, dst_type=dst_type, converter=func, force=force)

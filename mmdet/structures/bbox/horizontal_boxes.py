@@ -30,8 +30,8 @@ class HorizontalBoxes(BaseBoxes):
       coordinates of the box centers and (w, h) are the width and height.
 
     ``HorizontalBoxes`` only restores 'xyxy' mode of data. If the the data is
-    in 'cxcywh' mode, users need to input ``mode='cxcywh'`` and The code will
-    convert the 'cxcywh' data to 'xyxy' automatically.
+    in 'cxcywh' mode, users need to input ``in_mode='cxcywh'`` and The code
+    will convert the 'cxcywh' data to 'xyxy' automatically.
 
     Args:
         data (Tensor or np.ndarray or Sequence): The box data with shape of
@@ -51,12 +51,12 @@ class HorizontalBoxes(BaseBoxes):
                  dtype: torch.dtype = None,
                  device: DeviceType = None,
                  clone: bool = True,
-                 mode: Optional[str] = None) -> None:
+                 in_mode: Optional[str] = None) -> None:
         super().__init__(data=data, dtype=dtype, device=device, clone=clone)
-        if isinstance(mode, str):
-            if mode not in ('xyxy', 'cxcywh'):
-                raise ValueError(f'Get invalid mode {mode}.')
-            if mode == 'cxcywh':
+        if isinstance(in_mode, str):
+            if in_mode not in ('xyxy', 'cxcywh'):
+                raise ValueError(f'Get invalid mode {in_mode}.')
+            if in_mode == 'cxcywh':
                 self.tensor = self.cxcywh_to_xyxy(self.tensor)
 
     @staticmethod

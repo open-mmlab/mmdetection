@@ -10,7 +10,7 @@ from mmdet.structures.bbox.box_type import (_box_type_to_name, box_converters,
 from .utils import ToyBaseBoxes
 
 
-class TestBboxMode(TestCase):
+class TestBoxType(TestCase):
 
     def setUp(self):
         self.box_types = box_types.copy()

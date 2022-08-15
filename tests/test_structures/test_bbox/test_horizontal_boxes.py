@@ -19,12 +19,12 @@ class TestHorizontalBoxes(TestCase):
 
         boxes = HorizontalBoxes(th_boxes)
         assert_allclose(boxes.tensor, th_boxes)
-        boxes = HorizontalBoxes(th_boxes, mode='xyxy')
+        boxes = HorizontalBoxes(th_boxes, in_mode='xyxy')
         assert_allclose(boxes.tensor, th_boxes)
-        boxes = HorizontalBoxes(th_boxes_cxcywh, mode='cxcywh')
+        boxes = HorizontalBoxes(th_boxes_cxcywh, in_mode='cxcywh')
         assert_allclose(boxes.tensor, th_boxes)
         with self.assertRaises(ValueError):
-            boxes = HorizontalBoxes(th_boxes, mode='invalid')
+            boxes = HorizontalBoxes(th_boxes, in_mode='invalid')
 
     def test_cxcywh(self):
         th_boxes = torch.Tensor([10, 10, 20, 20]).reshape(1, 1, 4)
