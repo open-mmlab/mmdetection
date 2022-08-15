@@ -397,7 +397,7 @@ class MultiBranchDataPreprocessor(nn.Module):
             nn.Module: The model itself.
         """
 
-        return self.data_preprocessor.to(device, args, kwargs)
+        return self.data_preprocessor.to(device, *args, **kwargs)
 
     def cuda(self, *args, **kwargs) -> nn.Module:
         """Overrides this method to set the :attr:`device`
@@ -406,7 +406,7 @@ class MultiBranchDataPreprocessor(nn.Module):
             nn.Module: The model itself.
         """
 
-        return self.data_preprocessor.cuda(args, kwargs)
+        return self.data_preprocessor.cuda(*args, **kwargs)
 
     def cpu(self, *args, **kwargs) -> nn.Module:
         """Overrides this method to set the :attr:`device`
@@ -415,4 +415,4 @@ class MultiBranchDataPreprocessor(nn.Module):
             nn.Module: The model itself.
         """
 
-        return self.data_preprocessor.cpu(args, kwargs)
+        return self.data_preprocessor.cpu(*args, **kwargs)
