@@ -20,7 +20,7 @@ Usually we recommend to use the first two methods which are usually easier than 
 
 In this note, we give an example for converting the data into COCO format.
 
-**Note**: Datasets and metrics have been decoupled except CityScapes since MMDetection 3.0 . So users can use VOC as dataset and COCO metric as metric, or use VOC as dataset and use VOC metric and COCO metric as metric simultaneously now.
+**Note**: Datasets and metrics have been decoupled except CityScapes since MMDetection 3.0 . So users can evaluate on VOC dataset with COCO metric, or evaluate on VOC dataset with both VOC and COCO metrics.
 
 ### COCO annotation format
 

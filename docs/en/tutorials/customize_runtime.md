@@ -254,7 +254,7 @@ Before v2.3.0, the users need to modify the code to get the hook registered befo
 Here we give an example of creating a new hook in mmdet and using it in training.
 
 ```python
-from mmengne.hooks import HOOKS, Hook
+from mmengine.hooks import HOOKS, Hook
 
 
 @HOOKS.register_module()
