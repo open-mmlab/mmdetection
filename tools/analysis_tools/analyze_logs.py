@@ -48,13 +48,14 @@ def plot_curve(log_dicts, args):
                 legend.append(f'{json_log}_{metric}')
     assert len(legend) == (len(args.json_logs) * len(args.keys))
     metrics = args.keys
+    dataset = args.dataset
 
     num_metrics = len(metrics)
     for i, log_dict in enumerate(log_dicts):
         epochs = list(log_dict.keys())
         for j, metric in enumerate(metrics):
             if 'mAP' in metric:
-                metric = 'coco/' + metric
+                metric = f'{dataset}/' + metric
             print(f'plot curve of {args.json_logs[i]}, metric is {metric}')
             if metric not in log_dict[epochs[int(args.eval_interval) - 1]]:
                 if 'mAP' in metric:
@@ -131,6 +132,12 @@ def add_plot_parser(subparsers):
         help='legend of each plot')
     parser_plt.add_argument(
         '--backend', type=str, default=None, help='backend of plt')
+    parser_plt.add_argument(
+        '--dataset',
+        type=str,
+        default='coco',
+        choices=['coco', 'voc', 'cityscapes'],
+        help='dataset type')
     parser_plt.add_argument(
         '--style', type=str, default='dark', help='style of plt')
     parser_plt.add_argument('--out', type=str, default=None)
