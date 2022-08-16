@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmengine.dist import barrier, broadcast, get_dist_info
 from mmengine.logging import MessageHub
-from mmengine.model import ImgDataPreprocessor
+from mmengine.model import BaseDataPreprocessor, ImgDataPreprocessor
 from torch import Tensor
 
 from mmdet.registry import MODELS
@@ -337,7 +337,7 @@ class BatchFixedSizePad(nn.Module):
 
 
 @MODELS.register_module()
-class MultiBranchDataPreprocessor(nn.Module):
+class MultiBranchDataPreprocessor(BaseDataPreprocessor):
     """DataPreprocessor wrapper for multi-branch data.
 
     Args:
