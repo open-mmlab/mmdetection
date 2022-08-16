@@ -53,7 +53,7 @@ class MultiBranch(BaseTransform):
 
 
 @TRANSFORMS.register_module()
-class ShuffledSequence(Compose):
+class RandomOrder(Compose):
     """Shuffle the transform Sequence."""
 
     @cache_randomness
@@ -61,7 +61,7 @@ class ShuffledSequence(Compose):
         return np.random.permutation(len(self.transforms))
 
     def transform(self, results: Dict) -> Optional[Dict]:
-        """Transform function to apply transforms shuffled sequentially.
+        """Transform function to apply transforms in random order.
 
         Args:
             results (dict): A result dict contains the results to transform.
@@ -69,8 +69,8 @@ class ShuffledSequence(Compose):
         Returns:
             dict or None: Transformed results.
         """
-        order = self._random_permutation()
-        for idx in order:
+        inds = self._random_permutation()
+        for idx in inds:
             t = self.transforms[idx]
             results = t(results)
             if results is None:

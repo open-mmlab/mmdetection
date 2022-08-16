@@ -4,7 +4,7 @@ import unittest
 
 from mmcv.transforms import Compose
 
-from mmdet.datasets.transforms import MultiBranch, ShuffledSequence
+from mmdet.datasets.transforms import MultiBranch, RandomOrder
 from mmdet.utils import register_all_modules
 from .utils import construct_toy_data
 
@@ -128,7 +128,7 @@ class TestMultiBranch(unittest.TestCase):
             ("MultiBranch(branch_pipelines=['sup', 'unsup'])"))
 
 
-class TestShuffledSequence(unittest.TestCase):
+class TestRandomOrder(unittest.TestCase):
 
     def setUp(self):
         """Setup the model and optimizer which are used in every test method.
@@ -147,7 +147,7 @@ class TestShuffledSequence(unittest.TestCase):
         ]
 
     def test_transform(self):
-        transform = ShuffledSequence(self.pipeline)
+        transform = RandomOrder(self.pipeline)
         results = transform(copy.deepcopy(self.results))
         self.assertEqual(results['img_shape'], self.results['img_shape'])
         self.assertEqual(results['gt_bboxes'].shape,
@@ -162,7 +162,7 @@ class TestShuffledSequence(unittest.TestCase):
                          self.results['gt_seg_map'].shape)
 
     def test_repr(self):
-        transform = ShuffledSequence(self.pipeline)
+        transform = RandomOrder(self.pipeline)
         self.assertEqual(
-            repr(transform), ('ShuffledSequence(Sharpness, Contrast, '
+            repr(transform), ('RandomOrder(Sharpness, Contrast, '
                               'Brightness, Rotate, ShearX, TranslateY, )'))
