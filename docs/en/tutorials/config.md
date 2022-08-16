@@ -325,6 +325,10 @@ param_scheduler = [
 
 ### Hook config
 
+Users can attach hooks to training, validation, and testing loops to insert some oprations during running. There are two different hook fields, one is `default_hooks` and the other is `custom_hooks`.
+
+`default_hooks` is a dict of hook configs. `default_hooks` are the hooks must required at runtime. They have default priority which should not be modified. If not set, runner will use the default values. To disable a default hook, users can set its config to `None`.
+
 ```python
 default_hooks = dict(
     timer=dict(type='IterTimerHook'),
@@ -335,6 +339,8 @@ default_hooks = dict(
     visualization=dict(type='DetVisualizationHook'))
 ```
 
+`default_hooks` is a list of hook configs. Users can develop there own hooks and insert them in this field.
+
 ```python
 custom_hooks = []
 ```
@@ -342,26 +348,43 @@ custom_hooks = []
 ### Runtime config
 
 ```python
-default_scope = 'mmdet'
+default_scope = 'mmdet'  # The default registry scope to find modules. Refer to https://mmengine.readthedocs.io/en/latest/tutorials/registry.html
 
 env_cfg = dict(
-    cudnn_benchmark=False,
-    mp_cfg=dict(mp_start_method='fork', opencv_num_threads=0),
-    dist_cfg=dict(backend='nccl'),
+    cudnn_benchmark=False,  # Whether to enable cudnn benchmark
+    mp_cfg=dict(  # Multi-processing config
+        mp_start_method='fork',  # Use fork to start multi-processing threads. 'fork' usually faster than 'spawn' but maybe unsafe. See discussion in https://github.com/pytorch/pytorch/issues/1355
+        opencv_num_threads=0),  # Disable opencv multi-threads to avoid system being overloaded
+    dist_cfg=dict(backend='nccl'),  # Distribution configs
 )
 
-vis_backends = [dict(type='LocalVisBackend')]
+vis_backends = [dict(type='LocalVisBackend')]  # Visualization backends. Refer to TODO: visualization documents
 visualizer = dict(
     type='DetLocalVisualizer', vis_backends=vis_backends, name='visualizer')
-log_processor = dict(type='LogProcessor', window_size=50, by_epoch=True)
+log_processor = dict(
+    type='LogProcessor',  # log processor to process runtime logs
+    window_size=50,  # smooth interval of log values
+    by_epoch=True)  # Whether to format logs with epoch stype. Should be consistent with train loop's type.
 
-log_level = 'INFO'
-load_from = None
-resume = False
-
+log_level = 'INFO'  # The level of logging.
+load_from = None  # load model checkpoint as a pre-trained model from a given path. This will not resume training.
+resume = False  # Whether to resume from the checkpoint defined in `load_from`. If `load_from` is None, it will resume the latest checkpoint in the `work_dir`.
 ```
 
-## Config inheritance
+## Config file inheritance
+
+There are 4 basic component types under `config/_base_`, dataset, model, schedule, default_runtime.
+Many methods could be easily constructed with one of each like Faster R-CNN, Mask R-CNN, Cascade R-CNN, RPN, SSD.
+The configs that are composed by components from `_base_` are called _primitive_.
+
+For all configs under the same folder, it is recommended to have only **one** _primitive_ config. All other configs should inherit from the _primitive_ config. In this way, the maximum of inheritance level is 3.
+
+For easy understanding, we recommend contributors to inherit from existing methods.
+For example, if some modification is made base on Faster R-CNN, user may first inherit the basic Faster R-CNN structure by specifying `_base_ = ../faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py`, then modify the necessary fields in the config files.
+
+If you are building an entirely new method that does not share the structure with any of the existing methods, you may create a folder `xxx_rcnn` under `configs`,
+
+Please refer to [mmengine config tutorial](https://mmengine.readthedocs.io/en/latest/tutorials/config.html) for detailed documentation.
 
 By setting the `_base_` field, we can set which files the current configuration file inherits from.
 
@@ -382,69 +405,6 @@ _base_ = [
 ```
 
 If you wish to inspect the config file, you may run `python tools/misc/print_config.py /PATH/TO/CONFIG` to see the complete config.
-
-## Modify config through script arguments
-
-When submitting jobs using "tools/train.py" or "tools/test.py", you may specify `--cfg-options` to in-place modify the config.
-
-- Update config keys of dict chains.
-
-  The config options can be specified following the order of the dict keys in the original config.
-  For example, `--cfg-options model.backbone.norm_eval=False` changes the all BN modules in model backbones to `train` mode.
-
-- Update keys inside a list of configs.
-
-  Some config dicts are composed as a list in your config. For example, the training pipeline `data.train.pipeline` is normally a list
-  e.g. `[dict(type='LoadImageFromFile'), ...]`. If you want to change `'LoadImageFromFile'` to `'LoadImageFromNDArray'` in the pipeline,
-  you may specify `--cfg-options data.train.pipeline.0.type=LoadImageFromNDArray`.
-
-- Update values of list/tuples.
-
-  If the value to be updated is a list or a tuple. For example, the config file normally sets `workflow=[('train', 1)]`. If you want to
-  change this key, you may specify `--cfg-options workflow="[(train,1),(val,1)]"`. Note that the quotation mark " is necessary to
-  support list/tuple data types, and that **NO** white space is allowed inside the quotation marks in the specified value.
-
-## Config File Structure
-
-There are 4 basic component types under `config/_base_`, dataset, model, schedule, default_runtime.
-Many methods could be easily constructed with one of each like Faster R-CNN, Mask R-CNN, Cascade R-CNN, RPN, SSD.
-The configs that are composed by components from `_base_` are called _primitive_.
-
-For all configs under the same folder, it is recommended to have only **one** _primitive_ config. All other configs should inherit from the _primitive_ config. In this way, the maximum of inheritance level is 3.
-
-For easy understanding, we recommend contributors to inherit from existing methods.
-For example, if some modification is made base on Faster R-CNN, user may first inherit the basic Faster R-CNN structure by specifying `_base_ = ../faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py`, then modify the necessary fields in the config files.
-
-If you are building an entirely new method that does not share the structure with any of the existing methods, you may create a folder `xxx_rcnn` under `configs`,
-
-Please refer to [mmcv](https://mmcv.readthedocs.io/en/latest/understand_mmcv/config.html) for detailed documentation.
-
-## Config Name Style
-
-We follow the below style to name config files. Contributors are advised to follow the same style.
-
-```
-{model}_[model setting]_{backbone}_{neck}_[norm setting]_[misc]_[gpu x batch_per_gpu]_{schedule}_{dataset}
-```
-
-`{xxx}` is required field and `[yyy]` is optional.
-
-- `{model}`: model type like `faster_rcnn`, `mask_rcnn`, etc.
-- `[model setting]`: specific setting for some model, like `without_semantic` for `htc`, `moment` for `reppoints`, etc.
-- `{backbone}`: backbone type like `r50` (ResNet-50), `x101` (ResNeXt-101).
-- `{neck}`: neck type like `fpn`, `pafpn`, `nasfpn`, `c4`.
-- `[norm_setting]`: `bn` (Batch Normalization) is used unless specified, other norm layer type could be `gn` (Group Normalization), `syncbn` (Synchronized Batch Normalization).
-  `gn-head`/`gn-neck` indicates GN is applied in head/neck only, while `gn-all` means GN is applied in the entire model, e.g. backbone, neck, head.
-- `[misc]`: miscellaneous setting/plugins of model, e.g. `dconv`, `gcb`, `attention`, `albu`, `mstrain`.
-- `[gpu x batch_per_gpu]`: GPUs and samples per GPU, `8x2` is used by default.
-- `{schedule}`: training schedule, options are `1x`, `2x`, `20e`, etc.
-  `1x` and `2x` means 12 epochs and 24 epochs respectively.
-  `20e` is adopted in cascade models, which denotes 20 epochs.
-  For `1x`/`2x`, initial learning rate decays by a factor of 10 at the 8/16th and 11/22th epochs.
-  For `20e`, initial learning rate decays by a factor of 10 at the 16th and 19th epochs.
-- `{dataset}`: dataset like `coco`, `cityscapes`, `voc_0712`, `wider_face`.
-
-## FAQ
 
 ### Ignore some fields in the base configs
 
@@ -518,45 +478,30 @@ For example, we would like to use multi scale strategy to train a Mask R-CNN. `t
 
 ```python
 _base_ = './mask_rcnn_r50_fpn_1x_coco.py'
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
-        type='Resize',
-        img_scale=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
-                   (1333, 768), (1333, 800)],
-        multiscale_mode="value",
+        type='RandomResize', scale=[(1333, 640), (1333, 800)],
         keep_ratio=True),
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels', 'gt_masks']),
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='Resize', scale=(1333, 800), keep_ratio=True),
     dict(
-        type='MultiScaleFlipAug',
-        img_scale=(1333, 800),
-        flip=False,
-        transforms=[
-            dict(type='Resize', keep_ratio=True),
-            dict(type='RandomFlip'),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32),
-            dict(type='ImageToTensor', keys=['img']),
-            dict(type='Collect', keys=['img']),
-        ])
+        type='PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
 ]
-data = dict(
-    train=dict(pipeline=train_pipeline),
-    val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
+train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
+val_dataloader = dict(dataset=dict(pipeline=test_pipeline))
+test_dataloader = dict(dataset=dict(pipeline=test_pipeline))
 ```
 
-We first define the new `train_pipeline`/`test_pipeline` and pass them into `data`.
+We first define the new `train_pipeline`/`test_pipeline` and pass them into dataloader fields.
 
 Similarly, if we would like to switch from `SyncBN` to `BN` or `MMSyncBN`, we need to substitute every `norm_cfg` in the config.
 
@@ -568,3 +513,49 @@ model = dict(
     neck=dict(norm_cfg=norm_cfg),
     ...)
 ```
+
+## Modify config through script arguments
+
+When submitting jobs using "tools/train.py" or "tools/test.py", you may specify `--cfg-options` to in-place modify the config.
+
+- Update config keys of dict chains.
+
+  The config options can be specified following the order of the dict keys in the original config.
+  For example, `--cfg-options model.backbone.norm_eval=False` changes the all BN modules in model backbones to `train` mode.
+
+- Update keys inside a list of configs.
+
+  Some config dicts are composed as a list in your config. For example, the training pipeline `train_dataloader.dataset.pipeline` is normally a list
+  e.g. `[dict(type='LoadImageFromFile'), ...]`. If you want to change `'LoadImageFromFile'` to `'LoadImageFromNDArray'` in the pipeline,
+  you may specify `--cfg-options data.train.pipeline.0.type=LoadImageFromNDArray`.
+
+- Update values of list/tuples.
+
+  If the value to be updated is a list or a tuple. For example, the config file normally sets `model.data_preprocessor.mean=[123.675, 116.28, 103.53]`. If you want to
+  change the mean values, you may specify `--cfg-options model.data_preprocessor.mean="[127,127,127]"`. Note that the quotation mark `"` is necessary to
+  support list/tuple data types, and that **NO** white space is allowed inside the quotation marks in the specified value.
+
+## Config name style
+
+We follow the below style to name config files. Contributors are advised to follow the same style.
+
+```
+{model}_[model setting]_{backbone}_{neck}_[norm setting]_[misc]_[gpu x batch_per_gpu]_{schedule}_{dataset}
+```
+
+`{xxx}` is required field and `[yyy]` is optional.
+
+- `{model}`: model type like `faster_rcnn`, `mask_rcnn`, etc.
+- `[model setting]`: specific setting for some model, like `without_semantic` for `htc`, `moment` for `reppoints`, etc.
+- `{backbone}`: backbone type like `r50` (ResNet-50), `x101` (ResNeXt-101).
+- `{neck}`: neck type like `fpn`, `pafpn`, `nasfpn`, `c4`.
+- `[norm_setting]`: `bn` (Batch Normalization) is used unless specified, other norm layer type could be `gn` (Group Normalization), `syncbn` (Synchronized Batch Normalization).
+  `gn-head`/`gn-neck` indicates GN is applied in head/neck only, while `gn-all` means GN is applied in the entire model, e.g. backbone, neck, head.
+- `[misc]`: miscellaneous setting/plugins of model, e.g. `dconv`, `gcb`, `attention`, `albu`, `mstrain`.
+- `[gpu x batch_per_gpu]`: GPUs and samples per GPU, `8x2` is used by default.
+- `{schedule}`: training schedule, options are `1x`, `2x`, `20e`, etc.
+  `1x` and `2x` means 12 epochs and 24 epochs respectively.
+  `20e` is adopted in cascade models, which denotes 20 epochs.
+  For `1x`/`2x`, initial learning rate decays by a factor of 10 at the 8/16th and 11/22th epochs.
+  For `20e`, initial learning rate decays by a factor of 10 at the 16th and 19th epochs.
+- `{dataset}`: dataset like `coco`, `cityscapes`, `voc_0712`, `wider_face`.
