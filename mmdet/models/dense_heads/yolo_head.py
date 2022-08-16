@@ -521,14 +521,15 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         target_conf = target_map[..., 4]
         target_label = target_map[..., 5:]
 
-        pred_xy = remap_tensor(pred_xy)
-        pred_wh = remap_tensor(pred_wh)
-        pred_conf = remap_tensor(pred_conf)
-        pred_label = remap_tensor(pred_label)
-        target_xy = remap_tensor(target_xy)
-        target_wh = remap_tensor(target_wh)
-        target_conf = remap_tensor(target_conf)
-        target_label = remap_tensor(target_label)
+        if self.static:
+            pred_xy = remap_tensor(pred_xy)
+            pred_wh = remap_tensor(pred_wh)
+            pred_conf = remap_tensor(pred_conf)
+            pred_label = remap_tensor(pred_label)
+            target_xy = remap_tensor(target_xy)
+            target_wh = remap_tensor(target_wh)
+            target_conf = remap_tensor(target_conf)
+            target_label = remap_tensor(target_label)
 
         loss_cls = self.loss_cls(pred_label, target_label, weight=pos_mask)
         loss_conf = self.loss_conf(
