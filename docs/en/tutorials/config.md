@@ -171,7 +171,7 @@ model = dict(
 
 ### Dataset and evaluator config
 
-Dataloaders are required for the training, validation, and testing of the runner. Dataset and data pipeline need to be set to build the dataloader. We use intermediate variables to configure them.
+[Dataloaders](https://pytorch.org/docs/stable/data.html?highlight=data%20loader#torch.utils.data.DataLoader) are required for the training, validation, and testing of the [runner](https://mmengine.readthedocs.io/en/latest/tutorials/runner.html). Dataset and data pipeline need to be set to build the dataloader. Due to the complexity of this part, we use intermediate variables to simplify the writing of dataloader configs.
 
 ```python
 dataset_type = 'CocoDataset'  # Dataset type, this will be used to define the dataset
@@ -218,7 +218,7 @@ train_dataloader = dict(   # Train dataloader config
         data_prefix=dict(img='train2017/'),  # Prefix of image path
         filter_cfg=dict(filter_empty_gt=True, min_size=32),  # config of filtering images and annotations
         pipeline=train_pipeline))
-val_dataloader = dict(  # Validation dataset config
+val_dataloader = dict(  # Validation dataloader config
     batch_size=1,  # Batch size of a single GPU
     num_workers=2,  # Worker to pre-fetch data for each single GPU
     persistent_workers=True,  # If ``True``, the dataloader will not shutdown the worker processes after an epoch end, which can accelerate training speed.
@@ -233,15 +233,21 @@ val_dataloader = dict(  # Validation dataset config
         data_prefix=dict(img='val2017/'),
         test_mode=True,  # Turn on test mode of the dataset to avoid filtering annotations or images
         pipeline=test_pipeline))
-test_dataloader = val_dataloader  # Testing dataset config
-
-val_evaluator = dict(
-    type='CocoMetric',
-    ann_file=data_root + 'annotations/instances_val2017.json',
-    metric='bbox',
-    format_only=False)
-test_evaluator = val_evaluator
+test_dataloader = val_dataloader  # Testing dataloader config
 ```
+
+[Evaluators](https://mmengine.readthedocs.io/en/latest/tutorials/metric_and_evaluator.html) are used to compute the metrics of the trained model on the validation and testing datasets. The config of evaluators consists of one or a list of metric configs:
+
+```python
+val_evaluator = dict(  # Validation evaluator config
+    type='CocoMetric',  # The coco metric used to evaluate AR, AP, and mAP for detection and instance segmentation
+    ann_file=data_root + 'annotations/instances_val2017.json',  # Annotation file path
+    metric=['bbox', 'segm'],  # Metrics to be evaluated, `bbox` for detection and `segm` for instance segmentation
+    format_only=False)
+test_evaluator = val_evaluator  # Testing evaluator config
+```
+
+Since the test dataset has no annotation files, the test_dataloader and test_evaluator config in MMDetection are generally equal to the val's. If you want to save the detection results on the test dataset, you can write the config like this:
 
 ```python
 # inference on test dataset and
@@ -261,44 +267,60 @@ test_dataloader = dict(
         pipeline=test_pipeline))
 test_evaluator = dict(
     type='CocoMetric',
-    metric='bbox',
-    format_only=True,
     ann_file=data_root + 'annotations/image_info_test-dev2017.json',
-    outfile_prefix='./work_dirs/coco_detection/test')
+    metric=['bbox', 'segm'],  # Metrics to be evaluated
+    format_only=True,  # Only format and save the results to coco json file
+    outfile_prefix='./work_dirs/coco_detection/test')  # The prefix of output json files
 ```
 
 ### Training and testing config
 
+MMEngine's runner uses Loop to control the training, validation, and testing processes.
+Users can set the maximum training epochs and validation intervals with these fields.
+
 ```python
 train_cfg = dict(
-    type='EpochBasedTrainLoop',
-    max_epochs=12,
-    val_interval=1)
-val_cfg = dict(type='ValLoop')
-test_cfg = dict(type='TestLoop')
+    type='EpochBasedTrainLoop',  # The training loop type. Refer to https://github.com/open-mmlab/mmengine/blob/main/mmengine/runner/loops.py
+    max_epochs=12,  # Maximum training epochs
+    val_interval=1)  # Validation intervals. Run validation every epoch.
+val_cfg = dict(type='ValLoop')  # The validation loop type
+test_cfg = dict(type='TestLoop')  # The testing loop type
 ```
 
 ### Optimization config
 
+`optim_wrapper` is the field to configure optimization related settings. The optimizer wrapper not only provides the functions of the optimizer, but also supports functions such as gradient clipping, mixed precision training, etc. Find more in [optimizer wrapper tutorial](https://mmengine.readthedocs.io/en/latest/tutorials/optimizer.html).
+
+```python
+optim_wrapper = dict(  # Optimizer wrapper config
+    type='OptimWrapper',  # Optimizer wrapper type, switch to AmpOptimWrapper to enable mixed precision training.
+    optimizer=dict(  # Optimizer config. Support all kinds of optimizers in PyTorch. Refer to https://pytorch.org/docs/stable/optim.html#algorithms
+        type='SGD',  # Stochastic gradient descent optimizer
+        lr=0.02,  # The base learning rate
+        momentum=0.9,  # stochastic gradient descent with momentum
+        weight_decay=0.0001),  # Weight decay of SGD
+    clip_grad=None,  # Gradient clip option. Set None to disable gradient clip. Find usage in https://mmengine.readthedocs.io/en/latest/tutorials/optimizer.html
+    )
+```
+
+`param_scheduler` is a field that configures methods of adjusting optimization hyperparameters such as learning rate and momentum. Users can combine multiple schedulers to create a desired parameter adjustment strategy. Find more in [parameter scheduler tutorial](https://mmengine.readthedocs.io/en/latest/tutorials/param_scheduler.html) and [parameter scheduler API documents](TODO)
+
 ```python
 param_scheduler = [
     dict(
-        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
+        type='LinearLR',  # Use linear policy to warmup learning rate
+        start_factor=0.001, # The ratio of the starting learning rate used for warmup
+        by_epoch=False,  # The warmup learning rate is updated by iteration
+        begin=0,  # start from the first iteration
+        end=500),  # end the warmup at the 500th iteration
     dict(
-        type='MultiStepLR',
-        begin=0,
-        end=12,
-        by_epoch=True,
-        milestones=[8, 11],
-        gamma=0.1)
+        type='MultiStepLR',  # Use multi step learning rate policy during training
+        by_epoch=True,  # The learning rate is updated by epoch
+        begin=0,   # start from the first epoch
+        end=12,  # end at the 12th epoch
+        milestones=[8, 11],  # epochs to decay the learning rate
+        gamma=0.1)  # the learning rate decay ratio
 ]
-```
-
-```python
-# optimizer
-optim_wrapper = dict(
-    type='OptimWrapper',
-    optimizer=dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001))
 ```
 
 ### Hook config
