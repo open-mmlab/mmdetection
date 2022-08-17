@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import random
 from numbers import Number
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
@@ -9,11 +9,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmengine.dist import barrier, broadcast, get_dist_info
 from mmengine.logging import MessageHub
-from mmengine.model import ImgDataPreprocessor
+from mmengine.model import BaseDataPreprocessor, ImgDataPreprocessor
 from torch import Tensor
 
 from mmdet.registry import MODELS
 from mmdet.structures import DetDataSample
+from mmdet.utils import ConfigType
 
 
 @MODELS.register_module()
@@ -333,3 +334,85 @@ class BatchFixedSizePad(nn.Module):
                         value=self.seg_pad_value)
 
         return batch_inputs, batch_data_samples
+
+
+@MODELS.register_module()
+class MultiBranchDataPreprocessor(BaseDataPreprocessor):
+    """DataPreprocessor wrapper for multi-branch data.
+
+    Args:
+        data_preprocessor (:obj:`ConfigDict` or dict): Config of
+            :class:`DetDataPreprocessor` to process the input data.
+    """
+
+    def __init__(self, data_preprocessor: ConfigType) -> None:
+        super().__init__()
+        self.data_preprocessor = MODELS.build(data_preprocessor)
+
+    def forward(
+        self,
+        data: Sequence[dict],
+        training: bool = False
+    ) -> Tuple[Dict[str, torch.Tensor], Dict[str, Optional[list]]]:
+        """Perform normalization、padding and bgr2rgb conversion based on
+        ``BaseDataPreprocessor`` for multi-branch data.
+
+        Args:
+            data (Sequence[dict]): data sampled from dataloader.
+            training (bool): Whether to enable training time augmentation.
+
+        Returns:
+            Tuple[Dict[torch.Tensor], Dict[Optional[list]]]: Each tuple of
+            zip(dict, dict) is the data in the same format as the model input.
+        """
+
+        if training is False:
+            return self.data_preprocessor(data, training)
+        multi_branch_data = {}
+        for multi_results in data:
+            for branch, results in multi_results.items():
+                if multi_branch_data.get(branch, None) is None:
+                    multi_branch_data[branch] = [results]
+                else:
+                    multi_branch_data[branch].append(results)
+        multi_batch_inputs, multi_batch_data_samples = {}, {}
+        for branch, data in multi_branch_data.items():
+            multi_batch_inputs[branch], multi_batch_data_samples[
+                branch] = self.data_preprocessor(data, training)
+        return multi_batch_inputs, multi_batch_data_samples
+
+    @property
+    def device(self):
+        return self.data_preprocessor.device
+
+    def to(self, device: Optional[Union[int, torch.device]], *args,
+           **kwargs) -> nn.Module:
+        """Overrides this method to set the :attr:`device`
+
+        Args:
+            device (int or torch.device, optional): The desired device of the
+                parameters and buffers in this module.
+
+        Returns:
+            nn.Module: The model itself.
+        """
+
+        return self.data_preprocessor.to(device, *args, **kwargs)
+
+    def cuda(self, *args, **kwargs) -> nn.Module:
+        """Overrides this method to set the :attr:`device`
+
+        Returns:
+            nn.Module: The model itself.
+        """
+
+        return self.data_preprocessor.cuda(*args, **kwargs)
+
+    def cpu(self, *args, **kwargs) -> nn.Module:
+        """Overrides this method to set the :attr:`device`
+
+        Returns:
+            nn.Module: The model itself.
+        """
+
+        return self.data_preprocessor.cpu(*args, **kwargs)
