@@ -8,12 +8,14 @@ from mmengine.config import Config, DictAction
 from mmengine.fileio import load
 from mmengine.utils import ProgressBar, check_file_exist, mkdir_or_exist
 from mmengine.data import InstanceData
+from mmengine.runner import Runner
 
 from mmdet.datasets import get_loading_pipeline
 from mmdet.evaluation import eval_map, pq_compute_single_core
-from mmdet.registry import DATASETS
+from mmdet.registry import DATASETS, RUNNERS
 from mmdet.structures import DetDataSample
-from mmdet.utils import replace_cfg_vals, update_data_root
+from mmdet.utils import (register_all_modules, replace_cfg_vals,
+                         update_data_root)
 from mmdet.visualization import DetLocalVisualizer
 
 
@@ -87,12 +89,14 @@ class ResultVisualizer:
                  show=False,
                  wait_time=0,
                  score_thr=0,
-                 overlay_gt_pred=False):
+                 overlay_gt_pred=False,
+                 runner=None):
         self.show = show
         self.wait_time = wait_time
         self.score_thr = score_thr
         self.overlay_gt_pred = overlay_gt_pred
         self.visualizer = DetLocalVisualizer()
+        self.runner = runner
 
     def _save_image_gts_results(self,
                                 dataset,
@@ -170,12 +174,16 @@ class ResultVisualizer:
         if (topk * 2) > len(dataset):
             topk = len(dataset) // 2
 
-        # TODO: Waiting for panoptic segmentation reconstruction to test.
-        # good_samples, bad_samples = self.panoptic_evaluate(
-        #     dataset, results, topk=topk)
-
-        good_samples, bad_samples = self.detection_evaluate(
-            dataset, results, topk=topk)
+        if isinstance(results[0], dict):
+            good_samples, bad_samples = self.panoptic_evaluate(
+                dataset, results, topk=topk)
+        elif isinstance(results[0], list):
+            good_samples, bad_samples = self.detection_evaluate(
+                dataset, results, topk=topk)
+        else:
+            raise 'The format of result is not supported yet. ' \
+                'Current dict for panoptic segmentation and list ' \
+                'for object detection are supported.'
 
         good_dir = osp.abspath(osp.join(show_dir, 'good'))
         bad_dir = osp.abspath(osp.join(show_dir, 'bad'))
@@ -272,28 +280,40 @@ class ResultVisualizer:
         pqs = {}
         prog_bar = ProgressBar(len(results))
         for i in range(len(results)):
-            data_info = dataset[i]
+            #             data_sample = {}
+            #             for k in dataset[i].keys():
+            #                 data_sample[k] = dataset[i][k]
+            #             data_batch = {}
+            #             data_batch['data_sample'] = data_sample
+
+            import pdb
+            pdb.set_trace()
+            data_info = dataset.prepare_data(i)
             image_id = data_info['img_id']
             gt_ann = {
                 'image_id': image_id,
-                'segments_info': gt_json[image_id],
-                'file_name': data_info['img_info']['segm_file']
+                'segments_info': data_info['gt_seg_map'],
+                'file_name': osp.split(data_info['seg_map_path'])[-1]
             }
-            pred_ann = pred_json[i]
+            pred_ann = results[i]['pred_panoptic_seg']
+
+            gt_folder = dataset.data_prefix['seg']
+            pred_folder = self.runner.test_evaluator.metrics[0].seg_out_dir
+
+            # TODO add file_client
             pq_stat = pq_compute_single_core(
                 i, [(gt_ann, pred_ann)],
                 gt_folder,
                 pred_folder,
-                dataset.categories,
-                dataset.file_client,
+                dataset.COCOAPI(dataset.ann_file).cats,
                 print_log=False)
             pq_results, classwise_results = pq_stat.pq_average(
                 dataset.categories, isthing=None)
             pqs[i] = pq_results['pq']
             prog_bar.update()
 
-        if tmp_dir is not None:
-            tmp_dir.cleanup()
+        # if tmp_dir is not None:
+        #     tmp_dir.cleanup()
 
         # descending select topk image
         pqs = list(sorted(pqs.items(), key=lambda kv: kv[1]))
@@ -351,6 +371,7 @@ def parse_args():
 
 
 def main():
+    register_all_modules()
     args = parse_args()
 
     check_file_exist(args.prediction_path)
@@ -380,9 +401,19 @@ def main():
     dataset = build_dataset(cfg.data.test)
     outputs = load(args.prediction_path)
 
+    cfg.work_dir = args.show_dir
+    # build the runner from config
+    if 'runner_type' not in cfg:
+        # build the default runner
+        runner = Runner.from_cfg(cfg)
+    else:
+        # build customized runner from the registry
+        # if 'runner_type' is set in the cfg
+        runner = RUNNERS.build(cfg)
+
     result_visualizer = ResultVisualizer(args.show, args.wait_time,
                                          args.show_score_thr,
-                                         args.overlay_gt_pred)
+                                         args.overlay_gt_pred, runner)
     result_visualizer.evaluate_and_show(
         dataset, outputs, topk=args.topk, show_dir=args.show_dir)
 

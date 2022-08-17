@@ -54,7 +54,7 @@ val_dataloader = dict(
         data_prefix=dict(img='val2017/', seg='annotations/panoptic_val2017/'),
         test_mode=True,
         pipeline=test_pipeline))
-test_dataloader = val_dataloader
+# test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='CocoPanopticMetric',
@@ -62,10 +62,11 @@ val_evaluator = dict(
     seg_prefix=data_root + 'annotations/panoptic_val2017/',
     file_client_args=file_client_args,
 )
-test_evaluator = val_evaluator
+# test_evaluator = val_evaluator
 
 # inference on test dataset and
 # format the output results for submission.
+<<<<<<< HEAD
 # test_dataloader = dict(
 #     batch_size=1,
 #     num_workers=1,
@@ -84,3 +85,25 @@ test_evaluator = val_evaluator
 #     format_only=True,
 #     ann_file=data_root + 'annotations/panoptic_image_info_test-dev2017.json',
 #     outfile_prefix='./work_dirs/coco_panoptic/test')
+=======
+test_dataloader = dict(
+    batch_size=1,
+    num_workers=1,
+    persistent_workers=True,
+    drop_last=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
+        type=dataset_type,
+        data_root=data_root,
+        ann_file='annotations/panoptic_val2017.json',
+        data_prefix=dict(img='val2017/', seg='annotations/panoptic_val2017/'),
+        test_mode=True,
+        pipeline=test_pipeline))
+test_evaluator = [
+    dict(
+        type='CocoPanopticMetric',
+        format_only=True,
+        outfile_prefix='./work_dirs/coco_panoptic/test'),
+    dict(type='DumpResults', out_file_path='dump_maskformer_result2.pkl')
+]
+>>>>>>> working in progress
