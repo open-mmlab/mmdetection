@@ -4,13 +4,18 @@ import os.path as osp
 from multiprocessing import Pool
 
 import numpy as np
+from mmcv.transforms import to_tensor
 from mmengine.config import Config, DictAction
+<<<<<<< HEAD
 <<<<<<< HEAD
 from mmengine.fileio import load
 from mmengine.utils import ProgressBar, check_file_exist, mkdir_or_exist
 =======
 >>>>>>> update
 from mmengine.data import InstanceData
+=======
+from mmengine.data import InstanceData, PixelData
+>>>>>>> Support panoptic_seg visualization
 from mmengine.runner import Runner
 
 from mmdet.datasets import get_loading_pipeline
@@ -150,16 +155,14 @@ class ResultVisualizer:
                 pred_samples = DetDataSample()
                 pred_samples.pred_instances = pred_instances
             elif task == 'seg':
-                gt_instances = InstanceData()
-                gt_instances.panoptic_seg = data_info['gt_seg_map']
                 gt_samples = DetDataSample()
-                gt_samples.gt_instances = gt_instances
+                gt_sem_seg_data = dict(
+                    sem_seg=to_tensor(data_info['gt_seg_map']))
+                gt_samples.gt_sem_seg = PixelData(**gt_sem_seg_data)
 
-                panoptic_seg = InstanceData()
                 pred_samples = DetDataSample()
-                panoptic_seg.panoptic_seg = results[index][
-                    'pred_panoptic_seg']['sem_seg']
-                pred_samples.pred_panoptic_seg = panoptic_seg
+                pred_samples.pred_panoptic_seg = PixelData(
+                    sem_seg=results[index]['pred_panoptic_seg']['sem_seg'])
 
             self.visualizer.add_datasample(
                 'image',
