@@ -1,6 +1,6 @@
 # dataset settings
 dataset_type = 'CocoPanopticDataset'
-data_root = 'data/coco/'
+data_root = 'data/coco100/'
 
 # file_client_args = dict(
 #     backend='petrel',
@@ -24,7 +24,7 @@ test_pipeline = [
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                   'scale_factor', 'segments_info'))
+                   'scale_factor', 'segments_info', 'seg_map_path'))
 ]
 
 train_dataloader = dict(
@@ -102,7 +102,7 @@ test_dataloader = dict(
 test_evaluator = [
     dict(
         type='CocoPanopticMetric',
-        format_only=True,
+        # format_only=True,
         outfile_prefix='./work_dirs/coco_panoptic/test'),
     dict(type='DumpResults', out_file_path='dump_maskformer_result2.pkl')
 ]

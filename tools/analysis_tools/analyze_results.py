@@ -11,7 +11,7 @@ from mmengine.data import InstanceData
 from mmengine.runner import Runner
 
 from mmdet.datasets import get_loading_pipeline
-from mmdet.evaluation import eval_map, pq_compute_single_core
+from mmdet.evaluation import eval_map
 from mmdet.registry import DATASETS, RUNNERS
 from mmdet.structures import DetDataSample
 from mmdet.utils import (register_all_modules, replace_cfg_vals,
@@ -97,12 +97,14 @@ class ResultVisualizer:
         self.overlay_gt_pred = overlay_gt_pred
         self.visualizer = DetLocalVisualizer()
         self.runner = runner
+        self.evaluator = runner.test_evaluator
 
     def _save_image_gts_results(self,
                                 dataset,
                                 results,
                                 performances,
-                                out_dir=None):
+                                out_dir=None,
+                                task='det'):
         """Display or save image with groung truths and predictions from a
         model.
 
@@ -128,18 +130,33 @@ class ResultVisualizer:
             save_filename = fname + '_' + str(round(performance, 3)) + name
             out_file = osp.join(out_dir, save_filename)
 
-            gt_instances = InstanceData()
-            gt_instances.bboxes = data_info['gt_bboxes']
-            gt_instances.labels = data_info['gt_bboxes_labels']
-            gt_samples = DetDataSample()
-            gt_samples.gt_instances = gt_instances
+            if task == 'det':
+                gt_instances = InstanceData()
+                gt_instances.bboxes = data_info['gt_bboxes']
+                gt_instances.labels = data_info['gt_bboxes_labels']
+                gt_samples = DetDataSample()
+                gt_samples.gt_instances = gt_instances
 
-            pred_instances = InstanceData()
-            pred_instances.bboxes = results[index]['pred_instances']['bboxes']
-            pred_instances.labels = results[index]['pred_instances']['labels']
-            pred_instances.scores = results[index]['pred_instances']['scores']
-            pred_samples = DetDataSample()
-            pred_samples.pred_instances = pred_instances
+                pred_instances = InstanceData()
+                pred_instances.bboxes = results[index]['pred_instances'][
+                    'bboxes']
+                pred_instances.labels = results[index]['pred_instances'][
+                    'labels']
+                pred_instances.scores = results[index]['pred_instances'][
+                    'scores']
+                pred_samples = DetDataSample()
+                pred_samples.pred_instances = pred_instances
+            elif task == 'seg':
+                gt_instances = InstanceData()
+                gt_instances.panoptic_seg = data_info['gt_seg_map']
+                gt_samples = DetDataSample()
+                gt_samples.gt_instances = gt_instances
+
+                panoptic_seg = InstanceData()
+                pred_samples = DetDataSample()
+                panoptic_seg.panoptic_seg = results[index][
+                    'pred_panoptic_seg']['sem_seg']
+                pred_samples.pred_panoptic_seg = panoptic_seg
 
             self.visualizer.add_datasample(
                 'image',
@@ -174,21 +191,27 @@ class ResultVisualizer:
         if (topk * 2) > len(dataset):
             topk = len(dataset) // 2
 
+        good_dir = osp.abspath(osp.join(show_dir, 'good'))
+        bad_dir = osp.abspath(osp.join(show_dir, 'bad'))
+
         if isinstance(results[0], dict):
             good_samples, bad_samples = self.panoptic_evaluate(
                 dataset, results, topk=topk)
+            self._save_image_gts_results(
+                dataset, results, good_samples, good_dir, task='seg')
+            self._save_image_gts_results(
+                dataset, results, bad_samples, bad_dir, task='seg')
         elif isinstance(results[0], list):
             good_samples, bad_samples = self.detection_evaluate(
                 dataset, results, topk=topk)
+            self._save_image_gts_results(
+                dataset, results, good_samples, good_dir, task='det')
+            self._save_image_gts_results(
+                dataset, results, bad_samples, bad_dir, task='det')
         else:
             raise 'The format of result is not supported yet. ' \
                 'Current dict for panoptic segmentation and list ' \
                 'for object detection are supported.'
-
-        good_dir = osp.abspath(osp.join(show_dir, 'good'))
-        bad_dir = osp.abspath(osp.join(show_dir, 'bad'))
-        self._save_image_gts_results(dataset, results, good_samples, good_dir)
-        self._save_image_gts_results(dataset, results, bad_samples, bad_dir)
 
     def detection_evaluate(self, dataset, results, topk=20, eval_fn=None):
         """Evaluation for object detection.
@@ -280,36 +303,16 @@ class ResultVisualizer:
         pqs = {}
         prog_bar = ProgressBar(len(results))
         for i in range(len(results)):
-            #             data_sample = {}
-            #             for k in dataset[i].keys():
-            #                 data_sample[k] = dataset[i][k]
-            #             data_batch = {}
-            #             data_batch['data_sample'] = data_sample
+            data_sample = {}
+            for k in dataset[i].keys():
+                data_sample[k] = dataset[i][k]
+            data_batch = {}
+            data_batch['data_sample'] = data_sample
 
-            import pdb
-            pdb.set_trace()
-            data_info = dataset.prepare_data(i)
-            image_id = data_info['img_id']
-            gt_ann = {
-                'image_id': image_id,
-                'segments_info': data_info['gt_seg_map'],
-                'file_name': osp.split(data_info['seg_map_path'])[-1]
-            }
-            pred_ann = results[i]['pred_panoptic_seg']
+            self.evaluator.process([data_batch], [results[i]])
+            metrics = self.evaluator.evaluate(1)
 
-            gt_folder = dataset.data_prefix['seg']
-            pred_folder = self.runner.test_evaluator.metrics[0].seg_out_dir
-
-            # TODO add file_client
-            pq_stat = pq_compute_single_core(
-                i, [(gt_ann, pred_ann)],
-                gt_folder,
-                pred_folder,
-                dataset.COCOAPI(dataset.ann_file).cats,
-                print_log=False)
-            pq_results, classwise_results = pq_stat.pq_average(
-                dataset.categories, isthing=None)
-            pqs[i] = pq_results['pq']
+            pqs[i] = metrics['coco_panoptic/PQ']
             prog_bar.update()
 
         # if tmp_dir is not None:
