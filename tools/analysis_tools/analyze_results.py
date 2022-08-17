@@ -5,8 +5,11 @@ from multiprocessing import Pool
 
 import numpy as np
 from mmengine.config import Config, DictAction
+<<<<<<< HEAD
 from mmengine.fileio import load
 from mmengine.utils import ProgressBar, check_file_exist, mkdir_or_exist
+=======
+>>>>>>> update
 from mmengine.data import InstanceData
 from mmengine.runner import Runner
 
