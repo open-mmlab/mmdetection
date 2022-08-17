@@ -10,10 +10,10 @@ import torch.nn.functional as F
 from mmcv.cnn import Conv2d, build_activation_layer, build_norm_layer
 from mmcv.cnn.bricks.drop import build_dropout
 from mmcv.cnn.bricks.transformer import MultiheadAttention
-from mmcv.runner import _load_checkpoint, load_state_dict
 from mmengine.model import BaseModule, ModuleList, Sequential
 from mmengine.model.utils import (constant_init, normal_init, trunc_normal_,
                                   trunc_normal_init)
+from mmengine.runner.checkpoint import _load_checkpoint, load_state_dict
 from torch.nn.modules.utils import _pair as to_2tuple
 
 from mmdet.registry import MODELS
