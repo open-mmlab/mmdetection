@@ -256,16 +256,20 @@ def autocast_hbox(func: Callable) -> Callable:
                 or isinstance(results['gt_bboxes'], BaseBoxes)):
             return func(self, results)
         elif isinstance(results['gt_bboxes'], np.ndarray):
-            results['gt_bboxes'] = HorizontalBoxes(results['gt_bboxes'])
-            results = func(self, results, *args, **kwargs)
-            results['gt_bboxes'] = results['gt_bboxes'].numpy()
-        elif isinstance(results['gt_bboxes'], Tensor):
-            results['gt_bboxes'] = HorizontalBoxes(results['gt_bboxes'])
-            results = func(self, results, *args, **kwargs)
-            results['gt_bboxes'] = results['gt_bboxes'].tensor
+            results['gt_bboxes'] = HorizontalBoxes(
+                results['gt_bboxes'], clone=False)
+            _results = func(self, results, *args, **kwargs)
+            if isinstance(_results, dict) and 'gt_bboxes' in _results:
+                # Return output gt_bboxes to numpy
+                _results['gt_bboxes'] = _results['gt_bboxes'].numpy()
+                return _results
+            else:
+                # Return input gt_bboxes to numpy
+                results['gt_bboxes'] = results['gt_bboxes'].numpy()
+                return _results
         else:
             raise TypeError("auto_box_type requires results['gt_bboxes'] to "
-                            'be BaseBoxes, np.ndarray, or torch.Tensor, '
-                            f"but get {type(results['gt_bboxes'])}")
+                            'be BaseBoxes or np.ndarray, but got '
+                            f"{type(results['gt_bboxes'])}")
 
     return wrapper
