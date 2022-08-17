@@ -24,7 +24,7 @@ test_pipeline = [
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                   'scale_factor'))
+                   'scale_factor', 'segments_info'))
 ]
 
 train_dataloader = dict(
