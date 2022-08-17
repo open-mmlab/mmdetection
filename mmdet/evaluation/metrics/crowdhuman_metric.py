@@ -85,17 +85,11 @@ class CrowdHumanMetric(BaseMetric):
             ann = dict()
 
             ann['ID'] = gt['img_id']
-            ann['width'] = gt['img_shape'][0]
-            ann['height'] = gt['img_shape'][1]
-
-            # ann['bboxes'] = gt['gt_instances']['bboxes'].cpu().numpy()
-            # ann['labels'] = gt['gt_instances']['labels'].cpu().numpy()
-            # ann['bboxes_ignore'] = gt['gt_instances']['bboxes'].cpu().numpy()
-            # ann['labels_ignore'] = gt['gt_instances']['labels'].cpu().numpy()
+            ann['width'] = gt['ori_shape'][1]
+            ann['height'] = gt['ori_shape'][0]
 
             pred_bboxes = pred['pred_instances']['bboxes'].cpu().numpy()
             pred_scores = pred['pred_instances']['scores'].cpu().numpy()
-            # pred_labels = pred['pred_instances']['labels'].cpu().numpy()
 
             pred_bbox_scores = np.hstack(
                 [pred_bboxes, pred_scores.reshape((-1, 1))])
@@ -161,9 +155,47 @@ class Image(object):
         self._gtNum = None
         self._dtNum = None
 
-    def load(self, record, body_key, head_key, class_names, gtflag):
-        """
-        :meth: read the object from a dict
+    def load(self, record, body_key, head_key, class_names, gt_flag):
+        """Loading information for evaluation.
+
+        Args:
+            record (dict): Label information or test results.
+                The format might look something like this:
+                {
+                    'ID': '273271,c9db000d5146c15',
+                    'gtboxes': [
+                        {'fbox': [72, 202, 163, 503], 'tag': 'person', ...},
+                        {'fbox': [199, 180, 144, 499], 'tag': 'person', ...},
+                        ...
+                    ]
+                }
+                or:
+                {
+                    'ID': '273271,c9db000d5146c15',
+                    'width': 800,
+                    'height': 1067,
+                    'dtboxes': [
+                        {
+                            'box': [306.22, 205.95, 164.05, 394.04],
+                            'score': 0.99,
+                            'tag': 1
+                        },
+                        {
+                            'box': [403.60, 178.66, 157.15, 421.33],
+                            'score': 0.99,
+                            'tag': 1
+                        },
+                        ...
+                    ]
+                }
+            body_key (str): key of detection body box.
+                Valid when loading detection results and self.eval_mode!=1.
+            head_key (str): key of detection head box.
+                Valid when loading detection results and self.eval_mode!=0.
+            class_names (list[str]):class names of data set.
+                Defaults to ['background', 'person'].
+            gt_flag (bool): Indicate whether record is ground truth
+                or predicting the outcome.
         """
         if 'ID' in record and self.ID is None:
             self.ID = record['ID']
@@ -171,10 +203,10 @@ class Image(object):
             self._width = record['width']
         if 'height' in record and self._height is None:
             self._height = record['height']
-        if gtflag:
+        if gt_flag:
             self._gtNum = len(record['gtboxes'])
-            body_bbox, head_bbox = self.load_gt_boxes(record, 'gtboxes',
-                                                      class_names)
+            body_bbox, head_bbox = \
+                self.load_gt_boxes(record, 'gtboxes', class_names)
             if self.eval_mode == 0:
                 self.gtboxes = body_bbox
                 self._ignNum = (body_bbox[:, -1] == -1).sum()
@@ -191,7 +223,7 @@ class Image(object):
                                           gt_tag.reshape(-1, 1)))
             else:
                 raise Exception('Unknown evaluation mode!')
-        if not gtflag:
+        if not gt_flag:
             self._dtNum = len(record['dtboxes'])
             if self.eval_mode == 0:
                 self.dtboxes = self.load_det_boxes(record, 'dtboxes', body_key,
@@ -485,6 +517,19 @@ class Image(object):
 
 
 class Database(object):
+    """Loading information for evaluation.
+
+    Args:
+        gt_path (str): Path of an annotations file.
+        dt_path (str): Path of detection results.
+        body_key (str): key of detection body box.
+            Valid when loading detection results and mode!=1.
+        head_key (str): key of detection head box.
+            Valid when loading detection results and mode!=0.
+        mode (int): Select the mode of evaluate. Valid mode include
+            0(just body box), 1(just head box) and 2(both of them).
+            Defaults to 0.
+    """
 
     def __init__(self,
                  gt_path=None,
@@ -492,9 +537,7 @@ class Database(object):
                  body_key=None,
                  head_key=None,
                  mode=0):
-        """
-        mode=0: only body; mode=1: only head
-        """
+
         self.images = dict()
         self.eval_mode = mode
         self.loadData(gt_path, body_key, head_key, if_gt=True)
@@ -537,9 +580,14 @@ class Database(object):
         self.scorelist = scorelist
 
     def eval_MR(self, ref='CALTECH_-2'):
-        """evaluate by Caltech-style log-average miss rate.
+        """Evaluate by Caltech-style log-average miss rate.
 
-        ref: str - "CALTECH_-2"/"CALTECH_-4"
+        Args:
+            ref (str): Different ways of calculating. Valid ref include
+            CALTECH_-2 and CALTECH_-4. Defaults to CALTECH_-2.
+
+        Returns:
+            float: miss rate results.
         """
 
         # find greater_than
@@ -593,7 +641,7 @@ class Database(object):
         return MR, (fppiX, fppiY)
 
     def eval_AP(self):
-        """:meth: evaluate by average precision"""
+        """evaluate by average precision."""
 
         # calculate general ap score
         def _calculate_map(recall, precision):
