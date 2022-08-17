@@ -9,6 +9,7 @@ from mmcv.transforms import BaseTransform
 from mmcv.transforms.utils import cache_randomness
 
 from mmdet.registry import TRANSFORMS
+from mmdet.structures.bbox import autocast_hbox
 from .augment_wrappers import _MAX_LEVEL, level_to_mag
 
 
@@ -156,6 +157,7 @@ class GeomTransform(BaseTransform):
         mag = level_to_mag(self.level, self.min_mag, self.max_mag)
         return -mag if np.random.rand() > self.reversal_prob else mag
 
+    @autocast_hbox
     def transform(self, results: dict) -> dict:
         """Transform function for images, bounding boxes, masks and semantic
         segmentation map.
@@ -529,13 +531,6 @@ class Rotate(GeomTransform):
             border_value=self.seg_ignore_label,
             interpolation='nearest')
 
-    def _transform_bboxes(self, results: dict, mag: float) -> None:
-        """Rotate the bboxes."""
-        img_shape = results['img_shape']
-        center = ((img_shape[1] - 1) * 0.5, (img_shape[0] - 1) * 0.5)
-        results['gt_bboxes'].rotate_(center, mag)
-        results['gt_bboxes'].clip_(img_shape)
-
 
 @TRANSFORMS.register_module()
 class TranslateX(GeomTransform):
@@ -647,11 +642,6 @@ class TranslateX(GeomTransform):
             border_value=self.seg_ignore_label,
             interpolation='nearest')
 
-    def _transform_bboxes(self, results: dict, mag: float) -> None:
-        """Translate the bboxes horizontally."""
-        results['gt_bboxes'].translate_([mag, 0])
-        results['gt_bboxes'].clip_(results['img_shape'])
-
 
 @TRANSFORMS.register_module()
 class TranslateY(GeomTransform):
@@ -762,8 +752,3 @@ class TranslateY(GeomTransform):
             direction='vertical',
             border_value=self.seg_ignore_label,
             interpolation='nearest')
-
-    def _transform_bboxes(self, results: dict, mag: float) -> None:
-        """Translate the bboxes vertically."""
-        results['gt_bboxes'].translate_([0, mag])
-        results['gt_bboxes'].clip_(results['img_shape'])

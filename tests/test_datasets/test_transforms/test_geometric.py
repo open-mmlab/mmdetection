@@ -417,7 +417,7 @@ class TestTranslateX(unittest.TestCase):
         results_gt = copy.deepcopy(self.results_mask)
         results_gt['img'] = img_gt
         results_gt['gt_bboxes'] = HorizontalBoxes(
-            np.array([[0.7, 0, 1.7, 2]], dtype=np.float32))
+            np.array([[0, 0, 1, 2]], dtype=np.float32))
         gt_masks = np.array([[1, 0, 0, 0], [1, 1, 0, 0], [1, 0, 0, 0]],
                             dtype=np.uint8)[None, :, :]
         results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)
@@ -496,7 +496,7 @@ class TestTranslateY(unittest.TestCase):
         results_gt = copy.deepcopy(self.results_mask)
         results_gt['img'] = img_gt
         results_gt['gt_bboxes'] = HorizontalBoxes(
-            np.array([[1, 0, 2, 1.6]], dtype=np.float32))
+            np.array([[1, 0, 2, 1]], dtype=np.float32))
         gt_masks = np.array([[0, 1, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0]],
                             dtype=np.uint8)[None, :, :]
         results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)

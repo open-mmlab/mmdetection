@@ -17,7 +17,7 @@ from mmengine.dataset import BaseDataset
 from numpy import random
 
 from mmdet.registry import TRANSFORMS
-from mmdet.structures.bbox import HorizontalBoxes
+from mmdet.structures.bbox import HorizontalBoxes, autocast_hbox
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 from mmdet.utils import log_img_scale
 
@@ -133,6 +133,7 @@ class Resize(MMCV_Resize):
             results['homography_matrix'] = homography_matrix @ results[
                 'homography_matrix']
 
+    @autocast_hbox
     def transform(self, results: dict) -> dict:
         """Transform function to resize images, bounding boxes and semantic
         segmentation map.
@@ -245,6 +246,7 @@ class RandomFlip(MMCV_RandomFlip):
             results['homography_matrix'] = homography_matrix @ results[
                 'homography_matrix']
 
+    @autocast_hbox
     def _flip(self, results: dict) -> None:
         """Flip images, bounding boxes, and semantic segmentation map."""
         # flip image
@@ -311,6 +313,7 @@ class RandomShift(BaseTransform):
     def _random_prob(self) -> float:
         return random.uniform(0, 1)
 
+    @autocast_hbox
     def transform(self, results: dict) -> dict:
         """Transform function to random shift images, bounding boxes.
 
@@ -710,6 +713,7 @@ class RandomCrop(BaseTransform):
             crop_h, crop_w = crop_size + np.random.rand(2) * (1 - crop_size)
             return int(h * crop_h + 0.5), int(w * crop_w + 0.5)
 
+    @autocast_hbox
     def transform(self, results: dict) -> Union[dict, None]:
         """Transform function to randomly crop images, bounding boxes, masks,
         semantic segmentation maps.
@@ -977,6 +981,7 @@ class Expand(BaseTransform):
         top = int(random.uniform(0, h * ratio - h))
         return left, top
 
+    @autocast_hbox
     def transform(self, results: dict) -> dict:
         """Transform function to expand images, bounding boxes, masks,
         segmentation map.
@@ -1089,6 +1094,7 @@ class MinIoURandomCrop(BaseTransform):
     def _random_mode(self) -> Number:
         return random.choice(self.sample_mode)
 
+    @autocast_hbox
     def transform(self, results: dict) -> dict:
         """Transform function to crop images and bounding boxes with minimum
         IoU constraint.
@@ -1390,6 +1396,7 @@ class Albu(BaseTransform):
             updated_dict[new_k] = d[k]
         return updated_dict
 
+    @autocast_hbox
     def transform(self, results: dict) -> Union[dict, None]:
         """Transform function of Albu."""
         # TODO: gt_seg_map is not currently supported
@@ -1819,6 +1826,7 @@ class RandomCenterCropPad(BaseTransform):
         results['border'] = border
         return results
 
+    @autocast_hbox
     def transform(self, results: dict) -> dict:
         img = results['img']
         assert img.dtype == np.float32, (
@@ -1906,6 +1914,7 @@ class CutOut(BaseTransform):
         if not isinstance(self.candidates, list):
             self.candidates = [self.candidates]
 
+    @autocast_hbox
     def transform(self, results: dict) -> dict:
         """Call function to drop some regions of image."""
         h, w, c = results['img'].shape
@@ -2031,6 +2040,7 @@ class Mosaic(BaseTransform):
         indexes = [random.randint(0, len(dataset)) for _ in range(3)]
         return indexes
 
+    @autocast_hbox
     def transform(self, results: dict) -> dict:
         """Mosaic transform function.
 
@@ -2291,6 +2301,7 @@ class MixUp(BaseTransform):
 
         return index
 
+    @autocast_hbox
     def transform(self, results: dict) -> dict:
         """MixUp transform function.
 
@@ -2505,6 +2516,7 @@ class RandomAffine(BaseTransform):
             translate_matrix @ shear_matrix @ rotation_matrix @ scaling_matrix)
         return warp_matrix
 
+    @autocast_hbox
     def transform(self, results: dict) -> dict:
         img = results['img']
         height = img.shape[0] + self.border[0] * 2
@@ -2714,6 +2726,7 @@ class CopyPaste(BaseTransform):
         """
         return random.randint(0, len(dataset))
 
+    @autocast_hbox
     def transform(self, results: dict) -> dict:
         """Transform function to make a copy-paste of image.
 

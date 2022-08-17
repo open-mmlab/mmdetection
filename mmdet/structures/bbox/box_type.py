@@ -240,3 +240,32 @@ def convert_box_type(boxes: BoxType,
         return boxes.numpy()
     else:
         return converter(boxes)
+
+
+def autocast_hbox(func: Callable) -> Callable:
+    """A decorator which automatically casts results['gt_bboxes'] to
+    HorizontalBoxes.
+
+    It commenly used in mmdet.datasets.transforms to make the transforms up-
+    compatible with the np.ndarray type of results['gt_bboxes'].
+    """
+    _, HorizontalBoxes = get_box_type('hbox')
+
+    def wrapper(self, results: dict, *args, **kwargs) -> dict:
+        if ('gt_bboxes' not in results
+                or isinstance(results['gt_bboxes'], BaseBoxes)):
+            return func(self, results)
+        elif isinstance(results['gt_bboxes'], np.ndarray):
+            results['gt_bboxes'] = HorizontalBoxes(results['gt_bboxes'])
+            results = func(self, results, *args, **kwargs)
+            results['gt_bboxes'] = results['gt_bboxes'].numpy()
+        elif isinstance(results['gt_bboxes'], Tensor):
+            results['gt_bboxes'] = HorizontalBoxes(results['gt_bboxes'])
+            results = func(self, results, *args, **kwargs)
+            results['gt_bboxes'] = results['gt_bboxes'].tensor
+        else:
+            raise TypeError("auto_box_type requires results['gt_bboxes'] to "
+                            'be BaseBoxes, np.ndarray, or torch.Tensor, '
+                            f"but get {type(results['gt_bboxes'])}")
+
+    return wrapper

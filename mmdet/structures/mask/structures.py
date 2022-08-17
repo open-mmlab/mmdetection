@@ -190,7 +190,10 @@ class BaseInstanceMasks(metaclass=ABCMeta):
         """
 
     def get_bboxes(self, dst_type='hbb'):
-        """Get certain type boxes from masks.
+        """Get the certain type boxes from masks.
+
+        Please refer to ``mmdet.structures.bbox.box_type`` for more details of
+        the box type.
 
         Args:
             dst_type: Destination box type.

@@ -60,7 +60,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         rgb_to_bgr (bool): whether to convert image from RGB to RGB.
             Defaults to False.
         with_box_wrapped (bool): Whether to keep the ``BaseBoxes`` wrapper of
-            bboxes data.
+            bboxes data. Defaults to False.
         batch_augments (list[dict], optional): Batch-level augmentations
     """
 

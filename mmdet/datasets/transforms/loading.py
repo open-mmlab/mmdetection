@@ -227,7 +227,8 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         with_seg (bool): Whether to parse and load the semantic segmentation
             annotation. Defaults to False.
         poly2mask (bool): Whether to convert mask to bitmap. Default: True.
-        box_type (str): The box mode used to wrap the bboxes.
+        box_type (str): The box type used to wrap the bboxes. If ``box_type``
+            is None, gt_bboxes will keep being np.ndarray. Defaults to 'hbox'.
         imdecode_backend (str): The image decoding backend type. The backend
             argument for :func:``mmcv.imfrombytes``.
             See :fun:``mmcv.imfrombytes`` for details.
@@ -260,8 +261,12 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         for instance in results['instances']:
             gt_bboxes.append(instance['bbox'])
             gt_ignore_flags.append(instance['ignore_flag'])
-        _, box_type_cls = get_box_type(self.box_type)
-        results['gt_bboxes'] = box_type_cls(gt_bboxes, dtype=torch.float32)
+        if self.box_type is None:
+            results['gt_bboxes'] = np.array(
+                gt_bboxes, dtype=np.float32).reshape((-1, 4))
+        else:
+            _, box_type_cls = get_box_type(self.box_type)
+            results['gt_bboxes'] = box_type_cls(gt_bboxes, dtype=torch.float32)
         results['gt_ignore_flags'] = np.array(gt_ignore_flags, dtype=np.bool)
 
     def _load_labels(self, results: dict) -> None:
