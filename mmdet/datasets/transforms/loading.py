@@ -693,3 +693,74 @@ class FilterAnnotations(BaseTransform):
         return self.__class__.__name__ + \
                f'(min_gt_bbox_wh={self.min_gt_bbox_wh}, ' \
                f'keep_empty={self.keep_empty})'
+
+
+@TRANSFORMS.register_module()
+class LoadEmptyAnnotations(BaseTransform):
+    """Load Empty Annotations for unlabeled images.
+
+    Added Keys:
+    - gt_bboxes (np.float32)
+    - gt_bboxes_labels (np.int64)
+    - gt_masks (BitmapMasks | PolygonMasks)
+    - gt_seg_map (np.uint8)
+    - gt_ignore_flags (np.bool)
+
+    Args:
+        with_bbox (bool): Whether to load the pseudo bbox annotation.
+            Defaults to True.
+        with_label (bool): Whether to load the pseudo label annotation.
+            Defaults to True.
+        with_mask (bool): Whether to load the pseudo mask annotation.
+             Default: False.
+        with_seg (bool): Whether to load the pseudo semantic segmentation
+            annotation. Defaults to False.
+        seg_ignore_label (int): The fill value used for segmentation map.
+            Note this value must equals ``ignore_label`` in ``semantic_head``
+            of the corresponding config. Defaults to 255.
+    """
+
+    def __init__(self,
+                 with_bbox: bool = True,
+                 with_label: bool = True,
+                 with_mask: bool = False,
+                 with_seg: bool = False,
+                 seg_ignore_label: int = 255) -> None:
+        self.with_bbox = with_bbox
+        self.with_label = with_label
+        self.with_mask = with_mask
+        self.with_seg = with_seg
+        self.seg_ignore_label = seg_ignore_label
+
+    def transform(self, results: dict) -> dict:
+        """Transform function to load empty annotations.
+
+        Args:
+            results (dict): Result dict.
+        Returns:
+            dict: Updated result dict.
+        """
+        if self.with_bbox:
+            results['gt_bboxes'] = np.zeros((0, 4), dtype=np.float32)
+            results['gt_ignore_flags'] = np.zeros((0, ), dtype=bool)
+        if self.with_label:
+            results['gt_bboxes_labels'] = np.zeros((0, ), dtype=np.int64)
+        if self.with_mask:
+            # TODO: support PolygonMasks
+            h, w = results['img_shape']
+            gt_masks = np.zeros((0, h, w), dtype=np.uint8)
+            results['gt_masks'] = BitmapMasks(gt_masks, h, w)
+        if self.with_seg:
+            h, w = results['img_shape']
+            results['gt_seg_map'] = self.seg_ignore_label * np.ones(
+                (h, w), dtype=np.uint8)
+        return results
+
+    def __repr__(self) -> str:
+        repr_str = self.__class__.__name__
+        repr_str += f'(with_bbox={self.with_bbox}, '
+        repr_str += f'with_label={self.with_label}, '
+        repr_str += f'with_mask={self.with_mask}, '
+        repr_str += f'with_seg={self.with_seg}, '
+        repr_str += f'seg_ignore_label={self.seg_ignore_label})'
+        return repr_str

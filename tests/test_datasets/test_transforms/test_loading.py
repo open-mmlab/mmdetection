@@ -10,6 +10,7 @@ import mmcv
 import numpy as np
 
 from mmdet.datasets.transforms import (FilterAnnotations, LoadAnnotations,
+                                       LoadEmptyAnnotations,
                                        LoadImageFromNDArray,
                                        LoadMultiChannelImageFromFiles,
                                        LoadProposals)
@@ -410,3 +411,30 @@ class TestLoadProposals(unittest.TestCase):
         transform = LoadProposals()
         self.assertEqual(
             repr(transform), 'LoadProposals(num_max_proposals=None)')
+
+
+class TestLoadEmptyAnnotations(unittest.TestCase):
+
+    def test_transform(self):
+        transform = LoadEmptyAnnotations(
+            with_bbox=True, with_label=True, with_mask=True, with_seg=True)
+        results = {'img_shape': (224, 224)}
+        results = transform(results)
+        self.assertEqual(results['gt_bboxes'].dtype, np.float32)
+        self.assertEqual(results['gt_bboxes'].shape[-1], 4)
+        self.assertEqual(results['gt_ignore_flags'].dtype, bool)
+        self.assertEqual(results['gt_bboxes_labels'].dtype, np.int64)
+        self.assertEqual(results['gt_masks'].masks.dtype, np.uint8)
+        self.assertEqual(results['gt_masks'].masks.shape[-2:],
+                         results['img_shape'])
+        self.assertEqual(results['gt_seg_map'].dtype, np.uint8)
+        self.assertEqual(results['gt_seg_map'].shape, results['img_shape'])
+
+    def test_repr(self):
+        transform = LoadEmptyAnnotations()
+        self.assertEqual(
+            repr(transform), 'LoadEmptyAnnotations(with_bbox=True, '
+            'with_label=True, '
+            'with_mask=False, '
+            'with_seg=False, '
+            'seg_ignore_label=255)')

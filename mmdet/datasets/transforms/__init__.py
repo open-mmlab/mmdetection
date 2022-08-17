@@ -8,9 +8,9 @@ from .formatting import (ImageToTensor, PackDetInputs, ToDataContainer,
 from .geometric import (GeomTransform, Rotate, ShearX, ShearY, TranslateX,
                         TranslateY)
 from .instaboost import InstaBoost
-from .loading import (FilterAnnotations, LoadAnnotations, LoadImageFromNDArray,
-                      LoadMultiChannelImageFromFiles, LoadPanopticAnnotations,
-                      LoadProposals)
+from .loading import (FilterAnnotations, LoadAnnotations, LoadEmptyAnnotations,
+                      LoadImageFromNDArray, LoadMultiChannelImageFromFiles,
+                      LoadPanopticAnnotations, LoadProposals)
 from .transforms import (Albu, CopyPaste, CutOut, Expand, MinIoURandomCrop,
                          MixUp, Mosaic, Normalize, Pad, PhotoMetricDistortion,
                          RandomAffine, RandomCenterCropPad, RandomCrop,
@@ -30,5 +30,5 @@ __all__ = [
     'RandomAffine', 'YOLOXHSVRandomAug', 'CopyPaste', 'FilterAnnotations',
     'Pad', 'GeomTransform', 'ColorTransform', 'RandAugment', 'Sharpness',
     'Solarize', 'SolarizeAdd', 'Posterize', 'AutoContrast', 'Invert',
-    'MultiBranch', 'RandomErasing'
+    'MultiBranch', 'RandomErasing', 'LoadEmptyAnnotations'
 ]
