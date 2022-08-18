@@ -248,6 +248,11 @@ def autocast_hbox(func: Callable) -> Callable:
 
     It commenly used in mmdet.datasets.transforms to make the transforms up-
     compatible with the np.ndarray type of results['gt_bboxes'].
+
+    The speed of processing of np.ndarray and BaseBoxes data are the same:
+
+    - np.ndarray: 0.0509 img/s
+    - BaseBoxes: 0.0551 img/s
     """
     _, HorizontalBoxes = get_box_type('hbox')
 
