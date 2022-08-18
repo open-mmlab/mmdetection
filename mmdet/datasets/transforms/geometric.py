@@ -9,7 +9,7 @@ from mmcv.transforms import BaseTransform
 from mmcv.transforms.utils import cache_randomness
 
 from mmdet.registry import TRANSFORMS
-from mmdet.structures.bbox import autocast_hbox
+from mmdet.structures.bbox import autocast_box_type
 from .augment_wrappers import _MAX_LEVEL, level_to_mag
 
 
@@ -157,7 +157,7 @@ class GeomTransform(BaseTransform):
         mag = level_to_mag(self.level, self.min_mag, self.max_mag)
         return -mag if np.random.rand() > self.reversal_prob else mag
 
-    @autocast_hbox
+    @autocast_box_type()
     def transform(self, results: dict) -> dict:
         """Transform function for images, bounding boxes, masks and semantic
         segmentation map.

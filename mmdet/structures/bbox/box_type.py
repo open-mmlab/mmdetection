@@ -242,9 +242,9 @@ def convert_box_type(boxes: BoxType,
         return converter(boxes)
 
 
-def autocast_hbox(func: Callable) -> Callable:
-    """A decorator which automatically casts results['gt_bboxes'] to
-    HorizontalBoxes.
+def autocast_box_type(dst_box_type='hbox') -> Callable:
+    """A decorator which automatically casts results['gt_bboxes'] to the
+    destination box type.
 
     It commenly used in mmdet.datasets.transforms to make the transforms up-
     compatible with the np.ndarray type of results['gt_bboxes'].
@@ -253,28 +253,36 @@ def autocast_hbox(func: Callable) -> Callable:
 
     - np.ndarray: 0.0509 img/s
     - BaseBoxes: 0.0551 img/s
+
+    Args:
+        dst_box_type (str): Destination box type.
     """
-    _, HorizontalBoxes = get_box_type('hbox')
+    _, box_type_cls = get_box_type(dst_box_type)
 
-    def wrapper(self, results: dict, *args, **kwargs) -> dict:
-        if ('gt_bboxes' not in results
-                or isinstance(results['gt_bboxes'], BaseBoxes)):
-            return func(self, results)
-        elif isinstance(results['gt_bboxes'], np.ndarray):
-            results['gt_bboxes'] = HorizontalBoxes(
-                results['gt_bboxes'], clone=False)
-            _results = func(self, results, *args, **kwargs)
-            if isinstance(_results, dict) and 'gt_bboxes' in _results:
-                # Return output gt_bboxes to numpy
-                _results['gt_bboxes'] = _results['gt_bboxes'].numpy()
-                return _results
+    def decorator(func: Callable) -> Callable:
+
+        def wrapper(self, results: dict, *args, **kwargs) -> dict:
+            if ('gt_bboxes' not in results
+                    or isinstance(results['gt_bboxes'], BaseBoxes)):
+                return func(self, results)
+            elif isinstance(results['gt_bboxes'], np.ndarray):
+                results['gt_bboxes'] = box_type_cls(
+                    results['gt_bboxes'], clone=False)
+                _results = func(self, results, *args, **kwargs)
+                if isinstance(_results, dict) and 'gt_bboxes' in _results:
+                    # Return output gt_bboxes to numpy
+                    _results['gt_bboxes'] = _results['gt_bboxes'].numpy()
+                    return _results
+                else:
+                    # Return input gt_bboxes to numpy
+                    results['gt_bboxes'] = results['gt_bboxes'].numpy()
+                    return _results
             else:
-                # Return input gt_bboxes to numpy
-                results['gt_bboxes'] = results['gt_bboxes'].numpy()
-                return _results
-        else:
-            raise TypeError("auto_box_type requires results['gt_bboxes'] to "
-                            'be BaseBoxes or np.ndarray, but got '
-                            f"{type(results['gt_bboxes'])}")
+                raise TypeError(
+                    "auto_box_type requires results['gt_bboxes'] to "
+                    'be BaseBoxes or np.ndarray, but got '
+                    f"{type(results['gt_bboxes'])}")
 
-    return wrapper
+        return wrapper
+
+    return decorator

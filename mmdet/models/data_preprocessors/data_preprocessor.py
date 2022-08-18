@@ -15,8 +15,8 @@ from torch import Tensor
 
 from mmdet.registry import MODELS
 from mmdet.structures import DetDataSample
-from mmdet.utils import ConfigType
 from mmdet.structures.bbox import BaseBoxes
+from mmdet.utils import ConfigType
 
 
 @MODELS.register_module()
