@@ -46,10 +46,10 @@ class SoftTeacher(SemiBaseDetector):
             data_preprocessor=data_preprocessor,
             init_cfg=init_cfg)
 
-    def pseudo_loss(self,
-                    batch_inputs: Tensor,
-                    batch_data_samples: SampleList,
-                    batch_info: Optional[dict] = None) -> dict:
+    def loss_by_pseudo_instances(self,
+                                 batch_inputs: Tensor,
+                                 batch_data_samples: SampleList,
+                                 batch_info: Optional[dict] = None) -> dict:
         """Calculate losses from a batch of inputs and pseudo data samples.
 
         Args:
@@ -121,12 +121,18 @@ class SoftTeacher(SemiBaseDetector):
                 torch.from_numpy(data_samples.homography_matrix).inverse().to(
                     self.data_preprocessor.device), data_samples.ori_shape)
 
-        batch_info = {'feat': x, 'img_shape': [], 'homography_matrix': []}
+        batch_info = {
+            'feat': x,
+            'img_shape': [],
+            'homography_matrix': [],
+            'metainfo': []
+        }
         for data_samples in batch_data_samples:
             batch_info['img_shape'].append(data_samples.img_shape)
             batch_info['homography_matrix'].append(
                 torch.from_numpy(data_samples.homography_matrix).to(
                     self.data_preprocessor.device))
+            batch_info['metainfo'].append(data_samples.metainfo)
         return batch_data_samples, batch_info
 
     def unsup_rpn_loss(self, x: Tuple[Tensor],
@@ -197,11 +203,11 @@ class SoftTeacher(SemiBaseDetector):
                     data_samples.gt_instances.scores >
                     self.semi_train_cfg.cls_pseudo_thr]
 
-        outputs = unpack_gt_instances(batch_data_samples)
+        outputs = unpack_gt_instances(cls_data_samples)
         batch_gt_instances, batch_gt_instances_ignore, _ = outputs
 
         # assign gts and sample proposals
-        num_imgs = len(batch_data_samples)
+        num_imgs = len(cls_data_samples)
         sampling_results = []
         for i in range(num_imgs):
             # rename rpn_results.bboxes to rpn_results.priors
@@ -238,7 +244,7 @@ class SoftTeacher(SemiBaseDetector):
         with torch.no_grad():
             results_list = self.teacher.roi_head.predict_bbox(
                 batch_info['feat'],
-                [data_samples.metainfo for data_samples in batch_data_samples],
+                batch_info['metainfo'],
                 selected_results_list,
                 rcnn_test_cfg=None,
                 rescale=False)
@@ -370,10 +376,9 @@ class SoftTeacher(SemiBaseDetector):
             offset = (
                 torch.randn(times, box.shape[0], 4, device=box.device) *
                 aug_scale[None, ...])
-            new_box = box.clone()[None, ...].expand(times, box.shape[0], -1)
-            return torch.cat(
-                [new_box[:, :, :4].clone() + offset, new_box[:, :, 4:]],
-                dim=-1)
+            new_box = box.clone()[None, ...].expand(times, box.shape[0],
+                                                    -1) + offset
+            return new_box
 
         return [
             _aug_single(data_samples.gt_instances.bboxes)

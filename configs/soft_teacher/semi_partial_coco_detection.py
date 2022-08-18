@@ -21,13 +21,11 @@ geometric = [[dict(type='Rotate')], [dict(type='ShearX')],
              [dict(type='ShearY')], [dict(type='TranslateX')],
              [dict(type='TranslateY')]]
 
+scale = [(1333, 400), (1333, 1200)]
 sup_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(type='LoadAnnotations', with_bbox=True),
-    dict(
-        type='RandomResize',
-        scale=[(1333, 400), (1333, 1200)],
-        keep_ratio=True),
+    dict(type='RandomResize', scale=scale, keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='RandAugment', aug_space=color_space, aug_num=1),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
@@ -35,10 +33,7 @@ sup_pipeline = [
 ]
 
 weak_pipeline = [
-    dict(
-        type='RandomResize',
-        scale=[(1333, 400), (1333, 1200)],
-        keep_ratio=True),
+    dict(type='RandomResize', scale=scale, keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(
         type='PackDetInputs',
@@ -48,13 +43,10 @@ weak_pipeline = [
 ]
 
 strong_pipeline = [
-    dict(
-        type='RandomResize',
-        scale=[(1333, 400), (1333, 1200)],
-        keep_ratio=True),
+    dict(type='RandomResize', scale=scale, keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
     dict(
-        type='ShuffledSequence',
+        type='RandomOrder',
         transforms=[
             dict(type='RandAugment', aug_space=color_space, aug_num=1),
             dict(type='RandAugment', aug_space=geometric, aug_num=1),
@@ -70,7 +62,7 @@ strong_pipeline = [
 
 unsup_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
-    dict(type='LoadPseudoAnnos'),
+    dict(type='LoadEmptyAnnotations'),
     dict(
         type='MultiBranch',
         unsup_teacher=weak_pipeline,
@@ -87,6 +79,9 @@ test_pipeline = [
                    'scale_factor'))
 ]
 
+fold = 1
+percent = 10
+
 train_dataloader = dict(
     batch_size=5,
     num_workers=5,
@@ -100,7 +95,7 @@ train_dataloader = dict(
                 type=dataset_type,
                 data_root='data/',
                 ann_file='coco_semi_annos/'
-                'instances_train2017.${fold}@${percent}.json',
+                f'instances_train2017.{fold}@{percent}.json',
                 data_prefix=dict(img='coco/train2017/'),
                 filter_cfg=dict(filter_empty_gt=True, min_size=32),
                 pipeline=sup_pipeline),
@@ -108,7 +103,7 @@ train_dataloader = dict(
                 type=dataset_type,
                 data_root='data/',
                 ann_file='coco_semi_annos/'
-                'instances_train2017.${fold}@${percent}-unlabeled.json',
+                f'instances_train2017.{fold}@{percent}-unlabeled.json',
                 data_prefix=dict(img='coco/train2017/'),
                 filter_cfg=dict(filter_empty_gt=True, min_size=32),
                 pipeline=unsup_pipeline)
@@ -136,6 +131,3 @@ val_evaluator = dict(
     metric='bbox',
     format_only=False)
 test_evaluator = val_evaluator
-
-fold = 1
-percent = 10

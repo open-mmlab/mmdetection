@@ -50,9 +50,6 @@ class SemiBaseDetector(BaseDetector):
         self.semi_test_cfg = semi_test_cfg
         if self.semi_train_cfg.get('freeze_teacher', True) is True:
             self.freeze(self.teacher)
-            self._ddp_params_and_buffers_to_ignore = [
-                'teacher.' + k for k in self.teacher.state_dict().keys()
-            ]
 
     @staticmethod
     def freeze(model: nn.Module):
@@ -76,8 +73,8 @@ class SemiBaseDetector(BaseDetector):
             dict: A dictionary of loss components
         """
         losses = dict()
-        losses.update(**self.gt_loss(multi_batch_inputs['sup'],
-                                     multi_batch_data_samples['sup']))
+        losses.update(**self.loss_by_gt_instances(
+            multi_batch_inputs['sup'], multi_batch_data_samples['sup']))
         origin_pseudo_instances, batch_info = self.get_pseudo_instances(
             multi_batch_inputs['unsup_teacher'],
             multi_batch_data_samples['unsup_teacher'])
@@ -85,13 +82,13 @@ class SemiBaseDetector(BaseDetector):
             'unsup_student'] = self.project_pseudo_instances(
                 origin_pseudo_instances,
                 multi_batch_data_samples['unsup_student'])
-        losses.update(**self.pseudo_loss(
+        losses.update(**self.loss_by_pseudo_instances(
             multi_batch_inputs['unsup_student'],
             multi_batch_data_samples['unsup_student'], batch_info))
         return losses
 
-    def gt_loss(self, batch_inputs: Tensor,
-                batch_data_samples: SampleList) -> dict:
+    def loss_by_gt_instances(self, batch_inputs: Tensor,
+                             batch_data_samples: SampleList) -> dict:
         """Calculate losses from a batch of inputs and ground-truth data
         samples.
 
@@ -113,10 +110,10 @@ class SemiBaseDetector(BaseDetector):
         }
         return gt_loss
 
-    def pseudo_loss(self,
-                    batch_inputs: Tensor,
-                    batch_data_samples: SampleList,
-                    batch_info: Optional[dict] = None) -> dict:
+    def loss_by_pseudo_instances(self,
+                                 batch_inputs: Tensor,
+                                 batch_data_samples: SampleList,
+                                 batch_info: Optional[dict] = None) -> dict:
         """Calculate losses from a batch of inputs and pseudo data samples.
 
         Args:

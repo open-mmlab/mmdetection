@@ -13,7 +13,8 @@ register_all_modules()
 class TestSemiBase(TestCase):
 
     @parameterized.expand([
-        'semi/faster_rcnn/semi_base_faster_rcnn_r50_fpn_coco_90k.py',
+        'soft_teacher/'
+        'semi_base_faster-rcnn_r50_caffe_fpn_180k_partial_coco.py',
     ])
     def test_init(self, cfg_file):
         model = get_detector_cfg(cfg_file)
@@ -27,3 +28,7 @@ class TestSemiBase(TestCase):
         self.assertTrue(model.teacher.neck)
         self.assertTrue(model.teacher.rpn_head)
         self.assertTrue(model.teacher.roi_head)
+        self.assertTrue(model.student.backbone)
+        self.assertTrue(model.student.neck)
+        self.assertTrue(model.student.rpn_head)
+        self.assertTrue(model.student.roi_head)

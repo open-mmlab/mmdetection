@@ -1,6 +1,6 @@
-_base_ = ['semi_base_faster_rcnn_r50_caffe_fpn_180k_partial_coco.py']
+_base_ = ['semi_base_faster-rcnn_r50_caffe_fpn_180k_partial_coco.py']
 
-model_wrapper = dict(
+model = dict(
     type='SoftTeacher',
     semi_train_cfg=dict(
         pseudo_label_initial_score_thr=0.5,
