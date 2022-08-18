@@ -2,7 +2,8 @@
 from typing import Tuple
 
 import torch.nn as nn
-from mmcv.cnn import ConvModule, bias_init_with_prob, normal_init
+from mmcv.cnn import ConvModule
+from mmengine.model.utils import bias_init_with_prob, normal_init
 from torch import Tensor
 
 from mmdet.registry import MODELS

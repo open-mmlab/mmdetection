@@ -125,7 +125,5 @@ model = dict(
 train_dataloader = dict(batch_size=8, num_workers=4)
 optim_wrapper = dict(type='AmpOptimWrapper', optimizer=dict(lr=0.01))
 
-# NOTE: `auto_scale_lr` is for automatically scaling LR,
-# USER SHOULD NOT CHANGE ITS VALUES.
-# base_batch_size = (8 GPUs) x (8 samples per GPU)
-auto_scale_lr = dict(base_batch_size=64)
+# TODO: MMEngine does not support fp16 yet.
+# fp16 = dict(loss_scale=512.)

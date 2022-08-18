@@ -1,8 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
-from typing import List, Optional
+from typing import Dict, List, Optional
 
+import numpy as np
 from mmcv.transforms import BaseTransform, Compose
+from mmcv.transforms.utils import cache_randomness
 
 from mmdet.registry import TRANSFORMS
 
@@ -48,3 +50,37 @@ class MultiBranch(BaseTransform):
         repr_str = self.__class__.__name__
         repr_str += f'(branch_pipelines={list(self.branch_pipelines.keys())})'
         return repr_str
+
+
+@TRANSFORMS.register_module()
+class RandomOrder(Compose):
+    """Shuffle the transform Sequence."""
+
+    @cache_randomness
+    def _random_permutation(self):
+        return np.random.permutation(len(self.transforms))
+
+    def transform(self, results: Dict) -> Optional[Dict]:
+        """Transform function to apply transforms in random order.
+
+        Args:
+            results (dict): A result dict contains the results to transform.
+
+        Returns:
+            dict or None: Transformed results.
+        """
+        inds = self._random_permutation()
+        for idx in inds:
+            t = self.transforms[idx]
+            results = t(results)
+            if results is None:
+                return None
+        return results
+
+    def __repr__(self):
+        """Compute the string representation."""
+        format_string = self.__class__.__name__ + '('
+        for t in self.transforms:
+            format_string += f'{t.__class__.__name__}, '
+        format_string += ')'
+        return format_string

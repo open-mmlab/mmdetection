@@ -9,10 +9,11 @@ from mmdet.structures import DetDataSample
 from mmdet.testing._utils import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
 
-register_all_modules()
-
 
 class TestMaskFormer(unittest.TestCase):
+
+    def setUp(self):
+        register_all_modules()
 
     def _create_model_cfg(self):
         cfg_path = 'maskformer/maskformer_r50_mstrain_16x1_75e_coco.py'
@@ -118,6 +119,9 @@ class TestMaskFormer(unittest.TestCase):
 
 
 class TestMask2Former(unittest.TestCase):
+
+    def setUp(self):
+        register_all_modules()
 
     def _create_model_cfg(self, cfg_path):
         model_cfg = get_detector_cfg(cfg_path)

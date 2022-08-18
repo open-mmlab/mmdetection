@@ -10,7 +10,7 @@ from mmengine.model import BaseModule
 from torch import Tensor
 from torch.nn.modules.utils import _pair
 
-from mmdet.models.layers import build_linear_layer, multiclass_nms
+from mmdet.models.layers import multiclass_nms
 from mmdet.models.losses import accuracy
 from mmdet.models.task_modules.samplers import SamplingResult
 from mmdet.models.utils import empty_instances, multi_apply
@@ -75,16 +75,16 @@ class BBoxHead(BaseModule):
                 cls_channels = self.loss_cls.get_cls_channels(self.num_classes)
             else:
                 cls_channels = num_classes + 1
-            self.fc_cls = build_linear_layer(
-                self.cls_predictor_cfg,
-                in_features=in_channels,
-                out_features=cls_channels)
+            cls_predictor_cfg_ = self.cls_predictor_cfg.copy()
+            cls_predictor_cfg_.update(
+                in_features=in_channels, out_features=cls_channels)
+            self.fc_cls = MODELS.build(cls_predictor_cfg_)
         if self.with_reg:
             out_dim_reg = 4 if reg_class_agnostic else 4 * num_classes
-            self.fc_reg = build_linear_layer(
-                self.reg_predictor_cfg,
-                in_features=in_channels,
-                out_features=out_dim_reg)
+            reg_predictor_cfg_ = self.reg_predictor_cfg.copy()
+            reg_predictor_cfg_.update(
+                in_features=in_channels, out_features=out_dim_reg)
+            self.fc_reg = MODELS.build(reg_predictor_cfg_)
         self.debug_imgs = None
         if init_cfg is None:
             self.init_cfg = []

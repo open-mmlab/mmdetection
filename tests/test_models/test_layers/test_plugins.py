@@ -4,9 +4,12 @@ import unittest
 import pytest
 import torch
 from mmcv import ConfigDict
-from mmcv.cnn import build_plugin_layer
 
 from mmdet.models.layers import DropBlock
+from mmdet.registry import MODELS
+from mmdet.utils import register_all_modules
+
+register_all_modules()
 
 
 def test_dropblock():
@@ -45,7 +48,7 @@ class TestPixelDecoder(unittest.TestCase):
                 out_channels=base_channels,
                 norm_cfg=dict(type='GN', num_groups=32),
                 act_cfg=dict(type='ReLU')))
-        self = build_plugin_layer(pixel_decoder_cfg)[1]
+        self = MODELS.build(pixel_decoder_cfg)
         self.init_weights()
         img_metas = [{}, {}]
         feats = [
@@ -101,7 +104,7 @@ class TestTransformerEncoderPixelDecoder(unittest.TestCase):
                     type='SinePositionalEncoding',
                     num_feats=base_channels // 2,
                     normalize=True)))
-        self = build_plugin_layer(pixel_decoder_cfg)[1]
+        self = MODELS.build(pixel_decoder_cfg)
         self.init_weights()
         img_metas = [{
             'batch_input_shape': (128, 160),
@@ -165,7 +168,7 @@ class TestMSDeformAttnPixelDecoder(unittest.TestCase):
                     num_feats=base_channels // 2,
                     normalize=True),
                 init_cfg=None), )
-        self = build_plugin_layer(pixel_decoder_cfg)[1]
+        self = MODELS.build(pixel_decoder_cfg)
         self.init_weights()
         feats = [
             torch.rand(

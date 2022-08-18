@@ -2,8 +2,9 @@
 from typing import List, Optional, Tuple
 
 import torch.nn as nn
-from mmcv.cnn import ConvModule, normal_init
+from mmcv.cnn import ConvModule
 from mmcv.ops import DeformConv2d
+from mmengine.model.utils import normal_init
 from torch import Tensor
 
 from mmdet.registry import MODELS

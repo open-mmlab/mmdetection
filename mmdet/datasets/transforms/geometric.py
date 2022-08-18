@@ -505,8 +505,7 @@ class Rotate(GeomTransform):
         cv2_rotation_matrix = cv2.getRotationMatrix2D(center, -mag, 1.0)
         return np.concatenate(
             [cv2_rotation_matrix,
-             np.array([0, 0, 1]).reshape((1, 3))],
-            dtype=np.float32)
+             np.array([0, 0, 1]).reshape((1, 3))]).astype(np.float32)
 
     def _transform_img(self, results: dict, mag: float) -> None:
         """Rotate the image."""

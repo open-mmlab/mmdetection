@@ -5,8 +5,8 @@ from typing import List, Optional, Union
 
 import numpy as np
 import torch
-from mmcv import ConfigDict
 from mmcv.ops import nms
+from mmengine import ConfigDict
 from torch import Tensor
 
 from mmdet.structures.bbox import bbox_mapping_back

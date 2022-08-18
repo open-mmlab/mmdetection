@@ -44,6 +44,8 @@ def main(args):
 
     # init visualizer
     visualizer = VISUALIZERS.build(model.cfg.visualizer)
+    # the dataset_meta is loaded from the checkpoint and
+    # then pass to the model in init_detector
     visualizer.dataset_meta = model.dataset_meta
 
     # test a single image
@@ -56,7 +58,7 @@ def main(args):
         'result',
         img,
         pred_sample=result,
-        show=True,
+        show=args.out_file is None,
         wait_time=0,
         out_file=args.out_file,
         pred_score_thr=args.score_thr)
@@ -80,7 +82,7 @@ async def async_main(args):
         'result',
         img,
         pred_sample=result[0],
-        show=True,
+        show=args.out_file is None,
         wait_time=0,
         out_file=args.out_file,
         pred_score_thr=args.score_thr)
@@ -88,6 +90,7 @@ async def async_main(args):
 
 if __name__ == '__main__':
     args = parse_args()
+    assert not args.async_test, 'async inference is not supported yet.'
     if args.async_test:
         asyncio.run(async_main(args))
     else:

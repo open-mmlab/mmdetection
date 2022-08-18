@@ -55,15 +55,15 @@ def init_detector(
     model = build_detector(config.model)
     if checkpoint is not None:
         checkpoint = load_checkpoint(model, checkpoint, map_location='cpu')
-
-        dataset_meta = checkpoint['meta'].get('dataset_meta', None)
+        # Weights converted from elsewhere may not have meta fields.
+        checkpoint_meta = checkpoint.get('meta', {})
         # save the dataset_meta in the model for convenience
-        if 'dataset_meta' in checkpoint.get('meta', {}):
+        if 'dataset_meta' in checkpoint_meta:
             # mmdet 3.x
-            model.dataset_meta = dataset_meta
-        elif 'CLASSES' in checkpoint.get('meta', {}):
+            model.dataset_meta = checkpoint_meta['dataset_meta']
+        elif 'CLASSES' in checkpoint_meta:
             # < mmdet 3.x
-            classes = checkpoint['meta']['CLASSES']
+            classes = checkpoint_meta['CLASSES']
             model.dataset_meta = {'CLASSES': classes, 'PALETTE': palette}
         else:
             warnings.simplefilter('once')
@@ -84,14 +84,18 @@ def init_detector(
 ImagesType = Union[str, np.ndarray, Sequence[str], Sequence[np.ndarray]]
 
 
-def inference_detector(model: nn.Module,
-                       imgs: ImagesType) -> Union[DetDataSample, SampleList]:
+def inference_detector(
+    model: nn.Module,
+    imgs: ImagesType,
+    test_pipeline: Optional[Compose] = None
+) -> Union[DetDataSample, SampleList]:
     """Inference image(s) with the detector.
 
     Args:
         model (nn.Module): The loaded detector.
         imgs (str, ndarray, Sequence[str/ndarray]):
            Either image files or loaded images.
+        test_pipeline (:obj:`Compose`): Test pipeline.
 
     Returns:
         :obj:`DetDataSample` or list[:obj:`DetDataSample`]:
@@ -107,12 +111,14 @@ def inference_detector(model: nn.Module,
 
     cfg = model.cfg
 
-    if isinstance(imgs[0], np.ndarray):
-        cfg = cfg.copy()
-        # set loading pipeline type
-        cfg.test_dataloader.dataset.pipeline[0].type = 'LoadImageFromNDArray'
+    if test_pipeline is None:
+        if isinstance(imgs[0], np.ndarray):
+            cfg = cfg.copy()
+            # set loading pipeline type
+            cfg.test_dataloader.dataset.pipeline[
+                0].type = 'LoadImageFromNDArray'
 
-    test_pipeline = Compose(cfg.test_dataloader.dataset.pipeline)
+        test_pipeline = Compose(cfg.test_dataloader.dataset.pipeline)
 
     data = []
     for img in imgs:
