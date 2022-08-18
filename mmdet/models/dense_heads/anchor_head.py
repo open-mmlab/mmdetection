@@ -8,6 +8,7 @@ from mmengine.data import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.structures.bbox import BaseBoxes
 from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
                          OptInstanceList, OptMultiConfig)
 from ..task_modules.prior_generators import (AnchorGenerator,
@@ -120,8 +121,10 @@ class AnchorHead(BaseDenseHead):
         self.conv_cls = nn.Conv2d(self.in_channels,
                                   self.num_base_priors * self.cls_out_channels,
                                   1)
-        self.conv_reg = nn.Conv2d(self.in_channels, self.num_base_priors * 4,
-                                  1)
+        bbox_dim = self.bbox_coder.decode_bbox_dim if self.reg_decoded_bbox \
+            else self.bbox_coder.encode_bbox_dim
+        self.conv_reg = nn.Conv2d(self.in_channels,
+                                  self.num_base_priors * bbox_dim, 1)
 
     def forward_single(self, x: Tensor) -> Tuple[Tensor, Tensor]:
         """Forward feature of a single scale level.
@@ -162,7 +165,8 @@ class AnchorHead(BaseDenseHead):
     def get_anchors(self,
                     featmap_sizes: List[tuple],
                     batch_img_metas: List[dict],
-                    device: Union[torch.device, str] = 'cuda') \
+                    device: Union[torch.device, str] = 'cuda',
+                    with_box_wrapped: bool = False) \
             -> Tuple[List[List[Tensor]], List[List[Tensor]]]:
         """Get anchors according to feature map sizes.
 
@@ -171,6 +175,8 @@ class AnchorHead(BaseDenseHead):
             batch_img_metas (list[dict]): Image meta info.
             device (torch.device | str): Device for returned tensors.
                 Defaults to cuda.
+            with_box_wrapped (bool): Whether to warp anchors with ``BaseBoxes``
+                Defaults to False.
 
         Returns:
             tuple:
@@ -184,7 +190,7 @@ class AnchorHead(BaseDenseHead):
         # since feature map sizes of all images are the same, we only compute
         # anchors for one time
         multi_level_anchors = self.prior_generator.grid_priors(
-            featmap_sizes, device=device)
+            featmap_sizes, device=device, with_box_wrapped=with_box_wrapped)
         anchor_list = [multi_level_anchors for _ in range(num_imgs)]
 
         # for each image, we compute valid flags of multi level anchors
@@ -243,7 +249,7 @@ class AnchorHead(BaseDenseHead):
                 'check the image size and anchor sizes, or set '
                 '``allowed_border`` to -1 to skip the condition.')
         # assign gt and sample anchors
-        anchors = flat_anchors[inside_flags, :]
+        anchors = flat_anchors[inside_flags]
 
         pred_instances = InstanceData(priors=anchors)
         assign_result = self.assigner.assign(pred_instances, gt_instances,
@@ -254,8 +260,10 @@ class AnchorHead(BaseDenseHead):
                                               gt_instances)
 
         num_valid_anchors = anchors.shape[0]
-        bbox_targets = torch.zeros_like(anchors)
-        bbox_weights = torch.zeros_like(anchors)
+        bbox_dim = self.bbox_coder.decode_bbox_dim if self.reg_decoded_bbox \
+            else self.bbox_coder.encode_bbox_dim
+        bbox_targets = anchors.new_zeros(num_valid_anchors, bbox_dim)
+        bbox_weights = anchors.new_zeros(num_valid_anchors, bbox_dim)
 
         # TODO: Considering saving memory, is it necessary to be long?
         labels = anchors.new_full((num_valid_anchors, ),
@@ -271,6 +279,8 @@ class AnchorHead(BaseDenseHead):
                     sampling_result.pos_priors, sampling_result.pos_gt_bboxes)
             else:
                 pos_bbox_targets = sampling_result.pos_gt_bboxes
+                if isinstance(pos_bbox_targets, BaseBoxes):
+                    pos_bbox_targets = pos_bbox_targets.tensor
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
 
@@ -438,15 +448,19 @@ class AnchorHead(BaseDenseHead):
         loss_cls = self.loss_cls(
             cls_score, labels, label_weights, avg_factor=avg_factor)
         # regression loss
-        bbox_targets = bbox_targets.reshape(-1, 4)
-        bbox_weights = bbox_weights.reshape(-1, 4)
-        bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
+        bbox_dim = self.bbox_coder.decode_bbox_dim if self.reg_decoded_bbox \
+            else self.bbox_coder.encode_bbox_dim
+        bbox_targets = bbox_targets.reshape(-1, bbox_dim)
+        bbox_weights = bbox_weights.reshape(-1, bbox_dim)
+        bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, bbox_dim)
         if self.reg_decoded_bbox:
             # When the regression loss (e.g. `IouLoss`, `GIouLoss`)
             # is applied directly on the decoded bounding boxes, it
             # decodes the already encoded coordinates to absolute format.
-            anchors = anchors.reshape(-1, 4)
+            anchors = anchors.reshape(-1, bbox_dim)
             bbox_pred = self.bbox_coder.decode(anchors, bbox_pred)
+            if isinstance(bbox_pred, BaseBoxes):
+                bbox_pred = bbox_pred.tensor
         loss_bbox = self.loss_bbox(
             bbox_pred, bbox_targets, bbox_weights, avg_factor=avg_factor)
         return loss_cls, loss_bbox
@@ -484,8 +498,12 @@ class AnchorHead(BaseDenseHead):
 
         device = cls_scores[0].device
 
+        with_box_wapped = isinstance(batch_gt_instances[0].bboxes, BaseBoxes)
         anchor_list, valid_flag_list = self.get_anchors(
-            featmap_sizes, batch_img_metas, device=device)
+            featmap_sizes,
+            batch_img_metas,
+            device=device,
+            with_box_wrapped=with_box_wapped)
         cls_reg_targets = self.get_targets(
             anchor_list,
             valid_flag_list,

@@ -5,6 +5,9 @@ from abc import ABCMeta, abstractmethod
 class BaseBBoxCoder(metaclass=ABCMeta):
     """Base bounding box coder."""
 
+    decode_bbox_dim = 4
+    encode_bbox_dim = 4
+
     def __init__(self, **kwargs):
         pass
 
