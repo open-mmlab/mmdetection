@@ -7,6 +7,7 @@ import torch
 from torch.nn.modules.utils import _pair
 
 from mmdet.registry import TASK_UTILS
+from mmdet.structures.bbox import HorizontalBoxes
 
 
 @TASK_UTILS.register_module()
@@ -214,7 +215,11 @@ class AnchorGenerator:
         else:
             return yy, xx
 
-    def grid_priors(self, featmap_sizes, dtype=torch.float32, device='cuda'):
+    def grid_priors(self,
+                    featmap_sizes,
+                    dtype=torch.float32,
+                    device='cuda',
+                    with_box_wrapped=False):
         """Generate grid anchors in multiple feature levels.
 
         Args:
@@ -236,6 +241,8 @@ class AnchorGenerator:
         for i in range(self.num_levels):
             anchors = self.single_level_grid_priors(
                 featmap_sizes[i], level_idx=i, dtype=dtype, device=device)
+            if with_box_wrapped:
+                anchors = HorizontalBoxes(anchors, clone=False)
             multi_level_anchors.append(anchors)
         return multi_level_anchors
 

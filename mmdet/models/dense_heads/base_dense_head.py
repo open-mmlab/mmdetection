@@ -13,6 +13,7 @@ from mmengine.model.utils import constant_init
 from torch import Tensor
 
 from mmdet.structures import SampleList
+from mmdet.structures.bbox import BaseBoxes
 from mmdet.utils import InstanceList, OptMultiConfig
 from ..test_time_augs import merge_aug_results
 from ..utils import (filter_scores_and_topk, select_single_mlvl,
@@ -453,11 +454,15 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 - bboxes (Tensor): Has a shape (num_instances, 4),
                   the last dimension 4 arrange as (x1, y1, x2, y2).
         """
-
+        with_box_wrapped = isinstance(results.bboxes, BaseBoxes)
         if rescale:
             assert img_meta.get('scale_factor') is not None
-            results.bboxes /= results.bboxes.new_tensor(
-                img_meta['scale_factor']).repeat((1, 2))
+            if with_box_wrapped:
+                scale_factor = [1 / s for s in img_meta['scale_factor']]
+                results.bboxes.rescale_(scale_factor)
+            else:
+                results.bboxes /= results.bboxes.new_tensor(
+                    img_meta['scale_factor']).repeat((1, 2))
 
         if hasattr(results, 'score_factors'):
             # TODO： Add sqrt operation in order to be consistent with
@@ -467,21 +472,30 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
         # filter small size bboxes
         if cfg.get('min_bbox_size', -1) >= 0:
-            w = results.bboxes[:, 2] - results.bboxes[:, 0]
-            h = results.bboxes[:, 3] - results.bboxes[:, 1]
+            if with_box_wrapped:
+                w, h = results.bboxes.widths, results.bboxes.heights
+            else:
+                w = results.bboxes[:, 2] - results.bboxes[:, 0]
+                h = results.bboxes[:, 3] - results.bboxes[:, 1]
             valid_mask = (w > cfg.min_bbox_size) & (h > cfg.min_bbox_size)
             if not valid_mask.all():
                 results = results[valid_mask]
 
         # TODO: deal with `with_nms` and `nms_cfg=None` in test_cfg
         if with_nms and results.bboxes.numel() > 0:
-            det_bboxes, keep_idxs = batched_nms(results.bboxes, results.scores,
+            if with_box_wrapped:
+                bboxes = results.bboxes.tensor
+            else:
+                bboxes = results.bboxes
+            det_bboxes, keep_idxs = batched_nms(bboxes, results.scores,
                                                 results.labels, cfg.nms)
             results = results[keep_idxs]
             # some nms would reweight the score, such as softnms
             results.scores = det_bboxes[:, -1]
             results = results[:cfg.max_per_img]
 
+        if with_box_wrapped:
+            results.bboxes = results.bboxes.tensor
         return results
 
     def aug_test(self,
