@@ -1,4 +1,4 @@
-_base_ = './fovea_r50_fpn_4x4_1x_coco.py'
+_base_ = './fovea_r50-fpn_4x4-1x_coco.py'
 model = dict(
     bbox_head=dict(
         with_deform=True,

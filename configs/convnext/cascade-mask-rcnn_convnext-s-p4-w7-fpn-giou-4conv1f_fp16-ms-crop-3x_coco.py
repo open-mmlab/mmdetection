@@ -1,4 +1,4 @@
-_base_ = './cascade_mask_rcnn_convnext-t_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco.py'  # noqa
+_base_ = './cascade-mask-rcnn_convnext-t-p4-w7-fpn-giou-4conv1f_fp16-ms-crop-3x_coco.py'  # noqa
 
 # please install mmcls>=0.22.0
 # import mmcls.models to trigger register_module in mmcls

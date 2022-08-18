@@ -1,4 +1,4 @@
-_base_ = './cornernet_hourglass104_mstest_8x6_210e_coco.py'
+_base_ = './cornernet_hourglass104_mstest-8x6-210e_coco.py'
 
 train_dataloader = dict(batch_size=3)
 

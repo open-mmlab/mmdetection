@@ -1,4 +1,4 @@
-_base_ = '../htc/htc_r101_fpn_20e_coco.py'
+_base_ = '../htc/htc_r101-fpn_20e_coco.py'
 
 model = dict(
     backbone=dict(

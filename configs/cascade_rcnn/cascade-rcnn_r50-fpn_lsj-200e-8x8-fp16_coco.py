@@ -1,5 +1,5 @@
 _base_ = [
-    '../_base_/models/cascade_rcnn_r50_fpn.py',
+    '../_base_/models/cascade-rcnn_r50-fpn.py',
     '../common/lsj_200e_coco_detection.py'
 ]
 image_size = (1024, 1024)

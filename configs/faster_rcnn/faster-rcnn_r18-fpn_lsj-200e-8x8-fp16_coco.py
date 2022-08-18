@@ -1,4 +1,4 @@
-_base_ = './faster_rcnn_r50_fpn_lsj_200e_8x8_fp16_coco.py'
+_base_ = './faster-rcnn_r50-fpn_lsj-200e-8x8-fp16_coco.py'
 
 model = dict(
     backbone=dict(
