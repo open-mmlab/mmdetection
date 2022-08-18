@@ -29,7 +29,7 @@ COCO 格式的 JSON 标注文件有如下必要的字段：
             247.09,
             ...
             219.03,
-            249.06]],  # 如果有 mask 标签
+            249.06]],  # 如果有 mask 标签且为多边形 XY 点坐标格式，则需要保证至少包括 3 个点坐标，否则为无效多边形
         'area': 1035.749,
         'iscrowd': 0,
         'image_id': 1268,
@@ -87,13 +87,15 @@ train_dataloader = dict(
         data_root=data_root,
         ann_file='train/annotation_data',
         data_prefix=dict(img='train/image_data')
+        )
     )
 
 val_dataloader = dict(
-    batch_size=2,
+    batch_size=1,
     num_workers=2,
     dataset=dict(
         type=dataset_type,
+        test_mode=True,
         # 将类别名字添加至 `metainfo` 字段中
         metainfo=dict(CLASSES=classes),
         data_root=data_root,
@@ -102,15 +104,17 @@ val_dataloader = dict(
     )
 
 test_dataloader = dict(
-    batch_size=2,
+    batch_size=1,
     num_workers=2,
     dataset=dict(
         type=dataset_type,
+        test_mode=True,
         # 将类别名字添加至 `metainfo` 字段中
         metainfo=dict(CLASSES=classes),
         data_root=data_root,
         ann_file='test/annotation_data',
         data_prefix=dict(img='test/image_data')
+        )
     )
 
 # 2. 模型设置
@@ -181,7 +185,7 @@ model = dict(
 
 如果不想将标注格式转换为 COCO 或者 PASCAL 格式也是可行的。实际上，我们在 MMEngine 的 [BaseDataset](https://github.com/open-mmlab/mmengine/blob/main/mmengine/dataset/base_dataset.py#L116) 中定义了一种简单的标注格式并且与所有现有的数据格式兼容，也能进行离线或者在线转换。
 
-数据集的标注必须为 `json` 或 `yaml`，`yml` 或 `pickle`，`pkl` 格式；标注文件中存储的字典必须包含 `metainfo` 和 `data_list` 两个字段。其中 `metainfo` 是一个字典，里面包含数据集的元信息；`data_list` 是一个列表，列表中每个元素是一个字典，该字典定义了一个原始数据（raw data），每个原始数据包含一个或若干个训练/测试样本。
+数据集的标注必须为 `json` 或 `yaml`，`yml` 或 `pickle`，`pkl` 格式；标注文件中存储的字典必须包含 `metainfo` 和 `data_list` 两个字段。其中 `metainfo` 是一个字典，里面包含数据集的元信息，例如类别信息；`data_list` 是一个列表，列表中每个元素是一个字典，该字典定义了一个原始数据（raw data），每个原始数据包含一个或若干个训练/测试样本。
 
 以下是一个 JSON 标注文件的例子:
 
@@ -203,10 +207,12 @@ model = dict(
                   {
                     "bbox": [0, 0, 10, 20],
                     "bbox_label": 1,
+                    "ignore_flag": 0
                   },
                   {
                     "bbox": [10, 10, 110, 120],
                     "bbox_label": 2,
+                    "ignore_flag": 0
                   }
                 ]
               },
@@ -219,7 +225,7 @@ model = dict(
                   {
                     "bbox": [10, 0, 20, 20],
                     "bbox_label": 3,
-                    "ignore_flag": 1,
+                    "ignore_flag": 1
                   }
                 ]
               },
@@ -255,9 +261,7 @@ model = dict(
 我们可以在 `mmdet/datasets/my_dataset.py` 中创建一个新的 dataset 用以加载数据。
 
 ```python
-import mmcv
-import numpy as np
-
+import mmengine
 from mmengine.dataset import BaseDataset
 from mmdet.registry import DATASETS
 
@@ -271,11 +275,10 @@ class MyDataset(BaseDataset):
     }
 
     def load_data_list(self, ann_file):
-        ann_list = mmcv.list_from_file(ann_file)
+        ann_list = mmengine.list_from_file(ann_file)
 
         data_infos = []
         for i, ann_line in enumerate(ann_list):
-
             if ann_line != '#':
                 continue
 

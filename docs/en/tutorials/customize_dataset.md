@@ -27,7 +27,7 @@ The annotation JSON files in COCO format has the following necessary keys:
             247.09,
             ...
             219.03,
-            249.06]],  # if you have mask labels
+            249.06]],  # If you have mask labels, and it is in polygon XY point coordinate format, you need to ensure that at least 3 point coordinates are included. Otherwise, it is an invalid polygon.
         'area': 1035.749,
         'iscrowd': 0,
         'image_id': 1268,
@@ -85,30 +85,35 @@ train_dataloader = dict(
         data_root=data_root,
         ann_file='train/annotation_data',
         data_prefix=dict(img='train/image_data')
+        )
     )
 
 val_dataloader = dict(
-    batch_size=2,
+    batch_size=1,
     num_workers=2,
     dataset=dict(
         type=dataset_type,
+        test_mode=True,
         # explicitly add your class names to the field `metainfo`
         metainfo=dict(CLASSES=classes),
         data_root=data_root,
         ann_file='val/annotation_data',
         data_prefix=dict(img='val/image_data')
+        )
     )
 
 test_dataloader = dict(
-    batch_size=2,
+    batch_size=1,
     num_workers=2,
     dataset=dict(
         type=dataset_type,
+        test_mode=True,
         # explicitly add your class names to the field `metainfo`
         metainfo=dict(CLASSES=classes),
         data_root=data_root,
         ann_file='test/annotation_data',
         data_prefix=dict(img='test/image_data')
+        )
     )
 
 # 2. model settings
@@ -181,7 +186,7 @@ It is also fine if you do not want to convert the annotation format to COCO or P
 Actually, we define a simple annotation format in MMEninge's [BaseDataset ](https://github.com/open-mmlab/mmengine/blob/main/mmengine/dataset/base_dataset.py#L116)and all existing datasets are
 processed to be compatible with it, either online or offline.
 
-The annotation of the dataset must be in `json` or `yaml`, `yml` or `pickle`, `pkl` format; the dictionary stored in the annotation file must contain two fields `metainfo` and `data_list`.  The `metainfo` is a dictionary, which contains the metadata of the dataset; `data_list` is a list, each element in the list is a dictionary, the dictionary defines a raw data (raw data), each raw data contains a or several training/testing samples.
+The annotation of the dataset must be in `json` or `yaml`, `yml` or `pickle`, `pkl` format; the dictionary stored in the annotation file must contain two fields `metainfo` and `data_list`.  The `metainfo` is a dictionary, which contains the metadata of the dataset, such as class information; `data_list` is a list, each element in the list is a dictionary, the dictionary defines a raw data (raw data), each raw data contains a or several training/testing samples.
 
 Here is an example.
 
@@ -203,10 +208,12 @@ Here is an example.
                   {
                     "bbox": [0, 0, 10, 20],
                     "bbox_label": 1,
+                    "ignore_flag": 0
                   },
                   {
                     "bbox": [10, 10, 110, 120],
                     "bbox_label": 2,
+                    "ignore_flag": 0
                   }
                 ]
               },
@@ -256,8 +263,7 @@ The bounding boxes annotations are stored in text file `annotation.txt` as the f
 We can create a new dataset in `mmdet/datasets/my_dataset.py` to load the data.
 
 ```python
-import mmcv
-import numpy as np
+import mmengine
 
 from mmengine.dataset import BaseDataset
 from mmdet.registry import DATASETS
@@ -272,11 +278,10 @@ class MyDataset(BaseDataset):
     }
 
     def load_data_list(self, ann_file):
-        ann_list = mmcv.list_from_file(ann_file)
+        ann_list = mmengine.list_from_file(ann_file)
 
         data_infos = []
         for i, ann_line in enumerate(ann_list):
-
             if ann_line != '#':
                 continue
 
