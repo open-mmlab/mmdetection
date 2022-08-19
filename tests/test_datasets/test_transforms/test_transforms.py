@@ -1151,7 +1151,7 @@ class TestRandomErasing(unittest.TestCase):
         self.assertTrue(results['img'].sum() > self.results['img'].sum())
         # test empty results
         empty_results = copy.deepcopy(self.results)
-        empty_results['gt_bboxes'] = np.zeros((0, 4), dtype=np.float32)
+        empty_results['gt_bboxes'] = HorizontalBoxes([], dtype=torch.float32)
         empty_results['gt_bboxes_labels'] = np.zeros((0, ), dtype=np.int64)
         empty_results['gt_masks'] = empty_results['gt_masks'][False]
         empty_results['gt_ignore_flags'] = np.zeros((0, ), dtype=bool)

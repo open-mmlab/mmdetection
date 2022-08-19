@@ -2950,6 +2950,8 @@ class RandomErasing(BaseTransform):
     def _transform_bboxes(self, results: dict, patches: List[list]) -> None:
         """Random erasing the bboxes."""
         bboxes = results['gt_bboxes']
+        assert isinstance(bboxes, HorizontalBoxes)
+        bboxes = bboxes.numpy()
         left_top = np.maximum(bboxes[:, None, :2], patches[:, :2])
         right_bottom = np.minimum(bboxes[:, None, 2:], patches[:, 2:])
         wh = np.maximum(right_bottom - left_top, 0)
@@ -2958,7 +2960,7 @@ class RandomErasing(BaseTransform):
             bboxes[:, 3] - bboxes[:, 1])
         bboxes_erased_ratio = inter_areas.sum(-1) / (bbox_areas + 1e-7)
         valid_inds = bboxes_erased_ratio < self.bbox_erased_thr
-        results['gt_bboxes'] = bboxes[valid_inds]
+        results['gt_bboxes'] = HorizontalBoxes(bboxes[valid_inds])
         results['gt_bboxes_labels'] = results['gt_bboxes_labels'][valid_inds]
         results['gt_ignore_flags'] = results['gt_ignore_flags'][valid_inds]
         if results.get('gt_masks', None) is not None:
@@ -2977,6 +2979,7 @@ class RandomErasing(BaseTransform):
             px1, py1, px2, py2 = patch
             results['gt_seg_map'][py1:py2, px1:px2] = self.seg_ignore_label
 
+    @autocast_box_type()
     def transform(self, results: dict) -> dict:
         """Transform function to erase some regions of image."""
         patches = self._get_patches(results['img_shape'])
