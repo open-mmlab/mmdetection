@@ -42,7 +42,7 @@ We recommend that users follow our best practices to install MMDetection. Howeve
 ```shell
 pip install -U openmim
 mim install mmengine
-mim install mmcv-full>=2.0.0
+mim install mmcv-full>=2.0.0rc0
 ```
 
 **Step 1.** Install MMDetection.
@@ -62,7 +62,7 @@ pip install -v -e .
 Case b: If you use mmdet as a dependency or third-party package, install it with MIM:
 
 ```shell
-mim install mmdet>=3.0.0
+mim install mmdet>=3.0.0rc0
 ```
 
 ## Verify the installation
@@ -178,13 +178,13 @@ thus we only need to install MMCV and MMDetection with the following commands.
 ```shell
 !pip3 install openmim
 !mim install mmengine
-!mim install mmcv-full
+!mim install mmcv-full>=2.0.0rc0,<2.1.0
 ```
 
 **Step 2.** Install MMDetection from the source.
 
 ```shell
-!git clone https://github.com/open-mmlab/mmdetection.git
+!git clone https://github.com/open-mmlab/mmdetection.git -b dev-3.x
 %cd mmdetection
 !pip install -e .
 ```
