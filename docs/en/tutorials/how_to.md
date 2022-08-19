@@ -133,8 +133,9 @@ custom_hooks = [dict(type="UnfreezeBackboneEpochBasedHook", unfreeze_epoch=1)]
 Meanwhile write the hook class `UnfreezeBackboneEpochBasedHook` in `mmdet/core/hook/unfreeze_backbone_epoch_based_hook.py`
 
 ```python
-from mmcv.parallel import is_module_wrapper
-from mmcv.runner.hooks import HOOKS, Hook
+from mmengine.model import is_model_wrapper
+from mmdet.registry import HOOKS
+from mmegnine.hooks import Hook
 
 
 @HOOKS.register_module()
@@ -153,7 +154,7 @@ class UnfreezeBackboneEpochBasedHook(Hook):
         # Only valid for resnet.
         if runner.epoch == self.unfreeze_epoch:
             model = runner.model
-            if is_module_wrapper(model):
+            if is_model_wrapper(model):
                 model = model.module
             backbone = model.backbone
             if backbone.frozen_stages >= 0:
