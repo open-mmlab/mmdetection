@@ -154,8 +154,11 @@ The code to convert the balloon dataset into coco format is as below.
 import os.path as osp
 import mmcv
 
+from mmengine.fileio import dump, load
+
+
 def convert_balloon_to_coco(ann_file, out_file, image_prefix):
-    data_infos = mmcv.load(ann_file)
+    data_infos = load(ann_file)
 
     annotations = []
     images = []
@@ -201,7 +204,7 @@ def convert_balloon_to_coco(ann_file, out_file, image_prefix):
         images=images,
         annotations=annotations,
         categories=[{'id':0, 'name': 'balloon'}])
-    mmcv.dump(coco_format_json, out_file)
+    dump(coco_format_json, out_file)
 
 ```
 

@@ -2,7 +2,7 @@
 
 ## Customize optimization settings
 
-Optimization related configuration is now all managed by `optim_wrapper` which usually has three fields: `optimizer`, `paramwise_cfg`, `clip_grad`. See the example below, where `Adamw` is used as an `optimizer`, the learning rate of the backbone is reduced by a factor of 10, and gradient clipping is added.
+Optimization related configuration is now all managed by `optim_wrapper` which usually has three fields: `optimizer`, `paramwise_cfg`, `clip_grad`, refer to [OptimWrapper](https://github.com/open-mmlab/mmengine/blob/429bb27972bee1a9f3095a4d5f6ac5c0b88ccf54/mmengine/optim/optimizer/optimizer_wrapper.py#L17) for more detail. See the example below, where `Adamw` is used as an `optimizer`, the learning rate of the backbone is reduced by a factor of 10, and gradient clipping is added.
 
 ```python
 optim_wrapper = dict(
@@ -144,7 +144,7 @@ Tricks not implemented by the optimizer should be implemented through optimizer 
 
 - __Use momentum schedule to accelerate model convergence__:
   We support momentum scheduler to modify model's momentum according to learning rate, which could make the model converge in a faster way.
-  Momentum scheduler is usually used with LR scheduler, for example, the following config is used in 3D detection to accelerate convergence.
+  Momentum scheduler is usually used with LR scheduler, for example, the following config is used in [3D detection](https://github.com/open-mmlab/mmdetection3d/blob/dev-1.x/configs/_base_/schedules/cyclic_20e.py) to accelerate convergence.
   For more details, please refer to the implementation of [CosineAnnealingLR](https://github.com/open-mmlab/mmengine/blob/6ebb7ed481614b8ef08aabe27f6d88f750eb65dd/mmengine/optim/scheduler/lr_scheduler.py#L42) and [CosineAnnealingMomentum](https://github.com/open-mmlab/mmengine/blob/9b2a0e02da840b474f41c9bbc35335dab39eb844/mmengine/optim/scheduler/momentum_scheduler.py#L70).
 
   ```python
@@ -249,8 +249,7 @@ train_cfg = dict(
 
 #### 1. Implement a new hook
 
-There are some occasions when the users might need to implement a new hook. MMDetection supports customized hooks in training (#3395) since v2.3.0. Thus the users could implement a hook directly in mmdet or their mmdet-based codebases and use the hook by only modifying the config in training.
-Before v2.3.0, the users need to modify the code to get the hook registered before training starts.
+There are some occasions when the users might need to implement a new hook. MMDetection supports customized hooks in training in v3.0 . Thus the users could implement a hook directly in mmdet or their mmdet-based codebases and use the hook by only modifying the config in training.
 Here we give an example of creating a new hook in mmdet and using it in training.
 
 ```python
@@ -286,7 +285,7 @@ class MyHook(Hook):
                          outputs: Optional[dict] = None) -> None:
 ```
 
-Depending on the functionality of the hook, the users need to specify what the hook will do at each stage of the training in `before_run`, `after_run`, `before_train`, `after_train` , `before_train_epoch`, `after_train_epoch`, `before_train_iter`, and `after_train_iter`.
+Depending on the functionality of the hook, the users need to specify what the hook will do at each stage of the training in `before_run`, `after_run`, `before_train`, `after_train` , `before_train_epoch`, `after_train_epoch`, `before_train_iter`, and `after_train_iter`.  There are more points where hooks can be inserted, refer to [base hook class](https://github.com/open-mmlab/mmengine/blob/429bb27972bee1a9f3095a4d5f6ac5c0b88ccf54/mmengine/hooks/hook.py#L9) for more detail.
 
 #### 2. Register the new hook
 
@@ -330,7 +329,7 @@ If the hook is already implemented in MMEngine, you can directly modify the conf
 
 #### 4. Example: `NumClassCheckHook`
 
-We implement a customized hook named  [NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/test-3.0.0rc0/mmdet/engine/hooks/num_class_check_hook.py) to check whether the `num_classes` in head matches the length of `CLASSES` in `dataset`.
+We implement a customized hook named [NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/test-3.0.0rc0/mmdet/engine/hooks/num_class_check_hook.py) to check whether the `num_classes` in head matches the length of `CLASSES` in `dataset`.
 
 We set it in [default_runtime.py](https://github.com/open-mmlab/mmdetection/blob/master/configs/_base_/default_runtime.py).
 
@@ -342,18 +341,18 @@ custom_hooks = [dict(type='NumClassCheckHook')]
 
 There are some common hooks that are registered through `default_hooks`, they are
 
-- `IterTimerHook`: A hook that logs 'data_time' for loading data and 'time' a model train step.
+- `IterTimerHook`: A hook that logs 'data_time' for loading data and 'time' for a model train step.
 - `LoggerHook`: A hook that Collect logs from different components of `Runner` and write them to terminal, JSON file, tensorboard and wandb .etc.
 - `ParamSchedulerHook`: A hook to update some hyper-parameters in optimizer, e.g., learning rate and momentum.
 - `CheckpointHook`: A hook that saves checkpoints periodically.
 - `DistSamplerSeedHook`: A hook that sets the seed for sampler and batch_sampler.
 - `DetVisualizationHook`: A hook used to visualize validation and testing process prediction results.
 
-`IterTimerHook`, `ParamSchedulerHook` and `DistSamplerSeedHook` are simple and no need to be modified, so here we reveals how what we can do with `LoggerHook`, `CheckpointHook` and `DetVisualizationHook`.
+`IterTimerHook`, `ParamSchedulerHook` and `DistSamplerSeedHook` are simple and no need to be modified usually, so here we reveals how what we can do with `LoggerHook`, `CheckpointHook` and `DetVisualizationHook`.
 
 #### CheckpointHook
 
-Except saving checkpoints periodically, [`CheckpointHook`](https://github.com/open-mmlab/mmengine/blob/6ebb7ed481614b8ef08aabe27f6d88f750eb65dd/mmengine/hooks/checkpoint_hook.py#L19) provides other options such as `max_keep_ckpts`, `save_optimizer` and etc. The users could set `max_keep_ckpts` to only save only small number of checkpoints or decide whether to store state dict of optimizer by `save_optimizer`. More details of the arguments are [here](https://github.com/open-mmlab/mmengine/blob/6ebb7ed481614b8ef08aabe27f6d88f750eb65dd/mmengine/hooks/checkpoint_hook.py#L19)
+Except saving checkpoints periodically, [`CheckpointHook`](https://github.com/open-mmlab/mmengine/blob/6ebb7ed481614b8ef08aabe27f6d88f750eb65dd/mmengine/hooks/checkpoint_hook.py#L19) provides other options such as `max_keep_ckpts`, `save_optimizer` and etc. The users could set `max_keep_ckpts` to only save small number of checkpoints or decide whether to store state dict of optimizer by `save_optimizer`. More details of the arguments are [here](https://github.com/open-mmlab/mmengine/blob/6ebb7ed481614b8ef08aabe27f6d88f750eb65dd/mmengine/hooks/checkpoint_hook.py#L19)
 
 ```python
 default_hooks = dict(

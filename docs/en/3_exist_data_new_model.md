@@ -68,7 +68,9 @@ The second step is to use your own module or training setting. Assume that we wa
 Firstly create a new file `mmdet/models/necks/augfpn.py`.
 
 ```python
+import torch.nn as nn
 from mmdet.registry import MODELS
+
 
 @MODELS.register_module()
 class AugFPN(nn.Module):
@@ -99,7 +101,7 @@ or alternatively add
 
 ```python
 custom_imports = dict(
-    imports=['mmdet.models.necks.augfpn.py'],
+    imports=['mmdet.models.necks.augfpn'],
     allow_failed_imports=False)
 ```
 
@@ -113,9 +115,10 @@ neck=dict(
     in_channels=[256, 512, 1024, 2048],
     out_channels=256,
     num_outs=5)
+
 ```
 
-For more detailed usages about customize your own models (e.g. implement a new backbone, head, loss, etc) and runtime training settings (e.g. define a new optimizer, use gradient clip, customize training schedules and hooks, etc), please refer to the guideline [Customize Models](tutorials/customize_models.md) and [Customize Runtime Settings](tutorials/customize_runtime.md) respectively.
+For more detailed usages about customizing your own models (e.g. implement a new backbone, head, loss, etc) and runtime training settings (e.g. define a new optimizer, use gradient clip, customize training schedules and hooks, etc), please refer to the guideline [Customize Models](tutorials/customize_models.md) and [Customize Runtime Settings](tutorials/customize_runtime.md) respectively.
 
 ## Prepare a config
 
