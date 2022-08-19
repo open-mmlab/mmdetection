@@ -17,7 +17,7 @@ model = dict(
         type='DetDataPreprocessor',  # The type of the data preprocessor, refer to https://mmdetection.readthedocs.io/en/dev-3.x/api.html#module-mmdet.models.data_preprocessors
         mean=[123.675, 116.28, 103.53],  # Mean values used to pre-training the pre-trained backbone models
         std=[58.395, 57.12, 57.375],  # Standard variance used to pre-training the pre-trained backbone models
-        bgr_to_rgb=True,  # whether to convert image from RGB to RGB
+        bgr_to_rgb=True,  # whether to convert image from BGR to RGB
         pad_mask=True,  # whether to pad instance masks
         pad_size_divisor=32),  # The size of padded image should be divisible by ``pad_size_divisor``
     backbone=dict(  # The config of backbone
@@ -219,7 +219,7 @@ train_dataloader = dict(   # Train dataloader config
         filter_cfg=dict(filter_empty_gt=True, min_size=32),  # config of filtering images and annotations
         pipeline=train_pipeline))
 val_dataloader = dict(  # Validation dataloader config
-    batch_size=1,  # Batch size of a single GPU
+    batch_size=1,  # Batch size of a single GPU. If batch-szie > 1, the extra padding area may influence the performance.
     num_workers=2,  # Worker to pre-fetch data for each single GPU
     persistent_workers=True,  # If ``True``, the dataloader will not shutdown the worker processes after an epoch end, which can accelerate training speed.
     drop_last=False,  # Whether to drop the last incomplete batch, if the dataset size is not divisible by the batch size
@@ -371,6 +371,44 @@ load_from = None  # load model checkpoint as a pre-trained model from a given pa
 resume = False  # Whether to resume from the checkpoint defined in `load_from`. If `load_from` is None, it will resume the latest checkpoint in the `work_dir`.
 ```
 
+## Iter-based config
+
+MMEngine's Runner also provides an iter-based training loop except for epoch-based.
+To use iter-based training, users should modify the `train_cfg`, `param_scheduler`, `train_dataloader`, `default_hooks`, and `log_processor`.
+Here is an example of changing an epoch-based RetinaNet config to iter-based: configs/retinanet/retinanet_r50_fpn_90k_coco.py
+
+```python
+# iter-based training config
+train_cfg = dict(
+    _delete_=True,  # ignore the base config setting (optional)
+    type='IterBasedTrainLoop',  # use iter-based training loop
+    max_iters=90000,  # maximum iterations
+    val_interval=10000)  # validation interval
+
+
+# change the scheduler to iter-based
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=90000,
+        by_epoch=False,
+        milestones=[60000, 80000],
+        gamma=0.1)
+]
+
+# switch to InfiniteSampler to avoid dataloader restart
+train_dataloader = dict(sampler=dict(type='InfiniteSampler'))
+
+# change the checkpoint saving interval to iter-based
+default_hooks = dict(checkpoint=dict(by_epoch=False, interval=10000))
+
+# change the log format to iter-based
+log_processor = dict(by_epoch=False)
+```
+
 ## Config file inheritance
 
 There are 4 basic component types under `config/_base_`, dataset, model, schedule, default_runtime.
@@ -416,7 +454,6 @@ In MMDetection, for example, to change the backbone of Mask R-CNN with the follo
 ```python
 model = dict(
     type='MaskRCNN',
-    pretrained='torchvision://resnet50',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -425,7 +462,8 @@ model = dict(
         frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=True,
-        style='pytorch'),
+        style='pytorch',
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
     neck=dict(...),
     rpn_head=dict(...),
     roi_head=dict(...))
@@ -436,7 +474,6 @@ model = dict(
 ```python
 _base_ = '../mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py'
 model = dict(
-    pretrained='open-mmlab://msra/hrnetv2_w32',
     backbone=dict(
         _delete_=True,
         type='HRNet',
@@ -464,7 +501,8 @@ model = dict(
                 num_branches=4,
                 block='BASIC',
                 num_blocks=(4, 4, 4, 4),
-                num_channels=(32, 64, 128, 256)))),
+                num_channels=(32, 64, 128, 256))),
+        init_cfg=dict(type='Pretrained', checkpoint='open-mmlab://msra/hrnetv2_w32')),
     neck=dict(...))
 ```
 
