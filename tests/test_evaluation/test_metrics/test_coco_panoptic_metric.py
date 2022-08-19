@@ -7,7 +7,7 @@ from copy import deepcopy
 import mmcv
 import numpy as np
 import torch
-from mmengine import dump
+from mmengine.fileio import dump
 
 from mmdet.evaluation import INSTANCE_OFFSET, CocoPanopticMetric
 

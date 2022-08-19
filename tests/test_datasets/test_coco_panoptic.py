@@ -2,7 +2,7 @@
 import os
 import unittest
 
-from mmengine import dump
+from mmengine.fileio import dump
 
 from mmdet.datasets import CocoPanopticDataset
 
