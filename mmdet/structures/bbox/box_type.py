@@ -269,14 +269,15 @@ def autocast_box_type(dst_box_type='hbox') -> Callable:
                 results['gt_bboxes'] = box_type_cls(
                     results['gt_bboxes'], clone=False)
                 _results = func(self, results, *args, **kwargs)
+                # In some cases, the function will process gt_bboxes in-place
+                # Simultaneously convert inputting and outputting gt_bboxes
+                # back to np.ndarray
                 if isinstance(_results, dict) and 'gt_bboxes' in _results:
-                    # Return output gt_bboxes to numpy
-                    _results['gt_bboxes'] = _results['gt_bboxes'].numpy()
-                    return _results
-                else:
-                    # Return input gt_bboxes to numpy
+                    if isinstance(_results['gt_bboxes'], BaseBoxes):
+                        _results['gt_bboxes'] = _results['gt_bboxes'].numpy()
+                if isinstance(results['gt_bboxes'], BaseBoxes):
                     results['gt_bboxes'] = results['gt_bboxes'].numpy()
-                    return _results
+                return _results
             else:
                 raise TypeError(
                     "auto_box_type requires results['gt_bboxes'] to "
