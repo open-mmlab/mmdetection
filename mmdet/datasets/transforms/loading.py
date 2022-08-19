@@ -7,6 +7,7 @@ import pycocotools.mask as maskUtils
 from mmcv.transforms import BaseTransform
 from mmcv.transforms import LoadAnnotations as MMCV_LoadAnnotations
 from mmcv.transforms import LoadImageFromFile
+from mmengine.fileio import FileClient
 
 from mmdet.registry import TRANSFORMS
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
@@ -99,7 +100,7 @@ class LoadMultiChannelImageFromFiles(BaseTransform):
         self.color_type = color_type
         self.imdecode_backend = imdecode_backend
         self.file_client_args = file_client_args.copy()
-        self.file_client = mmcv.FileClient(**self.file_client_args)
+        self.file_client = FileClient(**self.file_client_args)
 
     def transform(self, results: dict) -> dict:
         """Transform functions to load multiple images and get images meta

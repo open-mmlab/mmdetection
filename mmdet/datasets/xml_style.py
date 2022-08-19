@@ -5,7 +5,7 @@ from typing import List, Optional, Union
 
 import mmcv
 from mmengine.dataset import BaseDataset
-from mmengine.fileio import FileClient
+from mmengine.fileio import FileClient, list_from_file
 
 from mmdet.registry import DATASETS
 
@@ -52,7 +52,7 @@ class XMLDataset(BaseDataset):
         }
 
         data_list = []
-        img_ids = mmcv.list_from_file(
+        img_ids = list_from_file(
             self.ann_file, file_client_args=self.file_client_args)
         for img_id in img_ids:
             file_name = osp.join(self.img_subdir, f'{img_id}.jpg')

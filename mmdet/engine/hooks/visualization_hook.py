@@ -4,6 +4,7 @@ import warnings
 from typing import Optional, Sequence
 
 import mmcv
+from mmengine.fileio import FileClient
 from mmengine.hooks import Hook
 from mmengine.runner import Runner
 from mmengine.visualization import Visualizer
@@ -88,7 +89,7 @@ class DetVisualizationHook(Hook):
             return
 
         if self.file_client is None:
-            self.file_client = mmcv.FileClient(**self.file_client_args)
+            self.file_client = FileClient(**self.file_client_args)
 
         # There is no guarantee that the same batch of images
         # is visualized for each evaluation.
@@ -131,7 +132,7 @@ class DetVisualizationHook(Hook):
             mmcv.mkdir_or_exist(self.test_out_dir)
 
         if self.file_client is None:
-            self.file_client = mmcv.FileClient(**self.file_client_args)
+            self.file_client = FileClient(**self.file_client_args)
 
         for input_data, output in zip(data_batch, outputs):
             self._test_index += 1
