@@ -2,7 +2,7 @@ import os.path as osp
 import tempfile
 import unittest
 
-from mmengine import dump
+from mmengine.fileio import dump
 
 from mmdet.datasets.api_wrappers import COCOPanoptic
 
