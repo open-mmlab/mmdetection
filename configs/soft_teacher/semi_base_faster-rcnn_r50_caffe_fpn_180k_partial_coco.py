@@ -27,17 +27,16 @@ model = dict(
     _delete_=True,
     type='SemiBaseDetector',
     detector=detector,
+    data_preprocessor=dict(
+        type='MultiBranchDataPreprocessor',
+        data_preprocessor=detector.data_preprocessor),
     semi_train_cfg=dict(
         freeze_teacher=True,
         sup_weight=1.0,
         unsup_weight=4.0,
         cls_pseudo_thr=0.9,
         min_pseudo_bbox_wh=(1e-2, 1e-2)),
-    semi_test_cfg=dict(predict_on='teacher'),
-    data_preprocessor=dict(
-        type='MultiBranchDataPreprocessor',
-        data_preprocessor=detector.data_preprocessor,
-    ))
+    semi_test_cfg=dict(predict_on='teacher'))
 
 # training schedule for 180k
 train_cfg = dict(

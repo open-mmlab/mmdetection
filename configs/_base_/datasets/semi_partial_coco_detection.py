@@ -29,6 +29,8 @@ geometric = [[dict(type='Rotate')], [dict(type='ShearX')],
 
 scale = [(1333, 400), (1333, 1200)]
 
+# pipeline used to augment labeled data,
+# which will be sent to student model for supervised training.
 sup_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(type='LoadAnnotations', with_bbox=True),
@@ -39,6 +41,8 @@ sup_pipeline = [
     dict(type='MultiBranch', sup=dict(type='PackDetInputs'))
 ]
 
+# pipeline used to augment unlabeled data weakly,
+# which will be sent to teacher model for predicting pseudo instances.
 weak_pipeline = [
     dict(type='RandomResize', scale=scale, keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
@@ -49,6 +53,8 @@ weak_pipeline = [
                    'homography_matrix')),
 ]
 
+# pipeline used to augment unlabeled data strongly,
+# which will be sent to student model for unsupervised training.
 strong_pipeline = [
     dict(type='RandomResize', scale=scale, keep_ratio=True),
     dict(type='RandomFlip', prob=0.5),
@@ -91,7 +97,9 @@ num_workers = 5
 # The format of labeled_ann_file and unlabeled_ann_file are
 # instances_train2017.{fold}@{percent}.json, and
 # instances_train2017.{fold}@{percent}-unlabeled.json
-# Default fold and percent are 1 and 10.
+# Default fold and percent are 1 and 10, which means 10% data
+# of coco train2017 will be selected as labeled data,
+# and the remaining data will be used as unlabeled data.
 labeled_ann_file = 'coco_semi_anns/instances_train2017.1@10.json'
 unlabeled_ann_file = 'coco_semi_anns/instances_train2017.1@10-unlabeled.json'
 
