@@ -1,9 +1,9 @@
-_base_ = './mask_rcnn_r50_fpn_sample1e-3_mstrain_2x_lvis_v0.5.py'
+_base_ = './mask-rcnn_r50-fpn-sample1e-3_mstrain-2x_lvis-v0.5.py'
 model = dict(
     backbone=dict(
         type='ResNeXt',
         depth=101,
-        groups=32,
+        groups=64,
         base_width=4,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
@@ -11,4 +11,4 @@ model = dict(
         norm_cfg=dict(type='BN', requires_grad=True),
         style='pytorch',
         init_cfg=dict(
-            type='Pretrained', checkpoint='open-mmlab://resnext101_32x4d')))
+            type='Pretrained', checkpoint='open-mmlab://resnext101_64x4d')))

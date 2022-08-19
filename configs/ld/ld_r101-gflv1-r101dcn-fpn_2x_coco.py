@@ -1,4 +1,4 @@
-_base_ = ['./ld_r18_gflv1_r101_fpn_coco_1x.py']
+_base_ = ['./ld_r18-gflv1-r101-fpn_1x_coco.py']
 teacher_ckpt = 'https://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_r101_fpn_dconv_c3-c5_mstrain_2x_coco/gfl_r101_fpn_dconv_c3-c5_mstrain_2x_coco_20200630_102002-134b07df.pth'  # noqa
 model = dict(
     teacher_config='configs/gfl/gfl_r101_fpn_dconv_c3-c5_mstrain_2x_coco.py',

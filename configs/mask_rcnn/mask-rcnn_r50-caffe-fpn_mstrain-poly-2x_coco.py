@@ -1,4 +1,4 @@
-_base_ = './mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py'
+_base_ = './mask-rcnn_r50-caffe-fpn_mstrain-poly-1x_coco.py'
 
 train_cfg = dict(max_epochs=24)
 # learning rate

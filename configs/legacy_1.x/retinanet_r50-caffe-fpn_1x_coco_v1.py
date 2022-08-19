@@ -1,4 +1,4 @@
-_base_ = './retinanet_r50_fpn_1x_coco_v1.py'
+_base_ = './retinanet_r50-fpn_1x_coco_v1.py'
 model = dict(
     backbone=dict(
         norm_cfg=dict(requires_grad=False),
