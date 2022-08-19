@@ -8,7 +8,7 @@ from typing import Dict, Optional, Sequence, Tuple, Union
 import mmcv
 import numpy as np
 from mmengine.evaluator import BaseMetric
-from mmengine.fileio import dump, load
+from mmengine.fileio import FileClient, dump, load
 from mmengine.logging import MMLogger, print_log
 from terminaltables import AsciiTable
 
@@ -57,7 +57,7 @@ class CocoPanopticMetric(BaseMetric):
             Defaults to 32. When ``nproc`` exceeds the number of cpu cores,
             the number of cpu cores is used.
         file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:`mmcv.fileio.FileClient` for details.
+            See :class:`mmengine.fileio.FileClient` for details.
             Defaults to ``dict(backend='disk')``.
         collect_device (str): Device name used for collecting results from
             different ranks during distributed training. Must be 'cpu' or
@@ -107,14 +107,17 @@ class CocoPanopticMetric(BaseMetric):
 
         self.cat_ids = None
         self.cat2label = None
+
+        self.file_client_args = file_client_args
+        self.file_client = FileClient(**file_client_args)
+
         if ann_file:
-            self._coco_api = COCOPanoptic(ann_file)
+            with self.file_client.get_local_path(ann_file) as local_path:
+                self._coco_api = COCOPanoptic(local_path)
             self.categories = self._coco_api.cats
         else:
             self._coco_api = None
             self.categories = None
-
-        self.file_client = mmcv.FileClient(**file_client_args)
 
     def __del__(self) -> None:
         """Clean up."""

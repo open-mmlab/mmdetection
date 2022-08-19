@@ -2,7 +2,7 @@
 import os
 import unittest
 
-from mmcv import dump
+from mmengine.fileio import dump
 
 from mmdet.datasets import CityscapesDataset
 

@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from .base_det_dataset import BaseDetDataset
 from .builder import DATASETS, PIPELINES, build_dataset
 from .cityscapes import CityscapesDataset
 from .coco import CocoDataset
@@ -14,10 +15,10 @@ from .wider_face import WIDERFaceDataset
 from .xml_style import XMLDataset
 
 __all__ = [
-    'XMLDataset', 'CocoDataset', 'DeepFashionDataset', 'VOCDataset',
-    'CityscapesDataset', 'LVISDataset', 'LVISV05Dataset', 'LVISV1Dataset',
-    'WIDERFaceDataset', 'DATASETS', 'PIPELINES', 'build_dataset',
-    'get_loading_pipeline', 'CocoPanopticDataset', 'MultiImageMixDataset',
-    'OpenImagesDataset', 'OpenImagesChallengeDataset',
+    'BaseDetDataset', 'XMLDataset', 'CocoDataset', 'DeepFashionDataset',
+    'VOCDataset', 'CityscapesDataset', 'LVISDataset', 'LVISV05Dataset',
+    'LVISV1Dataset', 'WIDERFaceDataset', 'CocoPanopticDataset',
+    'MultiImageMixDataset', 'OpenImagesDataset', 'OpenImagesChallengeDataset',
+    'DATASETS', 'PIPELINES', 'build_dataset', 'get_loading_pipeline',
     'AspectRatioBatchSampler', 'ClassAwareSampler'
 ]
