@@ -1,4 +1,4 @@
-_base_ = './cascade_mask_rcnn_r101_fpn_sample1e-3_seesaw_loss_mstrain_2x_lvis_v1.py'  # noqa: E501
+_base_ = './cascade-mask-rcnn_r101-fpn-sample1e-3-seesaw-loss_mstrain-2x_lvis-v1.py'  # noqa: E501
 model = dict(
     roi_head=dict(
         mask_head=dict(

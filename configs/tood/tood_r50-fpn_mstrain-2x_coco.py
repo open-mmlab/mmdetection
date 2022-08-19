@@ -1,4 +1,4 @@
-_base_ = './tood_r50_fpn_1x_coco.py'
+_base_ = './tood_r50-fpn_1x_coco.py'
 max_epochs = 24
 
 # learning rate

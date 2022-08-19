@@ -1,4 +1,4 @@
-_base_ = './mask_rcnn_r50_caffe_fpn_syncbn-all_rpn-2conv_lsj_100e_coco.py'
+_base_ = './mask-rcnn_r50-caffe-fpn-syncbn-all-rpn-2conv_lsj-100e_coco.py'
 
 # Use RepeatDataset to speed up training
 # change repeat time from 4 (for 100 epochs) to 16 (for 400 epochs)

@@ -1,5 +1,5 @@
 _base_ = [
-    '../_base_/models/mask_rcnn_r50_fpn.py',
+    '../_base_/models/mask-rcnn_r50-fpn.py',
     '../common/lsj_100e_coco_instance.py'
 ]
 image_size = (1024, 1024)

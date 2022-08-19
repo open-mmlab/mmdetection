@@ -1,4 +1,4 @@
-_base_ = './solo_r50_fpn_1x_coco.py'
+_base_ = './solo_r50-fpn_1x_coco.py'
 # model settings
 model = dict(
     mask_head=dict(

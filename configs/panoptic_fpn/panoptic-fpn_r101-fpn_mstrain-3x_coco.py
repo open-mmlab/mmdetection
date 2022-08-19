@@ -1,4 +1,4 @@
-_base_ = './panoptic_fpn_r50_fpn_mstrain_3x_coco.py'
+_base_ = './panoptic-fpn_r50-fpn_mstrain-3x_coco.py'
 model = dict(
     backbone=dict(
         depth=101,

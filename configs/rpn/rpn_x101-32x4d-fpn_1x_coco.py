@@ -1,4 +1,4 @@
-_base_ = './rpn_r50_fpn_1x_coco.py'
+_base_ = './rpn_r50-fpn_1x_coco.py'
 model = dict(
     backbone=dict(
         type='ResNeXt',

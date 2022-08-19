@@ -1,4 +1,4 @@
-_base_ = './solo_r50_fpn_3x_coco.py'
+_base_ = './solo_r50-fpn_3x_coco.py'
 
 # model settings
 model = dict(

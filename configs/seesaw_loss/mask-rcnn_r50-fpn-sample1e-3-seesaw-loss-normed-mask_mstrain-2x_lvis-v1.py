@@ -1,4 +1,4 @@
-_base_ = './mask_rcnn_r50_fpn_sample1e-3_seesaw_loss_mstrain_2x_lvis_v1.py'
+_base_ = './mask-rcnn_r50-fpn-sample1e-3-seesaw-loss_mstrain-2x_lvis-v1.py'
 model = dict(
     roi_head=dict(
         mask_head=dict(

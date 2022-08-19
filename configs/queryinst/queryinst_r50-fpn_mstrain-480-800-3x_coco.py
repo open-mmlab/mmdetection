@@ -1,4 +1,4 @@
-_base_ = './queryinst_r50_fpn_1x_coco.py'
+_base_ = './queryinst_r50-fpn_1x_coco.py'
 
 train_pipeline = [
     dict(

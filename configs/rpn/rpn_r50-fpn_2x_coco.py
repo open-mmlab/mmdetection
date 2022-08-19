@@ -1,4 +1,4 @@
-_base_ = './rpn_r50_fpn_1x_coco.py'
+_base_ = './rpn_r50-fpn_1x_coco.py'
 
 # learning policy
 max_epochs = 24

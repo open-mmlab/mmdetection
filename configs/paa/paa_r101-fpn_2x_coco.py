@@ -1,4 +1,4 @@
-_base_ = './paa_r101_fpn_1x_coco.py'
+_base_ = './paa_r101-fpn_1x_coco.py'
 max_epochs = 24
 
 # learning rate

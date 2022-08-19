@@ -1,4 +1,4 @@
-_base_ = './retinanet_regnetx-3.2GF_fpn_1x_coco.py'
+_base_ = './retinanet_regnetx-3.2GF-fpn_1x_coco.py'
 model = dict(
     backbone=dict(
         type='RegNet',

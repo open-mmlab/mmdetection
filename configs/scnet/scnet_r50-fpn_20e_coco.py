@@ -1,4 +1,4 @@
-_base_ = './scnet_r50_fpn_1x_coco.py'
+_base_ = './scnet_r50-fpn_1x_coco.py'
 # learning policy
 max_epochs = 20
 param_scheduler = [

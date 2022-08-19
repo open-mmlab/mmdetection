@@ -1,5 +1,5 @@
 _base_ = [
-    '../_base_/models/retinanet_r50_fpn.py',
+    '../_base_/models/retinanet_r50-fpn.py',
     '../common/lsj_200e_coco_detection.py'
 ]
 

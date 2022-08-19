@@ -1,4 +1,4 @@
-_base_ = './vfnet_r50_fpn_mdconv_c3-c5_mstrain_2x_coco.py'
+_base_ = './vfnet_r50-fpn-mdconv-c3-c5_mstrain-2x_coco.py'
 model = dict(
     backbone=dict(
         type='ResNeXt',
