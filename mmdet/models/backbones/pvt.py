@@ -13,7 +13,7 @@ from mmcv.cnn.bricks.transformer import MultiheadAttention
 from mmengine.model import BaseModule, ModuleList, Sequential
 from mmengine.model.utils import (constant_init, normal_init, trunc_normal_,
                                   trunc_normal_init)
-from mmengine.runner.checkpoint import _load_checkpoint, load_state_dict
+from mmengine.runner.checkpoint import CheckpointLoader, load_state_dict
 from torch.nn.modules.utils import _pair as to_2tuple
 
 from mmdet.registry import MODELS
@@ -544,7 +544,7 @@ class PyramidVisionTransformer(BaseModule):
                                                   f'specify `Pretrained` in ' \
                                                   f'`init_cfg` in ' \
                                                   f'{self.__class__.__name__} '
-            checkpoint = _load_checkpoint(
+            checkpoint = CheckpointLoader.load_checkpoint(
                 self.init_cfg.checkpoint, logger=logger, map_location='cpu')
             logger.warn(f'Load pre-trained model for '
                         f'{self.__class__.__name__} from original repo')
