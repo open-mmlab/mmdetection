@@ -1,6 +1,6 @@
 _base_ = [
     '../_base_/models/faster_rcnn_r50_fpn.py', '../_base_/default_runtime.py',
-    'semi_partial_coco_detection.py'
+    '../_base_/datasets/semi_partial_coco_detection.py'
 ]
 
 detector = _base_.model

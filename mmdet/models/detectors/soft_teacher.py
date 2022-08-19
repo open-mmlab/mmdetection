@@ -70,16 +70,16 @@ class SoftTeacher(SemiBaseDetector):
         x = self.student.extract_feat(batch_inputs)
 
         losses = {}
-        rpn_losses, rpn_results_list = self.unsup_rpn_loss(
+        rpn_losses, rpn_results_list = self.rpn_loss_by_pseudo_instances(
             x, batch_data_samples)
         losses.update(**rpn_losses)
-        losses.update(**self.unsup_rcnn_cls_loss(
+        losses.update(**self.rcnn_cls_loss_by_pseudo_instances(
             x, rpn_results_list, batch_data_samples, batch_info))
-        losses.update(**self.unsup_rcnn_reg_loss(x, rpn_results_list,
-                                                 batch_data_samples))
+        losses.update(**self.rcnn_reg_loss_by_pseudo_instances(
+            x, rpn_results_list, batch_data_samples))
         pseudo_loss = {
             'unsup_' + k: v
-            for k, v in self.weight(
+            for k, v in self.reweight_loss(
                 losses, self.semi_train_cfg.get('unsup_weight', 1.)).items()
         }
         return pseudo_loss
@@ -135,10 +135,9 @@ class SoftTeacher(SemiBaseDetector):
             batch_info['metainfo'].append(data_samples.metainfo)
         return batch_data_samples, batch_info
 
-    def unsup_rpn_loss(self, x: Tuple[Tensor],
-                       batch_data_samples: SampleList) -> dict:
-        """Calculate unsupervised rpn loss from a batch of inputs and pseudo
-        data samples.
+    def rpn_loss_by_pseudo_instances(self, x: Tuple[Tensor],
+                                     batch_data_samples: SampleList) -> dict:
+        """Calculate rpn loss from a batch of inputs and pseudo data samples.
 
         Args:
             x (tuple[Tensor]): Features from FPN.
@@ -172,10 +171,10 @@ class SoftTeacher(SemiBaseDetector):
                 rpn_losses[f'rpn_{key}'] = rpn_losses.pop(key)
         return rpn_losses, rpn_results_list
 
-    def unsup_rcnn_cls_loss(self, x: Tuple[Tensor],
-                            unsup_rpn_results_list: InstanceList,
-                            batch_data_samples: SampleList,
-                            batch_info: dict) -> dict:
+    def rcnn_cls_loss_by_pseudo_instances(self, x: Tuple[Tensor],
+                                          unsup_rpn_results_list: InstanceList,
+                                          batch_data_samples: SampleList,
+                                          batch_info: dict) -> dict:
         """Calculate classification loss from a batch of inputs and pseudo data
         samples.
 
@@ -264,9 +263,9 @@ class SoftTeacher(SemiBaseDetector):
             cls_reg_targets[1].sum(), 1.0)
         return losses
 
-    def unsup_rcnn_reg_loss(self, x: Tuple[Tensor],
-                            unsup_rpn_results_list: InstanceList,
-                            batch_data_samples: SampleList) -> dict:
+    def rcnn_reg_loss_by_pseudo_instances(
+            self, x: Tuple[Tensor], unsup_rpn_results_list: InstanceList,
+            batch_data_samples: SampleList) -> dict:
         """Calculate rcnn regression loss from a batch of inputs and pseudo
         data samples.
 

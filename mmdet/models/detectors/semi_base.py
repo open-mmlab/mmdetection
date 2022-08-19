@@ -58,6 +58,17 @@ class SemiBaseDetector(BaseDetector):
         for param in model.parameters():
             param.requires_grad = False
 
+    @staticmethod
+    def reweight_loss(losses: dict, weight: float) -> dict:
+        """Reweight loss for different branches."""
+        for name, loss in losses.items():
+            if 'loss' in name:
+                if isinstance(loss, Sequence):
+                    losses[name] = [item * weight for item in loss]
+                else:
+                    losses[name] = loss * weight
+        return losses
+
     def loss(self, multi_batch_inputs: Dict[str, Tensor],
              multi_batch_data_samples: Dict[str, SampleList]) -> dict:
         """Calculate losses from multi-branch inputs and data samples.
@@ -104,7 +115,7 @@ class SemiBaseDetector(BaseDetector):
         """
         gt_loss = {
             'sup_' + k: v
-            for k, v in self.weight(
+            for k, v in self.reweight_loss(
                 self.student.loss(batch_inputs, batch_data_samples),
                 self.semi_train_cfg.get('sup_weight', 1.)).items()
         }
@@ -145,22 +156,11 @@ class SemiBaseDetector(BaseDetector):
 
         pseudo_loss = {
             'unsup_' + k: v
-            for k, v in self.weight(
+            for k, v in self.reweight_loss(
                 self.student.loss(batch_inputs, batch_data_samples),
                 unsup_weight).items()
         }
         return pseudo_loss
-
-    @staticmethod
-    def weight(losses: dict, weight: float) -> dict:
-        """Weight loss for different branches."""
-        for name, loss in losses.items():
-            if 'loss' in name:
-                if isinstance(loss, Sequence):
-                    losses[name] = [item * weight for item in loss]
-                else:
-                    losses[name] = loss * weight
-        return losses
 
     def filter_pseudo_instances(self,
                                 batch_data_samples: SampleList) -> SampleList:

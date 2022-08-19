@@ -1,10 +1,16 @@
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
+
+# file_client_args = dict(
+#     backend='petrel',
+#     path_mapping=dict({
+#         './data/': 's3://openmmlab/datasets/detection/',
+#         'data/': 's3://openmmlab/datasets/detection/'
+#     }))
 file_client_args = dict(backend='disk')
 
 color_space = [
-    [dict(type='ColorTransform')],
     [dict(type='AutoContrast')],
     [dict(type='Equalize')],
     [dict(type='Invert')],
@@ -22,6 +28,7 @@ geometric = [[dict(type='Rotate')], [dict(type='ShearX')],
              [dict(type='TranslateY')]]
 
 scale = [(1333, 400), (1333, 1200)]
+
 sup_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(type='LoadAnnotations', with_bbox=True),
@@ -79,33 +86,39 @@ test_pipeline = [
                    'scale_factor'))
 ]
 
-fold = 1
-percent = 10
+batch_size = 5
+num_workers = 5
+# The format of labeled_ann_file and unlabeled_ann_file are
+# instances_train2017.{fold}@{percent}.json, and
+# instances_train2017.{fold}@{percent}-unlabeled.json
+# Default fold and percent are 1 and 10.
+labeled_ann_file = 'coco_semi_anns/instances_train2017.1@10.json'
+unlabeled_ann_file = 'coco_semi_anns/instances_train2017.1@10-unlabeled.json'
 
 train_dataloader = dict(
-    batch_size=5,
-    num_workers=5,
+    batch_size=batch_size,
+    num_workers=num_workers,
     persistent_workers=True,
     sampler=dict(
-        type='GroupMultiSourceSampler', batch_size=5, source_ratio=[1, 4]),
+        type='GroupMultiSourceSampler',
+        batch_size=batch_size,
+        source_ratio=[1, 4]),
     dataset=dict(
         type='ConcatDataset',
         datasets=[
             dict(
                 type=dataset_type,
                 data_root='data/',
-                ann_file='coco_semi_annos/'
-                f'instances_train2017.{fold}@{percent}.json',
+                ann_file=labeled_ann_file,
                 data_prefix=dict(img='coco/train2017/'),
                 filter_cfg=dict(filter_empty_gt=True, min_size=32),
                 pipeline=sup_pipeline),
             dict(
                 type=dataset_type,
                 data_root='data/',
-                ann_file='coco_semi_annos/'
-                f'instances_train2017.{fold}@{percent}-unlabeled.json',
+                ann_file=unlabeled_ann_file,
                 data_prefix=dict(img='coco/train2017/'),
-                filter_cfg=dict(filter_empty_gt=True, min_size=32),
+                filter_cfg=dict(filter_empty_gt=False),
                 pipeline=unsup_pipeline)
         ]))
 
