@@ -115,7 +115,7 @@ python tools/analysis_tools/analyze_results.py \
 
 ### Visualize Datasets
 
-`tools/misc/browse_dataset.py` helps the user to browse a detection dataset (both
+`tools/analysis_tools/browse_dataset.py` helps the user to browse a detection dataset (both
 images and bounding box annotations) visually, or save the image to a
 designated directory.
 
@@ -146,18 +146,21 @@ python tools/analysis_tools/coco_error_analysis.py ${RESULT} ${OUT_DIR} [-h] [--
 
 Example:
 
-Assume that you have got [Mask R-CNN checkpoint file](https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_fpn_1x_coco/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth) in the path 'checkpoint'. For other checkpoints, please refer to our [model zoo](./model_zoo.md). You can use the following command to get the results bbox and segmentation json file.
+Assume that you have got [Mask R-CNN checkpoint file](https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_fpn_1x_coco/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth) in the path 'checkpoint'. For other checkpoints, please refer to our [model zoo](./model_zoo.md).
+
+You can modify the test_evaluator to save the results bbox by:
+
+1. Find which dataset in 'configs/base/datasets' the current config corresponds to.
+2. Replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in dateset config.
+3. Use the following command to get the results bbox and segmentation json file.
 
 ```shell
-# out: results.bbox.json and results.segm.json
 python tools/test.py \
        configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
        checkpoint/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
-       --format-only \
-       --options "jsonfile_prefix=./results"
 ```
 
-1. Get COCO bbox error results per category , save analyze result images to the directory `results/`
+1. Get COCO bbox error results per category , save analyze result images to the directory(In  [config](https://github.com/wanghonglie/mmdetection/tree/master/configs/_base_/datasets/coco_instance.py) the default directory is './work_dirs/coco_instance/test')
 
 ```shell
 python tools/analysis_tools/coco_error_analysis.py \
@@ -166,7 +169,7 @@ python tools/analysis_tools/coco_error_analysis.py \
        --ann=data/coco/annotations/instances_val2017.json \
 ```
 
-2. Get COCO segmentation error results per category , save analyze result images to the directory `results/`
+2. Get COCO segmentation error results per category , save analyze result images to the directory
 
 ```shell
 python tools/analysis_tools/coco_error_analysis.py \
@@ -305,15 +308,9 @@ comparisons, but double check it before you adopt it in technical reports or pap
 
 ## Model conversion
 
-### MMDetection model to ONNX (experimental)
+### MMDetection model to ONNX
 
-We provide a script to convert model to [ONNX](https://github.com/onnx/onnx) format. We also support comparing the output results between Pytorch and ONNX model for verification.
-
-```shell
-python tools/deployment/pytorch2onnx.py ${CONFIG_FILE} ${CHECKPOINT_FILE} --output-file ${ONNX_FILE} [--shape ${INPUT_SHAPE} --verify]
-```
-
-**Note**: This tool is still experimental. Some customized operators are not supported for now. For a detailed description of the usage and the list of supported models, please refer to [pytorch2onnx](tutorials/pytorch2onnx.md).
+We provide a script to convert model to [ONNX](https://github.com/onnx/onnx) format. We also support comparing the output results between Pytorch and ONNX model for verification. More details can refer to [mmdeploy](https://github.com/open-mmlab/mmdeployhttps://github.com/open-mmlab/mmdeploy)
 
 ### MMDetection 1.x model to MMDetection 2.x
 
