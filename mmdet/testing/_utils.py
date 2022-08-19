@@ -92,7 +92,7 @@ def demo_mm_inputs(batch_size=2,
                    sem_seg_output_strides=1,
                    with_mask=False,
                    with_semantic=False,
-                   with_box_wrapped=False):
+                   with_boxlist=False):
     """Create a superset of inputs needed to run test or train batches.
 
     Args:
@@ -152,7 +152,7 @@ def demo_mm_inputs(batch_size=2,
         bboxes = _rand_bboxes(rng, num_boxes, w, h)
         labels = rng.randint(1, num_classes, size=num_boxes)
         # TODO: remove this part when all model adapted with BaseBoxes
-        if with_box_wrapped:
+        if with_boxlist:
             gt_instances.bboxes = HorizontalBoxes(bboxes, dtype=torch.float32)
         else:
             gt_instances.bboxes = torch.FloatTensor(bboxes)
@@ -171,7 +171,7 @@ def demo_mm_inputs(batch_size=2,
         # ignore_instances
         ignore_instances = InstanceData()
         bboxes = _rand_bboxes(rng, num_boxes, w, h)
-        if with_box_wrapped:
+        if with_boxlist:
             ignore_instances.bboxes = HorizontalBoxes(
                 bboxes, dtype=torch.float32)
         else:

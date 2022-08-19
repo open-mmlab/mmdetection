@@ -59,8 +59,8 @@ class DetDataPreprocessor(ImgDataPreprocessor):
             Defaults to False.
         rgb_to_bgr (bool): whether to convert image from RGB to RGB.
             Defaults to False.
-        with_box_wrapped (bool): Whether to keep the ``BaseBoxes`` wrapper of
-            bboxes data. Defaults to False.
+        with_boxlist (bool): Whether to keep the ``BaseBoxes`` type of
+            bboxes data or not. Defaults to False.
         batch_augments (list[dict], optional): Batch-level augmentations
     """
 
@@ -75,7 +75,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                  seg_pad_value: int = 255,
                  bgr_to_rgb: bool = False,
                  rgb_to_bgr: bool = False,
-                 with_box_wrapped: bool = False,
+                 with_boxlist: bool = False,
                  batch_augments: Optional[List[dict]] = None):
         super().__init__(
             mean=mean,
@@ -93,7 +93,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         self.mask_pad_value = mask_pad_value
         self.pad_seg = pad_seg
         self.seg_pad_value = seg_pad_value
-        self.with_box_wrapped = with_box_wrapped
+        self.with_boxlist = with_boxlist
 
     def forward(self,
                 data: Sequence[dict],
@@ -129,13 +129,13 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                 if ('gt_instances' in data_samples
                         and 'bboxes' in data_samples.gt_instances):
                     bboxes = data_samples.gt_instances.bboxes
-                    if not self.with_box_wrapped:
+                    if not self.with_boxlist:
                         data_samples.gt_instances.bboxes = bboxes.tensor \
                             if isinstance(bboxes, BaseBoxes) else bboxes
                 if ('ignored_instances' in data_samples
                         and 'bboxes' in data_samples.ignored_instances):
                     bboxes = data_samples.ignored_instances.bboxes
-                    if not self.with_box_wrapped:
+                    if not self.with_boxlist:
                         data_samples.ignored_instances.bboxes = bboxes.tensor \
                             if isinstance(bboxes, BaseBoxes) else bboxes
 
