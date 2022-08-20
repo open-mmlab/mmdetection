@@ -5,6 +5,7 @@ import os.path as osp
 
 import mmcv
 from gather_models import get_final_results
+from mmengine.fileio import dump
 
 try:
     import xlrd
@@ -137,8 +138,7 @@ if __name__ == '__main__':
         # 4 save or print results
         if metrics_out:
             mmcv.mkdir_or_exist(metrics_out)
-            mmcv.dump(result_dict,
-                      osp.join(metrics_out, 'model_metric_info.json'))
+            dump(result_dict, osp.join(metrics_out, 'model_metric_info.json'))
         if not args.not_show:
             print('===================================')
             for config_name, metrics in result_dict.items():

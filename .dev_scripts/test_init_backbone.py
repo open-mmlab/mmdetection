@@ -5,8 +5,10 @@ import os
 from os.path import dirname, exists, join
 
 import pytest
-from mmcv import Config, ProgressBar
-from mmcv.runner import _load_checkpoint
+# TODO
+from mmcv import ProgressBar
+from mmengine.config import Config
+from mmengine.runner import CheckpointLoader
 
 from mmdet.models import build_detector
 
@@ -120,7 +122,7 @@ def _check_backbone(config, print_cfg=True):
     if init_cfg is None or init_cfg.get('type') != 'Pretrained':
         init_flag = False
     if init_flag:
-        checkpoint = _load_checkpoint(init_cfg.checkpoint)
+        checkpoint = CheckpointLoader.load_checkpoint(init_cfg.checkpoint)
         if 'state_dict' in checkpoint:
             state_dict = checkpoint['state_dict']
         else:

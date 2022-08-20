@@ -3,7 +3,7 @@ from multiprocessing import Pool
 
 import mmcv
 import numpy as np
-from mmcv.utils import print_log
+from mmengine.logging import print_log
 from terminaltables import AsciiTable
 
 from .bbox_overlaps import bbox_overlaps

@@ -208,7 +208,7 @@ def pq_compute_multi_core(matched_annotations_list,
 
     if file_client is None:
         file_client_args = dict(backend='disk')
-        file_client = mmcv.FileClient(**file_client_args)
+        file_client = FileClient(**file_client_args)
 
     cpu_num = min(nproc, multiprocessing.cpu_count())
 

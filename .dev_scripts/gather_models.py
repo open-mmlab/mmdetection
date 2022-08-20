@@ -10,6 +10,7 @@ from collections import OrderedDict
 import mmcv
 import torch
 import yaml
+from mmengine.fileio import dump
 
 
 def ordered_yaml_dump(data, stream=None, Dumper=yaml.SafeDumper, **kwds):
@@ -328,7 +329,7 @@ def main():
 
     models = dict(models=publish_model_infos)
     print(f'Totally gathered {len(publish_model_infos)} models')
-    mmcv.dump(models, osp.join(models_out, 'model_info.json'))
+    dump(models, osp.join(models_out, 'model_info.json'))
 
     pwc_files = convert_model_info_to_pwc(publish_model_infos)
     for name in pwc_files:

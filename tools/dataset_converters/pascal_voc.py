@@ -5,6 +5,7 @@ import xml.etree.ElementTree as ET
 
 import mmcv
 import numpy as np
+from mmengine.fileio import dump
 
 from mmdet.evaluation import voc_classes
 
@@ -89,7 +90,7 @@ def cvt_annotations(devkit_path, years, split, out_file):
         annotations.extend(part_annotations)
     if out_file.endswith('json'):
         annotations = cvt_to_coco_json(annotations)
-    mmcv.dump(annotations, out_file)
+    dump(annotations, out_file)
     return annotations
 
 

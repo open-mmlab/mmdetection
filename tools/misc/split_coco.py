@@ -4,6 +4,7 @@ import os.path as osp
 
 import mmcv
 import numpy as np
+from mmengine.fileio import dump, load
 
 prog_description = '''K-Fold coco split.
 
@@ -59,12 +60,12 @@ def split_coco(data_root, out_dir, percent, fold):
         sub_anns['info'] = anns['info']
 
         mmcv.mkdir_or_exist(out_dir)
-        mmcv.dump(sub_anns, f'{out_dir}/{name}.json')
+        dump(sub_anns, f'{out_dir}/{name}.json')
 
     # set random seed with the fold
     np.random.seed(fold)
     ann_file = osp.join(data_root, 'annotations/instances_train2017.json')
-    anns = mmcv.load(ann_file)
+    anns = load(ann_file)
 
     image_list = anns['images']
     labeled_total = int(percent / 100. * len(image_list))

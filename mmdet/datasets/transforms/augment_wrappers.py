@@ -2,9 +2,9 @@
 from typing import List, Optional, Union
 
 import numpy as np
-from mmcv import ConfigDict
 from mmcv.transforms import RandomChoice
 from mmcv.transforms.utils import cache_randomness
+from mmengine.config import ConfigDict
 
 from mmdet.registry import TRANSFORMS
 

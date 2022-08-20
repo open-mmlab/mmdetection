@@ -7,6 +7,7 @@ import cityscapesscripts.helpers.labels as CSLabels
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
+from mmengine.fileio import dump
 
 
 def collect_files(img_dir, gt_dir):
@@ -107,7 +108,7 @@ def cvt_annotations(image_infos, out_json_name):
     if len(out_json['annotations']) == 0:
         out_json.pop('annotations')
 
-    mmcv.dump(out_json, out_json_name)
+    dump(out_json, out_json_name)
     return out_json
 
 

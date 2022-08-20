@@ -24,7 +24,8 @@ import os.path as osp
 import mmcv
 import numpy as np
 import torch
-from mmcv import Config
+from mmengine.config import Config
+from mmengine.fileio import dump
 from scipy.optimize import differential_evolution
 
 from mmdet.datasets import build_dataset
@@ -145,7 +146,7 @@ class BaseAnchorOptimizer:
         self.logger.info(f'Anchor optimize result:{anchor_results}')
         if path:
             json_path = osp.join(path, 'anchor_optimize_result.json')
-            mmcv.dump(anchor_results, json_path)
+            dump(anchor_results, json_path)
             self.logger.info(f'Result saved in {json_path}')
 
 
