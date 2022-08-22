@@ -5,7 +5,9 @@ from multiprocessing import Pool
 
 import mmcv
 import numpy as np
-from mmcv import Config, DictAction
+from mmengine.config import Config, DictAction
+from mmengine.fileio import load
+from mmengine.utils import ProgressBar
 
 from mmdet.datasets import build_dataset, get_loading_pipeline
 from mmdet.evaluation import eval_map, pq_compute_single_core
@@ -201,7 +203,7 @@ class ResultVisualizer:
         else:
             assert callable(eval_fn)
 
-        prog_bar = mmcv.ProgressBar(len(results))
+        prog_bar = ProgressBar(len(results))
         _mAPs = {}
         for i, (result, ) in enumerate(zip(results)):
             # self.dataset[i] should not call directly
@@ -240,12 +242,12 @@ class ResultVisualizer:
         gt_json = dataset.coco.img_ann_map
 
         result_files, tmp_dir = dataset.format_results(results)
-        pred_json = mmcv.load(result_files['panoptic'])['annotations']
+        pred_json = load(result_files['panoptic'])['annotations']
         pred_folder = osp.join(tmp_dir.name, 'panoptic')
         gt_folder = dataset.seg_prefix
 
         pqs = {}
-        prog_bar = mmcv.ProgressBar(len(results))
+        prog_bar = ProgressBar(len(results))
         for i in range(len(results)):
             data_info = dataset.prepare_train_img(i)
             image_id = data_info['img_info']['id']
@@ -351,7 +353,7 @@ def main():
         cfg.data.test.pipeline = get_loading_pipeline(cfg.data.train.pipeline)
 
     dataset = build_dataset(cfg.data.test)
-    outputs = mmcv.load(args.prediction_path)
+    outputs = load(args.prediction_path)
 
     result_visualizer = ResultVisualizer(args.show, args.wait_time,
                                          args.show_score_thr,

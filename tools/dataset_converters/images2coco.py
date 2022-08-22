@@ -3,7 +3,8 @@ import argparse
 import os
 
 import mmcv
-from mmengine.fileio import dump
+from mmengine.fileio import dump, list_from_file
+from mmengine.utils import track_iter_progress
 from PIL import Image
 
 
@@ -32,7 +33,7 @@ def collect_image_infos(path, exclude_extensions=None):
     img_infos = []
 
     images_generator = mmcv.scandir(path, recursive=True)
-    for image_path in mmcv.track_iter_progress(list(images_generator)):
+    for image_path in track_iter_progress(list(images_generator)):
         if exclude_extensions is None or (
                 exclude_extensions is not None
                 and not image_path.lower().endswith(exclude_extensions)):
@@ -87,7 +88,7 @@ def main():
     img_infos = collect_image_infos(args.img_path, args.exclude_extensions)
 
     # 2 convert to coco format data
-    classes = mmcv.list_from_file(args.classes)
+    classes = list_from_file(args.classes)
     coco_info = cvt_to_coco_json(img_infos, classes)
 
     # 3 dump

@@ -8,7 +8,7 @@ from multiprocessing import Pool
 
 import mmcv
 import torch
-from mmcv import Config
+from mmengine.config import Config
 
 
 def download(url, out_file, min_bytes=math.pow(1024, 2), progress=True):

@@ -5,10 +5,9 @@ import os
 from os.path import dirname, exists, join
 
 import pytest
-# TODO
-from mmcv import ProgressBar
 from mmengine.config import Config
 from mmengine.runner import CheckpointLoader
+from mmengine.utils import ProgressBar
 
 from mmdet.models import build_detector
 
