@@ -1,9 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import mmcv
 import torch
 import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmengine.model import BaseModule
+from mmengine.utils import is_tuple_of
 
 
 class SELayer(BaseModule):
@@ -35,7 +35,7 @@ class SELayer(BaseModule):
         if isinstance(act_cfg, dict):
             act_cfg = (act_cfg, act_cfg)
         assert len(act_cfg) == 2
-        assert mmcv.is_tuple_of(act_cfg, dict)
+        assert is_tuple_of(act_cfg, dict)
         self.global_avgpool = nn.AdaptiveAvgPool2d(1)
         self.conv1 = ConvModule(
             in_channels=channels,
@@ -96,7 +96,7 @@ class DyReLU(BaseModule):
         if isinstance(act_cfg, dict):
             act_cfg = (act_cfg, act_cfg)
         assert len(act_cfg) == 2
-        assert mmcv.is_tuple_of(act_cfg, dict)
+        assert is_tuple_of(act_cfg, dict)
         self.channels = channels
         self.expansion = 4  # for a1, b1, a2, b2
         self.global_avgpool = nn.AdaptiveAvgPool2d(1)

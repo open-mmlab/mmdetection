@@ -41,7 +41,7 @@ class MixFFN(BaseModule):
             Default: None.
         use_conv (bool): If True, add 3x3 DWConv between two Linear layers.
             Defaults: False.
-        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+        init_cfg (obj:`mmengine.ConfigDict`): The Config for initialization.
             Default: None.
     """
 
@@ -123,7 +123,7 @@ class SpatialReductionAttention(MultiheadAttention):
             Default: dict(type='LN').
         sr_ratio (int): The ratio of spatial reduction of Spatial Reduction
             Attention of PVT. Default: 1.
-        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+        init_cfg (obj:`mmengine.ConfigDict`): The Config for initialization.
             Default: None.
     """
 
