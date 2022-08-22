@@ -544,6 +544,16 @@ model = dict(
     ...)
 ```
 
+### 复用 \_base\_ 文件中的变量
+
+如果用户希望在当前配置中复用 base 文件中的变量，则可以通过使用 `{{_base_.xxx}}` 的方式来获取对应变量的拷贝。例如：
+
+```python
+_base_ = './mask-rcnn_r50-fpn_1x_coco.py'
+
+a = {{_base_.model}}  # 变量 a 等于 _base_ 中定义的 model
+```
+
 ## 通过脚本参数修改配置
 
 当运行 `tools/train.py` 和 `tools/test.py` 时，可以通过 `--cfg-options` 来修改配置文件。

@@ -552,6 +552,16 @@ model = dict(
     ...)
 ```
 
+### Reuse variables in \_base\_ file
+
+If the users want to reuse the variables in the base file, they can get a copy of the corresponding variable by using `{{_base_.xxx}}`. E.g:
+
+```python
+_base_ = './mask-rcnn_r50-fpn_1x_coco.py'
+
+a = {{_base_.model}} # variable `a` is equal to the `model` defined in `_base_`
+```
+
 ## Modify config through script arguments
 
 When submitting jobs using "tools/train.py" or "tools/test.py", you may specify `--cfg-options` to in-place modify the config.
