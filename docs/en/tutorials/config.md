@@ -176,7 +176,7 @@ model = dict(
 ```python
 dataset_type = 'CocoDataset'  # Dataset type, this will be used to define the dataset
 data_root = 'data/coco/'  # Root path of data
-file_client_args = dict(backend='disk')  # file client arguments
+file_client_args = dict(backend='disk')  # file client arguments, refer to
 
 train_pipeline = [  # Training data processing pipeline
     dict(type='LoadImageFromFile', file_client_args=file_client_args),  # First pipeline to load images from file path
@@ -225,7 +225,7 @@ val_dataloader = dict(  # Validation dataloader config
     drop_last=False,  # Whether to drop the last incomplete batch, if the dataset size is not divisible by the batch size
     sampler=dict(
         type='DefaultSampler',
-        shuffle=False),  # not shuffle the during validation and testing
+        shuffle=False),  # not shuffle during validation and testing
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
@@ -578,22 +578,19 @@ When submitting jobs using "tools/train.py" or "tools/test.py", you may specify 
 We follow the below style to name config files. Contributors are advised to follow the same style.
 
 ```
-{model}_[model setting]_{backbone}_{neck}_[norm setting]_[misc]_[gpu x batch_per_gpu]_{schedule}_{dataset}
+{algorithm name}_{component names}_{training settings}_{dataset information}.py
 ```
 
-`{xxx}` is required field and `[yyy]` is optional.
+The file name is divided to four parts. Each part are connected with `_` and words inside each part should be connected with `-`.
 
-- `{model}`: model type like `faster_rcnn`, `mask_rcnn`, etc.
-- `[model setting]`: specific setting for some model, like `without_semantic` for `htc`, `moment` for `reppoints`, etc.
-- `{backbone}`: backbone type like `r50` (ResNet-50), `x101` (ResNeXt-101).
-- `{neck}`: neck type like `fpn`, `pafpn`, `nasfpn`, `c4`.
-- `[norm_setting]`: `bn` (Batch Normalization) is used unless specified, other norm layer type could be `gn` (Group Normalization), `syncbn` (Synchronized Batch Normalization).
-  `gn-head`/`gn-neck` indicates GN is applied in head/neck only, while `gn-all` means GN is applied in the entire model, e.g. backbone, neck, head.
-- `[misc]`: miscellaneous setting/plugins of model, e.g. `dconv`, `gcb`, `attention`, `albu`, `mstrain`.
-- `[gpu x batch_per_gpu]`: GPUs and samples per GPU, `8x2` is used by default.
-- `{schedule}`: training schedule, options are `1x`, `2x`, `20e`, etc.
-  `1x` and `2x` means 12 epochs and 24 epochs respectively.
-  `20e` is adopted in cascade models, which denotes 20 epochs.
-  For `1x`/`2x`, initial learning rate decays by a factor of 10 at the 8/16th and 11/22th epochs.
-  For `20e`, initial learning rate decays by a factor of 10 at the 16th and 19th epochs.
-- `{dataset}`: dataset like `coco`, `cityscapes`, `voc_0712`, `wider_face`.
+- `{algorithm name}`: The name of the algorithm. It can be a detector name such as `faster-rcnn`, `mask-rcnn`, etc. Or can be a semi-supervise or knowladge-distillation algorithm such as `soft-teacher`, `lad`. etc.
+- `{component names}`: Names of the components used in the algorithm such as backbone, neck, etc. For example, `r50-fpn-gn` means using ResNet50, FPN and Group Norm in the algorithm.
+- `{training settings}`: Information of training settings such as batch size, augmentations, loss trick, scheduler, and epochs/iterations. For example: `4xb4-mixup-giou-coslr-100e` means using 8-gpus x 4-images-per-gpu, mixup augmentation, GIoU loss, cosine annealing learning rate, and train 100 epochs.
+  Some abbreviations:
+  - `{gpu x batch_per_gpu}`: GPUs and samples per GPU. E.g. `4x4b` is the short term of 4-gpus x 4-images-per-gpu. And `8xb2` is used by default if not mentioned.
+  - `{schedule}`: training schedule, options are `1x`, `2x`, `20e`, etc.
+    `1x` and `2x` means 12 epochs and 24 epochs respectively.
+    `20e` is adopted in cascade models, which denotes 20 epochs.
+    For `1x`/`2x`, initial learning rate decays by a factor of 10 at the 8/16th and 11/22th epochs.
+    For `20e`, initial learning rate decays by a factor of 10 at the 16th and 19th epochs.
+- `{dataset information}`: Dataset names like `coco`, `coco-panoptic`, `cityscapes`, `voc-0712`, `wider-face`.
