@@ -62,7 +62,7 @@ COCO 格式的 JSON 标注文件有如下必要的字段：
 
 配置文件的修改涉及两个方面：
 
-1. `dataloaer` 部分。需要在 `train_dataloader.dataset`、`val_dataloader.dataset` 和 `test_dataloader.dataset` 中添加 `metainfo=dict(CLASSES=classes)`。
+1. `dataloaer` 部分。需要在 `train_dataloader.dataset`、`val_dataloader.dataset` 和 `test_dataloader.dataset` 中添加 `metainfo=dict(CLASSES=classes)`, 其中 classes 必须是 tuple 类型。
 2. `model` 部分中的 `num_classes`。需要将默认值（COCO 数据集中为 80）修改为自定义数据集中的类别数。
 
 `configs/my_custom_config.py` 内容如下：
@@ -236,7 +236,7 @@ model = dict(
 
 有些数据集可能会提供如：crowd/difficult/ignored bboxes 标注，那么我们使用 `ignore_flag`来包含它们。
 
-在得到上述标准的数据标注格式后，可以直接在配置中使用 MMEngine 的 [BaseDataset](https://github.com/open-mmlab/mmengine/blob/main/mmengine/dataset/base_dataset.py#L116)，而无需进行转换。
+在得到上述标准的数据标注格式后，可以直接在配置中使用 MMDetection 的 [BaseDetDataset](<>)，而无需进行转换。
 
 ### 自定义数据集例子
 
@@ -262,12 +262,12 @@ model = dict(
 
 ```python
 import mmengine
-from mmengine.dataset import BaseDataset
+from mmdet.base_det_dataset import BaseDetDataset
 from mmdet.registry import DATASETS
 
 
 @DATASETS.register_module()
-class MyDataset(BaseDataset):
+class MyDataset(BaseDetDataset):
 
     METAINFO = {
        'CLASSES': ('person', 'bicycle', 'car', 'motorcycle'),
@@ -304,10 +304,6 @@ class MyDataset(BaseDataset):
                 ))
 
         return data_infos
-
-    def get_cat_ids(self, idx):
-        instances = self.get_data_info(idx)['instances']
-        return [instance['bbox_label'] for instance in instances]
 ```
 
 配置文件中，可以使用 `MyDataset` 进行如下修改
@@ -328,7 +324,7 @@ MMEngine 也支持非常多的数据集包装器（wrapper）来混合数据集�
 - `ClassBalancedDataset`：以类别均衡的方式重复数据集。
 - `ConcatDataset`：合并数据集。
 
-具体使用方式见 [MMEngine 数据集基类包装](https://github.com/open-mmlab/mmengine/blob/main/docs/zh_cn/tutorials/basedataset.md#%E6%95%B0%E6%8D%AE%E9%9B%86%E5%9F%BA%E7%B1%BB%E5%8C%85%E8%A3%85)。
+具体使用方式见 [MMEngine 数据集基类包装](#TODO)。
 
 ## 修改数据集的类别
 

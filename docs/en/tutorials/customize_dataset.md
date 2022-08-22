@@ -60,7 +60,7 @@ Here we give an example to show the above two steps, which uses a customized dat
 
 There are two aspects involved in the modification of config file:
 
-1. The `data` field. Specifically, you need to explicitly add the `metainfo=dict(CLASSES=classes)` fields in `train_dataloader.dataset`, `val_dataloader.dataset` and `test_dataloader.dataset`.
+1. The `data` field. Specifically, you need to explicitly add the `metainfo=dict(CLASSES=classes)` fields in `train_dataloader.dataset`, `val_dataloader.dataset` and `test_dataloader.dataset` and `classes` must be a tuple type.
 2. The `num_classes` field in the `model` part. Explicitly over-write all the `num_classes` from default value (e.g. 80 in COCO) to your classes number.
 
 In `configs/my_custom_config.py`:
@@ -183,7 +183,7 @@ We use this way to support CityScapes dataset. The script is in [cityscapes.py](
 ### Reorganize new data format to middle format
 
 It is also fine if you do not want to convert the annotation format to COCO or PASCAL format.
-Actually, we define a simple annotation format in MMEninge's [BaseDataset ](https://github.com/open-mmlab/mmengine/blob/main/mmengine/dataset/base_dataset.py#L116)and all existing datasets are
+Actually, we define a simple annotation format in MMEninge's [BaseDataset ](https://github.com/open-mmlab/mmengine/blob/main/mmengine/dataset/base_dataset.py#L116) and all existing datasets are
 processed to be compatible with it, either online or offline.
 
 The annotation of the dataset must be in `json` or `yaml`, `yml` or `pickle`, `pkl` format; the dictionary stored in the annotation file must contain two fields `metainfo` and `data_list`.  The `metainfo` is a dictionary, which contains the metadata of the dataset, such as class information; `data_list` is a list, each element in the list is a dictionary, the dictionary defines a raw data (raw data), each raw data contains a or several training/testing samples.
@@ -237,7 +237,7 @@ Here is an example.
 
 Some datasets may provide annotations like crowd/difficult/ignored bboxes, we use `ignore_flag`to cover them.
 
-After obtaining the above standard data annotation format, you can directly use the [BaseDataset](https://github.com/open-mmlab/mmengine/blob/main/mmengine/dataset/base_dataset.py#L116) of MMEngine in the configuration , without conversion.
+After obtaining the above standard data annotation format, you can directly use [BaseDetDataset](<>) of MMDetection in the configuration , without conversion.
 
 ### An example of customized dataset
 
@@ -265,12 +265,12 @@ We can create a new dataset in `mmdet/datasets/my_dataset.py` to load the data.
 ```python
 import mmengine
 
-from mmengine.dataset import BaseDataset
+from mmdet.base_det_dataset import BaseDetDataset
 from mmdet.registry import DATASETS
 
 
 @DATASETS.register_module()
-class MyDataset(BaseDataset):
+class MyDataset(BaseDetDataset):
 
     METAINFO = {
        'CLASSES': ('person', 'bicycle', 'car', 'motorcycle'),
@@ -307,10 +307,6 @@ class MyDataset(BaseDataset):
                 ))
 
         return data_infos
-
-    def get_cat_ids(self, idx):
-        instances = self.get_data_info(idx)['instances']
-        return [instance['bbox_label'] for instance in instances]
 ```
 
 Then in the config, to use `MyDataset` you can modify the config as the following
@@ -332,7 +328,7 @@ Currently it supports to three dataset wrappers as below:
 - `ClassBalancedDataset`: repeat dataset in a class balanced manner.
 - `ConcatDataset`: concat datasets.
 
-For detailed usage, see [MMEngine Dataset Base Class Wrapper](<>).
+For detailed usage, see [MMEngine Dataset Base Class Wrapper](#TODO).
 
 ## Modify Dataset Classes
 
