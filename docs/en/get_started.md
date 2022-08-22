@@ -100,7 +100,7 @@ model = init_detector(config_file, checkpoint_file, device='cpu')  # or device='
 inference_detector(model, 'demo/demo.jpg')
 ```
 
-You will see a result of `DetDataSample`, indicating the detected bounding boxes, labels, and scores.
+You will see a list of `DetDataSample`, and the predictions are in the `pred_instance`, indicating the detected bounding boxes, labels, and scores.
 
 ## Customize Installation
 
@@ -194,7 +194,7 @@ thus we only need to install MMCV and MMDetection with the following commands.
 ```python
 import mmdet
 print(mmdet.__version__)
-# Example output: 2.23.0
+# Example output: 3.0.0
 ```
 
 ```{note}

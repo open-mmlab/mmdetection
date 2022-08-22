@@ -6,7 +6,7 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - Compatibility issue between MMCV and MMDetection; "ConvWS is already registered in conv layer"; "AssertionError: MMCV==xxx is used but incompatible. Please install mmcv>=xxx, \<=xxx."
 
-  Compatible MMDetection and MMCV versions are shown as below. Please choose the correct version of MMCV to avoid installation issues.
+  Compatible MMDetection, MMEngine, and MMCV versions are shown as below. Please choose the correct version of MMCV to avoid installation issues.
 
   | MMDetection version |         MMCV version         |     MMEngine version     |
   | :-----------------: | :--------------------------: | :----------------------: |
@@ -48,7 +48,7 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - How to develop with multiple MMDetection versions
 
-  You can have multiple folders like mmdet-2.21, mmdet-2.22.
+  You can have multiple folders like mmdet-3.0, mmdet-3.1.
   When you run the train or test script, it will adopt the mmdet package in the current folder.
 
   To use the default MMDetection installed in the environment rather than the one you are working with, you can remove the following line in those scripts:
@@ -151,13 +151,12 @@ We list some common troubles faced by many users and their corresponding solutio
 - "RuntimeError: Expected to have finished reduction in the prior iteration before starting a new one"
 
   1. This error indicates that your module has parameters that were not used in producing loss. This phenomenon may be caused by running different branches in your code in DDP mode.
-  2. You can set `find_unused_parameters = True` in the config to solve the above problems(but this will slow down the training speed.
-  3. You can get the name of those unused parameters with `optimizer_config = dict(type='OptimizerHook', detect_anomalous_params=True))` in `optimizer_config` of config.
-     Note `detect_anomalous_params = True` will slow down the training speed, so it is recommended for debugging only.
+  2. You can set `find_unused_parameters = True` in the config to solve the above problems, but this will slow down the training speed.
+  3. You can get the name of those unused parameters with `detect_anomalous_params = True`. Note `detect_anomalous_params = True` will slow down the training speed, so it is recommended for debugging only.
 
 - Save the best model
 
-  It can be turned on by configuring `checkpoint = dict(type='CheckpointHook', interval=1, save_best='auto'),`. In the case of the `auto` parameter, the first key in the returned evaluation result will be used as the basis for selecting the best model. You can also directly set the key in the evaluation result to manually set it, for example, `save_best='mAP'`.
+  It can be turned on by configuring `default_hooks = dict(checkpoint=dict(type='CheckpointHook', interval=1, save_best='auto'),`. In the case of the `auto` parameter, the first key in the returned evaluation result will be used as the basis for selecting the best model. You can also directly set the key in the evaluation result to manually set it, for example, `save_best='mAP'`.
 
 ## Evaluation
 
