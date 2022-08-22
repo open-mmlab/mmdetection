@@ -4,8 +4,9 @@ import unittest
 
 from mmcv.transforms import Compose
 
-from mmdet.datasets.transforms import MultiBranch
+from mmdet.datasets.transforms import MultiBranch, RandomOrder
 from mmdet.utils import register_all_modules
+from .utils import construct_toy_data
 
 register_all_modules()
 
@@ -125,3 +126,43 @@ class TestMultiBranch(unittest.TestCase):
         self.assertEqual(
             repr(transform),
             ("MultiBranch(branch_pipelines=['sup', 'unsup'])"))
+
+
+class TestRandomOrder(unittest.TestCase):
+
+    def setUp(self):
+        """Setup the model and optimizer which are used in every test method.
+
+        TestCase calls functions in this order: setUp() -> testMethod() ->
+        tearDown() -> cleanUp()
+        """
+        self.results = construct_toy_data(poly2mask=True)
+        self.pipeline = [
+            dict(type='Sharpness'),
+            dict(type='Contrast'),
+            dict(type='Brightness'),
+            dict(type='Rotate'),
+            dict(type='ShearX'),
+            dict(type='TranslateY')
+        ]
+
+    def test_transform(self):
+        transform = RandomOrder(self.pipeline)
+        results = transform(copy.deepcopy(self.results))
+        self.assertEqual(results['img_shape'], self.results['img_shape'])
+        self.assertEqual(results['gt_bboxes'].shape,
+                         self.results['gt_bboxes'].shape)
+        self.assertEqual(results['gt_bboxes_labels'],
+                         self.results['gt_bboxes_labels'])
+        self.assertEqual(results['gt_ignore_flags'],
+                         self.results['gt_ignore_flags'])
+        self.assertEqual(results['gt_masks'].masks.shape,
+                         self.results['gt_masks'].masks.shape)
+        self.assertEqual(results['gt_seg_map'].shape,
+                         self.results['gt_seg_map'].shape)
+
+    def test_repr(self):
+        transform = RandomOrder(self.pipeline)
+        self.assertEqual(
+            repr(transform), ('RandomOrder(Sharpness, Contrast, '
+                              'Brightness, Rotate, ShearX, TranslateY, )'))
