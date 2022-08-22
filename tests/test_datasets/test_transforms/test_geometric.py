@@ -108,6 +108,8 @@ class TestShearX(unittest.TestCase):
                            'gt_ignore_flags', 'gt_seg_map')
         self.results_mask = construct_toy_data(poly2mask=True)
         self.results_poly = construct_toy_data(poly2mask=False)
+        self.results_mask_boxlist = construct_toy_data(
+            poly2mask=True, with_boxlist=True)
         self.img_border_value = (104, 116, 124)
         self.seg_ignore_label = 255
 
@@ -146,8 +148,7 @@ class TestShearX(unittest.TestCase):
         img_gt[2, 0, :] = np.array(self.img_border_value)
         img_gt[2, 1, :] = np.array(self.img_border_value)
         results_gt['img'] = img_gt
-        results_gt['gt_bboxes'] = HorizontalBoxes(
-            np.array([[1, 0, 4, 2]], dtype=np.float32))
+        results_gt['gt_bboxes'] = np.array([[1, 0, 4, 2]], dtype=np.float32)
         results_gt['gt_bboxes_labels'] = np.array([13], dtype=np.int64)
         gt_masks = np.array([[0, 1, 0, 0], [0, 0, 1, 1], [0, 0, 0, 1]],
                             dtype=np.uint8)[None, :, :]
@@ -162,6 +163,46 @@ class TestShearX(unittest.TestCase):
         results_sheared = transform(copy.deepcopy(self.results_poly))
         gt_masks = [[np.array([3, 2, 1, 0, 3, 1], dtype=np.float32)]]
         results_gt['gt_masks'] = PolygonMasks(gt_masks, 3, 4)
+        check_result_same(results_gt, results_sheared, self.check_keys)
+
+    def test_shearx_with_boxlist(self):
+        # test case when no shear horizontally (level=0)
+        transform = ShearX(
+            prob=1.0,
+            level=0,
+            img_border_value=self.img_border_value,
+            seg_ignore_label=self.seg_ignore_label,
+        )
+        results_wo_shearx = transform(copy.deepcopy(self.results_mask_boxlist))
+        check_result_same(self.results_mask_boxlist, results_wo_shearx,
+                          self.check_keys)
+
+        # test shear horizontally, magnitude=-1
+        transform = ShearX(
+            prob=1.0,
+            level=10,
+            max_mag=45.,
+            reversal_prob=1.0,
+            img_border_value=self.img_border_value)
+        results_sheared = transform(copy.deepcopy(self.results_mask_boxlist))
+        results_gt = copy.deepcopy(self.results_mask_boxlist)
+        img_gt = np.array([[1, 2, 3, 4], [0, 5, 6, 7], [0, 0, 9, 10]],
+                          dtype=np.uint8)
+        img_gt = np.stack([img_gt, img_gt, img_gt], axis=-1)
+        img_gt[1, 0, :] = np.array(self.img_border_value)
+        img_gt[2, 0, :] = np.array(self.img_border_value)
+        img_gt[2, 1, :] = np.array(self.img_border_value)
+        results_gt['img'] = img_gt
+        results_gt['gt_bboxes'] = HorizontalBoxes(
+            np.array([[1, 0, 4, 2]], dtype=np.float32))
+        results_gt['gt_bboxes_labels'] = np.array([13], dtype=np.int64)
+        gt_masks = np.array([[0, 1, 0, 0], [0, 0, 1, 1], [0, 0, 0, 1]],
+                            dtype=np.uint8)[None, :, :]
+        results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)
+        results_gt['gt_ignore_flags'] = np.array(np.array([1], dtype=bool))
+        results_gt['gt_seg_map'] = np.array(
+            [[255, 13, 255, 255], [255, 255, 13, 13], [255, 255, 255, 13]],
+            dtype=self.results_mask['gt_seg_map'].dtype)
         check_result_same(results_gt, results_sheared, self.check_keys)
 
     def test_repr(self):
@@ -190,6 +231,8 @@ class TestShearY(unittest.TestCase):
                            'gt_ignore_flags', 'gt_seg_map')
         self.results_mask = construct_toy_data(poly2mask=True)
         self.results_poly = construct_toy_data(poly2mask=False)
+        self.results_mask_boxlist = construct_toy_data(
+            poly2mask=True, with_boxlist=True)
         self.img_border_value = (104, 116, 124)
         self.seg_ignore_label = 255
 
@@ -221,8 +264,7 @@ class TestShearY(unittest.TestCase):
             dtype=np.uint8)
         img_gt = np.stack([img_gt, img_gt, img_gt], axis=-1)
         results_gt['img'] = img_gt
-        results_gt['gt_bboxes'] = HorizontalBoxes(
-            np.array([[1, 0, 2, 1]], dtype=np.float32))
+        results_gt['gt_bboxes'] = np.array([[1, 0, 2, 1]], dtype=np.float32)
         results_gt['gt_bboxes_labels'] = np.array([13], dtype=np.int64)
         gt_masks = np.array([[0, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0]],
                             dtype=np.uint8)[None, :, :]
@@ -237,6 +279,39 @@ class TestShearY(unittest.TestCase):
         results_sheared = transform(copy.deepcopy(self.results_poly))
         gt_masks = [[np.array([1, 1, 1, 0, 2, 0], dtype=np.float32)]]
         results_gt['gt_masks'] = PolygonMasks(gt_masks, 3, 4)
+        check_result_same(results_gt, results_sheared, self.check_keys)
+
+    def test_sheary_with_boxlist(self):
+        # test case when no shear vertically (level=0)
+        transform = ShearY(
+            prob=1.0,
+            level=0,
+            img_border_value=self.img_border_value,
+            seg_ignore_label=self.seg_ignore_label,
+        )
+        results_wo_sheary = transform(copy.deepcopy(self.results_mask_boxlist))
+        check_result_same(self.results_mask_boxlist, results_wo_sheary,
+                          self.check_keys)
+
+        # test shear vertically, magnitude=1
+        transform = ShearY(prob=1., level=10, max_mag=45., reversal_prob=0.)
+        results_sheared = transform(copy.deepcopy(self.results_mask_boxlist))
+        results_gt = copy.deepcopy(self.results_mask_boxlist)
+        img_gt = np.array(
+            [[1, 6, 11, 128], [5, 10, 128, 128], [9, 128, 128, 128]],
+            dtype=np.uint8)
+        img_gt = np.stack([img_gt, img_gt, img_gt], axis=-1)
+        results_gt['img'] = img_gt
+        results_gt['gt_bboxes'] = HorizontalBoxes(
+            np.array([[1, 0, 2, 1]], dtype=np.float32))
+        results_gt['gt_bboxes_labels'] = np.array([13], dtype=np.int64)
+        gt_masks = np.array([[0, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0]],
+                            dtype=np.uint8)[None, :, :]
+        results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)
+        results_gt['gt_ignore_flags'] = np.array(np.array([1], dtype=bool))
+        results_gt['gt_seg_map'] = np.array(
+            [[255, 13, 255, 255], [255, 13, 255, 255], [255, 255, 255, 255]],
+            dtype=self.results_mask['gt_seg_map'].dtype)
         check_result_same(results_gt, results_sheared, self.check_keys)
 
     def test_repr(self):
@@ -265,6 +340,8 @@ class TestRotate(unittest.TestCase):
                            'gt_ignore_flags', 'gt_seg_map')
         self.results_mask = construct_toy_data(poly2mask=True)
         self.results_poly = construct_toy_data(poly2mask=False)
+        self.results_mask_boxlist = construct_toy_data(
+            poly2mask=True, with_boxlist=True)
         self.img_border_value = (104, 116, 124)
         self.seg_ignore_label = 255
 
@@ -303,8 +380,8 @@ class TestRotate(unittest.TestCase):
         img_gt = np.stack([img_gt, img_gt, img_gt], axis=-1)
         results_gt = copy.deepcopy(self.results_mask)
         results_gt['img'] = img_gt
-        results_gt['gt_bboxes'] = HorizontalBoxes(
-            np.array([[0.5, 0.5, 2.5, 1.5]], dtype=np.float32))
+        results_gt['gt_bboxes'] = np.array([[0.5, 0.5, 2.5, 1.5]],
+                                           dtype=np.float32)
         gt_masks = np.array([[0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]],
                             dtype=np.uint8)[None, :, :]
         results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)
@@ -337,8 +414,8 @@ class TestRotate(unittest.TestCase):
         img_gt = np.stack([img_gt, img_gt, img_gt], axis=-1)
         results_gt = copy.deepcopy(self.results_mask)
         results_gt['img'] = img_gt
-        results_gt['gt_bboxes'] = HorizontalBoxes(
-            np.array([[0.5, 0.5, 2.5, 1.5]], dtype=np.float32))
+        results_gt['gt_bboxes'] = np.array([[0.5, 0.5, 2.5, 1.5]],
+                                           dtype=np.float32)
         gt_masks = np.array([[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0]],
                             dtype=np.uint8)[None, :, :]
         results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)
@@ -352,6 +429,73 @@ class TestRotate(unittest.TestCase):
         results_rotated = transform(copy.deepcopy(self.results_poly))
         gt_masks = [[np.array([2, 0, 0, 0, 1, 0], dtype=np.float)]]
         results_gt['gt_masks'] = PolygonMasks(gt_masks, 3, 4)
+        check_result_same(results_gt, results_rotated, self.check_keys)
+
+    def test_rotate_with_boxlist(self):
+        # test case when no rotate aug (level=0)
+        transform = Rotate(
+            prob=1.,
+            level=0,
+            img_border_value=self.img_border_value,
+            seg_ignore_label=self.seg_ignore_label,
+        )
+        results_wo_rotate = transform(copy.deepcopy(self.results_mask_boxlist))
+        check_result_same(self.results_mask_boxlist, results_wo_rotate,
+                          self.check_keys)
+
+        # test clockwise rotation with angle 90
+        transform = Rotate(
+            prob=1.,
+            level=10,
+            max_mag=90.0,
+            # set reversal_prob to 1 for clockwise rotation
+            reversal_prob=1.,
+        )
+        results_rotated = transform(copy.deepcopy(self.results_mask_boxlist))
+        # The image, masks, and semantic segmentation map
+        # will be bilinearly interpolated.
+        img_gt = np.array([[69, 8, 4, 65], [69, 9, 5, 65],
+                           [70, 10, 6, 66]]).astype(np.uint8)
+        img_gt = np.stack([img_gt, img_gt, img_gt], axis=-1)
+        results_gt = copy.deepcopy(self.results_mask_boxlist)
+        results_gt['img'] = img_gt
+        results_gt['gt_bboxes'] = HorizontalBoxes(
+            np.array([[0.5, 0.5, 2.5, 1.5]], dtype=np.float32))
+        gt_masks = np.array([[0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]],
+                            dtype=np.uint8)[None, :, :]
+        results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)
+        results_gt['gt_ignore_flags'] = np.array(np.array([1], dtype=bool))
+        results_gt['gt_seg_map'] = np.array(
+            [[255, 13, 13, 13], [255, 255, 13, 255],
+             [255, 255, 255,
+              255]]).astype(self.results_mask['gt_seg_map'].dtype)
+        check_result_same(results_gt, results_rotated, self.check_keys)
+
+        # test counter-clockwise rotation with angle 90
+        transform = Rotate(
+            prob=1.0,
+            level=10,
+            max_mag=90.0,
+            # set reversal_prob to 0 for counter-clockwise rotation
+            reversal_prob=0.0,
+        )
+        results_rotated = transform(copy.deepcopy(self.results_mask_boxlist))
+        # The image, masks, and  semantic segmentation map
+        # will be bilinearly interpolated.
+        img_gt = np.array([[66, 6, 10, 70], [65, 5, 9, 69],
+                           [65, 4, 8, 69]]).astype(np.uint8)
+        img_gt = np.stack([img_gt, img_gt, img_gt], axis=-1)
+        results_gt = copy.deepcopy(self.results_mask_boxlist)
+        results_gt['img'] = img_gt
+        results_gt['gt_bboxes'] = HorizontalBoxes(
+            np.array([[0.5, 0.5, 2.5, 1.5]], dtype=np.float32))
+        gt_masks = np.array([[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0]],
+                            dtype=np.uint8)[None, :, :]
+        results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)
+        results_gt['gt_ignore_flags'] = np.array(np.array([1], dtype=bool))
+        results_gt['gt_seg_map'] = np.array(
+            [[255, 255, 255, 255], [255, 13, 255, 255],
+             [13, 13, 13, 255]]).astype(self.results_mask['gt_seg_map'].dtype)
         check_result_same(results_gt, results_rotated, self.check_keys)
 
     def test_repr(self):
@@ -380,6 +524,8 @@ class TestTranslateX(unittest.TestCase):
                            'gt_ignore_flags', 'gt_seg_map')
         self.results_mask = construct_toy_data(poly2mask=True)
         self.results_poly = construct_toy_data(poly2mask=False)
+        self.results_mask_boxlist = construct_toy_data(
+            poly2mask=True, with_boxlist=True)
         self.img_border_value = (104, 116, 124)
         self.seg_ignore_label = 255
 
@@ -416,8 +562,7 @@ class TestTranslateX(unittest.TestCase):
         img_gt[:, 3, :] = np.array(self.img_border_value)
         results_gt = copy.deepcopy(self.results_mask)
         results_gt['img'] = img_gt
-        results_gt['gt_bboxes'] = HorizontalBoxes(
-            np.array([[0, 0, 1, 2]], dtype=np.float32))
+        results_gt['gt_bboxes'] = np.array([[0, 0, 1, 2]], dtype=np.float32)
         gt_masks = np.array([[1, 0, 0, 0], [1, 1, 0, 0], [1, 0, 0, 0]],
                             dtype=np.uint8)[None, :, :]
         results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)
@@ -432,6 +577,46 @@ class TestTranslateX(unittest.TestCase):
         results_translated = transform(copy.deepcopy(self.results_poly))
         gt_masks = [[np.array([0, 2, 0, 0, 1, 1], dtype=np.float32)]]
         results_gt['gt_masks'] = PolygonMasks(gt_masks, 3, 4)
+        check_result_same(results_gt, results_translated, self.check_keys)
+
+    def test_translatex_with_boxlist(self):
+        # test case when level=0 (without translate aug)
+        transform = TranslateX(
+            prob=1.0,
+            level=0,
+            img_border_value=self.img_border_value,
+            seg_ignore_label=self.seg_ignore_label)
+        results_wo_translatex = transform(
+            copy.deepcopy(self.results_mask_boxlist))
+        check_result_same(self.results_mask_boxlist, results_wo_translatex,
+                          self.check_keys)
+
+        # test translate horizontally, magnitude=-1
+        transform = TranslateX(
+            prob=1.0,
+            level=10,
+            max_mag=0.3,
+            reversal_prob=0.0,
+            img_border_value=self.img_border_value,
+            seg_ignore_label=self.seg_ignore_label)
+        results_translated = transform(
+            copy.deepcopy(self.results_mask_boxlist))
+        img_gt = np.array([[2, 3, 4, 0], [6, 7, 8, 0], [10, 11, 12,
+                                                        0]]).astype(np.uint8)
+        img_gt = np.stack([img_gt, img_gt, img_gt], axis=-1)
+        img_gt[:, 3, :] = np.array(self.img_border_value)
+        results_gt = copy.deepcopy(self.results_mask)
+        results_gt['img'] = img_gt
+        results_gt['gt_bboxes'] = HorizontalBoxes(
+            np.array([[0, 0, 1, 2]], dtype=np.float32))
+        gt_masks = np.array([[1, 0, 0, 0], [1, 1, 0, 0], [1, 0, 0, 0]],
+                            dtype=np.uint8)[None, :, :]
+        results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)
+        results_gt['gt_ignore_flags'] = np.array(np.array([1], dtype=bool))
+        results_gt['gt_seg_map'] = np.array(
+            [[13, 255, 255, 255], [13, 13, 255, 255],
+             [13, 255, 255,
+              255]]).astype(self.results_mask['gt_seg_map'].dtype)
         check_result_same(results_gt, results_translated, self.check_keys)
 
     def test_repr(self):
@@ -460,6 +645,8 @@ class TestTranslateY(unittest.TestCase):
                            'gt_ignore_flags', 'gt_seg_map')
         self.results_mask = construct_toy_data(poly2mask=True)
         self.results_poly = construct_toy_data(poly2mask=False)
+        self.results_mask_boxlist = construct_toy_data(
+            poly2mask=True, with_boxlist=True)
         self.img_border_value = (104, 116, 124)
         self.seg_ignore_label = 255
 
@@ -495,8 +682,7 @@ class TestTranslateY(unittest.TestCase):
         img_gt = np.stack([img_gt, img_gt, img_gt], axis=-1)
         results_gt = copy.deepcopy(self.results_mask)
         results_gt['img'] = img_gt
-        results_gt['gt_bboxes'] = HorizontalBoxes(
-            np.array([[1, 0, 2, 1]], dtype=np.float32))
+        results_gt['gt_bboxes'] = np.array([[1, 0, 2, 1]], dtype=np.float32)
         gt_masks = np.array([[0, 1, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0]],
                             dtype=np.uint8)[None, :, :]
         results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)
@@ -511,6 +697,45 @@ class TestTranslateY(unittest.TestCase):
         results_translated = transform(copy.deepcopy(self.results_poly))
         gt_masks = [[np.array([1, 1, 1, 0, 2, 0], dtype=np.float32)]]
         results_gt['gt_masks'] = PolygonMasks(gt_masks, 3, 4)
+        check_result_same(results_gt, results_translated, self.check_keys)
+
+    def test_translatey_with_boxlist(self):
+        # test case when level=0 (without translate aug)
+        transform = TranslateY(
+            prob=1.0,
+            level=0,
+            img_border_value=self.img_border_value,
+            seg_ignore_label=self.seg_ignore_label)
+        results_wo_translatey = transform(
+            copy.deepcopy(self.results_mask_boxlist))
+        check_result_same(self.results_mask_boxlist, results_wo_translatey,
+                          self.check_keys)
+
+        # test translate vertically, magnitude=-1
+        transform = TranslateY(
+            prob=1.0,
+            level=10,
+            max_mag=0.4,
+            reversal_prob=0.0,
+            seg_ignore_label=self.seg_ignore_label)
+
+        results_translated = transform(
+            copy.deepcopy(self.results_mask_boxlist))
+        img_gt = np.array([[5, 6, 7, 8], [9, 10, 11, 12],
+                           [128, 128, 128, 128]]).astype(np.uint8)
+        img_gt = np.stack([img_gt, img_gt, img_gt], axis=-1)
+        results_gt = copy.deepcopy(self.results_mask_boxlist)
+        results_gt['img'] = img_gt
+        results_gt['gt_bboxes'] = HorizontalBoxes(
+            np.array([[1, 0, 2, 1]], dtype=np.float32))
+        gt_masks = np.array([[0, 1, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0]],
+                            dtype=np.uint8)[None, :, :]
+        results_gt['gt_masks'] = BitmapMasks(gt_masks, 3, 4)
+        results_gt['gt_ignore_flags'] = np.array(np.array([1], dtype=bool))
+        results_gt['gt_seg_map'] = np.array(
+            [[255, 13, 13, 255], [255, 13, 255, 255],
+             [255, 255, 255,
+              255]]).astype(self.results_mask['gt_seg_map'].dtype)
         check_result_same(results_gt, results_translated, self.check_keys)
 
     def test_repr(self):

@@ -432,8 +432,8 @@ def samplelist_boxlist2tensor(batch_data_samples: SampleList) -> SampleList:
         if 'pred_instances' in data_samples:
             bboxes = data_samples.pred_instances.get('bboxes', None)
             if isinstance(bboxes, BaseBoxes):
-                data_samples.gt_instances.bboxes = bboxes.tensor
-        if 'pred_instances' in data_samples:
+                data_samples.pred_instances.bboxes = bboxes.tensor
+        if 'ignored_instances' in data_samples:
             bboxes = data_samples.ignored_instances.get('bboxes', None)
             if isinstance(bboxes, BaseBoxes):
-                data_samples.gt_instances.bboxes = bboxes.tensor
+                data_samples.ignored_instances.bboxes = bboxes.tensor

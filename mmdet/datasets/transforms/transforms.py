@@ -2857,7 +2857,7 @@ class RandomErasing(BaseTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (HorizontalBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_ignore_flags (np.bool) (optional)
     - gt_masks (BitmapMasks) (optional)
@@ -2950,6 +2950,7 @@ class RandomErasing(BaseTransform):
     def _transform_bboxes(self, results: dict, patches: List[list]) -> None:
         """Random erasing the bboxes."""
         bboxes = results['gt_bboxes']
+        # TODO: unify the logic by using operators in BaseBoxes.
         assert isinstance(bboxes, HorizontalBoxes)
         bboxes = bboxes.numpy()
         left_top = np.maximum(bboxes[:, None, :2], patches[:, :2])

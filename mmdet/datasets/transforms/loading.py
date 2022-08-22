@@ -11,6 +11,7 @@ from mmcv.transforms import LoadImageFromFile
 
 from mmdet.registry import TRANSFORMS
 from mmdet.structures.bbox import get_box_type
+from mmdet.structures.bbox.box_type import autocast_box_type
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 
 
@@ -684,6 +685,7 @@ class FilterAnnotations(BaseTransform):
         self.by_mask = by_mask
         self.keep_empty = keep_empty
 
+    @autocast_box_type()
     def transform(self, results: dict) -> Union[dict, None]:
         """Transform function to filter annotations.
 
