@@ -8,7 +8,7 @@ To support a new data format, you can either convert them to existing formats (C
 
 The simplest way is to convert your dataset to existing dataset formats (COCO or PASCAL VOC).
 
-The annotation json files in COCO format has the following necessary keys:
+The annotation JSON files in COCO format has the following necessary keys:
 
 ```python
 'images': [
@@ -27,7 +27,7 @@ The annotation json files in COCO format has the following necessary keys:
             247.09,
             ...
             219.03,
-            249.06]],  # if you have mask labels
+            249.06]],  # If you have mask labels, and it is in polygon XY point coordinate format, you need to ensure that at least 3 point coordinates are included. Otherwise, it is an invalid polygon.
         'area': 1035.749,
         'iscrowd': 0,
         'image_id': 1268,
@@ -43,7 +43,7 @@ The annotation json files in COCO format has the following necessary keys:
  ]
 ```
 
-There are three necessary keys in the json file:
+There are three necessary keys in the JSON file:
 
 - `images`: contains a list of images with their information like `file_name`, `height`, `width`, and `id`.
 - `annotations`: contains the list of instance annotations.
@@ -60,7 +60,7 @@ Here we give an example to show the above two steps, which uses a customized dat
 
 There are two aspects involved in the modification of config file:
 
-1. The `data` field. Specifically, you need to explicitly add the `classes` fields in `data.train`, `data.val` and `data.test`.
+1. The `data` field. Specifically, you need to explicitly add the `metainfo=dict(CLASSES=classes)` fields in `train_dataloader.dataset`, `val_dataloader.dataset` and `test_dataloader.dataset`.
 2. The `num_classes` field in the `model` part. Explicitly over-write all the `num_classes` from default value (e.g. 80 in COCO) to your classes number.
 
 In `configs/my_custom_config.py`:
@@ -73,27 +73,48 @@ _base_ = './cascade_mask_rcnn_r50_fpn_1x_coco.py'
 # 1. dataset settings
 dataset_type = 'CocoDataset'
 classes = ('a', 'b', 'c', 'd', 'e')
-data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
-    train=dict(
+data_root='path/to/your/'
+
+train_dataloader = dict(
+    batch_size=2,
+    num_workers=2,
+    dataset=dict(
         type=dataset_type,
-        # explicitly add your class names to the field `classes`
-        classes=classes,
-        ann_file='path/to/your/train/annotation_data',
-        img_prefix='path/to/your/train/image_data'),
-    val=dict(
+        # explicitly add your class names to the field `metainfo`
+        metainfo=dict(CLASSES=classes),
+        data_root=data_root,
+        ann_file='train/annotation_data',
+        data_prefix=dict(img='train/image_data')
+        )
+    )
+
+val_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    dataset=dict(
         type=dataset_type,
-        # explicitly add your class names to the field `classes`
-        classes=classes,
-        ann_file='path/to/your/val/annotation_data',
-        img_prefix='path/to/your/val/image_data'),
-    test=dict(
+        test_mode=True,
+        # explicitly add your class names to the field `metainfo`
+        metainfo=dict(CLASSES=classes),
+        data_root=data_root,
+        ann_file='val/annotation_data',
+        data_prefix=dict(img='val/image_data')
+        )
+    )
+
+test_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    dataset=dict(
         type=dataset_type,
-        # explicitly add your class names to the field `classes`
-        classes=classes,
-        ann_file='path/to/your/test/annotation_data',
-        img_prefix='path/to/your/test/image_data'))
+        test_mode=True,
+        # explicitly add your class names to the field `metainfo`
+        metainfo=dict(CLASSES=classes),
+        data_root=data_root,
+        ann_file='test/annotation_data',
+        data_prefix=dict(img='test/image_data')
+        )
+    )
 
 # 2. model settings
 
@@ -162,49 +183,61 @@ We use this way to support CityScapes dataset. The script is in [cityscapes.py](
 ### Reorganize new data format to middle format
 
 It is also fine if you do not want to convert the annotation format to COCO or PASCAL format.
-Actually, we define a simple annotation format and all existing datasets are
+Actually, we define a simple annotation format in MMEninge's [BaseDataset ](https://github.com/open-mmlab/mmengine/blob/main/mmengine/dataset/base_dataset.py#L116)and all existing datasets are
 processed to be compatible with it, either online or offline.
 
-The annotation of a dataset is a list of dict, each dict corresponds to an image.
-There are 3 field `filename` (relative path), `width`, `height` for testing,
-and an additional field `ann` for training. `ann` is also a dict containing at least 2 fields:
-`bboxes` and `labels`, both of which are numpy arrays. Some datasets may provide
-annotations like crowd/difficult/ignored bboxes, we use `bboxes_ignore` and `labels_ignore`
-to cover them.
+The annotation of the dataset must be in `json` or `yaml`, `yml` or `pickle`, `pkl` format; the dictionary stored in the annotation file must contain two fields `metainfo` and `data_list`.  The `metainfo` is a dictionary, which contains the metadata of the dataset, such as class information; `data_list` is a list, each element in the list is a dictionary, the dictionary defines a raw data (raw data), each raw data contains a or several training/testing samples.
 
 Here is an example.
 
 ```python
-
-[
-    {
-        'filename': 'a.jpg',
-        'width': 1280,
-        'height': 720,
-        'ann': {
-            'bboxes': <np.ndarray, float32> (n, 4),
-            'labels': <np.ndarray, int64> (n, ),
-            'bboxes_ignore': <np.ndarray, float32> (k, 4),
-            'labels_ignore': <np.ndarray, int64> (k, ) (optional field)
-        }
-    },
-    ...
-]
+{
+    'metainfo':
+        {
+            'classes': ('person', 'bicycle', 'car', 'motorcycle'),
+            ...
+        },
+    'data_list':
+        [
+            {
+                "img_path": "xxx/xxx_1.jpg",
+                "height": 604,
+                "width": 640,
+                "instances":
+                [
+                  {
+                    "bbox": [0, 0, 10, 20],
+                    "bbox_label": 1,
+                    "ignore_flag": 0
+                  },
+                  {
+                    "bbox": [10, 10, 110, 120],
+                    "bbox_label": 2,
+                    "ignore_flag": 0
+                  }
+                ]
+              },
+            {
+                "img_path": "xxx/xxx_2.jpg",
+                "height": 320,
+                "width": 460,
+                "instances":
+                [
+                  {
+                    "bbox": [10, 0, 20, 20],
+                    "bbox_label": 3,
+                    "ignore_flag": 1,
+                  }
+                ]
+              },
+            ...
+        ]
+}
 ```
 
-There are two ways to work with custom datasets.
+Some datasets may provide annotations like crowd/difficult/ignored bboxes, we use `ignore_flag`to cover them.
 
-- online conversion
-
-  You can write a new Dataset class inherited from `CustomDataset`, and overwrite two methods
-  `load_annotations(self, ann_file)` and `get_ann_info(self, idx)`,
-  like [CocoDataset](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/coco.py) and [VOCDataset](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/voc.py).
-
-- offline conversion
-
-  You can convert the annotation format to the expected format above and save it to
-  a pickle or json file, like [pascal_voc.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/dataset_converters/pascal_voc.py).
-  Then you can simply use `CustomDataset`.
+After obtaining the above standard data annotation format, you can directly use the [BaseDataset](https://github.com/open-mmlab/mmengine/blob/main/mmengine/dataset/base_dataset.py#L116) of MMEngine in the configuration , without conversion.
 
 ### An example of customized dataset
 
@@ -230,20 +263,22 @@ The bounding boxes annotations are stored in text file `annotation.txt` as the f
 We can create a new dataset in `mmdet/datasets/my_dataset.py` to load the data.
 
 ```python
-import mmcv
-import numpy as np
+import mmengine
 
-from .builder import DATASETS
-from .custom import CustomDataset
+from mmengine.dataset import BaseDataset
+from mmdet.registry import DATASETS
 
 
 @DATASETS.register_module()
-class MyDataset(CustomDataset):
+class MyDataset(BaseDataset):
 
-    CLASSES = ('person', 'bicycle', 'car', 'motorcycle')
+    METAINFO = {
+       'CLASSES': ('person', 'bicycle', 'car', 'motorcycle'),
+        'PALETTE': [(220, 20, 60), (119, 11, 32), (0, 0, 142), (0, 0, 230)]
+    }
 
-    def load_annotations(self, ann_file):
-        ann_list = mmcv.list_from_file(ann_file)
+    def load_data_list(self, ann_file):
+        ann_list = mmengine.list_from_file(ann_file)
 
         data_infos = []
         for i, ann_line in enumerate(ann_list):
@@ -255,28 +290,27 @@ class MyDataset(CustomDataset):
             height = int(img_shape[1])
             bbox_number = int(ann_list[i + 3])
 
-            anns = ann_line.split(' ')
-            bboxes = []
-            labels = []
+            instances = []
             for anns in ann_list[i + 4:i + 4 + bbox_number]:
-                bboxes.append([float(ann) for ann in anns[:4]])
-                labels.append(int(anns[4]))
+                instance = {}
+                instance['bbox'] = [float(ann) for ann in anns.split(' ')[:4]]
+                instance['bbox_label']=int(anns[4])
+ 				instances.append(instance)
 
             data_infos.append(
                 dict(
-                    filename=ann_list[i + 1],
+                    img_path=ann_list[i + 1],
+                    img_id=i,
                     width=width,
                     height=height,
-                    ann=dict(
-                        bboxes=np.array(bboxes).astype(np.float32),
-                        labels=np.array(labels).astype(np.int64))
+                    instances=instances
                 ))
 
         return data_infos
 
-    def get_ann_info(self, idx):
-        return self.data_infos[idx]['ann']
-
+    def get_cat_ids(self, idx):
+        instances = self.get_data_info(idx)['instances']
+        return [instance['bbox_label'] for instance in instances]
 ```
 
 Then in the config, to use `MyDataset` you can modify the config as the following
@@ -291,200 +325,43 @@ dataset_A_train = dict(
 
 ## Customize datasets by dataset wrappers
 
-MMDetection also supports many dataset wrappers to mix the dataset or modify the dataset distribution for training.
+MMEngine also supports many dataset wrappers to mix the dataset or modify the dataset distribution for training.
 Currently it supports to three dataset wrappers as below:
 
 - `RepeatDataset`: simply repeat the whole dataset.
 - `ClassBalancedDataset`: repeat dataset in a class balanced manner.
 - `ConcatDataset`: concat datasets.
 
-### Repeat dataset
-
-We use `RepeatDataset` as wrapper to repeat the dataset. For example, suppose the original dataset is `Dataset_A`, to repeat it, the config looks like the following
-
-```python
-dataset_A_train = dict(
-        type='RepeatDataset',
-        times=N,
-        dataset=dict(  # This is the original config of Dataset_A
-            type='Dataset_A',
-            ...
-            pipeline=train_pipeline
-        )
-    )
-```
-
-### Class balanced dataset
-
-We use `ClassBalancedDataset` as wrapper to repeat the dataset based on category
-frequency. The dataset to repeat needs to instantiate function `self.get_cat_ids(idx)`
-to support `ClassBalancedDataset`.
-For example, to repeat `Dataset_A` with `oversample_thr=1e-3`, the config looks like the following
-
-```python
-dataset_A_train = dict(
-        type='ClassBalancedDataset',
-        oversample_thr=1e-3,
-        dataset=dict(  # This is the original config of Dataset_A
-            type='Dataset_A',
-            ...
-            pipeline=train_pipeline
-        )
-    )
-```
-
-You may refer to [source code](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/dataset_wrappers.py#L211) for details.
-
-### Concatenate dataset
-
-There are three ways to concatenate the dataset.
-
-1. If the datasets you want to concatenate are in the same type with different annotation files, you can concatenate the dataset configs like the following.
-
-   ```python
-   dataset_A_train = dict(
-       type='Dataset_A',
-       ann_file = ['anno_file_1', 'anno_file_2'],
-       pipeline=train_pipeline
-   )
-   ```
-
-   If the concatenated dataset is used for test or evaluation, this manner supports to evaluate each dataset separately. To test the concatenated datasets as a whole, you can set `separate_eval=False` as below.
-
-   ```python
-   dataset_A_train = dict(
-       type='Dataset_A',
-       ann_file = ['anno_file_1', 'anno_file_2'],
-       separate_eval=False,
-       pipeline=train_pipeline
-   )
-   ```
-
-2. In case the dataset you want to concatenate is different, you can concatenate the dataset configs like the following.
-
-   ```python
-   dataset_A_train = dict()
-   dataset_B_train = dict()
-
-   data = dict(
-       imgs_per_gpu=2,
-       workers_per_gpu=2,
-       train = [
-           dataset_A_train,
-           dataset_B_train
-       ],
-       val = dataset_A_val,
-       test = dataset_A_test
-       )
-   ```
-
-   If the concatenated dataset is used for test or evaluation, this manner also supports to evaluate each dataset separately.
-
-3. We also support to define `ConcatDataset` explicitly as the following.
-
-   ```python
-   dataset_A_val = dict()
-   dataset_B_val = dict()
-
-   data = dict(
-       imgs_per_gpu=2,
-       workers_per_gpu=2,
-       train=dataset_A_train,
-       val=dict(
-           type='ConcatDataset',
-           datasets=[dataset_A_val, dataset_B_val],
-           separate_eval=False))
-   ```
-
-   This manner allows users to evaluate all the datasets as a single one by setting `separate_eval=False`.
-
-**Note:**
-
-1. The option `separate_eval=False` assumes the datasets use `self.data_infos` during evaluation. Therefore, COCO datasets do not support this behavior since COCO datasets do not fully rely on `self.data_infos` for evaluation. Combining different types of datasets and evaluating them as a whole is not tested thus is not suggested.
-2. Evaluating `ClassBalancedDataset` and `RepeatDataset` is not supported thus evaluating concatenated datasets of these types is also not supported.
-
-A more complex example that repeats `Dataset_A` and `Dataset_B` by N and M times, respectively, and then concatenates the repeated datasets is as the following.
-
-```python
-dataset_A_train = dict(
-    type='RepeatDataset',
-    times=N,
-    dataset=dict(
-        type='Dataset_A',
-        ...
-        pipeline=train_pipeline
-    )
-)
-dataset_A_val = dict(
-    ...
-    pipeline=test_pipeline
-)
-dataset_A_test = dict(
-    ...
-    pipeline=test_pipeline
-)
-dataset_B_train = dict(
-    type='RepeatDataset',
-    times=M,
-    dataset=dict(
-        type='Dataset_B',
-        ...
-        pipeline=train_pipeline
-    )
-)
-data = dict(
-    imgs_per_gpu=2,
-    workers_per_gpu=2,
-    train = [
-        dataset_A_train,
-        dataset_B_train
-    ],
-    val = dataset_A_val,
-    test = dataset_A_test
-)
-
-```
+For detailed usage, see [MMEngine Dataset Base Class Wrapper](<>).
 
 ## Modify Dataset Classes
 
-With existing dataset types, we can modify the class names of them to train subset of the annotations.
+With existing dataset types, we can modify the metainfo of them to train subset of the annotations.
 For example, if you want to train only three classes of the current dataset,
 you can modify the classes of dataset.
 The dataset will filter out the ground truth boxes of other classes automatically.
 
 ```python
 classes = ('person', 'bicycle', 'car')
-data = dict(
-    train=dict(classes=classes),
-    val=dict(classes=classes),
-    test=dict(classes=classes))
-```
-
-MMDetection V2.0 also supports to read the classes from a file, which is common in real applications.
-For example, assume the `classes.txt` contains the name of classes as the following.
-
-```
-person
-bicycle
-car
-```
-
-Users can set the classes as a file path, the dataset will load it and convert it to a list automatically.
-
-```python
-classes = 'path/to/classes.txt'
-data = dict(
-    train=dict(classes=classes),
-    val=dict(classes=classes),
-    test=dict(classes=classes))
+train_dataloader = dict(
+    dataset=dict(
+        metainfo=dict(CLASSES=classes))
+    )
+val_dataloader = dict(
+    dataset=dict(
+        metainfo=dict(CLASSES=classes))
+    )
+test_dataloader = dict(
+    dataset=dict(
+        metainfo=dict(CLASSES=classes))
+    )
 ```
 
 **Note**:
 
-- Before MMDetection v2.5.0, the dataset will filter out the empty GT images automatically if the classes are set and there is no way to disable that through config. This is an undesirable behavior and introduces confusion because if the classes are not set, the dataset only filter the empty GT images when `filter_empty_gt=True` and `test_mode=False`. After MMDetection v2.5.0, we decouple the image filtering process and the classes modification, i.e., the dataset will only filter empty GT images when `filter_empty_gt=True` and `test_mode=False`, no matter whether the classes are set. Thus, setting the classes only influences the annotations of classes used for training and users could decide whether to filter empty GT images by themselves.
-- Since the middle format only has box labels and does not contain the class names, when using `CustomDataset`, users cannot filter out the empty GT images through configs but only do this offline.
-- Please remember to modify the `num_classes` in the head when specifying `classes` in dataset. We implemented [NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/utils.py) to check whether the numbers are consistent since v2.9.0(after PR#4508).
-- The features for setting dataset classes and dataset filtering will be refactored to be more user-friendly in the future (depends on the progress).
+- Before MMDetection v2.5.0, the dataset will filter out the empty GT images automatically if the classes are set and there is no way to disable that through config. This is an undesirable behavior and introduces confusion because if the classes are not set, the dataset only filter the empty GT images when `filter_empty_gt=True` and `test_mode=False`. After MMDetection v2.5.0, we decouple the image filtering process and the classes modification, i.e., the dataset will only filter empty GT images when `filter_cfg=dict(filter_empty_gt=True)` and `test_mode=False`, no matter whether the classes are set. Thus, setting the classes only influences the annotations of classes used for training and users could decide whether to filter empty GT images by themselves.
+- When using `BaseDataset` in MMEngine, users cannot filter images without GT by modifying the configuration, but it can be solved in an offline way.
+- Please remember to modify the `num_classes` in the head when specifying `classes` in dataset. We implemented [NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/engine/hooks/num_class_check_hook.py) to check whether the numbers are consistent since v2.9.0(after PR#4508).
 
 ## COCO Panoptic Dataset
 
@@ -527,16 +404,34 @@ The annotation json files in COCO Panoptic format has the following necessary ke
  ]
 ```
 
-Moreover, the `seg_prefix` must be set to the path of the panoptic annotation images.
+Moreover, the `seg` must be set to the path of the panoptic annotation images.
 
 ```python
-data = dict(
-    type='CocoPanopticDataset',
-    train=dict(
-        seg_prefix = 'path/to/your/train/panoptic/image_annotation_data'
-    ),
-    val=dict(
-        seg_prefix = 'path/to/your/train/panoptic/image_annotation_data'
+dataset_type = 'CocoPanopticDataset'
+data_root='path/to/your/'
+
+train_dataloader = dict(
+    dataset=dict(
+        type=dataset_type,
+        data_root=data_root,
+        data_prefix=dict(
+            img='train/image_data/', seg='train/panoptic/image_annotation_data/')
+    )
+)
+val_dataloader = dict(
+    dataset=dict(
+        type=dataset_type,
+        data_root=data_root,
+        data_prefix=dict(
+            img='val/image_data/', seg='val/panoptic/image_annotation_data/')
+    )
+)
+test_dataloader = dict(
+    dataset=dict(
+        type=dataset_type,
+        data_root=data_root,
+        data_prefix=dict(
+            img='test/image_data/', seg='test/panoptic/image_annotation_data/')
     )
 )
 ```

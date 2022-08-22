@@ -10,7 +10,7 @@
 
 最简单的方法就是将你的数据集转换成现有的数据格式（COCO 或者 PASCAL VOC）
 
-COCO 格式的 json 标注文件有如下必要的字段：
+COCO 格式的 JSON 标注文件有如下必要的字段：
 
 ```python
 'images': [
@@ -29,7 +29,7 @@ COCO 格式的 json 标注文件有如下必要的字段：
             247.09,
             ...
             219.03,
-            249.06]],  # 如果有 mask 标签
+            249.06]],  # 如果有 mask 标签且为多边形 XY 点坐标格式，则需要保证至少包括 3 个点坐标，否则为无效多边形
         'area': 1035.749,
         'iscrowd': 0,
         'image_id': 1268,
@@ -45,7 +45,7 @@ COCO 格式的 json 标注文件有如下必要的字段：
  ]
 ```
 
-在 json 文件中有三个必要的键：
+在 JSON 文件中有三个必要的键：
 
 - `images`: 包含多个图片以及它们的信息的数组，例如 `file_name`、`height`、`width` 和 `id`。
 - `annotations`: 包含多个实例标注信息的数组。
@@ -62,7 +62,7 @@ COCO 格式的 json 标注文件有如下必要的字段：
 
 配置文件的修改涉及两个方面：
 
-1. `data` 部分。需要在 `data.train`、`data.val` 和 `data.test` 中添加 `classes`。
+1. `dataloaer` 部分。需要在 `train_dataloader.dataset`、`val_dataloader.dataset` 和 `test_dataloader.dataset` 中添加 `metainfo=dict(CLASSES=classes)`。
 2. `model` 部分中的 `num_classes`。需要将默认值（COCO 数据集中为 80）修改为自定义数据集中的类别数。
 
 `configs/my_custom_config.py` 内容如下：
@@ -75,31 +75,51 @@ _base_ = './cascade_mask_rcnn_r50_fpn_1x_coco.py'
 # 1. 数据集设定
 dataset_type = 'CocoDataset'
 classes = ('a', 'b', 'c', 'd', 'e')
-data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
-    train=dict(
+data_root='path/to/your/'
+
+train_dataloader = dict(
+    batch_size=2,
+    num_workers=2,
+    dataset=dict(
         type=dataset_type,
-        # 将类别名字添加至 `classes` 字段中
-        classes=classes,
-        ann_file='path/to/your/train/annotation_data',
-        img_prefix='path/to/your/train/image_data'),
-    val=dict(
+        # 将类别名字添加至 `metainfo` 字段中
+        metainfo=dict(CLASSES=classes),
+        data_root=data_root,
+        ann_file='train/annotation_data',
+        data_prefix=dict(img='train/image_data')
+        )
+    )
+
+val_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    dataset=dict(
         type=dataset_type,
-        # 将类别名字添加至 `classes` 字段中
-        classes=classes,
-        ann_file='path/to/your/val/annotation_data',
-        img_prefix='path/to/your/val/image_data'),
-    test=dict(
+        test_mode=True,
+        # 将类别名字添加至 `metainfo` 字段中
+        metainfo=dict(CLASSES=classes),
+        data_root=data_root,
+        ann_file='val/annotation_data',
+        data_prefix=dict(img='val/image_data')
+    )
+
+test_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    dataset=dict(
         type=dataset_type,
-        # 将类别名字添加至 `classes` 字段中
-        classes=classes,
-        ann_file='path/to/your/test/annotation_data',
-        img_prefix='path/to/your/test/image_data'))
+        test_mode=True,
+        # 将类别名字添加至 `metainfo` 字段中
+        metainfo=dict(CLASSES=classes),
+        data_root=data_root,
+        ann_file='test/annotation_data',
+        data_prefix=dict(img='test/image_data')
+        )
+    )
 
 # 2. 模型设置
 
-# 将所有的 `num_classes` 默认值修改为5（原来为80）
+# 将所有的 `num_classes` 默认值修改为 5（原来为80）
 model = dict(
     roi_head=dict(
         bbox_head=[
@@ -137,7 +157,7 @@ model = dict(
             247.09,
             ...
             219.03,
-            249.06]],  #如果有 mask 标签。
+            249.06]],  # 如果有 mask 标签。
         'area': 1035.749,
         'iscrowd': 0,
         'image_id': 1268,
@@ -154,7 +174,7 @@ model = dict(
  ]
 ```
 
-我们使用这种方式来支持 CityScapes 数据集。脚本在[cityscapes.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/dataset_converters/cityscapes.py) 并且我们提供了微调的[configs](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes).
+我们使用这种方式来支持 CityScapes 数据集。脚本在 [cityscapes.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/dataset_converters/cityscapes.py) 并且我们提供了微调的 [configs](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes).
 
 **注意**
 
@@ -163,42 +183,62 @@ model = dict(
 
 ### 调整新的数据格式为中间格式
 
-如果不想将标注格式转换为 COCO 或者 PASCAL 格式也是可行的。实际上，我们定义了一种简单的标注格式并且与所有现有的数据格式兼容，也能进行离线或者在线转换。
+如果不想将标注格式转换为 COCO 或者 PASCAL 格式也是可行的。实际上，我们在 MMEngine 的 [BaseDataset](https://github.com/open-mmlab/mmengine/blob/main/mmengine/dataset/base_dataset.py#L116) 中定义了一种简单的标注格式并且与所有现有的数据格式兼容，也能进行离线或者在线转换。
 
-数据集的标注是包含多个字典（dict）的列表，每个字典（dict）都与一张图片对应。测试时需要用到 `filename`（相对路径）、`width` 和 `height` 三个字段；训练时则额外需要 `ann`。`ann` 也是至少包含了两个字段的字典：`bboxes` 和 `labels`，它们都是 numpy array。有些数据集可能会提供如：crowd/difficult/ignored bboxes 标注，那么我们使用 `bboxes_ignore` 以及 `labels_ignore` 来包含它们。
+数据集的标注必须为 `json` 或 `yaml`，`yml` 或 `pickle`，`pkl` 格式；标注文件中存储的字典必须包含 `metainfo` 和 `data_list` 两个字段。其中 `metainfo` 是一个字典，里面包含数据集的元信息，例如类别信息；`data_list` 是一个列表，列表中每个元素是一个字典，该字典定义了一个原始数据（raw data），每个原始数据包含一个或若干个训练/测试样本。
 
-下面给出一个例子。
+以下是一个 JSON 标注文件的例子:
 
-```python
-
-[
-    {
-        'filename': 'a.jpg',
-        'width': 1280,
-        'height': 720,
-        'ann': {
-            'bboxes': <np.ndarray, float32> (n, 4),
-            'labels': <np.ndarray, int64> (n, ),
-            'bboxes_ignore': <np.ndarray, float32> (k, 4),
-            'labels_ignore': <np.ndarray, int64> (k, ) （可选字段）
-        }
-    },
-    ...
-]
+```json
+{
+    'metainfo':
+        {
+            'classes': ('person', 'bicycle', 'car', 'motorcycle'),
+            ...
+        },
+    'data_list':
+        [
+            {
+                "img_path": "xxx/xxx_1.jpg",
+                "height": 604,
+                "width": 640,
+                "instances":
+                [
+                  {
+                    "bbox": [0, 0, 10, 20],
+                    "bbox_label": 1,
+                    "ignore_flag": 0
+                  },
+                  {
+                    "bbox": [10, 10, 110, 120],
+                    "bbox_label": 2,
+                    "ignore_flag": 0
+                  }
+                ]
+              },
+            {
+                "img_path": "xxx/xxx_2.jpg",
+                "height": 320,
+                "width": 460,
+                "instances":
+                [
+                  {
+                    "bbox": [10, 0, 20, 20],
+                    "bbox_label": 3,
+                    "ignore_flag": 1
+                  }
+                ]
+              },
+            ...
+        ]
+}
 ```
 
-有两种方法处理自定义数据。
+有些数据集可能会提供如：crowd/difficult/ignored bboxes 标注，那么我们使用 `ignore_flag`来包含它们。
 
-- 在线转换（online conversion）
+在得到上述标准的数据标注格式后，可以直接在配置中使用 MMEngine 的 [BaseDataset](https://github.com/open-mmlab/mmengine/blob/main/mmengine/dataset/base_dataset.py#L116)，而无需进行转换。
 
-  可以新写一个继承自 `CustomDataset` 的 Dataset 类，并重写 `load_annotations(self, ann_file)` 以及 `get_ann_info(self, idx)` 这两个方法，正如[CocoDataset](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/coco.py)与[VOCDataset](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/voc.py).
-
-- 离线转换（offline conversion）
-
-  可以将标注格式转换为上述的任意格式并将其保存为 pickle 或者 json 文件，例如[pascal_voc.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/dataset_converters/pascal_voc.py)。
-  然后使用`CustomDataset`。
-
-### 自定义数据集的例子：
+### 自定义数据集例子
 
 假设文本文件中表示的是一种全新的标注格式。边界框的标注信息保存在 `annotation.txt` 中，内容如下：
 
@@ -221,20 +261,21 @@ model = dict(
 我们可以在 `mmdet/datasets/my_dataset.py` 中创建一个新的 dataset 用以加载数据。
 
 ```python
-import mmcv
-import numpy as np
-
-from .builder import DATASETS
-from .custom import CustomDataset
+import mmengine
+from mmengine.dataset import BaseDataset
+from mmdet.registry import DATASETS
 
 
 @DATASETS.register_module()
-class MyDataset(CustomDataset):
+class MyDataset(BaseDataset):
 
-    CLASSES = ('person', 'bicycle', 'car', 'motorcycle')
+    METAINFO = {
+       'CLASSES': ('person', 'bicycle', 'car', 'motorcycle'),
+        'PALETTE': [(220, 20, 60), (119, 11, 32), (0, 0, 142), (0, 0, 230)]
+    }
 
-    def load_annotations(self, ann_file):
-        ann_list = mmcv.list_from_file(ann_file)
+    def load_data_list(self, ann_file):
+        ann_list = mmengine.list_from_file(ann_file)
 
         data_infos = []
         for i, ann_line in enumerate(ann_list):
@@ -246,28 +287,27 @@ class MyDataset(CustomDataset):
             height = int(img_shape[1])
             bbox_number = int(ann_list[i + 3])
 
-            anns = ann_line.split(' ')
-            bboxes = []
-            labels = []
+            instances = []
             for anns in ann_list[i + 4:i + 4 + bbox_number]:
-                bboxes.append([float(ann) for ann in anns[:4]])
-                labels.append(int(anns[4]))
+                instance = {}
+                instance['bbox'] = [float(ann) for ann in anns.split(' ')[:4]]
+                instance['bbox_label']=int(anns[4])
+ 				instances.append(instance)
 
             data_infos.append(
                 dict(
-                    filename=ann_list[i + 1],
+                    img_path=ann_list[i + 1],
+                    img_id=i,
                     width=width,
                     height=height,
-                    ann=dict(
-                        bboxes=np.array(bboxes).astype(np.float32),
-                        labels=np.array(labels).astype(np.int64))
+                    instances=instances
                 ))
 
         return data_infos
 
-    def get_ann_info(self, idx):
-        return self.data_infos[idx]['ann']
-
+    def get_cat_ids(self, idx):
+        instances = self.get_data_info(idx)['instances']
+        return [instance['bbox_label'] for instance in instances]
 ```
 
 配置文件中，可以使用 `MyDataset` 进行如下修改
@@ -282,175 +322,108 @@ dataset_A_train = dict(
 
 ## 使用 dataset 包装器自定义数据集
 
-MMDetection 也支持非常多的数据集包装器（wrapper）来混合数据集或在训练时修改数据集的分布。
-最近 MMDetection 支持如下三种数据集包装：
+MMEngine 也支持非常多的数据集包装器（wrapper）来混合数据集或在训练时修改数据集的分布，其支持如下三种数据集包装：
 
 - `RepeatDataset`：将整个数据集简单地重复。
 - `ClassBalancedDataset`：以类别均衡的方式重复数据集。
 - `ConcatDataset`：合并数据集。
 
-### 重复数据集（Repeat dataset）
-
-使用 `RepeatDataset` 包装器来重复数据集。例如，假设原始数据集为 `Dataset_A`，重复它过后，其配置如下：
-
-```python
-dataset_A_train = dict(
-        type='RepeatDataset',
-        times=N,
-        dataset=dict(  # Dataset_A 的原始配置信息
-            type='Dataset_A',
-            ...
-            pipeline=train_pipeline
-        )
-    )
-```
-
-### 类别均衡数据集（Class balanced dataset）
-
-使用 `ClassBalancedDataset` 作为包装器在类别的出现的频率上重复数据集。数据集需要实例化 `self.get_cat_ids(idx)` 函数以支持 `ClassBalancedDataset`。
-比如，以 `oversample_thr=1e-3` 来重复数据集 `Dataset_A`，其配置如下：
-
-```python
-dataset_A_train = dict(
-        type='ClassBalancedDataset',
-        oversample_thr=1e-3,
-        dataset=dict(  # Dataset_A 的原始配置信息
-            type='Dataset_A',
-            ...
-            pipeline=train_pipeline
-        )
-    )
-```
-
-更多细节请参考[源码](../../mmdet/datasets/dataset_wrappers.py)。
-
-### 合并数据集（Concatenate dataset）
-
-合并数据集有三种方法：
-
-1. 如果要合并的数据集类型一致但有多个的标注文件，那么可以使用如下配置将其合并。
-
-   ```python
-   dataset_A_train = dict(
-       type='Dataset_A',
-       ann_file = ['anno_file_1', 'anno_file_2'],
-       pipeline=train_pipeline
-   )
-   ```
-
-   如果合并的数据集适用于测试或者评估，那么这种方式支持每个数据集分开进行评估。如果想要将合并的数据集作为整体用于评估，那么可以像如下一样设置 `separate_eval=False`。
-
-   ```python
-   dataset_A_train = dict(
-       type='Dataset_A',
-       ann_file = ['anno_file_1', 'anno_file_2'],
-       separate_eval=False,
-       pipeline=train_pipeline
-   )
-   ```
-
-2. 如果想要合并的是不同数据集，那么可以使用如下配置。
-
-   ```python
-   dataset_A_val = dict()
-   dataset_B_val = dict()
-
-   data = dict(
-       imgs_per_gpu=2,
-       workers_per_gpu=2,
-       train=dataset_A_train,
-       val=dict(
-           type='ConcatDataset',
-           datasets=[dataset_A_val, dataset_B_val],
-           separate_eval=False))
-   ```
-
-   只需设置 `separate_eval=False`，用户就可以将所有的数据集作为一个整体来评估。
-
-**注意**
-
-1. 在做评估时，`separate_eval=False` 选项是假设数据集使用了 `self.data_infos`。因此COCO数据集不支持此项操作，因为COCO数据集在做评估时并不是所有都依赖 `self.data_infos`。组合不同类型的数据集并将其作为一个整体来评估，这种做法没有得到测试，也不建议这样做。
-
-2. 因为不支持评估 `ClassBalancedDataset` 和 `RepeatDataset`，所以也不支持评估它们的组合。
-
-一个更复杂的例子则是分别将 `Dataset_A` 和 `Dataset_B` 重复N和M次，然后进行如下合并。
-
-```python
-dataset_A_train = dict(
-    type='RepeatDataset',
-    times=N,
-    dataset=dict(
-        type='Dataset_A',
-        ...
-        pipeline=train_pipeline
-    )
-)
-dataset_A_val = dict(
-    ...
-    pipeline=test_pipeline
-)
-dataset_A_test = dict(
-    ...
-    pipeline=test_pipeline
-)
-dataset_B_train = dict(
-    type='RepeatDataset',
-    times=M,
-    dataset=dict(
-        type='Dataset_B',
-        ...
-        pipeline=train_pipeline
-    )
-)
-data = dict(
-    imgs_per_gpu=2,
-    workers_per_gpu=2,
-    train = [
-        dataset_A_train,
-        dataset_B_train
-    ],
-    val = dataset_A_val,
-    test = dataset_A_test
-)
-
-```
+具体使用方式见 [MMEngine 数据集基类包装](https://github.com/open-mmlab/mmengine/blob/main/docs/zh_cn/tutorials/basedataset.md#%E6%95%B0%E6%8D%AE%E9%9B%86%E5%9F%BA%E7%B1%BB%E5%8C%85%E8%A3%85)。
 
 ## 修改数据集的类别
 
 根据现有数据集的类型，我们可以修改它们的类别名称来训练其标注的子集。
-例如，如果只想训练当前数据集中的三个类别，那么就可以修改数据集的类别元组。
-数据集就会自动屏蔽掉其他类别的真实框。
+例如，如果只想训练当前数据集中的三个类别，那么就可以修改数据集的 `metainfo` 字典，数据集就会自动屏蔽掉其他类别的真实框。
 
 ```python
 classes = ('person', 'bicycle', 'car')
-data = dict(
-    train=dict(classes=classes),
-    val=dict(classes=classes),
-    test=dict(classes=classes))
-```
-
-MMDetection V2.0 也支持从文件中读取类别名称，这种方式在实际应用中很常见。
-假设存在文件 `classes.txt`，其包含了如下的类别名称。
-
-```
-person
-bicycle
-car
-```
-
-用户可以将类别设置成文件路径，数据集就会自动将其加载并转换成一个列表。
-
-```python
-classes = 'path/to/classes.txt'
-data = dict(
-    train=dict(classes=classes),
-    val=dict(classes=classes),
-    test=dict(classes=classes))
+train_dataloader = dict(
+    dataset=dict(
+        metainfo=dict(CLASSES=classes))
+    )
+val_dataloader = dict(
+    dataset=dict(
+        metainfo=dict(CLASSES=classes))
+    )
+test_dataloader = dict(
+    dataset=dict(
+        metainfo=dict(CLASSES=classes))
+    )
 ```
 
 **注意**
 
-- 在 MMDetection v2.5.0 之前，如果类别为集合时数据集将自动过滤掉不包含 GT 的图片，且没办法通过修改配置将其关闭。这是一种不可取的行为而且会引起混淆，因为当类别不是集合时数据集只有在 `filter_empty_gt=True` 以及 `test_mode=False` 的情况下才会过滤掉不包含 GT 的图片。在 MMDetection v2.5.0 之后，我们将图片的过滤以及类别的修改进行解耦，如，数据集只有在 `filter_empty_gt=True` 和 `test_mode=False` 的情况下才会过滤掉不包含 GT 的图片，无论类别是否为集合。设置类别只会影响用于训练的标注类别，用户可以自行决定是否过滤不包含 GT 的图片。
-- 因为中间格式只有框的标签并不包含类别的名字，所以使用 `CustomDataset` 时用户不能通过修改配置来过滤不含 GT 的图片。但是可以通过离线的方式来解决。
-- 当设置数据集中的 `classes` 时，记得修改 `num_classes`。从 v2.9.0 (PR#4508) 之后，我们实现了[NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/datasets/utils.py)来检查类别数是否一致。
-- 我们在未来将会重构设置数据集类别以及数据集过滤的特性，使其更加地方便用户使用。
+- 在 MMDetection v2.5.0 之前，如果类别为集合时数据集将自动过滤掉不包含 GT 的图片，且没办法通过修改配置将其关闭。这是一种不可取的行为而且会引起混淆，因为当类别不是集合时数据集时，只有在 `filter_empty_gt=True` 以及 `test_mode=False` 的情况下才会过滤掉不包含 GT 的图片。在 MMDetection v2.5.0 之后，我们将图片的过滤以及类别的修改进行解耦，数据集只有在 `filter_cfg=dict(filter_empty_gt=True)` 和 `test_mode=False` 的情况下才会过滤掉不包含 GT 的图片，无论类别是否为集合。设置类别只会影响用于训练的标注类别，用户可以自行决定是否过滤不包含 GT 的图片。
+- 使用 MMEngine 中的 `BaseDataset` 时用户不能通过修改配置来过滤不含 GT 的图片，但是可以通过离线的方式来解决。
+- 当设置数据集中的 `classes` 时，记得修改 `num_classes`。从 v2.9.0 (PR#4508) 之后，我们实现了[NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/engine/hooks/num_class_check_hook.py)来检查类别数是否一致。
+
+## COCO 全景分割数据集
+
+现在我们也支持 COCO Panoptic Dataset，全景注释的格式与 COCO 格式不同，其前景和背景都将存在于注释文件中。COCO Panoptic 格式的注释 JSON 文件具有以下必要的键：
+
+```python
+'images': [
+    {
+        'file_name': '000000001268.jpg',
+        'height': 427,
+        'width': 640,
+        'id': 1268
+    },
+    ...
+]
+
+'annotations': [
+    {
+        'filename': '000000001268.jpg',
+        'image_id': 1268,
+        'segments_info': [
+            {
+                'id':8345037,  # One-to-one correspondence with the id in the annotation map.
+                'category_id': 51,
+                'iscrowd': 0,
+                'bbox': (x1, y1, w, h),  # The bbox of the background is the outer rectangle of its mask.
+                'area': 24315
+            },
+            ...
+        ]
+    },
+    ...
+]
+
+'categories': [  # including both foreground categories and background categories
+    {'id': 0, 'name': 'person'},
+    ...
+ ]
+```
+
+此外，`seg` 必须设置为全景注释图像的路径。
+
+```python
+dataset_type = 'CocoPanopticDataset'
+data_root='path/to/your/'
+
+train_dataloader = dict(
+    dataset=dict(
+        type=dataset_type,
+        data_root=data_root,
+        data_prefix=dict(
+            img='train/image_data/', seg='train/panoptic/image_annotation_data/')
+    )
+)
+val_dataloader = dict(
+    dataset=dict(
+        type=dataset_type,
+        data_root=data_root,
+        data_prefix=dict(
+            img='val/image_data/', seg='val/panoptic/image_annotation_data/')
+    )
+)
+test_dataloader = dict(
+    dataset=dict(
+        type=dataset_type,
+        data_root=data_root,
+        data_prefix=dict(
+            img='test/image_data/', seg='test/panoptic/image_annotation_data/')
+    )
+)
+```
