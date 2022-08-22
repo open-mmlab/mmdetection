@@ -13,6 +13,7 @@ from mmengine.logging import MessageHub
 from mmengine.model import BaseDataPreprocessor, ImgDataPreprocessor
 from torch import Tensor
 
+from mmdet.models.utils.misc import samplelist_boxlist2tensor
 from mmdet.registry import MODELS
 from mmdet.structures import DetDataSample
 from mmdet.utils import ConfigType
@@ -58,6 +59,8 @@ class DetDataPreprocessor(ImgDataPreprocessor):
             Defaults to False.
         rgb_to_bgr (bool): whether to convert image from RGB to RGB.
             Defaults to False.
+        boxlist2tensor (bool): Whether to keep the ``BaseBoxes`` type of
+            bboxes data or not. Defaults to False.
         batch_augments (list[dict], optional): Batch-level augmentations
     """
 
@@ -72,6 +75,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                  seg_pad_value: int = 255,
                  bgr_to_rgb: bool = False,
                  rgb_to_bgr: bool = False,
+                 boxlist2tensor: bool = True,
                  batch_augments: Optional[List[dict]] = None):
         super().__init__(
             mean=mean,
@@ -89,6 +93,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         self.mask_pad_value = mask_pad_value
         self.pad_seg = pad_seg
         self.seg_pad_value = seg_pad_value
+        self.boxlist2tensor = boxlist2tensor
 
     def forward(self,
                 data: Sequence[dict],
@@ -119,6 +124,9 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                     'batch_input_shape': batch_input_shape,
                     'pad_shape': pad_shape
                 })
+
+            if self.boxlist2tensor:
+                samplelist_boxlist2tensor(batch_data_samples)
 
             if self.pad_mask:
                 self.pad_gt_masks(batch_data_samples)

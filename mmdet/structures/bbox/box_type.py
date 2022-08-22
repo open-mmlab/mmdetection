@@ -240,3 +240,57 @@ def convert_box_type(boxes: BoxType,
         return boxes.numpy()
     else:
         return converter(boxes)
+
+
+def autocast_box_type(dst_box_type='hbox') -> Callable:
+    """A decorator which automatically casts results['gt_bboxes'] to the
+    destination box type.
+
+    It commenly used in mmdet.datasets.transforms to make the transforms up-
+    compatible with the np.ndarray type of results['gt_bboxes'].
+
+    The speed of processing of np.ndarray and BaseBoxes data are the same:
+
+    - np.ndarray: 0.0509 img/s
+    - BaseBoxes: 0.0551 img/s
+
+    Args:
+        dst_box_type (str): Destination box type.
+    """
+    _, box_type_cls = get_box_type(dst_box_type)
+
+    def decorator(func: Callable) -> Callable:
+
+        def wrapper(self, results: dict, *args, **kwargs) -> dict:
+            if ('gt_bboxes' not in results
+                    or isinstance(results['gt_bboxes'], BaseBoxes)):
+                return func(self, results)
+            elif isinstance(results['gt_bboxes'], np.ndarray):
+                results['gt_bboxes'] = box_type_cls(
+                    results['gt_bboxes'], clone=False)
+                if 'mix_results' in results:
+                    for res in results['mix_results']:
+                        if isinstance(res['gt_bboxes'], np.ndarray):
+                            res['gt_bboxes'] = box_type_cls(
+                                res['gt_bboxes'], clone=False)
+
+                _results = func(self, results, *args, **kwargs)
+
+                # In some cases, the function will process gt_bboxes in-place
+                # Simultaneously convert inputting and outputting gt_bboxes
+                # back to np.ndarray
+                if isinstance(_results, dict) and 'gt_bboxes' in _results:
+                    if isinstance(_results['gt_bboxes'], BaseBoxes):
+                        _results['gt_bboxes'] = _results['gt_bboxes'].numpy()
+                if isinstance(results['gt_bboxes'], BaseBoxes):
+                    results['gt_bboxes'] = results['gt_bboxes'].numpy()
+                return _results
+            else:
+                raise TypeError(
+                    "auto_box_type requires results['gt_bboxes'] to "
+                    'be BaseBoxes or np.ndarray, but got '
+                    f"{type(results['gt_bboxes'])}")
+
+        return wrapper
+
+    return decorator

@@ -7,6 +7,7 @@ from mmengine.data import InstanceData, PixelData
 
 from mmdet.registry import TRANSFORMS
 from mmdet.structures import DetDataSample
+from mmdet.structures.bbox import BaseBoxes
 
 
 @TRANSFORMS.register_module()
@@ -82,7 +83,7 @@ class PackDetInputs(BaseTransform):
         for key in self.mapping_table.keys():
             if key not in results:
                 continue
-            if key == 'gt_masks':
+            if key == 'gt_masks' or isinstance(results[key], BaseBoxes):
                 if 'gt_ignore_flags' in results:
                     instance_data[
                         self.mapping_table[key]] = results[key][vaild_idx]
