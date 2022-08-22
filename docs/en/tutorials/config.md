@@ -375,7 +375,7 @@ resume = False  # Whether to resume from the checkpoint defined in `load_from`. 
 
 MMEngine's Runner also provides an iter-based training loop except for epoch-based.
 To use iter-based training, users should modify the `train_cfg`, `param_scheduler`, `train_dataloader`, `default_hooks`, and `log_processor`.
-Here is an example of changing an epoch-based RetinaNet config to iter-based: configs/retinanet/retinanet_r50_fpn_90k_coco.py
+Here is an example of changing an epoch-based RetinaNet config to iter-based: configs/retinanet/retinanet_r50-fpn_90k_coco.py
 
 ```python
 # iter-based training config
@@ -418,7 +418,7 @@ The configs that are composed by components from `_base_` are called _primitive_
 For all configs under the same folder, it is recommended to have only **one** _primitive_ config. All other configs should inherit from the _primitive_ config. In this way, the maximum of inheritance level is 3.
 
 For easy understanding, we recommend contributors to inherit from existing methods.
-For example, if some modification is made base on Faster R-CNN, user may first inherit the basic Faster R-CNN structure by specifying `_base_ = ../faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py`, then modify the necessary fields in the config files.
+For example, if some modification is made base on Faster R-CNN, user may first inherit the basic Faster R-CNN structure by specifying `_base_ = ../faster_rcnn/faster-rcnn_r50-fpn_1x_coco.py`, then modify the necessary fields in the config files.
 
 If you are building an entirely new method that does not share the structure with any of the existing methods, you may create a folder `xxx_rcnn` under `configs`,
 
@@ -429,7 +429,7 @@ By setting the `_base_` field, we can set which files the current configuration 
 When `_base_` is a string of a file path, it means inherit the contents of one config file.
 
 ```python
-_base_ = './mask_rcnn_r50_fpn_1x_coco.py'
+_base_ = './mask-rcnn_r50-fpn_1x_coco.py'
 ```
 
 When `_base_` is a list of multiple file paths, it means inheriting multiple files.
@@ -472,7 +472,7 @@ model = dict(
 `ResNet` and `HRNet` use different keywords to construct.
 
 ```python
-_base_ = '../mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py'
+_base_ = '../mask_rcnn/mask-rcnn_r50-fpn_1x_coco.py'
 model = dict(
     backbone=dict(
         _delete_=True,
@@ -515,7 +515,7 @@ It's worth noting that when modifying intermediate variables in the children con
 For example, we would like to use multi scale strategy to train a Mask R-CNN. `train_pipeline`/`test_pipeline` are intermediate variable we would like modify.
 
 ```python
-_base_ = './mask_rcnn_r50_fpn_1x_coco.py'
+_base_ = './mask-rcnn_r50-fpn_1x_coco.py'
 
 train_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -544,7 +544,7 @@ We first define the new `train_pipeline`/`test_pipeline` and pass them into data
 Similarly, if we would like to switch from `SyncBN` to `BN` or `MMSyncBN`, we need to substitute every `norm_cfg` in the config.
 
 ```python
-_base_ = './mask_rcnn_r50_fpn_1x_coco.py'
+_base_ = './mask-rcnn_r50-fpn_1x_coco.py'
 norm_cfg = dict(type='BN', requires_grad=True)
 model = dict(
     backbone=dict(norm_cfg=norm_cfg),
