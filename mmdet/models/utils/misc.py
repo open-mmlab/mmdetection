@@ -10,6 +10,7 @@ from torch.autograd import Function
 from torch.nn import functional as F
 
 from mmdet.structures import SampleList
+from mmdet.structures.bbox import BaseBoxes
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 from mmdet.utils import OptInstanceList
 
@@ -420,3 +421,19 @@ def images_to_levels(target, num_levels):
         level_targets.append(target[:, start:end])
         start = end
     return level_targets
+
+
+def samplelist_boxlist2tensor(batch_data_samples: SampleList) -> SampleList:
+    for data_samples in batch_data_samples:
+        if 'gt_instances' in data_samples:
+            bboxes = data_samples.gt_instances.get('bboxes', None)
+            if isinstance(bboxes, BaseBoxes):
+                data_samples.gt_instances.bboxes = bboxes.tensor
+        if 'pred_instances' in data_samples:
+            bboxes = data_samples.pred_instances.get('bboxes', None)
+            if isinstance(bboxes, BaseBoxes):
+                data_samples.pred_instances.bboxes = bboxes.tensor
+        if 'ignored_instances' in data_samples:
+            bboxes = data_samples.ignored_instances.get('bboxes', None)
+            if isinstance(bboxes, BaseBoxes):
+                data_samples.ignored_instances.bboxes = bboxes.tensor

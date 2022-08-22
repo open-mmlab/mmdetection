@@ -94,7 +94,7 @@ class AutoAugment(RandomChoice):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_ignore_flags (np.bool) (optional)
@@ -175,7 +175,7 @@ class RandAugment(RandomChoice):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_ignore_flags (np.bool) (optional)

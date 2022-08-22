@@ -61,7 +61,7 @@ class TestLoadAnnotations(unittest.TestCase):
             with_label=False,
             with_seg=False,
             with_mask=False,
-        )
+            box_type=None)
         results = transform(copy.deepcopy(self.results))
         self.assertIn('gt_bboxes', results)
         self.assertTrue((results['gt_bboxes'] == np.array([[0, 0, 10, 20],
@@ -297,7 +297,11 @@ class TestLoadPanopticAnnotations(unittest.TestCase):
 
             # test with all True
             transform = LoadPanopticAnnotations(
-                with_bbox=True, with_label=True, with_mask=True, with_seg=True)
+                with_bbox=True,
+                with_label=True,
+                with_mask=True,
+                with_seg=True,
+                box_type=None)
             results = transform(copy.deepcopy(self.results))
             self.assertTrue(
                 (results['gt_masks'].masks == self.gt_mask.masks).all())
