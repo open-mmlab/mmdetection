@@ -15,7 +15,11 @@ from mmcv.runner import get_dist_info
 from mmdet.core import encode_mask_results
 
 
-def ipu_test(model, data_loader, show=False, out_dir=None, show_score_thr=0.3):
+def single_replica_ipu_test(model,
+                            data_loader,
+                            show=False,
+                            out_dir=None,
+                            show_score_thr=0.3):
     model.eval()
     results = []
     dataset = data_loader.dataset
@@ -25,7 +29,7 @@ def ipu_test(model, data_loader, show=False, out_dir=None, show_score_thr=0.3):
         data['img_metas'] = data['img_metas'][0].data
         with torch.no_grad():
             result = model(return_loss=False, rescale=True, **data)
-            result = model.model.model.post_process(result)
+            result = model.post_process(result)
 
         batch_size = len(result)
         if show or out_dir:

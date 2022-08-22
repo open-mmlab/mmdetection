@@ -17,6 +17,8 @@ train_pipeline = [
         min_crop_size=0.3),
     dict(type='Resize', img_scale=(IM_SIZE, IM_SIZE), keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
+    # image norm will be placed in IPU, and PhotoMetricDistortion has been
+    # removed in this config because it has no effect on loss convergence.
     dict(type='Pad', size=(IM_SIZE, IM_SIZE)),
     dict(
         type='IPUFormatBundle',

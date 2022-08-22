@@ -12,7 +12,7 @@ from mmcv.cnn import fuse_conv_bn
 from mmcv.runner import (get_dist_info, init_dist, load_checkpoint,
                          wrap_fp16_model)
 
-from mmdet.apis import ipu_test, multi_gpu_test, single_gpu_test
+from mmdet.apis import multi_gpu_test, single_gpu_test, single_replica_ipu_test
 from mmdet.datasets import (build_dataloader, build_dataset,
                             replace_ImageToTensor)
 from mmdet.models import build_detector
@@ -238,8 +238,9 @@ def main():
         if args.ipu:
             from mmcv.device.ipu import build_ipu_model
             model = build_ipu_model(model, **cfg.runner)
-            outputs = ipu_test(model, data_loader, args.show, args.show_dir,
-                               args.show_score_thr)
+            outputs = single_replica_ipu_test(model, data_loader, args.show,
+                                              args.show_dir,
+                                              args.show_score_thr)
         else:
             model = build_dp(model, cfg.device, device_ids=cfg.gpu_ids)
             outputs = single_gpu_test(model, data_loader, args.show,
