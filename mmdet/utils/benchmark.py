@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.cnn import fuse_conv_bn
-# TODO ?
+# TODO need update
 # from mmcv.runner import wrap_fp16_model
 from mmengine import MMLogger
 from mmengine.config import Config
@@ -179,10 +179,11 @@ class InferenceBenchmark(BaseBenchmark):
     def _init_model(self, checkpoint: str, is_fuse_conv_bn: bool) -> nn.Module:
         """Initialize the model."""
         model = build_detector(self.cfg.model)
+        # TODO need update
         # fp16_cfg = self.cfg.get('fp16', None)
-        # TODO update
         # if fp16_cfg is not None:
-        # wrap_fp16_model(model)
+        #     wrap_fp16_model(model)
+
         load_checkpoint(model, checkpoint, map_location='cpu')
         if is_fuse_conv_bn:
             model = fuse_conv_bn(model)
