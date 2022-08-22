@@ -3,11 +3,10 @@ import argparse
 import os.path as osp
 from multiprocessing import Pool
 
-import mmcv
 import numpy as np
 from mmengine.config import Config, DictAction
 from mmengine.fileio import load
-from mmengine.utils import ProgressBar
+from mmengine.utils import ProgressBar, check_file_exist, mkdir_or_exist
 
 from mmdet.datasets import build_dataset, get_loading_pipeline
 from mmdet.evaluation import eval_map, pq_compute_single_core
@@ -108,7 +107,7 @@ class ResultVisualizer:
             out_dir (str, optional): The filename to write the image.
                 Defaults: None.
         """
-        mmcv.mkdir_or_exist(out_dir)
+        mkdir_or_exist(out_dir)
 
         for performance_info in performances:
             index, performance = performance_info
@@ -330,7 +329,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    mmcv.check_file_exist(args.prediction_path)
+    check_file_exist(args.prediction_path)
 
     cfg = Config.fromfile(args.config)
 

@@ -85,7 +85,7 @@ class LoadMultiChannelImageFromFiles(BaseTransform):
             See :func:``mmcv.imfrombytes`` for details.
             Defaults to 'cv2'.
         file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:`mmcv.fileio.FileClient` for details.
+            See :class:`mmengine.fileio.FileClient` for details.
             Defaults to ``dict(backend='disk')``.
     """
 
@@ -490,7 +490,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
             See :fun:``mmcv.imfrombytes`` for details.
             Defaults to 'cv2'.
         file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:``mmcv.fileio.FileClient`` for details.
+            See :class:``mmengine.fileio.FileClient`` for details.
             Defaults to ``dict(backend='disk')``.
     """
 

@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import pytest
 import torch
-from mmcv.utils import ConfigDict
+from mmengine.config import ConfigDict
 
 from mmdet.models.layers.transformer import (AdaptivePadding,
                                              DetrTransformerDecoder,

@@ -29,7 +29,6 @@ def _get_config_directory():
 
 def _get_config_module(fname):
     """Load a configuration as a python module."""
-    from mmcv import Config
     config_dpath = _get_config_directory()
     config_fpath = join(config_dpath, fname)
     config_mod = Config.fromfile(config_fpath)
@@ -92,8 +91,8 @@ def _check_backbone(config, print_cfg=True):
     """Check out backbone whether successfully load pretrained model, by using
     `backbone.init_cfg`.
 
-    First, using `mmcv._load_checkpoint` to load the checkpoint without
-        loading models.
+    First, using `CheckpointLoader.load_checkpoint` to load the checkpoint
+        without loading models.
     Then, using `build_detector` to build models, and using
         `model.init_weights()` to initialize the parameters.
     Finally, assert weights and bias of each layer loaded from pretrained

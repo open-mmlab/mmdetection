@@ -8,7 +8,8 @@ import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
 from mmengine.fileio import dump
-from mmengine.utils import Timer, track_parallel_progress, track_progress
+from mmengine.utils import (Timer, mkdir_or_exist, track_parallel_progress,
+                            track_progress)
 
 
 def collect_files(img_dir, gt_dir):
@@ -129,7 +130,7 @@ def main():
     args = parse_args()
     cityscapes_path = args.cityscapes_path
     out_dir = args.out_dir if args.out_dir else cityscapes_path
-    mmcv.mkdir_or_exist(out_dir)
+    mkdir_or_exist(out_dir)
 
     img_dir = osp.join(cityscapes_path, args.img_dir)
     gt_dir = osp.join(cityscapes_path, args.gt_dir)

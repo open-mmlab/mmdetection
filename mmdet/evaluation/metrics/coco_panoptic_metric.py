@@ -57,7 +57,7 @@ class CocoPanopticMetric(BaseMetric):
             Defaults to 32. When ``nproc`` exceeds the number of cpu cores,
             the number of cpu cores is used.
         file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:`mmcv.fileio.FileClient` for details.
+            See :class:`mmengine.fileio.FileClient` for details.
             Defaults to ``dict(backend='disk')``.
         collect_device (str): Device name used for collecting results from
             different ranks during distributed training. Must be 'cpu' or
