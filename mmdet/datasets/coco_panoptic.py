@@ -208,6 +208,7 @@ class CocoPanopticDataset(CocoDataset):
         else:
             seg_map_path = None
         data_info['img_path'] = img_path
+        data_info['file_name'] = img_info['file_name']
         data_info['img_id'] = img_info['img_id']
         data_info['seg_map_path'] = seg_map_path
         data_info['height'] = img_info['height']

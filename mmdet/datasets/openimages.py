@@ -107,6 +107,7 @@ class OpenImagesDataset(BaseDetDataset):
                         # switch to a new image, record previous image's data.
                         data_info = dict(
                             img_path=last_img_path,
+                            file_name=f'{last_img_id}.jpg',
                             img_id=last_img_id,
                             instances=instances,
                         )
@@ -117,6 +118,7 @@ class OpenImagesDataset(BaseDetDataset):
                 data_list.append(
                     dict(
                         img_path=last_img_path,
+                        file_name=f'{last_img_id}.jpg',
                         img_id=last_img_id,
                         instances=instances,
                     ))
@@ -131,6 +133,7 @@ class OpenImagesDataset(BaseDetDataset):
             img_id = data_list[i]['img_id']
             assert f'{img_id}.jpg' == osp.split(meta['filename'])[-1]
             h, w = meta['ori_shape'][:2]
+            data_list[i]['file_name'] = osp.split(meta['filename'])[-1]
             data_list[i]['height'] = h
             data_list[i]['width'] = w
             # denormalize bboxes
@@ -283,18 +286,6 @@ class OpenImagesDataset(BaseDetDataset):
                     node, relation_matrix, parents=children)
         return relation_matrix
 
-    def get_cat_ids(self, idx: int) -> List[int]:
-        """Get category ids by index.
-
-        Args:
-            idx (int): Index of data.
-
-        Returns:
-            List[int]: All categories in the image of specified index.
-        """
-        instances = self.get_data_info(idx)['instances']
-        return [instance['bbox_label'] for instance in instances]
-
     def _join_prefix(self):
         """Join ``self.data_root`` with annotation path."""
         super()._join_prefix()
@@ -375,6 +366,7 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
             data_list.append(
                 dict(
                     img_path=osp.join(self.data_prefix['img'], filename),
+                    file_name=filename,
                     instances=instances,
                 ))
 

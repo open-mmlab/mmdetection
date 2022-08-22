@@ -119,6 +119,7 @@ class CocoDataset(BaseDetDataset):
         else:
             seg_map_path = None
         data_info['img_path'] = img_path
+        data_info['file_name'] = img_info['file_name']
         data_info['img_id'] = img_info['img_id']
         data_info['seg_map_path'] = seg_map_path
         data_info['height'] = img_info['height']
@@ -154,19 +155,6 @@ class CocoDataset(BaseDetDataset):
             instances.append(instance)
         data_info['instances'] = instances
         return data_info
-
-    def get_cat_ids(self, idx: int) -> List[int]:
-        """Get COCO category ids by index.
-
-        Args:
-            idx (int): Index of data.
-
-        Returns:
-            List[int]: All categories in the image of specified index.
-        """
-
-        instances = self.get_data_info(idx)['instances']
-        return [instance['bbox_label'] for instance in instances]
 
     def filter_data(self) -> List[dict]:
         """Filter annotations according to filter_cfg.

@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import os.path as osp
-from typing import Optional
+from typing import List, Optional
 
 from mmengine.dataset import BaseDataset
 from mmengine.fileio import FileClient, load
@@ -82,12 +82,25 @@ class BaseDetDataset(BaseDataset):
             - scores (np.ndarry): Classification scores, has a shape
               (num_instance, ).
         """
-        if not is_abs(self.proposal_file) and self.proposal_file:
+        # TODO: Add Unit Test after fully support Dump-Proposal Metric
+        if not is_abs(self.proposal_file):
             self.proposal_file = osp.join(self.data_root, self.proposal_file)
         proposals_list = load(
             self.proposal_file, file_client_args=self.file_client_args)
         assert len(self.data_list) == len(proposals_list)
         for data_info in self.data_list:
-            img_path = data_info['img_path']
+            img_path = data_info['file_name']
             proposals = proposals_list[img_path]
             data_info['proposals'] = proposals
+
+    def get_cat_ids(self, idx: int) -> List[int]:
+        """Get COCO category ids by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            List[int]: All categories in the image of specified index.
+        """
+        instances = self.get_data_info(idx)['instances']
+        return [instance['bbox_label'] for instance in instances]

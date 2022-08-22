@@ -86,6 +86,7 @@ class XMLDataset(BaseDetDataset):
         data_info = {}
         img_path = osp.join(self.sub_data_root, img_info['file_name'])
         data_info['img_path'] = img_path
+        data_info['file_name'] = img_info['file_name']
         data_info['img_id'] = img_info['img_id']
         data_info['xml_path'] = img_info['xml_path']
 
@@ -163,16 +164,3 @@ class XMLDataset(BaseDetDataset):
                 valid_data_infos.append(data_info)
 
         return valid_data_infos
-
-    def get_cat_ids(self, idx: int) -> List[int]:
-        """Get COCO category ids by index.
-
-        Args:
-            idx (int): Index of data.
-
-        Returns:
-            List[int]: All categories in the image of specified index.
-        """
-
-        instances = self.get_data_info(idx)['instances']
-        return [instance['bbox_label'] for instance in instances]
