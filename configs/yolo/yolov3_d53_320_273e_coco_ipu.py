@@ -2,9 +2,9 @@ _base_ = './yolov3_d53_mstrain-608_273e_coco.py'
 # dataset settings
 IM_SIZE = 320
 custom_hooks = [dict(type='NumClassCheckHook'), dict(type='BNToFP32')]
-img_norm_cfg = dict(mean=[0, 0, 0], std=[255., 255., 255.], to_rgb=True)
+img_norm_cfg = dict(mean=[0, 0, 0], std=[255., 255., 255.], to_rgb=False)
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', channel_order='rgb'),
     dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='Expand',
@@ -17,7 +17,6 @@ train_pipeline = [
         min_crop_size=0.3),
     dict(type='Resize', img_scale=(IM_SIZE, IM_SIZE), keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='BGR2RGB'),
     dict(type='Pad', size=(IM_SIZE, IM_SIZE)),
     dict(
         type='IPUFormatBundle',
@@ -35,7 +34,7 @@ train_pipeline = [
         featmap_sizes=[IM_SIZE // 32, IM_SIZE // 16, IM_SIZE // 8])
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='LoadImageFromFile', channel_order='rgb'),
     dict(
         type='MultiScaleFlipAug',
         img_scale=(320, 320),
@@ -43,13 +42,12 @@ test_pipeline = [
         transforms=[
             dict(type='Resize', img_scale=(IM_SIZE, IM_SIZE), keep_ratio=True),
             dict(type='RandomFlip'),
-            dict(type='BGR2RGB'),
             dict(type='Pad', size=(IM_SIZE, IM_SIZE), pad_val={'img': 128}),
             dict(type='IPUFormatBundle', img_to_float=False),
             dict(
                 type='IPUCollect',
                 keys=['img'],
-                meta_tensor_keys=('scale_factor'),
+                meta_tensor_keys=('scale_factor', ),
                 meta_on=True)
         ])
 ]

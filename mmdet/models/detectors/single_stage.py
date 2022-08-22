@@ -86,7 +86,7 @@ class SingleStageDetector(BaseDetector):
                                               **kwargs)
         return losses
 
-    def simple_test(self, img, img_metas, rescale=False, post_process=True):
+    def simple_test(self, img, img_metas, rescale=False, to_bbox_results=True):
         """Test function without test-time augmentation.
 
         Args:
@@ -105,7 +105,7 @@ class SingleStageDetector(BaseDetector):
         feat = self.extract_feat(img)
         results_list = self.bbox_head.simple_test(
             feat, img_metas, rescale=rescale)
-        if post_process:
+        if to_bbox_results:
             return self.post_process(results_list)
         return results_list
 

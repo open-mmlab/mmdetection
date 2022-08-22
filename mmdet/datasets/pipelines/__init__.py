@@ -6,7 +6,7 @@ from .compose import Compose
 from .formatting import (Collect, DefaultFormatBundle, ImageToTensor,
                          ToDataContainer, ToTensor, Transpose, to_tensor)
 from .instaboost import InstaBoost
-from .ipu_pipelines import BGR2RGB
+from .ipu_pipelines import IPUFormatBundle
 from .loading import (FilterAnnotations, LoadAnnotations, LoadImageFromFile,
                       LoadImageFromWebcam, LoadMultiChannelImageFromFiles,
                       LoadPanopticAnnotations, LoadProposals)
@@ -28,5 +28,5 @@ __all__ = [
     'AutoAugment', 'CutOut', 'Shear', 'Rotate', 'ColorTransform',
     'EqualizeTransform', 'BrightnessTransform', 'ContrastTransform',
     'Translate', 'RandomShift', 'Mosaic', 'MixUp', 'RandomAffine',
-    'YOLOXHSVRandomAug', 'CopyPaste', 'BGR2RGB'
+    'YOLOXHSVRandomAug', 'CopyPaste', 'IPUFormatBundle'
 ]
