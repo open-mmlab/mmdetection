@@ -1,6 +1,6 @@
 _base_ = [
     '../_base_/models/faster_rcnn_r50_fpn.py', '../_base_/default_runtime.py',
-    '../_base_/datasets/semi_partial_coco_detection.py'
+    '../_base_/datasets/semi_coco_detection.py'
 ]
 
 detector = _base_.model
@@ -25,7 +25,7 @@ detector.backbone = dict(
 
 model = dict(
     _delete_=True,
-    type='SemiBaseDetector',
+    type='SoftTeacher',
     detector=detector,
     data_preprocessor=dict(
         type='MultiBranchDataPreprocessor',
@@ -34,9 +34,24 @@ model = dict(
         freeze_teacher=True,
         sup_weight=1.0,
         unsup_weight=4.0,
+        pseudo_label_initial_score_thr=0.5,
+        rpn_pseudo_thr=0.9,
         cls_pseudo_thr=0.9,
+        reg_pseudo_thr=0.02,
+        jitter_times=10,
+        jitter_scale=0.06,
         min_pseudo_bbox_wh=(1e-2, 1e-2)),
     semi_test_cfg=dict(predict_on='teacher'))
+
+# 10% coco train2017 is set as labeled dataset
+labeled_dataset = _base_.labeled_dataset
+unlabeled_dataset = _base_.unlabeled_dataset
+labeled_dataset.ann_file = 'semi_anns/instances_train2017.1@10.json'
+unlabeled_dataset.ann_file = 'semi_anns/' \
+                             'instances_train2017.1@10-unlabeled.json'
+unlabeled_dataset.data_prefix = dict(img='train2017/')
+train_dataloader = dict(
+    dataset=dict(datasets=[labeled_dataset, unlabeled_dataset]))
 
 # training schedule for 180k
 train_cfg = dict(

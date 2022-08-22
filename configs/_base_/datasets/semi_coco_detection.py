@@ -11,21 +11,24 @@ data_root = 'data/coco/'
 file_client_args = dict(backend='disk')
 
 color_space = [
+    [dict(type='ColorTransform')],
     [dict(type='AutoContrast')],
     [dict(type='Equalize')],
-    [dict(type='Invert')],
     [dict(type='Sharpness')],
     [dict(type='Posterize')],
     [dict(type='Solarize')],
-    [dict(type='SolarizeAdd')],
     [dict(type='Color')],
     [dict(type='Contrast')],
     [dict(type='Brightness')],
 ]
 
-geometric = [[dict(type='Rotate')], [dict(type='ShearX')],
-             [dict(type='ShearY')], [dict(type='TranslateX')],
-             [dict(type='TranslateY')]]
+geometric = [
+    [dict(type='Rotate')],
+    [dict(type='ShearX')],
+    [dict(type='ShearY')],
+    [dict(type='TranslateX')],
+    [dict(type='TranslateY')],
+]
 
 scale = [(1333, 400), (1333, 1200)]
 
@@ -73,6 +76,7 @@ strong_pipeline = [
                    'homography_matrix')),
 ]
 
+# pipeline used to augment unlabeled data into different views
 unsup_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(type='LoadEmptyAnnotations'),
@@ -94,14 +98,34 @@ test_pipeline = [
 
 batch_size = 5
 num_workers = 5
+# There are two common semi-supervised learning settings on the coco dataset：
+# (1) Divide the train2017 into labeled and unlabeled datasets
+# by a fixed percentage, such as 1%, 2%, 5% and 10%.
 # The format of labeled_ann_file and unlabeled_ann_file are
 # instances_train2017.{fold}@{percent}.json, and
 # instances_train2017.{fold}@{percent}-unlabeled.json
-# Default fold and percent are 1 and 10, which means 10% data
-# of coco train2017 will be selected as labeled data,
-# and the remaining data will be used as unlabeled data.
-labeled_ann_file = 'coco_semi_anns/instances_train2017.1@10.json'
-unlabeled_ann_file = 'coco_semi_anns/instances_train2017.1@10-unlabeled.json'
+# `fold` is used for cross-validation, and `percent` represents
+# the proportion of labeled data in the train2017.
+# (2) Choose the train2017 as the labeled dataset
+# and unlabeled2017 as the unlabeled dataset.
+# The labeled_ann_file and unlabeled_ann_file are
+# instances_train2017.json and image_info_unlabeled2017.json
+# We use this configuration by default.
+labeled_dataset = dict(
+    type=dataset_type,
+    data_root=data_root,
+    ann_file='annotations/instances_train2017.json',
+    data_prefix=dict(img='train2017/'),
+    filter_cfg=dict(filter_empty_gt=True, min_size=32),
+    pipeline=sup_pipeline)
+
+unlabeled_dataset = dict(
+    type=dataset_type,
+    data_root=data_root,
+    ann_file='annotations/instances_unlabeled2017.json',
+    data_prefix=dict(img='unlabeled2017/'),
+    filter_cfg=dict(filter_empty_gt=False),
+    pipeline=unsup_pipeline)
 
 train_dataloader = dict(
     batch_size=batch_size,
@@ -112,23 +136,7 @@ train_dataloader = dict(
         batch_size=batch_size,
         source_ratio=[1, 4]),
     dataset=dict(
-        type='ConcatDataset',
-        datasets=[
-            dict(
-                type=dataset_type,
-                data_root='data/',
-                ann_file=labeled_ann_file,
-                data_prefix=dict(img='coco/train2017/'),
-                filter_cfg=dict(filter_empty_gt=True, min_size=32),
-                pipeline=sup_pipeline),
-            dict(
-                type=dataset_type,
-                data_root='data/',
-                ann_file=unlabeled_ann_file,
-                data_prefix=dict(img='coco/train2017/'),
-                filter_cfg=dict(filter_empty_gt=False),
-                pipeline=unsup_pipeline)
-        ]))
+        type='ConcatDataset', datasets=[labeled_dataset, unlabeled_dataset]))
 
 val_dataloader = dict(
     batch_size=1,
