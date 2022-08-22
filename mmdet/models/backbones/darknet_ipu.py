@@ -45,7 +45,8 @@ class IPUDarknet(Darknet):
 
     def serialized_forward(self, x):
         batch_size = x.shape[0]
-        assert batch_size % self.serial_num == 0
+        assert batch_size % self.serial_num == 0, \
+            'batch_size must be divisible by serial_num'
         local_bz = batch_size // self.serial_num
 
         b3_out_list = []

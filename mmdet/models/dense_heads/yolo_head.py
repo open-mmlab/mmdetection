@@ -471,7 +471,6 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                     self.prior_generator.responsible_flags(
                         featmap_sizes, gt_bboxes[img_id], device))
 
-        # if target_maps_list is None or neg_maps_list is None:
             target_maps_list, neg_maps_list = self.get_targets(
                 anchor_list, responsible_flag_list, gt_bboxes, gt_labels)
 

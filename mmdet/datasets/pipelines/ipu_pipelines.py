@@ -1,35 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import cv2
 import numpy as np
 import torch
 from mmcv.parallel import DataContainer as DC
 
 from ..builder import PIPELINES
 from .formating import to_tensor
-
-
-@PIPELINES.register_module()
-class BGR2RGB:
-    """Convert channel of image from bgr to rgb."""
-
-    def __call__(self, results):
-        """Call Convert channel of image from bgr to rgb.
-
-        Args:
-            results (dict): Result dict from loading pipeline.
-
-        Returns:
-            dict: Converted results, results['img'] has been
-        converted from bgr to rgb.
-        """
-        img_bgr = results['img']
-        img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-        results['img'] = img_rgb
-        return results
-
-    def __repr__(self):
-        repr_str = self.__class__.__name__
-        return repr_str
 
 
 @PIPELINES.register_module()
