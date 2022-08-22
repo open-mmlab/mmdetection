@@ -278,7 +278,6 @@ class ResultVisualizer:
 
         return good_mAPs, bad_mAPs
 
-    # TODO: Waiting for panoptic segmentation reconstruction to test.
     def panoptic_evaluate(self, dataset, results, topk=20):
         """Evaluation for panoptic segmentation.
 

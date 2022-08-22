@@ -1,6 +1,6 @@
 # dataset settings
 dataset_type = 'CocoPanopticDataset'
-data_root = 'data/coco100/'
+data_root = 'data/coco/'
 
 # file_client_args = dict(
 #     backend='petrel',
@@ -54,7 +54,7 @@ val_dataloader = dict(
         data_prefix=dict(img='val2017/', seg='annotations/panoptic_val2017/'),
         test_mode=True,
         pipeline=test_pipeline))
-# test_dataloader = val_dataloader
+test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='CocoPanopticMetric',
@@ -62,11 +62,14 @@ val_evaluator = dict(
     seg_prefix=data_root + 'annotations/panoptic_val2017/',
     file_client_args=file_client_args,
 )
-# test_evaluator = val_evaluator
+test_evaluator = val_evaluator
 
 # inference on test dataset and
 # format the output results for submission.
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> recover config
 # test_dataloader = dict(
 #     batch_size=1,
 #     num_workers=1,
@@ -77,12 +80,17 @@ val_evaluator = dict(
 #         type=dataset_type,
 #         data_root=data_root,
 #         ann_file='annotations/panoptic_image_info_test-dev2017.json',
+<<<<<<< HEAD
 #         data_prefix=dict(img='test2017/'),
+=======
+#         data_prefix=dict(img='test2017/', seg=None),
+>>>>>>> recover config
 #         test_mode=True,
 #         pipeline=test_pipeline))
 # test_evaluator = dict(
 #     type='CocoPanopticMetric',
 #     format_only=True,
+<<<<<<< HEAD
 #     ann_file=data_root + 'annotations/panoptic_image_info_test-dev2017.json',
 #     outfile_prefix='./work_dirs/coco_panoptic/test')
 =======
@@ -107,3 +115,6 @@ test_evaluator = [
     dict(type='DumpResults', out_file_path='dump_maskformer_result2.pkl')
 ]
 >>>>>>> working in progress
+=======
+#     outfile_prefix='./work_dirs/coco_panoptic/test')
+>>>>>>> recover config
