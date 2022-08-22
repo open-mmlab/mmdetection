@@ -89,6 +89,7 @@ class BaseDetDataset(BaseDataset):
             self.proposal_file, file_client_args=self.file_client_args)
         assert len(self.data_list) == len(proposals_list)
         for data_info in self.data_list:
+            # TODO: add `file_name` into metafile during PackDetInputs
             img_path = data_info['file_name']
             proposals = proposals_list[img_path]
             data_info['proposals'] = proposals
