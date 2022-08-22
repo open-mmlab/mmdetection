@@ -82,7 +82,7 @@ def fast_test_model(config_name, checkpoint, args, logger=None):
     runner.test()
 
 
-# Sample test whether the train code is correct
+# Sample test whether the inference code is correct
 def main(args):
     # register all modules in mmdet into the registries
     register_all_modules(init_default_scope=False)
