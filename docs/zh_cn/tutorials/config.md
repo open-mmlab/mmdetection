@@ -375,7 +375,7 @@ resume = False  # 是否从 `load_from` 中定义的检查点恢复。 如果 `l
 
 MMEngine 的 Runner 除了基于轮次的训练循环（epoch）外，还提供了基于迭代（iteration）的训练循环。
 要使用基于迭代的训练，用户应该修改`train_cfg`、`param_scheduler`、`train_dataloader`、`default_hooks`和`log_processor`。
-以下是将基于 epoch 的 RetinaNet 配置更改为基于 iteration 的示例：configs/retinanet/retinanet_r50-fpn_90k_coco.py
+以下是将基于 epoch 的 RetinaNet 配置更改为基于 iteration 的示例：configs/retinanet/retinanet_r50_fpn_90k_coco.py
 
 ```python
 # iter-based 训练配置
@@ -415,7 +415,7 @@ log_processor = dict(by_epoch=False)
 
 对于同一文件夹下的所有配置，推荐**只有一个**对应的**原始配置**文件。所有其他的配置文件都应该继承自这个**原始配置**文件。这样就能保证配置文件的最大继承深度为 3。
 
-为了便于理解，我们建议贡献者继承现有方法。例如，如果在 Faster R-CNN 的基础上做了一些修改，用户首先可以通过指定 `_base_ = ../faster_rcnn/faster-rcnn_r50-fpn_1x_coco.py` 来继承基础的 Faster R-CNN 结构，然后修改配置文件中的必要参数以完成继承。
+为了便于理解，我们建议贡献者继承现有方法。例如，如果在 Faster R-CNN 的基础上做了一些修改，用户首先可以通过指定 `_base_ = ../faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py` 来继承基础的 Faster R-CNN 结构，然后修改配置文件中的必要参数以完成继承。
 
 如果你在构建一个与任何现有方法不共享结构的全新方法，那么可以在 `configs` 文件夹下创建一个新的例如 `xxx_rcnn` 文件夹。
 
@@ -426,14 +426,14 @@ log_processor = dict(by_epoch=False)
 当 `_base_` 为文件路径字符串时，表示继承一个配置文件的内容。
 
 ```python
-_base_ = './mask_rcnn_r50_fpn_1x_coco.py'
+_base_ = './mask-rcnn_r50_fpn_1x_coco.py'
 ```
 
 当 `_base_` 是多个文件路径的列表时，表示继承多个文件。
 
 ```python
 _base_ = [
-    '../_base_/models/mask_rcnn_r50_fpn.py',
+    '../_base_/models/mask-rcnn_r50_fpn.py',
     '../_base_/datasets/coco_instance.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
@@ -468,7 +468,7 @@ model = dict(
 基础配置的 `Mask R-CNN` 使用 `ResNet-50`，在需要将主干网络改成 `HRNet` 的时候，因为 `HRNet` 和 `ResNet` 中有不同的字段，需要使用 `_delete_=True` 将新的键去替换 `backbone` 域内所有老的键。
 
 ```python
-_base_ = '../mask_rcnn/mask-rcnn_r50-fpn_1x_coco.py'
+_base_ = '../mask_rcnn/mask-rcnn_r50_fpn_1x_coco.py'
 model = dict(
     backbone=dict(
         _delete_=True,
@@ -507,7 +507,7 @@ model = dict(
 配置文件里会使用一些中间变量，例如数据集里的 `train_pipeline`/`test_pipeline`。我们在定义新的 `train_pipeline`/`test_pipeline` 之后，需要将它们传递到 `data` 里。例如，我们想在训练或测试时，改变 Mask R-CNN 的多尺度策略 (multi scale strategy)，`train_pipeline`/`test_pipeline` 是我们想要修改的中间变量。
 
 ```python
-_base_ = './mask-rcnn_r50-fpn_1x_coco.py'
+_base_ = './mask-rcnn_r50_fpn_1x_coco.py'
 
 train_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -536,7 +536,7 @@ test_dataloader = dict(dataset=dict(pipeline=test_pipeline))
 同样的，如果我们想从 `SyncBN` 切换到 `BN` 或者 `MMSyncBN`，我们需要修改配置文件里的每一个  `norm_cfg`。
 
 ```python
-_base_ = './mask-rcnn_r50-fpn_1x_coco.py'
+_base_ = './mask-rcnn_r50_fpn_1x_coco.py'
 norm_cfg = dict(type='BN', requires_grad=True)
 model = dict(
     backbone=dict(norm_cfg=norm_cfg),
@@ -549,7 +549,7 @@ model = dict(
 如果用户希望在当前配置中复用 base 文件中的变量，则可以通过使用 `{{_base_.xxx}}` 的方式来获取对应变量的拷贝。例如：
 
 ```python
-_base_ = './mask-rcnn_r50-fpn_1x_coco.py'
+_base_ = './mask-rcnn_r50_fpn_1x_coco.py'
 
 a = {{_base_.model}}  # 变量 a 等于 _base_ 中定义的 model
 ```
@@ -575,13 +575,13 @@ a = {{_base_.model}}  # 变量 a 等于 _base_ 中定义的 model
 我们遵循以下样式来命名配置文件。建议贡献者遵循相同的风格。
 
 ```
-{algorithm name}_{component names}_{training settings}_{dataset information}.py
+{algorithm name}_{model component names [component1]_[component2]_[...]}_{training settings}_{dataset information}.py
 ```
 
 文件名分为四个部分。 每个部分用`_`连接，每个部分内的单词应该用`-`连接。
 
 - `{algorithm name}`: 算法的名称。 它可以是检测器名称，例如 `faster-rcnn`、`mask-rcnn` 等。也可以是半监督或知识蒸馏算法，例如 `soft-teacher`、`lad` 等等
-- `{component names}`: 算法中使用的组件名称，如 backbone、neck 等。例如 `r50-fpn-gn` 表示在算法中使用 ResNet50、FPN 和 Group Norm。
+- `{component names}`: 算法中使用的组件名称，如 backbone、neck 等。例如 `r50-caffe_fpn_gn-head` 表示在算法中使用 caffe 版本的 ResNet50、FPN 和 使用了 Group Norm 的检测头。
 - `{training settings}`: 训练设置的信息，例如 batch 大小、数据增强、损失、参数调度方式和训练最大轮次/迭代。 例如：`4xb4-mixup-giou-coslr-100e` 表示使用 8 个 gpu 每个 gpu 4 张图、mixup 数据增强、GIoU loss、余弦退火学习率，并训练 100 个 epoch。
   缩写介绍:
   - `{gpu x batch_per_gpu}`: GPU 数和每个 GPU 的样本数。例如 `4x4b` 是 4 个 GPU 每个 GPU 4 张图的缩写。如果没有注明，默认为 8 卡每卡 2 张图。

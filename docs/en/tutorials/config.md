@@ -375,7 +375,7 @@ resume = False  # Whether to resume from the checkpoint defined in `load_from`. 
 
 MMEngine's Runner also provides an iter-based training loop except for epoch-based.
 To use iter-based training, users should modify the `train_cfg`, `param_scheduler`, `train_dataloader`, `default_hooks`, and `log_processor`.
-Here is an example of changing an epoch-based RetinaNet config to iter-based: configs/retinanet/retinanet_r50-fpn_90k_coco.py
+Here is an example of changing an epoch-based RetinaNet config to iter-based: configs/retinanet/retinanet_r50_fpn_90k_coco.py
 
 ```python
 # iter-based training config
@@ -418,7 +418,7 @@ The configs that are composed by components from `_base_` are called _primitive_
 For all configs under the same folder, it is recommended to have only **one** _primitive_ config. All other configs should inherit from the _primitive_ config. In this way, the maximum of inheritance level is 3.
 
 For easy understanding, we recommend contributors to inherit from existing methods.
-For example, if some modification is made base on Faster R-CNN, user may first inherit the basic Faster R-CNN structure by specifying `_base_ = ../faster_rcnn/faster-rcnn_r50-fpn_1x_coco.py`, then modify the necessary fields in the config files.
+For example, if some modification is made base on Faster R-CNN, user may first inherit the basic Faster R-CNN structure by specifying `_base_ = ../faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py`, then modify the necessary fields in the config files.
 
 If you are building an entirely new method that does not share the structure with any of the existing methods, you may create a folder `xxx_rcnn` under `configs`,
 
@@ -429,7 +429,7 @@ By setting the `_base_` field, we can set which files the current configuration 
 When `_base_` is a string of a file path, it means inherit the contents of one config file.
 
 ```python
-_base_ = './mask-rcnn_r50-fpn_1x_coco.py'
+_base_ = './mask-rcnn_r50_fpn_1x_coco.py'
 ```
 
 When `_base_` is a list of multiple file paths, it means inheriting multiple files.
@@ -472,7 +472,7 @@ model = dict(
 `ResNet` and `HRNet` use different keywords to construct.
 
 ```python
-_base_ = '../mask_rcnn/mask-rcnn_r50-fpn_1x_coco.py'
+_base_ = '../mask_rcnn/mask-rcnn_r50_fpn_1x_coco.py'
 model = dict(
     backbone=dict(
         _delete_=True,
@@ -515,7 +515,7 @@ It's worth noting that when modifying intermediate variables in the children con
 For example, we would like to use multi scale strategy to train a Mask R-CNN. `train_pipeline`/`test_pipeline` are intermediate variable we would like modify.
 
 ```python
-_base_ = './mask-rcnn_r50-fpn_1x_coco.py'
+_base_ = './mask-rcnn_r50_fpn_1x_coco.py'
 
 train_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -544,7 +544,7 @@ We first define the new `train_pipeline`/`test_pipeline` and pass them into data
 Similarly, if we would like to switch from `SyncBN` to `BN` or `MMSyncBN`, we need to substitute every `norm_cfg` in the config.
 
 ```python
-_base_ = './mask-rcnn_r50-fpn_1x_coco.py'
+_base_ = './mask-rcnn_r50_fpn_1x_coco.py'
 norm_cfg = dict(type='BN', requires_grad=True)
 model = dict(
     backbone=dict(norm_cfg=norm_cfg),
@@ -557,7 +557,7 @@ model = dict(
 If the users want to reuse the variables in the base file, they can get a copy of the corresponding variable by using `{{_base_.xxx}}`. E.g:
 
 ```python
-_base_ = './mask-rcnn_r50-fpn_1x_coco.py'
+_base_ = './mask-rcnn_r50_fpn_1x_coco.py'
 
 a = {{_base_.model}} # variable `a` is equal to the `model` defined in `_base_`
 ```
@@ -588,13 +588,13 @@ When submitting jobs using "tools/train.py" or "tools/test.py", you may specify 
 We follow the below style to name config files. Contributors are advised to follow the same style.
 
 ```
-{algorithm name}_{component names}_{training settings}_{dataset information}.py
+{algorithm name}_{model component names [component1]_[component2]_[...]}_{training settings}_{dataset information}.py
 ```
 
-The file name is divided to four parts. Each part are connected with `_` and words inside each part should be connected with `-`.
+The file name is divided to four parts. All parts and components are connected with `_` and words of each part or component should be connected with `-`.
 
 - `{algorithm name}`: The name of the algorithm. It can be a detector name such as `faster-rcnn`, `mask-rcnn`, etc. Or can be a semi-supervise or knowladge-distillation algorithm such as `soft-teacher`, `lad`. etc.
-- `{component names}`: Names of the components used in the algorithm such as backbone, neck, etc. For example, `r50-fpn-gn` means using ResNet50, FPN and Group Norm in the algorithm.
+- `{model component names}`: Names of the components used in the algorithm such as backbone, neck, etc. For example, `r50-caffe_fpn_gn-head` means using caffe-style ResNet50, FPN and detection head with Group Norm in the algorithm.
 - `{training settings}`: Information of training settings such as batch size, augmentations, loss trick, scheduler, and epochs/iterations. For example: `4xb4-mixup-giou-coslr-100e` means using 8-gpus x 4-images-per-gpu, mixup augmentation, GIoU loss, cosine annealing learning rate, and train 100 epochs.
   Some abbreviations:
   - `{gpu x batch_per_gpu}`: GPUs and samples per GPU. E.g. `4x4b` is the short term of 4-gpus x 4-images-per-gpu. And `8xb2` is used by default if not mentioned.
