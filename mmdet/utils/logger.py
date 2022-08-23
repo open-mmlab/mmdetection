@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import inspect
 
-from mmengine.logging import MMLogger
+from mmengine.logging import print_log
 
 
 def get_caller_name():
@@ -41,8 +41,9 @@ def log_img_scale(img_scale, shape_order='hw', skip_square=False):
     if skip_square and (height == width):
         return False
 
-    logger = MMLogger.get_current_instance()
     caller = get_caller_name()
-    logger.info(f'image shape: height={height}, width={width} in {caller}')
+    print_log(
+        f'image shape: height={height}, width={width} in {caller}',
+        logger='current')
 
     return True
