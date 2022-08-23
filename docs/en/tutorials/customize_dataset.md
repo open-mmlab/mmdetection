@@ -186,7 +186,7 @@ It is also fine if you do not want to convert the annotation format to COCO or P
 Actually, we define a simple annotation format in MMEninge's [BaseDataset ](https://github.com/open-mmlab/mmengine/blob/main/mmengine/dataset/base_dataset.py#L116) and all existing datasets are
 processed to be compatible with it, either online or offline.
 
-The annotation of the dataset must be in `json` or `yaml`, `yml` or `pickle`, `pkl` format; the dictionary stored in the annotation file must contain two fields `metainfo` and `data_list`.  The `metainfo` is a dictionary, which contains the metadata of the dataset, such as class information; `data_list` is a list, each element in the list is a dictionary, the dictionary defines a raw data (raw data), each raw data contains a or several training/testing samples.
+The annotation of the dataset must be in `json` or `yaml`, `yml` or `pickle`, `pkl` format; the dictionary stored in the annotation file must contain two fields `metainfo` and `data_list`.  The `metainfo` is a dictionary, which contains the metadata of the dataset, such as class information; `data_list` is a list, each element in the list is a dictionary, the dictionary defines the raw data of one image, and each raw data contains a or several training/testing samples.
 
 Here is an example.
 
@@ -328,7 +328,7 @@ Currently it supports to three dataset wrappers as below:
 - `ClassBalancedDataset`: repeat dataset in a class balanced manner.
 - `ConcatDataset`: concat datasets.
 
-For detailed usage, see [MMEngine Dataset Base Class Wrapper](#TODO).
+For detailed usage, see [MMEngine Dataset Wrapper](#TODO).
 
 ## Modify Dataset Classes
 
@@ -356,7 +356,7 @@ test_dataloader = dict(
 **Note**:
 
 - Before MMDetection v2.5.0, the dataset will filter out the empty GT images automatically if the classes are set and there is no way to disable that through config. This is an undesirable behavior and introduces confusion because if the classes are not set, the dataset only filter the empty GT images when `filter_empty_gt=True` and `test_mode=False`. After MMDetection v2.5.0, we decouple the image filtering process and the classes modification, i.e., the dataset will only filter empty GT images when `filter_cfg=dict(filter_empty_gt=True)` and `test_mode=False`, no matter whether the classes are set. Thus, setting the classes only influences the annotations of classes used for training and users could decide whether to filter empty GT images by themselves.
-- When using `BaseDataset` in MMEngine, users cannot filter images without GT by modifying the configuration, but it can be solved in an offline way.
+- When directly using `BaseDataset` in MMEngine or `BaseDetDataset` in MMDetection, users cannot filter images without GT by modifying the configuration, but it can be solved in an offline way.
 - Please remember to modify the `num_classes` in the head when specifying `classes` in dataset. We implemented [NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/engine/hooks/num_class_check_hook.py) to check whether the numbers are consistent since v2.9.0(after PR#4508).
 
 ## COCO Panoptic Dataset

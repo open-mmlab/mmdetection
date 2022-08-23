@@ -324,7 +324,7 @@ MMEngine 也支持非常多的数据集包装器（wrapper）来混合数据集�
 - `ClassBalancedDataset`：以类别均衡的方式重复数据集。
 - `ConcatDataset`：合并数据集。
 
-具体使用方式见 [MMEngine 数据集基类包装](#TODO)。
+具体使用方式见 [MMEngine 数据集包装器](#TODO)。
 
 ## 修改数据集的类别
 
@@ -350,7 +350,7 @@ test_dataloader = dict(
 **注意**
 
 - 在 MMDetection v2.5.0 之前，如果类别为集合时数据集将自动过滤掉不包含 GT 的图片，且没办法通过修改配置将其关闭。这是一种不可取的行为而且会引起混淆，因为当类别不是集合时数据集时，只有在 `filter_empty_gt=True` 以及 `test_mode=False` 的情况下才会过滤掉不包含 GT 的图片。在 MMDetection v2.5.0 之后，我们将图片的过滤以及类别的修改进行解耦，数据集只有在 `filter_cfg=dict(filter_empty_gt=True)` 和 `test_mode=False` 的情况下才会过滤掉不包含 GT 的图片，无论类别是否为集合。设置类别只会影响用于训练的标注类别，用户可以自行决定是否过滤不包含 GT 的图片。
-- 使用 MMEngine 中的 `BaseDataset` 时用户不能通过修改配置来过滤不含 GT 的图片，但是可以通过离线的方式来解决。
+- 直接使用 MMEngine 中的 `BaseDataset` 或者 MMDetection 中的 `BaseDetDataset` 时用户不能通过修改配置来过滤不含 GT 的图片，但是可以通过离线的方式来解决。
 - 当设置数据集中的 `classes` 时，记得修改 `num_classes`。从 v2.9.0 (PR#4508) 之后，我们实现了[NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/engine/hooks/num_class_check_hook.py)来检查类别数是否一致。
 
 ## COCO 全景分割数据集
