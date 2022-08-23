@@ -3,6 +3,7 @@ import torch
 
 from mmdet.registry import TASK_UTILS
 from .base_bbox_coder import BaseBBoxCoder
+from mmdet.structures.bbox import HorizontalBoxes
 
 
 @TASK_UTILS.register_module()
@@ -18,8 +19,8 @@ class YOLOBBoxCoder(BaseBBoxCoder):
         eps (float): Min value of cx, cy when encoding.
     """
 
-    def __init__(self, eps=1e-6):
-        super(BaseBBoxCoder, self).__init__()
+    def __init__(self, eps=1e-6, **kwargs):
+        super(BaseBBoxCoder, self).__init__(**kwargs)
         self.eps = eps
 
     def encode(self, bboxes, gt_bboxes, stride):
@@ -77,4 +78,7 @@ class YOLOBBoxCoder(BaseBBoxCoder):
              whs[..., 1], xy_centers[..., 0] + whs[..., 0],
              xy_centers[..., 1] + whs[..., 1]),
             dim=-1)
+        
+        if self.with_boxlist:
+            decoded_bboxes = HorizontalBoxes(decoded_bboxes)
         return decoded_bboxes

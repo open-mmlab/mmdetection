@@ -16,6 +16,7 @@ from mmdet.utils import InstanceList, OptMultiConfig
 from ..test_time_augs import merge_aug_results
 from ..utils import (filter_scores_and_topk, select_single_mlvl,
                      unpack_gt_instances)
+from mmdet.structures.bbox import BaseBoxes
 
 
 class BaseDenseHead(BaseModule, metaclass=ABCMeta):
@@ -345,6 +346,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         cfg = copy.deepcopy(cfg)
         img_shape = img_meta['img_shape']
         nms_pre = cfg.get('nms_pre', -1)
+        reg_out_channels = getattr(self, 'reg_out_channels', 4)
 
         mlvl_bbox_preds = []
         mlvl_valid_priors = []
@@ -360,7 +362,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
 
-            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
+            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, reg_out_channels)
             if with_score_factors:
                 score_factor = score_factor.permute(1, 2,
                                                     0).reshape(-1).sigmoid()
@@ -452,11 +454,15 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 - bboxes (Tensor): Has a shape (num_instances, 4),
                   the last dimension 4 arrange as (x1, y1, x2, y2).
         """
-
+        is_boxlist = isinstance(results.bboxes, BaseBoxes)
         if rescale:
             assert img_meta.get('scale_factor') is not None
-            results.bboxes /= results.bboxes.new_tensor(
-                img_meta['scale_factor']).repeat((1, 2))
+            if is_boxlist:
+                scale_factor = [1 / s for s in img_meta['scale_factor']]
+                results.bboxes.rescale_(scale_factor)
+            else:
+                results.bboxes /= results.bboxes.new_tensor(
+                    img_meta['scale_factor']).repeat((1, 2))
 
         if hasattr(results, 'score_factors'):
             # TODO： Add sqrt operation in order to be consistent with
@@ -466,15 +472,19 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
         # filter small size bboxes
         if cfg.get('min_bbox_size', -1) >= 0:
-            w = results.bboxes[:, 2] - results.bboxes[:, 0]
-            h = results.bboxes[:, 3] - results.bboxes[:, 1]
+            if is_boxlist:
+                w, h = results.bboxes.widths, results.bboxes.heights
+            else:
+                w = results.bboxes[:, 2] - results.bboxes[:, 0]
+                h = results.bboxes[:, 3] - results.bboxes[:, 1]
             valid_mask = (w > cfg.min_bbox_size) & (h > cfg.min_bbox_size)
             if not valid_mask.all():
                 results = results[valid_mask]
 
         # TODO: deal with `with_nms` and `nms_cfg=None` in test_cfg
         if with_nms and results.bboxes.numel() > 0:
-            det_bboxes, keep_idxs = batched_nms(results.bboxes, results.scores,
+            bboxes = results.bboxes.tensor if is_boxlist else results.bboxes
+            det_bboxes, keep_idxs = batched_nms(bboxes, results.scores,
                                                 results.labels, cfg.nms)
             results = results[keep_idxs]
             # some nms would reweight the score, such as softnms

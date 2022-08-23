@@ -7,6 +7,7 @@ from mmengine.utils import is_tuple_of
 from torch.nn.modules.utils import _pair
 
 from mmdet.registry import TASK_UTILS
+from mmdet.structures.bbox import HorizontalBoxes
 
 
 @TASK_UTILS.register_module()
@@ -68,7 +69,8 @@ class AnchorGenerator:
                  octave_base_scale=None,
                  scales_per_octave=None,
                  centers=None,
-                 center_offset=0.):
+                 center_offset=0.,
+                 with_boxlist=False):
         # check center and center_offset
         if center_offset != 0:
             assert centers is None, 'center cannot be set when center_offset' \
@@ -112,6 +114,7 @@ class AnchorGenerator:
         self.centers = centers
         self.center_offset = center_offset
         self.base_anchors = self.gen_base_anchors()
+        self.with_boxlist = with_boxlist
 
     @property
     def num_base_anchors(self):
@@ -279,6 +282,8 @@ class AnchorGenerator:
         all_anchors = all_anchors.view(-1, 4)
         # first A rows correspond to A anchors of (0, 0) in feature map,
         # then (0, 1), (0, 2), ...
+        if self.with_boxlist:
+            all_anchors = HorizontalBoxes(all_anchors)
         return all_anchors
 
     def sparse_priors(self,

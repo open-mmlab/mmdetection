@@ -7,7 +7,8 @@ from .misc import (center_of_mass, empty_instances, filter_scores_and_topk,
                    flip_tensor, generate_coordinate, images_to_levels,
                    interpolate_as, levels_to_images, mask2ndarray, multi_apply,
                    samplelist_boxlist2tensor, select_single_mlvl,
-                   sigmoid_geometric_mean, unmap, unpack_gt_instances)
+                   sigmoid_geometric_mean, unmap, unpack_gt_instances,
+                   cat, stack)
 from .panoptic_gt_processing import preprocess_panoptic_gt
 from .point_sample import (get_uncertain_point_coords_with_randomness,
                            get_uncertainty)
@@ -21,5 +22,5 @@ __all__ = [
     'center_of_mass', 'filter_scores_and_topk', 'flip_tensor',
     'generate_coordinate', 'levels_to_images', 'mask2ndarray', 'multi_apply',
     'select_single_mlvl', 'unmap', 'images_to_levels',
-    'samplelist_boxlist2tensor'
+    'samplelist_boxlist2tensor', 'cat', 'stack'
 ]

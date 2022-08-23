@@ -3,6 +3,7 @@ import numpy as np
 import torch
 
 from mmdet.registry import TASK_UTILS
+from mmdet.structures.bbox import HorizontalBoxes
 from .base_bbox_coder import BaseBBoxCoder
 
 
@@ -32,8 +33,9 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
 
     def __init__(self,
                  target_means=(0., 0., 0., 0.),
-                 target_stds=(1., 1., 1., 1.)):
-        super(BaseBBoxCoder, self).__init__()
+                 target_stds=(1., 1., 1., 1.),
+                 **kwargs):
+        super(BaseBBoxCoder, self).__init__(**kwargs)
         self.means = target_means
         self.stds = target_stds
 
@@ -77,6 +79,8 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
         decoded_bboxes = legacy_delta2bbox(bboxes, pred_bboxes, self.means,
                                            self.stds, max_shape, wh_ratio_clip)
 
+        if self.with_boxlist:
+            decoded_bboxes = HorizontalBoxes(decoded_bboxes)
         return decoded_bboxes
 
 

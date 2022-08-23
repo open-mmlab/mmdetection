@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 
 from mmdet.registry import TASK_UTILS
-from mmdet.structures.bbox import bbox_rescale
+from mmdet.structures.bbox import bbox_rescale, HorizontalBoxes
 from .base_bbox_coder import BaseBBoxCoder
 
 
@@ -37,8 +37,9 @@ class BucketingBBoxCoder(BaseBBoxCoder):
                  offset_topk=2,
                  offset_upperbound=1.0,
                  cls_ignore_neighbor=True,
-                 clip_border=True):
-        super(BucketingBBoxCoder, self).__init__()
+                 clip_border=True,
+                 **kwargs):
+        super(BucketingBBoxCoder, self).__init__(**kwargs)
         self.num_buckets = num_buckets
         self.scale_factor = scale_factor
         self.offset_topk = offset_topk
@@ -84,11 +85,12 @@ class BucketingBBoxCoder(BaseBBoxCoder):
         cls_preds, offset_preds = pred_bboxes
         assert cls_preds.size(0) == bboxes.size(0) and offset_preds.size(
             0) == bboxes.size(0)
-        decoded_bboxes = bucket2bbox(bboxes, cls_preds, offset_preds,
+        bboxes, loc_confidence = bucket2bbox(bboxes, cls_preds, offset_preds,
                                      self.num_buckets, self.scale_factor,
                                      max_shape, self.clip_border)
-
-        return decoded_bboxes
+        if self.with_boxlist:
+            bboxes = HorizontalBoxes(bboxes, clone=False)
+        return bboxes, loc_confidence
 
 
 def generat_buckets(proposals, num_buckets, scale_factor=1.0):

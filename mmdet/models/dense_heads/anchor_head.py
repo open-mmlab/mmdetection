@@ -13,8 +13,9 @@ from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
 from ..task_modules.prior_generators import (AnchorGenerator,
                                              anchor_inside_flags)
 from ..task_modules.samplers import PseudoSampler
-from ..utils import images_to_levels, multi_apply, unmap
+from ..utils import images_to_levels, multi_apply, unmap, cat
 from .base_dense_head import BaseDenseHead
+from mmdet.structures.bbox import BaseBoxes
 
 
 @MODELS.register_module()
@@ -80,6 +81,7 @@ class AnchorHead(BaseDenseHead):
         self.reg_decoded_bbox = reg_decoded_bbox
 
         self.bbox_coder = TASK_UTILS.build(bbox_coder)
+        self.reg_out_channels = self.bbox_coder.encode_size
         self.loss_cls = MODELS.build(loss_cls)
         self.loss_bbox = MODELS.build(loss_bbox)
         self.train_cfg = train_cfg
@@ -120,7 +122,8 @@ class AnchorHead(BaseDenseHead):
         self.conv_cls = nn.Conv2d(self.in_channels,
                                   self.num_base_priors * self.cls_out_channels,
                                   1)
-        self.conv_reg = nn.Conv2d(self.in_channels, self.num_base_priors * 4,
+        self.conv_reg = nn.Conv2d(self.in_channels,
+                                  self.num_base_priors * self.reg_out_channels,
                                   1)
 
     def forward_single(self, x: Tensor) -> Tuple[Tensor, Tensor]:
@@ -243,7 +246,7 @@ class AnchorHead(BaseDenseHead):
                 'check the image size and anchor sizes, or set '
                 '``allowed_border`` to -1 to skip the condition.')
         # assign gt and sample anchors
-        anchors = flat_anchors[inside_flags, :]
+        anchors = flat_anchors[inside_flags]
 
         pred_instances = InstanceData(priors=anchors)
         assign_result = self.assigner.assign(pred_instances, gt_instances,
@@ -254,8 +257,10 @@ class AnchorHead(BaseDenseHead):
                                               gt_instances)
 
         num_valid_anchors = anchors.shape[0]
-        bbox_targets = torch.zeros_like(anchors)
-        bbox_weights = torch.zeros_like(anchors)
+        target_dim = gt_instances.bboxes.size(-1) if self.reg_decoded_bbox \
+            else self.reg_out_channels
+        bbox_targets = anchors.new_zeros(num_valid_anchors, target_dim)
+        bbox_weights = anchors.new_zeros(num_valid_anchors, target_dim)
 
         # TODO: Considering saving memory, is it necessary to be long?
         labels = anchors.new_full((num_valid_anchors, ),
@@ -271,6 +276,8 @@ class AnchorHead(BaseDenseHead):
                     sampling_result.pos_priors, sampling_result.pos_gt_bboxes)
             else:
                 pos_bbox_targets = sampling_result.pos_gt_bboxes
+                if isinstance(pos_bbox_targets, BaseBoxes):
+                    pos_bbox_targets = pos_bbox_targets.tensor
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
 
@@ -362,7 +369,7 @@ class AnchorHead(BaseDenseHead):
         concat_valid_flag_list = []
         for i in range(num_imgs):
             assert len(anchor_list[i]) == len(valid_flag_list[i])
-            concat_anchor_list.append(torch.cat(anchor_list[i]))
+            concat_anchor_list.append(cat(anchor_list[i]))
             concat_valid_flag_list.append(torch.cat(valid_flag_list[i]))
 
         # compute targets for each image
@@ -438,15 +445,19 @@ class AnchorHead(BaseDenseHead):
         loss_cls = self.loss_cls(
             cls_score, labels, label_weights, avg_factor=avg_factor)
         # regression loss
-        bbox_targets = bbox_targets.reshape(-1, 4)
-        bbox_weights = bbox_weights.reshape(-1, 4)
-        bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(-1, 4)
+        target_dim = bbox_targets.size(-1)
+        bbox_targets = bbox_targets.reshape(-1, target_dim)
+        bbox_weights = bbox_weights.reshape(-1, target_dim)
+        bbox_pred = bbox_pred.permute(0, 2, 3,
+                                      1).reshape(-1, self.reg_out_channels)
         if self.reg_decoded_bbox:
             # When the regression loss (e.g. `IouLoss`, `GIouLoss`)
             # is applied directly on the decoded bounding boxes, it
             # decodes the already encoded coordinates to absolute format.
-            anchors = anchors.reshape(-1, 4)
+            anchors = anchors.reshape(-1, anchors.size(2))
             bbox_pred = self.bbox_coder.decode(anchors, bbox_pred)
+            if isinstance(bbox_pred, BaseBoxes):
+                bbox_pred = bbox_pred.tensor
         loss_bbox = self.loss_bbox(
             bbox_pred, bbox_targets, bbox_weights, avg_factor=avg_factor)
         return loss_cls, loss_bbox
@@ -500,7 +511,7 @@ class AnchorHead(BaseDenseHead):
         # concat all level anchors and flags to a single tensor
         concat_anchor_list = []
         for i in range(len(anchor_list)):
-            concat_anchor_list.append(torch.cat(anchor_list[i]))
+            concat_anchor_list.append(cat(anchor_list[i]))
         all_anchor_list = images_to_levels(concat_anchor_list,
                                            num_level_anchors)
 

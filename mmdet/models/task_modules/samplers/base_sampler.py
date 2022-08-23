@@ -94,8 +94,6 @@ class BaseSampler(metaclass=ABCMeta):
         if len(priors.shape) < 2:
             priors = priors[None, :]
 
-        priors = priors[:, :4]
-
         gt_flags = priors.new_zeros((priors.shape[0], ), dtype=torch.uint8)
         if self.add_gt_as_proposals and len(gt_bboxes) > 0:
             priors = torch.cat([gt_bboxes, priors], dim=0)

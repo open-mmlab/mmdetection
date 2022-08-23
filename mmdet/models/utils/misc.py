@@ -4,6 +4,7 @@ from typing import List, Union
 
 import numpy as np
 import torch
+from torch import Tensor
 from mmengine.structures import InstanceData
 from six.moves import map, zip
 from torch.autograd import Function
@@ -412,7 +413,7 @@ def images_to_levels(target, num_levels):
 
     [target_img0, target_img1] -> [target_level0, target_level1, ...]
     """
-    target = torch.stack(target, 0)
+    target = stack(target, 0)
     level_targets = []
     start = 0
     for n in num_levels:
@@ -437,3 +438,41 @@ def samplelist_boxlist2tensor(batch_data_samples: SampleList) -> SampleList:
             bboxes = data_samples.ignored_instances.get('bboxes', None)
             if isinstance(bboxes, BaseBoxes):
                 data_samples.ignored_instances.bboxes = bboxes.tensor
+
+
+def cat(data_list: List[Union[Tensor, BaseBoxes]], dim: int = 0) \
+    -> Union[Tensor, BaseBoxes]:
+    """Concatenate tensor or BoxList.
+
+    Args:
+        data_list (List[Union[Tensor, :obj:`BaseBoxes`]]): A list of tensors
+            or boxlists need to be concatenated.
+            dim (int): The dimension over which the box are concatenated.
+                Defaults to 0.
+    
+    Returns:
+        Union[Tensor, :obj`BaseBoxes`]: Concatenated results.
+    """
+    if data_list and isinstance(data_list[0], BaseBoxes):
+        return data_list[0].cat(data_list, dim=dim)
+    else:
+        return torch.cat(data_list, dim=dim)
+
+
+def stack(data_list: List[Union[Tensor, BaseBoxes]], dim: int = 0) \
+    -> Union[Tensor, BaseBoxes]:
+    """Stack tensor or BoxList.
+
+    Args:
+        data_list (List[Union[Tensor, :obj:`BaseBoxes`]]): A list of tensors
+            or boxlists need to be stacked.
+            dim (int): The dimension over which the box are stacked.
+                Defaults to 0.
+    
+    Returns:
+        Union[Tensor, :obj`BaseBoxes`]: Stacked results.
+    """
+    if data_list and isinstance(data_list[0], BaseBoxes):
+        return data_list[0].stack(data_list, dim=dim)
+    else:
+        return torch.stack(data_list, dim=dim)

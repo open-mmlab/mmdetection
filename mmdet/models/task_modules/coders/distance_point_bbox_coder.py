@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from mmdet.registry import TASK_UTILS
-from mmdet.structures.bbox import bbox2distance, distance2bbox
+from mmdet.structures.bbox import bbox2distance, distance2bbox, HorizontalBoxes
 from .base_bbox_coder import BaseBBoxCoder
 
 
@@ -16,8 +16,8 @@ class DistancePointBBoxCoder(BaseBBoxCoder):
             border of the image. Defaults to True.
     """
 
-    def __init__(self, clip_border=True):
-        super(BaseBBoxCoder, self).__init__()
+    def __init__(self, clip_border=True, **kwargs):
+        super(BaseBBoxCoder, self).__init__(**kwargs)
         self.clip_border = clip_border
 
     def encode(self, points, gt_bboxes, max_dis=None, eps=0.1):
@@ -60,4 +60,7 @@ class DistancePointBBoxCoder(BaseBBoxCoder):
         assert pred_bboxes.size(-1) == 4
         if self.clip_border is False:
             max_shape = None
-        return distance2bbox(points, pred_bboxes, max_shape)
+        bboxes = distance2bbox(points, pred_bboxes, max_shape)
+
+        if self.with_boxlist:
+            bboxes = HorizontalBoxes(bboxes)

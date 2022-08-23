@@ -6,6 +6,7 @@ import torch
 
 from mmdet.registry import TASK_UTILS
 from .base_bbox_coder import BaseBBoxCoder
+from mmdet.structures.bbox import HorizontalBoxes
 
 
 @TASK_UTILS.register_module()
@@ -35,8 +36,9 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
                  target_stds=(1., 1., 1., 1.),
                  clip_border=True,
                  add_ctr_clamp=False,
-                 ctr_clamp=32):
-        super(BaseBBoxCoder, self).__init__()
+                 ctr_clamp=32,
+                 **kwargs):
+        super(BaseBBoxCoder, self).__init__(**kwargs)
         self.means = target_means
         self.stds = target_stds
         self.clip_border = clip_border
@@ -109,7 +111,9 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
                                              wh_ratio_clip, self.clip_border,
                                              self.add_ctr_clamp,
                                              self.ctr_clamp)
-
+        
+        if self.with_boxlist:
+            decoded_bboxes = HorizontalBoxes(decoded_bboxes)
         return decoded_bboxes
 
 

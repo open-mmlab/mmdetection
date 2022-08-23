@@ -3,6 +3,7 @@ import torch
 
 from mmdet.registry import TASK_UTILS
 from .base_bbox_coder import BaseBBoxCoder
+from mmdet.structures.bbox import HorizontalBoxes
 
 
 @TASK_UTILS.register_module()
@@ -22,8 +23,8 @@ class TBLRBBoxCoder(BaseBBoxCoder):
             border of the image. Defaults to True.
     """
 
-    def __init__(self, normalizer=4.0, clip_border=True):
-        super(BaseBBoxCoder, self).__init__()
+    def __init__(self, normalizer=4.0, clip_border=True, **kwargs):
+        super(BaseBBoxCoder, self).__init__(**kwargs)
         self.normalizer = normalizer
         self.clip_border = clip_border
 
@@ -69,6 +70,8 @@ class TBLRBBoxCoder(BaseBBoxCoder):
             max_shape=max_shape,
             clip_border=self.clip_border)
 
+        if self.with_boxlist:
+            decoded_bboxes = HorizontalBoxes(decoded_bboxes)
         return decoded_bboxes
 
 
