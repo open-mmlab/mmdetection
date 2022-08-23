@@ -2,7 +2,7 @@
 
 ## Customize optimization settings
 
-Optimization related configuration is now all managed by `optim_wrapper` which usually has three fields: `optimizer`, `paramwise_cfg`, `clip_grad`, refer to [OptimWrapper](https://github.com/open-mmlab/mmengine/blob/429bb27972bee1a9f3095a4d5f6ac5c0b88ccf54/mmengine/optim/optimizer/optimizer_wrapper.py#L17) for more detail. See the example below, where `Adamw` is used as an `optimizer`, the learning rate of the backbone is reduced by a factor of 10, and gradient clipping is added.
+Optimization related configuration is now all managed by `optim_wrapper` which usually has three fields: `optimizer`, `paramwise_cfg`, `clip_grad`, refer to [OptimWrapper](https://mmengine.readthedocs.io/en/latest/tutorials/optim_wrapper.md) for more detail. See the example below, where `Adamw` is used as an `optimizer`, the learning rate of the backbone is reduced by a factor of 10, and gradient clipping is added.
 
 ```python
 optim_wrapper = dict(
@@ -126,7 +126,7 @@ class MyOptimizerConstructor(DefaultOptimWrapperConstructor):
 
 ```
 
-The default optimizer constructor is implemented [here](https://github.com/open-mmlab/mmengine/blob/1a8f0139373ab3d5e0a7012f42e3b345776c0b72/mmengine/optim/optimizer/default_constructor.py#L18), which could also serve as a template for new optimizer constructor.
+The default optimizer constructor is implemented [here](https://github.com/open-mmlab/mmengine/blob/main/mmengine/optim/optimizer/default_constructor.py#L18), which could also serve as a template for new optimizer constructor.
 
 ### Additional settings
 
@@ -137,7 +137,7 @@ Tricks not implemented by the optimizer should be implemented through optimizer 
 
   ```python
   optim_wrapper = dict(
-      _delete_=True, grad_clip=dict(max_norm=35, norm_type=2)
+      _delete_=True, clip_grad=dict(max_norm=35, norm_type=2)
   ```
 
   If your config inherits the base config which already sets the `optim_wrapper`, you might need `_delete_=True` to override the unnecessary settings. See the [config documentation](https://mmdetection.readthedocs.io/en/latest/tutorials/config.html) for more details.
@@ -145,11 +145,13 @@ Tricks not implemented by the optimizer should be implemented through optimizer 
 - __Use momentum schedule to accelerate model convergence__:
   We support momentum scheduler to modify model's momentum according to learning rate, which could make the model converge in a faster way.
   Momentum scheduler is usually used with LR scheduler, for example, the following config is used in [3D detection](https://github.com/open-mmlab/mmdetection3d/blob/dev-1.x/configs/_base_/schedules/cyclic_20e.py) to accelerate convergence.
-  For more details, please refer to the implementation of [CosineAnnealingLR](https://github.com/open-mmlab/mmengine/blob/6ebb7ed481614b8ef08aabe27f6d88f750eb65dd/mmengine/optim/scheduler/lr_scheduler.py#L42) and [CosineAnnealingMomentum](https://github.com/open-mmlab/mmengine/blob/9b2a0e02da840b474f41c9bbc35335dab39eb844/mmengine/optim/scheduler/momentum_scheduler.py#L70).
+  For more details, please refer to the implementation of [CosineAnnealingLR](https://github.com/open-mmlab/mmengine/blob/main/mmengine/optim/scheduler/lr_scheduler.py#L43) and [CosineAnnealingMomentum](https://github.com/open-mmlab/mmengine/blob/main/mmengine/optim/scheduler/momentum_scheduler.py#L71).
 
   ```python
   param_scheduler = [
       # learning rate scheduler
+      # During the first 8 epochs, learning rate increases from 0 to lr * 10
+      # during the next 12 epochs, learning rate decreases from lr * 10 to lr * 1e-4
       dict(
           type='CosineAnnealingLR',
           T_max=8,
@@ -167,6 +169,8 @@ Tricks not implemented by the optimizer should be implemented through optimizer 
           by_epoch=True,
           convert_to_iter_based=True),
       # momentum scheduler
+      # During the first 8 epochs, momentum increases from 0 to 0.85 / 0.95
+      # during the next 12 epochs, momentum increases from 0.85 / 0.95 to 1
       dict(
           type='CosineAnnealingMomentum',
           T_max=8,
@@ -188,7 +192,7 @@ Tricks not implemented by the optimizer should be implemented through optimizer 
 
 ## Customize training schedules
 
-By default we use step learning rate with 1x schedule, this calls [MultiStepLR](https://github.com/open-mmlab/mmengine/blob/1a8f0139373ab3d5e0a7012f42e3b345776c0b72/mmengine/optim/scheduler/lr_scheduler.py#L139) in MMEngine.
+By default we use step learning rate with 1x schedule, this calls [MultiStepLR](https://github.com/open-mmlab/mmengine/blob/main/mmengine/optim/scheduler/lr_scheduler.py#L139) in MMEngine.
 We support many other learning rate schedule [here](https://github.com/open-mmlab/mmengine/blob/main/mmengine/optim/scheduler/lr_scheduler.py), such as `CosineAnnealingLR` and `PolyLR` schedule. Here are some examples
 
 - Poly schedule:
@@ -226,7 +230,7 @@ By default, `EpochBasedTrainLoop` is used in `train_cfg` and validation is done 
 train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=12, val_begin=1, val_interval=1)
 ```
 
-Actually, [`IterBasedTrainLoop`](https://github.com/open-mmlab/mmengine/blob/9b2a0e02da840b474f41c9bbc35335dab39eb844/mmengine/runner/loops.py#L183%5D) is also supported and validation can be done dynamically, see the following example.
+Actually, both [`IterBasedTrainLoop`](https://github.com/open-mmlab/mmengine/blob/main/mmengine/runner/loops.py#L183%5D) and [`EpochBasedTrainLoop`](https://github.com/open-mmlab/mmengine/blob/main/mmengine/runner/loops.py#L18) support dynamical interval, see the following example.
 
 ```python
 # Before 365001th iteration, we do evaluation every 5000 iterations.
@@ -249,7 +253,7 @@ train_cfg = dict(
 
 #### 1. Implement a new hook
 
-There are some occasions when the users might need to implement a new hook. MMDetection supports customized hooks in training in v3.0 . Thus the users could implement a hook directly in mmdet or their mmdet-based codebases and use the hook by only modifying the config in training.
+MMEngine provides many useful [hooks](https://mmdetection.readthedocs.io/en/latest/tutorials/hooks.html), but there are some occasions when the users might need to implement a new hook. MMDetection supports customized hooks in training in v3.0 . Thus the users could implement a hook directly in mmdet or their mmdet-based codebases and use the hook by only modifying the config in training.
 Here we give an example of creating a new hook in mmdet and using it in training.
 
 ```python
@@ -285,7 +289,7 @@ class MyHook(Hook):
                          outputs: Optional[dict] = None) -> None:
 ```
 
-Depending on the functionality of the hook, the users need to specify what the hook will do at each stage of the training in `before_run`, `after_run`, `before_train`, `after_train` , `before_train_epoch`, `after_train_epoch`, `before_train_iter`, and `after_train_iter`.  There are more points where hooks can be inserted, refer to [base hook class](https://github.com/open-mmlab/mmengine/blob/429bb27972bee1a9f3095a4d5f6ac5c0b88ccf54/mmengine/hooks/hook.py#L9) for more detail.
+Depending on the functionality of the hook, the users need to specify what the hook will do at each stage of the training in `before_run`, `after_run`, `before_train`, `after_train` , `before_train_epoch`, `after_train_epoch`, `before_train_iter`, and `after_train_iter`.  There are more points where hooks can be inserted, refer to [base hook class](https://github.com/open-mmlab/mmengine/blob/main/mmengine/hooks/hook.py#L9) for more detail.
 
 #### 2. Register the new hook
 
@@ -329,9 +333,9 @@ If the hook is already implemented in MMEngine, you can directly modify the conf
 
 #### 4. Example: `NumClassCheckHook`
 
-We implement a customized hook named [NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/test-3.0.0rc0/mmdet/engine/hooks/num_class_check_hook.py) to check whether the `num_classes` in head matches the length of `CLASSES` in `dataset`.
+We implement a customized hook named [NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/engine/hooks/num_class_check_hook.py) to check whether the `num_classes` in head matches the length of `CLASSES` in `dataset`.
 
-We set it in [default_runtime.py](https://github.com/open-mmlab/mmdetection/blob/master/configs/_base_/default_runtime.py).
+We set it in [default_runtime.py](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/_base_/default_runtime.py).
 
 ```python
 custom_hooks = [dict(type='NumClassCheckHook')]
@@ -352,7 +356,7 @@ There are some common hooks that are registered through `default_hooks`, they ar
 
 #### CheckpointHook
 
-Except saving checkpoints periodically, [`CheckpointHook`](https://github.com/open-mmlab/mmengine/blob/6ebb7ed481614b8ef08aabe27f6d88f750eb65dd/mmengine/hooks/checkpoint_hook.py#L19) provides other options such as `max_keep_ckpts`, `save_optimizer` and etc. The users could set `max_keep_ckpts` to only save small number of checkpoints or decide whether to store state dict of optimizer by `save_optimizer`. More details of the arguments are [here](https://github.com/open-mmlab/mmengine/blob/6ebb7ed481614b8ef08aabe27f6d88f750eb65dd/mmengine/hooks/checkpoint_hook.py#L19)
+Except saving checkpoints periodically, [`CheckpointHook`](https://github.com/open-mmlab/mmengine/blob/main/mmengine/hooks/checkpoint_hook.py#L19) provides other options such as `max_keep_ckpts`, `save_optimizer` and etc. The users could set `max_keep_ckpts` to only save small number of checkpoints or decide whether to store state dict of optimizer by `save_optimizer`. More details of the arguments are [here](https://github.com/open-mmlab/mmengine/blob/main/mmengine/hooks/checkpoint_hook.py#L19)
 
 ```python
 default_hooks = dict(
@@ -365,7 +369,7 @@ default_hooks = dict(
 
 #### LoggerHook
 
-The `LoggerHook` enables to set intervals. And the detail usages can be found in the [docstring](https://github.com/open-mmlab/mmengine/blob/9b2a0e02da840b474f41c9bbc35335dab39eb844/mmengine/hooks/logger_hook.py#L18).
+The `LoggerHook` enables to set intervals. And the detail usages can be found in the [docstring](https://github.com/open-mmlab/mmengine/blob/main/mmengine/hooks/logger_hook.py#L18).
 
 ```python
 default_hooks = dict(logger=dict(type='LoggerHook', interval=50))
