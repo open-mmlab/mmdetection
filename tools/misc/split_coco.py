@@ -24,7 +24,7 @@ def parse_args():
         '--out-dir',
         type=str,
         help='The output directory of coco semi-supervised annotations.',
-        default='./data/coco_semi_annos/')
+        default='./data/coco/semi_anns/')
     parser.add_argument(
         '--labeled-percent',
         type=float,
