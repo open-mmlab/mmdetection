@@ -1,4 +1,4 @@
-_base_ = ['soft-teacher_faster-rcnn_r50-caffe-fpn_180k_semi-0.1_coco.py']
+_base_ = ['soft-teacher_faster-rcnn_r50-caffe_fpn_180k_semi-0.1-coco.py']
 
 # 2% coco train2017 is set as labeled dataset
 labeled_dataset = _base_.labeled_dataset
