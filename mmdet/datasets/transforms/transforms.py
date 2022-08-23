@@ -146,12 +146,219 @@ class Resize(MMCV_Resize):
             'scale', 'scale_factor', 'height', 'width', and 'keep_ratio' keys
             are updated in result dict.
         """
-
         if self.scale:
             results['scale'] = self.scale
         else:
             img_shape = results['img'].shape[:2]
             results['scale'] = _scale_size(img_shape[::-1], self.scale_factor)
+        self._resize_img(results)
+        self._resize_bboxes(results)
+        self._resize_masks(results)
+        self._resize_seg(results)
+        self._record_homography_matrix(results)
+        return results
+
+    def __repr__(self) -> str:
+        repr_str = self.__class__.__name__
+        repr_str += f'(scale={self.scale}, '
+        repr_str += f'scale_factor={self.scale_factor}, '
+        repr_str += f'keep_ratio={self.keep_ratio}, '
+        repr_str += f'clip_object_border={self.clip_object_border}), '
+        repr_str += f'backend={self.backend}), '
+        repr_str += f'interpolation={self.interpolation})'
+        return repr_str
+
+
+@TRANSFORMS.register_module()
+class FixShapeResize(BaseTransform):
+    """Resize images & bbox & seg.
+
+    This transform resizes the input image according to ``scale`` or
+    ``scale_factor``. Bboxes, masks, and seg map are then resized
+    with the same scale factor.
+    if ``scale`` and ``scale_factor`` are both set, it will use ``scale`` to
+    resize.
+
+    Required Keys:
+
+    - img
+    - gt_bboxes (np.float32) (optional)
+    - gt_masks (BitmapMasks | PolygonMasks) (optional)
+    - gt_seg_map (np.uint8) (optional)
+
+    Modified Keys:
+
+    - img
+    - img_shape
+    - gt_bboxes
+    - gt_masks
+    - gt_seg_map
+
+
+    Added Keys:
+
+    - scale
+    - scale_factor
+    - keep_ratio
+    - homography_matrix
+
+    Args:
+        scale (int or tuple): Images scales for resizing. Defaults to None
+        scale_factor (float or tuple[float]): Scale factors for resizing.
+            Defaults to None.
+        keep_ratio (bool): Whether to keep the aspect ratio when resizing the
+            image. Defaults to False.
+        clip_object_border (bool): Whether to clip the objects
+            outside the border of the image. In some dataset like MOT17, the gt
+            bboxes are allowed to cross the border of images. Therefore, we
+            don't need to clip the gt bboxes in these cases. Defaults to True.
+        backend (str): Image resize backend, choices are 'cv2' and 'pillow'.
+            These two backends generates slightly different results. Defaults
+            to 'cv2'.
+        interpolation (str): Interpolation method, accepted values are
+            "nearest", "bilinear", "bicubic", "area", "lanczos" for 'cv2'
+            backend, "nearest", "bilinear" for 'pillow' backend. Defaults
+            to 'bilinear'.
+    """
+
+    def __init__(self,
+                 width: int = None,
+                 height: int = None,
+                 img_pad_value: int = 0,
+                 mask_pad_value: int = 0,
+                 seg_pad_value: int = 255,
+                 keep_ratio: bool = False,
+                 clip_object_border: bool = True,
+                 backend: str = 'cv2',
+                 interpolation='bilinear') -> None:
+        assert width is not None and height is not None, (
+            '`width` and'
+            '`height` can not be `None`')
+
+        self.width = width
+        self.height = height
+        self.img_pad_value = img_pad_value
+        self.mask_pad_value = mask_pad_value
+        self.seg_pad_value = seg_pad_value
+
+        self.backend = backend
+        self.interpolation = interpolation
+        self.keep_ratio = keep_ratio
+        self.clip_object_border = clip_object_border
+
+    def _resize_img(self, results: dict) -> None:
+        """Resize images with ``results['scale']``."""
+
+        if results.get('img', None) is not None:
+            if self.keep_ratio:
+                new_w, new_h = results['keep_ratio_scale']
+                img, w_scale, h_scale = mmcv.imresize(
+                    results['img'], (new_w, new_h),
+                    interpolation=self.interpolation,
+                    return_scale=True,
+                    backend=self.backend)
+
+                out_w, out_h = results['scale']
+                padded_img = np.zeros(
+                    (out_h, out_w, 3)).astype(np.uint8) + self.img_pad_value
+                padded_img[:new_h, :new_w] = img
+                img = padded_img
+
+            else:
+                img, w_scale, h_scale = mmcv.imresize(
+                    results['img'],
+                    results['scale'],
+                    interpolation=self.interpolation,
+                    return_scale=True,
+                    backend=self.backend)
+            results['img'] = img
+            results['img_shape'] = img.shape[:2]
+            results['scale_factor'] = (w_scale, h_scale)
+            results['keep_ratio'] = self.keep_ratio
+
+    def _resize_masks(self, results: dict) -> None:
+        """Resize masks with ``results['scale']``"""
+        if results.get('gt_masks', None) is not None:
+            if self.keep_ratio:
+                new_w, new_h = results['keep_ratio_scale']
+                results['gt_masks'] = results['gt_masks'].resize(
+                    (new_w, new_h))
+                results['gt_masks'] = results['gt_masks'].pad(
+                    results['img_shape'], pad_val=self.mask_pad_value)
+            else:
+                results['gt_masks'] = results['gt_masks'].resize(
+                    results['img_shape'])
+
+    def _resize_bboxes(self, results: dict) -> None:
+        """Resize bounding boxes with ``results['scale_factor']``."""
+        if results.get('gt_bboxes', None) is not None:
+            bboxes = results['gt_bboxes'] * np.tile(
+                np.array(results['scale_factor']), 2)
+            if self.clip_object_border:
+                bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0,
+                                          results['img_shape'][1])
+                bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0,
+                                          results['img_shape'][0])
+            results['gt_bboxes'] = bboxes.astype(np.float32)
+
+    def _resize_seg(self, results: dict) -> None:
+        """Resize semantic segmentation map with ``results['scale']``."""
+        if results.get('gt_seg_map', None) is not None:
+            if self.keep_ratio:
+                new_w, new_h = results['keep_ratio_scale']
+                gt_seg = mmcv.imresize(
+                    results['gt_seg_map'], (new_w, new_h),
+                    interpolation='nearest',
+                    backend=self.backend)
+                out_w, out_h = results['scale']
+                padded_gt_seg = np.zeros((out_h, out_w, 3)).astype(np.float32)
+                padded_gt_seg = padded_gt_seg + 255
+                padded_gt_seg[:new_h, :new_w] = gt_seg
+                gt_seg = padded_gt_seg
+            else:
+                gt_seg = mmcv.imresize(
+                    results['gt_seg_map'],
+                    results['scale'],
+                    interpolation='nearest',
+                    backend=self.backend)
+            results['gt_seg_map'] = gt_seg
+
+    def _record_homography_matrix(self, results: dict) -> None:
+        """Record the homography matrix for the Resize."""
+        w_scale, h_scale = results['scale_factor']
+        homography_matrix = np.array(
+            [[w_scale, 0, 0], [0, h_scale, 0], [0, 0, 1]], dtype=np.float32)
+        if results.get('homography_matrix', None) is None:
+            results['homography_matrix'] = homography_matrix
+        else:
+            results['homography_matrix'] = homography_matrix @ results[
+                'homography_matrix']
+
+    def transform(self, results: dict) -> dict:
+        """Transform function to resize images, bounding boxes and semantic
+        segmentation map.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+        Returns:
+            dict: Resized results, 'img', 'gt_bboxes', 'gt_seg_map',
+            'scale', 'scale_factor', 'height', 'width', and 'keep_ratio' keys
+            are updated in result dict.
+        """
+        if self.keep_ratio:
+            img = results['img']
+            h, w = img.shape[:2]
+            scale_factor = min(self.width / w, self.height / h)
+            results['scale_factor'] = (scale_factor, scale_factor)
+
+            real_w, real_h = int(w * float(scale_factor) +
+                                 0.5), int(h * float(scale_factor) + 0.5)
+            results['keep_ratio_scale'] = (real_w, real_h)
+        else:
+            results['scale_factor'] = (self.width / w, self.height / h)
+
+        results['scale'] = (self.width, self.height)
+
         self._resize_img(results)
         self._resize_bboxes(results)
         self._resize_masks(results)

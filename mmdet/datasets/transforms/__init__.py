@@ -10,10 +10,10 @@ from .instaboost import InstaBoost
 from .loading import (FilterAnnotations, LoadAnnotations, LoadEmptyAnnotations,
                       LoadImageFromNDArray, LoadMultiChannelImageFromFiles,
                       LoadPanopticAnnotations, LoadProposals)
-from .transforms import (Albu, CachedMixUp, CachedMosaic, CopyPaste, CutOut,
-                         Expand, MinIoURandomCrop, MixUp, Mosaic, Normalize,
-                         Pad, PhotoMetricDistortion, RandomAffine,
-                         RandomCenterCropPad, RandomCrop, RandomErasing,
+
+from .transforms import (Albu, CachedMixUp, CachedMosaic,CopyPaste, CutOut, Expand, FixShapeResize,
+                         MinIoURandomCrop, MixUp, Mosaic, Normalize, Pad,
+                         PhotoMetricDistortion, RandomAffine,RandomCenterCropPad, RandomCrop, RandomErasing,
                          RandomFlip, RandomShift, Resize, SegRescale,
                          YOLOXHSVRandomAug)
 from .wrappers import MultiBranch, RandomOrder
@@ -29,6 +29,4 @@ __all__ = [
     'Mosaic', 'MixUp', 'RandomAffine', 'YOLOXHSVRandomAug', 'CopyPaste',
     'FilterAnnotations', 'Pad', 'GeomTransform', 'ColorTransform',
     'RandAugment', 'Sharpness', 'Solarize', 'SolarizeAdd', 'Posterize',
-    'AutoContrast', 'Invert', 'MultiBranch', 'RandomErasing',
-    'LoadEmptyAnnotations', 'RandomOrder', 'CachedMosaic', 'CachedMixUp'
-]
+    'AutoContrast', 'Invert', 'MultiBranch', 'RandomErasing','LoadEmptyAnnotations', 'RandomOrder', 'CachedMosaic', 'CachedMixUp','FixShapeResize'
