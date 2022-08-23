@@ -20,7 +20,7 @@ Usually we recommend to use the first two methods which are usually easier than 
 
 In this note, we give an example for converting the data into COCO format.
 
-**Note**: Datasets and metrics have been decoupled except CityScapes since MMDetection 3.0 . So users can evaluate on VOC dataset with COCO metric, or evaluate on VOC dataset with both VOC and COCO metrics.
+**Note**: Datasets and metrics have been decoupled except CityScapes since MMDetection 3.0 . Therefore, uers can use any kind of evaluation metrics for any format of datasets during validation. For example: evaluate on COCO dataset with VOC metric, or evaluate on OpenImages dataset with both VOC and COCO metrics.
 
 ### COCO annotation format
 
@@ -152,9 +152,11 @@ The code to convert the balloon dataset into coco format is as below.
 
 ```python
 import os.path as osp
+
 import mmcv
 
 from mmengine.fileio import dump, load
+from mmengine.utils import track_iter_progress
 
 
 def convert_balloon_to_coco(ann_file, out_file, image_prefix):
@@ -163,20 +165,14 @@ def convert_balloon_to_coco(ann_file, out_file, image_prefix):
     annotations = []
     images = []
     obj_count = 0
-    for idx, v in enumerate(mmcv.track_iter_progress(data_infos.values())):
+    for idx, v in enumerate(track_iter_progress(data_infos.values())):
         filename = v['filename']
         img_path = osp.join(image_prefix, filename)
         height, width = mmcv.imread(img_path).shape[:2]
 
-        images.append(dict(
-            id=idx,
-            file_name=filename,
-            height=height,
-            width=width))
+        images.append(
+            dict(id=idx, file_name=filename, height=height, width=width))
 
-        bboxes = []
-        labels = []
-        masks = []
         for _, obj in v['regions'].items():
             assert not obj['region_attributes']
             obj = obj['shape_attributes']
@@ -185,9 +181,7 @@ def convert_balloon_to_coco(ann_file, out_file, image_prefix):
             poly = [(x + 0.5, y + 0.5) for x, y in zip(px, py)]
             poly = [p for x in poly for p in x]
 
-            x_min, y_min, x_max, y_max = (
-                min(px), min(py), max(px), max(py))
-
+            x_min, y_min, x_max, y_max = (min(px), min(py), max(px), max(py))
 
             data_anno = dict(
                 image_id=idx,
@@ -203,8 +197,20 @@ def convert_balloon_to_coco(ann_file, out_file, image_prefix):
     coco_format_json = dict(
         images=images,
         annotations=annotations,
-        categories=[{'id':0, 'name': 'balloon'}])
+        categories=[{
+            'id': 0,
+            'name': 'balloon'
+        }])
     dump(coco_format_json, out_file)
+
+
+if __name__ == '__main__':
+    convert_balloon_to_coco(ann_file='data/balloon/train/via_region_data.json',
+                            out_file='data/balloon/train/annotation_coco.json',
+                            image_prefix='data/balloon/train')
+    convert_balloon_to_coco(ann_file='data/balloon/val/via_region_data.json',
+                            out_file='data/balloon/val/annotation_coco.json',
+                            image_prefix='data/balloon/val')
 
 ```
 
@@ -216,36 +222,45 @@ The second step is to prepare a config thus the dataset could be successfully lo
 
 ```python
 # The new config inherits a base config to highlight the necessary modification
-_base_ = 'mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py'
+_base_ = '../mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_coco.py'
 
 # We also need to change the num_classes in head to match the dataset's annotation
 model = dict(
     roi_head=dict(
-        bbox_head=dict(num_classes=1),
-        mask_head=dict(num_classes=1)))
+        bbox_head=dict(num_classes=1), mask_head=dict(num_classes=1)))
 
 # Modify dataset related settings
-dataset_type = 'COCODataset'
-data_root='data/balloon/'
+data_root = 'data/balloon/'
+metainfo = {
+    'CLASSES': ('balloon', ),
+    'PALETTE': [
+        (220, 20, 60),
+    ]
+}
 train_dataloader = dict(
+    batch_size=1,
     dataset=dict(
         data_root=data_root,
+        metainfo=metainfo,
         ann_file='train/annotation_coco.json',
         data_prefix=dict(img='train/')))
 val_dataloader = dict(
     dataset=dict(
         data_root=data_root,
+        metainfo=metainfo,
         ann_file='val/annotation_coco.json',
         data_prefix=dict(img='val/')))
 test_dataloader = val_dataloader
 
 # Modify metric related settings
-val_evaluator = dict(
-    ann_file=data_root + 'val/annotation_coco.json')
+val_evaluator = dict(ann_file=data_root + 'val/annotation_coco.json')
 test_evaluator = val_evaluator
 
 # We can use the pre-trained Mask RCNN model to obtain higher performance
 load_from = 'checkpoints/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco_bbox_mAP-0.408__segm_mAP-0.37_20200504_163245-42aa3d00.pth'
+
+train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=5, val_interval=1)
+
 ```
 
 ## Train a new model
@@ -263,7 +278,7 @@ For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).
 To test the trained model, you can simply run
 
 ```shell
-python tools/test.py configs/balloon/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py work_dirs/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon/latest.pth
+python tools/test.py configs/balloon/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon.py work_dirs/mask_rcnn_r50_caffe_fpn_mstrain-poly_1x_balloon/epoch_5.pth
 ```
 
 For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).
