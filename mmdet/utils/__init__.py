@@ -3,7 +3,7 @@ from .collect_env import collect_env
 from .compat_config import compat_cfg
 from .dist_utils import (all_reduce_dict, allreduce_grads, reduce_mean,
                          sync_random_seed)
-from .logger import get_caller_name, get_root_logger, log_img_scale
+from .logger import get_caller_name, log_img_scale
 from .memory import AvoidCUDAOOM, AvoidOOM
 from .misc import find_latest_checkpoint, update_data_root
 from .replace_cfg_vals import replace_cfg_vals
@@ -14,11 +14,11 @@ from .typing import (ConfigType, InstanceList, MultiConfig, OptConfigType,
                      RangeType)
 
 __all__ = [
-    'get_root_logger', 'collect_env', 'find_latest_checkpoint',
-    'update_data_root', 'setup_multi_processes', 'get_caller_name',
-    'log_img_scale', 'compat_cfg', 'split_batch', 'register_all_modules',
-    'replace_cfg_vals', 'AvoidOOM', 'AvoidCUDAOOM', 'all_reduce_dict',
-    'allreduce_grads', 'reduce_mean', 'sync_random_seed', 'ConfigType',
-    'InstanceList', 'MultiConfig', 'OptConfigType', 'OptInstanceList',
-    'OptMultiConfig', 'OptPixelList', 'PixelList', 'RangeType'
+    'collect_env', 'find_latest_checkpoint', 'update_data_root',
+    'setup_multi_processes', 'get_caller_name', 'log_img_scale', 'compat_cfg',
+    'split_batch', 'register_all_modules', 'replace_cfg_vals', 'AvoidOOM',
+    'AvoidCUDAOOM', 'all_reduce_dict', 'allreduce_grads', 'reduce_mean',
+    'sync_random_seed', 'ConfigType', 'InstanceList', 'MultiConfig',
+    'OptConfigType', 'OptInstanceList', 'OptMultiConfig', 'OptPixelList',
+    'PixelList', 'RangeType'
 ]
