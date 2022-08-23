@@ -3,7 +3,7 @@ import tempfile
 from copy import deepcopy
 
 import pytest
-from mmcv.utils import Config
+from mmengine.config import Config
 
 from mmdet.utils import replace_cfg_vals
 

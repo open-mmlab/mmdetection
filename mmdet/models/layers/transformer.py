@@ -153,8 +153,8 @@ class PatchEmbed(BaseModule):
         input_size (int | tuple | None): The size of input, which will be
             used to calculate the out size. Only work when `dynamic_size`
             is False. Default: None.
-        init_cfg (`mmcv.ConfigDict`, optional): The Config for initialization.
-            Default: None.
+        init_cfg (`mmengine.ConfigDict`, optional): The Config for
+            initialization. Default: None.
     """
 
     def __init__(
@@ -407,7 +407,7 @@ class DetrTransformerDecoderLayer(BaseTransformerLayer):
     """Implements decoder layer in DETR transformer.
 
     Args:
-        attn_cfgs (list[`mmcv.ConfigDict`] | list[dict] | dict )):
+        attn_cfgs (list[`mmengine.ConfigDict`] | list[dict] | dict )):
             Configs for self_attention or cross_attention, the order
             should be consistent with it in `operation_order`. If it is
             a dict, it would be expand to the number of attention in
@@ -548,11 +548,11 @@ class Transformer(BaseModule):
     <https://arxiv.org/pdf/2005.12872>`_ for details.
 
     Args:
-        encoder (`mmcv.ConfigDict` | Dict): Config of
+        encoder (`mmengine.ConfigDict` | Dict): Config of
             TransformerEncoder. Defaults to None.
-        decoder ((`mmcv.ConfigDict` | Dict)): Config of
+        decoder ((`mmengine.ConfigDict` | Dict)): Config of
             TransformerDecoder. Defaults to None
-        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+        init_cfg (obj:`mmegine.ConfigDict`): The Config for initialization.
             Defaults to None.
     """
 
@@ -1081,7 +1081,7 @@ class DynamicConv(BaseModule):
         act_cfg (dict): The activation config for DynamicConv.
         norm_cfg (dict): Config dict for normalization layer. Default
             layer normalization.
-        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+        init_cfg (obj:`mmengine.ConfigDict`): The Config for initialization.
             Default: None.
     """
 

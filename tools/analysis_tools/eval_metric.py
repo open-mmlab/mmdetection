@@ -1,8 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 
-import mmcv
-from mmcv import Config, DictAction
+from mmengine.config import Config, DictAction
+from mmengine.fileio import load
 
 from mmdet.datasets import build_dataset
 from mmdet.utils import replace_cfg_vals, update_data_root
@@ -67,7 +67,7 @@ def main():
     cfg.data.test.test_mode = True
 
     dataset = build_dataset(cfg.data.test)
-    outputs = mmcv.load(args.pkl_results)
+    outputs = load(args.pkl_results)
 
     kwargs = {} if args.eval_options is None else args.eval_options
     if args.format_only:

@@ -2,7 +2,7 @@
 import os
 import unittest
 
-import mmcv
+from mmengine.fileio import dump
 
 from mmdet.datasets import CocoPanopticDataset
 
@@ -161,7 +161,7 @@ class TestCocoPanopticDataset(unittest.TestCase):
             'categories': categories
         }
         self.json_name = 'coco_panoptic.json'
-        mmcv.dump(fake_json, self.json_name)
+        dump(fake_json, self.json_name)
 
         self.metainfo = dict(
             CLASSES=('person', 'car', 'wall'),

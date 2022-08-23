@@ -6,6 +6,7 @@ from argparse import ArgumentParser
 import mmcv
 from mmengine.config import Config
 from mmengine.logging import MMLogger
+from mmengine.utils import mkdir_or_exist
 
 from mmdet.apis import inference_detector, init_detector
 from mmdet.registry import VISUALIZERS
@@ -58,7 +59,7 @@ def inference_model(config_name, checkpoint, visualizer, args, logger=None):
         out_file = None
         if args.out_dir is not None:
             out_dir = args.out_dir
-            mmcv.mkdir_or_exist(out_dir)
+            mkdir_or_exist(out_dir)
 
             out_file = osp.join(
                 out_dir,

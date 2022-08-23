@@ -2,7 +2,7 @@ import os.path as osp
 import tempfile
 import unittest
 
-import mmcv
+from mmengine.fileio import dump
 
 from mmdet.datasets.api_wrappers import COCOPanoptic
 
@@ -18,7 +18,7 @@ class TestCOCOPanoptic(unittest.TestCase):
     def test_create_index(self):
         ann_json = {'test': ['test', 'createIndex']}
         annotation_file = osp.join(self.tmp_dir.name, 'createIndex.json')
-        mmcv.dump(ann_json, annotation_file)
+        dump(ann_json, annotation_file)
         COCOPanoptic(annotation_file)
 
     def test_load_anns(self):
@@ -59,7 +59,7 @@ class TestCOCOPanoptic(unittest.TestCase):
         }
 
         annotation_file = osp.join(self.tmp_dir.name, 'load_anns.json')
-        mmcv.dump(ann_json, annotation_file)
+        dump(ann_json, annotation_file)
 
         api = COCOPanoptic(annotation_file)
         api.load_anns(1)

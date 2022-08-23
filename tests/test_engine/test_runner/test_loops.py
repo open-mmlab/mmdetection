@@ -7,7 +7,6 @@ import torch
 import torch.nn as nn
 from mmengine.model import BaseModel
 from mmengine.optim import OptimWrapper
-from mmengine.registry import DATASETS
 from mmengine.runner import Runner
 from torch.utils.data import Dataset
 
@@ -56,7 +55,6 @@ class ToyModel2(BaseModel):
         return self.student(*args, **kwargs)
 
 
-@DATASETS.register_module()
 class DummyDataset(Dataset):
     METAINFO = dict()  # type: ignore
     data = torch.randn(12, 2)

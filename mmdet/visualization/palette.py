@@ -3,6 +3,7 @@ from typing import List, Tuple, Union
 
 import mmcv
 import numpy as np
+from mmengine.utils import is_str
 
 
 def palette_val(palette: List[tuple]) -> List[tuple]:
@@ -56,7 +57,7 @@ def get_palette(palette: Union[List[tuple], str, tuple],
     elif palette == 'voc':
         from mmdet.datasets import VOCDataset
         dataset_palette = VOCDataset.METAINFO['PALETTE']
-    elif mmcv.is_str(palette):
+    elif is_str(palette):
         dataset_palette = [mmcv.color_val(palette)[::-1]] * num_classes
     else:
         raise TypeError(f'Invalid type for palette: {type(palette)}')

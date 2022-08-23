@@ -1,8 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import mmcv
 import numpy as np
 import pycocotools.mask as mask_util
 import torch
+from mmengine.utils import slice_list
 
 
 def split_combined_polys(polys, poly_lens, polys_per_mask):
@@ -28,8 +28,8 @@ def split_combined_polys(polys, poly_lens, polys_per_mask):
         polys_lens_single = poly_lens[img_id].tolist()
         polys_per_mask_single = polys_per_mask[img_id].tolist()
 
-        split_polys = mmcv.slice_list(polys_single, polys_lens_single)
-        mask_polys = mmcv.slice_list(split_polys, polys_per_mask_single)
+        split_polys = slice_list(polys_single, polys_lens_single)
+        mask_polys = slice_list(split_polys, polys_per_mask_single)
         mask_polys_list.append(mask_polys)
     return mask_polys_list
 

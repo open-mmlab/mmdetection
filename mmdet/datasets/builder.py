@@ -49,7 +49,10 @@ def _concat_dataset(cfg, default_args=None):
 
 # TODO: Need to refactor later
 def build_dataset(cfg, default_args=None):
-    from .dataset_wrappers import ClassBalancedDataset, MultiImageMixDataset
+    from mmengine.dataset import ClassBalancedDataset
+
+    from .dataset_wrappers import MultiImageMixDataset
+
     if cfg['type'] == 'ClassBalancedDataset':
         dataset = ClassBalancedDataset(
             build_dataset(cfg['dataset'], default_args), cfg['oversample_thr'])
