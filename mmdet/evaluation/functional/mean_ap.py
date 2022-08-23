@@ -1,9 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from multiprocessing import Pool
 
-import mmcv
 import numpy as np
-from mmcv.utils import print_log
+from mmengine.logging import print_log
+from mmengine.utils import is_str
 from terminaltables import AsciiTable
 
 from .bbox_overlaps import bbox_overlaps
@@ -559,7 +559,7 @@ def eval_map(det_results,
             there are minor differences in metrics for different datasets, e.g.
             "voc", "imagenet_det", etc. Defaults to None.
         logger (logging.Logger | str | None): The way to print the mAP
-            summary. See `mmcv.utils.print_log()` for details.
+            summary. See `mmengine.logging.print_log()` for details.
             Defaults to None.
         tpfp_fn (callable | None): The function used to determine true/
             false positives. If None, :func:`tpfp_default` is used as default
@@ -739,7 +739,7 @@ def print_map_summary(mean_ap,
         dataset (list[str] | str | None): Dataset name or dataset classes.
         scale_ranges (list[tuple] | None): Range of scales to be evaluated.
         logger (logging.Logger | str | None): The way to print the mAP
-            summary. See `mmcv.utils.print_log()` for details.
+            summary. See `mmengine.logging.print_log()` for details.
             Defaults to None.
     """
 
@@ -767,7 +767,7 @@ def print_map_summary(mean_ap,
 
     if dataset is None:
         label_names = [str(i) for i in range(num_classes)]
-    elif mmcv.is_str(dataset):
+    elif is_str(dataset):
         label_names = get_classes(dataset)
     else:
         label_names = dataset

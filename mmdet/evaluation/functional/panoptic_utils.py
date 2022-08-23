@@ -9,6 +9,7 @@ import os
 
 import mmcv
 import numpy as np
+from mmengine.fileio import FileClient
 
 # A custom value to distinguish instance ID and category ID; need to
 # be greater than the number of categories.
@@ -56,7 +57,7 @@ def pq_compute_single_core(proc_id,
 
     if file_client is None:
         file_client_args = dict(backend='disk')
-        file_client = mmcv.FileClient(**file_client_args)
+        file_client = FileClient(**file_client_args)
 
     pq_stat = PQStat()
 
@@ -207,7 +208,7 @@ def pq_compute_multi_core(matched_annotations_list,
 
     if file_client is None:
         file_client_args = dict(backend='disk')
-        file_client = mmcv.FileClient(**file_client_args)
+        file_client = FileClient(**file_client_args)
 
     cpu_num = min(nproc, multiprocessing.cpu_count())
 

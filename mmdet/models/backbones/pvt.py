@@ -10,10 +10,10 @@ import torch.nn.functional as F
 from mmcv.cnn import Conv2d, build_activation_layer, build_norm_layer
 from mmcv.cnn.bricks.drop import build_dropout
 from mmcv.cnn.bricks.transformer import MultiheadAttention
-from mmcv.runner import _load_checkpoint, load_state_dict
 from mmengine.model import BaseModule, ModuleList, Sequential
 from mmengine.model.utils import (constant_init, normal_init, trunc_normal_,
                                   trunc_normal_init)
+from mmengine.runner.checkpoint import CheckpointLoader, load_state_dict
 from torch.nn.modules.utils import _pair as to_2tuple
 
 from mmdet.registry import MODELS
@@ -41,7 +41,7 @@ class MixFFN(BaseModule):
             Default: None.
         use_conv (bool): If True, add 3x3 DWConv between two Linear layers.
             Defaults: False.
-        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+        init_cfg (obj:`mmengine.ConfigDict`): The Config for initialization.
             Default: None.
     """
 
@@ -123,7 +123,7 @@ class SpatialReductionAttention(MultiheadAttention):
             Default: dict(type='LN').
         sr_ratio (int): The ratio of spatial reduction of Spatial Reduction
             Attention of PVT. Default: 1.
-        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+        init_cfg (obj:`mmengine.ConfigDict`): The Config for initialization.
             Default: None.
     """
 
@@ -544,7 +544,7 @@ class PyramidVisionTransformer(BaseModule):
                                                   f'specify `Pretrained` in ' \
                                                   f'`init_cfg` in ' \
                                                   f'{self.__class__.__name__} '
-            checkpoint = _load_checkpoint(
+            checkpoint = CheckpointLoader.load_checkpoint(
                 self.init_cfg.checkpoint, logger=logger, map_location='cpu')
             logger.warn(f'Load pre-trained model for '
                         f'{self.__class__.__name__} from original repo')

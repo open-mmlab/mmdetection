@@ -13,7 +13,8 @@ import os.path as osp
 from multiprocessing import Pool
 
 import mmcv
-from mmcv import Config
+from mmengine.config import Config
+from mmengine.fileio import FileClient, dump
 
 
 def parse_args():
@@ -68,7 +69,7 @@ def get_metas_from_txt_style_ann_file(ann_file):
 
 
 def get_image_metas(data_info, img_prefix):
-    file_client = mmcv.FileClient(backend='disk')
+    file_client = FileClient(backend='disk')
     filename = data_info.get('filename', None)
     if filename is not None:
         if img_prefix is not None:
@@ -117,7 +118,7 @@ def main():
     # save image metas
     root_path = dataloader_cfg.dataset.ann_file.rsplit('/', 1)[0]
     save_path = osp.join(root_path, args.out)
-    mmcv.dump(image_metas, save_path, protocol=4)
+    dump(image_metas, save_path, protocol=4)
     print(f'Image meta file save to: {save_path}')
 
 

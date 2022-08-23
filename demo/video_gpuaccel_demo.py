@@ -7,6 +7,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from mmcv.transforms import Compose
+from mmengine.utils import track_iter_progress
 
 from mmdet.apis import init_detector
 from mmdet.registry import VISUALIZERS
@@ -113,7 +114,7 @@ def main():
 
     with torch.no_grad():
         for i, (frame_resize, frame_origin) in enumerate(
-                zip(mmcv.track_iter_progress(video_resize), video_origin)):
+                zip(track_iter_progress(video_resize), video_origin)):
             data = pack_data(frame_resize, batch_input_shape, ori_shape)
             result = model.test_step([data])[0]
 

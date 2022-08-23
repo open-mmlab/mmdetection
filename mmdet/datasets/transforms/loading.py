@@ -8,6 +8,7 @@ import torch
 from mmcv.transforms import BaseTransform
 from mmcv.transforms import LoadAnnotations as MMCV_LoadAnnotations
 from mmcv.transforms import LoadImageFromFile
+from mmengine.fileio import FileClient
 
 from mmdet.registry import TRANSFORMS
 from mmdet.structures.bbox import get_box_type
@@ -87,7 +88,7 @@ class LoadMultiChannelImageFromFiles(BaseTransform):
             See :func:``mmcv.imfrombytes`` for details.
             Defaults to 'cv2'.
         file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:`mmcv.fileio.FileClient` for details.
+            See :class:`mmengine.fileio.FileClient` for details.
             Defaults to ``dict(backend='disk')``.
     """
 
@@ -102,7 +103,7 @@ class LoadMultiChannelImageFromFiles(BaseTransform):
         self.color_type = color_type
         self.imdecode_backend = imdecode_backend
         self.file_client_args = file_client_args.copy()
-        self.file_client = mmcv.FileClient(**self.file_client_args)
+        self.file_client = FileClient(**self.file_client_args)
 
     def transform(self, results: dict) -> dict:
         """Transform functions to load multiple images and get images meta
@@ -235,7 +236,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             See :fun:``mmcv.imfrombytes`` for details.
             Defaults to 'cv2'.
         file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:``mmcv.fileio.FileClient`` for details.
+            See :class:``mmengine.fileio.FileClient`` for details.
             Defaults to ``dict(backend='disk')``.
     """
 
@@ -501,7 +502,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
             See :fun:``mmcv.imfrombytes`` for details.
             Defaults to 'cv2'.
         file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:``mmcv.fileio.FileClient`` for details.
+            See :class:``mmengine.fileio.FileClient`` for details.
             Defaults to ``dict(backend='disk')``.
     """
 

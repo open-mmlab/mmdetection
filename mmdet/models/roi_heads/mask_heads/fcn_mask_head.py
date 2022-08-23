@@ -303,7 +303,7 @@ class FCNMaskHead(BaseModule):
             Tensor: Encoded masks, has shape (n, img_w, img_h)
 
         Example:
-            >>> import mmcv
+            >>> from mmengine.config import Config
             >>> from mmdet.models.roi_heads.mask_heads.fcn_mask_head import *  # NOQA
             >>> N = 7  # N = number of extracted ROIs
             >>> C, H, W = 11, 32, 32
@@ -314,7 +314,7 @@ class FCNMaskHead(BaseModule):
             >>> # Each input is associated with some bounding box
             >>> bboxes = torch.Tensor([[1, 1, 42, 42 ]] * N)
             >>> labels = torch.randint(0, C, size=(N,))
-            >>> rcnn_test_cfg = mmcv.Config({'mask_thr_binary': 0, })
+            >>> rcnn_test_cfg = Config({'mask_thr_binary': 0, })
             >>> ori_shape = (H * 4, W * 4)
             >>> scale_factor = (1, 1)
             >>> rescale = False

@@ -14,6 +14,7 @@ from mmcv.transforms import RandomFlip as MMCV_RandomFlip
 from mmcv.transforms import Resize as MMCV_Resize
 from mmcv.transforms.utils import avoid_cache_randomness, cache_randomness
 from mmengine.dataset import BaseDataset
+from mmengine.utils import is_str
 from numpy import random
 
 from mmdet.registry import TRANSFORMS
@@ -1362,7 +1363,7 @@ class Albu(BaseTransform):
         assert isinstance(cfg, dict) and 'type' in cfg
         args = cfg.copy()
         obj_type = args.pop('type')
-        if mmcv.is_str(obj_type):
+        if is_str(obj_type):
             if albumentations is None:
                 raise RuntimeError('albumentations is not installed')
             obj_cls = getattr(albumentations, obj_type)

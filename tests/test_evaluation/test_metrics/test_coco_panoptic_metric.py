@@ -7,6 +7,7 @@ from copy import deepcopy
 import mmcv
 import numpy as np
 import torch
+from mmengine.fileio import dump
 
 from mmdet.evaluation import INSTANCE_OFFSET, CocoPanopticMetric
 
@@ -102,7 +103,7 @@ class TestCocoPanopticMetric(unittest.TestCase):
 
         img_path = osp.join(seg_map_dir, 'fake_name1.png')
         mmcv.imwrite(rgb_gt_seg_map[:, :, ::-1], img_path)
-        mmcv.dump(gt_json, ann_file)
+        dump(gt_json, ann_file)
 
         return gt_json
 
