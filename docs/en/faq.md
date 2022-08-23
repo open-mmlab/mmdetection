@@ -152,7 +152,7 @@ We list some common troubles faced by many users and their corresponding solutio
 
   1. This error indicates that your module has parameters that were not used in producing loss. This phenomenon may be caused by running different branches in your code in DDP mode.
   2. You can set `find_unused_parameters = True` in the config to solve the above problems, but this will slow down the training speed.
-  3. You can get the name of those unused parameters with `detect_anomalous_params = True`. Note `detect_anomalous_params = True` will slow down the training speed, so it is recommended for debugging only.
+  3. You can set `detect_anomalous_params = True` in the config or `model_wrapper_cfg = dict(type='MMDistributedDataParallel', detect_anomalous_params=True)` (More details please refer to [MMEngine](https://github.com/open-mmlab/mmengine/blob/main/mmengine/model/wrappers/distributed.py#L91)) to get the name of those unused parameters. Note `detect_anomalous_params = True` will slow down the training speed, so it is recommended for debugging only.
 
 - Save the best model
 
