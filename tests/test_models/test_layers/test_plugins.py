@@ -3,7 +3,7 @@ import unittest
 
 import pytest
 import torch
-from mmcv import ConfigDict
+from mmengine.config import ConfigDict
 
 from mmdet.models.layers import DropBlock
 from mmdet.registry import MODELS
