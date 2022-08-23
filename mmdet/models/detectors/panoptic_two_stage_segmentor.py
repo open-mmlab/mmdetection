@@ -167,10 +167,9 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         results_list = self.panoptic_fusion_head.predict(
             results_list, seg_preds)
 
-        results_list = self.convert_to_datasample(batch_data_samples,
-                                                  results_list)
-
-        return results_list
+        batch_data_samples = self.add_pred_to_datasample(
+            batch_data_samples, results_list)
+        return batch_data_samples
 
     # TODO the code has not been verified and needs to be refactored later.
     def _forward(self, batch_inputs: Tensor,
@@ -213,9 +212,9 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
 
         return results
 
-    def convert_to_datasample(self, data_samples: SampleList,
-                              results_list: List[PixelData]) -> SampleList:
-        """Convert results list to `DetDataSample`.
+    def add_pred_to_datasample(self, data_samples: SampleList,
+                               results_list: List[PixelData]) -> SampleList:
+        """Add predictions to `DetDataSample`.
 
         Args:
             data_samples (list[:obj:`DetDataSample`]): The

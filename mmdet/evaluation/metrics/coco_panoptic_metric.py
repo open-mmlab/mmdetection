@@ -14,7 +14,6 @@ from terminaltables import AsciiTable
 
 from mmdet.datasets.api_wrappers import COCOPanoptic
 from mmdet.registry import METRICS
-from mmdet.structures import DetDataSample, SampleList
 from ..functional import (INSTANCE_OFFSET, pq_compute_multi_core,
                           pq_compute_single_core)
 
@@ -238,14 +237,14 @@ class CocoPanopticMetric(BaseMetric):
             if self.tmp_dir is None else tempfile.gettempdir())
 
     def _parse_predictions(self,
-                           pred: DetDataSample,
+                           pred: dict,
                            img_id: int,
                            segm_file: str,
                            label2cat=None) -> dict:
         """Parse panoptic segmentation predictions.
 
         Args:
-            pred (:obj:`DetDataSample`): Panoptic segmentation predictions.
+            pred (dict): Panoptic segmentation predictions.
             img_id (int): Image id.
             segm_file (str): Segmentation file name.
             label2cat (dict): Mapping from label to category id.
@@ -291,7 +290,7 @@ class CocoPanopticMetric(BaseMetric):
         return result
 
     def _compute_batch_pq_stats(self, data_batch: Sequence[dict],
-                                data_samples: SampleList):
+                                data_samples: Sequence[dict]):
         """Process gts and predictions when ``outfile_prefix`` is not set, gts
         are from dataset or a json file which is defined by ``ann_file``.
 
@@ -372,7 +371,7 @@ class CocoPanopticMetric(BaseMetric):
             self.results.append(pq_stats)
 
     def _process_gt_and_predictions(self, data_batch: Sequence[dict],
-                                    data_samples: SampleList):
+                                    data_samples: Sequence[dict]):
         """Process gts and predictions when ``outfile_prefix`` is set.
 
         The predictions will be saved to directory specified by
@@ -401,7 +400,7 @@ class CocoPanopticMetric(BaseMetric):
             self.results.append((gt, result))
 
     def process(self, data_batch: Sequence[dict],
-                data_samples: SampleList) -> None:
+                data_samples: Sequence[dict]) -> None:
         """Process one batch of data samples and predictions. The processed
         results should be stored in ``self.results``, which will be used to
         compute the metrics when all batches have been processed.
@@ -409,8 +408,8 @@ class CocoPanopticMetric(BaseMetric):
         Args:
             data_batch (Sequence[dict]): A batch of data
                 from the dataloader.
-            data_samples (list[:obj:`DetDataSample`]): The
-                annotation and prediction data of every samples.
+            data_samples (Sequence[dict]): A batch of data samples that
+                contain annotations and predictions.
         """
         # If ``self.tmp_dir`` is none, it will save gt and predictions to
         # self.results, otherwise, it will compute pq_stats here.

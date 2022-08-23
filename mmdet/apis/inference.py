@@ -126,10 +126,11 @@ def inference_detector(
 
         test_pipeline = Compose(new_test_pipeline)
 
-    for m in model.modules():
-        assert not isinstance(
-            m,
-            RoIPool), 'CPU inference with RoIPool is not supported currently.'
+    if model.data_preprocessor.device.type == 'cpu':
+        for m in model.modules():
+            assert not isinstance(
+                m, RoIPool
+            ), 'CPU inference with RoIPool is not supported currently.'
 
     result_list = []
     for img in imgs:

@@ -14,7 +14,6 @@ from terminaltables import AsciiTable
 
 from mmdet.datasets.api_wrappers import COCO, COCOeval
 from mmdet.registry import METRICS
-from mmdet.structures import SampleList
 from mmdet.structures.mask import encode_mask_results
 from ..functional import eval_recalls
 
@@ -305,7 +304,7 @@ class CocoMetric(BaseMetric):
         return converted_json_path
 
     def process(self, data_batch: Sequence[dict],
-                data_samples: SampleList) -> None:
+                data_samples: Sequence[dict]) -> None:
         """Process one batch of data samples and predictions. The processed
         results should be stored in ``self.results``, which will be used to
         compute the metrics when all batches have been processed.
@@ -313,8 +312,8 @@ class CocoMetric(BaseMetric):
         Args:
             data_batch (Sequence[dict]): A batch of data
                 from the dataloader.
-            data_samples (list[:obj:`DetDataSample`]): The
-                annotation and prediction data of every samples.
+            data_samples (Sequence[dict]): A batch of data samples that
+                contain annotations and predictions.
         """
         for data, data_sample in zip(data_batch, data_samples):
             result = dict()

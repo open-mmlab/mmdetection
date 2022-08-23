@@ -316,8 +316,8 @@ class DetLocalVisualizer(Visualizer):
         Args:
             name (str): The image identifier.
             image (np.ndarray): The image to draw.
-            data_sample (:obj:`DetDataSample`, optional):The
-                annotation and prediction data of every samples.
+            data_sample (:obj:`DetDataSample`, optional): A data
+                sample that contain annotations and predictions.
                 Defaults to None.
             draw_gt (bool): Whether to draw GT DetDataSample. Default to True.
             draw_pred (bool): Whether to draw Prediction DetDataSample.

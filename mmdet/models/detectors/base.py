@@ -75,8 +75,9 @@ class BaseDetector(BaseModel, metaclass=ABCMeta):
         Args:
             inputs (torch.Tensor): The input tensor with shape
                 (N, C, ...) in general.
-            data_samples (list[:obj:`DetDataSample`], optional): The
-                annotation data of every samples. Defaults to None.
+            data_samples (list[:obj:`DetDataSample`], optional): A batch of
+                data samples that contain annotations and predictions.
+                Defaults to None.
             mode (str): Return what kind of value. Defaults to 'tensor'.
 
         Returns:
@@ -125,12 +126,13 @@ class BaseDetector(BaseModel, metaclass=ABCMeta):
         """Extract features from images."""
         pass
 
-    def convert_to_datasample(self, data_samples: SampleList,
-                              results_list: InstanceList) -> SampleList:
-        """ Convert results list to `DetDataSample`.
+    def add_pred_to_datasample(self, data_samples: SampleList,
+                               results_list: InstanceList) -> SampleList:
+        """Add predictions to `DetDataSample`.
+
         Args:
-            data_samples (list[:obj:`DetDataSample`]): The
-                annotation data of every samples.
+            data_samples (list[:obj:`DetDataSample`], optional): A batch of
+                data samples that contain annotations and predictions.
             results_list (list[:obj:`InstanceData`]): Detection results of
                 each image.
 
@@ -146,7 +148,7 @@ class BaseDetector(BaseModel, metaclass=ABCMeta):
                     (num_instances, ).
                 - bboxes (Tensor): Has a shape (num_instances, 4),
                     the last dimension 4 arrange as (x1, y1, x2, y2).
-            """
+        """
         for data_sample, pred_instances in zip(data_samples, results_list):
             data_sample.pred_instances = pred_instances
         return data_samples
