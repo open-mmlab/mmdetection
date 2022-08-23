@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 
 from mmdet.registry import TASK_UTILS
-from mmdet.structures.bbox import bbox_rescale, HorizontalBoxes
+from mmdet.structures.bbox import HorizontalBoxes, bbox_rescale
 from .base_bbox_coder import BaseBBoxCoder
 
 
@@ -86,8 +86,9 @@ class BucketingBBoxCoder(BaseBBoxCoder):
         assert cls_preds.size(0) == bboxes.size(0) and offset_preds.size(
             0) == bboxes.size(0)
         bboxes, loc_confidence = bucket2bbox(bboxes, cls_preds, offset_preds,
-                                     self.num_buckets, self.scale_factor,
-                                     max_shape, self.clip_border)
+                                             self.num_buckets,
+                                             self.scale_factor, max_shape,
+                                             self.clip_border)
         if self.with_boxlist:
             bboxes = HorizontalBoxes(bboxes, clone=False)
         return bboxes, loc_confidence

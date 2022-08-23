@@ -7,6 +7,7 @@ import torch
 from torch import Tensor
 from mmengine.structures import InstanceData
 from six.moves import map, zip
+from torch import Tensor
 from torch.autograd import Function
 from torch.nn import functional as F
 
@@ -440,8 +441,8 @@ def samplelist_boxlist2tensor(batch_data_samples: SampleList) -> SampleList:
                 data_samples.ignored_instances.bboxes = bboxes.tensor
 
 
-def cat(data_list: List[Union[Tensor, BaseBoxes]], dim: int = 0) \
-    -> Union[Tensor, BaseBoxes]:
+def cat(data_list: List[Union[Tensor, BaseBoxes]],
+        dim: int = 0) -> Union[Tensor, BaseBoxes]:
     """Concatenate tensor or BoxList.
 
     Args:
@@ -449,7 +450,7 @@ def cat(data_list: List[Union[Tensor, BaseBoxes]], dim: int = 0) \
             or boxlists need to be concatenated.
             dim (int): The dimension over which the box are concatenated.
                 Defaults to 0.
-    
+
     Returns:
         Union[Tensor, :obj`BaseBoxes`]: Concatenated results.
     """
@@ -459,8 +460,8 @@ def cat(data_list: List[Union[Tensor, BaseBoxes]], dim: int = 0) \
         return torch.cat(data_list, dim=dim)
 
 
-def stack(data_list: List[Union[Tensor, BaseBoxes]], dim: int = 0) \
-    -> Union[Tensor, BaseBoxes]:
+def stack(data_list: List[Union[Tensor, BaseBoxes]],
+          dim: int = 0) -> Union[Tensor, BaseBoxes]:
     """Stack tensor or BoxList.
 
     Args:
@@ -468,7 +469,7 @@ def stack(data_list: List[Union[Tensor, BaseBoxes]], dim: int = 0) \
             or boxlists need to be stacked.
             dim (int): The dimension over which the box are stacked.
                 Defaults to 0.
-    
+
     Returns:
         Union[Tensor, :obj`BaseBoxes`]: Stacked results.
     """

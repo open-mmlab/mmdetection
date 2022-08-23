@@ -2,8 +2,8 @@
 import torch
 
 from mmdet.registry import TASK_UTILS
-from .base_bbox_coder import BaseBBoxCoder
 from mmdet.structures.bbox import HorizontalBoxes
+from .base_bbox_coder import BaseBBoxCoder
 
 
 @TASK_UTILS.register_module()

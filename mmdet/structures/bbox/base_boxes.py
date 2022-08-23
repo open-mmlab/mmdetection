@@ -322,7 +322,7 @@ class BaseBoxes(metaclass=ABCMeta):
 
     @classmethod
     def stack(cls: Type[T], box_list: Sequence[T], dim: int = 0) -> T:
-        """Concatenates a sequence of tensors along a new dimension. Similar to
+        """Stacks a sequence of tensors along a new dimension. Similar to
         ``torch.stack``.
 
         Args:
@@ -330,7 +330,7 @@ class BaseBoxes(metaclass=ABCMeta):
             dim (int): Dimension to insert. Defaults to 0.
 
         Returns:
-            T: Concatenated box instance.
+            T: Stacked box instance.
         """
         assert isinstance(box_list, Sequence)
         if len(box_list) == 0:
@@ -461,7 +461,7 @@ class BaseBoxes(metaclass=ABCMeta):
             allowed_border (int): Boxes that extend beyond the image shape
                 boundary by more than ``allowed_border`` are considered
                 "outside" Defaults to 0.
-        
+
         Returns:
             BoolTensor: A BoolTensor indicating whether the box is inside
             the image. Assuming the original boxes have shape (m, n, box_dim),

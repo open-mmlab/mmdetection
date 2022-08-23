@@ -5,10 +5,10 @@ import numpy as np
 import torch
 from torch import Tensor
 
+from mmdet.structures.bbox import BaseBoxes
 from mmdet.utils import util_mixins
 from mmdet.utils.util_random import ensure_rng
 from ..assigners import AssignResult
-from mmdet.structures.bbox import BaseBoxes
 
 
 def random_boxes(num=1, scale=1, rng=None):

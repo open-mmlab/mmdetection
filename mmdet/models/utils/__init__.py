@@ -3,12 +3,12 @@ from .gaussian_target import (gather_feat, gaussian_radius,
                               gen_gaussian_target, get_local_maximum,
                               get_topk_from_heatmap, transpose_and_gather_feat)
 from .make_divisible import make_divisible
-from .misc import (center_of_mass, empty_instances, filter_scores_and_topk,
-                   flip_tensor, generate_coordinate, images_to_levels,
-                   interpolate_as, levels_to_images, mask2ndarray, multi_apply,
-                   samplelist_boxlist2tensor, select_single_mlvl,
-                   sigmoid_geometric_mean, unmap, unpack_gt_instances,
-                   cat, stack)
+from .misc import (cat, center_of_mass, empty_instances,
+                   filter_scores_and_topk, flip_tensor, generate_coordinate,
+                   images_to_levels, interpolate_as, levels_to_images,
+                   mask2ndarray, multi_apply, samplelist_boxlist2tensor,
+                   select_single_mlvl, sigmoid_geometric_mean, stack, unmap,
+                   unpack_gt_instances)
 from .panoptic_gt_processing import preprocess_panoptic_gt
 from .point_sample import (get_uncertain_point_coords_with_randomness,
                            get_uncertainty)

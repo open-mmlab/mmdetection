@@ -2,8 +2,8 @@
 import torch
 
 from mmdet.registry import TASK_UTILS
-from .base_bbox_coder import BaseBBoxCoder
 from mmdet.structures.bbox import HorizontalBoxes
+from .base_bbox_coder import BaseBBoxCoder
 
 
 @TASK_UTILS.register_module()
@@ -78,7 +78,7 @@ class YOLOBBoxCoder(BaseBBoxCoder):
              whs[..., 1], xy_centers[..., 0] + whs[..., 0],
              xy_centers[..., 1] + whs[..., 1]),
             dim=-1)
-        
+
         if self.with_boxlist:
             decoded_bboxes = HorizontalBoxes(decoded_bboxes)
         return decoded_bboxes

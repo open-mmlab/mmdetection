@@ -12,11 +12,11 @@ from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.structures import SampleList
+from mmdet.structures.bbox import BaseBoxes
 from mmdet.utils import InstanceList, OptMultiConfig
 from ..test_time_augs import merge_aug_results
 from ..utils import (filter_scores_and_topk, select_single_mlvl,
                      unpack_gt_instances)
-from mmdet.structures.bbox import BaseBoxes
 
 
 class BaseDenseHead(BaseModule, metaclass=ABCMeta):
@@ -362,7 +362,8 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
 
-            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, reg_out_channels)
+            bbox_pred = bbox_pred.permute(1, 2,
+                                          0).reshape(-1, reg_out_channels)
             if with_score_factors:
                 score_factor = score_factor.permute(1, 2,
                                                     0).reshape(-1).sigmoid()

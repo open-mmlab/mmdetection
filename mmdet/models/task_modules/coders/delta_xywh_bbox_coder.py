@@ -5,8 +5,8 @@ import numpy as np
 import torch
 
 from mmdet.registry import TASK_UTILS
-from .base_bbox_coder import BaseBBoxCoder
 from mmdet.structures.bbox import HorizontalBoxes
+from .base_bbox_coder import BaseBBoxCoder
 
 
 @TASK_UTILS.register_module()
@@ -111,7 +111,7 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
                                              wh_ratio_clip, self.clip_border,
                                              self.add_ctr_clamp,
                                              self.ctr_clamp)
-        
+
         if self.with_boxlist:
             decoded_bboxes = HorizontalBoxes(decoded_bboxes)
         return decoded_bboxes

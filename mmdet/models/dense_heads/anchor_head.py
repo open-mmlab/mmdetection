@@ -8,14 +8,14 @@ from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.structures.bbox import BaseBoxes
 from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
                          OptInstanceList, OptMultiConfig)
 from ..task_modules.prior_generators import (AnchorGenerator,
                                              anchor_inside_flags)
 from ..task_modules.samplers import PseudoSampler
-from ..utils import images_to_levels, multi_apply, unmap, cat
+from ..utils import cat, images_to_levels, multi_apply, unmap
 from .base_dense_head import BaseDenseHead
-from mmdet.structures.bbox import BaseBoxes
 
 
 @MODELS.register_module()
