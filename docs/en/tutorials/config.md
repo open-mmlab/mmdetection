@@ -436,7 +436,7 @@ When `_base_` is a list of multiple file paths, it means inheriting multiple fil
 
 ```python
 _base_ = [
-    '../_base_/models/mask_rcnn_r50_fpn.py',
+    '../_base_/models/mask-rcnn_r50_fpn.py',
     '../_base_/datasets/coco_instance.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
@@ -588,19 +588,20 @@ When submitting jobs using "tools/train.py" or "tools/test.py", you may specify 
 We follow the below style to name config files. Contributors are advised to follow the same style.
 
 ```
-{algorithm name}_{model component names [component1]_[component2]_[...]}_{training settings}_{dataset information}.py
+{algorithm name}_{model component names [component1]_[component2]_[...]}_{training settings}_{training dataset information}_{testing dataset information}.py
 ```
 
-The file name is divided to four parts. All parts and components are connected with `_` and words of each part or component should be connected with `-`.
+The file name is divided to five parts. All parts and components are connected with `_` and words of each part or component should be connected with `-`.
 
 - `{algorithm name}`: The name of the algorithm. It can be a detector name such as `faster-rcnn`, `mask-rcnn`, etc. Or can be a semi-supervise or knowladge-distillation algorithm such as `soft-teacher`, `lad`. etc.
 - `{model component names}`: Names of the components used in the algorithm such as backbone, neck, etc. For example, `r50-caffe_fpn_gn-head` means using caffe-style ResNet50, FPN and detection head with Group Norm in the algorithm.
 - `{training settings}`: Information of training settings such as batch size, augmentations, loss trick, scheduler, and epochs/iterations. For example: `4xb4-mixup-giou-coslr-100e` means using 8-gpus x 4-images-per-gpu, mixup augmentation, GIoU loss, cosine annealing learning rate, and train 100 epochs.
   Some abbreviations:
-  - `{gpu x batch_per_gpu}`: GPUs and samples per GPU. E.g. `4x4b` is the short term of 4-gpus x 4-images-per-gpu. And `8xb2` is used by default if not mentioned.
+  - `{gpu x batch_per_gpu}`: GPUs and samples per GPU. `bN` indicates N batch size per GPU. E.g. `4xb4` is the short term of 4-gpus x 4-images-per-gpu. And `8xb2` is used by default if not mentioned.
   - `{schedule}`: training schedule, options are `1x`, `2x`, `20e`, etc.
     `1x` and `2x` means 12 epochs and 24 epochs respectively.
     `20e` is adopted in cascade models, which denotes 20 epochs.
     For `1x`/`2x`, initial learning rate decays by a factor of 10 at the 8/16th and 11/22th epochs.
     For `20e`, initial learning rate decays by a factor of 10 at the 16th and 19th epochs.
-- `{dataset information}`: Dataset names like `coco`, `coco-panoptic`, `cityscapes`, `voc-0712`, `wider-face`.
+- `{training dataset information}`: Training dataset names like `coco`, `coco-panoptic`, `cityscapes`, `voc-0712`, `wider-face`.
+- `{testing dataset information}` (optional): Testing dataset name for models trained on one dataset but tested on another. If not mentioned, it means the model was trained and tested on the same dataset type.
