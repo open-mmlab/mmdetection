@@ -46,8 +46,12 @@ model = dict(
                         embed_dims=256,
                         num_levels=4,
                         dropout=0.0),  # 0.1 for DeformDETR
-                    feedforward_channels=2048,  # 1024 for DeformDETR
-                    ffn_dropout=0.0,  # 0.1 for DeformDETR
+                    ffn_cfgs=dict(
+                        type='FFN',
+                        feedforward_channels=2048,  # 1024 for DeformDETR
+                        num_fcs=2,
+                        ffn_drop=0.0,  # 0.1 for DeformDETR
+                        act_cfg=dict(type='ReLU', inplace=True)),
                     operation_order=('self_attn', 'norm', 'ffn', 'norm'))),
             decoder=dict(
                 type='DinoTransformerDecoder',
@@ -67,8 +71,12 @@ model = dict(
                             num_levels=4,
                             dropout=0.0),  # 0.1 for DeformDETR
                     ],
-                    feedforward_channels=2048,  # 1024 for DeformDETR
-                    ffn_dropout=0.0,  # 0.1 for DeformDETR
+                    ffn_cfgs=dict(
+                        type='FFN',
+                        feedforward_channels=2048,  # 1024 for DeformDETR
+                        num_fcs=2,
+                        ffn_drop=0.0,  # 0.1 for DeformDETR
+                        act_cfg=dict(type='ReLU', inplace=True)),
                     operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
                                      'ffn', 'norm')))),
         positional_encoding=dict(
@@ -91,7 +99,7 @@ model = dict(
             cls_cost=dict(type='FocalLossCost', weight=2.0),
             reg_cost=dict(type='BBoxL1Cost', weight=5.0, box_format='xywh'),
             iou_cost=dict(type='IoUCost', iou_mode='giou', weight=2.0))),
-    test_cfg=dict(max_per_img=300))  # TODO: Originally 100
+    test_cfg=dict(max_per_img=300))  # 100 for DeformDETR
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 # train_pipeline, NOTE the img_scale and the Pad's size_divisor is different
@@ -171,12 +179,9 @@ optimizer = dict(
     type='AdamW',
     lr=1e-4,
     weight_decay=0.0001,
-    paramwise_cfg=dict(
-        custom_keys={
-            'backbone': dict(lr_mult=0.1),
-            # 'sampling_offsets': dict(lr_mult=0.1),
-            # 'reference_points': dict(lr_mult=0.1)
-        }))
+    # custom_keys of sampling_offsets and reference_points in DeformDETR
+    paramwise_cfg=dict(custom_keys={'backbone': dict(lr_mult=0.1)}))
+
 optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
 # learning policy
 lr_config = dict(policy='step', step=[11])
