@@ -14,6 +14,7 @@ from terminaltables import AsciiTable
 
 from mmdet.datasets.api_wrappers import COCOPanoptic
 from mmdet.registry import METRICS
+from mmdet.structures import DetDataSample, SampleList
 from ..functional import (INSTANCE_OFFSET, pq_compute_multi_core,
                           pq_compute_single_core)
 
@@ -237,14 +238,14 @@ class CocoPanopticMetric(BaseMetric):
             if self.tmp_dir is None else tempfile.gettempdir())
 
     def _parse_predictions(self,
-                           pred: dict,
+                           pred: DetDataSample,
                            img_id: int,
                            segm_file: str,
                            label2cat=None) -> dict:
         """Parse panoptic segmentation predictions.
 
         Args:
-            pred (dict): Panoptic segmentation predictions.
+            pred (:obj:`DetDataSample`): Panoptic segmentation predictions.
             img_id (int): Image id.
             segm_file (str): Segmentation file name.
             label2cat (dict): Mapping from label to category id.
@@ -290,7 +291,7 @@ class CocoPanopticMetric(BaseMetric):
         return result
 
     def _compute_batch_pq_stats(self, data_batch: Sequence[dict],
-                                predictions: Sequence[dict]):
+                                data_samples: SampleList):
         """Process gts and predictions when ``outfile_prefix`` is not set, gts
         are from dataset or a json file which is defined by ``ann_file``.
 
@@ -310,13 +311,13 @@ class CocoPanopticMetric(BaseMetric):
                 cat_names=self.dataset_meta['CLASSES'])
             label2cat = {i: cat_id for i, cat_id in enumerate(cat_ids)}
 
-        for data, pred in zip(data_batch, predictions):
+        for data, data_sample in zip(data_batch, data_samples):
             # parse pred
-            img_id = data['data_sample']['img_id']
-            segm_file = osp.basename(data['data_sample']['img_path']).replace(
+            img_id = data_sample['img_id']
+            segm_file = osp.basename(data_sample['img_path']).replace(
                 'jpg', 'png')
             result = self._parse_predictions(
-                pred=pred,
+                pred=data_sample,
                 img_id=img_id,
                 segm_file=segm_file,
                 label2cat=label2cat)
@@ -324,8 +325,8 @@ class CocoPanopticMetric(BaseMetric):
             # parse gt
             gt = dict()
             gt['image_id'] = img_id
-            gt['width'] = data['data_sample']['ori_shape'][1]
-            gt['height'] = data['data_sample']['ori_shape'][0]
+            gt['width'] = data_sample['ori_shape'][1]
+            gt['height'] = data_sample['ori_shape'][0]
             gt['file_name'] = segm_file
 
             if self._coco_api is None:
@@ -336,7 +337,7 @@ class CocoPanopticMetric(BaseMetric):
                 pan_png = rgb2id(pan_png)
                 segments_info = []
 
-                for segment_info in data['data_sample']['segments_info']:
+                for segment_info in data_sample['segments_info']:
                     id = segment_info['id']
                     label = segment_info['category']
                     mask = pan_png == id
@@ -371,36 +372,36 @@ class CocoPanopticMetric(BaseMetric):
             self.results.append(pq_stats)
 
     def _process_gt_and_predictions(self, data_batch: Sequence[dict],
-                                    predictions: Sequence[dict]):
+                                    data_samples: SampleList):
         """Process gts and predictions when ``outfile_prefix`` is set.
 
         The predictions will be saved to directory specified by
         ``outfile_predfix``. The matched pair (gt, result) will be put into
         ``self.results``.
         """
-        for data, pred in zip(data_batch, predictions):
+        for data, data_sample in zip(data_batch, data_samples):
             # parse pred
-            img_id = data['data_sample']['img_id']
-            segm_file = osp.basename(data['data_sample']['img_path']).replace(
+            img_id = data_sample['img_id']
+            segm_file = osp.basename(data_sample['img_path']).replace(
                 'jpg', 'png')
             result = self._parse_predictions(
-                pred=pred, img_id=img_id, segm_file=segm_file)
+                pred=data_sample, img_id=img_id, segm_file=segm_file)
 
             # parse gt
             gt = dict()
             gt['image_id'] = img_id
-            gt['width'] = data['data_sample']['ori_shape'][1]
-            gt['height'] = data['data_sample']['ori_shape'][0]
+            gt['width'] = data_sample['ori_shape'][1]
+            gt['height'] = data_sample['ori_shape'][0]
 
             if self._coco_api is None:
                 # get segments_info from dataset
-                gt['segments_info'] = data['data_sample']['segments_info']
-                gt['seg_map_path'] = data['data_sample']['seg_map_path']
+                gt['segments_info'] = data_sample['segments_info']
+                gt['seg_map_path'] = data_sample['seg_map_path']
 
             self.results.append((gt, result))
 
     def process(self, data_batch: Sequence[dict],
-                predictions: Sequence[dict]) -> None:
+                data_samples: SampleList) -> None:
         """Process one batch of data samples and predictions. The processed
         results should be stored in ``self.results``, which will be used to
         compute the metrics when all batches have been processed.
@@ -408,15 +409,15 @@ class CocoPanopticMetric(BaseMetric):
         Args:
             data_batch (Sequence[dict]): A batch of data
                 from the dataloader.
-            predictions (Sequence[dict]): A batch of outputs from
-                the model.
+            data_samples (list[:obj:`DetDataSample`]): The
+                annotation and prediction data of every samples.
         """
         # If ``self.tmp_dir`` is none, it will save gt and predictions to
         # self.results, otherwise, it will compute pq_stats here.
         if self.tmp_dir is None:
-            self._process_gt_and_predictions(data_batch, predictions)
+            self._process_gt_and_predictions(data_batch, data_samples)
         else:
-            self._compute_batch_pq_stats(data_batch, predictions)
+            self._compute_batch_pq_stats(data_batch, data_samples)
 
     def compute_metrics(self, results: list) -> Dict[str, float]:
         """Compute the metrics from processed results.

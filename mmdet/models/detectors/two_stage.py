@@ -237,6 +237,7 @@ class TwoStageDetector(BaseDetector):
             x, rpn_results_list, batch_data_samples, rescale=rescale)
 
         # connvert to DetDataSample
-        results_list = self.convert_to_datasample(results_list)
+        results_list = self.convert_to_datasample(batch_data_samples,
+                                                  results_list)
 
         return results_list

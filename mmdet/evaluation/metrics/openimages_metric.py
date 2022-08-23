@@ -8,6 +8,7 @@ from mmengine.evaluator import BaseMetric
 from mmengine.logging import MMLogger, print_log
 
 from mmdet.registry import METRICS
+from mmdet.structures import SampleList
 from ..functional import eval_map
 
 
@@ -143,7 +144,7 @@ class OpenImagesMetric(BaseMetric):
         return processed_bboxes, processed_scores, processed_labels
 
     def process(self, data_batch: Sequence[dict],
-                predictions: Sequence[dict]) -> None:
+                data_samples: SampleList) -> None:
         """Process one batch of data samples and predictions. The processed
         results should be stored in ``self.results``, which will be used to
         compute the metrics when all batches have been processed.
@@ -151,12 +152,13 @@ class OpenImagesMetric(BaseMetric):
         Args:
             data_batch (Sequence[dict]): A batch of data
                 from the dataloader.
-            predictions (Sequence[dict]): A batch of outputs from
-                the model.
+            data_samples (list[:obj:`DetDataSample`]): The
+                annotation and prediction data of every samples.
         """
-        for data, pred in zip(data_batch, predictions):
-            gt = copy.deepcopy(data['data_sample'])
+        for data, data_sample in zip(data_batch, data_samples):
+            gt = copy.deepcopy(data_sample)
             # add super-category instances
+            # TODO: Need to refactor to support LoadAnnotations
             instances = gt['instances']
             if self.get_supercategory:
                 supercat_instances = self._get_supercategory_ann(instances)
@@ -174,7 +176,7 @@ class OpenImagesMetric(BaseMetric):
                 gt_is_group_ofs=np.array(is_group_ofs, dtype=bool))
 
             image_level_labels = gt.get('image_level_labels', None)
-            pred = pred['pred_instances']
+            pred = data_sample['pred_instances']
             pred_bboxes = pred['bboxes'].cpu().numpy()
             pred_scores = pred['scores'].cpu().numpy()
             pred_labels = pred['labels'].cpu().numpy()

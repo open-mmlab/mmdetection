@@ -9,6 +9,7 @@ from mmengine.evaluator import BaseMetric
 from mmengine.logging import MMLogger
 
 from mmdet.registry import METRICS
+from mmdet.structures import SampleList
 from ..functional import eval_map, eval_recalls
 
 
@@ -70,7 +71,7 @@ class VOCMetric(BaseMetric):
         self.eval_mode = eval_mode
 
     def process(self, data_batch: Sequence[dict],
-                predictions: Sequence[dict]) -> None:
+                data_samples: SampleList) -> None:
         """Process one batch of data samples and predictions. The processed
         results should be stored in ``self.results``, which will be used to
         compute the metrics when all batches have been processed.
@@ -78,11 +79,12 @@ class VOCMetric(BaseMetric):
         Args:
             data_batch (Sequence[dict]): A batch of data
                 from the dataloader.
-            predictions (Sequence[dict]): A batch of outputs from
-                the model.
+            data_samples (list[:obj:`DetDataSample`]): The
+                annotation and prediction data of every samples.
         """
-        for data, pred in zip(data_batch, predictions):
-            gt = copy.deepcopy(data['data_sample'])
+        for data, data_sample in zip(data_batch, data_samples):
+            gt = copy.deepcopy(data_sample)
+            # TODO: Need to refactor to support LoadAnnotations
             gt_instances = gt['gt_instances']
             gt_ignore_instances = gt['ignored_instances']
             ann = dict(
@@ -91,7 +93,7 @@ class VOCMetric(BaseMetric):
                 bboxes_ignore=gt_ignore_instances['bboxes'].cpu().numpy(),
                 labels_ignore=gt_ignore_instances['labels'].cpu().numpy())
 
-            pred = pred['pred_instances']
+            pred = data_sample['pred_instances']
             pred_bboxes = pred['bboxes'].cpu().numpy()
             pred_scores = pred['scores'].cpu().numpy()
             pred_labels = pred['labels'].cpu().numpy()

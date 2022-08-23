@@ -7,7 +7,7 @@ from mmengine.data import PixelData
 from torch import Tensor
 
 from mmdet.registry import MODELS
-from mmdet.structures import DetDataSample, SampleList
+from mmdet.structures import SampleList
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from .two_stage import TwoStageDetector
 
@@ -167,7 +167,8 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
         results_list = self.panoptic_fusion_head.predict(
             results_list, seg_preds)
 
-        results_list = self.convert_to_datasample(results_list)
+        results_list = self.convert_to_datasample(batch_data_samples,
+                                                  results_list)
 
         return results_list
 
@@ -212,11 +213,13 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
 
         return results
 
-    def convert_to_datasample(self,
+    def convert_to_datasample(self, data_samples: SampleList,
                               results_list: List[PixelData]) -> SampleList:
         """Convert results list to `DetDataSample`.
 
         Args:
+            data_samples (list[:obj:`DetDataSample`]): The
+                annotation data of every samples.
             results_list (List[PixelData]): Panoptic segmentation results of
                 each image.
 
@@ -226,10 +229,7 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
                 'pred_panoptic_seg'. And the 'pred_panoptic_seg' has a key
                 ``sem_seg``, which is a tensor of shape (1, h, w).
         """
-        results = []
-        for pred_panoptic_seg in results_list:
-            result = DetDataSample()
-            result.pred_panoptic_seg = pred_panoptic_seg
-            results.append(result)
 
-        return results
+        for data_sample, pred_panoptic_seg in zip(data_samples, results_list):
+            data_sample.pred_panoptic_seg = pred_panoptic_seg
+        return data_samples
