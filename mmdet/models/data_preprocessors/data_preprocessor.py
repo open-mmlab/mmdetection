@@ -103,7 +103,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         ``BaseDataPreprocessor``.
 
         Args:
-            data (dict): Data sampled from dataset.
+            data (dict): Data sampled from dataloader.
             training (bool): Whether to enable training time augmentation.
 
         Returns:
