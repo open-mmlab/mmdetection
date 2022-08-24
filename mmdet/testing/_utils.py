@@ -6,6 +6,7 @@ import numpy as np
 import torch
 from mmengine.config import Config
 from mmengine.data import InstanceData, PixelData
+from mmengine.data.utils import pseudo_collate
 
 from ..registry import TASK_UTILS
 from ..structures import DetDataSample
@@ -190,12 +191,13 @@ def demo_mm_inputs(batch_size=2,
             gt_sem_seg_data = dict(sem_seg=gt_semantic_seg)
             data_sample.gt_sem_seg = PixelData(**gt_sem_seg_data)
 
-        mm_inputs['data_sample'] = data_sample
+        mm_inputs['data_samples'] = data_sample
 
         # TODO: gt_ignore
 
         packed_inputs.append(mm_inputs)
-    return packed_inputs
+    data = pseudo_collate(packed_inputs)
+    return data
 
 
 def demo_mm_proposals(image_shapes, num_proposals, device='cpu'):

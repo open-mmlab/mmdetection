@@ -107,7 +107,7 @@ class TestCocoPanopticMetric(unittest.TestCase):
 
         return gt_json
 
-    def _create_panoptic_predictions(self):
+    def _create_panoptic_data_samples(self):
         # predictions
         # TP for background class, IoU=3576/4324=0.827
         # 2 the category id of the background class
@@ -124,13 +124,37 @@ class TestCocoPanopticMetric(unittest.TestCase):
             x, y, w, h = pred_bboxes[i]
             pred[y:y + h, x:x + w] = (i + 1) * INSTANCE_OFFSET + pred_labels[i]
 
-        predictions = [{
+        data_samples = [{
+            'img_id':
+            0,
+            'ori_shape': (60, 80),
+            'img_path':
+            'xxx/fake_name1.jpg',
+            'segments_info': [{
+                'id': 1,
+                'category': 0,
+                'is_thing': 1
+            }, {
+                'id': 2,
+                'category': 0,
+                'is_thing': 1
+            }, {
+                'id': 3,
+                'category': 1,
+                'is_thing': 1
+            }, {
+                'id': 4,
+                'category': 2,
+                'is_thing': 0
+            }],
+            'seg_map_path':
+            osp.join(self.gt_seg_dir, 'fake_name1.png'),
             'pred_panoptic_seg': {
                 'sem_seg': torch.from_numpy(pred).unsqueeze(0)
             },
         }]
 
-        return predictions
+        return data_samples
 
     def setUp(self):
         self.tmp_dir = tempfile.TemporaryDirectory()
@@ -155,7 +179,7 @@ class TestCocoPanopticMetric(unittest.TestCase):
             'coco_panoptic/SQ_st': 82.70120259019427,
             'coco_panoptic/RQ_st': 100.0
         }
-        self.predictions = self._create_panoptic_predictions()
+        self.data_samples = self._create_panoptic_data_samples()
 
     def tearDown(self):
         self.tmp_dir.cleanup()
@@ -167,39 +191,6 @@ class TestCocoPanopticMetric(unittest.TestCase):
 
     @unittest.skipIf(panopticapi is None, 'panopticapi is not installed')
     def test_evaluate_without_json(self):
-        # subset of dataset.data_list
-        data_batch = [{
-            'input': None,
-            'data_sample': {
-                'img_id':
-                0,
-                'ori_shape': (60, 80),
-                'segments_info': [{
-                    'id': 1,
-                    'category': 0,
-                    'is_thing': 1
-                }, {
-                    'id': 2,
-                    'category': 0,
-                    'is_thing': 1
-                }, {
-                    'id': 3,
-                    'category': 1,
-                    'is_thing': 1
-                }, {
-                    'id': 4,
-                    'category': 2,
-                    'is_thing': 0
-                }],
-                'file_name':
-                'fake_name1.jpg',
-                'seg_map_path':
-                osp.join(self.gt_seg_dir, 'fake_name1.png'),
-                'img_path':
-                'xxx/fake_name1.jpg'
-            }
-        }]
-
         # with tmpfile, without json
         metric = CocoPanopticMetric(
             ann_file=None,
@@ -209,7 +200,7 @@ class TestCocoPanopticMetric(unittest.TestCase):
             outfile_prefix=None)
 
         metric.dataset_meta = self.dataset_meta
-        metric.process(data_batch, deepcopy(self.predictions))
+        metric.process({}, deepcopy(self.data_samples))
         eval_results = metric.evaluate(size=1)
         self.assertDictEqual(eval_results, self.target)
 
@@ -223,20 +214,12 @@ class TestCocoPanopticMetric(unittest.TestCase):
             outfile_prefix=outfile_prefix)
 
         metric.dataset_meta = self.dataset_meta
-        metric.process(data_batch, deepcopy(self.predictions))
+        metric.process({}, deepcopy(self.data_samples))
         eval_results = metric.evaluate(size=1)
         self.assertDictEqual(eval_results, self.target)
 
     @unittest.skipIf(panopticapi is None, 'panopticapi is not installed')
     def test_evaluate_with_json(self):
-        data_batch = [{
-            'input': None,
-            'data_sample': {
-                'img_id': 0,
-                'ori_shape': (60, 80),
-                'img_path': 'xxx/fake_name1.jpg'
-            }
-        }]
         # with tmpfile and json
         metric = CocoPanopticMetric(
             ann_file=self.gt_json_path,
@@ -246,7 +229,7 @@ class TestCocoPanopticMetric(unittest.TestCase):
             outfile_prefix=None)
 
         metric.dataset_meta = self.dataset_meta
-        metric.process(data_batch, deepcopy(self.predictions))
+        metric.process({}, deepcopy(self.data_samples))
         eval_results = metric.evaluate(size=1)
         self.assertDictEqual(eval_results, self.target)
 
@@ -258,7 +241,7 @@ class TestCocoPanopticMetric(unittest.TestCase):
             nproc=1,
             outfile_prefix=None)
         metric.dataset_meta = self.dataset_meta
-        metric.process(data_batch, deepcopy(self.predictions))
+        metric.process({}, deepcopy(self.data_samples))
         eval_results = metric.evaluate(size=1)
         self.assertDictEqual(eval_results, self.target)
 
@@ -271,20 +254,12 @@ class TestCocoPanopticMetric(unittest.TestCase):
             nproc=1,
             outfile_prefix=outfile_prefix)
         metric.dataset_meta = self.dataset_meta
-        metric.process(data_batch, deepcopy(self.predictions))
+        metric.process({}, deepcopy(self.data_samples))
         eval_results = metric.evaluate(size=1)
         self.assertDictEqual(eval_results, self.target)
 
     @unittest.skipIf(panopticapi is None, 'panopticapi is not installed')
     def test_format_only(self):
-        data_batch = [{
-            'input': None,
-            'data_sample': {
-                'img_id': 0,
-                'ori_shape': (60, 80),
-                'img_path': 'xxx/fake_name1.jpg'
-            }
-        }]
         with self.assertRaises(AssertionError):
             metric = CocoPanopticMetric(
                 ann_file=self.gt_json_path,
@@ -303,7 +278,7 @@ class TestCocoPanopticMetric(unittest.TestCase):
             format_only=True,
             outfile_prefix=outfile_prefix)
         metric.dataset_meta = self.dataset_meta
-        metric.process(data_batch, deepcopy(self.predictions))
+        metric.process({}, deepcopy(self.data_samples))
         eval_results = metric.evaluate(size=1)
         self.assertDictEqual(eval_results, dict())
         self.assertTrue(osp.exists(f'{self.tmp_dir.name}/test.panoptic'))

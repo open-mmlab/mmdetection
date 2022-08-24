@@ -303,6 +303,8 @@ class CocoMetric(BaseMetric):
         dump(coco_json, converted_json_path)
         return converted_json_path
 
+    # TODO: data_batch is no longer needed, consider adjusting the
+    #  parameter position
     def process(self, data_batch: dict, data_samples: Sequence[dict]) -> None:
         """Process one batch of data samples and predictions. The processed
         results should be stored in ``self.results``, which will be used to

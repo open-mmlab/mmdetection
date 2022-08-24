@@ -84,6 +84,8 @@ class CityScapesMetric(BaseMetric):
         if not self.keep_results:
             shutil.rmtree(self.seg_out_dir)
 
+    # TODO: data_batch is no longer needed, consider adjusting the
+    #  parameter position
     def process(self, data_batch: dict, data_samples: Sequence[dict]) -> None:
         """Process one batch of data samples and predictions. The processed
         results should be stored in ``self.results``, which will be used to

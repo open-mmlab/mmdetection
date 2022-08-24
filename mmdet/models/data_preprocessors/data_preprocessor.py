@@ -268,7 +268,7 @@ class BatchSyncRandomResize(nn.Module):
         message_hub = MessageHub.get_current_instance()
         if (message_hub.get_info('iter') + 1) % self._interval == 0:
             self._input_size = self._get_random_size(
-                aspect_ratio=float(w / h), device=data_samples.device)
+                aspect_ratio=float(w / h), device=inputs.device)
         return inputs, data_samples
 
     def _get_random_size(self, aspect_ratio: float,
@@ -382,7 +382,7 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
 
     def forward(
         self,
-        data: Sequence[dict],
+        data: dict,
         training: bool = False
     ) -> Tuple[Dict[str, torch.Tensor], Dict[str, Optional[list]]]:
         """Perform normalization、padding and bgr2rgb conversion based on
