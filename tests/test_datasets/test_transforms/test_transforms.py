@@ -1521,7 +1521,7 @@ class TestRandomErasing(unittest.TestCase):
         transform = RandomErasing(
             n_patches=(1, 5), ratio=(0.2, 0.5), img_border_value=0)
         results = transform(copy.deepcopy(src_results))
-        self.assertTrue(results['img'].sum() < self.results['img'].sum())
+        self.assertTrue(results['img'].sum() < src_results['img'].sum())
 
         transform = RandomErasing(
             n_patches=1, ratio=0.999, img_border_value=255)

@@ -2,13 +2,13 @@
 import torch.nn as nn
 import torch.utils.checkpoint as cp
 from mmcv.cnn import build_conv_layer, build_norm_layer
+from mmengine.logging import MMLogger
 from mmengine.model import Sequential
 from mmengine.model.utils import constant_init, kaiming_init
 from mmengine.runner.checkpoint import load_checkpoint
 from torch.nn.modules.batchnorm import _BatchNorm
 
 from mmdet.registry import MODELS
-from mmdet.utils import get_root_logger
 from .resnet import BasicBlock
 from .resnet import Bottleneck as _Bottleneck
 from .resnet import ResNet
@@ -299,7 +299,7 @@ class DetectoRS_ResNet(ResNet):
         # super(DetectoRS_ResNet, self).init_weights()
 
         if isinstance(self.pretrained, str):
-            logger = get_root_logger()
+            logger = MMLogger.get_current_instance()
             load_checkpoint(self, self.pretrained, strict=False, logger=logger)
         elif self.pretrained is None:
             for m in self.modules():
