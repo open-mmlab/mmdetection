@@ -2,8 +2,8 @@
 from unittest import TestCase
 
 import torch
-from mmcv import ConfigDict
 from mmengine import InstanceData
+from mmengine.config import ConfigDict
 
 from mmdet.models.dense_heads import DeformableDETRHead
 from mmdet.utils import register_all_modules

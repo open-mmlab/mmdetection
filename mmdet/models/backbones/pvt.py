@@ -10,6 +10,7 @@ import torch.nn.functional as F
 from mmcv.cnn import Conv2d, build_activation_layer, build_norm_layer
 from mmcv.cnn.bricks.drop import build_dropout
 from mmcv.cnn.bricks.transformer import MultiheadAttention
+from mmengine.logging import MMLogger
 from mmengine.model import BaseModule, ModuleList, Sequential
 from mmengine.model.utils import (constant_init, normal_init, trunc_normal_,
                                   trunc_normal_init)
@@ -17,7 +18,6 @@ from mmengine.runner.checkpoint import CheckpointLoader, load_state_dict
 from torch.nn.modules.utils import _pair as to_2tuple
 
 from mmdet.registry import MODELS
-from ...utils import get_root_logger
 from ..layers import PatchEmbed, nchw_to_nlc, nlc_to_nchw
 
 
@@ -522,7 +522,7 @@ class PyramidVisionTransformer(BaseModule):
             cur += num_layer
 
     def init_weights(self):
-        logger = get_root_logger()
+        logger = MMLogger.get_current_instance()
         if self.init_cfg is None:
             logger.warn(f'No pre-trained weights for '
                         f'{self.__class__.__name__}, '

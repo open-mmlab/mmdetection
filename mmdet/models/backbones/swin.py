@@ -9,6 +9,7 @@ import torch.nn.functional as F
 import torch.utils.checkpoint as cp
 from mmcv.cnn import build_norm_layer
 from mmcv.cnn.bricks.transformer import FFN, build_dropout
+from mmengine.logging import MMLogger
 from mmengine.model import BaseModule, ModuleList
 from mmengine.model.utils import (constant_init, trunc_normal_,
                                   trunc_normal_init)
@@ -16,7 +17,6 @@ from mmengine.runner.checkpoint import CheckpointLoader
 from mmengine.utils import to_2tuple
 
 from mmdet.registry import MODELS
-from ...utils import get_root_logger
 from ..layers import PatchEmbed, PatchMerging
 
 
@@ -669,7 +669,7 @@ class SwinTransformer(BaseModule):
                 param.requires_grad = False
 
     def init_weights(self):
-        logger = get_root_logger()
+        logger = MMLogger.get_current_instance()
         if self.init_cfg is None:
             logger.warn(f'No pre-trained weights for '
                         f'{self.__class__.__name__}, '

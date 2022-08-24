@@ -14,7 +14,7 @@ class TestSemiBase(TestCase):
 
     @parameterized.expand([
         'soft_teacher/'
-        'semi_base_faster-rcnn_r50_caffe_fpn_180k_partial_coco.py',
+        'soft-teacher_faster-rcnn_r50-caffe_fpn_180k_semi-0.1-coco.py',
     ])
     def test_init(self, cfg_file):
         model = get_detector_cfg(cfg_file)

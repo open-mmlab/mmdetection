@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import mmcv
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -7,7 +6,6 @@ from mmdet.registry import MODELS
 from .utils import weighted_loss
 
 
-@mmcv.jit(derivate=True, coderize=True)
 @weighted_loss
 def knowledge_distillation_kl_div_loss(pred,
                                        soft_label,
