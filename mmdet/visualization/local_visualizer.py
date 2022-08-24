@@ -335,6 +335,9 @@ class DetLocalVisualizer(Visualizer):
         gt_img_data = None
         pred_img_data = None
 
+        if data_sample is not None:
+            data_sample = data_sample.cpu()
+
         if draw_gt and data_sample is not None:
             gt_img_data = image
             if 'gt_instances' in data_sample:
@@ -355,7 +358,7 @@ class DetLocalVisualizer(Visualizer):
             if 'pred_instances' in data_sample:
                 pred_instances = data_sample.pred_instances
                 pred_instances = pred_instances[
-                    pred_instances.scores > pred_score_thr].cpu()
+                    pred_instances.scores > pred_score_thr]
                 pred_img_data = self._draw_instances(image, pred_instances,
                                                      classes, palette)
             if 'pred_panoptic_seg' in data_sample:
@@ -364,8 +367,8 @@ class DetLocalVisualizer(Visualizer):
                                             'visualizing panoptic ' \
                                             'segmentation results.'
                 pred_img_data = self._draw_panoptic_seg(
-                    pred_img_data,
-                    data_sample.pred_panoptic_seg.cpu().numpy(), classes)
+                    pred_img_data, data_sample.pred_panoptic_seg.numpy(),
+                    classes)
 
         if gt_img_data is not None and pred_img_data is not None:
             drawn_img = np.concatenate((gt_img_data, pred_img_data), axis=1)
