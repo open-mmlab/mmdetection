@@ -47,17 +47,14 @@ class TestHTCRoIHead(TestCase):
         # should be nonzero for random inputs
         img_shape_list = [(3, s, s) for _ in img_metas]
         proposal_list = demo_mm_proposals(img_shape_list, 100, device='cuda')
-        packed_inputs = demo_mm_inputs(
+        batch_data_samples = demo_mm_inputs(
             batch_size=1,
             image_shapes=[(3, s, s)],
             num_items=[1],
             num_classes=4,
             with_mask=True,
-            with_semantic=True)
-        batch_data_samples = []
-        for i in range(len(packed_inputs)):
-            batch_data_samples.append(
-                packed_inputs[i]['data_sample'].to(device='cuda'))
+            with_semantic=True,
+            device='cuda')['data_samples']
         out = roi_head.loss(feats, proposal_list, batch_data_samples)
         for name, value in out.items():
             if 'loss' in name:
@@ -67,17 +64,14 @@ class TestHTCRoIHead(TestCase):
         # When there is no truth, the cls loss should be nonzero but
         # there should be no box and mask loss.
         proposal_list = demo_mm_proposals(img_shape_list, 100, device='cuda')
-        packed_inputs = demo_mm_inputs(
+        batch_data_samples = demo_mm_inputs(
             batch_size=1,
             image_shapes=[(3, s, s)],
             num_items=[0],
             num_classes=4,
             with_mask=True,
-            with_semantic=True)
-        batch_data_samples = []
-        for i in range(len(packed_inputs)):
-            batch_data_samples.append(
-                packed_inputs[i]['data_sample'].to(device='cuda'))
+            with_semantic=True,
+            device='cuda')['data_samples']
         out = roi_head.loss(feats, proposal_list, batch_data_samples)
         for name, value in out.items():
             if 'loss_cls' in name:
@@ -108,16 +102,13 @@ class TestHTCRoIHead(TestCase):
 
         img_shape_list = [(3, s, s) for _ in img_metas]
         proposal_list = demo_mm_proposals(img_shape_list, 100, device='cuda')
-        packed_inputs = demo_mm_inputs(
+        batch_data_samples = demo_mm_inputs(
             batch_size=1,
             image_shapes=[(3, s, s)],
             num_items=[1],
             num_classes=4,
-            with_mask=True)
-        batch_data_samples = []
-        for i in range(len(packed_inputs)):
-            batch_data_samples.append(
-                packed_inputs[i]['data_sample'].to(device='cuda'))
+            with_mask=True,
+            device='cuda')['data_samples']
         results = roi_head.predict(
             feats, proposal_list, batch_data_samples, rescale=True)
         self.assertEqual(results[0].masks.shape[-2:], (s, s))

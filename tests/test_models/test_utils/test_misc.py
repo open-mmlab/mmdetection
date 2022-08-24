@@ -7,13 +7,9 @@ from mmdet.testing import demo_mm_inputs
 
 
 def test_parse_gt_instance_info():
-    packed_inputs = demo_mm_inputs()
-
-    batch_data_samples = []
-    for inputs in packed_inputs:
-        batch_data_samples.append(inputs['data_sample'])
+    packed_inputs = demo_mm_inputs()['data_samples']
     batch_gt_instances, batch_gt_instances_ignore, batch_img_metas \
-        = unpack_gt_instances(batch_data_samples)
+        = unpack_gt_instances(packed_inputs)
     assert len(batch_gt_instances) == len(packed_inputs)
     assert len(batch_gt_instances_ignore) == len(packed_inputs)
     assert len(batch_img_metas) == len(packed_inputs)

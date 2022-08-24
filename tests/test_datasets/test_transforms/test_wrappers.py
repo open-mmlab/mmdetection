@@ -94,31 +94,33 @@ class TestMultiBranch(unittest.TestCase):
         for branch in sup_branches:
             self.assertIn(branch, labeled_results)
             self.assertIn('homography_matrix',
-                          labeled_results[branch]['data_sample'])
+                          labeled_results[branch]['data_samples'])
             self.assertIn('labels',
-                          labeled_results[branch]['data_sample'].gt_instances)
+                          labeled_results[branch]['data_samples'].gt_instances)
             self.assertIn('bboxes',
-                          labeled_results[branch]['data_sample'].gt_instances)
+                          labeled_results[branch]['data_samples'].gt_instances)
             self.assertIn('masks',
-                          labeled_results[branch]['data_sample'].gt_instances)
-            self.assertIn('gt_sem_seg', labeled_results[branch]['data_sample'])
+                          labeled_results[branch]['data_samples'].gt_instances)
+            self.assertIn('gt_sem_seg',
+                          labeled_results[branch]['data_samples'])
 
         # test branch unsup_teacher and unsup_student
         unsup_branches = ['unsup_teacher', 'unsup_student']
         for branch in unsup_branches:
             self.assertIn(branch, unlabeled_results)
             self.assertIn('homography_matrix',
-                          unlabeled_results[branch]['data_sample'])
+                          unlabeled_results[branch]['data_samples'])
             self.assertNotIn(
                 'labels',
-                unlabeled_results[branch]['data_sample'].gt_instances)
+                unlabeled_results[branch]['data_samples'].gt_instances)
             self.assertNotIn(
                 'bboxes',
-                unlabeled_results[branch]['data_sample'].gt_instances)
+                unlabeled_results[branch]['data_samples'].gt_instances)
             self.assertNotIn(
-                'masks', unlabeled_results[branch]['data_sample'].gt_instances)
+                'masks',
+                unlabeled_results[branch]['data_samples'].gt_instances)
             self.assertNotIn('gt_sem_seg',
-                             unlabeled_results[branch]['data_sample'])
+                             unlabeled_results[branch]['data_samples'])
 
     def test_repr(self):
         pipeline = [dict(type='PackDetInputs', meta_keys=())]
