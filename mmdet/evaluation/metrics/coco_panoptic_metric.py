@@ -119,6 +119,8 @@ class CocoPanopticMetric(BaseMetric):
             self._coco_api = None
             self.categories = None
 
+        self.file_client = FileClient(**file_client_args)
+
     def __del__(self) -> None:
         """Clean up."""
         if self.tmp_dir is not None:

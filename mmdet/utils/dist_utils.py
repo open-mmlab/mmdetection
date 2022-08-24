@@ -7,7 +7,7 @@ from collections import OrderedDict
 import numpy as np
 import torch
 import torch.distributed as dist
-from mmcv.runner import OptimizerHook, get_dist_info
+from mmengine.dist import get_dist_info
 from torch._utils import (_flatten_dense_tensors, _take_tensors,
                           _unflatten_dense_tensors)
 
@@ -54,15 +54,6 @@ def allreduce_grads(params, coalesce=True, bucket_size_mb=-1):
     else:
         for tensor in grads:
             dist.all_reduce(tensor.div_(world_size))
-
-
-class DistOptimizerHook(OptimizerHook):
-    """Deprecated optimizer hook for distributed training."""
-
-    def __init__(self, *args, **kwargs):
-        warnings.warn('"DistOptimizerHook" is deprecated, please switch to'
-                      '"mmcv.runner.OptimizerHook".')
-        super().__init__(*args, **kwargs)
 
 
 def reduce_mean(tensor):

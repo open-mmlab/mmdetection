@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import pytest
 import torch
-from mmcv.utils import digit_version
+from mmengine.utils import digit_version
 
 from mmdet.models.losses import (BalancedL1Loss, CrossEntropyLoss, DiceLoss,
                                  DistributionFocalLoss, FocalLoss,

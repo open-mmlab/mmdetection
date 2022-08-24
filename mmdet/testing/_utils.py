@@ -4,10 +4,12 @@ from os.path import dirname, exists, join
 
 import numpy as np
 import torch
+from mmengine.config import Config
 from mmengine.data import InstanceData, PixelData
 
 from ..registry import TASK_UTILS
 from ..structures import DetDataSample
+from ..structures.bbox import HorizontalBoxes
 
 
 def _get_config_directory():
@@ -27,7 +29,6 @@ def _get_config_directory():
 
 def _get_config_module(fname):
     """Load a configuration as a python module."""
-    from mmengine import Config
     config_dpath = _get_config_directory()
     config_fpath = join(config_dpath, fname)
     config_mod = Config.fromfile(config_fpath)
@@ -90,7 +91,8 @@ def demo_mm_inputs(batch_size=2,
                    num_classes=10,
                    sem_seg_output_strides=1,
                    with_mask=False,
-                   with_semantic=False):
+                   with_semantic=False,
+                   with_boxlist=False):
     """Create a superset of inputs needed to run test or train batches.
 
     Args:
@@ -149,7 +151,11 @@ def demo_mm_inputs(batch_size=2,
 
         bboxes = _rand_bboxes(rng, num_boxes, w, h)
         labels = rng.randint(1, num_classes, size=num_boxes)
-        gt_instances.bboxes = torch.FloatTensor(bboxes)
+        # TODO: remove this part when all model adapted with BaseBoxes
+        if with_boxlist:
+            gt_instances.bboxes = HorizontalBoxes(bboxes, dtype=torch.float32)
+        else:
+            gt_instances.bboxes = torch.FloatTensor(bboxes)
         gt_instances.labels = torch.LongTensor(labels)
 
         if with_mask:
@@ -165,7 +171,11 @@ def demo_mm_inputs(batch_size=2,
         # ignore_instances
         ignore_instances = InstanceData()
         bboxes = _rand_bboxes(rng, num_boxes, w, h)
-        ignore_instances.bboxes = torch.FloatTensor(bboxes)
+        if with_boxlist:
+            ignore_instances.bboxes = HorizontalBoxes(
+                bboxes, dtype=torch.float32)
+        else:
+            ignore_instances.bboxes = torch.FloatTensor(bboxes)
         data_sample.ignored_instances = ignore_instances
 
         # gt_sem_seg

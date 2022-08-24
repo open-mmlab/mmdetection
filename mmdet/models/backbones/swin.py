@@ -9,10 +9,10 @@ import torch.nn.functional as F
 import torch.utils.checkpoint as cp
 from mmcv.cnn import build_norm_layer
 from mmcv.cnn.bricks.transformer import FFN, build_dropout
-from mmcv.runner import _load_checkpoint
 from mmengine.model import BaseModule, ModuleList
 from mmengine.model.utils import (constant_init, trunc_normal_,
                                   trunc_normal_init)
+from mmengine.runner.checkpoint import CheckpointLoader
 from mmengine.utils import to_2tuple
 
 from mmdet.registry import MODELS
@@ -686,7 +686,7 @@ class SwinTransformer(BaseModule):
                                                   f'specify `Pretrained` in ' \
                                                   f'`init_cfg` in ' \
                                                   f'{self.__class__.__name__} '
-            ckpt = _load_checkpoint(
+            ckpt = CheckpointLoader.load_checkpoint(
                 self.init_cfg.checkpoint, logger=logger, map_location='cpu')
             if 'state_dict' in ckpt:
                 _state_dict = ckpt['state_dict']

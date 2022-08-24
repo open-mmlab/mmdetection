@@ -2,10 +2,10 @@
 import argparse
 import os
 
-import mmcv
-from mmcv import Config, DictAction
 from mmengine import MMLogger
+from mmengine.config import Config, DictAction
 from mmengine.dist import init_dist
+from mmengine.utils import mkdir_or_exist
 
 from mmdet.utils import register_all_modules
 from mmdet.utils.benchmark import (DataLoaderBenchmark, DatasetBenchmark,
@@ -121,7 +121,7 @@ def main():
     log_file = None
     if args.work_dir:
         log_file = os.path.join(args.work_dir, 'benchmark.log')
-        mmcv.mkdir_or_exist(args.work_dir)
+        mkdir_or_exist(args.work_dir)
 
     logger = MMLogger.get_instance(
         'mmdet', log_file=log_file, log_level='INFO')

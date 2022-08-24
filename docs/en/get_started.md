@@ -147,12 +147,12 @@ However some functionalities are gone in this mode:
 If you try to train/test/inference a model containing above ops, an error will be raised.
 The following table lists affected algorithms.
 
-|                        Operator                         |                                       Model                                       |
-| :-----------------------------------------------------: | :-------------------------------------------------------------------------------: |
+|                        Operator                         |                                          Model                                           |
+| :-----------------------------------------------------: | :--------------------------------------------------------------------------------------: |
 | Deformable Convolution/Modulated Deformable Convolution | DCN、Guided Anchoring、RepPoints、CentripetalNet、VFNet、CascadeRPN、NAS-FCOS、DetectoRS |
-|                      MaskedConv2d                       |                                 Guided Anchoring                                  |
-|                         CARAFE                          |                                      CARAFE                                       |
-|                      SyncBatchNorm                      |                                      ResNeSt                                      |
+|                      MaskedConv2d                       |                                     Guided Anchoring                                     |
+|                         CARAFE                          |                                          CARAFE                                          |
+|                      SyncBatchNorm                      |                                         ResNeSt                                          |
 
 ### Install on Google Colab
 

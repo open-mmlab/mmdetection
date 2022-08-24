@@ -9,7 +9,7 @@ from mmcv.transforms import BaseTransform
 from mmcv.transforms.utils import cache_randomness
 
 from mmdet.registry import TRANSFORMS
-from mmdet.structures.bbox import bbox_project
+from mmdet.structures.bbox import autocast_box_type
 from .augment_wrappers import _MAX_LEVEL, level_to_mag
 
 
@@ -24,7 +24,7 @@ class GeomTransform(BaseTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -135,9 +135,8 @@ class GeomTransform(BaseTransform):
 
     def _transform_bboxes(self, results: dict, mag: float) -> None:
         """Transform the bboxes."""
-        results['gt_bboxes'] = bbox_project(results['gt_bboxes'],
-                                            self.homography_matrix,
-                                            results['img_shape'])
+        results['gt_bboxes'].project_(self.homography_matrix)
+        results['gt_bboxes'].clip_(results['img_shape'])
 
     def _record_homography_matrix(self, results: dict) -> None:
         """Record the homography matrix for the geometric transformation."""
@@ -158,6 +157,7 @@ class GeomTransform(BaseTransform):
         mag = level_to_mag(self.level, self.min_mag, self.max_mag)
         return -mag if np.random.rand() > self.reversal_prob else mag
 
+    @autocast_box_type()
     def transform(self, results: dict) -> dict:
         """Transform function for images, bounding boxes, masks and semantic
         segmentation map.
@@ -204,7 +204,7 @@ class ShearX(GeomTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -318,7 +318,7 @@ class ShearY(GeomTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -432,7 +432,7 @@ class Rotate(GeomTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -539,7 +539,7 @@ class TranslateX(GeomTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -650,7 +650,7 @@ class TranslateY(GeomTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 

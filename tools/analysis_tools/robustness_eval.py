@@ -2,8 +2,8 @@
 import os.path as osp
 from argparse import ArgumentParser
 
-import mmcv
 import numpy as np
+from mmengine.fileio import load
 
 
 def print_coco_results(results):
@@ -63,7 +63,7 @@ def get_coco_style_results(filename,
             'ARs', 'ARm', 'ARl'
         ]
 
-    eval_output = mmcv.load(filename)
+    eval_output = load(filename)
 
     num_distortions = len(list(eval_output.keys()))
     results = np.zeros((num_distortions, 6, len(metrics)), dtype='float32')
@@ -120,7 +120,7 @@ def get_voc_style_results(filename, prints='mPC', aggregate='benchmark'):
     for p in prints:
         assert p in ['P', 'mPC', 'rPC']
 
-    eval_output = mmcv.load(filename)
+    eval_output = load(filename)
 
     num_distortions = len(list(eval_output.keys()))
     results = np.zeros((num_distortions, 6, 20), dtype='float32')
@@ -183,7 +183,7 @@ def get_results(filename,
 
 def get_distortions_from_file(filename):
 
-    eval_output = mmcv.load(filename)
+    eval_output = load(filename)
 
     return get_distortions_from_results(eval_output)
 

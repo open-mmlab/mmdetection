@@ -1,12 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import numpy as np
-from mmcv.parallel import DataContainer as DC
 from mmcv.transforms import to_tensor
 from mmcv.transforms.base import BaseTransform
 from mmengine.data import InstanceData, PixelData
 
 from mmdet.registry import TRANSFORMS
 from mmdet.structures import DetDataSample
+from mmdet.structures.bbox import BaseBoxes
 
 
 @TRANSFORMS.register_module()
@@ -72,7 +72,7 @@ class PackDetInputs(BaseTransform):
             packed_results['inputs'] = to_tensor(img)
 
         if 'gt_ignore_flags' in results:
-            vaild_idx = np.where(results['gt_ignore_flags'] == 0)[0]
+            valid_idx = np.where(results['gt_ignore_flags'] == 0)[0]
             ignore_idx = np.where(results['gt_ignore_flags'] == 1)[0]
 
         data_sample = DetDataSample()
@@ -82,10 +82,10 @@ class PackDetInputs(BaseTransform):
         for key in self.mapping_table.keys():
             if key not in results:
                 continue
-            if key == 'gt_masks':
+            if key == 'gt_masks' or isinstance(results[key], BaseBoxes):
                 if 'gt_ignore_flags' in results:
                     instance_data[
-                        self.mapping_table[key]] = results[key][vaild_idx]
+                        self.mapping_table[key]] = results[key][valid_idx]
                     ignore_instance_data[
                         self.mapping_table[key]] = results[key][ignore_idx]
                 else:
@@ -93,7 +93,7 @@ class PackDetInputs(BaseTransform):
             else:
                 if 'gt_ignore_flags' in results:
                     instance_data[self.mapping_table[key]] = to_tensor(
-                        results[key][vaild_idx])
+                        results[key][valid_idx])
                     ignore_instance_data[self.mapping_table[key]] = to_tensor(
                         results[key][ignore_idx])
                 else:
@@ -221,45 +221,6 @@ class Transpose:
     def __repr__(self):
         return self.__class__.__name__ + \
             f'(keys={self.keys}, order={self.order})'
-
-
-@TRANSFORMS.register_module()
-class ToDataContainer:
-    """Convert results to :obj:`mmcv.DataContainer` by given fields.
-
-    Args:
-        fields (Sequence[dict]): Each field is a dict like
-            ``dict(key='xxx', **kwargs)``. The ``key`` in result will
-            be converted to :obj:`mmcv.DataContainer` with ``**kwargs``.
-            Default: ``(dict(key='img', stack=True), dict(key='gt_bboxes'),
-            dict(key='gt_labels'))``.
-    """
-
-    def __init__(self,
-                 fields=(dict(key='img', stack=True), dict(key='gt_bboxes'),
-                         dict(key='gt_labels'))):
-        self.fields = fields
-
-    def __call__(self, results):
-        """Call function to convert data in results to
-        :obj:`mmcv.DataContainer`.
-
-        Args:
-            results (dict): Result dict contains the data to convert.
-
-        Returns:
-            dict: The result dict contains the data converted to \
-                :obj:`mmcv.DataContainer`.
-        """
-
-        for field in self.fields:
-            field = field.copy()
-            key = field.pop('key')
-            results[key] = DC(results[key], **field)
-        return results
-
-    def __repr__(self):
-        return self.__class__.__name__ + f'(fields={self.fields})'
 
 
 @TRANSFORMS.register_module()

@@ -2,13 +2,13 @@
 import argparse
 import os.path as osp
 
-import mmcv
 import numpy as np
-from mmcv import Config, DictAction
+from mmengine.config import Config, DictAction
+from mmengine.utils import ProgressBar
 
-from mmdet.datasets.builder import build_dataset
 from mmdet.models.utils import mask2ndarray
-from mmdet.registry import VISUALIZERS
+from mmdet.registry import DATASETS, VISUALIZERS
+from mmdet.structures.bbox import BaseBoxes
 from mmdet.utils import register_all_modules
 
 
@@ -49,12 +49,11 @@ def main():
     # register all modules in mmdet into the registries
     register_all_modules()
 
-    dataset = build_dataset(cfg.train_dataloader.dataset)
-
+    dataset = DATASETS.build(cfg.train_dataloader.dataset)
     visualizer = VISUALIZERS.build(cfg.visualizer)
     visualizer.dataset_meta = dataset.metainfo
 
-    progress_bar = mmcv.ProgressBar(len(dataset))
+    progress_bar = ProgressBar(len(dataset))
     for item in dataset:
         img = item['inputs'].permute(1, 2, 0).numpy()
         data_sample = item['data_sample'].numpy()
@@ -66,6 +65,9 @@ def main():
             osp.basename(img_path)) if args.output_dir is not None else None
 
         img = img[..., [2, 1, 0]]  # bgr to rgb
+        gt_bboxes = gt_instances.get('bboxes', None)
+        if gt_bboxes is not None and isinstance(gt_bboxes, BaseBoxes):
+            gt_instances.bboxes = gt_bboxes.tensor
         gt_masks = gt_instances.get('masks', None)
         if gt_masks is not None:
             masks = mask2ndarray(gt_masks)

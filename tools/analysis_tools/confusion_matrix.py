@@ -2,12 +2,12 @@ import argparse
 import os
 
 import matplotlib.pyplot as plt
-import mmcv
-import mmengine
 import numpy as np
 from matplotlib.ticker import MultipleLocator
 from mmcv.ops import nms
 from mmengine import Config, DictAction
+from mmengine.fileio import load
+from mmengine.utils import ProgressBar
 
 from mmdet.evaluation import bbox_overlaps
 from mmdet.registry import DATASETS
@@ -80,7 +80,7 @@ def calculate_confusion_matrix(dataset,
     num_classes = len(dataset.metainfo['CLASSES'])
     confusion_matrix = np.zeros(shape=[num_classes + 1, num_classes + 1])
     assert len(dataset) == len(results)
-    prog_bar = mmcv.ProgressBar(len(results))
+    prog_bar = ProgressBar(len(results))
     for idx, per_img_res in enumerate(results):
         res_bboxes = per_img_res['pred_instances']
         gts = dataset.get_data_info(idx)['instances']
@@ -249,7 +249,7 @@ def main():
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
 
-    results = mmengine.fileio.load(args.prediction_path)
+    results = load(args.prediction_path)
 
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)

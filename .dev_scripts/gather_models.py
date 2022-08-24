@@ -7,9 +7,11 @@ import shutil
 import subprocess
 from collections import OrderedDict
 
-import mmcv
 import torch
 import yaml
+from mmengine.config import Config
+from mmengine.fileio import dump
+from mmengine.utils import mkdir_or_exist, scandir
 
 
 def ordered_yaml_dump(data, stream=None, Dumper=yaml.SafeDumper, **kwds):
@@ -49,12 +51,12 @@ def process_checkpoint(in_file, out_file):
 
 
 def is_by_epoch(config):
-    cfg = mmcv.Config.fromfile('./configs/' + config)
+    cfg = Config.fromfile('./configs/' + config)
     return cfg.runner.type == 'EpochBasedRunner'
 
 
 def get_final_epoch_or_iter(config):
-    cfg = mmcv.Config.fromfile('./configs/' + config)
+    cfg = Config.fromfile('./configs/' + config)
     if cfg.runner.type == 'EpochBasedRunner':
         return cfg.runner.max_epochs
     else:
@@ -71,7 +73,7 @@ def get_best_epoch_or_iter(exp_dir):
 
 
 def get_real_epoch_or_iter(config):
-    cfg = mmcv.Config.fromfile('./configs/' + config)
+    cfg = Config.fromfile('./configs/' + config)
     if cfg.runner.type == 'EpochBasedRunner':
         epoch = cfg.runner.max_epochs
         if cfg.data.train.type == 'RepeatDataset':
@@ -142,7 +144,7 @@ def get_dataset_name(config):
         WIDERFaceDataset='WIDER Face',
         OpenImagesDataset='OpenImagesDataset',
         OpenImagesChallengeDataset='OpenImagesChallengeDataset')
-    cfg = mmcv.Config.fromfile('./configs/' + config)
+    cfg = Config.fromfile('./configs/' + config)
     return name_map[cfg.dataset_type]
 
 
@@ -226,10 +228,10 @@ def main():
     args = parse_args()
     models_root = args.root
     models_out = args.out
-    mmcv.mkdir_or_exist(models_out)
+    mkdir_or_exist(models_out)
 
     # find all models in the root directory to be gathered
-    raw_configs = list(mmcv.scandir('./configs', '.py', recursive=True))
+    raw_configs = list(scandir('./configs', '.py', recursive=True))
 
     # filter configs that is not trained in the experiments dir
     used_configs = []
@@ -261,7 +263,7 @@ def main():
         log_json_path = list(
             sorted(glob.glob(osp.join(exp_dir, '*.log.json'))))[-1]
         log_txt_path = list(sorted(glob.glob(osp.join(exp_dir, '*.log'))))[-1]
-        cfg = mmcv.Config.fromfile('./configs/' + used_config)
+        cfg = Config.fromfile('./configs/' + used_config)
         results_lut = cfg.evaluation.metric
         if not isinstance(results_lut, list):
             results_lut = [results_lut]
@@ -292,7 +294,7 @@ def main():
     publish_model_infos = []
     for model in model_infos:
         model_publish_dir = osp.join(models_out, model['config'].rstrip('.py'))
-        mmcv.mkdir_or_exist(model_publish_dir)
+        mkdir_or_exist(model_publish_dir)
 
         model_name = osp.split(model['config'])[-1].split('.')[0]
 
@@ -328,7 +330,7 @@ def main():
 
     models = dict(models=publish_model_infos)
     print(f'Totally gathered {len(publish_model_infos)} models')
-    mmcv.dump(models, osp.join(models_out, 'model_info.json'))
+    dump(models, osp.join(models_out, 'model_info.json'))
 
     pwc_files = convert_model_info_to_pwc(publish_model_infos)
     for name in pwc_files:

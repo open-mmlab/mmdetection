@@ -154,6 +154,14 @@ class BaseBoxes(metaclass=ABCMeta):
         """Return the length of self.tensor first dimension."""
         return self.tensor.size(0)
 
+    def __deepcopy__(self, memo):
+        """Only clone the ``self.tensor`` when applying deepcopy."""
+        cls = self.__class__
+        other = cls.__new__(cls)
+        memo[id(self)] = other
+        other.tensor = self.tensor.clone()
+        return other
+
     def __repr__(self) -> str:
         """Return a strings that describes the object."""
         return self.__class__.__name__ + '(\n' + str(self.tensor) + ')'

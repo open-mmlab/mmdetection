@@ -18,7 +18,7 @@ class TestBaseBoxes(TestCase):
 
         if torch.cuda.is_available():
             boxes = ToyBaseBoxes(box_tensor, device='cuda')
-            self.assertTrue(boxes.tensor.is_cuda())
+            self.assertTrue(boxes.tensor.is_cuda)
 
         with self.assertRaises(AssertionError):
             box_tensor = torch.rand((4, ))
@@ -146,16 +146,16 @@ class TestBaseBoxes(TestCase):
         self.assertEqual(new_boxes.tensor.dtype, torch.uint8)
         if torch.cuda.is_available():
             new_boxes = boxes.to(device='cuda')
-            self.assertTrue(new_boxes.tensor.is_cuda())
+            self.assertTrue(new_boxes.tensor.is_cuda)
         # cpu
         if torch.cuda.is_available():
             new_boxes = boxes.to(device='cuda')
             new_boxes = new_boxes.cpu()
-            self.assertTrue(new_boxes.tensor.is_cpu())
+            self.assertFalse(new_boxes.tensor.is_cuda)
         # cuda
         if torch.cuda.is_available():
             new_boxes = boxes.cuda()
-            self.assertTrue(new_boxes.tensor.is_cuda())
+            self.assertTrue(new_boxes.tensor.is_cuda)
         # clone
         boxes.clone()
         # detach
@@ -273,4 +273,4 @@ class TestBaseBoxes(TestCase):
         self.assertEqual(new_boxes.dtype, torch.uint8)
         if torch.cuda.is_available():
             new_boxes = boxes.create_fake_boxes((3, 4, 4), device='cuda')
-            self.assertTrue(new_boxes.tensor.is_cuda())
+            self.assertTrue(new_boxes.tensor.is_cuda)

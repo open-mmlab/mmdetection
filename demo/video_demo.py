@@ -4,6 +4,7 @@ import argparse
 import cv2
 import mmcv
 from mmcv.transforms import Compose
+from mmengine.utils import track_iter_progress
 
 from mmdet.apis import inference_detector, init_detector
 from mmdet.registry import VISUALIZERS
@@ -60,7 +61,7 @@ def main():
             args.out, fourcc, video_reader.fps,
             (video_reader.width, video_reader.height))
 
-    for frame in mmcv.track_iter_progress(video_reader):
+    for frame in track_iter_progress(video_reader):
         result = inference_detector(model, frame, test_pipeline=test_pipeline)
         visualizer.add_datasample(
             name='video',

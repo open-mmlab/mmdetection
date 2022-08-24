@@ -21,10 +21,11 @@ Example:
 import argparse
 import os.path as osp
 
-import mmcv
 import numpy as np
 import torch
-from mmcv import Config
+from mmengine.config import Config
+from mmengine.fileio import dump
+from mmengine.utils import ProgressBar
 from scipy.optimize import differential_evolution
 
 from mmdet.datasets import build_dataset
@@ -105,7 +106,7 @@ class BaseAnchorOptimizer:
         self.logger.info('Collecting bboxes from annotation...')
         bbox_whs = []
         img_shapes = []
-        prog_bar = mmcv.ProgressBar(len(self.dataset))
+        prog_bar = ProgressBar(len(self.dataset))
         for idx in range(len(self.dataset)):
             ann = self.dataset.get_ann_info(idx)
             data_info = self.dataset.data_infos[idx]
@@ -145,7 +146,7 @@ class BaseAnchorOptimizer:
         self.logger.info(f'Anchor optimize result:{anchor_results}')
         if path:
             json_path = osp.join(path, 'anchor_optimize_result.json')
-            mmcv.dump(anchor_results, json_path)
+            dump(anchor_results, json_path)
             self.logger.info(f'Result saved in {json_path}')
 
 
@@ -184,7 +185,7 @@ class YOLOKMeansAnchorOptimizer(BaseAnchorOptimizer):
             anchors = sorted(anchors, key=lambda x: x[0] * x[1])
             return anchors
 
-        prog_bar = mmcv.ProgressBar(self.iters)
+        prog_bar = ProgressBar(self.iters)
         for i in range(self.iters):
             converged, assignments = self.kmeans_expectation(
                 bboxes, assignments, cluster_centers)

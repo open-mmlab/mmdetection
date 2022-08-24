@@ -8,17 +8,19 @@ from .dataset_wrappers import MultiImageMixDataset
 from .deepfashion import DeepFashionDataset
 from .lvis import LVISDataset, LVISV1Dataset, LVISV05Dataset
 from .openimages import OpenImagesChallengeDataset, OpenImagesDataset
-from .samplers import AspectRatioBatchSampler, ClassAwareSampler
+from .samplers import (AspectRatioBatchSampler, ClassAwareSampler,
+                       GroupMultiSourceSampler, MultiSourceSampler)
 from .utils import get_loading_pipeline
 from .voc import VOCDataset
 from .wider_face import WIDERFaceDataset
 from .xml_style import XMLDataset
 
 __all__ = [
-    'BaseDetDataset', 'XMLDataset', 'CocoDataset', 'DeepFashionDataset',
-    'VOCDataset', 'CityscapesDataset', 'LVISDataset', 'LVISV05Dataset',
-    'LVISV1Dataset', 'WIDERFaceDataset', 'CocoPanopticDataset',
-    'MultiImageMixDataset', 'OpenImagesDataset', 'OpenImagesChallengeDataset',
-    'DATASETS', 'PIPELINES', 'build_dataset', 'get_loading_pipeline',
-    'AspectRatioBatchSampler', 'ClassAwareSampler'
+    'XMLDataset', 'CocoDataset', 'DeepFashionDataset', 'VOCDataset',
+    'CityscapesDataset', 'LVISDataset', 'LVISV05Dataset', 'LVISV1Dataset',
+    'WIDERFaceDataset', 'DATASETS', 'PIPELINES', 'build_dataset',
+    'get_loading_pipeline', 'CocoPanopticDataset', 'MultiImageMixDataset',
+    'OpenImagesDataset', 'OpenImagesChallengeDataset',
+    'AspectRatioBatchSampler', 'ClassAwareSampler', 'MultiSourceSampler',
+    'GroupMultiSourceSampler', 'BaseDetDataset'
 ]

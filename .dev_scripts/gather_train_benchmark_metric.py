@@ -3,8 +3,10 @@ import argparse
 import glob
 import os.path as osp
 
-import mmcv
 from gather_models import get_final_results
+from mmengine.config import Config
+from mmengine.fileio import dump
+from mmengine.utils import mkdir_or_exist
 
 try:
     import xlrd
@@ -78,7 +80,7 @@ if __name__ == '__main__':
             result_path = osp.join(root_path, config_name)
             if osp.exists(result_path):
                 # 1 read config
-                cfg = mmcv.Config.fromfile(config)
+                cfg = Config.fromfile(config)
                 total_epochs = cfg.runner.max_epochs
                 final_results = cfg.evaluation.metric
                 if not isinstance(final_results, list):
@@ -136,9 +138,8 @@ if __name__ == '__main__':
 
         # 4 save or print results
         if metrics_out:
-            mmcv.mkdir_or_exist(metrics_out)
-            mmcv.dump(result_dict,
-                      osp.join(metrics_out, 'model_metric_info.json'))
+            mkdir_or_exist(metrics_out)
+            dump(result_dict, osp.join(metrics_out, 'model_metric_info.json'))
         if not args.not_show:
             print('===================================')
             for config_name, metrics in result_dict.items():

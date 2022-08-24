@@ -4,8 +4,8 @@ import os
 import os.path as osp
 import warnings
 
-import mmcv
-from mmcv.utils import print_log
+from mmengine.config import Config, ConfigDict
+from mmengine.logging import print_log
 
 
 def find_latest_checkpoint(path, suffix='pth'):
@@ -49,11 +49,11 @@ def update_data_root(cfg, logger=None):
     MMDET_DATASETS. Otherwise, using cfg.data_root as default.
 
     Args:
-        cfg (mmcv.Config): The model config need to modify
+        cfg (:obj:`Config`): The model config need to modify
         logger (logging.Logger | str | None): the way to print msg
     """
-    assert isinstance(cfg, mmcv.Config), \
-        f'cfg got wrong type: {type(cfg)}, expected mmcv.Config'
+    assert isinstance(cfg, Config), \
+        f'cfg got wrong type: {type(cfg)}, expected mmengine.Config'
 
     if 'MMDET_DATASETS' in os.environ:
         dst_root = os.environ['MMDET_DATASETS']
@@ -62,12 +62,12 @@ def update_data_root(cfg, logger=None):
     else:
         return
 
-    assert isinstance(cfg, mmcv.Config), \
-        f'cfg got wrong type: {type(cfg)}, expected mmcv.Config'
+    assert isinstance(cfg, Config), \
+        f'cfg got wrong type: {type(cfg)}, expected mmengine.Config'
 
     def update(cfg, src_str, dst_str):
         for k, v in cfg.items():
-            if isinstance(v, mmcv.ConfigDict):
+            if isinstance(v, ConfigDict):
                 update(cfg[k], src_str, dst_str)
             if isinstance(v, str) and src_str in v:
                 cfg[k] = v.replace(src_str, dst_str)
