@@ -1,7 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from typing import List, Optional, Tuple
 
-import mmcv
 import torch
 import torch.nn as nn
 from torch import Tensor
@@ -11,7 +10,6 @@ from ..task_modules.coders import BaseBBoxCoder
 from ..task_modules.samplers import SamplingResult
 
 
-@mmcv.jit(derivate=True, coderize=True)
 def isr_p(cls_score: Tensor,
           bbox_pred: Tensor,
           bbox_targets: Tuple[Tensor],
@@ -125,7 +123,6 @@ def isr_p(cls_score: Tensor,
     return bbox_targets
 
 
-@mmcv.jit(derivate=True, coderize=True)
 def carl_loss(cls_score: Tensor,
               labels: Tensor,
               bbox_pred: Tensor,

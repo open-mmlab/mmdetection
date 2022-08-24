@@ -13,6 +13,7 @@ from mmengine.registry import MODEL_WRAPPERS
 from mmengine.runner import Runner
 from torch.utils.data import Dataset
 
+from mmdet.registry import DATASETS
 from mmdet.utils import register_all_modules
 
 register_all_modules()
@@ -57,6 +58,7 @@ class ToyModel2(BaseModel):
         return self.student(*args, **kwargs)
 
 
+@DATASETS.register_module(force=True)
 class DummyDataset(Dataset):
     METAINFO = dict()  # type: ignore
     data = torch.randn(12, 2)
@@ -98,8 +100,6 @@ class TestMeanTeacherHook(TestCase):
     def test_mean_teacher_hook(self):
         device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
         model = ToyModel2().to(device)
-        evaluator = Mock()
-        evaluator.evaluate = Mock(return_value=dict(acc=0.5))
         runner = Runner(
             model=model,
             train_dataloader=dict(
