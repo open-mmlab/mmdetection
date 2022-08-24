@@ -308,34 +308,26 @@ class TestMultiBranchDataPreprocessor(TestCase):
             std=[58.395, 57.12, 57.375],
             bgr_to_rgb=True,
             pad_size_divisor=32)
-        self.multi_data = [
-            {
-                'sup': {
-                    'inputs': torch.randint(0, 256, (3, 224, 224)),
-                    'data_samples': DetDataSample()
-                }
+        self.multi_data = {
+            'inputs': {
+                'sup': [torch.randint(0, 256, (3, 224, 224))],
+                'unsup_teacher': [
+                    torch.randint(0, 256, (3, 400, 600)),
+                    torch.randint(0, 256, (3, 600, 400))
+                ],
+                'unsup_student': [
+                    torch.randint(0, 256, (3, 700, 500)),
+                    torch.randint(0, 256, (3, 500, 700))
+                ]
             },
-            {
-                'unsup_teacher': {
-                    'inputs': torch.randint(0, 256, (3, 400, 600)),
-                    'data_samples': DetDataSample()
-                },
-                'unsup_student': {
-                    'inputs': torch.randint(0, 256, (3, 700, 500)),
-                    'data_samples': DetDataSample()
-                }
-            },
-            {
-                'unsup_teacher': {
-                    'inputs': torch.randint(0, 256, (3, 600, 400)),
-                    'data_samples': DetDataSample()
-                },
-                'unsup_student': {
-                    'inputs': torch.randint(0, 256, (3, 500, 700)),
-                    'data_samples': DetDataSample()
-                }
-            },
-        ]
+            'data_samples': {
+                'sup': [DetDataSample()],
+                'unsup_teacher': [DetDataSample(),
+                                  DetDataSample()],
+                'unsup_student': [DetDataSample(),
+                                  DetDataSample()],
+            }
+        }
         self.data = {
             'inputs': [torch.randint(0, 256, (3, 224, 224))],
             'data_samples': [DetDataSample()]

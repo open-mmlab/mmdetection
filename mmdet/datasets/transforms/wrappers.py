@@ -16,12 +16,15 @@ class MultiBranch(BaseTransform):
     Generate multiple data-augmented versions of the same image.
 
     Args:
+        branch_field (list): List of branch names.
         branch_pipelines (dict): Dict of different pipeline configs
             to be composed.
 
     """
 
-    def __init__(self, **branch_pipelines: dict) -> None:
+    def __init__(self, branch_field: List[str],
+                 **branch_pipelines: dict) -> None:
+        self.branch_field = branch_field
         self.branch_pipelines = {
             branch: Compose(pipeline)
             for branch, pipeline in branch_pipelines.items()
@@ -37,6 +40,8 @@ class MultiBranch(BaseTransform):
             list[dict]: Results from different pipeline.
         """
         multi_results = {}
+        for branch in self.branch_field:
+            multi_results[branch] = {'inputs': None, 'data_samples': None}
         for branch, pipeline in self.branch_pipelines.items():
             branch_results = pipeline(copy.deepcopy(results))
             # If one branch pipeline returns None,
@@ -44,7 +49,15 @@ class MultiBranch(BaseTransform):
             if branch_results is None:
                 return None
             multi_results[branch] = branch_results
-        return multi_results
+
+        format_results = {}
+        for branch, results in multi_results.items():
+            for key in results.keys():
+                if format_results.get(key, None) is None:
+                    format_results[key] = {branch: results[key]}
+                else:
+                    format_results[key][branch] = results[key]
+        return format_results
 
     def __repr__(self) -> str:
         repr_str = self.__class__.__name__

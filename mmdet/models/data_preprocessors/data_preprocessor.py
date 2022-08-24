@@ -389,7 +389,7 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
         ``BaseDataPreprocessor`` for multi-branch data.
 
         Args:
-            data (Sequence[dict]): data sampled from dataloader.
+            data (dict): Data sampled from dataloader.
             training (bool): Whether to enable training time augmentation.
 
         Returns:
@@ -399,17 +399,26 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
 
         if training is False:
             return self.data_preprocessor(data, training)
+
+        for key in data.keys():
+            for branch in data[key].keys():
+                data[key][branch] = list(
+                    filter(lambda x: x is not None, data[key][branch]))
+
         multi_branch_data = {}
-        for multi_results in data:
-            for branch, results in multi_results.items():
+        for key in data.keys():
+            for branch in data[key].keys():
                 if multi_branch_data.get(branch, None) is None:
-                    multi_branch_data[branch] = [results]
+                    multi_branch_data[branch] = {key: data[key][branch]}
+                elif multi_branch_data[branch].get(key, None) is None:
+                    multi_branch_data[branch][key] = data[key][branch]
                 else:
-                    multi_branch_data[branch].append(results)
+                    multi_branch_data[branch][key].append(data[key][branch])
+
         multi_batch_inputs, multi_batch_data_samples = {}, {}
-        for branch, data in multi_branch_data.items():
+        for branch, _data in multi_branch_data.items():
             multi_batch_inputs[branch], multi_batch_data_samples[
-                branch] = self.data_preprocessor(data, training)
+                branch] = self.data_preprocessor(_data, training)
         return multi_batch_inputs, multi_batch_data_samples
 
     @property
