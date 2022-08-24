@@ -23,9 +23,9 @@ class ToyModel(nn.Module):
         super().__init__()
         self.linear = nn.Linear(2, 1)
 
-    def forward(self, batch_inputs, labels, mode='tensor'):
-        labels = torch.stack(labels)
-        outputs = self.linear(batch_inputs)
+    def forward(self, inputs, data_samples, mode='tensor'):
+        labels = torch.stack(data_samples)
+        outputs = self.linear(inputs)
         if mode == 'tensor':
             return outputs
         elif mode == 'loss':
