@@ -128,10 +128,10 @@ class DetDataPreprocessor(ImgDataPreprocessor):
             if self.boxlist2tensor:
                 samplelist_boxlist2tensor(data_samples)
 
-            if self.pad_mask:
+            if self.pad_mask and training:
                 self.pad_gt_masks(data_samples)
 
-            if self.pad_seg:
+            if self.pad_seg and training:
                 self.pad_gt_sem_seg(data_samples)
 
         if training and self.batch_augments is not None:
@@ -177,6 +177,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
     def pad_gt_masks(self,
                      batch_data_samples: Sequence[DetDataSample]) -> None:
         """Pad gt_masks to shape of batch_input_shape."""
+        print(batch_data_samples[0].img_path)
         if 'masks' in batch_data_samples[0].gt_instances:
             for data_samples in batch_data_samples:
                 masks = data_samples.gt_instances.masks

@@ -364,8 +364,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         Args:
             results (dict): Result dict from :obj:``mmengine.BaseDataset``.
         """
-
-        h, w = results['img_shape']
+        h, w = results['ori_shape']
         gt_masks = self._process_masks(results)
         if self.poly2mask:
             gt_masks = BitmapMasks(
@@ -562,7 +561,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
                 gt_masks.append(mask.astype(np.uint8))
 
         if self.with_mask:
-            h, w = results['img_shape']
+            h, w = results['ori_shape']
             gt_masks = BitmapMasks(gt_masks, h, w)
             results['gt_masks'] = gt_masks
 
