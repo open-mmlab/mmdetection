@@ -289,8 +289,7 @@ class CocoPanopticMetric(BaseMetric):
 
         return result
 
-    def _compute_batch_pq_stats(self, data_batch: Sequence[dict],
-                                data_samples: Sequence[dict]):
+    def _compute_batch_pq_stats(self, data_samples: Sequence[dict]):
         """Process gts and predictions when ``outfile_prefix`` is not set, gts
         are from dataset or a json file which is defined by ``ann_file``.
 
@@ -310,7 +309,7 @@ class CocoPanopticMetric(BaseMetric):
                 cat_names=self.dataset_meta['CLASSES'])
             label2cat = {i: cat_id for i, cat_id in enumerate(cat_ids)}
 
-        for data, data_sample in zip(data_batch, data_samples):
+        for data_sample in data_samples:
             # parse pred
             img_id = data_sample['img_id']
             segm_file = osp.basename(data_sample['img_path']).replace(
@@ -370,15 +369,14 @@ class CocoPanopticMetric(BaseMetric):
 
             self.results.append(pq_stats)
 
-    def _process_gt_and_predictions(self, data_batch: Sequence[dict],
-                                    data_samples: Sequence[dict]):
+    def _process_gt_and_predictions(self, data_samples: Sequence[dict]):
         """Process gts and predictions when ``outfile_prefix`` is set.
 
         The predictions will be saved to directory specified by
         ``outfile_predfix``. The matched pair (gt, result) will be put into
         ``self.results``.
         """
-        for data, data_sample in zip(data_batch, data_samples):
+        for data_sample in data_samples:
             # parse pred
             img_id = data_sample['img_id']
             segm_file = osp.basename(data_sample['img_path']).replace(
@@ -399,24 +397,22 @@ class CocoPanopticMetric(BaseMetric):
 
             self.results.append((gt, result))
 
-    def process(self, data_batch: Sequence[dict],
-                data_samples: Sequence[dict]) -> None:
+    def process(self, data_batch: dict, data_samples: Sequence[dict]) -> None:
         """Process one batch of data samples and predictions. The processed
         results should be stored in ``self.results``, which will be used to
         compute the metrics when all batches have been processed.
 
         Args:
-            data_batch (Sequence[dict]): A batch of data
-                from the dataloader.
+            data_batch (dict): A batch of data from the dataloader.
             data_samples (Sequence[dict]): A batch of data samples that
                 contain annotations and predictions.
         """
         # If ``self.tmp_dir`` is none, it will save gt and predictions to
         # self.results, otherwise, it will compute pq_stats here.
         if self.tmp_dir is None:
-            self._process_gt_and_predictions(data_batch, data_samples)
+            self._process_gt_and_predictions(data_samples)
         else:
-            self._compute_batch_pq_stats(data_batch, data_samples)
+            self._compute_batch_pq_stats(data_samples)
 
     def compute_metrics(self, results: list) -> Dict[str, float]:
         """Compute the metrics from processed results.

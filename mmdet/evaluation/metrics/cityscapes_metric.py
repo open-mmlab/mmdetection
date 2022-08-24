@@ -84,18 +84,17 @@ class CityScapesMetric(BaseMetric):
         if not self.keep_results:
             shutil.rmtree(self.seg_out_dir)
 
-    def process(self, data_batch: Sequence[dict],
-                data_samples: Sequence[dict]) -> None:
+    def process(self, data_batch: dict, data_samples: Sequence[dict]) -> None:
         """Process one batch of data samples and predictions. The processed
         results should be stored in ``self.results``, which will be used to
         compute the metrics when all batches have been processed.
 
         Args:
-            data_batch (Sequence[dict]): A batch of data from the dataloader.
+            data_batch (dict): A batch of data from the dataloader.
             data_samples (Sequence[dict]): A batch of data samples that
                 contain annotations and predictions.
         """
-        for data, data_sample in zip(data_batch, data_samples):
+        for data_sample in data_samples:
             # parse pred
             result = dict()
             pred = data_sample['pred_instances']

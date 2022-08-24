@@ -303,19 +303,17 @@ class CocoMetric(BaseMetric):
         dump(coco_json, converted_json_path)
         return converted_json_path
 
-    def process(self, data_batch: Sequence[dict],
-                data_samples: Sequence[dict]) -> None:
+    def process(self, data_batch: dict, data_samples: Sequence[dict]) -> None:
         """Process one batch of data samples and predictions. The processed
         results should be stored in ``self.results``, which will be used to
         compute the metrics when all batches have been processed.
 
         Args:
-            data_batch (Sequence[dict]): A batch of data
-                from the dataloader.
+            data_batch (dict): A batch of data from the dataloader.
             data_samples (Sequence[dict]): A batch of data samples that
                 contain annotations and predictions.
         """
-        for data, data_sample in zip(data_batch, data_samples):
+        for data_sample in data_samples:
             result = dict()
             pred = data_sample['pred_instances']
             result['img_id'] = data_sample['img_id']
@@ -337,10 +335,10 @@ class CocoMetric(BaseMetric):
             gt['img_id'] = data_sample['img_id']
             if self._coco_api is None:
                 # TODO: Need to refactor to support LoadAnnotations
-                assert 'instances' in data['data_sample'], \
+                assert 'instances' in data_sample, \
                     'ground truth is required for evaluation when ' \
                     '`ann_file` is not provided'
-                gt['anns'] = data['data_sample']['instances']
+                gt['anns'] = data_sample['instances']
             # add converted result to the results list
             self.results.append((gt, result))
 
