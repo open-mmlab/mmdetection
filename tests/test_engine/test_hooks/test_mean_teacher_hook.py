@@ -2,7 +2,6 @@
 import os.path as osp
 import tempfile
 from unittest import TestCase
-from unittest.mock import Mock
 
 import torch
 import torch.nn as nn
