@@ -3,44 +3,6 @@ mmdet.apis
 .. automodule:: mmdet.apis
     :members:
 
-mmdet.core
---------------
-
-anchor
-^^^^^^^^^^
-.. automodule:: mmdet.core.anchor
-    :members:
-
-bbox
-^^^^^^^^^^
-.. automodule:: mmdet.core.bbox
-    :members:
-
-export
-^^^^^^^^^^
-.. automodule:: mmdet.core.export
-    :members:
-
-mask
-^^^^^^^^^^
-.. automodule:: mmdet.core.mask
-    :members:
-
-evaluation
-^^^^^^^^^^
-.. automodule:: mmdet.core.evaluation
-    :members:
-
-post_processing
-^^^^^^^^^^^^^^^
-.. automodule:: mmdet.core.post_processing
-    :members:
-
-utils
-^^^^^^^^^^
-.. automodule:: mmdet.core.utils
-    :members:
-
 mmdet.datasets
 --------------
 
@@ -59,27 +21,58 @@ samplers
 .. automodule:: mmdet.datasets.samplers
     :members:
 
-api_wrappers
+transforms
 ^^^^^^^^^^^^
-.. automodule:: mmdet.datasets.api_wrappers
+.. automodule:: mmdet.datasets.transforms
     :members:
+
+mmdet.engine
+--------------
+hooks
+^^^^^^^^^^
+.. automodule:: mmdet.engine.hooks
+    :members:
+
+runner
+^^^^^^^^^^
+.. automodule:: mmdet.engine.runner
+    :members:
+
+hooks
+^^^^^^^^^^
+.. automodule:: mmdet.engine.hooks
+    :members:
+
+schedulers
+^^^^^^^^^^
+.. automodule:: mmdet.engine.schedulers
+    :members:
+
+mmdet.evaluation
+--------------
+
+functional
+^^^^^^^^^^
+.. automodule:: mmdet.engine.functional
+    :members:
+
+metrics
+^^^^^^^^^^
+.. automodule:: mmdet.engine.metrics
+    :members:
+
 
 mmdet.models
 --------------
-
-detectors
-^^^^^^^^^^
-.. automodule:: mmdet.models.detectors
-    :members:
 
 backbones
 ^^^^^^^^^^
 .. automodule:: mmdet.models.backbones
     :members:
 
-necks
-^^^^^^^^^^^^
-.. automodule:: mmdet.models.necks
+data_preprocessors
+^^^^^^^^^^
+.. automodule:: mmdet.models.data_preprocessors
     :members:
 
 dense_heads
@@ -87,9 +80,9 @@ dense_heads
 .. automodule:: mmdet.models.dense_heads
     :members:
 
-roi_heads
+layers
 ^^^^^^^^^^
-.. automodule:: mmdet.models.roi_heads
+.. automodule:: mmdet.models.layers
     :members:
 
 losses
@@ -97,9 +90,63 @@ losses
 .. automodule:: mmdet.models.losses
     :members:
 
+detectors
+^^^^^^^^^^
+.. automodule:: mmdet.models.detectors
+    :members:
+
+necks
+^^^^^^^^^^^^
+.. automodule:: mmdet.models.necks
+    :members:
+
+roi_heads
+^^^^^^^^^^
+.. automodule:: mmdet.models.roi_heads
+    :members:
+
+seg_heads
+^^^^^^^^^^
+.. automodule:: mmdet.models.seg_heads
+    :members:
+
+task_modules
+^^^^^^^^^^
+.. automodule:: mmdet.models.task_modules
+    :members:
+
+test_time_augs
+^^^^^^^^^^
+.. automodule:: mmdet.models.test_time_augs
+    :members:
+
 utils
 ^^^^^^^^^^
 .. automodule:: mmdet.models.utils
+    :members:
+
+
+mmdet.structures
+--------------
+
+bbox
+^^^^^^^^^^
+.. automodule:: mmdet.structures.bbox
+    :members:
+
+mask
+^^^^^^^^^^
+.. automodule:: mmdet.structures.mask
+    :members:
+
+mmdet.testing
+--------------
+.. automodule::mmdet.testing
+    :members:
+
+mmdet.visulization
+--------------
+.. automodule::mmdet.visulization
     :members:
 
 mmdet.utils
