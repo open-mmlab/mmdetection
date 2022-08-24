@@ -101,10 +101,10 @@ optim_wrapper = dict(
     optimizer=dict(type='MyOptimizer', a=a_value, b=b_value, c=c_value))
 ```
 
-### Customize optimizer constructor
+### Customize optimizer wrapper constructor
 
 Some models may have some parameter-specific settings for optimization, e.g. weight decay for BatchNorm layers.
-The users can do those fine-grained parameter tuning through customizing optimizer constructor.
+The users can do those fine-grained parameter tuning through customizing optimizer wrapper constructor.
 
 ```python
 from mmengine.optim import DefaultOptiWrapperConstructor
@@ -114,7 +114,7 @@ from .my_optimizer import MyOptimizer
 
 
 @OPTIM_WRAPPER_CONSTRUCTORS.register_module()
-class MyOptimizerConstructor(DefaultOptimWrapperConstructor):
+class MyOptimizerWrapperConstructor(DefaultOptimWrapperConstructor):
 
     def __init__(self,
                  optim_wrapper_cfg: dict,
@@ -126,11 +126,11 @@ class MyOptimizerConstructor(DefaultOptimWrapperConstructor):
 
 ```
 
-The default optimizer constructor is implemented [here](https://github.com/open-mmlab/mmengine/blob/main/mmengine/optim/optimizer/default_constructor.py#L18), which could also serve as a template for new optimizer constructor.
+The default optimizer wrapper constructor is implemented [here](https://github.com/open-mmlab/mmengine/blob/main/mmengine/optim/optimizer/default_constructor.py#L18), which could also serve as a template for the new optimizer wrapper constructor.
 
 ### Additional settings
 
-Tricks not implemented by the optimizer should be implemented through optimizer constructor (e.g., set parameter-wise learning rates) or hooks. We list some common settings that could stabilize the training or accelerate the training. Feel free to create PR, issue for more settings.
+Tricks not implemented by the optimizer should be implemented through optimizer wrapper constructor (e.g., set parameter-wise learning rates) or hooks. We list some common settings that could stabilize the training or accelerate the training. Feel free to create PR, issue for more settings.
 
 - __Use gradient clip to stabilize training__:
   Some models need gradient clip to clip the gradients to stabilize the training process. An example is as below:
