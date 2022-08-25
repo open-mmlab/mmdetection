@@ -45,11 +45,9 @@ class TestKDSingleStageDetector(TestCase):
                 detector = detector.cuda()
 
             packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]])
-            batch_inputs, data_samples = detector.data_preprocessor(
-                packed_inputs, True)
-
+            data = detector.data_preprocessor(packed_inputs, True)
             # Test forward train
-            losses = detector.forward(batch_inputs, data_samples, mode='loss')
+            losses = detector.forward(**data, mode='loss')
             self.assertIsInstance(losses, dict)
 
     @parameterized.expand([('ld/ld_r18_gflv1_r101_fpn_coco_1x.py', ('cpu',
@@ -70,13 +68,11 @@ class TestKDSingleStageDetector(TestCase):
                 detector = detector.cuda()
 
             packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]])
-            batch_inputs, data_samples = detector.data_preprocessor(
-                packed_inputs, False)
+            data = detector.data_preprocessor(packed_inputs, False)
 
             # Test forward test
             detector.eval()
             with torch.no_grad():
-                batch_results = detector.forward(
-                    batch_inputs, data_samples, mode='predict')
+                batch_results = detector.forward(**data, mode='predict')
                 self.assertEqual(len(batch_results), 2)
                 self.assertIsInstance(batch_results[0], DetDataSample)

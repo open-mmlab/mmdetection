@@ -96,9 +96,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         self.seg_pad_value = seg_pad_value
         self.boxlist2tensor = boxlist2tensor
 
-    def forward(self,
-                data: dict,
-                training: bool = False) -> Tuple[torch.Tensor, Optional[list]]:
+    def forward(self, data: dict, training: bool = False) -> dict:
         """Perform normalization、padding and bgr2rgb conversion based on
         ``BaseDataPreprocessor``.
 
@@ -107,8 +105,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
             training (bool): Whether to enable training time augmentation.
 
         Returns:
-            Tuple[torch.Tensor, Optional[list]]: Data in the same format as the
-            model input.
+            dict: Data in the same format as the model input.
         """
         batch_pad_shape = self._get_pad_shape(data)
         data = super().forward(data=data, training=training)
@@ -138,7 +135,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
             for batch_aug in self.batch_augments:
                 inputs, data_samples = batch_aug(inputs, data_samples)
 
-        return inputs, data_samples
+        return {'inputs': inputs, 'data_samples': data_samples}
 
     def _get_pad_shape(self, data: dict) -> List[tuple]:
         """Get the pad_shape of each image based on data and

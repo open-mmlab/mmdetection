@@ -41,17 +41,21 @@ class TestDetDataPreprocessor(TestCase):
             'inputs': [torch.randint(0, 256, (3, 11, 10))],
             'data_samples': [DetDataSample()]
         }
-        inputs, data_samples = processor(data)
-        print(inputs.dtype)
-        self.assertEqual(inputs.shape, (1, 3, 11, 10))
-        self.assertEqual(len(data_samples), 1)
+        out_data = processor(data)
+        batch_inputs, batch_data_samples = out_data['inputs'], out_data[
+            'data_samples']
+
+        self.assertEqual(batch_inputs.shape, (1, 3, 11, 10))
+        self.assertEqual(len(batch_data_samples), 1)
 
         # test channel_conversion
         processor = DetDataPreprocessor(
             mean=[0., 0., 0.], std=[1., 1., 1.], bgr_to_rgb=True)
-        inputs, data_samples = processor(data)
-        self.assertEqual(inputs.shape, (1, 3, 11, 10))
-        self.assertEqual(len(data_samples), 1)
+        out_data = processor(data)
+        batch_inputs, batch_data_samples = out_data['inputs'], out_data[
+            'data_samples']
+        self.assertEqual(batch_inputs.shape, (1, 3, 11, 10))
+        self.assertEqual(len(batch_data_samples), 1)
 
         # test padding
         data = {
@@ -62,9 +66,11 @@ class TestDetDataPreprocessor(TestCase):
         }
         processor = DetDataPreprocessor(
             mean=[0., 0., 0.], std=[1., 1., 1.], bgr_to_rgb=True)
-        inputs, data_samples = processor(data)
-        self.assertEqual(inputs.shape, (2, 3, 10, 14))
-        self.assertIsNone(data_samples)
+        out_data = processor(data)
+        batch_inputs, batch_data_samples = out_data['inputs'], out_data[
+            'data_samples']
+        self.assertEqual(batch_inputs.shape, (2, 3, 10, 14))
+        self.assertIsNone(batch_data_samples)
 
         # test pad_size_divisor
         data = {
@@ -76,12 +82,14 @@ class TestDetDataPreprocessor(TestCase):
         }
         processor = DetDataPreprocessor(
             mean=[0., 0., 0.], std=[1., 1., 1.], pad_size_divisor=5)
-        inputs, data_samples = processor(data)
-        self.assertEqual(inputs.shape, (2, 3, 10, 25))
-        self.assertEqual(len(data_samples), 2)
-        for data_sample, expected_shape in zip(data_samples, [(10, 15),
-                                                              (10, 25)]):
-            self.assertEqual(data_sample.pad_shape, expected_shape)
+        out_data = processor(data)
+        batch_inputs, batch_data_samples = out_data['inputs'], out_data[
+            'data_samples']
+        self.assertEqual(batch_inputs.shape, (2, 3, 10, 25))
+        self.assertEqual(len(batch_data_samples), 2)
+        for data_samples, expected_shape in zip(batch_data_samples,
+                                                [(10, 15), (10, 25)]):
+            self.assertEqual(data_samples.pad_shape, expected_shape)
 
         # test pad_mask=True and pad_seg=True
         processor = DetDataPreprocessor(
@@ -102,8 +110,8 @@ class TestDetDataPreprocessor(TestCase):
         seg_pad_sums = [
             x.gt_sem_seg.sem_seg.sum() for x in packed_inputs['data_samples']
         ]
-        batch_inputs, batch_data_samples = processor(
-            packed_inputs, training=True)
+        batch_data_samples = processor(
+            packed_inputs, training=True)['data_samples']
         for data_samples, expected_shape, mask_pad_sum, seg_pad_sum in zip(
                 batch_data_samples, [(10, 24), (10, 24)], mask_pad_sums,
                 seg_pad_sums):
@@ -130,22 +138,19 @@ class TestDetDataPreprocessor(TestCase):
         message_hub.update_info('iter', 0)
         packed_inputs = demo_mm_inputs(
             2, [[3, 128, 128], [3, 128, 128]], with_boxlist=True)
-        batch_inputs, batch_data_samples = processor(
-            packed_inputs, training=True)
+        batch_inputs = processor(packed_inputs, training=True)['inputs']
         self.assertEqual(batch_inputs.shape, (2, 3, 128, 128))
 
         # resize after one iter
         message_hub.update_info('iter', 1)
         packed_inputs = demo_mm_inputs(
             2, [[3, 128, 128], [3, 128, 128]], with_boxlist=True)
-        batch_inputs, batch_data_samples = processor(
-            packed_inputs, training=True)
+        batch_inputs = processor(packed_inputs, training=True)['inputs']
         self.assertEqual(batch_inputs.shape, (2, 3, 320, 320))
 
         packed_inputs = demo_mm_inputs(
             2, [[3, 128, 128], [3, 128, 128]], with_boxlist=True)
-        batch_inputs, batch_data_samples = processor(
-            packed_inputs, training=False)
+        batch_inputs = processor(packed_inputs, training=False)['inputs']
         self.assertEqual(batch_inputs.shape, (2, 3, 128, 128))
 
     def test_batch_fixed_size_pad(self):
@@ -181,8 +186,8 @@ class TestDetDataPreprocessor(TestCase):
         seg_pad_sums = [
             x.gt_sem_seg.sem_seg.sum() for x in packed_inputs['data_samples']
         ]
-        batch_inputs, batch_data_samples = processor(
-            packed_inputs, training=True)
+        data = processor(packed_inputs, training=True)
+        batch_inputs, batch_data_samples = data['inputs'], data['data_samples']
         self.assertEqual(batch_inputs.shape[-2:], (32, 32))
         for data_samples, expected_shape, mask_pad_sum, seg_pad_sum in zip(
                 batch_data_samples, [(32, 32), (32, 32)], mask_pad_sums,
@@ -230,8 +235,8 @@ class TestDetDataPreprocessor(TestCase):
         seg_pad_sums = [
             x.gt_sem_seg.sem_seg.sum() for x in packed_inputs['data_samples']
         ]
-        batch_inputs, batch_data_samples = processor(
-            packed_inputs, training=True)
+        data = processor(packed_inputs, training=True)
+        batch_inputs, batch_data_samples = data['inputs'], data['data_samples']
         self.assertEqual(batch_inputs.shape[-2:], (32, 32))
         for data_samples, expected_shape, mask_pad_sum, seg_pad_sum in zip(
                 batch_data_samples, [(32, 32), (32, 32)], mask_pad_sums,
@@ -279,8 +284,8 @@ class TestDetDataPreprocessor(TestCase):
         seg_pad_sums = [
             x.gt_sem_seg.sem_seg.sum() for x in packed_inputs['data_samples']
         ]
-        batch_inputs, batch_data_samples = processor(
-            packed_inputs, training=True)
+        data = processor(packed_inputs, training=True)
+        batch_inputs, batch_data_samples = data['inputs'], data['data_samples']
         self.assertEqual(batch_inputs.shape[-2:], (10, 24))
         for data_samples, expected_shape, mask_pad_sum, seg_pad_sum in zip(
                 batch_data_samples, [(10, 24), (10, 24)], mask_pad_sums,
