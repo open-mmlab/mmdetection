@@ -429,21 +429,15 @@ class DetrTransformerDecoderLayer(BaseTransformerLayer):
 
     def __init__(self,
                  attn_cfgs,
-                 feedforward_channels,
-                 ffn_dropout=0.0,
+                 ffn_cfgs,
                  operation_order=None,
-                 act_cfg=dict(type='ReLU', inplace=True),
                  norm_cfg=dict(type='LN'),
-                 ffn_num_fcs=2,
                  **kwargs):
         super(DetrTransformerDecoderLayer, self).__init__(
             attn_cfgs=attn_cfgs,
-            feedforward_channels=feedforward_channels,
-            ffn_dropout=ffn_dropout,
+            ffn_cfgs=ffn_cfgs,
             operation_order=operation_order,
-            act_cfg=act_cfg,
             norm_cfg=norm_cfg,
-            ffn_num_fcs=ffn_num_fcs,
             **kwargs)
         assert len(operation_order) == 6
         assert set(operation_order) == set(
