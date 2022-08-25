@@ -49,13 +49,12 @@ class TestOpenImagesMetric(unittest.TestCase):
                     meta_keys=('img_id', 'img_path', 'instances'))
             ])
         dataset.full_init()
-        data_sample = dataset[0]['data_sample'].to_dict()
+        data_sample = dataset[0]['data_samples'].to_dict()
+        data_sample['pred_instances'] = self._create_dummy_results()
 
         metric = OpenImagesMetric()
         metric.dataset_meta = dataset.metainfo
-        metric.process(
-            data_batch=[dict(inputs=None, data_sample=data_sample)],
-            predictions=[dict(pred_instances=self._create_dummy_results())])
+        metric.process({}, [data_sample])
         results = metric.evaluate(size=len(dataset))
         targets = {'openimages/AP50': 1.0, 'openimages/mAP': 1.0}
         self.assertDictEqual(results, targets)
@@ -63,9 +62,7 @@ class TestOpenImagesMetric(unittest.TestCase):
         # test multi-threshold
         metric = OpenImagesMetric(iou_thrs=[0.1, 0.5], ioa_thrs=[0.1, 0.5])
         metric.dataset_meta = dataset.metainfo
-        metric.process(
-            data_batch=[dict(inputs=None, data_sample=data_sample)],
-            predictions=[dict(pred_instances=self._create_dummy_results())])
+        metric.process({}, [data_sample])
         results = metric.evaluate(size=len(dataset))
         targets = {
             'openimages/AP10': 1.0,

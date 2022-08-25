@@ -74,18 +74,17 @@ class DetVisualizationHook(Hook):
         self.test_out_dir = test_out_dir
         self._test_index = 0
 
-    def after_val_iter(self, runner: Runner, batch_idx: int,
-                       data_batch: Sequence[dict],
+    def after_val_iter(self, runner: Runner, batch_idx: int, data_batch: dict,
                        outputs: Sequence[DetDataSample]) -> None:
         """Run after every ``self.interval`` validation iterations.
 
         Args:
             runner (:obj:`Runner`): The runner of the validation process.
             batch_idx (int): The index of the current batch in the val loop.
-            data_batch (Sequence[dict]): Data from dataloader.
-            outputs (Sequence[:obj:`DetDataSample`]): Outputs from model.
+            data_batch (dict): Data from dataloader.
+            outputs (Sequence[:obj:`DetDataSample`]]): A batch of data samples
+                that contain annotations and predictions.
         """
-        # TODO: data_batch does not include annotation information
         if self.draw is False:
             return
 
@@ -97,33 +96,31 @@ class DetVisualizationHook(Hook):
         total_curr_iter = runner.iter + batch_idx
 
         # Visualize only the first data
-        img_path = data_batch[0]['data_sample'].img_path
+        img_path = outputs[0].img_path
         img_bytes = self.file_client.get(img_path)
         img = mmcv.imfrombytes(img_bytes, channel_order='rgb')
 
-        pred_sample = outputs[0]
         if total_curr_iter % self.interval == 0:
             self._visualizer.add_datasample(
                 osp.basename(img_path) if self.show else 'val_img',
                 img,
-                pred_sample=pred_sample,
+                data_sample=outputs[0],
                 show=self.show,
                 wait_time=self.wait_time,
                 pred_score_thr=self.score_thr,
                 step=total_curr_iter)
 
-    def after_test_iter(self, runner: Runner, batch_idx: int,
-                        data_batch: Sequence[dict],
+    def after_test_iter(self, runner: Runner, batch_idx: int, data_batch: dict,
                         outputs: Sequence[DetDataSample]) -> None:
         """Run after every testing iterations.
 
         Args:
             runner (:obj:`Runner`): The runner of the testing process.
             batch_idx (int): The index of the current batch in the val loop.
-            data_batch (Sequence[dict]): Data from dataloader.
-            outputs (Sequence[:obj:`DetDataSample`]): Outputs from model.
+            data_batch (dict): Data from dataloader.
+            outputs (Sequence[:obj:`DetDataSample`]): A batch of data samples
+                that contain annotations and predictions.
         """
-        # TODO: data_batch does not include annotation information
         if self.draw is False:
             return
 
@@ -135,10 +132,10 @@ class DetVisualizationHook(Hook):
         if self.file_client is None:
             self.file_client = FileClient(**self.file_client_args)
 
-        for input_data, output in zip(data_batch, outputs):
+        for data_sample in outputs:
             self._test_index += 1
 
-            img_path = input_data['data_sample'].img_path
+            img_path = data_sample.img_path
             img_bytes = self.file_client.get(img_path)
             img = mmcv.imfrombytes(img_bytes, channel_order='rgb')
 
@@ -150,7 +147,7 @@ class DetVisualizationHook(Hook):
             self._visualizer.add_datasample(
                 osp.basename(img_path) if self.show else 'test_img',
                 img,
-                pred_sample=output,
+                data_sample=data_sample,
                 show=self.show,
                 wait_time=self.wait_time,
                 pred_score_thr=self.score_thr,

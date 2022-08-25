@@ -1,6 +1,6 @@
 _base_ = './cascade_mask_rcnn_convnext-t_p4_w7_fpn_giou_4conv1f_fp16_ms-crop_3x_coco.py'  # noqa
 
-# please install mmcls>=0.22.0
+# please install mmcls>=1.0
 # import mmcls.models to trigger register_module in mmcls
 custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
 checkpoint_file = 'https://download.openmmlab.com/mmclassification/v0/convnext/downstream/convnext-small_3rdparty_32xb128-noema_in1k_20220301-303e75e3.pth'  # noqa

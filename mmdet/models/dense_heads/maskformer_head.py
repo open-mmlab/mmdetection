@@ -5,8 +5,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import Conv2d
-from mmengine.data import InstanceData, PixelData
-from mmengine.model.utils import caffe2_xavier_init
+from mmengine.model import caffe2_xavier_init
+from mmengine.structures import InstanceData, PixelData
 from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS

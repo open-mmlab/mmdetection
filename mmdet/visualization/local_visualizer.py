@@ -5,14 +5,14 @@ import cv2
 import mmcv
 import numpy as np
 import torch
-from mmengine import Visualizer
-from mmengine.data import InstanceData, PixelData
 from mmengine.dist import master_only
+from mmengine.structures import InstanceData, PixelData
+from mmengine.visualization import Visualizer
 
 from ..evaluation import INSTANCE_OFFSET
 from ..registry import VISUALIZERS
 from ..structures import DetDataSample
-from ..structures.mask import bitmap_to_polygon
+from ..structures.mask import BitmapMasks, PolygonMasks, bitmap_to_polygon
 from .palette import _get_adaptive_scales, get_palette
 
 
@@ -44,7 +44,7 @@ class DetLocalVisualizer(Visualizer):
     Examples:
         >>> import numpy as np
         >>> import torch
-        >>> from mmengine.data import InstanceData
+        >>> from mmengine.structures import InstanceData
         >>> from mmdet.structures import DetDataSample
         >>> from mmdet.visualization import DetLocalVisualizer
 
@@ -165,6 +165,10 @@ class DetLocalVisualizer(Visualizer):
             masks = instances.masks
             if isinstance(masks, torch.Tensor):
                 masks = masks.numpy()
+            elif isinstance(masks, (PolygonMasks, BitmapMasks)):
+                masks = masks.to_ndarray()
+
+            masks = masks.astype(np.bool)
 
             max_label = int(max(labels) if len(labels) > 0 else 0)
             mask_color = palette if self.mask_color is None \
@@ -293,8 +297,7 @@ class DetLocalVisualizer(Visualizer):
             self,
             name: str,
             image: np.ndarray,
-            gt_sample: Optional['DetDataSample'] = None,
-            pred_sample: Optional['DetDataSample'] = None,
+            data_sample: Optional['DetDataSample'] = None,
             draw_gt: bool = True,
             draw_pred: bool = True,
             show: bool = False,
@@ -317,10 +320,9 @@ class DetLocalVisualizer(Visualizer):
         Args:
             name (str): The image identifier.
             image (np.ndarray): The image to draw.
-            gt_sample (:obj:`DetDataSample`, optional): GT DetDataSample.
+            data_sample (:obj:`DetDataSample`, optional): A data
+                sample that contain annotations and predictions.
                 Defaults to None.
-            pred_sample (:obj:`DetDataSample`, optional): Prediction
-                DetDataSample. Defaults to None.
             draw_gt (bool): Whether to draw GT DetDataSample. Default to True.
             draw_pred (bool): Whether to draw Prediction DetDataSample.
                 Defaults to True.
@@ -337,37 +339,40 @@ class DetLocalVisualizer(Visualizer):
         gt_img_data = None
         pred_img_data = None
 
-        if draw_gt and gt_sample is not None:
+        if data_sample is not None:
+            data_sample = data_sample.cpu()
+
+        if draw_gt and data_sample is not None:
             gt_img_data = image
-            if 'gt_instances' in gt_sample:
+            if 'gt_instances' in data_sample:
                 gt_img_data = self._draw_instances(image,
-                                                   gt_sample.gt_instances,
+                                                   data_sample.gt_instances,
                                                    classes, palette)
 
-            if 'gt_panoptic_seg' in gt_sample:
+            if 'gt_panoptic_seg' in data_sample:
                 assert classes is not None, 'class information is ' \
                                             'not provided when ' \
                                             'visualizing panoptic ' \
                                             'segmentation results.'
                 gt_img_data = self._draw_panoptic_seg(
-                    gt_img_data, gt_sample.gt_panoptic_seg, classes)
+                    gt_img_data, data_sample.gt_panoptic_seg, classes)
 
-        if draw_pred and pred_sample is not None:
+        if draw_pred and data_sample is not None:
             pred_img_data = image
-            if 'pred_instances' in pred_sample:
-                pred_instances = pred_sample.pred_instances
+            if 'pred_instances' in data_sample:
+                pred_instances = data_sample.pred_instances
                 pred_instances = pred_instances[
-                    pred_instances.scores > pred_score_thr].cpu()
+                    pred_instances.scores > pred_score_thr]
                 pred_img_data = self._draw_instances(image, pred_instances,
                                                      classes, palette)
-            if 'pred_panoptic_seg' in pred_sample:
+            if 'pred_panoptic_seg' in data_sample:
                 assert classes is not None, 'class information is ' \
                                             'not provided when ' \
                                             'visualizing panoptic ' \
                                             'segmentation results.'
                 pred_img_data = self._draw_panoptic_seg(
-                    pred_img_data,
-                    pred_sample.pred_panoptic_seg.cpu().numpy(), classes)
+                    pred_img_data, data_sample.pred_panoptic_seg.numpy(),
+                    classes)
 
         if gt_img_data is not None and pred_img_data is not None:
             drawn_img = np.concatenate((gt_img_data, pred_img_data), axis=1)

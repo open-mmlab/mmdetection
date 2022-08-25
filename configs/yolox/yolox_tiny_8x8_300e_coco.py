@@ -49,6 +49,7 @@ test_pipeline = [
         type='Pad',
         pad_to_square=True,
         pad_val=dict(img=(114.0, 114.0, 114.0))),
+    dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',

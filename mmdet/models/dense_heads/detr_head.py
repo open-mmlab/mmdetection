@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import Conv2d, Linear, build_activation_layer
 from mmcv.cnn.bricks.transformer import FFN, build_positional_encoding
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS

@@ -142,21 +142,22 @@ class OpenImagesMetric(BaseMetric):
                     processed_labels = processed_labels[index]
         return processed_bboxes, processed_scores, processed_labels
 
-    def process(self, data_batch: Sequence[dict],
-                predictions: Sequence[dict]) -> None:
+    # TODO: data_batch is no longer needed, consider adjusting the
+    #  parameter position
+    def process(self, data_batch: dict, data_samples: Sequence[dict]) -> None:
         """Process one batch of data samples and predictions. The processed
         results should be stored in ``self.results``, which will be used to
         compute the metrics when all batches have been processed.
 
         Args:
-            data_batch (Sequence[dict]): A batch of data
-                from the dataloader.
-            predictions (Sequence[dict]): A batch of outputs from
-                the model.
+            data_batch (dict): A batch of data from the dataloader.
+            data_samples (Sequence[dict]): A batch of data samples that
+                contain annotations and predictions.
         """
-        for data, pred in zip(data_batch, predictions):
-            gt = copy.deepcopy(data['data_sample'])
+        for data_sample in data_samples:
+            gt = copy.deepcopy(data_sample)
             # add super-category instances
+            # TODO: Need to refactor to support LoadAnnotations
             instances = gt['instances']
             if self.get_supercategory:
                 supercat_instances = self._get_supercategory_ann(instances)
@@ -174,7 +175,7 @@ class OpenImagesMetric(BaseMetric):
                 gt_is_group_ofs=np.array(is_group_ofs, dtype=bool))
 
             image_level_labels = gt.get('image_level_labels', None)
-            pred = pred['pred_instances']
+            pred = data_sample['pred_instances']
             pred_bboxes = pred['bboxes'].cpu().numpy()
             pred_scores = pred['scores'].cpu().numpy()
             pred_labels = pred['labels'].cpu().numpy()

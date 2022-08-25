@@ -2,11 +2,10 @@
 import os.path as osp
 import tempfile
 from unittest import TestCase
-from unittest.mock import Mock
 
 import torch
 import torch.nn as nn
-from mmengine.evaluator import Evaluator
+from mmengine.evaluator import BaseMetric
 from mmengine.model import BaseModel
 from mmengine.optim import OptimWrapper
 from mmengine.registry import MODEL_WRAPPERS
@@ -25,9 +24,9 @@ class ToyModel(nn.Module):
         super().__init__()
         self.linear = nn.Linear(2, 1)
 
-    def forward(self, batch_inputs, labels, mode='tensor'):
-        labels = torch.stack(labels)
-        outputs = self.linear(batch_inputs)
+    def forward(self, inputs, data_samples, mode='tensor'):
+        labels = torch.stack(data_samples)
+        outputs = self.linear(inputs)
         if mode == 'tensor':
             return outputs
         elif mode == 'loss':
@@ -72,7 +71,21 @@ class DummyDataset(Dataset):
         return self.data.size(0)
 
     def __getitem__(self, index):
-        return dict(inputs=self.data[index], data_sample=self.label[index])
+        return dict(inputs=self.data[index], data_samples=self.label[index])
+
+
+class ToyMetric1(BaseMetric):
+
+    def __init__(self, collect_device='cpu', dummy_metrics=None):
+        super().__init__(collect_device=collect_device)
+        self.dummy_metrics = dummy_metrics
+
+    def process(self, data_batch, predictions):
+        result = {'acc': 1}
+        self.results.append(result)
+
+    def compute_metrics(self, results):
+        return dict(acc=1)
 
 
 class TestMeanTeacherHook(TestCase):
@@ -86,22 +99,19 @@ class TestMeanTeacherHook(TestCase):
     def test_mean_teacher_hook(self):
         device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
         model = ToyModel2().to(device)
-        evaluator = Mock()
-        evaluator.evaluate = Mock(return_value=dict(acc=0.5))
-        evaluator.__class__ = Evaluator
         runner = Runner(
             model=model,
             train_dataloader=dict(
-                dataset=dict(type='DummyDataset'),
+                dataset=DummyDataset(),
                 sampler=dict(type='DefaultSampler', shuffle=True),
                 batch_size=3,
                 num_workers=0),
             val_dataloader=dict(
-                dataset=dict(type='DummyDataset'),
+                dataset=DummyDataset(),
                 sampler=dict(type='DefaultSampler', shuffle=False),
                 batch_size=3,
                 num_workers=0),
-            val_evaluator=evaluator,
+            val_evaluator=[ToyMetric1()],
             work_dir=self.temp_dir.name,
             default_scope='mmdet',
             optim_wrapper=OptimWrapper(
@@ -121,11 +131,11 @@ class TestMeanTeacherHook(TestCase):
         runner = Runner(
             model=model,
             test_dataloader=dict(
-                dataset=dict(type='DummyDataset'),
+                dataset=DummyDataset(),
                 sampler=dict(type='DefaultSampler', shuffle=True),
                 batch_size=3,
                 num_workers=0),
-            test_evaluator=evaluator,
+            test_evaluator=[ToyMetric1()],
             test_cfg=dict(),
             work_dir=self.temp_dir.name,
             default_scope='mmdet',
@@ -149,11 +159,11 @@ class TestMeanTeacherHook(TestCase):
         runner = Runner(
             model=DummyWrapper(ToyModel2()),
             test_dataloader=dict(
-                dataset=dict(type='DummyDataset'),
+                dataset=DummyDataset(),
                 sampler=dict(type='DefaultSampler', shuffle=True),
                 batch_size=3,
                 num_workers=0),
-            test_evaluator=evaluator,
+            test_evaluator=[ToyMetric1()],
             test_cfg=dict(),
             work_dir=self.temp_dir.name,
             default_scope='mmdet',

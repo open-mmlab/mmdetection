@@ -2,8 +2,8 @@
 from unittest import TestCase
 
 import torch
-from mmengine import InstanceData
 from mmengine.config import ConfigDict
+from mmengine.structures import InstanceData
 
 from mmdet.models.dense_heads import DETRHead
 from mmdet.structures import DetDataSample

@@ -54,7 +54,7 @@ class SingleStageDetector(BaseDetector):
         if len(bbox_head_keys) == 0 and len(rpn_head_keys) != 0:
             for rpn_head_key in rpn_head_keys:
                 bbox_head_key = bbox_head_prefix + \
-                    rpn_head_key[len(rpn_head_prefix):]
+                                rpn_head_key[len(rpn_head_prefix):]
                 state_dict[bbox_head_key] = state_dict.pop(rpn_head_key)
         super()._load_from_state_dict(state_dict, prefix, local_metadata,
                                       strict, missing_keys, unexpected_keys,
@@ -109,8 +109,9 @@ class SingleStageDetector(BaseDetector):
         x = self.extract_feat(batch_inputs)
         results_list = self.bbox_head.predict(
             x, batch_data_samples, rescale=rescale)
-        predictions = self.convert_to_datasample(results_list)
-        return predictions
+        batch_data_samples = self.add_pred_to_datasample(
+            batch_data_samples, results_list)
+        return batch_data_samples
 
     def _forward(
             self,

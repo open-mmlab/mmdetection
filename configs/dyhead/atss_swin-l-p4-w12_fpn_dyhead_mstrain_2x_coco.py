@@ -107,6 +107,7 @@ test_pipeline = [
         type='LoadImageFromFile',
         file_client_args={{_base_.file_client_args}}),
     dict(type='Resize', scale=(2000, 1200), keep_ratio=True, backend='pillow'),
+    dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',

@@ -5,7 +5,8 @@ from os.path import dirname, exists, join
 import numpy as np
 import torch
 from mmengine.config import Config
-from mmengine.data import InstanceData, PixelData
+from mmengine.dataset import pseudo_collate
+from mmengine.structures import InstanceData, PixelData
 
 from ..registry import TASK_UTILS
 from ..structures import DetDataSample
@@ -92,7 +93,8 @@ def demo_mm_inputs(batch_size=2,
                    sem_seg_output_strides=1,
                    with_mask=False,
                    with_semantic=False,
-                   with_boxlist=False):
+                   with_boxlist=False,
+                   device='cpu'):
     """Create a superset of inputs needed to run test or train batches.
 
     Args:
@@ -107,6 +109,7 @@ def demo_mm_inputs(batch_size=2,
             Defaults to False.
         with_semantic (bool): whether to return semantic.
             Defaults to False.
+        device (str): Destination device type. Defaults to cpu.
     """
     rng = np.random.RandomState(0)
 
@@ -126,7 +129,7 @@ def demo_mm_inputs(batch_size=2,
         image = rng.randint(0, 255, size=image_shape, dtype=np.uint8)
 
         mm_inputs = dict()
-        mm_inputs['inputs'] = torch.from_numpy(image)
+        mm_inputs['inputs'] = torch.from_numpy(image).to(device)
 
         img_meta = {
             'img_id': idx,
@@ -190,12 +193,13 @@ def demo_mm_inputs(batch_size=2,
             gt_sem_seg_data = dict(sem_seg=gt_semantic_seg)
             data_sample.gt_sem_seg = PixelData(**gt_sem_seg_data)
 
-        mm_inputs['data_sample'] = data_sample
+        mm_inputs['data_samples'] = data_sample.to(device)
 
         # TODO: gt_ignore
 
         packed_inputs.append(mm_inputs)
-    return packed_inputs
+    data = pseudo_collate(packed_inputs)
+    return data
 
 
 def demo_mm_proposals(image_shapes, num_proposals, device='cpu'):

@@ -45,7 +45,7 @@ class DummyConcatDataset(ConcatDataset):
 
 class TestMultiSourceSampler(TestCase):
 
-    @patch('mmengine.data.sampler.get_dist_info', return_value=(7, 8))
+    @patch('mmengine.dist.get_dist_info', return_value=(7, 8))
     def setUp(self, mock):
         self.length_a = 100
         self.dataset_a = DummyDataset(self.length_a, flag='a')
@@ -79,7 +79,7 @@ class TestMultiSourceSampler(TestCase):
 
 class TestGroupMultiSourceSampler(TestCase):
 
-    @patch('mmengine.data.sampler.get_dist_info', return_value=(7, 8))
+    @patch('mmengine.dist.get_dist_info', return_value=(7, 8))
     def setUp(self, mock):
         self.length_a = 100
         self.dataset_a = DummyDataset(self.length_a, flag='a')

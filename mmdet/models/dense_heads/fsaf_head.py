@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS

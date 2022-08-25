@@ -175,6 +175,6 @@ class SingleStageInstanceSegmentor(BaseDetector):
         results_list = self.mask_head.predict(
             x, batch_data_samples, rescale=rescale, results_list=results_list)
 
-        # connvert to DetDataSample
-        results_list = self.convert_to_datasample(results_list)
-        return results_list
+        batch_data_samples = self.add_pred_to_datasample(
+            batch_data_samples, results_list)
+        return batch_data_samples

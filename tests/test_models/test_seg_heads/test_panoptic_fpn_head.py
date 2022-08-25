@@ -1,7 +1,7 @@
 import unittest
 
 import torch
-from mmengine.data import PixelData
+from mmengine.structures import PixelData
 from mmengine.testing import assert_allclose
 
 from mmdet.models.seg_heads import PanopticFPNHead

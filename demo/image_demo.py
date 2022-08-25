@@ -57,7 +57,8 @@ def main(args):
     visualizer.add_datasample(
         'result',
         img,
-        pred_sample=result,
+        data_sample=result,
+        draw_gt=False,
         show=args.out_file is None,
         wait_time=0,
         out_file=args.out_file,

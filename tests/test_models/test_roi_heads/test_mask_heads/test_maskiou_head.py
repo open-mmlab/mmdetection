@@ -4,7 +4,7 @@ from unittest import TestCase
 
 import torch
 from mmengine.config import ConfigDict
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 from parameterized import parameterized
 
 from mmdet.models.roi_heads.mask_heads import MaskIoUHead
@@ -27,27 +27,20 @@ class TestMaskIoUHead(TestCase):
 
         s = 256
         image_shapes = [(3, s, s)]
-        packed_inputs = demo_mm_inputs(
+        batch_data_samples = demo_mm_inputs(
             batch_size=1,
             image_shapes=image_shapes,
             num_items=[1],
             num_classes=4,
-            with_mask=True)
+            with_mask=True,
+            device=device)['data_samples']
         proposals_list = demo_mm_proposals(
             image_shapes=image_shapes, num_proposals=100, device=device)
-        batch_data_samples = []
-        for i in range(len(packed_inputs)):
-            batch_data_samples.append(
-                packed_inputs[i]['data_sample'].to(device=device))
-            proposals_list[i] = proposals_list[i].to(device=device)
         train_cfg = ConfigDict(dict(mask_size=28, mask_thr_binary=0.5))
 
         # prepare ground truth
-        data_samples = [
-            inputs['data_sample'].to(device=device) for inputs in packed_inputs
-        ]
         (batch_gt_instances, batch_gt_instances_ignore,
-         _) = unpack_gt_instances(data_samples)
+         _) = unpack_gt_instances(batch_data_samples)
         sampling_results = demo_mm_sampling_results(
             proposals_list=proposals_list,
             batch_gt_instances=batch_gt_instances,

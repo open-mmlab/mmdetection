@@ -15,7 +15,7 @@ from mmengine.config import Config
 from mmengine.device import get_max_cuda_memory
 from mmengine.dist import get_world_size
 from mmengine.runner import Runner, load_checkpoint
-from mmengine.utils import set_multi_processing
+from mmengine.utils.dl_utils import set_multi_processing
 from torch.nn.parallel import DistributedDataParallel
 
 from mmdet.models import build_detector

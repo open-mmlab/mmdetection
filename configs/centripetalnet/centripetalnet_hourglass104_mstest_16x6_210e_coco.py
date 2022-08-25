@@ -90,6 +90,7 @@ test_pipeline = [
         std=data_preprocessor['std'],
         # Image data is not converted to rgb.
         to_rgb=data_preprocessor['bgr_to_rgb']),
+    dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape', 'border'))

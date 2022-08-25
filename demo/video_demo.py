@@ -66,7 +66,8 @@ def main():
         visualizer.add_datasample(
             name='video',
             image=frame,
-            pred_sample=result,
+            data_sample=result,
+            draw_gt=False,
             show=False,
             pred_score_thr=args.score_thr)
         frame = visualizer.get_image()
