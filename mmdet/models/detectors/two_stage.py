@@ -142,7 +142,7 @@ class TwoStageDetector(BaseDetector):
 
     def loss(self, batch_inputs: Tensor,
              batch_data_samples: SampleList) -> dict:
-        """Calculate losses from a b         atch of inputs and data samples.
+        """Calculate losses from a batch of inputs and data samples.
 
         Args:
             batch_inputs (Tensor): Input images of shape (N, C, H, W).
