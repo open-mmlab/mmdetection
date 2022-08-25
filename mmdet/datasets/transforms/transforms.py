@@ -282,7 +282,7 @@ class FixShapeResize(BaseTransform):
             if self.keep_ratio:
                 new_w, new_h = results['keep_ratio_scale']
                 results['gt_masks'] = results['gt_masks'].resize(
-                    (new_w, new_h))
+                    (new_h, new_w))
                 results['gt_masks'] = results['gt_masks'].pad(
                     results['img_shape'], pad_val=self.mask_pad_value)
             else:
@@ -345,9 +345,9 @@ class FixShapeResize(BaseTransform):
             'scale', 'scale_factor', 'height', 'width', and 'keep_ratio' keys
             are updated in result dict.
         """
+        img = results['img']
+        h, w = img.shape[:2]
         if self.keep_ratio:
-            img = results['img']
-            h, w = img.shape[:2]
             scale_factor = min(self.width / w, self.height / h)
             results['scale_factor'] = (scale_factor, scale_factor)
 
