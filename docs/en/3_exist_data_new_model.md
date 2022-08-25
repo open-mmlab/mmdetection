@@ -122,12 +122,12 @@ For more detailed usages about customizing your own models (e.g. implement a new
 
 ## Prepare a config
 
-The third step is to prepare a config for your own training setting. Assume that we want to add `AugFPN` and `Rotate` or `Translate` augmentation to existing Cascade Mask R-CNN R50 to train the cityscapes dataset, and assume the config is under directory `configs/cityscapes/` and named as `cascade_mask_rcnn_r50_augfpn_autoaug_10e_cityscapes.py`, the config is as below.
+The third step is to prepare a config for your own training setting. Assume that we want to add `AugFPN` and `Rotate` or `Translate` augmentation to existing Cascade Mask R-CNN R50 to train the cityscapes dataset, and assume the config is under directory `configs/cityscapes/` and named as `cascade-mask-rcnn_r50_augfpn_autoaug-10e_cityscapes.py`, the config is as below.
 
 ```python
 # The new config inherits the base configs to highlight the necessary modification
 _base_ = [
-    '../_base_/models/cascade_mask_rcnn_r50_fpn.py',
+    '../_base_/models/cascade-mask-rcnn_r50_fpn.py',
     '../_base_/datasets/cityscapes_instance.py', '../_base_/default_runtime.py'
 ]
 
@@ -278,7 +278,7 @@ load_from = 'https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascad
 To train a model with the new config, you can simply run
 
 ```shell
-python tools/train.py configs/cityscapes/cascade_mask_rcnn_r50_augfpn_autoaug_10e_cityscapes.py
+python tools/train.py configs/cityscapes/cascade-mask-rcnn_r50_augfpn_autoaug-10e_cityscapes.py
 ```
 
 For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).
@@ -288,7 +288,7 @@ For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).
 To test the trained model, you can simply run
 
 ```shell
-python tools/test.py configs/cityscapes/cascade_mask_rcnn_r50_augfpn_autoaug_10e_cityscapes.py work_dirs/cascade_mask_rcnn_r50_augfpn_autoaug_10e_cityscapes.py/latest.pth
+python tools/test.py configs/cityscapes/cascade-mask-rcnn_r50_augfpn_autoaug-10e_cityscapes.py work_dirs/cascade-mask-rcnn_r50_augfpn_autoaug-10e_cityscapes/epoch_10.pth
 ```
 
 For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).
