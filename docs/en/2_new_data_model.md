@@ -56,7 +56,7 @@ categories = \[{
 }\]
 
 Assume we use the balloon dataset.
-After downloading the data, we need to implement a function to convert the annotation format into the COCO format. Then we can use implemented COCODataset to load the data and perform training and evaluation.
+After downloading the data, we need to implement a function to convert the annotation format into the COCO format. Then we can use implemented `CocoDataset` to load the data and perform training and evaluation.
 
 If you take a look at the dataset, you will find the dataset format is as below:
 
