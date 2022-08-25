@@ -33,7 +33,7 @@ class CheckInvalidLossHook(Hook):
         Args:
             runner (:obj:`Runner`): The runner of the training process.
             batch_idx (int): The index of the current batch in the train loop.
-            data_batch (Sequence[dict], Optional): Data from dataloader.
+            data_batch (dict, Optional): Data from dataloader.
                 Defaults to None.
             outputs (dict, Optional): Outputs from model. Defaults to None.
         """

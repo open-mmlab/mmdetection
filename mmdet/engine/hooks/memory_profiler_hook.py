@@ -75,7 +75,7 @@ class MemoryProfilerHook(Hook):
         Args:
             runner (:obj:`Runner`): The runner of the training process.
             batch_idx (int): The index of the current batch in the train loop.
-            data_batch (Sequence[dict], optional): Data from dataloader.
+            data_batch (dict, optional): Data from dataloader.
                 Defaults to None.
             outputs (dict, optional): Outputs from model. Defaults to None.
         """
@@ -86,7 +86,7 @@ class MemoryProfilerHook(Hook):
             self,
             runner: Runner,
             batch_idx: int,
-            data_batch: dict = None,
+            data_batch: Optional[dict] = None,
             outputs: Optional[Sequence[DetDataSample]] = None) -> None:
         """Regularly record memory information.
 
@@ -105,7 +105,7 @@ class MemoryProfilerHook(Hook):
             self,
             runner: Runner,
             batch_idx: int,
-            data_batch: dict = None,
+            data_batch: Optional[dict] = None,
             outputs: Optional[Sequence[DetDataSample]] = None) -> None:
         """Regularly record memory information.
 
