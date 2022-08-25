@@ -7,8 +7,8 @@ import torch
 import torch.nn as nn
 from mmcv.ops import DeformConv2d
 from mmengine.config import ConfigDict
-from mmengine.data import InstanceData
 from mmengine.model import BaseModule, ModuleList
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS

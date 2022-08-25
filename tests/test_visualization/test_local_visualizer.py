@@ -4,7 +4,7 @@ from unittest import TestCase
 import cv2
 import numpy as np
 import torch
-from mmengine.data import InstanceData, PixelData
+from mmengine.structures import InstanceData, PixelData
 
 from mmdet.evaluation import INSTANCE_OFFSET
 from mmdet.structures import DetDataSample

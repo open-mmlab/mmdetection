@@ -3,7 +3,7 @@ from typing import Tuple
 
 import torch.nn as nn
 from mmcv.cnn import ConvModule
-from mmengine.model.utils import bias_init_with_prob, normal_init
+from mmengine.model import bias_init_with_prob, normal_init
 from torch import Tensor
 
 from mmdet.registry import MODELS

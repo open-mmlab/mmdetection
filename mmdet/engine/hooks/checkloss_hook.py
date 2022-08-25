@@ -2,9 +2,9 @@
 from typing import Optional, Sequence, Union
 
 import torch
-from mmengine.data import BaseDataElement
 from mmengine.hooks import Hook
 from mmengine.runner import Runner
+from mmengine.structures import BaseDataElement
 
 from mmdet.registry import HOOKS
 

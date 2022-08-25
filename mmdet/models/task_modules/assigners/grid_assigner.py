@@ -2,7 +2,7 @@
 from typing import Optional, Tuple, Union
 
 import torch
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 
 from mmdet.registry import TASK_UTILS
 from mmdet.utils import ConfigType

@@ -2,7 +2,7 @@
 from typing import List
 
 import torch
-from mmengine.data import InstanceData, PixelData
+from mmengine.structures import InstanceData, PixelData
 from torch import Tensor
 
 from mmdet.evaluation.functional import INSTANCE_OFFSET

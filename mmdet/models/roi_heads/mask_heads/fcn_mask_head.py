@@ -8,8 +8,8 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule, build_conv_layer, build_upsample_layer
 from mmcv.ops.carafe import CARAFEPack
 from mmengine.config import ConfigDict
-from mmengine.data import InstanceData
 from mmengine.model import BaseModule, ModuleList
+from mmengine.structures import InstanceData
 from torch import Tensor
 from torch.nn.modules.utils import _pair
 

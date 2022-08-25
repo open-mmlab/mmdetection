@@ -3,7 +3,7 @@ from typing import Tuple
 
 import torch
 from mmcv.ops import batched_nms
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS

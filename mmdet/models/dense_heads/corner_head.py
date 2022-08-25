@@ -8,9 +8,8 @@ import torch.nn as nn
 from mmcv.cnn import ConvModule
 from mmcv.ops import CornerPool, batched_nms
 from mmengine.config import ConfigDict
-from mmengine.data import InstanceData
-from mmengine.model import BaseModule
-from mmengine.model.utils import bias_init_with_prob
+from mmengine.model import BaseModule, bias_init_with_prob
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS

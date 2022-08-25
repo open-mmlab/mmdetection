@@ -102,7 +102,8 @@ class TestDetDataPreprocessor(TestCase):
         seg_pad_sums = [
             x.gt_sem_seg.sem_seg.sum() for x in packed_inputs['data_samples']
         ]
-        batch_inputs, batch_data_samples = processor(packed_inputs)
+        batch_inputs, batch_data_samples = processor(
+            packed_inputs, training=True)
         for data_samples, expected_shape, mask_pad_sum, seg_pad_sum in zip(
                 batch_data_samples, [(10, 24), (10, 24)], mask_pad_sums,
                 seg_pad_sums):

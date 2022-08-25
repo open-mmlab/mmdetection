@@ -1,6 +1,6 @@
 import pytest
 import torch
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 
 from mmdet.models.utils import empty_instances, unpack_gt_instances
 from mmdet.testing import demo_mm_inputs

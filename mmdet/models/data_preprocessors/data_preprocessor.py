@@ -7,10 +7,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmengine.data import PixelData
 from mmengine.dist import barrier, broadcast, get_dist_info
 from mmengine.logging import MessageHub
 from mmengine.model import BaseDataPreprocessor, ImgDataPreprocessor
+from mmengine.structures import PixelData
 from mmengine.utils import is_list_of
 from torch import Tensor
 
@@ -177,7 +177,6 @@ class DetDataPreprocessor(ImgDataPreprocessor):
     def pad_gt_masks(self,
                      batch_data_samples: Sequence[DetDataSample]) -> None:
         """Pad gt_masks to shape of batch_input_shape."""
-        print(batch_data_samples[0].img_path)
         if 'masks' in batch_data_samples[0].gt_instances:
             for data_samples in batch_data_samples:
                 masks = data_samples.gt_instances.masks

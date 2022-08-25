@@ -7,7 +7,7 @@ CommandLine:
 """ # noqa
 import pytest
 import torch
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 
 from mmdet.models.task_modules.assigners import MaxIoUAssigner
 
