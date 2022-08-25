@@ -5,8 +5,8 @@ from os.path import dirname, exists, join
 import numpy as np
 import torch
 from mmengine.config import Config
-from mmengine.data import InstanceData, PixelData
-from mmengine.data.utils import pseudo_collate
+from mmengine.dataset import pseudo_collate
+from mmengine.structures import InstanceData, PixelData
 
 from ..registry import TASK_UTILS
 from ..structures import DetDataSample

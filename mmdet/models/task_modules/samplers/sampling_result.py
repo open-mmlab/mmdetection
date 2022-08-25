@@ -197,7 +197,7 @@ class SamplingResult(util_mixins.NiceRepr):
             >>> self = SamplingResult.random()
             >>> print(self.__dict__)
         """
-        from mmengine.data import InstanceData
+        from mmengine.structures import InstanceData
 
         from mmdet.models.task_modules.assigners import AssignResult
         from mmdet.models.task_modules.samplers import RandomSampler

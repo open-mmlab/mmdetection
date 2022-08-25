@@ -2,7 +2,7 @@
 from typing import List, Optional, Tuple
 
 import torch
-from mmengine import InstanceData
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import TASK_UTILS

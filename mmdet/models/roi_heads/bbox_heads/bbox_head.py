@@ -5,8 +5,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmengine.config import ConfigDict
-from mmengine.data import InstanceData
 from mmengine.model import BaseModule
+from mmengine.structures import InstanceData
 from torch import Tensor
 from torch.nn.modules.utils import _pair
 

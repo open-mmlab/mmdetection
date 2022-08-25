@@ -4,7 +4,7 @@ from typing import List, Union
 
 import numpy as np
 import torch
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 from six.moves import map, zip
 from torch.autograd import Function
 from torch.nn import functional as F

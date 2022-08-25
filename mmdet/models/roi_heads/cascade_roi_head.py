@@ -3,8 +3,8 @@ from typing import List, Sequence, Tuple, Union
 
 import torch
 import torch.nn as nn
-from mmengine.data import InstanceData
 from mmengine.model import ModuleList
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.models.task_modules.samplers import SamplingResult

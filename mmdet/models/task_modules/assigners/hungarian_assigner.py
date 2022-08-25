@@ -12,7 +12,7 @@ except ImportError:
 from typing import List, Optional, Union
 
 from mmengine import ConfigDict
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 

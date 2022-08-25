@@ -4,8 +4,8 @@ from typing import List, Optional, Tuple
 import torch
 import torch.nn as nn
 from mmcv.ops import DeformConv2d, MaskedConv2d
-from mmengine.data import InstanceData
 from mmengine.model import BaseModule
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS

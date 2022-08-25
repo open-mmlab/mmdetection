@@ -5,14 +5,14 @@ import cv2
 import mmcv
 import numpy as np
 import torch
-from mmengine import Visualizer
-from mmengine.data import InstanceData, PixelData
 from mmengine.dist import master_only
+from mmengine.structures import InstanceData, PixelData
+from mmengine.visualization import Visualizer
 
 from ..evaluation import INSTANCE_OFFSET
 from ..registry import VISUALIZERS
 from ..structures import DetDataSample
-from ..structures.mask import bitmap_to_polygon
+from ..structures.mask import BitmapMasks, PolygonMasks, bitmap_to_polygon
 from .palette import _get_adaptive_scales, get_palette
 
 
@@ -44,7 +44,7 @@ class DetLocalVisualizer(Visualizer):
     Examples:
         >>> import numpy as np
         >>> import torch
-        >>> from mmengine.data import InstanceData
+        >>> from mmengine.structures import InstanceData
         >>> from mmdet.structures import DetDataSample
         >>> from mmdet.visualization import DetLocalVisualizer
 
@@ -165,6 +165,10 @@ class DetLocalVisualizer(Visualizer):
             masks = instances.masks
             if isinstance(masks, torch.Tensor):
                 masks = masks.numpy()
+            elif isinstance(masks, (PolygonMasks, BitmapMasks)):
+                masks = masks.to_ndarray()
+
+            masks = masks.astype(np.bool)
 
             max_label = int(max(labels) if len(labels) > 0 else 0)
             mask_color = palette if self.mask_color is None \

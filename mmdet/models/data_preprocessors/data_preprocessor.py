@@ -7,10 +7,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmengine.data import PixelData
 from mmengine.dist import barrier, broadcast, get_dist_info
 from mmengine.logging import MessageHub
 from mmengine.model import BaseDataPreprocessor, ImgDataPreprocessor
+from mmengine.structures import PixelData
 from mmengine.utils import is_list_of
 from torch import Tensor
 
@@ -96,9 +96,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         self.seg_pad_value = seg_pad_value
         self.boxlist2tensor = boxlist2tensor
 
-    def forward(self,
-                data: dict,
-                training: bool = False) -> Tuple[torch.Tensor, Optional[list]]:
+    def forward(self, data: dict, training: bool = False) -> dict:
         """Perform normalization、padding and bgr2rgb conversion based on
         ``BaseDataPreprocessor``.
 
@@ -107,8 +105,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
             training (bool): Whether to enable training time augmentation.
 
         Returns:
-            Tuple[torch.Tensor, Optional[list]]: Data in the same format as the
-            model input.
+            dict: Data in the same format as the model input.
         """
         batch_pad_shape = self._get_pad_shape(data)
         data = super().forward(data=data, training=training)
@@ -138,7 +135,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
             for batch_aug in self.batch_augments:
                 inputs, data_samples = batch_aug(inputs, data_samples)
 
-        return inputs, data_samples
+        return {'inputs': inputs, 'data_samples': data_samples}
 
     def _get_pad_shape(self, data: dict) -> List[tuple]:
         """Get the pad_shape of each image based on data and
@@ -177,7 +174,6 @@ class DetDataPreprocessor(ImgDataPreprocessor):
     def pad_gt_masks(self,
                      batch_data_samples: Sequence[DetDataSample]) -> None:
         """Pad gt_masks to shape of batch_input_shape."""
-        print(batch_data_samples[0].img_path)
         if 'masks' in batch_data_samples[0].gt_instances:
             for data_samples in batch_data_samples:
                 masks = data_samples.gt_instances.masks

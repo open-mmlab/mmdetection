@@ -82,8 +82,8 @@ class DetVisualizationHook(Hook):
             runner (:obj:`Runner`): The runner of the validation process.
             batch_idx (int): The index of the current batch in the val loop.
             data_batch (dict): Data from dataloader.
-            outputs (Sequence[dict]): A batch of data samples that
-                contain annotations and predictions.
+            outputs (Sequence[:obj:`DetDataSample`]]): A batch of data samples
+                that contain annotations and predictions.
         """
         if self.draw is False:
             return
@@ -118,8 +118,8 @@ class DetVisualizationHook(Hook):
             runner (:obj:`Runner`): The runner of the testing process.
             batch_idx (int): The index of the current batch in the val loop.
             data_batch (dict): Data from dataloader.
-            outputs (Sequence[dict]): A batch of data samples that
-                contain annotations and predictions.
+            outputs (Sequence[:obj:`DetDataSample`]): A batch of data samples
+                that contain annotations and predictions.
         """
         if self.draw is False:
             return
