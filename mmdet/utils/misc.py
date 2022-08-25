@@ -5,6 +5,7 @@ import os.path as osp
 import warnings
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 from mmengine.config import Config, ConfigDict
 from mmengine.logging import print_log
 =======
@@ -14,6 +15,9 @@ import mmengine
 from mmcv.utils import print_log
 >>>>>>> update
 =======
+=======
+from mmengine import Config, ConfigDict
+>>>>>>> update
 from mmengine.logging import print_log
 >>>>>>> update misc.py
 
@@ -63,9 +67,13 @@ def update_data_root(cfg, logger=None):
         logger (logging.Logger | str | None): the way to print msg
     """
 <<<<<<< HEAD
+<<<<<<< HEAD
     assert isinstance(cfg, Config), \
 =======
     assert isinstance(cfg, mmengine.Config), \
+>>>>>>> update
+=======
+    assert isinstance(cfg, Config), \
 >>>>>>> update
         f'cfg got wrong type: {type(cfg)}, expected mmengine.Config'
 
@@ -77,9 +85,13 @@ def update_data_root(cfg, logger=None):
         return
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     assert isinstance(cfg, Config), \
 =======
     assert isinstance(cfg, mmengine.Config), \
+>>>>>>> update
+=======
+    assert isinstance(cfg, Config), \
 >>>>>>> update
         f'cfg got wrong type: {type(cfg)}, expected mmengine.Config'
 

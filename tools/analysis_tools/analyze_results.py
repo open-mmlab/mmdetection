@@ -17,6 +17,7 @@ from mmengine.data import InstanceData
 from mmengine.data import InstanceData, PixelData
 >>>>>>> Support panoptic_seg visualization
 from mmengine.runner import Runner
+from mmengine.utils import ProgressBar
 
 from mmdet.datasets import get_loading_pipeline
 from mmdet.evaluation import eval_map
@@ -300,10 +301,15 @@ class ResultVisualizer:
         # image to annotations
         gt_json = dataset.coco.img_ann_map
 
+<<<<<<< HEAD
         result_files, tmp_dir = dataset.format_results(results)
         pred_json = load(result_files['panoptic'])['annotations']
         pred_folder = osp.join(tmp_dir.name, 'panoptic')
         gt_folder = dataset.seg_prefix
+=======
+        pqs = {}
+        prog_bar = ProgressBar(len(results))
+>>>>>>> update
 
         pqs = {}
         prog_bar = ProgressBar(len(results))
