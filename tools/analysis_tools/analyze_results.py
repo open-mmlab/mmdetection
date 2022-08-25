@@ -401,7 +401,7 @@ def main():
                                              'ClassBalancedDataset',
                                              'RepeatDataset', 'ConcatDataset'):
         cfg.test_dataloader.dataset.pipeline = get_loading_pipeline(
-            cfg.train_dataloader.dataset.pipeline)
+            cfg.train_dataloader.dataset.dataset.pipeline)
     else:
         cfg.test_dataloader.dataset.pipeline = get_loading_pipeline(
             cfg.train_dataloader.dataset.pipeline)
