@@ -106,7 +106,6 @@ class TestMultiBranch(unittest.TestCase):
                           labeled_results['data_samples'][branch].gt_instances)
             self.assertIn('gt_sem_seg',
                           labeled_results['data_samples'][branch])
-
         # test branch unsup_teacher and unsup_student
         unsup_branches = ['unsup_teacher', 'unsup_student']
         for branch in unsup_branches:
