@@ -137,7 +137,7 @@ Tricks not implemented by the optimizer should be implemented through optimizer 
 
   ```python
   optim_wrapper = dict(
-      _delete_=True, clip_grad=dict(max_norm=35, norm_type=2)
+      _delete_=True, clip_grad=dict(max_norm=35, norm_type=2))
   ```
 
   If your config inherits the base config which already sets the `optim_wrapper`, you might need `_delete_=True` to override the unnecessary settings. See the [config documentation](https://mmdetection.readthedocs.io/en/latest/tutorials/config.html) for more details.
