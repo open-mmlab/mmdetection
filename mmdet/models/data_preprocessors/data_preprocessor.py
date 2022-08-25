@@ -386,17 +386,24 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
             training (bool): Whether to enable training time augmentation.
 
         Returns:
-            dict: Data in the same format as the model input.
+            dict:
+
+            - 'inputs' (Dict[str, obj:`torch.Tensor`]): The forward data of
+                models from different branches.
+            - 'data_sample' (Dict[str,obj:`DetDataSample`]): The annotation
+                info of the sample from different branches.
         """
 
         if training is False:
             return self.data_preprocessor(data, training)
 
+        # Filter out branches with a value of None
         for key in data.keys():
             for branch in data[key].keys():
                 data[key][branch] = list(
                     filter(lambda x: x is not None, data[key][branch]))
 
+        # Group data by branch
         multi_branch_data = {}
         for key in data.keys():
             for branch in data[key].keys():
@@ -407,9 +414,11 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
                 else:
                     multi_branch_data[branch][key].append(data[key][branch])
 
+        # Preprocess data from different branches
         for branch, _data in multi_branch_data.items():
             multi_branch_data[branch] = self.data_preprocessor(_data, training)
 
+        # Format data by inputs and data_samples
         format_data = {}
         for branch in multi_branch_data.keys():
             for key in multi_branch_data[branch].keys():

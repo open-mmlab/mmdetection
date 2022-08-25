@@ -30,14 +30,19 @@ class MultiBranch(BaseTransform):
             for branch, pipeline in branch_pipelines.items()
         }
 
-    def transform(self, results: dict) -> Optional[List[dict]]:
+    def transform(self, results: dict) -> dict:
         """Transform function to apply transforms sequentially.
 
         Args:
             results (dict): Result dict from loading pipeline.
 
         Returns:
-            list[dict]: Results from different pipeline.
+            dict:
+
+            - 'inputs' (Dict[str, obj:`torch.Tensor`]): The forward data of
+                models from different branches.
+            - 'data_sample' (Dict[str,obj:`DetDataSample`]): The annotation
+                info of the sample from different branches.
         """
         multi_results = {}
         for branch in self.branch_field:
