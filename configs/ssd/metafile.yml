@@ -59,7 +59,7 @@ Models:
 
   - Name: ssdlite_mobilenetv2_scratch_600e_coco
     In Collection: SSD
-    Config: configs/ssd/ssdlite_mobilenetv2_scratch_600e_coco.py
+    Config: configs/ssd/ssdlite_mobilenetv2-scratch_8xb24-600e_coco.py
     Metadata:
       Training Memory (GB): 4.0
       inference time (ms/im):

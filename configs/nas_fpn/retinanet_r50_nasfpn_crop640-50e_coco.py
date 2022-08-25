@@ -1,4 +1,4 @@
-_base_ = './retinanet_r50_fpn_crop640_50e_coco.py'
+_base_ = './retinanet_r50_fpn_crop640-50e_coco.py'
 
 # model settings
 model = dict(

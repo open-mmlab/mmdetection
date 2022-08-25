@@ -21,7 +21,7 @@ Collections:
 Models:
   - Name: fcos_r50_caffe_fpn_gn-head_1x_coco
     In Collection: FCOS
-    Config: configs/fcos/fcos_r50_caffe_fpn_gn-head_1x_coco.py
+    Config: configs/fcos/fcos_r50-caffe_fpn_gn-head_1x_coco.py
     Metadata:
       Training Memory (GB): 3.6
       inference time (ms/im):
@@ -41,7 +41,7 @@ Models:
 
   - Name: fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_1x_coco
     In Collection: FCOS
-    Config: configs/fcos/fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_1x_coco.py
+    Config: configs/fcos/fcos_r50-caffe_fpn_gn-head-center-normbbox-centeronreg-giou_1x_coco.py
     Metadata:
       Training Memory (GB): 3.7
       Epochs: 12
@@ -54,7 +54,7 @@ Models:
 
   - Name: fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_dcn_1x_coco
     In Collection: FCOS
-    Config: configs/fcos/fcos_center-normbbox-centeronreg-giou_r50_caffe_fpn_gn-head_dcn_1x_coco.py
+    Config: configs/fcos/fcos_r50-dcn-caffe_fpn_gn-head-center-normbbox-centeronreg-giou_1x_coco.py
     Metadata:
       Training Memory (GB): 3.8
       Epochs: 12
@@ -67,7 +67,7 @@ Models:
 
   - Name: fcos_r101_caffe_fpn_gn-head_1x_coco
     In Collection: FCOS
-    Config: configs/fcos/fcos_r101_caffe_fpn_gn-head_1x_coco.py
+    Config: configs/fcos/fcos_r101-caffe_fpn_gn-head-1x_coco.py
     Metadata:
       Training Memory (GB): 5.5
       inference time (ms/im):
@@ -87,7 +87,7 @@ Models:
 
   - Name: fcos_r50_caffe_fpn_gn-head_mstrain_640-800_2x_coco
     In Collection: FCOS
-    Config: configs/fcos/fcos_r50_caffe_fpn_gn-head_mstrain_640-800_2x_coco.py
+    Config: configs/fcos/fcos_r50-caffe_fpn_gn-head_ms-640-800-2x_coco.py
     Metadata:
       Training Memory (GB): 2.6
       inference time (ms/im):
@@ -107,7 +107,7 @@ Models:
 
   - Name: fcos_r101_caffe_fpn_gn-head_mstrain_640-800_2x_coco
     In Collection: FCOS
-    Config: configs/fcos/fcos_r101_caffe_fpn_gn-head_mstrain_640-800_2x_coco.py
+    Config: configs/fcos/fcos_r101-caffe_fpn_gn-head_ms-640-800-2x_coco.py
     Metadata:
       Training Memory (GB): 5.5
       inference time (ms/im):
@@ -127,7 +127,7 @@ Models:
 
   - Name: fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_2x_coco
     In Collection: FCOS
-    Config: configs/fcos/fcos_x101_64x4d_fpn_gn-head_mstrain_640-800_2x_coco.py
+    Config: configs/fcos/fcos_x101-64x4d_fpn_gn-head_ms-640-800-2x_coco.py
     Metadata:
       Training Memory (GB): 10.0
       inference time (ms/im):

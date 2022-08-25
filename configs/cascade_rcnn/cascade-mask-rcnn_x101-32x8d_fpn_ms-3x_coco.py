@@ -1,4 +1,4 @@
-_base_ = './cascade_mask_rcnn_r50_fpn_mstrain_3x_coco.py'
+_base_ = './cascade-mask-rcnn_r50_fpn_ms-3x_coco.py'
 
 model = dict(
     # ResNeXt-101-32x8d model trained with Caffe2 at FB,

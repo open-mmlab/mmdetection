@@ -1,6 +1,4 @@
-_base_ = [
-    '../common/mstrain_3x_coco.py', '../_base_/models/faster_rcnn_r50_fpn.py'
-]
+_base_ = ['../common/ms_3x_coco.py', '../_base_/models/faster-rcnn_r50_fpn.py']
 model = dict(
     data_preprocessor=dict(
         # The mean and std are used in PyCls when training RegNets

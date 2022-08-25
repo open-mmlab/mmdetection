@@ -20,7 +20,7 @@ Collections:
 Models:
   - Name: retinanet_r50_fpn_crop640_50e_coco
     In Collection: NAS-FPN
-    Config: configs/nas_fpn/retinanet_r50_fpn_crop640_50e_coco.py
+    Config: configs/nas_fpn/retinanet_r50_fpn_crop640-50e_coco.py
     Metadata:
       Training Memory (GB): 12.9
       inference time (ms/im):
@@ -40,7 +40,7 @@ Models:
 
   - Name: retinanet_r50_nasfpn_crop640_50e_coco
     In Collection: NAS-FPN
-    Config: configs/nas_fpn/retinanet_r50_nasfpn_crop640_50e_coco.py
+    Config: configs/nas_fpn/retinanet_r50_nasfpn_crop640-50e_coco.py
     Metadata:
       Training Memory (GB): 13.2
       inference time (ms/im):

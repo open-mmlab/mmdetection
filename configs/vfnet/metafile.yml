@@ -33,7 +33,7 @@ Models:
 
   - Name: vfnet_r50_fpn_mstrain_2x_coco
     In Collection: VFNet
-    Config: configs/vfnet/vfnet_r50_fpn_mstrain_2x_coco.py
+    Config: configs/vfnet/vfnet_r50_fpn_ms-2x_coco.py
     Metadata:
       Epochs: 24
     Results:
@@ -45,7 +45,7 @@ Models:
 
   - Name: vfnet_r50_fpn_mdconv_c3-c5_mstrain_2x_coco
     In Collection: VFNet
-    Config: configs/vfnet/vfnet_r50_fpn_mdconv_c3-c5_mstrain_2x_coco.py
+    Config: configs/vfnet/vfnet_r50-mdconv-c3-c5_fpn_ms-2x_coco.py
     Metadata:
       Epochs: 24
     Results:
@@ -69,7 +69,7 @@ Models:
 
   - Name: vfnet_r101_fpn_mstrain_2x_coco
     In Collection: VFNet
-    Config: configs/vfnet/vfnet_r101_fpn_mstrain_2x_coco.py
+    Config: configs/vfnet/vfnet_r101_fpn_ms-2x_coco.py
     Metadata:
       Epochs: 24
     Results:
@@ -81,7 +81,7 @@ Models:
 
   - Name: vfnet_r101_fpn_mdconv_c3-c5_mstrain_2x_coco
     In Collection: VFNet
-    Config: configs/vfnet/vfnet_r101_fpn_mdconv_c3-c5_mstrain_2x_coco.py
+    Config: configs/vfnet/vfnet_r101-mdconv-c3-c5_fpn_ms-2x_coco.py
     Metadata:
       Epochs: 24
     Results:
@@ -93,7 +93,7 @@ Models:
 
   - Name: vfnet_x101_32x4d_fpn_mdconv_c3-c5_mstrain_2x_coco
     In Collection: VFNet
-    Config: configs/vfnet/vfnet_x101_32x4d_fpn_mdconv_c3-c5_mstrain_2x_coco.py
+    Config: configs/vfnet/vfnet_x101-32x4d-mdconv-c3-c5_fpn_ms-2x_coco.py
     Metadata:
       Epochs: 24
     Results:
@@ -105,7 +105,7 @@ Models:
 
   - Name: vfnet_x101_64x4d_fpn_mdconv_c3-c5_mstrain_2x_coco
     In Collection: VFNet
-    Config: configs/vfnet/vfnet_x101_64x4d_fpn_mdconv_c3-c5_mstrain_2x_coco.py
+    Config: configs/vfnet/vfnet_x101-64x4d-mdconv-c3-c5_fpn_ms-2x_coco.py
     Metadata:
       Epochs: 24
     Results:

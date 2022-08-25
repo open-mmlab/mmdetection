@@ -43,7 +43,7 @@ Collections:
 Models:
   - Name: cascade_rcnn_r50_caffe_fpn_1x_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_rcnn_r50_caffe_fpn_1x_coco.py
+    Config: configs/cascade_rcnn/cascade-rcnn_r50-caffe_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.2
       Epochs: 12
@@ -56,7 +56,7 @@ Models:
 
   - Name: cascade_rcnn_r50_fpn_1x_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py
+    Config: configs/cascade_rcnn/cascade-rcnn_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.4
       inference time (ms/im):
@@ -76,7 +76,7 @@ Models:
 
   - Name: cascade_rcnn_r50_fpn_20e_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_rcnn_r50_fpn_20e_coco.py
+    Config: configs/cascade_rcnn/cascade-rcnn_r50_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 4.4
       inference time (ms/im):
@@ -96,7 +96,7 @@ Models:
 
   - Name: cascade_rcnn_r101_caffe_fpn_1x_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_rcnn_r101_caffe_fpn_1x_coco.py
+    Config: configs/cascade_rcnn/cascade-rcnn_r101-caffe_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.2
       Epochs: 12
@@ -109,7 +109,7 @@ Models:
 
   - Name: cascade_rcnn_r101_fpn_1x_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_rcnn_r101_fpn_1x_coco.py
+    Config: configs/cascade_rcnn/cascade-rcnn_r101_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.4
       inference time (ms/im):
@@ -129,7 +129,7 @@ Models:
 
   - Name: cascade_rcnn_r101_fpn_20e_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_rcnn_r101_fpn_20e_coco.py
+    Config: configs/cascade_rcnn/cascade-rcnn_r101_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 6.4
       inference time (ms/im):
@@ -149,7 +149,7 @@ Models:
 
   - Name: cascade_rcnn_x101_32x4d_fpn_1x_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_rcnn_x101_32x4d_fpn_1x_coco.py
+    Config: configs/cascade_rcnn/cascade-rcnn_x101-32x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 7.6
       inference time (ms/im):
@@ -169,7 +169,7 @@ Models:
 
   - Name: cascade_rcnn_x101_32x4d_fpn_20e_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_rcnn_x101_32x4d_fpn_20e_coco.py
+    Config: configs/cascade_rcnn/cascade-rcnn_x101-32x4d_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 7.6
       Epochs: 20
@@ -182,7 +182,7 @@ Models:
 
   - Name: cascade_rcnn_x101_64x4d_fpn_1x_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_rcnn_x101_64x4d_fpn_1x_coco.py
+    Config: configs/cascade_rcnn/cascade-rcnn_x101-64x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 10.7
       Epochs: 12
@@ -195,7 +195,7 @@ Models:
 
   - Name: cascade_rcnn_x101_64x4d_fpn_20e_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_rcnn_x101_64x4d_fpn_20e_coco.py
+    Config: configs/cascade_rcnn/cascade-rcnn_x101_64x4d_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 10.7
       Epochs: 20
@@ -208,7 +208,7 @@ Models:
 
   - Name: cascade_mask_rcnn_r50_caffe_fpn_1x_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_mask_rcnn_r50_caffe_fpn_1x_coco.py
+    Config: configs/cascade_rcnn/cascade-mask-rcnn_r50-caffe_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 5.9
       Epochs: 12
@@ -225,7 +225,7 @@ Models:
 
   - Name: cascade_mask_rcnn_r50_fpn_1x_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py
+    Config: configs/cascade_rcnn/cascade-mask-rcnn_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.0
       inference time (ms/im):
@@ -249,7 +249,7 @@ Models:
 
   - Name: cascade_mask_rcnn_r50_fpn_20e_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_20e_coco.py
+    Config: configs/cascade_rcnn/cascade-mask-rcnn_r50_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 6.0
       inference time (ms/im):
@@ -273,7 +273,7 @@ Models:
 
   - Name: cascade_mask_rcnn_r101_caffe_fpn_1x_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_mask_rcnn_r101_caffe_fpn_1x_coco.py
+    Config: configs/cascade_rcnn/cascade-mask-rcnn_r101-caffe_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 7.8
       Epochs: 12
@@ -290,7 +290,7 @@ Models:
 
   - Name: cascade_mask_rcnn_r101_fpn_1x_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_mask_rcnn_r101_fpn_1x_coco.py
+    Config: configs/cascade_rcnn/cascade-mask-rcnn_r101_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 7.9
       inference time (ms/im):
@@ -314,7 +314,7 @@ Models:
 
   - Name: cascade_mask_rcnn_r101_fpn_20e_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_mask_rcnn_r101_fpn_20e_coco.py
+    Config: configs/cascade_rcnn/cascade-mask-rcnn_r101_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 7.9
       inference time (ms/im):
@@ -338,7 +338,7 @@ Models:
 
   - Name: cascade_mask_rcnn_x101_32x4d_fpn_1x_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_1x_coco.py
+    Config: configs/cascade_rcnn/cascade-mask-rcnn_x101-32x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 9.2
       inference time (ms/im):
@@ -362,7 +362,7 @@ Models:
 
   - Name: cascade_mask_rcnn_x101_32x4d_fpn_20e_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_20e_coco.py
+    Config: configs/cascade_rcnn/cascade-mask-rcnn_x101-32x4d_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 9.2
       inference time (ms/im):
@@ -386,7 +386,7 @@ Models:
 
   - Name: cascade_mask_rcnn_x101_64x4d_fpn_1x_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_1x_coco.py
+    Config: configs/cascade_rcnn/cascade-mask-rcnn_x101-64x4d_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 12.2
       inference time (ms/im):
@@ -410,7 +410,7 @@ Models:
 
   - Name: cascade_mask_rcnn_x101_64x4d_fpn_20e_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_20e_coco.py
+    Config: configs/cascade_rcnn/cascade-mask-rcnn_x101-64x4d_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 12.2
       Epochs: 20
@@ -427,7 +427,7 @@ Models:
 
   - Name: cascade_mask_rcnn_r50_caffe_fpn_mstrain_3x_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_mask_rcnn_r50_caffe_fpn_mstrain_3x_coco.py
+    Config: configs/cascade_rcnn/cascade-mask-rcnn_r50-caffe_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 5.7
       Epochs: 36
@@ -444,7 +444,7 @@ Models:
 
   - Name: cascade_mask_rcnn_r50_fpn_mstrain_3x_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_mask_rcnn_r50_fpn_mstrain_3x_coco.py
+    Config: configs/cascade_rcnn/cascade-mask-rcnn_r50_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 5.9
       Epochs: 36
@@ -461,7 +461,7 @@ Models:
 
   - Name: cascade_mask_rcnn_r101_caffe_fpn_mstrain_3x_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_mask_rcnn_r101_caffe_fpn_mstrain_3x_coco.py
+    Config: configs/cascade_rcnn/cascade-mask-rcnn_r101-caffe_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 7.7
       Epochs: 36
@@ -478,7 +478,7 @@ Models:
 
   - Name: cascade_mask_rcnn_r101_fpn_mstrain_3x_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_mask_rcnn_r101_fpn_mstrain_3x_coco.py
+    Config: configs/cascade_rcnn/cascade-mask-rcnn_r101_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 7.8
       Epochs: 36
@@ -495,7 +495,7 @@ Models:
 
   - Name: cascade_mask_rcnn_x101_32x4d_fpn_mstrain_3x_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_mask_rcnn_x101_32x4d_fpn_mstrain_3x_coco.py
+    Config: configs/cascade_rcnn/cascade-mask-rcnn_x101-32x4d_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 9.0
       Epochs: 36
@@ -512,7 +512,7 @@ Models:
 
   - Name: cascade_mask_rcnn_x101_32x8d_fpn_mstrain_3x_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_mask_rcnn_x101_32x8d_fpn_mstrain_3x_coco.py
+    Config: configs/cascade_rcnn/cascade-mask-rcnn_x101-32x8d_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 12.1
       Epochs: 36
@@ -529,7 +529,7 @@ Models:
 
   - Name: cascade_mask_rcnn_x101_64x4d_fpn_mstrain_3x_coco
     In Collection: Cascade R-CNN
-    Config: configs/cascade_rcnn/cascade_mask_rcnn_x101_64x4d_fpn_mstrain_3x_coco.py
+    Config: configs/cascade_rcnn/cascade-mask-rcnn_x101-64x4d_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 12.0
       Epochs: 36

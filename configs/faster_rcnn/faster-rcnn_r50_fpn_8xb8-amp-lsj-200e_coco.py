@@ -1,6 +1,6 @@
 _base_ = [
-    '../_base_/models/faster_rcnn_r50_fpn.py',
-    '../common/lsj_200e_coco_detection.py'
+    '../_base_/models/faster-rcnn_r50_fpn.py',
+    '../common/lsj-200e_coco-detection.py'
 ]
 image_size = (1024, 1024)
 batch_augments = [dict(type='BatchFixedSizePad', size=image_size)]

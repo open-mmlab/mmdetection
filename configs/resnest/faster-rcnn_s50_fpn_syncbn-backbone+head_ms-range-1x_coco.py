@@ -1,4 +1,4 @@
-_base_ = '../faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
+_base_ = '../faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py'
 norm_cfg = dict(type='SyncBN', requires_grad=True)
 model = dict(
     # use ResNeSt img_norm

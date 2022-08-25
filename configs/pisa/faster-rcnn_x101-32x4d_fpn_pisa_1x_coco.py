@@ -1,4 +1,4 @@
-_base_ = '../faster_rcnn/faster_rcnn_x101_32x4d_fpn_1x_coco.py'
+_base_ = '../faster_rcnn/faster-rcnn_x101-32x4d_fpn_1x_coco.py'
 
 model = dict(
     roi_head=dict(

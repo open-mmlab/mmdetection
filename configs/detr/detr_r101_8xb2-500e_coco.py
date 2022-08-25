@@ -1,4 +1,4 @@
-_base_ = './detr_r50_8x2_500e_coco.py'
+_base_ = './detr_r50_8xb2-500e_coco.py'
 
 model = dict(
     backbone=dict(

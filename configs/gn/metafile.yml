@@ -13,13 +13,13 @@ Collections:
       Title: 'Group Normalization'
     README: configs/gn/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/configs/gn/mask_rcnn_r50_fpn_gn-all_2x_coco.py
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/configs/gn/mask-rcnn_r50_fpn_gn-all_2x_coco.py
       Version: v2.0.0
 
 Models:
   - Name: mask_rcnn_r50_fpn_gn-all_2x_coco
     In Collection: Group Normalization
-    Config: configs/gn/mask_rcnn_r50_fpn_gn-all_2x_coco.py
+    Config: configs/gn/mask-rcnn_r50_fpn_gn-all_2x_coco.py
     Metadata:
       Training Memory (GB): 7.1
       inference time (ms/im):
@@ -43,7 +43,7 @@ Models:
 
   - Name: mask_rcnn_r50_fpn_gn-all_3x_coco
     In Collection: Group Normalization
-    Config: configs/gn/mask_rcnn_r50_fpn_gn-all_3x_coco.py
+    Config: configs/gn/mask-rcnn_r50_fpn_gn-all_3x_coco.py
     Metadata:
       Training Memory (GB): 7.1
       inference time (ms/im):
@@ -67,7 +67,7 @@ Models:
 
   - Name: mask_rcnn_r101_fpn_gn-all_2x_coco
     In Collection: Group Normalization
-    Config: configs/gn/mask_rcnn_r101_fpn_gn-all_2x_coco.py
+    Config: configs/gn/mask-rcnn_r101_fpn_gn-all_2x_coco.py
     Metadata:
       Training Memory (GB): 9.9
       inference time (ms/im):
@@ -91,7 +91,7 @@ Models:
 
   - Name: mask_rcnn_r101_fpn_gn-all_3x_coco
     In Collection: Group Normalization
-    Config: configs/gn/mask_rcnn_r101_fpn_gn-all_3x_coco.py
+    Config: configs/gn/mask-rcnn_r101_fpn_gn-all_3x_coco.py
     Metadata:
       Training Memory (GB): 9.9
       inference time (ms/im):
@@ -115,7 +115,7 @@ Models:
 
   - Name: mask_rcnn_r50_fpn_gn-all_contrib_2x_coco
     In Collection: Group Normalization
-    Config: configs/gn/mask_rcnn_r50_fpn_gn-all_contrib_2x_coco.py
+    Config: configs/gn/mask-rcnn_r50-contrib_fpn_gn-all_2x_coco.py
     Metadata:
       Training Memory (GB): 7.1
       inference time (ms/im):
@@ -139,7 +139,7 @@ Models:
 
   - Name: mask_rcnn_r50_fpn_gn-all_contrib_3x_coco
     In Collection: Group Normalization
-    Config: configs/gn/mask_rcnn_r50_fpn_gn-all_contrib_3x_coco.py
+    Config: configs/gn/mask-rcnn_r50-contrib_fpn_gn-all_3x_coco.py
     Metadata:
       Training Memory (GB): 7.1
       inference time (ms/im):

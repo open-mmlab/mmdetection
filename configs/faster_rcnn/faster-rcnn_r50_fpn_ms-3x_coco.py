@@ -1,3 +1,1 @@
-_base_ = [
-    '../common/mstrain_3x_coco.py', '../_base_/models/faster_rcnn_r50_fpn.py'
-]
+_base_ = ['../common/ms_3x_coco.py', '../_base_/models/faster-rcnn_r50_fpn.py']

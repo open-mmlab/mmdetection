@@ -21,7 +21,7 @@ Collections:
 Models:
   - Name: sparse_rcnn_r50_fpn_1x_coco
     In Collection: Sparse R-CNN
-    Config: configs/sparse_rcnn/sparse_rcnn_r50_fpn_1x_coco.py
+    Config: configs/sparse_rcnn/sparse-rcnn_r50_fpn_1x_coco.py
     Metadata:
       Epochs: 12
     Results:
@@ -33,7 +33,7 @@ Models:
 
   - Name: sparse_rcnn_r50_fpn_mstrain_480-800_3x_coco
     In Collection: Sparse R-CNN
-    Config: configs/sparse_rcnn/sparse_rcnn_r50_fpn_mstrain_480-800_3x_coco.py
+    Config: configs/sparse_rcnn/sparse-rcnn_r50_fpn_ms-480-800-3x_coco.py
     Metadata:
       Epochs: 36
     Results:
@@ -45,7 +45,7 @@ Models:
 
   - Name: sparse_rcnn_r50_fpn_300_proposals_crop_mstrain_480-800_3x_coco
     In Collection: Sparse R-CNN
-    Config: configs/sparse_rcnn/sparse_rcnn_r50_fpn_300_proposals_crop_mstrain_480-800_3x_coco.py
+    Config: configs/sparse_rcnn/sparse-rcnn_r50_fpn_300-proposals_crop-ms-480-800-3x_coco.py
     Metadata:
       Epochs: 36
     Results:
@@ -57,7 +57,7 @@ Models:
 
   - Name: sparse_rcnn_r101_fpn_mstrain_480-800_3x_coco
     In Collection: Sparse R-CNN
-    Config: configs/sparse_rcnn/sparse_rcnn_r101_fpn_mstrain_480-800_3x_coco.py
+    Config: configs/sparse_rcnn/sparse-rcnn_r101_fpn_ms-480-800-3x_coco.py
     Metadata:
       Epochs: 36
     Results:
@@ -69,7 +69,7 @@ Models:
 
   - Name: sparse_rcnn_r101_fpn_300_proposals_crop_mstrain_480-800_3x_coco
     In Collection: Sparse R-CNN
-    Config: configs/sparse_rcnn/sparse_rcnn_r101_fpn_300_proposals_crop_mstrain_480-800_3x_coco.py
+    Config: configs/sparse_rcnn/sparse-rcnn_r101_fpn_300-proposals_crop-ms-480-800-3x_coco.py
     Metadata:
       Epochs: 36
     Results:

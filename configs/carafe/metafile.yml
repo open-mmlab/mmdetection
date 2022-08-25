@@ -22,7 +22,7 @@ Collections:
 Models:
   - Name: faster_rcnn_r50_fpn_carafe_1x_coco
     In Collection: CARAFE
-    Config: configs/carafe/faster_rcnn_r50_fpn_carafe_1x_coco.py
+    Config: configs/carafe/faster-rcnn_r50_fpn-carafe_1x_coco.py
     Metadata:
       Training Memory (GB): 4.26
       Epochs: 12
@@ -39,7 +39,7 @@ Models:
 
   - Name: mask_rcnn_r50_fpn_carafe_1x_coco
     In Collection: CARAFE
-    Config: configs/carafe/mask_rcnn_r50_fpn_carafe_1x_coco.py
+    Config: configs/carafe/mask-rcnn_r50_fpn-carafe_1x_coco.py
     Metadata:
       Training Memory (GB): 4.31
       Epochs: 12

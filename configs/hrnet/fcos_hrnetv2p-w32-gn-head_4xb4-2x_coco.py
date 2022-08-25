@@ -1,4 +1,4 @@
-_base_ = './fcos_hrnetv2p_w32_gn-head_4x4_1x_coco.py'
+_base_ = './fcos_hrnetv2p-w32-gn-head_4xb4-1x_coco.py'
 
 # learning policy
 max_epochs = 24

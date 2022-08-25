@@ -1,4 +1,4 @@
-_base_ = '../mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py'
+_base_ = '../mask_rcnn/mask-rcnn_r50_fpn_1x_coco.py'
 norm_cfg = dict(type='SyncBN', requires_grad=True)
 model = dict(
     # use ResNeSt img_norm

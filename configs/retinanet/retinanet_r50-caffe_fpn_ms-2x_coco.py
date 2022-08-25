@@ -1,4 +1,4 @@
-_base_ = './retinanet_r50_caffe_fpn_mstrain_1x_coco.py'
+_base_ = './retinanet_r50-caffe_fpn_ms-1x_coco.py'
 # training schedule for 2x
 train_cfg = dict(max_epochs=24)
 

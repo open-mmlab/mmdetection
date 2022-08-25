@@ -29,7 +29,7 @@ Models:
 
   - Name: solov2_r50_fpn_mstrain_3x_coco
     In Collection: SOLOv2
-    Config: configs/solov2/solov2_r50_fpn_mstrain_3x_coco.py
+    Config: configs/solov2/solov2_r50_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 5.1
       Epochs: 36
@@ -42,7 +42,7 @@ Models:
 
   - Name: solov2_r101_dcn_fpn_mstrain_3x_coco
     In Collection: SOLOv2
-    Config: configs/solov2/solov2_r101_dcn_fpn_mstrain_3x_coco.py
+    Config: configs/solov2/solov2_r101-dcn_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 7.1
       Epochs: 36
@@ -55,7 +55,7 @@ Models:
 
   - Name: solov2_x101_dcn_fpn_mstrain_3x_coco
     In Collection: SOLOv2
-    Config: configs/solov2/solov2_x101_dcn_fpn_mstrain_3x_coco.py
+    Config: configs/solov2/solov2_x101-dcn_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 11.3
       Epochs: 36
@@ -68,7 +68,7 @@ Models:
 
   - Name: solov2_light_r18_fpn_mstrain_3x_coco
     In Collection: SOLOv2
-    Config: configs/solov2/solov2_light_r18_fpn_mstrain_3x_coco.py
+    Config: configs/solov2/solov2-light_r18_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 9.1
       Epochs: 36
@@ -81,7 +81,7 @@ Models:
 
   - Name: solov2_light_r50_fpn_mstrain_3x_coco
     In Collection: SOLOv2
-    Config: configs/solov2/solov2_light_r50_fpn_mstrain_3x_coco.py
+    Config: configs/solov2/solov2-light_r50_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 9.9
       Epochs: 36

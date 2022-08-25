@@ -1,7 +1,7 @@
 Models:
   - Name: faster_rcnn_r50_fpn_32x2_1x_openimages
     In Collection: Faster R-CNN
-    Config: configs/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages.py
+    Config: configs/openimages/faster-rcnn_r50_fpn_32xb2-1x_openimages.py
     Metadata:
       Training Memory (GB): 7.7
       Epochs: 12
@@ -18,7 +18,7 @@ Models:
 
   - Name: retinanet_r50_fpn_32x2_1x_openimages
     In Collection: RetinaNet
-    Config: configs/openimages/retinanet_r50_fpn_32x2_1x_openimages.py
+    Config: configs/openimages/retinanet_r50_fpn_32xb2-1x_openimages.py
     Metadata:
       Training Memory (GB): 6.6
       Epochs: 12
@@ -35,7 +35,7 @@ Models:
 
   - Name: ssd300_32x8_36e_openimages
     In Collection: SSD
-    Config: configs/openimages/ssd300_32x8_36e_openimages.py
+    Config: configs/openimages/ssd300_32xb8-36e_openimages.py
     Metadata:
       Training Memory (GB): 10.8
       Epochs: 36
@@ -52,7 +52,7 @@ Models:
 
   - Name: faster_rcnn_r50_fpn_32x2_1x_openimages_challenge
     In Collection: Faster R-CNN
-    Config: configs/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge.py
+    Config: configs/openimages/faster-rcnn_r50_fpn_32xb2-1x_openimages-challenge.py
     Metadata:
       Training Memory (GB): 7.7
       Epochs: 12
@@ -69,7 +69,7 @@ Models:
 
   - Name: faster_rcnn_r50_fpn_32x2_cas_1x_openimages
     In Collection: Faster R-CNN
-    Config: configs/openimages/faster_rcnn_r50_fpn_32x2_cas_1x_openimages.py
+    Config: configs/openimages/faster-rcnn_r50_fpn_32xb2-cas-1x_openimages.py
     Metadata:
       Training Memory (GB): 7.7
       Epochs: 12
@@ -86,7 +86,7 @@ Models:
 
   - Name: faster_rcnn_r50_fpn_32x2_cas_1x_openimages_challenge
     In Collection: Faster R-CNN
-    Config: configs/openimages/faster_rcnn_r50_fpn_32x2_cas_1x_openimages_challenge.py
+    Config: configs/openimages/faster-rcnn_r50_fpn_32xb2-cas-1x_openimages-challenge.py
     Metadata:
       Training Memory (GB): 7.1
       Epochs: 12

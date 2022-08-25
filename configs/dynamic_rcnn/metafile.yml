@@ -23,7 +23,7 @@ Collections:
 Models:
   - Name: dynamic_rcnn_r50_fpn_1x_coco
     In Collection: Dynamic R-CNN
-    Config: configs/dynamic_rcnn/dynamic_rcnn_r50_fpn_1x_coco.py
+    Config: configs/dynamic_rcnn/dynamic-rcnn_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 3.8
       Epochs: 12
