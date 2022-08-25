@@ -10,7 +10,7 @@ MMDetection provides hundreds of existing and existing detection models in [Mode
 
 By inference, we mean using trained models to detect objects on images. In MMDetection, a model is defined by a configuration file and existing model parameters are save in a checkpoint file.
 
-To start with, we recommend [Faster RCNN](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn) with this [configuration file](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py) and this [checkpoint file](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth). It is recommended to download the checkpoint file to `checkpoints` directory.
+To start with, we recommend [Faster RCNN](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn) with this [configuration file](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py) and this [checkpoint file](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth). It is recommended to download the checkpoint file to `checkpoints` directory.
 
 ### High-level APIs for inference
 
@@ -102,7 +102,7 @@ from mmdet.apis import init_detector, async_inference_detector
 from mmdet.utils.contextmanagers import concurrent
 
 async def main():
-    config_file = 'configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
+    config_file = 'configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py'
     checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
     device = 'cuda:0'
     model = init_detector(config_file, checkpoint=checkpoint_file, device=device)
@@ -152,7 +152,7 @@ Examples:
 
 ```shell
 python demo/image_demo.py demo/demo.jpg \
-    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
     --device cpu
 ```
@@ -174,7 +174,7 @@ Examples:
 
 ```shell
 python demo/webcam_demo.py \
-    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
 ```
 
@@ -198,7 +198,7 @@ Examples:
 
 ```shell
 python demo/video_demo.py demo/demo.mp4 \
-    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
     --out result.mp4
 ```
@@ -224,7 +224,7 @@ Examples:
 
 ```shell
 python demo/video_gpuaccel_demo.py demo/demo.mp4 \
-    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
     --nvdecode --out result.mp4
 ```
@@ -366,7 +366,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
 
    ```shell
    python tools/test.py \
-       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+       configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
        checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
        --show
    ```
@@ -376,7 +376,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
 
    ```shell
    python tools/test.py \
-       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+       configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
        checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
        --show-dir faster_rcnn_r50_fpn_1x_results
    ```
@@ -395,7 +395,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
 
    ```shell
    ./tools/dist_test.sh \
-       configs/mask_rcnn_r50_fpn_1x_coco.py \
+       configs/mask-rcnn_r50_fpn_1x_coco.py \
        checkpoints/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
        8 \
        --out results.pkl \
@@ -406,7 +406,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
 
    ```shell
    ./tools/dist_test.sh \
-       configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
+       configs/mask_rcnn/mask-rcnn_r50_fpn_1x_coco.py \
        checkpoints/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
        8 \
        --out results.pkl \
@@ -420,7 +420,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
 
    ```shell
    ./tools/dist_test.sh \
-       configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
+       configs/mask_rcnn/mask-rcnn_r50_fpn_1x_coco.py \
        checkpoints/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
        8 \
    ```
@@ -434,7 +434,7 @@ Assuming that you have already downloaded the checkpoints to the directory `chec
 
    ```shell
    ./tools/dist_test.sh \
-       configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py \
+       configs/cityscapes/mask-rcnn_r50_fpn_1x_cityscapes.py \
        checkpoints/mask_rcnn_r50_fpn_1x_cityscapes_20200227-afe51d5a.pth \
        8 \
    ```
@@ -489,7 +489,7 @@ Assuming that the checkpoints in the [model zoo](https://mmdetection.readthedocs
 
 ```sh
 ./tools/dist_test.sh \
-    configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
+    configs/mask_rcnn/mask-rcnn_r50_fpn_1x_coco.py \
     checkpoints/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
     8 \
 ```
@@ -639,7 +639,7 @@ The basic usage is as follows.
 Below is an example of using 16 GPUs to train Mask R-CNN on a Slurm partition named _dev_, and set the work-dir to some shared file systems.
 
 ```shell
-GPUS=16 ./tools/slurm_train.sh dev mask_r50_1x configs/mask_rcnn_r50_fpn_1x_coco.py /nfs/xxxx/mask_rcnn_r50_fpn_1x
+GPUS=16 ./tools/slurm_train.sh dev mask_r50_1x configs/mask-rcnn_r50_fpn_1x_coco.py /nfs/xxxx/mask_rcnn_r50_fpn_1x
 ```
 
 You can check [the source code](https://github.com/open-mmlab/mmdetection/blob/master/tools/slurm_train.sh) to review full arguments and environment variables.

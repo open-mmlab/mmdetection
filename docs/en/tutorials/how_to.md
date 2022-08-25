@@ -39,7 +39,7 @@ model = dict(
 MMClassification also provides a wrapper for the PyTorch Image Models (timm) backbone network, users can directly use the backbone network in timm through MMClassification. Suppose you want to use EfficientNet-B1 as the backbone network of RetinaNet, the example config is as the following.
 
 ```python
-# https://github.com/open-mmlab/mmdetection/blob/master/configs/timm_example/retinanet_timm_efficientnet_b1_fpn_1x_coco.py
+# https://github.com/open-mmlab/mmdetection/blob/master/configs/timm_example/retinanet_timm-efficientnet-b1_fpn_1x_coco.py
 
 _base_ = [
     '../_base_/models/retinanet_r50_fpn.py',
@@ -72,7 +72,7 @@ For the principle of the Hierarchy Registry, please refer to the [MMCV document]
 If you want to use `Mosaic` in training, please make sure that you use `MultiImageMixDataset` at the same time. Taking the 'Faster R-CNN' algorithm as an example, you should modify the values of `train_pipeline` and `train_dataset` in the config as below:
 
 ```python
-# Open configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py directly and add the following fields
+# Open configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py directly and add the following fields
 data_root = 'data/coco/'
 dataset_type = 'CocoDataset'
 img_scale=(1333, 800)​
@@ -119,7 +119,7 @@ If you have freezed the backbone network in the config and want to unfreeze it a
 
 ```python
 _base_ = [
-    '../_base_/models/faster_rcnn_r50_fpn.py',
+    '../_base_/models/faster-rcnn_r50_fpn.py',
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]

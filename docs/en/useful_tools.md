@@ -85,7 +85,7 @@ Assume that you have got result file in pickle format from `tools/test.py`  in t
 
 ```shell
 python tools/analysis_tools/analyze_results.py \
-       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+       configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
        result.pkl \
        results \
        --show
@@ -95,7 +95,7 @@ python tools/analysis_tools/analyze_results.py \
 
 ```shell
 python tools/analysis_tools/analyze_results.py \
-       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+       configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
        result.pkl \
        results \
        --topk 50
@@ -105,7 +105,7 @@ python tools/analysis_tools/analyze_results.py \
 
 ```shell
 python tools/analysis_tools/analyze_results.py \
-       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+       configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
        result.pkl \
        results \
        --show-score-thr 0.3
@@ -156,7 +156,7 @@ You can modify the test_evaluator to save the results bbox by:
 
 ```shell
 python tools/test.py \
-       configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
+       configs/mask_rcnn/mask-rcnn_r50_fpn_1x_coco.py \
        checkpoint/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
 ```
 
@@ -274,7 +274,7 @@ Example:
 ```shell
 python tools/deployment/test_torchserver.py \
 demo/demo.jpg \
-configs/yolo/yolov3_d53_320_273e_coco.py \
+configs/yolo/yolov3_d53_8xb8-320-273e_coco.py \
 checkpoint/yolov3_d53_320_273e_coco-421362b6.pth \
 yolov3
 ```
@@ -408,7 +408,7 @@ Examples: Assuming that you have already downloaded the `Faster R-CNN` model che
 
 ```shell
 python -m torch.distributed.launch --nproc_per_node=1 --master_port=29500 tools/analysis_tools/benchmark.py \
-       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+       configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
        checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
        --launcher pytorch
 ```
@@ -456,7 +456,7 @@ python tools/analysis_tools/optimize_anchors.py ${CONFIG} --algorithm differenti
 E.g.,
 
 ```shell
-python tools/analysis_tools/optimize_anchors.py configs/yolo/yolov3_d53_320_273e_coco.py --algorithm differential_evolution --input-shape 608 608 --device cuda --output-dir work_dirs
+python tools/analysis_tools/optimize_anchors.py configs/yolo/yolov3_d53_8xb8-320-273e_coco.py --algorithm differential_evolution --input-shape 608 608 --device cuda --output-dir work_dirs
 ```
 
 You will get:
