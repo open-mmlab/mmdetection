@@ -12,7 +12,7 @@ from mmengine.visualization import Visualizer
 from ..evaluation import INSTANCE_OFFSET
 from ..registry import VISUALIZERS
 from ..structures import DetDataSample
-from ..structures.mask import bitmap_to_polygon
+from ..structures.mask import BitmapMasks, PolygonMasks, bitmap_to_polygon
 from .palette import _get_adaptive_scales, get_palette
 
 
@@ -165,6 +165,10 @@ class DetLocalVisualizer(Visualizer):
             masks = instances.masks
             if isinstance(masks, torch.Tensor):
                 masks = masks.numpy()
+            elif isinstance(masks, (PolygonMasks, BitmapMasks)):
+                masks = masks.to_ndarray()
+
+            masks = masks.astype(np.bool)
 
             max_label = int(max(labels) if len(labels) > 0 else 0)
             mask_color = palette if self.mask_color is None \
