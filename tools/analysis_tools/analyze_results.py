@@ -15,7 +15,11 @@ from mmengine.utils import ProgressBar, check_file_exist, mkdir_or_exist
 from mmengine.data import InstanceData
 =======
 from mmengine.data import InstanceData, PixelData
+<<<<<<< HEAD
 >>>>>>> Support panoptic_seg visualization
+=======
+from mmengine.fileio import load
+>>>>>>> update
 from mmengine.runner import Runner
 from mmengine.utils import ProgressBar
 
@@ -412,7 +416,11 @@ def main():
         cfg.test_dataloader.dataset.pipeline = get_loading_pipeline(
             cfg.train_dataloader.dataset.pipeline)
 
+<<<<<<< HEAD
     dataset = build_dataset(cfg.data.test)
+=======
+    dataset = DATASETS.build(cfg.test_dataloader.dataset)
+>>>>>>> update
     outputs = load(args.prediction_path)
 
     cfg.work_dir = args.show_dir
