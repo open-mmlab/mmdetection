@@ -10,8 +10,12 @@ from mmengine.logging import print_log
 =======
 import mmcv
 import mmengine
+<<<<<<< HEAD
 from mmcv.utils import print_log
 >>>>>>> update
+=======
+from mmengine.logging import print_log
+>>>>>>> update misc.py
 
 
 def find_latest_checkpoint(path, suffix='pth'):
