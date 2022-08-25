@@ -52,6 +52,7 @@ visualizer.add_datasample(
     'result',
     img,
     data_sample=result,
+    draw_gt=False,
     show=True)
 
 # test a video and show the results
@@ -76,6 +77,7 @@ for frame in mmcv.track_iter_progress(video_reader):
         name='video',
         image=frame,
         data_sample=result,
+        draw_gt=False,
         show=False)
     frame = visualizer.get_image()
 
@@ -124,6 +126,7 @@ async def main():
         'result',
         img,
         data_sample=result[0],
+        draw_gt=False,
         show=True,
         wait_time=0)
 
