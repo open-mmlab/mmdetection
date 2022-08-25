@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 import pytest
 import torch
-from mmengine.data import InstanceData, PixelData
+from mmengine.structures import InstanceData, PixelData
 
 from mmdet.structures import DetDataSample
 

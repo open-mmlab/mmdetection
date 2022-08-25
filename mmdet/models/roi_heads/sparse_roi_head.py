@@ -3,7 +3,7 @@ from typing import List, Tuple
 
 import torch
 from mmengine.config import ConfigDict
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.models.task_modules.samplers import PseudoSampler

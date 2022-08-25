@@ -1,13 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from typing import Optional, Sequence
 
-from mmengine.data import BaseDataElement
 from mmengine.hooks import Hook
 from mmengine.runner import Runner
 
 from mmdet.registry import HOOKS
-
-DATA_BATCH = Optional[Sequence[dict]]
+from mmdet.structures import DetDataSample
 
 
 @HOOKS.register_module()
@@ -70,17 +68,16 @@ class MemoryProfilerHook(Hook):
     def after_train_iter(self,
                          runner: Runner,
                          batch_idx: int,
-                         data_batch: DATA_BATCH = None,
+                         data_batch: Optional[dict] = None,
                          outputs: Optional[dict] = None) -> None:
         """Regularly record memory information.
 
         Args:
             runner (:obj:`Runner`): The runner of the training process.
             batch_idx (int): The index of the current batch in the train loop.
-            data_batch (Sequence[dict], optional): Data from dataloader.
+            data_batch (dict, optional): Data from dataloader.
                 Defaults to None.
-            outputs (Union[Sequence[:obj:`BaseDataElement`], dict], optional):
-                Outputs from model. Defaults to None.
+            outputs (dict, optional): Outputs from model. Defaults to None.
         """
         if self.every_n_inner_iters(batch_idx, self.interval):
             self._record_memory_information(runner)
@@ -89,16 +86,16 @@ class MemoryProfilerHook(Hook):
             self,
             runner: Runner,
             batch_idx: int,
-            data_batch: DATA_BATCH = None,
-            outputs: Optional[Sequence[BaseDataElement]] = None) -> None:
+            data_batch: Optional[dict] = None,
+            outputs: Optional[Sequence[DetDataSample]] = None) -> None:
         """Regularly record memory information.
 
         Args:
             runner (:obj:`Runner`): The runner of the validation process.
             batch_idx (int): The index of the current batch in the val loop.
-            data_batch (Sequence[dict], optional): Data from dataloader.
+            data_batch (dict, optional): Data from dataloader.
                 Defaults to None.
-            outputs (Union[Sequence[:obj:`BaseDataElement`], dict], optional):
+            outputs (Sequence[:obj:`DetDataSample`], optional):
                 Outputs from model. Defaults to None.
         """
         if self.every_n_inner_iters(batch_idx, self.interval):
@@ -108,16 +105,16 @@ class MemoryProfilerHook(Hook):
             self,
             runner: Runner,
             batch_idx: int,
-            data_batch: DATA_BATCH = None,
-            outputs: Optional[Sequence[BaseDataElement]] = None) -> None:
+            data_batch: Optional[dict] = None,
+            outputs: Optional[Sequence[DetDataSample]] = None) -> None:
         """Regularly record memory information.
 
         Args:
             runner (:obj:`Runner`): The runner of the testing process.
             batch_idx (int): The index of the current batch in the test loop.
-            data_batch (Sequence[dict], optional): Data from dataloader.
+            data_batch (dict, optional): Data from dataloader.
                 Defaults to None.
-            outputs (Union[Sequence[:obj:`BaseDataElement`], dict], optional):
+            outputs (Sequence[:obj:`DetDataSample`], optional):
                 Outputs from model. Defaults to None.
         """
         if self.every_n_inner_iters(batch_idx, self.interval):

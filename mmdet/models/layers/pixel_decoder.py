@@ -7,8 +7,7 @@ import torch.nn.functional as F
 from mmcv.cnn import Conv2d, ConvModule
 from mmcv.cnn.bricks.transformer import (build_positional_encoding,
                                          build_transformer_layer_sequence)
-from mmengine.model import BaseModule, ModuleList
-from mmengine.model.utils import caffe2_xavier_init
+from mmengine.model import BaseModule, ModuleList, caffe2_xavier_init
 from torch import Tensor
 
 from mmdet.registry import MODELS

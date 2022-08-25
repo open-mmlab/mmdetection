@@ -68,7 +68,8 @@ def inference_model(config_name, checkpoint, visualizer, args, logger=None):
         visualizer.add_datasample(
             'result',
             img,
-            pred_sample=result,
+            data_sample=result,
+            draw_gt=False,
             show=args.show,
             wait_time=args.wait_time,
             out_file=out_file,

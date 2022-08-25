@@ -2,7 +2,7 @@
 import numpy as np
 from mmcv.transforms import to_tensor
 from mmcv.transforms.base import BaseTransform
-from mmengine.data import InstanceData, PixelData
+from mmengine.structures import InstanceData, PixelData
 
 from mmdet.registry import TRANSFORMS
 from mmdet.structures import DetDataSample
@@ -115,7 +115,7 @@ class PackDetInputs(BaseTransform):
             img_meta[key] = results[key]
 
         data_sample.set_metainfo(img_meta)
-        packed_results['data_sample'] = data_sample
+        packed_results['data_samples'] = data_sample
 
         return packed_results
 

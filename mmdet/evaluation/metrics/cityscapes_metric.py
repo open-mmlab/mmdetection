@@ -84,22 +84,23 @@ class CityScapesMetric(BaseMetric):
         if not self.keep_results:
             shutil.rmtree(self.seg_out_dir)
 
-    def process(self, data_batch: Sequence[dict],
-                predictions: Sequence[dict]) -> None:
+    # TODO: data_batch is no longer needed, consider adjusting the
+    #  parameter position
+    def process(self, data_batch: dict, data_samples: Sequence[dict]) -> None:
         """Process one batch of data samples and predictions. The processed
         results should be stored in ``self.results``, which will be used to
         compute the metrics when all batches have been processed.
 
         Args:
-            data_batch (Sequence[dict]): A batch of data from the dataloader.
-            predictions (Sequence[dict]): A batch of outputs from
-                the model.
+            data_batch (dict): A batch of data from the dataloader.
+            data_samples (Sequence[dict]): A batch of data samples that
+                contain annotations and predictions.
         """
-        for data, pred in zip(data_batch, predictions):
+        for data_sample in data_samples:
             # parse pred
             result = dict()
-            pred = pred['pred_instances']
-            filename = data['data_sample']['img_path']
+            pred = data_sample['pred_instances']
+            filename = data_sample['img_path']
             basename = osp.splitext(osp.basename(filename))[0]
             pred_txt = osp.join(self.seg_out_dir, basename + '_pred.txt')
             result['pred_txt'] = pred_txt
@@ -124,8 +125,8 @@ class CityScapesMetric(BaseMetric):
 
             # parse gt
             gt = dict()
-            img_path = data['data_sample']['img_path'].replace(
-                'leftImg8bit.png', 'gtFine_instanceIds.png')
+            img_path = filename.replace('leftImg8bit.png',
+                                        'gtFine_instanceIds.png')
             img_path = img_path.replace('leftImg8bit', 'gtFine')
             gt['file_name'] = osp.join(self.seg_prefix, img_path)
 

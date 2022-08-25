@@ -2,7 +2,7 @@
 from unittest import TestCase
 
 import torch
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 
 from mmdet.models.task_modules.assigners import ApproxMaxIoUAssigner
 

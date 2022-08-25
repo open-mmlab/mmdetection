@@ -8,8 +8,8 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 from mmcv.ops.nms import batched_nms
 from mmengine.config import ConfigDict
-from mmengine.data import InstanceData
-from mmengine.model.utils import bias_init_with_prob
+from mmengine.model import bias_init_with_prob
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS

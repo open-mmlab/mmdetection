@@ -4,7 +4,7 @@ import os.path as osp
 import unittest
 
 import numpy as np
-from mmengine.data import InstanceData, PixelData
+from mmengine.structures import InstanceData, PixelData
 
 from mmdet.datasets.transforms import PackDetInputs
 from mmdet.structures import DetDataSample
@@ -57,35 +57,35 @@ class TestPackDetInputs(unittest.TestCase):
     def test_transform(self):
         transform = PackDetInputs(meta_keys=self.meta_keys)
         results = transform(copy.deepcopy(self.results1))
-        self.assertIn('data_sample', results)
-        self.assertIsInstance(results['data_sample'], DetDataSample)
-        self.assertIsInstance(results['data_sample'].gt_instances,
+        self.assertIn('data_samples', results)
+        self.assertIsInstance(results['data_samples'], DetDataSample)
+        self.assertIsInstance(results['data_samples'].gt_instances,
                               InstanceData)
-        self.assertIsInstance(results['data_sample'].ignored_instances,
+        self.assertIsInstance(results['data_samples'].ignored_instances,
                               InstanceData)
-        self.assertEqual(len(results['data_sample'].gt_instances), 2)
-        self.assertEqual(len(results['data_sample'].ignored_instances), 1)
-        self.assertIsInstance(results['data_sample'].gt_sem_seg, PixelData)
-        self.assertIsInstance(results['data_sample'].proposals, InstanceData)
-        self.assertEqual(len(results['data_sample'].proposals), 2)
-        self.assertIsInstance(results['data_sample'].proposals.bboxes,
+        self.assertEqual(len(results['data_samples'].gt_instances), 2)
+        self.assertEqual(len(results['data_samples'].ignored_instances), 1)
+        self.assertIsInstance(results['data_samples'].gt_sem_seg, PixelData)
+        self.assertIsInstance(results['data_samples'].proposals, InstanceData)
+        self.assertEqual(len(results['data_samples'].proposals), 2)
+        self.assertIsInstance(results['data_samples'].proposals.bboxes,
                               np.ndarray)
 
     def test_transform_without_ignore(self):
         transform = PackDetInputs(meta_keys=self.meta_keys)
         results = transform(copy.deepcopy(self.results2))
-        self.assertIn('data_sample', results)
-        self.assertIsInstance(results['data_sample'], DetDataSample)
-        self.assertIsInstance(results['data_sample'].gt_instances,
+        self.assertIn('data_samples', results)
+        self.assertIsInstance(results['data_samples'], DetDataSample)
+        self.assertIsInstance(results['data_samples'].gt_instances,
                               InstanceData)
-        self.assertIsInstance(results['data_sample'].ignored_instances,
+        self.assertIsInstance(results['data_samples'].ignored_instances,
                               InstanceData)
-        self.assertEqual(len(results['data_sample'].gt_instances), 3)
-        self.assertEqual(len(results['data_sample'].ignored_instances), 0)
-        self.assertIsInstance(results['data_sample'].gt_sem_seg, PixelData)
-        self.assertIsInstance(results['data_sample'].proposals, InstanceData)
-        self.assertEqual(len(results['data_sample'].proposals), 2)
-        self.assertIsInstance(results['data_sample'].proposals.bboxes,
+        self.assertEqual(len(results['data_samples'].gt_instances), 3)
+        self.assertEqual(len(results['data_samples'].ignored_instances), 0)
+        self.assertIsInstance(results['data_samples'].gt_sem_seg, PixelData)
+        self.assertIsInstance(results['data_samples'].proposals, InstanceData)
+        self.assertEqual(len(results['data_samples'].proposals), 2)
+        self.assertIsInstance(results['data_samples'].proposals.bboxes,
                               np.ndarray)
 
     def test_repr(self):

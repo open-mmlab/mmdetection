@@ -69,20 +69,21 @@ class VOCMetric(BaseMetric):
             'Unrecognized mode, only "area" and "11points" are supported'
         self.eval_mode = eval_mode
 
-    def process(self, data_batch: Sequence[dict],
-                predictions: Sequence[dict]) -> None:
+    # TODO: data_batch is no longer needed, consider adjusting the
+    #  parameter position
+    def process(self, data_batch: dict, data_samples: Sequence[dict]) -> None:
         """Process one batch of data samples and predictions. The processed
         results should be stored in ``self.results``, which will be used to
         compute the metrics when all batches have been processed.
 
         Args:
-            data_batch (Sequence[dict]): A batch of data
-                from the dataloader.
-            predictions (Sequence[dict]): A batch of outputs from
-                the model.
+            data_batch (dict): A batch of data from the dataloader.
+            data_samples (Sequence[dict]): A batch of data samples that
+                contain annotations and predictions.
         """
-        for data, pred in zip(data_batch, predictions):
-            gt = copy.deepcopy(data['data_sample'])
+        for data_sample in data_samples:
+            gt = copy.deepcopy(data_sample)
+            # TODO: Need to refactor to support LoadAnnotations
             gt_instances = gt['gt_instances']
             gt_ignore_instances = gt['ignored_instances']
             ann = dict(
@@ -91,7 +92,7 @@ class VOCMetric(BaseMetric):
                 bboxes_ignore=gt_ignore_instances['bboxes'].cpu().numpy(),
                 labels_ignore=gt_ignore_instances['labels'].cpu().numpy())
 
-            pred = pred['pred_instances']
+            pred = data_sample['pred_instances']
             pred_bboxes = pred['bboxes'].cpu().numpy()
             pred_scores = pred['scores'].cpu().numpy()
             pred_labels = pred['labels'].cpu().numpy()

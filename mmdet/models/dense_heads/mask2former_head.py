@@ -7,9 +7,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import Conv2d
 from mmcv.ops import point_sample
-from mmengine.data import InstanceData
-from mmengine.model import ModuleList
-from mmengine.model.utils import caffe2_xavier_init
+from mmengine.model import ModuleList, caffe2_xavier_init
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS
