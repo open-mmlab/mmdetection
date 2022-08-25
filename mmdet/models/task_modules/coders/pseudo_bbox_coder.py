@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from mmdet.registry import TASK_UTILS
-from mmdet.structures.bbox import HorizontalBoxes
+from mmdet.structures.bbox import BaseBoxes, HorizontalBoxes
 from .base_bbox_coder import BaseBBoxCoder
 
 
@@ -9,10 +9,12 @@ class PseudoBBoxCoder(BaseBBoxCoder):
     """Pseudo bounding box coder."""
 
     def __init__(self, **kwargs):
-        super(BaseBBoxCoder, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def encode(self, bboxes, gt_bboxes):
         """torch.Tensor: return the given ``bboxes``"""
+        if isinstance(gt_bboxes, BaseBoxes):
+            gt_bboxes = gt_bboxes.tensor
         return gt_bboxes
 
     def decode(self, bboxes, pred_bboxes):

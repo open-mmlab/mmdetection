@@ -3,7 +3,7 @@ import numpy as np
 import torch
 
 from mmdet.registry import TASK_UTILS
-from mmdet.structures.bbox import HorizontalBoxes
+from mmdet.structures.bbox import BaseBoxes, HorizontalBoxes
 from .base_bbox_coder import BaseBBoxCoder
 
 
@@ -35,7 +35,7 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
                  target_means=(0., 0., 0., 0.),
                  target_stds=(1., 1., 1., 1.),
                  **kwargs):
-        super(BaseBBoxCoder, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.means = target_means
         self.stds = target_stds
 
@@ -51,6 +51,10 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
         Returns:
             torch.Tensor: Box transformation deltas
         """
+        if isinstance(bboxes, BaseBoxes):
+            bboxes = bboxes.tensor
+        if isinstance(gt_bboxes, BaseBoxes):
+            gt_bboxes = gt_bboxes.tensor
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
         encoded_bboxes = legacy_bbox2delta(bboxes, gt_bboxes, self.means,
@@ -75,6 +79,8 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
         Returns:
             torch.Tensor: Decoded boxes.
         """
+        if isinstance(bboxes, BaseBoxes):
+            bboxes = bboxes.tensor
         assert pred_bboxes.size(0) == bboxes.size(0)
         decoded_bboxes = legacy_delta2bbox(bboxes, pred_bboxes, self.means,
                                            self.stds, max_shape, wh_ratio_clip)

@@ -2,7 +2,7 @@
 import torch
 
 from mmdet.registry import TASK_UTILS
-from mmdet.structures.bbox import bbox_overlaps
+from mmdet.structures.bbox import BaseBoxes, bbox_overlaps
 
 
 def cast_tensor_type(x, scale=1., dtype=None):
@@ -39,6 +39,10 @@ class BboxOverlaps2D:
         Returns:
             Tensor: shape (m, n) if ``is_aligned `` is False else shape (m,)
         """
+        if isinstance(bboxes1, BaseBoxes):
+            bboxes1 = bboxes1.tensor
+        if isinstance(bboxes2, BaseBoxes):
+            bboxes2 = bboxes2.tensor
         assert bboxes1.size(-1) in [0, 4, 5]
         assert bboxes2.size(-1) in [0, 4, 5]
         if bboxes2.size(-1) == 5:

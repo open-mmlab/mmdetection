@@ -246,7 +246,8 @@ class HorizontalBoxes(BaseBoxes):
         """
         boxes = self.tensor
         assert len(scale_factor) == 2
-        scale_factor = boxes.new_tensor(scale_factor).repeat(2)
+        repeat_num = int(boxes.size(-1) / 2)
+        scale_factor = boxes.new_tensor(scale_factor).repeat(repeat_num)
         self.tensor = boxes * scale_factor
 
     def resize_(self, scale_factor: Tuple[float, float]) -> None:
@@ -274,14 +275,14 @@ class HorizontalBoxes(BaseBoxes):
 
     def is_inside(self,
                   img_shape: Tuple[int, int],
-                  all_in: bool = False,
+                  all_inside: bool = False,
                   allowed_border: int = 0) -> BoolTensor:
         """Find boxes inside the image.
 
         Args:
             img_shape (Tuple[int, int]): A tuple of image height and width.
-            all_in (bool): Whether the boxes are all inside the image or part
-                inside the image. Defaults to False.
+            all_inside (bool): Whether the boxes are all inside the image or
+                part inside the image. Defaults to False.
             allowed_border (int): Boxes that extend beyond the image shape
                 boundary by more than ``allowed_border`` are considered
                 "outside" Defaults to 0.
@@ -293,7 +294,7 @@ class HorizontalBoxes(BaseBoxes):
         """
         img_h, img_w = img_shape
         boxes = self.tensor
-        if all_in:
+        if all_inside:
             return (boxes[:, 0] >= -allowed_border) & \
                 (boxes[:, 1] >= -allowed_border) & \
                 (boxes[:, 2] < img_w + allowed_border) & \

@@ -25,8 +25,9 @@ def anchor_inside_flags(flat_anchors,
     if allowed_border >= 0:
         if isinstance(flat_anchors, BaseBoxes):
             inside_flags = valid_flags & \
-                flat_anchors.is_inside(
-                    [img_h, img_w], all_in=True, allowed_border=allowed_border)
+                flat_anchors.is_inside([img_h, img_w],
+                                       all_inside=True,
+                                       allowed_border=allowed_border)
         else:
             inside_flags = valid_flags & \
                 (flat_anchors[:, 0] >= -allowed_border) & \

@@ -15,7 +15,7 @@ from mmdet.structures import SampleList
 from mmdet.structures.bbox import BaseBoxes
 from mmdet.utils import InstanceList, OptMultiConfig
 from ..test_time_augs import merge_aug_results
-from ..utils import (filter_scores_and_topk, select_single_mlvl,
+from ..utils import (cat, filter_scores_and_topk, select_single_mlvl,
                      unpack_gt_instances)
 
 
@@ -346,7 +346,6 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
         cfg = copy.deepcopy(cfg)
         img_shape = img_meta['img_shape']
         nms_pre = cfg.get('nms_pre', -1)
-        reg_out_channels = getattr(self, 'reg_out_channels', 4)
 
         mlvl_bbox_preds = []
         mlvl_valid_priors = []
@@ -362,8 +361,8 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
 
-            bbox_pred = bbox_pred.permute(1, 2,
-                                          0).reshape(-1, reg_out_channels)
+            reg_dim = self.bbox_coder.encode_size
+            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, reg_dim)
             if with_score_factors:
                 score_factor = score_factor.permute(1, 2,
                                                     0).reshape(-1).sigmoid()
@@ -404,7 +403,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 mlvl_score_factors.append(score_factor)
 
         bbox_pred = torch.cat(mlvl_bbox_preds)
-        priors = torch.cat(mlvl_valid_priors)
+        priors = cat(mlvl_valid_priors)
         bboxes = self.bbox_coder.decode(priors, bbox_pred, max_shape=img_shape)
 
         results = InstanceData()

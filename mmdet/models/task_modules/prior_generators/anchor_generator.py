@@ -502,7 +502,8 @@ class SSDAnchorGenerator(AnchorGenerator):
                  max_sizes=None,
                  basesize_ratio_range=(0.15, 0.9),
                  input_size=300,
-                 scale_major=True):
+                 scale_major=True,
+                 with_boxlist=False):
         assert len(strides) == len(ratios)
         assert not (min_sizes is None) ^ (max_sizes is None)
         self.strides = [_pair(stride) for stride in strides]
@@ -573,6 +574,7 @@ class SSDAnchorGenerator(AnchorGenerator):
         self.scale_major = scale_major
         self.center_offset = 0
         self.base_anchors = self.gen_base_anchors()
+        self.with_boxlist = with_boxlist
 
     def gen_base_anchors(self):
         """Generate base anchors.
@@ -725,13 +727,15 @@ class LegacySSDAnchorGenerator(SSDAnchorGenerator, LegacyAnchorGenerator):
                  ratios,
                  basesize_ratio_range,
                  input_size=300,
-                 scale_major=True):
+                 scale_major=True,
+                 with_boxlist=False):
         super(LegacySSDAnchorGenerator, self).__init__(
             strides=strides,
             ratios=ratios,
             basesize_ratio_range=basesize_ratio_range,
             input_size=input_size,
-            scale_major=scale_major)
+            scale_major=scale_major,
+            with_boxlist=with_boxlist)
         self.centers = [((stride - 1) / 2., (stride - 1) / 2.)
                         for stride in strides]
         self.base_anchors = self.gen_base_anchors()
@@ -748,7 +752,7 @@ class YOLOAnchorGenerator(AnchorGenerator):
             of anchors in multiple levels.
     """
 
-    def __init__(self, strides, base_sizes):
+    def __init__(self, strides, base_sizes, with_boxlist=False):
         self.strides = [_pair(stride) for stride in strides]
         self.centers = [(stride[0] / 2., stride[1] / 2.)
                         for stride in self.strides]
@@ -759,6 +763,7 @@ class YOLOAnchorGenerator(AnchorGenerator):
             self.base_sizes.append(
                 [_pair(base_size) for base_size in base_sizes_per_level])
         self.base_anchors = self.gen_base_anchors()
+        self.with_boxlist = with_boxlist
 
     @property
     def num_levels(self):

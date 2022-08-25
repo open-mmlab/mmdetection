@@ -180,8 +180,6 @@ class TestBaseBoxes(TestCase):
         # repeat
         new_boxes = boxes.repeat(2, 2, 1)
         self.assertEqual(tuple(new_boxes.size()), (6, 8, 4))
-        with self.assertRaises(AssertionError):
-            new_boxes = boxes.repeat(2, 2, 2)
         # transpose
         new_boxes = boxes.transpose(0, 1)
         self.assertEqual(tuple(new_boxes.size()), (4, 3, 4))

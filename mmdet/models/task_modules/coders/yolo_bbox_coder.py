@@ -2,7 +2,7 @@
 import torch
 
 from mmdet.registry import TASK_UTILS
-from mmdet.structures.bbox import HorizontalBoxes
+from mmdet.structures.bbox import BaseBoxes, HorizontalBoxes
 from .base_bbox_coder import BaseBBoxCoder
 
 
@@ -20,7 +20,7 @@ class YOLOBBoxCoder(BaseBBoxCoder):
     """
 
     def __init__(self, eps=1e-6, **kwargs):
-        super(BaseBBoxCoder, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.eps = eps
 
     def encode(self, bboxes, gt_bboxes, stride):
@@ -36,7 +36,10 @@ class YOLOBBoxCoder(BaseBBoxCoder):
         Returns:
             torch.Tensor: Box transformation deltas
         """
-
+        if isinstance(bboxes, BaseBoxes):
+            bboxes = bboxes.tensor
+        if isinstance(gt_bboxes, BaseBoxes):
+            gt_bboxes = gt_bboxes.tensor
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
         x_center_gt = (gt_bboxes[..., 0] + gt_bboxes[..., 2]) * 0.5
@@ -68,6 +71,8 @@ class YOLOBBoxCoder(BaseBBoxCoder):
         Returns:
             torch.Tensor: Decoded boxes.
         """
+        if isinstance(bboxes, BaseBoxes):
+            bboxes = bboxes.tensor
         assert pred_bboxes.size(-1) == bboxes.size(-1) == 4
         xy_centers = (bboxes[..., :2] + bboxes[..., 2:]) * 0.5 + (
             pred_bboxes[..., :2] - 0.5) * stride

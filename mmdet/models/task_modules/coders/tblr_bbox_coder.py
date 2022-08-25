@@ -2,7 +2,7 @@
 import torch
 
 from mmdet.registry import TASK_UTILS
-from mmdet.structures.bbox import HorizontalBoxes
+from mmdet.structures.bbox import BaseBoxes, HorizontalBoxes
 from .base_bbox_coder import BaseBBoxCoder
 
 
@@ -24,7 +24,7 @@ class TBLRBBoxCoder(BaseBBoxCoder):
     """
 
     def __init__(self, normalizer=4.0, clip_border=True, **kwargs):
-        super(BaseBBoxCoder, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.normalizer = normalizer
         self.clip_border = clip_border
 
@@ -41,6 +41,10 @@ class TBLRBBoxCoder(BaseBBoxCoder):
         Returns:
             torch.Tensor: Box transformation deltas
         """
+        if isinstance(bboxes, BaseBoxes):
+            bboxes = bboxes.tensor
+        if isinstance(gt_bboxes, BaseBoxes):
+            gt_bboxes = gt_bboxes.tensor
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
         encoded_bboxes = bboxes2tblr(
@@ -63,6 +67,8 @@ class TBLRBBoxCoder(BaseBBoxCoder):
         Returns:
             torch.Tensor: Decoded boxes.
         """
+        if isinstance(bboxes, BaseBoxes):
+            bboxes = bboxes.tensor
         decoded_bboxes = tblr2bboxes(
             bboxes,
             pred_bboxes,

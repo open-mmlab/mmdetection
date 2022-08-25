@@ -5,7 +5,7 @@ import numpy as np
 import torch
 
 from mmdet.registry import TASK_UTILS
-from mmdet.structures.bbox import HorizontalBoxes
+from mmdet.structures.bbox import BaseBoxes, HorizontalBoxes
 from .base_bbox_coder import BaseBBoxCoder
 
 
@@ -38,7 +38,7 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
                  add_ctr_clamp=False,
                  ctr_clamp=32,
                  **kwargs):
-        super(BaseBBoxCoder, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.means = target_means
         self.stds = target_stds
         self.clip_border = clip_border
@@ -57,7 +57,10 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
         Returns:
             torch.Tensor: Box transformation deltas
         """
-
+        if isinstance(bboxes, BaseBoxes):
+            bboxes = bboxes.tensor
+        if isinstance(gt_bboxes, BaseBoxes):
+            gt_bboxes = gt_bboxes.tensor
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
         encoded_bboxes = bbox2delta(bboxes, gt_bboxes, self.means, self.stds)
@@ -87,7 +90,8 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
         Returns:
             torch.Tensor: Decoded boxes.
         """
-
+        if isinstance(bboxes, BaseBoxes):
+            bboxes = bboxes.tensor
         assert pred_bboxes.size(0) == bboxes.size(0)
         if pred_bboxes.ndim == 3:
             assert pred_bboxes.size(1) == bboxes.size(1)
