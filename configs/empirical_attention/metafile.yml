@@ -22,7 +22,7 @@ Collections:
       Version: v2.0.0
 
 Models:
-  - Name: faster_rcnn_r50_fpn_attention_1111_1x_coco
+  - Name: faster-rcnn_r50_fpn_attention_1111_1x_coco
     In Collection: Empirical Attention
     Config: configs/empirical_attention/faster-rcnn_r50-attn1111_fpn_1x_coco.py
     Metadata:
@@ -42,7 +42,7 @@ Models:
           box AP: 40.0
     Weights: https://download.openmmlab.com/mmdetection/v2.0/empirical_attention/faster_rcnn_r50_fpn_attention_1111_1x_coco/faster_rcnn_r50_fpn_attention_1111_1x_coco_20200130-403cccba.pth
 
-  - Name: faster_rcnn_r50_fpn_attention_0010_1x_coco
+  - Name: faster-rcnn_r50_fpn_attention_0010_1x_coco
     In Collection: Empirical Attention
     Config: configs/empirical_attention/faster-rcnn_r50-attn0010_fpn_1x_coco.py
     Metadata:
@@ -62,7 +62,7 @@ Models:
           box AP: 39.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/empirical_attention/faster_rcnn_r50_fpn_attention_0010_1x_coco/faster_rcnn_r50_fpn_attention_0010_1x_coco_20200130-7cb0c14d.pth
 
-  - Name: faster_rcnn_r50_fpn_attention_1111_dcn_1x_coco
+  - Name: faster-rcnn_r50_fpn_attention_1111_dcn_1x_coco
     In Collection: Empirical Attention
     Config: configs/empirical_attention/faster-rcnn_r50-attn1111-dcn_fpn_1x_coco.py
     Metadata:
@@ -82,7 +82,7 @@ Models:
           box AP: 42.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/empirical_attention/faster_rcnn_r50_fpn_attention_1111_dcn_1x_coco/faster_rcnn_r50_fpn_attention_1111_dcn_1x_coco_20200130-8b2523a6.pth
 
-  - Name: faster_rcnn_r50_fpn_attention_0010_dcn_1x_coco
+  - Name: faster-rcnn_r50_fpn_attention_0010_dcn_1x_coco
     In Collection: Empirical Attention
     Config: configs/empirical_attention/faster-rcnn_r50-attn0010-dcn_fpn_1x_coco.py
     Metadata:

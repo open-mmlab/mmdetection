@@ -17,7 +17,7 @@ Collections:
       Version: v2.13.0
 
 Models:
-  - Name: centernet_resnet18_dcnv2_140e_coco
+  - Name: centernet_r18-dcnv2_8xb16-crop512-140e_coco
     In Collection: CenterNet
     Config: configs/centernet/centernet_r18-dcnv2_8xb16-crop512-140e_coco.py
     Metadata:
@@ -31,7 +31,7 @@ Models:
           box AP: 29.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/centernet/centernet_resnet18_dcnv2_140e_coco/centernet_resnet18_dcnv2_140e_coco_20210702_155131-c8cd631f.pth
 
-  - Name: centernet_resnet18_140e_coco
+  - Name: centernet_r18_8xb16-crop512-140e_coco
     In Collection: CenterNet
     Config: configs/centernet/centernet_r18_8xb16-crop512-140e_coco.py
     Metadata:

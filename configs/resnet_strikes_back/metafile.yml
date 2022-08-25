@@ -1,5 +1,5 @@
 Models:
-  - Name: faster_rcnn_r50_fpn_rsb-pretrain_1x_coco
+  - Name: faster-rcnn_r50_fpn_rsb-pretrain_1x_coco
     In Collection: Faster R-CNN
     Config: configs/resnet_strikes_back/faster-rcnn_r50-rsb-pre_fpn_1x_coco.py
     Metadata:
@@ -26,7 +26,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.22.0/configs/resnet_strikes_back/README.md
       Version: v2.22.0
 
-  - Name: cascade_mask_rcnn_r50_fpn_rsb-pretrain_1x_coco
+  - Name: cascade-mask-rcnn_r50_fpn_rsb-pretrain_1x_coco
     In Collection: Cascade R-CNN
     Config: configs/resnet_strikes_back/cascade-mask-rcnn_r50-rsb-pre_fpn_1x_coco.py
     Metadata:
@@ -57,7 +57,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.22.0/configs/resnet_strikes_back/README.md
       Version: v2.22.0
 
-  - Name: retinanet_r50_fpn_rsb-pretrain_1x_coco
+  - Name: retinanet_r50-rsb-pre_fpn_1x_coco
     In Collection: RetinaNet
     Config: configs/resnet_strikes_back/retinanet_r50-rsb-pre_fpn_1x_coco.py
     Metadata:
@@ -84,7 +84,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.22.0/configs/resnet_strikes_back/README.md
       Version: v2.22.0
 
-  - Name: mask_rcnn_r50_fpn_rsb-pretrain_1x_coco
+  - Name: mask-rcnn_r50_fpn_rsb-pretrain_1x_coco
     In Collection: Mask R-CNN
     Config: configs/resnet_strikes_back/mask-rcnn_r50-rsb-pre_fpn_1x_coco.py
     Metadata:

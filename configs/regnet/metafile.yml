@@ -1,5 +1,5 @@
 Models:
-  - Name: mask_rcnn_regnetx-3.2GF_fpn_1x_coco
+  - Name: mask-rcnn_regnetx-3.2GF_fpn_1x_coco
     In Collection: Mask R-CNN
     Config: configs/regnet/mask-rcnn_regnetx-3.2GF_fpn_1x_coco.py
     Metadata:
@@ -30,7 +30,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-4GF_fpn_1x_coco
+  - Name: mask-rcnn_regnetx-4GF_fpn_1x_coco
     In Collection: Mask R-CNN
     Config: configs/regnet/mask-rcnn_regnetx-4GF_fpn_1x_coco.py
     Metadata:
@@ -61,7 +61,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-6.4GF_fpn_1x_coco
+  - Name: mask-rcnn_regnetx-6.4GF_fpn_1x_coco
     In Collection: Mask R-CNN
     Config: configs/regnet/mask-rcnn_regnetx-6.4GF_fpn_1x_coco.py
     Metadata:
@@ -92,7 +92,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-8GF_fpn_1x_coco
+  - Name: mask-rcnn_regnetx-8GF_fpn_1x_coco
     In Collection: Mask R-CNN
     Config: configs/regnet/mask-rcnn_regnetx-8GF_fpn_1x_coco.py
     Metadata:
@@ -123,7 +123,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-12GF_fpn_1x_coco
+  - Name: mask-rcnn_regnetx-12GF_fpn_1x_coco
     In Collection: Mask R-CNN
     Config: configs/regnet/mask-rcnn_regnetx-12GF_fpn_1x_coco.py
     Metadata:
@@ -154,7 +154,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-3.2GF_fpn_mdconv_c3-c5_1x_coco
+  - Name: mask-rcnn_regnetx-3.2GF-mdconv-c3-c5_fpn_1x_coco
     In Collection: Mask R-CNN
     Config: configs/regnet/mask-rcnn_regnetx-3.2GF-mdconv-c3-c5_fpn_1x_coco.py
     Metadata:
@@ -185,7 +185,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: faster_rcnn_regnetx-3.2GF_fpn_1x_coco
+  - Name: faster-rcnn_regnetx-3.2GF_fpn_1x_coco
     In Collection: Faster R-CNN
     Config: configs/regnet/faster-rcnn_regnetx-3.2GF_fpn_1x_coco.py
     Metadata:
@@ -212,7 +212,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: faster_rcnn_regnetx-3.2GF_fpn_2x_coco
+  - Name: faster-rcnn_regnetx-3.2GF_fpn_2x_coco
     In Collection: Faster R-CNN
     Config: configs/regnet/faster-rcnn_regnetx-3.2GF_fpn_2x_coco.py
     Metadata:
@@ -320,7 +320,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: faster_rcnn_regnetx-400MF_fpn_mstrain_3x_coco
+  - Name: faster-rcnn_regnetx-400MF_fpn_ms-3x_coco
     In Collection: Faster R-CNN
     Config: configs/regnet/faster-rcnn_regnetx-400MF_fpn_ms-3x_coco.py
     Metadata:
@@ -347,7 +347,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: faster_rcnn_regnetx-800MF_fpn_mstrain_3x_coco
+  - Name: faster-rcnn_regnetx-800MF_fpn_ms-3x_coco
     In Collection: Faster R-CNN
     Config: configs/regnet/faster-rcnn_regnetx-800MF_fpn_ms-3x_coco.py
     Metadata:
@@ -374,7 +374,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: faster_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco
+  - Name: faster-rcnn_regnetx-1.6GF_fpn_ms-3x_coco
     In Collection: Faster R-CNN
     Config: configs/regnet/faster-rcnn_regnetx-1.6GF_fpn_ms-3x_coco.py
     Metadata:
@@ -401,7 +401,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: faster_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco
+  - Name: faster-rcnn_regnetx-3.2GF_fpn_ms-3x_coco
     In Collection: Faster R-CNN
     Config: configs/regnet/faster-rcnn_regnetx-3.2GF_fpn_ms-3x_coco.py
     Metadata:
@@ -428,7 +428,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: faster_rcnn_regnetx-4GF_fpn_mstrain_3x_coco
+  - Name: faster-rcnn_regnetx-4GF_fpn_ms-3x_coco
     In Collection: Faster R-CNN
     Config: configs/regnet/faster-rcnn_regnetx-4GF_fpn_ms-3x_coco.py
     Metadata:
@@ -455,7 +455,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco
+  - Name: mask-rcnn_regnetx-3.2GF_fpn_ms-3x_coco
     In Collection: Mask R-CNN
     Config: configs/regnet/mask-rcnn_regnetx-3.2GF_fpn_ms-3x_coco.py
     Metadata:
@@ -486,7 +486,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-400MF_fpn_mstrain-poly_3x_coco
+  - Name: mask-rcnn_regnetx-400MF_fpn_ms-poly-3x_coco
     In Collection: Mask R-CNN
     Config: configs/regnet/mask-rcnn_regnetx-400MF_fpn_ms-poly-3x_coco.py
     Metadata:
@@ -517,7 +517,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-800MF_fpn_mstrain-poly_3x_coco
+  - Name: mask-rcnn_regnetx-800MF_fpn_ms-poly-3x_coco
     In Collection: Mask R-CNN
     Config: configs/regnet/mask-rcnn_regnetx-800MF_fpn_ms-poly-3x_coco.py
     Metadata:
@@ -548,7 +548,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-1.6GF_fpn_mstrain-poly_3x_coco
+  - Name: mask-rcnn_regnetx-1.6GF_fpn_ms-poly-3x_coco
     In Collection: Mask R-CNN
     Config: configs/regnet/mask-rcnn_regnetx-1.6GF_fpn_ms-poly-3x_coco.py
     Metadata:
@@ -579,7 +579,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco
+  - Name: mask-rcnn_regnetx-3.2GF_fpn_ms-3x_coco
     In Collection: Mask R-CNN
     Config: configs/regnet/mask-rcnn_regnetx-3.2GF_fpn_ms-3x_coco.py
     Metadata:
@@ -610,7 +610,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-4GF_fpn_mstrain-poly_3x_coco
+  - Name: mask-rcnn_regnetx-4GF_fpn_ms-poly-3x_coco
     In Collection: Mask R-CNN
     Config: configs/regnet/mask-rcnn_regnetx-4GF_fpn_ms-poly-3x_coco.py
     Metadata:
@@ -641,7 +641,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: cascade_mask_rcnn_regnetx-400MF_fpn_mstrain_3x_coco
+  - Name: cascade-mask-rcnn_regnetx-400MF_fpn_ms-3x_coco
     In Collection: Cascade R-CNN
     Config: configs/regnet/cascade-mask-rcnn_regnetx-400MF_fpn_ms-3x_coco.py
     Metadata:
@@ -672,7 +672,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: cascade_mask_rcnn_regnetx-800MF_fpn_mstrain_3x_coco
+  - Name: cascade-mask-rcnn_regnetx-800MF_fpn_ms-3x_coco
     In Collection: Cascade R-CNN
     Config: configs/regnet/cascade-mask-rcnn_regnetx-800MF_fpn_ms-3x_coco.py
     Metadata:
@@ -703,7 +703,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: cascade_mask_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco
+  - Name: cascade-mask-rcnn_regnetx-1.6GF_fpn_ms-3x_coco
     In Collection: Cascade R-CNN
     Config: configs/regnet/cascade-mask-rcnn_regnetx-1.6GF_fpn_ms-3x_coco.py
     Metadata:
@@ -734,7 +734,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: cascade_mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco
+  - Name: cascade-mask-rcnn_regnetx-3.2GF_fpn_ms-3x_coco
     In Collection: Cascade R-CNN
     Config: configs/regnet/cascade-mask-rcnn_regnetx-3.2GF_fpn_ms-3x_coco.py
     Metadata:
@@ -765,7 +765,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: cascade_mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco
+  - Name: cascade-mask-rcnn_regnetx-4GF_fpn_ms-3x_coco
     In Collection: Cascade R-CNN
     Config: configs/regnet/cascade-mask-rcnn_regnetx-4GF_fpn_ms-3x_coco.py
     Metadata:

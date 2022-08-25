@@ -1,5 +1,5 @@
 Models:
-  - Name: faster_rcnn_r50_fpn_32x2_1x_openimages
+  - Name: faster-rcnn_r50_fpn_32x2_1x_openimages
     In Collection: Faster R-CNN
     Config: configs/openimages/faster-rcnn_r50_fpn_32xb2-1x_openimages.py
     Metadata:
@@ -16,7 +16,7 @@ Models:
           box AP: 51.6
     Weights: https://download.openmmlab.com/mmdetection/v2.0/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_20211130_231159-e87ab7ce.pth
 
-  - Name: retinanet_r50_fpn_32x2_1x_openimages
+  - Name: retinanet_r50_fpn_32xb2-1x_openimages
     In Collection: RetinaNet
     Config: configs/openimages/retinanet_r50_fpn_32xb2-1x_openimages.py
     Metadata:
@@ -33,7 +33,7 @@ Models:
           box AP: 61.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/openimages/retinanet_r50_fpn_32x2_1x_openimages/retinanet_r50_fpn_32x2_1x_openimages_20211223_071954-d2ae5462.pth
 
-  - Name: ssd300_32x8_36e_openimages
+  - Name: ssd300_32xb8-36e_openimages
     In Collection: SSD
     Config: configs/openimages/ssd300_32xb8-36e_openimages.py
     Metadata:
@@ -50,7 +50,7 @@ Models:
           box AP: 35.4
     Weights: https://download.openmmlab.com/mmdetection/v2.0/openimages/ssd300_32x8_36e_openimages/ssd300_32x8_36e_openimages_20211224_000232-dce93846.pth
 
-  - Name: faster_rcnn_r50_fpn_32x2_1x_openimages_challenge
+  - Name: faster-rcnn_r50_fpn_32x2_1x_openimages_challenge
     In Collection: Faster R-CNN
     Config: configs/openimages/faster-rcnn_r50_fpn_32xb2-1x_openimages-challenge.py
     Metadata:
@@ -67,7 +67,7 @@ Models:
           box AP: 54.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/openimages/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge/faster_rcnn_r50_fpn_32x2_1x_openimages_challenge_20220114_045100-0e79e5df.pth
 
-  - Name: faster_rcnn_r50_fpn_32x2_cas_1x_openimages
+  - Name: faster-rcnn_r50_fpn_32x2_cas_1x_openimages
     In Collection: Faster R-CNN
     Config: configs/openimages/faster-rcnn_r50_fpn_32xb2-cas-1x_openimages.py
     Metadata:
@@ -84,7 +84,7 @@ Models:
           box AP: 60.0
     Weights: https://download.openmmlab.com/mmdetection/v2.0/openimages/faster_rcnn_r50_fpn_32x2_cas_1x_openimages/faster_rcnn_r50_fpn_32x2_cas_1x_openimages_20220306_202424-98c630e5.pth
 
-  - Name: faster_rcnn_r50_fpn_32x2_cas_1x_openimages_challenge
+  - Name: faster-rcnn_r50_fpn_32x2_cas_1x_openimages_challenge
     In Collection: Faster R-CNN
     Config: configs/openimages/faster-rcnn_r50_fpn_32xb2-cas-1x_openimages-challenge.py
     Metadata:

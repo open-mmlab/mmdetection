@@ -1,5 +1,5 @@
 Models:
-  - Name: mask_rcnn_swin-s-p4-w7_fpn_fp16_ms-crop-3x_coco
+  - Name: mask-rcnn_swin-s-p4-w7_fpn_amp-ms-crop-3x_coco
     In Collection: Mask R-CNN
     Config: configs/swin/mask-rcnn_swin-s-p4-w7_fpn_amp-ms-crop-3x_coco.py
     Metadata:
@@ -29,7 +29,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.16.0/mmdet/models/backbones/swin.py#L465
       Version: v2.16.0
 
-  - Name: mask_rcnn_swin-t-p4-w7_fpn_ms-crop-3x_coco
+  - Name: mask-rcnn_swin-t-p4-w7_fpn_ms-crop-3x_coco
     In Collection: Mask R-CNN
     Config: configs/swin/mask-rcnn_swin-t-p4-w7_fpn_ms-crop-3x_coco.py
     Metadata:
@@ -59,7 +59,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.16.0/mmdet/models/backbones/swin.py#L465
       Version: v2.16.0
 
-  - Name: mask_rcnn_swin-t-p4-w7_fpn_1x_coco
+  - Name: mask-rcnn_swin-t-p4-w7_fpn_1x_coco
     In Collection: Mask R-CNN
     Config: configs/swin/mask-rcnn_swin-t-p4-w7_fpn_1x_coco.py
     Metadata:
@@ -89,7 +89,7 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.16.0/mmdet/models/backbones/swin.py#L465
       Version: v2.16.0
 
-  - Name: mask_rcnn_swin-t-p4-w7_fpn_fp16_ms-crop-3x_coco
+  - Name: mask-rcnn_swin-t-p4-w7_fpn_amp-ms-crop-3x_coco
     In Collection: Mask R-CNN
     Config: configs/swin/mask-rcnn_swin-t-p4-w7_fpn_amp-ms-crop-3x_coco.py
     Metadata:

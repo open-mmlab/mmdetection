@@ -17,7 +17,7 @@ Collections:
       Version: v2.0.0
 
 Models:
-  - Name: mask_rcnn_r50_fpn_gn-all_2x_coco
+  - Name: mask-rcnn_r50_fpn_gn-all_2x_coco
     In Collection: Group Normalization
     Config: configs/gn/mask-rcnn_r50_fpn_gn-all_2x_coco.py
     Metadata:
@@ -41,7 +41,7 @@ Models:
           mask AP:  36.4
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gn/mask_rcnn_r50_fpn_gn-all_2x_coco/mask_rcnn_r50_fpn_gn-all_2x_coco_20200206-8eee02a6.pth
 
-  - Name: mask_rcnn_r50_fpn_gn-all_3x_coco
+  - Name: mask-rcnn_r50_fpn_gn-all_3x_coco
     In Collection: Group Normalization
     Config: configs/gn/mask-rcnn_r50_fpn_gn-all_3x_coco.py
     Metadata:
@@ -65,7 +65,7 @@ Models:
           mask AP:  36.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gn/mask_rcnn_r50_fpn_gn-all_3x_coco/mask_rcnn_r50_fpn_gn-all_3x_coco_20200214-8b23b1e5.pth
 
-  - Name: mask_rcnn_r101_fpn_gn-all_2x_coco
+  - Name: mask-rcnn_r101_fpn_gn-all_2x_coco
     In Collection: Group Normalization
     Config: configs/gn/mask-rcnn_r101_fpn_gn-all_2x_coco.py
     Metadata:
@@ -89,7 +89,7 @@ Models:
           mask AP:  37.6
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gn/mask_rcnn_r101_fpn_gn-all_2x_coco/mask_rcnn_r101_fpn_gn-all_2x_coco_20200205-d96b1b50.pth
 
-  - Name: mask_rcnn_r101_fpn_gn-all_3x_coco
+  - Name: mask-rcnn_r101_fpn_gn-all_3x_coco
     In Collection: Group Normalization
     Config: configs/gn/mask-rcnn_r101_fpn_gn-all_3x_coco.py
     Metadata:
@@ -113,7 +113,7 @@ Models:
           mask AP:  38.0
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gn/mask_rcnn_r101_fpn_gn-all_3x_coco/mask_rcnn_r101_fpn_gn-all_3x_coco_20200513_181609-0df864f4.pth
 
-  - Name: mask_rcnn_r50_fpn_gn-all_contrib_2x_coco
+  - Name: mask-rcnn_r50_fpn_gn-all_contrib_2x_coco
     In Collection: Group Normalization
     Config: configs/gn/mask-rcnn_r50-contrib_fpn_gn-all_2x_coco.py
     Metadata:
@@ -137,7 +137,7 @@ Models:
           mask AP:  36.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gn/mask_rcnn_r50_fpn_gn-all_contrib_2x_coco/mask_rcnn_r50_fpn_gn-all_contrib_2x_coco_20200207-20d3e849.pth
 
-  - Name: mask_rcnn_r50_fpn_gn-all_contrib_3x_coco
+  - Name: mask-rcnn_r50_fpn_gn-all_contrib_3x_coco
     In Collection: Group Normalization
     Config: configs/gn/mask-rcnn_r50-contrib_fpn_gn-all_3x_coco.py
     Metadata:

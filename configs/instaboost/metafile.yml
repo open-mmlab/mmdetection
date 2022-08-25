@@ -16,7 +16,7 @@ Collections:
       Version: v2.0.0
 
 Models:
-  - Name: mask_rcnn_r50_fpn_instaboost_4x_coco
+  - Name: mask-rcnn_r50_fpn_instaboost_4x_coco
     In Collection: InstaBoost
     Config: configs/instaboost/mask-rcnn_r50_fpn_instaboost-4x_coco.py
     Metadata:
@@ -40,7 +40,7 @@ Models:
           mask AP: 36.6
     Weights: https://download.openmmlab.com/mmdetection/v2.0/instaboost/mask_rcnn_r50_fpn_instaboost_4x_coco/mask_rcnn_r50_fpn_instaboost_4x_coco_20200307-d025f83a.pth
 
-  - Name: mask_rcnn_r101_fpn_instaboost_4x_coco
+  - Name: mask-rcnn_r101_fpn_instaboost-4x_coco
     In Collection: InstaBoost
     Config: configs/instaboost/mask-rcnn_r101_fpn_instaboost-4x_coco.py
     Metadata:
@@ -57,7 +57,7 @@ Models:
           mask AP: 38.0
     Weights: https://download.openmmlab.com/mmdetection/v2.0/instaboost/mask_rcnn_r101_fpn_instaboost_4x_coco/mask_rcnn_r101_fpn_instaboost_4x_coco_20200703_235738-f23f3a5f.pth
 
-  - Name: mask_rcnn_x101_64x4d_fpn_instaboost_4x_coco
+  - Name: mask-rcnn_x101-64x4d_fpn_instaboost-4x_coco
     In Collection: InstaBoost
     Config: configs/instaboost/mask-rcnn_x101-64x4d_fpn_instaboost-4x_coco.py
     Metadata:
@@ -74,7 +74,7 @@ Models:
           mask AP: 39.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/instaboost/mask_rcnn_x101_64x4d_fpn_instaboost_4x_coco/mask_rcnn_x101_64x4d_fpn_instaboost_4x_coco_20200515_080947-8ed58c1b.pth
 
-  - Name: cascade_mask_rcnn_r50_fpn_instaboost_4x_coco
+  - Name: cascade-mask-rcnn_r50_fpn_instaboost_4x_coco
     In Collection: InstaBoost
     Config: configs/instaboost/cascade-mask-rcnn_r50_fpn_instaboost-4x_coco.py
     Metadata:
