@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import random
 from numbers import Number
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
@@ -377,11 +377,7 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
         super().__init__()
         self.data_preprocessor = MODELS.build(data_preprocessor)
 
-    def forward(
-        self,
-        data: dict,
-        training: bool = False
-    ) -> Tuple[Dict[str, torch.Tensor], Dict[str, Optional[list]]]:
+    def forward(self, data: dict, training: bool = False) -> dict:
         """Perform normalization、padding and bgr2rgb conversion based on
         ``BaseDataPreprocessor`` for multi-branch data.
 
@@ -390,8 +386,7 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
             training (bool): Whether to enable training time augmentation.
 
         Returns:
-            Tuple[Dict[torch.Tensor], Dict[Optional[list]]]: Each tuple of
-            zip(dict, dict) is the data in the same format as the model input.
+            dict: Data in the same format as the model input.
         """
 
         if training is False:
@@ -412,11 +407,21 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
                 else:
                     multi_branch_data[branch][key].append(data[key][branch])
 
-        multi_batch_inputs, multi_batch_data_samples = {}, {}
         for branch, _data in multi_branch_data.items():
-            multi_batch_inputs[branch], multi_batch_data_samples[
-                branch] = self.data_preprocessor(_data, training)
-        return multi_batch_inputs, multi_batch_data_samples
+            multi_branch_data[branch] = self.data_preprocessor(_data, training)
+
+        format_data = {}
+        for branch in multi_branch_data.keys():
+            for key in multi_branch_data[branch].keys():
+                if format_data.get(key, None) is None:
+                    format_data[key] = {branch: multi_branch_data[branch][key]}
+                elif format_data[key].get(branch, None) is None:
+                    format_data[key][branch] = multi_branch_data[branch][key]
+                else:
+                    format_data[key][branch].append(
+                        multi_branch_data[branch][key])
+
+        return format_data
 
     @property
     def device(self):
