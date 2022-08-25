@@ -6,42 +6,14 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - Compatibility issue between MMCV and MMDetection; "ConvWS is already registered in conv layer"; "AssertionError: MMCV==xxx is used but incompatible. Please install mmcv>=xxx, \<=xxx."
 
-  Compatible MMDetection and MMCV versions are shown as below. Please choose the correct version of MMCV to avoid installation issues.
+  Compatible MMDetection, MMEngine, and MMCV versions are shown as below. Please choose the correct version of MMCV to avoid installation issues.
 
-| MMDetection version |        MMCV version        |
-| :-----------------: | :------------------------: |
-|       master        | mmcv-full>=1.3.17, \<1.6.0 |
-|       2.25.0        | mmcv-full>=1.3.17, \<1.6.0 |
-|       2.24.1        | mmcv-full>=1.3.17, \<1.6.0 |
-|       2.24.0        | mmcv-full>=1.3.17, \<1.6.0 |
-|       2.23.0        | mmcv-full>=1.3.17, \<1.5.0 |
-|       2.22.0        | mmcv-full>=1.3.17, \<1.5.0 |
-|       2.21.0        | mmcv-full>=1.3.17, \<1.5.0 |
-|       2.20.0        | mmcv-full>=1.3.17, \<1.5.0 |
-|       2.19.1        | mmcv-full>=1.3.17, \<1.5.0 |
-|       2.19.0        | mmcv-full>=1.3.17, \<1.5.0 |
-|       2.18.0        | mmcv-full>=1.3.17, \<1.4.0 |
-|       2.17.0        | mmcv-full>=1.3.14, \<1.4.0 |
-|       2.16.0        | mmcv-full>=1.3.8, \<1.4.0  |
-|       2.15.1        | mmcv-full>=1.3.8, \<1.4.0  |
-|       2.15.0        | mmcv-full>=1.3.8, \<1.4.0  |
-|       2.14.0        | mmcv-full>=1.3.8, \<1.4.0  |
-|       2.13.0        | mmcv-full>=1.3.3, \<1.4.0  |
-|       2.12.0        | mmcv-full>=1.3.3, \<1.4.0  |
-|       2.11.0        | mmcv-full>=1.2.4, \<1.4.0  |
-|       2.10.0        | mmcv-full>=1.2.4, \<1.4.0  |
-|        2.9.0        | mmcv-full>=1.2.4, \<1.4.0  |
-|        2.8.0        | mmcv-full>=1.2.4, \<1.4.0  |
-|        2.7.0        | mmcv-full>=1.1.5, \<1.4.0  |
-|        2.6.0        | mmcv-full>=1.1.5, \<1.4.0  |
-|        2.5.0        | mmcv-full>=1.1.5, \<1.4.0  |
-|        2.4.0        | mmcv-full>=1.1.1, \<1.4.0  |
-|        2.3.0        |      mmcv-full==1.0.5      |
-|      2.3.0rc0       |      mmcv-full>=1.0.2      |
-|        2.2.1        |        mmcv==0.6.2         |
-|        2.2.0        |        mmcv==0.6.2         |
-|        2.1.0        |   mmcv>=0.5.9, \<=0.6.1    |
-|        2.0.0        |   mmcv>=0.5.1, \<=0.5.8    |
+  | MMDetection version |         MMCV version         |     MMEngine version     |
+  | :-----------------: | :--------------------------: | :----------------------: |
+  |       dev-3.x       | mmcv-full>=2.0.0rc0, \<2.1.0 | mmengine>=0.1.0, \<0.2.0 |
+  |      3.0.0rc0       | mmcv-full>=2.0.0rc0, \<2.1.0 | mmengine>=0.1.0, \<0.2.0 |
+
+  **Note:** If you want to install mmdet-v2.x, the compatible MMDetection and MMCV versions table can be found at [here](https://mmdetection.readthedocs.io/en/stable/faq.html#installation). Please choose the correct version of MMCV to avoid installation issues.
 
 - "No module named 'mmcv.ops'"; "No module named 'mmcv.\_ext'".
 
@@ -76,7 +48,7 @@ We list some common troubles faced by many users and their corresponding solutio
 
 - How to develop with multiple MMDetection versions
 
-  You can have multiple folders like mmdet-2.21, mmdet-2.22.
+  You can have multiple folders like mmdet-3.0, mmdet-3.1.
   When you run the train or test script, it will adopt the mmdet package in the current folder.
 
   To use the default MMDetection installed in the environment rather than the one you are working with, you can remove the following line in those scripts:
@@ -147,7 +119,7 @@ We list some common troubles faced by many users and their corresponding solutio
   1. Check if the dataset annotations are valid: zero-size bounding boxes will cause the regression loss to be Nan due to the commonly used transformation for box regression. Some small size (width or height are smaller than 1) boxes will also cause this problem after data augmentation (e.g., instaboost). So check the data and try to filter out those zero-size boxes and skip some risky augmentations on the small-size boxes when you face the problem.
   2. Reduce the learning rate: the learning rate might be too large due to some reasons, e.g., change of batch size. You can rescale them to the value that could stably train the model.
   3. Extend the warmup iterations: some models are sensitive to the learning rate at the start of the training. You can extend the warmup iterations, e.g., change the `warmup_iters` from 500 to 1000 or 2000.
-  4. Add gradient clipping: some models requires gradient clipping to stabilize the training process. The default of `grad_clip` is `None`, you can add gradient clippint to avoid gradients that are too large, i.e., set `optimizer_config=dict(_delete_=True, grad_clip=dict(max_norm=35, norm_type=2))` in your config file. If your config does not inherits from any basic config that contains `optimizer_config=dict(grad_clip=None)`, you can simply add `optimizer_config=dict(grad_clip=dict(max_norm=35, norm_type=2))`.
+  4. Add gradient clipping: some models requires gradient clipping to stabilize the training process. The default of `grad_clip` is `None`, you can add gradient clippint to avoid gradients that are too large, i.e., set `optim_wrapper=dict(clip_grad=dict(max_norm=35, norm_type=2))` in your config file.
 
 - "GPU out of memory"
 
@@ -179,28 +151,12 @@ We list some common troubles faced by many users and their corresponding solutio
 - "RuntimeError: Expected to have finished reduction in the prior iteration before starting a new one"
 
   1. This error indicates that your module has parameters that were not used in producing loss. This phenomenon may be caused by running different branches in your code in DDP mode.
-  2. You can set `find_unused_parameters = True` in the config to solve the above problems(but this will slow down the training speed.
-  3. If the version of your MMCV >= 1.4.1, you can get the name of those unused parameters with `detect_anomalous_params=True` in `optimizer_config` of config.
+  2. You can set `find_unused_parameters = True` in the config to solve the above problems, but this will slow down the training speed.
+  3. You can set `detect_anomalous_params = True` in the config or `model_wrapper_cfg = dict(type='MMDistributedDataParallel', detect_anomalous_params=True)` (More details please refer to [MMEngine](https://github.com/open-mmlab/mmengine/blob/main/mmengine/model/wrappers/distributed.py#L91)) to get the name of those unused parameters. Note `detect_anomalous_params = True` will slow down the training speed, so it is recommended for debugging only.
 
 - Save the best model
 
-  It can be turned on by configuring `evaluation = dict(save_best=‘auto’)`. In the case of the `auto` parameter, the first key in the returned evaluation result will be used as the basis for selecting the best model. You can also directly set the key in the evaluation result to manually set it, for example, `evaluation = dict(save_best='mAP' )`.
-
-- Resume training with `ExpMomentumEMAHook`
-
-  If you use `ExpMomentumEMAHook` in training, you can't just use command line parameters  `--resume-from` nor `--cfg-options resume_from` to restore model parameters during resume, i.e., the command `python tools/train.py configs/yolox/yolox_s_8x8_300e_coco.py --resume-from ./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth` will not work. Since `ExpMomentumEMAHook` needs to reload the weights, taking the `yolox_s` algorithm as an example, you should modify the values of `resume_from` in two places of the config as below:
-
-  ```python
-  # Open configs/yolox/yolox_s_8x8_300e_coco.py directly and modify all resume_from fields
-  resume_from=./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth
-  custom_hooks=[...
-      dict(
-          type='ExpMomentumEMAHook',
-          resume_from=./work_dir/yolox_s_8x8_300e_coco/epoch_x.pth,
-          momentum=0.0001,
-          priority=49)
-      ]
-  ```
+  It can be turned on by configuring `default_hooks = dict(checkpoint=dict(type='CheckpointHook', interval=1, save_best='auto'),`. In the case of the `auto` parameter, the first key in the returned evaluation result will be used as the basis for selecting the best model. You can also directly set the key in the evaluation result to manually set it, for example, `save_best='mAP'`.
 
 ## Evaluation
 

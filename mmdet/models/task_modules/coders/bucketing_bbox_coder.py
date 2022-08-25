@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import mmcv
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -92,7 +91,6 @@ class BucketingBBoxCoder(BaseBBoxCoder):
         return decoded_bboxes
 
 
-@mmcv.jit(coderize=True)
 def generat_buckets(proposals, num_buckets, scale_factor=1.0):
     """Generate buckets w.r.t bucket number and scale factor of proposals.
 
@@ -141,7 +139,6 @@ def generat_buckets(proposals, num_buckets, scale_factor=1.0):
     return bucket_w, bucket_h, l_buckets, r_buckets, t_buckets, d_buckets
 
 
-@mmcv.jit(coderize=True)
 def bbox2bucket(proposals,
                 gt,
                 num_buckets,
@@ -265,7 +262,6 @@ def bbox2bucket(proposals,
     return offsets, offsets_weights, bucket_labels, bucket_cls_weights
 
 
-@mmcv.jit(coderize=True)
 def bucket2bbox(proposals,
                 cls_preds,
                 offset_preds,

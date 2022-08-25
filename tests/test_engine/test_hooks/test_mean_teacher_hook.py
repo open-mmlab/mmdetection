@@ -6,12 +6,14 @@ from unittest.mock import Mock
 
 import torch
 import torch.nn as nn
+from mmengine.evaluator import Evaluator
 from mmengine.model import BaseModel
 from mmengine.optim import OptimWrapper
 from mmengine.registry import MODEL_WRAPPERS
 from mmengine.runner import Runner
 from torch.utils.data import Dataset
 
+from mmdet.registry import DATASETS
 from mmdet.utils import register_all_modules
 
 register_all_modules()
@@ -56,6 +58,7 @@ class ToyModel2(BaseModel):
         return self.student(*args, **kwargs)
 
 
+@DATASETS.register_module(force=True)
 class DummyDataset(Dataset):
     METAINFO = dict()  # type: ignore
     data = torch.randn(12, 2)
@@ -85,6 +88,7 @@ class TestMeanTeacherHook(TestCase):
         model = ToyModel2().to(device)
         evaluator = Mock()
         evaluator.evaluate = Mock(return_value=dict(acc=0.5))
+        evaluator.__class__ = Evaluator
         runner = Runner(
             model=model,
             train_dataloader=dict(

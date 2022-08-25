@@ -84,7 +84,6 @@ The users can do those fine-grained parameter tuning through customizing optimiz
 from mmcv.utils import build_from_cfg
 
 from mmcv.runner.optimizer import OPTIMIZER_BUILDERS, OPTIMIZERS
-from mmdet.utils import get_root_logger
 from .my_optimizer import MyOptimizer
 
 

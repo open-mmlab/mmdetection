@@ -4,10 +4,10 @@ from typing import List
 
 import torch.nn as nn
 from mmengine.dist import get_dist_info
+from mmengine.logging import MMLogger
 from mmengine.optim import DefaultOptimWrapperConstructor
 
 from mmdet.registry import OPTIM_WRAPPER_CONSTRUCTORS
-from mmdet.utils import get_root_logger
 
 
 def get_layer_id_for_convnext(var_name, max_layer_id):
@@ -95,7 +95,7 @@ class LearningRateDecayOptimizerConstructor(DefaultOptimWrapperConstructor):
                 in place.
             module (nn.Module): The module to be added.
         """
-        logger = get_root_logger()
+        logger = MMLogger.get_current_instance()
 
         parameter_groups = {}
         logger.info(f'self.paramwise_cfg is {self.paramwise_cfg}')

@@ -25,13 +25,14 @@ import numpy as np
 import torch
 from mmengine.config import Config
 from mmengine.fileio import dump
+from mmengine.logging import MMLogger
 from mmengine.utils import ProgressBar
 from scipy.optimize import differential_evolution
 
 from mmdet.datasets import build_dataset
 from mmdet.structures.bbox import (bbox_cxcywh_to_xyxy, bbox_overlaps,
                                    bbox_xyxy_to_cxcywh)
-from mmdet.utils import get_root_logger, replace_cfg_vals, update_data_root
+from mmdet.utils import replace_cfg_vals, update_data_root
 
 
 def parse_args():
@@ -322,7 +323,7 @@ class YOLODEAnchorOptimizer(BaseAnchorOptimizer):
 
 
 def main():
-    logger = get_root_logger()
+    logger = MMLogger.get_current_instance()
     args = parse_args()
     cfg = args.config
     cfg = Config.fromfile(cfg)
