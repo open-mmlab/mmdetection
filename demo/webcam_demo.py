@@ -51,7 +51,8 @@ def main():
         visualizer.add_datasample(
             name='result',
             image=img,
-            pred_sample=result,
+            data_sample=result,
+            draw_gt=False,
             pred_score_thr=args.score_thr,
             show=False)
 

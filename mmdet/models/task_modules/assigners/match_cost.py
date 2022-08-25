@@ -4,7 +4,7 @@ from typing import Optional, Union
 
 import torch
 import torch.nn.functional as F
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import TASK_UTILS

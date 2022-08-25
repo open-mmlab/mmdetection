@@ -37,19 +37,15 @@ class TestMaskScoringRoiHead(TestCase):
                            s // (2**(i + 2))).to(device='cuda'))
 
         image_shapes = [(3, s, s)]
-        packed_inputs = demo_mm_inputs(
+        batch_data_samples = demo_mm_inputs(
             batch_size=1,
             image_shapes=image_shapes,
             num_items=[1],
             num_classes=4,
-            with_mask=True)
+            with_mask=True,
+            device='cuda')['data_samples']
         proposals_list = demo_mm_proposals(
-            image_shapes=image_shapes, num_proposals=100)
-        batch_data_samples = []
-        for i in range(len(packed_inputs)):
-            batch_data_samples.append(
-                packed_inputs[i]['data_sample'].to(device='cuda'))
-            proposals_list[i] = proposals_list[i].to(device='cuda')
+            image_shapes=image_shapes, num_proposals=100, device='cuda')
 
         out = roi_head.loss(feats, proposals_list, batch_data_samples)
         loss_cls = out['loss_cls']
@@ -59,19 +55,15 @@ class TestMaskScoringRoiHead(TestCase):
         self.assertGreater(loss_bbox.sum(), 0, 'box loss should be non-zero')
         self.assertGreater(loss_mask.sum(), 0, 'mask loss should be non-zero')
 
-        packed_inputs = demo_mm_inputs(
+        batch_data_samples = demo_mm_inputs(
             batch_size=1,
             image_shapes=image_shapes,
             num_items=[0],
             num_classes=4,
-            with_mask=True)
+            with_mask=True,
+            device='cuda')['data_samples']
         proposals_list = demo_mm_proposals(
-            image_shapes=image_shapes, num_proposals=100)
-        batch_data_samples = []
-        for i in range(len(packed_inputs)):
-            batch_data_samples.append(
-                packed_inputs[i]['data_sample'].to(device='cuda'))
-            proposals_list[i] = proposals_list[i].to(device='cuda')
+            image_shapes=image_shapes, num_proposals=100, device='cuda')
 
         out = roi_head.loss(feats, proposals_list, batch_data_samples)
         empty_cls_loss = out['loss_cls']
@@ -101,19 +93,15 @@ class TestMaskScoringRoiHead(TestCase):
                            s // (2**(i + 2))).to(device='cuda'))
 
         image_shapes = [(3, s, s)]
-        packed_inputs = demo_mm_inputs(
+        batch_data_samples = demo_mm_inputs(
             batch_size=1,
             image_shapes=image_shapes,
             num_items=[0],
             num_classes=4,
-            with_mask=True)
+            with_mask=True,
+            device='cuda')['data_samples']
         proposals_list = demo_mm_proposals(
-            image_shapes=image_shapes, num_proposals=100)
-        batch_data_samples = []
-        for i in range(len(packed_inputs)):
-            batch_data_samples.append(
-                packed_inputs[i]['data_sample'].to(device='cuda'))
-            proposals_list[i] = proposals_list[i].to(device='cuda')
+            image_shapes=image_shapes, num_proposals=100, device='cuda')
         roi_head.predict(feats, proposals_list, batch_data_samples)
 
     def test_mask_scoring_roi_head_forward(self):
@@ -132,7 +120,5 @@ class TestMaskScoringRoiHead(TestCase):
 
         image_shapes = [(3, s, s)]
         proposals_list = demo_mm_proposals(
-            image_shapes=image_shapes, num_proposals=100)
-        for i in range(len(proposals_list)):
-            proposals_list[i] = proposals_list[i].to(device='cuda')
+            image_shapes=image_shapes, num_proposals=100, device='cuda')
         roi_head.forward(feats, proposals_list)

@@ -79,6 +79,7 @@ test_pipeline = [
         test_mode=True,
         test_pad_mode=['logical_or', 31],
         test_pad_add_pix=1),
+    dict(type='LoadAnnotations', with_bbox=True),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape', 'border'))

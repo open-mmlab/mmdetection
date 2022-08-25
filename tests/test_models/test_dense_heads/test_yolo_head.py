@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import torch
 from mmengine.config import Config
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 
 from mmdet.models.dense_heads import YOLOV3Head
 

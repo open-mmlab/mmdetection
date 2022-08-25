@@ -6,7 +6,7 @@ import torch.nn as nn
 from mmcv.cnn import build_activation_layer, build_norm_layer
 from mmcv.cnn.bricks.transformer import FFN, MultiheadAttention
 from mmengine.config import ConfigDict
-from mmengine.model.utils import bias_init_with_prob
+from mmengine.model import bias_init_with_prob
 from torch import Tensor
 
 from mmdet.models.losses import accuracy

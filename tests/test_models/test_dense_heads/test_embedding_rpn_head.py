@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import pytest
 import torch
-from mmengine import InstanceData
+from mmengine.structures import InstanceData
 
 from mmdet.models.dense_heads import EmbeddingRPNHead
 from mmdet.structures import DetDataSample

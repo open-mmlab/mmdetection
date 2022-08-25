@@ -2,7 +2,7 @@
 from abc import ABCMeta, abstractmethod
 from typing import Optional
 
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 
 
 class BaseAssigner(metaclass=ABCMeta):

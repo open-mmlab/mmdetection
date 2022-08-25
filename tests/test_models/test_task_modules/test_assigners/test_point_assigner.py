@@ -2,7 +2,7 @@
 import unittest
 
 import torch
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 from mmengine.testing import assert_allclose
 
 from mmdet.models.task_modules.assigners import PointAssigner

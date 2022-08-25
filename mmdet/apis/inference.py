@@ -112,15 +112,27 @@ def inference_detector(
     cfg = model.cfg
 
     if test_pipeline is None:
+        cfg = cfg.copy()
+        test_pipeline = cfg.test_dataloader.dataset.pipeline
         if isinstance(imgs[0], np.ndarray):
-            cfg = cfg.copy()
             # set loading pipeline type
-            cfg.test_dataloader.dataset.pipeline[
-                0].type = 'LoadImageFromNDArray'
+            test_pipeline[0].type = 'LoadImageFromNDArray'
 
-        test_pipeline = Compose(cfg.test_dataloader.dataset.pipeline)
+        new_test_pipeline = []
+        for pipeline in test_pipeline:
+            if pipeline['type'] != 'LoadAnnotations' and pipeline[
+                    'type'] != 'LoadPanopticAnnotations':
+                new_test_pipeline.append(pipeline)
 
-    data = []
+        test_pipeline = Compose(new_test_pipeline)
+
+    if model.data_preprocessor.device.type == 'cpu':
+        for m in model.modules():
+            assert not isinstance(
+                m, RoIPool
+            ), 'CPU inference with RoIPool is not supported currently.'
+
+    result_list = []
     for img in imgs:
         # prepare data
         if isinstance(img, np.ndarray):
@@ -131,21 +143,20 @@ def inference_detector(
             data_ = dict(img_path=img, img_id=0)
         # build the data pipeline
         data_ = test_pipeline(data_)
-        data.append(data_)
 
-    for m in model.modules():
-        assert not isinstance(
-            m,
-            RoIPool), 'CPU inference with RoIPool is not supported currently.'
+        data_['inputs'] = [data_['inputs']]
+        data_['data_samples'] = [data_['data_samples']]
 
-    # forward the model
-    with torch.no_grad():
-        results = model.test_step(data)
+        # forward the model
+        with torch.no_grad():
+            results = model.test_step(data_)[0]
+
+        result_list.append(results)
 
     if not is_batch:
-        return results[0]
+        return result_list[0]
     else:
-        return results
+        return result_list
 
 
 # TODO: Awaiting refactoring

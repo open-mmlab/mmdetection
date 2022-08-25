@@ -6,8 +6,8 @@ import torch
 import torch.nn as nn
 from mmcv.cnn import Conv2d, Linear, MaxPool2d
 from mmengine.config import ConfigDict
-from mmengine.data import InstanceData
 from mmengine.model import BaseModule
+from mmengine.structures import InstanceData
 from torch import Tensor
 from torch.nn.modules.utils import _pair
 

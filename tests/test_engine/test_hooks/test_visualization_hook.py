@@ -6,7 +6,7 @@ from unittest import TestCase
 from unittest.mock import Mock
 
 import torch
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 
 from mmdet.engine.hooks import DetVisualizationHook
 from mmdet.structures import DetDataSample
@@ -30,18 +30,15 @@ class TestVisualizationHook(TestCase):
     def setUp(self) -> None:
         DetLocalVisualizer.get_instance('visualizer')
 
-        data_sample = DetDataSample()
-        data_sample.set_metainfo({
-            'img_path':
-            osp.join(osp.dirname(__file__), '../../data/color.jpg')
-        })
-        self.data_batch = [{'data_sample': data_sample}] * 2
-
         pred_instances = InstanceData()
         pred_instances.bboxes = _rand_bboxes(5, 10, 12)
         pred_instances.labels = torch.randint(0, 2, (5, ))
         pred_instances.scores = torch.rand((5, ))
         pred_det_data_sample = DetDataSample()
+        pred_det_data_sample.set_metainfo({
+            'img_path':
+            osp.join(osp.dirname(__file__), '../../data/color.jpg')
+        })
         pred_det_data_sample.pred_instances = pred_instances
         self.outputs = [pred_det_data_sample] * 2
 
@@ -49,13 +46,13 @@ class TestVisualizationHook(TestCase):
         runner = Mock()
         runner.iter = 1
         hook = DetVisualizationHook()
-        hook.after_val_iter(runner, 1, self.data_batch, self.outputs)
+        hook.after_val_iter(runner, 1, {}, self.outputs)
 
     def test_after_test_iter(self):
         runner = Mock()
         runner.iter = 1
         hook = DetVisualizationHook(draw=True)
-        hook.after_test_iter(runner, 1, self.data_batch, self.outputs)
+        hook.after_test_iter(runner, 1, {}, self.outputs)
         self.assertEqual(hook._test_index, 2)
 
         # test
@@ -64,10 +61,10 @@ class TestVisualizationHook(TestCase):
         runner.work_dir = timestamp
         runner.timestamp = '1'
         hook = DetVisualizationHook(draw=False, test_out_dir=test_out_dir)
-        hook.after_test_iter(runner, 1, self.data_batch, self.outputs)
+        hook.after_test_iter(runner, 1, {}, self.outputs)
         self.assertTrue(not osp.exists(f'{timestamp}/1/{test_out_dir}'))
 
         hook = DetVisualizationHook(draw=True, test_out_dir=test_out_dir)
-        hook.after_test_iter(runner, 1, self.data_batch, self.outputs)
+        hook.after_test_iter(runner, 1, {}, self.outputs)
         self.assertTrue(osp.exists(f'{timestamp}/1/{test_out_dir}'))
         shutil.rmtree(f'{timestamp}')

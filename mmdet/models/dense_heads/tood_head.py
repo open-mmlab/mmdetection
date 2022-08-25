@@ -8,8 +8,8 @@ from mmcv.cnn import ConvModule, Scale
 from mmcv.ops import deform_conv2d
 from mmengine import MessageHub
 from mmengine.config import ConfigDict
-from mmengine.data import InstanceData
-from mmengine.model.utils import bias_init_with_prob, normal_init
+from mmengine.model import bias_init_with_prob, normal_init
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS

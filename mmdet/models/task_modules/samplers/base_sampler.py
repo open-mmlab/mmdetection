@@ -2,7 +2,7 @@
 from abc import ABCMeta, abstractmethod
 
 import torch
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 
 from ..assigners import AssignResult
 from .sampling_result import SamplingResult
@@ -69,7 +69,7 @@ class BaseSampler(metaclass=ABCMeta):
             :obj:`SamplingResult`: Sampling result.
 
         Example:
-            >>> from mmengine.data import InstanceData
+            >>> from mmengine.structures import InstanceData
             >>> from mmdet.models.task_modules.samplers import RandomSampler,
             >>> from mmdet.models.task_modules.assigners import AssignResult
             >>> from mmdet.models.task_modules.samplers.

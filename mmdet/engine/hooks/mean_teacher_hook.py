@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Optional, Sequence
+from typing import Optional
 
 import torch.nn as nn
 from mmengine.hooks import Hook
@@ -58,7 +58,7 @@ class MeanTeacherHook(Hook):
     def after_train_iter(self,
                          runner: Runner,
                          batch_idx: int,
-                         data_batch: Optional[Sequence[dict]] = None,
+                         data_batch: Optional[dict] = None,
                          outputs: Optional[dict] = None) -> None:
         """Update teacher's parameter every self.interval iterations."""
         if (runner.iter + 1) % self.interval != 0:

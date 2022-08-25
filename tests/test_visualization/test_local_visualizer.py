@@ -4,7 +4,7 @@ from unittest import TestCase
 import cv2
 import numpy as np
 import torch
-from mmengine.data import InstanceData, PixelData
+from mmengine.structures import InstanceData, PixelData
 
 from mmdet.evaluation import INSTANCE_OFFSET
 from mmdet.structures import DetDataSample
@@ -49,15 +49,20 @@ class TestDetLocalVisualizer(TestCase):
         gt_instances = InstanceData()
         gt_instances.bboxes = _rand_bboxes(num_bboxes, h, w)
         gt_instances.labels = torch.randint(0, num_class, (num_bboxes, ))
-        gt_det_data_sample = DetDataSample()
-        gt_det_data_sample.gt_instances = gt_instances
-        #
+        det_data_sample = DetDataSample()
+        det_data_sample.gt_instances = gt_instances
+
         det_local_visualizer = DetLocalVisualizer()
-        det_local_visualizer.add_datasample('image', image, gt_det_data_sample)
+        det_local_visualizer.add_datasample(
+            'image', image, det_data_sample, draw_pred=False)
 
         # test out_file
         det_local_visualizer.add_datasample(
-            'image', image, gt_det_data_sample, out_file=out_file)
+            'image',
+            image,
+            det_data_sample,
+            draw_pred=False,
+            out_file=out_file)
         assert os.path.exists(out_file)
         drawn_img = cv2.imread(out_file)
         assert drawn_img.shape == (h, w, 3)
@@ -68,31 +73,20 @@ class TestDetLocalVisualizer(TestCase):
         pred_instances.bboxes = _rand_bboxes(num_bboxes, h, w)
         pred_instances.labels = torch.randint(0, num_class, (num_bboxes, ))
         pred_instances.scores = torch.rand((num_bboxes, ))
-        pred_det_data_sample = DetDataSample()
-        pred_det_data_sample.pred_instances = pred_instances
+        det_data_sample.pred_instances = pred_instances
 
         det_local_visualizer.add_datasample(
-            'image',
-            image,
-            gt_det_data_sample,
-            pred_det_data_sample,
-            out_file=out_file)
+            'image', image, det_data_sample, out_file=out_file)
         self._assert_image_and_shape(out_file, (h, w * 2, 3))
 
         det_local_visualizer.add_datasample(
-            'image',
-            image,
-            gt_det_data_sample,
-            pred_det_data_sample,
-            draw_gt=False,
-            out_file=out_file)
+            'image', image, det_data_sample, draw_gt=False, out_file=out_file)
         self._assert_image_and_shape(out_file, (h, w, 3))
 
         det_local_visualizer.add_datasample(
             'image',
             image,
-            gt_det_data_sample,
-            pred_det_data_sample,
+            det_data_sample,
             draw_pred=False,
             out_file=out_file)
         self._assert_image_and_shape(out_file, (h, w, 3))
@@ -101,30 +95,23 @@ class TestDetLocalVisualizer(TestCase):
         det_local_visualizer.dataset_meta = dict(CLASSES=('1', '2'))
         gt_sem_seg = _create_panoptic_data(num_bboxes, h, w)
         panoptic_seg = PixelData(sem_seg=gt_sem_seg)
-        gt_det_data_sample = DetDataSample()
-        gt_det_data_sample.gt_panoptic_seg = panoptic_seg
+
+        det_data_sample = DetDataSample()
+        det_data_sample.gt_panoptic_seg = panoptic_seg
 
         pred_sem_seg = _create_panoptic_data(num_bboxes, h, w)
         panoptic_seg = PixelData(sem_seg=pred_sem_seg)
-        pred_det_data_sample = DetDataSample()
-        pred_det_data_sample.pred_panoptic_seg = panoptic_seg
+        det_data_sample.pred_panoptic_seg = panoptic_seg
+
         det_local_visualizer.add_datasample(
-            'image',
-            image,
-            gt_det_data_sample,
-            pred_det_data_sample,
-            out_file=out_file)
+            'image', image, det_data_sample, out_file=out_file)
         self._assert_image_and_shape(out_file, (h, w * 2, 3))
 
         # class information must be provided
         det_local_visualizer.dataset_meta = {}
         with self.assertRaises(AssertionError):
             det_local_visualizer.add_datasample(
-                'image',
-                image,
-                gt_det_data_sample,
-                pred_det_data_sample,
-                out_file=out_file)
+                'image', image, det_data_sample, out_file=out_file)
 
     def _assert_image_and_shape(self, out_file, out_shape):
         assert os.path.exists(out_file)

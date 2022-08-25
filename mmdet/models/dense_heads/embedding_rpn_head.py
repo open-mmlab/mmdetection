@@ -3,8 +3,8 @@ from typing import List
 
 import torch
 import torch.nn as nn
-from mmengine.data import InstanceData
 from mmengine.model import BaseModule
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS

@@ -132,14 +132,9 @@ class TestLVISMetric(unittest.TestCase):
             outfile_prefix=f'{self.tmp_dir.name}/test')
         lvis_metric.dataset_meta = dict(
             CLASSES=['aerosol_can', 'air_conditioner'])
-        lvis_metric.process([
-            dict(
-                inputs=None,
-                data_sample={
-                    'img_id': 0,
-                    'ori_shape': (640, 640)
-                })
-        ], [dict(pred_instances=dummy_pred)])
+        lvis_metric.process(
+            {},
+            [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = lvis_metric.evaluate(size=1)
         target = {
             'lvis/bbox_AP': 1.0,
@@ -164,14 +159,9 @@ class TestLVISMetric(unittest.TestCase):
             outfile_prefix=f'{self.tmp_dir.name}/test')
         lvis_metric.dataset_meta = dict(
             CLASSES=['aerosol_can', 'air_conditioner'])
-        lvis_metric.process([
-            dict(
-                inputs=None,
-                data_sample={
-                    'img_id': 0,
-                    'ori_shape': (640, 640)
-                })
-        ], [dict(pred_instances=dummy_pred)])
+        lvis_metric.process(
+            {},
+            [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = lvis_metric.evaluate(size=1)
         target = {
             'lvis/bbox_AP': 1.0,
@@ -212,14 +202,9 @@ class TestLVISMetric(unittest.TestCase):
         lvis_metric = LVISMetric(ann_file=fake_json_file, metric_items=['APm'])
         lvis_metric.dataset_meta = dict(
             CLASSES=['aerosol_can', 'air_conditioner'])
-        lvis_metric.process([
-            dict(
-                inputs=None,
-                data_sample={
-                    'img_id': 0,
-                    'ori_shape': (640, 640)
-                })
-        ], [dict(pred_instances=dummy_pred)])
+        lvis_metric.process(
+            {},
+            [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = lvis_metric.evaluate(size=1)
         target = {
             'lvis/bbox_APm': 1.0,
@@ -238,14 +223,9 @@ class TestLVISMetric(unittest.TestCase):
             ann_file=fake_json_file, metric='bbox', classwise=True)
         lvis_metric.dataset_meta = dict(
             CLASSES=['aerosol_can', 'air_conditioner'])
-        lvis_metric.process([
-            dict(
-                inputs=None,
-                data_sample={
-                    'img_id': 0,
-                    'ori_shape': (640, 640)
-                })
-        ], [dict(pred_instances=dummy_pred)])
+        lvis_metric.process(
+            {},
+            [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = lvis_metric.evaluate(size=1)
         target = {
             'lvis/bbox_AP': 1.0,
@@ -287,14 +267,9 @@ class TestLVISMetric(unittest.TestCase):
             ann_file=fake_json_file, metric='proposal_fast')
         lvis_metric.dataset_meta = dict(
             CLASSES=['aerosol_can', 'air_conditioner'])
-        lvis_metric.process([
-            dict(
-                inputs=None,
-                data_sample={
-                    'img_id': 0,
-                    'ori_shape': (640, 640)
-                })
-        ], [dict(pred_instances=dummy_pred)])
+        lvis_metric.process(
+            {},
+            [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = lvis_metric.evaluate(size=1)
         target = {'lvis/AR@100': 1.0, 'lvis/AR@300': 1.0, 'lvis/AR@1000': 1.0}
         self.assertDictEqual(eval_results, target)
@@ -306,14 +281,9 @@ class TestLVISMetric(unittest.TestCase):
             proposal_nums=(2, 4))
         lvis_metric.dataset_meta = dict(
             CLASSES=['aerosol_can', 'air_conditioner'])
-        lvis_metric.process([
-            dict(
-                inputs=None,
-                data_sample={
-                    'img_id': 0,
-                    'ori_shape': (640, 640)
-                })
-        ], [dict(pred_instances=dummy_pred)])
+        lvis_metric.process(
+            {},
+            [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = lvis_metric.evaluate(size=1)
         target = {'lvis/AR@2': 0.5, 'lvis/AR@4': 1.0}
         self.assertDictEqual(eval_results, target)
@@ -328,14 +298,9 @@ class TestLVISMetric(unittest.TestCase):
         lvis_metric = LVISMetric(ann_file=fake_json_file, metric='proposal')
         lvis_metric.dataset_meta = dict(
             CLASSES=['aerosol_can', 'air_conditioner'])
-        lvis_metric.process([
-            dict(
-                inputs=None,
-                data_sample={
-                    'img_id': 0,
-                    'ori_shape': (640, 640)
-                })
-        ], [dict(pred_instances=dummy_pred)])
+        lvis_metric.process(
+            {},
+            [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = lvis_metric.evaluate(size=1)
         target = {
             'lvis/AR@300': 1.0,
@@ -362,14 +327,9 @@ class TestLVISMetric(unittest.TestCase):
             scores=torch.from_numpy(scores),
             labels=torch.from_numpy(labels),
             masks=torch.from_numpy(dummy_mask))
-        lvis_metric.process([
-            dict(
-                inputs=None,
-                data_sample={
-                    'img_id': 0,
-                    'ori_shape': (640, 640)
-                })
-        ], [dict(pred_instances=empty_pred)])
+        lvis_metric.process(
+            {},
+            [dict(pred_instances=empty_pred, img_id=0, ori_shape=(640, 640))])
         # lvis api Index error will be caught
         lvis_metric.evaluate(size=1)
 
@@ -395,14 +355,9 @@ class TestLVISMetric(unittest.TestCase):
             outfile_prefix=f'{self.tmp_dir.name}/test')
         lvis_metric.dataset_meta = dict(
             CLASSES=['aerosol_can', 'air_conditioner'])
-        lvis_metric.process([
-            dict(
-                inputs=None,
-                data_sample={
-                    'img_id': 0,
-                    'ori_shape': (640, 640)
-                })
-        ], [dict(pred_instances=dummy_pred)])
+        lvis_metric.process(
+            {},
+            [dict(pred_instances=dummy_pred, img_id=0, ori_shape=(640, 640))])
         eval_results = lvis_metric.evaluate(size=1)
         self.assertDictEqual(eval_results, dict())
         self.assertTrue(osp.exists(f'{self.tmp_dir.name}/test.bbox.json'))
