@@ -50,6 +50,7 @@ class TestMultiBranch(unittest.TestCase):
                 'ignore_flag': 1
             }]
         }
+        self.branch_field = ['sup', 'sup_teacher', 'sup_student']
         self.weak_pipeline = [
             dict(type='ShearX'),
             dict(type='PackDetInputs', meta_keys=self.meta_keys)
@@ -70,6 +71,7 @@ class TestMultiBranch(unittest.TestCase):
             dict(type='RandomFlip', prob=0.5),
             dict(
                 type='MultiBranch',
+                branch_field=self.branch_field,
                 sup_teacher=self.weak_pipeline,
                 sup_student=self.strong_pipeline),
         ]
@@ -79,6 +81,7 @@ class TestMultiBranch(unittest.TestCase):
             dict(type='RandomFlip', prob=0.5),
             dict(
                 type='MultiBranch',
+                branch_field=self.branch_field,
                 unsup_teacher=self.weak_pipeline,
                 unsup_student=self.strong_pipeline),
         ]
@@ -92,39 +95,39 @@ class TestMultiBranch(unittest.TestCase):
         # test branch sup_teacher and sup_student
         sup_branches = ['sup_teacher', 'sup_student']
         for branch in sup_branches:
-            self.assertIn(branch, labeled_results)
+            self.assertIn(branch, labeled_results['data_samples'])
             self.assertIn('homography_matrix',
-                          labeled_results[branch]['data_samples'])
+                          labeled_results['data_samples'][branch])
             self.assertIn('labels',
-                          labeled_results[branch]['data_samples'].gt_instances)
+                          labeled_results['data_samples'][branch].gt_instances)
             self.assertIn('bboxes',
-                          labeled_results[branch]['data_samples'].gt_instances)
+                          labeled_results['data_samples'][branch].gt_instances)
             self.assertIn('masks',
-                          labeled_results[branch]['data_samples'].gt_instances)
+                          labeled_results['data_samples'][branch].gt_instances)
             self.assertIn('gt_sem_seg',
-                          labeled_results[branch]['data_samples'])
-
+                          labeled_results['data_samples'][branch])
         # test branch unsup_teacher and unsup_student
         unsup_branches = ['unsup_teacher', 'unsup_student']
         for branch in unsup_branches:
-            self.assertIn(branch, unlabeled_results)
+            self.assertIn(branch, unlabeled_results['data_samples'])
             self.assertIn('homography_matrix',
-                          unlabeled_results[branch]['data_samples'])
+                          unlabeled_results['data_samples'][branch])
             self.assertNotIn(
                 'labels',
-                unlabeled_results[branch]['data_samples'].gt_instances)
+                unlabeled_results['data_samples'][branch].gt_instances)
             self.assertNotIn(
                 'bboxes',
-                unlabeled_results[branch]['data_samples'].gt_instances)
+                unlabeled_results['data_samples'][branch].gt_instances)
             self.assertNotIn(
                 'masks',
-                unlabeled_results[branch]['data_samples'].gt_instances)
+                unlabeled_results['data_samples'][branch].gt_instances)
             self.assertNotIn('gt_sem_seg',
-                             unlabeled_results[branch]['data_samples'])
+                             unlabeled_results['data_samples'][branch])
 
     def test_repr(self):
         pipeline = [dict(type='PackDetInputs', meta_keys=())]
-        transform = MultiBranch(sup=pipeline, unsup=pipeline)
+        transform = MultiBranch(
+            branch_field=self.branch_field, sup=pipeline, unsup=pipeline)
         self.assertEqual(
             repr(transform),
             ("MultiBranch(branch_pipelines=['sup', 'unsup'])"))
