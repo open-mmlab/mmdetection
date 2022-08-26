@@ -26,10 +26,11 @@ In this note, we give an example for converting the data into COCO format.
 
 The necessary keys of COCO format for instance segmentation is as below, for the complete details, please refer [here](https://cocodataset.org/#format-data).
 
+```json
 {
-"images": \[image\],
-"annotations": \[annotation\],
-"categories": \[category\]
+"images": [image],
+"annotations": [annotation],
+"categories": [category]
 }
 
 image = {
@@ -43,17 +44,18 @@ annotation = {
 "id": int,
 "image_id": int,
 "category_id": int,
-"segmentation": RLE or \[polygon\],
+"segmentation": RLE or [polygon],
 "area": float,
-"bbox": \[x,y,width,height\], # (x, y) are the coordinates of the upper left corner of the bbox
+"bbox": [x,y,width,height], # (x, y) are the coordinates of the upper left corner of the bbox
 "iscrowd": 0 or 1,
 }
 
-categories = \[{
+categories = [{
 "id": int,
 "name": str,
 "supercategory": str,
-}\]
+}]
+```
 
 Assume we use the balloon dataset.
 After downloading the data, we need to implement a function to convert the annotation format into the COCO format. Then we can use implemented `CocoDataset` to load the data and perform training and evaluation.

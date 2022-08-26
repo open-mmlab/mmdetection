@@ -123,7 +123,7 @@ class MyOptimizerWrapperConstructor(DefaultOptimWrapperConstructor):
 
 ```
 
-优化器包装构造类的具体实现见 [这里](https://github.com/open-mmlab/mmengine/blob/main/mmengine/optim/optimizer/default_constructor.py#L18)，用户以它为模板，来实现新的优化器包装构造类。
+优化器包装构造类的具体实现见[这里](https://github.com/open-mmlab/mmengine/blob/main/mmengine/optim/optimizer/default_constructor.py#L18)，用户以它为模板，来实现新的优化器包装构造类。
 
 ### 额外的设置
 
@@ -137,7 +137,7 @@ class MyOptimizerWrapperConstructor(DefaultOptimWrapperConstructor):
       _delete_=True, clip_grad=dict(max_norm=35, norm_type=2))
   ```
 
-  如果你的配置已经集成了基础配置（包含了 `optim_wrapper` 的配置），那么你需要添加 `_delete_=True` 来覆盖掉不需要的设置。 具体见 [配置相关的文档](https://mmdetection.readthedocs.io/en/latest/tutorials/config.html)。
+  如果你的配置已经集成了基础配置（包含了 `optim_wrapper` 的配置），那么你需要添加 `_delete_=True` 来覆盖掉不需要的设置。具体见[配置相关的文档](https://mmdetection.readthedocs.io/en/latest/tutorials/config.html)。
 
 - __使用动量调度加速模型收敛__:
   我们支持动量调度器根据学习率修改模型的动量，这可以使模型以更快的方式收敛。动量调度器通常与学习率调度器一起使用，例如 [3D 检测](https://github.com/open-mmlab/mmdetection3d/blob/dev-1.x/configs/_base_/schedules/cyclic_20e.py) 中使用以下配置以加速收敛。
@@ -189,7 +189,7 @@ class MyOptimizerWrapperConstructor(DefaultOptimWrapperConstructor):
 ## 自定义训练策略
 
 默认情况下，我们使用 1x 的学习率调整策略，这会条用 MMEngine 中的 [MultiStepLR](https://github.com/open-mmlab/mmengine/blob/main/mmengine/optim/scheduler/lr_scheduler.py#L139)。
-我们支持许多其他学习率调整策略，具体见 [这里](https://github.com/open-mmlab/mmengine/blob/main/mmengine/optim/scheduler/lr_scheduler.py)，例如 `CosineAnnealingLR` 和 `PolyLR` 策略。下面有些例子
+我们支持许多其他学习率调整策略，具体见[这里](https://github.com/open-mmlab/mmengine/blob/main/mmengine/optim/scheduler/lr_scheduler.py)，例如 `CosineAnnealingLR` 和 `PolyLR` 策略。下面有些例子
 
 - 多项式学习率调整策略:
 
@@ -220,7 +220,7 @@ class MyOptimizerWrapperConstructor(DefaultOptimWrapperConstructor):
 
 ## 自定义训练循环
 
-默认情况下，在 `train_cfg` 中使用 `EpochBasedTrainLoop`，并且在每个训练 epoch 之后进行验证，如下所示。
+默认情况下，在 `train_cfg` 中使用 `EpochBasedTrainLoop`，并且在每个 epoch 训练之后进行验证，如下所示。
 
 ```python
 train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=12, val_begin=1, val_interval=1)
@@ -249,7 +249,7 @@ train_cfg = dict(
 
 #### 1. 实现一个新的钩子
 
-MMEngine 提供了许多有用的 [钩子](https://mmdetection.readthedocs.io/en/latest/tutorials/hooks.html)，但在某些情况下用户可能需要实现新的钩子。MMDetection 在 v3.0 中支持自定义钩子。因此，用户可以直接在 mmdet 或其基于 mmdet 的代码库中实现钩子，并通过仅在训练中修改配置来使用钩子。
+MMEngine 提供了许多有用的[钩子](https://mmdetection.readthedocs.io/en/latest/tutorials/hooks.html)，但在某些情况下用户可能需要实现新的钩子。MMDetection 在 v3.0 中支持自定义钩子。因此，用户可以直接在 mmdet 或其基于 mmdet 的代码库中实现钩子，并通过仅在训练中修改配置来使用钩子。
 这里我们给出一个在 mmdet 中创建一个新的钩子并在训练中使用它的例子。
 
 ```python
@@ -285,11 +285,11 @@ class MyHook(Hook):
                          outputs: Optional[dict] = None) -> None:
 ```
 
-根据钩子的功能，用户需要在 `before_run`、`after_run`、`before_train`、`after_train`、`before_train_epoch`、`after_train_epoch`、`before_train_iter` 和 `after_train_iter`。 还有更多可以插入钩子的点，更多细节请参考 [base hook class](https://github.com/open-mmlab/mmengine/blob/main/mmengine/hooks/hook.py#L9)。
+根据钩子的功能，用户需要在 `before_run`、`after_run`、`before_train`、`after_train`、`before_train_epoch`、`after_train_epoch`、`before_train_iter` 和 `after_train_iter`。还有更多可以插入钩子的点，更多细节请参考 [base hook class](https://github.com/open-mmlab/mmengine/blob/main/mmengine/hooks/hook.py#L9)。
 
 #### 2. 注册新钩子
 
-然后我们需要导入 `MyHook`。 假设该文件位于 `mmdet/engine/hooks/my_hook.py` 中，有两种方法可以做到这一点：
+然后我们需要导入 `MyHook`。假设该文件位于 `mmdet/engine/hooks/my_hook.py` 中，有两种方法可以做到这一点：
 
 - 修改 `mmdet/engine/hooks/__init__.py` 以导入它。
 

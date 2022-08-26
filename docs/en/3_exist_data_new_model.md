@@ -115,7 +115,6 @@ neck=dict(
     in_channels=[256, 512, 1024, 2048],
     out_channels=256,
     num_outs=5)
-
 ```
 
 For more detailed usages about customizing your own models (e.g. implement a new backbone, head, loss, etc) and runtime training settings (e.g. define a new optimizer, use gradient clip, customize training schedules and hooks, etc), please refer to the guideline [Customize Models](tutorials/customize_models.md) and [Customize Runtime Settings](tutorials/customize_runtime.md) respectively.

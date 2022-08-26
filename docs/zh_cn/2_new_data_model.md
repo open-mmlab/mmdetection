@@ -20,7 +20,7 @@ MMDetection 一共支持三种形式应用新数据集：
 
 在本文档中，我们展示一个例子来说明如何将数据转化为 COCO 格式。
 
-**注意**：在 MMDetection 3.0 之后，数据集和指标已经解耦（除了CityScapes）。因此，用户在验证阶段使用任意的评价指标来评价模型在任意数据集上的性能。比如，用 VOC 评价指标来评价模型在 COCO 数据集的性能，或者同时使用 VOC 评价指标和 COCO 评价指标来评价模型在 OpenImages 数据集上的性能。
+**注意**：在 MMDetection 3.0 之后，数据集和指标已经解耦（除了 CityScapes）。因此，用户在验证阶段使用任意的评价指标来评价模型在任意数据集上的性能。比如，用 VOC 评价指标来评价模型在 COCO 数据集的性能，或者同时使用 VOC 评价指标和 COCO 评价指标来评价模型在 OpenImages 数据集上的性能。
 
 ### COCO标注格式
 
@@ -222,15 +222,15 @@ if __name__ == '__main__':
 第二步需要准备一个配置文件来成功加载数据集。假设我们想要用 balloon dataset 来训练配备了 FPN 的 Mask R-CNN ，如下是我们的配置文件。假设配置文件命名为 `mask-rcnn_r50-caffe_fpn_ms-poly-1x_balloon.py`，相应保存路径为 `configs/balloon/`，配置文件内容如下所示。
 
 ```python
-# The new config inherits a base config to highlight the necessary modification
+# 新配置继承了基本配置，并做了必要的修改
 _base_ = '../mask_rcnn/mask-rcnn_r50-caffe_fpn_ms-poly-1x_coco.py'
 
-# We also need to change the num_classes in head to match the dataset's annotation
+# 我们还需要更改 head 中的 num_classes 以匹配数据集中的类别数
 model = dict(
     roi_head=dict(
         bbox_head=dict(num_classes=1), mask_head=dict(num_classes=1)))
 
-# Modify dataset related settings
+# 修改数据集相关配置
 data_root = 'data/balloon/'
 metainfo = {
     'CLASSES': ('balloon', ),
@@ -253,11 +253,11 @@ val_dataloader = dict(
         data_prefix=dict(img='val/')))
 test_dataloader = val_dataloader
 
-# Modify metric related settings
+# 修改评价指标相关配置
 val_evaluator = dict(ann_file=data_root + 'val/annotation_coco.json')
 test_evaluator = val_evaluator
 
-# We can use the pre-trained Mask RCNN model to obtain higher performance
+# 使用预训练的 Mask R-CNN 模型权重来做初始化，可以提高模型性能
 load_from = 'https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco_bbox_mAP-0.408__segm_mAP-0.37_20200504_163245-42aa3d00.pth'
 
 ```
