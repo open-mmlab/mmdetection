@@ -28,32 +28,32 @@ The necessary keys of COCO format for instance segmentation is as below, for the
 
 ```json
 {
-"images": [image],
-"annotations": [annotation],
-"categories": [category]
+    "images": [image],
+    "annotations": [annotation],
+    "categories": [category]
 }
 
 image = {
-"id": int,
-"width": int,
-"height": int,
-"file_name": str,
+    "id": int,
+    "width": int,
+    "height": int,
+    "file_name": str,
 }
 
 annotation = {
-"id": int,
-"image_id": int,
-"category_id": int,
-"segmentation": RLE or [polygon],
-"area": float,
-"bbox": [x,y,width,height], # (x, y) are the coordinates of the upper left corner of the bbox
-"iscrowd": 0 or 1,
+    "id": int,
+    "image_id": int,
+    "category_id": int,
+    "segmentation": RLE or [polygon],
+    "area": float,
+    "bbox": [x,y,width,height], # (x, y) are the coordinates of the upper left corner of the bbox
+    "iscrowd": 0 or 1,
 }
 
 categories = [{
-"id": int,
-"name": str,
-"supercategory": str,
+    "id": int,
+    "name": str,
+    "supercategory": str,
 }]
 ```
 
