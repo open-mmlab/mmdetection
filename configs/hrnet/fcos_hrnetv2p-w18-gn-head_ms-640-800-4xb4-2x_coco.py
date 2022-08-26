@@ -1,4 +1,4 @@
-_base_ = './fcos_hrnetv2p_w32_gn-head_mstrain_640-800_4x4_2x_coco.py'
+_base_ = './fcos_hrnetv2p-w32-gn-head_ms-640-800-4xb4-2x_coco.py'
 model = dict(
     backbone=dict(
         extra=dict(

@@ -1,4 +1,4 @@
-_base_ = './mask_rcnn_r101_fpn_1x_coco.py'
+_base_ = './mask-rcnn_r101_fpn_1x_coco.py'
 
 model = dict(
     # ResNeXt-101-32x8d model trained with Caffe2 at FB,

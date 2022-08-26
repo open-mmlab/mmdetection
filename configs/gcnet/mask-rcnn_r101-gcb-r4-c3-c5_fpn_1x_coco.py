@@ -1,4 +1,4 @@
-_base_ = '../mask_rcnn/mask_rcnn_r101_fpn_1x_coco.py'
+_base_ = '../mask_rcnn/mask-rcnn_r101_fpn_1x_coco.py'
 model = dict(
     backbone=dict(plugins=[
         dict(

@@ -1,4 +1,4 @@
-_base_ = '../gcnet/mask_rcnn_r50_fpn_syncbn-backbone_r4_gcb_c3-c5_1x_coco.py'
+_base_ = '../gcnet/mask-rcnn_r50-syncbn-gcb-r4-c3-c5_fpn_1x_coco.py'
 # model settings
 model = dict(
     roi_head=dict(

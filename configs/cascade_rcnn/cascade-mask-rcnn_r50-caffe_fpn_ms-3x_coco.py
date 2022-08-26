@@ -1,6 +1,6 @@
 _base_ = [
-    '../common/mstrain_3x_coco_instance.py',
-    '../_base_/models/cascade_mask_rcnn_r50_fpn.py'
+    '../common/ms_3x_coco-instance.py',
+    '../_base_/models/cascade-mask-rcnn_r50_fpn.py'
 ]
 
 model = dict(

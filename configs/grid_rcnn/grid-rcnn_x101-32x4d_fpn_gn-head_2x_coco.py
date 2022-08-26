@@ -1,4 +1,4 @@
-_base_ = './grid_rcnn_r50_fpn_gn-head_2x_coco.py'
+_base_ = './grid-rcnn_r50_fpn_gn-head_2x_coco.py'
 model = dict(
     backbone=dict(
         type='ResNeXt',

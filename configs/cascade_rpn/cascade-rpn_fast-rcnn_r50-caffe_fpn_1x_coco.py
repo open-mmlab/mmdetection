@@ -1,4 +1,4 @@
-_base_ = '../fast_rcnn/fast_rcnn_r50_fpn_1x_coco.py'
+_base_ = '../fast_rcnn/fast-rcnn_r50_fpn_1x_coco.py'
 model = dict(
     backbone=dict(
         type='ResNet',

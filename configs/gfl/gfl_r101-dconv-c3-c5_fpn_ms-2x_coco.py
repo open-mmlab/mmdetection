@@ -1,4 +1,4 @@
-_base_ = './gfl_r50_fpn_mstrain_2x_coco.py'
+_base_ = './gfl_r50_fpn_ms-2x_coco.py'
 model = dict(
     backbone=dict(
         type='ResNet',

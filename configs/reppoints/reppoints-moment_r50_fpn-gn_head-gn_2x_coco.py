@@ -1,4 +1,4 @@
-_base_ = './reppoints_moment_r50_fpn_gn-neck+head_1x_coco.py'
+_base_ = './reppoints-moment_r50_fpn-gn_head-gn_1x_coco.py'
 
 max_epochs = 24
 

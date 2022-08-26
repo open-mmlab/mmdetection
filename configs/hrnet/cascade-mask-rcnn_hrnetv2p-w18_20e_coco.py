@@ -1,4 +1,4 @@
-_base_ = './cascade_mask_rcnn_hrnetv2p_w32_20e_coco.py'
+_base_ = './cascade-mask-rcnn_hrnetv2p-w32_20e_coco.py'
 # model settings
 model = dict(
     backbone=dict(

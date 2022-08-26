@@ -1,4 +1,4 @@
-_base_ = './fcos_center-normbbox-centeronreg-giou_r50_fpn_gn-head_lsj_200e_8x8_fp16_coco.py'  # noqa
+_base_ = './fcos_r50_fpn_gn-head-center-normbbox-centeronreg-giou_8xb8-amp-lsj-200e_coco.py'  # noqa
 
 model = dict(
     backbone=dict(

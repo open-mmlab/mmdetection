@@ -1,4 +1,4 @@
-_base_ = './yolov3_d53_mstrain-608_273e_coco.py'
+_base_ = './yolov3_d53_8xb8-ms-608-273e_coco.py'
 # dataset settings
 # file_client_args = dict(
 #     backend='petrel',

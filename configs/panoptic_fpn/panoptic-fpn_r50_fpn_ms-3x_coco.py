@@ -1,4 +1,4 @@
-_base_ = './panoptic_fpn_r50_fpn_1x_coco.py'
+_base_ = './panoptic-fpn_r50_fpn_1x_coco.py'
 
 # In mstrain 3x config, img_scale=[(1333, 640), (1333, 800)],
 # multiscale_mode='range'

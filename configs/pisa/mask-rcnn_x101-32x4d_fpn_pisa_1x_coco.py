@@ -1,4 +1,4 @@
-_base_ = '../mask_rcnn/mask_rcnn_x101_32x4d_fpn_1x_coco.py'
+_base_ = '../mask_rcnn/mask-rcnn_x101-32x4d_fpn_1x_coco.py'
 
 model = dict(
     roi_head=dict(

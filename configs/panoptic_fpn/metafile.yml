@@ -19,7 +19,7 @@ Collections:
 Models:
   - Name: panoptic_fpn_r50_fpn_1x_coco
     In Collection: PanopticFPN
-    Config: configs/panoptic_fpn/panoptic_fpn_r50_fpn_1x_coco.py
+    Config: configs/panoptic_fpn/panoptic-fpn_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.6
       Epochs: 12
@@ -32,7 +32,7 @@ Models:
 
   - Name: panoptic_fpn_r50_fpn_mstrain_3x_coco
     In Collection: PanopticFPN
-    Config: configs/panoptic_fpn/panoptic_fpn_r50_fpn_mstrain_3x_coco.py
+    Config: configs/panoptic_fpn/panoptic-fpn_r50_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 4.6
       Epochs: 36
@@ -45,7 +45,7 @@ Models:
 
   - Name: panoptic_fpn_r101_fpn_1x_coco
     In Collection: PanopticFPN
-    Config: configs/panoptic_fpn/panoptic_fpn_r101_fpn_1x_coco.py
+    Config: configs/panoptic_fpn/panoptic-fpn_r101_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.5
       Epochs: 12
@@ -58,7 +58,7 @@ Models:
 
   - Name: panoptic_fpn_r101_fpn_mstrain_3x_coco
     In Collection: PanopticFPN
-    Config: configs/panoptic_fpn/panoptic_fpn_r101_fpn_mstrain_3x_coco.py
+    Config: configs/panoptic_fpn/panoptic-fpn_r101_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 6.5
       Epochs: 36

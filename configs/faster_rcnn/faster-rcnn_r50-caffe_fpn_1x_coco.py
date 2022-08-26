@@ -1,4 +1,4 @@
-_base_ = './faster_rcnn_r50_fpn_1x_coco.py'
+_base_ = './faster-rcnn_r50_fpn_1x_coco.py'
 model = dict(
     data_preprocessor=dict(
         type='DetDataPreprocessor',

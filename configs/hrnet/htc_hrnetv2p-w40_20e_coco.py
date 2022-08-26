@@ -1,4 +1,4 @@
-_base_ = './htc_hrnetv2p_w32_20e_coco.py'
+_base_ = './htc_hrnetv2p-w32_20e_coco.py'
 model = dict(
     backbone=dict(
         type='HRNet',

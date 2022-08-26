@@ -1,4 +1,4 @@
-_base_ = './htc_hrnetv2p_w40_20e_coco.py'
+_base_ = './htc_hrnetv2p-w40_20e_coco.py'
 
 # learning policy
 max_epochs = 28

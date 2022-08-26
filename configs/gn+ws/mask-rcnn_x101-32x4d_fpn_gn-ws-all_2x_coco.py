@@ -1,4 +1,4 @@
-_base_ = './mask_rcnn_r50_fpn_gn_ws-all_2x_coco.py'
+_base_ = './mask-rcnn_r50_fpn_gn-ws-all_2x_coco.py'
 # model settings
 conv_cfg = dict(type='ConvWS')
 norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)

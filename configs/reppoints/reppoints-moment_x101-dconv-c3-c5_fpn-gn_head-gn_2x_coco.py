@@ -1,4 +1,4 @@
-_base_ = './reppoints_moment_r50_fpn_gn-neck+head_2x_coco.py'
+_base_ = './reppoints-moment_r50_fpn-gn_head-gn_2x_coco.py'
 model = dict(
     backbone=dict(
         type='ResNeXt',

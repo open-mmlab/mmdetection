@@ -1,4 +1,4 @@
-_base_ = './decoupled_solo_r50_fpn_3x_coco.py'
+_base_ = './decoupled-solo_r50_fpn_3x_coco.py'
 
 # model settings
 model = dict(

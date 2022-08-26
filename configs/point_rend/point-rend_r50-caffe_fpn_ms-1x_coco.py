@@ -1,4 +1,4 @@
-_base_ = '../mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain_1x_coco.py'
+_base_ = '../mask_rcnn/mask-rcnn_r50-caffe_fpn_ms-1x_coco.py'
 # model settings
 model = dict(
     type='PointRend',
