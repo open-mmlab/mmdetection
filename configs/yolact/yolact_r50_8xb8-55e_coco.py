@@ -1,4 +1,4 @@
-_base_ = 'yolact_r50_1x8_coco.py'
+_base_ = 'yolact_r50_1xb8-55e_coco.py'
 
 # optimizer
 optim_wrapper = dict(
