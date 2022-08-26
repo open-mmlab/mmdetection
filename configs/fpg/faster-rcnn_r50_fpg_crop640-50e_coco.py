@@ -1,4 +1,4 @@
-_base_ = 'faster_rcnn_r50_fpn_crop640_50e_coco.py'
+_base_ = 'faster-rcnn_r50_fpn_crop640-50e_coco.py'
 
 norm_cfg = dict(type='BN', requires_grad=True)
 model = dict(
