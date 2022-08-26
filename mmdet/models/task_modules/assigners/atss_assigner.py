@@ -7,6 +7,7 @@ from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import TASK_UTILS
+from mmdet.structures.bbox import BaseBoxes
 from mmdet.utils import ConfigType
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
@@ -22,13 +23,19 @@ def bbox_center_distance(bboxes: Tensor, priors: Tensor) -> Tensor:
     Returns:
         Tensor: Center distances between bboxes and priors.
     """
-    bbox_cx = (bboxes[:, 0] + bboxes[:, 2]) / 2.0
-    bbox_cy = (bboxes[:, 1] + bboxes[:, 3]) / 2.0
-    bbox_points = torch.stack((bbox_cx, bbox_cy), dim=1)
+    if isinstance(bboxes, BaseBoxes):
+        bbox_points = bboxes.centers
+    else:
+        bbox_cx = (bboxes[:, 0] + bboxes[:, 2]) / 2.0
+        bbox_cy = (bboxes[:, 1] + bboxes[:, 3]) / 2.0
+        bbox_points = torch.stack((bbox_cx, bbox_cy), dim=1)
 
-    priors_cx = (priors[:, 0] + priors[:, 2]) / 2.0
-    priors_cy = (priors[:, 1] + priors[:, 3]) / 2.0
-    priors_points = torch.stack((priors_cx, priors_cy), dim=1)
+    if isinstance(priors, BaseBoxes):
+        priors_points = priors.centers
+    else:
+        priors_cx = (priors[:, 0] + priors[:, 2]) / 2.0
+        priors_cy = (priors[:, 1] + priors[:, 3]) / 2.0
+        priors_points = torch.stack((priors_cx, priors_cy), dim=1)
 
     distances = (priors_points[:, None, :] -
                  bbox_points[None, :, :]).pow(2).sum(-1).sqrt()
@@ -124,7 +131,7 @@ class ATSSAssigner(BaseAssigner):
             gt_bboxes_ignore = None
 
         INF = 100000000
-        priors = priors[:, :4]
+
         num_gt, num_priors = gt_bboxes.size(0), priors.size(0)
 
         message = 'Invalid alpha parameter because cls_scores or ' \
@@ -212,23 +219,38 @@ class ATSSAssigner(BaseAssigner):
         is_pos = candidate_overlaps >= overlaps_thr_per_gt[None, :]
 
         # limit the positive sample's center in gt
-        for gt_idx in range(num_gt):
-            candidate_idxs[:, gt_idx] += gt_idx * num_priors
-        priors_cx = (priors[:, 0] + priors[:, 2]) / 2.0
-        priors_cy = (priors[:, 1] + priors[:, 3]) / 2.0
-        ep_priors_cx = priors_cx.view(1, -1).expand(
-            num_gt, num_priors).contiguous().view(-1)
-        ep_priors_cy = priors_cy.view(1, -1).expand(
-            num_gt, num_priors).contiguous().view(-1)
-        candidate_idxs = candidate_idxs.view(-1)
 
-        # calculate the left, top, right, bottom distance between positive
-        # prior center and gt side
-        l_ = ep_priors_cx[candidate_idxs].view(-1, num_gt) - gt_bboxes[:, 0]
-        t_ = ep_priors_cy[candidate_idxs].view(-1, num_gt) - gt_bboxes[:, 1]
-        r_ = gt_bboxes[:, 2] - ep_priors_cx[candidate_idxs].view(-1, num_gt)
-        b_ = gt_bboxes[:, 3] - ep_priors_cy[candidate_idxs].view(-1, num_gt)
-        is_in_gts = torch.stack([l_, t_, r_, b_], dim=1).min(dim=1)[0] > 0.01
+        if isinstance(priors, BaseBoxes):
+            priors_points = priors.centers
+            inside_flag = gt_bboxes.find_inside_points(priors_points)
+            is_in_gts = inside_flag[candidate_idxs,
+                                    torch.arange(num_gt)].to(is_pos.dtype)
+            for gt_idx in range(num_gt):
+                candidate_idxs[:, gt_idx] += gt_idx * num_priors
+            candidate_idxs = candidate_idxs.view(-1)
+        else:
+            for gt_idx in range(num_gt):
+                candidate_idxs[:, gt_idx] += gt_idx * num_priors
+            priors_cx = (priors[:, 0] + priors[:, 2]) / 2.0
+            priors_cy = (priors[:, 1] + priors[:, 3]) / 2.0
+            ep_priors_cx = priors_cx.view(1, -1).expand(
+                num_gt, num_priors).contiguous().view(-1)
+            ep_priors_cy = priors_cy.view(1, -1).expand(
+                num_gt, num_priors).contiguous().view(-1)
+            candidate_idxs = candidate_idxs.view(-1)
+
+            # calculate the left, top, right, bottom distance between positive
+            # prior center and gt side
+            l_ = ep_priors_cx[candidate_idxs].view(-1, num_gt) - gt_bboxes[:,
+                                                                           0]
+            t_ = ep_priors_cy[candidate_idxs].view(-1, num_gt) - gt_bboxes[:,
+                                                                           1]
+            r_ = gt_bboxes[:, 2] - ep_priors_cx[candidate_idxs].view(
+                -1, num_gt)
+            b_ = gt_bboxes[:, 3] - ep_priors_cy[candidate_idxs].view(
+                -1, num_gt)
+            is_in_gts = torch.stack([l_, t_, r_, b_],
+                                    dim=1).min(dim=1)[0] > 0.01
 
         is_pos = is_pos & is_in_gts
 
