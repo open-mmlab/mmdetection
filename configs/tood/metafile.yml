@@ -16,9 +16,9 @@ Collections:
       Version: v2.20.0
 
 Models:
-  - Name: tood_r101_fpn_mstrain_2x_coco
+  - Name: tood_r101_fpn_ms-2x_coco
     In Collection: TOOD
-    Config: configs/tood/tood_r101_fpn_mstrain_2x_coco.py
+    Config: configs/tood/tood_r101_fpn_ms-2x_coco.py
     Metadata:
       Training Memory (GB): 6.0
       Epochs: 24
@@ -29,9 +29,9 @@ Models:
           box AP: 46.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/tood/tood_r101_fpn_mstrain_2x_coco/tood_r101_fpn_mstrain_2x_coco_20211210_144232-a18f53c8.pth
 
-  - Name: tood_x101_64x4d_fpn_mstrain_2x_coco
+  - Name: tood_x101-64x4d_fpn_ms-2x_coco
     In Collection: TOOD
-    Config: configs/tood/tood_x101_64x4d_fpn_mstrain_2x_coco.py
+    Config: configs/tood/tood_x101-64x4d_fpn_ms-2x_coco.py
     Metadata:
       Training Memory (GB): 10.2
       Epochs: 24
@@ -42,9 +42,9 @@ Models:
           box AP: 47.6
     Weights: https://download.openmmlab.com/mmdetection/v2.0/tood/tood_x101_64x4d_fpn_mstrain_2x_coco/tood_x101_64x4d_fpn_mstrain_2x_coco_20211211_003519-a4f36113.pth
 
-  - Name: tood_r101_fpn_dconv_c3-c5_mstrain_2x_coco
+  - Name: tood_r101-dconv-c3-c5_fpn_ms-2x_coco
     In Collection: TOOD
-    Config: configs/tood/tood_r101_fpn_dconv_c3-c5_mstrain_2x_coco.py
+    Config: configs/tood/tood_r101-dconv-c3-c5_fpn_ms-2x_coco.py
     Metadata:
       Training Memory (GB): 6.2
       Epochs: 24
@@ -55,9 +55,9 @@ Models:
           box AP: 49.3
     Weights: https://download.openmmlab.com/mmdetection/v2.0/tood/tood_r101_fpn_dconv_c3-c5_mstrain_2x_coco/tood_r101_fpn_dconv_c3-c5_mstrain_2x_coco_20211210_213728-4a824142.pth
 
-  - Name: tood_r50_fpn_anchor_based_1x_coco
+  - Name: tood_r50_fpn_anchor-based_1x_coco
     In Collection: TOOD
-    Config: configs/tood/tood_r50_fpn_anchor_based_1x_coco.py
+    Config: configs/tood/tood_r50_fpn_anchor-based_1x_coco.py
     Metadata:
       Training Memory (GB): 4.1
       Epochs: 12
@@ -81,9 +81,9 @@ Models:
           box AP: 42.4
     Weights: https://download.openmmlab.com/mmdetection/v2.0/tood/tood_r50_fpn_1x_coco/tood_r50_fpn_1x_coco_20211210_103425-20e20746.pth
 
-  - Name: tood_r50_fpn_mstrain_2x_coco
+  - Name: tood_r50_fpn_ms-2x_coco
     In Collection: TOOD
-    Config: configs/tood/tood_r50_fpn_mstrain_2x_coco.py
+    Config: configs/tood/tood_r50_fpn_ms-2x_coco.py
     Metadata:
       Training Memory (GB): 4.1
       Epochs: 24

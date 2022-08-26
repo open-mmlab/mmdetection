@@ -57,7 +57,7 @@ Models:
 
   - Name: paa_r50_fpn_mstrain_3x_coco
     In Collection: PAA
-    Config: configs/paa/paa_r50_fpn_mstrain_3x_coco.py
+    Config: configs/paa/paa_r50_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 3.7
     Results:
@@ -93,7 +93,7 @@ Models:
 
   - Name: paa_r101_fpn_mstrain_3x_coco
     In Collection: PAA
-    Config: configs/paa/paa_r101_fpn_mstrain_3x_coco.py
+    Config: configs/paa/paa_r101_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 6.2
     Results:

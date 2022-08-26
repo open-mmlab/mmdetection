@@ -1,4 +1,4 @@
-_base_ = './point_rend_r50_caffe_fpn_mstrain_1x_coco.py'
+_base_ = './point-rend_r50-caffe_fpn_ms-1x_coco.py'
 
 max_epochs = 36
 

@@ -1,4 +1,4 @@
-_base_ = './ga_faster_r50_fpn_1x_coco.py'
+_base_ = './ga-faster-rcnn_r50_fpn_1x_coco.py'
 model = dict(
     backbone=dict(
         type='ResNeXt',

@@ -15,7 +15,7 @@ class TestTridentRoIHead(TestCase):
     def setUp(self):
         register_all_modules()
         self.roi_head_cfg = get_roi_head_cfg(
-            'tridentnet/tridentnet_r50_caffe_1x_coco.py')
+            'tridentnet/tridentnet_r50-caffe_1x_coco.py')
 
     def test_init(self):
 

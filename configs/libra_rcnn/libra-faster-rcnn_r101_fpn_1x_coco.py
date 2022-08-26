@@ -1,4 +1,4 @@
-_base_ = './libra_faster_rcnn_r50_fpn_1x_coco.py'
+_base_ = './libra-faster-rcnn_r50_fpn_1x_coco.py'
 model = dict(
     backbone=dict(
         depth=101,

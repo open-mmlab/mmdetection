@@ -1,4 +1,4 @@
-_base_ = './mask_rcnn_hrnetv2p_w32_1x_coco.py'
+_base_ = './mask-rcnn_hrnetv2p-w32-1x_coco.py'
 
 # learning policy
 max_epochs = 24

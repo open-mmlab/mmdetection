@@ -1,4 +1,4 @@
-_base_ = '../cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py'
+_base_ = '../cascade_rcnn/cascade-mask-rcnn_r50_fpn_1x_coco.py'
 
 train_pipeline = [
     dict(

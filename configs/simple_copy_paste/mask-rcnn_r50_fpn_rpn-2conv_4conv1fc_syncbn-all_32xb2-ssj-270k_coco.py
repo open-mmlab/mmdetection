@@ -1,7 +1,7 @@
 _base_ = [
-    '../_base_/models/mask_rcnn_r50_fpn.py',
+    '../_base_/models/mask-rcnn_r50_fpn.py',
     # 270k iterations with batch_size 64 is roughly equivalent to 144 epochs
-    '../common/ssj_270k_coco_instance.py',
+    '../common/ssj_270k_coco-instance.py',
 ]
 
 image_size = (1024, 1024)

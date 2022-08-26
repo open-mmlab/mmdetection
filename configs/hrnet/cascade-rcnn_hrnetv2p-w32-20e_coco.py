@@ -1,4 +1,4 @@
-_base_ = '../cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py'
+_base_ = '../cascade_rcnn/cascade-rcnn_r50_fpn_1x_coco.py'
 model = dict(
     backbone=dict(
         _delete_=True,

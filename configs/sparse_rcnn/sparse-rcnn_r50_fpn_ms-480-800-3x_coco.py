@@ -1,4 +1,4 @@
-_base_ = './sparse_rcnn_r50_fpn_1x_coco.py'
+_base_ = './sparse-rcnn_r50_fpn_1x_coco.py'
 
 train_pipeline = [
     dict(

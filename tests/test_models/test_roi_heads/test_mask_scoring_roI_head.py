@@ -14,7 +14,7 @@ class TestMaskScoringRoiHead(TestCase):
     def setUp(self):
         register_all_modules()
         self.roi_head_cfg = get_roi_head_cfg(
-            'ms_rcnn/ms_rcnn_r50_fpn_1x_coco.py')
+            'ms_rcnn/ms-rcnn_r50_fpn_1x_coco.py')
 
     def test_init(self):
         roi_head = MODELS.build(self.roi_head_cfg)

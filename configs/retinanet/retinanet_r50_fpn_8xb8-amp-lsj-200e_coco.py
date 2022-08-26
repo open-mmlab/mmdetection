@@ -1,6 +1,6 @@
 _base_ = [
     '../_base_/models/retinanet_r50_fpn.py',
-    '../common/lsj_200e_coco_detection.py'
+    '../common/lsj-200e_coco-detection.py'
 ]
 
 image_size = (1024, 1024)

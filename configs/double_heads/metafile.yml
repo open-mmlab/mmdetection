@@ -20,9 +20,9 @@ Collections:
       Version: v2.0.0
 
 Models:
-  - Name: dh_faster_rcnn_r50_fpn_1x_coco
+  - Name: dh-faster-rcnn_r50_fpn_1x_coco
     In Collection: Rethinking Classification and Localization for Object Detection
-    Config: configs/double_heads/dh_faster_rcnn_r50_fpn_1x_coco.py
+    Config: configs/double_heads/dh-faster-rcnn_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.8
       inference time (ms/im):

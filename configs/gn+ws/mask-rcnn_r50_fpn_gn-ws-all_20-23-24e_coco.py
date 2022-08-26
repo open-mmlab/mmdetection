@@ -1,4 +1,4 @@
-_base_ = './mask_rcnn_r50_fpn_gn_ws-all_2x_coco.py'
+_base_ = './mask-rcnn_r50_fpn_gn-ws-all_2x_coco.py'
 # learning policy
 max_epochs = 24
 train_cfg = dict(max_epochs=max_epochs)

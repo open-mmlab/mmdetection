@@ -1,4 +1,4 @@
-_base_ = './detr_r50_8x2_150e_coco.py'
+_base_ = './detr_r50_8xb2-150e_coco.py'
 
 # learning policy
 max_epochs = 500

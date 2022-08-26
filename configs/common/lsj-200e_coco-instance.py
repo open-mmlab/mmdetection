@@ -1,4 +1,4 @@
-_base_ = './lsj_100e_coco_instance.py'
+_base_ = './lsj-100e_coco-instance.py'
 
 # 8x25=200e
 train_dataloader = dict(dataset=dict(times=8))

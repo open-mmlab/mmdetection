@@ -14,13 +14,13 @@ Collections:
       Title: 'Weight Standardization'
     README: configs/gn+ws/README.md
     Code:
-      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/configs/gn%2Bws/mask_rcnn_r50_fpn_gn_ws-all_2x_coco.py
+      URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/configs/gn%2Bws/mask-rcnn_r50_fpn_gn-ws-all_2x_coco.py
       Version: v2.0.0
 
 Models:
-  - Name: faster_rcnn_r50_fpn_gn_ws-all_1x_coco
+  - Name: faster-rcnn_r50_fpn_gn_ws-all_1x_coco
     In Collection: Weight Standardization
-    Config: configs/gn%2Bws/faster_rcnn_r50_fpn_gn_ws-all_1x_coco.py
+    Config: configs/gn%2Bws/faster-rcnn_r50_fpn_gn-ws-all_1x_coco.py
     Metadata:
       Training Memory (GB): 5.9
       inference time (ms/im):
@@ -38,9 +38,9 @@ Models:
           box AP: 39.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gn%2Bws/faster_rcnn_r50_fpn_gn_ws-all_1x_coco/faster_rcnn_r50_fpn_gn_ws-all_1x_coco_20200130-613d9fe2.pth
 
-  - Name: faster_rcnn_r101_fpn_gn_ws-all_1x_coco
+  - Name: faster-rcnn_r101_fpn_gn-ws-all_1x_coco
     In Collection: Weight Standardization
-    Config: configs/gn%2Bws/faster_rcnn_r101_fpn_gn_ws-all_1x_coco.py
+    Config: configs/gn%2Bws/faster-rcnn_r101_fpn_gn-ws-all_1x_coco.py
     Metadata:
       Training Memory (GB): 8.9
       inference time (ms/im):
@@ -58,9 +58,9 @@ Models:
           box AP: 41.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gn%2Bws/faster_rcnn_r101_fpn_gn_ws-all_1x_coco/faster_rcnn_r101_fpn_gn_ws-all_1x_coco_20200205-a93b0d75.pth
 
-  - Name: faster_rcnn_x50_32x4d_fpn_gn_ws-all_1x_coco
+  - Name: faster-rcnn_x50-32x4d_fpn_gn-ws-all_1x_coco
     In Collection: Weight Standardization
-    Config: configs/gn%2Bws/faster_rcnn_x50_32x4d_fpn_gn_ws-all_1x_coco.py
+    Config: configs/gn%2Bws/faster-rcnn_x50-32x4d_fpn_gn-ws-all_1x_coco.py
     Metadata:
       Training Memory (GB): 7.0
       inference time (ms/im):
@@ -78,9 +78,9 @@ Models:
           box AP: 40.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gn%2Bws/faster_rcnn_x50_32x4d_fpn_gn_ws-all_1x_coco/faster_rcnn_x50_32x4d_fpn_gn_ws-all_1x_coco_20200203-839c5d9d.pth
 
-  - Name: faster_rcnn_x101_32x4d_fpn_gn_ws-all_1x_coco
+  - Name: faster-rcnn_x101-32x4d_fpn_gn-ws-all_1x_coco
     In Collection: Weight Standardization
-    Config: configs/gn%2Bws/faster_rcnn_x101_32x4d_fpn_gn_ws-all_1x_coco.py
+    Config: configs/gn%2Bws/faster-rcnn_x101-32x4d_fpn_gn-ws-all_1x_coco.py
     Metadata:
       Training Memory (GB): 10.8
       inference time (ms/im):
@@ -98,9 +98,9 @@ Models:
           box AP: 42.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gn%2Bws/faster_rcnn_x101_32x4d_fpn_gn_ws-all_1x_coco/faster_rcnn_x101_32x4d_fpn_gn_ws-all_1x_coco_20200212-27da1bc2.pth
 
-  - Name: mask_rcnn_r50_fpn_gn_ws-all_2x_coco
+  - Name: mask-rcnn_r50_fpn_gn_ws-all_2x_coco
     In Collection: Weight Standardization
-    Config: configs/gn%2Bws/mask_rcnn_r50_fpn_gn_ws-all_2x_coco.py
+    Config: configs/gn%2Bws/mask-rcnn_r50_fpn_gn-ws-all_2x_coco.py
     Metadata:
       Training Memory (GB): 7.3
       inference time (ms/im):
@@ -122,9 +122,9 @@ Models:
           mask AP:  36.6
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_r50_fpn_gn_ws-all_2x_coco/mask_rcnn_r50_fpn_gn_ws-all_2x_coco_20200226-16acb762.pth
 
-  - Name: mask_rcnn_r101_fpn_gn_ws-all_2x_coco
+  - Name: mask-rcnn_r101_fpn_gn-ws-all_2x_coco
     In Collection: Weight Standardization
-    Config: configs/gn%2Bws/mask_rcnn_r101_fpn_gn_ws-all_2x_coco.py
+    Config: configs/gn%2Bws/mask-rcnn_r101_fpn_gn-ws-all_2x_coco.py
     Metadata:
       Training Memory (GB): 10.3
       inference time (ms/im):
@@ -146,9 +146,9 @@ Models:
           mask AP:  37.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_r101_fpn_gn_ws-all_2x_coco/mask_rcnn_r101_fpn_gn_ws-all_2x_coco_20200212-ea357cd9.pth
 
-  - Name: mask_rcnn_x50_32x4d_fpn_gn_ws-all_2x_coco
+  - Name: mask-rcnn_x50-32x4d_fpn_gn-ws-all_2x_coco
     In Collection: Weight Standardization
-    Config: configs/gn%2Bws/mask_rcnn_x50_32x4d_fpn_gn_ws-all_2x_coco.py
+    Config: configs/gn%2Bws/mask-rcnn_x50-32x4d_fpn_gn-ws-all_2x_coco.py
     Metadata:
       Training Memory (GB): 8.4
       inference time (ms/im):
@@ -170,9 +170,9 @@ Models:
           mask AP:  37.0
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_x50_32x4d_fpn_gn_ws-all_2x_coco/mask_rcnn_x50_32x4d_fpn_gn_ws-all_2x_coco_20200216-649fdb6f.pth
 
-  - Name: mask_rcnn_x101_32x4d_fpn_gn_ws-all_2x_coco
+  - Name: mask-rcnn_x101-32x4d_fpn_gn-ws-all_2x_coco
     In Collection: Weight Standardization
-    Config: configs/gn%2Bws/mask_rcnn_x101_32x4d_fpn_gn_ws-all_2x_coco.py
+    Config: configs/gn%2Bws/mask-rcnn_x101-32x4d_fpn_gn-ws-all_2x_coco.py
     Metadata:
       Training Memory (GB): 12.2
       inference time (ms/im):
@@ -194,9 +194,9 @@ Models:
           mask AP:  37.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_x101_32x4d_fpn_gn_ws-all_2x_coco/mask_rcnn_x101_32x4d_fpn_gn_ws-all_2x_coco_20200319-33fb95b5.pth
 
-  - Name: mask_rcnn_r50_fpn_gn_ws-all_20_23_24e_coco
+  - Name: mask-rcnn_r50_fpn_gn_ws-all_20_23_24e_coco
     In Collection: Weight Standardization
-    Config: configs/gn%2Bws/mask_rcnn_r50_fpn_gn_ws-all_20_23_24e_coco.py
+    Config: configs/gn%2Bws/mask-rcnn_r50_fpn_gn-ws-all_20-23-24e_coco.py
     Metadata:
       Training Memory (GB): 7.3
       Epochs: 24
@@ -211,9 +211,9 @@ Models:
           mask AP:  37.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_r50_fpn_gn_ws-all_20_23_24e_coco/mask_rcnn_r50_fpn_gn_ws-all_20_23_24e_coco_20200213-487d1283.pth
 
-  - Name: mask_rcnn_r101_fpn_gn_ws-all_20_23_24e_coco
+  - Name: mask-rcnn_r101_fpn_gn-ws-all_20-23-24e_coco
     In Collection: Weight Standardization
-    Config: configs/gn%2Bws/mask_rcnn_r101_fpn_gn_ws-all_20_23_24e_coco.py
+    Config: configs/gn%2Bws/mask-rcnn_r101_fpn_gn-ws-all_20-23-24e_coco.py
     Metadata:
       Training Memory (GB): 10.3
       Epochs: 24
@@ -228,9 +228,9 @@ Models:
           mask AP:  38.6
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_r101_fpn_gn_ws-all_20_23_24e_coco/mask_rcnn_r101_fpn_gn_ws-all_20_23_24e_coco_20200213-57b5a50f.pth
 
-  - Name: mask_rcnn_x50_32x4d_fpn_gn_ws-all_20_23_24e_coco
+  - Name: mask-rcnn_x50-32x4d_fpn_gn-ws-all_20-23-24e_coco
     In Collection: Weight Standardization
-    Config: configs/gn%2Bws/mask_rcnn_x50_32x4d_fpn_gn_ws-all_20_23_24e_coco.py
+    Config: configs/gn%2Bws/mask-rcnn_x50-32x4d_fpn_gn-ws-all_20-23-24e_coco.py
     Metadata:
       Training Memory (GB): 8.4
       Epochs: 24
@@ -245,9 +245,9 @@ Models:
           mask AP:  38.0
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gn%2Bws/mask_rcnn_x50_32x4d_fpn_gn_ws-all_20_23_24e_coco/mask_rcnn_x50_32x4d_fpn_gn_ws-all_20_23_24e_coco_20200226-969bcb2c.pth
 
-  - Name: mask_rcnn_x101_32x4d_fpn_gn_ws-all_20_23_24e_coco
+  - Name: mask-rcnn_x101-32x4d_fpn_gn-ws-all_20-23-24e_coco
     In Collection: Weight Standardization
-    Config: configs/gn%2Bws/mask_rcnn_x101_32x4d_fpn_gn_ws-all_20_23_24e_coco.py
+    Config: configs/gn%2Bws/mask-rcnn_x101-32x4d_fpn_gn-ws-all_20-23-24e_coco.py
     Metadata:
       Training Memory (GB): 12.2
       Epochs: 24

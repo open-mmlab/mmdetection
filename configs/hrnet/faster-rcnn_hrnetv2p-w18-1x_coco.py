@@ -1,4 +1,4 @@
-_base_ = './faster_rcnn_hrnetv2p_w32_1x_coco.py'
+_base_ = './faster-rcnn_hrnetv2p-w32-1x_coco.py'
 # model settings
 model = dict(
     backbone=dict(

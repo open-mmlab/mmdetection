@@ -1,4 +1,4 @@
-_base_ = './vfnet_r50_fpn_mstrain_2x_coco.py'
+_base_ = './vfnet_r50_fpn_ms-2x_coco.py'
 model = dict(
     backbone=dict(
         dcn=dict(type='DCNv2', deform_groups=1, fallback_on_stride=False),

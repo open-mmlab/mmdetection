@@ -1,4 +1,4 @@
-_base_ = './maskformer_r50_mstrain_16x1_75e_coco.py'
+_base_ = './maskformer_r50_ms-16xb1-75e_coco.py'
 
 pretrained = 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth'  # noqa
 depths = [2, 2, 18, 2]

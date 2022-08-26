@@ -1,4 +1,4 @@
-_base_ = './queryinst_r50_fpn_mstrain_480-800_3x_coco.py'
+_base_ = './queryinst_r50_fpn_ms-480-800-3x_coco.py'
 num_proposals = 300
 model = dict(
     rpn_head=dict(num_proposals=num_proposals),

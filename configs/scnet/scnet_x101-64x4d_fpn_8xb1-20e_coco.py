@@ -1,4 +1,4 @@
-_base_ = './scnet_x101_64x4d_fpn_20e_coco.py'
+_base_ = './scnet_x101-64x4d_fpn_20e_coco.py'
 train_dataloader = dict(batch_size=1, num_workers=1)
 
 optim_wrapper = dict(optimizer=dict(lr=0.01))

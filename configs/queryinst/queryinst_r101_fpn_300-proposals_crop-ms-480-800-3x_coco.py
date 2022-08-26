@@ -1,4 +1,4 @@
-_base_ = './queryinst_r50_fpn_300_proposals_crop_mstrain_480-800_3x_coco.py'
+_base_ = './queryinst_r50_fpn_300-proposals_crop-ms-480-800-3x_coco.py'
 
 model = dict(
     backbone=dict(

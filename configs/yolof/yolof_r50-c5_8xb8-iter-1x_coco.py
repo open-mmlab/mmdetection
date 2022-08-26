@@ -1,4 +1,4 @@
-_base_ = './yolof_r50_c5_8x8_1x_coco.py'
+_base_ = './yolof_r50-c5_8xb8-1x_coco.py'
 
 # We implemented the iter-based config according to the source code.
 # COCO dataset has 117266 images after filtering. We use 8 gpu and
