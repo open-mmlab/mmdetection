@@ -310,7 +310,7 @@ comparisons, but double check it before you adopt it in technical reports or pap
 
 ### MMDetection model to ONNX
 
-We provide a script to convert model to [ONNX](https://github.com/onnx/onnx) format. We also support comparing the output results between Pytorch and ONNX model for verification. More details can refer to [mmdeploy](https://github.com/open-mmlab/mmdeployhttps://github.com/open-mmlab/mmdeploy)
+We provide a script to convert model to [ONNX](https://github.com/onnx/onnx) format. We also support comparing the output results between Pytorch and ONNX model for verification. More details can refer to [mmdeploy](https://github.com/open-mmlab/mmdeploy)
 
 ### MMDetection 1.x model to MMDetection 2.x
 

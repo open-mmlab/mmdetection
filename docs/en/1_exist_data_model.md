@@ -19,6 +19,7 @@ MMDetection provide high-level Python APIs for inference on images. Here is an e
 ```python
 import mmcv
 from mmcv.transforms import Compose
+from mmengine.utils import track_iter_progress
 from mmdet.registry import VISUALIZERS
 from mmdet.utils import register_all_modules
 from mmdet.apis import init_detector, inference_detector
@@ -71,7 +72,7 @@ wait_time = 1
 
 video_reader = mmcv.VideoReader('video.mp4')
 
-for frame in mmcv.track_iter_progress(video_reader):
+for frame in track_iter_progress(video_reader):
     result = inference_detector(model, frame, test_pipeline=test_pipeline)
     visualizer.add_datasample(
         name='video',
@@ -357,7 +358,7 @@ Optional arguments:
 - `RESULT_FILE`: Filename of the output results in pickle format. If not specified, the results will not be saved to a file.
 - `--show`: If specified, detection results will be plotted on the images and shown in a new window. It is only applicable to single GPU testing and used for debugging and visualization. Please make sure that GUI is available in your environment. Otherwise, you may encounter an error like `cannot connect to X server`.
 - `--show-dir`: If specified, detection results will be plotted on the images and saved to the specified directory. It is only applicable to single GPU testing and used for debugging and visualization. You do NOT need a GUI available in your environment for using this option.
-- `--work-dir`: If specified, detection results of containing evaluation metrics will be saved to the specified directory.
+- `--work-dir`: If specified, detection results containing evaluation metrics will be saved to the specified directory.
 - `--cfg-options`:  if specified, the key-value pair optional cfg will be merged into config file
 
 ### Examples
