@@ -69,8 +69,8 @@ class BaseDetector(BaseModel, metaclass=ABCMeta):
         - "loss": Forward and return a dict of losses according to the given
         inputs and data samples.
 
-        Note that this method doesn't handle neither back propagation nor
-        optimizer updating, which are done in the :meth:`train_step`.
+        Note that this method doesn't handle either back propagation or
+        parameter update, which are supposed to be done in :meth:`train_step`.
 
         Args:
             inputs (torch.Tensor): The input tensor with shape
