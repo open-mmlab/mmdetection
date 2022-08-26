@@ -107,8 +107,13 @@ class CocoPanopticMetric(BaseMetric):
 
         self.cat_ids = None
         self.cat2label = None
+
+        self.file_client_args = file_client_args
+        self.file_client = FileClient(**file_client_args)
+
         if ann_file:
-            self._coco_api = COCOPanoptic(ann_file)
+            with self.file_client.get_local_path(ann_file) as local_path:
+                self._coco_api = COCOPanoptic(local_path)
             self.categories = self._coco_api.cats
         else:
             self._coco_api = None
