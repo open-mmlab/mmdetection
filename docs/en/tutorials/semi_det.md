@@ -1,7 +1,6 @@
 # Tutorial 14: Semi-supervised Object Detection
 
-Semi-supervised object detection utilizes both labeled and unlabeled data for training. On the one hand, the dependence of the model on the number of detection boxes can be reduced, and on the other hand, a large amount of unlabeled data can be used to further improve the model.
-The process of semi-supervised object detection is as below:
+Semi supervised target detection uses both labeled data and unlabeled data for training. On the one hand, it can reduce the dependence of the model on the number of detection frames, and on the other hand, it can further improve the model by using a large number of unlabeled dataThe process of semi-supervised object detection is as below:
 
 - \[Prepare and split dataset\](#Prepare and split dataset)
 - \[Configure multi-branch pipeline\](#Configure multi-branch pipeline)
@@ -10,7 +9,7 @@ The process of semi-supervised object detection is as below:
 - \[Configure MeanTeacherHook\](#Configure MeanTeacherHook)
 - \[Configure TeacherStudentValLoop\](#Configure TeacherStudentValLoop)
 
-# Prepare and split dataset
+## Prepare and split dataset
 
 We provide a dataset download script, which downloads the coco2017 dataset by default and decompresses it automatically.
 
@@ -215,7 +214,7 @@ train_dataloader = dict(
 
 ## Configure semi-supervised model
 
-We usually choose `Faster R-CNN` as `detector` for semi-supervised training. Take the semi-supervised object detection algorithm `SoftTeacher` as an example,
+We choose `Faster R-CNN` as `detector` for semi-supervised training. Take the semi-supervised object detection algorithm `SoftTeacher` as an example,
 the model configuration can be inherited from `_base_/models/faster-rcnn_r50_fpn.py`, replacing the backbone network of the detector with `caffe` style.
 Note that unlike the supervised training configs, `Faster R-CNN` as `detector` is an attribute of `model`, not `model` .
 In addition, `data_preprocessor` needs to be set to `MultiBranchDataPreprocessor`, which is used to pad and normalize images from different pipelines.
