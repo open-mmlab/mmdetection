@@ -372,8 +372,9 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
     the ratio of labeled data and unlabeled data in a batch is 1:2,
     `sup` indicates the branch where the labeled data is augmented,
     `unsup_teacher` and `unsup_student` indicate the branches where
-    the unlabeled data is augmented by different pipeline. Therefore,
-    the input format of multi-branch data is shown as follows:
+    the unlabeled data is augmented by different pipeline.
+
+    The input format of multi-branch data is shown as below :
 
     .. code-block:: none
         {
@@ -391,7 +392,8 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
                 }
         }
 
-    Filter out branches with a value of None:
+    The format of multi-branch data
+    after filtering None is shown as below :
 
     .. code-block:: none
         {
@@ -409,7 +411,9 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
                 }
         }
 
-    Group data by branch:
+    In order to reuse `DetDataPreprocessor` for the data
+    from different branches, the format of multi-branch data
+    grouped by branch as below :
 
     .. code-block:: none
         {
