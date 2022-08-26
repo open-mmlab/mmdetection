@@ -14,11 +14,61 @@ class MultiBranch(BaseTransform):
     r"""Multiple branch pipeline wrapper.
 
     Generate multiple data-augmented versions of the same image.
+    `MultiBranch` needs to specify the branch names of all
+    pipelines of the dataset, perform corresponding data augmentation
+    for the current branch, and return None for other branches,
+    which ensures the uniformity of return value.
 
     Args:
         branch_field (list): List of branch names.
         branch_pipelines (dict): Dict of different pipeline configs
             to be composed.
+
+    Examples:
+        >>> branch_field = ['sup', 'unsup_teacher', 'unsup_student']
+        >>> sup_pipeline = [
+        >>>     dict(type='LoadImageFromFile',
+        >>>         file_client_args=file_client_args),
+        >>>     dict(type='LoadAnnotations', with_bbox=True),
+        >>>     dict(type='RandomResize', scale=scale, keep_ratio=True),
+        >>>     dict(type='RandomFlip', prob=0.5),
+        >>>     dict(
+        >>>         type='MultiBranch',
+        >>>         branch_field=branch_field,
+        >>>         sup=dict(type='PackDetInputs'))
+        >>>     ]
+        >>> weak_pipeline = [
+        >>>     dict(type='LoadImageFromFile',
+        >>>         file_client_args=file_client_args),
+        >>>     dict(type='LoadAnnotations', with_bbox=True),
+        >>>     dict(type='RandomResize', scale=scale, keep_ratio=True),
+        >>>     dict(type='RandomFlip', prob=0.0),
+        >>>     dict(
+        >>>         type='MultiBranch',
+        >>>         branch_field=branch_field,
+        >>>         sup=dict(type='PackDetInputs'))
+        >>>     ]
+        >>> strong_pipeline = [
+        >>>     dict(type='LoadImageFromFile',
+        >>>         file_client_args=file_client_args),
+        >>>     dict(type='LoadAnnotations', with_bbox=True),
+        >>>     dict(type='RandomResize', scale=scale, keep_ratio=True),
+        >>>     dict(type='RandomFlip', prob=1.0),
+        >>>     dict(
+        >>>         type='MultiBranch',
+        >>>         branch_field=branch_field,
+        >>>         sup=dict(type='PackDetInputs'))
+        >>>     ]
+        >>> unsup_pipeline = [
+        >>>     dict(type='LoadImageFromFile',
+        >>>         file_client_args=file_client_args),
+        >>>     dict(type='LoadEmptyAnnotations'),
+        >>>     dict(
+        >>>         type='MultiBranch',
+        >>>         branch_field=branch_field,
+        >>>         unsup_teacher=weak_pipeline,
+        >>>         unsup_student=strong_pipeline)
+        >>>     ]
 
     """
 

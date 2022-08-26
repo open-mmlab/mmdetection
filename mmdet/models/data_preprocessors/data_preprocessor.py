@@ -368,6 +368,87 @@ class BatchFixedSizePad(nn.Module):
 class MultiBranchDataPreprocessor(BaseDataPreprocessor):
     """DataPreprocessor wrapper for multi-branch data.
 
+    Take semi-supervised object detection as an example, assume that
+    the ratio of labeled data and unlabeled data in a batch is 1:2,
+    `sup` indicates the branch where the labeled data is augmented,
+    `unsup_teacher` and `unsup_student` indicate the branches where
+    the unlabeled data is augmented by different pipeline. Therefore,
+    the input format of multi-branch data is shown as follows:
+
+    .. code-block:: none
+        {
+            'inputs':
+                {
+                    'sup': [Tensor, None, None],
+                    'unsup_teacher': [None, Tensor, Tensor],
+                    'unsup_student': [None, Tensor, Tensor],
+                },
+            'data_sample':
+                {
+                    'sup': [DetDataSample, None, None],
+                    'unsup_teacher': [None, DetDataSample, DetDataSample],
+                    'unsup_student': [NOne, DetDataSample, DetDataSample],
+                }
+        }
+
+    Filter out branches with a value of None:
+
+    .. code-block:: none
+        {
+            'inputs':
+                {
+                    'sup': [Tensor],
+                    'unsup_teacher': [Tensor, Tensor],
+                    'unsup_student': [Tensor, Tensor],
+                },
+            'data_sample':
+                {
+                    'sup': [DetDataSample],
+                    'unsup_teacher': [DetDataSample, DetDataSample],
+                    'unsup_student': [DetDataSample, DetDataSample],
+                }
+        }
+
+    Group data by branch:
+
+    .. code-block:: none
+        {
+            'sup':
+                {
+                    'inputs': [Tensor]
+                    'data_sample': [DetDataSample, DetDataSample]
+                },
+            'unsup_teacher':
+                {
+                    'inputs': [Tensor, Tensor]
+                    'data_sample': [DetDataSample, DetDataSample]
+                },
+            'unsup_student':
+                {
+                    'inputs': [Tensor, Tensor]
+                    'data_sample': [DetDataSample, DetDataSample]
+                },
+        }
+
+    After preprocessing data from different branches,
+    the multi-branch data needs to be reformatted as:
+
+    .. code-block:: none
+        {
+            'inputs':
+                {
+                    'sup': [Tensor],
+                    'unsup_teacher': [Tensor, Tensor],
+                    'unsup_student': [Tensor, Tensor],
+                },
+            'data_sample':
+                {
+                    'sup': [DetDataSample],
+                    'unsup_teacher': [DetDataSample, DetDataSample],
+                    'unsup_student': [DetDataSample, DetDataSample],
+                }
+        }
+
     Args:
         data_preprocessor (:obj:`ConfigDict` or dict): Config of
             :class:`DetDataPreprocessor` to process the input data.
@@ -390,7 +471,7 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
 
             - 'inputs' (Dict[str, obj:`torch.Tensor`]): The forward data of
                 models from different branches.
-            - 'data_sample' (Dict[str,obj:`DetDataSample`]): The annotation
+            - 'data_sample' (Dict[str, obj:`DetDataSample`]): The annotation
                 info of the sample from different branches.
         """
 
