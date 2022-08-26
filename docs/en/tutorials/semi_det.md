@@ -1,15 +1,16 @@
 # Tutorial 14: Semi-supervised Object Detection
 
-The process of semi-supervised object detection is as follows:
+Semi-supervised object detection utilizes both labeled and unlabeled data for training. On the one hand, the dependence of the model on the number of detection boxes can be reduced, and on the other hand, a large amount of unlabeled data can be used to further improve the model.
+The process of semi-supervised object detection is as below:
 
-- Data Preparation
-- Data Pipeline
-- Semi-supervised dataloader
-- Model preparation
-- Model update
-- Model validation
+- \[Prepare and split dataset\](#Prepare and split dataset)
+- \[Configure multi-branch pipeline\](#Configure multi-branch pipeline)
+- \[Configure semi-supervised dataloader\](#Configure semi-supervised dataloader)
+- \[Configure semi-supervised model\](#Configure semi-supervised model)
+- \[Configure MeanTeacherHook\](#Configure MeanTeacherHook)
+- \[Configure TeacherStudentValLoop\](#Configure TeacherStudentValLoop)
 
-## Data Preparation
+# Prepare and split dataset
 
 We provide a dataset download script, which downloads the coco2017 dataset by default and decompresses it automatically.
 
@@ -101,7 +102,7 @@ mmdetection
 │   │   ├── val2017
 ```
 
-## Data Pipeline
+## Configure multi-branch pipeline
 
 There are two main approaches to semi-supervised learning, consistency constraints and pseudo-labels. Consistency constraints often require some careful design, while pseudo-labels have a simpler form and are easier to extend to downstream tasks.
 We adopt a teacher-student joint training semi-supervised object detection framework, so labeled data and unlabeled data need to configure different data pipeline:
@@ -169,7 +170,7 @@ unsup_pipeline = [
 ]
 ```
 
-## Semi-supervised dataloader
+## Configure semi-supervised dataloader
 
 (1) Build a semi-supervised dataset. Use `ConcatDataset` to concatenate labeled and unlabeled datasets.
 
@@ -212,7 +213,7 @@ train_dataloader = dict(
 `unsup=9000` indicates that the scale of the unlabeled dataset is 9000, `unsup_h=1800` indicates that the scale of the images with an aspect ratio greater than or equal to 1 in the unlabeled dataset is 1800, and `unsup_w=7200` indicates the scale of the images with an aspect ratio less than 1 in the unlabeled dataset is 7200.
 `GroupMultiSourceSampler` randomly selects a group according to the overall aspect ratio distribution of the images in the labeled dataset and the unlabeled dataset, and then sample data to form batches from the two datasets according to `source_ratio`, so labeled datasets and unlabeled datasets have different repetitions.
 
-## Model preparation
+## Configure semi-supervised model
 
 We usually choose `Faster R-CNN` as `detector` for semi-supervised training. Take the semi-supervised object detection algorithm `SoftTeacher` as an example,
 the model configuration can be inherited from `_base_/models/faster-rcnn_r50_fpn.py`, replacing the backbone network of the detector with `caffe` style.
@@ -267,7 +268,7 @@ model = dict(
     semi_test_cfg=dict(predict_on='teacher'))
 ```
 
-## Model update
+## Configure MeanTeacherHook
 
 Usually, the teacher model is updated by EMA the student model, and then the teacher model is optimized with the optimization of the student model, which can be achieved by configuring `custom_hooks`:
 
@@ -275,7 +276,7 @@ Usually, the teacher model is updated by EMA the student model, and then the tea
 custom_hooks = [dict(type='MeanTeacherHook')]
 ```
 
-## Model validation
+## Configure TeacherStudentValLoop
 
 Since there are two models in the teacher-student joint training framework, we can replace `ValLoop` with `TeacherStudentValLoop` to test the accuracy of both models during the training process.
 
