@@ -32,6 +32,7 @@ geometric = [
 
 scale = [(1333, 400), (1333, 1200)]
 
+branch_field = ['sup', 'unsup_teacher', 'unsup_student']
 # pipeline used to augment labeled data,
 # which will be sent to student model for supervised training.
 sup_pipeline = [
@@ -41,7 +42,10 @@ sup_pipeline = [
     dict(type='RandomFlip', prob=0.5),
     dict(type='RandAugment', aug_space=color_space, aug_num=1),
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1e-2, 1e-2)),
-    dict(type='MultiBranch', sup=dict(type='PackDetInputs'))
+    dict(
+        type='MultiBranch',
+        branch_field=branch_field,
+        sup=dict(type='PackDetInputs'))
 ]
 
 # pipeline used to augment unlabeled data weakly,
@@ -82,6 +86,7 @@ unsup_pipeline = [
     dict(type='LoadEmptyAnnotations'),
     dict(
         type='MultiBranch',
+        branch_field=branch_field,
         unsup_teacher=weak_pipeline,
         unsup_student=strong_pipeline,
     )

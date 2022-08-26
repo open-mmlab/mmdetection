@@ -1,2 +1,2 @@
-_base_ = 'deformable_detr_r50_16x2_50e_coco.py'
+_base_ = 'deformable-detr_r50_16xb2-50e_coco.py'
 model = dict(bbox_head=dict(with_box_refine=True))

@@ -1,4 +1,4 @@
-_base_ = 'mask_rcnn_r50_fpn_syncbn-all_rpn-2conv_ssj_32x2_270k_coco.py'
+_base_ = 'mask-rcnn_r50_fpn_rpn-2conv_4conv1fc_syncbn-all_32xb2-ssj-270k_coco.py'  # noqa
 
 # training schedule for 90k
 max_iters = 90000

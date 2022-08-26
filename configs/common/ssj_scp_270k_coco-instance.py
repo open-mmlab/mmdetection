@@ -1,4 +1,4 @@
-_base_ = 'ssj_270k_coco_instance.py'
+_base_ = 'ssj_270k_coco-instance.py'
 # dataset settings
 dataset_type = 'CocoDataset'
 data_root = 'data/coco/'
