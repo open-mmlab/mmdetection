@@ -212,13 +212,13 @@ train_dataloader = dict(
 
 ## 模型准备
 
-我们通常选择 `Faster R-CNN` 作为 `detector` 进行半监督训练，以半监督目标检测算法 `SoftTeacher` 为例，模型的配置可以继承 `_base_/models/faster_rcnn_r50_fpn.py`，将检测器的骨干网络替换成 `caffe` 风格。
+我们通常选择 `Faster R-CNN` 作为 `detector` 进行半监督训练，以半监督目标检测算法 `SoftTeacher` 为例，模型的配置可以继承 `_base_/models/faster-rcnn_r50_fpn.py`，将检测器的骨干网络替换成 `caffe` 风格。
 注意，与监督训练的配置文件不同的是，`Faster R-CNN` 作为 `detector`，是作为 `model`的一个属性，而不是 `model` 。此外，还需要将`data_preprocessor`设置为`MultiBranchDataPreprocessor`，用于处理不同数据流程图片的填充和归一化。
 最后，可以通过 `semi_train_cfg` 和 `semi_test_cfg` 配置半监督训练和测试需要的参数。
 
 ```python
 _base_ = [
-    '../_base_/models/faster_rcnn_r50_fpn.py', '../_base_/default_runtime.py',
+    '../_base_/models/faster-rcnn_r50_fpn.py', '../_base_/default_runtime.py',
     '../_base_/datasets/semi_coco_detection.py'
 ]
 

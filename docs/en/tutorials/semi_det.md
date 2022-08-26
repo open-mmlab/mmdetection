@@ -215,14 +215,14 @@ train_dataloader = dict(
 ## Model preparation
 
 We usually choose `Faster R-CNN` as `detector` for semi-supervised training. Take the semi-supervised object detection algorithm `SoftTeacher` as an example,
-the model configuration can be inherited from `_base_/models/faster_rcnn_r50_fpn.py`, replacing the backbone network of the detector with `caffe` style.
+the model configuration can be inherited from `_base_/models/faster-rcnn_r50_fpn.py`, replacing the backbone network of the detector with `caffe` style.
 Note that unlike the supervised training configs, `Faster R-CNN` as `detector` is an attribute of `model`, not `model` .
 In addition, `data_preprocessor` needs to be set to `MultiBranchDataPreprocessor`, which is used to pad and normalize images from different pipelines.
 Finally, parameters required for semi-supervised training and testing can be configured via `semi_train_cfg` and `semi_test_cfg`.
 
 ```python
 _base_ = [
-    '../_base_/models/faster_rcnn_r50_fpn.py', '../_base_/default_runtime.py',
+    '../_base_/models/faster-rcnn_r50_fpn.py', '../_base_/default_runtime.py',
     '../_base_/datasets/semi_coco_detection.py'
 ]
 
