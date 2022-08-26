@@ -1,4 +1,4 @@
-_base_ = 'mask_rcnn_r50_fpg_crop640_50e_coco.py'
+_base_ = 'mask-rcnn_r50_fpg_crop640-50e_coco.py'
 
 model = dict(
     neck=dict(out_channels=128, inter_channels=128),

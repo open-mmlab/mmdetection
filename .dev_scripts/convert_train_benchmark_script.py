@@ -24,8 +24,7 @@ def determine_gpus(cfg_name):
 
     if cfg_name.find('16x') >= 0:
         gpus = 16
-    elif cfg_name.find('gn-head_4x4_1x_coco.py') >= 0 or \
-            cfg_name.find('gn-head_4x4_2x_coco.py') >= 0:
+    elif cfg_name.find('4xb4') >= 0:
         gpus = 4
         gpus_pre_node = 4
     elif 'lad' in cfg_name:
