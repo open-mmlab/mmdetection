@@ -1,7 +1,7 @@
 Models:
-  - Name: faster_rcnn_hrnetv2p_w18_1x_coco
+  - Name: faster-rcnn_hrnetv2p-w18-1x_coco
     In Collection: Faster R-CNN
-    Config: configs/hrnet/faster_rcnn_hrnetv2p_w18_1x_coco.py
+    Config: configs/hrnet/faster-rcnn_hrnetv2p-w18-1x_coco.py
     Metadata:
       Training Memory (GB): 6.6
       inference time (ms/im):
@@ -33,9 +33,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: faster_rcnn_hrnetv2p_w18_2x_coco
+  - Name: faster-rcnn_hrnetv2p-w18-2x_coco
     In Collection: Faster R-CNN
-    Config: configs/hrnet/faster_rcnn_hrnetv2p_w18_2x_coco.py
+    Config: configs/hrnet/faster-rcnn_hrnetv2p-w18-2x_coco.py
     Metadata:
       Training Memory (GB): 6.6
       inference time (ms/im):
@@ -67,9 +67,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: faster_rcnn_hrnetv2p_w32_1x_coco
+  - Name: faster-rcnn_hrnetv2p-w32-1x_coco
     In Collection: Faster R-CNN
-    Config: configs/hrnet/faster_rcnn_hrnetv2p_w32_1x_coco.py
+    Config: configs/hrnet/faster-rcnn_hrnetv2p-w32-1x_coco.py
     Metadata:
       Training Memory (GB): 9.0
       inference time (ms/im):
@@ -101,9 +101,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: faster_rcnn_hrnetv2p_w32_2x_coco
+  - Name: faster-rcnn_hrnetv2p-w32_2x_coco
     In Collection: Faster R-CNN
-    Config: configs/hrnet/faster_rcnn_hrnetv2p_w32_2x_coco.py
+    Config: configs/hrnet/faster-rcnn_hrnetv2p-w32_2x_coco.py
     Metadata:
       Training Memory (GB): 9.0
       inference time (ms/im):
@@ -135,9 +135,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: faster_rcnn_hrnetv2p_w40_1x_coco
+  - Name: faster-rcnn_hrnetv2p-w40-1x_coco
     In Collection: Faster R-CNN
-    Config: configs/hrnet/faster_rcnn_hrnetv2p_w40_1x_coco.py
+    Config: configs/hrnet/faster-rcnn_hrnetv2p-w40-1x_coco.py
     Metadata:
       Training Memory (GB): 10.4
       inference time (ms/im):
@@ -169,9 +169,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: faster_rcnn_hrnetv2p_w40_2x_coco
+  - Name: faster-rcnn_hrnetv2p-w40_2x_coco
     In Collection: Faster R-CNN
-    Config: configs/hrnet/faster_rcnn_hrnetv2p_w40_2x_coco.py
+    Config: configs/hrnet/faster-rcnn_hrnetv2p-w40_2x_coco.py
     Metadata:
       Training Memory (GB): 10.4
       inference time (ms/im):
@@ -203,9 +203,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: mask_rcnn_hrnetv2p_w18_1x_coco
+  - Name: mask-rcnn_hrnetv2p-w18-1x_coco
     In Collection: Mask R-CNN
-    Config: configs/hrnet/mask_rcnn_hrnetv2p_w18_1x_coco.py
+    Config: configs/hrnet/mask-rcnn_hrnetv2p-w18-1x_coco.py
     Metadata:
       Training Memory (GB): 7.0
       inference time (ms/im):
@@ -241,9 +241,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: mask_rcnn_hrnetv2p_w18_2x_coco
+  - Name: mask-rcnn_hrnetv2p-w18-2x_coco
     In Collection: Mask R-CNN
-    Config: configs/hrnet/mask_rcnn_hrnetv2p_w18_2x_coco.py
+    Config: configs/hrnet/mask-rcnn_hrnetv2p-w18-2x_coco.py
     Metadata:
       Training Memory (GB): 7.0
       inference time (ms/im):
@@ -279,9 +279,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: mask_rcnn_hrnetv2p_w32_1x_coco
+  - Name: mask-rcnn_hrnetv2p-w32-1x_coco
     In Collection: Mask R-CNN
-    Config: configs/hrnet/mask_rcnn_hrnetv2p_w32_1x_coco.py
+    Config: configs/hrnet/mask-rcnn_hrnetv2p-w32-1x_coco.py
     Metadata:
       Training Memory (GB): 9.4
       inference time (ms/im):
@@ -317,9 +317,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: mask_rcnn_hrnetv2p_w32_2x_coco
+  - Name: mask-rcnn_hrnetv2p-w32-2x_coco
     In Collection: Mask R-CNN
-    Config: configs/hrnet/mask_rcnn_hrnetv2p_w32_2x_coco.py
+    Config: configs/hrnet/mask-rcnn_hrnetv2p-w32-2x_coco.py
     Metadata:
       Training Memory (GB): 9.4
       inference time (ms/im):
@@ -355,9 +355,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: mask_rcnn_hrnetv2p_w40_1x_coco
+  - Name: mask-rcnn_hrnetv2p-w40_1x_coco
     In Collection: Mask R-CNN
-    Config: configs/hrnet/mask_rcnn_hrnetv2p_w40_1x_coco.py
+    Config: configs/hrnet/mask-rcnn_hrnetv2p-w40_1x_coco.py
     Metadata:
       Training Memory (GB): 10.9
       Epochs: 12
@@ -386,9 +386,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: mask_rcnn_hrnetv2p_w40_2x_coco
+  - Name: mask-rcnn_hrnetv2p-w40-2x_coco
     In Collection: Mask R-CNN
-    Config: configs/hrnet/mask_rcnn_hrnetv2p_w40_2x_coco.py
+    Config: configs/hrnet/mask-rcnn_hrnetv2p-w40-2x_coco.py
     Metadata:
       Training Memory (GB): 10.9
       Epochs: 24
@@ -417,9 +417,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: cascade_rcnn_hrnetv2p_w18_20e_coco
+  - Name: cascade-rcnn_hrnetv2p-w18-20e_coco
     In Collection: Cascade R-CNN
-    Config: configs/hrnet/cascade_rcnn_hrnetv2p_w18_20e_coco.py
+    Config: configs/hrnet/cascade-rcnn_hrnetv2p-w18-20e_coco.py
     Metadata:
       Training Memory (GB): 7.0
       inference time (ms/im):
@@ -451,9 +451,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: cascade_rcnn_hrnetv2p_w32_20e_coco
+  - Name: cascade-rcnn_hrnetv2p-w32-20e_coco
     In Collection: Cascade R-CNN
-    Config: configs/hrnet/cascade_rcnn_hrnetv2p_w32_20e_coco.py
+    Config: configs/hrnet/cascade-rcnn_hrnetv2p-w32-20e_coco.py
     Metadata:
       Training Memory (GB): 9.4
       inference time (ms/im):
@@ -485,9 +485,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: cascade_rcnn_hrnetv2p_w40_20e_coco
+  - Name: cascade-rcnn_hrnetv2p-w40-20e_coco
     In Collection: Cascade R-CNN
-    Config: configs/hrnet/cascade_rcnn_hrnetv2p_w40_20e_coco.py
+    Config: configs/hrnet/cascade-rcnn_hrnetv2p-w40-20e_coco.py
     Metadata:
       Training Memory (GB): 10.8
       Epochs: 20
@@ -512,9 +512,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: cascade_mask_rcnn_hrnetv2p_w18_20e_coco
+  - Name: cascade-mask-rcnn_hrnetv2p-w18_20e_coco
     In Collection: Cascade R-CNN
-    Config: configs/hrnet/cascade_mask_rcnn_hrnetv2p_w18_20e_coco.py
+    Config: configs/hrnet/cascade-mask-rcnn_hrnetv2p-w18_20e_coco.py
     Metadata:
       Training Memory (GB): 8.5
       inference time (ms/im):
@@ -550,9 +550,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: cascade_mask_rcnn_hrnetv2p_w32_20e_coco
+  - Name: cascade-mask-rcnn_hrnetv2p-w32_20e_coco
     In Collection: Cascade R-CNN
-    Config: configs/hrnet/cascade_mask_rcnn_hrnetv2p_w32_20e_coco.py
+    Config: configs/hrnet/cascade-mask-rcnn_hrnetv2p-w32_20e_coco.py
     Metadata:
       inference time (ms/im):
         - value: 120.48
@@ -587,9 +587,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: cascade_mask_rcnn_hrnetv2p_w40_20e_coco
+  - Name: cascade-mask-rcnn_hrnetv2p-w40-20e_coco
     In Collection: Cascade R-CNN
-    Config: configs/hrnet/cascade_mask_rcnn_hrnetv2p_w40_20e_coco.py
+    Config: configs/hrnet/cascade-mask-rcnn_hrnetv2p-w40-20e_coco.py
     Metadata:
       Training Memory (GB): 12.5
       Epochs: 20
@@ -618,9 +618,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: htc_hrnetv2p_w18_20e_coco
+  - Name: htc_hrnetv2p-w18_20e_coco
     In Collection: HTC
-    Config: configs/hrnet/htc_hrnetv2p_w18_20e_coco.py
+    Config: configs/hrnet/htc_hrnetv2p-w18_20e_coco.py
     Metadata:
       Training Memory (GB): 10.8
       inference time (ms/im):
@@ -656,9 +656,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: htc_hrnetv2p_w32_20e_coco
+  - Name: htc_hrnetv2p-w32_20e_coco
     In Collection: HTC
-    Config: configs/hrnet/htc_hrnetv2p_w32_20e_coco.py
+    Config: configs/hrnet/htc_hrnetv2p-w32_20e_coco.py
     Metadata:
       Training Memory (GB): 13.1
       inference time (ms/im):
@@ -694,9 +694,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: htc_hrnetv2p_w40_20e_coco
+  - Name: htc_hrnetv2p-w40_20e_coco
     In Collection: HTC
-    Config: configs/hrnet/htc_hrnetv2p_w40_20e_coco.py
+    Config: configs/hrnet/htc_hrnetv2p-w40_20e_coco.py
     Metadata:
       Training Memory (GB): 14.6
       Epochs: 20
@@ -725,9 +725,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: fcos_hrnetv2p_w18_gn-head_4x4_1x_coco
+  - Name: fcos_hrnetv2p-w18-gn-head_4xb4-1x_coco
     In Collection: FCOS
-    Config: configs/hrnet/fcos_hrnetv2p_w18_gn-head_4x4_1x_coco.py
+    Config: configs/hrnet/fcos_hrnetv2p-w18-gn-head_4xb4-1x_coco.py
     Metadata:
       Training Resources: 4x V100 GPUs
       Batch Size: 16
@@ -760,9 +760,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: fcos_hrnetv2p_w18_gn-head_4x4_2x_coco
+  - Name: fcos_hrnetv2p-w18-gn-head_4xb4-2x_coco
     In Collection: FCOS
-    Config: configs/hrnet/fcos_hrnetv2p_w18_gn-head_4x4_2x_coco.py
+    Config: configs/hrnet/fcos_hrnetv2p-w18-gn-head_4xb4-2x_coco.py
     Metadata:
       Training Resources: 4x V100 GPUs
       Batch Size: 16
@@ -795,9 +795,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: fcos_hrnetv2p_w32_gn-head_4x4_1x_coco
+  - Name: fcos_hrnetv2p-w32-gn-head_4xb4-1x_coco
     In Collection: FCOS
-    Config: configs/hrnet/fcos_hrnetv2p_w32_gn-head_4x4_1x_coco.py
+    Config: configs/hrnet/fcos_hrnetv2p-w32-gn-head_4xb4-1x_coco.py
     Metadata:
       Training Resources: 4x V100 GPUs
       Batch Size: 16
@@ -830,9 +830,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: fcos_hrnetv2p_w32_gn-head_4x4_2x_coco
+  - Name: fcos_hrnetv2p-w32-gn-head_4xb4-2x_coco
     In Collection: FCOS
-    Config: configs/hrnet/fcos_hrnetv2p_w32_gn-head_4x4_2x_coco.py
+    Config: configs/hrnet/fcos_hrnetv2p-w32-gn-head_4xb4-2x_coco.py
     Metadata:
       Training Resources: 4x V100 GPUs
       Batch Size: 16
@@ -865,9 +865,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: fcos_hrnetv2p_w18_gn-head_mstrain_640-800_4x4_2x_coco
+  - Name: fcos_hrnetv2p-w18-gn-head_ms-640-800-4xb4-2x_coco
     In Collection: FCOS
-    Config: configs/hrnet/fcos_hrnetv2p_w18_gn-head_mstrain_640-800_4x4_2x_coco.py
+    Config: configs/hrnet/fcos_hrnetv2p-w18-gn-head_ms-640-800-4xb4-2x_coco.py
     Metadata:
       Training Resources: 4x V100 GPUs
       Batch Size: 16
@@ -900,9 +900,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: fcos_hrnetv2p_w32_gn-head_mstrain_640-800_4x4_2x_coco
+  - Name: fcos_hrnetv2p-w32-gn-head_ms-640-800-4xb4-2x_coco
     In Collection: FCOS
-    Config: configs/hrnet/fcos_hrnetv2p_w32_gn-head_mstrain_640-800_4x4_2x_coco.py
+    Config: configs/hrnet/fcos_hrnetv2p-w32-gn-head_ms-640-800-4xb4-2x_coco.py
     Metadata:
       Training Resources: 4x V100 GPUs
       Batch Size: 16
@@ -935,9 +935,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.0.0/mmdet/models/backbones/hrnet.py#L195
       Version: v2.0.0
 
-  - Name: fcos_hrnetv2p_w40_gn-head_mstrain_640-800_4x4_2x_coco
+  - Name: fcos_hrnetv2p-w40-gn-head_ms-640-800-4xb4-2x_coco
     In Collection: FCOS
-    Config: configs/hrnet/fcos_hrnetv2p_w40_gn-head_mstrain_640-800_4x4_2x_coco.py
+    Config: configs/hrnet/fcos_hrnetv2p-w40-gn-head_ms-640-800-4xb4-2x_coco.py
     Metadata:
       Training Resources: 4x V100 GPUs
       Batch Size: 16

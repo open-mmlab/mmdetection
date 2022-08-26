@@ -91,9 +91,9 @@ Models:
           mask AP: 40.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/scnet/scnet_r101_fpn_20e_coco/scnet_r101_fpn_20e_coco-294e312c.pth
 
-  - Name: scnet_x101_64x4d_fpn_20e_coco
+  - Name: scnet_x101-64x4d_fpn_20e_coco
     In Collection: SCNet
-    Config: configs/scnet/scnet_x101_64x4d_fpn_20e_coco.py
+    Config: configs/scnet/scnet_x101-64x4d_fpn_20e_coco.py
     Metadata:
       Training Memory (GB): 13.2
       inference time (ms/im):

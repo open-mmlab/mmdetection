@@ -14,9 +14,9 @@ Collections:
     README: configs/solo/README.md
 
 Models:
-  - Name: decoupled_solo_r50_fpn_1x_coco
+  - Name: decoupled-solo_r50_fpn_1x_coco
     In Collection: SOLO
-    Config: configs/solo/decoupled_solo_r50_fpn_1x_coco.py
+    Config: configs/solo/decoupled-solo_r50_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 7.8
       Epochs: 12
@@ -34,9 +34,9 @@ Models:
           mask AP: 33.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/solo/decoupled_solo_r50_fpn_1x_coco/decoupled_solo_r50_fpn_1x_coco_20210820_233348-6337c589.pth
 
-  - Name: decoupled_solo_r50_fpn_3x_coco
+  - Name: decoupled-solo_r50_fpn_3x_coco
     In Collection: SOLO
-    Config: configs/solo/decoupled_solo_r50_fpn_3x_coco.py
+    Config: configs/solo/decoupled-solo_r50_fpn_3x_coco.py
     Metadata:
       Training Memory (GB): 7.9
       Epochs: 36
@@ -54,9 +54,9 @@ Models:
           mask AP: 36.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/solo/decoupled_solo_r50_fpn_3x_coco/decoupled_solo_r50_fpn_3x_coco_20210821_042504-7b3301ec.pth
 
-  - Name: decoupled_solo_light_r50_fpn_3x_coco
+  - Name: decoupled-solo-light_r50_fpn_3x_coco
     In Collection: SOLO
-    Config: configs/solo/decoupled_solo_light_r50_fpn_3x_coco.py
+    Config: configs/solo/decoupled-solo-light_r50_fpn_3x_coco.py
     Metadata:
       Training Memory (GB): 2.2
       Epochs: 36

@@ -1,7 +1,7 @@
 Models:
-  - Name: mask_rcnn_regnetx-3.2GF_fpn_1x_coco
+  - Name: mask-rcnn_regnetx-3.2GF_fpn_1x_coco
     In Collection: Mask R-CNN
-    Config: configs/regnet/mask_rcnn_regnetx-3.2GF_fpn_1x_coco.py
+    Config: configs/regnet/mask-rcnn_regnetx-3.2GF_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 5.0
       Epochs: 12
@@ -30,9 +30,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-4GF_fpn_1x_coco
+  - Name: mask-rcnn_regnetx-4GF_fpn_1x_coco
     In Collection: Mask R-CNN
-    Config: configs/regnet/mask_rcnn_regnetx-4GF_fpn_1x_coco.py
+    Config: configs/regnet/mask-rcnn_regnetx-4GF_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 5.5
       Epochs: 12
@@ -61,9 +61,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-6.4GF_fpn_1x_coco
+  - Name: mask-rcnn_regnetx-6.4GF_fpn_1x_coco
     In Collection: Mask R-CNN
-    Config: configs/regnet/mask_rcnn_regnetx-6.4GF_fpn_1x_coco.py
+    Config: configs/regnet/mask-rcnn_regnetx-6.4GF_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.1
       Epochs: 12
@@ -92,9 +92,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-8GF_fpn_1x_coco
+  - Name: mask-rcnn_regnetx-8GF_fpn_1x_coco
     In Collection: Mask R-CNN
-    Config: configs/regnet/mask_rcnn_regnetx-8GF_fpn_1x_coco.py
+    Config: configs/regnet/mask-rcnn_regnetx-8GF_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 6.4
       Epochs: 12
@@ -123,9 +123,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-12GF_fpn_1x_coco
+  - Name: mask-rcnn_regnetx-12GF_fpn_1x_coco
     In Collection: Mask R-CNN
-    Config: configs/regnet/mask_rcnn_regnetx-12GF_fpn_1x_coco.py
+    Config: configs/regnet/mask-rcnn_regnetx-12GF_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 7.4
       Epochs: 12
@@ -154,9 +154,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-3.2GF_fpn_mdconv_c3-c5_1x_coco
+  - Name: mask-rcnn_regnetx-3.2GF-mdconv-c3-c5_fpn_1x_coco
     In Collection: Mask R-CNN
-    Config: configs/regnet/mask_rcnn_regnetx-3.2GF_fpn_mdconv_c3-c5_1x_coco.py
+    Config: configs/regnet/mask-rcnn_regnetx-3.2GF-mdconv-c3-c5_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 5.0
       Epochs: 12
@@ -185,9 +185,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: faster_rcnn_regnetx-3.2GF_fpn_1x_coco
+  - Name: faster-rcnn_regnetx-3.2GF_fpn_1x_coco
     In Collection: Faster R-CNN
-    Config: configs/regnet/faster_rcnn_regnetx-3.2GF_fpn_1x_coco.py
+    Config: configs/regnet/faster-rcnn_regnetx-3.2GF_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 4.5
       Epochs: 12
@@ -212,9 +212,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: faster_rcnn_regnetx-3.2GF_fpn_2x_coco
+  - Name: faster-rcnn_regnetx-3.2GF_fpn_2x_coco
     In Collection: Faster R-CNN
-    Config: configs/regnet/faster_rcnn_regnetx-3.2GF_fpn_2x_coco.py
+    Config: configs/regnet/faster-rcnn_regnetx-3.2GF_fpn_2x_coco.py
     Metadata:
       Training Memory (GB): 4.5
       Epochs: 24
@@ -320,9 +320,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: faster_rcnn_regnetx-400MF_fpn_mstrain_3x_coco
+  - Name: faster-rcnn_regnetx-400MF_fpn_ms-3x_coco
     In Collection: Faster R-CNN
-    Config: configs/regnet/faster_rcnn_regnetx-400MF_fpn_mstrain_3x_coco.py
+    Config: configs/regnet/faster-rcnn_regnetx-400MF_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 2.3
       Epochs: 36
@@ -347,9 +347,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: faster_rcnn_regnetx-800MF_fpn_mstrain_3x_coco
+  - Name: faster-rcnn_regnetx-800MF_fpn_ms-3x_coco
     In Collection: Faster R-CNN
-    Config: configs/regnet/faster_rcnn_regnetx-800MF_fpn_mstrain_3x_coco.py
+    Config: configs/regnet/faster-rcnn_regnetx-800MF_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 2.8
       Epochs: 36
@@ -374,9 +374,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: faster_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco
+  - Name: faster-rcnn_regnetx-1.6GF_fpn_ms-3x_coco
     In Collection: Faster R-CNN
-    Config: configs/regnet/faster_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco.py
+    Config: configs/regnet/faster-rcnn_regnetx-1.6GF_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 3.4
       Epochs: 36
@@ -401,9 +401,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: faster_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco
+  - Name: faster-rcnn_regnetx-3.2GF_fpn_ms-3x_coco
     In Collection: Faster R-CNN
-    Config: configs/regnet/faster_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco.py
+    Config: configs/regnet/faster-rcnn_regnetx-3.2GF_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 4.4
       Epochs: 36
@@ -428,9 +428,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: faster_rcnn_regnetx-4GF_fpn_mstrain_3x_coco
+  - Name: faster-rcnn_regnetx-4GF_fpn_ms-3x_coco
     In Collection: Faster R-CNN
-    Config: configs/regnet/faster_rcnn_regnetx-4GF_fpn_mstrain_3x_coco.py
+    Config: configs/regnet/faster-rcnn_regnetx-4GF_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 4.9
       Epochs: 36
@@ -455,9 +455,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco
+  - Name: mask-rcnn_regnetx-3.2GF_fpn_ms-3x_coco
     In Collection: Mask R-CNN
-    Config: configs/regnet/mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco.py
+    Config: configs/regnet/mask-rcnn_regnetx-3.2GF_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 5.0
       Epochs: 36
@@ -486,9 +486,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-400MF_fpn_mstrain-poly_3x_coco
+  - Name: mask-rcnn_regnetx-400MF_fpn_ms-poly-3x_coco
     In Collection: Mask R-CNN
-    Config: configs/regnet/mask_rcnn_regnetx-400MF_fpn_mstrain-poly_3x_coco.py
+    Config: configs/regnet/mask-rcnn_regnetx-400MF_fpn_ms-poly-3x_coco.py
     Metadata:
       Training Memory (GB): 2.5
       Epochs: 36
@@ -517,9 +517,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-800MF_fpn_mstrain-poly_3x_coco
+  - Name: mask-rcnn_regnetx-800MF_fpn_ms-poly-3x_coco
     In Collection: Mask R-CNN
-    Config: configs/regnet/mask_rcnn_regnetx-800MF_fpn_mstrain-poly_3x_coco.py
+    Config: configs/regnet/mask-rcnn_regnetx-800MF_fpn_ms-poly-3x_coco.py
     Metadata:
       Training Memory (GB): 2.9
       Epochs: 36
@@ -548,9 +548,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-1.6GF_fpn_mstrain-poly_3x_coco
+  - Name: mask-rcnn_regnetx-1.6GF_fpn_ms-poly-3x_coco
     In Collection: Mask R-CNN
-    Config: configs/regnet/mask_rcnn_regnetx-1.6GF_fpn_mstrain-poly_3x_coco.py
+    Config: configs/regnet/mask-rcnn_regnetx-1.6GF_fpn_ms-poly-3x_coco.py
     Metadata:
       Training Memory (GB): 3.6
       Epochs: 36
@@ -579,9 +579,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco
+  - Name: mask-rcnn_regnetx-3.2GF_fpn_ms-3x_coco
     In Collection: Mask R-CNN
-    Config: configs/regnet/mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco.py
+    Config: configs/regnet/mask-rcnn_regnetx-3.2GF_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 5.0
       Epochs: 36
@@ -610,9 +610,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: mask_rcnn_regnetx-4GF_fpn_mstrain-poly_3x_coco
+  - Name: mask-rcnn_regnetx-4GF_fpn_ms-poly-3x_coco
     In Collection: Mask R-CNN
-    Config: configs/regnet/mask_rcnn_regnetx-4GF_fpn_mstrain-poly_3x_coco.py
+    Config: configs/regnet/mask-rcnn_regnetx-4GF_fpn_ms-poly-3x_coco.py
     Metadata:
       Training Memory (GB): 5.1
       Epochs: 36
@@ -641,9 +641,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: cascade_mask_rcnn_regnetx-400MF_fpn_mstrain_3x_coco
+  - Name: cascade-mask-rcnn_regnetx-400MF_fpn_ms-3x_coco
     In Collection: Cascade R-CNN
-    Config: configs/regnet/cascade_mask_rcnn_regnetx-400MF_fpn_mstrain_3x_coco.py
+    Config: configs/regnet/cascade-mask-rcnn_regnetx-400MF_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 4.3
       Epochs: 36
@@ -672,9 +672,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: cascade_mask_rcnn_regnetx-800MF_fpn_mstrain_3x_coco
+  - Name: cascade-mask-rcnn_regnetx-800MF_fpn_ms-3x_coco
     In Collection: Cascade R-CNN
-    Config: configs/regnet/cascade_mask_rcnn_regnetx-800MF_fpn_mstrain_3x_coco.py
+    Config: configs/regnet/cascade-mask-rcnn_regnetx-800MF_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 4.8
       Epochs: 36
@@ -703,9 +703,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: cascade_mask_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco
+  - Name: cascade-mask-rcnn_regnetx-1.6GF_fpn_ms-3x_coco
     In Collection: Cascade R-CNN
-    Config: configs/regnet/cascade_mask_rcnn_regnetx-1.6GF_fpn_mstrain_3x_coco.py
+    Config: configs/regnet/cascade-mask-rcnn_regnetx-1.6GF_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 5.4
       Epochs: 36
@@ -734,9 +734,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: cascade_mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco
+  - Name: cascade-mask-rcnn_regnetx-3.2GF_fpn_ms-3x_coco
     In Collection: Cascade R-CNN
-    Config: configs/regnet/cascade_mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco.py
+    Config: configs/regnet/cascade-mask-rcnn_regnetx-3.2GF_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 6.4
       Epochs: 36
@@ -765,9 +765,9 @@ Models:
       URL: https://github.com/open-mmlab/mmdetection/blob/v2.1.0/mmdet/models/backbones/regnet.py#L11
       Version: v2.1.0
 
-  - Name: cascade_mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco
+  - Name: cascade-mask-rcnn_regnetx-4GF_fpn_ms-3x_coco
     In Collection: Cascade R-CNN
-    Config: configs/regnet/cascade_mask_rcnn_regnetx-4GF_fpn_mstrain_3x_coco.py
+    Config: configs/regnet/cascade-mask-rcnn_regnetx-4GF_fpn_ms-3x_coco.py
     Metadata:
       Training Memory (GB): 6.9
       Epochs: 36

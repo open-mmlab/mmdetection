@@ -16,9 +16,9 @@ class TestTwoStageBBox(TestCase):
         register_all_modules()
 
     @parameterized.expand([
-        'faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py',
-        'cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py',
-        'sparse_rcnn/sparse_rcnn_r50_fpn_1x_coco.py',
+        'faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py',
+        'cascade_rcnn/cascade-rcnn_r50_fpn_1x_coco.py',
+        'sparse_rcnn/sparse-rcnn_r50_fpn_1x_coco.py',
     ])
     def test_init(self, cfg_file):
         model = get_detector_cfg(cfg_file)
@@ -41,9 +41,9 @@ class TestTwoStageBBox(TestCase):
             self.assertEqual(detector.rpn_head.num_classes, 1)
 
     @parameterized.expand([
-        'faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py',
-        'cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py',
-        'sparse_rcnn/sparse_rcnn_r50_fpn_1x_coco.py',
+        'faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py',
+        'cascade_rcnn/cascade-rcnn_r50_fpn_1x_coco.py',
+        'sparse_rcnn/sparse-rcnn_r50_fpn_1x_coco.py',
     ])
     def test_two_stage_forward_loss_mode(self, cfg_file):
         model = get_detector_cfg(cfg_file)
@@ -67,9 +67,9 @@ class TestTwoStageBBox(TestCase):
         self.assertIsInstance(losses, dict)
 
     @parameterized.expand([
-        'faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py',
-        'cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py',
-        'sparse_rcnn/sparse_rcnn_r50_fpn_1x_coco.py',
+        'faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py',
+        'cascade_rcnn/cascade-rcnn_r50_fpn_1x_coco.py',
+        'sparse_rcnn/sparse-rcnn_r50_fpn_1x_coco.py',
     ])
     def test_two_stage_forward_predict_mode(self, cfg_file):
         model = get_detector_cfg(cfg_file)
@@ -97,9 +97,9 @@ class TestTwoStageBBox(TestCase):
 
     # TODO: Awaiting refactoring
     # @parameterized.expand([
-    #     'faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py',
-    #     'cascade_rcnn/cascade_rcnn_r50_fpn_1x_coco.py',
-    #     'sparse_rcnn/sparse_rcnn_r50_fpn_1x_coco.py',
+    #     'faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py',
+    #     'cascade_rcnn/cascade-rcnn_r50_fpn_1x_coco.py',
+    #     'sparse_rcnn/sparse-rcnn_r50_fpn_1x_coco.py',
     # ])
     # def test_two_stage_forward_tensor_mode(self, cfg_file):
     #     model = get_detector_cfg(cfg_file)
@@ -129,8 +129,8 @@ class TestTwoStageMask(TestCase):
         register_all_modules()
 
     @parameterized.expand([
-        'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py',
-        'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
+        'mask_rcnn/mask-rcnn_r50_fpn_1x_coco.py',
+        'cascade_rcnn/cascade-mask-rcnn_r50_fpn_1x_coco.py',
         'queryinst/queryinst_r50_fpn_1x_coco.py'
     ])
     def test_init(self, cfg_file):
@@ -155,8 +155,8 @@ class TestTwoStageMask(TestCase):
             self.assertEqual(detector.rpn_head.num_classes, 1)
 
     @parameterized.expand([
-        'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py',
-        'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
+        'mask_rcnn/mask-rcnn_r50_fpn_1x_coco.py',
+        'cascade_rcnn/cascade-mask-rcnn_r50_fpn_1x_coco.py',
         'queryinst/queryinst_r50_fpn_1x_coco.py'
     ])
     def test_two_stage_forward_loss_mode(self, cfg_file):
@@ -181,8 +181,8 @@ class TestTwoStageMask(TestCase):
         self.assertIsInstance(losses, dict)
 
     @parameterized.expand([
-        'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py',
-        'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
+        'mask_rcnn/mask-rcnn_r50_fpn_1x_coco.py',
+        'cascade_rcnn/cascade-mask-rcnn_r50_fpn_1x_coco.py',
         'queryinst/queryinst_r50_fpn_1x_coco.py'
     ])
     def test_two_stage_forward_predict_mode(self, cfg_file):
@@ -210,8 +210,8 @@ class TestTwoStageMask(TestCase):
 
     # TODO: Awaiting refactoring
     # @parameterized.expand([
-    #     'mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py',
-    #     'cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py',
+    #     'mask_rcnn/mask-rcnn_r50_fpn_1x_coco.py',
+    #     'cascade_rcnn/cascade-mask-rcnn_r50_fpn_1x_coco.py',
     #     'queryinst/queryinst_r50_fpn_1x_coco.py'
     # ])
     # def test_two_stage_forward_tensor_mode(self, cfg_file):
