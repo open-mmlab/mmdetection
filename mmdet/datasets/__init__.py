@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from .base_det_dataset import BaseDetDataset
 from .builder import DATASETS, PIPELINES, build_dataset
 from .cityscapes import CityscapesDataset
 from .coco import CocoDataset
@@ -21,5 +22,5 @@ __all__ = [
     'get_loading_pipeline', 'CocoPanopticDataset', 'MultiImageMixDataset',
     'OpenImagesDataset', 'OpenImagesChallengeDataset',
     'AspectRatioBatchSampler', 'ClassAwareSampler', 'MultiSourceSampler',
-    'GroupMultiSourceSampler'
+    'GroupMultiSourceSampler', 'BaseDetDataset'
 ]
