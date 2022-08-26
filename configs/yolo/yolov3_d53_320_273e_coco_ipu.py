@@ -30,7 +30,7 @@ train_pipeline = [
     dict(
         type='IPUCollect',
         keys=['img', 'gt_bboxes', 'gt_labels'],
-        meta_on=True),
+        remove_img_meta=True),
     dict(
         type='GetTargetsOutsideForYolo',
         featmap_sizes=[IM_SIZE // 32, IM_SIZE // 16, IM_SIZE // 8])
@@ -50,7 +50,7 @@ test_pipeline = [
                 type='IPUCollect',
                 keys=['img'],
                 meta_tensor_keys=('scale_factor', ),
-                meta_on=True)
+                remove_img_meta=True)
         ])
 ]
 data = dict(

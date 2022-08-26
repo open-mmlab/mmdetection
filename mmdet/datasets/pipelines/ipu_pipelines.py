@@ -127,7 +127,7 @@ class IPUCollect:
     The additional feature is:
         1. meta_tensor_keys specify tensors which will be converted to
         torch.Tensor
-        2. meta_on determines whether remove img_metas from results
+        2. remove_img_meta determines whether remove img_metas from results
     Args:
         keys (Sequence[str]): Keys of results to be collected in ``data``.
         meta_keys (Sequence[str], optional): Meta keys to be converted to
@@ -137,7 +137,7 @@ class IPUCollect:
             'img_norm_cfg')``
         meta_tensor_keys (tuple[str]): keys of data which will be converted
             to torch.Tensor
-        meta_on (bool): whether remove img_metas from results or not.
+        remove_img_meta (bool): whether remove img_metas from results or not.
     """
 
     def __init__(self,
@@ -146,11 +146,11 @@ class IPUCollect:
                             'img_shape', 'pad_shape', 'scale_factor', 'flip',
                             'flip_direction', 'img_norm_cfg'),
                  meta_tensor_keys=tuple(),
-                 meta_on=False):
+                 remove_img_meta=False):
         self.keys = keys
         self.meta_keys = meta_keys
         self.meta_tensor_keys = meta_tensor_keys
-        self.meta_on = meta_on
+        self.remove_img_meta = remove_img_meta
         self.shape_dic = {}
 
     def check_shape(self, name, shape):
@@ -168,7 +168,7 @@ class IPUCollect:
                 img_meta[key] = torch.from_numpy(results[key])
             else:
                 img_meta[key] = results[key]
-        if self.meta_on:
+        if self.remove_img_meta:
             data['img_metas'] = DC(img_meta, cpu_only=True)
         for key in self.keys:
             data[key] = results[key]
