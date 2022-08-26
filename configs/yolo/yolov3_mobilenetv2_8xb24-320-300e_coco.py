@@ -1,4 +1,4 @@
-_base_ = ['./yolov3_mobilenetv2_mstrain-416_300e_coco.py']
+_base_ = ['./yolov3_mobilenetv2_8xb24-ms-416-300e_coco.py']
 
 # yapf:disable
 model = dict(

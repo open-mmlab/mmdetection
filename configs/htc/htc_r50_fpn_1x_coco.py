@@ -1,4 +1,4 @@
-_base_ = './htc_without_semantic_r50_fpn_1x_coco.py'
+_base_ = './htc-without-semantic_r50_fpn_1x_coco.py'
 model = dict(
     data_preprocessor=dict(pad_seg=True),
     roi_head=dict(

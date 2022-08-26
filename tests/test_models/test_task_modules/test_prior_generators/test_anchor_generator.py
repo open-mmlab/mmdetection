@@ -655,7 +655,7 @@ def test_guided_anchor():
     else:
         device = 'cpu'
     # head configs modified from
-    # configs/guided_anchoring/ga_retinanet_r50_fpn_1x_coco.py
+    # configs/guided_anchoring/ga-retinanet_r50_fpn_1x_coco.py
     bbox_head = dict(
         type='GARetinaHead',
         num_classes=8,

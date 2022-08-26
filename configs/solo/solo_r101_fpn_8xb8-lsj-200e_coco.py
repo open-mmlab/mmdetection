@@ -1,4 +1,4 @@
-_base_ = './solo_r50_fpn_lsj_200e_8x8_coco.py'
+_base_ = './solo_r50_fpn_8xb8-lsj-200e_coco.py'
 
 model = dict(
     backbone=dict(

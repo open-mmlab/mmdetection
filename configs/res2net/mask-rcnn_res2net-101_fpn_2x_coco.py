@@ -1,4 +1,4 @@
-_base_ = '../mask_rcnn/mask_rcnn_r50_fpn_2x_coco.py'
+_base_ = '../mask_rcnn/mask-rcnn_r50_fpn_2x_coco.py'
 model = dict(
     backbone=dict(
         type='Res2Net',

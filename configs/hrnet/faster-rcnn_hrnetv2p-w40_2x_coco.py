@@ -1,4 +1,4 @@
-_base_ = './faster_rcnn_hrnetv2p_w40_1x_coco.py'
+_base_ = './faster-rcnn_hrnetv2p-w40-1x_coco.py'
 
 # learning policy
 max_epochs = 24

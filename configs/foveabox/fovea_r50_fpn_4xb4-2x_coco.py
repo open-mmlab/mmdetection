@@ -1,4 +1,4 @@
-_base_ = './fovea_r50_fpn_4x4_1x_coco.py'
+_base_ = './fovea_r50_fpn_4xb4-1x_coco.py'
 # learning policy
 max_epochs = 24
 param_scheduler = [

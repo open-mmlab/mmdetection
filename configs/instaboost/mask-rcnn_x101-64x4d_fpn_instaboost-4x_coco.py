@@ -1,4 +1,4 @@
-_base_ = './mask_rcnn_r50_fpn_instaboost_4x_coco.py'
+_base_ = './mask-rcnn_r50_fpn_instaboost-4x_coco.py'
 model = dict(
     backbone=dict(
         type='ResNeXt',

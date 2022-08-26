@@ -1,4 +1,4 @@
-_base_ = '../common/lsj_200e_coco_instance.py'
+_base_ = '../common/lsj-200e_coco-instance.py'
 
 image_size = (1024, 1024)
 batch_augments = [dict(type='BatchFixedSizePad', size=image_size)]

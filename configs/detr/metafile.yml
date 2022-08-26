@@ -19,9 +19,9 @@ Collections:
       Version: v2.7.0
 
 Models:
-  - Name: detr_r50_8x2_150e_coco
+  - Name: detr_r50_8xb2-150e_coco
     In Collection: DETR
-    Config: configs/detr/detr_r50_8x2_150e_coco.py
+    Config: configs/detr/detr_r50_8xb2-150e_coco.py
     Metadata:
       Training Memory (GB): 7.9
       Epochs: 150

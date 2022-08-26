@@ -1,4 +1,4 @@
-_base_ = './faster_rcnn_regnetx-3.2GF_fpn_1x_coco.py'
+_base_ = './faster-rcnn_regnetx-3.2GF_fpn_1x_coco.py'
 
 # learning policy
 max_epochs = 24

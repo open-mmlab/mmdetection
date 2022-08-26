@@ -1,4 +1,4 @@
-_base_ = './ms_rcnn_x101_64x4d_fpn_1x_coco.py'
+_base_ = './ms-rcnn_x101-64x4d_fpn_1x_coco.py'
 # learning policy
 max_epochs = 24
 train_cfg = dict(

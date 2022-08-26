@@ -1,4 +1,4 @@
-_base_ = '../htc/htc_x101_64x4d_fpn_16x1_20e_coco.py'
+_base_ = '../htc/htc_x101-64x4d_fpn_16xb1-20e_coco.py'
 
 # learning policy
 max_epochs = 28

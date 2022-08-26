@@ -20,7 +20,7 @@ Collections:
 Models:
   - Name: yolact_r50_1x8_coco
     In Collection: YOLACT
-    Config: configs/yolact/yolact_r50_1x8_coco.py
+    Config: configs/yolact/yolact_r50_1xb8-55e_coco.py
     Metadata:
       Training Resources: 1x V100 GPU
       Batch Size: 8
@@ -40,7 +40,7 @@ Models:
 
   - Name: yolact_r50_8x8_coco
     In Collection: YOLACT
-    Config: configs/yolact/yolact_r50_8x8_coco.py
+    Config: configs/yolact/yolact_r50_8xb8-55e_coco.py
     Metadata:
       Batch Size: 64
       inference time (ms/im):
@@ -59,7 +59,7 @@ Models:
 
   - Name: yolact_r101_1x8_coco
     In Collection: YOLACT
-    Config: configs/yolact/yolact_r101_1x8_coco.py
+    Config: configs/yolact/yolact_r101_1xb8-55e_coco.py
     Metadata:
       Training Resources: 1x V100 GPU
       Batch Size: 8

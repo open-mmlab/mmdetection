@@ -1,4 +1,4 @@
-_base_ = '../grid_rcnn/grid_rcnn_r50_fpn_gn-head_1x_coco.py'
+_base_ = '../grid_rcnn/grid-rcnn_r50_fpn_gn-head_1x_coco.py'
 # model settings
 model = dict(
     roi_head=dict(

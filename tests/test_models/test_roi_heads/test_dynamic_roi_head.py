@@ -15,7 +15,7 @@ class TestDynamicRoIHead(TestCase):
     def setUp(self):
         register_all_modules()
         self.roi_head_cfg = get_roi_head_cfg(
-            'dynamic_rcnn/dynamic_rcnn_r50_fpn_1x_coco.py')
+            'dynamic_rcnn/dynamic-rcnn_r50_fpn_1x_coco.py')
 
     def test_init(self):
         roi_head = MODELS.build(self.roi_head_cfg)

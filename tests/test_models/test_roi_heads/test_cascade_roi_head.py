@@ -13,7 +13,7 @@ from mmdet.testing import demo_mm_inputs, demo_mm_proposals, get_roi_head_cfg
 class TestCascadeRoIHead(TestCase):
 
     @parameterized.expand(
-        ['cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py'])
+        ['cascade_rcnn/cascade-mask-rcnn_r50_fpn_1x_coco.py'])
     def test_init(self, cfg_file):
         """Test init standard RoI head."""
         # Normal Cascade Mask R-CNN RoI head
@@ -23,7 +23,7 @@ class TestCascadeRoIHead(TestCase):
         assert roi_head.with_mask
 
     @parameterized.expand(
-        ['cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco.py'])
+        ['cascade_rcnn/cascade-mask-rcnn_r50_fpn_1x_coco.py'])
     def test_cascade_roi_head_loss(self, cfg_file):
         """Tests standard roi head loss when truth is empty and non-empty."""
         if not torch.cuda.is_available():

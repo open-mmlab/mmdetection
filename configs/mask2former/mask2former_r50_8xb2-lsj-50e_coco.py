@@ -1,4 +1,4 @@
-_base_ = ['./mask2former_r50_lsj_8x2_50e_coco-panoptic.py']
+_base_ = ['./mask2former_r50_8xb2-lsj-50e_coco-panoptic.py']
 
 num_things_classes = 80
 num_stuff_classes = 0

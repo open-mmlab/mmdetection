@@ -1,4 +1,4 @@
-_base_ = './cascade_rcnn_s50_fpn_syncbn-backbone+head_mstrain-range_1x_coco.py'
+_base_ = './cascade-rcnn_s50_fpn_syncbn-backbone+head_ms-range-1x_coco.py'
 model = dict(
     backbone=dict(
         stem_channels=128,

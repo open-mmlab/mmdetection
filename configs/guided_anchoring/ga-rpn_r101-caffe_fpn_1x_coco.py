@@ -1,4 +1,4 @@
-_base_ = './ga_rpn_r50_caffe_fpn_1x_coco.py'
+_base_ = './ga-rpn_r50-caffe_fpn_1x_coco.py'
 # model settings
 model = dict(
     backbone=dict(

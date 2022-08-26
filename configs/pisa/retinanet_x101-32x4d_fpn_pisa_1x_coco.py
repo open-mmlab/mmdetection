@@ -1,4 +1,4 @@
-_base_ = '../retinanet/retinanet_x101_32x4d_fpn_1x_coco.py'
+_base_ = '../retinanet/retinanet_x101-32x4d_fpn_1x_coco.py'
 
 model = dict(
     bbox_head=dict(

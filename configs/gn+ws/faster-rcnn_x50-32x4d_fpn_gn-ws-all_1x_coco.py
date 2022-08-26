@@ -1,4 +1,4 @@
-_base_ = './faster_rcnn_r50_fpn_gn_ws-all_1x_coco.py'
+_base_ = './faster-rcnn_r50_fpn_gn-ws-all_1x_coco.py'
 conv_cfg = dict(type='ConvWS')
 norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
 model = dict(

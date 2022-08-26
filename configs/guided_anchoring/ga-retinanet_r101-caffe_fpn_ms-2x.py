@@ -1,4 +1,4 @@
-_base_ = './ga_retinanet_r101_caffe_fpn_1x_coco.py'
+_base_ = './ga-retinanet_r101-caffe_fpn_1x_coco.py'
 
 train_pipeline = [
     dict(
