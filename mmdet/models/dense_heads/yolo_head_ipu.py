@@ -191,8 +191,10 @@ class IPUYOLOV3Head(YOLOV3Head):
                 image size, scaling factor, etc.
             gt_bboxes_ignore (None | list[Tensor]): specify which bounding
                 boxes can be ignored when computing the loss.
-            target_map_list (list[Tensor]): Target map of each level.
-            neg_map_list (list[Tensor]): Negative map of each level.
+            target_map_list (list[Tensor]): Target map of each level. Generated
+                by GetTargetsOutsideForYolo(pipeline)
+            neg_map_list (list[Tensor]): Negative map of each level. Generated
+                by GetTargetsOutsideForYolo(pipeline)
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.

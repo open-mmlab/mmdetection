@@ -303,9 +303,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
              gt_bboxes,
              gt_labels,
              img_metas,
-             gt_bboxes_ignore=None,
-             target_maps_list=None,
-             neg_maps_list=None):
+             gt_bboxes_ignore=None):
         """Compute loss of the head.
 
         Args:
@@ -318,31 +316,29 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                 image size, scaling factor, etc.
             gt_bboxes_ignore (None | list[Tensor]): specify which bounding
                 boxes can be ignored when computing the loss.
-            target_map_list (list[Tensor]): Target map of each level.
-            neg_map_list (list[Tensor]): Negative map of each level.
 
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        if target_maps_list is None or neg_maps_list is None:
-            num_imgs = len(img_metas)
-            device = pred_maps[0][0].device
+        num_imgs = len(img_metas)
+        device = pred_maps[0][0].device
 
-            featmap_sizes = [
-                pred_maps[i].shape[-2:] for i in range(self.num_levels)
-            ]
-            mlvl_anchors = self.prior_generator.grid_priors(
-                featmap_sizes, device=device)
-            anchor_list = [mlvl_anchors for _ in range(num_imgs)]
+        featmap_sizes = [
+            pred_maps[i].shape[-2:] for i in range(self.num_levels)
+        ]
+        mlvl_anchors = self.prior_generator.grid_priors(
+            featmap_sizes, device=device)
+        anchor_list = [mlvl_anchors for _ in range(num_imgs)]
 
-            responsible_flag_list = []
-            for img_id in range(len(img_metas)):
-                responsible_flag_list.append(
-                    self.prior_generator.responsible_flags(
-                        featmap_sizes, gt_bboxes[img_id], device))
+        responsible_flag_list = []
+        for img_id in range(len(img_metas)):
+            responsible_flag_list.append(
+                self.prior_generator.responsible_flags(featmap_sizes,
+                                                       gt_bboxes[img_id],
+                                                       device))
 
-            target_maps_list, neg_maps_list = self.get_targets(
-                anchor_list, responsible_flag_list, gt_bboxes, gt_labels)
+        target_maps_list, neg_maps_list = self.get_targets(
+            anchor_list, responsible_flag_list, gt_bboxes, gt_labels)
 
         losses_cls, losses_conf, losses_xy, losses_wh = multi_apply(
             self.loss_single, pred_maps, target_maps_list, neg_maps_list)
