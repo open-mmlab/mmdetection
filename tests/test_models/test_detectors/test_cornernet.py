@@ -15,7 +15,7 @@ class TestCornerNet(TestCase):
     def setUp(self) -> None:
         register_all_modules()
         model_cfg = get_detector_cfg(
-            'cornernet/cornernet_hourglass104_mstest_8x6_210e_coco.py')
+            'cornernet/cornernet_hourglass104_8xb6-210e-mstest_coco.py')
 
         backbone = dict(
             type='ResNet',
@@ -41,7 +41,7 @@ class TestCornerNet(TestCase):
 
     def test_init(self):
         model = get_detector_cfg(
-            'cornernet/cornernet_hourglass104_mstest_8x6_210e_coco.py')
+            'cornernet/cornernet_hourglass104_8xb6-210e-mstest_coco.py')
         model.backbone.init_cfg = None
 
         from mmdet.models import build_detector
