@@ -1,4 +1,4 @@
-_base_ = 'faster_rcnn_r50_caffe_fpn_mstrain_1x_coco.py'
+_base_ = 'faster-rcnn_r50-caffe_fpn_ms-1x_coco.py'
 
 # learning policy
 lr_config = dict(

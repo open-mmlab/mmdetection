@@ -1,4 +1,4 @@
-_base_ = ['faster_rcnn_r50_fpn_32x2_1x_openimages_challenge.py']
+_base_ = ['faster-rcnn_r50_fpn_32xb2-1x_openimages-challenge.py']
 
 # Use ClassAwareSampler
 train_dataloader = dict(
