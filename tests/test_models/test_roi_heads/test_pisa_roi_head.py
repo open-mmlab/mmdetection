@@ -15,7 +15,7 @@ class TestPISARoIHead(TestCase):
     def setUp(self):
         register_all_modules()
         self.roi_head_cfg = get_roi_head_cfg(
-            'pisa/pisa_faster_rcnn_r50_fpn_1x_coco.py')
+            'pisa/faster-rcnn_r50_fpn_pisa_1x_coco.py')
 
     def test_init(self):
         roi_head = MODELS.build(self.roi_head_cfg)

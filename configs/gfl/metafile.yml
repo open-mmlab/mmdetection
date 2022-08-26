@@ -38,9 +38,9 @@ Models:
           box AP: 40.2
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_r50_fpn_1x_coco/gfl_r50_fpn_1x_coco_20200629_121244-25944287.pth
 
-  - Name: gfl_r50_fpn_mstrain_2x_coco
+  - Name: gfl_r50_fpn_ms-2x_coco
     In Collection: Generalized Focal Loss
-    Config: configs/gfl/gfl_r50_fpn_mstrain_2x_coco.py
+    Config: configs/gfl/gfl_r50_fpn_ms-2x_coco.py
     Metadata:
       inference time (ms/im):
         - value: 51.28
@@ -57,9 +57,9 @@ Models:
           box AP: 42.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_r50_fpn_mstrain_2x_coco/gfl_r50_fpn_mstrain_2x_coco_20200629_213802-37bb1edc.pth
 
-  - Name: gfl_r101_fpn_mstrain_2x_coco
+  - Name: gfl_r101_fpn_ms-2x_coco
     In Collection: Generalized Focal Loss
-    Config: configs/gfl/gfl_r101_fpn_mstrain_2x_coco.py
+    Config: configs/gfl/gfl_r101_fpn_ms-2x_coco.py
     Metadata:
       inference time (ms/im):
         - value: 68.03
@@ -76,9 +76,9 @@ Models:
           box AP: 44.7
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_r101_fpn_mstrain_2x_coco/gfl_r101_fpn_mstrain_2x_coco_20200629_200126-dd12f847.pth
 
-  - Name: gfl_r101_fpn_dconv_c3-c5_mstrain_2x_coco
+  - Name: gfl_r101-dconv-c3-c5_fpn_ms-2x_coco
     In Collection: Generalized Focal Loss
-    Config: configs/gfl/gfl_r101_fpn_dconv_c3-c5_mstrain_2x_coco.py
+    Config: configs/gfl/gfl_r101-dconv-c3-c5_fpn_ms-2x_coco.py
     Metadata:
       inference time (ms/im):
         - value: 77.52
@@ -95,9 +95,9 @@ Models:
           box AP: 47.1
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_r101_fpn_dconv_c3-c5_mstrain_2x_coco/gfl_r101_fpn_dconv_c3-c5_mstrain_2x_coco_20200630_102002-134b07df.pth
 
-  - Name: gfl_x101_32x4d_fpn_mstrain_2x_coco
+  - Name: gfl_x101-32x4d_fpn_ms-2x_coco
     In Collection: Generalized Focal Loss
-    Config: configs/gfl/gfl_x101_32x4d_fpn_mstrain_2x_coco.py
+    Config: configs/gfl/gfl_x101-32x4d_fpn_ms-2x_coco.py
     Metadata:
       inference time (ms/im):
         - value: 82.64
@@ -114,9 +114,9 @@ Models:
           box AP: 45.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/gfl/gfl_x101_32x4d_fpn_mstrain_2x_coco/gfl_x101_32x4d_fpn_mstrain_2x_coco_20200630_102002-50c1ffdb.pth
 
-  - Name: gfl_x101_32x4d_fpn_dconv_c4-c5_mstrain_2x_coco
+  - Name: gfl_x101-32x4d-dconv-c4-c5_fpn_ms-2x_coco
     In Collection: Generalized Focal Loss
-    Config: configs/gfl/gfl_x101_32x4d_fpn_dconv_c4-c5_mstrain_2x_coco.py
+    Config: configs/gfl/gfl_x101-32x4d-dconv-c4-c5_fpn_ms-2x_coco.py
     Metadata:
       inference time (ms/im):
         - value: 93.46

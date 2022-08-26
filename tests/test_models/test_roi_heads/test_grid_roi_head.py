@@ -15,7 +15,7 @@ class TestGridRoIHead(TestCase):
     def setUp(self):
         register_all_modules()
         self.roi_head_cfg = get_roi_head_cfg(
-            'grid_rcnn/grid_rcnn_r50_fpn_gn-head_2x_coco.py')
+            'grid_rcnn/grid-rcnn_r50_fpn_gn-head_2x_coco.py')
 
     def test_init(self):
         roi_head = MODELS.build(self.roi_head_cfg)

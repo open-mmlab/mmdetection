@@ -16,7 +16,7 @@ class TestTwoStagePanopticSegmentor(unittest.TestCase):
         register_all_modules()
 
     def _create_model_cfg(self):
-        cfg_file = 'panoptic_fpn/panoptic_fpn_r50_fpn_1x_coco.py'
+        cfg_file = 'panoptic_fpn/panoptic-fpn_r50_fpn_1x_coco.py'
         model_cfg = get_detector_cfg(cfg_file)
         model_cfg.backbone.depth = 18
         model_cfg.neck.in_channels = [64, 128, 256, 512]

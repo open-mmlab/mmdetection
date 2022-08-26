@@ -19,9 +19,9 @@ Collections:
       Version: v2.11.0
 
 Models:
-  - Name: ld_r18_gflv1_r101_fpn_coco_1x
+  - Name: ld_r18-gflv1-r101_fpn_1x_coco
     In Collection: Localization Distillation
-    Config: configs/ld/ld_r18_gflv1_r101_fpn_coco_1x.py
+    Config: configs/ld/ld_r18-gflv1-r101_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 1.8
       Epochs: 12
@@ -31,9 +31,9 @@ Models:
       Metrics:
         box AP: 36.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/ld/ld_r18_gflv1_r101_fpn_coco_1x/ld_r18_gflv1_r101_fpn_coco_1x_20220702_062206-330e6332.pth
-  - Name: ld_r34_gflv1_r101_fpn_coco_1x
+  - Name: ld_r34-gflv1-r101_fpn_1x_coco
     In Collection: Localization Distillation
-    Config: configs/ld/ld_r34_gflv1_r101_fpn_coco_1x.py
+    Config: configs/ld/ld_r34-gflv1-r101_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 2.2
       Epochs: 12
@@ -43,9 +43,9 @@ Models:
       Metrics:
         box AP: 39.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/ld/ld_r34_gflv1_r101_fpn_coco_1x/ld_r34_gflv1_r101_fpn_coco_1x_20220630_134007-9bc69413.pth
-  - Name: ld_r50_gflv1_r101_fpn_coco_1x
+  - Name: ld_r50-gflv1-r101_fpn_1x_coco
     In Collection: Localization Distillation
-    Config: configs/ld/ld_r50_gflv1_r101_fpn_coco_1x.py
+    Config: configs/ld/ld_r50-gflv1-r101_fpn_1x_coco.py
     Metadata:
       Training Memory (GB): 3.6
       Epochs: 12
@@ -55,9 +55,9 @@ Models:
       Metrics:
         box AP: 41.0
     Weights: https://download.openmmlab.com/mmdetection/v2.0/ld/ld_r50_gflv1_r101_fpn_coco_1x/ld_r50_gflv1_r101_fpn_coco_1x_20220629_145355-8dc5bad8.pth
-  - Name: ld_r101_gflv1_r101dcn_fpn_coco_2x
+  - Name: ld_r101-gflv1-r101-dcn_fpn_2x_coco
     In Collection: Localization Distillation
-    Config: configs/ld/ld_r101_gflv1_r101dcn_fpn_coco_2x.py
+    Config: configs/ld/ld_r101-gflv1-r101-dcn_fpn_2x_coco.py
     Metadata:
       Training Memory (GB): 5.5
       Epochs: 24

@@ -17,9 +17,9 @@ Collections:
       Version: v2.22.0
 
 Models:
-  - Name: maskformer_r50_mstrain_16x1_75e_coco
+  - Name: maskformer_r50_ms-16xb1-75e_coco
     In Collection: MaskFormer
-    Config: configs/maskformer/maskformer_r50_mstrain_16x1_75e_coco.py
+    Config: configs/maskformer/maskformer_r50_ms-16xb1-75e_coco.py
     Metadata:
       Training Memory (GB): 16.2
       Epochs: 75
@@ -29,9 +29,9 @@ Models:
       Metrics:
         PQ: 46.9
     Weights: https://download.openmmlab.com/mmdetection/v2.0/maskformer/maskformer_r50_mstrain_16x1_75e_coco/maskformer_r50_mstrain_16x1_75e_coco_20220221_141956-bc2699cb.pth
-  - Name: maskformer_swin-l-p4-w12_mstrain_64x1_300e_coco
+  - Name: maskformer_swin-l-p4-w12_64xb1-ms-300e_coco
     In Collection: MaskFormer
-    Config: configs/maskformer/maskformer_swin-l-p4-w12_mstrain_64x1_300e_coco.py
+    Config: configs/maskformer/maskformer_swin-l-p4-w12_64xb1-ms-300e_coco.py
     Metadata:
       Training Memory (GB): 27.2
       Epochs: 300
