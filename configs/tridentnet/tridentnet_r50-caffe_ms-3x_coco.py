@@ -1,4 +1,4 @@
-_base_ = 'tridentnet_r50_caffe_mstrain_1x_coco.py'
+_base_ = 'tridentnet_r50-caffe_ms-1x_coco.py'
 
 # learning rate
 max_epochs = 36

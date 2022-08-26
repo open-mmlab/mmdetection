@@ -1,4 +1,4 @@
-_base_ = 'cascade_mask_rcnn_regnetx-3.2GF_fpn_mstrain_3x_coco.py'
+_base_ = 'cascade-mask-rcnn_regnetx-3.2GF_fpn_ms-3x_coco.py'
 model = dict(
     backbone=dict(
         type='RegNet',
