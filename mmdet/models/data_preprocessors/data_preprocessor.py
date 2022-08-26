@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import random
 from numbers import Number
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
@@ -368,6 +368,91 @@ class BatchFixedSizePad(nn.Module):
 class MultiBranchDataPreprocessor(BaseDataPreprocessor):
     """DataPreprocessor wrapper for multi-branch data.
 
+    Take semi-supervised object detection as an example, assume that
+    the ratio of labeled data and unlabeled data in a batch is 1:2,
+    `sup` indicates the branch where the labeled data is augmented,
+    `unsup_teacher` and `unsup_student` indicate the branches where
+    the unlabeled data is augmented by different pipeline.
+
+    The input format of multi-branch data is shown as below :
+
+    .. code-block:: none
+        {
+            'inputs':
+                {
+                    'sup': [Tensor, None, None],
+                    'unsup_teacher': [None, Tensor, Tensor],
+                    'unsup_student': [None, Tensor, Tensor],
+                },
+            'data_sample':
+                {
+                    'sup': [DetDataSample, None, None],
+                    'unsup_teacher': [None, DetDataSample, DetDataSample],
+                    'unsup_student': [NOne, DetDataSample, DetDataSample],
+                }
+        }
+
+    The format of multi-branch data
+    after filtering None is shown as below :
+
+    .. code-block:: none
+        {
+            'inputs':
+                {
+                    'sup': [Tensor],
+                    'unsup_teacher': [Tensor, Tensor],
+                    'unsup_student': [Tensor, Tensor],
+                },
+            'data_sample':
+                {
+                    'sup': [DetDataSample],
+                    'unsup_teacher': [DetDataSample, DetDataSample],
+                    'unsup_student': [DetDataSample, DetDataSample],
+                }
+        }
+
+    In order to reuse `DetDataPreprocessor` for the data
+    from different branches, the format of multi-branch data
+    grouped by branch is as below :
+
+    .. code-block:: none
+        {
+            'sup':
+                {
+                    'inputs': [Tensor]
+                    'data_sample': [DetDataSample, DetDataSample]
+                },
+            'unsup_teacher':
+                {
+                    'inputs': [Tensor, Tensor]
+                    'data_sample': [DetDataSample, DetDataSample]
+                },
+            'unsup_student':
+                {
+                    'inputs': [Tensor, Tensor]
+                    'data_sample': [DetDataSample, DetDataSample]
+                },
+        }
+
+    After preprocessing data from different branches,
+    the multi-branch data needs to be reformatted as:
+
+    .. code-block:: none
+        {
+            'inputs':
+                {
+                    'sup': [Tensor],
+                    'unsup_teacher': [Tensor, Tensor],
+                    'unsup_student': [Tensor, Tensor],
+                },
+            'data_sample':
+                {
+                    'sup': [DetDataSample],
+                    'unsup_teacher': [DetDataSample, DetDataSample],
+                    'unsup_student': [DetDataSample, DetDataSample],
+                }
+        }
+
     Args:
         data_preprocessor (:obj:`ConfigDict` or dict): Config of
             :class:`DetDataPreprocessor` to process the input data.
@@ -377,37 +462,60 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
         super().__init__()
         self.data_preprocessor = MODELS.build(data_preprocessor)
 
-    def forward(
-        self,
-        data: dict,
-        training: bool = False
-    ) -> Tuple[Dict[str, torch.Tensor], Dict[str, Optional[list]]]:
+    def forward(self, data: dict, training: bool = False) -> dict:
         """Perform normalization、padding and bgr2rgb conversion based on
         ``BaseDataPreprocessor`` for multi-branch data.
 
         Args:
-            data (Sequence[dict]): data sampled from dataloader.
+            data (dict): Data sampled from dataloader.
             training (bool): Whether to enable training time augmentation.
 
         Returns:
-            Tuple[Dict[torch.Tensor], Dict[Optional[list]]]: Each tuple of
-            zip(dict, dict) is the data in the same format as the model input.
+            dict:
+
+            - 'inputs' (Dict[str, obj:`torch.Tensor`]): The forward data of
+                models from different branches.
+            - 'data_sample' (Dict[str, obj:`DetDataSample`]): The annotation
+                info of the sample from different branches.
         """
 
         if training is False:
             return self.data_preprocessor(data, training)
+
+        # Filter out branches with a value of None
+        for key in data.keys():
+            for branch in data[key].keys():
+                data[key][branch] = list(
+                    filter(lambda x: x is not None, data[key][branch]))
+
+        # Group data by branch
         multi_branch_data = {}
-        for multi_results in data:
-            for branch, results in multi_results.items():
+        for key in data.keys():
+            for branch in data[key].keys():
                 if multi_branch_data.get(branch, None) is None:
-                    multi_branch_data[branch] = [results]
+                    multi_branch_data[branch] = {key: data[key][branch]}
+                elif multi_branch_data[branch].get(key, None) is None:
+                    multi_branch_data[branch][key] = data[key][branch]
                 else:
-                    multi_branch_data[branch].append(results)
-        multi_batch_inputs, multi_batch_data_samples = {}, {}
-        for branch, data in multi_branch_data.items():
-            multi_batch_inputs[branch], multi_batch_data_samples[
-                branch] = self.data_preprocessor(data, training)
-        return multi_batch_inputs, multi_batch_data_samples
+                    multi_branch_data[branch][key].append(data[key][branch])
+
+        # Preprocess data from different branches
+        for branch, _data in multi_branch_data.items():
+            multi_branch_data[branch] = self.data_preprocessor(_data, training)
+
+        # Format data by inputs and data_samples
+        format_data = {}
+        for branch in multi_branch_data.keys():
+            for key in multi_branch_data[branch].keys():
+                if format_data.get(key, None) is None:
+                    format_data[key] = {branch: multi_branch_data[branch][key]}
+                elif format_data[key].get(branch, None) is None:
+                    format_data[key][branch] = multi_branch_data[branch][key]
+                else:
+                    format_data[key][branch].append(
+                        multi_branch_data[branch][key])
+
+        return format_data
 
     @property
     def device(self):
