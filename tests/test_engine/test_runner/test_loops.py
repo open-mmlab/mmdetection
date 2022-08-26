@@ -25,6 +25,7 @@ class ToyModel(nn.Module):
 
     def forward(self, inputs, data_samples, mode='tensor'):
         labels = torch.stack(data_samples)
+        inputs = torch.stack(inputs)
         outputs = self.linear(inputs)
         if mode == 'tensor':
             return outputs
@@ -71,7 +72,7 @@ class DummyDataset(Dataset):
         return self.data.size(0)
 
     def __getitem__(self, index):
-        return dict(inputs=self.data[index], data_sample=self.label[index])
+        return dict(inputs=self.data[index], data_samples=self.label[index])
 
 
 class TestTeacherStudentValLoop(TestCase):
@@ -82,7 +83,7 @@ class TestTeacherStudentValLoop(TestCase):
     def tearDown(self):
         self.temp_dir.cleanup()
 
-    def test_mean_teacher_hook(self):
+    def test_teacher_student_val_loop(self):
         device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
         model = ToyModel2().to(device)
         evaluator = Mock()
