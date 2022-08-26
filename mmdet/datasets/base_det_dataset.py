@@ -89,9 +89,13 @@ class BaseDetDataset(BaseDataset):
             self.proposal_file, file_client_args=self.file_client_args)
         assert len(self.data_list) == len(proposals_list)
         for data_info in self.data_list:
-            # TODO: add `file_name` into metafile during PackDetInputs
-            img_path = data_info['file_name']
-            proposals = proposals_list[img_path]
+            img_path = data_info['img_path']
+            # `file_name` is the key to obtain the proposals from the
+            # `proposals_list`.
+            file_name = osp.join(
+                osp.split(osp.split(img_path)[0])[-1],
+                osp.split(img_path)[-1])
+            proposals = proposals_list[file_name]
             data_info['proposals'] = proposals
 
     def get_cat_ids(self, idx: int) -> List[int]:

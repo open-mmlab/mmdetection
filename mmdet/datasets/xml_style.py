@@ -86,7 +86,6 @@ class XMLDataset(BaseDetDataset):
         data_info = {}
         img_path = osp.join(self.sub_data_root, img_info['file_name'])
         data_info['img_path'] = img_path
-        data_info['file_name'] = img_info['file_name']
         data_info['img_id'] = img_info['img_id']
         data_info['xml_path'] = img_info['xml_path']
 

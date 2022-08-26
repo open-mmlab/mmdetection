@@ -107,7 +107,6 @@ class OpenImagesDataset(BaseDetDataset):
                         # switch to a new image, record previous image's data.
                         data_info = dict(
                             img_path=last_img_path,
-                            file_name=f'{last_img_id}.jpg',
                             img_id=last_img_id,
                             instances=instances,
                         )
@@ -118,7 +117,6 @@ class OpenImagesDataset(BaseDetDataset):
                 data_list.append(
                     dict(
                         img_path=last_img_path,
-                        file_name=f'{last_img_id}.jpg',
                         img_id=last_img_id,
                         instances=instances,
                     ))
@@ -133,7 +131,6 @@ class OpenImagesDataset(BaseDetDataset):
             img_id = data_list[i]['img_id']
             assert f'{img_id}.jpg' == osp.split(meta['filename'])[-1]
             h, w = meta['ori_shape'][:2]
-            data_list[i]['file_name'] = osp.split(meta['filename'])[-1]
             data_list[i]['height'] = h
             data_list[i]['width'] = w
             # denormalize bboxes
@@ -366,7 +363,6 @@ class OpenImagesChallengeDataset(OpenImagesDataset):
             data_list.append(
                 dict(
                     img_path=osp.join(self.data_prefix['img'], filename),
-                    file_name=filename,
                     instances=instances,
                 ))
 
