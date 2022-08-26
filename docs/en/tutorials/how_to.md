@@ -39,7 +39,7 @@ model = dict(
 MMClassification also provides a wrapper for the PyTorch Image Models (timm) backbone network, users can directly use the backbone network in timm through MMClassification. Suppose you want to use EfficientNet-B1 as the backbone network of RetinaNet, the example config is as the following.
 
 ```python
-# https://github.com/open-mmlab/mmdetection/blob/master/configs/timm_example/retinanet_timm-efficientnet-b1_fpn_1x_coco.py
+# https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/timm_example/retinanet_timm-efficientnet-b1_fpn_1x_coco.py
 
 _base_ = [
     '../_base_/models/retinanet_r50_fpn.py',
@@ -65,7 +65,7 @@ optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 
 `type='mmcls.TIMMBackbone'` means use the `TIMMBackbone` class from MMClassification in MMDetection, and the model used is `EfficientNet-B1`, where `mmcls` means the MMClassification repo and `TIMMBackbone` means the TIMMBackbone wrapper implemented in MMClassification.
 
-For the principle of the Hierarchy Registry, please refer to the [MMCV document](https://github.com/open-mmlab/mmcv/blob/master/docs/en/understand_mmcv/registry.md#hierarchy-registry). For how to use other backbones in MMClassification, you can refer to the [MMClassification document](https://github.com/open-mmlab/mmclassification/blob/master/docs/en/tutorials/config.md).
+For the principle of the Hierarchy Registry, please refer to the [MMCV document](https://github.com/open-mmlab/mmcv/blob/dev-3.x/docs/en/understand_mmcv/registry.md#hierarchy-registry). For how to use other backbones in MMClassification, you can refer to the [MMClassification document](https://github.com/open-mmlab/mmclassification/blob/dev-3.x/docs/en/tutorials/config.md).
 
 ## Use Mosaic augmentation
 

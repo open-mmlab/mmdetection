@@ -160,7 +160,7 @@ python tools/test.py \
        checkpoint/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
 ```
 
-1. Get COCO bbox error results per category , save analyze result images to the directory(In  [config](https://github.com/wanghonglie/mmdetection/tree/master/configs/_base_/datasets/coco_instance.py) the default directory is './work_dirs/coco_instance/test')
+1. Get COCO bbox error results per category , save analyze result images to the directory(In  [config](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/_base_/datasets/coco_instance.py) the default directory is './work_dirs/coco_instance/test')
 
 ```shell
 python tools/analysis_tools/coco_error_analysis.py \
@@ -303,7 +303,7 @@ comparisons, but double check it before you adopt it in technical reports or pap
 
 1. FLOPs are related to the input shape while parameters are not. The default
    input shape is (1, 3, 1280, 800).
-2. Some operators are not counted into FLOPs like GN and custom operators. Refer to [`mmcv.cnn.get_model_complexity_info()`](https://github.com/open-mmlab/mmcv/blob/master/mmcv/cnn/utils/flops_counter.py) for details.
+2. Some operators are not counted into FLOPs like GN and custom operators. Refer to [`mmcv.cnn.get_model_complexity_info()`](https://github.com/open-mmlab/mmcv/blob/dev-3.x/mmcv/cnn/utils/flops_counter.py) for details.
 3. The FLOPs of two-stage detectors is dependent on the number of proposals.
 
 ## Model conversion
