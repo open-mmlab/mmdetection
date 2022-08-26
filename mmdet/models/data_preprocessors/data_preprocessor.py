@@ -413,7 +413,7 @@ class MultiBranchDataPreprocessor(BaseDataPreprocessor):
 
     In order to reuse `DetDataPreprocessor` for the data
     from different branches, the format of multi-branch data
-    grouped by branch as below :
+    grouped by branch is as below :
 
     .. code-block:: none
         {
