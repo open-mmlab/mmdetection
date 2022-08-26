@@ -67,7 +67,7 @@ model = dict(
         depth=53,
         out_indices=(3, 4, 5),
         init_cfg=dict(type='Pretrained', checkpoint='open-mmlab://darknet53')),
-    bbox_head=dict(static=True))
+    bbox_head=dict(type='IPUYOLOV3Head'))
 
 # ipu settings
 

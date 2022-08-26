@@ -39,6 +39,7 @@ from .tood_head import TOODHead
 from .vfnet_head import VFNetHead
 from .yolact_head import YOLACTHead, YOLACTProtonet, YOLACTSegmHead
 from .yolo_head import YOLOV3Head
+from .yolo_head_ipu import IPUYOLOV3Head
 from .yolof_head import YOLOFHead
 from .yolox_head import YOLOXHead
 
@@ -54,5 +55,5 @@ __all__ = [
     'AutoAssignHead', 'DETRHead', 'YOLOFHead', 'DeformableDETRHead',
     'SOLOHead', 'DecoupledSOLOHead', 'CenterNetHead', 'YOLOXHead',
     'DecoupledSOLOLightHead', 'LADHead', 'TOODHead', 'MaskFormerHead',
-    'Mask2FormerHead', 'SOLOV2Head', 'DDODHead'
+    'Mask2FormerHead', 'SOLOV2Head', 'DDODHead', 'IPUYOLOV3Head'
 ]
