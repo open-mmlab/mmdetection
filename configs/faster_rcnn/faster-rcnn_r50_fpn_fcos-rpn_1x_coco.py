@@ -5,18 +5,15 @@ _base_ = [
 ]
 
 model = dict(
+    # copied from configs/fcos/fcos_r50-caffe_fpn_gn-head_1x_coco.py
     neck=dict(
-        type='FPN',
-        in_channels=[256, 512, 1024, 2048],
-        out_channels=256,
         start_level=1,
         add_extra_convs='on_output',  # use P5
-        num_outs=5,
         relu_before_extra_convs=True),
     rpn_head=dict(
-        _delete_=True,
+        _delete_=True,  # ignore the unused old settings
         type='FCOSHead',
-        num_classes=80,
+        num_classes=80,  # ``num_classes`` will be automatically set to 1
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
@@ -29,4 +26,6 @@ model = dict(
             loss_weight=1.0),
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(
-            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)))
+            type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
+    roi_head=dict(  # update ``featmap_strides``
+        bbox_roi_extractor=dict(featmap_strides=[8, 16, 32, 64, 128])))
