@@ -36,7 +36,7 @@ model = dict(
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
-    roi_head=dict(  # update featmap_strides
+    roi_head=dict(  # update ``featmap_strides``
         bbox_roi_extractor=dict(featmap_strides=[8, 16, 32, 64, 128])))
 
 ```
@@ -86,7 +86,7 @@ model = dict(
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
-    roi_head=dict(  # update featmap_strides
+    roi_head=dict(  # update ``featmap_strides``
         bbox_roi_extractor=dict(featmap_strides=[8, 16, 32, 64, 128])))
 
 ```
@@ -139,7 +139,7 @@ model = dict(
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
-    roi_head=dict(  # update featmap_strides
+    roi_head=dict(  # update ``featmap_strides``
         bbox_roi_extractor=dict(featmap_strides=[8, 16, 32, 64, 128])))
 
 load_from=https://download.openmmlab.com/mmdetection/v2.0/fcos/fcos_r50_caffe_fpn_gn-head_1x_coco/fcos_r50_caffe_fpn_gn-head_1x_coco-821213aa.pth
