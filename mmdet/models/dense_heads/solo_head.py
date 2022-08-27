@@ -375,27 +375,41 @@ class SOLOHead(BaseMaskHead):
                 center_h, center_w = center_of_mass(gt_mask)
 
                 coord_w = int(
-                    (center_w / upsampled_size[1]) // (1. / num_grid))
+                    torch.div((center_w / upsampled_size[1]), (1. / num_grid),
+                              rounding_mode='trunc'))
                 coord_h = int(
-                    (center_h / upsampled_size[0]) // (1. / num_grid))
+                    torch.div((center_h / upsampled_size[0]), (1. / num_grid),
+                              rounding_mode='trunc'))
 
                 # left, top, right, down
                 top_box = max(
                     0,
-                    int(((center_h - pos_h_range) / upsampled_size[0]) //
-                        (1. / num_grid)))
+                    int(
+                        torch.div(
+                            (center_h - pos_h_range) / upsampled_size[0],
+                            (1. / num_grid),
+                            rounding_mode='trunc')))
                 down_box = min(
                     num_grid - 1,
-                    int(((center_h + pos_h_range) / upsampled_size[0]) //
-                        (1. / num_grid)))
+                    int(
+                        torch.div(
+                            (center_h + pos_h_range) / upsampled_size[0],
+                            (1. / num_grid),
+                            rounding_mode='trunc')))
                 left_box = max(
                     0,
-                    int(((center_w - pos_w_range) / upsampled_size[1]) //
-                        (1. / num_grid)))
+                    int(
+                        torch.div(
+                            (center_w - pos_w_range) / upsampled_size[1],
+                            (1. / num_grid),
+                            rounding_mode='trunc')))
                 right_box = min(
                     num_grid - 1,
-                    int(((center_w + pos_w_range) / upsampled_size[1]) //
-                        (1. / num_grid)))
+                    int(
+                        torch.div(
+                            (center_w + pos_w_range) / upsampled_size[1],
+                            (1. / num_grid),
+                            rounding_mode='trunc')))
 
                 top = max(top_box, coord_h - 1)
                 down = min(down_box, coord_h + 1)
