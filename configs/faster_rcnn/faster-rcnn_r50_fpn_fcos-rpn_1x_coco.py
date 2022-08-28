@@ -13,7 +13,7 @@ model = dict(
     rpn_head=dict(
         _delete_=True,  # ignore the unused old settings
         type='FCOSHead',
-        num_classes=80,  # ``num_classes`` will be automatically set to 1
+        num_classes=1,  # num_classes = 1 for rpn
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
@@ -27,7 +27,7 @@ model = dict(
         loss_bbox=dict(type='IoULoss', loss_weight=1.0),
         loss_centerness=dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
-    roi_head=dict(  # update ``featmap_strides``
+    roi_head=dict(  # update featmap_strides
         bbox_roi_extractor=dict(featmap_strides=[8, 16, 32, 64, 128])))
 
 # learning rate
