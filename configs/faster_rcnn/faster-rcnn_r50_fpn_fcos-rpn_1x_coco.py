@@ -29,3 +29,17 @@ model = dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
     roi_head=dict(  # update ``featmap_strides``
         bbox_roi_extractor=dict(featmap_strides=[8, 16, 32, 64, 128])))
+
+# learning rate
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0,
+        end=1000),  # Slowly increase lr, otherwise loss becomes NAN
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=12,
+        by_epoch=True,
+        milestones=[8, 11],
+        gamma=0.1)
+]
