@@ -627,6 +627,8 @@ class DeformableDetrTransformerDecoder(TransformerLayerSequence):
 
     Args:
         return_intermediate (bool): Whether to return intermediate outputs.
+        look_forward_twice (bool): Whether to use look forward twice.
+            Defaults to False.
         coder_norm_cfg (dict): Config of last normalization layer. Default：
             `LN`.
     """
@@ -729,6 +731,8 @@ class DeformableDetrTransformer(Transformer):
             Default: 4.
         two_stage_num_proposals (int): Number of proposals when set
             `as_two_stage` as True. Default: 300.
+        mixed_selection (bool): Whether to use mixed selection.
+            Defaults to False.
     """
 
     def __init__(self,

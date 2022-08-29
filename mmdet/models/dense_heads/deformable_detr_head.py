@@ -29,6 +29,8 @@ class DeformableDETRHead(DETRHead):
             in the decoder. Defaults to False.
         as_two_stage (bool) : Whether to generate the proposal from
             the outputs of encoder.
+        mixed_selection (bool): Whether to use mixed selection.
+            Defaults to False.
         transformer (obj:`ConfigDict`): ConfigDict is used for building
             the Encoder and Decoder.
     """

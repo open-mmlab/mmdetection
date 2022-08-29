@@ -11,6 +11,28 @@ from mmdet.models.utils.transformer import inverse_sigmoid
 
 @HEADS.register_module()
 class HDeformableDETRHead(DeformableDETRHead):
+    """Head of DETRs with Hybrid Matching.
+
+    Code is modified from the `official github repo
+    <https://github.com/HDETR/H-Deformable-DETR>`_.
+
+    More details can be found in the `paper
+    <https://arxiv.org/abs/2207.13080>`_ .
+
+    Args:
+        num_queries_one2one (int):
+            Number of query for one2one matching in Transformer.
+            Defaults to 300.
+        num_queries_one2many (int) :
+            Number of query for one2many matching in Transformer.
+            Defaults to 0.
+        k_one2many (int): Number of repeats for one2many matching targets.
+            Defaults to 6.
+        lambda_one2many (float): Weight of one2many loss.
+            Defaults to 1.0.
+        transformer (obj:`ConfigDict`): ConfigDict is used for building
+            the Encoder and Decoder.
+    """
 
     def __init__(self,
                  *args,
@@ -40,12 +62,22 @@ class HDeformableDETRHead(DeformableDETRHead):
                 (N, C, H, W).
             img_metas (list[dict]): List of image information.
         Returns:
-            all_cls_scores (Tensor): Outputs from the classification head, \
-                shape [nb_dec, bs, num_query, cls_out_channels]. Note \
-                cls_out_channels should includes background.
-            all_bbox_preds (Tensor): Sigmoid outputs from the regression \
+            all_cls_scores_one2one (Tensor):
+                Outputs from the classification head for one2one matching, \
+                shape [nb_dec, bs, num_queries_one2one, cls_out_channels]. \
+                Note cls_out_channels should includes background.
+            all_bbox_preds_one2one (Tensor):
+                Sigmoid outputs from the regression for one2one matching \
                 head with normalized coordinate format (cx, cy, w, h). \
-                Shape [nb_dec, bs, num_query, 4].
+                Shape [nb_dec, bs, num_queries_one2one, 4].
+            all_cls_scores_one2many (Tensor):
+                Outputs from the classification head for one2many matching, \
+                shape [nb_dec, bs, num_queries_one2many, cls_out_channels]. \
+                Note cls_out_channels should includes background.
+            all_bbox_preds_one2many (Tensor):
+                Sigmoid outputs from the regression for one2many matching \
+                head with normalized coordinate format (cx, cy, w, h). \
+                Shape [nb_dec, bs, num_queries_one2many, 4].
             enc_outputs_class (Tensor): The score of each point on encode \
                 feature map, has shape (N, h*w, num_class). Only when \
                 as_two_stage is True it would be returned, otherwise \
@@ -154,14 +186,24 @@ class HDeformableDETRHead(DeformableDETRHead):
              img_metas,
              gt_bboxes_ignore=None):
         """"Loss function.
+
         Args:
-            all_cls_scores (Tensor): Classification score of all
-                decoder layers, has shape
-                [nb_dec, bs, num_query, cls_out_channels].
-            all_bbox_preds (Tensor): Sigmoid regression
-                outputs of all decode layers. Each is a 4D-tensor with
-                normalized coordinate format (cx, cy, w, h) and shape
-                [nb_dec, bs, num_query, 4].
+            all_cls_scores_one2one (Tensor):
+                Outputs from the classification head for one2one matching, \
+                shape [nb_dec, bs, num_queries_one2one, cls_out_channels]. \
+                Note cls_out_channels should includes background.
+            all_bbox_preds_one2one (Tensor):
+                Sigmoid outputs from the regression for one2one matching \
+                head with normalized coordinate format (cx, cy, w, h). \
+                Shape [nb_dec, bs, num_queries_one2one, 4].
+            all_cls_scores_one2many (Tensor):
+                Outputs from the classification head for one2many matching, \
+                shape [nb_dec, bs, num_queries_one2many, cls_out_channels]. \
+                Note cls_out_channels should includes background.
+            all_bbox_preds_one2many (Tensor):
+                Sigmoid outputs from the regression for one2many matching \
+                head with normalized coordinate format (cx, cy, w, h). \
+                Shape [nb_dec, bs, num_queries_one2many, 4].
             enc_cls_scores (Tensor): Classification scores of
                 points on encode feature map , has shape
                 (N, h*w, num_classes). Only be passed when as_two_stage is
@@ -272,14 +314,24 @@ class HDeformableDETRHead(DeformableDETRHead):
                    img_metas,
                    rescale=False):
         """Transform network outputs for a batch into bbox predictions.
+
         Args:
-            all_cls_scores (Tensor): Classification score of all
-                decoder layers, has shape
-                [nb_dec, bs, num_query, cls_out_channels].
-            all_bbox_preds (Tensor): Sigmoid regression
-                outputs of all decode layers. Each is a 4D-tensor with
-                normalized coordinate format (cx, cy, w, h) and shape
-                [nb_dec, bs, num_query, 4].
+            all_cls_scores (Tensor):
+                Outputs from the classification head for one2one matching, \
+                shape [nb_dec, bs, num_queries_one2one, cls_out_channels]. \
+                Note cls_out_channels should includes background.
+            all_bbox_preds (Tensor):
+                Sigmoid outputs from the regression for one2one matching \
+                head with normalized coordinate format (cx, cy, w, h). \
+                Shape [nb_dec, bs, num_queries_one2one, 4].
+            all_cls_scores_one2many (Tensor):
+                Outputs from the classification head for one2many matching, \
+                shape [nb_dec, bs, num_queries_one2many, cls_out_channels]. \
+                Note cls_out_channels should includes background.
+            all_bbox_preds_one2many (Tensor):
+                Sigmoid outputs from the regression for one2many matching \
+                head with normalized coordinate format (cx, cy, w, h). \
+                Shape [nb_dec, bs, num_queries_one2many, 4].
             enc_cls_scores (Tensor): Classification scores of
                 points on encode feature map , has shape
                 (N, h*w, num_classes). Only be passed when as_two_stage is
