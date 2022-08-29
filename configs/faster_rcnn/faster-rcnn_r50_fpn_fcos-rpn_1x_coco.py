@@ -13,7 +13,9 @@ model = dict(
     rpn_head=dict(
         _delete_=True,  # ignore the unused old settings
         type='FCOSHead',
-        num_classes=1,  # num_classes = 1 for rpn
+        # num_classes = 1 for rpn,
+        # if num_classes > 1, it will be set to 1 in rpn head
+        num_classes=1,
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
