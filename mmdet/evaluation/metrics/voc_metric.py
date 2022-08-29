@@ -32,6 +32,10 @@ class VOCMetric(BaseMetric):
             the average precision of recalls at [0, 0.1, ..., 1].
             The PASCAL VOC2007 defaults to use '11points', while PASCAL
             VOC2012 defaults to use 'area'.
+        use_legacy_coordinate (bool): Whether to use coordinate system in
+            mmdet v1.x. which means width, height should be
+            calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
+            Defaults to False.
         collect_device (str): Device name used for collecting results from
             different ranks during distributed training. Must be 'cpu' or
             'gpu'. Defaults to 'cpu'.
@@ -49,6 +53,7 @@ class VOCMetric(BaseMetric):
                  metric: Union[str, List[str]] = 'mAP',
                  proposal_nums: Sequence[int] = (100, 300, 1000),
                  eval_mode: str = '11points',
+                 use_legacy_coordinate: bool = False,
                  collect_device: str = 'cpu',
                  prefix: Optional[str] = None) -> None:
         super().__init__(collect_device=collect_device, prefix=prefix)
@@ -68,6 +73,7 @@ class VOCMetric(BaseMetric):
         assert eval_mode in ['area', '11points'], \
             'Unrecognized mode, only "area" and "11points" are supported'
         self.eval_mode = eval_mode
+        self.use_legacy_coordinate = use_legacy_coordinate
 
     # TODO: data_batch is no longer needed, consider adjusting the
     #  parameter position
@@ -150,7 +156,7 @@ class VOCMetric(BaseMetric):
                     iou_thr=iou_thr,
                     dataset=dataset_name,
                     logger=logger,
-                    use_legacy_coordinate=True)
+                    use_legacy_coordinate=self.use_legacy_coordinate)
                 mean_aps.append(mean_ap)
                 eval_results[f'AP{int(iou_thr * 100):02d}'] = round(mean_ap, 3)
             eval_results['mAP'] = sum(mean_aps) / len(mean_aps)
@@ -164,7 +170,7 @@ class VOCMetric(BaseMetric):
                 self.proposal_nums,
                 self.iou_thrs,
                 logger=logger,
-                use_legacy_coordinate=True)
+                use_legacy_coordinate=self.use_legacy_coordinate)
             for i, num in enumerate(self.proposal_nums):
                 for j, iou_thr in enumerate(self.iou_thrs):
                     eval_results[f'recall@{num}@{iou_thr}'] = recalls[i, j]
