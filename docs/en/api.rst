@@ -11,9 +11,9 @@ datasets
 .. automodule:: mmdet.datasets
     :members:
 
-pipelines
+api_wrappers
 ^^^^^^^^^^
-.. automodule:: mmdet.datasets.pipelines
+.. automodule:: mmdet.datasets.api_wrappers
     :members:
 
 samplers
@@ -33,14 +33,14 @@ hooks
 .. automodule:: mmdet.engine.hooks
     :members:
 
+optimizers
+^^^^^^^^^^
+.. automodule:: mmdet.engine.optimizers
+    :members:
+
 runner
 ^^^^^^^^^^
 .. automodule:: mmdet.engine.runner
-    :members:
-
-hooks
-^^^^^^^^^^
-.. automodule:: mmdet.engine.hooks
     :members:
 
 schedulers
@@ -80,6 +80,11 @@ dense_heads
 .. automodule:: mmdet.models.dense_heads
     :members:
 
+detectors
+^^^^^^^^^^
+.. automodule:: mmdet.models.detectors
+    :members:
+
 layers
 ^^^^^^^^^^
 .. automodule:: mmdet.models.layers
@@ -88,11 +93,6 @@ layers
 losses
 ^^^^^^^^^^
 .. automodule:: mmdet.models.losses
-    :members:
-
-detectors
-^^^^^^^^^^
-.. automodule:: mmdet.models.detectors
     :members:
 
 necks
