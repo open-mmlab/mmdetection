@@ -2,7 +2,7 @@
 
 Semi supervised target detection uses both labeled data and unlabeled data for training. On the one hand, it can reduce the dependence of the model on the number of detection frames, and on the other hand, it can further improve the model by using a large number of unlabeled dataThe process of semi-supervised object detection is as below:
 
-- [Prepare and split dataset](<>)
+- [Prepare and split dataset](#Prepare-and-split-dataset)
 - [Configure multi-branch pipeline](<>)
 - [Configure semi-supervised dataloader](<>)
 - [Configure semi-supervised model](<>)
