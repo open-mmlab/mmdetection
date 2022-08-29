@@ -389,12 +389,15 @@ checkpoint_config = dict(  # Checkpoint hook 的配置文件。执行时请参�
     interval=1)  # 保存的间隔是 1。
 log_config = dict(  # register logger hook 的配置文件。
     interval=50,  # 打印日志的间隔
-    hooks=[
-        dict(type='TextLoggerHook', by_epoch=False),
-        dict(type='TensorboardLoggerHook', by_epoch=False),
-        dict(type='WandbLoggerHook', by_epoch=False,
-             init_kwargs={'entity': entity, 'project': project, 'config': cfg_dict}), # 同样支持 Wandb 日志
+    hooks=[ # 训练期间执行的钩子
+      dict(type='TextLoggerHook', by_epoch=False),
+      dict(type='TensorboardLoggerHook', by_epoch=False),
+      dict(type='MMDetWandbHook', by_epoch=False, # 还支持 Wandb 记录器，它需要安装 `wandb`。
+           init_kwargs={'entity': "OpenMMLab", # 用于登录wandb的实体
+                        'project': "MMDet", # WandB中的项目名称
+                        'config': cfg_dict}), # 检查 https://docs.wandb.ai/ref/python/init 以获取更多初始化参数
     ])  # 用于记录训练过程的记录器(logger)。 
+
 dist_params = dict(backend='nccl')  # 用于设置分布式训练的参数，端口也同样可被设置。
 log_level = 'INFO'  # 日志的级别。
 load_from = None  # 从一个给定路径里加载模型作为预训练模型，它并不会消耗训练时间。
