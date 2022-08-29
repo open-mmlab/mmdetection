@@ -393,7 +393,7 @@ log_config = dict(  # register logger hook 的配置文件。
         dict(type='TextLoggerHook', by_epoch=False),
         dict(type='TensorboardLoggerHook', by_epoch=False),
         dict(type='WandbLoggerHook', by_epoch=False,
-             init_kwargs={'entity': entity, 'project': project, 'config': cfg_dict}), # 同样支持 Wandb 日志
+             init_kwargs={'entity': 'WandBUserOrGroupEntity', 'project': "WandBProjectName", 'config': cfg_dict}), # 同样支持 Wandb 日志
     ])  # 用于记录训练过程的记录器(logger)。 
 dist_params = dict(backend='nccl')  # 用于设置分布式训练的参数，端口也同样可被设置。
 log_level = 'INFO'  # 日志的级别。
