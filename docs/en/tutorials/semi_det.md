@@ -103,8 +103,8 @@ mmdetection
 
 ## Configure multi-branch pipeline
 
-There are two main approaches to semi-supervised learning, consistency constraints and pseudo-labels. Consistency constraints often require some careful design, while pseudo-labels have a simpler form and are easier to extend to downstream tasks.
-We adopt a teacher-student joint training semi-supervised object detection framework, so labeled data and unlabeled data need to configure different data pipeline:
+There are two main approaches to semi-supervised learning, consistency regularization and pseudo label. Consistency regularization often requires some careful design, while pseudo label have a simpler form and are easier to extend to downstream tasks.
+We adopt a teacher-student joint training semi-supervised object detection framework based on pseudo label, so labeled data and unlabeled data need to configure different data pipeline:
 
 (1) Pipeline for labeled data：
 
