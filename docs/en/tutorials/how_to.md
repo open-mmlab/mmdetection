@@ -65,7 +65,7 @@ optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 
 `type='mmcls.TIMMBackbone'` means use the `TIMMBackbone` class from MMClassification in MMDetection, and the model used is `EfficientNet-B1`, where `mmcls` means the MMClassification repo and `TIMMBackbone` means the TIMMBackbone wrapper implemented in MMClassification.
 
-For the principle of the Hierarchy Registry, please refer to the [MMCV document](https://github.com/open-mmlab/mmcv/blob/dev-3.x/docs/en/understand_mmcv/registry.md#hierarchy-registry). For how to use other backbones in MMClassification, you can refer to the [MMClassification document](https://github.com/open-mmlab/mmclassification/blob/dev-3.x/docs/en/tutorials/config.md).
+For the principle of the Hierarchy Registry, please refer to the [MMCV document](https://github.com/open-mmlab/mmcv/blob/dev-2.x/docs/en/understand_mmcv/registry.md#hierarchy-registry). For how to use other backbones in MMClassification, you can refer to the [MMClassification document](https://github.com/open-mmlab/mmclassification/blob/dev-1.x/docs/en/tutorials/config.md).
 
 ## Use Mosaic augmentation
 
