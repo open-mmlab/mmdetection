@@ -1,6 +1,8 @@
 # Customize RPN
 
-Region proposal network(RPN) is a submodule in [Faster R-CNN](https://arxiv.org/abs/1506.01497), which generates proposals for the second stage of Faster R-CNN. Most two stage detectors in MMDetection use [`RPNHead`](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/dense_heads/rpn_head.py) to generate proposals as RPN. However, any single-stage detector can serve as a RPN since their bounding box predictions can also be regarded as region proposals and thus be refined in the R-CNN. Therefore, MMDetection v3.0 supports that. Here we give an example to illustrate the whole process.
+Region proposal network (RPN) is a submodule in [Faster R-CNN](https://arxiv.org/abs/1506.01497), which generates proposals for the second stage of Faster R-CNN. Most two-stage detectors in MMDetection use [`RPNHead`](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/dense_heads/rpn_head.py) to generate proposals as RPN. However, any single-stage detector can serve as an RPN since their bounding box predictions can also be regarded as region proposals and thus be refined in the R-CNN. Therefore, MMDetection v3.0 supports that.
+
+To illustrate the whole process, here we give an example of how to use an anchor-free single-stage model [FCOS](configs/fcos/fcos_r50-caffe_fpn_gn-head_1x_coco.py) as an RPN in [Faster R-CNN](configs/faster_rcnn/faster-rcnn_r50_fpn_fcos-rpn_1x_coco.py).
 
 The main contents are as follows:
 
@@ -28,7 +30,7 @@ model = dict(
     rpn_head=dict(
         _delete_=True,  # ignore the unused old settings
         type='FCOSHead',
-        num_classes=1,  # num_classes = 1 for rpn
+        num_classes=1,  # num_classes = 1 for rpn, if num_classes > 1, it will be set to 1 in rpn head
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
@@ -91,7 +93,7 @@ model = dict(
     rpn_head=dict(
         _delete_=True,  # ignore the unused old settings
         type='FCOSHead',
-        num_classes=1,  # num_classes = 1 for rpn
+        num_classes=1,  # num_classes = 1 for rpn, if num_classes > 1, it will be set to 1 in rpn head
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
@@ -144,7 +146,7 @@ model = dict(
     rpn_head=dict(
         _delete_=True,  # ignore the unused old settings
         type='FCOSHead',
-        num_classes=1,  # num_classes = 1 for rpn
+        num_classes=1,  # num_classes = 1 for rpn, if num_classes > 1, it will be set to 1 in rpn head
         in_channels=256,
         stacked_convs=4,
         feat_channels=256,
