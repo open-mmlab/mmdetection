@@ -180,5 +180,5 @@ runner = dict(type='EpochBasedRunner', max_epochs=12)
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
-# base_batch_size = (16 GPUs) x (2 samples per GPU)
-auto_scale_lr = dict(enable=True, base_batch_size=16)
+# base_batch_size = (4 GPUs) x (4 samples per GPU)
+auto_scale_lr = dict(enable=False, base_batch_size=16)
