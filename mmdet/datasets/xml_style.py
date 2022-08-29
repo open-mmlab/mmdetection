@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from typing import List, Optional, Union
 
 import mmcv
-from mmengine.fileio import list_from_file
+from mmengine.fileio import FileClient, list_from_file
 
 from mmdet.registry import DATASETS
 from .base_det_dataset import BaseDetDataset
@@ -25,9 +25,12 @@ class XMLDataset(BaseDetDataset):
     def __init__(self,
                  img_subdir: str = 'JPEGImages',
                  ann_subdir: str = 'Annotations',
+                 file_client_args: dict = dict(backend='disk'),
                  **kwargs) -> None:
         self.img_subdir = img_subdir
         self.ann_subdir = ann_subdir
+        self.file_client_args = file_client_args
+        self.file_client = FileClient(**file_client_args)
         super().__init__(**kwargs)
 
     @property
@@ -107,6 +110,24 @@ class XMLDataset(BaseDetDataset):
         data_info['height'] = height
         data_info['width'] = width
 
+        data_info['instances'] = self._parse_instance_info(
+            raw_ann_info, minus_one=True)
+
+        return data_info
+
+    def _parse_instance_info(self,
+                             raw_ann_info: ET,
+                             minus_one: bool = False) -> List[dict]:
+        """parse instance information.
+
+        Args:
+            raw_ann_info (ElementTree): ElementTree object.
+            minus_one (bool): Whether to subtract 1 from the coordinates.
+                Defaults to False.
+
+        Returns:
+            List[dict]: List of instances.
+        """
         instances = []
         for obj in raw_ann_info.findall('object'):
             instance = {}
@@ -117,11 +138,16 @@ class XMLDataset(BaseDetDataset):
             difficult = 0 if difficult is None else int(difficult.text)
             bnd_box = obj.find('bndbox')
             bbox = [
-                int(float(bnd_box.find('xmin').text)) - 1,
-                int(float(bnd_box.find('ymin').text)) - 1,
-                int(float(bnd_box.find('xmax').text)) - 1,
-                int(float(bnd_box.find('ymax').text)) - 1
+                int(float(bnd_box.find('xmin').text)),
+                int(float(bnd_box.find('ymin').text)),
+                int(float(bnd_box.find('xmax').text)),
+                int(float(bnd_box.find('ymax').text))
             ]
+
+            # VOC needs to subtract 1 from the coordinates
+            if minus_one:
+                bbox = [x - 1 for x in bbox]
+
             ignore = False
             if self.bbox_min_size is not None:
                 assert not self.test_mode
@@ -136,8 +162,7 @@ class XMLDataset(BaseDetDataset):
             instance['bbox'] = bbox
             instance['bbox_label'] = self.cat2label[name]
             instances.append(instance)
-        data_info['instances'] = instances
-        return data_info
+        return instances
 
     def filter_data(self) -> List[dict]:
         """Filter annotations according to filter_cfg.
@@ -163,3 +188,15 @@ class XMLDataset(BaseDetDataset):
                 valid_data_infos.append(data_info)
 
         return valid_data_infos
+
+    def get_cat_ids(self, idx: int) -> List[int]:
+        """Get COCO category ids by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            List[int]: All categories in the image of specified index.
+        """
+        instances = self.get_data_info(idx)['instances']
+        return [instance['bbox_label'] for instance in instances]
