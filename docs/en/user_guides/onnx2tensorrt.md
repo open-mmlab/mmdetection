@@ -1,4 +1,4 @@
-# Tutorial 9: ONNX to TensorRT (Experimental)
+# ONNX to TensorRT (Experimental)
 
 > ## [Try the new MMDeploy to deploy your model](https://mmdeploy.readthedocs.io/)
 

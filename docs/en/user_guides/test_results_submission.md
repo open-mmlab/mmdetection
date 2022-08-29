@@ -1,4 +1,4 @@
-# Tutorial 12: Test Results Submission
+# Test Results Submission
 
 ## Panoptic segmentation test results submission
 

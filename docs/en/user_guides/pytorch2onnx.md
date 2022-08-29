@@ -1,4 +1,4 @@
-# Tutorial 8: Pytorch to ONNX (Experimental)
+# Pytorch to ONNX (Experimental)
 
 > ## [Try the new MMDeploy to deploy your model](https://mmdeploy.readthedocs.io/)
 

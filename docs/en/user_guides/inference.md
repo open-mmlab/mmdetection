@@ -1,4 +1,4 @@
-# 2: Train with customized datasets
+# Train with customized datasets
 
 In this note, you will know how to inference, test, and train predefined models with customized datasets. We use the [balloon dataset](https://github.com/matterport/Mask_RCNN/tree/master/samples/balloon) as an example to describe the whole process.
 
