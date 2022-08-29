@@ -108,6 +108,10 @@ class BaseBoxes(metaclass=ABCMeta):
         Returns:
             T: Fake boxes with shape of ``sizes``.
         """
+        if dtype is None:
+            dtype = self.dtype
+        if device is None:
+            device = self.device
         fake_boxes = self.tensor.new_full(
             sizes, fill, dtype=dtype, device=device)
         return type(self)(fake_boxes, clone=False)

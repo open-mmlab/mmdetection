@@ -15,6 +15,7 @@ from mmdet.models.losses import accuracy
 from mmdet.models.task_modules.samplers import SamplingResult
 from mmdet.models.utils import empty_instances, multi_apply
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.structures.bbox import BaseBoxes, get_box_type
 from mmdet.utils import ConfigType, InstanceList, OptMultiConfig
 
 
@@ -61,6 +62,7 @@ class BBoxHead(BaseModule):
         self.cls_predictor_cfg = cls_predictor_cfg
 
         self.bbox_coder = TASK_UTILS.build(bbox_coder)
+        self.predict_box_type = self.bbox_coder.decoded_box_type
         self.loss_cls = MODELS.build(loss_cls)
         self.loss_bbox = MODELS.build(loss_bbox)
 
@@ -80,7 +82,9 @@ class BBoxHead(BaseModule):
                 in_features=in_channels, out_features=cls_channels)
             self.fc_cls = MODELS.build(cls_predictor_cfg_)
         if self.with_reg:
-            out_dim_reg = 4 if reg_class_agnostic else 4 * num_classes
+            box_dim = self.bbox_coder.encode_size
+            out_dim_reg = box_dim if reg_class_agnostic else \
+                box_dim * num_classes
             reg_predictor_cfg_ = self.reg_predictor_cfg.copy()
             reg_predictor_cfg_.update(
                 in_features=in_channels, out_features=out_dim_reg)
@@ -191,9 +195,11 @@ class BBoxHead(BaseModule):
         labels = pos_priors.new_full((num_samples, ),
                                      self.num_classes,
                                      dtype=torch.long)
+        reg_dim = self.bbox_coder.decode_size if self.reg_decoded_bbox \
+            else self.bbox_coder.encode_size
         label_weights = pos_priors.new_zeros(num_samples)
-        bbox_targets = pos_priors.new_zeros(num_samples, 4)
-        bbox_weights = pos_priors.new_zeros(num_samples, 4)
+        bbox_targets = pos_priors.new_zeros(num_samples, reg_dim)
+        bbox_weights = pos_priors.new_zeros(num_samples, reg_dim)
         if num_pos > 0:
             labels[:num_pos] = pos_gt_labels
             pos_weight = 1.0 if cfg.pos_weight <= 0 else cfg.pos_weight
@@ -206,6 +212,8 @@ class BBoxHead(BaseModule):
                 # is applied directly on the decoded bounding boxes, both
                 # the predicted boxes and regression targets should be with
                 # absolute coordinate format.
+                if isinstance(pos_gt_bboxes, BaseBoxes):
+                    pos_gt_bboxes = pos_gt_bboxes.tensor
                 pos_bbox_targets = pos_gt_bboxes
             bbox_targets[:num_pos, :] = pos_bbox_targets
             bbox_weights[:num_pos, :] = 1
@@ -383,6 +391,8 @@ class BBoxHead(BaseModule):
                 else:
                     losses['acc'] = accuracy(cls_score, labels)
         if bbox_pred is not None:
+            reg_dim = self.bbox_coder.decode_size if self.reg_decoded_bbox \
+                else self.bbox_coder.encode_size
             bg_class_ind = self.num_classes
             # 0~self.num_classes-1 are FG, self.num_classes is BG
             pos_inds = (labels >= 0) & (labels < bg_class_ind)
@@ -394,14 +404,16 @@ class BBoxHead(BaseModule):
                     # the decoded bounding boxes, it decodes the
                     # already encoded coordinates to absolute format.
                     bbox_pred = self.bbox_coder.decode(rois[:, 1:], bbox_pred)
+                    if isinstance(bbox_pred, BaseBoxes):
+                        bbox_pred = bbox_pred.tensor
                 if self.reg_class_agnostic:
                     pos_bbox_pred = bbox_pred.view(
-                        bbox_pred.size(0), 4)[pos_inds.type(torch.bool)]
+                        bbox_pred.size(0), reg_dim)[pos_inds.type(torch.bool)]
                 else:
                     pos_bbox_pred = bbox_pred.view(
                         bbox_pred.size(0), -1,
-                        4)[pos_inds.type(torch.bool),
-                           labels[pos_inds.type(torch.bool)]]
+                        reg_dim)[pos_inds.type(torch.bool),
+                                 labels[pos_inds.type(torch.bool)]]
                 losses['loss_bbox'] = self.loss_bbox(
                     pos_bbox_pred,
                     bbox_targets[pos_inds.type(torch.bool)],
@@ -419,7 +431,8 @@ class BBoxHead(BaseModule):
                         bbox_preds: Tuple[Tensor],
                         batch_img_metas: List[dict],
                         rcnn_test_cfg: Optional[ConfigDict] = None,
-                        rescale: bool = False) -> InstanceList:
+                        rescale: bool = False,
+                        roi_box_type=None) -> InstanceList:
         """Transform a batch of output features extracted from the head into
         bbox results.
 
@@ -459,7 +472,8 @@ class BBoxHead(BaseModule):
                 bbox_pred=bbox_preds[img_id],
                 img_meta=img_meta,
                 rescale=rescale,
-                rcnn_test_cfg=rcnn_test_cfg)
+                rcnn_test_cfg=rcnn_test_cfg,
+                roi_box_type=roi_box_type)
             result_list.append(results)
 
         return result_list
@@ -471,7 +485,8 @@ class BBoxHead(BaseModule):
             bbox_pred: Tensor,
             img_meta: dict,
             rescale: bool = False,
-            rcnn_test_cfg: Optional[ConfigDict] = None) -> InstanceData:
+            rcnn_test_cfg: Optional[ConfigDict] = None,
+            roi_box_type: Optional[Union[str, type]] = None) -> InstanceData:
         """Transform a single image's features extracted from the head into
         bbox results.
 
@@ -499,12 +514,16 @@ class BBoxHead(BaseModule):
                 - bboxes (Tensor): Has a shape (num_instances, 4),
                   the last dimension 4 arrange as (x1, y1, x2, y2).
         """
+        is_boxlist = roi_box_type is not None
         results = InstanceData()
         if roi.shape[0] == 0:
+            predict_box_type = None if not is_boxlist else \
+                self.predict_box_type
             return empty_instances([img_meta],
                                    roi.device,
                                    task_type='bbox',
-                                   instance_results=[results])[0]
+                                   instance_results=[results],
+                                   box_type=predict_box_type)[0]
 
         # some loss (Seesaw loss..) may have custom activation
         if self.custom_cls_channels:
@@ -520,17 +539,27 @@ class BBoxHead(BaseModule):
             bboxes = self.bbox_coder.decode(
                 roi[..., 1:], bbox_pred, max_shape=img_shape)
         else:
-            bboxes = roi[:, 1:].clone()
-            if img_shape is not None:
-                bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1])
-                bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0])
+            if is_boxlist:
+                _, box_type = get_box_type(roi_box_type)
+                bboxes = box_type(roi[:, 1:])
+                bboxes.clip_(img_shape)
+                bboxes.convert_to(self.predict_box_type)
+            else:
+                bboxes = roi[:, 1:].clone()
+                if img_shape is not None:
+                    bboxes[:, [0, 2]].clamp_(min=0, max=img_shape[1])
+                    bboxes[:, [1, 3]].clamp_(min=0, max=img_shape[0])
 
         if rescale and bboxes.size(0) > 0:
             assert img_meta.get('scale_factor') is not None
-            scale_factor = bboxes.new_tensor(img_meta['scale_factor']).repeat(
-                (1, 2))
-            bboxes = (bboxes.view(bboxes.size(0), -1, 4) / scale_factor).view(
-                bboxes.size()[0], -1)
+            if is_boxlist:
+                scale_factor = [1 / s for s in img_meta['scale_factor']]
+                bboxes.rescale_(scale_factor)
+            else:
+                scale_factor = bboxes.new_tensor(
+                    img_meta['scale_factor']).repeat((1, 2))
+                bboxes = (bboxes.view(bboxes.size(0), -1, 4) /
+                          scale_factor).view(bboxes.size()[0], -1)
 
         if rcnn_test_cfg is None:
             # This means that it is aug test.
@@ -538,13 +567,30 @@ class BBoxHead(BaseModule):
             results.bboxes = bboxes
             results.scores = scores
         else:
-            det_bboxes, det_labels = multiclass_nms(bboxes, scores,
-                                                    rcnn_test_cfg.score_thr,
-                                                    rcnn_test_cfg.nms,
-                                                    rcnn_test_cfg.max_per_img)
-            results.bboxes = det_bboxes[:, :4]
-            results.scores = det_bboxes[:, -1]
-            results.labels = det_labels
+            if is_boxlist:
+                _, box_type = get_box_type(self.predict_box_type)
+                det_bboxes, det_labels = multiclass_nms(
+                    bboxes.tensor,
+                    scores,
+                    rcnn_test_cfg.score_thr,
+                    rcnn_test_cfg.nms,
+                    rcnn_test_cfg.max_per_img,
+                    box_dim=self.bbox_coder.decode_size)
+                bboxes = box_type(det_bboxes[:, :-1], clone=False)
+                results.bboxes = bboxes
+                results.scores = det_bboxes[:, -1]
+                results.labels = det_labels
+            else:
+                det_bboxes, det_labels = multiclass_nms(
+                    bboxes,
+                    scores,
+                    rcnn_test_cfg.score_thr,
+                    rcnn_test_cfg.nms,
+                    rcnn_test_cfg.max_per_img,
+                    box_dim=self.bbox_coder.decode_size)
+                results.bboxes = det_bboxes[:, :-1]
+                results.scores = det_bboxes[:, -1]
+                results.labels = det_labels
         return results
 
     def refine_bboxes(self, sampling_results: Union[List[SamplingResult],

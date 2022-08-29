@@ -5,6 +5,8 @@ import numpy as np
 import torch
 from torch import Tensor
 
+from mmdet.structures.bbox import BaseBoxes
+
 
 def find_inside_bboxes(bboxes: Tensor, img_h: int, img_w: int) -> Tensor:
     """Find bboxes as long as a part of bboxes is inside the image.
@@ -88,12 +90,16 @@ def bbox2roi(bbox_list: List[Tensor]) -> Tensor:
         Tensor: shape (n, 5), [batch_ind, x1, y1, x2, y2]
     """
     rois_list = []
+    box_dim = 4
     for img_id, bboxes in enumerate(bbox_list):
+        if isinstance(bboxes, BaseBoxes):
+            box_dim = bboxes.box_dim
+            bboxes = bboxes.tensor
         if bboxes.size(0) > 0:
             img_inds = bboxes.new_full((bboxes.size(0), 1), img_id)
-            rois = torch.cat([img_inds, bboxes[:, :4]], dim=-1)
+            rois = torch.cat([img_inds, bboxes[:, :box_dim]], dim=-1)
         else:
-            rois = bboxes.new_zeros((0, 5))
+            rois = bboxes.new_zeros((0, box_dim + 1))
         rois_list.append(rois)
     rois = torch.cat(rois_list, 0)
     return rois

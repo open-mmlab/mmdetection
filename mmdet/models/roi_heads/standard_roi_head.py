@@ -317,10 +317,18 @@ class StandardRoIHead(BaseRoIHead):
         """
         proposals = [res.bboxes for res in rpn_results_list]
         rois = bbox2roi(proposals)
+        roi_box_type = None if isinstance(rpn_results_list[0].bboxes, Tensor) \
+            else type(rpn_results_list[0].bboxes)
+        predict_box_type = None if isinstance(
+            rpn_results_list[0].bboxes, Tensor) else type(
+                self.bbox_head.predict_box_type)
 
         if rois.shape[0] == 0:
             return empty_instances(
-                batch_img_metas, rois.device, task_type='bbox')
+                batch_img_metas,
+                rois.device,
+                task_type='bbox',
+                box_type=predict_box_type)
 
         bbox_results = self._bbox_forward(x, rois)
 
@@ -349,7 +357,8 @@ class StandardRoIHead(BaseRoIHead):
             bbox_preds=bbox_preds,
             batch_img_metas=batch_img_metas,
             rcnn_test_cfg=rcnn_test_cfg,
-            rescale=rescale)
+            rescale=rescale,
+            roi_box_type=roi_box_type)
         return result_list
 
     def predict_mask(self,
