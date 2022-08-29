@@ -409,7 +409,7 @@ log_config = dict(  # config to register logger hook
     hooks=[
         dict(type='TextLoggerHook', by_epoch=False),
         dict(type='TensorboardLoggerHook', by_epoch=False),
-        dict(type='MMSegWandbHook', by_epoch=False, # The Wandb logger is also supported, It requires `wandb` to be installed.
+        dict(type='MMDetWandbHook', by_epoch=False, # The Wandb logger is also supported, It requires `wandb` to be installed.
              init_kwargs={'entity': "OpenMMLab", # The entity used to log on Wandb
                           'project': "MMDet", # Project name in WandB 
                           'config': cfg_dict}), # Check https://docs.wandb.ai/ref/python/init for more init arguments.

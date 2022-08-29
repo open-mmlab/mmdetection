@@ -392,7 +392,7 @@ log_config = dict(  # register logger hook 的配置文件。
     hooks=[ # 训练期间执行的钩子
       dict(type='TextLoggerHook', by_epoch=False),
       dict(type='TensorboardLoggerHook', by_epoch=False),
-      dict(type='MMSegWandbHook', by_epoch=False, # 还支持 Wandb 记录器，它需要安装 `wandb`。
+      dict(type='MMDetWandbHook', by_epoch=False, # 还支持 Wandb 记录器，它需要安装 `wandb`。
            init_kwargs={'entity': "OpenMMLab", # 用于登录wandb的实体
                         'project': "MMDet", # WandB中的项目名称
                         'config': cfg_dict}), # 检查 https://docs.wandb.ai/ref/python/init 以获取更多初始化参数
