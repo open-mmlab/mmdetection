@@ -2,7 +2,7 @@
 
 Region proposal network(RPN) is a submodule in [Faster R-CNN](https://arxiv.org/abs/1506.01497), which generates proposals for the second stage of Faster R-CNN. Most two stage detectors in MMDetection use [`RPNHead`](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/dense_heads/rpn_head.py) to generate proposals as RPN. However, any single-stage detector can serve as a RPN since their bounding box predictions can also be regarded as region proposals and thus be refined in the R-CNN. Therefore, MMDetection v3.0 supports that. Here we give an example to illustrate the whole process.
 
-The main content are as below:
+The main contents are as follows:
 
 1. How to make `FCOSHead` as a `RPNHead` in Faster R-CNN
 2. How to evaluate the quality of proposals
