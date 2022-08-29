@@ -21,10 +21,10 @@ Create a new file `mmdet/models/backbones/mobilenet.py`.
 ```python
 import torch.nn as nn
 
-from ..builder import BACKBONES
+from mmdet.registry import MODELS
 
 
-@BACKBONES.register_module()
+@MODELS.register_module()
 class MobileNet(nn.Module):
 
     def __init__(self, arg1, arg2):
@@ -71,9 +71,11 @@ model = dict(
 Create a new file `mmdet/models/necks/pafpn.py`.
 
 ```python
-from ..builder import NECKS
+import torch.nn as nn
 
-@NECKS.register_module()
+from mmdet.registry import MODELS
+
+@MODELS.register_module()
 class PAFPN(nn.Module):
 
     def __init__(self,
@@ -127,114 +129,162 @@ Double Head R-CNN implements a new bbox head for object detection.
 To implement a bbox head, basically we need to implement three functions of the new module as the following.
 
 ```python
-from mmdet.models.builder import HEADS
+from typing import Tuple
+
+import torch.nn as nn
+from mmcv.cnn import ConvModule
+from mmengine.model import BaseModule, ModuleList
+from torch import Tensor
+
+from mmdet.models.backbones.resnet import Bottleneck
+from mmdet.registry import MODELS
+from mmdet.utils import ConfigType, MultiConfig, OptConfigType, OptMultiConfig
 from .bbox_head import BBoxHead
 
-@HEADS.register_module()
+@MODELS.register_module()
 class DoubleConvFCBBoxHead(BBoxHead):
     r"""Bbox head used in Double-Head R-CNN
 
-                                      /-> cls
-                  /-> shared convs ->
-                                      \-> reg
-    roi features
-                                      /-> cls
-                  \-> shared fc    ->
-                                      \-> reg
+    .. code-block:: none
+
+                                          /-> cls
+                      /-> shared convs ->
+                                          \-> reg
+        roi features
+                                          /-> cls
+                      \-> shared fc    ->
+                                          \-> reg
     """  # noqa: W605
 
     def __init__(self,
-                 num_convs=0,
-                 num_fcs=0,
-                 conv_out_channels=1024,
-                 fc_out_channels=1024,
-                 conv_cfg=None,
-                 norm_cfg=dict(type='BN'),
-                 **kwargs):
+                 num_convs: int = 0,
+                 num_fcs: int = 0,
+                 conv_out_channels: int = 1024,
+                 fc_out_channels: int = 1024,
+                 conv_cfg: OptConfigType = None,
+                 norm_cfg: ConfigType = dict(type='BN'),
+                 init_cfg: MultiConfig = dict(
+                     type='Normal',
+                     override=[
+                         dict(type='Normal', name='fc_cls', std=0.01),
+                         dict(type='Normal', name='fc_reg', std=0.001),
+                         dict(
+                             type='Xavier',
+                             name='fc_branch',
+                             distribution='uniform')
+                     ]),
+                 **kwargs) -> None:
         kwargs.setdefault('with_avg_pool', True)
-        super(DoubleConvFCBBoxHead, self).__init__(**kwargs)
+        super().__init__(init_cfg=init_cfg, **kwargs)
 
-
-    def forward(self, x_cls, x_reg):
+    def forward(self, x_cls: Tensor, x_reg: Tensor) -> Tuple[Tensor]:
 
 ```
 
 Second, implement a new RoI Head if it is necessary. We plan to inherit the new `DoubleHeadRoIHead` from `StandardRoIHead`. We can find that a `StandardRoIHead` already implements the following functions.
 
 ```python
+from typing import List, Optional, Tuple
+
 import torch
+from torch import Tensor
 
-from mmdet.core import bbox2result, bbox2roi, build_assigner, build_sampler
-from ..builder import HEADS, build_head, build_roi_extractor
+from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.structures import DetDataSample
+from mmdet.structures.bbox import bbox2roi
+from mmdet.utils import ConfigType, InstanceList
+from ..task_modules.samplers import SamplingResult
+from ..utils import empty_instances, unpack_gt_instances
 from .base_roi_head import BaseRoIHead
-from .test_mixins import BBoxTestMixin, MaskTestMixin
 
 
-@HEADS.register_module()
-class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
-    """Simplest base roi head including one bbox head and one mask head.
-    """
+@MODELS.register_module()
+class StandardRoIHead(BaseRoIHead):
+    """Simplest base roi head including one bbox head and one mask head."""
 
-    def init_assigner_sampler(self):
+    def init_assigner_sampler(self) -> None:
 
-    def init_bbox_head(self, bbox_roi_extractor, bbox_head):
+    def init_bbox_head(self, bbox_roi_extractor: ConfigType,
+                       bbox_head: ConfigType) -> None:
 
-    def init_mask_head(self, mask_roi_extractor, mask_head):
+    def init_mask_head(self, mask_roi_extractor: ConfigType,
+                       mask_head: ConfigType) -> None:
 
+    def forward(self, x: Tuple[Tensor],
+                rpn_results_list: InstanceList) -> tuple:
 
-    def forward_dummy(self, x, proposals):
+    def loss(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
+             batch_data_samples: List[DetDataSample]) -> dict:
 
+    def _bbox_forward(self, x: Tuple[Tensor], rois: Tensor) -> dict:
 
-    def forward_train(self,
-                      x,
-                      img_metas,
-                      proposal_list,
-                      gt_bboxes,
-                      gt_labels,
-                      gt_bboxes_ignore=None,
-                      gt_masks=None):
+    def bbox_loss(self, x: Tuple[Tensor],
+                  sampling_results: List[SamplingResult]) -> dict:
 
-    def _bbox_forward(self, x, rois):
+    def mask_loss(self, x: Tuple[Tensor],
+                  sampling_results: List[SamplingResult], bbox_feats: Tensor,
+                  batch_gt_instances: InstanceList) -> dict:
 
-    def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
-                            img_metas):
+    def _mask_forward(self,
+                      x: Tuple[Tensor],
+                      rois: Tensor = None,
+                      pos_inds: Optional[Tensor] = None,
+                      bbox_feats: Optional[Tensor] = None) -> dict:
 
-    def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,
-                            img_metas):
+    def predict_bbox(self,
+                     x: Tuple[Tensor],
+                     batch_img_metas: List[dict],
+                     rpn_results_list: InstanceList,
+                     rcnn_test_cfg: ConfigType,
+                     rescale: bool = False) -> InstanceList:
 
-    def _mask_forward(self, x, rois=None, pos_inds=None, bbox_feats=None):
-
-
-    def simple_test(self,
-                    x,
-                    proposal_list,
-                    img_metas,
-                    proposals=None,
-                    rescale=False):
-        """Test without augmentation."""
+    def predict_mask(self,
+                     x: Tuple[Tensor],
+                     batch_img_metas: List[dict],
+                     results_list: InstanceList,
+                     rescale: bool = False) -> InstanceList:
 
 ```
 
-Double Head's modification is mainly in the bbox_forward logic, and it inherits other logics from the `StandardRoIHead`.
-In the `mmdet/models/roi_heads/double_roi_head.py`, we implement the new RoI Head as the following:
+Double Head's modification is mainly in the `bbox_forward` logic, and it inherits other logics from the `StandardRoIHead`. In the `mmdet/models/roi_heads/double_roi_head.py`, we implement the new RoI Head as the following:
 
 ```python
-from ..builder import HEADS
+from typing import Tuple
+
+from torch import Tensor
+
+from mmdet.registry import MODELS
 from .standard_roi_head import StandardRoIHead
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class DoubleHeadRoIHead(StandardRoIHead):
-    """RoI head for Double Head RCNN
+    """RoI head for `Double Head RCNN <https://arxiv.org/abs/1904.06493>`_.
 
-    https://arxiv.org/abs/1904.06493
+    Args:
+        reg_roi_scale_factor (float): The scale factor to extend the rois
+            used to extract the regression features.
     """
 
-    def __init__(self, reg_roi_scale_factor, **kwargs):
-        super(DoubleHeadRoIHead, self).__init__(**kwargs)
+    def __init__(self, reg_roi_scale_factor: float, **kwargs):
+        super().__init__(**kwargs)
         self.reg_roi_scale_factor = reg_roi_scale_factor
 
-    def _bbox_forward(self, x, rois):
+    def _bbox_forward(self, x: Tuple[Tensor], rois: Tensor) -> dict:
+        """Box head forward function used in both training and testing.
+
+        Args:
+            x (tuple[Tensor]): List of multi-level img features.
+            rois (Tensor): RoIs with the shape (n, 5) where the first
+                column indicates batch id of each RoI.
+
+        Returns:
+             dict[str, Tensor]: Usually returns a dictionary with keys:
+
+                - `cls_score` (Tensor): Classification scores.
+                - `bbox_pred` (Tensor): Box energies / deltas.
+                - `bbox_feats` (Tensor): Extract bbox RoI features.
+        """
         bbox_cls_feats = self.bbox_roi_extractor(
             x[:self.bbox_roi_extractor.num_inputs], rois)
         bbox_reg_feats = self.bbox_roi_extractor(
@@ -260,7 +310,7 @@ Alternatively, the users can add
 
 ```python
 custom_imports=dict(
-    imports=['mmdet.models.roi_heads.double_roi_head', 'mmdet.models.bbox_heads.double_bbox_head'])
+    imports=['mmdet.models.roi_heads.double_roi_head', 'mmdet.models.roi_heads.bbox_heads.double_bbox_head'])
 ```
 
 to the config file and achieve the same goal.
@@ -268,7 +318,7 @@ to the config file and achieve the same goal.
 The config file of Double Head R-CNN is as the following
 
 ```python
-_base_ = '../faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
+_base_ = '../faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py'
 model = dict(
     roi_head=dict(
         type='DoubleHeadRoIHead',
@@ -295,8 +345,7 @@ model = dict(
 ```
 
 Since MMDetection 2.0, the config system supports to inherit configs such that the users can focus on the modification.
-The Double Head R-CNN mainly uses a new DoubleHeadRoIHead and a new
-`DoubleConvFCBBoxHead`, the arguments are set according to the `__init__` function of each module.
+The Double Head R-CNN mainly uses a new `DoubleHeadRoIHead` and a new `DoubleConvFCBBoxHead `, the arguments are set according to the `__init__` function of each module.
 
 ### Add new loss
 
@@ -308,7 +357,7 @@ The decorator `weighted_loss` enable the loss to be weighted for each element.
 import torch
 import torch.nn as nn
 
-from ..builder import LOSSES
+from mmdet.registry import MODELS
 from .utils import weighted_loss
 
 @weighted_loss
@@ -317,7 +366,7 @@ def my_loss(pred, target):
     loss = torch.abs(pred - target)
     return loss
 
-@LOSSES.register_module()
+@MODELS.register_module()
 class MyLoss(nn.Module):
 
     def __init__(self, reduction='mean', loss_weight=1.0):
