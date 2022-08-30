@@ -5,6 +5,7 @@ from abc import ABCMeta, abstractmethod
 class BaseBBoxCoder(metaclass=ABCMeta):
     """Base bounding box coder."""
 
+    # The length of the `encode` function output.
     encode_size = 4
 
     def __init__(self, with_boxlist: bool = False, **kwargs):

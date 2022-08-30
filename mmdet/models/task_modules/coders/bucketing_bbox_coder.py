@@ -3,8 +3,9 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+from mmdet.models.utils.misc import get_box_tensor
 from mmdet.registry import TASK_UTILS
-from mmdet.structures.bbox import BaseBoxes, HorizontalBoxes, bbox_rescale
+from mmdet.structures.bbox import HorizontalBoxes, bbox_rescale
 from .base_bbox_coder import BaseBBoxCoder
 
 
@@ -60,10 +61,8 @@ class BucketingBBoxCoder(BaseBBoxCoder):
            encoded_bboxes(tuple[Tensor]): bucketing estimation
             and fine regression targets and weights
         """
-        if isinstance(bboxes, BaseBoxes):
-            bboxes = bboxes.tensor
-        if isinstance(gt_bboxes, BaseBoxes):
-            gt_bboxes = gt_bboxes.tensor
+        bboxes = get_box_tensor(bboxes)
+        gt_bboxes = get_box_tensor(gt_bboxes)
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
         encoded_bboxes = bbox2bucket(bboxes, gt_bboxes, self.num_buckets,
@@ -84,8 +83,7 @@ class BucketingBBoxCoder(BaseBBoxCoder):
         Returns:
             torch.Tensor: Decoded boxes.
         """
-        if isinstance(bboxes, BaseBoxes):
-            bboxes = bboxes.tensor
+        bboxes = get_box_tensor(bboxes)
         assert len(pred_bboxes) == 2
         cls_preds, offset_preds = pred_bboxes
         assert cls_preds.size(0) == bboxes.size(0) and offset_preds.size(

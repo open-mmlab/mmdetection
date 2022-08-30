@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from mmdet.models.utils.misc import get_box_tensor
 from mmdet.registry import TASK_UTILS
-from mmdet.structures.bbox import (BaseBoxes, HorizontalBoxes, bbox2distance,
-                                   distance2bbox)
+from mmdet.structures.bbox import HorizontalBoxes, bbox2distance, distance2bbox
 from .base_bbox_coder import BaseBBoxCoder
 
 
@@ -34,8 +34,7 @@ class DistancePointBBoxCoder(BaseBBoxCoder):
         Returns:
             Tensor: Box transformation deltas. The shape is (N, 4).
         """
-        if isinstance(gt_bboxes, BaseBoxes):
-            gt_bboxes = gt_bboxes.tensor
+        gt_bboxes = get_box_tensor(gt_bboxes)
         assert points.size(0) == gt_bboxes.size(0)
         assert points.size(-1) == 2
         assert gt_bboxes.size(-1) == 4

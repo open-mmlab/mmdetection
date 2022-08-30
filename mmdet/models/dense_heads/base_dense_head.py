@@ -12,10 +12,10 @@ from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.structures import SampleList
-from mmdet.structures.bbox import BaseBoxes
 from mmdet.utils import InstanceList, OptMultiConfig
 from ..test_time_augs import merge_aug_results
-from ..utils import (cat, filter_scores_and_topk, select_single_mlvl,
+from ..utils import (cat_boxes, filter_scores_and_topk, get_box_tensor,
+                     get_box_wh, scale_boxes, select_single_mlvl,
                      unpack_gt_instances)
 
 
@@ -361,8 +361,8 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
             assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
 
-            reg_dim = self.bbox_coder.encode_size
-            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, reg_dim)
+            dim = self.bbox_coder.encode_size
+            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, dim)
             if with_score_factors:
                 score_factor = score_factor.permute(1, 2,
                                                     0).reshape(-1).sigmoid()
@@ -403,7 +403,7 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 mlvl_score_factors.append(score_factor)
 
         bbox_pred = torch.cat(mlvl_bbox_preds)
-        priors = cat(mlvl_valid_priors)
+        priors = cat_boxes(mlvl_valid_priors)
         bboxes = self.bbox_coder.decode(priors, bbox_pred, max_shape=img_shape)
 
         results = InstanceData()
@@ -454,15 +454,10 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                 - bboxes (Tensor): Has a shape (num_instances, 4),
                   the last dimension 4 arrange as (x1, y1, x2, y2).
         """
-        is_boxlist = isinstance(results.bboxes, BaseBoxes)
         if rescale:
             assert img_meta.get('scale_factor') is not None
-            if is_boxlist:
-                scale_factor = [1 / s for s in img_meta['scale_factor']]
-                results.bboxes.rescale_(scale_factor)
-            else:
-                results.bboxes /= results.bboxes.new_tensor(
-                    img_meta['scale_factor']).repeat((1, 2))
+            scale_factor = [1 / s for s in img_meta['scale_factor']]
+            results.bboxes = scale_boxes(results.bboxes, scale_factor)
 
         if hasattr(results, 'score_factors'):
             # TODO： Add sqrt operation in order to be consistent with
@@ -472,18 +467,14 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
         # filter small size bboxes
         if cfg.get('min_bbox_size', -1) >= 0:
-            if is_boxlist:
-                w, h = results.bboxes.widths, results.bboxes.heights
-            else:
-                w = results.bboxes[:, 2] - results.bboxes[:, 0]
-                h = results.bboxes[:, 3] - results.bboxes[:, 1]
+            w, h = get_box_wh(results.bboxes)
             valid_mask = (w > cfg.min_bbox_size) & (h > cfg.min_bbox_size)
             if not valid_mask.all():
                 results = results[valid_mask]
 
         # TODO: deal with `with_nms` and `nms_cfg=None` in test_cfg
         if with_nms and results.bboxes.numel() > 0:
-            bboxes = results.bboxes.tensor if is_boxlist else results.bboxes
+            bboxes = get_box_tensor(results.bboxes)
             det_bboxes, keep_idxs = batched_nms(bboxes, results.scores,
                                                 results.labels, cfg.nms)
             results = results[keep_idxs]

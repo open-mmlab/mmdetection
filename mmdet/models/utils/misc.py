@@ -4,7 +4,6 @@ from typing import List, Union
 
 import numpy as np
 import torch
-from torch import Tensor
 from mmengine.structures import InstanceData
 from six.moves import map, zip
 from torch import Tensor
@@ -414,7 +413,7 @@ def images_to_levels(target, num_levels):
 
     [target_img0, target_img1] -> [target_level0, target_level1, ...]
     """
-    target = stack(target, 0)
+    target = stack_boxes(target, 0)
     level_targets = []
     start = 0
     for n in num_levels:
@@ -441,9 +440,9 @@ def samplelist_boxlist2tensor(batch_data_samples: SampleList) -> SampleList:
                 data_samples.ignored_instances.bboxes = bboxes.tensor
 
 
-def cat(data_list: List[Union[Tensor, BaseBoxes]],
-        dim: int = 0) -> Union[Tensor, BaseBoxes]:
-    """Concatenate tensor or BoxList.
+def cat_boxes(data_list: List[Union[Tensor, BaseBoxes]],
+              dim: int = 0) -> Union[Tensor, BaseBoxes]:
+    """Concatenate boxes with type of tensor or BoxList.
 
     Args:
         data_list (List[Union[Tensor, :obj:`BaseBoxes`]]): A list of tensors
@@ -460,9 +459,9 @@ def cat(data_list: List[Union[Tensor, BaseBoxes]],
         return torch.cat(data_list, dim=dim)
 
 
-def stack(data_list: List[Union[Tensor, BaseBoxes]],
-          dim: int = 0) -> Union[Tensor, BaseBoxes]:
-    """Stack tensor or BoxList.
+def stack_boxes(data_list: List[Union[Tensor, BaseBoxes]],
+                dim: int = 0) -> Union[Tensor, BaseBoxes]:
+    """Stack boxes with type of tensor or BoxList.
 
     Args:
         data_list (List[Union[Tensor, :obj:`BaseBoxes`]]): A list of tensors
@@ -477,3 +476,32 @@ def stack(data_list: List[Union[Tensor, BaseBoxes]],
         return data_list[0].stack(data_list, dim=dim)
     else:
         return torch.stack(data_list, dim=dim)
+
+
+def scale_boxes(boxes: Union[Tensor, BaseBoxes],
+                scale_factor: tuple) -> Union[Tensor, BaseBoxes]:
+    if isinstance(boxes, BaseBoxes):
+        boxes.rescale_(scale_factor)
+        return boxes
+    else:
+        # Tensor boxes will be treated as horizontal boxes
+        repeat_num = int(boxes.size(-1) / 2)
+        scale_factor = boxes.new_tensor(scale_factor).repeat((1, repeat_num))
+        return boxes * scale_factor
+
+
+def get_box_wh(boxes: Union[Tensor, BaseBoxes]) -> Tensor:
+    if isinstance(boxes, BaseBoxes):
+        w = boxes.widths
+        h = boxes.heights
+    else:
+        # Tensor boxes will be treated as horizontal boxes by defaults
+        w = boxes[:, 2] - boxes[:, 0]
+        h = boxes[:, 3] - boxes[:, 1]
+    return w, h
+
+
+def get_box_tensor(boxes: Union[Tensor, BaseBoxes]) -> Tensor:
+    if isinstance(boxes, BaseBoxes):
+        boxes = boxes.tensor
+    return boxes

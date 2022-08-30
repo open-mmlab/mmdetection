@@ -14,7 +14,8 @@ from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
 from ..task_modules.prior_generators import (AnchorGenerator,
                                              anchor_inside_flags)
 from ..task_modules.samplers import PseudoSampler
-from ..utils import cat, images_to_levels, multi_apply, unmap
+from ..utils import (cat_boxes, get_box_tensor, images_to_levels, multi_apply,
+                     unmap)
 from .base_dense_head import BaseDenseHead
 
 
@@ -279,8 +280,7 @@ class AnchorHead(BaseDenseHead):
                     sampling_result.pos_priors, sampling_result.pos_gt_bboxes)
             else:
                 pos_bbox_targets = sampling_result.pos_gt_bboxes
-                if isinstance(pos_bbox_targets, BaseBoxes):
-                    pos_bbox_targets = pos_bbox_targets.tensor
+                pos_bbox_targets = get_box_tensor(pos_bbox_targets)
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
 
@@ -372,7 +372,7 @@ class AnchorHead(BaseDenseHead):
         concat_valid_flag_list = []
         for i in range(num_imgs):
             assert len(anchor_list[i]) == len(valid_flag_list[i])
-            concat_anchor_list.append(cat(anchor_list[i]))
+            concat_anchor_list.append(cat_boxes(anchor_list[i]))
             concat_valid_flag_list.append(torch.cat(valid_flag_list[i]))
 
         # compute targets for each image
@@ -460,8 +460,7 @@ class AnchorHead(BaseDenseHead):
             # decodes the already encoded coordinates to absolute format.
             anchors = anchors.reshape(-1, anchors.size(-1))
             bbox_pred = self.bbox_coder.decode(anchors, bbox_pred)
-            if isinstance(bbox_pred, BaseBoxes):
-                bbox_pred = bbox_pred.tensor
+            bbox_pred = get_box_tensor(bbox_pred)
         loss_bbox = self.loss_bbox(
             bbox_pred, bbox_targets, bbox_weights, avg_factor=avg_factor)
         return loss_cls, loss_bbox
@@ -515,7 +514,7 @@ class AnchorHead(BaseDenseHead):
         # concat all level anchors and flags to a single tensor
         concat_anchor_list = []
         for i in range(len(anchor_list)):
-            concat_anchor_list.append(cat(anchor_list[i]))
+            concat_anchor_list.append(cat_boxes(anchor_list[i]))
         all_anchor_list = images_to_levels(concat_anchor_list,
                                            num_level_anchors)
 
