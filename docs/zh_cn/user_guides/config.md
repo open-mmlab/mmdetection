@@ -1,4 +1,4 @@
-# 教程 1: 学习配置文件
+# 学习配置文件
 
 MMDetection 和其他 OpenMMLab 仓库使用 [MMEngine 的配置文件系统](https://mmengine.readthedocs.io/zh_cn/latest/tutorials/config.md)。 配置文件使用了模块化和继承设计，以便于进行各类实验。
 
