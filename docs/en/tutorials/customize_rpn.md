@@ -62,7 +62,7 @@ param_scheduler = [
 ]
 ```
 
-Then, we could use the following command to train our customized model. For more training commands, please refer to [here](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/docs/en/1_exist_data_model.md).
+Then, we could use the following command to train our customized model. For more training commands, please refer to [here](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/docs/en/user_guides/train.md).
 
 ```python
 # training with 8 GPUS
