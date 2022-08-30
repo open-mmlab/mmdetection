@@ -94,12 +94,14 @@ class HorizontalBoxes(BaseBoxes):
     def centers(self) -> Tensor:
         """Return a tensor representing the centers of boxes."""
         boxes = self.tensor
+        assert boxes.size(-1) == self.box_dim
         return (boxes[..., :2] + boxes[..., 2:]) / 2
 
     @property
     def areas(self) -> Tensor:
         """Return a tensor representing the areas of boxes."""
         boxes = self.tensor
+        assert boxes.size(-1) == self.box_dim
         return (boxes[..., 2] - boxes[..., 0]) * (
             boxes[..., 3] - boxes[..., 1])
 
@@ -107,12 +109,14 @@ class HorizontalBoxes(BaseBoxes):
     def widths(self) -> Tensor:
         """Return a tensor representing the widths of boxes."""
         boxes = self.tensor
+        assert boxes.size(-1) == self.box_dim
         return boxes[..., 2] - boxes[..., 0]
 
     @property
     def heights(self) -> Tensor:
         """Return a tensor representing the heights of boxes."""
         boxes = self.tensor
+        assert boxes.size(-1) == self.box_dim
         return boxes[..., 3] - boxes[..., 1]
 
     def flip_(self,
@@ -129,16 +133,16 @@ class HorizontalBoxes(BaseBoxes):
         flipped = self.tensor
         boxes = flipped.clone()
         if direction == 'horizontal':
-            flipped[..., 0] = img_shape[1] - boxes[..., 2]
-            flipped[..., 2] = img_shape[1] - boxes[..., 0]
+            flipped[..., 0::4] = img_shape[1] - boxes[..., 2::4]
+            flipped[..., 2::4] = img_shape[1] - boxes[..., 0::4]
         elif direction == 'vertical':
-            flipped[..., 1] = img_shape[0] - boxes[..., 3]
-            flipped[..., 3] = img_shape[0] - boxes[..., 1]
+            flipped[..., 1::4] = img_shape[0] - boxes[..., 3::4]
+            flipped[..., 3::4] = img_shape[0] - boxes[..., 1]
         else:
-            flipped[..., 0] = img_shape[1] - boxes[..., 2]
-            flipped[..., 1] = img_shape[0] - boxes[..., 3]
-            flipped[..., 2] = img_shape[1] - boxes[..., 0]
-            flipped[..., 3] = img_shape[0] - boxes[..., 1]
+            flipped[..., 0::4] = img_shape[1] - boxes[..., 2::4]
+            flipped[..., 1::4] = img_shape[0] - boxes[..., 3::4]
+            flipped[..., 2::4] = img_shape[1] - boxes[..., 0::4]
+            flipped[..., 3::4] = img_shape[0] - boxes[..., 1::4]
 
     def translate_(self, distances: Tuple[float, float]) -> None:
         """Translate boxes in-place.
@@ -149,7 +153,8 @@ class HorizontalBoxes(BaseBoxes):
         """
         boxes = self.tensor
         assert len(distances) == 2
-        self.tensor = boxes + boxes.new_tensor(distances).repeat(2)
+        repeat_num = int(boxes.size(-1) / 2)
+        self.tensor = boxes + boxes.new_tensor(distances).repeat(repeat_num)
 
     def clip_(self, img_shape: Tuple[int, int]) -> None:
         """Clip boxes according to the image shape in-place.
@@ -170,6 +175,7 @@ class HorizontalBoxes(BaseBoxes):
                 values mean clockwise rotation.
         """
         boxes = self.tensor
+        assert boxes.size(-1) == self.box_dim
         rotation_matrix = boxes.new_tensor(
             cv2.getRotationMatrix2D(center, -angle, 1))
 
@@ -189,6 +195,7 @@ class HorizontalBoxes(BaseBoxes):
                 Shape (3, 3) for geometric transformation.
         """
         boxes = self.tensor
+        assert boxes.size(-1) == self.box_dim
         if isinstance(homography_matrix, np.ndarray):
             homography_matrix = boxes.new_tensor(homography_matrix)
         corners = self.hbox2corner(boxes)
@@ -265,6 +272,7 @@ class HorizontalBoxes(BaseBoxes):
         """
         boxes = self.tensor
         assert len(scale_factor) == 2
+        assert boxes.size(-1) == self.box_dim
         ctrs = (boxes[..., 2:] + boxes[..., :2]) / 2
         wh = boxes[..., 2:] - boxes[..., :2]
         scale_factor = boxes.new_tensor(scale_factor)
@@ -294,6 +302,7 @@ class HorizontalBoxes(BaseBoxes):
         """
         img_h, img_w = img_shape
         boxes = self.tensor
+        assert boxes.size(-1) == self.box_dim
         if all_inside:
             return (boxes[:, 0] >= -allowed_border) & \
                 (boxes[:, 1] >= -allowed_border) & \
@@ -324,6 +333,7 @@ class HorizontalBoxes(BaseBoxes):
         """
         boxes = self.tensor
         assert boxes.dim() == 2, 'boxes dimension must be 2.'
+        assert boxes.size(-1) == self.box_dim
 
         if not is_aligned:
             boxes = boxes[None, :, :]
@@ -381,18 +391,7 @@ class HorizontalBoxes(BaseBoxes):
         """
         num_masks = len(masks)
         boxes = np.zeros((num_masks, 4), dtype=np.float32)
-        if isinstance(masks, BitmapMasks):
-            x_any = masks.masks.any(axis=1)
-            y_any = masks.masks.any(axis=2)
-            for idx in range(num_masks):
-                x = np.where(x_any[idx, :])[0]
-                y = np.where(y_any[idx, :])[0]
-                if len(x) > 0 and len(y) > 0:
-                    # use +1 for x_max and y_max so that the right and bottom
-                    # boundary of instance masks are fully included by the box
-                    boxes[idx, :] = np.array(
-                        [x[0], y[0], x[-1] + 1, y[-1] + 1], dtype=np.float32)
-        elif isinstance(masks, PolygonMasks):
+        if isinstance(masks, PolygonMasks):
             for idx, poly_per_obj in enumerate(masks.masks):
                 # simply use a number that is big enough for comparison with
                 # coordinates
@@ -406,7 +405,15 @@ class HorizontalBoxes(BaseBoxes):
                 boxes[idx, :2] = xy_min
                 boxes[idx, 2:] = xy_max
         else:
-            raise TypeError(
-                '`masks` must be `BitmapMasks`  or `PolygonMasks`, '
-                f'but got {type(masks)}.')
+            masks = masks.to_ndarray()
+            x_any = masks.any(axis=1)
+            y_any = masks.any(axis=2)
+            for idx in range(num_masks):
+                x = np.where(x_any[idx, :])[0]
+                y = np.where(y_any[idx, :])[0]
+                if len(x) > 0 and len(y) > 0:
+                    # use +1 for x_max and y_max so that the right and bottom
+                    # boundary of instance masks are fully included by the box
+                    boxes[idx, :] = np.array(
+                        [x[0], y[0], x[-1] + 1, y[-1] + 1], dtype=np.float32)
         return HorizontalBoxes(boxes)
