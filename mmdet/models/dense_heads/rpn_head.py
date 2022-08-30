@@ -11,10 +11,11 @@ from mmengine.config import ConfigDict
 from mmengine.structures import InstanceData
 from torch import Tensor
 
+from mmdet.models.utils import (cat_boxes, get_box_tensor, get_box_wh,
+                                scale_boxes)
 from mmdet.registry import MODELS
 from mmdet.structures.bbox import BaseBoxes
 from mmdet.utils import InstanceList, MultiConfig, OptInstanceList
-from ..utils import cat
 from .anchor_head import AnchorHead
 
 
@@ -221,7 +222,7 @@ class RPNHead(AnchorHead):
                                 dtype=torch.long))
 
         bbox_pred = torch.cat(mlvl_bbox_preds)
-        priors = cat(mlvl_valid_priors)
+        priors = cat_boxes(mlvl_valid_priors)
         bboxes = self.bbox_coder.decode(priors, bbox_pred, max_shape=img_shape)
 
         results = InstanceData()
@@ -266,29 +267,20 @@ class RPNHead(AnchorHead):
                   the last dimension 4 arrange as (x1, y1, x2, y2).
         """
         assert with_nms, '`with_nms` must be True in RPNHead'
-        is_boxlist = isinstance(results.bboxes, BaseBoxes)
         if rescale:
             assert img_meta.get('scale_factor') is not None
-            if is_boxlist:
-                scale_factor = [1 / s for s in img_meta['scale_factor']]
-                results.bboxes.rescale_(scale_factor)
-            else:
-                results.bboxes /= results.bboxes.new_tensor(
-                    img_meta['scale_factor']).repeat((1, 2))
+            scale_factor = [1 / s for s in img_meta['scale_factor']]
+            results.bboxes = scale_boxes(results.bboxes, scale_factor)
 
         # filter small size bboxes
         if cfg.get('min_bbox_size', -1) >= 0:
-            if is_boxlist:
-                w, h = results.bboxes.widths, results.bboxes.heights
-            else:
-                w = results.bboxes[:, 2] - results.bboxes[:, 0]
-                h = results.bboxes[:, 3] - results.bboxes[:, 1]
+            w, h = get_box_wh(results.bboxes)
             valid_mask = (w > cfg.min_bbox_size) & (h > cfg.min_bbox_size)
             if not valid_mask.all():
                 results = results[valid_mask]
 
         if results.bboxes.numel() > 0:
-            bboxes = results.bboxes.tensor if is_boxlist else results.bboxes
+            bboxes = get_box_tensor(results.bboxes)
             det_bboxes, keep_idxs = batched_nms(bboxes, results.scores,
                                                 results.level_ids, cfg.nms)
             results = results[keep_idxs]
@@ -303,8 +295,8 @@ class RPNHead(AnchorHead):
         else:
             # To avoid some potential error
             results_ = InstanceData()
-            if is_boxlist:
-                results_.bboxes = results.bboxes.create_fake_boxes((0, 4))
+            if isinstance(results.bboxes, BaseBoxes):
+                results_.bboxes = results.bboxes.create_empty_boxes()
             else:
                 results_.bboxes = results.scores.new_zeros(0, 4)
             results_.scores = results.scores.new_zeros(0)

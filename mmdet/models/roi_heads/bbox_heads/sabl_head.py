@@ -521,14 +521,14 @@ class SABLHead(BBoxHead):
 
         return losses
 
-    def _predict_by_feat_single(self,
-                                roi: Tensor,
-                                cls_score: Tensor,
-                                bbox_pred: Tuple[Tensor, Tensor],
-                                img_meta: dict,
-                                rescale: bool = False,
-                                rcnn_test_cfg: Optional[ConfigDict] = None,
-                                roi_box_type=None) -> InstanceData:
+    def _predict_by_feat_single(
+            self,
+            roi: Tensor,
+            cls_score: Tensor,
+            bbox_pred: Tuple[Tensor, Tensor],
+            img_meta: dict,
+            rescale: bool = False,
+            rcnn_test_cfg: Optional[ConfigDict] = None) -> InstanceData:
         """Transform a single image's features extracted from the head into
         bbox results.
 

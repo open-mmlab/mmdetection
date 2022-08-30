@@ -91,6 +91,22 @@ class BaseBoxes(metaclass=ABCMeta):
         from .box_type import convert_box_type
         return convert_box_type(self, dst_type=dst_type)
 
+    def create_empty_box(self: T,
+                         dtype: Optional[torch.dtype] = None,
+                         device: Optional[DeviceType] = None) -> T:
+        """Create empty box.
+
+        Args:
+            dtype (torch.dtype, Optional): data type of boxes.
+            device (str or torch.device, Optional): device of boxes.
+
+        Returns:
+            T: empty boxes with shape of (0, box_dim).
+        """
+        empty_box = self.tensor.new_zeros(
+            0, self.box_dim, dtype=dtype, device=device)
+        return type(self)(empty_box, clone=False)
+
     def create_fake_boxes(self: T,
                           sizes: Tuple[int],
                           fill: float = 0,
@@ -108,10 +124,6 @@ class BaseBoxes(metaclass=ABCMeta):
         Returns:
             T: Fake boxes with shape of ``sizes``.
         """
-        if dtype is None:
-            dtype = self.dtype
-        if device is None:
-            device = self.device
         fake_boxes = self.tensor.new_full(
             sizes, fill, dtype=dtype, device=device)
         return type(self)(fake_boxes, clone=False)

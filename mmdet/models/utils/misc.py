@@ -122,13 +122,13 @@ def unpack_gt_instances(batch_data_samples: SampleList) -> tuple:
     return batch_gt_instances, batch_gt_instances_ignore, batch_img_metas
 
 
-def empty_instances(
-        batch_img_metas: List[dict],
-        device: torch.device,
-        task_type: str,
-        instance_results: OptInstanceList = None,
-        mask_thr_binary: Union[int, float] = 0,
-        box_type: Optional[Union[str, type]] = None) -> List[InstanceData]:
+def empty_instances(batch_img_metas: List[dict],
+                    device: torch.device,
+                    task_type: str,
+                    instance_results: OptInstanceList = None,
+                    mask_thr_binary: Union[int, float] = 0,
+                    box_type: Optional[Union[str, type]] = None,
+                    with_boxlist: bool = False) -> List[InstanceData]:
     """Handle predicted instances when RoI is empty.
 
     Note: If ``instance_results`` is not None, it will be modified
@@ -167,7 +167,10 @@ def empty_instances(
                 results.bboxes = torch.zeros(0, 4, device=device)
             else:
                 _, box_type = get_box_type(box_type)
-                results.bboxes = box_type([], device=device)
+                bboxes = box_type([], device=device)
+                if not with_boxlist:
+                    bboxes = get_box_tensor(bboxes)
+                results.bboxes = bboxes
             results.scores = torch.zeros((0, ), device=device)
             results.labels = torch.zeros((0, ),
                                          device=device,
