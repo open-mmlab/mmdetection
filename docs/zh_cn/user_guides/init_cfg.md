@@ -1,4 +1,4 @@
-# 教程 10: 权重初始化
+# 权重初始化
 
 在训练过程中，适当的初始化策略有利于加快训练速度或获得更⾼的性能。 [MMCV](https://github.com/open-mmlab/mmcv/blob/master/mmcv/cnn/utils/weight_init.py) 提供了一些常⽤的初始化模块的⽅法，如 `nn.Conv2d`。 MMdetection 中的模型初始化主要使⽤ `init_cfg`。⽤⼾可以通过以下两个步骤来初始化模型：
 

@@ -1,4 +1,172 @@
-# 2: 在自定义数据集上进行训练
+# 在标准数据集上训练预定义的模型（待更新）
+
+MMDetection 也为训练检测模型提供了开盖即食的工具。本节将展示在标准数据集（比如 COCO）上如何训练一个预定义的模型。
+
+### 数据集
+
+训练需要准备好数据集，细节请参考 [数据集准备](#%E6%95%B0%E6%8D%AE%E9%9B%86%E5%87%86%E5%A4%87) 。
+
+**注意**：
+目前，`configs/cityscapes` 文件夹下的配置文件都是使用 COCO 预训练权值进行初始化的。如果网络连接不可用或者速度很慢，你可以提前下载现存的模型。否则可能在训练的开始会有错误发生。
+
+### 学习率自动缩放
+
+**注意**：在配置文件中的学习率是在 8 块 GPU，每块 GPU 有 2 张图像（批大小为 8\*2=16）的情况下设置的。其已经设置在`config/_base_/default_runtime.py` 中的 `auto_scale_lr.base_batch_size`。当配置文件的批次大小为`16`时，学习率会基于该值进行自动缩放。同时，为了不影响其他基于 mmdet 的 codebase，启用自动缩放标志 `auto_scale_lr.enable` 默认设置为 `False`。
+
+如果要启用此功能，需在命令添加参数 `--auto-scale-lr`。并且在启动命令之前，请检查下即将使用的配置文件的名称，因为配置名称指示默认的批处理大小。
+在默认情况下，批次大小是 `8 x 2 = 16`，例如：`faster_rcnn_r50_caffe_fpn_90k_coco.py` 或者 `pisa_faster_rcnn_x101_32x4d_fpn_1x_coco.py`；若不是默认批次，你可以在配置文件看到像 `_NxM_` 字样的，例如：`cornernet_hourglass104_mstest_32x3_210e_coco.py` 的批次大小是 `32 x 3 = 96`, 或者 `scnet_x101_64x4d_fpn_8x1_20e_coco.py` 的批次大小是 `8 x 1 = 8`。
+
+**请记住：如果使用不是默认批次大小为`16`的配置文件，请检查配置文件中的底部，会有 `auto_scale_lr.base_batch_size`。如果找不到，可以在其继承的 `_base_=[xxx]` 文件中找到。另外，如果想使用自动缩放学习率的功能，请不要修改这些值。**
+
+学习率自动缩放基本用法如下：
+
+```shell
+python tools/train.py \
+    ${CONFIG_FILE} \
+    --auto-scale-lr \
+    [optional arguments]
+```
+
+执行命令之后，会根据机器的GPU数量和训练的批次大小对学习率进行自动缩放，缩放方式详见 [线性扩展规则](https://arxiv.org/abs/1706.02677) ，比如：在 4 块 GPU 并且每张 GPU 上有 2 张图片的情况下 `lr=0.01`，那么在 16 块 GPU 并且每张 GPU 上有 4 张图片的情况下, LR 会自动缩放至`lr=0.08`。
+
+如果不启用该功能，则需要根据 [线性扩展规则](https://arxiv.org/abs/1706.02677) 来手动计算并修改配置文件里面 `optimizer.lr` 的值。
+
+### 使用单 GPU 训练
+
+我们提供了 `tools/train.py` 来开启在单张 GPU 上的训练任务。基本使用如下：
+
+```shell
+python tools/train.py \
+    ${CONFIG_FILE} \
+    [optional arguments]
+```
+
+在训练期间，日志文件和 checkpoint 文件将会被保存在工作目录下，它需要通过配置文件中的 `work_dir` 或者 CLI 参数中的 `--work-dir` 来指定。
+
+默认情况下，模型将在每轮训练之后在 validation 集上进行测试，测试的频率可以通过设置配置文件来指定：
+
+```python
+# 每 12 轮迭代进行一次测试评估
+evaluation = dict(interval=12)
+```
+
+这个工具接受以下参数：
+
+- `--no-validate` (**不建议**): 在训练期间关闭测试.
+- `--work-dir ${WORK_DIR}`: 覆盖工作目录.
+- `--resume-from ${CHECKPOINT_FILE}`: 从某个 checkpoint 文件继续训练.
+- `--options 'Key=value'`: 覆盖使用的配置文件中的其他设置.
+
+**注意**：
+`resume-from` 和 `load-from` 的区别：
+
+`resume-from` 既加载了模型的权重和优化器的状态，也会继承指定 checkpoint 的迭代次数，不会重新开始训练。`load-from` 则是只加载模型的权重，它的训练是从头开始的，经常被用于微调模型。
+
+### 使用 CPU 训练
+
+使用 CPU 训练的流程和使用单 GPU 训练的流程一致，我们仅需要在训练流程开始前禁用 GPU。
+
+```shell
+export CUDA_VISIBLE_DEVICES=-1
+```
+
+之后运行单 GPU 训练脚本即可。
+
+**注意**：
+
+我们不推荐用户使用 CPU 进行训练，这太过缓慢。我们支持这个功能是为了方便用户在没有 GPU 的机器上进行调试。
+
+### 在多 GPU 上训练
+
+我们提供了 `tools/dist_train.sh` 来开启在多 GPU 上的训练。基本使用如下：
+
+```shell
+bash ./tools/dist_train.sh \
+    ${CONFIG_FILE} \
+    ${GPU_NUM} \
+    [optional arguments]
+```
+
+可选参数和单 GPU 训练的可选参数一致。
+
+#### 同时启动多个任务
+
+如果你想在一台机器上启动多个任务的话，比如在一个有 8 块 GPU 的机器上启动 2 个需要 4 块GPU的任务，你需要给不同的训练任务指定不同的端口（默认为 29500）来避免冲突。
+
+如果你使用 `dist_train.sh` 来启动训练任务，你可以使用命令来设置端口。
+
+```shell
+CUDA_VISIBLE_DEVICES=0,1,2,3 PORT=29500 ./tools/dist_train.sh ${CONFIG_FILE} 4
+CUDA_VISIBLE_DEVICES=4,5,6,7 PORT=29501 ./tools/dist_train.sh ${CONFIG_FILE} 4
+```
+
+### 使用多台机器训练
+
+如果您想使用由 ethernet 连接起来的多台机器， 您可以使用以下命令:
+
+在第一台机器上:
+
+```shell
+NNODES=2 NODE_RANK=0 PORT=$MASTER_PORT MASTER_ADDR=$MASTER_ADDR sh tools/dist_train.sh $CONFIG $GPUS
+```
+
+在第二台机器上:
+
+```shell
+NNODES=2 NODE_RANK=1 PORT=$MASTER_PORT MASTER_ADDR=$MASTER_ADDR sh tools/dist_train.sh $CONFIG $GPUS
+```
+
+但是，如果您不使用高速网路连接这几台机器的话，训练将会非常慢。
+
+### 使用 Slurm 来管理任务
+
+Slurm 是一个常见的计算集群调度系统。在 Slurm 管理的集群上，你可以使用 `slurm.sh` 来开启训练任务。它既支持单节点训练也支持多节点训练。
+
+基本使用如下：
+
+```shell
+[GPUS=${GPUS}] ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} ${CONFIG_FILE} ${WORK_DIR}
+```
+
+以下是在一个名称为 _dev_ 的 Slurm 分区上，使用 16 块 GPU 来训练 Mask R-CNN 的例子，并且将 `work-dir` 设置在了某些共享文件系统下。
+
+```shell
+GPUS=16 ./tools/slurm_train.sh dev mask_r50_1x configs/mask_rcnn_r50_fpn_1x_coco.py /nfs/xxxx/mask_rcnn_r50_fpn_1x
+```
+
+你可以查看 [源码](https://github.com/open-mmlab/mmdetection/blob/master/tools/slurm_train.sh) 来检查全部的参数和环境变量.
+
+在使用 Slurm 时，端口需要以下方的某个方法之一来设置。
+
+1. 通过 `--options` 来设置端口。我们非常建议用这种方法，因为它无需改变原始的配置文件。
+
+   ```shell
+   CUDA_VISIBLE_DEVICES=0,1,2,3 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR} --options 'dist_params.port=29500'
+   CUDA_VISIBLE_DEVICES=4,5,6,7 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR} --options 'dist_params.port=29501'
+   ```
+
+2. 修改配置文件来设置不同的交流端口。
+
+   在 `config1.py` 中，设置：
+
+   ```python
+   dist_params = dict(backend='nccl', port=29500)
+   ```
+
+   在 `config2.py` 中，设置：
+
+   ```python
+   dist_params = dict(backend='nccl', port=29501)
+   ```
+
+   然后你可以使用 `config1.py` 和 `config2.py` 来启动两个任务了。
+
+   ```shell
+   CUDA_VISIBLE_DEVICES=0,1,2,3 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config1.py ${WORK_DIR}
+   CUDA_VISIBLE_DEVICES=4,5,6,7 GPUS=4 ./tools/slurm_train.sh ${PARTITION} ${JOB_NAME} config2.py ${WORK_DIR}
+   ```
+
+# 在自定义数据集上进行训练
 
 通过本文档，你将会知道如何使用自定义数据集对预先定义好的模型进行推理，测试以及训练。我们使用 [balloon dataset](https://github.com/matterport/Mask_RCNN/tree/master/samples/balloon) 作为例子来描述整个过程。
 

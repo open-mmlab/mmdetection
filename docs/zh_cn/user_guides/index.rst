@@ -1,9 +1,8 @@
-Train & Test
+训练 & 测试
 **************
 
-MMDetection provides hundreds of pretrained detection models in `Model Zoo <https://mmdetection.readthedocs.io/en/latest/model_zoo.html>`_,
-and supports multiple standard datasets, including Pascal VOC, COCO, CityScapes, LVIS, etc. This note will show how to perform common tasks on these existing models and standard datasets:
-
+MMDetection 在 `Model Zoo <https://mmdetection.readthedocs.io/en/latest/model_zoo.html>`_ 中提供了数百个预训练的检测模型，
+并支持多种标准数据集格式，包括 Pascal VOC、COCO、CityScapes、LVIS 等。本文档将展示如何使用这些模型和数据集来执行常见的训练和测试任务：
 
 .. toctree::
    :maxdepth: 1
