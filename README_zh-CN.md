@@ -108,6 +108,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 - [ONNX 到 TensorRT 的模型转换](docs/zh_cn/tutorials/onnx2tensorrt.md)
 - [权重初始化](docs/zh_cn/tutorials/init_cfg.md)
 - [how to xxx](docs/zh_cn/tutorials/how_to.md)
+- [半监督目标检测](docs/zh_cn/tutorials/semi_det.md)
 
 同时，我们还提供了 [MMDetection 中文解读文案汇总](docs/zh_cn/article.md)
 
