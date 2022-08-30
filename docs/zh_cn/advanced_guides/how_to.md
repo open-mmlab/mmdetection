@@ -1,5 +1,3 @@
-# How to xxx（待更新）
-
 本教程收集了任何如何使用 MMDetection 进行 xxx 的答案。 如果您遇到有关`如何做`的问题及答案，请随时更新此文档！
 
 ## 使用 MMClassification 的骨干网络
@@ -66,12 +64,12 @@ optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 
 关于层次注册器的具体原理可以参考 [MMCV 文档](https://github.com/open-mmlab/mmcv/blob/master/docs/zh_cn/understand_mmcv/registry.md#%E6%B3%A8%E5%86%8C%E5%99%A8%E5%B1%82%E7%BB%93%E6%9E%84)，关于如何使用 MMClassification 中的其他 backbone，可以参考 [MMClassification 文档](https://github.com/open-mmlab/mmclassification/blob/master/docs/zh_CN/tutorials/config.md)。
 
-## 使用马赛克数据增强
+## 使用马赛克数据增强（待更新）
 
 如果你想在训练中使用 `Mosaic`，那么请确保你同时使用 `MultiImageMixDataset`。以 `Faster R-CNN` 算法为例，你可以通过如下做法实现：
 
 ```python
-# 直接打开 configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py ,增添如下字段
+# 直接打开 configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py ,增添如下字段
 data_root = 'data/coco/'
 dataset_type = 'CocoDataset'
 img_scale=(1333, 800)​
@@ -112,7 +110,7 @@ data = dict(
     )
 ```
 
-## 在配置文件中冻结骨干网络后在训练中解冻骨干网络
+## 在配置文件中冻结骨干网络后在训练中解冻骨干网络（待更新）
 
 如果你在配置文件中已经冻结了骨干网络并希望在几个训练周期后解冻它，你可以通过 hook 来实现这个功能。以用 ResNet 为骨干网络的 Faster R-CNN 为例，你可以冻结一个骨干网络的一个层并在配置文件中添加如下 `custom_hooks`:
 

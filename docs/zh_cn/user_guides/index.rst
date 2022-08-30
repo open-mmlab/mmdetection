@@ -18,7 +18,7 @@ MMDetection 在 `Model Zoo <https://mmdetection.readthedocs.io/en/latest/model_z
    init_cfg.md
 
 
-Useful Tools
+实用工具
 ************
 
 .. toctree::
