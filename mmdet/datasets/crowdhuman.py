@@ -1,7 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import json
 import logging
-import os
 import os.path as osp
 from typing import List, Union
 
@@ -33,7 +32,7 @@ class CrowdHumanDataset(BaseDataset):
         # id_hw file is an additional annotation information which record the
         # size of each image. This file is automatically created when you
         # first load the CrowdHuman dataset by mmdet
-        ann_file_name = os.path.basename(ann_file)
+        ann_file_name = osp.basename(ann_file)
         if 'train' in ann_file_name:
             self.id_hw_path = osp.join(data_root, 'id_hw_train.json')
         elif 'val' in ann_file_name:
