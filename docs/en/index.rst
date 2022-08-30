@@ -45,6 +45,7 @@ Welcome to MMDetection's documentation!
    notes/contribution_guide.md
    notes/projects.md
    notes/changelog.md
+   notes/changelog_v2.x.md
    notes/faq.md
    notes/compatibility.md
 

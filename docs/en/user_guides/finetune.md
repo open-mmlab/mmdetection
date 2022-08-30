@@ -5,7 +5,7 @@ This tutorial provides instruction for users to use the models provided in the [
 
 There are two steps to finetune a model on a new dataset.
 
-- Add support for the new dataset following [Tutorial 2: Customize Datasets](customize_dataset.md).
+- Add support for the new dataset following [Customize Datasets](../advanced_guides/customize_dataset.md).
 - Modify the configs as will be discussed in this tutorial.
 
 Take the finetuning process on Cityscapes Dataset as an example, the users need to modify five parts in the config.
@@ -13,11 +13,11 @@ Take the finetuning process on Cityscapes Dataset as an example, the users need 
 ## Inherit base configs
 
 To release the burden and reduce bugs in writing the whole configs, MMDetection V2.0 support inheriting configs from multiple existing configs. To finetune a Mask RCNN model, the new config needs to inherit
-`_base_/models/mask_rcnn_r50_fpn.py` to build the basic structure of the model. To use the Cityscapes Dataset, the new config can also simply inherit `_base_/datasets/cityscapes_instance.py`. For runtime settings such as training schedules, the new config needs to inherit `_base_/default_runtime.py`. This configs are in the `configs` directory and the users can also choose to write the whole contents rather than use inheritance.
+`_base_/models/mask-rcnn_r50_fpn.py` to build the basic structure of the model. To use the Cityscapes Dataset, the new config can also simply inherit `_base_/datasets/cityscapes_instance.py`. For runtime settings such as training schedules, the new config needs to inherit `_base_/default_runtime.py`. This configs are in the `configs` directory and the users can also choose to write the whole contents rather than use inheritance.
 
 ```python
 _base_ = [
-    '../_base_/models/mask_rcnn_r50_fpn.py',
+    '../_base_/models/mask-rcnn_r50_fpn.py',
     '../_base_/datasets/cityscapes_instance.py', '../_base_/default_runtime.py'
 ]
 ```
@@ -85,5 +85,4 @@ To use the pre-trained model, the new config add the link of pre-trained models 
 
 ```python
 load_from = 'https://download.openmmlab.com/mmdetection/v2.0/mask_rcnn/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco/mask_rcnn_r50_caffe_fpn_mstrain-poly_3x_coco_bbox_mAP-0.408__segm_mAP-0.37_20200504_163245-42aa3d00.pth'  # noqa
-
 ```

@@ -1,13 +1,19 @@
 Train & Test
 **************
 
+MMDetection provides hundreds of existing and existing detection models in `Model Zoo <https://mmdetection.readthedocs.io/en/latest/model_zoo.html>`_,
+and supports multiple standard datasets, including Pascal VOC, COCO, CityScapes, LVIS, etc. This note will show how to perform common tasks on these existing models and standard datasets:
+
+
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    config.md
-   train_test.md
    inference.md
-   exist_data_new_model.md
+   dataset_prepare.md
+   test.md
+   train.md
+   new_model.md
    finetune.md
    test_results_submission.md
    init_cfg.md

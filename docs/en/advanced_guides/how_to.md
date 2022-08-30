@@ -1,10 +1,10 @@
 This tutorial collects answers to any `How to xxx with MMDetection`. Feel free to update this doc if you meet new questions about `How to` and find the answers!
 
-## Use backbone network through MMClassification
+# Use backbone network through MMClassification
 
 The model registry in MMDet, MMCls, MMSeg all inherit from the root registry in MMCV. This allows these repositories to directly use the modules already implemented by each other. Therefore, users can use backbone networks from MMClassification in MMDetection without implementing a network that already exists in MMClassification.
 
-### Use backbone network implemented in MMClassification
+## Use backbone network implemented in MMClassification
 
 Suppose you want to use `MobileNetV3-small` as the backbone network of `RetinaNet`, the example config is as the following.
 
@@ -32,7 +32,7 @@ model = dict(
     neck=dict(in_channels=[24, 48, 96], start_level=0))
 ```
 
-### Use backbone network in TIMM through MMClassification
+## Use backbone network in TIMM through MMClassification
 
 MMClassification also provides a wrapper for the PyTorch Image Models (timm) backbone network, users can directly use the backbone network in timm through MMClassification. Suppose you want to use EfficientNet-B1 as the backbone network of RetinaNet, the example config is as the following.
 
@@ -65,7 +65,7 @@ optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 
 For the principle of the Hierarchy Registry, please refer to the [MMCV document](https://github.com/open-mmlab/mmcv/blob/dev-2.x/docs/en/understand_mmcv/registry.md#hierarchy-registry). For how to use other backbones in MMClassification, you can refer to the [MMClassification document](https://github.com/open-mmlab/mmclassification/blob/dev-1.x/docs/en/tutorials/config.md).
 
-## Use Mosaic augmentation
+# Use Mosaic augmentation
 
 If you want to use `Mosaic` in training, please make sure that you use `MultiImageMixDataset` at the same time. Taking the 'Faster R-CNN' algorithm as an example, you should modify the values of `train_pipeline` and `train_dataset` in the config as below:
 
@@ -111,7 +111,7 @@ data = dict(
     )
 ```
 
-## Unfreeze backbone network after freezing the backbone in the config
+# Unfreeze backbone network after freezing the backbone in the config
 
 If you have freezed the backbone network in the config and want to unfreeze it after some epoches, you can write a hook function to do it.  Taking the Faster R-CNN with the resnet backbone as an example, you can freeze one stage of the backbone network and  add a `custom_hooks` in the config as below:
 
@@ -173,7 +173,7 @@ class UnfreezeBackboneEpochBasedHook(Hook):
                     param.requires_grad = True
 ```
 
-## Get the channels of a new backbone
+# Get the channels of a new backbone
 
 If you want to get the channels of a new backbone, you can build this backbone alone and input a pseudo image to get each stage output.
 

@@ -40,7 +40,7 @@ For some other losses which have positive and negative sample balance mechanism 
 ## Tweaking loss
 
 Tweaking a loss is more related with step 2, 4, 5, and most modifications can be specified in the config.
-Here we take [Focal Loss (FL)](https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/losses/focal_loss.py) as an example.
+Here we take [Focal Loss (FL)](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/losses/focal_loss.py) as an example.
 The following code sniper are the construction method and config of FL respectively, they are actually one to one correspondence.
 
 ```python

@@ -1,4 +1,4 @@
-## Changelog
+# Changelog v2.x
 
 ### v2.25.0 (31/5/2022)
 

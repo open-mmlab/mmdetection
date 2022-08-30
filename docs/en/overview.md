@@ -1,8 +1,10 @@
 # OVERVIEW
 
-This chapter introduces you to the framework of MMDetection, the basic conception of optical flow, and provides links to detailed tutorials about MMDetection.
+This chapter introduces you to the framework of MMDetection, and provides links to detailed tutorials about MMDetection.
 
 ## What is MMDetection
+
+![image](https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png)
 
 MMDetection is an object detection toolbox that contains a rich set of object detection, instance segmentation, and panoptic segmentation methods as well as related components and modules, and below is its whole framework:
 
@@ -25,7 +27,7 @@ MMDetection consists of 7 main parts, apis, structures, datasets, models, engine
   - **task_modules** provides modules for detection tasks. E.g. assigners, samplers, box coders, and prior generators.
   - **layers** provides some basic neural network layers
 - **engine** is a part for runtime components.
-  - **runner** provides extensions for [MMEngine's runner](<>).
+  - **runner** provides extensions for [MMEngine's runner](https://mmengine.readthedocs.io/en/latest/tutorials/runner.html).
   - **schedulers** provides schedulers for adjusting optimization hyperparameters.
   - **optimizers** provides optimizers and optimizer wrappers.
   - **hooks** provides various hooks of the runner.
@@ -40,9 +42,9 @@ Here is a detailed step-by-step guide to learn more about MMDetection:
 
 2. Refer to the below tutorials to for the basic usage of MMDetection.
 
-   - [train and test](https://mmdetection.readthedocs.io/en/dev-3.x/user_guides/index.html#train-test)
+   - [Train and Test](https://mmdetection.readthedocs.io/en/dev-3.x/user_guides/index.html#train-test)
 
-   - [useful tools](https://mmdetection.readthedocs.io/en/dev-3.x/user_guides/index.html#useful-tools)
+   - [Useful Tools](https://mmdetection.readthedocs.io/en/dev-3.x/user_guides/index.html#useful-tools)
 
 3. Refer to the below tutorials to dive deeper:
 

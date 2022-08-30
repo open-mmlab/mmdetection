@@ -236,7 +236,7 @@ val_dataloader = dict(  # Validation dataloader config
 test_dataloader = val_dataloader  # Testing dataloader config
 ```
 
-[Evaluators](https://mmengine.readthedocs.io/en/latest/tutorials/metric_and_evaluator.html) are used to compute the metrics of the trained model on the validation and testing datasets. The config of evaluators consists of one or a list of metric configs:
+[Evaluators](https://mmengine.readthedocs.io/en/latest/design/metric_and_evaluator.html) are used to compute the metrics of the trained model on the validation and testing datasets. The config of evaluators consists of one or a list of metric configs:
 
 ```python
 val_evaluator = dict(  # Validation evaluator config
@@ -447,7 +447,7 @@ If you wish to inspect the config file, you may run `python tools/misc/print_con
 ### Ignore some fields in the base configs
 
 Sometimes, you may set `_delete_=True` to ignore some of fields in base configs.
-You may refer to [mmcv](https://mmcv.readthedocs.io/en/latest/understand_mmcv/config.html#inherit-from-base-config-with-ignored-fields) for simple illustration.
+You may refer to [mmengine config tutorial](https://mmengine.readthedocs.io/en/latest/tutorials/config.html) for simple illustration.
 
 In MMDetection, for example, to change the backbone of Mask R-CNN with the following config.
 

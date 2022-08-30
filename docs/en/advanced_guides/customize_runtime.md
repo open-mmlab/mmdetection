@@ -140,7 +140,7 @@ Tricks not implemented by the optimizer should be implemented through optimizer 
       _delete_=True, clip_grad=dict(max_norm=35, norm_type=2))
   ```
 
-  If your config inherits the base config which already sets the `optim_wrapper`, you might need `_delete_=True` to override the unnecessary settings. See the [config documentation](https://mmdetection.readthedocs.io/en/latest/tutorials/config.html) for more details.
+  If your config inherits the base config which already sets the `optim_wrapper`, you might need `_delete_=True` to override the unnecessary settings. See the [config documentation](../user_guides/config.md) for more details.
 
 - __Use momentum schedule to accelerate model convergence__:
   We support momentum scheduler to modify model's momentum according to learning rate, which could make the model converge in a faster way.
@@ -253,7 +253,7 @@ train_cfg = dict(
 
 #### 1. Implement a new hook
 
-MMEngine provides many useful [hooks](https://mmdetection.readthedocs.io/en/latest/tutorials/hooks.html), but there are some occasions when the users might need to implement a new hook. MMDetection supports customized hooks in training in v3.0 . Thus the users could implement a hook directly in mmdet or their mmdet-based codebases and use the hook by only modifying the config in training.
+MMEngine provides many useful [hooks](https://mmengine.readthedocs.io/en/latest/tutorials/hooks.html), but there are some occasions when the users might need to implement a new hook. MMDetection supports customized hooks in training in v3.0 . Thus the users could implement a hook directly in mmdet or their mmdet-based codebases and use the hook by only modifying the config in training.
 Here we give an example of creating a new hook in mmdet and using it in training.
 
 ```python

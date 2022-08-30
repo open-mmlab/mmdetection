@@ -117,7 +117,7 @@ neck=dict(
     num_outs=5)
 ```
 
-For more detailed usages about customizing your own models (e.g. implement a new backbone, head, loss, etc) and runtime training settings (e.g. define a new optimizer, use gradient clip, customize training schedules and hooks, etc), please refer to the guideline [Customize Models](tutorials/customize_models.md) and [Customize Runtime Settings](tutorials/customize_runtime.md) respectively.
+For more detailed usages about customizing your own models (e.g. implement a new backbone, head, loss, etc) and runtime training settings (e.g. define a new optimizer, use gradient clip, customize training schedules and hooks, etc), please refer to the guideline [Customize Models](../advanced_guides/customize_models.md) and [Customize Runtime Settings](../advanced_guides/customize_runtime.md) respectively.
 
 ## Prepare a config
 
@@ -239,11 +239,11 @@ train_pipeline = [
 ]
 
 # set batch_size per gpu, and set new training pipeline
-data = dict(
-    samples_per_gpu=1,
-    workers_per_gpu=3,
+train_dataloader = dict(
+    batch_size=1,
+    num_workers=3,
     # over-write `pipeline` with new training pipeline setting
-    train=dict(dataset=dict(pipeline=train_pipeline)))
+    dataset=dict(pipeline=train_pipeline))
 
 # Set optimizer
 optim_wrapper = dict(
@@ -264,9 +264,7 @@ param_scheduler = [
 ]
 
 # train, val, test loop config
-train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=10, val_interval=1)
-val_cfg = dict(type='ValLoop')
-test_cfg = dict(type='TestLoop')
+train_cfg = dict(max_epochs=10, val_interval=1)
 
 # We can use the COCO pretrained Cascade Mask R-CNN R50 model for more stable performance initialization
 load_from = 'https://download.openmmlab.com/mmdetection/v2.0/cascade_rcnn/cascade_mask_rcnn_r50_fpn_1x_coco/cascade_mask_rcnn_r50_fpn_1x_coco_20200203-9d4dcb24.pth'
@@ -280,7 +278,7 @@ To train a model with the new config, you can simply run
 python tools/train.py configs/cityscapes/cascade-mask-rcnn_r50_augfpn_autoaug-10e_cityscapes.py
 ```
 
-For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).
+For more detailed usages, please refer to the [training guide](train.md).
 
 ## Test and inference
 
@@ -290,4 +288,4 @@ To test the trained model, you can simply run
 python tools/test.py configs/cityscapes/cascade-mask-rcnn_r50_augfpn_autoaug-10e_cityscapes.py work_dirs/cascade-mask-rcnn_r50_augfpn_autoaug-10e_cityscapes/epoch_10.pth
 ```
 
-For more detailed usages, please refer to the [Case 1](1_exist_data_model.md).
+For more detailed usages, please refer to the [testing guide](test.md).
