@@ -1,6 +1,6 @@
 # 1: Inference and train with existing models and standard datasets
 
-MMDetection provides hundreds of existing and existing detection models in [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html)), and supports multiple standard datasets, including Pascal VOC, COCO, CityScapes, LVIS, etc. This note will show how to perform common tasks on these existing models and standard datasets, including:
+MMDetection provides hundreds of existing and existing detection models in [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html), and supports multiple standard datasets, including Pascal VOC, COCO, CityScapes, LVIS, etc. This note will show how to perform common tasks on these existing models and standard datasets, including:
 
 - Use existing models to inference on given images.
 - Test existing models on standard datasets.
@@ -10,39 +10,84 @@ MMDetection provides hundreds of existing and existing detection models in [Mode
 
 By inference, we mean using trained models to detect objects on images. In MMDetection, a model is defined by a configuration file and existing model parameters are save in a checkpoint file.
 
-To start with, we recommend [Faster RCNN](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn) with this [configuration file](https://github.com/open-mmlab/mmdetection/blob/master/configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py) and this [checkpoint file](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth). It is recommended to download the checkpoint file to `checkpoints` directory.
+To start with, we recommend [Faster RCNN](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/faster_rcnn) with this [configuration file](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py) and this [checkpoint file](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth). It is recommended to download the checkpoint file to `checkpoints` directory.
 
 ### High-level APIs for inference
 
 MMDetection provide high-level Python APIs for inference on images. Here is an example of building the model and inference on given images or videos.
 
 ```python
-from mmdet.apis import init_detector, inference_detector
 import mmcv
+from mmcv.transforms import Compose
+from mmengine.utils import track_iter_progress
+from mmdet.registry import VISUALIZERS
+from mmdet.utils import register_all_modules
+from mmdet.apis import init_detector, inference_detector
+
+# register all modules in mmdet into the registries
+register_all_modules()
 
 # Specify the path to model config and checkpoint file
-config_file = 'configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
+config_file = 'configs/faster_rcnn/faster-rcnn_r50-fpn_1x_coco.py'
 checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
 
 # build the model from a config file and a checkpoint file
 model = init_detector(config_file, checkpoint_file, device='cuda:0')
 
+# init visualizer
+visualizer = VISUALIZERS.build(model.cfg.visualizer)
+# the dataset_meta is loaded from the checkpoint and
+# then pass to the model in init_detector
+visualizer.dataset_meta = model.dataset_meta
 # test a single image and show the results
+
 img = 'test.jpg'  # or img = mmcv.imread(img), which will only load it once
 result = inference_detector(model, img)
-# visualize the results in a new window
-model.show_result(img, result)
-# or save the visualization results to image files
-model.show_result(img, result, out_file='result.jpg')
+
+# show the results
+img = mmcv.imread(img)
+img = mmcv.imconvert(img, 'bgr', 'rgb')
+
+
+visualizer.add_datasample(
+    'result',
+    img,
+    data_sample=result,
+    draw_gt=False,
+    show=True)
 
 # test a video and show the results
-video = mmcv.VideoReader('video.mp4')
-for frame in video:
-    result = inference_detector(model, frame)
-    model.show_result(frame, result, wait_time=1)
+# build test pipeline
+model.cfg.test_dataloader.dataset.pipeline[0].type = 'LoadImageFromNDArray'
+test_pipeline = Compose(model.cfg.test_dataloader.dataset.pipeline)
+
+# init visualizer
+visualizer = VISUALIZERS.build(model.cfg.visualizer)
+# the dataset_meta is loaded from the checkpoint and
+# then pass to the model in init_detector
+visualizer.dataset_meta = model.dataset_meta
+
+# The interval of show (s), 0 is block
+wait_time = 1
+
+video_reader = mmcv.VideoReader('video.mp4')
+
+for frame in track_iter_progress(video_reader):
+    result = inference_detector(model, frame, test_pipeline=test_pipeline)
+    visualizer.add_datasample(
+        name='video',
+        image=frame,
+        data_sample=result,
+        draw_gt=False,
+        show=False)
+    frame = visualizer.get_image()
+
+    cv2.namedWindow('video', 0)
+    mmcv.imshow(frame, 'video', wait_time)
+
 ```
 
-A notebook demo can be found in [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/master/demo/inference_demo.ipynb).
+A notebook demo can be found in [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/demo/inference_demo.ipynb).
 
 Note:  `inference_detector` only supports single-image inference for now.
 
@@ -60,39 +105,39 @@ from mmdet.apis import init_detector, async_inference_detector
 from mmdet.utils.contextmanagers import concurrent
 
 async def main():
-    config_file = 'configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py'
+    config_file = 'configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py'
     checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
     device = 'cuda:0'
     model = init_detector(config_file, checkpoint=checkpoint_file, device=device)
 
-    # queue is used for concurrent inference of multiple images
-    streamqueue = asyncio.Queue()
-    # queue size defines concurrency level
-    streamqueue_size = 3
-
-    for _ in range(streamqueue_size):
-        streamqueue.put_nowait(torch.cuda.Stream(device=device))
+    # init visualizer
+    visualizer = VISUALIZERS.build(model.cfg.visualizer)
+    visualizer.dataset_meta = model.dataset_meta
 
     # test a single image and show the results
     img = 'test.jpg'  # or img = mmcv.imread(img), which will only load it once
 
-    async with concurrent(streamqueue):
-        result = await async_inference_detector(model, img)
-
-    # visualize the results in a new window
-    model.show_result(img, result)
-    # or save the visualization results to image files
-    model.show_result(img, result, out_file='result.jpg')
-
+    # test a single image
+    tasks = asyncio.create_task(async_inference_detector(model, img))
+    result = await asyncio.gather(tasks)
+    # show the results
+    img = mmcv.imread(img)
+    img = mmcv.imconvert(img, 'bgr', 'rgb')
+    visualizer.add_datasample(
+        'result',
+        img,
+        data_sample=result[0],
+        draw_gt=False,
+        show=True,
+        wait_time=0)
 
 asyncio.run(main())
-
 ```
 
 ### Demos
 
 We also provide three demo scripts, implemented with high-level APIs and supporting functionality codes.
-Source codes are available [here](https://github.com/open-mmlab/mmdetection/tree/master/demo).
+Source codes are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/demo).
 
 #### Image demo
 
@@ -111,7 +156,7 @@ Examples:
 
 ```shell
 python demo/image_demo.py demo/demo.jpg \
-    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
     --device cpu
 ```
@@ -133,7 +178,7 @@ Examples:
 
 ```shell
 python demo/webcam_demo.py \
-    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth
 ```
 
@@ -157,7 +202,7 @@ Examples:
 
 ```shell
 python demo/video_demo.py demo/demo.mp4 \
-    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
     --out result.mp4
 ```
@@ -183,7 +228,7 @@ Examples:
 
 ```shell
 python demo/video_gpuaccel_demo.py demo/demo.mp4 \
-    configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+    configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
     checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
     --nvdecode --out result.mp4
 ```
@@ -191,7 +236,7 @@ python demo/video_gpuaccel_demo.py demo/demo.mp4 \
 ## Test existing models on standard datasets
 
 To evaluate a model's accuracy, one usually tests the model on some standard datasets.
-MMDetection supports multiple public datasets including COCO, Pascal VOC, CityScapes, and [more](https://github.com/open-mmlab/mmdetection/tree/master/configs/_base_/datasets).
+MMDetection supports multiple public datasets including COCO, Pascal VOC, CityScapes, and [more](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/_base_/datasets).
 This section will show how to test existing models on supported datasets.
 
 ### Prepare datasets
@@ -202,7 +247,7 @@ If your folder structure is different, you may need to change the corresponding 
 
 We provide a script to download datasets such as COCO , you can run `python tools/misc/download_dataset.py --dataset-name coco2017` to download COCO dataset.
 
-For more usage please refer to [dataset-download](https://github.com/open-mmlab/mmdetection/tree/master/docs/en/useful_tools.md#dataset-download)
+For more usage please refer to [dataset-download](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/docs/en/useful_tools.md#dataset-download)
 
 ```text
 mmdetection
@@ -288,7 +333,6 @@ python tools/test.py \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
     [--out ${RESULT_FILE}] \
-    [--eval ${EVAL_METRICS}] \
     [--show]
 
 # CPU: disable GPUs and run single-gpu testing script
@@ -297,7 +341,6 @@ python tools/test.py \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
     [--out ${RESULT_FILE}] \
-    [--eval ${EVAL_METRICS}] \
     [--show]
 
 # multi-gpu testing
@@ -306,7 +349,6 @@ bash tools/dist_test.sh \
     ${CHECKPOINT_FILE} \
     ${GPU_NUM} \
     [--out ${RESULT_FILE}] \
-    [--eval ${EVAL_METRICS}]
 ```
 
 `tools/dist_test.sh` also supports multi-node testing, but relies on PyTorch's [launch utility](https://pytorch.org/docs/stable/distributed.html#launch-utility).
@@ -314,103 +356,98 @@ bash tools/dist_test.sh \
 Optional arguments:
 
 - `RESULT_FILE`: Filename of the output results in pickle format. If not specified, the results will not be saved to a file.
-- `EVAL_METRICS`: Items to be evaluated on the results. Allowed values depend on the dataset, e.g., `proposal_fast`, `proposal`, `bbox`, `segm` are available for COCO, `mAP`, `recall` for PASCAL VOC. Cityscapes could be evaluated by `cityscapes` as well as all COCO metrics.
 - `--show`: If specified, detection results will be plotted on the images and shown in a new window. It is only applicable to single GPU testing and used for debugging and visualization. Please make sure that GUI is available in your environment. Otherwise, you may encounter an error like `cannot connect to X server`.
 - `--show-dir`: If specified, detection results will be plotted on the images and saved to the specified directory. It is only applicable to single GPU testing and used for debugging and visualization. You do NOT need a GUI available in your environment for using this option.
-- `--show-score-thr`: If specified, detections with scores below this threshold will be removed.
+- `--work-dir`: If specified, detection results containing evaluation metrics will be saved to the specified directory.
 - `--cfg-options`:  if specified, the key-value pair optional cfg will be merged into config file
-- `--eval-options`: if specified, the key-value pair optional eval cfg will be kwargs for dataset.evaluate() function, it's only for evaluation
 
 ### Examples
 
 Assuming that you have already downloaded the checkpoints to the directory `checkpoints/`.
 
 1. Test Faster R-CNN and visualize the results. Press any key for the next image.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn).
+   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/faster_rcnn).
 
    ```shell
    python tools/test.py \
-       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+       configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
        checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
        --show
    ```
 
 2. Test Faster R-CNN and save the painted images for future visualization.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/master/configs/faster_rcnn).
+   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/faster_rcnn).
 
    ```shell
    python tools/test.py \
-       configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py \
+       configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py \
        checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth \
        --show-dir faster_rcnn_r50_fpn_1x_results
    ```
 
-3. Test Faster R-CNN on PASCAL VOC (without saving the test results) and evaluate the mAP.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/master/configs/pascal_voc).
+3. Test Faster R-CNN on PASCAL VOC (without saving the test results).
+   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/pascal_voc).
 
    ```shell
    python tools/test.py \
        configs/pascal_voc/faster_rcnn_r50_fpn_1x_voc.py \
        checkpoints/faster_rcnn_r50_fpn_1x_voc0712_20200624-c9895d40.pth \
-       --eval mAP
    ```
 
-4. Test Mask R-CNN with 8 GPUs, and evaluate the bbox and mask AP.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/master/configs/mask_rcnn).
+4. Test Mask R-CNN with 8 GPUs, and evaluate.
+   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/mask_rcnn).
 
    ```shell
    ./tools/dist_test.sh \
-       configs/mask_rcnn_r50_fpn_1x_coco.py \
+       configs/mask-rcnn_r50_fpn_1x_coco.py \
        checkpoints/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
        8 \
        --out results.pkl \
-       --eval bbox segm
    ```
 
-5. Test Mask R-CNN with 8 GPUs, and evaluate the **classwise** bbox and mask AP.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/master/configs/mask_rcnn).
+5. Test Mask R-CNN with 8 GPUs, and evaluate the metric **class-wise**.
+   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/mask_rcnn).
 
    ```shell
    ./tools/dist_test.sh \
-       configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
+       configs/mask_rcnn/mask-rcnn_r50_fpn_1x_coco.py \
        checkpoints/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
        8 \
        --out results.pkl \
-       --eval bbox segm \
-       --options "classwise=True"
+       --cfg-options test_evaluator.classwise=True
    ```
 
 6. Test Mask R-CNN on COCO test-dev with 8 GPUs, and generate JSON files for submitting to the official evaluation server.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/master/configs/mask_rcnn).
+   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/mask_rcnn).
+
+   Replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in [config](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/_base_/datasets/coco_instance.py) and run:
 
    ```shell
    ./tools/dist_test.sh \
-       configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
+       configs/mask_rcnn/mask-rcnn_r50_fpn_1x_coco.py \
        checkpoints/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
        8 \
-       --format-only \
-       --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
    ```
 
-   This command generates two JSON files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
+   This command generates two JSON files `./work_dirs/coco_instance/test.bbox.json` and `./work_dirs/coco_instance/test.segm.json`.
 
 7. Test Mask R-CNN on Cityscapes test with 8 GPUs, and generate txt and png files for submitting to the official evaluation server.
-   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/master/configs/cityscapes).
+   Config and checkpoint files are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/cityscapes).
+
+   Replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in [config](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/_base_/datasets/cityscapes_instance.py) and run:
 
    ```shell
    ./tools/dist_test.sh \
-       configs/cityscapes/mask_rcnn_r50_fpn_1x_cityscapes.py \
+       configs/cityscapes/mask-rcnn_r50_fpn_1x_cityscapes.py \
        checkpoints/mask_rcnn_r50_fpn_1x_cityscapes_20200227-afe51d5a.pth \
        8 \
-       --format-only \
-       --options "txtfile_prefix=./mask_rcnn_cityscapes_test_results"
    ```
 
-   The generated png and txt would be under `./mask_rcnn_cityscapes_test_results` directory.
+   The generated png and txt would be under `./work_dirs/cityscapes_metric/` directory.
 
 ### Test without Ground Truth Annotations
 
-MMDetection supports to test models without ground-truth annotations using `CocoDataset`. If your dataset format is not in COCO format, please convert them to COCO format. For example, if your dataset format is VOC, you can directly convert it to COCO format by the [script in tools.](https://github.com/open-mmlab/mmdetection/tree/master/tools/dataset_converters/pascal_voc.py) If your dataset format is Cityscapes, you can directly convert it to COCO format by the [script in tools.](https://github.com/open-mmlab/mmdetection/tree/master/tools/dataset_converters/cityscapes.py) The rest of the formats can be converted using [this script](https://github.com/open-mmlab/mmdetection/tree/master/tools/dataset_converters/images2coco.py).
+MMDetection supports to test models without ground-truth annotations using `CocoDataset`. If your dataset format is not in COCO format, please convert them to COCO format. For example, if your dataset format is VOC, you can directly convert it to COCO format by the [script in tools.](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/tools/dataset_converters/pascal_voc.py) If your dataset format is Cityscapes, you can directly convert it to COCO format by the [script in tools.](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/tools/dataset_converters/cityscapes.py) The rest of the formats can be converted using [this script](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/tools/dataset_converters/images2coco.py).
 
 ```shel
 python tools/dataset_converters/images2coco.py \
@@ -427,15 +464,13 @@ arguments：
 - `OUT`: The output annotation json file name. The save dir is in the same directory as `IMG_PATH`.
 - `exclude-extensions`: The suffix of images to be excluded, such as 'png' and 'bmp'.
 
-After the conversion is complete, you can use the following command to test
+After the conversion is complete, you need to replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in [config](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/_base_/datasets/coco_detection.py)(find which dataset in 'configs/_base_/datasets' the current config corresponds to) and run:
 
 ```shell
 # single-gpu testing
 python tools/test.py \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
-    --format-only \
-    --options ${JSONFILE_PREFIX} \
     [--show]
 
 # CPU: disable GPUs and run single-gpu testing script
@@ -444,7 +479,6 @@ python tools/test.py \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
     [--out ${RESULT_FILE}] \
-    [--eval ${EVAL_METRICS}] \
     [--show]
 
 # multi-gpu testing
@@ -452,8 +486,6 @@ bash tools/dist_test.sh \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
     ${GPU_NUM} \
-    --format-only \
-    --options ${JSONFILE_PREFIX} \
     [--show]
 ```
 
@@ -461,69 +493,27 @@ Assuming that the checkpoints in the [model zoo](https://mmdetection.readthedocs
 
 ```sh
 ./tools/dist_test.sh \
-    configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.py \
+    configs/mask_rcnn/mask-rcnn_r50_fpn_1x_coco.py \
     checkpoints/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
     8 \
-    -format-only \
-    --options "jsonfile_prefix=./mask_rcnn_test-dev_results"
 ```
 
-This command generates two JSON files `mask_rcnn_test-dev_results.bbox.json` and `mask_rcnn_test-dev_results.segm.json`.
+This command generates two JSON files `./work_dirs/coco_instance/test.bbox.json` and `./work_dirs/coco_instance/test.segm.json`.
 
 ### Batch Inference
 
 MMDetection supports inference with a single image or batched images in test mode. By default, we use single-image inference and you can use batch inference by modifying `samples_per_gpu` in the config of test data. You can do that either by modifying the config as below.
 
 ```shell
-data = dict(train=dict(...), val=dict(...), test=dict(samples_per_gpu=2, ...))
+data = dict(train_dataloader=dict(...), val_dataloader=dict(...), test_dataloader=dict(batch_size=2, ...))
 ```
 
-Or you can set it through `--cfg-options` as `--cfg-options data.test.samples_per_gpu=2`
-
-### Deprecated ImageToTensor
-
-In test mode,  `ImageToTensor`  pipeline is deprecated, it's replaced by `DefaultFormatBundle` that recommended to manually replace it in the test data pipeline in your config file.  examples:
-
-```python
-# use ImageToTensor (deprecated)
-pipelines = [
-   dict(type='LoadImageFromFile'),
-   dict(
-       type='MultiScaleFlipAug',
-       img_scale=(1333, 800),
-       flip=False,
-       transforms=[
-           dict(type='Resize', keep_ratio=True),
-           dict(type='RandomFlip'),
-           dict(type='Normalize', mean=[0, 0, 0], std=[1, 1, 1]),
-           dict(type='Pad', size_divisor=32),
-           dict(type='ImageToTensor', keys=['img']),
-           dict(type='Collect', keys=['img']),
-       ])
-   ]
-
-# manually replace ImageToTensor to DefaultFormatBundle (recommended)
-pipelines = [
-   dict(type='LoadImageFromFile'),
-   dict(
-       type='MultiScaleFlipAug',
-       img_scale=(1333, 800),
-       flip=False,
-       transforms=[
-           dict(type='Resize', keep_ratio=True),
-           dict(type='RandomFlip'),
-           dict(type='Normalize', mean=[0, 0, 0], std=[1, 1, 1]),
-           dict(type='Pad', size_divisor=32),
-           dict(type='DefaultFormatBundle'),
-           dict(type='Collect', keys=['img']),
-       ])
-   ]
-```
+Or you can set it through `--cfg-options` as `--cfg-options test_dataloader.batch_size=2`
 
 ## Train predefined models on standard datasets
 
 MMDetection also provides out-of-the-box tools for training detection models.
-This section will show how to train _predefined_ models (under [configs](https://github.com/open-mmlab/mmdetection/tree/master/configs)) on standard datasets i.e. COCO.
+This section will show how to train _predefined_ models (under [configs](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs)) on standard datasets i.e. COCO.
 
 ### Prepare datasets
 
@@ -572,22 +562,14 @@ By default, the model is evaluated on the validation set every epoch, the evalua
 
 ```python
 # evaluate the model every 12 epoch.
-evaluation = dict(interval=12)
+train_cfg = dict(val_interval=12)
 ```
 
 This tool accepts several optional arguments, including:
 
-- `--no-validate` (**not suggested**): Disable evaluation during training.
 - `--work-dir ${WORK_DIR}`: Override the working directory.
-- `--resume-from ${CHECKPOINT_FILE}`: Resume from a previous checkpoint file.
-- `--options 'Key=value'`: Overrides other settings in the used config.
-
-**Note**:
-
-Difference between `resume-from` and `load-from`:
-
-`resume-from` loads both the model weights and optimizer status, and the epoch is also inherited from the specified checkpoint. It is usually used for resuming the training process that is interrupted accidentally.
-`load-from` only loads the model weights and the training epoch starts from 0. It is usually used for finetuning.
+- `--auto-resume`: resume from the latest checkpoint in the work_dir automatically.
+- `--cfg-options 'Key=value'`: Overrides other settings in the used config.
 
 ### Training on CPU
 
@@ -661,10 +643,10 @@ The basic usage is as follows.
 Below is an example of using 16 GPUs to train Mask R-CNN on a Slurm partition named _dev_, and set the work-dir to some shared file systems.
 
 ```shell
-GPUS=16 ./tools/slurm_train.sh dev mask_r50_1x configs/mask_rcnn_r50_fpn_1x_coco.py /nfs/xxxx/mask_rcnn_r50_fpn_1x
+GPUS=16 ./tools/slurm_train.sh dev mask_r50_1x configs/mask-rcnn_r50_fpn_1x_coco.py /nfs/xxxx/mask_rcnn_r50_fpn_1x
 ```
 
-You can check [the source code](https://github.com/open-mmlab/mmdetection/blob/master/tools/slurm_train.sh) to review full arguments and environment variables.
+You can check [the source code](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/tools/slurm_train.sh) to review full arguments and environment variables.
 
 When using Slurm, the port option need to be set in one of the following ways:
 
