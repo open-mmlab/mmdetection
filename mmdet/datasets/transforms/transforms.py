@@ -292,14 +292,9 @@ class FixShapeResize(BaseTransform):
     def _resize_bboxes(self, results: dict) -> None:
         """Resize bounding boxes with ``results['scale_factor']``."""
         if results.get('gt_bboxes', None) is not None:
-            bboxes = results['gt_bboxes'] * np.tile(
-                np.array(results['scale_factor']), 2)
+            results['gt_bboxes'].rescale_(results['scale_factor'])
             if self.clip_object_border:
-                bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0,
-                                          results['img_shape'][1])
-                bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0,
-                                          results['img_shape'][0])
-            results['gt_bboxes'] = bboxes.astype(np.float32)
+                results['gt_bboxes'].clip_(results['img_shape'])
 
     def _resize_seg(self, results: dict) -> None:
         """Resize semantic segmentation map with ``results['scale']``."""
@@ -334,6 +329,7 @@ class FixShapeResize(BaseTransform):
             results['homography_matrix'] = homography_matrix @ results[
                 'homography_matrix']
 
+    @autocast_box_type()
     def transform(self, results: dict) -> dict:
         """Transform function to resize images, bounding boxes and semantic
         segmentation map.
@@ -368,8 +364,7 @@ class FixShapeResize(BaseTransform):
 
     def __repr__(self) -> str:
         repr_str = self.__class__.__name__
-        repr_str += f'(scale={self.scale}, '
-        repr_str += f'scale_factor={self.scale_factor}, '
+        repr_str += f'(width={self.width}, height={self.height}, '
         repr_str += f'keep_ratio={self.keep_ratio}, '
         repr_str += f'clip_object_border={self.clip_object_border}), '
         repr_str += f'backend={self.backend}), '
