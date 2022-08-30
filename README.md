@@ -108,6 +108,7 @@ Please see [get_started.md](docs/en/get_started.md) for the basic usage of MMDet
 - [export ONNX to TRT](docs/en/tutorials/onnx2tensorrt.md)
 - [weight initialization](docs/en/tutorials/init_cfg.md)
 - [how to xxx](docs/en/tutorials/how_to.md)
+- [semi-supervised_detection](docs/en/tutorials/semi_det.md)
 
 ## Overview of Benchmark and Model Zoo
 
