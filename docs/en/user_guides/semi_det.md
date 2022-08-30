@@ -1,25 +1,25 @@
-# 教程 14: 半监督目标检测
+# Semi-supervised Object Detection
 
-半监督目标检测同时利用标签数据和无标签数据进行训练，一方面可以减少模型对检测框数量的依赖，另一方面也可以利用大量的未标记数据进一步提高模型。
+Semi-supervised object detection uses both labeled data and unlabeled data for training. It not only reduces the annotation burden for training high-performance object detectors but also further improves the object detector by using a large number of unlabeled data.
 
-按照以下流程进行半监督目标检测：
+A typical procedure to train a semi-supervised object detector is as below:
 
-- [准备和拆分数据集](#准备和拆分数据集)
-- [配置多分支数据流程](#配置多分支数据流程)
-- [配置加载半监督数据](#配置半监督数据加载)
-- [配置半监督模型](#配置半监督模型)
-- [配置 MeanTeacherHook](#配置MeanTeacherHook)
-- [配置 TeacherStudentValLoop](#配置TeacherStudentValLoop)
+- [Prepare and split dataset](#Prepare-and-split-dataset)
+- [Configure multi-branch pipeline](#Configure-multi-branch-pipeline)
+- [Configure semi-supervised dataloader](#Configure-semi-supervised-dataloader)
+- [Configure semi-supervised model](#Configure-semi-supervised-model)
+- [Configure MeanTeacherHook](#Configure-MeanTeacherHook)
+- [Configure TeacherStudentValLoop](#Configure-TeacherStudentValLoop)
 
-## 准备和拆分数据集
+## Prepare and split dataset
 
-我们提供了数据集下载脚本，默认下载 coco2017 数据集，并且自动解压。
+We provide a dataset download script, which downloads the coco2017 dataset by default and decompresses it automatically.
 
 ```shell
 python tools/misc/download_dataset.py
 ```
 
-解压后的数据集目录如下：
+The decompressed dataset directory structure is as below:
 
 ```plain
 mmdetection
@@ -35,21 +35,20 @@ mmdetection
 │   │   ├── val2017
 ```
 
-半监督目标检测在 coco 数据集上有两种比较通用的实验设置：
+There are two common experimental settings for semi-supervised object detection on the coco2017 dataset:
 
-（1）将 `train2017` 按照固定百分比（1%，2%，5% 和 10%）划分出一部分数据作为标签数据集，剩余的训练集数据作为无标签数据集，同时考虑划分不同的训练集数据作为标签数据集对半监督训练的结果影响较大，所以采用五折交叉验证来评估算法性能。我们提供了数据集划分脚本：
+(1) Split `train2017` according to a fixed percentage (1%, 2%, 5% and 10%) as a labeled dataset, and the rest of `train2017` as an unlabeled dataset. Because the different splits of `train2017` as labeled datasets will cause significant fluctuation on the accuracy of the semi-supervised detectors, five-fold cross-validation is used in practice to evaluate the algorithm. We provide the dataset split script:
 
 ```shell
 python tools/misc/split_coco.py
 ```
 
-该脚本默认会按照 1%，2%，5% 和 10% 的标签数据占比划分 `train2017`，每一种划分会随机重复 5 次，用于交叉验证。生成的半监督标注文件名称格式如下：
+By default, the script will split `train2017` according to the labeled data ratio  1%, 2%, 5% and 10%, and each split will be randomly repeated 5 times for cross-validation. The generated semi-supervised annotation file name format is as below:
 
-- 标签数据集标注名称格式：`instances_train2017.{fold}@{percent}.json`
+- the name format of labeled dataset: `instances_train2017.{fold}@{percent}.json`
+- the name format of unlabeled dataset: `instances_train2017.{fold}@{percent}-unlabeled.json`
 
-- 无标签数据集名称标注：`instances_train2017.{fold}@{percent}-unlabeled.json`
-
-其中，`fold` 用于交叉验证，`percent` 表示标签数据的占比。 划分后的数据集目录结构如下：
+Here, `fold` is used for cross-validation, and `percent` represents the ratio of labeled data. The directory structure of the divided dataset is as below:
 
 ```plain
 mmdetection
@@ -76,7 +75,7 @@ mmdetection
 │   │   ├── val2017
 ```
 
-（2）将 `train2017` 作为标签数据集，`unlabeled2017` 作为无标签数据集。由于 `image_info_unlabeled2017.json` 没有 `categories` 信息，无法初始化 `CocoDataset` ，所以需要将 `instances_train2017.json` 的 `categories` 写入 `image_info_unlabeled2017.json` ，另存为 `instances_unlabeled2017.json`，相关脚本如下：
+(2) Use `train2017` as the labeled dataset and `unlabeled2017` as the unlabeled dataset. Since `image_info_unlabeled2017.json` does not contain `categories` information, the `CocoDataset` cannot be initialized, so you need to write the `categories` of `instances_train2017.json` into `image_info_unlabeled2017.json` and save it as `instances_unlabeled2017.json`, the relevant script is as below:
 
 ```python
 from mmengine.fileio import load, dump
@@ -87,7 +86,7 @@ anns_unlabeled['categories'] = anns_train['categories']
 dump(anns_unlabeled, 'instances_unlabeled2017.json')
 ```
 
-处理后的数据集目录如下：
+The processed dataset directory is as below:
 
 ```plain
 mmdetection
@@ -104,13 +103,15 @@ mmdetection
 │   │   ├── val2017
 ```
 
-## 配置多分支数据流程
+## Configure multi-branch pipeline
 
-半监督学习有两个主要的方法，分别是
-[一致性正则化](https://research.nvidia.com/sites/default/files/publications/laine2017iclr_paper.pdf)
-和[伪标签](https://www.researchgate.net/profile/Dong-Hyun-Lee/publication/280581078_Pseudo-Label_The_Simple_and_Efficient_Semi-Supervised_Learning_Method_for_Deep_Neural_Networks/links/55bc4ada08ae092e9660b776/Pseudo-Label-The-Simple-and-Efficient-Semi-Supervised-Learning-Method-for-Deep-Neural-Networks.pdf) 。
-一致性正则化往往需要一些精心的设计，而伪标签的形式比较简单，更容易拓展到下游任务。我们主要采用了基于伪标签的教师学生联合训练的半监督目标检测框架，对于标签数据和无标签数据需要配置不同的数据流程：
-（1）标签数据的数据流程：
+There are two main approaches to semi-supervised learning,
+[consistency regularization](https://research.nvidia.com/sites/default/files/publications/laine2017iclr_paper.pdf)
+and [pseudo label](https://www.researchgate.net/profile/Dong-Hyun-Lee/publication/280581078_Pseudo-Label_The_Simple_and_Efficient_Semi-Supervised_Learning_Method_for_Deep_Neural_Networks/links/55bc4ada08ae092e9660b776/Pseudo-Label-The-Simple-and-Efficient-Semi-Supervised-Learning-Method-for-Deep-Neural-Networks.pdf).
+Consistency regularization often requires some careful design, while pseudo label have a simpler form and are easier to extend to downstream tasks.
+We adopt a teacher-student joint training semi-supervised object detection framework based on pseudo label, so labeled data and unlabeled data need to configure different data pipeline:
+
+(1) Pipeline for labeled data：
 
 ```python
 # pipeline used to augment labeled data,
@@ -126,7 +127,7 @@ sup_pipeline = [
 ]
 ```
 
-（2）无标签的数据流程：
+(2) Pipeline for unlabeled data：
 
 ```python
 # pipeline used to augment unlabeled data weakly,
@@ -173,9 +174,9 @@ unsup_pipeline = [
 ]
 ```
 
-## 配置半监督数据加载
+## Configure semi-supervised dataloader
 
-（1）构建半监督数据集。使用 `ConcatDataset` 拼接标签数据集和无标签数据集。
+(1) Build a semi-supervised dataset. Use `ConcatDataset` to concatenate labeled and unlabeled datasets.
 
 ```python
 labeled_dataset = dict(
@@ -206,19 +207,23 @@ train_dataloader = dict(
         type='ConcatDataset', datasets=[labeled_dataset, unlabeled_dataset]))
 ```
 
-（2）使用多源数据集采样器。 使用 `GroupMultiSourceSampler` 从 `labeled_dataset` 和 `labeled_dataset` 采样数据组成 batch , `source_ratio` 控制 batch 中标签数据和无标签数据的占比。`GroupMultiSourceSampler` 还保证了同一个 batch 中的图片具有相近的长宽比例，如果不需要保证batch内图片的长宽比例，可以使用 `MultiSourceSampler`。`GroupMultiSourceSampler` 采样示意图如下：
+(2) Use multi-source dataset sampler. Use `GroupMultiSourceSampler` to sample data form batches from `labeled_dataset` and `labeled_dataset`, `source_ratio` controls the proportion of labeled data and unlabeled data in the batch. `GroupMultiSourceSampler` also ensures that the images in the same batch have similar aspect ratios. If you don't need to guarantee the aspect ratio of the images in the batch, you can use `MultiSourceSampler`. The sampling diagram of `GroupMultiSourceSampler` is as below:
 
 <div align=center>
 <img src="https://user-images.githubusercontent.com/40661020/186149261-8cf28e92-de5c-4c8c-96e1-13558b2e27f7.jpg"/>
 </div>
 
-`sup=1000` 表示标签数据集的规模为 1000 ，`sup_h=200` 表示标签数据集中长宽比大于等于1的图片规模为 200，`sup_w=800` 表示标签数据集中长宽比小于1的图片规模为 800 ，`unsup=9000` 表示无标签数据集的规模为 9000 ，`unsup_h=1800` 表示无标签数据集中长宽比大于等于1的图片规模为 1800，`unsup_w=7200` 表示标签数据集中长宽比小于1的图片规模为 7200 ，`GroupMultiSourceSampler` 每次按照标签数据集和无标签数据集的图片的总体长宽比分布随机选择一组，然后按照 `source_ratio` 从两个数据集中采样组成 batch ，因此标签数据集和无标签数据集重复采样次数不同。
+`sup=1000` indicates that the scale of the labeled dataset is 1000, `sup_h=200` indicates that the scale of the images with an aspect ratio greater than or equal to 1 in the labeled dataset is 200, and `sup_w=800` indicates that the scale of the images with an aspect ratio less than 1 in the labeled dataset is 800,
+`unsup=9000` indicates that the scale of the unlabeled dataset is 9000, `unsup_h=1800` indicates that the scale of the images with an aspect ratio greater than or equal to 1 in the unlabeled dataset is 1800, and `unsup_w=7200` indicates the scale of the images with an aspect ratio less than 1 in the unlabeled dataset is 7200.
+`GroupMultiSourceSampler` randomly selects a group according to the overall aspect ratio distribution of the images in the labeled dataset and the unlabeled dataset, and then sample data to form batches from the two datasets according to `source_ratio`, so labeled datasets and unlabeled datasets have different repetitions.
 
-## 配置半监督模型
+## Configure semi-supervised model
 
-我们选择 `Faster R-CNN` 作为 `detector` 进行半监督训练，以半监督目标检测算法 `SoftTeacher` 为例，模型的配置可以继承 `_base_/models/faster-rcnn_r50_fpn.py`，将检测器的骨干网络替换成 `caffe` 风格。
-注意，与监督训练的配置文件不同的是，`Faster R-CNN` 作为 `detector`，是作为 `model`的一个属性，而不是 `model` 。此外，还需要将`data_preprocessor`设置为`MultiBranchDataPreprocessor`，用于处理不同数据流程图片的填充和归一化。
-最后，可以通过 `semi_train_cfg` 和 `semi_test_cfg` 配置半监督训练和测试需要的参数。
+We choose `Faster R-CNN` as `detector` for semi-supervised training. Take the semi-supervised object detection algorithm `SoftTeacher` as an example,
+the model configuration can be inherited from `_base_/models/faster-rcnn_r50_fpn.py`, replacing the backbone network of the detector with `caffe` style.
+Note that unlike the supervised training configs, `Faster R-CNN` as `detector` is an attribute of `model`, not `model` .
+In addition, `data_preprocessor` needs to be set to `MultiBranchDataPreprocessor`, which is used to pad and normalize images from different pipelines.
+Finally, parameters required for semi-supervised training and testing can be configured via `semi_train_cfg` and `semi_test_cfg`.
 
 ```python
 _base_ = [
@@ -267,7 +272,7 @@ model = dict(
     semi_test_cfg=dict(predict_on='teacher'))
 ```
 
-此外，我们也支持其他检测模型进行半监督训练，比如，`RetinaNet` 和 `Cascade R-CNN`。由于 `SoftTeacher` 仅支持 `Faster R-CNN`，所以需要将其替换为 `SemiBaseDetector`，示例如下：
+In addition, we also support semi-supervised training for other detection models, such as `RetinaNet` and `Cascade R-CNN`. Since `SoftTeacher` only supports `Faster R-CNN`, it needs to be replaced with `SemiBaseDetector`, example is as below:
 
 ```python
 _base_ = [
@@ -293,7 +298,7 @@ model = dict(
     semi_test_cfg=dict(predict_on='teacher'))
 ```
 
-沿用 `SoftTeacher` 的半监督训练配置，将 `batch_size` 改为 2 ，`source_ratio` 改为 `[1, 1]`，`RetinaNet`，`Faster R-CNN`， `Cascade R-CNN` 以及 `SoftTeacher` 在 10% coco 训练集上的监督训练和半监督训练的实验结果如下：
+Following the semi-supervised training configuration of `SoftTeacher`, change `batch_size` to 2 and `source_ratio` to `[1, 1]`, the experimental results of supervised and semi-supervised training of `RetinaNet`, `Faster R-CNN`, `Cascade R-CNN` and `SoftTeacher` on the 10% coco `train2017` are as below:
 
 |      Model       |   Detector    | BackBone | Style | sup-0.1-coco mAP | semi-0.1-coco mAP |
 | :--------------: | :-----------: | :------: | :---: | :--------------: | :---------------: |
@@ -302,17 +307,17 @@ model = dict(
 | SemiBaseDetector | Cascade R-CNN | R-50-FPN | caffe |       28.0       |       29.7        |
 |   SoftTeacher    | Faster R-CNN  | R-50-FPN | caffe |       26.7       |       31.1        |
 
-## 配置MeanTeacherHook
+## Configure MeanTeacherHook
 
-通常，教师模型采用对学生模型指数滑动平均（EMA）的方式进行更新，进而教师模型随着学生模型的优化而优化，可以通过配置 `custom_hooks` 实现：
+Usually, the teacher model is updated by Exponential Moving Average (EMA) the student model, and then the teacher model is optimized with the optimization of the student model, which can be achieved by configuring `custom_hooks`:
 
 ```python
 custom_hooks = [dict(type='MeanTeacherHook')]
 ```
 
-## 配置TeacherStudentValLoop
+## Configure TeacherStudentValLoop
 
-由于教师学生联合训练框架存在两个模型，我们可以用 `TeacherStudentValLoop` 替换 `ValLoop`，在训练的过程中同时检验两个模型的精度。
+Since there are two models in the teacher-student joint training framework, we can replace `ValLoop` with `TeacherStudentValLoop` to test the accuracy of both models during the training process.
 
 ```python
 val_cfg = dict(type='TeacherStudentValLoop')

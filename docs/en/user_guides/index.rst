@@ -17,6 +17,8 @@ and supports multiple standard datasets, including Pascal VOC, COCO, CityScapes,
    finetune.md
    test_results_submission.md
    init_cfg.md
+   single_stage_as_rpn.md
+   semi_det.md
 
 
 Useful Tools

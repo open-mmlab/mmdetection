@@ -16,6 +16,8 @@ MMDetection 在 `Model Zoo <https://mmdetection.readthedocs.io/en/latest/model_z
    finetune.md
    test_results_submission.md
    init_cfg.md
+   single_stage_as_rpn.md
+   semi_det.md
 
 
 实用工具
