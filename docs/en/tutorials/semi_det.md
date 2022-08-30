@@ -17,7 +17,7 @@ We provide a dataset download script, which downloads the coco2017 dataset by de
 python tools/misc/download_dataset.py
 ```
 
-The decompressed dataset directory is as follows:
+The decompressed dataset directory is as below:
 
 ```plain
 mmdetection
@@ -41,12 +41,12 @@ There are two common experimental settings for semi-supervised object detection 
 python tools/misc/split_coco.py
 ```
 
-By default, the script will split `train2017` according to the labeled data ratio  1%, 2%, 5% and 10%, and each split will be randomly repeated 5 times for cross-validation. The generated semi-supervised annotation file name format is as follows:
+By default, the script will split `train2017` according to the labeled data ratio  1%, 2%, 5% and 10%, and each split will be randomly repeated 5 times for cross-validation. The generated semi-supervised annotation file name format is as below:
 
 - the name format of labeled dataset: `instances_train2017.{fold}@{percent}.json`
 - the name format of unlabeled dataset: `instances_train2017.{fold}@{percent}-unlabeled.json`
 
-Here, `fold` is used for cross-validation, and `percent` represents the ratio of labeled data. The directory structure of the divided dataset is as follows:
+Here, `fold` is used for cross-validation, and `percent` represents the ratio of labeled data. The directory structure of the divided dataset is as below:
 
 ```plain
 mmdetection
@@ -73,7 +73,7 @@ mmdetection
 │   │   ├── val2017
 ```
 
-(2) Use `train2017` as the labeled dataset and `unlabeled2017` as the unlabeled dataset. Since `image_info_unlabeled2017.json` does not contain `categories` information, the `CocoDataset` cannot be initialized, so you need to write the `categories` of `instances_train2017.json` into `image_info_unlabeled2017.json` and save it as `instances_unlabeled2017.json`, the relevant script is as follows:
+(2) Use `train2017` as the labeled dataset and `unlabeled2017` as the unlabeled dataset. Since `image_info_unlabeled2017.json` does not contain `categories` information, the `CocoDataset` cannot be initialized, so you need to write the `categories` of `instances_train2017.json` into `image_info_unlabeled2017.json` and save it as `instances_unlabeled2017.json`, the relevant script is as below:
 
 ```python
 from mmengine.fileio import load, dump
@@ -84,7 +84,7 @@ anns_unlabeled['categories'] = anns_train['categories']
 dump(anns_unlabeled, 'instances_unlabeled2017.json')
 ```
 
-The processed dataset directory is as follows:
+The processed dataset directory is as below:
 
 ```plain
 mmdetection
@@ -202,7 +202,7 @@ train_dataloader = dict(
         type='ConcatDataset', datasets=[labeled_dataset, unlabeled_dataset]))
 ```
 
-(2) Multi-source dataset sampler. Use `GroupMultiSourceSampler` to sample data form batches from `labeled_dataset` and `labeled_dataset`, `source_ratio` controls the proportion of labeled data and unlabeled data in the batch. `GroupMultiSourceSampler` also ensures that the images in the same batch have similar aspect ratios. If you don't need to guarantee the aspect ratio of the images in the batch, you can use `MultiSourceSampler`. The sampling diagram of `GroupMultiSourceSampler` is as follows:
+(2) Multi-source dataset sampler. Use `GroupMultiSourceSampler` to sample data form batches from `labeled_dataset` and `labeled_dataset`, `source_ratio` controls the proportion of labeled data and unlabeled data in the batch. `GroupMultiSourceSampler` also ensures that the images in the same batch have similar aspect ratios. If you don't need to guarantee the aspect ratio of the images in the batch, you can use `MultiSourceSampler`. The sampling diagram of `GroupMultiSourceSampler` is as below:
 
 <div align=center>
 <img src="https://user-images.githubusercontent.com/40661020/186149261-8cf28e92-de5c-4c8c-96e1-13558b2e27f7.jpg"/>
@@ -266,6 +266,41 @@ model = dict(
         min_pseudo_bbox_wh=(1e-2, 1e-2)),
     semi_test_cfg=dict(predict_on='teacher'))
 ```
+
+In addition, we also support semi-supervised training for other detection models, such as `RetinaNet` and `Cascade R-CNN`. Since `SoftTeacher` only supports `Faster R-CNN`, it needs to be replaced with `SemiBaseDetector`, example is as below:
+
+```python
+_base_ = [
+    '../_base_/models/retinanet_r50_fpn.py', '../_base_/default_runtime.py',
+    '../_base_/datasets/semi_coco_detection.py'
+]
+
+detector = _base_.model
+
+model = dict(
+    _delete_=True,
+    type='SemiBaseDetector',
+    detector=detector,
+    data_preprocessor=dict(
+        type='MultiBranchDataPreprocessor',
+        data_preprocessor=detector.data_preprocessor),
+    semi_train_cfg=dict(
+        freeze_teacher=True,
+        sup_weight=1.0,
+        unsup_weight=1.0,
+        cls_pseudo_thr=0.9,
+        min_pseudo_bbox_wh=(1e-2, 1e-2)),
+    semi_test_cfg=dict(predict_on='teacher'))
+```
+
+Following the semi-supervised training configuration of `SoftTeacher`, change `batch_size` to 2 and `source_ratio` to `[1, 1]`, the experimental results of supervised and semi-supervised training of `RetinaNet`, `Faster R-CNN`, `Cascade R-CNN` and `SoftTeacher` on the 10% coco `train2017` are as below:
+
+|      Model       |   Detector    | BackBone | Style | sup-0.1-coco mAP | semi-0.1-coco mAP |
+| :--------------: | :-----------: | :------: | :---: | :--------------: | :---------------: |
+| SemiBaseDetector |   RetinaNet   | R-50-FPN | caffe |       23.5       |       27.7        |
+| SemiBaseDetector | Faster R-CNN  | R-50-FPN | caffe |       26.7       |       28.4        |
+| SemiBaseDetector | Cascade R-CNN | R-50-FPN | caffe |       28.0       |       29.7        |
+|   SoftTeacher    | Faster R-CNN  | R-50-FPN | caffe |       26.7       |       31.1        |
 
 ## Configure MeanTeacherHook
 

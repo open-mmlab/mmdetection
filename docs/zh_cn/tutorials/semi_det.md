@@ -213,7 +213,7 @@ train_dataloader = dict(
 
 ## 配置半监督模型
 
-我们通常选择 `Faster R-CNN` 作为 `detector` 进行半监督训练，以半监督目标检测算法 `SoftTeacher` 为例，模型的配置可以继承 `_base_/models/faster-rcnn_r50_fpn.py`，将检测器的骨干网络替换成 `caffe` 风格。
+我们选择 `Faster R-CNN` 作为 `detector` 进行半监督训练，以半监督目标检测算法 `SoftTeacher` 为例，模型的配置可以继承 `_base_/models/faster-rcnn_r50_fpn.py`，将检测器的骨干网络替换成 `caffe` 风格。
 注意，与监督训练的配置文件不同的是，`Faster R-CNN` 作为 `detector`，是作为 `model`的一个属性，而不是 `model` 。此外，还需要将`data_preprocessor`设置为`MultiBranchDataPreprocessor`，用于处理不同数据流程图片的填充和归一化。
 最后，可以通过 `semi_train_cfg` 和 `semi_test_cfg` 配置半监督训练和测试需要的参数。
 
@@ -263,6 +263,41 @@ model = dict(
         min_pseudo_bbox_wh=(1e-2, 1e-2)),
     semi_test_cfg=dict(predict_on='teacher'))
 ```
+
+此外，我们也支持其他检测模型进行半监督训练，比如，`RetinaNet` 和 `Cascade R-CNN`。由于 `SoftTeacher` 仅支持 `Faster R-CNN`，所以需要将其替换为 `SemiBaseDetector`，示例如下：
+
+```python
+_base_ = [
+    '../_base_/models/retinanet_r50_fpn.py', '../_base_/default_runtime.py',
+    '../_base_/datasets/semi_coco_detection.py'
+]
+
+detector = _base_.model
+
+model = dict(
+    _delete_=True,
+    type='SemiBaseDetector',
+    detector=detector,
+    data_preprocessor=dict(
+        type='MultiBranchDataPreprocessor',
+        data_preprocessor=detector.data_preprocessor),
+    semi_train_cfg=dict(
+        freeze_teacher=True,
+        sup_weight=1.0,
+        unsup_weight=1.0,
+        cls_pseudo_thr=0.9,
+        min_pseudo_bbox_wh=(1e-2, 1e-2)),
+    semi_test_cfg=dict(predict_on='teacher'))
+```
+
+沿用 `SoftTeacher` 的半监督训练配置，将 `batch_size` 改为 2 ，`source_ratio` 改为 `[1, 1]`，`RetinaNet`，`Faster R-CNN`， `Cascade R-CNN` 以及 `SoftTeacher` 在 10% coco 训练集上的监督训练和半监督训练的实验结果如下：
+
+|      Model       |   Detector    | BackBone | Style | sup-0.1-coco mAP | semi-0.1-coco mAP |
+| :--------------: | :-----------: | :------: | :---: | :--------------: | :---------------: |
+| SemiBaseDetector |   RetinaNet   | R-50-FPN | caffe |       23.5       |       27.7        |
+| SemiBaseDetector | Faster R-CNN  | R-50-FPN | caffe |       26.7       |       28.4        |
+| SemiBaseDetector | Cascade R-CNN | R-50-FPN | caffe |       28.0       |       29.7        |
+|   SoftTeacher    | Faster R-CNN  | R-50-FPN | caffe |       26.7       |       31.1        |
 
 ## 配置MeanTeacherHook
 
