@@ -106,7 +106,10 @@ mmdetection
 
 ## 配置多分支数据流程
 
-半监督学习有两个主要的方法，分别是一致性正则化和伪标签。一致性正则化往往需要一些精心的设计，而伪标签的形式比较简单，更容易拓展到下游任务。我们主要采用了基于伪标签的教师学生联合训练的半监督目标检测框架，对于标签数据和无标签数据需要配置不同的数据流程：
+半监督学习有两个主要的方法，分别是
+[一致性正则化](https://research.nvidia.com/sites/default/files/publications/laine2017iclr_paper.pdf)
+和[伪标签](https://www.researchgate.net/profile/Dong-Hyun-Lee/publication/280581078_Pseudo-Label_The_Simple_and_Efficient_Semi-Supervised_Learning_Method_for_Deep_Neural_Networks/links/55bc4ada08ae092e9660b776/Pseudo-Label-The-Simple-and-Efficient-Semi-Supervised-Learning-Method-for-Deep-Neural-Networks.pdf) 。
+一致性正则化往往需要一些精心的设计，而伪标签的形式比较简单，更容易拓展到下游任务。我们主要采用了基于伪标签的教师学生联合训练的半监督目标检测框架，对于标签数据和无标签数据需要配置不同的数据流程：
 （1）标签数据的数据流程：
 
 ```python
@@ -203,7 +206,7 @@ train_dataloader = dict(
         type='ConcatDataset', datasets=[labeled_dataset, unlabeled_dataset]))
 ```
 
-（2）多源数据集采样器。 使用 `GroupMultiSourceSampler` 从 `labeled_dataset` 和 `labeled_dataset` 采样数据组成 batch , `source_ratio` 控制 batch 中标签数据和无标签数据的占比。`GroupMultiSourceSampler` 还保证了同一个 batch 中的图片具有相近的长宽比例，如果不需要保证batch内图片的长宽比例，可以使用 `MultiSourceSampler`。`GroupMultiSourceSampler` 采样示意图如下：
+（2）使用多源数据集采样器。 使用 `GroupMultiSourceSampler` 从 `labeled_dataset` 和 `labeled_dataset` 采样数据组成 batch , `source_ratio` 控制 batch 中标签数据和无标签数据的占比。`GroupMultiSourceSampler` 还保证了同一个 batch 中的图片具有相近的长宽比例，如果不需要保证batch内图片的长宽比例，可以使用 `MultiSourceSampler`。`GroupMultiSourceSampler` 采样示意图如下：
 
 <div align=center>
 <img src="https://user-images.githubusercontent.com/40661020/186149261-8cf28e92-de5c-4c8c-96e1-13558b2e27f7.jpg"/>
@@ -301,7 +304,7 @@ model = dict(
 
 ## 配置MeanTeacherHook
 
-通常，教师模型采用对学生模型 EMA 的方式进行更新，进而教师模型随着学生模型的优化而优化，可以通过配置 `custom_hooks` 实现：
+通常，教师模型采用对学生模型指数滑动平均（EMA）的方式进行更新，进而教师模型随着学生模型的优化而优化，可以通过配置 `custom_hooks` 实现：
 
 ```python
 custom_hooks = [dict(type='MeanTeacherHook')]

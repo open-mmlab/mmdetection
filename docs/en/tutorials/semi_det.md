@@ -1,6 +1,6 @@
 # Tutorial 14: Semi-supervised Object Detection
 
-Semi supervised target detection uses both labeled data and unlabeled data for training. On the one hand, it can reduce the dependence of the model on the number of detection frames, and on the other hand, it can further improve the model by using a large number of unlabeled dataThe process of semi-supervised object detection is as below:
+Semi-supervised object detection uses both labeled data and unlabeled data for training. It not only reduces the annotation burden for training high-performance object detectors but also further improves the object detector by using a large number of unlabeled data.
 
 - [Prepare and split dataset](#Prepare-and-split-dataset)
 - [Configure multi-branch pipeline](#Configure-multi-branch-pipeline)
@@ -17,7 +17,7 @@ We provide a dataset download script, which downloads the coco2017 dataset by de
 python tools/misc/download_dataset.py
 ```
 
-The decompressed dataset directory is as below:
+The decompressed dataset directory structure is as below:
 
 ```plain
 mmdetection
@@ -35,7 +35,7 @@ mmdetection
 
 There are two common experimental settings for semi-supervised object detection on the coco2017 dataset:
 
-(1) Split `train2017` according to a fixed percentage (1%, 2%, 5% and 10%) as a labeled dataset, and the rest of `train2017` as an unlabeled dataset. Considering that splitting different data from `train2017` as labeled dataset has a great influence on the results of semi-supervised training, five-fold cross-validation is used to evaluate the performance of the algorithm. We provide the dataset split script:
+(1) Split `train2017` according to a fixed percentage (1%, 2%, 5% and 10%) as a labeled dataset, and the rest of `train2017` as an unlabeled dataset. Because the different splits of `train2017` as labeled datasets will cause significant fluctuation on the accuracy of the semi-supervised detectors, five-fold cross-validation is used in practice to evaluate the algorithm. We provide the dataset split script:
 
 ```shell
 python tools/misc/split_coco.py
@@ -103,7 +103,10 @@ mmdetection
 
 ## Configure multi-branch pipeline
 
-There are two main approaches to semi-supervised learning, consistency regularization and pseudo label. Consistency regularization often requires some careful design, while pseudo label have a simpler form and are easier to extend to downstream tasks.
+There are two main approaches to semi-supervised learning,
+[consistency regularization](https://research.nvidia.com/sites/default/files/publications/laine2017iclr_paper.pdf)
+and [pseudo label](https://www.researchgate.net/profile/Dong-Hyun-Lee/publication/280581078_Pseudo-Label_The_Simple_and_Efficient_Semi-Supervised_Learning_Method_for_Deep_Neural_Networks/links/55bc4ada08ae092e9660b776/Pseudo-Label-The-Simple-and-Efficient-Semi-Supervised-Learning-Method-for-Deep-Neural-Networks.pdf).
+Consistency regularization often requires some careful design, while pseudo label have a simpler form and are easier to extend to downstream tasks.
 We adopt a teacher-student joint training semi-supervised object detection framework based on pseudo label, so labeled data and unlabeled data need to configure different data pipeline:
 
 (1) Pipeline for labeled data：
@@ -202,7 +205,7 @@ train_dataloader = dict(
         type='ConcatDataset', datasets=[labeled_dataset, unlabeled_dataset]))
 ```
 
-(2) Multi-source dataset sampler. Use `GroupMultiSourceSampler` to sample data form batches from `labeled_dataset` and `labeled_dataset`, `source_ratio` controls the proportion of labeled data and unlabeled data in the batch. `GroupMultiSourceSampler` also ensures that the images in the same batch have similar aspect ratios. If you don't need to guarantee the aspect ratio of the images in the batch, you can use `MultiSourceSampler`. The sampling diagram of `GroupMultiSourceSampler` is as below:
+(2) Use multi-source dataset sampler. Use `GroupMultiSourceSampler` to sample data form batches from `labeled_dataset` and `labeled_dataset`, `source_ratio` controls the proportion of labeled data and unlabeled data in the batch. `GroupMultiSourceSampler` also ensures that the images in the same batch have similar aspect ratios. If you don't need to guarantee the aspect ratio of the images in the batch, you can use `MultiSourceSampler`. The sampling diagram of `GroupMultiSourceSampler` is as below:
 
 <div align=center>
 <img src="https://user-images.githubusercontent.com/40661020/186149261-8cf28e92-de5c-4c8c-96e1-13558b2e27f7.jpg"/>
@@ -304,7 +307,7 @@ Following the semi-supervised training configuration of `SoftTeacher`, change `b
 
 ## Configure MeanTeacherHook
 
-Usually, the teacher model is updated by EMA the student model, and then the teacher model is optimized with the optimization of the student model, which can be achieved by configuring `custom_hooks`:
+Usually, the teacher model is updated by Exponential Moving Average (EMA) the student model, and then the teacher model is optimized with the optimization of the student model, which can be achieved by configuring `custom_hooks`:
 
 ```python
 custom_hooks = [dict(type='MeanTeacherHook')]
