@@ -8,6 +8,7 @@ Basic Concepts
    structures.md
    models.md
    datasets.md
+   transforms.md
    evaluation.md
    engine.md
    conventions.md

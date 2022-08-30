@@ -1,4 +1,4 @@
-# Tutorial 2: Customize Datasets
+# Customize Datasets
 
 ## Support new data format
 

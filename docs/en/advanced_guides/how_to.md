@@ -1,5 +1,3 @@
-# Tutorial 11: How to xxx
-
 This tutorial collects answers to any `How to xxx with MMDetection`. Feel free to update this doc if you meet new questions about `How to` and find the answers!
 
 ## Use backbone network through MMClassification
