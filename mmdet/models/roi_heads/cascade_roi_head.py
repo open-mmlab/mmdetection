@@ -496,9 +496,11 @@ class CascadeRoIHead(BaseRoIHead):
                 for i in range(len(batch_img_metas)):
                     if rois[i].shape[0] > 0:
                         bbox_label = cls_scores[i][:, :-1].argmax(dim=1)
-                        refined_rois = bbox_head.regress_by_class(
-                            rois[i], bbox_label, bbox_preds[i],
+                        refined_bboxes = bbox_head.regress_by_class(
+                            rois[i][:, 1:], bbox_label, bbox_preds[i],
                             batch_img_metas[i])
+                        refined_rois = torch.cat(
+                            [rois[i][:, [0]], refined_bboxes], dim=1)
                         refine_rois_list.append(refined_rois)
                 rois = torch.cat(refine_rois_list)
 

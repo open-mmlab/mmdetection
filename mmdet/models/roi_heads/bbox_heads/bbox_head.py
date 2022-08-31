@@ -525,9 +525,13 @@ class BBoxHead(BaseModule):
                 cls_score, dim=-1) if cls_score is not None else None
 
         img_shape = img_meta['img_shape']
+        num_rois = roi.size(0)
         # bbox_pred would be None in some detector when with_reg is False,
         # e.g. Grid R-CNN.
         if bbox_pred is not None:
+            num_classes = 1 if self.reg_class_agnostic else self.num_classes
+            roi = roi.repeat_interleave(num_classes, dim=0)
+            bbox_pred = bbox_pred.view(-1, self.bbox_coder.encode_size)
             bboxes = self.bbox_coder.decode(
                 roi[..., 1:], bbox_pred, max_shape=img_shape)
         else:
@@ -543,6 +547,7 @@ class BBoxHead(BaseModule):
 
         # Get the inside tensor when `bboxes` is a boxlist
         bboxes = get_box_tensor(bboxes)
+        bboxes = bboxes.view(num_rois, -1)
 
         if rcnn_test_cfg is None:
             # This means that it is aug test.
@@ -664,14 +669,13 @@ class BBoxHead(BaseModule):
 
         return results_list
 
-    def regress_by_class(self, rois: Tensor, label: Tensor, bbox_pred: Tensor,
-                         img_meta: dict) -> Tensor:
+    def regress_by_class(self, priors: Tensor, label: Tensor,
+                         bbox_pred: Tensor, img_meta: dict) -> Tensor:
         """Regress the bbox for the predicted class. Used in Cascade R-CNN.
 
         Args:
-            rois (Tensor): Rois from `rpn_head` or last stage
-                `bbox_head`, has shape (num_proposals, 4) or
-                (num_proposals, 5).
+            priors (Tensor): Priors from `rpn_head` or last stage
+                `bbox_head`, has shape (num_proposals, 4).
             label (Tensor): Only used when `self.reg_class_agnostic`
                 is False, has shape (num_proposals, ).
             bbox_pred (Tensor): Regression prediction of
@@ -683,23 +687,14 @@ class BBoxHead(BaseModule):
         Returns:
             Tensor: Regressed bboxes, the same shape as input rois.
         """
-
-        assert rois.size()[1] == 4 or rois.size()[1] == 5, repr(rois.shape)
-
+        reg_dim = self.bbox_coder.encode_size
         if not self.reg_class_agnostic:
-            label = label * 4
-            inds = torch.stack((label, label + 1, label + 2, label + 3), 1)
+            label = label * reg_dim
+            inds = torch.stack([label + i for i in range(reg_dim)], 1)
             bbox_pred = torch.gather(bbox_pred, 1, inds)
-        assert bbox_pred.size()[1] == 4
+        assert bbox_pred.size()[1] == reg_dim
 
         max_shape = img_meta['img_shape']
-
-        if rois.size()[1] == 4:
-            new_rois = self.bbox_coder.decode(
-                rois, bbox_pred, max_shape=max_shape)
-        else:
-            bboxes = self.bbox_coder.decode(
-                rois[:, 1:], bbox_pred, max_shape=max_shape)
-            new_rois = torch.cat((rois[:, [0]], bboxes), dim=1)
-
-        return new_rois
+        regressed_bboxes = self.bbox_coder.decode(
+            priors, bbox_pred, max_shape=max_shape)
+        return regressed_bboxes
