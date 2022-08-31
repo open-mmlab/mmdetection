@@ -158,4 +158,4 @@ init_cfg = [dict(type='Constant', layer='Conv1d', val=1),
                checkpoint='torchvision://resnet50')
    ```
 
-More details can refer to the documentation in [MMCV](https://mmcv.readthedocs.io/en/latest/understand_mmcv/cnn.html#weight-initialization) and MMCV [PR #780](https://github.com/open-mmlab/mmcv/pull/780)
+More details can refer to the documentation in [MMEngine](https://mmengine.readthedocs.io/en/latest/tutorials/initialize.html)
