@@ -72,7 +72,20 @@ Besides the interface changes, there are several changes listed as below:
 
 #### Model
 
+The models in MMDet 3.x all inherits from `BaseModel` in MMEngine, which defines a new convention of OpenMMLeb 2.x projects.
+Accordingly, there are several changes as the following:
+
+- The model interfaces, including the input and output formats, are significantly simplified and unified following the new convention in MMDet 3.x.
+Specificaly, all the input data in training and testing are packed into `inputs` and `data_samples`, where `inputs` contains model inputs like such as a list of image tensors, and `data_samples` contains other information of the current data sample like ground truths, region proposals, and model predictions. In this way, different tasks in MMDet 3.x can share the same input arguments to make the models more general.
+- The model has a data preprocessor module, which are used to pre-process the input data of model. The data preprocessor does necessary steps to form the input images into a batch, such as padding. It can also serve as a place for some special data augmentations or more efficient data transformations like normalization.
+- The internal logic of model have been changed. In MMdet 2.x, model uses `forward_train`, `forward_test`, `simple_test`, and `aug_test` to deal with different model forward logics. In MMDet 3.x and OpenMMLab 2.x, the forward function has three modes: 'loss', 'predict', and 'tensor' for training, inference, and tracing or other purposes, respectively.
+The forward function calls `self.loss`, `self.predict`, and `self._forward` according to the modes 'loss', 'predict', and 'tensor', respectively.
+
 #### Evaluation
+
+The evaluation in MMDet 2.x strictly binds with the dataset. In contrast, MMDet 3.x decomposes the evaluation from dataset, so that all the detection dataset can evaluate with COCO AP and other metrics implemented in MMDet 3.x.
+MMDet 3.x mainly implements corresponding metrics for each dataset, which are manipulated by [Evaluator](https://mmengine.readthedocs.io/en/latest/design/evaluator.html) to complete the evaluation.
+Users can build evaluator in MMDet 3.x to conduct offline evaluation, i.e., evaluate predictions that may not produced in MMDet 3.x with the dataset as long as the dataset and the prediction follows the dataset conventions. More details can be find in the [tutorial in mmengine](https://mmengine.readthedocs.io/en/latest/tutorials/evaluation.html).
 
 #### Visualization
 
