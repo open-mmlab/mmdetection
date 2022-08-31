@@ -105,13 +105,6 @@ class Detectron2Wrapper(BaseDetector):
         if users want to change the initialization way, please
         change the code in detectron2.
         """
-
-        # TODO: Check whether can use load_from in config file.
-        # TODO: Check whether can use d2 ckpt to load.
-        # 支持两种方法:
-        # 1. 使用脚本转化，load_from，
-        # 2.训练的时候可以直接设置 model.weights
-        # 写个脚本，把 d2 的转 key 到 mmdet 能读的 感觉加一个前缀就行 d2.model.xxx
         from detectron2.checkpoint import DetectionCheckpointer
         checkpointer = DetectionCheckpointer(model=self.d2_model)
         checkpointer.load(self.cfg.MODEL.WEIGHTS, checkpointables=[])
