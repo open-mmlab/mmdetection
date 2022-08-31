@@ -26,10 +26,10 @@
 [![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 [![issue resolution](https://isitmaintained.com/badge/resolution/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 
-[📘Documentation](https://mmdetection.readthedocs.io/en/stable/) |
-[🛠️Installation](https://mmdetection.readthedocs.io/en/stable/get_started.html) |
-[👀Model Zoo](https://mmdetection.readthedocs.io/en/stable/model_zoo.html) |
-[🆕Update News](https://mmdetection.readthedocs.io/en/stable/changelog.html) |
+[📘Documentation](https://mmdetection.readthedocs.io/en/3.x/) |
+[🛠️Installation](https://mmdetection.readthedocs.io/en/3.x/get_started.html) |
+[👀Model Zoo](https://mmdetection.readthedocs.io/en/3.x/model_zoo.html) |
+[🆕Update News](https://mmdetection.readthedocs.io/en/3.x/notes/changelog.html) |
 [🚀Ongoing Projects](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔Reporting Issues](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
@@ -46,9 +46,9 @@ English | [简体中文](README_zh-CN.md)
 MMDetection is an open source object detection toolbox based on PyTorch. It is
 a part of the [OpenMMLab](https://openmmlab.com/) project.
 
-The master branch works with **PyTorch 1.5+**.
+The master branch works with **PyTorch 1.6+**.
 
-<img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
+<img src="https://user-images.githubusercontent.com/12907710/187674113-2074d658-f2fb-42d1-ac15-9c4a695e64d7.png"/>
 
 <details open>
 <summary>Major features</summary>
@@ -57,9 +57,9 @@ The master branch works with **PyTorch 1.5+**.
 
   We decompose the detection framework into different components and one can easily construct a customized object detection framework by combining different modules.
 
-- **Support of multiple frameworks out of box**
+- **Support of multiple tasks out of box**
 
-  The toolbox directly supports popular and contemporary detection frameworks, *e.g.* Faster RCNN, Mask RCNN, RetinaNet, etc.
+  The toolbox directly supports multiple detection tasks such as **object detection**, **instance segmentation**, **panoptic segmentation**, and **semi-supervised object detection**.
 
 - **High efficiency**
 
@@ -71,44 +71,62 @@ The master branch works with **PyTorch 1.5+**.
 
 </details>
 
-Apart from MMDetection, we also released a library [mmcv](https://github.com/open-mmlab/mmcv) for computer vision research, which is heavily depended on by this toolbox.
+Apart from MMDetection, we also released [MMEngine](https://github.com/open-mmlab/mmengine) for model training and [MMCV](https://github.com/open-mmlab/mmcv) for computer vision research, which are heavily depended on by this toolbox.
 
 ## What's New
 
-**2.25.0** was released in 1/6/2022:
+**v3.0.0rc0** was released in 31/8/2022:
 
-- Support dedicated `MMDetWandbHook` hook
-- Support [ConvNeXt](configs/convnext), [DDOD](configs/ddod), [SOLOv2](configs/solov2)
-- Support [Mask2Former](configs/mask2former) for instance segmentation
-- Rename [config files of Mask2Former](configs/mask2former)
-
-Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
-
-For compatibility changes between different versions of MMDetection, please refer to [compatibility.md](docs/en/compatibility.md).
+- Unifies interfaces of all components based on [MMEngine](https://github.com/open-mmlab/mmengine).
+- Faster training and testing speed with complete support of mixed precision training.
+- Refactored and more flexible [architecture](https://mmdetection.readthedocs.io/en/v3.0.0rc0/overview.html).
+- Provides more strong baselines and a general semi-supervised object detection framework. See [tutorial of semi-supervised detection](https://mmdetection.readthedocs.io/en/v3.0.0rc0/user_guides/semi_det.html).
+- Allows any kind of single-stage model as an RPN in a two-stage model. See [tutorial](https://mmdetection.readthedocs.io/en/v3.0.0rc0/user_guides/single_stage_as_rpn.html).
 
 ## Installation
 
-Please refer to [Installation](docs/en/get_started.md/#Installation) for installation instructions.
+Please refer to [Installation](https://mmdetection.readthedocs.io/en/3.x/get_started.html) for installation instructions.
 
 ## Getting Started
 
-Please see [get_started.md](docs/en/get_started.md) for the basic usage of MMDetection. We provide [colab tutorial](demo/MMDet_Tutorial.ipynb) and [instance segmentation colab tutorial](demo/MMDet_InstanceSeg_Tutorial.ipynb), and other tutorials for:
+Please see [Overview](https://mmdetection.readthedocs.io/en/3.x/get_started.html) for the general introduction of MMDetection.
 
-- [with existing dataset](docs/en/1_exist_data_model.md)
-- [with new dataset](docs/en/2_new_data_model.md)
-- [with existing dataset_new_model](docs/en/3_exist_data_new_model.md)
-- [learn about configs](docs/en/tutorials/config.md)
-- [customize_datasets](docs/en/tutorials/customize_dataset.md)
-- [customize data pipelines](docs/en/tutorials/data_pipeline.md)
-- [customize_models](docs/en/tutorials/customize_models.md)
-- [customize runtime settings](docs/en/tutorials/customize_runtime.md)
-- [customize_losses](docs/en/tutorials/customize_losses.md)
-- [finetuning models](docs/en/tutorials/finetune.md)
-- [export a model to ONNX](docs/en/tutorials/pytorch2onnx.md)
-- [export ONNX to TRT](docs/en/tutorials/onnx2tensorrt.md)
-- [weight initialization](docs/en/tutorials/init_cfg.md)
-- [how to xxx](docs/en/tutorials/how_to.md)
-- [semi-supervised_detection](docs/en/tutorials/semi_det.md)
+For detailed user guides and advanced guides, please refer to our [documentation](https://mmdetection.readthedocs.io/en/3.x/):
+
+- User Guides
+
+  <details>
+
+  - [Train & Test](https://mmdetection.readthedocs.io/en/3.x/user_guides/index.html#train-test)
+    - [Learn about Configs](https://mmdetection.readthedocs.io/en/3.x/user_guides/config.html)
+    - [Inference with existing models](https://mmdetection.readthedocs.io/en/3.x/user_guides/inference.html)
+    - [Dataset Prepare](https://mmdetection.readthedocs.io/en/3.x/user_guides/dataset_prepare.html)
+    - [Test existing models on standard datasets](https://mmdetection.readthedocs.io/en/3.x/user_guides/test.html)
+    - [Train predefined models on standard datasets](https://mmdetection.readthedocs.io/en/3.x/user_guides/train.html)
+    - [Train with customized datasets](https://mmdetection.readthedocs.io/en/3.x/user_guides/train.html#train-with-customized-datasets)
+    - [Train with customized models and standard datasets](https://mmdetection.readthedocs.io/en/3.x/user_guides/new_model.html)
+    - [Finetuning Models](https://mmdetection.readthedocs.io/en/3.x/user_guides/finetune.html)
+    - [Test Results Submission](https://mmdetection.readthedocs.io/en/3.x/user_guides/test_results_submission.html)
+    - [Weight initialization](https://mmdetection.readthedocs.io/en/3.x/user_guides/init_cfg.html)
+    - [Use a single stage detector as RPN](https://mmdetection.readthedocs.io/en/3.x/user_guides/single_stage_as_rpn.html)
+    - [Semi-supervised Object Detection](https://mmdetection.readthedocs.io/en/3.x/user_guides/semi_det.html)
+  - [Useful Tools](https://mmdetection.readthedocs.io/en/3.x/user_guides/index.html#useful-tools)
+
+  </details>
+
+- Advanced Guides
+
+  <details>
+
+  - [Basic Concepts](https://mmdetection.readthedocs.io/en/3.x/advanced_guides/index.html#basic-concepts)
+  - [Component Customization](https://mmdetection.readthedocs.io/en/3.x/advanced_guides/index.html#component-customization)
+  - [How to](https://mmdetection.readthedocs.io/en/3.x/advanced_guides/index.html#how-to)
+
+  </details>
+
+We also provide [colab tutorial](demo/MMDet_Tutorial.ipynb) and [instance segmentation colab tutorial](demo/MMDet_InstanceSeg_Tutorial.ipynb).
+
+To migrate from MMDetection 2.x, please refer to [migration](https://mmdetection.readthedocs.io/en/3.x/migration.html).
 
 ## Overview of Benchmark and Model Zoo
 
@@ -215,6 +233,12 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
           <li><a href="configs/lad">Label Assignment Distillation (WACV'2022)</a></li>
         </ul>
         </ul>
+          <li><b>Semi-Supervised Object Detection</b></li>
+        <ul>
+        <ul>
+          <li><a href="configs/soft_teacher">Soft Teacher (ICCV'2021)</a></li>
+        </ul>
+        </ul>
       </ul>
       </td>
     </tr>
@@ -282,7 +306,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
       </td>
       <td>
         <ul>
-          <li><a href="configs/faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py">OHEM (CVPR'2016)</a></li>
+          <li><a href="configs/faster_rcnn/faster-rcnn_r50_fpn_ohem_1x_coco.py">OHEM (CVPR'2016)</a></li>
           <li><a href="configs/gn">Group Normalization (ECCV'2018)</a></li>
           <li><a href="configs/dcn">DCN (ICCV'2017)</a></li>
           <li><a href="configs/dcnv2">DCNv2 (CVPR'2019)</a></li>
@@ -298,11 +322,11 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
   </tbody>
 </table>
 
-Some other methods are also supported in [projects using MMDetection](./docs/en/projects.md).
+Some other methods are also supported in [projects using MMDetection](./docs/en/notes/projects.md).
 
 ## FAQ
 
-Please refer to [FAQ](docs/en/faq.md) for frequently asked questions.
+Please refer to [FAQ](docs/en/notes/faq.md) for frequently asked questions.
 
 ## Contributing
 
@@ -337,6 +361,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Projects in OpenMMLab
 
+- [MMEngine](https://github.com/open-mmlab/mmengine): OpenMMLab foundational library for training deep learning models.
 - [MMCV](https://github.com/open-mmlab/mmcv): OpenMMLab foundational library for computer vision.
 - [MIM](https://github.com/open-mmlab/mim): MIM installs OpenMMLab packages.
 - [MMClassification](https://github.com/open-mmlab/mmclassification): OpenMMLab image classification toolbox and benchmark.
