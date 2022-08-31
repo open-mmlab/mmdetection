@@ -180,11 +180,11 @@ The basic steps are as below:
 
 There are three ways to support a new dataset in MMDetection:
 
-1. reorganize the dataset into COCO format.
-2. reorganize the dataset into a middle format.
-3. implement a new dataset.
+1. Reorganize the dataset into COCO format.
+2. Reorganize the dataset into a middle format.
+3. Implement a new dataset.
 
-Usually we recommend to use the first two methods which are usually easier than the third.
+Usually we recommend using the first two methods which are usually easier than the third.
 
 In this note, we give an example for converting the data into COCO format.
 
