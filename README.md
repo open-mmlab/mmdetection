@@ -294,7 +294,7 @@ Results and models are available in the [model zoo](docs/en/model_zoo.md).
       </td>
       <td>
         <ul>
-          <li><a href="configs/faster_rcnn/faster_rcnn_r50_fpn_ohem_1x_coco.py">OHEM (CVPR'2016)</a></li>
+          <li><a href="configs/faster_rcnn/faster-rcnn_r50_fpn_ohem_1x_coco.py">OHEM (CVPR'2016)</a></li>
           <li><a href="configs/gn">Group Normalization (ECCV'2018)</a></li>
           <li><a href="configs/dcn">DCN (ICCV'2017)</a></li>
           <li><a href="configs/dcnv2">DCNv2 (CVPR'2019)</a></li>
@@ -349,7 +349,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Projects in OpenMMLab
 
-- [MMEngine](https://github.com/open-mmlab/mmengine): OpenMMLab foundational library for training.
+- [MMEngine](https://github.com/open-mmlab/mmengine): OpenMMLab foundational library for model training.
 - [MMCV](https://github.com/open-mmlab/mmcv): OpenMMLab foundational library for computer vision.
 - [MIM](https://github.com/open-mmlab/mim): MIM installs OpenMMLab packages.
 - [MMClassification](https://github.com/open-mmlab/mmclassification): OpenMMLab image classification toolbox and benchmark.
