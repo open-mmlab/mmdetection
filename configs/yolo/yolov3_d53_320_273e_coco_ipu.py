@@ -1,6 +1,6 @@
 _base_ = './yolov3_d53_mstrain-608_273e_coco.py'
 # dataset settings
-IM_SIZE = 320
+IMG_SIZE = 320
 custom_hooks = [dict(type='NumClassCheckHook'), dict(type='BNToFP32')]
 img_norm_cfg = dict(mean=[0, 0, 0], std=[255., 255., 255.], to_rgb=False)
 train_pipeline = [
@@ -15,11 +15,11 @@ train_pipeline = [
         type='MinIoURandomCrop',
         min_ious=(0.4, 0.5, 0.6, 0.7, 0.8, 0.9),
         min_crop_size=0.3),
-    dict(type='Resize', img_scale=(IM_SIZE, IM_SIZE), keep_ratio=True),
+    dict(type='Resize', img_scale=(IMG_SIZE, IMG_SIZE), keep_ratio=True),
     dict(type='RandomFlip', flip_ratio=0.5),
     # image norm will be placed in IPU, and PhotoMetricDistortion has been
     # removed in this config because it has no effect on loss convergence.
-    dict(type='Pad', size=(IM_SIZE, IM_SIZE)),
+    dict(type='Pad', size=(IMG_SIZE, IMG_SIZE)),
     dict(
         type='IPUFormatBundle',
         img_to_float=False,
@@ -33,7 +33,7 @@ train_pipeline = [
         remove_img_meta=True),
     dict(
         type='GetTargetsOutsideForYolo',
-        featmap_sizes=[IM_SIZE // 32, IM_SIZE // 16, IM_SIZE // 8])
+        featmap_sizes=[IMG_SIZE // 32, IMG_SIZE // 16, IMG_SIZE // 8])
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile', channel_order='rgb'),
@@ -42,9 +42,11 @@ test_pipeline = [
         img_scale=(320, 320),
         flip=False,
         transforms=[
-            dict(type='Resize', img_scale=(IM_SIZE, IM_SIZE), keep_ratio=True),
+            dict(
+                type='Resize', img_scale=(IMG_SIZE, IMG_SIZE),
+                keep_ratio=True),
             dict(type='RandomFlip'),
-            dict(type='Pad', size=(IM_SIZE, IM_SIZE), pad_val={'img': 128}),
+            dict(type='Pad', size=(IMG_SIZE, IMG_SIZE), pad_val={'img': 128}),
             dict(type='IPUFormatBundle', img_to_float=False),
             dict(
                 type='IPUCollect',

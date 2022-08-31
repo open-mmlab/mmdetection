@@ -198,7 +198,14 @@ class GetTargetsOutsideForYolo:
             torch.Size([s3, s3])
         ]
         self.num_levels = num_levels
-        self.model = None
+
+    @property
+    def model(self):
+        if getattr(self, '_model', None) is None:
+            raise RuntimeError('This pipeline is used to adapt to ipu runner,'
+                               ' please use ipu runner')
+        else:
+            return self._model
 
     def __call__(self, results):
         """Call generate targets for YoloV3 training.
@@ -235,5 +242,10 @@ class GetTargetsOutsideForYolo:
 
     def set_model_in_ipu_mode(self, model):
         """The specific implementation is in the external model, so this
-        function is used to set target yolo model."""
-        self.model = model
+        function is used to set target yolo model.
+
+        Please use IPU Runner. The ipu runner will detect whether contains
+        :func:`set_model_in_ipu_mode` for each pipeline, and if so,
+        it will be called automatically
+        """
+        self._model = model

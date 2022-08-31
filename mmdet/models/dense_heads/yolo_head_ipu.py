@@ -8,7 +8,8 @@ from mmcv.runner import force_fp32
 from mmcv.utils import IS_IPU_AVAILABLE
 
 if IS_IPU_AVAILABLE:
-    from mmcv.device.ipu import nms_ipu, remap_tensor, slice_statically
+    from poptorch import nms_ipu, remap_tensor
+    from mmcv.device.ipu import slice_statically
 
 from mmdet.core import multi_apply
 from ..builder import HEADS
