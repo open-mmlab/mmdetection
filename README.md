@@ -48,7 +48,7 @@ a part of the [OpenMMLab](https://openmmlab.com/) project.
 
 The master branch works with **PyTorch 1.6+**.
 
-<img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
+<img src="https://user-images.githubusercontent.com/12907710/187674113-2074d658-f2fb-42d1-ac15-9c4a695e64d7.png"/>
 
 <details open>
 <summary>Major features</summary>
@@ -71,16 +71,17 @@ The master branch works with **PyTorch 1.6+**.
 
 </details>
 
-Apart from MMDetection, we also released [MMCV](https://github.com/open-mmlab/mmcv) for computer vision research and [MMEngine](https://github.com/open-mmlab/mmengine) for model training, that are heavily depended on by this toolbox.
+Apart from MMDetection, we also released [MMEngine](https://github.com/open-mmlab/mmengine) for model training and [MMCV](https://github.com/open-mmlab/mmcv) for computer vision research, which are heavily depended on by this toolbox.
 
 ## What's New
 
 **v3.0.0rc0** was released in 31/8/2022:
 
-- Faster and smoother training based on [MMEngine](https://github.com/open-mmlab/mmengine).
+- Unifies interfaces of all components based on [MMEngine](https://github.com/open-mmlab/mmengine).
+- Faster training and testing speed with complete support of mixed precision training.
 - Refactored and more flexible [architecture](https://mmdetection.readthedocs.io/en/v3.0.0rc0/overview.html).
-- Support semi-supervised object detection. See [tutorial](https://mmdetection.readthedocs.io/en/v3.0.0rc0/user_guides/semi_det.html).
-- Support use any kind of single-stage model as an RPN in a two-stage model. See [tutorial](https://mmdetection.readthedocs.io/en/v3.0.0rc0/user_guides/single_stage_as_rpn.html).
+- Provides more strong baselines and a general semi-supervised object detection framework. See [tutorial of semi-supervised detection](https://mmdetection.readthedocs.io/en/v3.0.0rc0/user_guides/semi_det.html).
+- Allows any kind of single-stage model as an RPN in a two-stage model. See [tutorial](https://mmdetection.readthedocs.io/en/v3.0.0rc0/user_guides/single_stage_as_rpn.html).
 
 ## Installation
 
@@ -93,6 +94,9 @@ Please see [Overview](https://mmdetection.readthedocs.io/en/3.x/get_started.html
 For detailed user guides and advanced guides, please refer to our [documentation](https://mmdetection.readthedocs.io/en/3.x/):
 
 - User Guides
+
+  <details>
+
   - [Train & Test](https://mmdetection.readthedocs.io/en/3.x/user_guides/index.html#train-test)
     - [Learn about Configs](https://mmdetection.readthedocs.io/en/3.x/user_guides/config.html)
     - [Inference with existing models](https://mmdetection.readthedocs.io/en/3.x/user_guides/inference.html)
@@ -107,10 +111,18 @@ For detailed user guides and advanced guides, please refer to our [documentation
     - [Use a single stage detector as RPN](https://mmdetection.readthedocs.io/en/3.x/user_guides/single_stage_as_rpn.html)
     - [Semi-supervised Object Detection](https://mmdetection.readthedocs.io/en/3.x/user_guides/semi_det.html)
   - [Useful Tools](https://mmdetection.readthedocs.io/en/3.x/user_guides/index.html#useful-tools)
+
+  </details>
+
 - Advanced Guides
+
+  <details>
+
   - [Basic Concepts](https://mmdetection.readthedocs.io/en/3.x/advanced_guides/index.html#basic-concepts)
   - [Component Customization](https://mmdetection.readthedocs.io/en/3.x/advanced_guides/index.html#component-customization)
   - [How to](https://mmdetection.readthedocs.io/en/3.x/advanced_guides/index.html#how-to)
+
+  </details>
 
 We also provide [colab tutorial](demo/MMDet_Tutorial.ipynb) and [instance segmentation colab tutorial](demo/MMDet_InstanceSeg_Tutorial.ipynb).
 

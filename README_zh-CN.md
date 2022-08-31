@@ -47,7 +47,7 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 主分支代码目前支持 PyTorch 1.6 以上的版本。
 
-<img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
+<img src="https://user-images.githubusercontent.com/12907710/187674113-2074d658-f2fb-42d1-ac15-9c4a695e64d7.png"/>
 
 <details open>
 <summary>主要特性</summary>
@@ -70,15 +70,15 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 </details>
 
-除了 MMDetection 之外，我们还开源了计算机视觉基础库 [MMCV](https://github.com/open-mmlab/mmcv) 和深度学习训练库 [MMEngine](https://github.com/open-mmlab/mmengine)，它们是 MMDetection 的主要依赖。
+除了 MMDetection 之外，我们还开源了深度学习训练库 [MMEngine](https://github.com/open-mmlab/mmengine) 和计算机视觉基础库 [MMCV](https://github.com/open-mmlab/mmcv)，它们是 MMDetection 的主要依赖。
 
 ## 最新进展
 
 **v3.0.0rc0** 版本已经在 2022.8.31 发布：
 
-- 基于 [MMEngine](https://github.com/open-mmlab/mmengine) 进行更快更流畅的训练。
-- 重构后的[架构](https://mmdetection.readthedocs.io/zh_CN/v3.0.0rc0/overview.html)变得更为灵活。
-- 支持半监督目标检测训练，详见[教程](https://mmdetection.readthedocs.io/zh_CN/v3.0.0rc0/user_guides/semi_det.html)。
+- 基于 [MMEngine](https://github.com/open-mmlab/mmengine) 统一了各组件接口。
+- 全面支持混合精度，训练测试速度更快。
+- 提供了更强的基线模型，并支持了通用的半监督目标检测框架，详见[半监督目标检测教程](https://mmdetection.readthedocs.io/zh_CN/v3.0.0rc0/user_guides/semi_det.html)。
 - 支持使用任意单阶段检测器作为二阶段模型的 RPN，详见[教程](https://mmdetection.readthedocs.io/en/v3.0.0rc0/user_guides/single_stage_as_rpn.html)。
 
 ## 安装
@@ -92,6 +92,9 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 为了帮助用户更进一步了解 MMDetection，我们准备了用户指南和进阶指南，请阅读我们的[文档](https://mmdetection.readthedocs.io/zh_CN/3.x/)：
 
 - 用户指南
+
+  <details>
+
   - [训练 & 测试](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/index.html#train-test)
     - [学习配置文件](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/config.html)
     - [使用已有模型在标准数据集上进行推理](https://mmdetection.readthedocs.io/en/3.x/user_guides/inference.html)
@@ -106,10 +109,18 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
     - [将单阶段检测器作为 RPN](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/single_stage_as_rpn.html)
     - [半监督目标检测](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/semi_det.html)
   - [实用工具](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/index.html#useful-tools)
+
+  </details>
+
 - 进阶指南
+
+  <details>
+
   - [基础概念](https://mmdetection.readthedocs.io/zh_CN/3.x/advanced_guides/index.html#basic-concepts)
   - [组件定制](https://mmdetection.readthedocs.io/zh_CN/3.x/advanced_guides/index.html#component-customization)
   - [How to](https://mmdetection.readthedocs.io/zh_CN/3.x/advanced_guides/index.html#how-to)
+
+  </details>
 
 我们提供了 [检测的 colab 教程](demo/MMDet_Tutorial.ipynb) 和 [实例分割的 colab 教程](demo/MMDet_InstanceSeg_Tutorial.ipynb)
 
