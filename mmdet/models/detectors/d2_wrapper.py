@@ -17,6 +17,7 @@ try:
     import detectron2
     from detectron2.config import get_cfg
     from detectron2.modeling import build_model
+    from detectron2.utils.events import EventStorage
 except ImportError:
     detectron2 = None
 
@@ -97,6 +98,7 @@ class Detectron2Wrapper(BaseDetector):
         self.cfg = get_cfg()
         self.cfg.merge_from_list(cfgnode_list)
         self.d2_model = build_model(self.cfg)
+        self.storage = EventStorage()
 
     def init_weights(self) -> None:
         """Initialization Backbone.
@@ -115,8 +117,8 @@ class Detectron2Wrapper(BaseDetector):
         print()
         d2_batched_inputs = self._convert_to_batched_d2_inputs(
             batch_inputs=batch_inputs, batch_data_samples=batch_data_samples)
-        from detectron2.utils.events import EventStorage
-        with EventStorage() as storage:  # noqa
+
+        with self.storage as storage:  # noqa
             losses = self.d2_model(d2_batched_inputs)
         # storage contains some training information, such as cls_accuracy.
         # you can use storage.latest() to get the detail information
