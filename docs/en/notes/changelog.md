@@ -32,9 +32,14 @@ It also provides a general semi-supervised object detection framework, and more 
 We briefly list the major breaking changes here.
 We will update the [migration guide](../migration.md) to provide complete details and migration instructions.
 
-#### Training and testing
+#### Dependencies
 
 - MMDet 3.x runs on PyTorch>=1.6. We have deprecated the support of PyTorch 1.5 to embrace the mixed precision training and other new features since PyTorch 1.6. Some models can still run on PyTorch 1.5, but the full functionality of MMDet 3.x is not guaranteed.
+- MMDet 3.x relies on MMEngine to run. MMEngine is a new foundational library for training deep learning models in OpenMMLab 2.x models. The dependencies of file IO and training are migrated from MMCV 1.x to MMEngine.
+- MMDet 3.x relies on MMCV>=2.0.0rc0. Although MMCV no longer maintains the training functionalities since 2.0.0rc0, MMDet 3.x relies on the data transforms, CUDA operators, and image processing interfaces in MMCV. Note that the package `mmcv` is the version that provide pre-built CUDA operators and `mmcv-lite` does not since MMCV 2.0.0rc0, while `mmcv-full` has been deprecated.
+
+#### Training and testing
+
 - MMDet 3.x uses Runner in [MMEngine](https://github.com/open-mmlab/mmengine) rather than that in MMCV. The new Runner implements and unifies the building logic of dataset, model, evaluation, and visualizer. Therefore, MMDet 3.x no longer maintains the building logics of those modules in `mmdet.train.apis` and `tools/train.py`. Those code have been migrated into [MMEngine](https://github.com/open-mmlab/mmengine/blob/main/mmengine/runner/runner.py). Please refer to the [migration guide of Runner in MMEngine](https://mmengine.readthedocs.io/en/latest/migration/runner.html) for more details.
 - The Runner in MMEngine also supports testing and validation. The testing scripts are also simplified, which has similar logic as that in training scripts to build the runner.
 - The execution points of hooks in the new Runner have been enriched to allow more flexible customization. Please refer to the [migration guide of Hook in MMEngine](https://mmengine.readthedocs.io/en/latest/migration/hook.html) for more details.
@@ -45,11 +50,25 @@ We will update the [migration guide](../migration.md) to provide complete detail
 - The [Runner in MMEngine](https://github.com/open-mmlab/mmengine/blob/main/mmengine/runner/runner.py) uses a different config structures to ease the understanding of the components in runner. Users can read the [config example of mmdet](../user_guides/config.md) or refer to the [migration guide in MMEngine](https://mmengine.readthedocs.io/en/latest/migration/runner.html) for migration details.
 - The file names of configs and models are also refactored to follow the new rules unified across OpenMMLab 2.x projects. Please refer to the [user guides of config](../user_guides/config.md) for more details.
 
-#### Components
+#### Dataset
 
-- Dataset
-- Data Transforms
-- Model
+The Dataset classes implemented in MMDet 3.x all inherits from the `BaseDetDataset`, which inherits from the [BaseDataset in MMEngine](https://mmengine.readthedocs.io/en/latest/advanced_tutorials/basedataset.html). There are several changes of Dataset in MMDet 3.x.
+
+- All the datasets support to serialize the data list to reduce the memory when multiple workers are built to accelerate data loading.
+- The interfaces are changed accordingly.
+
+#### Data Transforms
+
+The data transforms in MMDet 3.x all inherits from those in MMCV>=2.0.0rc0, which follows a new convention in OpenMMLab 2.x projects.
+The changes are listed as below:
+
+- The interfaces are also changed. Please refer to the [API doc](https://mmdetection.readthedocs.io/en/3.x/)
+- The functionality of some data transforms (e.g., `Resize`) are decomposed into several transforms.
+- he same data transforms in different OpenMMLab 2.x libraries have the same augmentation implementation and the logic of the same arguments, i.e., `Resize` in MMDet 3.x and MMSeg 1.x will resize the image in the exact same manner given the same arguments.
+
+#### Model
+
+- Model:
 - Evaluation
 - Visualization
 
