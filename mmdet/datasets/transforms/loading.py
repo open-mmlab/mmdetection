@@ -544,7 +544,7 @@ class LoadPanopticAnnotations(LoadAnnotations):
         Args:
             results (dict): Result dict from :obj:``mmdet.CustomDataset``.
         """
-        # seg_map_path is None, when inference on test dataset without gts.
+        # seg_map_path is None, when inference on the dataset without gts.
         if results['seg_map_path'] is None:
             return
 
