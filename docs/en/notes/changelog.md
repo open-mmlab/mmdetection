@@ -29,48 +29,54 @@ It also provides a general semi-supervised object detection framework, and more 
 
 ### Breaking Changes
 
-We briefly list the major breaking changes here.
+MMDet 3.x has gone through big changes to have better design, higher efficiency, more flexibility, and more unified interfaces.
+Besides the changes of API, we briefly list the major breaking changes in this section.
 We will update the [migration guide](../migration.md) to provide complete details and migration instructions.
+Users can also refer to the [API doc](https://mmdetection.readthedocs.io/en/3.x/) for more details.
 
 #### Dependencies
 
 - MMDet 3.x runs on PyTorch>=1.6. We have deprecated the support of PyTorch 1.5 to embrace the mixed precision training and other new features since PyTorch 1.6. Some models can still run on PyTorch 1.5, but the full functionality of MMDet 3.x is not guaranteed.
 - MMDet 3.x relies on MMEngine to run. MMEngine is a new foundational library for training deep learning models in OpenMMLab 2.x models. The dependencies of file IO and training are migrated from MMCV 1.x to MMEngine.
-- MMDet 3.x relies on MMCV>=2.0.0rc0. Although MMCV no longer maintains the training functionalities since 2.0.0rc0, MMDet 3.x relies on the data transforms, CUDA operators, and image processing interfaces in MMCV. Note that the package `mmcv` is the version that provide pre-built CUDA operators and `mmcv-lite` does not since MMCV 2.0.0rc0, while `mmcv-full` has been deprecated.
+- MMDet 3.x relies on MMCV>=2.0.0rc0. Although MMCV no longer maintains the training functionalities since 2.0.0rc0, MMDet 3.x relies on the data transforms, CUDA operators, and image processing interfaces in MMCV. Note that the package `mmcv` is the version that provides pre-built CUDA operators and `mmcv-lite` does not since MMCV 2.0.0rc0, while `mmcv-full` has been deprecated.
 
 #### Training and testing
 
 - MMDet 3.x uses Runner in [MMEngine](https://github.com/open-mmlab/mmengine) rather than that in MMCV. The new Runner implements and unifies the building logic of dataset, model, evaluation, and visualizer. Therefore, MMDet 3.x no longer maintains the building logics of those modules in `mmdet.train.apis` and `tools/train.py`. Those code have been migrated into [MMEngine](https://github.com/open-mmlab/mmengine/blob/main/mmengine/runner/runner.py). Please refer to the [migration guide of Runner in MMEngine](https://mmengine.readthedocs.io/en/latest/migration/runner.html) for more details.
-- The Runner in MMEngine also supports testing and validation. The testing scripts are also simplified, which has similar logic as that in training scripts to build the runner.
+- The Runner in MMEngine also supports testing and validation. The testing scripts are also simplified, which has similar logic to that in training scripts to build the runner.
 - The execution points of hooks in the new Runner have been enriched to allow more flexible customization. Please refer to the [migration guide of Hook in MMEngine](https://mmengine.readthedocs.io/en/latest/migration/hook.html) for more details.
 - Learning rate and momentum scheduling has been migrated from `Hook` to `Parameter Scheduler` in MMEngine. Please refer to the [migration guide of Parameter Scheduler in MMEngine](https://mmengine.readthedocs.io/en/latest/migration/param_scheduler.html) for more details.
 
 #### Configs
 
-- The [Runner in MMEngine](https://github.com/open-mmlab/mmengine/blob/main/mmengine/runner/runner.py) uses a different config structures to ease the understanding of the components in runner. Users can read the [config example of mmdet](../user_guides/config.md) or refer to the [migration guide in MMEngine](https://mmengine.readthedocs.io/en/latest/migration/runner.html) for migration details.
-- The file names of configs and models are also refactored to follow the new rules unified across OpenMMLab 2.x projects. Please refer to the [user guides of config](../user_guides/config.md) for more details.
+- The [Runner in MMEngine](https://github.com/open-mmlab/mmengine/blob/main/mmengine/runner/runner.py) uses a different config structure to ease the understanding of the components in runner. Users can read the [config example of mmdet](../user_guides/config.md) or refer to the [migration guide in MMEngine](https://mmengine.readthedocs.io/en/latest/migration/runner.html) for migration details.
+- The file names of configs and models are also refactored to follow the new rules unified across OpenMMLab 2.x projects. The names of checkpoints are not updated for now as there is no BC-breaking of model weights between MMDet 3.x and 2.x. We will progressively replace all the model weights by those trained in MMDet 3.x. Please refer to the [user guides of config](../user_guides/config.md) for more details.
 
 #### Dataset
 
-The Dataset classes implemented in MMDet 3.x all inherits from the `BaseDetDataset`, which inherits from the [BaseDataset in MMEngine](https://mmengine.readthedocs.io/en/latest/advanced_tutorials/basedataset.html). There are several changes of Dataset in MMDet 3.x.
+The Dataset classes implemented in MMDet 3.x all inherits from the `BaseDetDataset`, which inherits from the [BaseDataset in MMEngine](https://mmengine.readthedocs.io/en/latest/advanced_tutorials/basedataset.html). In addition to the changes of interfaces, there are several changes of Dataset in MMDet 3.x.
 
 - All the datasets support to serialize the data list to reduce the memory when multiple workers are built to accelerate data loading.
-- The interfaces are changed accordingly.
+- The internal data structure in the dataset is changed to be self-contained (without loosing information like class names in MMDet 2.x) while keeping simplicity.
+- The evaluation functionality of each dataset has been removed from dataset so that some specific evaluation metrics like COCO AP can be used to evaluate the prediction on other datasets.
 
 #### Data Transforms
 
-The data transforms in MMDet 3.x all inherits from those in MMCV>=2.0.0rc0, which follows a new convention in OpenMMLab 2.x projects.
-The changes are listed as below:
+The data transforms in MMDet 3.x all inherits from `BaseTransform` in MMCV>=2.0.0rc0, which defines a new convention in OpenMMLab 2.x projects.
+Besides the interface changes, there are several changes listed as below:
 
-- The interfaces are also changed. Please refer to the [API doc](https://mmdetection.readthedocs.io/en/3.x/)
 - The functionality of some data transforms (e.g., `Resize`) are decomposed into several transforms.
-- he same data transforms in different OpenMMLab 2.x libraries have the same augmentation implementation and the logic of the same arguments, i.e., `Resize` in MMDet 3.x and MMSeg 1.x will resize the image in the exact same manner given the same arguments.
+- The format of data dict processed by each data transform is changeed according to the new data structure of dataset.
+- Some inefficient data transforms (e.g., normalization and padding) are moved into data preprocessor of model to improve data loading and training speed.
+- The same data transforms in different OpenMMLab 2.x libraries have the same augmentation implementation and the logic of the same arguments, i.e., `Resize` in MMDet 3.x and MMSeg 1.x will resize the image in the exact same manner given the same arguments.
 
 #### Model
 
-- Model:
-- Evaluation
-- Visualization
+#### Evaluation
+
+#### Visualization
+
+The functions of visualization in MMDet 2.x are removed. Instead, in OpenMMLab 2.x projects, we use [Visualizer](https://mmengine.readthedocs.io/en/latest/design/visualization.html) to visualize data. MMDet 3.x implements `DetLocalVisualizer` to allow visualization of ground truths, model predictions, and feature maps, etc., at any place.
 
 ### Improvements
 
@@ -90,10 +96,13 @@ The changes are listed as below:
 4. Support [the updated CenterNet](https://arxiv.org/abs/2103.07461).
 5. Support data structures `HorizontalBoxes` and `BaseBoxes` to encapsulate different kinds of bounding boxes. We are migrating to use data structures of boxes to replace the use of pure tensor boxes. This will unify the usages of different kinds of bounding boxes in MMDet 3.x and MMRotate 1.x to simplify the implementation and reduce redundant codes.
 
-### Ongoing changes
+### Planned changes
+
+We list several planned changes of MMDet 3.0.0rc0 so that the community could more comprehensively know the refactoring progress. Feel free to create a PR, issue, or discussion if you are interested, have any suggestions and feedbacks, or want to participate.
 
 1. Test-time augmentation: which is supported in MMDet 2.x, is not implemented in this version due to limited time slot. We will support it in the following releases with a new and simplified design.
 2. Inference interfaces: a unified inference interfaces will be supported in the future to ease the use of released models.
 3. Interfaces of useful tools that can be used in notebook: more useful tools that implemented in the `tools` directory will have their python interfaces so that they can be used through notebook and in downstream libraries.
 4. Documentation: we will add more design docs, tutorials, and migration guidance so that the community can deep dive into our new design, participate the future development, and smoothly migrate downstream libraries to MMDet 3.x.
-5. WiderFace dataset, and Fast R-CNN support: we are verifying their functionalities and will fix related issues soon.
+5. Wandb visualization: MMDet 2.x supports data visualization since v2.25.0, which has not been migrated to MMDet 3.x for now. `DetWandbVisualizer`
+6. WiderFace dataset, and Fast R-CNN support: we are verifying their functionalities and will fix related issues soon.
