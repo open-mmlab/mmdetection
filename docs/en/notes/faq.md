@@ -8,19 +8,22 @@ We list some common troubles faced by many users and their corresponding solutio
 
   Compatible MMDetection, MMEngine, and MMCV versions are shown as below. Please choose the correct version of MMCV to avoid installation issues.
 
-  | MMDetection version |         MMCV version         |     MMEngine version     |
-  | :-----------------: | :--------------------------: | :----------------------: |
-  |       dev-3.x       | mmcv-full>=2.0.0rc0, \<2.1.0 | mmengine>=0.1.0, \<0.2.0 |
-  |      3.0.0rc0       | mmcv-full>=2.0.0rc0, \<2.1.0 | mmengine>=0.1.0, \<0.2.0 |
+  | MMDetection version |      MMCV version       |     MMEngine version     |
+  | :-----------------: | :---------------------: | :----------------------: |
+  |         3.x         | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.5.0, \<0.7.0 |
+  |      3.0.0rc0       | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.5.0, \<0.7.0 |
 
-  **Note:** If you want to install mmdet-v2.x, the compatible MMDetection and MMCV versions table can be found at [here](https://mmdetection.readthedocs.io/en/stable/faq.html#installation). Please choose the correct version of MMCV to avoid installation issues.
+  **Note:**
+
+  1. If you want to install mmdet-v2.x, the compatible MMDetection and MMCV versions table can be found at [here](https://mmdetection.readthedocs.io/en/stable/faq.html#installation). Please choose the correct version of MMCV to avoid installation issues.
+  2. In MMCV-v2.x, `mmcv-full` is rename to `mmcv`, if you want to install `mmcv` without CUDA ops, you can install `mmcv-lite`.
 
 - "No module named 'mmcv.ops'"; "No module named 'mmcv.\_ext'".
 
-  1. Uninstall existing mmcv in the environment using `pip uninstall mmcv`.
-  2. Install mmcv-full following the [installation instruction](get_started#best-practices).
+  1. Uninstall existing `mmcv-lite` in the environment using `pip uninstall mmcv-lite`.
+  2. Install `mmcv` following the [installation instruction](https://mmcv.readthedocs.io/en/2.x/get_started/installation.html).
 
-- Using albumentations
+- Using Albumentations
 
   If you would like to use `albumentations`, we suggest using `pip install -r requirements/albu.txt` or
   `pip install -U albumentations --no-binary qudida,albumentations`.
@@ -72,7 +75,7 @@ We list some common troubles faced by many users and their corresponding solutio
   2. Run `python mmdet/utils/collect_env.py` to check whether PyTorch, torchvision, and MMCV are built for the correct GPU architecture.
      You may need to set `TORCH_CUDA_ARCH_LIST` to reinstall MMCV.
      The GPU arch table could be found [here](https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#gpu-feature-list),
-     i.e. run `TORCH_CUDA_ARCH_LIST=7.0 pip install mmcv-full` to build MMCV for Volta GPUs.
+     i.e. run `TORCH_CUDA_ARCH_LIST=7.0 pip install mmcv` to build MMCV for Volta GPUs.
      The compatibility issue could happen when using old GPUS, e.g., Tesla K80 (3.7) on colab.
   3. Check whether the running environment is the same as that when mmcv/mmdet has compiled.
      For example, you may compile mmcv using CUDA 10.0 but run it on CUDA 9.0 environments.

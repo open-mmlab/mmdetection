@@ -1,1 +1,2 @@
-mmcv-full>=2.0.0rc0,<2.1.0
+mmcv>=2.0.0rc1,<2.1.0
+mmengine

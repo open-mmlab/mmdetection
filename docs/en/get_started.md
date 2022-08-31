@@ -44,16 +44,18 @@ We recommend that users follow our best practices to install MMDetection. Howeve
 ```shell
 pip install -U openmim
 mim install mmengine
-mim install mmcv-full>=2.0.0rc0
+mim install "mmcv>=2.0.0rc1"
 ```
+
+**Note:** In MMCV-v2.x, `mmcv-full` is rename to `mmcv`, if you want to install `mmcv` without CUDA ops, you can use `mim install "mmcv-lite>=2.0.0rc1"` to install the lite version.
 
 **Step 1.** Install MMDetection.
 
 Case a: If you develop and run mmdet directly, install it from source:
 
 ```shell
-git clone https://github.com/open-mmlab/mmdetection.git -b dev-3.x
-# "-b dev-3.x" means checkout to the `dev-3.x` branch.
+git clone https://github.com/open-mmlab/mmdetection.git -b 3.x
+# "-b 3.x" means checkout to the `3.x` branch.
 cd mmdetection
 pip install -v -e .
 # "-v" means verbose, or more output
@@ -64,7 +66,7 @@ pip install -v -e .
 Case b: If you use mmdet as a dependency or third-party package, install it with MIM:
 
 ```shell
-mim install mmdet>=3.0.0rc0
+mim install "mmdet>=3.0.0rc0"
 ```
 
 ## Verify the installation
@@ -74,29 +76,29 @@ To verify whether MMDetection is installed correctly, we provide some sample cod
 **Step 1.** We need to download config and checkpoint files.
 
 ```shell
-mim download mmdet --config yolov3_mobilenetv2_320_300e_coco --dest .
+mim download mmdet --config yolov3_mobilenetv2_8xb24-320-300e_coco --dest .
 ```
 
-The downloading will take several seconds or more, depending on your network environment. When it is done, you will find two files `yolov3_mobilenetv2_320_300e_coco.py` and `yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth` in your current folder.
+The downloading will take several seconds or more, depending on your network environment. When it is done, you will find two files `yolov3_mobilenetv2_8xb24-320-300e_coco.py` and `yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth` in your current folder.
 
 **Step 2.** Verify the inference demo.
 
-Option (a). If you install mmdetection from source, just run the following command.
+Option (a). If you install MMDetection from source, just run the following command.
 
 ```shell
-python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_320_300e_coco.py yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu --out-file result.jpg
+python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-ms-416-300e_coco.py yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu --out-file result.jpg
 ```
 
 You will see a new image `result.jpg` on your current folder, where bounding boxes are plotted on cars, benches, etc.
 
-Option (b). If you install mmdetection with pip, open you python interpreter and copy&paste the following codes.
+Option (b). If you install MMDetection with MIM, open you python interpreter and copy&paste the following codes.
 
 ```python
 from mmdet.apis import init_detector, inference_detector
 from mmdet.utils import register_all_modules
 
 register_all_modules()
-config_file = 'yolov3_mobilenetv2_320_300e_coco.py'
+config_file = 'yolov3_mobilenetv2_8xb24-ms-416-300e_coco.py'
 checkpoint_file = 'yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth'
 model = init_detector(config_file, checkpoint_file, device='cpu')  # or device='cuda:0'
 inference_detector(model, 'demo/demo.jpg')
@@ -121,7 +123,7 @@ Installing CUDA runtime libraries is enough if you follow our best practices, be
 
 #### Install MMEngine without MIM
 
-To install MMEngine with pip instead of MIM, please follow [MMEngine installation guides](https://mmcv.readthedocs.io/en/latest/get_started/installation.html).
+To install MMEngine with pip instead of MIM, please follow \[MMEngine installation guides\](https://mmengine.readthedocs.io/en/latest/get_started/installation.html).
 
 For example, you can install MMEngine by the following command.
 
@@ -133,17 +135,17 @@ pip install mmengine
 
 MMCV contains C++ and CUDA extensions, thus depending on PyTorch in a complex way. MIM solves such dependencies automatically and makes the installation easier. However, it is not a must.
 
-To install MMCV with pip instead of MIM, please follow [MMCV installation guides](https://mmcv.readthedocs.io/en/latest/get_started/installation.html). This requires manually specifying a find-url based on PyTorch version and its CUDA version.
+To install MMCV with pip instead of MIM, please follow [MMCV installation guides](https://mmcv.readthedocs.io/en/2.x/get_started/installation.html). This requires manually specifying a find-url based on PyTorch version and its CUDA version.
 
-For example, the following command install mmcv-full built for PyTorch 1.10.x and CUDA 11.3.
+For example, the following command install mmcv built for PyTorch 1.12.x and CUDA 11.6.
 
 ```shell
-pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu113/torch1.10/index.html
+pip install "mmcv>=2.0.0rc1" -f https://download.openmmlab.com/mmcv/dist/cu116/torch1.12.0/index.html
 ```
 
 #### Install on CPU-only platforms
 
-MMDetection can be built for CPU only environment. In CPU mode you can train (requires MMCV version >= 1.4.4), test or inference a model.
+MMDetection can be built for CPU only environment. In CPU mode you can train (requires MMCV version >= 2.0.0rc1), test or inference a model.
 
 However some functionalities are gone in this mode:
 
@@ -173,20 +175,20 @@ The following table lists affected algorithms.
 #### Install on Google Colab
 
 [Google Colab](https://research.google.com/) usually has PyTorch installed,
-thus we only need to install MMCV and MMDetection with the following commands.
+thus we only need to install MMEngine, MMCV, and MMDetection with the following commands.
 
 **Step 1.** Install [MMEngine](https://github.com/open-mmlab/mmengine) and [MMCV](https://github.com/open-mmlab/mmcv) using [MIM](https://github.com/open-mmlab/mim).
 
 ```shell
 !pip3 install openmim
 !mim install mmengine
-!mim install mmcv-full>=2.0.0rc0,<2.1.0
+!mim install mmcv>=2.0.0rc1,<2.1.0
 ```
 
 **Step 2.** Install MMDetection from the source.
 
 ```shell
-!git clone https://github.com/open-mmlab/mmdetection.git -b dev-3.x
+!git clone https://github.com/open-mmlab/mmdetection.git -b 3.x
 %cd mmdetection
 !pip install -e .
 ```
@@ -196,7 +198,7 @@ thus we only need to install MMCV and MMDetection with the following commands.
 ```python
 import mmdet
 print(mmdet.__version__)
-# Example output: 3.0.0
+# Example output: 3.0.0rc0, or other version.
 ```
 
 ```{note}
@@ -221,5 +223,5 @@ docker run --gpus all --shm-size=8g -it -v {DATA_DIR}:/mmdetection/data mmdetect
 
 ### Trouble shooting
 
-If you have some issues during the installation, please first view the [FAQ](faq.md) page.
+If you have some issues during the installation, please first view the [FAQ](notes/faq.md) page.
 You may [open an issue](https://github.com/open-mmlab/mmdetection/issues/new/choose) on GitHub if no solution is found.

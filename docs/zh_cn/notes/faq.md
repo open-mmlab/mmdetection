@@ -1,20 +1,68 @@
-# 常见问题解答（待更新）
+# 常见问题解答
 
 我们在这里列出了使用时的一些常见问题及其相应的解决方案。 如果您发现有一些问题被遗漏，请随时提 PR 丰富这个列表。 如果您无法在此获得帮助，请使用 [issue模板](https://github.com/open-mmlab/mmdetection/blob/master/.github/ISSUE_TEMPLATE/error-report.md/)创建问题，但是请在模板中填写所有必填信息，这有助于我们更快定位问题。
 
-## MMCV 安装相关
+## 安装
 
 - MMCV 与 MMDetection 的兼容问题: "ConvWS is already registered in conv layer"; "AssertionError: MMCV==xxx is used but incompatible. Please install mmcv>=xxx, \<=xxx."
 
-  请按 [安装说明](https://mmdetection.readthedocs.io/zh_CN/latest/get_started.html#installation) 为你的 MMDetection 安装正确版本的 MMCV 。
+  MMDetection，MMEngine 和 MMCV 的版本兼容关系如下。请选择合适的版本避免安装错误 。
+
+  | MMDetection 版本 |        MMCV 版本        |      MMEngine 版本       |
+  | :--------------: | :---------------------: | :----------------------: |
+  |       3.x        | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.5.0, \<0.7.0 |
+  |     3.0.0rc0     | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.5.0, \<0.7.0 |
+
+  **注意：**
+
+  1. 如果你希望安装 mmdet-v2.x, MMDetection 和 MMCV 版本兼容表可以在 [这里](https://mmdetection.readthedocs.io/en/stable/faq.html#installation) 找到，请选择合适的版本避免安装错误。
+  2. 在 MMCV-v2.x 中，`mmcv-full` 改名为 `mmcv`，如果你想安装不包含 CUDA 算子的版本，可以选择安装 MMCV 精简版 `mmcv-lite`。
 
 - "No module named 'mmcv.ops'"; "No module named 'mmcv.\_ext'".
 
-  原因是安装了 `mmcv` 而不是 `mmcv-full`。
+  原因是安装了 `mmcv-lite` 而不是 `mmcv`。
 
-  1. `pip uninstall mmcv` 卸载安装的 `mmcv`
+  1. `pip uninstall mmcv-lite` 卸载安装的 `mmcv-lite`
 
-  2. 安装 `mmcv-full` 根据 [安装说明](https://mmcv.readthedocs.io/zh/latest/#installation)。
+  2. 安装 `mmcv` 根据 [安装说明](https://mmcv.readthedocs.io/zh_CN/2.x/get_started/installation.html)。
+
+- 使用 albumentations
+
+如果你希望使用 `albumentations`，我们建议使用 `pip install -r requirements/albu.txt`
+或者 `pip install -U albumentations --no-binary qudida,albumentations` 进行安装。
+如果简单地使用 `pip install albumentations>=0.3.2` 进行安装，
+则会同时安装 `opencv-python-headless`（即便已经安装了 `opencv-python` 也会再次安装）。
+我们建议在安装 `albumentations` 后检查环境，以确保没有同时安装 `opencv-python` 和 `opencv-python-headless`，
+因为同时安装可能会导致一些问题。更多细节请参考[官方文档](https://albumentations.ai/docs/getting_started/installation/#note-on-opencv-dependencies) 。
+
+- 在某些算法中出现 ModuleNotFoundError 错误
+
+一些算法或者数据需要额外的依赖，例如 Instaboost、 Panoptic Segmentation、 LVIS dataset 等。请注意错误信息并安装相应的包，例如：
+
+```shell
+# 安装 instaboost 依赖
+pip install instaboostfast
+# 安装 panoptic segmentation 依赖
+pip install git+https://github.com/cocodataset/panopticapi.git
+# 安装 LVIS dataset 依赖
+pip install git+https://github.com/lvis-dataset/lvis-api.git
+```
+
+## 代码
+
+- 修改一些代码后是否需要重新安装 mmdet
+
+如果你遵循最佳实践，即使用 `pip install -v -e .` 安装的 mmdet，则对本地代码所作的任何修改都会生效，无需重新安装
+
+- 如何使用多个 MMDetection 版本进行开发
+
+你可以拥有多个文件夹，例如 mmdet-3.0，mmdet-3.1。
+
+要使环境中安装默认的 MMDetection 而不是当前正在在使用的，可以删除出现在相关脚本中的代码：
+
+```shell
+PYTHONPATH="$(dirname $0)/..":$PYTHONPATH
+```
 
 ## PyTorch/CUDA 环境相关
 
@@ -24,7 +72,7 @@
 
   2. 有开发者已经在 [pytorch/pytorch#47585](https://github.com/pytorch/pytorch/pull/47585) 更新了 PyTorch 默认的编译 flag， 但是我们对此并没有进行测试。
 
-- "invalid device function" or "no kernel image is available for execution".
+- "invalid device function" 或者 "no kernel image is available for execution".
 
   1. 检查您正常安装了 CUDA runtime (一般在`/usr/local/`)，或者使用 `nvcc --version` 检查本地版本，有时安装 PyTorch 会顺带安装一个 CUDA runtime，并且实际优先使用 conda 环境中的版本，你可以使用 `conda list cudatoolkit` 查看其版本。
 
@@ -37,9 +85,9 @@
      - 如果您是通过 pip 下载的预编译好的版本，请确保与当前 CUDA runtime 一致。
 
   3. 运行 `python mmdet/utils/collect_env.py` 检查是否为正确的 GPU 架构编译的 PyTorch， torchvision， 与 MMCV。 你或许需要设置 `TORCH_CUDA_ARCH_LIST` 来重新安装 MMCV，可以参考 [GPU 架构表](https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#gpu-feature-list),
-     例如， 运行 `TORCH_CUDA_ARCH_LIST=7.0 pip install mmcv-full` 为 Volta GPU 编译 MMCV。这种架构不匹配的问题一般会出现在使用一些旧型号的 GPU 时候出现， 例如， Tesla K80。
+     例如， 运行 `TORCH_CUDA_ARCH_LIST=7.0 pip install mmcv` 为 Volta GPU 编译 MMCV。这种架构不匹配的问题一般会出现在使用一些旧型号的 GPU 时候出现， 例如， Tesla K80。
 
-- "undefined symbol" or "cannot open xxx.so".
+- "undefined symbol" 或者 "cannot open xxx.so".
 
   1. 如果这些 symbol 属于 CUDA/C++ (如 libcudart.so 或者 GLIBCXX)，使用 `python mmdet/utils/collect_env.py`检查 CUDA/GCC runtime 与编译 MMCV 的 CUDA 版本是否相同。
   2. 如果这些 symbols 属于 PyTorch，(例如, symbols containing caffe, aten, and TH), 检查当前 Pytorch 版本是否与编译 MMCV 的版本一致。
