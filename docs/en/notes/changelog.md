@@ -21,9 +21,10 @@ It also provides a general semi-supervised object detection framework, and more 
 5. **Strong baselines**. We release strong baselines of many popular models to enable fair comparisons among state-of-the-art models.
 
 6. **New features and algorithms**:
-    - Enable all the single-stage detectors to serve as region proposal networks
-    - [SoftTeacher](https://arxiv.org/abs/2106.09018)
-    - [the updated CenterNet](https://arxiv.org/abs/2103.07461)
+
+   - Enable all the single-stage detectors to serve as region proposal networks
+   - [SoftTeacher](https://arxiv.org/abs/2106.09018)
+   - [the updated CenterNet](https://arxiv.org/abs/2103.07461)
 
 7. **More documentation and tutorials**. We add a bunch of documentation and tutorials to help users get started more smoothly. Read it [here](https://mmdetection.readthedocs.io/en/3.x/).
 
@@ -57,7 +58,7 @@ Users can also refer to the [API doc](https://mmdetection.readthedocs.io/en/3.x/
 The Dataset classes implemented in MMDet 3.x all inherits from the `BaseDetDataset`, which inherits from the [BaseDataset in MMEngine](https://mmengine.readthedocs.io/en/latest/advanced_tutorials/basedataset.html). In addition to the changes of interfaces, there are several changes of Dataset in MMDet 3.x.
 
 - All the datasets support to serialize the data list to reduce the memory when multiple workers are built to accelerate data loading.
-- The internal data structure in the dataset is changed to be self-contained (without loosing information like class names in MMDet 2.x) while keeping simplicity.
+- The internal data structure in the dataset is changed to be self-contained (without losing information like class names in MMDet 2.x) while keeping simplicity.
 - The evaluation functionality of each dataset has been removed from dataset so that some specific evaluation metrics like COCO AP can be used to evaluate the prediction on other datasets.
 
 #### Data Transforms
@@ -76,10 +77,10 @@ The models in MMDet 3.x all inherits from `BaseModel` in MMEngine, which defines
 Accordingly, there are several changes as the following:
 
 - The model interfaces, including the input and output formats, are significantly simplified and unified following the new convention in MMDet 3.x.
-Specificaly, all the input data in training and testing are packed into `inputs` and `data_samples`, where `inputs` contains model inputs like such as a list of image tensors, and `data_samples` contains other information of the current data sample like ground truths, region proposals, and model predictions. In this way, different tasks in MMDet 3.x can share the same input arguments to make the models more general.
+  Specifically, all the input data in training and testing are packed into `inputs` and `data_samples`, where `inputs` contains model inputs like such as a list of image tensors, and `data_samples` contains other information of the current data sample like ground truths, region proposals, and model predictions. In this way, different tasks in MMDet 3.x can share the same input arguments to make the models more general.
 - The model has a data preprocessor module, which are used to pre-process the input data of model. The data preprocessor does necessary steps to form the input images into a batch, such as padding. It can also serve as a place for some special data augmentations or more efficient data transformations like normalization.
 - The internal logic of model have been changed. In MMdet 2.x, model uses `forward_train`, `forward_test`, `simple_test`, and `aug_test` to deal with different model forward logics. In MMDet 3.x and OpenMMLab 2.x, the forward function has three modes: 'loss', 'predict', and 'tensor' for training, inference, and tracing or other purposes, respectively.
-The forward function calls `self.loss`, `self.predict`, and `self._forward` according to the modes 'loss', 'predict', and 'tensor', respectively.
+  The forward function calls `self.loss`, `self.predict`, and `self._forward` according to the modes 'loss', 'predict', and 'tensor', respectively.
 
 #### Evaluation
 
