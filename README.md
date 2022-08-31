@@ -90,7 +90,7 @@ For compatibility changes between different versions of MMDetection, please refe
 
 ### 🌟 Preview of 3.x version
 
-The whole new version of **MMDetection v3.0.0rc0** was released in 31/8/2022:
+A brand new version of **MMDetection v3.0.0rc0** was released in 31/8/2022:
 
 - Faster and smoother training based on [MMEngine](https://github.com/open-mmlab/mmengine).
 - Refactored and more flexible [architecture](https://mmdetection.readthedocs.io/en/v3.0.0rc0/overview.html).
