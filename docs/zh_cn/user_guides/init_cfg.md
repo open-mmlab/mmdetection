@@ -158,4 +158,4 @@ class FooModel(BaseModule)
                 checkpoint='torchvision://resnet50')
    ```
 
-更多细节可以参考 [MMCV](https://mmcv.readthedocs.io/en/latest/cnn.html#weight-initialization) 的文档和 MMCV [PR #780](https://github.com/open-mmlab/mmcv/pull/780)
+更多细节可以参考 [MMEngine](https://mmengine.readthedocs.io/zh_CN/latest/advanced_tutorials/initialize.html) 的文档
