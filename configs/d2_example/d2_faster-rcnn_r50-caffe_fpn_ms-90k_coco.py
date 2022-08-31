@@ -6,9 +6,14 @@ model = dict(
     data_preprocessor=None,  # detectron2 process data inside the model
     bgr_to_rgb=False,
     d2_detector=dict(
-        # default settings can be found from:
+        # The settings in `d2_detector` will merged into default settings
+        # in detectron2. More details please refer to
         # https://github.com/facebookresearch/detectron2/blob/main/detectron2/config/defaults.py    # noqa
         meta_architecture='GeneralizedRCNN',
+        # If you want to finetune the detector, you can use the
+        # checkpoint released by detectron2, for example:
+        # weights='detectron2://COCO-Detection/faster_rcnn_R_50_FPN_1x/137257794/model_final_b275ba.pk'     # noqa
+        # TODO: add readme to tell users how to convert d2 ckpt to mmdet style
         weights='detectron2://ImageNetPretrained/MSRA/R-50.pkl',
         mask_on=False,
         pixel_mean=[103.530, 116.280, 123.675],

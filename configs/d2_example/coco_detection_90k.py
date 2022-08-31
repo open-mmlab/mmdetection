@@ -1,8 +1,7 @@
 _base_ = '../_base_/default_runtime.py'
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = '/home/dong/BigDongDATA/DATA/coco/'
-# data_root = 'data/coco/'
+data_root = 'data/coco/'
 # file_client_args = dict(
 #     backend='petrel',
 #     path_mapping=dict({
@@ -34,8 +33,8 @@ test_pipeline = [
 ]
 train_dataloader = dict(
     batch_size=2,
-    num_workers=0,
-    persistent_workers=False,
+    num_workers=2,
+    persistent_workers=True,
     sampler=dict(type='InfiniteSampler', shuffle=False),
     batch_sampler=dict(type='AspectRatioBatchSampler'),
     dataset=dict(
@@ -47,8 +46,8 @@ train_dataloader = dict(
         pipeline=train_pipeline))
 val_dataloader = dict(
     batch_size=1,
-    num_workers=0,
-    persistent_workers=False,
+    num_workers=2,
+    persistent_workers=True,
     drop_last=False,
     sampler=dict(type='DefaultSampler', shuffle=False),
     dataset=dict(

@@ -3,6 +3,7 @@ import warnings
 from typing import Union
 
 from mmengine.config import ConfigDict
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS
@@ -51,6 +52,25 @@ def _to_cfgnode_list(cfg: ConfigType,
     return config_list, father_name
 
 
+def add_d2_pred_to_datasample(data_samples: SampleList,
+                              d2_results_list: list) -> SampleList:
+    """"""
+    assert len(data_samples) == len(d2_results_list)
+    for data_sample, d2_results in zip(data_samples, d2_results_list):
+        d2_instance = d2_results['instances']
+
+        results = InstanceData()
+        results.bboxes = d2_instance.pred_boxes.tensor
+        results.scores = d2_instance.scores
+        results.labels = d2_instance.pred_classes
+
+        if d2_instance.has('pred_masks'):
+            results.masks = d2_instance.pred_masks
+        data_sample.pred_instances = results
+
+    return data_samples
+
+
 @MODELS.register_module()
 class Detectron2Wrapper(BaseDetector):
 
@@ -88,6 +108,10 @@ class Detectron2Wrapper(BaseDetector):
 
         # TODO: Check whether can use load_from in config file.
         # TODO: Check whether can use d2 ckpt to load.
+        # 支持两种方法:
+        # 1. 使用脚本转化，load_from，
+        # 2.训练的时候可以直接设置 model.weights
+        # 写个脚本，把 d2 的转 key 到 mmdet 能读的 感觉加一个前缀就行 d2.model.xxx
         from detectron2.checkpoint import DetectionCheckpointer
         checkpointer = DetectionCheckpointer(model=self.d2_model)
         checkpointer.load(self.cfg.MODEL.WEIGHTS, checkpointables=[])
@@ -109,7 +133,14 @@ class Detectron2Wrapper(BaseDetector):
                 batch_data_samples: SampleList) -> SampleList:
         """Predict results from a batch of inputs and data samples with post-
         processing."""
-        pass
+        d2_batched_inputs = self._convert_to_batched_d2_inputs(
+            batch_inputs=batch_inputs, batch_data_samples=batch_data_samples)
+        # results in detectron2 has already rescale
+        d2_results_list = self.d2_model(d2_batched_inputs)
+        batch_data_samples = add_d2_pred_to_datasample(
+            data_samples=batch_data_samples, d2_results_list=d2_results_list)
+
+        return batch_data_samples
 
     def _forward(self,
                  batch_inputs: Tensor,
