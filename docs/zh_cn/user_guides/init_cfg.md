@@ -158,4 +158,4 @@ class FooModel(BaseModule)
                 checkpoint='torchvision://resnet50')
    ```
 
-更多细节可以参考 [MMEngine](https://mmengine.readthedocs.io/zh_CN/latest/tutorials/initialize.html) 的文档
+更多细节可以参考 [MMEngine](https://mmengine.readthedocs.io/zh_CN/latest/advanced_tutorials/initialize.html) 的文档
