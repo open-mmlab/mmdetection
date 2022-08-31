@@ -32,7 +32,7 @@ MMDetection consists of 7 main parts, apis, structures, datasets, models, engine
   - **optimizers** provides optimizers and optimizer wrappers.
   - **hooks** provides various hooks of the runner.
 - **evaluation** provides different metrics for evaluating model performance.
-- **visualization** is for visulizing detection results.
+- **visualization** is for visualizing detection results.
 
 ## How to Use this Guide
 
@@ -40,7 +40,7 @@ Here is a detailed step-by-step guide to learn more about MMDetection:
 
 1. For installation instructions, please see [get_started](get_started.md).
 
-2. Refer to the below tutorials to for the basic usage of MMDetection.
+2. Refer to the below tutorials for the basic usage of MMDetection.
 
    - [Train and Test](https://mmdetection.readthedocs.io/en/dev-3.x/user_guides/index.html#train-test)
 
