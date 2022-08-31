@@ -10,11 +10,11 @@ It also provides a general semi-supervised object detection framework, and more 
 
 ### Highlights
 
-1. **New engines**. MMDet 3.x is based on [MMEngine](https://github.com/open-mmlab/mmengine), which provides a general and powerful runner that allows more flexible customizations and significantly simplifies the entrypoints of high-level interfaces.
+1. **New engine**. MMDet 3.x is based on [MMEngine](https://github.com/open-mmlab/mmengine), which provides a general and powerful runner that allows more flexible customizations and significantly simplifies the entrypoints of high-level interfaces.
 
 2. **Unified interfaces**. As a part of the OpenMMLab 2.x projects, MMDet 3.x unifies and refactors the interfaces and internal logics of train, testing, datasets, models, evaluation, and visualization. All the OpenMMLab 2.x projects share the same design in those interfaces and logics to allow the emergence of multi-task/modality algorithms.
 
-3. **Faster speed**. We optimize the training and inference speed for common models, achieving faster or similar speed in comparison with [Detection2](https://github.com/facebookresearch/detectron2/). Please refer to [benchmark](./benchmark.md#comparison-with-detectron2) for details.
+3. **Faster speed**. We optimize the training and inference speed for common models and configurations, achieving faster or similar speed in comparison with [Detection2](https://github.com/facebookresearch/detectron2/). Model details of benchmark will be updated in [this note](./benchmark.md#comparison-with-detectron2).
 
 4. **General semi-supervised object detection**. Benefitting from the unified interfaces, we support a general semi-supervised learning framework that works with all the object detectors supported in MMDet 3.x. Please refer to [semi-supervised object detection](../user_guides/semi_det.md) for details.
 
@@ -113,11 +113,12 @@ The functions of visualization in MMDet 2.x are removed. Instead, in OpenMMLab 2
 
 ### Planned changes
 
-We list several planned changes of MMDet 3.0.0rc0 so that the community could more comprehensively know the refactoring progress. Feel free to create a PR, issue, or discussion if you are interested, have any suggestions and feedbacks, or want to participate.
+We list several planned changes of MMDet 3.0.0rc0 so that the community could more comprehensively know the progress of MMDet 3.x. Feel free to create a PR, issue, or discussion if you are interested, have any suggestions and feedbacks, or want to participate.
 
 1. Test-time augmentation: which is supported in MMDet 2.x, is not implemented in this version due to limited time slot. We will support it in the following releases with a new and simplified design.
 2. Inference interfaces: a unified inference interfaces will be supported in the future to ease the use of released models.
 3. Interfaces of useful tools that can be used in notebook: more useful tools that implemented in the `tools` directory will have their python interfaces so that they can be used through notebook and in downstream libraries.
 4. Documentation: we will add more design docs, tutorials, and migration guidance so that the community can deep dive into our new design, participate the future development, and smoothly migrate downstream libraries to MMDet 3.x.
 5. Wandb visualization: MMDet 2.x supports data visualization since v2.25.0, which has not been migrated to MMDet 3.x for now. Since Wandb provides strong visualization and experiment management capabilities, a `DetWandbVisualizer` and maybe a hook are planned to fully migrated those functionalities in MMDet 2.x.
-6. WiderFace dataset and Fast R-CNN support: we are verifying their functionalities and will fix related issues soon.
+6. Full support of WiderFace dataset (#8508) and Fast R-CNN: we are verifying their functionalities and will fix related issues soon.
+7. Migrate DETR-series algorithms(#8655, #8533) and YOLOv3 on IPU (#8552) from MMDet 2.x.
