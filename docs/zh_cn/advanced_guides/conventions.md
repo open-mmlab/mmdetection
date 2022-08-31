@@ -55,12 +55,12 @@ for i in range(self.num_stages):
     ...
     if i < self.num_stages - 1:
           for j in range(num_imgs):
-                   # 处理空 proposals
-                   if rois[j].shape[0] > 0:
-                       bbox_label = cls_score[j][:, :-1].argmax(dim=1)
-                       refine_roi = self.bbox_head[i].regress_by_class(
-                            rois[j], bbox_label[j], bbox_pred[j], img_metas[j])
-                       refine_roi_list.append(refine_roi)
+                # 处理空 proposals
+                if rois[j].shape[0] > 0:
+                    bbox_label = cls_score[j][:, :-1].argmax(dim=1)
+                    refine_roi = self.bbox_head[i].regress_by_class(
+                         rois[j], bbox_label[j], bbox_pred[j], img_metas[j])
+                    refine_roi_list.append(refine_roi)
 ```
 
 如果你有自定义的 `RoIHead`, 你可以参考上面的方法来处理空 proposals 的情况。
