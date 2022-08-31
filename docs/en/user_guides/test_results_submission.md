@@ -50,25 +50,87 @@ data
 
 ### Inference on coco test-dev
 
-The commands to perform inference on test2017 are as below:
+To do inference on coco test-dev, we should update the setting of `test_dataloder` and `test_evaluator` first. There two ways to do this: 1. update them in config file; 2. update them in command line.
+
+#### Update them in config file
+
+The relevant settings are provided at the end of `configs/_base_/datasets/coco_panoptic.py`, as below.
+
+```python
+test_dataloader = dict(
+    batch_size=1,
+    num_workers=1,
+    persistent_workers=True,
+    drop_last=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
+        type=dataset_type,
+        data_root=data_root,
+        ann_file='annotations/panoptic_image_info_test-dev2017.json',
+        data_prefix=dict(img='test2017/'),
+        test_mode=True,
+        pipeline=test_pipeline))
+test_evaluator = dict(
+    type='CocoPanopticMetric',
+    format_only=True,
+    ann_file=data_root + 'annotations/panoptic_image_info_test-dev2017.json',
+    outfile_prefix='./work_dirs/coco_panoptic/test')
+```
+
+Any of the following way can be used to update the setting for inference on coco test-dev set.
+
+Case 1: Directly uncomment the setting in `configs/_base_/datasets/coco_panoptic.py`.
+
+Case 2: Copy the following setting to the config file you used now.
+
+```python
+test_dataloader = dict(
+    dataset=dict(
+        ann_file='annotations/panoptic_image_info_test-dev2017.json',
+        data_prefix=dict(img='test2017/', _delete_=True)))
+test_evaluator = dict(
+    format_only=True,
+    ann_file=data_root + 'annotations/panoptic_image_info_test-dev2017.json',
+    outfile_prefix='./work_dirs/coco_panoptic/test')
+```
+
+Then infer on coco test-dev et by the following command.
+
+```shell
+python tools/test.py \
+    ${CONFIG_FILE} \
+    ${CHECKPOINT_FILE}
+```
+
+#### Update them in command line
+
+The command for update of the related settings and inference on coco test-dev are as below.
 
 ```shell
 # test with single gpu
 CUDA_VISIBLE_DEVICES=0 python tools/test.py \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
-    --format-only \
-    --cfg-options data.test.ann_file=data/coco/annotations/panoptic_image_info_test-dev2017.json data.test.img_prefix=data/coco/test2017 \
-    --eval-options jsonfile_prefix=${WORK_DIR}/results
+    --cfg-options \
+    test_dataloader.dataset.ann_file=annotations/panoptic_image_info_test-dev2017.json \
+    test_dataloader.dataset.data_prefix.img=test2017 \
+    test_dataloader.dataset.data_prefix._delete_=True \
+    test_evaluator.format_only=True \
+    test_evaluator.ann_file=data/coco/annotations/panoptic_image_info_test-dev2017.json \
+    test_evaluator.outfile_prefix=${WORK_DIR}/results
 
 # test with four gpus
 CUDA_VISIBLE_DEVICES=0,1,3,4 bash tools/dist_test.sh \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
-    4 \ # four gpus
-    --format-only \
-    --cfg-options data.test.ann_file=data/coco/annotations/panoptic_image_info_test-dev2017.json data.test.img_prefix=data/coco/test2017 \
-    --eval-options jsonfile_prefix=${WORK_DIR}/results
+    8 \  # eights gpus
+    --cfg-options \
+    test_dataloader.dataset.ann_file=annotations/panoptic_image_info_test-dev2017.json \
+    test_dataloader.dataset.data_prefix.img=test2017 \
+    test_dataloader.dataset.data_prefix._delete_=True \
+    test_evaluator.format_only=True \
+    test_evaluator.ann_file=data/coco/annotations/panoptic_image_info_test-dev2017.json \
+    test_evaluator.outfile_prefix=${WORK_DIR}/results
 
 # test with slurm
 GPUS=8 tools/slurm_test.sh \
@@ -76,9 +138,13 @@ GPUS=8 tools/slurm_test.sh \
     ${JOB_NAME} \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
-    --format-only \
-    --cfg-options data.test.ann_file=data/coco/annotations/panoptic_image_info_test-dev2017.json data.test.img_prefix=data/coco/test2017 \
-    --eval-options jsonfile_prefix=${WORK_DIR}/results
+    --cfg-options \
+    test_dataloader.dataset.ann_file=annotations/panoptic_image_info_test-dev2017.json \
+    test_dataloader.dataset.data_prefix.img=test2017 \
+    test_dataloader.dataset.data_prefix._delete_=True \
+    test_evaluator.format_only=True \
+    test_evaluator.ann_file=data/coco/annotations/panoptic_image_info_test-dev2017.json \
+    test_evaluator.outfile_prefix=${WORK_DIR}/results
 ```
 
 Example
@@ -90,9 +156,13 @@ Suppose we perform inference on `test2017` using pretrained MaskFormer with ResN
 CUDA_VISIBLE_DEVICES=0 python tools/test.py \
     configs/maskformer/maskformer_r50_mstrain_16x1_75e_coco.py \
     checkpoints/maskformer_r50_mstrain_16x1_75e_coco_20220221_141956-bc2699cb.pth \
-    --format-only \
-    --cfg-options data.test.ann_file=data/coco/annotations/panoptic_image_info_test-dev2017.json data.test.img_prefix=data/coco/test2017 \
-    --eval-options jsonfile_prefix=work_dirs/maskformer/results
+    --cfg-options \
+    test_dataloader.dataset.ann_file=annotations/panoptic_image_info_test-dev2017.json \
+    test_dataloader.dataset.data_prefix.img=test2017 \
+    test_dataloader.dataset.data_prefix._delete_=True \
+    test_evaluator.format_only=True \
+    test_evaluator.ann_file=data/coco/annotations/panoptic_image_info_test-dev2017.json \
+    test_evaluator.outfile_prefix=work_dirs/maskformer/results
 ```
 
 ### Rename files and zip results
