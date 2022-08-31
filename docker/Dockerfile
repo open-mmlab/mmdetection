@@ -12,11 +12,9 @@ RUN apt-get update && apt-get install -y ffmpeg libsm6 libxext6 git ninja-build 
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir --upgrade pip wheel setuptools
-# Install MMEngine
-RUN pip install --no-cache-dir mmengine
-# Install MMCV
-RUN pip install --no-cache-dir mmcv>=2.0.0rc0 -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.6.0/index.html
+# Install MMEngine and MMCV
+RUN pip install openmim
+RUN mim install mmengine "mmcv-full>=2.0rc0"
 
 # Install MMDetection
 RUN conda clean --all

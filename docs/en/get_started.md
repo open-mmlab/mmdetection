@@ -44,10 +44,10 @@ We recommend that users follow our best practices to install MMDetection. Howeve
 ```shell
 pip install -U openmim
 mim install mmengine
-mim install mmcv>=2.0.0rc1
+mim install "mmcv>=2.0.0rc1"
 ```
 
-**Note:** In MMCV-v2.x, `mmcv-full` is rename to `mmcv`, if you want to install `mmcv` without CUDA ops, you can use `mim install mmcv-lite>=2.0.0rc1` to install the lite version.
+**Note:** In MMCV-v2.x, `mmcv-full` is rename to `mmcv`, if you want to install `mmcv` without CUDA ops, you can use `mim install "mmcv-lite>=2.0.0rc1"` to install the lite version.
 
 **Step 1.** Install MMDetection.
 
@@ -66,7 +66,7 @@ pip install -v -e .
 Case b: If you use mmdet as a dependency or third-party package, install it with MIM:
 
 ```shell
-mim install mmdet>=3.0.0rc0
+mim install "mmdet>=3.0.0rc0"
 ```
 
 ## Verify the installation
@@ -140,7 +140,7 @@ To install MMCV with pip instead of MIM, please follow [MMCV installation guides
 For example, the following command install mmcv built for PyTorch 1.12.x and CUDA 11.6.
 
 ```shell
-pip install mmcv>=2.0.0rc1 -f https://download.openmmlab.com/mmcv/dist/cu116/torch1.12.0/index.html
+pip install "mmcv>=2.0.0rc1" -f https://download.openmmlab.com/mmcv/dist/cu116/torch1.12.0/index.html
 ```
 
 #### Install on CPU-only platforms
