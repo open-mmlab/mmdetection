@@ -76,10 +76,11 @@ test_evaluator = val_evaluator
 #         type=dataset_type,
 #         data_root=data_root,
 #         ann_file='annotations/panoptic_image_info_test-dev2017.json',
-#         data_prefix=dict(img='test2017/', seg=None),
+#         data_prefix=dict(img='test2017/'),
 #         test_mode=True,
 #         pipeline=test_pipeline))
 # test_evaluator = dict(
 #     type='CocoPanopticMetric',
 #     format_only=True,
+#     ann_file=data_root + 'annotations/panoptic_image_info_test-dev2017.json',
 #     outfile_prefix='./work_dirs/coco_panoptic/test')

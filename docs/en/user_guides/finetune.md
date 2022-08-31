@@ -13,12 +13,13 @@ Take the finetuning process on Cityscapes Dataset as an example, the users need 
 ## Inherit base configs
 
 To release the burden and reduce bugs in writing the whole configs, MMDetection V2.0 support inheriting configs from multiple existing configs. To finetune a Mask RCNN model, the new config needs to inherit
-`_base_/models/mask-rcnn_r50_fpn.py` to build the basic structure of the model. To use the Cityscapes Dataset, the new config can also simply inherit `_base_/datasets/cityscapes_instance.py`. For runtime settings such as training schedules, the new config needs to inherit `_base_/default_runtime.py`. This configs are in the `configs` directory and the users can also choose to write the whole contents rather than use inheritance.
+`_base_/models/mask-rcnn_r50_fpn.py` to build the basic structure of the model. To use the Cityscapes Dataset, the new config can also simply inherit `_base_/datasets/cityscapes_instance.py`. For runtime settings such as logger settings, the new config needs to inherit `_base_/default_runtime.py`. For training schedules, the new config can to inherit `_base_/schedules/schedule_1x.py`. These configs are in the `configs` directory and the users can also choose to write the whole contents rather than use inheritance.
 
 ```python
 _base_ = [
     '../_base_/models/mask-rcnn_r50_fpn.py',
-    '../_base_/datasets/cityscapes_instance.py', '../_base_/default_runtime.py'
+    '../_base_/datasets/cityscapes_instance.py', '../_base_/default_runtime.py',
+    '../_base_/schedules/schedule_1x.py'
 ]
 ```
 
@@ -28,7 +29,6 @@ Then the new config needs to modify the head according to the class numbers of t
 
 ```python
 model = dict(
-    pretrained=None,
     roi_head=dict(
         bbox_head=dict(
             type='Shared2FCBBoxHead',
@@ -56,7 +56,7 @@ model = dict(
 
 ## Modify dataset
 
-The users may also need to prepare the dataset and write the configs about dataset. MMDetection V2.0 already support VOC, WIDER FACE, COCO and Cityscapes Dataset.
+The users may also need to prepare the dataset and write the configs about dataset, refer to [Customize Datasets](../advanced_guides/customize_dataset.md) for more detail. MMDetection V3.0 already supports VOC, WIDERFACE, COCO, LIVS, OpenImages, DeepFashion and Cityscapes Dataset.
 
 ## Modify training schedule
 
@@ -65,18 +65,26 @@ The finetuning hyperparameters vary from the default schedule. It usually requir
 ```python
 # optimizer
 # lr is set for a batch size of 8
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
-optimizer_config = dict(grad_clip=None)
-# learning policy
-lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=500,
-    warmup_ratio=0.001,
-    step=[7])
-# the max_epochs and step in lr_config need specifically tuned for the customized dataset
-runner = dict(max_epochs=8)
-log_config = dict(interval=100)
+optim_wrapper = dict(optimizer=dict(lr=0.01))
+
+# learning rate
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
+    dict(
+        type='MultiStepLR',
+        begin=0,
+        end=8,
+        by_epoch=True,
+        milestones=[7],
+        gamma=0.1)
+]
+
+# max_epochs
+train_cfg = dict(max_epochs=8)
+
+# log config
+default_hooks = dict(logger=dict(interval=100)),
 ```
 
 ## Use pre-trained model
