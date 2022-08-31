@@ -8,7 +8,7 @@ If your folder structure is different, you may need to change the corresponding 
 
 We provide a script to download datasets such as COCO , you can run `python tools/misc/download_dataset.py --dataset-name coco2017` to download COCO dataset.
 
-For more usage please refer to [dataset-download](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/docs/en/useful_tools.md#dataset-download)
+For more usage please refer to [dataset-download](https://mmdetection.readthedocs.io/en/dev-3.x/user_guides/useful_tools.html#dataset-download)
 
 ```text
 mmdetection

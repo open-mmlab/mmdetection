@@ -20,27 +20,27 @@ from mmdet.registry import VISUALIZERS
 from mmdet.utils import register_all_modules
 from mmdet.apis import init_detector, inference_detector
 
-# register all modules in mmdet into the registries
+# Register all modules in mmdet into the registries
 register_all_modules()
 
 # Specify the path to model config and checkpoint file
 config_file = 'configs/faster_rcnn/faster-rcnn_r50-fpn_1x_coco.py'
 checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
 
-# build the model from a config file and a checkpoint file
+# Build the model from a config file and a checkpoint file
 model = init_detector(config_file, checkpoint_file, device='cuda:0')
 
-# init visualizer
+# Init visualizer
 visualizer = VISUALIZERS.build(model.cfg.visualizer)
-# the dataset_meta is loaded from the checkpoint and
+# The dataset_meta is loaded from the checkpoint and
 # then pass to the model in init_detector
 visualizer.dataset_meta = model.dataset_meta
-# test a single image and show the results
+# Ttest a single image and show the results
 
 img = 'test.jpg'  # or img = mmcv.imread(img), which will only load it once
 result = inference_detector(model, img)
 
-# show the results
+# Show the results
 img = mmcv.imread(img)
 img = mmcv.imconvert(img, 'bgr', 'rgb')
 
@@ -52,14 +52,14 @@ visualizer.add_datasample(
     draw_gt=False,
     show=True)
 
-# test a video and show the results
-# build test pipeline
+# Test a video and show the results
+# Build test pipeline
 model.cfg.test_dataloader.dataset.pipeline[0].type = 'LoadImageFromNDArray'
 test_pipeline = Compose(model.cfg.test_dataloader.dataset.pipeline)
 
-# init visualizer
+# Init visualizer
 visualizer = VISUALIZERS.build(model.cfg.visualizer)
-# the dataset_meta is loaded from the checkpoint and
+# The dataset_meta is loaded from the checkpoint and
 # then pass to the model in init_detector
 visualizer.dataset_meta = model.dataset_meta
 
@@ -86,50 +86,6 @@ for frame in track_iter_progress(video_reader):
 A notebook demo can be found in [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/demo/inference_demo.ipynb).
 
 Note:  `inference_detector` only supports single-image inference for now.
-
-## Asynchronous interface - supported for Python 3.7+
-
-For Python 3.7+, MMDetection also supports async interfaces.
-By utilizing CUDA streams, it allows not to block CPU on GPU bound inference code and enables better CPU/GPU utilization for single-threaded application. Inference can be done concurrently either between different input data samples or between different models of some inference pipeline.
-
-See `tests/async_benchmark.py` to compare the speed of synchronous and asynchronous interfaces.
-
-```python
-import asyncio
-import torch
-from mmdet.apis import init_detector, async_inference_detector
-from mmdet.registry import VISUALIZERS
-from mmdet.utils.contextmanagers import concurrent
-
-async def main():
-    config_file = 'configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py'
-    checkpoint_file = 'checkpoints/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth'
-    device = 'cuda:0'
-    model = init_detector(config_file, checkpoint=checkpoint_file, device=device)
-
-    # init visualizer
-    visualizer = VISUALIZERS.build(model.cfg.visualizer)
-    visualizer.dataset_meta = model.dataset_meta
-
-    # test a single image and show the results
-    img = 'test.jpg'  # or img = mmcv.imread(img), which will only load it once
-
-    # test a single image
-    tasks = asyncio.create_task(async_inference_detector(model, img))
-    result = await asyncio.gather(tasks)
-    # show the results
-    img = mmcv.imread(img)
-    img = mmcv.imconvert(img, 'bgr', 'rgb')
-    visualizer.add_datasample(
-        'result',
-        img,
-        data_sample=result[0],
-        draw_gt=False,
-        show=True,
-        wait_time=0)
-
-asyncio.run(main())
-```
 
 ## Demos
 
