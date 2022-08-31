@@ -42,10 +42,10 @@ conda install pytorch torchvision cpuonly -c pytorch
 ```shell
 pip install -U openmim
 mim install mmengine
-mim install mmcv>=2.0.0rc0
+mim install mmcv>=2.0.0rc1
 ```
 
-**注意：** 在 MMCV-v2.x 中，`mmcv-full` 改名为 `mmcv`，如果你想安装不包含 CUDA 算子精简版，可以通过 `min install mmcv-lite>=2.0.0rc0` 来安装。
+**注意：** 在 MMCV-v2.x 中，`mmcv-full` 改名为 `mmcv`，如果你想安装不包含 CUDA 算子精简版，可以通过 `min install mmcv-lite>=2.0.0rc1` 来安装。
 
 **步骤 1.** 安装 MMDetection
 
@@ -123,7 +123,7 @@ inference_detector(model, 'demo/demo.jpg')
 
 #### 不使用 MIM 安装 MMEngine
 
-要使用 pip 而不是 MIM 来安装 MMEngine，请遵照 [MMEngine 安装指南](<>) 。
+要使用 pip 而不是 MIM 来安装 MMEngine，请遵照 [MMEngine 安装指南](https://mmengine.readthedocs.io/en/latest/get_started/installation.html) 。
 
 例如，你可以通过以下命令安装 MMEngine
 
@@ -142,14 +142,14 @@ MMCV 包含 C++ 和 CUDA 扩展，因此其对 PyTorch 的依赖比较复杂。M
 例如，下述命令将会安装基于 PyTorch 1.12.x 和 CUDA 11.6 编译的 mmcv。
 
 ```shell
-pip install mmcv>=2.0.0rc0 -f https://download.openmmlab.com/mmcv/dist/cu116/torch1.12.0/index.html
+pip install mmcv>=2.0.0rc1 -f https://download.openmmlab.com/mmcv/dist/cu116/torch1.12.0/index.html
 ```
 
 #### 在 CPU 环境中安装
 
 我们的代码能够建立在只使用 CPU 的环境（CUDA 不可用）。
 
-在 CPU 模式下，可以进行模型训练（需要 MMCV 版本 >= 2.0.0rc0)、测试或者推理，然而以下功能将在 CPU 模式下不能使用：
+在 CPU 模式下，可以进行模型训练（需要 MMCV 版本 >= 2.0.0rc1)、测试或者推理，然而以下功能将在 CPU 模式下不能使用：
 
 - Deformable Convolution
 - Modulated Deformable Convolution
@@ -182,7 +182,7 @@ pip install mmcv>=2.0.0rc0 -f https://download.openmmlab.com/mmcv/dist/cu116/tor
 ```shell
 !pip3 install openmim
 !mim install mmengine
-!mim install mmcv>=2.0.0rc0,<2.1.0
+!mim install mmcv>=2.0.0rc1,<2.1.0
 ```
 
 **步骤 2.** 使用源码安装 MMDetection。
@@ -225,7 +225,7 @@ docker run --gpus all --shm-size=8g -it -v {DATA_DIR}:/mmdetection/data mmdetect
 
 如果你在安装过程中遇到一些问题，请先查看 [FAQ](notes/faq.md) 页面。
 
-如果没有找到解决方案，你也可以在 GitHub 上 [打开一个问题](https://github.com/open-mmlab/mmsegmentation/issues/new/choose) 。
+如果没有找到解决方案，你也可以在 GitHub 上 [打开一个问题](https://github.com/open-mmlab/mmdetection/issues/new/choose) 。
 
 ### 使用多个 MMDetection 版本进行开发
 

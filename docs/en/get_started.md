@@ -44,10 +44,10 @@ We recommend that users follow our best practices to install MMDetection. Howeve
 ```shell
 pip install -U openmim
 mim install mmengine
-mim install mmcv>=2.0.0rc0
+mim install mmcv>=2.0.0rc1
 ```
 
-**Note:** In MMCV-v2.x, `mmcv-full` is rename to `mmcv`, if you want to install `mmcv` without CUDA ops, you can use `mim install mmcv-lite>=2.0.0rc0` to install the lite version.
+**Note:** In MMCV-v2.x, `mmcv-full` is rename to `mmcv`, if you want to install `mmcv` without CUDA ops, you can use `mim install mmcv-lite>=2.0.0rc1` to install the lite version.
 
 **Step 1.** Install MMDetection.
 
@@ -123,7 +123,7 @@ Installing CUDA runtime libraries is enough if you follow our best practices, be
 
 #### Install MMEngine without MIM
 
-To install MMEngine with pip instead of MIM, please follow \[MMEngine installation guides\](Update later).
+To install MMEngine with pip instead of MIM, please follow \[MMEngine installation guides\](https://mmengine.readthedocs.io/en/latest/get_started/installation.html).
 
 For example, you can install MMEngine by the following command.
 
@@ -140,12 +140,12 @@ To install MMCV with pip instead of MIM, please follow [MMCV installation guides
 For example, the following command install mmcv built for PyTorch 1.12.x and CUDA 11.6.
 
 ```shell
-pip install mmcv>=2.0.0rc0 -f https://download.openmmlab.com/mmcv/dist/cu116/torch1.12.0/index.html
+pip install mmcv>=2.0.0rc1 -f https://download.openmmlab.com/mmcv/dist/cu116/torch1.12.0/index.html
 ```
 
 #### Install on CPU-only platforms
 
-MMDetection can be built for CPU only environment. In CPU mode you can train (requires MMCV version >= 2.0.0rc0), test or inference a model.
+MMDetection can be built for CPU only environment. In CPU mode you can train (requires MMCV version >= 2.0.0rc1), test or inference a model.
 
 However some functionalities are gone in this mode:
 
@@ -182,7 +182,7 @@ thus we only need to install MMEngine, MMCV, and MMDetection with the following 
 ```shell
 !pip3 install openmim
 !mim install mmengine
-!mim install mmcv>=2.0.0rc0,<2.1.0
+!mim install mmcv>=2.0.0rc1,<2.1.0
 ```
 
 **Step 2.** Install MMDetection from the source.

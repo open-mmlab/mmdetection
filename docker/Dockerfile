@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir --upgrade pip wheel setuptools
 # Install MMEngine
 RUN pip install --no-cache-dir mmengine
 # Install MMCV
-RUN pip install --no-cache-dir mmcv-full>=2.0.0rc0 -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.6.0/index.html
+RUN pip install --no-cache-dir mmcv>=2.0.0rc0 -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.6.0/index.html
 
 # Install MMDetection
 RUN conda clean --all

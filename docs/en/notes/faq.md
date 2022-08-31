@@ -10,8 +10,8 @@ We list some common troubles faced by many users and their corresponding solutio
 
   | MMDetection version |      MMCV version       |     MMEngine version     |
   | :-----------------: | :---------------------: | :----------------------: |
-  |         3.x         | mmcv>=2.0.0rc0, \<2.1.0 | mmengine>=0.5.0, \<0.7.0 |
-  |      3.0.0rc0       | mmcv>=2.0.0rc0, \<2.1.0 | mmengine>=0.5.0, \<0.7.0 |
+  |         3.x         | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.5.0, \<0.7.0 |
+  |      3.0.0rc0       | mmcv>=2.0.0rc1, \<2.1.0 | mmengine>=0.5.0, \<0.7.0 |
 
   **Note:**
 
