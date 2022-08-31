@@ -58,12 +58,12 @@ for i in range(self.num_stages):
     ...
     if i < self.num_stages - 1:
           for j in range(num_imgs):
-                   # Handle empty proposal
-                   if rois[j].shape[0] > 0:
-                       bbox_label = cls_score[j][:, :-1].argmax(dim=1)
-                       refine_roi = self.bbox_head[i].regress_by_class(
-                            rois[j], bbox_label, bbox_pred[j], img_metas[j])
-                       refine_roi_list.append(refine_roi)
+                # Handle empty proposal
+                if rois[j].shape[0] > 0:
+                    bbox_label = cls_score[j][:, :-1].argmax(dim=1)
+                    refine_roi = self.bbox_head[i].regress_by_class(
+                         rois[j], bbox_label, bbox_pred[j], img_metas[j])
+                    refine_roi_list.append(refine_roi)
 ```
 
 If you have customized `RoIHead`, you can refer to the above method to deal with empty proposals.
