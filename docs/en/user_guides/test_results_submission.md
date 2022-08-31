@@ -54,7 +54,7 @@ To do inference on coco test-dev, we should update the setting of `test_datalode
 
 #### Update them in config file
 
-The relevant settings are provided at the end of `configs/_base_/datasets/coco_panoptic.py`.
+The relevant settings are provided at the end of `configs/_base_/datasets/coco_panoptic.py`, as below.
 
 ```python
 test_dataloader = dict(
@@ -77,7 +77,7 @@ test_evaluator = dict(
     outfile_prefix='./work_dirs/coco_panoptic/test')
 ```
 
-Any of the following way can be used to update the setting.
+Any of the following way can be used to update the setting for inference on coco test-dev set.
 
 Case 1: Directly uncomment the setting in `configs/_base_/datasets/coco_panoptic.py`.
 
@@ -94,7 +94,7 @@ test_evaluator = dict(
     outfile_prefix='./work_dirs/coco_panoptic/test')
 ```
 
-Then infer on coco test dataset by the following command.
+Then infer on coco test-dev et by the following command.
 
 ```shell
 python tools/test.py \
@@ -104,7 +104,7 @@ python tools/test.py \
 
 #### Update them in command line
 
-The command for the update of the related settings and inference on coco test-dev are as below.
+The command for update of the related settings and inference on coco test-dev are as below.
 
 ```shell
 # test with single gpu

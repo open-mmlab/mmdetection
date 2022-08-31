@@ -56,7 +56,7 @@ model = dict(
 
 ## Modify dataset
 
-The users may also need to prepare the dataset and write the configs about dataset, see [Customize Datasets](../advanced_guides/customize_dataset.md). MMDetection V2.0 already support VOC, WIDER FACE, COCO and Cityscapes Dataset.
+The users may also need to prepare the dataset and write the configs about dataset, refer to [Customize Datasets](../advanced_guides/customize_dataset.md) for more detail. MMDetection V3.0 already supports VOC, WIDERFACE, COCO, LIVS, OpenImages, DeepFashion and Cityscapes Dataset.
 
 ## Modify training schedule
 
