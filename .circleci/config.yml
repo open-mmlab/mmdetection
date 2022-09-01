@@ -21,11 +21,11 @@ workflows:
           # <regex path-to-test> <parameter-to-set> <value-of-pipeline-parameter>
           mapping: |
             mmdet/.* lint_only false
+            requirements/.* lint_only false
             tests/.* lint_only false
             tools/.* lint_only false
             configs/.* lint_only false
             .circleci/.* lint_only false
-          # requirements/.* lint_only false
           base-revision: dev-3.x
           # this is the path of the configuration we should trigger once
           # path filtering and pipeline parameter value updates are
