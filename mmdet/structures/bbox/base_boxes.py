@@ -73,7 +73,7 @@ class BaseBoxes(metaclass=ABCMeta):
         if data.numel() == 0:
             data = data.reshape((-1, self.box_dim))
 
-        assert data.dim() >= 2 and data.size(-1) % self.box_dim == 0, \
+        assert data.dim() >= 2 and data.size(-1) == self.box_dim, \
             ('The boxes dimension must >= 2 and the length of the last '
              f'dimension must be {self.box_dim}, but got boxes with '
              f'shape {data.shape}.')
@@ -194,10 +194,6 @@ class BaseBoxes(metaclass=ABCMeta):
     def dim(self) -> int:
         """Reload ``dim`` from self.tensor."""
         return self.tensor.dim()
-
-    def numel(self) -> int:
-        """Reload ``numel`` from self.tensor."""
-        return self.tensor.numel()
 
     @property
     def device(self) -> torch.device:
@@ -326,7 +322,7 @@ class BaseBoxes(metaclass=ABCMeta):
 
     @classmethod
     def stack(cls: Type[T], box_list: Sequence[T], dim: int = 0) -> T:
-        """Stacks a sequence of tensors along a new dimension. Similar to
+        """Concatenates a sequence of tensors along a new dimension. Similar to
         ``torch.stack``.
 
         Args:
@@ -334,7 +330,7 @@ class BaseBoxes(metaclass=ABCMeta):
             dim (int): Dimension to insert. Defaults to 0.
 
         Returns:
-            T: Stacked box instance.
+            T: Concatenated box instance.
         """
         assert isinstance(box_list, Sequence)
         if len(box_list) == 0:
@@ -452,19 +448,11 @@ class BaseBoxes(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def is_inside(self,
-                  img_shape: Tuple[int, int],
-                  all_inside: bool = False,
-                  allowed_border: int = 0) -> BoolTensor:
+    def is_inside(self, img_shape: Tuple[int, int]) -> BoolTensor:
         """Find boxes inside the image.
 
         Args:
             img_shape (Tuple[int, int]): A tuple of image height and width.
-            all_inside (bool): Whether the boxes are all inside the image or
-                part inside the image. Defaults to False.
-            allowed_border (int): Boxes that extend beyond the image shape
-                boundary by more than ``allowed_border`` are considered
-                "outside" Defaults to 0.
 
         Returns:
             BoolTensor: A BoolTensor indicating whether the box is inside
