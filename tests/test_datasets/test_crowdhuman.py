@@ -8,9 +8,9 @@ class TestCrowdHumanDataset(unittest.TestCase):
 
     def test_crowdhuman_init(self):
         dataset = CrowdHumanDataset(
-            data_root='tests/data/CrowdHuman/',
+            data_root='tests/data/crowdhuman_dataset/',
             ann_file='test_annotation_train.odgt',
             data_prefix=dict(img='Images/'),
             pipeline=[])
-        self.assertEqual(len(dataset), 2)
+        self.assertEqual(len(dataset), 1)
         self.assertEqual(dataset.metainfo['CLASSES'], ('person', ))

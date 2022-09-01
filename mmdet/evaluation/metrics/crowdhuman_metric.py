@@ -143,21 +143,17 @@ class CrowdHumanMetric(BaseMetric):
         compute the metrics when all batches have been processed.
 
         Args:
-            data_batch (Sequence[dict]): A batch of data
-                from the dataloader.
-            data_samples (Sequence[dict]): A batch of outputs from
-                the model.
+            data_batch (dict): A batch of data from the dataloader.
+            data_samples (Sequence[dict]): A batch of data samples that
+                contain annotations and predictions.
         """
-        for data, pred in zip(data_batch, data_samples):
-            gt = copy.deepcopy(data['data_sample'])
+        for data_sample in data_samples:
             ann = dict()
-
-            ann['ID'] = gt['img_id']
-            ann['width'] = gt['ori_shape'][1]
-            ann['height'] = gt['ori_shape'][0]
-
-            pred_bboxes = pred['pred_instances']['bboxes'].cpu().numpy()
-            pred_scores = pred['pred_instances']['scores'].cpu().numpy()
+            ann['ID'] = data_sample['img_id']
+            ann['width'] = data_sample['ori_shape'][1]
+            ann['height'] = data_sample['ori_shape'][0]
+            pred_bboxes = data_sample['pred_instances']['bboxes'].cpu().numpy()
+            pred_scores = data_sample['pred_instances']['scores'].cpu().numpy()
 
             pred_bbox_scores = np.hstack(
                 [pred_bboxes, pred_scores.reshape((-1, 1))])
