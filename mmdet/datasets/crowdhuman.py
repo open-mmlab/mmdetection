@@ -69,12 +69,15 @@ class CrowdHumanDataset(BaseDataset):
             data_list.append(parsed_data_info)
             prog_bar.update()
         if not self.id_hw_exist:
+            # TODO: MMDetection's dataset support multiple file client. If the
+            #  dataset is not stored on disks, such as AWS or Aliyun OSS, this
+            #  may cause errors.
             with open(self.id_hw_path, 'w', encoding='utf-8') as file:
                 json.dump(self.id_hw, file, indent=4)
             print_log(f'\nsave id_hw in {self.data_root}', level=logging.INFO)
         del self.id_hw, self.id_hw_exist, self.id_hw_path
         print_log('\nDone', level=logging.INFO)
-        return data_list
+        return data_list[:10]
 
     def parse_data_info(self, raw_data_info: dict) -> Union[dict, List[dict]]:
         """Parse raw annotation to target format.
@@ -130,21 +133,3 @@ class CrowdHumanDataset(BaseDataset):
 
         data_info['instances'] = instances
         return data_info
-
-
-if __name__ == '__main__':
-    train_pipeline = [
-        dict(type='LoadImageFromFile', file_client_args=dict(backend='disk')),
-        dict(type='LoadAnnotations', with_bbox=True),
-        dict(type='BoxesCrop'),
-        dict(type='Resize', scale=(1333, 800), keep_ratio=True),
-        dict(type='RandomFlip', prob=0.5),
-        dict(type='PackDetInputs')
-    ]
-    dataset = CrowdHumanDataset(
-        data_root=r'D:\BaiduNetdiskDownload\CrowdHuman',
-        ann_file='annotation_train.odgt',
-        data_prefix=dict(img='Images/'),
-        pipeline=train_pipeline)
-    data = dataset.__getitem__(1)
-    print_log('complete the test', level=logging.INFO)

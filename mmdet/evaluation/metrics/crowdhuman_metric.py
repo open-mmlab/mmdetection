@@ -8,11 +8,15 @@ from multiprocessing import Process, Queue
 from typing import Dict, List, Optional, Sequence, Union
 
 import numpy as np
+
+try:
+    from scipy.sparse import csr_matrix
+    from scipy.sparse.csgraph import maximum_bipartite_matching
+except ImportError:
+    csr_matrix, maximum_bipartite_matching = None, None
+
 from mmengine.evaluator import BaseMetric
 from mmengine.logging import MMLogger
-from scipy.sparse import csr_matrix
-from scipy.sparse.csgraph import maximum_bipartite_matching
-from tqdm import tqdm
 
 from mmdet.evaluation.functional.bbox_overlaps import bbox_overlaps
 from mmdet.registry import METRICS
@@ -57,6 +61,7 @@ class CrowdHumanMetric(BaseMetric):
         ji_process_num (int): The number of processes to evaluation JI.
             Defaults to 10.
     """
+    default_prefix: Optional[str] = 'crowd_human'
 
     def __init__(self,
                  ann_file: str,
@@ -71,6 +76,10 @@ class CrowdHumanMetric(BaseMetric):
                  mr_ref: str = 'CALTECH_-2',
                  ji_process_num: int = 10) -> None:
         super().__init__(collect_device=collect_device, prefix=prefix)
+
+        if csr_matrix is None or maximum_bipartite_matching is None:
+            raise ImportError(
+                'Please run "pip install scipy" to install scipy first.')
 
         self.ann_file = ann_file
         # crowdhuman evaluation metrics
@@ -128,7 +137,7 @@ class CrowdHumanMetric(BaseMetric):
         return result_file_path
 
     def process(self, data_batch: Sequence[dict],
-                predictions: Sequence[dict]) -> None:
+                data_samples: Sequence[dict]) -> None:
         """Process one batch of data samples and predictions. The processed
         results should be stored in ``self.results``, which will be used to
         compute the metrics when all batches have been processed.
@@ -136,10 +145,10 @@ class CrowdHumanMetric(BaseMetric):
         Args:
             data_batch (Sequence[dict]): A batch of data
                 from the dataloader.
-            predictions (Sequence[dict]): A batch of outputs from
+            data_samples (Sequence[dict]): A batch of outputs from
                 the model.
         """
-        for data, pred in zip(data_batch, predictions):
+        for data, pred in zip(data_batch, data_samples):
             gt = copy.deepcopy(data['data_sample'])
             ann = dict()
 
@@ -247,11 +256,11 @@ class CrowdHumanMetric(BaseMetric):
             sort of dtbox.score.
         """
         score_list = list()
-        for ID in samples:
+        for id in samples:
             if self.compare_matching_method == 'VOC':
-                result = samples[ID].compare_voc(self.iou_thres)
+                result = samples[id].compare_voc(self.iou_thres)
             else:
-                result = samples[ID].compare_caltech(self.iou_thres)
+                result = samples[id].compare_caltech(self.iou_thres)
             score_list.extend(result)
         # In the descending sort of dtbox score.
         score_list.sort(key=lambda x: x[0][-1], reverse=True)
@@ -395,15 +404,11 @@ class CrowdHumanMetric(BaseMetric):
                     args=(result_queue, sample_data, score_thr))
                 p.start()
                 procs.append(p)
-            tqdm.monitor_interval = 0
-            pbar = tqdm(total=total, leave=False, ascii=True)
             for i in range(total):
                 t = result_queue.get()
                 results.append(t)
-                pbar.update(1)
             for p in procs:
                 p.join()
-            pbar.close()
             line, mean_ratio = self.gather(results)
             line = 'score_thr:{:.1f}, {}'.format(score_thr, line)
             res_line.append(line)
