@@ -73,7 +73,7 @@ Besides the interface changes, there are several changes listed as below:
 
 #### Model
 
-The models in MMDet 3.x all inherits from `BaseModel` in MMEngine, which defines a new convention of models in OpenMMLeb 2.x projects.
+The models in MMDet 3.x all inherits from `BaseModel` in MMEngine, which defines a new convention of models in OpenMMLab 2.0 projects.
 Users can refer to [the tutorial of model in MMengine](https://mmengine.readthedocs.io/en/latest/tutorials/model.html) for more details.
 Accordingly, there are several changes as the following:
 
