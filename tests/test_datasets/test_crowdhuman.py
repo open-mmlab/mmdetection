@@ -1,3 +1,4 @@
+# Copyright (c) OpenMMLab. All rights reserved.
 import unittest
 
 from mmdet.datasets import CrowdHumanDataset
