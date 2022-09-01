@@ -5,6 +5,7 @@ import numpy as np
 import torch
 from torch import Tensor
 
+from mmdet.models.utils import cat_boxes
 from mmdet.structures.bbox import BaseBoxes
 from mmdet.utils import util_mixins
 from mmdet.utils.util_random import ensure_rng
@@ -118,7 +119,7 @@ class SamplingResult(util_mixins.NiceRepr):
     @property
     def priors(self):
         """torch.Tensor: concatenated positive and negative priors"""
-        return torch.cat([self.pos_priors, self.neg_priors])
+        return cat_boxes([self.pos_priors, self.neg_priors])
 
     @property
     def bboxes(self):
