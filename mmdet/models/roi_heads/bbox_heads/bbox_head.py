@@ -16,7 +16,6 @@ from mmdet.models.task_modules.samplers import SamplingResult
 from mmdet.models.utils import (empty_instances, get_box_tensor, multi_apply,
                                 scale_boxes)
 from mmdet.registry import MODELS, TASK_UTILS
-from mmdet.structures.bbox import get_box_type
 from mmdet.utils import ConfigType, InstanceList, OptMultiConfig
 
 
@@ -547,6 +546,7 @@ class BBoxHead(BaseModule):
 
         # Get the inside tensor when `bboxes` is a boxlist
         bboxes = get_box_tensor(bboxes)
+        box_dim = bboxes.size(-1)
         bboxes = bboxes.view(num_rois, -1)
 
         if rcnn_test_cfg is None:
@@ -555,14 +555,13 @@ class BBoxHead(BaseModule):
             results.bboxes = bboxes
             results.scores = scores
         else:
-            _, box_type = get_box_type(self.predict_box_type)
             det_bboxes, det_labels = multiclass_nms(
                 bboxes,
                 scores,
                 rcnn_test_cfg.score_thr,
                 rcnn_test_cfg.nms,
                 rcnn_test_cfg.max_per_img,
-                box_dim=box_type.box_dim)
+                box_dim=box_dim)
             results.bboxes = det_bboxes[:, :-1]
             results.scores = det_bboxes[:, -1]
             results.labels = det_labels
