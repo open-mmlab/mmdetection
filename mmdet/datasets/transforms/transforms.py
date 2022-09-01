@@ -170,19 +170,17 @@ class Resize(MMCV_Resize):
 
 
 @TRANSFORMS.register_module()
-class FixShapeResize(BaseTransform):
+class FixShapeResize(Resize):
     """Resize images & bbox & seg.
 
-    This transform resizes the input image according to ``scale`` or
-    ``scale_factor``. Bboxes, masks, and seg map are then resized
-    with the same scale factor.
-    if ``scale`` and ``scale_factor`` are both set, it will use ``scale`` to
-    resize.
+    This transform resizes the input image according to ``width`` and
+    ``height``. Bboxes, masks, and seg map are then resized
+    with the same parameters.
 
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -203,8 +201,8 @@ class FixShapeResize(BaseTransform):
     - homography_matrix
 
     Args:
-        scale (int or tuple): Images scales for resizing. Defaults to None
-        scale_factor (float or tuple[float]): Scale factors for resizing.
+        width (int): width for resizing.
+        height (int): height for resizing.
             Defaults to None.
         keep_ratio (bool): Whether to keep the aspect ratio when resizing the
             image. Defaults to False.
@@ -222,15 +220,15 @@ class FixShapeResize(BaseTransform):
     """
 
     def __init__(self,
-                 width: int = None,
-                 height: int = None,
+                 width: int,
+                 height: int,
                  img_pad_value: int = 0,
                  mask_pad_value: int = 0,
                  seg_pad_value: int = 255,
                  keep_ratio: bool = False,
                  clip_object_border: bool = True,
                  backend: str = 'cv2',
-                 interpolation='bilinear') -> None:
+                 interpolation: str = 'bilinear') -> None:
         assert width is not None and height is not None, (
             '`width` and'
             '`height` can not be `None`')
@@ -289,13 +287,6 @@ class FixShapeResize(BaseTransform):
                 results['gt_masks'] = results['gt_masks'].resize(
                     results['img_shape'])
 
-    def _resize_bboxes(self, results: dict) -> None:
-        """Resize bounding boxes with ``results['scale_factor']``."""
-        if results.get('gt_bboxes', None) is not None:
-            results['gt_bboxes'].rescale_(results['scale_factor'])
-            if self.clip_object_border:
-                results['gt_bboxes'].clip_(results['img_shape'])
-
     def _resize_seg(self, results: dict) -> None:
         """Resize semantic segmentation map with ``results['scale']``."""
         if results.get('gt_seg_map', None) is not None:
@@ -317,17 +308,6 @@ class FixShapeResize(BaseTransform):
                     interpolation='nearest',
                     backend=self.backend)
             results['gt_seg_map'] = gt_seg
-
-    def _record_homography_matrix(self, results: dict) -> None:
-        """Record the homography matrix for the Resize."""
-        w_scale, h_scale = results['scale_factor']
-        homography_matrix = np.array(
-            [[w_scale, 0, 0], [0, h_scale, 0], [0, 0, 1]], dtype=np.float32)
-        if results.get('homography_matrix', None) is None:
-            results['homography_matrix'] = homography_matrix
-        else:
-            results['homography_matrix'] = homography_matrix @ results[
-                'homography_matrix']
 
     @autocast_box_type()
     def transform(self, results: dict) -> dict:

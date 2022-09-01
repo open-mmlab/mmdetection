@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-# yapf:disable
 import copy
 import os.path as osp
 import unittest
@@ -9,6 +8,7 @@ import numpy as np
 import torch
 from mmcv.transforms import LoadImageFromFile
 
+# yapf:disable
 from mmdet.datasets.transforms import (CopyPaste, CutOut, Expand,
                                        FixShapeResize, MinIoURandomCrop, MixUp,
                                        Mosaic, Pad, PhotoMetricDistortion,
@@ -16,6 +16,7 @@ from mmdet.datasets.transforms import (CopyPaste, CutOut, Expand,
                                        RandomCrop, RandomErasing, RandomFlip,
                                        RandomShift, Resize, SegRescale,
                                        YOLOXHSVRandomAug)
+# yapf:enable
 from mmdet.evaluation import bbox_overlaps
 from mmdet.registry import TRANSFORMS
 from mmdet.structures.bbox import HorizontalBoxes, bbox_project
