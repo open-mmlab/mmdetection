@@ -209,6 +209,10 @@ class BaseBoxes(metaclass=ABCMeta):
     def shape(self) -> torch.Size:
         return self.tensor.shape
 
+    def numel(self) -> int:
+        """Reload ``numel`` from self.tensor."""
+        return self.tensor.numel()
+
     def numpy(self) -> np.ndarray:
         """Reload ``numpy`` from self.tensor."""
         return self.tensor.numpy()
