@@ -144,7 +144,7 @@ Tricks not implemented by the optimizer should be implemented through optimizer 
 
 - __Use momentum schedule to accelerate model convergence__:
   We support momentum scheduler to modify model's momentum according to learning rate, which could make the model converge in a faster way.
-  Momentum scheduler is usually used with LR scheduler, for example, the following config is used in [3D detection](https://github.com/open-mmlab/mmdetection3d/blob/dev-1.x/configs/_base_/schedules/cyclic_20e.py) to accelerate convergence.
+  Momentum scheduler is usually used with LR scheduler, for example, the following config is used in [3D detection](https://github.com/open-mmlab/mmdetection3d/blob/dev-1.x/configs/_base_/schedules/cyclic-20e.py) to accelerate convergence.
   For more details, please refer to the implementation of [CosineAnnealingLR](https://github.com/open-mmlab/mmengine/blob/main/mmengine/optim/scheduler/lr_scheduler.py#L43) and [CosineAnnealingMomentum](https://github.com/open-mmlab/mmengine/blob/main/mmengine/optim/scheduler/momentum_scheduler.py#L71).
 
   ```python
@@ -257,7 +257,8 @@ MMEngine provides many useful [hooks](https://mmengine.readthedocs.io/en/latest/
 Here we give an example of creating a new hook in mmdet and using it in training.
 
 ```python
-from mmengine.hooks import HOOKS, Hook
+from mmengine.hooks import Hook
+from mmdet.registry import HOOKS
 
 
 @HOOKS.register_module()
@@ -327,11 +328,11 @@ custom_hooks = [
 
 By default the hook's priority is set as `NORMAL` during registration.
 
-### Use hooks implemented in MMEngine
+### Use hooks implemented in MMDetection
 
-If the hook is already implemented in MMEngine, you can directly modify the config to use the hook as below
+If the hook is already implemented in MMDectection, you can directly modify the config to use the hook as below
 
-#### 4. Example: `NumClassCheckHook`
+#### Example: `NumClassCheckHook`
 
 We implement a customized hook named [NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/engine/hooks/num_class_check_hook.py) to check whether the `num_classes` in head matches the length of `CLASSES` in `dataset`.
 

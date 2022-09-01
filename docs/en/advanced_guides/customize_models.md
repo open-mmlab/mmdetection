@@ -104,7 +104,7 @@ or alternatively add
 
 ```python
 custom_imports = dict(
-    imports=['mmdet.models.necks.pafpn.py'],
+    imports=['mmdet.models.necks.pafpn'],
     allow_failed_imports=False)
 ```
 

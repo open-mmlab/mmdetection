@@ -174,7 +174,7 @@ model = dict(
  ]
 ```
 
-我们使用这种方式来支持 CityScapes 数据集。脚本在 [cityscapes.py](https://github.com/open-mmlab/mmdetection/blob/master/tools/dataset_converters/cityscapes.py) 并且我们提供了微调的 [configs](https://github.com/open-mmlab/mmdetection/blob/master/configs/cityscapes).
+我们使用这种方式来支持 CityScapes 数据集。脚本在 [cityscapes.py](https://github.com/open-mmlab/mmdetection/blob/3.x/tools/dataset_converters/cityscapes.py) 并且我们提供了微调的 [configs](https://github.com/open-mmlab/mmdetection/blob/3.x/configs/cityscapes).
 
 **注意**
 
@@ -236,7 +236,7 @@ model = dict(
 
 有些数据集可能会提供如：crowd/difficult/ignored bboxes 标注，那么我们使用 `ignore_flag`来包含它们。
 
-在得到上述标准的数据标注格式后，可以直接在配置中使用 MMDetection 的 [BaseDetDataset](<>)，而无需进行转换。
+在得到上述标准的数据标注格式后，可以直接在配置中使用 MMDetection 的 [BaseDetDataset](https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/datasets/base_det_dataset.py#L13) ，而无需进行转换。
 
 ### 自定义数据集例子
 
@@ -351,7 +351,7 @@ test_dataloader = dict(
 
 - 在 MMDetection v2.5.0 之前，如果类别为集合时数据集将自动过滤掉不包含 GT 的图片，且没办法通过修改配置将其关闭。这是一种不可取的行为而且会引起混淆，因为当类别不是集合时数据集时，只有在 `filter_empty_gt=True` 以及 `test_mode=False` 的情况下才会过滤掉不包含 GT 的图片。在 MMDetection v2.5.0 之后，我们将图片的过滤以及类别的修改进行解耦，数据集只有在 `filter_cfg=dict(filter_empty_gt=True)` 和 `test_mode=False` 的情况下才会过滤掉不包含 GT 的图片，无论类别是否为集合。设置类别只会影响用于训练的标注类别，用户可以自行决定是否过滤不包含 GT 的图片。
 - 直接使用 MMEngine 中的 `BaseDataset` 或者 MMDetection 中的 `BaseDetDataset` 时用户不能通过修改配置来过滤不含 GT 的图片，但是可以通过离线的方式来解决。
-- 当设置数据集中的 `classes` 时，记得修改 `num_classes`。从 v2.9.0 (PR#4508) 之后，我们实现了[NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/engine/hooks/num_class_check_hook.py)来检查类别数是否一致。
+- 当设置数据集中的 `classes` 时，记得修改 `num_classes`。从 v2.9.0 (PR#4508) 之后，我们实现了 [NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/engine/hooks/num_class_check_hook.py) 来检查类别数是否一致。
 
 ## COCO 全景分割数据集
 

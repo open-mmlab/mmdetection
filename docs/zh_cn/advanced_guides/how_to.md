@@ -2,19 +2,19 @@
 
 ## 使用 MMClassification 的骨干网络
 
-MMDet、MMCls、MMSeg 中的模型注册表都继承自 MMCV 中的根注册表，允许这些存储库直接使用彼此已经实现的模块。 因此用户可以在 MMDetection 中使用来自 MMClassification 的骨干网络，而无需实现MMClassification 中已经存在的网络。
+MMDet、MMCls、MMSeg 中的模型注册表都继承自 MMEngine 中的根注册表，允许这些存储库直接使用彼此已经实现的模块。 因此用户可以在 MMDetection 中使用来自 MMClassification 的骨干网络，而无需实现MMClassification 中已经存在的网络。
 
 ### 使用在 MMClassification 中实现的骨干网络
 
 假设想将 `MobileNetV3-small` 作为 `RetinaNet` 的骨干网络，则配置文件如下。
 
 ```python
-通过 MMClassification 在 TIMM 中使用骨干网络_base_ = [
+_base_ = [
     '../_base_/models/retinanet_r50_fpn.py',
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
-# please install mmcls>=0.20.0
+# please install mmcls>=1.0.0rc0
 # import mmcls.models to trigger register_module in mmcls
 custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
 pretrained = 'https://download.openmmlab.com/mmclassification/v0/mobilenet_v3/convert/mobilenet_v3_small-8427ecf0.pth'
@@ -34,7 +34,7 @@ model = dict(
 
 ### 通过 MMClassification 使用 TIMM 中实现的骨干网络
 
-由于 MMClassification 提供了 Py**T**orch **Im**age **M**odels (`timm`) 骨干网络的封装，用户也可以通过 MMClassification 直接使用 `timm` 中的骨干网络。假设想将 [`EfficientNet-B1`](https://github.com/open-mmlab/mmdetection/blob/master/configs/timm_example/retinanet_timm_efficientnet_b1_fpn_1x_coco.py) 作为 `RetinaNet` 的骨干网络，则配置文件如下。
+由于 MMClassification 提供了 Py**T**orch **Im**age **M**odels (`timm`) 骨干网络的封装，用户也可以通过 MMClassification 直接使用 `timm` 中的骨干网络。假设想将 [`EfficientNet-B1`](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/timm_example/retinanet_timm-efficientnet-b1_fpn_1x_coco.py) 作为 `RetinaNet` 的骨干网络，则配置文件如下。
 
 ```python
 # https://github.com/open-mmlab/mmdetection/blob/master/configs/timm_example/retinanet_timm_efficientnet_b1_fpn_1x_coco.py
@@ -44,7 +44,7 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
-# please install mmcls>=0.20.0
+# please install mmcls>=1.0.0rc0
 # import mmcls.models to trigger register_module in mmcls
 custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
 model = dict(
@@ -62,9 +62,9 @@ optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 
 `type='mmcls.TIMMBackbone'` 表示在 MMDetection 中使用 MMClassification 中的 `TIMMBackbone` 类，并且使用的模型为` EfficientNet-B1`，其中 `mmcls` 表示 MMClassification 库，而 `TIMMBackbone ` 表示 MMClassification 中实现的 TIMMBackbone 包装器。
 
-关于层次注册器的具体原理可以参考 [MMCV 文档](https://github.com/open-mmlab/mmcv/blob/master/docs/zh_cn/understand_mmcv/registry.md#%E6%B3%A8%E5%86%8C%E5%99%A8%E5%B1%82%E7%BB%93%E6%9E%84)，关于如何使用 MMClassification 中的其他 backbone，可以参考 [MMClassification 文档](https://github.com/open-mmlab/mmclassification/blob/master/docs/zh_CN/tutorials/config.md)。
+关于层次注册器的具体原理可以参考 [MMEngine 文档](https://mmengine.readthedocs.io/zh_cn/latest/tutorials/config.md#跨项目继承配置文件)，关于如何使用 MMClassification 中的其他 backbone，可以参考 [MMClassification 文档](https://github.com/open-mmlab/mmclassification/blob/dev-1.x/docs/en/tutorials/config.md)。
 
-## 使用马赛克数据增强（待更新）
+## 使用马赛克数据增强
 
 如果你想在训练中使用 `Mosaic`，那么请确保你同时使用 `MultiImageMixDataset`。以 `Faster R-CNN` 算法为例，你可以通过如下做法实现：
 
@@ -72,9 +72,7 @@ optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 # 直接打开 configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py ,增添如下字段
 data_root = 'data/coco/'
 dataset_type = 'CocoDataset'
-img_scale=(1333, 800)​
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+img_scale=(1333, 800)
 
 train_pipeline = [
     dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
@@ -82,11 +80,8 @@ train_pipeline = [
         type='RandomAffine',
         scaling_ratio_range=(0.1, 2),
         border=(-img_scale[0] // 2, -img_scale[1] // 2)), # 图像经过马赛克处理后会放大4倍，所以我们使用仿射变换来恢复图像的大小。
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PackDetInputs'))
 ]
 
 train_dataset = dict(
@@ -104,19 +99,19 @@ train_dataset = dict(
     ),
     pipeline=train_pipeline
     )
-​
+
 data = dict(
     train=train_dataset
     )
 ```
 
-## 在配置文件中冻结骨干网络后在训练中解冻骨干网络（待更新）
+## 在配置文件中冻结骨干网络后在训练中解冻骨干网络
 
 如果你在配置文件中已经冻结了骨干网络并希望在几个训练周期后解冻它，你可以通过 hook 来实现这个功能。以用 ResNet 为骨干网络的 Faster R-CNN 为例，你可以冻结一个骨干网络的一个层并在配置文件中添加如下 `custom_hooks`:
 
 ```python
 _base_ = [
-    '../_base_/models/faster_rcnn_r50_fpn.py',
+    '../_base_/models/faster-rcnn_r50_fpn.py',
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
@@ -130,8 +125,9 @@ custom_hooks = [dict(type="UnfreezeBackboneEpochBasedHook", unfreeze_epoch=1)]
 同时在 `mmdet/core/hook/unfreeze_backbone_epoch_based_hook.py` 当中书写 `UnfreezeBackboneEpochBasedHook` 类
 
 ```python
-from mmcv.parallel import is_module_wrapper
-from mmcv.runner.hooks import HOOKS, Hook
+from mmengine.model import is_model_wrapper
+from mmengine.hooks import Hook
+from mmdet.registry import HOOKS
 
 
 @HOOKS.register_module()

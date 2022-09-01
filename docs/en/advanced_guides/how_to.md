@@ -2,7 +2,7 @@ This tutorial collects answers to any `How to xxx with MMDetection`. Feel free t
 
 # Use backbone network through MMClassification
 
-The model registry in MMDet, MMCls, MMSeg all inherit from the root registry in MMCV. This allows these repositories to directly use the modules already implemented by each other. Therefore, users can use backbone networks from MMClassification in MMDetection without implementing a network that already exists in MMClassification.
+The model registry in MMDet, MMCls, MMSeg all inherit from the root registry in MMEngine. This allows these repositories to directly use the modules already implemented by each other. Therefore, users can use backbone networks from MMClassification in MMDetection without implementing a network that already exists in MMClassification.
 
 ## Use backbone network implemented in MMClassification
 
@@ -14,7 +14,7 @@ _base_ = [
     '../_base_/datasets/coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
-# please install mmcls>=0.20.0
+# please install mmcls>=1.0.0rc0
 # import mmcls.models to trigger register_module in mmcls
 custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
 pretrained = 'https://download.openmmlab.com/mmclassification/v0/mobilenet_v3/convert/mobilenet_v3_small-8427ecf0.pth'
@@ -34,7 +34,7 @@ model = dict(
 
 ## Use backbone network in TIMM through MMClassification
 
-MMClassification also provides a wrapper for the PyTorch Image Models (timm) backbone network, users can directly use the backbone network in timm through MMClassification. Suppose you want to use EfficientNet-B1 as the backbone network of RetinaNet, the example config is as the following.
+MMClassification also provides a wrapper for the PyTorch Image Models (timm) backbone network, users can directly use the backbone network in timm through MMClassification. Suppose you want to use [EfficientNet-B1](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/timm_example/retinanet_timm-efficientnet-b1_fpn_1x_coco.py) as the backbone network of RetinaNet, the example config is as the following.
 
 ```python
 # https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/timm_example/retinanet_timm-efficientnet-b1_fpn_1x_coco.py
@@ -45,7 +45,7 @@ _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
-# please install mmcls>=0.20.0
+# please install mmcls>=1.0.0rc0
 # import mmcls.models to trigger register_module in mmcls
 custom_imports = dict(imports=['mmcls.models'], allow_failed_imports=False)
 model = dict(
@@ -63,7 +63,7 @@ optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 
 `type='mmcls.TIMMBackbone'` means use the `TIMMBackbone` class from MMClassification in MMDetection, and the model used is `EfficientNet-B1`, where `mmcls` means the MMClassification repo and `TIMMBackbone` means the TIMMBackbone wrapper implemented in MMClassification.
 
-For the principle of the Hierarchy Registry, please refer to the [MMCV document](https://github.com/open-mmlab/mmcv/blob/dev-2.x/docs/en/understand_mmcv/registry.md#hierarchy-registry). For how to use other backbones in MMClassification, you can refer to the [MMClassification document](https://github.com/open-mmlab/mmclassification/blob/dev-1.x/docs/en/tutorials/config.md).
+For the principle of the Hierarchy Registry, please refer to the [MMEngine document](https://github.com/open-mmlab/mmengine/blob/main/docs/en/tutorials/config.md). For how to use other backbones in MMClassification, you can refer to the [MMClassification document](https://github.com/open-mmlab/mmclassification/blob/dev-1.x/docs/en/tutorials/config.md).
 
 # Use Mosaic augmentation
 
@@ -73,9 +73,7 @@ If you want to use `Mosaic` in training, please make sure that you use `MultiIma
 # Open configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py directly and add the following fields
 data_root = 'data/coco/'
 dataset_type = 'CocoDataset'
-img_scale=(1333, 800)​
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+img_scale=(1333, 800)
 
 train_pipeline = [
     dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
@@ -83,11 +81,8 @@ train_pipeline = [
         type='RandomAffine',
         scaling_ratio_range=(0.1, 2),
         border=(-img_scale[0] // 2, -img_scale[1] // 2)), # The image will be enlarged by 4 times after Mosaic processing,so we use affine transformation to restore the image size.
-    dict(type='RandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PackDetInputs')
 ]
 
 train_dataset = dict(
@@ -105,7 +100,7 @@ train_dataset = dict(
     ),
     pipeline=train_pipeline
     )
-​
+
 data = dict(
     train=train_dataset
     )
@@ -132,8 +127,8 @@ Meanwhile write the hook class `UnfreezeBackboneEpochBasedHook` in `mmdet/core/h
 
 ```python
 from mmengine.model import is_model_wrapper
+from mmengine.hooks import Hook
 from mmdet.registry import HOOKS
-from mmegnine.hooks import Hook
 
 
 @HOOKS.register_module()

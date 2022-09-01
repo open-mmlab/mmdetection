@@ -26,10 +26,10 @@
 [![open issues](https://isitmaintained.com/badge/open/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 [![issue resolution](https://isitmaintained.com/badge/resolution/open-mmlab/mmdetection.svg)](https://github.com/open-mmlab/mmdetection/issues)
 
-[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/stable/) |
-[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/stable/get_started.html) |
-[👀模型库](https://mmdetection.readthedocs.io/zh_CN/stable/model_zoo.html) |
-[🆕更新日志](https://mmdetection.readthedocs.io/en/stable/changelog.html) |
+[📘使用文档](https://mmdetection.readthedocs.io/zh_CN/3.x/) |
+[🛠️安装教程](https://mmdetection.readthedocs.io/zh_CN/3.x/get_started.html) |
+[👀模型库](https://mmdetection.readthedocs.io/zh_CN/3.x/model_zoo.html) |
+[🆕更新日志](https://mmdetection.readthedocs.io/en/3.x/notes/changelog.html) |
 [🚀进行中的项目](https://github.com/open-mmlab/mmdetection/projects) |
 [🤔报告问题](https://github.com/open-mmlab/mmdetection/issues/new/choose)
 
@@ -45,9 +45,9 @@
 
 MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [OpenMMLab](https://openmmlab.com/) 项目的一部分。
 
-主分支代码目前支持 PyTorch 1.5 以上的版本。
+主分支代码目前支持 PyTorch 1.6 以上的版本。
 
-<img src="https://user-images.githubusercontent.com/12907710/137271636-56ba1cd2-b110-4812-8221-b4c120320aa9.png"/>
+<img src="https://user-images.githubusercontent.com/12907710/187674113-2074d658-f2fb-42d1-ac15-9c4a695e64d7.png"/>
 
 <details open>
 <summary>主要特性</summary>
@@ -56,9 +56,9 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
   MMDetection 将检测框架解耦成不同的模块组件，通过组合不同的模块组件，用户可以便捷地构建自定义的检测模型
 
-- **丰富的即插即用的算法和模型**
+- **支持多种检测任务**
 
-  MMDetection 支持了众多主流的和最新的检测算法，例如 Faster R-CNN，Mask R-CNN，RetinaNet 等。
+  MMDetection 支持了各种不同的检测任务，包括**目标检测**，**实例分割**，**全景分割**，以及**半监督目标检测**。
 
 - **速度快**
 
@@ -70,47 +70,63 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 </details>
 
-除了 MMDetection 之外，我们还开源了计算机视觉基础库 [MMCV](https://github.com/open-mmlab/mmcv)，MMCV 是 MMDetection 的主要依赖。
+除了 MMDetection 之外，我们还开源了深度学习训练库 [MMEngine](https://github.com/open-mmlab/mmengine) 和计算机视觉基础库 [MMCV](https://github.com/open-mmlab/mmcv)，它们是 MMDetection 的主要依赖。
 
 ## 最新进展
 
-最新的 **2.25.0** 版本已经在 2022.06.01 发布:
+**v3.0.0rc0** 版本已经在 2022.8.31 发布：
 
-- 支持功能更丰富的 `MMDetWandbHook`
-- 支持算法 [ConvNeXt](configs/convnext), [DDOD](configs/ddod) 和 [SOLOv2](configs/solov2)
-- [Mask2Former](configs/mask2former) 支持实例分割
-- 为了加入 Mask2Former 实例分割的模型，对 Mask2Former 原有的全景分割的配置文件进行了重命名
-
-如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/en/changelog.md)。
-
-如果想了解 MMDetection 不同版本之间的兼容性, 请参考[兼容性说明文档](docs/zh_cn/compatibility.md)。
+- 基于 [MMEngine](https://github.com/open-mmlab/mmengine) 统一了各组件接口。
+- 全面支持混合精度，训练测试速度更快。
+- 提供了更强的基线模型，并支持了通用的半监督目标检测框架，详见[半监督目标检测教程](https://mmdetection.readthedocs.io/zh_CN/v3.0.0rc0/user_guides/semi_det.html)。
+- 支持使用任意单阶段检测器作为二阶段模型的 RPN，详见[教程](https://mmdetection.readthedocs.io/en/v3.0.0rc0/user_guides/single_stage_as_rpn.html)。
 
 ## 安装
 
-请参考[安装指令](docs/zh_cn/get_started.md/#Installation)进行安装。
+请参考[快速入门文档](https://mmdetection.readthedocs.io/zh_CN/3.x/get_started.html)进行安装。
 
 ## 教程
 
-请参考[快速入门文档](docs/zh_cn/get_started.md)学习 MMDetection 的基本使用。
-我们提供了 [检测的 colab 教程](demo/MMDet_Tutorial.ipynb) 和 [实例分割的 colab 教程](demo/MMDet_InstanceSeg_Tutorial.ipynb)，也为新手提供了完整的运行教程，其他教程如下
+请阅读[概述](https://mmdetection.readthedocs.io/zh_CN/3.x/get_started.html)对 MMDetection 进行初步的了解。
 
-- [使用已有模型在标准数据集上进行推理](docs/zh_cn/1_exist_data_model.md)
-- [在自定义数据集上进行训练](docs/zh_cn/2_new_data_model.md)
-- [在标准数据集上训练自定义模型](docs/zh_cn/3_exist_data_new_model.md)
-- [学习配置文件](docs/zh_cn/tutorials/config.md)
-- [自定义数据集](docs/zh_cn/tutorials/customize_dataset.md)
-- [自定义数据预处理流程](docs/zh_cn/tutorials/data_pipeline.md)
-- [自定义模型](docs/zh_cn/tutorials/customize_models.md)
-- [自定义训练配置](docs/zh_cn/tutorials/customize_runtime.md)
-- [自定义损失函数](docs/zh_cn/tutorials/customize_losses.md)
-- [模型微调](docs/zh_cn/tutorials/finetune.md)
-- [Pytorch 到 ONNX 的模型转换](docs/zh_cn/tutorials/pytorch2onnx.md)
-- [ONNX 到 TensorRT 的模型转换](docs/zh_cn/tutorials/onnx2tensorrt.md)
-- [权重初始化](docs/zh_cn/tutorials/init_cfg.md)
-- [how to xxx](docs/zh_cn/tutorials/how_to.md)
-- [半监督目标检测](docs/zh_cn/tutorials/semi_det.md)
+为了帮助用户更进一步了解 MMDetection，我们准备了用户指南和进阶指南，请阅读我们的[文档](https://mmdetection.readthedocs.io/zh_CN/3.x/)：
+
+- 用户指南
+
+  <details>
+
+  - [训练 & 测试](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/index.html#train-test)
+    - [学习配置文件](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/config.html)
+    - [使用已有模型在标准数据集上进行推理](https://mmdetection.readthedocs.io/en/3.x/user_guides/inference.html)
+    - [数据集准备](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/dataset_prepare.html)
+    - [测试现有模型](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/test.html)
+    - [在标准数据集上训练预定义的模型](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/train.html)
+    - [在自定义数据集上进行训练](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/train.html#train-with-customized-datasets)
+    - [在标准数据集上训练自定义模型](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/new_model.html)
+    - [模型微调](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/finetune.html)
+    - [提交测试结果](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/test_results_submission.html)
+    - [权重初始化](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/init_cfg.html)
+    - [将单阶段检测器作为 RPN](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/single_stage_as_rpn.html)
+    - [半监督目标检测](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/semi_det.html)
+  - [实用工具](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/index.html#useful-tools)
+
+  </details>
+
+- 进阶指南
+
+  <details>
+
+  - [基础概念](https://mmdetection.readthedocs.io/zh_CN/3.x/advanced_guides/index.html#basic-concepts)
+  - [组件定制](https://mmdetection.readthedocs.io/zh_CN/3.x/advanced_guides/index.html#component-customization)
+  - [How to](https://mmdetection.readthedocs.io/zh_CN/3.x/advanced_guides/index.html#how-to)
+
+  </details>
+
+我们提供了 [检测的 colab 教程](demo/MMDet_Tutorial.ipynb) 和 [实例分割的 colab 教程](demo/MMDet_InstanceSeg_Tutorial.ipynb)
 
 同时，我们还提供了 [MMDetection 中文解读文案汇总](docs/zh_cn/article.md)
+
+若需要将2.x版本的代码迁移至新版，请参考[迁移文档](https://mmdetection.readthedocs.io/en/3.x/migration.html)。
 
 ## 基准测试和模型库
 
@@ -217,6 +233,12 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
           <li><a href="configs/lad">Label Assignment Distillation (WACV'2022)</a></li>
         </ul>
         </ul>
+          <li><b>Semi-Supervised Object Detection</b></li>
+        <ul>
+        <ul>
+          <li><a href="configs/soft_teacher">Soft Teacher (ICCV'2021)</a></li>
+        </ul>
+        </ul>
       </ul>
       </td>
     </tr>
@@ -300,11 +322,11 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
   </tbody>
 </table>
 
-我们在[基于 MMDetection 的项目](./docs/zh_cn/projects.md)中列举了一些其他的支持的算法。
+我们在[基于 MMDetection 的项目](./docs/zh_cn/notes/projects.md)中列举了一些其他的支持的算法。
 
 ## 常见问题
 
-请参考 [FAQ](docs/zh_cn/faq.md) 了解其他用户的常见问题。
+请参考 [FAQ](docs/zh_cn/notes/faq.md) 了解其他用户的常见问题。
 
 ## 贡献指南
 
@@ -338,6 +360,7 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 
 ## OpenMMLab 的其他项目
 
+- [MMEngine](https://github.com/open-mmlab/mmengine): OpenMMLab 深度学习模型训练基础库
 - [MMCV](https://github.com/open-mmlab/mmcv): OpenMMLab 计算机视觉基础库
 - [MIM](https://github.com/open-mmlab/mim): MIM 是 OpenMMlab 项目、算法、模型的统一入口
 - [MMClassification](https://github.com/open-mmlab/mmclassification): OpenMMLab 图像分类工具箱

@@ -17,7 +17,7 @@ The following testing environments are supported:
 Choose the proper script to perform testing depending on the testing environment.
 
 ```shell
-# single-gpu testing
+# Single-gpu testing
 python tools/test.py \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
@@ -32,7 +32,7 @@ python tools/test.py \
     [--out ${RESULT_FILE}] \
     [--show]
 
-# multi-gpu testing
+# Multi-gpu testing
 bash tools/dist_test.sh \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
@@ -48,7 +48,7 @@ Optional arguments:
 - `--show`: If specified, detection results will be plotted on the images and shown in a new window. It is only applicable to single GPU testing and used for debugging and visualization. Please make sure that GUI is available in your environment. Otherwise, you may encounter an error like `cannot connect to X server`.
 - `--show-dir`: If specified, detection results will be plotted on the images and saved to the specified directory. It is only applicable to single GPU testing and used for debugging and visualization. You do NOT need a GUI available in your environment for using this option.
 - `--work-dir`: If specified, detection results containing evaluation metrics will be saved to the specified directory.
-- `--cfg-options`:  if specified, the key-value pair optional cfg will be merged into config file
+- `--cfg-options`:  If specified, the key-value pair optional cfg will be merged into config file
 
 ## Examples
 
@@ -156,7 +156,7 @@ arguments：
 After the conversion is complete, you need to replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in [config](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/_base_/datasets/coco_detection.py)(find which dataset in 'configs/_base_/datasets' the current config corresponds to) and run:
 
 ```shell
-# single-gpu testing
+# Single-gpu testing
 python tools/test.py \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \
@@ -170,7 +170,7 @@ python tools/test.py \
     [--out ${RESULT_FILE}] \
     [--show]
 
-# multi-gpu testing
+# Multi-gpu testing
 bash tools/dist_test.sh \
     ${CONFIG_FILE} \
     ${CHECKPOINT_FILE} \

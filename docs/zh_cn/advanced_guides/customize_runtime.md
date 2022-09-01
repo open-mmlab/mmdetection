@@ -140,7 +140,7 @@ class MyOptimizerWrapperConstructor(DefaultOptimWrapperConstructor):
   如果你的配置已经集成了基础配置（包含了 `optim_wrapper` 的配置），那么你需要添加 `_delete_=True` 来覆盖掉不需要的设置。具体见[配置相关的文档](https://mmdetection.readthedocs.io/en/latest/tutorials/config.html)。
 
 - __使用动量调度加速模型收敛__:
-  我们支持动量调度器根据学习率修改模型的动量，这可以使模型以更快的方式收敛。动量调度器通常与学习率调度器一起使用，例如 [3D 检测](https://github.com/open-mmlab/mmdetection3d/blob/dev-1.x/configs/_base_/schedules/cyclic_20e.py) 中使用以下配置以加速收敛。
+  我们支持动量调度器根据学习率修改模型的动量，这可以使模型以更快的方式收敛。动量调度器通常与学习率调度器一起使用，例如 [3D 检测](https://github.com/open-mmlab/mmdetection3d/blob/dev-1.x/configs/_base_/schedules/cyclic-20e.py) 中使用以下配置以加速收敛。
   更多细节请参考 [CosineAnnealingLR](https://github.com/open-mmlab/mmengine/blob/main/mmengine/optim/scheduler/lr_scheduler.py#L43) 和 [CosineAnnealingMomentum](https://github.com/open-mmlab/mmengine/blob/main/mmengine/optim/scheduler/momentum_scheduler.py#L71) 的具体实现。
 
   ```python
@@ -253,7 +253,8 @@ MMEngine 提供了许多有用的[钩子](https://mmdetection.readthedocs.io/en/
 这里我们给出一个在 mmdet 中创建一个新的钩子并在训练中使用它的例子。
 
 ```python
-from mmengine.hooks import HOOKS, Hook
+from mmengine.hooks import Hook
+from mmdet.registry import HOOKS
 
 
 @HOOKS.register_module()
@@ -323,11 +324,11 @@ custom_hooks = [
 
 默认情况下，钩子的优先级在注册期间设置为 `NORMAL`。
 
-### 使用 MMEngine 中实现的钩子
+### 使用 MMDetection 中实现的钩子
 
-如果 MMEngine 中已经实现了该钩子，你可以直接修改配置以使用该钩子，如下所示
+如果 MMDetection 中已经实现了该钩子，你可以直接修改配置以使用该钩子，如下所示
 
-#### 4. 例子: `NumClassCheckHook`
+#### 例子: `NumClassCheckHook`
 
 我们实现了一个名为 [NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/engine/hooks/num_class_check_hook.py) 的自定义钩子来检查 `num_classes` 是否在 head 中和 `dataset` 中的 `CLASSES` 的长度相匹配。
 

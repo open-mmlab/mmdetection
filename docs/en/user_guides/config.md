@@ -1,6 +1,6 @@
 # Learn about Configs
 
-MMDetection and other OpenMMLab repositories use [MMEngine's config system](https://mmengine.readthedocs.io/en/latest/tutorials/config.md). It has a modular and inheritance design, which is convenient to conduct various experiments.
+MMDetection and other OpenMMLab repositories use [MMEngine's config system](https://mmengine.readthedocs.io/en/latest/tutorials/config.html). It has a modular and inheritance design, which is convenient to conduct various experiments.
 
 ## Config file content
 
@@ -25,7 +25,7 @@ model = dict(
         depth=50,  # The depth of backbone, usually it is 50 or 101 for ResNet and ResNext backbones.
         num_stages=4,  # Number of stages of the backbone.
         out_indices=(0, 1, 2, 3),  # The index of output feature maps produced in each stages
-        frozen_stages=1,  # The weights in the first 1 stage are frozen
+        frozen_stages=1,  # The weights in the first stage are frozen
         norm_cfg=dict(  # The config of normalization layers.
             type='BN',  # Type of norm layer, usually it is BN or GN
             requires_grad=True),  # Whether to train the gamma and beta in BN
@@ -60,7 +60,7 @@ model = dict(
     roi_head=dict(  # RoIHead encapsulates the second stage of two-stage/cascade detectors.
         type='StandardRoIHead',
         bbox_roi_extractor=dict(  # RoI feature extractor for bbox regression.
-            type='SingleRoIExtractor',  # Type of the RoI feature extractor, most of methods uses SingleRoIExtractor. Refer to https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/roi_heads/roi_extractors/single_level.py#L10 for details.
+            type='SingleRoIExtractor',  # Type of the RoI feature extractor, most of methods uses SingleRoIExtractor. Refer to https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/roi_heads/roi_extractors/single_level_roi_extractor.py#L10 for details.
             roi_layer=dict(  # Config of RoI Layer
                 type='RoIAlign',  # Type of RoI Layer, DeformRoIPoolingPack and ModulatedDeformRoIPoolingPack are also supported. Refer to https://mmcv.readthedocs.io/en/latest/api.html#mmcv.ops.RoIAlign for details.
                 output_size=7,  # The output size of feature maps.
@@ -124,7 +124,7 @@ model = dict(
         rpn_proposal=dict(  # The config to generate proposals during training
             nms_across_levels=False,  # Whether to do NMS for boxes across levels. Only work in `GARPNHead`, naive rpn does not support do nms cross levels.
             nms_pre=2000,  # The number of boxes before NMS
-            nms_post=1000,  # The number of boxes to be kept by NMS, Only work in `GARPNHead`.
+            nms_post=1000,  # The number of boxes to be kept by NMS. Only work in `GARPNHead`.
             max_per_img=1000,  # The number of boxes to be kept after NMS.
             nms=dict( # Config of NMS
                 type='nms',  # Type of NMS
@@ -153,7 +153,7 @@ model = dict(
         rpn=dict(  # The config to generate proposals during testing
             nms_across_levels=False,  # Whether to do NMS for boxes across levels. Only work in `GARPNHead`, naive rpn does not support do nms cross levels.
             nms_pre=1000,  # The number of boxes before NMS
-            nms_post=1000,  # The number of boxes to be kept by NMS, Only work in `GARPNHead`.
+            nms_post=1000,  # The number of boxes to be kept by NMS. Only work in `GARPNHead`.
             max_per_img=1000,  # The number of boxes to be kept after NMS.
             nms=dict( # Config of NMS
                 type='nms',  #Type of NMS
@@ -176,7 +176,7 @@ model = dict(
 ```python
 dataset_type = 'CocoDataset'  # Dataset type, this will be used to define the dataset
 data_root = 'data/coco/'  # Root path of data
-file_client_args = dict(backend='disk')  # file client arguments, refer to
+file_client_args = dict(backend='disk')  # file client arguments
 
 train_pipeline = [  # Training data processing pipeline
     dict(type='LoadImageFromFile', file_client_args=file_client_args),  # First pipeline to load images from file path
@@ -186,18 +186,18 @@ train_pipeline = [  # Training data processing pipeline
         with_mask=True,  # Whether to use instance mask, True for instance segmentation
         poly2mask=True),  # Whether to convert the polygon mask to instance mask, set False for acceleration and to save memory
     dict(
-        type='Resize',  # Pipeline that resize the images and their annotations
+        type='Resize',  # Pipeline that resizes the images and their annotations
         scale=(1333, 800),  # The largest scale of image
         keep_ratio=True  # Whether to keep the ratio between height and width
         ),
     dict(
-        type='RandomFlip',  # Augmentation pipeline that flip the images and their annotations
+        type='RandomFlip',  # Augmentation pipeline that flips the images and their annotations
         prob=0.5),  # The probability to flip
     dict(type='PackDetInputs')  # Pipeline that formats the annotation data and decides which keys in the data should be packed into data_samples
 ]
 test_pipeline = [  # Testing data processing pipeline
     dict(type='LoadImageFromFile', file_client_args=file_client_args),  # First pipeline to load images from file path
-    dict(type='Resize', scale=(1333, 800), keep_ratio=True),  # Pipeline that resize the images
+    dict(type='Resize', scale=(1333, 800), keep_ratio=True),  # Pipeline that resizes the images
     dict(
         type='PackDetInputs',  # Pipeline that formats the annotation data and decides which keys in the data should be packed into data_samples
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
@@ -206,22 +206,22 @@ test_pipeline = [  # Testing data processing pipeline
 train_dataloader = dict(   # Train dataloader config
     batch_size=2,  # Batch size of a single GPU
     num_workers=2,  # Worker to pre-fetch data for each single GPU
-    persistent_workers=True,  # If ``True``, the dataloader will not shutdown the worker processes after an epoch end, which can accelerate training speed.
+    persistent_workers=True,  # If ``True``, the dataloader will not shut down the worker processes after an epoch end, which can accelerate training speed.
     sampler=dict(  # training data sampler
         type='DefaultSampler',  # DefaultSampler which supports both distributed and non-distributed training. Refer to https://github.com/open-mmlab/mmengine/blob/main/mmengine/dataset/sampler.py
         shuffle=True),  # randomly shuffle the training data in each epoch
-    batch_sampler=dict(type='AspectRatioBatchSampler'),  # batch sampler for grouping images with similar aspect ratio into a same batch. It can reduce GPU memory cost.
+    batch_sampler=dict(type='AspectRatioBatchSampler'),  # Batch sampler for grouping images with similar aspect ratio into a same batch. It can reduce GPU memory cost.
     dataset=dict(  # Train dataset config
         type=dataset_type,
         data_root=data_root,
         ann_file='annotations/instances_train2017.json',  # Path of annotation file
         data_prefix=dict(img='train2017/'),  # Prefix of image path
-        filter_cfg=dict(filter_empty_gt=True, min_size=32),  # config of filtering images and annotations
+        filter_cfg=dict(filter_empty_gt=True, min_size=32),  # Config of filtering images and annotations
         pipeline=train_pipeline))
 val_dataloader = dict(  # Validation dataloader config
     batch_size=1,  # Batch size of a single GPU. If batch-szie > 1, the extra padding area may influence the performance.
     num_workers=2,  # Worker to pre-fetch data for each single GPU
-    persistent_workers=True,  # If ``True``, the dataloader will not shutdown the worker processes after an epoch end, which can accelerate training speed.
+    persistent_workers=True,  # If ``True``, the dataloader will not shut down the worker processes after an epoch end, which can accelerate training speed.
     drop_last=False,  # Whether to drop the last incomplete batch, if the dataset size is not divisible by the batch size
     sampler=dict(
         type='DefaultSampler',
@@ -297,7 +297,7 @@ optim_wrapper = dict(  # Optimizer wrapper config
     optimizer=dict(  # Optimizer config. Support all kinds of optimizers in PyTorch. Refer to https://pytorch.org/docs/stable/optim.html#algorithms
         type='SGD',  # Stochastic gradient descent optimizer
         lr=0.02,  # The base learning rate
-        momentum=0.9,  # stochastic gradient descent with momentum
+        momentum=0.9,  # Stochastic gradient descent with momentum
         weight_decay=0.0001),  # Weight decay of SGD
     clip_grad=None,  # Gradient clip option. Set None to disable gradient clip. Find usage in https://mmengine.readthedocs.io/en/latest/tutorials/optimizer.html
     )
@@ -311,15 +311,15 @@ param_scheduler = [
         type='LinearLR',  # Use linear policy to warmup learning rate
         start_factor=0.001, # The ratio of the starting learning rate used for warmup
         by_epoch=False,  # The warmup learning rate is updated by iteration
-        begin=0,  # start from the first iteration
-        end=500),  # end the warmup at the 500th iteration
+        begin=0,  # Start from the first iteration
+        end=500),  # End the warmup at the 500th iteration
     dict(
         type='MultiStepLR',  # Use multi step learning rate policy during training
         by_epoch=True,  # The learning rate is updated by epoch
-        begin=0,   # start from the first epoch
-        end=12,  # end at the 12th epoch
-        milestones=[8, 11],  # epochs to decay the learning rate
-        gamma=0.1)  # the learning rate decay ratio
+        begin=0,   # Start from the first epoch
+        end=12,  # End at the 12th epoch
+        milestones=[8, 11],  # Epochs to decay the learning rate
+        gamma=0.1)  # The learning rate decay ratio
 ]
 ```
 
@@ -339,7 +339,7 @@ default_hooks = dict(
     visualization=dict(type='DetVisualizationHook'))
 ```
 
-`default_hooks` is a list of hook configs. Users can develop there own hooks and insert them in this field.
+`custom_hooks` is a list of hook configs. Users can develop their own hooks and insert them in this field.
 
 ```python
 custom_hooks = []
@@ -362,12 +362,12 @@ vis_backends = [dict(type='LocalVisBackend')]  # Visualization backends. Refer t
 visualizer = dict(
     type='DetLocalVisualizer', vis_backends=vis_backends, name='visualizer')
 log_processor = dict(
-    type='LogProcessor',  # log processor to process runtime logs
-    window_size=50,  # smooth interval of log values
+    type='LogProcessor',  # Log processor to process runtime logs
+    window_size=50,  # Smooth interval of log values
     by_epoch=True)  # Whether to format logs with epoch stype. Should be consistent with train loop's type.
 
 log_level = 'INFO'  # The level of logging.
-load_from = None  # load model checkpoint as a pre-trained model from a given path. This will not resume training.
+load_from = None  # Load model checkpoint as a pre-trained model from a given path. This will not resume training.
 resume = False  # Whether to resume from the checkpoint defined in `load_from`. If `load_from` is None, it will resume the latest checkpoint in the `work_dir`.
 ```
 
@@ -375,18 +375,18 @@ resume = False  # Whether to resume from the checkpoint defined in `load_from`. 
 
 MMEngine's Runner also provides an iter-based training loop except for epoch-based.
 To use iter-based training, users should modify the `train_cfg`, `param_scheduler`, `train_dataloader`, `default_hooks`, and `log_processor`.
-Here is an example of changing an epoch-based RetinaNet config to iter-based: configs/retinanet/retinanet_r50_fpn_90k_coco.py
+Here is an example of changing an epoch-based RetinaNet config to iter-based: `configs/retinanet/retinanet_r50_fpn_90k_coco.py`
 
 ```python
-# iter-based training config
+# Iter-based training config
 train_cfg = dict(
-    _delete_=True,  # ignore the base config setting (optional)
-    type='IterBasedTrainLoop',  # use iter-based training loop
-    max_iters=90000,  # maximum iterations
-    val_interval=10000)  # validation interval
+    _delete_=True,  # Ignore the base config setting (optional)
+    type='IterBasedTrainLoop',  # Use iter-based training loop
+    max_iters=90000,  # Maximum iterations
+    val_interval=10000)  # Validation interval
 
 
-# change the scheduler to iter-based
+# Change the scheduler to iter-based
 param_scheduler = [
     dict(
         type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
@@ -399,13 +399,13 @@ param_scheduler = [
         gamma=0.1)
 ]
 
-# switch to InfiniteSampler to avoid dataloader restart
+# Switch to InfiniteSampler to avoid dataloader restart
 train_dataloader = dict(sampler=dict(type='InfiniteSampler'))
 
-# change the checkpoint saving interval to iter-based
+# Change the checkpoint saving interval to iter-based
 default_hooks = dict(checkpoint=dict(by_epoch=False, interval=10000))
 
-# change the log format to iter-based
+# Change the log format to iter-based
 log_processor = dict(by_epoch=False)
 ```
 
@@ -559,12 +559,12 @@ If the users want to reuse the variables in the base file, they can get a copy o
 ```python
 _base_ = './mask-rcnn_r50_fpn_1x_coco.py'
 
-a = {{_base_.model}} # variable `a` is equal to the `model` defined in `_base_`
+a = {{_base_.model}} # Variable `a` is equal to the `model` defined in `_base_`
 ```
 
 ## Modify config through script arguments
 
-When submitting jobs using "tools/train.py" or "tools/test.py", you may specify `--cfg-options` to in-place modify the config.
+When submitting jobs using `tools/train.py` or `tools/test.py`, you may specify `--cfg-options` to in-place modify the config.
 
 - Update config keys of dict chains.
 

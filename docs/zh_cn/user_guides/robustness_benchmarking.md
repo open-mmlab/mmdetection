@@ -18,7 +18,7 @@
 }
 ```
 
-![image corruption example](../resources/corruptions_sev_3.png)
+![image corruption example](../../../resources/corruptions_sev_3.png)
 
 ## 关于基准测试
 
