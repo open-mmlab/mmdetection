@@ -296,7 +296,7 @@ class RPNHead(AnchorHead):
             # To avoid some potential error
             results_ = InstanceData()
             if isinstance(results.bboxes, BaseBoxes):
-                results_.bboxes = results.bboxes.create_empty_boxes()
+                results_.bboxes = results.bboxes.create_empty_box()
             else:
                 results_.bboxes = results.scores.new_zeros(0, 4)
             results_.scores = results.scores.new_zeros(0)
