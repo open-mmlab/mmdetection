@@ -1160,9 +1160,10 @@ class MinIoURandomCrop(BaseTransform):
                         boxes = results['gt_bboxes']
                         mask = is_center_of_bboxes_in_patch(boxes, patch)
                         boxes = boxes[mask]
-                        boxes.translate_([-left, -top])
+                        boxes.translate_([-patch[0], -patch[1]])
                         if self.bbox_clip_border:
-                            boxes.clip_([new_h, new_w])
+                            boxes.clip_(
+                                [patch[3] - patch[1], patch[2] - patch[0]])
                         results['gt_bboxes'] = boxes
 
                         # ignore_flags
