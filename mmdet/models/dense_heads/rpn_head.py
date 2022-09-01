@@ -209,7 +209,7 @@ class RPNHead(AnchorHead):
                 topk_inds = rank_inds[:nms_pre]
                 scores = ranked_scores[:nms_pre]
                 bbox_pred = bbox_pred[topk_inds, :]
-                priors = priors[topk_inds, :]
+                priors = priors[topk_inds]
 
             mlvl_bbox_preds.append(bbox_pred)
             mlvl_valid_priors.append(priors)
