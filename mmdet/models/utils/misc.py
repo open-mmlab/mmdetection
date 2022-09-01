@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from functools import partial
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import numpy as np
 import torch
@@ -479,7 +479,18 @@ def stack_boxes(data_list: List[Union[Tensor, BaseBoxes]],
 
 
 def scale_boxes(boxes: Union[Tensor, BaseBoxes],
-                scale_factor: tuple) -> Union[Tensor, BaseBoxes]:
+                scale_factor: Tuple[float, float]) -> Union[Tensor, BaseBoxes]:
+    """Scale boxes with type of tensor or boxlist.
+
+    Args:
+        boxes (Tensor or :obj:`BaseBoxes`): boxes need to be scaled. Its type
+            can be a tensor or a boxlist.
+        scale_factor (Tuple[float, float]): factors for scaling boxes.
+            The length should be 2.
+
+    Returns:
+        Union[Tensor, :obj:`BaseBoxes`]: Scaled boxes.
+    """
     if isinstance(boxes, BaseBoxes):
         boxes.rescale_(scale_factor)
         return boxes
@@ -490,7 +501,16 @@ def scale_boxes(boxes: Union[Tensor, BaseBoxes],
         return boxes * scale_factor
 
 
-def get_box_wh(boxes: Union[Tensor, BaseBoxes]) -> Tensor:
+def get_box_wh(boxes: Union[Tensor, BaseBoxes]) -> Tuple[Tensor, Tensor]:
+    """Get the width and height of boxes with type of tensor or boxlist.
+
+    Args:
+        boxes (Tensor or :obj:`BaseBoxes`): boxes with type of tensor
+            or boxlist.
+
+    Returns:
+        Tuple[Tensor, Tensor]: the width and height of boxes.
+    """
     if isinstance(boxes, BaseBoxes):
         w = boxes.widths
         h = boxes.heights
@@ -502,6 +522,16 @@ def get_box_wh(boxes: Union[Tensor, BaseBoxes]) -> Tensor:
 
 
 def get_box_tensor(boxes: Union[Tensor, BaseBoxes]) -> Tensor:
+    """Get tensor data from boxlist boxes.
+
+    Args:
+        boxes (Tensor or BaseBoxes): boxes with type of tensor or boxlist.
+            If its type is a tensor, the boxes will be directly returned.
+            If its type is a boxlist, the `boxes.tensor` will be returned.
+
+    Returns:
+        Tensor: boxes tensor.
+    """
     if isinstance(boxes, BaseBoxes):
         boxes = boxes.tensor
     return boxes
