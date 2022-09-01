@@ -2,37 +2,53 @@ import os.path as osp
 import tempfile
 from unittest import TestCase
 
+import numpy as np
+import torch
+
 from mmdet.evaluation import CrowdHumanMetric
 
 
 class TestCrowdHumanMetric(TestCase):
 
+    def _create_dummy_results(self):
+        bboxes = np.array([[1330, 317, 418, 1338], [792, 24, 723, 2017],
+                           [693, 291, 307, 894], [522, 290, 285, 826],
+                           [728, 336, 175, 602], [92, 337, 267, 681]])
+        bboxes[:, 2:4] += bboxes[:, 0:2]
+        scores = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+        return dict(
+            bboxes=torch.from_numpy(bboxes), scores=torch.from_numpy(scores))
+
     def setUp(self):
-        self.data_root = 'tests/data/crowdhuman_dataset/'
-        self.ann_file = 'test_annotation_train.odgt'
         self.tmp_dir = tempfile.TemporaryDirectory()
+        self.ann_file_path = \
+            'tests/data/crowdhuman_dataset/test_annotation_train.odgt',
 
     def tearDown(self):
-        pass
+        self.tmp_dir.cleanup()
 
     def test_init(self):
-        ann_file_path = osp.join(self.data_root, self.ann_file)
         with self.assertRaisesRegex(KeyError, 'metric should be one of'):
-            CrowdHumanMetric(ann_file=ann_file_path, metric='unknown')
+            CrowdHumanMetric(ann_file=self.ann_file_path[0], metric='unknown')
 
     def test_evaluate(self):
+        # create dummy data
+        dummy_pred = self._create_dummy_results()
 
-        ann_file_path = osp.join(self.data_root, self.ann_file)
         crowdhuman_metric = CrowdHumanMetric(
-            ann_file=ann_file_path,
-            classwise=False,
+            ann_file=self.ann_file_path[0],
             outfile_prefix=f'{self.tmp_dir.name}/test')
-
-        crowdhuman_metric.process([
+        crowdhuman_metric.process({}, [
             dict(
-                inputs=None,
-                data_sample={
-                    'img_id': 0,
-                    'ori_shape': (640, 640)
-                })
-        ], [dict(pred_instances=crowdhuman_metric)])
+                pred_instances=dummy_pred,
+                img_id='283554,35288000868e92d4',
+                ori_shape=(1640, 1640))
+        ])
+        eval_results = crowdhuman_metric.evaluate(size=1)
+        target = {
+            'crowd_human/mAP': 0.8333,
+            'crowd_human/mMR': 0.0,
+            'crowd_human/JI': 1.0
+        }
+        self.assertDictEqual(eval_results, target)
+        self.assertTrue(osp.isfile(osp.join(self.tmp_dir.name, 'test.json')))

@@ -77,7 +77,7 @@ class CrowdHumanDataset(BaseDataset):
             print_log(f'\nsave id_hw in {self.data_root}', level=logging.INFO)
         del self.id_hw, self.id_hw_exist, self.id_hw_path
         print_log('\nDone', level=logging.INFO)
-        return data_list[:10]
+        return data_list
 
     def parse_data_info(self, raw_data_info: dict) -> Union[dict, List[dict]]:
         """Parse raw annotation to target format.

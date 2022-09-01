@@ -3013,14 +3013,10 @@ class CropBoxes(BaseTransform):
 
     @autocast_box_type()
     def transform(self, results: dict) -> dict:
-        gt_bboxes = results['gt_bboxes'].copy()
-        gt_bboxes = np.maximum(gt_bboxes, 0)
-        gt_bboxes[:, 2] = np.minimum(gt_bboxes[:, 2],
-                                     results['img_shape'][1] - 1)
-        gt_bboxes[:, 3] = np.minimum(gt_bboxes[:, 3],
-                                     results['img_shape'][0] - 1)
-        results['gt_bboxes'] = gt_bboxes
-        del gt_bboxes
+        boxes = copy.deepcopy(results['gt_bboxes'].tensor)
+        boxes[..., 0::2] = boxes[..., 0::2].clamp(0, results['img_shape'][1])
+        boxes[..., 1::2] = boxes[..., 1::2].clamp(0, results['img_shape'][0])
+        results['gt_bboxes'].tensor = boxes
         return results
 
     def __repr__(self) -> str:
