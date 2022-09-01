@@ -2,7 +2,7 @@
 
 ## v3.0.0rc0 (31/8/2022)
 
-We are excited to announce the release of MMDetection 3.0.0rc0. MMDet 3.0.0rc0 is the first version of MMDetection 3.x, a part of the OpenMMLab 2.0 projects. Built upon the new [training engine](https://github.com/open-mmlab/mmengine), MMDet 3.x unifies the interfaces of dataset, models, evaluation, and visualization with faster training and testing speed. It also provides a general semi-supervised object detection framework and strong baselines.
+We are excited to announce the release of MMDetection 3.0.0rc0. MMDet 3.0.0rc0 is the first version of MMDetection 3.x, a part of the OpenMMLab 2.0 projects. Built upon the new [training engine](https://github.com/open-mmlab/mmengine), MMDet 3.x unifies the interfaces of the dataset, models, evaluation, and visualization with faster training and testing speed. It also provides a general semi-supervised object detection framework and strong baselines.
 
 ### Highlights
 
@@ -10,7 +10,7 @@ We are excited to announce the release of MMDetection 3.0.0rc0. MMDet 3.0.0rc0 i
 
 2. **Unified interfaces**. As a part of the OpenMMLab 2.0 projects, MMDet 3.x unifies and refactors the interfaces and internal logic of training, testing, datasets, models, evaluation, and visualization. All the OpenMMLab 2.0 projects share the same design in those interfaces and logic to allow the emergence of multi-task/modality algorithms.
 
-3. **Faster speed**. We optimize the training and inference speed for common models and configurations, achieving faster or similar speed in comparison with [Detection2](https://github.com/facebookresearch/detectron2/). Model details of benchmark will be updated in [this note](./benchmark.md#comparison-with-detectron2).
+3. **Faster speed**. We optimize the training and inference speed for common models and configurations, achieving a faster or similar speed than [Detection2](https://github.com/facebookresearch/detectron2/). Model details of benchmark will be updated in [this note](./benchmark.md#comparison-with-detectron2).
 
 4. **General semi-supervised object detection**. Benefitting from the unified interfaces, we support a general semi-supervised learning framework that works with all the object detectors supported in MMDet 3.x. Please refer to [semi-supervised object detection](../user_guides/semi_det.md) for details.
 
@@ -26,7 +26,7 @@ We are excited to announce the release of MMDetection 3.0.0rc0. MMDet 3.0.0rc0 i
 
 ### Breaking Changes
 
-MMDet 3.x has gone through big changes to have better design, higher efficiency, more flexibility, and more unified interfaces.
+MMDet 3.x has undergone significant changes for better design, higher efficiency, more flexibility, and more unified interfaces.
 Besides the changes in API, we briefly list the major breaking changes in this section.
 We will update the [migration guide](../migration.md) to provide complete details and migration instructions.
 Users can also refer to the [API doc](https://mmdetection.readthedocs.io/en/3.x/) for more details.
@@ -34,7 +34,7 @@ Users can also refer to the [API doc](https://mmdetection.readthedocs.io/en/3.x/
 #### Dependencies
 
 - MMDet 3.x runs on PyTorch>=1.6. We have deprecated the support of PyTorch 1.5 to embrace mixed precision training and other new features since PyTorch 1.6. Some models can still run on PyTorch 1.5, but the full functionality of MMDet 3.x is not guaranteed.
-- MMDet 3.x relies on MMEngine to run. MMEngine is a new foundational library for training deep learning models of OpenMMLab and are the core dependency of OpenMMLab 2.0 projects. The dependencies of file IO and training are migrated from MMCV 1.x to MMEngine.
+- MMDet 3.x relies on MMEngine to run. MMEngine is a new foundational library for training deep learning models of OpenMMLab and is the core dependency of OpenMMLab 2.0 projects. The dependencies of file IO and training are migrated from MMCV 1.x to MMEngine.
 - MMDet 3.x relies on MMCV>=2.0.0rc0. Although MMCV no longer maintains the training functionalities since 2.0.0rc0, MMDet 3.x relies on the data transforms, CUDA operators, and image processing interfaces in MMCV. Note that the package `mmcv` is the version that provides pre-built CUDA operators and `mmcv-lite` does not since MMCV 2.0.0rc0, while `mmcv-full` has been deprecated since 2.0.0rc0.
 
 #### Training and testing
@@ -42,7 +42,7 @@ Users can also refer to the [API doc](https://mmdetection.readthedocs.io/en/3.x/
 - MMDet 3.x uses Runner in [MMEngine](https://github.com/open-mmlab/mmengine) rather than that in MMCV. The new Runner implements and unifies the building logic of the dataset, model, evaluation, and visualizer. Therefore, MMDet 3.x no longer maintains the building logic of those modules in `mmdet.train.apis` and `tools/train.py`. Those codes have been migrated into [MMEngine](https://github.com/open-mmlab/mmengine/blob/main/mmengine/runner/runner.py). Please refer to the [migration guide of Runner in MMEngine](https://mmengine.readthedocs.io/en/latest/migration/runner.html) for more details.
 - The Runner in MMEngine also supports testing and validation. The testing scripts are also simplified, which has similar logic to that in training scripts to build the runner.
 - The execution points of hooks in the new Runner have been enriched to allow more flexible customization. Please refer to the [migration guide of Hook in MMEngine](https://mmengine.readthedocs.io/en/latest/migration/hook.html) for more details.
-- Learning rate and momentum schedules has been migrated from Hook to [Parameter Scheduler in MMEngine](https://mmengine.readthedocs.io/en/latest/tutorials/param_scheduler.html). Please refer to the [migration guide of Parameter Scheduler in MMEngine](https://mmengine.readthedocs.io/en/latest/migration/param_scheduler.html) for more details.
+- Learning rate and momentum schedules have been migrated from Hook to [Parameter Scheduler in MMEngine](https://mmengine.readthedocs.io/en/latest/tutorials/param_scheduler.html). Please refer to the [migration guide of Parameter Scheduler in MMEngine](https://mmengine.readthedocs.io/en/latest/migration/param_scheduler.html) for more details.
 
 #### Configs
 
@@ -92,7 +92,7 @@ The functions of visualization in MMDet 2.x are removed. Instead, in OpenMMLab 2
 ### Improvements
 
 - Optimized training and testing speed of FCOS, RetinaNet, Faster R-CNN, Mask R-CNN, and Cascade R-CNN. The training speed of those models with some common training strategies is also optimized, including those with synchronized batch normalization and mixed precision training.
-- Support mixed precision training of all the models. However, some models may got Nan results due to some numerical issues. We will update the documentation and list the results (accuracy of failure) of mixed precision training.
+- Support mixed precision training of all the models. However, some models may get undesirable performance due to some numerical issues. We will update the documentation and list the results (accuracy of failure) of mixed precision training.
 - Release strong baselines of some popular object detectors. Their accuracy and pre-trained checkpoints will be released.
 
 ### Bug Fixes
