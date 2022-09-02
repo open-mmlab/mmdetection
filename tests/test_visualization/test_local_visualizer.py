@@ -19,7 +19,7 @@ def _rand_bboxes(num_boxes, h, w):
     br_x = ((cx * w) + (w * bw / 2)).clamp(0, w)
     br_y = ((cy * h) + (h * bh / 2)).clamp(0, h)
 
-    bboxes = torch.vstack([tl_x, tl_y, br_x, br_y]).T
+    bboxes = torch.stack([tl_x, tl_y, br_x, br_y], dim=0).T
     return bboxes
 
 
