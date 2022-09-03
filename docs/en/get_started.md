@@ -55,6 +55,7 @@ pip install -v -e .
 # "-v" means verbose, or more output
 # "-e" means installing a project in editable mode,
 # thus any local modifications made to the code will take effect without reinstallation.
+pip install mmengine
 ```
 
 Case b: If you use mmdet as a dependency or third-party package, install it with pip:
