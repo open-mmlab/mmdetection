@@ -181,8 +181,8 @@ workflows:
           # as string instead of number
           cuda: "10.2"
           mmcv: https://download.openmmlab.com/mmcv/dev-2.x/cu102/torch1.8.0/mmcv_full-2.0.0rc0-cp37-cp37m-manylinux1_x86_64.whl
-          # requires:
-          #   - hold
+          requires:
+            - hold
   merge_stage_test:
     when:
       not:
