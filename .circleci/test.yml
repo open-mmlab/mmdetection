@@ -148,32 +148,32 @@ workflows:
       not:
         << pipeline.parameters.lint_only >>
     jobs:
-      - lint:
-          name: lint
-          filters:
-            branches:
-              ignore:
-                - dev-3.x
-      - build_cpu:
-          name: minimum_version_cpu
-          torch: 1.6.0
-          torchvision: 0.7.0
-          python: 3.6.9  # The lowest python 3.6.x version available on CircleCI images
-          mmcv: https://download.openmmlab.com/mmcv/dev-2.x/cpu/torch1.6.0/mmcv_full-2.0.0rc0-cp36-cp36m-manylinux1_x86_64.whl
-          requires:
-            - lint
-      - build_cpu:
-          name: maximum_version_cpu
-          torch: 1.9.0
-          torchvision: 0.10.0
-          python: 3.9.0
-          mmcv: https://download.openmmlab.com/mmcv/dev-2.x/cpu/torch1.9.0/mmcv_full-2.0.0rc0-cp39-cp39-manylinux1_x86_64.whl
-          requires:
-            - minimum_version_cpu
-      - hold:
-          type: approval
-          requires:
-            - maximum_version_cpu
+      # - lint:
+      #     name: lint
+      #     filters:
+      #       branches:
+      #         ignore:
+      #           - dev-3.x
+      # - build_cpu:
+      #     name: minimum_version_cpu
+      #     torch: 1.6.0
+      #     torchvision: 0.7.0
+      #     python: 3.6.9  # The lowest python 3.6.x version available on CircleCI images
+      #     mmcv: https://download.openmmlab.com/mmcv/dev-2.x/cpu/torch1.6.0/mmcv_full-2.0.0rc0-cp36-cp36m-manylinux1_x86_64.whl
+      #     requires:
+      #       - lint
+      # - build_cpu:
+      #     name: maximum_version_cpu
+      #     torch: 1.9.0
+      #     torchvision: 0.10.0
+      #     python: 3.9.0
+      #     mmcv: https://download.openmmlab.com/mmcv/dev-2.x/cpu/torch1.9.0/mmcv_full-2.0.0rc0-cp39-cp39-manylinux1_x86_64.whl
+      #     requires:
+      #       - minimum_version_cpu
+      # - hold:
+      #     type: approval
+      #     requires:
+      #       - maximum_version_cpu
       - build_cuda:
           name: mainstream_version_gpu
           torch: 1.8.1
@@ -181,8 +181,8 @@ workflows:
           # as string instead of number
           cuda: "10.2"
           mmcv: https://download.openmmlab.com/mmcv/dev-2.x/cu102/torch1.8.0/mmcv_full-2.0.0rc0-cp37-cp37m-manylinux1_x86_64.whl
-          requires:
-            - hold
+          # requires:
+          #   - hold
   merge_stage_test:
     when:
       not:
