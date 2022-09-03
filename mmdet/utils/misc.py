@@ -4,8 +4,10 @@ import os
 import os.path as osp
 import warnings
 
+import torch
 from mmengine.config import Config, ConfigDict
 from mmengine.logging import print_log
+from mmengine.utils import digit_version
 
 
 def find_latest_checkpoint(path, suffix='pth'):
@@ -74,3 +76,15 @@ def update_data_root(cfg, logger=None):
 
     update(cfg.data, cfg.data_root, dst_root)
     cfg.data_root = dst_root
+
+
+_torch_version_div_indexing = (
+    'parrots' not in torch.__version__
+    and digit_version(torch.__version__) >= digit_version('1.8'))
+
+
+def floordiv(dividend, divisor, rounding_mode='trunc'):
+    if _torch_version_div_indexing:
+        return torch.div(dividend, divisor, rounding_mode=rounding_mode)
+    else:
+        return dividend // divisor
