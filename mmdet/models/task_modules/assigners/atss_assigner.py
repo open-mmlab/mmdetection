@@ -24,21 +24,21 @@ def bbox_center_distance(bboxes: Tensor, priors: Tensor) -> Tensor:
         Tensor: Center distances between bboxes and priors.
     """
     if isinstance(bboxes, BaseBoxes):
-        bbox_points = bboxes.centers
+        bbox_centers = bboxes.centers
     else:
         bbox_cx = (bboxes[:, 0] + bboxes[:, 2]) / 2.0
         bbox_cy = (bboxes[:, 1] + bboxes[:, 3]) / 2.0
-        bbox_points = torch.stack((bbox_cx, bbox_cy), dim=1)
+        bbox_centers = torch.stack((bbox_cx, bbox_cy), dim=1)
 
     if isinstance(priors, BaseBoxes):
-        priors_points = priors.centers
+        priors_centers = priors.centers
     else:
         priors_cx = (priors[:, 0] + priors[:, 2]) / 2.0
         priors_cy = (priors[:, 1] + priors[:, 3]) / 2.0
-        priors_points = torch.stack((priors_cx, priors_cy), dim=1)
+        priors_centers = torch.stack((priors_cx, priors_cy), dim=1)
 
-    distances = (priors_points[:, None, :] -
-                 bbox_points[None, :, :]).pow(2).sum(-1).sqrt()
+    distances = (priors_centers[:, None, :] -
+                 bbox_centers[None, :, :]).pow(2).sum(-1).sqrt()
 
     return distances
 
@@ -221,10 +221,9 @@ class ATSSAssigner(BaseAssigner):
         # limit the positive sample's center in gt
 
         if isinstance(priors, BaseBoxes):
-            priors_points = priors.centers
-            inside_flag = gt_bboxes.find_inside_points(priors_points)
-            is_in_gts = inside_flag[candidate_idxs,
-                                    torch.arange(num_gt)].to(is_pos.dtype)
+            priors_centers = priors.centers
+            inside_flag = gt_bboxes.find_inside_points(priors_centers[candidate_idxs], eps=0.01)
+            is_in_gts = inside_flag[:, torch.arange(num_gt)].to(is_pos.dtype)
             for gt_idx in range(num_gt):
                 candidate_idxs[:, gt_idx] += gt_idx * num_priors
             candidate_idxs = candidate_idxs.view(-1)

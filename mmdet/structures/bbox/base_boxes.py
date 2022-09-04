@@ -464,7 +464,7 @@ class BaseBoxes(metaclass=ABCMeta):
     @abstractmethod
     def find_inside_points(self,
                            points: Tensor,
-                           is_aligned: bool = False) -> BoolTensor:
+                           is_aligned: bool = False, eps: float = 0.01) -> BoolTensor:
         """Find inside box points. Boxes dimension must be 2.
 
         Args:
@@ -472,6 +472,8 @@ class BaseBoxes(metaclass=ABCMeta):
             is_aligned (bool): Whether ``points`` has been aligned with boxes
                 or not. If True, the length of boxes and ``points`` should be
                 the same. Defaults to False.
+            eps (float): Make sure the points are inside not on the boudary.
+                Defaults to 0.01.
 
         Returns:
             BoolTensor: A BoolTensor indicating whether a point is inside

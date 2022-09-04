@@ -295,7 +295,7 @@ class HorizontalBoxes(BaseBoxes):
 
     def find_inside_points(self,
                            points: Tensor,
-                           is_aligned: bool = False) -> BoolTensor:
+                           is_aligned: bool = False, eps: float = 0.01) -> BoolTensor:
         """Find inside box points. Boxes dimension must be 2.
 
         Args:
@@ -303,6 +303,8 @@ class HorizontalBoxes(BaseBoxes):
             is_aligned (bool): Whether ``points`` has been aligned with boxes
                 or not. If True, the length of boxes and ``points`` should be
                 the same. Defaults to False.
+            eps (float): Make sure the points are inside not on the boudary.
+                Defaults to 0.01.
 
         Returns:
             BoolTensor: A BoolTensor indicating whether a point is inside
@@ -320,8 +322,8 @@ class HorizontalBoxes(BaseBoxes):
             assert boxes.size(0) == points.size(0)
 
         x_min, y_min, x_max, y_max = boxes.unbind(dim=-1)
-        return (points[..., 0] >= x_min) & (points[..., 0] <= x_max) & \
-            (points[..., 1] >= y_min) & (points[..., 1] <= y_max)
+        return (points[..., 0] >= x_min + eps) & (points[..., 0] <= x_max - eps) & \
+            (points[..., 1] >= y_min + eps) & (points[..., 1] <= y_max - eps)
 
     @staticmethod
     def overlaps(boxes1: BaseBoxes,
