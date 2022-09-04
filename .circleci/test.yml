@@ -66,6 +66,8 @@ jobs:
             - run: pip install "protobuf <= 3.20.1" && sudo apt-get update && sudo apt-get -y install libprotobuf-dev protobuf-compiler cmake
       - run:
           name: Install mmdet dependencies
+          # numpy may be downgraded after building pycocotools, which causes `ImportError: numpy.core.multiarray failed to import`
+          # force reinstall pycocotools to ensure pycocotools being built under the currenct numpy
           command: |
             python -m pip install git+ssh://git@github.com/open-mmlab/mmengine.git@main
             python -m pip install << parameters.mmcv >>
