@@ -110,7 +110,7 @@ class SamplingResult(util_mixins.NiceRepr):
         if gt_bboxes.numel() == 0:
             # hack for index error case
             assert self.pos_assigned_gt_inds.numel() == 0
-            self.pos_gt_bboxes = torch.empty_like(gt_bboxes).view(-1, box_dim)
+            self.pos_gt_bboxes = gt_bboxes.view(-1, box_dim)
         else:
             if len(gt_bboxes.shape) < 2:
                 gt_bboxes = gt_bboxes.view(-1, box_dim)

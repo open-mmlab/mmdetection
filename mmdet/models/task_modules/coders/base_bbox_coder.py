@@ -3,9 +3,14 @@ from abc import ABCMeta, abstractmethod
 
 
 class BaseBBoxCoder(metaclass=ABCMeta):
-    """Base bounding box coder."""
+    """Base bounding box coder.
 
-    # The length of the `encode` function output.
+    Args:
+        with_boxlist (bool): Whether to warp decoded boxes with the
+            boxlist data structure. Defaults to False.
+    """
+
+    # The length of the last of dimension of the encoded tensor.
     encode_size = 4
 
     def __init__(self, with_boxlist: bool = False, **kwargs):
