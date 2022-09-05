@@ -603,13 +603,11 @@ class FilterAnnotations:
             assert 'gt_bboxes' in results
             gt_bboxes = results['gt_bboxes']
             instance_num = gt_bboxes.shape[0]
-            keep = np.ones(gt_bboxes.shape[0], dtype=bool)
         if self.by_mask:
             assert 'gt_masks' in results
             gt_masks = results['gt_masks']
             instance_num = len(gt_masks)
-            keep = np.ones(len(gt_masks), dtype=bool)
-
+        keep = np.ones(instance_num, dtype=bool)
         if instance_num == 0:
             return results
 
