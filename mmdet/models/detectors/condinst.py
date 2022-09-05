@@ -7,7 +7,7 @@ from .single_stage_instance_seg import SingleStageInstanceSegmentor
 
 @MODELS.register_module()
 class CondInst(SingleStageInstanceSegmentor):
-    """Implementation of `CondInst <https://link.springer.com/chapter/10.1007/978-3-030-58452-8_17>`_"""
+    """Implementation of `CondInst <https://arxiv.org/abs/2003.05664>`_"""
 
     def __init__(self,
                  backbone: ConfigType,

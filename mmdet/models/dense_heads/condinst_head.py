@@ -20,12 +20,15 @@ from ..utils.misc import empty_instances
 from .base_mask_head import BaseMaskHead
 from .fcos_head import FCOSHead
 
+INF = 100000000
+
 @MODELS.register_module()
 class FCOSwithControllerHead(FCOSHead):
     
     def __init__(self,
                 *args,
                  num_gen_params: int = 169,
+                 in_features: List = ["p3", "p4", "p5", "p6", "p7"],
                  init_cfg: MultiConfig = dict(
                      type='Normal',
                      layer='Conv2d',
@@ -37,6 +40,7 @@ class FCOSwithControllerHead(FCOSHead):
                          bias_prob=0.01)),
                  **kwargs) -> None:
         self.num_gen_params = num_gen_params
+        self.in_features = in_features
         
         super().__init__(
             *args,
@@ -78,7 +82,7 @@ class FCOSwithControllerHead(FCOSHead):
 
         for reg_layer in self.reg_convs:
             reg_feat = reg_layer(reg_feat)
-            controller_pred.append[self.controller(reg_feat)]
+            controller_pred.append(self.controller(reg_feat))
         
         bbox_pred = self.conv_reg(reg_feat)
         
@@ -99,8 +103,33 @@ class FCOSwithControllerHead(FCOSHead):
                 bbox_pred *= stride
         else:
             bbox_pred = bbox_pred.exp()
-        
         return cls_score, bbox_pred, centerness, controller_pred
+
+    def compute_locations(self, features):
+        locations = []
+        for level, feature in enumerate(features):
+            h, w = feature.size()[-2:]
+            locations_per_level = self.sub_compute_locations(
+                h, w, self.fpn_strides[level],
+                feature.device
+            )
+            locations.append(locations_per_level)
+        return locations
+
+    def sub_compute_locations(self, h, w, stride, device):
+        shifts_x = torch.arange(
+            0, w * stride, step=stride,
+            dtype=torch.float32, device=device
+        )
+        shifts_y = torch.arange(
+            0, h * stride, step=stride,
+            dtype=torch.float32, device=device
+        )
+        shift_y, shift_x = torch.meshgrid(shifts_y, shifts_x)
+        shift_x = shift_x.reshape(-1)
+        shift_y = shift_y.reshape(-1)
+        locations = torch.stack((shift_x, shift_y), dim=1) + stride // 2
+        return locations
 
     def loss_by_feat(
         self,
@@ -203,13 +232,27 @@ class FCOSwithControllerHead(FCOSHead):
         else:
             loss_bbox = pos_bbox_preds.sum()
             loss_centerness = pos_centerness.sum()
+
+        features = [features[f] for f in self.in_features]
+        locations = self.compute_locations(features)
+        
+        locations = torch.cat(locations, dim=0)
+        locations = [locations.clone() for _ in range(len(batch_gt_instances))]
+
+        fpn_levels = [
+            loc.new_ones(len(loc), dtype=torch.long) * level
+            for level, loc in enumerate(locations)
+        ]
+
         self._raw_positive_infos.update(controller_preds=controller_pred)
-        # self._raw_positive_infos.update(controller_preds=controller_pred)
+        self._raw_positive_infos.update(locations=locations)
+        self._raw_positive_infos.update(fpn_levels=fpn_levels)
+
         return dict(
             loss_cls=loss_cls,
             loss_bbox=loss_bbox,
-            loss_centerness=loss_centerness)
-
+            loss_centerness=loss_centerness)    
+    
     def get_targets(
             self, points: List[Tensor], batch_gt_instances: InstanceList
     ) -> Tuple[List[Tensor], List[Tensor]]:
@@ -270,378 +313,15 @@ class FCOSwithControllerHead(FCOSHead):
             if self.norm_on_bbox:
                 bbox_targets = bbox_targets / self.strides[i]
             concat_lvl_bbox_targets.append(bbox_targets)
+        self._raw_positive_infos.update(instances=concat_lvl_bbox_targets)
+
         return concat_lvl_labels, concat_lvl_bbox_targets
 
-    def _get_targets_single(
-            self, gt_instances: InstanceData, points: Tensor,
-            regress_ranges: Tensor,
-            num_points_per_lvl: List[int]) -> Tuple[Tensor, Tensor]:
-        """Compute regression and classification targets for a single image."""
-        num_points = points.size(0)
-        num_gts = len(gt_instances)
-        gt_bboxes = gt_instances.bboxes
-        gt_labels = gt_instances.labels
-
-        if num_gts == 0:
-            return gt_labels.new_full((num_points,), self.num_classes), \
-                   gt_bboxes.new_zeros((num_points, 4))
-
-        areas = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (
-            gt_bboxes[:, 3] - gt_bboxes[:, 1])
-        # TODO: figure out why these two are different
-        # areas = areas[None].expand(num_points, num_gts)
-        areas = areas[None].repeat(num_points, 1)
-        regress_ranges = regress_ranges[:, None, :].expand(
-            num_points, num_gts, 2)
-        gt_bboxes = gt_bboxes[None].expand(num_points, num_gts, 4)
-        xs, ys = points[:, 0], points[:, 1]
-        xs = xs[:, None].expand(num_points, num_gts)
-        ys = ys[:, None].expand(num_points, num_gts)
-
-        left = xs - gt_bboxes[..., 0]
-        right = gt_bboxes[..., 2] - xs
-        top = ys - gt_bboxes[..., 1]
-        bottom = gt_bboxes[..., 3] - ys
-        bbox_targets = torch.stack((left, top, right, bottom), -1)
-
-        if self.center_sampling:
-            # condition1: inside a `center bbox`
-            radius = self.center_sample_radius
-            center_xs = (gt_bboxes[..., 0] + gt_bboxes[..., 2]) / 2
-            center_ys = (gt_bboxes[..., 1] + gt_bboxes[..., 3]) / 2
-            center_gts = torch.zeros_like(gt_bboxes)
-            stride = center_xs.new_zeros(center_xs.shape)
-
-            # project the points on current lvl back to the `original` sizes
-            lvl_begin = 0
-            for lvl_idx, num_points_lvl in enumerate(num_points_per_lvl):
-                lvl_end = lvl_begin + num_points_lvl
-                stride[lvl_begin:lvl_end] = self.strides[lvl_idx] * radius
-                lvl_begin = lvl_end
-
-            x_mins = center_xs - stride
-            y_mins = center_ys - stride
-            x_maxs = center_xs + stride
-            y_maxs = center_ys + stride
-            center_gts[..., 0] = torch.where(x_mins > gt_bboxes[..., 0],
-                                             x_mins, gt_bboxes[..., 0])
-            center_gts[..., 1] = torch.where(y_mins > gt_bboxes[..., 1],
-                                             y_mins, gt_bboxes[..., 1])
-            center_gts[..., 2] = torch.where(x_maxs > gt_bboxes[..., 2],
-                                             gt_bboxes[..., 2], x_maxs)
-            center_gts[..., 3] = torch.where(y_maxs > gt_bboxes[..., 3],
-                                             gt_bboxes[..., 3], y_maxs)
-
-            cb_dist_left = xs - center_gts[..., 0]
-            cb_dist_right = center_gts[..., 2] - xs
-            cb_dist_top = ys - center_gts[..., 1]
-            cb_dist_bottom = center_gts[..., 3] - ys
-            center_bbox = torch.stack(
-                (cb_dist_left, cb_dist_top, cb_dist_right, cb_dist_bottom), -1)
-            inside_gt_bbox_mask = center_bbox.min(-1)[0] > 0
-        else:
-            # condition1: inside a gt bbox
-            inside_gt_bbox_mask = bbox_targets.min(-1)[0] > 0
-
-        # condition2: limit the regression range for each location
-        max_regress_distance = bbox_targets.max(-1)[0]
-        inside_regress_range = (
-            (max_regress_distance >= regress_ranges[..., 0])
-            & (max_regress_distance <= regress_ranges[..., 1]))
-
-        # if there are still more than one objects for a location,
-        # we choose the one with minimal area
-        areas[inside_gt_bbox_mask == 0] = INF
-        areas[inside_regress_range == 0] = INF
-        min_area, min_area_inds = areas.min(dim=1)
-
-        labels = gt_labels[min_area_inds]
-        labels[min_area == INF] = self.num_classes  # set as BG
-        bbox_targets = bbox_targets[range(num_points), min_area_inds]
-
-        return labels, bbox_targets
-
-    def centerness_target(self, pos_bbox_targets: Tensor) -> Tensor:
-        """Compute centerness targets.
-
-        Args:
-            pos_bbox_targets (Tensor): BBox targets of positive bboxes in shape
-                (num_pos, 4)
-
-        Returns:
-            Tensor: Centerness target.
-        """
-        # only calculate pos centerness targets, otherwise there may be nan
-        left_right = pos_bbox_targets[:, [0, 2]]
-        top_bottom = pos_bbox_targets[:, [1, 3]]
-        if len(left_right) == 0:
-            centerness_targets = left_right[..., 0]
-        else:
-            centerness_targets = (
-                left_right.min(dim=-1)[0] / left_right.max(dim=-1)[0]) * (
-                    top_bottom.min(dim=-1)[0] / top_bottom.max(dim=-1)[0])
-        return torch.sqrt(centerness_targets)
-
-#YOLACT
     def get_positive_infos(self) -> InstanceList:
-        controller_pred = self._raw_positive_infos['controller_preds']
-        return controller_pred
-        # assert len(self._raw_positive_infos) > 0
-        # sampling_results = self._raw_positive_infos['sampling_results']
-        # num_imgs = len(sampling_results)
-
-        # coeff_pred_list = []
-        # for coeff_pred_per_level in self._raw_positive_infos['coeff_preds']:
-        #     coeff_pred_per_level = \
-        #         coeff_pred_per_level.permute(
-        #             0, 2, 3, 1).reshape(num_imgs, -1, self.num_protos)
-        #     coeff_pred_list.append(coeff_pred_per_level)
-        # coeff_preds = torch.cat(coeff_pred_list, dim=1)
-
-        # pos_info_list = []
-        
-        # for idx, sampling_result in enumerate(sampling_results):
-        #     pos_info = InstanceData()
-        #     coeff_preds_single = coeff_preds[idx]
-        #     pos_info.pos_assigned_gt_inds = \
-        #         sampling_result.pos_assigned_gt_inds
-        #     pos_info.pos_inds = sampling_result.pos_inds
-        #     pos_info.coeffs = coeff_preds_single[sampling_result.pos_inds]
-        #     pos_info.bboxes = sampling_result.pos_gt_bboxes
-        #     pos_info_list.append(pos_info)
-
-        return pos_info_list
-#YOLACT
-    def predict_by_feat(self,
-                        cls_scores,
-                        bbox_preds,
-                        centerness,
-                        controller_pred,
-                        batch_img_metas,
-                        cfg=None,
-                        rescale=True,
-                        **kwargs):
-        """Similar to func:``AnchorHead.get_bboxes``, but additionally
-        processes coeff_preds.
-
-        Args:
-            cls_scores (list[Tensor]): Box scores for each scale level
-                with shape (N, num_anchors * num_classes, H, W)
-            bbox_preds (list[Tensor]): Box energies / deltas for each scale
-                level with shape (N, num_anchors * 4, H, W)
-            coeff_preds (list[Tensor]): Mask coefficients for each scale
-                level with shape (N, num_anchors * num_protos, H, W)
-            batch_img_metas (list[dict]): Batch image meta info.
-            cfg (mmcv.Config | None): Test / postprocessing configuration,
-                if None, test_cfg would be used
-            rescale (bool): If True, return boxes in original image space.
-                Defaults to True.
-
-        Returns:
-            list[:obj:`InstanceData`]: Object detection results of each image
-            after the post process. Each item usually contains following keys.
-                - scores (Tensor): Classification scores, has a shape
-                  (num_instance, )
-                - labels (Tensor): Labels of bboxes, has a shape
-                  (num_instances, ).
-                - bboxes (Tensor): Has a shape (num_instances, 4),
-                  the last dimension 4 arrange as (x1, y1, x2, y2).
-                - coeffs (Tensor): the predicted mask coefficients of
-                  instance inside the corresponding box has a shape
-                  (n, num_protos).
-        """
-
-        assert len(cls_scores) == len(bbox_preds)
-        num_levels = len(cls_scores)
-
-        device = cls_scores[0].device
-        featmap_sizes = [cls_scores[i].shape[-2:] for i in range(num_levels)]
-        
-        mlvl_priors = self.prior_generator.grid_priors(
-            featmap_sizes, device=device)
-
-        result_list = []
-        for img_id in range(len(batch_img_metas)):
-            img_meta = batch_img_metas[img_id]
-            cls_score_list = select_single_mlvl(cls_scores, img_id)
-            bbox_pred_list = select_single_mlvl(bbox_preds, img_id)
-            coeff_pred_list = select_single_mlvl(coeff_preds, img_id)
-            results = self._predict_by_feat_single(
-                cls_score_list=cls_score_list,
-                bbox_pred_list=bbox_pred_list,
-                coeff_preds_list=coeff_pred_list,
-                mlvl_priors=mlvl_priors,
-                img_meta=img_meta,
-                cfg=cfg,
-                rescale=rescale)
-            result_list.append(results)
-        return result_list
-#YOLACT
-    def _predict_by_feat_single(self,
-                                cls_score_list: List[Tensor],
-                                bbox_pred_list: List[Tensor],
-                                centernesses_list: List[Tensor],
-                                mlvl_priors: List[Tensor],
-                                img_meta: dict,
-                                cfg: ConfigType,
-                                rescale: bool = True) -> InstanceData:
-        """Transform a single image's features extracted from the head into
-        bbox results. Similar to func:``AnchorHead._predict_by_feat_single``,
-        but additionally processes coeff_preds_list and uses fast NMS instead
-        of traditional NMS.
-
-        Args:
-            cls_score_list (list[Tensor]): Box scores for a single scale level
-                Has shape (num_priors * num_classes, H, W).
-            bbox_pred_list (list[Tensor]): Box energies / deltas for a single
-                scale level with shape (num_priors * 4, H, W).
-            coeff_preds_list (list[Tensor]): Mask coefficients for a single
-                scale level with shape (num_priors * num_protos, H, W).
-            mlvl_priors (list[Tensor]): Each element in the list is
-                the priors of a single level in feature pyramid,
-                has shape (num_priors, 4).
-            img_meta (dict): Image meta info.
-            cfg (mmengine.Config): Test / postprocessing configuration,
-                if None, test_cfg would be used.
-            rescale (bool): If True, return boxes in original image space.
-                Defaults to False.
-
-        Returns:
-            :obj:`InstanceData`: Detection results of each image
-            after the post process.
-            Each item usually contains following keys.
-
-                - scores (Tensor): Classification scores, has a shape
-                  (num_instance, )
-                - labels (Tensor): Labels of bboxes, has a shape
-                  (num_instances, ).
-                - bboxes (Tensor): Has a shape (num_instances, 4),
-                  the last dimension 4 arrange as (x1, y1, x2, y2).
-                - coeffs (Tensor): the predicted mask coefficients of
-                  instance inside the corresponding box has a shape
-                  (n, num_protos).
-        """
-        assert len(cls_score_list) == len(bbox_pred_list) == len(mlvl_priors)
-
-        cfg = self.test_cfg if cfg is None else cfg
-        cfg = copy.deepcopy(cfg)
-        img_shape = img_meta['img_shape']
-        nms_pre = cfg.get('nms_pre', -1)
-
-        mlvl_bbox_preds = []
-        mlvl_valid_priors = []
-        mlvl_scores = []
-        mlvl_coeffs = []
-        for cls_score, bbox_pred, coeff_pred, priors in \
-                zip(cls_score_list, bbox_pred_list,
-                    coeff_preds_list, mlvl_priors):
-            assert cls_score.size()[-2:] == bbox_pred.size()[-2:]
-            cls_score = cls_score.permute(1, 2,
-                                          0).reshape(-1, self.cls_out_channels)
-            if self.use_sigmoid_cls:
-                scores = cls_score.sigmoid()
-            else:
-                scores = cls_score.softmax(-1)
-            bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 4)
-            coeff_pred = coeff_pred.permute(1, 2,
-                                            0).reshape(-1, self.num_protos)
-
-            if 0 < nms_pre < scores.shape[0]:
-                # Get maximum scores for foreground classes.
-                if self.use_sigmoid_cls:
-                    max_scores, _ = scores.max(dim=1)
-                else:
-                    # remind that we set FG labels to [0, num_class-1]
-                    # since mmdet v2.0
-                    # BG cat_id: num_class
-                    max_scores, _ = scores[:, :-1].max(dim=1)
-                _, topk_inds = max_scores.topk(nms_pre)
-                priors = priors[topk_inds, :]
-                bbox_pred = bbox_pred[topk_inds, :]
-                scores = scores[topk_inds, :]
-                coeff_pred = coeff_pred[topk_inds, :]
-
-            mlvl_bbox_preds.append(bbox_pred)
-            mlvl_valid_priors.append(priors)
-            mlvl_scores.append(scores)
-            mlvl_coeffs.append(coeff_pred)
-
-        bbox_pred = torch.cat(mlvl_bbox_preds)
-        priors = torch.cat(mlvl_valid_priors)
-        multi_bboxes = self.bbox_coder.decode(
-            priors, bbox_pred, max_shape=img_shape)
-
-        multi_scores = torch.cat(mlvl_scores)
-        multi_coeffs = torch.cat(mlvl_coeffs)
-
-        return self._bbox_post_process(
-            multi_bboxes=multi_bboxes,
-            multi_scores=multi_scores,
-            multi_coeffs=multi_coeffs,
-            cfg=cfg,
-            rescale=rescale,
-            img_meta=img_meta)
-#YOLACT
-    def _bbox_post_process(self,
-                           multi_bboxes: Tensor,
-                           multi_scores: Tensor,
-                           multi_coeffs: Tensor,
-                           cfg: ConfigType,
-                           rescale: bool = False,
-                           img_meta: Optional[dict] = None,
-                           **kwargs) -> InstanceData:
-        """bbox post-processing method.
-
-        The boxes would be rescaled to the original image scale and do
-        the nms operation. Usually `with_nms` is False is used for aug test.
-
-        Args:
-            multi_bboxes (Tensor): Predicted bbox that concat all levels.
-            multi_scores (Tensor): Bbox scores that concat all levels.
-            multi_coeffs (Tensor): Mask coefficients  that concat all levels.
-            cfg (ConfigDict): Test / postprocessing configuration,
-                if None, test_cfg would be used.
-            rescale (bool): If True, return boxes in original image space.
-                Default to False.
-            img_meta (dict, optional): Image meta info. Defaults to None.
-
-        Returns:
-            :obj:`InstanceData`: Detection results of each image
-            after the post process.
-            Each item usually contains following keys.
-
-                - scores (Tensor): Classification scores, has a shape
-                  (num_instance, )
-                - labels (Tensor): Labels of bboxes, has a shape
-                  (num_instances, ).
-                - bboxes (Tensor): Has a shape (num_instances, 4),
-                  the last dimension 4 arrange as (x1, y1, x2, y2).
-                - coeffs (Tensor): the predicted mask coefficients of
-                  instance inside the corresponding box has a shape
-                  (n, num_protos).
-        """
-        if rescale:
-            assert img_meta.get('scale_factor') is not None
-            multi_bboxes /= multi_bboxes.new_tensor(
-                img_meta['scale_factor']).repeat((1, 2))
-            # mlvl_bboxes /= mlvl_bboxes.new_tensor(scale_factor)
-
-        if self.use_sigmoid_cls:
-            # Add a dummy background class to the backend when using sigmoid
-            # remind that we set FG labels to [0, num_class-1] since mmdet v2.0
-            # BG cat_id: num_class
-
-            padding = multi_scores.new_zeros(multi_scores.shape[0], 1)
-            multi_scores = torch.cat([multi_scores, padding], dim=1)
-        det_bboxes, det_labels, det_coeffs = fast_nms(
-            multi_bboxes, multi_scores, multi_coeffs, cfg.score_thr,
-            cfg.iou_thr, cfg.top_k, cfg.max_per_img)
-        results = InstanceData()
-        results.bboxes = det_bboxes[:, :4]
-        results.scores = det_bboxes[:, -1]
-        results.labels = det_labels
-        results.coeffs = det_coeffs
-        return results
+        assert len(self._raw_positive_infos) > 0
+        controller_preds = self._raw_positive_infos['controller_preds']
+        sampling_results = self._raw_positive_infos['instances']
+        return [controller_preds, sampling_results]
 
 @MODELS.register_module()
 class CondInstDynamicMaskHead(BaseMaskHead):
@@ -650,30 +330,41 @@ class CondInstDynamicMaskHead(BaseMaskHead):
         self,
         num_classes: int,
         in_channels: int = 256,
-        in_features_channels:List[int] = [512, 1024, 2048],
+        in_features_channels:List[int] = [256, 256, 256],
         tower_channel: int = 128,
         num_convs: int = 3,
-        num_outputs: int = 1,
+        num_outputs: int = 8,
+        max_proposals: int = 100,
+        topk_proposals_per_im: int = -1,
         loss_mask_weight: float = 1.0,
         max_masks_to_train: int = 100,
+        disable_rel_coords: bool = False,
         train_cfg: OptConfigType = None,
         test_cfg: OptConfigType = None,
         with_seg_branch: bool = True,
         boxinst_enabled: bool = False,
+        sizes_of_interest: List[int] = [64, 128, 256, 512],
         loss_segm: ConfigType = dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
-        init_cfg=dict(
+        init_cfg = dict(
             type='Xavier',
             distribution='uniform',
-            override=dict(name='protonet'))
+        )
+        # init_cfg=dict(
+        #     type='Xavier',
+        #     distribution='uniform',
+        #     override=dict(name='protonet'))
     ) -> None:
         super().__init__(init_cfg=init_cfg)
+        self.disable_rel_coords = disable_rel_coords
         self.in_channels = in_channels
         self.boxinst_enabled = boxinst_enabled
         self.in_features_channels = in_features_channels
         self.tower_channel = tower_channel
         # Segmentation branch
         self.with_seg_branch = with_seg_branch
+        # self.segm_branch = nn.Conv2d(
+        #     self.in_channels, self.num_classes, kernel_size=1)
         self.segm_branch = SegmentationModule(
             num_classes=num_classes, in_channels=in_channels) \
             if with_seg_branch else None
@@ -682,59 +373,66 @@ class CondInstDynamicMaskHead(BaseMaskHead):
         self.num_classes = num_classes
         self.num_convs = num_convs
         self.num_outputs = num_outputs
+        self.max_proposals = max_proposals
+        self.topk_proposals_per_im = topk_proposals_per_im
         self.max_masks_to_train = max_masks_to_train
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+
+        self.soi = sizes_of_interest
+        self.sizes_of_interest = torch.tensor(self.soi + [self.soi[-1] * 2])
+
         self._init_layers()
 
     def _init_layers(self) -> None:
         in_channels = self.in_channels
         # feature_channels = {k: v.channels for k, v in input_shape.items()}
 
-
         self.refine = nn.ModuleList()
         for in_feature in self.in_features_channels:
-            self.refine.append(kaiming_init(nn.Conv2d(in_feature,self.tower_channel, 3, 1)))
-            # self.refine.append((torch.conv2d(256,self.tower_channel, 3, 1)))
-        self.tower = nn.ModuleList()
+            self.refine.append(nn.Conv2d(in_feature,self.tower_channel, 3, 1, 1))
+        tower = []
         for i in range(self.num_convs):
-            self.tower.append(kaiming_init(nn.Conv2d(self.tower_channel, self.tower_channel, 3, 1)))
-            # self.refine.append((torch.conv2d(256,self.tower_channel, 3, 1)))
-        self.tower.append(nn.Conv2d(
+            tower.append(nn.Conv2d(self.tower_channel, self.tower_channel, 3, 1, 1))
+        tower.append(nn.Conv2d(
             self.tower_channel, max(self.num_outputs, 1), 1
         ))
+        self.add_module('tower', nn.Sequential(*tower))
 
     def forward(self, x: tuple, positive_infos: InstanceList) -> tuple:
-        pred_instances = positive_infos["instances"]
-        if self.train:
-            assert (self.max_proposals == -1) or (self.topk_proposals_per_im == -1), \
-            "MAX_PROPOSALS and TOPK_PROPOSALS_PER_IM cannot be used at the same time."
-            if self.max_proposals != -1:
-                if self.max_proposals < len(pred_instances):
-                    inds = torch.randperm(len(pred_instances), device=mask_feats.device).long()
-                    pred_instances = pred_instances[inds[:self.max_proposals]]
-            elif self.topk_proposals_per_im != -1:
-                num_images = len(gt_instances)
-                kept_instances = []
-                for im_id in range(num_images):
-                    instances_per_im = pred_instances[pred_instances.im_inds == im_id]
-                    if len(instances_per_im) == 0:
-                        kept_instances.append(instances_per_im)
-                        continue
-                    unique_gt_inds = instances_per_im.gt_inds.unique()
-                    num_instances_per_gt = max(int(self.topk_proposals_per_im / len(unique_gt_inds)), 1)
-                    for gt_ind in unique_gt_inds:
-                        instances_per_gt = instances_per_im[instances_per_im.gt_inds == gt_ind]
-                        if len(instances_per_gt) > num_instances_per_gt:
-                            scores = instances_per_gt.logits_pred.sigmoid().max(dim=1)[0]
-                            ctrness_pred = instances_per_gt.ctrness_pred.sigmoid()
-                            inds = (scores * ctrness_pred).topk(k=num_instances_per_gt, dim=0)[1]
-                            instances_per_gt = instances_per_gt[inds]
-                        kept_instances.append(instances_per_gt)
-                pred_instances = Instances.cat(kept_instances)
-            pred_instances.mask_head_params = pred_instances.top_feats
+        
+        pred_instances = positive_infos[1]
+
+        # if self.train:
+        #     assert (self.max_proposals == -1) or (self.topk_proposals_per_im == -1), \
+        #     "MAX_PROPOSALS and TOPK_PROPOSALS_PER_IM cannot be used at the same time."
+        #     if self.max_proposals != -1:
+        #         if self.max_proposals < len(pred_instances):
+        #             inds = torch.randperm(len(pred_instances), device=mask_feats.device).long()
+        #             pred_instances = pred_instances[inds[:self.max_proposals]]
+        #     elif self.topk_proposals_per_im != -1:
+        #         num_images = len(pred_instances)
+        #         kept_instances = []
+        #         for im_id in range(num_images):
+        #             instances_per_im = pred_instances[pred_instances.im_inds == im_id]
+        #             if len(instances_per_im) == 0:
+        #                 kept_instances.append(instances_per_im)
+        #                 continue
+        #             unique_gt_inds = instances_per_im.gt_inds.unique()
+        #             num_instances_per_gt = max(int(self.topk_proposals_per_im / len(unique_gt_inds)), 1)
+        #             for gt_ind in unique_gt_inds:
+        #                 instances_per_gt = instances_per_im[instances_per_im.gt_inds == gt_ind]
+        #                 if len(instances_per_gt) > num_instances_per_gt:
+        #                     scores = instances_per_gt.logits_pred.sigmoid().max(dim=1)[0]
+        #                     ctrness_pred = instances_per_gt.ctrness_pred.sigmoid()
+        #                     inds = (scores * ctrness_pred).topk(k=num_instances_per_gt, dim=0)[1]
+        #                     instances_per_gt = instances_per_gt[inds]
+        #                 kept_instances.append(instances_per_gt)
+        #         pred_instances = Instances.cat(kept_instances)
+        #     pred_instances.mask_head_params = pred_instances.top_feats
+        
         seg_x = x[1]
-        mask_x = x[1:]
+        mask_x = x[2:]
         mask_feat_stride = 8
         if self.with_seg_branch  is not None and self.training:
             segm_preds = self.segm_branch(seg_x)
@@ -769,16 +467,30 @@ class CondInstDynamicMaskHead(BaseMaskHead):
         )
         n_inst = len(pred_instances)
 
-        im_inds = pred_instances.im_inds
-        mask_head_params = positive_infos["controller"]
+        # im_inds = pred_instances.im_inds
+        im_inds = [
+            locations.new_ones(locations.size(0), dtype=torch.long) * i for i in range(len(pred_instances))
+        ]
+        # TODO
+
+        mask_head_params = positive_infos[0]
 
         N, _, H, W = mask_feats.size()
 
         if not self.disable_rel_coords:
-            instance_locations = pred_instances.locations
+            # TODO
+            # instance_locations = pred_instances.locations
+            instance_locations = locations
             relative_coords = instance_locations.reshape(-1, 1, 2) - locations.reshape(1, -1, 2)
             relative_coords = relative_coords.permute(0, 2, 1).float()
-            soi = self.sizes_of_interest.float()[pred_instances.fpn_levels]
+            # soi = self.sizes_of_interest.float()[pred_instances.fpn_levels]
+
+            fpn_levels = [
+                loc.new_ones(len(loc), dtype=torch.long) * level
+                for level, loc in enumerate(locations)
+            ]
+
+            soi = self.sizes_of_interest.float()[fpn_levels]
             relative_coords = relative_coords / soi.reshape(-1, 1, 1)
             relative_coords = relative_coords.to(dtype=mask_feats.dtype)
 
@@ -836,6 +548,7 @@ class CondInstDynamicMaskHead(BaseMaskHead):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
+
         assert positive_infos is not None, \
             'positive_infos should not be None in `YOLACTProtonet`'
         losses = dict()
@@ -1209,7 +922,7 @@ class CondInstDynamicMaskHead(BaseMaskHead):
             masks = (masks * 255).to(dtype=torch.uint8)
         return masks
 
-    def _parse_dynamic_params(params, channels, weight_nums, bias_nums):
+    def _parse_dynamic_params(self, params, channels, weight_nums, bias_nums):
         assert params.dim() == 2
         assert len(weight_nums) == len(bias_nums)
         assert params.size(1) == sum(weight_nums) + sum(bias_nums)
@@ -1236,7 +949,7 @@ class CondInstDynamicMaskHead(BaseMaskHead):
 
         return weight_splits, bias_splits
     
-    def aligned_bilinear(tensor, factor):
+    def aligned_bilinear(self, tensor, factor):
         assert tensor.dim() == 4
         assert factor >= 1
         assert int(factor) == factor
@@ -1260,7 +973,7 @@ class CondInstDynamicMaskHead(BaseMaskHead):
 
         return tensor[:, :, :oh - 1, :ow - 1]
 
-    def compute_locations(h, w, stride, device):
+    def compute_locations(self, h, w, stride, device):
         shifts_x = torch.arange(
             0, w * stride, step=stride,
             dtype=torch.float32, device=device

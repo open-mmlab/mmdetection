@@ -4,7 +4,7 @@ _base_ = [
 img_norm_cfg = dict(
     mean=[123.68, 116.78, 103.94], std=[58.40, 57.12, 57.38], to_rgb=True)
 # model settings
-input_size = 550
+input_size = 640
 model = dict(
     type='CondInst',
     data_preprocessor=dict(
@@ -18,10 +18,10 @@ model = dict(
         depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
-        frozen_stages=1,  # do not freeze stem
+        frozen_stages=1,
         norm_cfg=dict(type='BN', requires_grad=True),
         norm_eval=False,  # update the statistics of bn
-        zero_init_residual=False,
+        # zero_init_residual=False,
         style='pytorch',
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
     neck=dict(
@@ -66,7 +66,7 @@ model = dict(
             min_pos_iou=0.,
             ignore_iof_thr=-1,
             gt_max_assign_all=False),
-        sampler=dict(type='PseudoSampler'),  # YOLACT should use PseudoSampler
+        sampler=dict(type='PseudoSampler'),
         # smoothl1_beta=1.,
         allowed_border=-1,
         pos_weight=-1,
@@ -157,38 +157,3 @@ env_cfg = dict(cudnn_benchmark=True)
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (1 GPUs) x (8 samples per GPU)
 auto_scale_lr = dict(base_batch_size=8)
-
-# MODEL:
-#   META_ARCHITECTURE: "CondInst"
-#   MASK_ON: True
-#   BACKBONE:
-#     NAME: "build_fcos_resnet_fpn_backbone"
-#   RESNETS:
-#     OUT_FEATURES: ["res3", "res4", "res5"]
-#   FPN:
-#     IN_FEATURES: ["res3", "res4", "res5"]
-#   PROPOSAL_GENERATOR:
-#     NAME: "FCOS"
-#   FCOS:
-#     THRESH_WITH_CTR: True
-#     USE_SCALE: True
-#   CONDINST:
-#     MAX_PROPOSALS: 500
-# DATASETS:
-#   TRAIN: ("coco_2017_train",)
-#   TEST: ("coco_2017_val",)
-# SOLVER:
-#   IMS_PER_BATCH: 16
-#   BASE_LR: 0.01
-#   STEPS: (60000, 80000)
-#   MAX_ITER: 90000
-# INPUT:
-#   MIN_SIZE_TRAIN: (640, 672, 704, 736, 768, 800)
-
-
-# _BASE_: "Base-CondInst.yaml"
-# MODEL:
-#   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
-#   RESNETS:
-#     DEPTH: 50
-# OUTPUT_DIR: "output/condinst_MS_R_50_1x"
