@@ -9,6 +9,7 @@ from mmcv.runner import force_fp32
 
 from mmdet.core import build_bbox_coder, multi_apply
 from mmdet.core.anchor.point_generator import MlvlPointGenerator
+from mmdet.utils.misc import torch_meshgrid_ij
 from ..builder import HEADS, build_loss
 from .base_dense_head import BaseDenseHead
 from .dense_test_mixins import BBoxTestMixin
@@ -301,7 +302,7 @@ class AnchorFreeHead(BaseDenseHead, BBoxTestMixin):
         # target `dtype` for onnx exporting.
         x_range = torch.arange(w, device=device).to(dtype)
         y_range = torch.arange(h, device=device).to(dtype)
-        y, x = torch.meshgrid(y_range, x_range)
+        y, x = torch_meshgrid_ij(y_range, x_range)
         if flatten:
             y = y.flatten()
             x = x.flatten()
