@@ -496,6 +496,8 @@ class CascadeRoIHead(BaseRoIHead):
                 for i in range(len(batch_img_metas)):
                     if rois[i].shape[0] > 0:
                         bbox_label = cls_scores[i][:, :-1].argmax(dim=1)
+                        # Refactor `bbox_head.regress_by_class` to only accept
+                        # box tensor without img_idx concatenated.
                         refined_bboxes = bbox_head.regress_by_class(
                             rois[i][:, 1:], bbox_label, bbox_preds[i],
                             batch_img_metas[i])
