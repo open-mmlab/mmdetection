@@ -75,6 +75,8 @@ Apart from MMDetection, we also released a library [mmcv](https://github.com/ope
 
 ## What's New
 
+### 💎 Stable version
+
 **2.25.0** was released in 1/6/2022:
 
 - Support dedicated `MMDetWandbHook` hook
@@ -85,6 +87,18 @@ Apart from MMDetection, we also released a library [mmcv](https://github.com/ope
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 
 For compatibility changes between different versions of MMDetection, please refer to [compatibility.md](docs/en/compatibility.md).
+
+### 🌟 Preview of 3.x version
+
+A brand new version of **MMDetection v3.0.0rc0** was released in 31/8/2022:
+
+- Unifies interfaces of all components based on [MMEngine](https://github.com/open-mmlab/mmengine).
+- Faster training and testing speed with complete support of mixed precision training.
+- Refactored and more flexible [architecture](https://mmdetection.readthedocs.io/en/v3.0.0rc0/overview.html).
+- Provides more strong baselines and a general semi-supervised object detection framework. See [tutorial of semi-supervised detection](https://mmdetection.readthedocs.io/en/v3.0.0rc0/user_guides/semi_det.html).
+- Allows any kind of single-stage model as an RPN in a two-stage model. See [tutorial](https://mmdetection.readthedocs.io/en/v3.0.0rc0/user_guides/single_stage_as_rpn.html).
+
+Find more new features in [3.x branch](https://github.com/open-mmlab/mmdetection/tree/3.x). Issues and PRs are welcome!
 
 ## Installation
 
