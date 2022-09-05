@@ -36,17 +36,17 @@ class BaseRoIHead(BaseModule, metaclass=ABCMeta):
 
     @property
     def with_bbox(self):
-        """bool: whether the RoI head contains a `bbox_head`"""
+        """bool: RoI head 是否包含 `bbox_head`"""
         return hasattr(self, 'bbox_head') and self.bbox_head is not None
 
     @property
     def with_mask(self):
-        """bool: whether the RoI head contains a `mask_head`"""
+        """bool: RoI head 是否包含 `mask_head`"""
         return hasattr(self, 'mask_head') and self.mask_head is not None
 
     @property
     def with_shared_head(self):
-        """bool: whether the RoI head contains a `shared_head`"""
+        """bool: RoI head 是否包含 `shared_head`"""
         return hasattr(self, 'shared_head') and self.shared_head is not None
 
     @abstractmethod

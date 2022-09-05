@@ -148,14 +148,11 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
 
     @auto_fp16(apply_to=('img', ))
     def forward(self, img, img_metas, return_loss=True, **kwargs):
-        """Calls either :func:`forward_train` or :func:`forward_test` depending
-        on whether ``return_loss`` is ``True``.
-
-        Note this setting will change the expected inputs. When
-        ``return_loss=True``, img and img_meta are single-nested (i.e. Tensor
-        and List[dict]), and when ``resturn_loss=False``, img and img_meta
-        should be double nested (i.e.  List[Tensor], List[List[dict]]), with
-        the outer list indicating test time augmentations.
+        """
+        注!``return_loss``参数与输入格式密切相关, 当 ``return_loss=True``时img
+        和 img_meta 是单嵌套的(比如, Tensor, List[dict]), 当 ``return_loss=False``,
+        img 和 img_meta 应该是双重嵌套的 (比如 List[Tensor], List[List[dict]]).
+        其中内部嵌套代表GPU索引,外部嵌套代表TTA索引
         """
         if torch.onnx.is_in_onnx_export():
             assert len(img_metas) == 1

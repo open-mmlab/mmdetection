@@ -9,10 +9,9 @@ from .base import BaseDetector
 
 @DETECTORS.register_module()
 class TwoStageDetector(BaseDetector):
-    """Base class for two-stage detectors.
+    """两阶段检测器的基类.
 
-    Two-stage detectors typically consisting of a region proposal network and a
-    task-specific regression head.
+    两阶段检测器通常由RPN和几个特定任务Head(box_head, cls_head, mask_head)组成.
     """
 
     def __init__(self,
@@ -22,13 +21,8 @@ class TwoStageDetector(BaseDetector):
                  roi_head=None,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None,
                  init_cfg=None):
         super(TwoStageDetector, self).__init__(init_cfg)
-        if pretrained:
-            warnings.warn('DeprecationWarning: pretrained is deprecated, '
-                          'please use "init_cfg" instead')
-            backbone.pretrained = pretrained
         self.backbone = build_backbone(backbone)
 
         if neck is not None:
@@ -46,7 +40,6 @@ class TwoStageDetector(BaseDetector):
             rcnn_train_cfg = train_cfg.rcnn if train_cfg is not None else None
             roi_head.update(train_cfg=rcnn_train_cfg)
             roi_head.update(test_cfg=test_cfg.rcnn)
-            roi_head.pretrained = pretrained
             self.roi_head = build_head(roi_head)
 
         self.train_cfg = train_cfg
@@ -64,9 +57,11 @@ class TwoStageDetector(BaseDetector):
 
     def extract_feat(self, img):
         """Directly extract features from the backbone+neck."""
+        # img -> tensor(bs, 3, h, w) out_channel代表输出维度一般随着尺寸减半而翻倍
+        # x -> tuple(tensor(bs, out_channel, f_h, f_w),)*out_indices
         x = self.backbone(img)
         if self.with_neck:
-            x = self.neck(x)
+            x = self.neck(x)  # tuple([tensor(bs, 256, f_h, f_w)]*num_outs)
         return x
 
     def forward_dummy(self, img):
@@ -98,31 +93,28 @@ class TwoStageDetector(BaseDetector):
                       **kwargs):
         """
         Args:
-            img (Tensor): of shape (N, C, H, W) encoding input images.
-                Typically these should be mean centered and std scaled.
+            img (Tensor): shape为 (N, C, H, W) 的 输入图像数据.
+                通常这些数据应该是经过归一化的(减均值除以方差).
 
-            img_metas (list[dict]): list of image info dict where each dict
-                has: 'img_shape', 'scale_factor', 'flip', and may also contain
+            img_metas (list[dict]): 图像信息字典列表,其中每一个字典 含有键: 'img_shape',
+                'scale_factor', 'flip', and may also contain
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
-                For details on the values of these keys see
+                有关这些键值的详细信息, 请参见
                 `mmdet/datasets/pipelines/formatting.py:Collect`.
 
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
+            gt_bboxes (list[Tensor]): 标注框列表, 每个元素的shape都是 (num_gts, 4),
+                其中4代表 [x1, y1, x2, y2] 格式的gt.
 
-            gt_labels (list[Tensor]): class indices corresponding to each box
+            gt_labels (list[Tensor]): 标注类别列表, 每个元素的shape都是 (num_gts,)
 
-            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss.
+            gt_bboxes_ignore (None | list[Tensor]): 计算损失时可以忽略的标注类别列表.
 
-            gt_masks (None | Tensor) : true segmentation masks for each box
-                used if the architecture supports a segmentation task.
+            gt_masks (None | Tensor) : 如果模型支持分割任务, 则对应每个框的真实分割mask.
 
-            proposals : override rpn proposals with custom proposals. Use when
-                `with_rpn` is False.
+            proposals : 用自定义proposals覆盖 rpn proposals. 当with_rpn=False时使用.
 
         Returns:
-            dict[str, Tensor]: a dictionary of loss components
+            dict[str, Tensor]: loss的结构字典.
         """
         x = self.extract_feat(img)
 

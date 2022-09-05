@@ -9,13 +9,14 @@ from ..mask.structures import BitmapMasks, PolygonMasks
 
 
 def multi_apply(func, *args, **kwargs):
-    """Apply function to a list of arguments.
-
-    Note:
-        This function applies the ``func`` to multiple inputs and
-        map the multiple outputs of the ``func`` into different
-        list. Each list contains the same type of outputs corresponding
-        to different inputs.
+    """将函数func应用于参数列表args.
+    设 def func(x):
+           return str(x), x
+    举个简单的例子.args为([3,10,5]),先忽略kwargs参数
+    map_results = map(func, *args)
+    那么list(map_results)就是[('3', 3), ('10', 10), ('5', 5)].
+    那么zip(*map_results))就是[('3', '10', '5'), (3, 10, 5)]
+    那么tuple(map(list, zip(*map_results)))就为(['3', '10', '5'], [3, 10, 5])
 
     Args:
         func (Function): A function that will be applied to a list of
@@ -26,6 +27,7 @@ def multi_apply(func, *args, **kwargs):
             a kind of returned results by the function
     """
     pfunc = partial(func, **kwargs) if kwargs else func
+    # args一般是tuple(list[])这种结构
     map_results = map(pfunc, *args)
     return tuple(map(list, zip(*map_results)))
 

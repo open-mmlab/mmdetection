@@ -9,7 +9,7 @@ from mmdet.apis import (async_inference_detector, inference_detector,
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument('--img', help='图片路径',default=[r'D:\mmdetection\data\yexi\images\000001.jpg',r'D:\mmdetection\data\yexi\images\000001.jpg',r'D:\mmdetection\data\yexi\images\000001.jpg',])
-    parser.add_argument('--config', help='模型配置文件',default=r'D:\mmdetection\configs\retinanet\retinanet_r50_fpn_1x_coco.py')
+    parser.add_argument('--config', help='模型配置文件',default=r'D:\mmdetection\configs\faster_rcnn\faster_rcnn_r50_fpn_1x_coco.py')
     parser.add_argument('--checkpoint', help='模型路径',default=r'D:\mmdetection\tools\work_dirs\retinanet_r50_fpn_1x_coco\epoch_12.pth')
     parser.add_argument('--out-file', default=r'D:\mmdetection\data\000001.jpg', help='图片输出路径')
     parser.add_argument(

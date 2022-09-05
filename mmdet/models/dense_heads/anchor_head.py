@@ -152,14 +152,12 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             feats (tuple[Tensor]): 来自上游网络的特征图,每个都是 4维 张量.
 
         Returns:
-            tuple: A tuple of classification scores and bbox prediction.
+            tuple: tuple(cls_scores, bbox_preds).
 
-                - cls_scores (list[Tensor]): Classification scores for all \
-                    scale levels, each is a 4D-tensor, the channels number \
-                    is num_base_priors * num_classes.
-                - bbox_preds (list[Tensor]): Box energies / deltas for all \
-                    scale levels, each is a 4D-tensor, the channels number \
-                    is num_base_priors * 4.
+                - cls_scores (list[Tensor]): 所有层级的cls_scores,每个都是4D张量,
+                    通道数是num_base_priors * num_classes.
+                - bbox_preds (list[Tensor]): 所有层级的box_predict,每个都是4D张量,
+                    通道数是num_base_priors * 4.
         """
         return multi_apply(self.forward_single, feats)
 
@@ -208,7 +206,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             flat_anchors (Tensor): 被合并到一起的单张图像的多层级anchor, (num_levels*feat_h*feat_w*A ,4)
             valid_flags (Tensor): 同上,有效anchor的mask, (num_levels*feat_h*feat_w*A ,)
             gt_bboxes (Tensor): 单张图片的真实框, (num_gts, 4)
-            gt_bboxes_ignore (Tensor): 单张图片中将要被忽略的真实框, (num_ignored_gts, 4)
+            gt_bboxes_ignore (Tensor): 单张图片中将要被忽略的gt box, (num_ignored_gts, 4)
             img_meta (dict): 单张图片的元信息
             gt_labels (Tensor): 单张图片中真实框的所属类别, (num_gts,)
             label_channels (int): 类别总数
@@ -307,28 +305,29 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
             valid_flag_list (list[list[Tensor]]):[[(f_h*f_w*A,)]*self.num_levels]*B
             gt_bboxes_list (list[Tensor]): 每张图像中的标注box.
             img_metas (list[dict]): 每张图片的元信息.
-            gt_bboxes_ignore_list (list[Tensor]): 每张图像的要忽略的标注box索引.
+            gt_bboxes_ignore_list (list[Tensor]): batch幅图像的要忽略的gt box列表.
+                其内部元素shape为 (num_ignored_gts, 4).意为该幅图片所忽略的gt box
             gt_labels_list (list[Tensor]): 每张图像中标注box所属类别.
             label_channels (int): 类别维度.
             unmap_outputs (bool): 是否将输出映射回原始anchor上.
 
         Returns:
-            tuple: 通常返回一个包含网路拟合目标的元组.
+            tuple: 通常返回一个包含网络拟合目标的元组.
 
-                - labels_list (list[Tensor]): Labels of each level.
-                - label_weights_list (list[Tensor]): Label weights of each
-                  level.
-                - bbox_targets_list (list[Tensor]): BBox targets of each level.
-                - bbox_weights_list (list[Tensor]): BBox weights of each level.
-                - num_total_pos (int): Number of positive samples in all
-                  images.
-                - num_total_neg (int): Number of negative samples in all
-                  images.
+                - labels_list (list[Tensor]): 每个层级上对应的label.
+                    [B,feat_h*feat_w*A] * num_level feat_h*feat_w随着层级不同而不同
+                - label_weights_list (list[Tensor]): 每个层级上的label权重.
+                    [B,feat_h*feat_w*A] * num_level
+                - bbox_targets_list (list[Tensor]): 每个层级上特征图需要回归的目标.
+                    [B,feat_h*feat_w*A, 4] * num_level
+                - bbox_weights_list (list[Tensor]): 每个层级上特征图回归的权重.
+                    [B,feat_h*feat_w*A, 4] * num_level
+                - num_total_pos (int): batch幅图像中的正样本数.
+                - num_total_neg (int): batch幅图像中的负样本数.
 
-            additional_returns: This function enables user-defined returns from
-                `self._get_targets_single`. These returns are currently refined
-                to properties at each feature map (i.e. having HxW dimension).
-                The results will be concatenated after the end
+            额外返回值: 此值来自 `self._get_targets_single` 的用户定义返回.
+                这些返回值目前被细化为每个特征图的属性(即具有 HxW 维度).它将与原始返回值
+                合并到一起返回.
         """
         num_imgs = len(img_metas)
         assert len(anchor_list) == len(valid_flag_list) == num_imgs

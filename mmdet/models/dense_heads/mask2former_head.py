@@ -328,19 +328,19 @@ class Mask2FormerHead(MaskFormerHead):
         """
         decoder_out = self.transformer_decoder.post_norm(decoder_out)
         decoder_out = decoder_out.transpose(0, 1)
-        # shape (num_queries, batch_size, c)
+        # shape (batch_size, num_queries, c)
         cls_pred = self.cls_embed(decoder_out)
-        # shape (num_queries, batch_size, c)
+        # shape (batch_size, num_queries, c)
         mask_embed = self.mask_embed(decoder_out)
-        # shape (num_queries, batch_size, h, w)
+        # shape (batch_size, num_queries, h, w)
         mask_pred = torch.einsum('bqc,bchw->bqhw', mask_embed, mask_feature)
         attn_mask = F.interpolate(
             mask_pred,
             attn_mask_target_size,
             mode='bilinear',
             align_corners=False)
-        # shape (num_queries, batch_size, h, w) ->
-        #   (batch_size * num_head, num_queries, h, w)
+        # shape (batch_size, num_queries, h, w) ->
+        #   (batch_size * num_head, num_queries, h*w)
         attn_mask = attn_mask.flatten(2).unsqueeze(1).repeat(
             (1, self.num_heads, 1, 1)).flatten(0, 1)
         attn_mask = attn_mask.sigmoid() < 0.5

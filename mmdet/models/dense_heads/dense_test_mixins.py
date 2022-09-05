@@ -110,17 +110,15 @@ class BBoxTestMixin(object):
         ]
 
     def simple_test_rpn(self, x, img_metas):
-        """Test without augmentation, only for ``RPNHead`` and its variants,
-        e.g., ``GARPNHead``, etc.
+        """无增强测试, 仅适用于“RPNHead”及其变体,例如“GARPNHead”等.
 
         Args:
-            x (tuple[Tensor]): Features from the upstream network, each is
-                a 4D-tensor.
-            img_metas (list[dict]): Meta info of each image.
+            x (tuple[Tensor]): 来自上游网络的特征,每个都是 4D 张量.
+            img_metas (list[dict]): 每张图片的元信息.
 
         Returns:
-            list[Tensor]: Proposals of each image, each item has shape (n, 5),
-                where 5 represent (tl_x, tl_y, br_x, br_y, score).
+            list[Tensor]: 每张图像的proposal,每个元素shape为 (n, 5),
+            其中 5 代表 (x1, y1, x2, y2, score).
         """
         rpn_outs = self(x)
         proposal_list = self.get_bboxes(*rpn_outs, img_metas=img_metas)

@@ -54,23 +54,23 @@ class BBoxTestMixin:
                            proposals,
                            rcnn_test_cfg,
                            rescale=False):
-        """Test only det bboxes without augmentation.
+        """无数据增强的test box过程.
 
         Args:
-            x (tuple[Tensor]): Feature maps of all scale level.
-            img_metas (list[dict]): Image meta info.
+            x (tuple[Tensor]): 所有层级上的特征图.
+                ((batch_size, c, f_h, f_w),) * num_level.
+            img_metas (list[dict]): 图像元信息.
             proposals (List[Tensor]): Region proposals.
+                [(num_proposals, 5),]*bs, 5 -> (x1, y1, x2, y2, score)
             rcnn_test_cfg (obj:`ConfigDict`): `test_cfg` of R-CNN.
-            rescale (bool): If True, return boxes in original image space.
+            rescale (bool): If True, 对box进行缩放以返回原始图像尺寸中的框.
                 Default: False.
 
         Returns:
-            tuple[list[Tensor], list[Tensor]]: The first list contains
-                the boxes of the corresponding image in a batch, each
-                tensor has the shape (num_boxes, 5) and last dimension
-                5 represent (tl_x, tl_y, br_x, br_y, score). Each Tensor
-                in the second list is the labels with shape (num_boxes, ).
-                The length of both lists should be equal to batch_size.
+            tuple[list[Tensor], list[Tensor]]: 第一个list包含batch张图像的框,
+                每个张量的shape为 (num_boxes, 5),5 -> (x1, y1, x2, y2, score).
+                第二个list中的每个张量都是形状为 (num_boxes, ) 的标签.
+                并且二者len(det_bboxes) == len(det_bboxes) == bs.
         """
 
         rois = bbox2roi(proposals)
@@ -83,24 +83,24 @@ class BBoxTestMixin:
                 det_bbox = det_bbox[:, :4]
                 det_label = rois.new_zeros(
                     (0, self.bbox_head.fc_cls.out_features))
-            # There is no proposal in the whole batch
+            # 整个batch上没有proposal
             return [det_bbox] * batch_size, [det_label] * batch_size
 
         bbox_results = self._bbox_forward(x, rois)
         img_shapes = tuple(meta['img_shape'] for meta in img_metas)
         scale_factors = tuple(meta['scale_factor'] for meta in img_metas)
 
-        # split batch bbox prediction back to each image
+        # 将网络整个batch预测的值划分成bs份,以匹配每张图片
         cls_score = bbox_results['cls_score']
         bbox_pred = bbox_results['bbox_pred']
         num_proposals_per_img = tuple(len(p) for p in proposals)
         rois = rois.split(num_proposals_per_img, 0)
         cls_score = cls_score.split(num_proposals_per_img, 0)
 
-        # some detector with_reg is False, bbox_pred will be None
+        # 某些检测器 with_reg 为 False,自然bbox_pred 将为 None
         if bbox_pred is not None:
             # TODO move this to a sabl_roi_head
-            # the bbox prediction of some detectors like SABL is not Tensor
+            # 某些检测器(如SABL)的 box reg 不是 Tensor
             if isinstance(bbox_pred, torch.Tensor):
                 bbox_pred = bbox_pred.split(num_proposals_per_img, 0)
             else:
@@ -109,12 +109,12 @@ class BBoxTestMixin:
         else:
             bbox_pred = (None, ) * len(proposals)
 
-        # apply bbox post-processing to each image individually
+        # 分别对每幅图像应用后处理
         det_bboxes = []
         det_labels = []
         for i in range(len(proposals)):
             if rois[i].shape[0] == 0:
-                # There is no proposal in the single image
+                # 该张图片中没有proposal时
                 det_bbox = rois[i].new_zeros(0, 5)
                 det_label = rois[i].new_zeros((0, ), dtype=torch.long)
                 if rcnn_test_cfg is None:

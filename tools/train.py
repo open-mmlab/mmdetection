@@ -24,7 +24,7 @@ from mmdet.utils import (collect_env, get_device, get_root_logger,
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
-    parser.add_argument('--config', help='模型文件路径', default=r'D:\mmdetection\configs\retinanet\retinanet_r50_fpn_1x_coco.py')
+    parser.add_argument('--config', help='模型文件路径', default=r'D:\mmdetection\configs\faster_rcnn\faster_rcnn_r50_fpn_1x_coco.py')
     parser.add_argument('--work-dir', help='存储日志和模型的目录')
     parser.add_argument('--resume-from', help='恢复训练的目录')
     parser.add_argument('--auto-resume', action='store_true', help='自动从最近的保存点恢复训练')

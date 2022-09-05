@@ -73,11 +73,11 @@ def bbox_mapping_back(bboxes,
 
 
 def bbox2roi(bbox_list):
-    """Convert a list of bboxes to roi format.
-
+    """将 box 列表转换为 roi shape转换过程为[(num,4),]*batch -> (batch_gts, 5)
+        batch_gts意为batch幅图像上所有的gt box, 5意为[batch_ind, x1, y1, x2, y2]
+        注!num是指sampler中num参数的值,上限是该值,实际可能低于该值,取决于每幅图片的情况
     Args:
-        bbox_list (list[Tensor]): a list of bboxes corresponding to a batch
-            of images.
+        bbox_list (list[Tensor]): batch张图像的 box 列表.
 
     Returns:
         Tensor: shape (n, 5), [batch_ind, x1, y1, x2, y2]

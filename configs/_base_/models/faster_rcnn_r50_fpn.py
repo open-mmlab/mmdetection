@@ -38,7 +38,7 @@ model = dict(
             type='SingleRoIExtractor',
             roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
             out_channels=256,
-            featmap_strides=[4, 8, 16, 32]),
+            featmap_strides=[4, 8, 16, 32]),  # FPN输出五层特征图,但只提取前四层
         bbox_head=dict(
             type='Shared2FCBBoxHead',
             in_channels=256,

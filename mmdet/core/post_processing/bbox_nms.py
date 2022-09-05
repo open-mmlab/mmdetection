@@ -16,27 +16,22 @@ def multiclass_nms(multi_bboxes,
 
     Args:
         multi_bboxes (Tensor): shape (n, #class*4) or (n, 4)
-        multi_scores (Tensor): shape (n, #class), where the last column
-            contains scores of the background class, but this will be ignored.
-        score_thr (float): bbox threshold, bboxes with scores lower than it
-            will not be considered.
-        nms_cfg (dict): a dict that contains the arguments of nms operations
-        max_num (int, optional): if there are more than max_num bboxes after
-            NMS, only top max_num will be kept. Default to -1.
-        score_factors (Tensor, optional): The factors multiplied to scores
-            before applying NMS. Default to None.
-        return_inds (bool, optional): Whether return the indices of kept
-            bboxes. Default to False.
+        multi_scores (Tensor): shape (n, #class),最后一列为bg score,但这将被忽略.
+        score_thr (float): box 阈值,分数低于该阈值的 box 将不被考虑.
+        nms_cfg (dict): nms的配置表
+        max_num (int, optional): 截取nms后前max_num个box. -1代表不截取.
+        score_factors (Tensor, optional): NMS之前,score将与其相乘.
+        return_inds (bool, optional): 是否返回保留的box的索引.
 
     Returns:
-        tuple: (dets, labels, indices (optional)), tensors of shape (k, 5),
-            (k), and (k). Dets are boxes with scores. Labels are 0-based.
+        tuple: (dets, labels, indices (optional)),各个shape为 (k, 5), (k), (k).
+        5 -> (x1, y1, x2, y2, score). labels∈[0,num_class).
     """
     num_classes = multi_scores.size(1) - 1
-    # exclude background category
+    # 忽略背景类别
     if multi_bboxes.shape[1] > 4:
         bboxes = multi_bboxes.view(multi_scores.size(0), -1, 4)
-    else:
+    else:  # 如果仅仅是单一类的box.那么先增维再复制至指定维度
         bboxes = multi_bboxes[:, None].expand(
             multi_scores.size(0), num_classes, 4)
 
@@ -50,20 +45,19 @@ def multiclass_nms(multi_bboxes,
     labels = labels.reshape(-1)
 
     if not torch.onnx.is_in_onnx_export():
-        # NonZero not supported  in TensorRT
-        # remove low scoring boxes
+        # 在TensorRT中并不支持NonZero操作
+        # 过滤score低于score_thr的对饮box
         valid_mask = scores > score_thr
-    # multiply score_factor after threshold to preserve more bboxes, improve
-    # mAP by 1% for YOLOv3
+    # 先过滤再乘以 score_factor 以保留更多 box, 在YOLOv3上 mAP 提高 1%
     if score_factors is not None:
-        # expand the shape to match original shape of score
+        # 扩展至与score相同的shape,以方便与其相乘
         score_factors = score_factors.view(-1, 1).expand(
             multi_scores.size(0), num_classes)
         score_factors = score_factors.reshape(-1)
         scores = scores * score_factors
 
     if not torch.onnx.is_in_onnx_export():
-        # NonZero not supported  in TensorRT
+        # 在TensorRT中并不支持NonZero操作
         inds = valid_mask.nonzero(as_tuple=False).squeeze(1)
         bboxes, scores, labels = bboxes[inds], scores[inds], labels[inds]
     else:
@@ -75,8 +69,7 @@ def multiclass_nms(multi_bboxes,
 
     if bboxes.numel() == 0:
         if torch.onnx.is_in_onnx_export():
-            raise RuntimeError('[ONNX Error] Can not record NMS '
-                               'as it has not been executed this time')
+            raise RuntimeError('[ONNX Error] 无法记录NMS, 因为box为空导致没有被执行')
         dets = torch.cat([bboxes, scores[:, None]], -1)
         if return_inds:
             return dets, labels, inds

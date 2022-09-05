@@ -62,7 +62,7 @@ class BBoxHead(BaseModule):
         if self.with_avg_pool:
             self.avg_pool = nn.AvgPool2d(self.roi_feat_size)
         else:
-            in_channels *= self.roi_feat_area
+            in_channels *= self.roi_feat_area  # 256 * 7 * 7
         if self.with_cls:
             # need to add background class
             if self.custom_cls_channels:
@@ -170,14 +170,11 @@ class BBoxHead(BaseModule):
             labels[:num_pos] = pos_gt_labels
             pos_weight = 1.0 if cfg.pos_weight <= 0 else cfg.pos_weight
             label_weights[:num_pos] = pos_weight
-            if not self.reg_decoded_bbox:
+            if not self.reg_decoded_bbox:  # 该参数为False时,需要计算出理论修正系数
                 pos_bbox_targets = self.bbox_coder.encode(
                     pos_bboxes, pos_gt_bboxes)
             else:
-                # When the regression loss (e.g. `IouLoss`, `GIouLoss`)
-                # is applied directly on the decoded bounding boxes, both
-                # the predicted boxes and regression targets should be with
-                # absolute coordinate format.
+                # 当loss为IOU类时,reg_decoded_bbox为True.此时对绝对坐标进行计算损失
                 pos_bbox_targets = pos_gt_bboxes
             bbox_targets[:num_pos, :] = pos_bbox_targets
             bbox_weights[:num_pos, :] = 1
@@ -192,12 +189,10 @@ class BBoxHead(BaseModule):
                     gt_labels,
                     rcnn_train_cfg,
                     concat=True):
-        """Calculate the ground truth for all samples in a batch according to
-        the sampling_results.
+        """根据sampling_results计算一个batch中所有样本对应的gt box.
 
-        Almost the same as the implementation in bbox_head, we passed
-        additional parameters pos_inds_list and neg_inds_list to
-        `_get_target_single` function.
+        与 bbox_head 中的实现几乎相同, 我们将附加参数 pos_inds_list 和
+        neg_inds_list 传递给 `_get_target_single` 函数.
 
         Args:
             sampling_results (List[obj:SamplingResults]): Assign results of
@@ -263,15 +258,27 @@ class BBoxHead(BaseModule):
              bbox_targets,
              bbox_weights,
              reduction_override=None):
+        """
+        cls_score [batch_boxes, num_class+1]  batch_boxes为整个batch图片上出现的网络输出
+        其最大值取决于模型文件中的sampler中的num有关,即batch_boxes最大为batch*num
+        1是指背景,对于背景自然就没有所谓的回归
+        bbox_pred [batch_boxes, num_class*4]
+        rois [batch_boxes, 5] 5代指[batch_ind, x1, y1, x2, y2]
+        labels [batch_boxes,]
+        label_weights [batch_boxes,]
+        bbox_targets [batch_boxes, 4]
+        bbox_weights [batch_boxes, 4]
+        reduction_override代表是否覆盖Loss类初始化中的reduction
+        """
         losses = dict()
-        if cls_score is not None:
+        if cls_score is not None:  # avg_factor为正样本数量
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
             if cls_score.numel() > 0:
                 loss_cls_ = self.loss_cls(
                     cls_score,
                     labels,
                     label_weights,
-                    avg_factor=avg_factor,
+                    avg_factor=avg_factor,  # 该参数仅在最终reduction=mean时才生效
                     reduction_override=reduction_override)
                 if isinstance(loss_cls_, dict):
                     losses.update(loss_cls_)
@@ -289,10 +296,10 @@ class BBoxHead(BaseModule):
             # do not perform bounding box regression for BG anymore.
             if pos_inds.any():
                 if self.reg_decoded_bbox:
-                    # When the regression loss (e.g. `IouLoss`,
-                    # `GIouLoss`, `DIouLoss`) is applied directly on
-                    # the decoded bounding boxes, it decodes the
-                    # already encoded coordinates to absolute format.
+                    # "基础box"在不同的地方寓意不同,在一阶段(或者二阶段的rpn中)
+                    # 指代anchor(如果是anchor base的网络的话),其余地方代指 roi
+                    # 该参数为True时,意为需要根据"基础box"与网络预测的修正系数结合.
+                    # 计算得到box的绝对坐标与gt box一同送入损失函数进行计算loss
                     bbox_pred = self.bbox_coder.decode(rois[:, 1:], bbox_pred)
                 if self.reg_class_agnostic:
                     pos_bbox_pred = bbox_pred.view(
@@ -321,39 +328,34 @@ class BBoxHead(BaseModule):
                    scale_factor,
                    rescale=False,
                    cfg=None):
-        """Transform network output for a batch into bbox predictions.
+        """将网络的batch输出转换为 bbox reg/cls.
 
         Args:
-            rois (Tensor): Boxes to be transformed. Has shape (num_boxes, 5).
-                last dimension 5 arrange as (batch_index, x1, y1, x2, y2).
-            cls_score (Tensor): Box scores, has shape
-                (num_boxes, num_classes + 1).
-            bbox_pred (Tensor, optional): Box energies / deltas.
-                has shape (num_boxes, num_classes * 4).
-            img_shape (Sequence[int], optional): Maximum bounds for boxes,
-                specifies (H, W, C) or (H, W).
-            scale_factor (ndarray): Scale factor of the
-               image arrange as (w_scale, h_scale, w_scale, h_scale).
-            rescale (bool): If True, return boxes in original image space.
-                Default: False.
-            cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head. Default: None
+            rois (Tensor): 将要进行修正的box. (num_boxes, 5).
+               5 -> (batch_index, x1, y1, x2, y2).
+            cls_score (Tensor): Box scores, (num_boxes, num_classes + 1).
+            bbox_pred (Tensor, optional): 网络回归值.(num_boxes, num_classes * 4).
+            img_shape (Sequence[int], optional): 框的最大界限,
+               指定 (H, W, C) or (H, W).
+            scale_factor (ndarray): 图像的缩放因子,参考transforms.py中的Resize类
+                其格式为(w_scale, h_scale, w_scale, h_scale).
+            rescale (bool): If True, 对box进行逆放缩,以匹配其在原始图像的位置.
+             cfg (obj:`ConfigDict`): `test_cfg` of Bbox Head. Default: None
 
         Returns:
-            tuple[Tensor, Tensor]:
-                First tensor is `det_bboxes`, has the shape
-                (num_boxes, 5) and last
-                dimension 5 represent (tl_x, tl_y, br_x, br_y, score).
-                Second tensor is the labels with shape (num_boxes, ).
+            tuple[Tensor, Tensor]:`det_bboxes`: (num_boxes, 5)
+                5 -> (x1, y1, x2, y2, score).
+                `det_bboxes`: (num_boxes, ).
         """
 
-        # some loss (Seesaw loss..) may have custom activation
+        # 一些loss,比如(Seesaw loss..) 可能有自定义激活函数
         if self.custom_cls_channels:
             scores = self.loss_cls.get_activation(cls_score)
         else:
             scores = F.softmax(
                 cls_score, dim=-1) if cls_score is not None else None
-        # bbox_pred would be None in some detector when with_reg is False,
-        # e.g. Grid R-CNN.
+        # 当 with_reg 为 False 时,bbox_pred 在某些检测器中将为 None,
+        # 比如 Grid R-CNN.
         if bbox_pred is not None:
             bboxes = self.bbox_coder.decode(
                 rois[..., 1:], bbox_pred, max_shape=img_shape)

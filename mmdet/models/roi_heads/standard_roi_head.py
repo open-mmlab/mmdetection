@@ -9,10 +9,10 @@ from .test_mixins import BBoxTestMixin, MaskTestMixin
 
 @HEADS.register_module()
 class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
-    """Simplest base roi head including one bbox head and one mask head."""
+    """最简单的基础 roi head，包括一个 box head 和一个 mask head."""
 
     def init_assigner_sampler(self):
-        """Initialize assigner and sampler."""
+        """初始化分配器和采样器."""
         self.bbox_assigner = None
         self.bbox_sampler = None
         if self.train_cfg:
@@ -21,12 +21,12 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                 self.train_cfg.sampler, context=self)
 
     def init_bbox_head(self, bbox_roi_extractor, bbox_head):
-        """Initialize ``bbox_head``"""
+        """初始化box_head"""
         self.bbox_roi_extractor = build_roi_extractor(bbox_roi_extractor)
         self.bbox_head = build_head(bbox_head)
 
     def init_mask_head(self, mask_roi_extractor, mask_head):
-        """Initialize ``mask_head``"""
+        """初始化mask_head"""
         if mask_roi_extractor is not None:
             self.mask_roi_extractor = build_roi_extractor(mask_roi_extractor)
             self.share_roi_extractor = False
@@ -62,20 +62,19 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                       **kwargs):
         """
         Args:
-            x (list[Tensor]): list of multi-level img features.
-            img_metas (list[dict]): list of image info dict where each dict
-                has: 'img_shape', 'scale_factor', 'flip', and may also contain
-                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
-                For details on the values of these keys see
+            x (list[Tensor]): 多层级特征图[(bs, c, f_h, f_w),]*num_level.
+            img_metas (list[dict]): 图像信息字典列表,其中每个字典具有:'img_shape'、
+                'scale_factor'、'flip',还可能包含 'filename'、'ori_shape'、
+                'pad_shape'和'img_norm_cfg'. img_metas长度为bs
+                有关这些键值的详细信息, 请参见
                 `mmdet/datasets/pipelines/formatting.py:Collect`.
-            proposals (list[Tensors]): list of region proposals.
-            gt_bboxes (list[Tensor]): Ground truth bboxes for each image with
-                shape (num_gts, 4) in [tl_x, tl_y, br_x, br_y] format.
-            gt_labels (list[Tensor]): class indices corresponding to each box
-            gt_bboxes_ignore (None | list[Tensor]): specify which bounding
-                boxes can be ignored when computing the loss.
-            gt_masks (None | Tensor) : true segmentation masks for each box
-                used if the architecture supports a segmentation task.
+            proposal_list (list[Tensors]): list of region proposals.
+            gt_bboxes (list[Tensor]): bs幅图像的gt box,其内部shape为(num_gts, 4)
+                其中num_gts代表该幅图像标有num_gts个gt,4代表[x1, y1, x2, y2]
+            gt_labels (list[Tensor]): bs幅图像的gt label,其内部shape为(num_gts,)
+            gt_bboxes_ignore (None | list[Tensor]): 计算损失时可以忽略的指定gt box.
+                shape为(num_ignored_gts, 4).
+            gt_masks (None | Tensor) : 如果模型支持分割任务,则为每个gt 的 mask.
 
         Returns:
             dict[str, Tensor]: a dictionary of loss components
@@ -95,6 +94,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     proposal_list[i],
                     gt_bboxes[i],
                     gt_labels[i],
+                    # 这里添加[None]是因为对x的batch维度循环,而循环元素为(c,h,w)
+                    # 自然需要增加一个维度为[1,c,h,w]
                     feats=[lvl_feat[i][None] for lvl_feat in x])
                 sampling_results.append(sampling_result)
 
@@ -116,8 +117,10 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         return losses
 
     def _bbox_forward(self, x, rois):
-        """Box head forward function used in both training and testing."""
+        """在训练和测试阶段的 Box Head 的前向传播函数."""
         # TODO: a more flexible way to decide which feature maps to use
+        # rois -> [k, 5] bbox_feats -> [k, self.out_channels, 7, 7]
+        # k是指batch张图片上的RoI总数
         bbox_feats = self.bbox_roi_extractor(
             x[:self.bbox_roi_extractor.num_inputs], rois)
         if self.with_shared_head:
@@ -131,6 +134,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
                             img_metas):
         """Run forward function and calculate loss for box head in training."""
+        # res.bboxes 最大数量为sampler中num,所以其shape最大为(num, 4)
         rois = bbox2roi([res.bboxes for res in sampling_results])
         bbox_results = self._bbox_forward(x, rois)
 
@@ -226,27 +230,22 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     img_metas,
                     proposals=None,
                     rescale=False):
-        """Test without augmentation.
+        """无数据增强测试.
 
         Args:
-            x (tuple[Tensor]): Features from upstream network. Each
-                has shape (batch_size, c, h, w).
-            proposal_list (list(Tensor)): Proposals from rpn head.
-                Each has shape (num_proposals, 5), last dimension
-                5 represent (x1, y1, x2, y2, score).
+            x (tuple[Tensor]): 来自上游网络的特征图.
+                ((batch_size, c, f_h, f_w),) * num_level.
+            proposal_list (list(Tensor)): 来自rpn head 的Proposals.
+                [(num_proposals, 5),]*bs, 5 -> (x1, y1, x2, y2, score).
+                num_proposals最大值取决于模型配置文件中rpn中的max_per_img
             img_metas (list[dict]): Meta information of images.
             rescale (bool): Whether to rescale the results to
                 the original image. Default: True.
 
         Returns:
-            list[list[np.ndarray]] or list[tuple]: When no mask branch,
-            it is bbox results of each image and classes with type
-            `list[list[np.ndarray]]`. The outer list
-            corresponds to each image. The inner list
-            corresponds to each class. When the model has mask branch,
-            it contains bbox results and mask results.
-            The outer list corresponds to each image, and first element
-            of tuple is bbox results, second element is mask results.
+            list[list[np.ndarray]] or list[tuple]:
+            当没有with_mask时, 其格式为[[np.ndarray,] * num_class,] * bs.
+            当存在with_mask时, 其格式为[(box, mask),] * bs.
         """
         assert self.with_bbox, 'Bbox head must be implemented.'
 

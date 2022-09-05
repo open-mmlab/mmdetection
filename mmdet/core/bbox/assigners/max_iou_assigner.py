@@ -70,14 +70,14 @@ class MaxIoUAssigner(BaseAssigner):
         4. 对于每个 gt, 分配与其有最大IOU的box(可能不止一个)给它
 
         Args:
-            bboxes (Tensor): Bounding boxes to be assigned, shape(n, 4).
-            gt_bboxes (Tensor): Groundtruth boxes, shape (k, 4).
-            gt_bboxes_ignore (Tensor, optional): Ground truth bboxes that are
-                labelled as `ignored`, e.g., crowd boxes in COCO.
+            bboxes (Tensor): 要为其分配gt box 的pred box, shape(n, 4).
+            gt_bboxes (Tensor): gt box, shape (k, 4).
+            gt_bboxes_ignore (Tensor, optional): 被忽略的gt box,
+                如果不为None,其shape为(num_ignored_gts, 4)
             gt_labels (Tensor, optional): Label of gt_bboxes, shape (k, ).
 
         Returns:
-            :obj:`AssignResult`: The assign result.
+            :obj:`AssignResult`: 分配结果.
 
         Example:
             >>> self = MaxIoUAssigner(0.5, 0.5)

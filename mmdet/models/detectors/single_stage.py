@@ -22,13 +22,8 @@ class SingleStageDetector(BaseDetector):
                  bbox_head=None,
                  train_cfg=None,
                  test_cfg=None,
-                 pretrained=None,
                  init_cfg=None):
         super(SingleStageDetector, self).__init__(init_cfg)
-        if pretrained:
-            warnings.warn('DeprecationWarning: pretrained is deprecated, '
-                          'please use "init_cfg" instead')
-            backbone.pretrained = pretrained
         self.backbone = build_backbone(backbone)
         if neck is not None:
             self.neck = build_neck(neck)
@@ -62,16 +57,17 @@ class SingleStageDetector(BaseDetector):
                       gt_bboxes_ignore=None):
         """
         Args:
-            img (Tensor): Input images of shape (N, C, H, W).
-                Typically these should be mean centered and std scaled.
-            img_metas (list[dict]): A List of image info dict where each dict
-                has: 'img_shape', 'scale_factor', 'flip', and may also contain
+            img (Tensor): shape为 (N, C, H, W) 的 输入图像数据.
+                通常这些数据应该是经过归一化的(减均值除以方差).
+            img_metas (list[dict]): 图像信息字典列表,其中每一个字典 含有键: 'img_shape',
+                'scale_factor', 'flip', and may also contain
                 'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
-                For details on the values of these keys see
-                :class:`mmdet.datasets.pipelines.Collect`.
-            gt_bboxes (list[Tensor]): 每个元素都是 [x1, y1, x2, y2] 格式的gt.
-            gt_labels (list[Tensor]): 每个gt对应的label
-            gt_bboxes_ignore (None | list[Tensor]): 计算损失时可以忽略的gt.
+                有关这些键值的详细信息, 请参见
+                `mmdet/datasets/pipelines/formatting.py:Collect`.
+            gt_bboxes (list[Tensor]): 标注框列表, 每个元素的shape都是 (num_gts, 4),
+                其中4代表 [x1, y1, x2, y2] 格式的gt.
+            gt_labels (list[Tensor]): 标注类别列表, 每个元素的shape都是 (num_gts,)
+            gt_bboxes_ignore (None | list[Tensor]): 计算损失时可以忽略的标注类别列表.
 
         Returns:
             dict[str, Tensor]: loss的结构字典.

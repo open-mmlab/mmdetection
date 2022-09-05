@@ -34,7 +34,7 @@ class SingleRoIExtractor(BaseRoIExtractor):
         self.finest_scale = finest_scale
 
     def map_roi_levels(self, rois, num_levels):
-        """Map rois to corresponding feature levels by scales.
+        """按比例将 rois 映射到相应的特征图上.
 
         - scale < finest_scale * 2: level 0
         - finest_scale * 2 <= scale < finest_scale * 4: level 1
@@ -43,10 +43,10 @@ class SingleRoIExtractor(BaseRoIExtractor):
 
         Args:
             rois (Tensor): Input RoIs, shape (k, 5).
-            num_levels (int): Total level number.
+            num_levels (int): 特征图层数.
 
         Returns:
-            Tensor: Level index (0-based) of each RoI, shape (k, )
+            Tensor: 每个 RoI 的特征层索引(从 0 开始), shape (k, )
         """
         scale = torch.sqrt(
             (rois[:, 3] - rois[:, 1]) * (rois[:, 4] - rois[:, 2]))
@@ -61,13 +61,14 @@ class SingleRoIExtractor(BaseRoIExtractor):
         num_levels = len(feats)
         expand_dims = (-1, self.out_channels * out_size[0] * out_size[1])
         if torch.onnx.is_in_onnx_export():
-            # Work around to export mask-rcnn to onnx
+            # 兼容mask-rcnn 导出到 onnx时遇到的问题,
+            # 先复制出一个基础的[k, 1]的tensor,再在第二维扩充到指定长度再reshape最后乘零
             roi_feats = rois[:, :1].clone().detach()
             roi_feats = roi_feats.expand(*expand_dims)
             roi_feats = roi_feats.reshape(-1, self.out_channels, *out_size)
             roi_feats = roi_feats * 0
         else:
-            roi_feats = feats[0].new_zeros(
+            roi_feats = feats[0].new_zeros(  # 首先初始化所有roi的输出结果
                 rois.size(0), self.out_channels, *out_size)
         # TODO: remove this when parrots supports
         if torch.__version__ == 'parrots':
@@ -77,14 +78,17 @@ class SingleRoIExtractor(BaseRoIExtractor):
             if len(rois) == 0:
                 return roi_feats
             return self.roi_layers[0](feats[0], rois)
-
+        # 此处以faster_rcnn_r50_fpn.py,单卡训练过程为例
+        # target_lvls.shape -> [k,], 其中每个值代表每个roi所属特征图ind
+        # k为一个batch中所有层级上的roi的总数,由于经过rcnn中的sampler处理
+        # 所以其被限制最大为512*batch,一般情况下,k会随着训练时间增加而降低
         target_lvls = self.map_roi_levels(rois, num_levels)
 
-        if roi_scale_factor is not None:
+        if roi_scale_factor is not None:  # 对roi宽高进行缩放
             rois = self.roi_rescale(rois, roi_scale_factor)
 
         for i in range(num_levels):
-            mask = target_lvls == i
+            mask = target_lvls == i  # [k,]
             if torch.onnx.is_in_onnx_export():
                 # To keep all roi_align nodes exported to onnx
                 # and skip nonzero op
@@ -97,11 +101,18 @@ class SingleRoIExtractor(BaseRoIExtractor):
                 roi_feats_t = roi_feats_t * mask_exp
                 roi_feats = roi_feats + roi_feats_t
                 continue
-            inds = mask.nonzero(as_tuple=False).squeeze(1)
+            # [k, 1] -> [k, 1]
+            inds = mask.nonzero(as_tuple=False).squeeze(1)  # 当前特征图中所有的roi索引
             if inds.numel() > 0:
-                rois_ = rois[inds]
+                rois_ = rois[inds]  # 当前特征图中所有的roi
+                # 指定的roi层对指定的roi在其所属特征图上进行RoIPool/RoIAlign
+                # self.roi_layers[i] RoIAlign(output_size=(7, 7), spatial_scale=1/(4/8/16/32),
+                # sampling_ratio=0, pool_mode=avg, aligned=True, use_torchvision=False)
+                # feats[i].shape -> torch.Size([bs, self.out_channels, f_h, f_w])
+                # rois_ -> torch.Size([1935, 5]) 其中1935不具备普适性
+                # roi_feats_t.shape -> torch.Size([1935, self.out_channels, 7, 7])
                 roi_feats_t = self.roi_layers[i](feats[i], rois_)
-                roi_feats[inds] = roi_feats_t
+                roi_feats[inds] = roi_feats_t  # 逐层填充输出结果
             else:
                 # Sometimes some pyramid levels will not be used for RoI
                 # feature extraction and this will cause an incomplete

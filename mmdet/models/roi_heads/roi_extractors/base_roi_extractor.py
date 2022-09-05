@@ -24,22 +24,22 @@ class BaseRoIExtractor(BaseModule, metaclass=ABCMeta):
                  featmap_strides,
                  init_cfg=None):
         super(BaseRoIExtractor, self).__init__(init_cfg)
-        self.roi_layers = self.build_roi_layers(roi_layer, featmap_strides)
+        self.roi_layers = self.build_roi_layers(roi_layer, featmap_strides)  # 传入roi配置以构建ROI层
         self.out_channels = out_channels
         self.featmap_strides = featmap_strides
         self.fp16_enabled = False
 
     @property
     def num_inputs(self):
-        """int: Number of input feature maps."""
+        """int: 输入特征图的数量."""
         return len(self.featmap_strides)
 
     def build_roi_layers(self, layer_cfg, featmap_strides):
-        """Build RoI operator to extract feature from each level feature map.
+        """构建 RoI 算子从每个级别的特征图中提取特征.
 
         Args:
-            layer_cfg (dict): Dictionary to construct and config RoI layer
-                operation. Options are modules under ``mmcv/ops`` such as
+            layer_cfg (dict): 构造 RoI 层的配置字典. 选项是 "mmcvops" 下的模块,例如“RoIAlign”
+                Options are modules under ``mmcv/ops`` such as
                 ``RoIAlign``.
             featmap_strides (List[int]): The stride of input feature map w.r.t
                 to the original image size, which would be used to scale RoI
@@ -55,12 +55,13 @@ class BaseRoIExtractor(BaseModule, metaclass=ABCMeta):
         layer_type = cfg.pop('type')
         assert hasattr(ops, layer_type)
         layer_cls = getattr(ops, layer_type)
-        roi_layers = nn.ModuleList(
+        roi_layers = nn.ModuleList(  # 构建多个不同层级的ROI层,
             [layer_cls(spatial_scale=1 / s, **cfg) for s in featmap_strides])
         return roi_layers
 
     def roi_rescale(self, rois, scale_factor):
-        """Scale RoI coordinates by scale factor.
+        """按照scale_factor缩放RoI的宽高,但由于RoI是x1,y1,x2,y2表示,
+            所以需要转换为x,y,w,h格式对wh进行缩放再转为x1,y1,x2,y2表示.
 
         Args:
             rois (torch.Tensor): RoI (Region of Interest), shape (n, 5)

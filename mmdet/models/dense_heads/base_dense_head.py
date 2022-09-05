@@ -48,11 +48,11 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
 
         Args:
             cls_scores (list[Tensor]): 所有特征层级上预测的类别概率, shape为
-                (B, A * C, H, W). 其中H、W随着层级不同而不同
+                [(B, A * C, H, W),]*num_levels. 其中H、W随着层级不同而不同
             bbox_preds (list[Tensor]): 所有特征层级上预测的回归结果, shape为
-                (B, A * 4, H, W).
+                [(B, A * 4, H, W),]*num_levels.
             score_factors (list[Tensor], Optional): 所有特征层级上预测的目标概率,
-                shape为(B, A * 1, H, W). 默认为None,即网络不输出该结果
+                shape为[(B, A * 1, H, W),]*num_levels. 默认为None,即网络不输出该结果
             img_metas (list[dict], Optional): 图像元信息.
             cfg (mmcv.Config, Optional): 测试 / 后处理 配置,
                 如果为 None, test_cfg 将被使用.
@@ -287,15 +287,17 @@ class BaseDenseHead(BaseModule, metaclass=ABCMeta):
                       **kwargs):
         """
         Args:
-            x (list[Tensor]): 来自FPN的特征图.
-            img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-            gt_bboxes (Tensor): Ground truth bboxes of the image,
-                shape (num_gts, 4).
-            gt_labels (Tensor): Ground truth labels of each box,
-                shape (num_gts,).
-            gt_bboxes_ignore (Tensor): Ground truth bboxes to be
-                ignored, shape (num_ignored_gts, 4).
+            x (list[Tensor]): 多层级特征图[(bs, c, f_h, f_w),]*num_level.
+            img_metas (list[dict]): 图像信息字典列表,其中每个字典具有:'img_shape'、
+                'scale_factor'、'flip',还可能包含 'filename'、'ori_shape'、
+                'pad_shape'和'img_norm_cfg'. img_metas长度为bs
+                有关这些键值的详细信息, 请参见
+                `mmdet/datasets/pipelines/formatting.py:Collect`.
+            gt_bboxes (Tensor): bs幅图像的gt box,其内部shape为(num_gts, 4)
+                其中num_gts代表该幅图像标有num_gts个gt,4代表[x1, y1, x2, y2]
+            gt_labels (Tensor): bs幅图像的gt label,其内部shape为(num_gts,)
+            gt_bboxes_ignore (Tensor): 计算损失时可以忽略的指定gt box.
+                shape为(num_ignored_gts, 4).
             proposal_cfg (mmcv.Config): Test / postprocessing configuration,
                 if None, test_cfg would be used
 

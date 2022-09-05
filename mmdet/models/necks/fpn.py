@@ -15,33 +15,29 @@ class FPN(BaseModule):
     Detection <https://arxiv.org/abs/1612.03144>`_.
 
     Args:
-        in_channels (list[int]): Number of input channels per scale.
-        out_channels (int): Number of output channels (used at each scale).
-        num_outs (int): Number of output scales.
-        start_level (int): Index of the start input backbone level used to
-            build the feature pyramid. Default: 0.
-        end_level (int): Index of the end input backbone level (exclusive) to
-            build the feature pyramid. Default: -1, which means the last level.
-        add_extra_convs (bool | str): If bool, it decides whether to add conv
-            layers on top of the original feature maps. Default to False.
-            If True, it is equivalent to `add_extra_convs='on_input'`.
-            If str, it specifies the source feature map of the extra convs.
-            Only the following options are allowed
+        in_channels (list[int]): 长度为n,每种尺度的输入通道数.该参数对下面部分参数影响重大!
+        out_channels (int): 输出通道数(用于统一每种尺度).
+        num_outs (int): FPN网络输出的层级数量.
+        start_level (int): 构建FPN时会有n层特征图(index∈[0, n-1])输入,
+            但这些特征图并不总是全部都会使用到.该参数控制着从哪个index开始使用特征图.
+            默认为0.即全部都使用
+        end_level (int): 对应start_level的end_level,左闭右闭. 默认: -1, 意为n-1.
+        add_extra_convs (bool | str): 如果是布尔值,是否添加额外的卷积层.
+            默认为False.
+            为True时, 它等价于 `add_extra_convs='on_input'`.
+            如果是str,它指定额外convs的源特征图,不过只允许以下选项
 
-            - 'on_input': Last feat map of neck inputs (i.e. backbone feature).
-            - 'on_lateral': Last feature map after lateral convs.
-            - 'on_output': The last output feature map after fpn convs.
-        relu_before_extra_convs (bool): Whether to apply relu before the extra
-            conv. Default: False.
+            - 'on_input': 输入neck的最上层特征图 (即in_channels中最上层的特征图).
+            - 'on_lateral': 横向转换后的最后一个特征图,即仅进行1x1卷积的最上层特征图.
+            - 'on_output': 进行3x3卷积后的最上层卷积.
+        relu_before_extra_convs (bool): 是否在额外卷积之前应用relu. 默认为False.
         no_norm_on_lateral (bool): Whether to apply norm on lateral.
             Default: False.
-        conv_cfg (dict): Config dict for convolution layer. Default: None.
-        norm_cfg (dict): Config dict for normalization layer. Default: None.
-        act_cfg (dict): Config dict for activation layer in ConvModule.
-            Default: None.
-        upsample_cfg (dict): Config dict for interpolate layer.
-            Default: dict(mode='nearest').
-        init_cfg (dict or list[dict], optional): Initialization config dict.
+        conv_cfg (dict): 卷积层的配置字典. Default: None.
+        norm_cfg (dict): norm层的配置字典. Default: None.
+        act_cfg (dict): 激活层的配置字典. Default: None.
+        upsample_cfg (dict): 插值(上采样)层的配置字典. Default: dict(mode='nearest').
+        init_cfg (dict or list[dict], optional): 初始化配置字典.
 
     Example:
         >>> import torch
@@ -86,10 +82,10 @@ class FPN(BaseModule):
         self.upsample_cfg = upsample_cfg.copy()
 
         if end_level == -1 or end_level == self.num_ins - 1:
-            self.backbone_end_level = self.num_ins
+            self.backbone_end_level = self.num_ins  # 下面使用range所以为左闭右开
             assert num_outs >= self.num_ins - start_level
         else:
-            # if end_level is not the last level, no extra level is allowed
+            # 如果 end_level 不是最后一个特征图, 则不会产生额外的卷积或特征图
             self.backbone_end_level = end_level + 1
             assert end_level < self.num_ins
             assert num_outs == end_level - start_level + 1
@@ -98,13 +94,13 @@ class FPN(BaseModule):
         self.add_extra_convs = add_extra_convs
         assert isinstance(add_extra_convs, (str, bool))
         if isinstance(add_extra_convs, str):
-            # Extra_convs_source choices: 'on_input', 'on_lateral', 'on_output'
+            # 可选的值: 'on_input', 'on_lateral', 'on_output'
             assert add_extra_convs in ('on_input', 'on_lateral', 'on_output')
-        elif add_extra_convs:  # True
+        elif add_extra_convs:  # 为True时的默认值
             self.add_extra_convs = 'on_input'
 
-        self.lateral_convs = nn.ModuleList()
-        self.fpn_convs = nn.ModuleList()
+        self.lateral_convs = nn.ModuleList()  # 仅包含升降维卷积
+        self.fpn_convs = nn.ModuleList()    # 包含升降维后的3x3卷积以及可能的额外卷积
 
         for i in range(self.start_level, self.backbone_end_level):
             l_conv = ConvModule(
@@ -128,7 +124,7 @@ class FPN(BaseModule):
             self.lateral_convs.append(l_conv)
             self.fpn_convs.append(fpn_conv)
 
-        # add extra conv layers (e.g., RetinaNet)
+        # 额外添加的卷积层数量 (比如. RetinaNet)
         extra_levels = num_outs - self.backbone_end_level + self.start_level
         if self.add_extra_convs and extra_levels >= 1:
             for i in range(extra_levels):
@@ -153,13 +149,13 @@ class FPN(BaseModule):
         """Forward function."""
         assert len(inputs) == len(self.in_channels)
 
-        # build laterals
+        # 1x1卷积过程
         laterals = [
             lateral_conv(inputs[i + self.start_level])
             for i, lateral_conv in enumerate(self.lateral_convs)
         ]
 
-        # build top-down path
+        # 从上到下下采样以及相加过程
         used_backbone_levels = len(laterals)
         for i in range(used_backbone_levels - 1, 0, -1):
             # In some cases, fixing `scale factor` (e.g. 2) is preferred, but
@@ -173,29 +169,32 @@ class FPN(BaseModule):
                 laterals[i - 1] = laterals[i - 1] + F.interpolate(
                     laterals[i], size=prev_shape, **self.upsample_cfg)
 
-        # build outputs
-        # part 1: from original levels
+        # FPN层的输出结果
+        # part 1: 3x3卷积过程
         outs = [
             self.fpn_convs[i](laterals[i]) for i in range(used_backbone_levels)
         ]
-        # part 2: add extra levels
+        # part 2: 产生额外特征图过程
         if self.num_outs > len(outs):
-            # use max pool to get more levels on top of outputs
-            # (e.g., Faster R-CNN, Mask R-CNN)
+            # 如果不额外使用卷积的话,使用max pool在输出之上获得更多尺寸的特征图
+            # (比如. Faster R-CNN, Mask R-CNN)
+            # 注!该种方式的特征图来自3x3卷积的最上层,额外产生多少个特征图就连续池化多少次
             if not self.add_extra_convs:
                 for i in range(self.num_outs - used_backbone_levels):
                     outs.append(F.max_pool2d(outs[-1], 1, stride=2))
-            # add conv layers on top of original feature maps (RetinaNet)
+            # 使用额外卷积的情况 (RetinaNet)
             else:
-                if self.add_extra_convs == 'on_input':
+                if self.add_extra_convs == 'on_input':  # 来自backbone
                     extra_source = inputs[self.backbone_end_level - 1]
-                elif self.add_extra_convs == 'on_lateral':
+                elif self.add_extra_convs == 'on_lateral':  # 来自1x1卷积
                     extra_source = laterals[-1]
-                elif self.add_extra_convs == 'on_output':
+                elif self.add_extra_convs == 'on_output':  # 来自3x3卷积
                     extra_source = outs[-1]
                 else:
                     raise NotImplementedError
+                # 由于不确定特征图来自哪里,所以这里需要单独添加进outs
                 outs.append(self.fpn_convs[used_backbone_levels](extra_source))
+                # 一般的模型,比如 RetinaNet ,Faster-RCNN等是不会再产生额外的特征图了
                 for i in range(used_backbone_levels + 1, self.num_outs):
                     if self.relu_before_extra_convs:
                         outs.append(self.fpn_convs[i](F.relu(outs[-1])))

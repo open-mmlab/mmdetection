@@ -37,7 +37,7 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
         config.model.pretrained = None
     elif 'init_cfg' in config.model.backbone:
         config.model.backbone.init_cfg = None
-    config.model.train_cfg = None  # 避免构建只在train才使用的方法,build_assigner等
+    config.model.train_cfg = None  # 避免构建只在train才使用的方法,assigner, sampler等
     model = build_detector(config.model)
     if checkpoint is not None:
         checkpoint = load_checkpoint(model, checkpoint, map_location='cpu')
@@ -45,8 +45,7 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
             model.CLASSES = checkpoint['meta']['CLASSES']
         else:
             warnings.simplefilter('once')
-            warnings.warn('Class names are not saved in the checkpoint\'s '
-                          'meta data, use COCO classes by default.')
+            warnings.warn('加载的权重中不存在类别列表,默认使用COCO类.')
             model.CLASSES = get_classes('coco')  # 初始化为coco的80类
     model.cfg = config  # save the config in the model for convenience
     model.to(device)
@@ -128,7 +127,8 @@ def inference_detector(model, imgs):
         # build the data pipeline
         data = test_pipeline(data)
         datas.append(data)
-
+    # 将多张图片整合到一起, 包括兼容不同长宽比的图片至同一尺寸
+    # 注! 它是将所有测试图片揉到一个batch中,只跑一遍inference.
     data = collate(datas, samples_per_gpu=len(imgs))
     # {'img_metas':[DC([]),], 'img':[DC[tensor(bs, 3, 480, 640),],]}
     # 最外面的[]是TTA数量,里面的[]中的数据是GPU数量的数据,TTA与bs不能同时大于1
@@ -144,8 +144,8 @@ def inference_detector(model, imgs):
             assert not isinstance(
                 m, RoIPool
             ), 'CPU inference with RoIPool is not supported currently.'
-    print()
-    # forward the model
+
+    # 对模型前向传播
     with torch.no_grad():
         results = model(return_loss=False, rescale=True, **data)
 

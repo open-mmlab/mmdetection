@@ -9,10 +9,9 @@ from .bbox_head import BBoxHead
 
 @HEADS.register_module()
 class ConvFCBBoxHead(BBoxHead):
-    r"""More general bbox head, with shared conv and fc layers and two optional
-    separated branches.
+    r"""更通用的 box 头，具有共享的 conv 和 fc 层以及两个可选的分离分支.
 
-    .. code-block:: none
+    .. 参考以下代码流程
 
                                     /-> cls convs -> cls fcs -> cls
         shared convs -> shared fcs
@@ -54,19 +53,19 @@ class ConvFCBBoxHead(BBoxHead):
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
 
-        # add shared convs and fcs
+        # 添加共享的conv和fc层
         self.shared_convs, self.shared_fcs, last_layer_dim = \
             self._add_conv_fc_branch(
                 self.num_shared_convs, self.num_shared_fcs, self.in_channels,
                 True)
         self.shared_out_channels = last_layer_dim
 
-        # add cls specific branch
+        # 添加 cls 特定分支
         self.cls_convs, self.cls_fcs, self.cls_last_dim = \
             self._add_conv_fc_branch(
                 self.num_cls_convs, self.num_cls_fcs, self.shared_out_channels)
 
-        # add reg specific branch
+        # 添加 reg 特定分支
         self.reg_convs, self.reg_fcs, self.reg_last_dim = \
             self._add_conv_fc_branch(
                 self.num_reg_convs, self.num_reg_fcs, self.shared_out_channels)
@@ -78,7 +77,7 @@ class ConvFCBBoxHead(BBoxHead):
                 self.reg_last_dim *= self.roi_feat_area
 
         self.relu = nn.ReLU(inplace=True)
-        # reconstruct fc_cls and fc_reg since input channels are changed
+        # 这里需要重构fc_cls和fc_reg因为输入通道已经改变
         if self.with_cls:
             if self.custom_cls_channels:
                 cls_channels = self.loss_cls.get_cls_channels(self.num_classes)
@@ -97,13 +96,11 @@ class ConvFCBBoxHead(BBoxHead):
                 out_features=out_dim_reg)
 
         if init_cfg is None:
-            # when init_cfg is None,
-            # It has been set to
+            # 当init_cfg为None时,
+            # 在`super(ConvFCBBoxHead, self).__init__()中`self.init_cfg被设置为
             # [[dict(type='Normal', std=0.01, override=dict(name='fc_cls'))],
             #  [dict(type='Normal', std=0.001, override=dict(name='fc_reg'))]
-            # after `super(ConvFCBBoxHead, self).__init__()`
-            # we only need to append additional configuration
-            # for `shared_fcs`, `cls_fcs` and `reg_fcs`
+            # 我们只需要为 `shared_fcs`、`cls_fcs` 和 `reg_fcs` 附加额外的配置
             self.init_cfg += [
                 dict(
                     type='Xavier',
@@ -120,12 +117,12 @@ class ConvFCBBoxHead(BBoxHead):
                             num_branch_fcs,
                             in_channels,
                             is_shared=False):
-        """Add shared or separable branch.
+        """添加共享或可分离分支.
 
         convs -> avg pool (optional) -> fcs
         """
         last_layer_dim = in_channels
-        # add branch specific conv layers
+        # 添加指定的conv层
         branch_convs = nn.ModuleList()
         if num_branch_convs > 0:
             for i in range(num_branch_convs):
@@ -140,11 +137,11 @@ class ConvFCBBoxHead(BBoxHead):
                         conv_cfg=self.conv_cfg,
                         norm_cfg=self.norm_cfg))
             last_layer_dim = self.conv_out_channels
-        # add branch specific fc layers
+        # 添加指定的fc层
         branch_fcs = nn.ModuleList()
         if num_branch_fcs > 0:
-            # for shared branch, only consider self.with_avg_pool
-            # for separated branches, also consider self.num_shared_fcs
+            # 对于共享分支,只考虑 self.with_avg_pool
+            # 对于分离的分支,还要考虑 self.num_shared_fcs
             if (is_shared
                     or self.num_shared_fcs == 0) and not self.with_avg_pool:
                 last_layer_dim *= self.roi_feat_area
