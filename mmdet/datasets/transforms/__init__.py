@@ -10,11 +10,12 @@ from .instaboost import InstaBoost
 from .loading import (FilterAnnotations, LoadAnnotations, LoadEmptyAnnotations,
                       LoadImageFromNDArray, LoadMultiChannelImageFromFiles,
                       LoadPanopticAnnotations, LoadProposals)
-from .transforms import (Albu, CopyPaste, CropBoxes, CutOut, Expand, MinIoURandomCrop,
-                         MixUp, Mosaic, Normalize, Pad, PhotoMetricDistortion,
-                         RandomAffine, RandomCenterCropPad, RandomCrop,
-                         RandomErasing, RandomFlip, RandomShift, Resize,
-                         SegRescale, YOLOXHSVRandomAug)
+from .transforms import (Albu, CopyPaste, CropBoxes, CutOut, Expand,
+                         MinIoURandomCrop, MixUp, Mosaic, Normalize, Pad,
+                         PhotoMetricDistortion, RandomAffine,
+                         RandomCenterCropPad, RandomCrop, RandomErasing,
+                         RandomFlip, RandomShift, Resize, SegRescale,
+                         YOLOXHSVRandomAug)
 from .wrappers import MultiBranch, RandomOrder
 
 __all__ = [

@@ -69,9 +69,7 @@ class CrowdHumanDataset(BaseDataset):
             data_list.append(parsed_data_info)
             prog_bar.update()
         if not self.id_hw_exist:
-            # TODO: MMDetection's dataset support multiple file client. If the
-            #  dataset is not stored on disks, such as AWS or Aliyun OSS, this
-            #  may cause errors.
+            #  TODO: support file client
             with open(self.id_hw_path, 'w', encoding='utf-8') as file:
                 json.dump(self.id_hw, file, indent=4)
             print_log(f'\nsave id_hw in {self.data_root}', level=logging.INFO)
