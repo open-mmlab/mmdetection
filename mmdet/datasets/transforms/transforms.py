@@ -1136,7 +1136,7 @@ class MinIoURandomCrop(BaseTransform):
                 if patch[2] == patch[0] or patch[3] == patch[1]:
                     continue
                 overlaps = boxes.overlaps(
-                    HorizontalBoxes(patch.reshape(-1, 4)),
+                    HorizontalBoxes(patch.reshape(-1, 4).astype(np.float32)),
                     boxes).numpy().reshape(-1)
                 if len(overlaps) > 0 and overlaps.min() < min_iou:
                     continue
