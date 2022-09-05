@@ -1,6 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from functools import partial
+<<<<<<< HEAD
 from typing import List, Sequence, Tuple, Union, Optional
+=======
+from typing import List, Optional, Tuple, Union
+>>>>>>> Fix lint
 
 import numpy as np
 import torch
