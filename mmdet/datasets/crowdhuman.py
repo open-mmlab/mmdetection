@@ -8,6 +8,7 @@ import mmcv
 from mmengine.dataset import BaseDataset
 from mmengine.fileio import FileClient
 from mmengine.logging import print_log
+from mmengine.utils import ProgressBar
 
 from mmdet.registry import DATASETS
 
@@ -62,7 +63,7 @@ class CrowdHumanDataset(BaseDataset):
 
         print_log('loading CrowdHuman annotation...', level=logging.INFO)
         data_list = []
-        prog_bar = mmcv.ProgressBar(len(anno_strs))
+        prog_bar = ProgressBar(len(anno_strs))
         for i, anno_str in enumerate(anno_strs):
             anno_dict = json.loads(anno_str)
             parsed_data_info = self.parse_data_info(anno_dict)
