@@ -7,7 +7,7 @@ import numpy as np
 from mmengine.config import Config, DictAction
 from mmengine.fileio import load
 from mmengine.runner import Runner
-from mmengine.structures import InstanceData
+from mmengine.structures import InstanceData, PixelData
 from mmengine.utils import ProgressBar, check_file_exist, mkdir_or_exist
 
 from mmdet.datasets import get_loading_pipeline
@@ -132,10 +132,8 @@ class ResultVisualizer:
 
             if task == 'det':
                 gt_instances = InstanceData()
-                gt_instances.bboxes = data_info['gt_bboxes']
-                gt_instances.labels = data_info['gt_bboxes_labels']
-                gt_samples = DetDataSample()
-                gt_samples.gt_instances = gt_instances
+                gt_instances.bboxes = results[index]['gt_instances']['bboxes']
+                gt_instances.labels = results[index]['gt_instances']['labels']
 
                 pred_instances = InstanceData()
                 pred_instances.bboxes = results[index]['pred_instances'][
@@ -144,26 +142,30 @@ class ResultVisualizer:
                     'labels']
                 pred_instances.scores = results[index]['pred_instances'][
                     'scores']
-                pred_samples = DetDataSample()
-                pred_samples.pred_instances = pred_instances
-            elif task == 'seg':
-                gt_instances = InstanceData()
-                gt_instances.panoptic_seg = data_info['gt_seg_map']
-                gt_samples = DetDataSample()
-                gt_samples.gt_instances = gt_instances
 
-                panoptic_seg = InstanceData()
-                pred_samples = DetDataSample()
-                panoptic_seg.panoptic_seg = results[index][
+                data_samples = DetDataSample()
+                data_samples.pred_instances = pred_instances
+                data_samples.gt_instances = gt_instances
+
+            elif task == 'seg':
+                gt_panoptic_seg = PixelData()
+                gt_panoptic_seg.sem_seg = results[index]['gt_seg_map']
+
+                pred_panoptic_seg = PixelData()
+                pred_panoptic_seg.sem_seg = results[index][
                     'pred_panoptic_seg']['sem_seg']
-                pred_samples.pred_panoptic_seg = panoptic_seg
+
+                data_samples = DetDataSample()
+                data_samples.pred_panoptic_seg = pred_panoptic_seg
+                data_samples.gt_panoptic_seg = gt_panoptic_seg
 
             self.visualizer.add_datasample(
                 'image',
-                data_info['img'],
-                gt_samples,
-                pred_samples,
-                show=self.show,
+                results[index]['img'],
+                data_samples,
+                show=True,
+                # show=self.show,
+                draw_gt=False,
                 pred_score_thr=self.score_thr,
                 out_file=out_file)
 
@@ -194,14 +196,14 @@ class ResultVisualizer:
         good_dir = osp.abspath(osp.join(show_dir, 'good'))
         bad_dir = osp.abspath(osp.join(show_dir, 'bad'))
 
-        if isinstance(results[0], dict):
+        if 'pred_panoptic_seg' in results[0].keys():
             good_samples, bad_samples = self.panoptic_evaluate(
                 dataset, results, topk=topk)
             self._save_image_gts_results(
                 dataset, results, good_samples, good_dir, task='seg')
             self._save_image_gts_results(
                 dataset, results, bad_samples, bad_dir, task='seg')
-        elif isinstance(results[0], list):
+        elif 'pred_instances' in results[0].keys():
             good_samples, bad_samples = self.detection_evaluate(
                 dataset, results, topk=topk)
             self._save_image_gts_results(
@@ -209,9 +211,8 @@ class ResultVisualizer:
             self._save_image_gts_results(
                 dataset, results, bad_samples, bad_dir, task='det')
         else:
-            raise 'The format of result is not supported yet. ' \
-                'Current dict for panoptic segmentation and list ' \
-                'for object detection are supported.'
+            raise 'expect \'pred_panoptic_seg\' or \'pred_panoptic_seg\' \
+                in dict result'
 
     def detection_evaluate(self, dataset, results, topk=20, eval_fn=None):
         """Evaluation for object detection.
@@ -247,7 +248,7 @@ class ResultVisualizer:
             # self.dataset[i] should not call directly
             # because there is a risk of mismatch
             data_info = dataset.prepare_data(i)
-            data_info['bboxes'] = data_info['gt_bboxes']
+            data_info['bboxes'] = data_info['gt_bboxes'].tensor
             data_info['labels'] = data_info['gt_bboxes_labels']
 
             pred = result['pred_instances']
