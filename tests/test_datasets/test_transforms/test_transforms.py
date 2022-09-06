@@ -1495,7 +1495,7 @@ class TestRandomErasing(unittest.TestCase):
 
     def test_transform(self):
         transform = RandomErasing(
-            n_patches=(1, 5), ratio=(0.2, 0.5), img_border_value=0)
+            n_patches=(1, 5), ratio=(0.4, 0.8), img_border_value=0)
         results = transform(copy.deepcopy(self.results))
         self.assertTrue(results['img'].sum() < self.results['img'].sum())
 
@@ -1519,14 +1519,14 @@ class TestRandomErasing(unittest.TestCase):
         src_results['gt_bboxes'] = HorizontalBoxes(src_results['gt_bboxes'])
 
         transform = RandomErasing(
-            n_patches=(1, 5), ratio=(0.2, 0.5), img_border_value=0)
+            n_patches=(1, 5), ratio=(0.4, 0.8), img_border_value=0)
         results = transform(copy.deepcopy(src_results))
         self.assertTrue(results['img'].sum() < src_results['img'].sum())
 
         transform = RandomErasing(
             n_patches=1, ratio=0.999, img_border_value=255)
         results = transform(copy.deepcopy(src_results))
-        self.assertTrue(results['img'].sum() > self.results['img'].sum())
+        self.assertTrue(results['img'].sum() > src_results['img'].sum())
         # test empty results
         empty_results = copy.deepcopy(src_results)
         empty_results['gt_bboxes'] = HorizontalBoxes([], dtype=torch.float32)
@@ -1536,7 +1536,7 @@ class TestRandomErasing(unittest.TestCase):
         empty_results['gt_seg_map'] = np.ones_like(
             empty_results['gt_seg_map']) * 255
         results = transform(copy.deepcopy(empty_results))
-        self.assertTrue(results['img'].sum() > self.results['img'].sum())
+        self.assertTrue(results['img'].sum() > src_results['img'].sum())
 
     def test_repr(self):
         transform = RandomErasing(n_patches=(1, 5), ratio=(0, 0.2))

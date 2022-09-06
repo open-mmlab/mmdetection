@@ -16,7 +16,7 @@ class TestKDSingleStageDetector(TestCase):
     def setUp(self):
         register_all_modules()
 
-    @parameterized.expand(['ld/ld_r18_gflv1_r101_fpn_coco_1x.py'])
+    @parameterized.expand(['ld/ld_r18-gflv1-r101_fpn_1x_coco.py'])
     def test_init(self, cfg_file):
         model = get_detector_cfg(cfg_file)
         model.backbone.init_cfg = None
@@ -27,7 +27,7 @@ class TestKDSingleStageDetector(TestCase):
         self.assertTrue(detector.neck)
         self.assertTrue(detector.bbox_head)
 
-    @parameterized.expand([('ld/ld_r18_gflv1_r101_fpn_coco_1x.py', ('cpu',
+    @parameterized.expand([('ld/ld_r18-gflv1-r101_fpn_1x_coco.py', ('cpu',
                                                                     'cuda'))])
     def test_single_stage_forward_train(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
@@ -50,7 +50,7 @@ class TestKDSingleStageDetector(TestCase):
             losses = detector.forward(**data, mode='loss')
             self.assertIsInstance(losses, dict)
 
-    @parameterized.expand([('ld/ld_r18_gflv1_r101_fpn_coco_1x.py', ('cpu',
+    @parameterized.expand([('ld/ld_r18-gflv1-r101_fpn_1x_coco.py', ('cpu',
                                                                     'cuda'))])
     def test_single_stage_forward_test(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)

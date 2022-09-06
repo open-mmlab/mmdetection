@@ -314,34 +314,26 @@ class TestMultiBranchDataPreprocessor(TestCase):
             std=[58.395, 57.12, 57.375],
             bgr_to_rgb=True,
             pad_size_divisor=32)
-        self.multi_data = [
-            {
-                'sup': {
-                    'inputs': torch.randint(0, 256, (3, 224, 224)),
-                    'data_samples': DetDataSample()
-                }
+        self.multi_data = {
+            'inputs': {
+                'sup': [torch.randint(0, 256, (3, 224, 224))],
+                'unsup_teacher': [
+                    torch.randint(0, 256, (3, 400, 600)),
+                    torch.randint(0, 256, (3, 600, 400))
+                ],
+                'unsup_student': [
+                    torch.randint(0, 256, (3, 700, 500)),
+                    torch.randint(0, 256, (3, 500, 700))
+                ]
             },
-            {
-                'unsup_teacher': {
-                    'inputs': torch.randint(0, 256, (3, 400, 600)),
-                    'data_samples': DetDataSample()
-                },
-                'unsup_student': {
-                    'inputs': torch.randint(0, 256, (3, 700, 500)),
-                    'data_samples': DetDataSample()
-                }
-            },
-            {
-                'unsup_teacher': {
-                    'inputs': torch.randint(0, 256, (3, 600, 400)),
-                    'data_samples': DetDataSample()
-                },
-                'unsup_student': {
-                    'inputs': torch.randint(0, 256, (3, 500, 700)),
-                    'data_samples': DetDataSample()
-                }
-            },
-        ]
+            'data_samples': {
+                'sup': [DetDataSample()],
+                'unsup_teacher': [DetDataSample(),
+                                  DetDataSample()],
+                'unsup_student': [DetDataSample(),
+                                  DetDataSample()],
+            }
+        }
         self.data = {
             'inputs': [torch.randint(0, 256, (3, 224, 224))],
             'data_samples': [DetDataSample()]
@@ -350,15 +342,16 @@ class TestMultiBranchDataPreprocessor(TestCase):
     def test_multi_data_preprocessor(self):
         processor = MultiBranchDataPreprocessor(self.data_preprocessor)
         # test processing multi_data when training
-        multi_inputs, multi_data_samples = processor(
-            self.multi_data, training=True)
-        self.assertEqual(multi_inputs['sup'].shape, (1, 3, 224, 224))
-        self.assertEqual(multi_inputs['unsup_teacher'].shape, (2, 3, 608, 608))
-        self.assertEqual(multi_inputs['unsup_student'].shape, (2, 3, 704, 704))
-        self.assertEqual(len(multi_data_samples['sup']), 1)
-        self.assertEqual(len(multi_data_samples['unsup_teacher']), 2)
-        self.assertEqual(len(multi_data_samples['unsup_student']), 2)
+        multi_data = processor(self.multi_data, training=True)
+        self.assertEqual(multi_data['inputs']['sup'].shape, (1, 3, 224, 224))
+        self.assertEqual(multi_data['inputs']['unsup_teacher'].shape,
+                         (2, 3, 608, 608))
+        self.assertEqual(multi_data['inputs']['unsup_student'].shape,
+                         (2, 3, 704, 704))
+        self.assertEqual(len(multi_data['data_samples']['sup']), 1)
+        self.assertEqual(len(multi_data['data_samples']['unsup_teacher']), 2)
+        self.assertEqual(len(multi_data['data_samples']['unsup_student']), 2)
         # test processing data when testing
-        inputs, data_samples = processor(self.data)
-        self.assertEqual(inputs.shape, (1, 3, 224, 224))
-        self.assertEqual(len(data_samples), 1)
+        data = processor(self.data)
+        self.assertEqual(data['inputs'].shape, (1, 3, 224, 224))
+        self.assertEqual(len(data['data_samples']), 1)

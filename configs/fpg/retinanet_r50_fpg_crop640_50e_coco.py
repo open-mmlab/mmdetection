@@ -1,4 +1,4 @@
-_base_ = '../nas_fpn/retinanet_r50_nasfpn_crop640_50e_coco.py'
+_base_ = '../nas_fpn/retinanet_r50_nasfpn_crop640-50e_coco.py'
 
 norm_cfg = dict(type='BN', requires_grad=True)
 model = dict(

@@ -94,9 +94,9 @@ Models:
           mask AP: 39.6
     Weights: https://download.openmmlab.com/mmdetection/v2.0/htc/htc_r101_fpn_20e_coco/htc_r101_fpn_20e_coco_20200317-9b41b48f.pth
 
-  - Name: htc_x101_32x4d_fpn_16x1_20e_coco
+  - Name: htc_x101-32x4d_fpn_16xb1-20e_coco
     In Collection: HTC
-    Config: configs/htc/htc_x101_32x4d_fpn_16x1_20e_coco.py
+    Config: configs/htc/htc_x101-32x4d_fpn_16xb1-20e_coco.py
     Metadata:
       Training Resources: 16x V100 GPUs
       Batch Size: 16
@@ -120,9 +120,9 @@ Models:
           mask AP: 40.5
     Weights: https://download.openmmlab.com/mmdetection/v2.0/htc/htc_x101_32x4d_fpn_16x1_20e_coco/htc_x101_32x4d_fpn_16x1_20e_coco_20200318-de97ae01.pth
 
-  - Name: htc_x101_64x4d_fpn_16x1_20e_coco
+  - Name: htc_x101-64x4d_fpn_16xb1-20e_coco
     In Collection: HTC
-    Config: configs/htc/htc_x101_64x4d_fpn_16x1_20e_coco.py
+    Config: configs/htc/htc_x101-64x4d_fpn_16xb1-20e_coco.py
     Metadata:
       Training Resources: 16x V100 GPUs
       Batch Size: 16
@@ -146,9 +146,9 @@ Models:
           mask AP: 41.4
     Weights: https://download.openmmlab.com/mmdetection/v2.0/htc/htc_x101_64x4d_fpn_16x1_20e_coco/htc_x101_64x4d_fpn_16x1_20e_coco_20200318-b181fd7a.pth
 
-  - Name: htc_x101_64x4d_fpn_dconv_c3-c5_mstrain_400_1400_16x1_20e_coco
+  - Name: htc_x101-64x4d-dconv-c3-c5_fpn_ms-400-1400-16xb1-20e_coco
     In Collection: HTC
-    Config: configs/htc/htc_x101_64x4d_fpn_dconv_c3-c5_mstrain_400_1400_16x1_20e_coco.py
+    Config: configs/htc/htc_x101-64x4d-dconv-c3-c5_fpn_ms-400-1400-16xb1-20e_coco.py
     Metadata:
       Training Resources: 16x V100 GPUs
       Batch Size: 16

@@ -20,8 +20,8 @@ Py**T**orch **Im**age **M**odels (`timm`) is a collection of image models, layer
 
 |    Backbone     |  Style  | Lr schd | Mem (GB) | Inf time (fps) | box AP |                          Config                           | Download |
 | :-------------: | :-----: | :-----: | :------: | :------------: | :----: | :-------------------------------------------------------: | :------: |
-|      R-50       | pytorch |   1x    |          |                |        |   [config](./retinanet_timm_tv_resnet50_fpn_1x_coco.py)   |          |
-| EfficientNet-B1 |    -    |   1x    |          |                |        | [config](./retinanet_timm_efficientnet_b1_fpn_1x_coco.py) |          |
+|      R-50       | pytorch |   1x    |          |                |        |   [config](./retinanet_timm-tv-resnet50_fpn_1x_coco.py)   |          |
+| EfficientNet-B1 |    -    |   1x    |          |                |        | [config](./retinanet_timm-efficientnet-b1_fpn_1x_coco.py) |          |
 
 ## Usage
 

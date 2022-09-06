@@ -26,6 +26,7 @@ class ToyModel(nn.Module):
 
     def forward(self, inputs, data_samples, mode='tensor'):
         labels = torch.stack(data_samples)
+        inputs = torch.stack(inputs)
         outputs = self.linear(inputs)
         if mode == 'tensor':
             return outputs

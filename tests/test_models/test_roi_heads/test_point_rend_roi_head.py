@@ -13,7 +13,7 @@ from mmdet.testing import demo_mm_inputs, demo_mm_proposals, get_roi_head_cfg
 class TestHTCRoIHead(TestCase):
 
     @parameterized.expand(
-        ['point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py'])
+        ['point_rend/point-rend_r50-caffe_fpn_ms-1x_coco.py'])
     def test_init(self, cfg_file):
         """Test init Point rend RoI head."""
         # Normal HTC RoI head
@@ -23,7 +23,7 @@ class TestHTCRoIHead(TestCase):
         assert roi_head.with_mask
 
     @parameterized.expand(
-        ['point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py'])
+        ['point_rend/point-rend_r50-caffe_fpn_ms-1x_coco.py'])
     def test_point_rend_roi_head_loss(self, cfg_file):
         """Tests htc roi head loss when truth is empty and non-empty."""
         if not torch.cuda.is_available():
@@ -74,7 +74,7 @@ class TestHTCRoIHead(TestCase):
             out = roi_head.loss(feats, proposal_list, batch_data_samples)
 
     @parameterized.expand(
-        ['point_rend/point_rend_r50_caffe_fpn_mstrain_1x_coco.py'])
+        ['point_rend/point-rend_r50-caffe_fpn_ms-1x_coco.py'])
     def test_point_rend_roi_head_predict(self, cfg_file):
         if not torch.cuda.is_available():
             # RoI pooling only support in GPU
