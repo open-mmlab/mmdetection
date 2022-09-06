@@ -10,12 +10,11 @@ from .instaboost import InstaBoost
 from .loading import (FilterAnnotations, LoadAnnotations, LoadEmptyAnnotations,
                       LoadImageFromNDArray, LoadMultiChannelImageFromFiles,
                       LoadPanopticAnnotations, LoadProposals)
-from .transforms import (Albu, CopyPaste, CropBoxes, CutOut, Expand,
-                         MinIoURandomCrop, MixUp, Mosaic, Normalize, Pad,
-                         PhotoMetricDistortion, RandomAffine,
-                         RandomCenterCropPad, RandomCrop, RandomErasing,
-                         RandomFlip, RandomShift, Resize, SegRescale,
-                         YOLOXHSVRandomAug)
+from .transforms import (Albu, CopyPaste, CutOut, Expand, MinIoURandomCrop,
+                         MixUp, Mosaic, Normalize, Pad, PhotoMetricDistortion,
+                         RandomAffine, RandomCenterCropPad, RandomCrop,
+                         RandomErasing, RandomFlip, RandomShift, Resize,
+                         SegRescale, YOLOXHSVRandomAug)
 from .wrappers import MultiBranch, RandomOrder
 
 __all__ = [
@@ -30,5 +29,5 @@ __all__ = [
     'FilterAnnotations', 'Pad', 'GeomTransform', 'ColorTransform',
     'RandAugment', 'Sharpness', 'Solarize', 'SolarizeAdd', 'Posterize',
     'AutoContrast', 'Invert', 'MultiBranch', 'RandomErasing',
-    'LoadEmptyAnnotations', 'RandomOrder', 'CropBoxes'
+    'LoadEmptyAnnotations', 'RandomOrder'
 ]

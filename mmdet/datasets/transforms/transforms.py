@@ -3005,20 +3005,3 @@ class RandomErasing(BaseTransform):
         repr_str += f'mask_border_value={self.mask_border_value}, '
         repr_str += f'seg_ignore_label={self.seg_ignore_label})'
         return repr_str
-
-
-@TRANSFORMS.register_module()
-class CropBoxes(BaseTransform):
-    """Make sure boxes are within the image range."""
-
-    @autocast_box_type()
-    def transform(self, results: dict) -> dict:
-        boxes = copy.deepcopy(results['gt_bboxes'].tensor)
-        boxes[..., 0::2] = boxes[..., 0::2].clamp(0, results['img_shape'][1])
-        boxes[..., 1::2] = boxes[..., 1::2].clamp(0, results['img_shape'][0])
-        results['gt_bboxes'].tensor = boxes
-        return results
-
-    def __repr__(self) -> str:
-        repr_str = self.__class__.__name__
-        return repr_str

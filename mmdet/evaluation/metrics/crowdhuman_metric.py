@@ -16,6 +16,7 @@ except ImportError:
     csr_matrix, maximum_bipartite_matching = None, None
 
 from mmengine.evaluator import BaseMetric
+from mmengine.fileio import FileClient, dump, load
 from mmengine.logging import MMLogger
 
 from mmdet.evaluation.functional.bbox_overlaps import bbox_overlaps
@@ -41,6 +42,9 @@ class CrowdHumanMetric(BaseMetric):
         outfile_prefix (str, optional): The prefix of json files. It includes
             the file path and the prefix of filename, e.g., "a/b/prefix".
             If not specified, a temp file will be created. Defaults to None.
+        file_client_args (dict): Arguments to instantiate a FileClient.
+            See :class:`mmengine.fileio.FileClient` for details.
+            Defaults to ``dict(backend='disk')``.
         collect_device (str): Device name used for collecting results from
             different ranks during distributed training. Must be 'cpu' or
             'gpu'. Defaults to 'cpu'.
@@ -68,6 +72,7 @@ class CrowdHumanMetric(BaseMetric):
                  metric: Union[str, List[str]] = ['AP', 'MR', 'JI'],
                  format_only: bool = False,
                  outfile_prefix: Optional[str] = None,
+                 file_client_args: dict = dict(backend='disk'),
                  collect_device: str = 'cpu',
                  prefix: Optional[str] = None,
                  eval_mode: int = 0,
@@ -96,6 +101,8 @@ class CrowdHumanMetric(BaseMetric):
             'None when format_only is True, otherwise the result files will'
             'be saved to a temp directory which will be cleaned up at the end.'
         self.outfile_prefix = outfile_prefix
+        self.file_client_args = file_client_args
+        self.file_client = FileClient(**file_client_args)
 
         assert eval_mode in [0, 1, 2], \
             "Unknown eval mode. mr_ref should be one of '0', '1', '2'."
@@ -115,25 +122,25 @@ class CrowdHumanMetric(BaseMetric):
     def results2json(results: Sequence[dict], outfile_prefix: str) -> str:
         """Dump the detection results to a json file."""
         result_file_path = f'{outfile_prefix}.json'
-        with open(result_file_path, 'w') as outfile:
-            for i, result in enumerate(results):
-                ann, pred = result
-                dump_dict = dict()
-                dump_dict['ID'] = ann['ID']
-                dump_dict['width'] = ann['width']
-                dump_dict['height'] = ann['height']
-                dtboxes = []
-                bboxes = pred.tolist()
-                for _, single_bbox in enumerate(bboxes):
-                    temp_dict = dict()
-                    x1, y1, x2, y2, score = single_bbox
-                    temp_dict['box'] = [x1, y1, x2 - x1, y2 - y1]
-                    temp_dict['score'] = score
-                    temp_dict['tag'] = 1
-                    dtboxes.append(temp_dict)
-                dump_dict['dtboxes'] = dtboxes
-                outfile.write(json.dumps(dump_dict) + '\n')
-
+        bbox_json_results = []
+        for i, result in enumerate(results):
+            ann, pred = result
+            dump_dict = dict()
+            dump_dict['ID'] = ann['ID']
+            dump_dict['width'] = ann['width']
+            dump_dict['height'] = ann['height']
+            dtboxes = []
+            bboxes = pred.tolist()
+            for _, single_bbox in enumerate(bboxes):
+                temp_dict = dict()
+                x1, y1, x2, y2, score = single_bbox
+                temp_dict['box'] = [x1, y1, x2 - x1, y2 - y1]
+                temp_dict['score'] = score
+                temp_dict['tag'] = 1
+                dtboxes.append(temp_dict)
+            dump_dict['dtboxes'] = dtboxes
+            bbox_json_results.append(dump_dict)
+        dump(bbox_json_results, result_file_path)
         return result_file_path
 
     def process(self, data_batch: Sequence[dict],
@@ -222,12 +229,10 @@ class CrowdHumanMetric(BaseMetric):
         Returns:
             Dict[Image]: The detection result packaged by Image
         """
-        with open(self.ann_file, 'r') as gt_f:
-            gt = gt_f.readlines()
-        gt_records = [json.loads(line.strip('\n')) for line in gt]
-        with open(result_file, 'r') as pred_f:
-            pred = pred_f.readlines()
-        pred_records = [json.loads(line.strip('\n')) for line in pred]
+        gt_str = self.file_client.get_text(self.ann_file).strip().split('\n')
+        gt_records = [json.loads(line) for line in gt_str]
+
+        pred_records = load(result_file)
         eval_samples = dict()
         for gt_record, pred_record in zip(gt_records, pred_records):
             assert gt_record['ID'] == pred_record['ID'], \
