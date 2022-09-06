@@ -5,16 +5,16 @@ import os.path as osp
 from typing import List, Union
 
 import mmcv
-from mmengine.dataset import BaseDataset
-from mmengine.fileio import FileClient
+from mmengine.fileio import dump, load
 from mmengine.logging import print_log
 from mmengine.utils import ProgressBar
 
 from mmdet.registry import DATASETS
+from .base_det_dataset import BaseDetDataset
 
 
 @DATASETS.register_module()
-class CrowdHumanDataset(BaseDataset):
+class CrowdHumanDataset(BaseDetDataset):
     r"""Dataset for CrowdHuman.
 
     Args:
@@ -44,12 +44,10 @@ class CrowdHumanDataset(BaseDataset):
                 'id_hw file does not exist, prepare to collect '
                 'image height and width...',
                 level=logging.INFO)
-            self.file_client = FileClient()
             self.id_hw = {}
         else:
             self.id_hw_exist = True
-            with open(self.id_hw_path, 'r') as id_hw_file:
-                self.id_hw = json.load(id_hw_file)
+            self.id_hw = load(self.id_hw_path)
         super().__init__(data_root=data_root, ann_file=ann_file, **kwargs)
 
     def load_data_list(self) -> List[dict]:
@@ -58,9 +56,8 @@ class CrowdHumanDataset(BaseDataset):
         Returns:
             List[dict]: A list of annotation.
         """  # noqa: E501
-        with open(self.ann_file, 'r') as file:
-            anno_strs = file.readlines()
-
+        anno_strs = self.file_client.get_text(
+            self.ann_file).strip().split('\n')
         print_log('loading CrowdHuman annotation...', level=logging.INFO)
         data_list = []
         prog_bar = ProgressBar(len(anno_strs))
@@ -71,9 +68,9 @@ class CrowdHumanDataset(BaseDataset):
             prog_bar.update()
         if not self.id_hw_exist:
             #  TODO: support file client
-            with open(self.id_hw_path, 'w', encoding='utf-8') as file:
-                json.dump(self.id_hw, file, indent=4)
+            dump(self.id_hw, self.id_hw_path, file_format='json')
             print_log(f'\nsave id_hw in {self.data_root}', level=logging.INFO)
+
         del self.id_hw, self.id_hw_exist, self.id_hw_path
         print_log('\nDone', level=logging.INFO)
         return data_list
