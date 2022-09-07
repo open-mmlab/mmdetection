@@ -484,10 +484,10 @@ class SSDAnchorGenerator(AnchorGenerator):
             in multiple feature levels.
         ratios (list[float]): The list of ratios between the height and width
             of anchors in a single level.
-        min_sizes (list[float] | list[list[float]]): The list of minimum anchor sizes on each
-            level.
-        max_sizes (list[float] | list[list[float]] | optional): The list of maximum anchor sizes on each
-            level.
+        min_sizes (list[float] | list[list[float]]): The list of minimum
+            anchor sizes on each level.
+        max_sizes (list[float] | list[list[float]] | optional): The list
+            of maximum anchor sizes on each level.
         basesize_ratio_range (tuple(float)): Ratio range of anchors. Being
             used when not setting min_sizes and max_sizes.
         input_size (int): Size of feature map, 300 for SSD300, 512 for
