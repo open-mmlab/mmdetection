@@ -164,7 +164,7 @@ class AnchorGenerator:
         Args:
             base_size (int | float): Basic size of an anchor.
             scales (torch.Tensor): Scales of the anchor.
-            ratios (torch.Tensor): The ratio between between the height
+            ratios (torch.Tensor): The ratio between the height
                 and width of anchors in a single level.
             center (tuple[float], optional): The center of the base anchor
                 related to a single feature grid. Defaults to None.
@@ -484,17 +484,14 @@ class SSDAnchorGenerator(AnchorGenerator):
             in multiple feature levels.
         ratios (list[float]): The list of ratios between the height and width
             of anchors in a single level.
-        min_sizes (list[float]): The list of minimum anchor sizes on each
+        min_sizes (list[float] | list[list[float]]): The list of minimum anchor sizes on each
             level.
-        max_sizes (list[float]): The list of maximum anchor sizes on each
+        max_sizes (list[float] | list[list[float]] | optional): The list of maximum anchor sizes on each
             level.
         basesize_ratio_range (tuple(float)): Ratio range of anchors. Being
             used when not setting min_sizes and max_sizes.
         input_size (int): Size of feature map, 300 for SSD300, 512 for
             SSD512. Being used when not setting min_sizes and max_sizes.
-        scale_major (bool): Whether to multiply scales first when generating
-            base anchors. If true, the anchors in the same row will have the
-            same scales. It is always set to be False in SSD.
         use_box_type (bool): Whether to warp anchors with the boxlist data
             structure. Defaults to False.
     """
@@ -506,10 +503,8 @@ class SSDAnchorGenerator(AnchorGenerator):
                  max_sizes=None,
                  basesize_ratio_range=(0.15, 0.9),
                  input_size=300,
-                 scale_major=True,
                  use_box_type=False):
         assert len(strides) == len(ratios)
-        assert not (min_sizes is None) ^ (max_sizes is None)
         self.strides = [_pair(stride) for stride in strides]
         self.centers = [(stride[0] / 2., stride[1] / 2.)
                         for stride in self.strides]
@@ -560,23 +555,39 @@ class SSDAnchorGenerator(AnchorGenerator):
                     'not setting min_sizes and max_sizes, '
                     f'got {self.input_size}.')
 
-        assert len(min_sizes) == len(max_sizes) == len(strides)
+        assert len(min_sizes) == len(strides)
+
+        min_sizes = [
+            min_sizes_per_level if isinstance(min_sizes_per_level, list) else
+            [min_sizes_per_level] for min_sizes_per_level in min_sizes
+        ]
+
+        if max_sizes is not None:
+            max_sizes = [
+                max_sizes_per_level if isinstance(max_sizes_per_level, list)
+                else [max_sizes_per_level] for max_sizes_per_level in max_sizes
+            ]
+            assert len(min_sizes) == len(max_sizes)
+            for max_sizes_per_level, min_sizes_per_level in zip(
+                    max_sizes, min_sizes):
+                min_sizes_per_level = np.array(min_sizes_per_level)
+                max_sizes_per_level = np.array(max_sizes_per_level)
+                assert max_sizes_per_level.size == min_sizes_per_level.size
+                assert np.all(max_sizes_per_level - min_sizes_per_level > 0)
 
         anchor_ratios = []
-        anchor_scales = []
         for k in range(len(self.strides)):
-            scales = [1., np.sqrt(max_sizes[k] / min_sizes[k])]
             anchor_ratio = [1.]
             for r in ratios[k]:
+                if np.count_nonzero(
+                        np.abs([r - ar for ar in anchor_ratio]) < 1e-6):
+                    continue
                 anchor_ratio += [1 / r, r]  # 4 or 6 ratio
             anchor_ratios.append(torch.Tensor(anchor_ratio))
-            anchor_scales.append(torch.Tensor(scales))
 
-        self.base_sizes = min_sizes
-        self.scales = anchor_scales
+        self.min_sizes = min_sizes
+        self.max_sizes = max_sizes
         self.ratios = anchor_ratios
-        self.scale_major = scale_major
-        self.center_offset = 0
         self.base_anchors = self.gen_base_anchors()
         self.use_box_type = use_box_type
 
@@ -588,33 +599,71 @@ class SSDAnchorGenerator(AnchorGenerator):
                 feature levels.
         """
         multi_level_base_anchors = []
-        for i, base_size in enumerate(self.base_sizes):
-            base_anchors = self.gen_single_level_base_anchors(
-                base_size,
-                scales=self.scales[i],
-                ratios=self.ratios[i],
-                center=self.centers[i])
-            indices = list(range(len(self.ratios[i])))
-            indices.insert(1, len(indices))
-            base_anchors = torch.index_select(base_anchors, 0,
-                                              torch.LongTensor(indices))
+        for i, base_sizes_per_level in enumerate(self.min_sizes):
+            base_anchors = []
+            base_anchors.append(
+                self.gen_single_level_base_anchors(
+                    torch.Tensor(base_sizes_per_level),
+                    ratios=self.ratios[i],
+                    center=self.centers[i]))
+
+            if self.max_sizes is not None:
+                base_size = np.sqrt([
+                    max_size * min_size for max_size, min_size in zip(
+                        self.max_sizes[i], base_sizes_per_level)
+                ])
+                base_anchors.append(
+                    self.gen_single_level_base_anchors(
+                        torch.Tensor(base_size),
+                        ratios=torch.Tensor([1.]),
+                        center=self.centers[i]))
+
+            base_anchors = torch.vstack(base_anchors)
             multi_level_base_anchors.append(base_anchors)
+
         return multi_level_base_anchors
+
+    def gen_single_level_base_anchors(self, base_size, ratios, center=None):
+        """Generate base anchors of a single level.
+
+        Args:
+            base_size (torch.Tensor): Basic sizes of an anchors.
+            ratios (torch.Tensor): The ratio between the height
+                and width of anchors in a single level.
+            center (tuple[float], optional): The center of the base anchor
+                related to a single feature grid. Defaults to None.
+
+        Returns:
+            torch.Tensor: Anchors in a single-level feature maps.
+        """
+        w = base_size
+        h = base_size
+        x_center, y_center = center
+
+        h_ratios = torch.sqrt(ratios)
+        w_ratios = 1 / h_ratios
+
+        ws = (w[:, None] * w_ratios[None, :]).view(-1)
+        hs = (h[:, None] * h_ratios[None, :]).view(-1)
+
+        # use float anchor and the anchor's center is aligned with the
+        # pixel center
+        base_anchors = [
+            x_center - 0.5 * ws, y_center - 0.5 * hs, x_center + 0.5 * ws,
+            y_center + 0.5 * hs
+        ]
+        base_anchors = torch.stack(base_anchors, dim=-1)
+
+        return base_anchors
 
     def __repr__(self):
         """str: a string that describes the module"""
         indent_str = '    '
         repr_str = self.__class__.__name__ + '(\n'
         repr_str += f'{indent_str}strides={self.strides},\n'
-        repr_str += f'{indent_str}scales={self.scales},\n'
-        repr_str += f'{indent_str}scale_major={self.scale_major},\n'
-        repr_str += f'{indent_str}input_size={self.input_size},\n'
-        repr_str += f'{indent_str}scales={self.scales},\n'
         repr_str += f'{indent_str}ratios={self.ratios},\n'
-        repr_str += f'{indent_str}num_levels={self.num_levels},\n'
-        repr_str += f'{indent_str}base_sizes={self.base_sizes},\n'
-        repr_str += f'{indent_str}basesize_ratio_range='
-        repr_str += f'{self.basesize_ratio_range})'
+        repr_str += f'{indent_str}min_sizes={self.min_sizes},\n'
+        repr_str += f'{indent_str}max_sizes={self.max_sizes},\n'
         return repr_str
 
 
@@ -684,7 +733,7 @@ class LegacyAnchorGenerator(AnchorGenerator):
         Args:
             base_size (int | float): Basic size of an anchor.
             scales (torch.Tensor): Scales of the anchor.
-            ratios (torch.Tensor): The ratio between between the height.
+            ratios (torch.Tensor): The ratio between the height.
                 and width of anchors in a single level.
             center (tuple[float], optional): The center of the base anchor
                 related to a single feature grid. Defaults to None.
