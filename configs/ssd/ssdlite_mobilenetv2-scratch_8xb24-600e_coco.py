@@ -42,7 +42,6 @@ model = dict(
         # SSD300 setting.
         anchor_generator=dict(
             type='SSDAnchorGenerator',
-            scale_major=False,
             strides=[16, 32, 64, 107, 160, 320],
             ratios=[[2, 3], [2, 3], [2, 3], [2, 3], [2, 3], [2, 3]],
             min_sizes=[48, 100, 150, 202, 253, 304],

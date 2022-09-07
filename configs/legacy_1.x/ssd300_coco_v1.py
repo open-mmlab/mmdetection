@@ -9,7 +9,6 @@ model = dict(
         type='SSDHead',
         anchor_generator=dict(
             type='LegacySSDAnchorGenerator',
-            scale_major=False,
             input_size=input_size,
             basesize_ratio_range=(0.15, 0.9),
             strides=[8, 16, 32, 64, 100, 300],

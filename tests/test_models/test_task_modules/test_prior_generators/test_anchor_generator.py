@@ -152,7 +152,6 @@ def test_sparse_prior():
     from mmdet.models.task_modules.prior_generators import SSDAnchorGenerator
     featmap_sizes = [(38, 38), (19, 19), (10, 10)]
     anchor_generator = SSDAnchorGenerator(
-        scale_major=False,
         input_size=300,
         basesize_ratio_range=(0.15, 0.9),
         strides=[8, 16, 32],
@@ -235,7 +234,6 @@ def test_sparse_prior():
             SSDAnchorGenerator
         featmap_sizes = [(38, 38), (19, 19), (10, 10)]
         anchor_generator = SSDAnchorGenerator(
-            scale_major=False,
             input_size=300,
             basesize_ratio_range=(0.15, 0.9),
             strides=[8, 16, 32],
@@ -320,7 +318,6 @@ def test_ssd_anchor_generator():
     with pytest.raises(AssertionError):
         anchor_generator_cfg = dict(
             type='SSDAnchorGenerator',
-            scale_major=False,
             min_sizes=[48, 100, 150, 202, 253, 300],
             max_sizes=None,
             strides=[8, 16, 32, 64, 100, 300],
@@ -331,7 +328,6 @@ def test_ssd_anchor_generator():
     with pytest.raises(AssertionError):
         anchor_generator_cfg = dict(
             type='SSDAnchorGenerator',
-            scale_major=False,
             min_sizes=[48, 100, 150, 202, 253, 300],
             max_sizes=[100, 150, 202, 253],
             strides=[8, 16, 32, 64, 100, 300],
@@ -341,7 +337,6 @@ def test_ssd_anchor_generator():
     # test setting anchor size manually
     anchor_generator_cfg = dict(
         type='SSDAnchorGenerator',
-        scale_major=False,
         min_sizes=[48, 100, 150, 202, 253, 304],
         max_sizes=[100, 150, 202, 253, 304, 320],
         strides=[16, 32, 64, 107, 160, 320],
@@ -410,7 +405,6 @@ def test_ssd_anchor_generator():
     # test vgg ssd anchor setting
     anchor_generator_cfg = dict(
         type='SSDAnchorGenerator',
-        scale_major=False,
         input_size=300,
         basesize_ratio_range=(0.15, 0.9),
         strides=[8, 16, 32, 64, 100, 300],
@@ -480,7 +474,6 @@ def test_anchor_generator_with_tuples():
 
     anchor_generator_cfg = dict(
         type='SSDAnchorGenerator',
-        scale_major=False,
         input_size=300,
         basesize_ratio_range=(0.15, 0.9),
         strides=[8, 16, 32, 64, 100, 300],
@@ -492,7 +485,6 @@ def test_anchor_generator_with_tuples():
 
     anchor_generator_cfg_tuples = dict(
         type='SSDAnchorGenerator',
-        scale_major=False,
         input_size=300,
         basesize_ratio_range=(0.15, 0.9),
         strides=[(8, 8), (16, 16), (32, 32), (64, 64), (100, 100), (300, 300)],

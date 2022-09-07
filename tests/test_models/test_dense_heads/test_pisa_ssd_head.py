@@ -40,7 +40,6 @@ class TestPISASSDHead(TestCase):
             in_channels=(1, 1, 1, 1, 1, 1),
             anchor_generator=dict(
                 type='SSDAnchorGenerator',
-                scale_major=False,
                 input_size=s,
                 basesize_ratio_range=(0.15, 0.9),
                 strides=[8, 16, 32, 64, 100, 300],

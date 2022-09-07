@@ -30,7 +30,6 @@ model = dict(
         num_classes=80,
         anchor_generator=dict(
             type='SSDAnchorGenerator',
-            scale_major=False,
             input_size=input_size,
             basesize_ratio_range=(0.15, 0.9),
             strides=[8, 16, 32, 64, 100, 300],

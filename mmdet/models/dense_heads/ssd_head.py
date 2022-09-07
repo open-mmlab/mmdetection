@@ -65,7 +65,6 @@ class SSDHead(AnchorHead):
         act_cfg: Optional[ConfigType] = None,
         anchor_generator: ConfigType = dict(
             type='SSDAnchorGenerator',
-            scale_major=False,
             input_size=300,
             strides=[8, 16, 32, 64, 100, 300],
             ratios=([2], [2, 3], [2, 3], [2, 3], [2], [2]),

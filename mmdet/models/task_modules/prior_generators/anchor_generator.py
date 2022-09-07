@@ -782,14 +782,12 @@ class LegacySSDAnchorGenerator(SSDAnchorGenerator, LegacyAnchorGenerator):
                  ratios,
                  basesize_ratio_range,
                  input_size=300,
-                 scale_major=True,
                  use_box_type=False):
         super(LegacySSDAnchorGenerator, self).__init__(
             strides=strides,
             ratios=ratios,
             basesize_ratio_range=basesize_ratio_range,
             input_size=input_size,
-            scale_major=scale_major,
             use_box_type=use_box_type)
         self.centers = [((stride - 1) / 2., (stride - 1) / 2.)
                         for stride in strides]
