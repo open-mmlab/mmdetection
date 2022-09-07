@@ -29,9 +29,10 @@ class YOLOBBoxCoder(BaseBBoxCoder):
         transform the ``bboxes`` into the ``gt_bboxes``.
 
         Args:
-            bboxes (torch.Tensor): Source boxes, e.g., anchors.
-            gt_bboxes (torch.Tensor): Target of the transformation, e.g.,
-                ground-truth boxes.
+            bboxes (torch.Tensor or :obj:`BaseBoxes`): Source boxes,
+                e.g., anchors.
+            gt_bboxes (torch.Tensor or :obj:`BaseBoxes`): Target of the
+                transformation, e.g., ground-truth boxes.
             stride (torch.Tensor | int): Stride of bboxes.
 
         Returns:
@@ -63,12 +64,13 @@ class YOLOBBoxCoder(BaseBBoxCoder):
         """Apply transformation `pred_bboxes` to `boxes`.
 
         Args:
-            boxes (torch.Tensor): Basic boxes, e.g. anchors.
+            boxes (torch.Tensor or :obj:`BaseBoxes`): Basic boxes,
+                e.g. anchors.
             pred_bboxes (torch.Tensor): Encoded boxes with shape
             stride (torch.Tensor | int): Strides of bboxes.
 
         Returns:
-            torch.Tensor: Decoded boxes.
+            Union[torch.Tensor, :obj:`BaseBoxes`]: Decoded boxes.
         """
         bboxes = get_box_tensor(bboxes)
         assert pred_bboxes.size(-1) == bboxes.size(-1) == 4

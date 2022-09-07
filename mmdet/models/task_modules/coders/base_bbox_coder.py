@@ -10,7 +10,7 @@ class BaseBBoxCoder(metaclass=ABCMeta):
             boxlist data structure. Defaults to False.
     """
 
-    # The length of the last of dimension of the encoded tensor.
+    # The size of the last of dimension of the encoded tensor.
     encode_size = 4
 
     def __init__(self, with_boxlist: bool = False, **kwargs):

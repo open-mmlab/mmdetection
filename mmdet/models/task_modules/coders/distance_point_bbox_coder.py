@@ -26,7 +26,8 @@ class DistancePointBBoxCoder(BaseBBoxCoder):
 
         Args:
             points (Tensor): Shape (N, 2), The format is [x, y].
-            gt_bboxes (Tensor): Shape (N, 4), The format is "xyxy"
+            gt_bboxes (Tensor or :obj:`BaseBoxes`): Shape (N, 4), The format
+                is "xyxy"
             max_dis (float): Upper bound of the distance. Default None.
             eps (float): a small value to ensure target < max_dis, instead <=.
                 Default 0.1.
@@ -55,7 +56,8 @@ class DistancePointBBoxCoder(BaseBBoxCoder):
                 and the length of max_shape should also be B.
                 Default None.
         Returns:
-            Tensor: Boxes with shape (N, 4) or (B, N, 4)
+            Union[Tensor, :obj:`BaseBoxes`]: Boxes with shape (N, 4) or
+            (B, N, 4)
         """
         assert points.size(0) == pred_bboxes.size(0)
         assert points.size(-1) == 2

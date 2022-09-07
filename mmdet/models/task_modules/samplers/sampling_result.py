@@ -151,7 +151,7 @@ class SamplingResult(util_mixins.NiceRepr):
         """
         _dict = self.__dict__
         for key, value in _dict.items():
-            if isinstance(value, torch.Tensor):
+            if isinstance(value, (torch.Tensor, BaseBoxes)):
                 _dict[key] = value.to(device)
         return self
 

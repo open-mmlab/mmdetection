@@ -53,9 +53,10 @@ class BucketingBBoxCoder(BaseBBoxCoder):
         training.
 
         Args:
-            bboxes (torch.Tensor): source boxes, e.g., object proposals.
-            gt_bboxes (torch.Tensor): target of the transformation, e.g.,
-                ground truth boxes.
+            bboxes (torch.Tensor or :obj:`BaseBoxes`): source boxes,
+                e.g., object proposals.
+            gt_bboxes (torch.Tensor or :obj:`BaseBoxes`): target of the
+                transformation, e.g., ground truth boxes.
 
         Returns:
            encoded_bboxes(tuple[Tensor]): bucketing estimation
@@ -74,14 +75,14 @@ class BucketingBBoxCoder(BaseBBoxCoder):
     def decode(self, bboxes, pred_bboxes, max_shape=None):
         """Apply transformation `pred_bboxes` to `boxes`.
         Args:
-            boxes (torch.Tensor): Basic boxes.
+            boxes (torch.Tensor or :obj:`BaseBoxes`): Basic boxes.
             pred_bboxes (torch.Tensor): Predictions for bucketing estimation
                 and fine regression
             max_shape (tuple[int], optional): Maximum shape of boxes.
                 Defaults to None.
 
         Returns:
-            torch.Tensor: Decoded boxes.
+            Union[torch.Tensor, :obj:`BaseBoxes`]: Decoded boxes.
         """
         bboxes = get_box_tensor(bboxes)
         assert len(pred_bboxes) == 2

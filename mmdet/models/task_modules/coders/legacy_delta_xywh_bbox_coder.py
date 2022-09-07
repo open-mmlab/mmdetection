@@ -45,9 +45,10 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
         transform the ``bboxes`` into the ``gt_bboxes``.
 
         Args:
-            bboxes (torch.Tensor): source boxes, e.g., object proposals.
-            gt_bboxes (torch.Tensor): target of the transformation, e.g.,
-                ground-truth boxes.
+            bboxes (torch.Tensor or :obj:`BaseBoxes`): source boxes,
+                e.g., object proposals.
+            gt_bboxes (torch.Tensor or :obj:`BaseBoxes`): target of the
+                transformation, e.g., ground-truth boxes.
 
         Returns:
             torch.Tensor: Box transformation deltas
@@ -68,7 +69,7 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
         """Apply transformation `pred_bboxes` to `boxes`.
 
         Args:
-            boxes (torch.Tensor): Basic boxes.
+            boxes (torch.Tensor or :obj:`BaseBoxes`): Basic boxes.
             pred_bboxes (torch.Tensor): Encoded boxes with shape
             max_shape (tuple[int], optional): Maximum shape of boxes.
                 Defaults to None.
@@ -76,7 +77,7 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
                 width and height.
 
         Returns:
-            torch.Tensor: Decoded boxes.
+            Union[torch.Tensor, :obj:`BaseBoxes`]: Decoded boxes.
         """
         bboxes = get_box_tensor(bboxes)
         assert pred_bboxes.size(0) == bboxes.size(0)
@@ -84,6 +85,9 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
                                            self.stds, max_shape, wh_ratio_clip)
 
         if self.with_boxlist:
+            assert decoded_bboxes.size(-1) == 4, \
+                ('Cannot warp decoded boxes with boxlist when decoded boxes'
+                 'have shape of (N, num_classes * 4)')
             decoded_bboxes = HorizontalBoxes(decoded_bboxes)
         return decoded_bboxes
 

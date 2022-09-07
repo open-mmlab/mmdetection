@@ -51,9 +51,10 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
         transform the ``bboxes`` into the ``gt_bboxes``.
 
         Args:
-            bboxes (torch.Tensor): Source boxes, e.g., object proposals.
-            gt_bboxes (torch.Tensor): Target of the transformation, e.g.,
-                ground-truth boxes.
+            bboxes (torch.Tensor or :obj:`BaseBoxes`): Source boxes,
+                e.g., object proposals.
+            gt_bboxes (torch.Tensor or :obj:`BaseBoxes`): Target of the
+                transformation, e.g., ground-truth boxes.
 
         Returns:
             torch.Tensor: Box transformation deltas
@@ -73,7 +74,8 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
         """Apply transformation `pred_bboxes` to `boxes`.
 
         Args:
-            bboxes (torch.Tensor): Basic boxes. Shape (B, N, 4) or (N, 4)
+            bboxes (torch.Tensor or :obj:`BaseBoxes`): Basic boxes. Shape
+                (B, N, 4) or (N, 4)
             pred_bboxes (Tensor): Encoded offsets with respect to each roi.
                Has shape (B, N, num_classes * 4) or (B, N, 4) or
                (N, num_classes * 4) or (N, 4). Note N = num_anchors * W * H
@@ -87,7 +89,7 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
                 width and height.
 
         Returns:
-            torch.Tensor: Decoded boxes.
+            Union[torch.Tensor, :obj:`BaseBoxes`]: Decoded boxes.
         """
         bboxes = get_box_tensor(bboxes)
         assert pred_bboxes.size(0) == bboxes.size(0)
@@ -115,6 +117,9 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
                                              self.ctr_clamp)
 
         if self.with_boxlist:
+            assert decoded_bboxes.size(-1) == 4, \
+                ('Cannot warp decoded boxes with boxlist when decoded boxes'
+                 'have shape of (N, num_classes * 4)')
             decoded_bboxes = HorizontalBoxes(decoded_bboxes)
         return decoded_bboxes
 

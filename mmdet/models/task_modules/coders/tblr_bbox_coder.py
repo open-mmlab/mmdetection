@@ -35,9 +35,10 @@ class TBLRBBoxCoder(BaseBBoxCoder):
         bottom, right) order.
 
         Args:
-            bboxes (torch.Tensor): source boxes, e.g., object proposals.
-            gt_bboxes (torch.Tensor): target of the transformation, e.g.,
-                ground truth boxes.
+            bboxes (torch.Tensor or :obj:`BaseBoxes`): source boxes,
+                e.g., object proposals.
+            gt_bboxes (torch.Tensor or :obj:`BaseBoxes`): target of the
+                transformation, e.g., ground truth boxes.
 
         Returns:
             torch.Tensor: Box transformation deltas
@@ -54,7 +55,8 @@ class TBLRBBoxCoder(BaseBBoxCoder):
         """Apply transformation `pred_bboxes` to `boxes`.
 
         Args:
-            bboxes (torch.Tensor): Basic boxes.Shape (B, N, 4) or (N, 4)
+            bboxes (torch.Tensor or :obj:`BaseBoxes`): Basic boxes.Shape
+                (B, N, 4) or (N, 4)
             pred_bboxes (torch.Tensor): Encoded boxes with shape
                (B, N, 4) or (N, 4)
             max_shape (Sequence[int] or torch.Tensor or Sequence[
@@ -64,7 +66,7 @@ class TBLRBBoxCoder(BaseBBoxCoder):
                and the length of max_shape should also be B.
 
         Returns:
-            torch.Tensor: Decoded boxes.
+            Union[torch.Tensor, :obj:`BaseBoxes`]: Decoded boxes.
         """
         bboxes = get_box_tensor(bboxes)
         decoded_bboxes = tblr2bboxes(
