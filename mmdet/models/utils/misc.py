@@ -1,10 +1,14 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from functools import partial
 <<<<<<< HEAD
+<<<<<<< HEAD
 from typing import List, Sequence, Tuple, Union, Optional
 =======
 from typing import List, Optional, Tuple, Union
 >>>>>>> Fix lint
+=======
+from typing import List, Tuple, Union
+>>>>>>> Add docstring
 
 import numpy as np
 import torch
@@ -131,7 +135,7 @@ def empty_instances(batch_img_metas: List[dict],
                     task_type: str,
                     instance_results: OptInstanceList = None,
                     mask_thr_binary: Union[int, float] = 0,
-                    box_type: Optional[Union[str, type]] = None,
+                    box_type: Union[str, type] = 'hbox',
                     with_boxlist: bool = False) -> List[InstanceData]:
     """Handle predicted instances when RoI is empty.
 
@@ -147,7 +151,9 @@ def empty_instances(batch_img_metas: List[dict],
             results.
         mask_thr_binary (int, float): mask binarization threshold.
             Defaults to 0.
-        box_type
+        box_type (str or type): The empty box type. Defaults to `hbox`.
+        with_boxlist (bool): Whether to warp boxes with boxlist.
+            Defaults to False.
 
     Returns:
         list[:obj:`InstanceData`]: Detection results of each image
@@ -167,14 +173,11 @@ def empty_instances(batch_img_metas: List[dict],
             results = InstanceData()
 
         if task_type == 'bbox':
-            if box_type is None:
-                results.bboxes = torch.zeros(0, 4, device=device)
-            else:
-                _, box_type = get_box_type(box_type)
-                bboxes = box_type([], device=device)
-                if not with_boxlist:
-                    bboxes = get_box_tensor(bboxes)
-                results.bboxes = bboxes
+            _, box_type = get_box_type(box_type)
+            bboxes = torch.zeros(0, box_type.box_dim, device=device)
+            if with_boxlist:
+                bboxes = box_type(bboxes, clone=False)
+            results.bboxes = bboxes
             results.scores = torch.zeros((0, ), device=device)
             results.labels = torch.zeros((0, ),
                                          device=device,
