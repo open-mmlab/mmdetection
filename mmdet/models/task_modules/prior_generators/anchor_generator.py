@@ -618,7 +618,9 @@ class SSDAnchorGenerator(AnchorGenerator):
                         ratios=torch.Tensor([1.]),
                         center=self.centers[i]))
 
-            base_anchors = torch.vstack(base_anchors)
+            # since pytorch 1.7.0
+            # base_anchors = torch.vstack(base_anchors)
+            base_anchors = torch.cat(base_anchors, dim=0)
             multi_level_base_anchors.append(base_anchors)
 
         return multi_level_base_anchors
