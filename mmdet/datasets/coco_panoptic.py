@@ -22,7 +22,7 @@ except ImportError:
     id2rgb = None
     VOID = None
 
-__all__ = ['CocoPanopticDataset', 'CocoLiposomeDataset', 'CocoSingleLiposomeDataset']
+__all__ = ['CocoPanopticDataset', 'CocoLiposomeDataset', 'CocoSingleLiposomeDataset', 'CocoBMSLiposomeDataset']
 
 
 class COCOPanoptic(COCO):
@@ -114,6 +114,20 @@ class COCOPanoptic(COCO):
 class CocoSingleLiposomeDataset(CocoDataset):
     CLASSES = ["Inside Uni Empty"]
     PALETTE = [(0, 255, 0)]
+
+@DATASETS.register_module()
+class CocoBMSLiposomeDataset(CocoDataset):
+    CLASSES = ["Unilamellar",
+               "Multilamellar",
+               "Serpentine",
+               "Concentric",
+               "unknown_liposome"
+               ]
+    PALETTE = [(0, 255, 0), (255, 0, 0),
+                (0, 0, 255), (0, 127, 127),
+                (127, 127, 0)]
+
+
 
 @DATASETS.register_module()
 class CocoLiposomeDataset(CocoDataset):
