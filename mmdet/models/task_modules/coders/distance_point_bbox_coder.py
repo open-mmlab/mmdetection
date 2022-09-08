@@ -66,6 +66,6 @@ class DistancePointBBoxCoder(BaseBBoxCoder):
             max_shape = None
         bboxes = distance2bbox(points, pred_bboxes, max_shape)
 
-        if self.with_boxlist:
+        if self.use_box_type:
             bboxes = HorizontalBoxes(bboxes)
         return bboxes

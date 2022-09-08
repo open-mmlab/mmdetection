@@ -116,7 +116,7 @@ class DeltaXYWHBBoxCoder(BaseBBoxCoder):
                                              self.add_ctr_clamp,
                                              self.ctr_clamp)
 
-        if self.with_boxlist:
+        if self.use_box_type:
             assert decoded_bboxes.size(-1) == 4, \
                 ('Cannot warp decoded boxes with boxlist when decoded boxes'
                  'have shape of (N, num_classes * 4)')

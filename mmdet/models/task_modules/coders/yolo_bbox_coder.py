@@ -84,6 +84,6 @@ class YOLOBBoxCoder(BaseBBoxCoder):
              xy_centers[..., 1] + whs[..., 1]),
             dim=-1)
 
-        if self.with_boxlist:
+        if self.use_box_type:
             decoded_bboxes = HorizontalBoxes(decoded_bboxes)
         return decoded_bboxes

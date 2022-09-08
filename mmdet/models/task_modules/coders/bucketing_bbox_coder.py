@@ -93,7 +93,7 @@ class BucketingBBoxCoder(BaseBBoxCoder):
                                              self.num_buckets,
                                              self.scale_factor, max_shape,
                                              self.clip_border)
-        if self.with_boxlist:
+        if self.use_box_type:
             bboxes = HorizontalBoxes(bboxes, clone=False)
         return bboxes, loc_confidence
 

@@ -39,7 +39,7 @@ class AnchorGenerator:
             float is given, they will be used to shift the centers of anchors.
         center_offset (float): The offset of center in proportion to anchors'
             width and height. By default it is 0 in V2.0.
-        with_boxlist (bool): Whether to warp anchors with the boxlist data
+        use_box_type (bool): Whether to warp anchors with the boxlist data
             structure. Defaults to False.
 
     Examples:
@@ -72,7 +72,7 @@ class AnchorGenerator:
                  scales_per_octave=None,
                  centers=None,
                  center_offset=0.,
-                 with_boxlist=False):
+                 use_box_type=False):
         # check center and center_offset
         if center_offset != 0:
             assert centers is None, 'center cannot be set when center_offset' \
@@ -116,7 +116,7 @@ class AnchorGenerator:
         self.centers = centers
         self.center_offset = center_offset
         self.base_anchors = self.gen_base_anchors()
-        self.with_boxlist = with_boxlist
+        self.use_box_type = use_box_type
 
     @property
     def num_base_anchors(self):
@@ -284,7 +284,7 @@ class AnchorGenerator:
         all_anchors = all_anchors.view(-1, 4)
         # first A rows correspond to A anchors of (0, 0) in feature map,
         # then (0, 1), (0, 2), ...
-        if self.with_boxlist:
+        if self.use_box_type:
             all_anchors = HorizontalBoxes(all_anchors)
         return all_anchors
 
@@ -495,7 +495,7 @@ class SSDAnchorGenerator(AnchorGenerator):
         scale_major (bool): Whether to multiply scales first when generating
             base anchors. If true, the anchors in the same row will have the
             same scales. It is always set to be False in SSD.
-        with_boxlist (bool): Whether to warp anchors with the boxlist data
+        use_box_type (bool): Whether to warp anchors with the boxlist data
             structure. Defaults to False.
     """
 
@@ -507,7 +507,7 @@ class SSDAnchorGenerator(AnchorGenerator):
                  basesize_ratio_range=(0.15, 0.9),
                  input_size=300,
                  scale_major=True,
-                 with_boxlist=False):
+                 use_box_type=False):
         assert len(strides) == len(ratios)
         assert not (min_sizes is None) ^ (max_sizes is None)
         self.strides = [_pair(stride) for stride in strides]
@@ -578,7 +578,7 @@ class SSDAnchorGenerator(AnchorGenerator):
         self.scale_major = scale_major
         self.center_offset = 0
         self.base_anchors = self.gen_base_anchors()
-        self.with_boxlist = with_boxlist
+        self.use_box_type = use_box_type
 
     def gen_base_anchors(self):
         """Generate base anchors.
@@ -654,7 +654,7 @@ class LegacyAnchorGenerator(AnchorGenerator):
         center_offset (float): The offset of center in proportion to anchors'
             width and height. By default it is 0.5 in V2.0 but it should be 0.5
             in v1.x models.
-        with_boxlist (bool): Whether to warp anchors with the boxlist data
+        use_box_type (bool): Whether to warp anchors with the boxlist data
             structure. Defaults to False.
 
     Examples:
@@ -734,14 +734,14 @@ class LegacySSDAnchorGenerator(SSDAnchorGenerator, LegacyAnchorGenerator):
                  basesize_ratio_range,
                  input_size=300,
                  scale_major=True,
-                 with_boxlist=False):
+                 use_box_type=False):
         super(LegacySSDAnchorGenerator, self).__init__(
             strides=strides,
             ratios=ratios,
             basesize_ratio_range=basesize_ratio_range,
             input_size=input_size,
             scale_major=scale_major,
-            with_boxlist=with_boxlist)
+            use_box_type=use_box_type)
         self.centers = [((stride - 1) / 2., (stride - 1) / 2.)
                         for stride in strides]
         self.base_anchors = self.gen_base_anchors()
@@ -758,7 +758,7 @@ class YOLOAnchorGenerator(AnchorGenerator):
             of anchors in multiple levels.
     """
 
-    def __init__(self, strides, base_sizes, with_boxlist=False):
+    def __init__(self, strides, base_sizes, use_box_type=False):
         self.strides = [_pair(stride) for stride in strides]
         self.centers = [(stride[0] / 2., stride[1] / 2.)
                         for stride in self.strides]
@@ -769,7 +769,7 @@ class YOLOAnchorGenerator(AnchorGenerator):
             self.base_sizes.append(
                 [_pair(base_size) for base_size in base_sizes_per_level])
         self.base_anchors = self.gen_base_anchors()
-        self.with_boxlist = with_boxlist
+        self.use_box_type = use_box_type
 
     @property
     def num_levels(self):

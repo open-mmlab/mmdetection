@@ -19,6 +19,6 @@ class PseudoBBoxCoder(BaseBBoxCoder):
 
     def decode(self, bboxes, pred_bboxes):
         """torch.Tensor: return the given ``pred_bboxes``"""
-        if self.with_boxlist:
+        if self.use_box_type:
             pred_bboxes = HorizontalBoxes(pred_bboxes)
         return pred_bboxes

@@ -76,7 +76,7 @@ class TBLRBBoxCoder(BaseBBoxCoder):
             max_shape=max_shape,
             clip_border=self.clip_border)
 
-        if self.with_boxlist:
+        if self.use_box_type:
             decoded_bboxes = HorizontalBoxes(decoded_bboxes)
         return decoded_bboxes
 
