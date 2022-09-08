@@ -395,7 +395,6 @@ class DetrTransformerEncoder(BaseModule):
     def __init__(self,
                  layers_cfg=None,
                  num_layers=None,
-                 post_norm_cfg=None,
                  init_cfg=None):
 
         super().__init__(init_cfg)
@@ -405,7 +404,6 @@ class DetrTransformerEncoder(BaseModule):
             assert isinstance(layers_cfg, list) and \
                    len(layers_cfg) == num_layers  # TODO
         self.layers_cfg = layers_cfg  # TODO
-        self.post_norm_cfg = post_norm_cfg
         self.num_layers = num_layers
         self._init_layers()
         self.embed_dims = self.layers[0].embed_dims  # TODO
