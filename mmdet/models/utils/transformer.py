@@ -418,27 +418,9 @@ class DetrTransformerEncoder(BaseModule):
             self.layers.append(
                 DetrTransformerEncoderLayer(**self.layers_cfg[i]))
 
-    def forward(self,
-                query,
-                key,
-                value,
-                query_pos=None,
-                key_pos=None,
-                attn_masks=None,
-                query_key_padding_mask=None,
-                key_padding_mask=None,
-                **kwargs):
+    def forward(self, query, *args, **kwargs):
         for layer in self.layers:
-            query = layer(
-                query,
-                key,
-                value,
-                query_pos=query_pos,
-                key_pos=key_pos,
-                attn_masks=attn_masks,
-                query_key_padding_mask=query_key_padding_mask,
-                key_padding_mask=key_padding_mask,
-                **kwargs)
+            query = layer(query, *args, **kwargs)
         if self.post_norm is not None:
             query = self.post_norm(query)
         return query
@@ -473,28 +455,10 @@ class DetrTransformerDecoder(BaseModule):
             self.layers.append(
                 DetrTransformerDecoderLayer(**self.layers_cfg[i]))
 
-    def forward(self,
-                query,
-                key,
-                value,
-                query_pos=None,
-                key_pos=None,
-                attn_masks=None,
-                query_key_padding_mask=None,
-                key_padding_mask=None,
-                **kwargs):
+    def forward(self, query, *args, **kwargs):
         intermediate = []
         for layer in self.layers:
-            query = layer(
-                query,
-                key,
-                value,
-                query_pos=query_pos,
-                key_pos=key_pos,
-                attn_masks=attn_masks,
-                query_key_padding_mask=query_key_padding_mask,
-                key_padding_mask=key_padding_mask,
-                **kwargs)
+            query = layer(query, *args, **kwargs)
             if self.return_intermediate:
                 intermediate.append(query)
 
@@ -519,8 +483,7 @@ class DetrTransformerEncoderLayer(BaseModule):
                      feedforward_channels=1024,
                      num_fcs=2,
                      ffn_drop=0.,
-                     act_cfg=dict(type='ReLU', inplace=True),
-                 ),
+                     act_cfg=dict(type='ReLU', inplace=True)),
                  norm_cfg=dict(type='LN'),
                  init_cfg=None,
                  batch_first=False):

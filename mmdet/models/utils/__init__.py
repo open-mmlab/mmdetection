@@ -16,14 +16,11 @@ from .positional_encoding import (LearnedPositionalEncoding,
                                   SinePositionalEncoding)
 from .res_layer import ResLayer, SimplifiedBasicBlock
 from .se_layer import DyReLU, SELayer
-from .transformer import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
-                          DynamicConv, PatchEmbed, Transformer, nchw_to_nlc,
-                          nlc_to_nchw)
+from .transformer import DynamicConv, PatchEmbed, nchw_to_nlc, nlc_to_nchw
 
 __all__ = [
-    'ResLayer', 'gaussian_radius', 'gen_gaussian_target',
-    'DetrTransformerDecoderLayer', 'DetrTransformerDecoder', 'Transformer',
-    'build_transformer', 'build_linear_layer', 'SinePositionalEncoding',
+    'ResLayer', 'gaussian_radius', 'gen_gaussian_target', 'build_transformer',
+    'build_linear_layer', 'SinePositionalEncoding',
     'LearnedPositionalEncoding', 'DynamicConv', 'SimplifiedBasicBlock',
     'NormedLinear', 'NormedConv2d', 'make_divisible', 'InvertedResidual',
     'SELayer', 'interpolate_as', 'ConvUpsample', 'CSPLayer',
