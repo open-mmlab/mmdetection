@@ -395,7 +395,7 @@ class DetrTransformerEncoder(BaseModule):
     def __init__(self,
                  layers_cfg=None,
                  num_layers=None,
-                 post_norm_cfg=dict(type='LN'),
+                 post_norm_cfg=None,
                  init_cfg=None):
 
         super().__init__(init_cfg)
@@ -409,8 +409,6 @@ class DetrTransformerEncoder(BaseModule):
         self.num_layers = num_layers
         self._init_layers()
         self.embed_dims = self.layers[0].embed_dims  # TODO
-        self.post_norm = build_norm_layer(self.post_norm_cfg,
-                                          self.embed_dims)[1]
 
     def _init_layers(self):
         self.layers = ModuleList()
@@ -421,8 +419,6 @@ class DetrTransformerEncoder(BaseModule):
     def forward(self, query, *args, **kwargs):
         for layer in self.layers:
             query = layer(query, *args, **kwargs)
-        if self.post_norm is not None:
-            query = self.post_norm(query)
         return query
 
 
