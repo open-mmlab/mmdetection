@@ -107,15 +107,6 @@ class DETRHead(AnchorFreeHead):
             assert 'assigner' in train_cfg, 'assigner should be provided '\
                 'when train_cfg is set.'
             assigner = train_cfg['assigner']
-            assert loss_cls['loss_weight'] == assigner['cls_cost']['weight'], \
-                'The classification weight for loss and matcher should be' \
-                'exactly the same.'
-            assert loss_bbox['loss_weight'] == assigner['reg_cost'][
-                'weight'], 'The regression L1 weight for loss and matcher ' \
-                'should be exactly the same.'
-            assert loss_iou['loss_weight'] == assigner['iou_cost']['weight'], \
-                'The regression iou weight for loss and matcher should be' \
-                'exactly the same.'
             self.assigner = build_assigner(assigner)
             # DETR sampling=False, so use PseudoSampler
             sampler_cfg = dict(type='PseudoSampler')
