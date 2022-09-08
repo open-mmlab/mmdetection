@@ -4,12 +4,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import (PLUGIN_LAYERS, Conv2d, ConvModule, caffe2_xavier_init,
                       normal_init, xavier_init)
-from mmcv.cnn.bricks.transformer import (build_positional_encoding,
+from mmcv.cnn.bricks.transformer import (MultiScaleDeformableAttention,
+                                         build_positional_encoding,
                                          build_transformer_layer_sequence)
 from mmcv.runner import BaseModule, ModuleList
 
 from mmdet.core.anchor import MlvlPointGenerator
-from mmdet.models.utils.transformer import MultiScaleDeformableAttention
 
 
 @PLUGIN_LAYERS.register_module()
