@@ -514,7 +514,7 @@ class BBoxHead(BaseModule):
                                    task_type='bbox',
                                    instance_results=[results],
                                    box_type=self.predict_box_type,
-                                   with_boxlist=False)[0]
+                                   use_box_type=False)[0]
 
         # some loss (Seesaw loss..) may have custom activation
         if self.custom_cls_channels:
