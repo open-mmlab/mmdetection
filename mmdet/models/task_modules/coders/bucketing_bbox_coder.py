@@ -3,8 +3,9 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+from mmdet.models.utils.misc import get_box_tensor
 from mmdet.registry import TASK_UTILS
-from mmdet.structures.bbox import bbox_rescale
+from mmdet.structures.bbox import HorizontalBoxes, bbox_rescale
 from .base_bbox_coder import BaseBBoxCoder
 
 
@@ -37,8 +38,9 @@ class BucketingBBoxCoder(BaseBBoxCoder):
                  offset_topk=2,
                  offset_upperbound=1.0,
                  cls_ignore_neighbor=True,
-                 clip_border=True):
-        super(BucketingBBoxCoder, self).__init__()
+                 clip_border=True,
+                 **kwargs):
+        super().__init__(**kwargs)
         self.num_buckets = num_buckets
         self.scale_factor = scale_factor
         self.offset_topk = offset_topk
@@ -51,15 +53,17 @@ class BucketingBBoxCoder(BaseBBoxCoder):
         training.
 
         Args:
-            bboxes (torch.Tensor): source boxes, e.g., object proposals.
-            gt_bboxes (torch.Tensor): target of the transformation, e.g.,
-                ground truth boxes.
+            bboxes (torch.Tensor or :obj:`BaseBoxes`): source boxes,
+                e.g., object proposals.
+            gt_bboxes (torch.Tensor or :obj:`BaseBoxes`): target of the
+                transformation, e.g., ground truth boxes.
 
         Returns:
            encoded_bboxes(tuple[Tensor]): bucketing estimation
             and fine regression targets and weights
         """
-
+        bboxes = get_box_tensor(bboxes)
+        gt_bboxes = get_box_tensor(gt_bboxes)
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
         encoded_bboxes = bbox2bucket(bboxes, gt_bboxes, self.num_buckets,
@@ -71,24 +75,27 @@ class BucketingBBoxCoder(BaseBBoxCoder):
     def decode(self, bboxes, pred_bboxes, max_shape=None):
         """Apply transformation `pred_bboxes` to `boxes`.
         Args:
-            boxes (torch.Tensor): Basic boxes.
+            boxes (torch.Tensor or :obj:`BaseBoxes`): Basic boxes.
             pred_bboxes (torch.Tensor): Predictions for bucketing estimation
                 and fine regression
             max_shape (tuple[int], optional): Maximum shape of boxes.
                 Defaults to None.
 
         Returns:
-            torch.Tensor: Decoded boxes.
+            Union[torch.Tensor, :obj:`BaseBoxes`]: Decoded boxes.
         """
+        bboxes = get_box_tensor(bboxes)
         assert len(pred_bboxes) == 2
         cls_preds, offset_preds = pred_bboxes
         assert cls_preds.size(0) == bboxes.size(0) and offset_preds.size(
             0) == bboxes.size(0)
-        decoded_bboxes = bucket2bbox(bboxes, cls_preds, offset_preds,
-                                     self.num_buckets, self.scale_factor,
-                                     max_shape, self.clip_border)
-
-        return decoded_bboxes
+        bboxes, loc_confidence = bucket2bbox(bboxes, cls_preds, offset_preds,
+                                             self.num_buckets,
+                                             self.scale_factor, max_shape,
+                                             self.clip_border)
+        if self.use_box_type:
+            bboxes = HorizontalBoxes(bboxes, clone=False)
+        return bboxes, loc_confidence
 
 
 def generat_buckets(proposals, num_buckets, scale_factor=1.0):

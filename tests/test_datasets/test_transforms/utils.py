@@ -25,14 +25,14 @@ def create_full_masks(gt_bboxes, img_w, img_h):
     return gt_masks
 
 
-def construct_toy_data(poly2mask, with_boxlist=False):
+def construct_toy_data(poly2mask, use_box_type=False):
     img = np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]],
                    dtype=np.uint8)
     img = np.stack([img, img, img], axis=-1)
     results = dict()
     results['img'] = img
     results['img_shape'] = img.shape[:2]
-    if with_boxlist:
+    if use_box_type:
         results['gt_bboxes'] = HorizontalBoxes(
             np.array([[1, 0, 2, 2]], dtype=np.float32))
     else:

@@ -1,7 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
+from mmdet.models.utils.misc import get_box_tensor
 from mmdet.registry import TASK_UTILS
+from mmdet.structures.bbox import HorizontalBoxes
 from .base_bbox_coder import BaseBBoxCoder
 
 
@@ -22,8 +24,8 @@ class TBLRBBoxCoder(BaseBBoxCoder):
             border of the image. Defaults to True.
     """
 
-    def __init__(self, normalizer=4.0, clip_border=True):
-        super(BaseBBoxCoder, self).__init__()
+    def __init__(self, normalizer=4.0, clip_border=True, **kwargs):
+        super().__init__(**kwargs)
         self.normalizer = normalizer
         self.clip_border = clip_border
 
@@ -33,13 +35,16 @@ class TBLRBBoxCoder(BaseBBoxCoder):
         bottom, right) order.
 
         Args:
-            bboxes (torch.Tensor): source boxes, e.g., object proposals.
-            gt_bboxes (torch.Tensor): target of the transformation, e.g.,
-                ground truth boxes.
+            bboxes (torch.Tensor or :obj:`BaseBoxes`): source boxes,
+                e.g., object proposals.
+            gt_bboxes (torch.Tensor or :obj:`BaseBoxes`): target of the
+                transformation, e.g., ground truth boxes.
 
         Returns:
             torch.Tensor: Box transformation deltas
         """
+        bboxes = get_box_tensor(bboxes)
+        gt_bboxes = get_box_tensor(gt_bboxes)
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
         encoded_bboxes = bboxes2tblr(
@@ -50,7 +55,8 @@ class TBLRBBoxCoder(BaseBBoxCoder):
         """Apply transformation `pred_bboxes` to `boxes`.
 
         Args:
-            bboxes (torch.Tensor): Basic boxes.Shape (B, N, 4) or (N, 4)
+            bboxes (torch.Tensor or :obj:`BaseBoxes`): Basic boxes.Shape
+                (B, N, 4) or (N, 4)
             pred_bboxes (torch.Tensor): Encoded boxes with shape
                (B, N, 4) or (N, 4)
             max_shape (Sequence[int] or torch.Tensor or Sequence[
@@ -60,8 +66,9 @@ class TBLRBBoxCoder(BaseBBoxCoder):
                and the length of max_shape should also be B.
 
         Returns:
-            torch.Tensor: Decoded boxes.
+            Union[torch.Tensor, :obj:`BaseBoxes`]: Decoded boxes.
         """
+        bboxes = get_box_tensor(bboxes)
         decoded_bboxes = tblr2bboxes(
             bboxes,
             pred_bboxes,
@@ -69,6 +76,8 @@ class TBLRBBoxCoder(BaseBBoxCoder):
             max_shape=max_shape,
             clip_border=self.clip_border)
 
+        if self.use_box_type:
+            decoded_bboxes = HorizontalBoxes(decoded_bboxes)
         return decoded_bboxes
 
 

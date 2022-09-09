@@ -1,7 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import torch
 
+from mmdet.models.utils.misc import get_box_tensor
 from mmdet.registry import TASK_UTILS
+from mmdet.structures.bbox import HorizontalBoxes
 from .base_bbox_coder import BaseBBoxCoder
 
 
@@ -18,8 +20,8 @@ class YOLOBBoxCoder(BaseBBoxCoder):
         eps (float): Min value of cx, cy when encoding.
     """
 
-    def __init__(self, eps=1e-6):
-        super(BaseBBoxCoder, self).__init__()
+    def __init__(self, eps=1e-6, **kwargs):
+        super().__init__(**kwargs)
         self.eps = eps
 
     def encode(self, bboxes, gt_bboxes, stride):
@@ -27,15 +29,17 @@ class YOLOBBoxCoder(BaseBBoxCoder):
         transform the ``bboxes`` into the ``gt_bboxes``.
 
         Args:
-            bboxes (torch.Tensor): Source boxes, e.g., anchors.
-            gt_bboxes (torch.Tensor): Target of the transformation, e.g.,
-                ground-truth boxes.
+            bboxes (torch.Tensor or :obj:`BaseBoxes`): Source boxes,
+                e.g., anchors.
+            gt_bboxes (torch.Tensor or :obj:`BaseBoxes`): Target of the
+                transformation, e.g., ground-truth boxes.
             stride (torch.Tensor | int): Stride of bboxes.
 
         Returns:
             torch.Tensor: Box transformation deltas
         """
-
+        bboxes = get_box_tensor(bboxes)
+        gt_bboxes = get_box_tensor(gt_bboxes)
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
         x_center_gt = (gt_bboxes[..., 0] + gt_bboxes[..., 2]) * 0.5
@@ -60,13 +64,15 @@ class YOLOBBoxCoder(BaseBBoxCoder):
         """Apply transformation `pred_bboxes` to `boxes`.
 
         Args:
-            boxes (torch.Tensor): Basic boxes, e.g. anchors.
+            boxes (torch.Tensor or :obj:`BaseBoxes`): Basic boxes,
+                e.g. anchors.
             pred_bboxes (torch.Tensor): Encoded boxes with shape
             stride (torch.Tensor | int): Strides of bboxes.
 
         Returns:
-            torch.Tensor: Decoded boxes.
+            Union[torch.Tensor, :obj:`BaseBoxes`]: Decoded boxes.
         """
+        bboxes = get_box_tensor(bboxes)
         assert pred_bboxes.size(-1) == bboxes.size(-1) == 4
         xy_centers = (bboxes[..., :2] + bboxes[..., 2:]) * 0.5 + (
             pred_bboxes[..., :2] - 0.5) * stride
@@ -77,4 +83,7 @@ class YOLOBBoxCoder(BaseBBoxCoder):
              whs[..., 1], xy_centers[..., 0] + whs[..., 0],
              xy_centers[..., 1] + whs[..., 1]),
             dim=-1)
+
+        if self.use_box_type:
+            decoded_bboxes = HorizontalBoxes(decoded_bboxes)
         return decoded_bboxes

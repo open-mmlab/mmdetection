@@ -109,7 +109,7 @@ class TestShearX(unittest.TestCase):
         self.results_mask = construct_toy_data(poly2mask=True)
         self.results_poly = construct_toy_data(poly2mask=False)
         self.results_mask_boxlist = construct_toy_data(
-            poly2mask=True, with_boxlist=True)
+            poly2mask=True, use_box_type=True)
         self.img_border_value = (104, 116, 124)
         self.seg_ignore_label = 255
 
@@ -165,7 +165,7 @@ class TestShearX(unittest.TestCase):
         results_gt['gt_masks'] = PolygonMasks(gt_masks, 3, 4)
         check_result_same(results_gt, results_sheared, self.check_keys)
 
-    def test_shearx_with_boxlist(self):
+    def test_shearx_use_box_type(self):
         # test case when no shear horizontally (level=0)
         transform = ShearX(
             prob=1.0,
@@ -232,7 +232,7 @@ class TestShearY(unittest.TestCase):
         self.results_mask = construct_toy_data(poly2mask=True)
         self.results_poly = construct_toy_data(poly2mask=False)
         self.results_mask_boxlist = construct_toy_data(
-            poly2mask=True, with_boxlist=True)
+            poly2mask=True, use_box_type=True)
         self.img_border_value = (104, 116, 124)
         self.seg_ignore_label = 255
 
@@ -281,7 +281,7 @@ class TestShearY(unittest.TestCase):
         results_gt['gt_masks'] = PolygonMasks(gt_masks, 3, 4)
         check_result_same(results_gt, results_sheared, self.check_keys)
 
-    def test_sheary_with_boxlist(self):
+    def test_sheary_use_box_type(self):
         # test case when no shear vertically (level=0)
         transform = ShearY(
             prob=1.0,
@@ -341,7 +341,7 @@ class TestRotate(unittest.TestCase):
         self.results_mask = construct_toy_data(poly2mask=True)
         self.results_poly = construct_toy_data(poly2mask=False)
         self.results_mask_boxlist = construct_toy_data(
-            poly2mask=True, with_boxlist=True)
+            poly2mask=True, use_box_type=True)
         self.img_border_value = (104, 116, 124)
         self.seg_ignore_label = 255
 
@@ -431,7 +431,7 @@ class TestRotate(unittest.TestCase):
         results_gt['gt_masks'] = PolygonMasks(gt_masks, 3, 4)
         check_result_same(results_gt, results_rotated, self.check_keys)
 
-    def test_rotate_with_boxlist(self):
+    def test_rotate_use_box_type(self):
         # test case when no rotate aug (level=0)
         transform = Rotate(
             prob=1.,
@@ -525,7 +525,7 @@ class TestTranslateX(unittest.TestCase):
         self.results_mask = construct_toy_data(poly2mask=True)
         self.results_poly = construct_toy_data(poly2mask=False)
         self.results_mask_boxlist = construct_toy_data(
-            poly2mask=True, with_boxlist=True)
+            poly2mask=True, use_box_type=True)
         self.img_border_value = (104, 116, 124)
         self.seg_ignore_label = 255
 
@@ -579,7 +579,7 @@ class TestTranslateX(unittest.TestCase):
         results_gt['gt_masks'] = PolygonMasks(gt_masks, 3, 4)
         check_result_same(results_gt, results_translated, self.check_keys)
 
-    def test_translatex_with_boxlist(self):
+    def test_translatex_use_box_type(self):
         # test case when level=0 (without translate aug)
         transform = TranslateX(
             prob=1.0,
@@ -646,7 +646,7 @@ class TestTranslateY(unittest.TestCase):
         self.results_mask = construct_toy_data(poly2mask=True)
         self.results_poly = construct_toy_data(poly2mask=False)
         self.results_mask_boxlist = construct_toy_data(
-            poly2mask=True, with_boxlist=True)
+            poly2mask=True, use_box_type=True)
         self.img_border_value = (104, 116, 124)
         self.seg_ignore_label = 255
 
@@ -699,7 +699,7 @@ class TestTranslateY(unittest.TestCase):
         results_gt['gt_masks'] = PolygonMasks(gt_masks, 3, 4)
         check_result_same(results_gt, results_translated, self.check_keys)
 
-    def test_translatey_with_boxlist(self):
+    def test_translatey_use_box_type(self):
         # test case when level=0 (without translate aug)
         transform = TranslateY(
             prob=1.0,
