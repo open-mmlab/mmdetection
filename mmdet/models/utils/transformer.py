@@ -454,8 +454,7 @@ class DetrTransformerDecoder(BaseModule):
         for layer in self.layers:
             query = layer(query, *args, **kwargs)
             if self.return_intermediate:
-                intermediate.append(query)
-
+                intermediate.append(self.post_norm(query))
         if self.post_norm is not None:
             query = self.post_norm(query)
             if self.return_intermediate:
