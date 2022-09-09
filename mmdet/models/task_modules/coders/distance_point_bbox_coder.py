@@ -1,6 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from mmdet.models.utils.misc import get_box_tensor
 from mmdet.registry import TASK_UTILS
-from mmdet.structures.bbox import bbox2distance, distance2bbox
+from mmdet.structures.bbox import HorizontalBoxes, bbox2distance, distance2bbox
 from .base_bbox_coder import BaseBBoxCoder
 
 
@@ -16,8 +17,8 @@ class DistancePointBBoxCoder(BaseBBoxCoder):
             border of the image. Defaults to True.
     """
 
-    def __init__(self, clip_border=True):
-        super(BaseBBoxCoder, self).__init__()
+    def __init__(self, clip_border=True, **kwargs):
+        super().__init__(**kwargs)
         self.clip_border = clip_border
 
     def encode(self, points, gt_bboxes, max_dis=None, eps=0.1):
@@ -25,7 +26,8 @@ class DistancePointBBoxCoder(BaseBBoxCoder):
 
         Args:
             points (Tensor): Shape (N, 2), The format is [x, y].
-            gt_bboxes (Tensor): Shape (N, 4), The format is "xyxy"
+            gt_bboxes (Tensor or :obj:`BaseBoxes`): Shape (N, 4), The format
+                is "xyxy"
             max_dis (float): Upper bound of the distance. Default None.
             eps (float): a small value to ensure target < max_dis, instead <=.
                 Default 0.1.
@@ -33,6 +35,7 @@ class DistancePointBBoxCoder(BaseBBoxCoder):
         Returns:
             Tensor: Box transformation deltas. The shape is (N, 4).
         """
+        gt_bboxes = get_box_tensor(gt_bboxes)
         assert points.size(0) == gt_bboxes.size(0)
         assert points.size(-1) == 2
         assert gt_bboxes.size(-1) == 4
@@ -53,11 +56,16 @@ class DistancePointBBoxCoder(BaseBBoxCoder):
                 and the length of max_shape should also be B.
                 Default None.
         Returns:
-            Tensor: Boxes with shape (N, 4) or (B, N, 4)
+            Union[Tensor, :obj:`BaseBoxes`]: Boxes with shape (N, 4) or
+            (B, N, 4)
         """
         assert points.size(0) == pred_bboxes.size(0)
         assert points.size(-1) == 2
         assert pred_bboxes.size(-1) == 4
         if self.clip_border is False:
             max_shape = None
-        return distance2bbox(points, pred_bboxes, max_shape)
+        bboxes = distance2bbox(points, pred_bboxes, max_shape)
+
+        if self.use_box_type:
+            bboxes = HorizontalBoxes(bboxes)
+        return bboxes
