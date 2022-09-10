@@ -13,9 +13,9 @@ from torch.nn.modules.utils import _pair
 from mmdet.models.layers import multiclass_nms
 from mmdet.models.losses import accuracy
 from mmdet.models.task_modules.samplers import SamplingResult
-from mmdet.models.utils import (empty_instances, get_box_tensor, multi_apply,
-                                scale_boxes)
+from mmdet.models.utils import empty_instances, multi_apply
 from mmdet.registry import MODELS, TASK_UTILS
+from mmdet.structures.bbox import get_box_tensor, scale_boxes
 from mmdet.utils import ConfigType, InstanceList, OptMultiConfig
 
 

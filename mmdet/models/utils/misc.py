@@ -2,6 +2,7 @@
 from functools import partial
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 from typing import List, Sequence, Tuple, Union, Optional
 =======
 from typing import List, Optional, Tuple, Union
@@ -9,18 +10,20 @@ from typing import List, Optional, Tuple, Union
 =======
 from typing import List, Tuple, Union
 >>>>>>> Add docstring
+=======
+from typing import List, Union
+>>>>>>> Fix comments, move box operations into structure
 
 import numpy as np
 import torch
 from mmengine.structures import InstanceData
 from mmengine.utils import digit_version
 from six.moves import map, zip
-from torch import Tensor
 from torch.autograd import Function
 from torch.nn import functional as F
 
 from mmdet.structures import SampleList
-from mmdet.structures.bbox import BaseBoxes, get_box_type
+from mmdet.structures.bbox import BaseBoxes, get_box_type, stack_boxes
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 from mmdet.utils import OptInstanceList
 
@@ -455,6 +458,7 @@ def samplelist_boxlist2tensor(batch_data_samples: SampleList) -> SampleList:
             bboxes = data_samples.ignored_instances.get('bboxes', None)
             if isinstance(bboxes, BaseBoxes):
                 data_samples.ignored_instances.bboxes = bboxes.tensor
+<<<<<<< HEAD
 
 
 def cat_boxes(data_list: List[Union[Tensor, BaseBoxes]],
@@ -666,3 +670,5 @@ def reweight_loss_dict(losses: dict, weight: float) -> dict:
             else:
                 losses[name] = loss * weight
     return losses
+=======
+>>>>>>> Fix comments, move box operations into structure

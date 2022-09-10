@@ -4,8 +4,7 @@ from abc import ABCMeta, abstractmethod
 import torch
 from mmengine.structures import InstanceData
 
-from mmdet.models.utils.misc import cat_boxes
-from mmdet.structures.bbox.base_boxes import BaseBoxes
+from mmdet.structures.bbox import BaseBoxes, cat_boxes
 from ..assigners import AssignResult
 from .sampling_result import SamplingResult
 
