@@ -19,45 +19,33 @@ model = dict(
         norm_eval=True,
         style='pytorch',
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
+    encoder_cfg=dict(
+        num_layers=6,
+        layer_cfg=dict(
+            self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.1),
+            ffn_cfg=dict(
+                embed_dims=256,
+                feedforward_channels=2048,
+                num_fcs=2,
+                ffn_drop=0.1,
+                act_cfg=dict(type='ReLU', inplace=True)))),
+    decoder_cfg=dict(
+        num_layers=6,
+        layer_cfg=dict(
+            self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.1),
+            cross_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.1),
+            ffn_cfg=dict(
+                embed_dims=256,
+                feedforward_channels=2048,
+                num_fcs=2,
+                ffn_drop=0.1,
+                act_cfg=dict(type='ReLU', inplace=True))),
+        return_intermediate=True),
+    positional_encoding_cfg=dict(num_feats=128, normalize=True),
     bbox_head=dict(
         type='DETRHead',
         num_classes=80,
-        in_channels=2048,
-        transformer=dict(
-            type='Transformer',
-            encoder=dict(
-                type='DetrTransformerEncoder',
-                num_layers=6,
-                transformerlayers=dict(
-                    type='BaseTransformerLayer',
-                    attn_cfgs=[
-                        dict(
-                            type='MultiheadAttention',
-                            embed_dims=256,
-                            num_heads=8,
-                            dropout=0.1)
-                    ],
-                    feedforward_channels=2048,
-                    ffn_dropout=0.1,
-                    operation_order=('self_attn', 'norm', 'ffn', 'norm'))),
-            decoder=dict(
-                type='DetrTransformerDecoder',
-                return_intermediate=True,
-                num_layers=6,
-                transformerlayers=dict(
-                    type='DetrTransformerDecoderLayer',
-                    attn_cfgs=dict(
-                        type='MultiheadAttention',
-                        embed_dims=256,
-                        num_heads=8,
-                        dropout=0.1),
-                    feedforward_channels=2048,
-                    ffn_dropout=0.1,
-                    operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
-                                     'ffn', 'norm')),
-            )),
-        positional_encoding=dict(
-            type='SinePositionalEncoding', num_feats=128, normalize=True),
+        embed_dims=256,
         loss_cls=dict(
             type='CrossEntropyLoss',
             bg_cls_weight=0.1,
@@ -128,7 +116,10 @@ optim_wrapper = dict(
 # learning policy
 max_epochs = 150
 train_cfg = dict(
-    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
+    # type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
+    type='IterBasedTrainLoop',
+    max_iters=max_epochs,
+    val_interval=1)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 
