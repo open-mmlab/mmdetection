@@ -22,13 +22,13 @@ class DETR(TransformerDetector):
     def __init__(self, *args, **kwargs) -> None:
         super(DETR, self).__init__(*args, **kwargs)
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         # initialize encoder, decoder, query_embed, positional_encoding
         self._init_transformer()
         # initialize input projection
         self._init_input_proj()  # TODO: Can it be replaced with ChannelMapper?
 
-    def _init_transformer(self):
+    def _init_transformer(self) -> None:
         self.positional_encoding = SinePositionalEncoding(
             **self.positional_encoding_cfg)
         self.encoder = DetrTransformerEncoder(**self.encoder_cfg)
@@ -41,16 +41,16 @@ class DETR(TransformerDetector):
             f'embed_dims should be exactly 2 times of num_feats. ' \
             f'Found {self.embed_dims} and {num_feats}.'
 
-    def _init_input_proj(self):
+    def _init_input_proj(self) -> None:
         in_channels = self.backbone.feat_dim  # TODO: Is this correct stably?
         self.input_proj = Conv2d(in_channels, self.embed_dims, kernel_size=1)
 
-    def init_weights(self):  # TODO
+    def init_weights(self) -> None:  # TODO
         super(TransformerDetector, self).init_weights()
         self._init_transformer_weights()
         self._is_init = True  # TODO
 
-    def _init_transformer_weights(self):  # TODO
+    def _init_transformer_weights(self) -> None:  # TODO
         # follow the DetrTransformer to init parameters
         for coder in [self.encoder, self.decoder]:
             for m in coder.modules():
