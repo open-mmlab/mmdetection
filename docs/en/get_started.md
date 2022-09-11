@@ -42,6 +42,7 @@ We recommend that users follow our best practices to install MMDetection. Howeve
 ```shell
 pip install -U openmim
 mim install mmcv-full
+mim install mmengine
 ```
 
 **Step 1.** Install MMDetection.
