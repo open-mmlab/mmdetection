@@ -9,6 +9,7 @@ from torch import Tensor
 from mmdet.registry import MODELS
 from mmdet.structures import OptSampleList, SampleList
 from mmdet.structures.bbox import BaseBoxes
+from mmdet.structures.mask import BitmapMasks, PolygonMasks
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from .base import BaseDetector
 
@@ -17,6 +18,8 @@ try:
     import detectron2
     from detectron2.config import get_cfg
     from detectron2.modeling import build_model
+    from detectron2.structures.masks import BitMasks as D2_BitMasks
+    from detectron2.structures.masks import PolygonMasks as D2_PolygonMasks
     from detectron2.utils.events import EventStorage
 except ImportError:
     detectron2 = None
@@ -114,7 +117,6 @@ class Detectron2Wrapper(BaseDetector):
     def loss(self, batch_inputs: Tensor,
              batch_data_samples: SampleList) -> Union[dict, tuple]:
         """Calculate losses from a batch of inputs and data samples."""
-        print()
         d2_batched_inputs = self._convert_to_batched_d2_inputs(
             batch_inputs=batch_inputs, batch_data_samples=batch_data_samples)
 
@@ -174,7 +176,7 @@ class Detectron2Wrapper(BaseDetector):
             d2_inputs['image'] = image
             # deal with gt_instances
             gt_instances = data_samples.gt_instances
-            d2_instances = Instances(meta_info['ori_shape'])
+            d2_instances = Instances(meta_info['img_shape'])
 
             gt_boxes = gt_instances.bboxes
             if isinstance(gt_boxes, BaseBoxes):
@@ -183,8 +185,21 @@ class Detectron2Wrapper(BaseDetector):
 
             d2_instances.gt_classes = gt_instances.labels
             if gt_instances.get('masks', None) is not None:
-                d2_instances.gt_masks = gt_instances.masks
-            d2_inputs['instances'] = filter_empty_instances(d2_instances)
+                gt_masks = gt_instances.masks
+                if isinstance(gt_masks, PolygonMasks):
+                    d2_instances.gt_masks = D2_PolygonMasks(gt_masks.masks)
+                elif isinstance(gt_masks, BitmapMasks):
+                    d2_instances.gt_masks = D2_BitMasks(gt_masks.masks)
+                else:
+                    raise TypeError('The type of `gt_mask` can be '
+                                    '`PolygonMasks` or `BitMasks`, but get '
+                                    f'{type(gt_masks)}.')
+            # convert to cpu and convert back to cuda to avoid
+            # some potential error
+            device = gt_boxes.device
+            d2_instances = filter_empty_instances(
+                d2_instances.to('cpu')).to(device)
+            d2_inputs['instances'] = d2_instances
             batched_d2_inputs.append(d2_inputs)
 
         return batched_d2_inputs

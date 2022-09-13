@@ -1,4 +1,4 @@
-_base_ = '../common/ms-90k_coco-detection.py'
+_base_ = '../common/ms-poly-90k_coco-instance.py'
 
 # model settings
 model = dict(
@@ -12,10 +12,10 @@ model = dict(
         meta_architecture='GeneralizedRCNN',
         # If you want to finetune the detector, you can use the
         # checkpoint released by detectron2, for example:
-        # weights='detectron2://COCO-Detection/faster_rcnn_R_50_FPN_1x/137257794/model_final_b275ba.pkl'     # noqa
+        # weights='detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x/137260431/model_final_a54504.pkl'  # noqa
         # TODO: add readme to tell users how to convert d2 ckpt to mmdet style
         weights='detectron2://ImageNetPretrained/MSRA/R-50.pkl',
-        mask_on=False,
+        mask_on=True,
         pixel_mean=[103.530, 116.280, 123.675],
         pixel_std=[1.0, 1.0, 1.0],
         backbone=dict(name='build_resnet_fpn_backbone', freeze_at=2),
@@ -74,4 +74,10 @@ model = dict(
             bbox_reg_loss_weight=1.0,
             bbox_reg_weights=(10.0, 10.0, 5.0, 5.0),
             smooth_l1_beta=0.0,
-            cls_agnostic_bbox_reg=False)))
+            cls_agnostic_bbox_reg=False),
+        roi_mask_head=dict(
+            name='MaskRCNNConvUpsampleHead',
+            conv_dim=256,
+            pooler_type='ROIAlignV2',
+            pooler_resolution=14,
+            pooler_sampling_ratio=0)))

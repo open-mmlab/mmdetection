@@ -12,7 +12,10 @@ data_root = 'data/coco/'
 file_client_args = dict(backend='disk')
 
 train_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
+    dict(
+        type='LoadImageFromFile',
+        file_client_args=file_client_args,
+        imdecode_backend='pillow'),
     dict(
         type='LoadAnnotations',
         with_bbox=True,
@@ -22,13 +25,17 @@ train_pipeline = [
         type='RandomChoiceResize',
         scales=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
                 (1333, 768), (1333, 800)],
-        keep_ratio=True),
-    dict(type='RandomFlip', prob=0.5),
+        keep_ratio=True,
+        backend='pillow'),
+    dict(type='RandomFlip', prob=0.0),
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', file_client_args=file_client_args),
-    dict(type='Resize', scale=(1333, 800), keep_ratio=True),
+    dict(
+        type='LoadImageFromFile',
+        file_client_args=file_client_args,
+        imdecode_backend='pillow'),
+    dict(type='Resize', scale=(1333, 800), keep_ratio=True, backend='pillow'),
     # If you don't have a gt annotation, delete the pipeline
     dict(
         type='LoadAnnotations',
@@ -44,7 +51,7 @@ train_dataloader = dict(
     batch_size=2,
     num_workers=2,
     persistent_workers=True,
-    sampler=dict(type='InfiniteSampler', shuffle=False),
+    sampler=dict(type='InfiniteSampler', shuffle=True),
     batch_sampler=dict(type='AspectRatioBatchSampler'),
     dataset=dict(
         type=dataset_type,
