@@ -51,7 +51,7 @@ class MaskHungarianAssigner(BaseAssigner):
 
         Args:
             cls_pred (Tensor | None): Class prediction in shape
-                (num_query, cls_out_channels).
+                (num_query, cls_out_channels). It may be None for K-Net.
             mask_pred (Tensor): Mask prediction in shape (num_query, H, W).
             gt_labels (Tensor): Label of 'gt_mask'in shape = (num_gt, ).
             gt_mask (Tensor): Ground truth mask in shape = (num_gt, H, W).

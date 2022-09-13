@@ -10,7 +10,7 @@ from mmdet.models.dense_heads import *  # noqa: F401,F403
 def test_dense_heads_test_attr():
     """Tests inference methods such as simple_test and aug_test."""
     # make list of dense heads
-    exceptions = ['FeatureAdaption']  # module used in head
+    exceptions = ['FeatureAdaption', 'KernelRPNHead']  # module used in head
     all_dense_heads = [m for m in dense_heads.__all__ if m not in exceptions]
 
     # search attributes
