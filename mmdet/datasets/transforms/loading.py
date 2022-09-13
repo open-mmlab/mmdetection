@@ -260,9 +260,10 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         """
         gt_bboxes = []
         gt_ignore_flags = []
-        for instance in results['instances']:
-            gt_bboxes.append(instance['bbox'])
-            gt_ignore_flags.append(instance['ignore_flag'])
+        if 'instances' in results.keys():
+            for instance in results['instances']:
+                gt_bboxes.append(instance['bbox'])
+                gt_ignore_flags.append(instance['ignore_flag'])
         if self.box_type is None:
             results['gt_bboxes'] = np.array(
                 gt_bboxes, dtype=np.float32).reshape((-1, 4))
@@ -281,8 +282,9 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             dict: The dict contains loaded label annotations.
         """
         gt_bboxes_labels = []
-        for instance in results['instances']:
-            gt_bboxes_labels.append(instance['bbox_label'])
+        if 'instances' in results.keys():
+            for instance in results['instances']:
+                gt_bboxes_labels.append(instance['bbox_label'])
         # TODO: Inconsistent with mmcv, consider how to deal with it later.
         results['gt_bboxes_labels'] = np.array(
             gt_bboxes_labels, dtype=np.int64)
