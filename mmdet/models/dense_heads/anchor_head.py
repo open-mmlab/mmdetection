@@ -211,7 +211,7 @@ class AnchorHead(BaseDenseHead):
         Args:
             flat_anchors (Tensor or :obj:`BaseBoxes`): Multi-level anchors
                 of the image, which are concatenated into a single tensor
-                or boxlist of shape (num_anchors, 4)
+                or box type of shape (num_anchors, 4)
             valid_flags (Tensor): Multi level valid flags of the image,
                 which are concatenated into a single tensor of
                     shape (num_anchors, ).
@@ -270,9 +270,9 @@ class AnchorHead(BaseDenseHead):
 
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
-        # `bbox_coder.encode` accepts tensor or boxlist inputs and generates
+        # `bbox_coder.encode` accepts tensor or box type inputs and generates
         # tensor targets. If regressing decoded boxes, the code will convert
-        # boxlist `pos_bbox_targets` to tensor.
+        # box type `pos_bbox_targets` to tensor.
         if len(pos_inds) > 0:
             if not self.reg_decoded_bbox:
                 pos_bbox_targets = self.bbox_coder.encode(

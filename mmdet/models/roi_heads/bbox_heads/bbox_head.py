@@ -544,7 +544,7 @@ class BBoxHead(BaseModule):
             scale_factor = [1 / s for s in img_meta['scale_factor']]
             bboxes = scale_boxes(bboxes, scale_factor)
 
-        # Get the inside tensor when `bboxes` is a boxlist
+        # Get the inside tensor when `bboxes` is a box type
         bboxes = get_box_tensor(bboxes)
         box_dim = bboxes.size(-1)
         bboxes = bboxes.view(num_rois, -1)

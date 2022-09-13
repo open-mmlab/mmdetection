@@ -97,7 +97,7 @@ class BaseSampler(metaclass=ABCMeta):
 
         gt_flags = priors.new_zeros((priors.shape[0], ), dtype=torch.uint8)
         if self.add_gt_as_proposals and len(gt_bboxes) > 0:
-            # When `gt_bboxes` and `priors` are all boxlist, convert
+            # When `gt_bboxes` and `priors` are all box type, convert
             # `gt_bboxes` type to `priors` type.
             if (isinstance(gt_bboxes, BaseBoxes)
                     and isinstance(priors, BaseBoxes)):

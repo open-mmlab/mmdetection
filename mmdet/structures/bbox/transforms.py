@@ -355,11 +355,11 @@ def bbox_project(
 
 def cat_boxes(data_list: List[Union[Tensor, BaseBoxes]],
               dim: int = 0) -> Union[Tensor, BaseBoxes]:
-    """Concatenate boxes with type of tensor or BoxList.
+    """Concatenate boxes with type of tensor or box type.
 
     Args:
         data_list (List[Union[Tensor, :obj:`BaseBoxes`]]): A list of tensors
-            or boxlists need to be concatenated.
+            or box types need to be concatenated.
             dim (int): The dimension over which the box are concatenated.
                 Defaults to 0.
 
@@ -374,11 +374,11 @@ def cat_boxes(data_list: List[Union[Tensor, BaseBoxes]],
 
 def stack_boxes(data_list: List[Union[Tensor, BaseBoxes]],
                 dim: int = 0) -> Union[Tensor, BaseBoxes]:
-    """Stack boxes with type of tensor or BoxList.
+    """Stack boxes with type of tensor or box type.
 
     Args:
         data_list (List[Union[Tensor, :obj:`BaseBoxes`]]): A list of tensors
-            or boxlists need to be stacked.
+            or box types need to be stacked.
             dim (int): The dimension over which the box are stacked.
                 Defaults to 0.
 
@@ -393,11 +393,11 @@ def stack_boxes(data_list: List[Union[Tensor, BaseBoxes]],
 
 def scale_boxes(boxes: Union[Tensor, BaseBoxes],
                 scale_factor: Tuple[float, float]) -> Union[Tensor, BaseBoxes]:
-    """Scale boxes with type of tensor or boxlist.
+    """Scale boxes with type of tensor or box type.
 
     Args:
         boxes (Tensor or :obj:`BaseBoxes`): boxes need to be scaled. Its type
-            can be a tensor or a boxlist.
+            can be a tensor or a box type.
         scale_factor (Tuple[float, float]): factors for scaling boxes.
             The length should be 2.
 
@@ -415,11 +415,11 @@ def scale_boxes(boxes: Union[Tensor, BaseBoxes],
 
 
 def get_box_wh(boxes: Union[Tensor, BaseBoxes]) -> Tuple[Tensor, Tensor]:
-    """Get the width and height of boxes with type of tensor or boxlist.
+    """Get the width and height of boxes with type of tensor or box type.
 
     Args:
         boxes (Tensor or :obj:`BaseBoxes`): boxes with type of tensor
-            or boxlist.
+            or box type.
 
     Returns:
         Tuple[Tensor, Tensor]: the width and height of boxes.
@@ -435,12 +435,12 @@ def get_box_wh(boxes: Union[Tensor, BaseBoxes]) -> Tuple[Tensor, Tensor]:
 
 
 def get_box_tensor(boxes: Union[Tensor, BaseBoxes]) -> Tensor:
-    """Get tensor data from boxlist boxes.
+    """Get tensor data from box type boxes.
 
     Args:
-        boxes (Tensor or BaseBoxes): boxes with type of tensor or boxlist.
+        boxes (Tensor or BaseBoxes): boxes with type of tensor or box type.
             If its type is a tensor, the boxes will be directly returned.
-            If its type is a boxlist, the `boxes.tensor` will be returned.
+            If its type is a box type, the `boxes.tensor` will be returned.
 
     Returns:
         Tensor: boxes tensor.

@@ -444,7 +444,7 @@ def images_to_levels(target, num_levels):
     return level_targets
 
 
-def samplelist_boxlist2tensor(batch_data_samples: SampleList) -> SampleList:
+def samplelist_boxtype2tensor(batch_data_samples: SampleList) -> SampleList:
     for data_samples in batch_data_samples:
         if 'gt_instances' in data_samples:
             bboxes = data_samples.gt_instances.get('bboxes', None)
