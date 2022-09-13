@@ -69,6 +69,21 @@ class SemiBaseDetector(BaseDetector):
                     losses[name] = loss * weight
         return losses
 
+    @staticmethod
+    def rename_loss(prefix: str, losses: dict) -> dict:
+        """Rename loss for different branches."""
+        return {prefix + k: v for k, v in losses.items()}
+
+    @staticmethod
+    def filter_pseudo_instances_by_scores(batch_data_samples: SampleList,
+                                          thr: float) -> SampleList:
+        """Filter invalid pseudo instances by scores."""
+        for data_samples in batch_data_samples:
+            if data_samples.gt_instances.bboxes.shape[0] > 0:
+                data_samples.gt_instances = data_samples.gt_instances[
+                    data_samples.gt_instances.scores > thr]
+        return batch_data_samples
+
     def loss(self, multi_batch_inputs: Dict[str, Tensor],
              multi_batch_data_samples: Dict[str, SampleList]) -> dict:
         """Calculate losses from multi-branch inputs and data samples.
@@ -113,13 +128,11 @@ class SemiBaseDetector(BaseDetector):
         Returns:
             dict: A dictionary of loss components
         """
-        gt_loss = {
-            'sup_' + k: v
-            for k, v in self.reweight_loss(
-                self.student.loss(batch_inputs, batch_data_samples),
-                self.semi_train_cfg.get('sup_weight', 1.)).items()
-        }
-        return gt_loss
+
+        gt_losses = self.student.loss(batch_inputs, batch_data_samples)
+        sup_weight = self.semi_train_cfg.get('sup_weight', 1.)
+        return self.rename_loss('sup_',
+                                self.reweight_loss(gt_losses, sup_weight))
 
     def loss_by_pseudo_instances(self,
                                  batch_inputs: Tensor,
@@ -141,30 +154,21 @@ class SemiBaseDetector(BaseDetector):
         Returns:
             dict: A dictionary of loss components
         """
-        for data_samples in batch_data_samples:
-            if data_samples.gt_instances.bboxes.shape[0] > 0:
-                data_samples.gt_instances = data_samples.gt_instances[
-                    data_samples.gt_instances.scores >
-                    self.semi_train_cfg.cls_pseudo_thr]
-
+        batch_data_samples = self.filter_pseudo_instances_by_scores(
+            batch_data_samples, self.semi_train_cfg.cls_pseudo_thr)
+        pseudo_losses = self.student.loss(batch_inputs, batch_data_samples)
         pseudo_instances_num = sum([
             len(data_samples.gt_instances)
             for data_samples in batch_data_samples
         ])
         unsup_weight = self.semi_train_cfg.get(
             'unsup_weight', 1.) if pseudo_instances_num > 0 else 0.
+        return self.rename_loss(
+            'unsup_', self.reweight_loss(pseudo_losses, unsup_weight))
 
-        pseudo_loss = {
-            'unsup_' + k: v
-            for k, v in self.reweight_loss(
-                self.student.loss(batch_inputs, batch_data_samples),
-                unsup_weight).items()
-        }
-        return pseudo_loss
-
-    def filter_pseudo_instances(self,
-                                batch_data_samples: SampleList) -> SampleList:
-        """Filter invalid pseudo instances from teacher model."""
+    def filter_pseudo_instances_by_sizes(
+            self, batch_data_samples: SampleList) -> SampleList:
+        """Filter invalid pseudo instances by sizes from teacher model."""
         for data_samples in batch_data_samples:
             pseudo_bboxes = data_samples.gt_instances.bboxes
             if pseudo_bboxes.shape[0] > 0:
@@ -198,7 +202,7 @@ class SemiBaseDetector(BaseDetector):
                 data_samples.gt_instances.bboxes,
                 torch.tensor(data_samples.homography_matrix).to(
                     self.data_preprocessor.device), data_samples.img_shape)
-        return self.filter_pseudo_instances(batch_data_samples)
+        return self.filter_pseudo_instances_by_sizes(batch_data_samples)
 
     def predict(self, batch_inputs: Tensor,
                 batch_data_samples: SampleList) -> SampleList:
