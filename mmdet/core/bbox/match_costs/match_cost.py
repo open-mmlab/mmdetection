@@ -357,3 +357,42 @@ class CrossEntropyLossCost:
             raise NotImplementedError
 
         return cls_cost * self.weight
+
+
+@MATCH_COST.register_module()
+class MaskCost:
+    """MaskCost.
+
+    Args:
+        weight (int | float, optional): loss_weight
+        use_sigmoid (bool, optional): Whether the prediction uses sigmoid
+                of softmax. Defaults to True.
+    """
+
+    def __init__(self, weight=1., use_sigmoid=True):
+        self.weight = weight
+        self.use_sigmoid = use_sigmoid
+
+    def __call__(self, mask_preds, gt_masks):
+        """
+        Args:
+            mask_preds (Tensor): Mask prediction logits in shape
+                (num_query, h, w).
+            gt_masks (Tensor): Ground truth in shape (num_gt, h, w).
+        Returns:
+            Tensor: Ccost matrix with weight in shape (num_query, num_gt).
+        """
+
+        if self.use_sigmoid:
+            mask_preds = mask_preds.sigmoid()
+            _, h, w = gt_masks.shape
+            # eingum is ~10 times faster than matmul
+            gt_masks = gt_masks.type_as(mask_preds)
+            pos_cost = torch.einsum('nhw,mhw->nm', mask_preds, gt_masks)
+            neg_cost = torch.einsum('nhw,mhw->nm', 1 - mask_preds,
+                                    1 - gt_masks)
+            cls_cost = -(pos_cost + neg_cost) / (h * w)
+        else:
+            raise NotImplementedError
+
+        return cls_cost * self.weight

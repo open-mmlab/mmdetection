@@ -2,8 +2,13 @@
 import torch
 
 
-def preprocess_panoptic_gt(gt_labels, gt_masks, gt_semantic_seg, num_things,
-                           num_stuff, img_metas):
+def preprocess_panoptic_gt(gt_labels,
+                           gt_masks,
+                           gt_semantic_seg,
+                           num_things,
+                           num_stuff,
+                           img_metas,
+                           merge_things_stuff=True):
     """Preprocess the ground truth for a image.
 
     Args:
@@ -17,28 +22,34 @@ def preprocess_panoptic_gt(gt_labels, gt_masks, gt_semantic_seg, num_things,
             [num_thing_class, num_class-1] means stuff,
             255 means VOID. It's None when training instance segmentation.
         img_metas (dict): List of image meta information.
+        merge_things_stuff (bool): Whether merges ground truth of things and
+            ground truth of stuff together. Defaults to True.
 
     Returns:
-        tuple: a tuple containing the following targets.
+        tuple: According to the value of the parameter, the return value
+        can be divided into the following four cases:
+        1. (things_labels, things_masks, None, None), when ``gt_semantic_seg``
+        is None and ``merge_things_stuff`` is True.
+        2. (labels, masks, None, None), when ``gt_semantic_seg`` is Not None
+        and ``merge_things_stuff`` is True. The ``labels`` contains labels of
+        things and labels of stuff, and so does the ``masks``.
+        3. (things_labels, things_masks, None, None), when ``gt_semantic_seg``
+        is None and ``merge_things_stuff`` is False.
+        4. (things_labels, things_masks, stuff_labels, stuff_masks), when
+        ``gt_semantic_seg`` is Not None and ``merge_things_stuff`` is False.
 
-            - labels (Tensor): Ground truth class indices for a
-                image, with shape (n, ), n is the sum of number
-                of stuff type and number of instance in a image.
-            - masks (Tensor): Ground truth mask for a image, with
-                shape (n, h, w). Contains stuff and things when training
-                panoptic segmentation, and things only when training
-                instance segmentation.
+        The shape of labels(things_labels and stuff_labels) is like (n, ),
+        and the shape of masks(things_masks and stuff_masks) is like (n, h, w).
     """
     num_classes = num_things + num_stuff
 
-    things_masks = gt_masks.pad(img_metas['pad_shape'][:2], pad_val=0)\
-        .to_tensor(dtype=torch.bool, device=gt_labels.device)
+    things_masks = gt_masks.pad(img_metas['batch_input_shape'][:2], pad_val=0)\
+        .to_tensor(dtype=torch.long, device=gt_labels.device)
+    things_labels = gt_labels
 
     if gt_semantic_seg is None:
-        masks = things_masks.long()
-        return gt_labels, masks
+        return things_labels, things_masks, None, None
 
-    things_labels = gt_labels
     gt_semantic_seg = gt_semantic_seg.squeeze(0)
 
     semantic_labels = torch.unique(
@@ -51,18 +62,28 @@ def preprocess_panoptic_gt(gt_labels, gt_masks, gt_semantic_seg, num_things,
     for label in semantic_labels:
         if label < num_things or label >= num_classes:
             continue
-        stuff_mask = gt_semantic_seg == label
+        stuff_mask = (gt_semantic_seg == label).long()
         stuff_masks_list.append(stuff_mask)
         stuff_labels_list.append(label)
 
-    if len(stuff_masks_list) > 0:
-        stuff_masks = torch.stack(stuff_masks_list, dim=0)
-        stuff_labels = torch.stack(stuff_labels_list, dim=0)
-        labels = torch.cat([things_labels, stuff_labels], dim=0)
-        masks = torch.cat([things_masks, stuff_masks], dim=0)
-    else:
-        labels = things_labels
-        masks = things_masks
+    if not merge_things_stuff:
+        if len(stuff_labels_list) > 0:
+            stuff_masks = torch.stack(stuff_masks_list, dim=0)
+            stuff_labels = torch.stack(stuff_labels_list, dim=0)
+        else:
+            stuff_masks = gt_semantic_seg.new_zeros(
+                size=(0, ) + gt_semantic_seg.shape[-2:])
+            stuff_labels = gt_semantic_seg.new_zeros(size=(0, ))
 
-    masks = masks.long()
-    return labels, masks
+        return things_labels, things_masks, stuff_labels, stuff_masks
+    else:
+        if len(stuff_masks_list) > 0:
+            stuff_masks = torch.stack(stuff_masks_list, dim=0)
+            stuff_labels = torch.stack(stuff_labels_list, dim=0)
+            labels = torch.cat([things_labels, stuff_labels], dim=0)
+            masks = torch.cat([things_masks, stuff_masks], dim=0)
+        else:
+            labels = things_labels
+            masks = things_masks
+
+        return labels, masks, None, None

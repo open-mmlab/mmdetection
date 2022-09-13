@@ -661,3 +661,15 @@ def test_mask_hungarian_match_assigner():
         dice_cost=dict(type='DiceCost', weight=0.0, pred_act=True, eps=1.0))
     with pytest.raises(AssertionError):
         self = MaskHungarianAssigner(**assigner_cfg)
+
+    # test with MaskCost
+    assigner_cfg = dict(
+        cls_cost=dict(type='ClassificationCost', weight=0.0),
+        mask_cost=dict(type='MaskCost', weight=1.0, use_sigmoid=True),
+        dice_cost=dict(type='DiceCost', weight=0.0, pred_act=True, eps=1.0))
+    self = MaskHungarianAssigner(**assigner_cfg)
+    assign_result = self.assign(cls_pred, mask_pred, gt_labels, gt_masks,
+                                img_meta)
+    assert torch.all(assign_result.gt_inds > -1)
+    assert (assign_result.gt_inds > 0).sum() == gt_labels.size(0)
+    assert (assign_result.labels > -1).sum() == gt_labels.size(0)
