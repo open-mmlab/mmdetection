@@ -164,7 +164,7 @@ model = dict(
             loss_mask=dict(  # mask 分支的损失函数配置。
                 type='CrossEntropyLoss',  # 用于分割的损失类型。
                 use_mask=True,  # 是否只在正确的类中训练 mask。
-                loss_weight=1.0))))  # mask 分支的损失权重.
+                loss_weight=1.0))),  # mask 分支的损失权重.
     train_cfg = dict(  # rpn 和 rcnn 训练超参数的配置
         rpn=dict(  # rpn 的训练配置
             assigner=dict(  # 分配器(assigner)的配置
@@ -210,7 +210,7 @@ model = dict(
             ),  # 采样后是否添加 GT 作为 proposal。
             mask_size=28,  # mask 的大小
             pos_weight=-1,  # 训练期间正样本的权重。
-            debug=False))  # 是否设置调试模式。
+            debug=False)),  # 是否设置调试模式。
     test_cfg = dict(  # 用于测试 rpn 和 rcnn 超参数的配置
         rpn=dict(  # 测试阶段生成 proposals 的配置
             nms_across_levels=False,  # 是否对跨层的 box 做 NMS。仅适用于`GARPNHead`，naive rpn 不支持做 NMS cross levels。
@@ -228,7 +228,8 @@ model = dict(
                 type='nms',  # NMS 的类型
                 iou_thr=0.5),  # NMS 的阈值
             max_per_img=100,  # 每张图像的最大检测次数
-            mask_thr_binary=0.5))  # mask 预处的阈值
+            mask_thr_binary=0.5)))  # mask 预处的阈值
+
 dataset_type = 'CocoDataset'  # 数据集类型，这将被用来定义数据集。
 data_root = 'data/coco/'  # 数据的根路径。
 img_norm_cfg = dict(  # 图像归一化配置，用来归一化输入的图像。
