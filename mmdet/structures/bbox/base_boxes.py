@@ -468,12 +468,19 @@ class BaseBoxes(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def is_inside(self, img_shape: Tuple[int, int]) -> BoolTensor:
+    def is_inside(self,
+                  img_shape: Tuple[int, int],
+                  all_inside: bool = False,
+                  allowed_border: int = 0) -> BoolTensor:
         """Find boxes inside the image.
 
         Args:
             img_shape (Tuple[int, int]): A tuple of image height and width.
-
+            all_inside (bool): Whether the boxes are all inside the image or
+                part inside the image. Defaults to False.
+            allowed_border (int): Boxes that extend beyond the image shape
+                boundary by more than ``allowed_border`` are considered
+                "outside" Defaults to 0.
         Returns:
             BoolTensor: A BoolTensor indicating whether the box is inside
             the image. Assuming the original boxes have shape (m, n, box_dim),
