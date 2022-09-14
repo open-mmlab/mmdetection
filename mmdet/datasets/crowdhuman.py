@@ -20,8 +20,11 @@ class CrowdHumanDataset(BaseDetDataset):
 
     Args:
         data_root (str): The root directory for
-        ``data_prefix`` and ``ann_file``.
+            ``data_prefix`` and ``ann_file``.
         ann_file (str): Annotation file path.
+        id_hw_path (str | None):The path of extra image metas for CrowdHuman.
+            It can be created by CrowdHumanDataset automatically or
+            by tools/misc/get_crowdhuman_id_hw.py manually.
     """
 
     METAINFO = {
@@ -30,13 +33,13 @@ class CrowdHumanDataset(BaseDetDataset):
         'PALETTE': [(220, 20, 60)]
     }
 
-    def __init__(self, data_root, ann_file, id_hw=None, **kwargs):
+    def __init__(self, data_root, ann_file, id_hw_path=None, **kwargs):
         # id_hw file is an additional annotation information which record the
         # size of each image. This file is automatically created when you
         # first load the CrowdHuman dataset by mmdet
-        if id_hw is not None:
+        if id_hw_path is not None:
             self.id_hw_exist = True
-            self.id_hw = load(id_hw)
+            self.id_hw = load(id_hw_path)
         else:
             ann_file_name = osp.basename(ann_file)
             if 'train' in ann_file_name:
@@ -79,7 +82,7 @@ class CrowdHumanDataset(BaseDetDataset):
                 warnings.warn(
                     'Cache files can not be saved automatically! To speed up'
                     'loading the dataset, please manually generate the cache'
-                    ' file by filetools/misc/get_crowdhuman_id_hw.py')
+                    ' file by file tools/misc/get_crowdhuman_id_hw.py')
 
             print_log(f'\nsave id_hw in {self.data_root}', level=logging.INFO)
 
