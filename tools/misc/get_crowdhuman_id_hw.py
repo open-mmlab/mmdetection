@@ -4,7 +4,8 @@
 Here is an example to run this script.
 
 Example:
-    python tools/misc/get_crowdhuman_id_hw.py ${CONFIG}
+    python tools/misc/get_crowdhuman_id_hw.py ${CONFIG} \
+    --dataset ${DATASET_TYPE}
 """
 import argparse
 import json
@@ -23,7 +24,6 @@ def parse_args():
     parser.add_argument('config', help='Config file path')
     parser.add_argument(
         '--dataset',
-        default='val',
         choices=['train', 'val'],
         help='Collect image metas from which dataset')
     parser.add_argument(
@@ -52,7 +52,8 @@ def main():
 
     # get ann_file and img_prefix from config files
     cfg = Config.fromfile(args.config)
-    file_client = FileClient(backend='disk')
+    file_client_args = cfg.get('file_client_args', dict(backend='disk'))
+    file_client = FileClient(**file_client_args)
     dataset = args.dataset
     dataloader_cfg = cfg.get(f'{dataset}_dataloader')
     ann_file = osp.join(dataloader_cfg.dataset.data_root,

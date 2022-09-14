@@ -22,9 +22,10 @@ class CrowdHumanDataset(BaseDetDataset):
         data_root (str): The root directory for
             ``data_prefix`` and ``ann_file``.
         ann_file (str): Annotation file path.
-        id_hw_path (str | None):The path of extra image metas for CrowdHuman.
+        id_hw_path (str, None):The path of extra image metas for CrowdHuman.
             It can be created by CrowdHumanDataset automatically or
             by tools/misc/get_crowdhuman_id_hw.py manually.
+            Defaults to None.
     """
 
     METAINFO = {
