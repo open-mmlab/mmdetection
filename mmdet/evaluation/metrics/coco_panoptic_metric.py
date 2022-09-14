@@ -482,6 +482,7 @@ class CocoPanopticMetric(BaseMetric):
             pred_json = load(json_filename)
             pred_json = dict(
                 (el['image_id'], el) for el in pred_json['annotations'])
+
             # match the gt_anns and pred_anns in the same image
             matched_annotations_list = []
             for gt_ann in gt_json:

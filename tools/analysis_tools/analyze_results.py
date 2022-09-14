@@ -78,23 +78,12 @@ class ResultVisualizer:
         wait_time (float): Value of waitKey param. Default: 0.
         score_thr (float): Minimum score of bboxes to be shown.
            Default: 0.
-        overlay_gt_pred (bool): Whether to plot gts and predictions on the
-            same image. If False, predictions and gts will be plotted on two
-            same image which will be concatenated in vertical direction.
-            The image above is drawn with gt, and the image below is drawn
-            with the prediction result. Default: False.
     """
 
-    def __init__(self,
-                 show=False,
-                 wait_time=0,
-                 score_thr=0,
-                 overlay_gt_pred=False,
-                 runner=None):
+    def __init__(self, show=False, wait_time=0, score_thr=0, runner=None):
         self.show = show
         self.wait_time = wait_time
         self.score_thr = score_thr
-        self.overlay_gt_pred = overlay_gt_pred
         self.visualizer = DetLocalVisualizer()
         self.runner = runner
         self.evaluator = runner.test_evaluator
@@ -299,8 +288,7 @@ class ResultVisualizer:
             data_sample = {}
             for k in dataset[i].keys():
                 data_sample[k] = dataset[i][k]
-            # data_batch = {}
-            # data_batch['data_sample'] = data_sample
+
             for k in results[i].keys():
                 data_sample[k] = results[i][k]
 
@@ -309,9 +297,6 @@ class ResultVisualizer:
 
             pqs[i] = metrics['coco_panoptic/PQ']
             prog_bar.update()
-
-        # if tmp_dir is not None:
-        #     tmp_dir.cleanup()
 
         # descending select topk image
         pqs = list(sorted(pqs.items(), key=lambda kv: kv[1]))
@@ -390,8 +375,8 @@ def main():
     if cfg.train_dataloader.dataset.type in ('MultiImageMixDataset',
                                              'ClassBalancedDataset',
                                              'RepeatDataset', 'ConcatDataset'):
-        cfg.test_dataloader.dataset.dataset.pipeline = get_loading_pipeline(
-            cfg.train_dataloader.dataset.pipeline)
+        cfg.test_dataloader.dataset.pipeline = get_loading_pipeline(
+            cfg.train_dataloader.dataset.dataset.pipeline)
     else:
         cfg.test_dataloader.dataset.pipeline = get_loading_pipeline(
             cfg.train_dataloader.dataset.pipeline)
@@ -409,8 +394,7 @@ def main():
         runner = RUNNERS.build(cfg)
 
     result_visualizer = ResultVisualizer(args.show, args.wait_time,
-                                         args.show_score_thr,
-                                         args.overlay_gt_pred, runner)
+                                         args.show_score_thr, runner)
     result_visualizer.evaluate_and_show(
         dataset, outputs, topk=args.topk, show_dir=args.show_dir)
 
