@@ -152,8 +152,7 @@ class ResultVisualizer:
                 'image',
                 results[index]['img'],
                 data_samples,
-                show=True,
-                # show=self.show,
+                show=self.show,
                 draw_gt=False,
                 pred_score_thr=self.score_thr,
                 out_file=out_file)
@@ -200,7 +199,7 @@ class ResultVisualizer:
             self._save_image_gts_results(
                 dataset, results, bad_samples, bad_dir, task='det')
         else:
-            raise 'expect \'pred_panoptic_seg\' or \'pred_panoptic_seg\' \
+            raise 'expect \'pred_panoptic_seg\' or \'pred_instances\' \
                 in dict result'
 
     def detection_evaluate(self, dataset, results, topk=20, eval_fn=None):
@@ -331,14 +330,6 @@ def parse_args():
         type=float,
         default=0,
         help='score threshold (default: 0.)')
-    parser.add_argument(
-        '--overlay-gt-pred',
-        action='store_true',
-        help='whether to plot gts and predictions on the same image.'
-        'If False, predictions and gts will be plotted on two same'
-        'image which will be concatenated in vertical direction.'
-        'The image above is drawn with gt, and the image below is'
-        'drawn with the prediction result.')
     parser.add_argument(
         '--cfg-options',
         nargs='+',
