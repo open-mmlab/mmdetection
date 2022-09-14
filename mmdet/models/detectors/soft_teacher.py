@@ -69,17 +69,17 @@ class SoftTeacher(SemiBaseDetector):
 
         x = self.student.extract_feat(batch_inputs)
 
-        pseudo_losses = {}
+        losses = {}
         rpn_losses, rpn_results_list = self.rpn_loss_by_pseudo_instances(
             x, batch_data_samples)
-        pseudo_losses.update(**rpn_losses)
-        pseudo_losses.update(**self.rcnn_cls_loss_by_pseudo_instances(
+        losses.update(**rpn_losses)
+        losses.update(**self.rcnn_cls_loss_by_pseudo_instances(
             x, rpn_results_list, batch_data_samples, batch_info))
-        pseudo_losses.update(**self.rcnn_reg_loss_by_pseudo_instances(
+        losses.update(**self.rcnn_reg_loss_by_pseudo_instances(
             x, rpn_results_list, batch_data_samples))
         unsup_weight = self.semi_train_cfg.get('unsup_weight', 1.)
         return self.rename_loss(
-            'unsup_', self.reweight_loss(pseudo_losses, unsup_weight))
+            'unsup_', self.reweight_loss(losses, unsup_weight))
 
     @torch.no_grad()
     def get_pseudo_instances(
@@ -104,7 +104,7 @@ class SoftTeacher(SemiBaseDetector):
         for data_samples, results in zip(batch_data_samples, results_list):
             data_samples.gt_instances = results
 
-        batch_data_samples = self.filter_pseudo_instances_by_scores(
+        batch_data_samples = self.filter_pseudo_instances_by_score(
             batch_data_samples,
             self.semi_train_cfg.pseudo_label_initial_score_thr)
 
@@ -148,7 +148,7 @@ class SoftTeacher(SemiBaseDetector):
         """
 
         rpn_data_samples = copy.deepcopy(batch_data_samples)
-        rpn_data_samples = self.filter_pseudo_instances_by_scores(
+        rpn_data_samples = self.filter_pseudo_instances_by_score(
             rpn_data_samples, self.semi_train_cfg.rpn_pseudo_thr)
         proposal_cfg = self.student.train_cfg.get('rpn_proposal',
                                                   self.student.test_cfg.rpn)
@@ -189,7 +189,7 @@ class SoftTeacher(SemiBaseDetector):
         """
         rpn_results_list = copy.deepcopy(unsup_rpn_results_list)
         cls_data_samples = copy.deepcopy(batch_data_samples)
-        cls_data_samples = self.filter_pseudo_instances_by_scores(
+        cls_data_samples = self.filter_pseudo_instances_by_score(
             cls_data_samples, self.semi_train_cfg.cls_pseudo_thr)
 
         outputs = unpack_gt_instances(cls_data_samples)

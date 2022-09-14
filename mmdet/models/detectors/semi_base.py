@@ -75,7 +75,7 @@ class SemiBaseDetector(BaseDetector):
         return {prefix + k: v for k, v in losses.items()}
 
     @staticmethod
-    def filter_pseudo_instances_by_scores(batch_data_samples: SampleList,
+    def filter_pseudo_instances_by_score(batch_data_samples: SampleList,
                                           thr: float) -> SampleList:
         """Filter invalid pseudo instances by scores."""
         for data_samples in batch_data_samples:
@@ -129,10 +129,10 @@ class SemiBaseDetector(BaseDetector):
             dict: A dictionary of loss components
         """
 
-        gt_losses = self.student.loss(batch_inputs, batch_data_samples)
+        losses = self.student.loss(batch_inputs, batch_data_samples)
         sup_weight = self.semi_train_cfg.get('sup_weight', 1.)
         return self.rename_loss('sup_',
-                                self.reweight_loss(gt_losses, sup_weight))
+                                self.reweight_loss(losses, sup_weight))
 
     def loss_by_pseudo_instances(self,
                                  batch_inputs: Tensor,
@@ -154,9 +154,9 @@ class SemiBaseDetector(BaseDetector):
         Returns:
             dict: A dictionary of loss components
         """
-        batch_data_samples = self.filter_pseudo_instances_by_scores(
+        batch_data_samples = self.filter_pseudo_instances_by_score(
             batch_data_samples, self.semi_train_cfg.cls_pseudo_thr)
-        pseudo_losses = self.student.loss(batch_inputs, batch_data_samples)
+        losses = self.student.loss(batch_inputs, batch_data_samples)
         pseudo_instances_num = sum([
             len(data_samples.gt_instances)
             for data_samples in batch_data_samples
@@ -164,7 +164,7 @@ class SemiBaseDetector(BaseDetector):
         unsup_weight = self.semi_train_cfg.get(
             'unsup_weight', 1.) if pseudo_instances_num > 0 else 0.
         return self.rename_loss(
-            'unsup_', self.reweight_loss(pseudo_losses, unsup_weight))
+            'unsup_', self.reweight_loss(losses, unsup_weight))
 
     def filter_pseudo_instances_by_sizes(
             self, batch_data_samples: SampleList) -> SampleList:
