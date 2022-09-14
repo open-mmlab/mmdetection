@@ -448,3 +448,20 @@ def get_box_tensor(boxes: Union[Tensor, BaseBoxes]) -> Tensor:
     if isinstance(boxes, BaseBoxes):
         boxes = boxes.tensor
     return boxes
+
+
+def empty_box_as(boxes: Union[Tensor, BaseBoxes]) -> Union[Tensor, BaseBoxes]:
+    """Generate empty box according to input ``boxes` type and device.
+
+    Args:
+        boxes (Tensor or :obj:`BaseBoxes`): boxes with type of tensor
+            or box type.
+
+    Returns:
+        Union[Tensor, BaseBoxes]: Generated empty box.
+    """
+    if isinstance(boxes, BaseBoxes):
+        return boxes.empty_boxes()
+    else:
+        # Tensor boxes will be treated as horizontal boxes by defaults
+        return boxes.new_zeros(0, 4)

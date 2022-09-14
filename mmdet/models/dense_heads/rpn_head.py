@@ -12,7 +12,7 @@ from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS
-from mmdet.structures.bbox import (BaseBoxes, cat_boxes, get_box_tensor,
+from mmdet.structures.bbox import (cat_boxes, empty_box_as, get_box_tensor,
                                    get_box_wh, scale_boxes)
 from mmdet.utils import InstanceList, MultiConfig, OptInstanceList
 from .anchor_head import AnchorHead
@@ -294,10 +294,7 @@ class RPNHead(AnchorHead):
         else:
             # To avoid some potential error
             results_ = InstanceData()
-            if isinstance(results.bboxes, BaseBoxes):
-                results_.bboxes = results.bboxes.empty_boxes()
-            else:
-                results_.bboxes = results.scores.new_zeros(0, 4)
+            results_.bboxes = empty_box_as(results.bboxes)
             results_.scores = results.scores.new_zeros(0)
             results_.labels = results.scores.new_zeros(0)
             results = results_
