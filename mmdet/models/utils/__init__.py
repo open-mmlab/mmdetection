@@ -23,6 +23,10 @@ __all__ = [
     'center_of_mass', 'filter_scores_and_topk', 'flip_tensor',
     'generate_coordinate', 'levels_to_images', 'mask2ndarray', 'multi_apply',
     'select_single_mlvl', 'unmap', 'images_to_levels',
+<<<<<<< HEAD
     'samplelist_boxtype2tensor', 'filter_gt_instances', 'rename_loss_dict',
     'reweight_loss_dict'
+=======
+    'samplelist_boxtype2tensor'
+>>>>>>> Update
 ]

@@ -35,7 +35,7 @@ def multiclass_nms(
             before applying NMS. Default to None.
         return_inds (bool, optional): Whether return the indices of kept
             bboxes. Default to False.
-        box_dim (int):
+        box_dim (int): The dimension of boxes. Defaults to 4.
 
     Returns:
         Union[Tuple[Tensor, Tensor, Tensor], Tuple[Tensor, Tensor]]:
