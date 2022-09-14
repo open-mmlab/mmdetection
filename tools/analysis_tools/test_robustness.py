@@ -149,7 +149,10 @@ def main():
             type='DumpResults',
             out_file_path='robust.pkl',
         )
-        cfg.test_evaluator = [cfg.test_evaluator, test_evaluator]
+        if isinstance(cfg.test_evaluator, dict):
+            cfg.test_evaluator = [cfg.test_evaluator, test_evaluator]
+        elif isinstance(cfg.test_evaluator, list):
+            cfg.test_evaluator = cfg.test_evaluator.append(test_evaluator)
 
     # build the runner from config
     if 'runner_type' not in cfg:
@@ -219,7 +222,6 @@ def main():
             test_loader = runner.build_dataloader(test_loader_cfg)
 
             runner.test_loop.dataloader = test_loader
-            # runner._test_evaluator.metrics
             # set random seeds
             if args.seed is not None:
                 runner.set_randomness(args.seed)
