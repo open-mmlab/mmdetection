@@ -29,11 +29,11 @@ from mmengine.logging import MMLogger
 from mmengine.utils import ProgressBar
 from scipy.optimize import differential_evolution
 
-from mmdet.registry import DATASETS
+from mmdet.datasets import build_dataset
 from mmdet.structures.bbox import (bbox_cxcywh_to_xyxy, bbox_overlaps,
                                    bbox_xyxy_to_cxcywh)
-from mmdet.utils import (get_root_logger, register_all_modules,
-                         replace_cfg_vals, update_data_root)
+from mmdet.utils import (register_all_modules, replace_cfg_vals,
+                         update_data_root)
 
 
 def parse_args():
@@ -111,10 +111,9 @@ class BaseAnchorOptimizer:
         prog_bar = ProgressBar(len(self.dataset))
         for idx in range(len(self.dataset)):
             data_info = self.dataset.get_data_info(idx)
-            instances = data_info['instances']
             img_shape = np.array([data_info['width'], data_info['height']])
-
-            for instance in instances:
+            gt_instances = data_info['instances']
+            for instance in gt_instances:
                 bbox = np.array(instance['bbox'])
                 wh = bbox[2:4] - bbox[0:2]
                 img_shapes.append(img_shape)
@@ -348,8 +347,10 @@ def main():
     base_sizes = cfg.model.bbox_head.anchor_generator.base_sizes
     num_anchors = sum([len(sizes) for sizes in base_sizes])
 
-    train_data_cfg = cfg.train_dataloader.dataset
-    dataset = DATASETS.build(train_data_cfg)
+    train_data_cfg = cfg.train_dataloader
+    while 'dataset' in train_data_cfg:
+        train_data_cfg = train_data_cfg['dataset']
+    dataset = build_dataset(train_data_cfg)
 
     if args.algorithm == 'k-means':
         optimizer = YOLOKMeansAnchorOptimizer(
