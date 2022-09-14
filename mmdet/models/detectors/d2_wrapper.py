@@ -118,7 +118,9 @@ class Detectron2Wrapper(BaseDetector):
              batch_data_samples: SampleList) -> Union[dict, tuple]:
         """Calculate losses from a batch of inputs and data samples."""
         d2_batched_inputs = self._convert_to_batched_d2_inputs(
-            batch_inputs=batch_inputs, batch_data_samples=batch_data_samples)
+            batch_inputs=batch_inputs,
+            batch_data_samples=batch_data_samples,
+            training=True)
 
         with self.storage as storage:  # noqa
             losses = self.d2_model(d2_batched_inputs)
@@ -131,7 +133,9 @@ class Detectron2Wrapper(BaseDetector):
         """Predict results from a batch of inputs and data samples with post-
         processing."""
         d2_batched_inputs = self._convert_to_batched_d2_inputs(
-            batch_inputs=batch_inputs, batch_data_samples=batch_data_samples)
+            batch_inputs=batch_inputs,
+            batch_data_samples=batch_data_samples,
+            training=False)
         # results in detectron2 has already rescale
         d2_results_list = self.d2_model(d2_batched_inputs)
         batch_data_samples = add_d2_pred_to_datasample(
@@ -157,8 +161,10 @@ class Detectron2Wrapper(BaseDetector):
         """
         pass
 
-    def _convert_to_batched_d2_inputs(self, batch_inputs: Tensor,
-                                      batch_data_samples: SampleList) -> list:
+    def _convert_to_batched_d2_inputs(self,
+                                      batch_inputs: Tensor,
+                                      batch_data_samples: SampleList,
+                                      training=True) -> list:
         from detectron2.data.detection_utils import filter_empty_instances
         from detectron2.structures import Boxes, Instances
 
@@ -196,10 +202,11 @@ class Detectron2Wrapper(BaseDetector):
                                     f'{type(gt_masks)}.')
             # convert to cpu and convert back to cuda to avoid
             # some potential error
-            device = gt_boxes.device
-            d2_instances = filter_empty_instances(
-                d2_instances.to('cpu')).to(device)
-            d2_inputs['instances'] = d2_instances
+            if training:
+                device = gt_boxes.device
+                d2_instances = filter_empty_instances(
+                    d2_instances.to('cpu')).to(device)
+                d2_inputs['instances'] = d2_instances
             batched_d2_inputs.append(d2_inputs)
 
         return batched_d2_inputs
