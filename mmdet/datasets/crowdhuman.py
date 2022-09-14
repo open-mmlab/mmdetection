@@ -2,6 +2,7 @@
 import json
 import logging
 import os.path as osp
+import warnings
 from typing import List, Union
 
 import mmcv
@@ -29,25 +30,29 @@ class CrowdHumanDataset(BaseDetDataset):
         'PALETTE': [(220, 20, 60)]
     }
 
-    def __init__(self, data_root, ann_file, **kwargs):
+    def __init__(self, data_root, ann_file, id_hw=None, **kwargs):
         # id_hw file is an additional annotation information which record the
         # size of each image. This file is automatically created when you
         # first load the CrowdHuman dataset by mmdet
-        ann_file_name = osp.basename(ann_file)
-        if 'train' in ann_file_name:
-            self.id_hw_path = osp.join(data_root, 'id_hw_train.json')
-        elif 'val' in ann_file_name:
-            self.id_hw_path = osp.join(data_root, 'id_hw_val.json')
-        self.id_hw_exist = False
-        if not osp.isfile(self.id_hw_path):
-            print_log(
-                'id_hw file does not exist, prepare to collect '
-                'image height and width...',
-                level=logging.INFO)
-            self.id_hw = {}
-        else:
+        if id_hw is not None:
             self.id_hw_exist = True
-            self.id_hw = load(self.id_hw_path)
+            self.id_hw = load(id_hw)
+        else:
+            ann_file_name = osp.basename(ann_file)
+            if 'train' in ann_file_name:
+                self.id_hw_path = osp.join(data_root, 'id_hw_train.json')
+            elif 'val' in ann_file_name:
+                self.id_hw_path = osp.join(data_root, 'id_hw_val.json')
+            self.id_hw_exist = False
+            if not osp.isfile(self.id_hw_path):
+                print_log(
+                    'id_hw file does not exist, prepare to collect '
+                    'image height and width...',
+                    level=logging.INFO)
+                self.id_hw = {}
+            else:
+                self.id_hw_exist = True
+                self.id_hw = load(self.id_hw_path)
         super().__init__(data_root=data_root, ann_file=ann_file, **kwargs)
 
     def load_data_list(self) -> List[dict]:
@@ -68,10 +73,16 @@ class CrowdHumanDataset(BaseDetDataset):
             prog_bar.update()
         if not self.id_hw_exist:
             #  TODO: support file client
-            dump(self.id_hw, self.id_hw_path, file_format='json')
+            try:
+                dump(self.id_hw, self.id_hw_path, file_format='json')
+            except:  # noqa
+                warnings.warn(
+                    'Cache files can not be saved automatically! To speed up'
+                    'loading the dataset, please manually generate the cache'
+                    ' file by filetools/misc/get_crowdhuman_id_hw.py')
+
             print_log(f'\nsave id_hw in {self.data_root}', level=logging.INFO)
 
-        del self.id_hw, self.id_hw_exist, self.id_hw_path
         print_log('\nDone', level=logging.INFO)
         return data_list
 
