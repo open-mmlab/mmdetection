@@ -26,7 +26,7 @@ class DETR(TransformerDetector):
         # initialize encoder, decoder, query_embed, positional_encoding
         self._init_transformer()
         # initialize input projection
-        self._init_input_proj()  # TODO: Can it be replaced with ChannelMapper?
+        self._init_input_proj()  # TODO: Can it be replaced by ChannelMapper?
 
     def _init_transformer(self) -> None:
         self.positional_encoding = SinePositionalEncoding(
@@ -48,7 +48,7 @@ class DETR(TransformerDetector):
     def init_weights(self) -> None:  # TODO
         super(TransformerDetector, self).init_weights()
         self._init_transformer_weights()
-        self._is_init = True  # TODO
+        self._is_init = True  # TODO why?
 
     def _init_transformer_weights(self) -> None:  # TODO
         # follow the DetrTransformer to init parameters

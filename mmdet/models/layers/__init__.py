@@ -11,12 +11,15 @@ from .msdeformattn_pixel_decoder import MSDeformAttnPixelDecoder
 from .normed_predictor import NormedConv2d, NormedLinear
 from .pixel_decoder import PixelDecoder, TransformerEncoderPixelDecoder
 from .positional_encoding import (LearnedPositionalEncoding,
-                                  SinePositionalEncoding)
+                                  SinePositionalEncoding,
+                                  SinePositionalEncodingHW)
 from .res_layer import ResLayer, SimplifiedBasicBlock
 from .se_layer import DyReLU, SELayer
-from .transformer import (DetrTransformerDecoder, DetrTransformerEncoder,
-                          DynamicConv, PatchEmbed, PatchMerging,
-                          inverse_sigmoid, nchw_to_nlc, nlc_to_nchw)
+from .transformer import (MLP, DetrTransformerDecoder,
+                          DetrTransformerDecoderLayer, DetrTransformerEncoder,
+                          DetrTransformerEncoderLayer, DynamicConv, PatchEmbed,
+                          PatchMerging, inverse_sigmoid, nchw_to_nlc,
+                          nlc_to_nchw)
 
 __all__ = [
     'fast_nms', 'multiclass_nms', 'mask_matrix_nms', 'DropBlock',
@@ -27,5 +30,6 @@ __all__ = [
     'SELayer', 'ConvUpsample', 'CSPLayer', 'adaptive_avg_pool2d',
     'AdaptiveAvgPool2d', 'PatchEmbed', 'nchw_to_nlc', 'nlc_to_nchw', 'DyReLU',
     'ExpMomentumEMA', 'inverse_sigmoid', 'DetrTransformerEncoder',
-    'DetrTransformerDecoder'
+    'DetrTransformerDecoder', 'MLP', 'DetrTransformerEncoderLayer',
+    'DetrTransformerDecoderLayer', 'SinePositionalEncodingHW'
 ]
