@@ -78,6 +78,7 @@ class ResultVisualizer:
         wait_time (float): Value of waitKey param. Default: 0.
         score_thr (float): Minimum score of bboxes to be shown.
            Default: 0.
+        runner (:obj:`Runner`): The runner of the visualization process.
     """
 
     def __init__(self, show=False, wait_time=0, score_thr=0, runner=None):
@@ -105,6 +106,7 @@ class ResultVisualizer:
                 in dataset and model's performance on them.
             out_dir (str, optional): The filename to write the image.
                 Defaults: None.
+            task (str): The task to be performed. Defaults: det
         """
         mkdir_or_exist(out_dir)
 
@@ -172,7 +174,6 @@ class ResultVisualizer:
                 lowest topk after evaluation index sorting. Default: 20.
             show_dir (str, optional): The filename to write the image.
                 Default: 'work_dir'
-            eval_fn (callable, optional): Eval function, Default: None.
         """
 
         self.visualizer.dataset_meta = dataset.metainfo
