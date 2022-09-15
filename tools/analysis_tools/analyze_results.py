@@ -106,7 +106,7 @@ class ResultVisualizer:
                 in dataset and model's performance on them.
             out_dir (str, optional): The filename to write the image.
                 Defaults: None.
-            task (str): The task to be performed. Defaults: det
+            task (str): The task to be performed. Defaults: 'det'
         """
         mkdir_or_exist(out_dir)
 
