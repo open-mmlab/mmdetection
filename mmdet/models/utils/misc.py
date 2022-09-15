@@ -539,7 +539,7 @@ def get_box_tensor(boxes: Union[Tensor, BaseBoxes]) -> Tensor:
 
 def filter_gt_instances_by_score(batch_data_samples: SampleList,
                                  score_thr: float) -> SampleList:
-    """Filter gt-instances by score.
+    """Filter ground truth (GT) instances by score.
 
     Args:
         batch_data_samples (SampleList): The Data
@@ -561,7 +561,7 @@ def filter_gt_instances_by_score(batch_data_samples: SampleList,
 
 def filter_gt_instances_by_size(batch_data_samples: SampleList,
                                 wh_thr: tuple) -> SampleList:
-    """Filter gt-instances by size.
+    """Filter ground truth (GT) instances by size.
 
     Args:
         batch_data_samples (SampleList): The Data
@@ -585,7 +585,7 @@ def filter_gt_instances_by_size(batch_data_samples: SampleList,
 def filter_gt_instances(batch_data_samples: SampleList,
                         score_thr: float = None,
                         wh_thr: tuple = None):
-    """Filter gt-instances by score and size.
+    """Filter ground truth (GT) instances by score and/or size.
 
     Args:
         batch_data_samples (SampleList): The Data
@@ -595,7 +595,7 @@ def filter_gt_instances(batch_data_samples: SampleList,
         wh_thr (tuple):  Minimum width and height of bbox.
 
     Returns:
-        SampleList: The Data Samples filtered by score.
+        SampleList: The Data Samples filtered by score and/or size.
     """
 
     if score_thr is not None:
