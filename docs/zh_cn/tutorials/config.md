@@ -56,8 +56,8 @@
 ```python
 # 已经弃用的形式
 model = dict(
-   type=...,
-   ...
+    type=...,
+    ...
 )
 train_cfg=dict(...)
 test_cfg=dict(...)
@@ -68,10 +68,10 @@ test_cfg=dict(...)
 ```python
 # 推荐的形式
 model = dict(
-   type=...,
-   ...
-   train_cfg=dict(...),
-   test_cfg=dict(...),
+    type=...,
+    ...
+train_cfg=dict(...),
+          test_cfg=dict(...),
 )
 ```
 
@@ -93,7 +93,7 @@ model = dict(
             requires_grad=True),  # 是否训练归一化里的 gamma 和 beta。
         norm_eval=True,  # 是否冻结 BN 里的统计项。
         style='pytorch',  # 主干网络的风格，'pytorch' 意思是步长为2的层为 3x3 卷积， 'caffe' 意思是步长为2的层为 1x1 卷积。
-       init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),  # 加载通过 ImageNet 预训练的模型
+        init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),  # 加载通过 ImageNet 预训练的模型
     neck=dict(
         type='FPN',  # 检测器的 neck 是 FPN，我们同样支持 'NASFPN', 'PAFPN' 等，更多细节可以参考 https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/necks/fpn.py#L10。
         in_channels=[256, 512, 1024, 2048],  # 输入通道数，这与主干网络的输出通道一致
@@ -365,7 +365,7 @@ data = dict(
                 ])
         ],
         samples_per_gpu=2  # 单个 GPU 测试时的 Batch size
-        ))
+    ))
 evaluation = dict(  # evaluation hook 的配置，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/evaluation/eval_hooks.py#L7。
     interval=1,  # 验证的间隔。
     metric=['bbox', 'segm'])  # 验证期间使用的指标。
@@ -390,10 +390,15 @@ checkpoint_config = dict(  # Checkpoint hook 的配置文件。执行时请参�
     interval=1)  # 保存的间隔是 1。
 log_config = dict(  # register logger hook 的配置文件。
     interval=50,  # 打印日志的间隔
-    hooks=[
-        # dict(type='TensorboardLoggerHook')  # 同样支持 Tensorboard 日志
-        dict(type='TextLoggerHook')
+    hooks=[ # 训练期间执行的钩子
+        dict(type='TextLoggerHook', by_epoch=False),
+        dict(type='TensorboardLoggerHook', by_epoch=False),
+        dict(type='MMDetWandbHook', by_epoch=False, # 还支持 Wandb 记录器，它需要安装 `wandb`。
+             init_kwargs={'entity': "OpenMMLab", # 用于登录wandb的实体
+                          'project': "MMDet", # WandB中的项目名称
+                          'config': cfg_dict}), # 检查 https://docs.wandb.ai/ref/python/init 以获取更多初始化参数
     ])  # 用于记录训练过程的记录器(logger)。
+
 dist_params = dict(backend='nccl')  # 用于设置分布式训练的参数，端口也同样可被设置。
 log_level = 'INFO'  # 日志的级别。
 load_from = None  # 从一个给定路径里加载模型作为预训练模型，它并不会消耗训练时间。

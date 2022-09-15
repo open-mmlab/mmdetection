@@ -50,9 +50,9 @@ __all__ = [
     'PISARetinaHead', 'PISASSDHead', 'GFLHead', 'CornerHead', 'YOLACTHead',
     'YOLACTSegmHead', 'YOLACTProtonet', 'YOLOV3Head', 'PAAHead',
     'SABLRetinaHead', 'CentripetalHead', 'VFNetHead', 'StageCascadeRPNHead',
-    'CascadeRPNHead', 'EmbeddingRPNHead', 'LDHead', 'CascadeRPNHead',
-    'AutoAssignHead', 'DETRHead', 'YOLOFHead', 'DeformableDETRHead',
-    'SOLOHead', 'DecoupledSOLOHead', 'CenterNetHead', 'YOLOXHead',
+    'CascadeRPNHead', 'EmbeddingRPNHead', 'LDHead', 'AutoAssignHead',
+    'DETRHead', 'YOLOFHead', 'DeformableDETRHead', 'SOLOHead',
+    'DecoupledSOLOHead', 'CenterNetHead', 'YOLOXHead',
     'DecoupledSOLOLightHead', 'LADHead', 'TOODHead', 'MaskFormerHead',
     'Mask2FormerHead', 'SOLOV2Head', 'DDODHead'
 ]

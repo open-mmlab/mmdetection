@@ -33,10 +33,9 @@ class BboxOverlaps2D:
         Args:
             bboxes1 (Tensor): bboxes have shape (m, 4) in <x1, y1, x2, y2>
                 format, or shape (m, 5) in <x1, y1, x2, y2, score> format.
-            bboxes2 (Tensor): bboxes have shape (m, 4) in <x1, y1, x2, y2>
-                format, shape (m, 5) in <x1, y1, x2, y2, score> format, or be
-                empty. If ``is_aligned `` is ``True``, then m and n must be
-                equal.
+            bboxes2 (Tensor): bboxes have shape (n, 4) in <x1, y1, x2, y2>
+                format, shape (n, 5) in <x1, y1, x2, y2, score> format, or be
+                empty.
             mode (str): "iou" (intersection over union), "iof" (intersection
                 over foreground), or "giou" (generalized intersection over
                 union).
