@@ -77,12 +77,10 @@ Apart from MMDetection, we also released a library [mmcv](https://github.com/ope
 
 ### 💎 Stable version
 
-**2.25.0** was released in 1/6/2022:
+**2.25.2** was released in 15/9/2022:
 
-- Support dedicated `MMDetWandbHook` hook
-- Support [ConvNeXt](configs/convnext), [DDOD](configs/ddod), [SOLOv2](configs/solov2)
-- Support [Mask2Former](configs/mask2former) for instance segmentation
-- Rename [config files of Mask2Former](configs/mask2former)
+- Fix bugs in Dynamic Head and Swin Transformer.
+- Refine docstring and documentation.
 
 Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
 
