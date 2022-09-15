@@ -14,11 +14,11 @@ from mmcv.transforms import RandomFlip as MMCV_RandomFlip
 from mmcv.transforms import Resize as MMCV_Resize
 from mmcv.transforms.utils import avoid_cache_randomness, cache_randomness
 from mmengine.dataset import BaseDataset
+from mmengine.utils import is_str
 from numpy import random
 
-from mmdet.evaluation.functional import bbox_overlaps
 from mmdet.registry import TRANSFORMS
-from mmdet.structures.bbox import find_inside_bboxes
+from mmdet.structures.bbox import HorizontalBoxes, autocast_box_type
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 from mmdet.utils import log_img_scale
 
@@ -50,7 +50,7 @@ class Resize(MMCV_Resize):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -102,14 +102,9 @@ class Resize(MMCV_Resize):
     def _resize_bboxes(self, results: dict) -> None:
         """Resize bounding boxes with ``results['scale_factor']``."""
         if results.get('gt_bboxes', None) is not None:
-            bboxes = results['gt_bboxes'] * np.tile(
-                np.array(results['scale_factor']), 2)
+            results['gt_bboxes'].rescale_(results['scale_factor'])
             if self.clip_object_border:
-                bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0,
-                                          results['img_shape'][1])
-                bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0,
-                                          results['img_shape'][0])
-            results['gt_bboxes'] = bboxes.astype(np.float32)
+                results['gt_bboxes'].clip_(results['img_shape'])
 
     def _resize_seg(self, results: dict) -> None:
         """Resize semantic segmentation map with ``results['scale']``."""
@@ -139,6 +134,7 @@ class Resize(MMCV_Resize):
             results['homography_matrix'] = homography_matrix @ results[
                 'homography_matrix']
 
+    @autocast_box_type()
     def transform(self, results: dict) -> dict:
         """Transform function to resize images, bounding boxes and semantic
         segmentation map.
@@ -201,7 +197,7 @@ class RandomFlip(MMCV_RandomFlip):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -251,6 +247,7 @@ class RandomFlip(MMCV_RandomFlip):
             results['homography_matrix'] = homography_matrix @ results[
                 'homography_matrix']
 
+    @autocast_box_type()
     def _flip(self, results: dict) -> None:
         """Flip images, bounding boxes, and semantic segmentation map."""
         # flip image
@@ -261,9 +258,7 @@ class RandomFlip(MMCV_RandomFlip):
 
         # flip bboxes
         if results.get('gt_bboxes', None) is not None:
-            results['gt_bboxes'] = self.flip_bbox(results['gt_bboxes'],
-                                                  img_shape,
-                                                  results['flip_direction'])
+            results['gt_bboxes'].flip_(img_shape, results['flip_direction'])
 
         # flip masks
         if results.get('gt_masks', None) is not None:
@@ -286,7 +281,7 @@ class RandomShift(BaseTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32)
+    - gt_bboxes (BaseBoxes[torch.float32])
     - gt_bboxes_labels (np.int64)
     - gt_ignore_flags (np.bool) (optional)
 
@@ -319,6 +314,7 @@ class RandomShift(BaseTransform):
     def _random_prob(self) -> float:
         return random.uniform(0, 1)
 
+    @autocast_box_type()
     def transform(self, results: dict) -> dict:
         """Transform function to random shift images, bounding boxes.
 
@@ -341,19 +337,15 @@ class RandomShift(BaseTransform):
             ori_y = max(0, -random_shift_y)
 
             # TODO: support mask and semantic segmentation maps.
-            bboxes = results['gt_bboxes'].copy()
-            bboxes[..., 0::2] += random_shift_x
-            bboxes[..., 1::2] += random_shift_y
+            bboxes = results['gt_bboxes'].clone()
+            bboxes.translate_([random_shift_x, random_shift_y])
 
             # clip border
-            bboxes[..., 0::2] = np.clip(bboxes[..., 0::2], 0, img_shape[1])
-            bboxes[..., 1::2] = np.clip(bboxes[..., 1::2], 0, img_shape[0])
+            bboxes.clip_(img_shape)
 
             # remove invalid bboxes
-            bbox_w = bboxes[..., 2] - bboxes[..., 0]
-            bbox_h = bboxes[..., 3] - bboxes[..., 1]
-            valid_inds = (bbox_w > self.filter_thr_px) & (
-                bbox_h > self.filter_thr_px)
+            valid_inds = (bboxes.widths > self.filter_thr_px).numpy() & (
+                bboxes.heights > self.filter_thr_px).numpy()
             # If the shift does not contain any gt-bbox area, skip this
             # image.
             if not valid_inds.any():
@@ -398,7 +390,7 @@ class Pad(MMCV_Pad):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -521,7 +513,7 @@ class RandomCrop(BaseTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_ignore_flags (np.bool) (optional)
@@ -639,20 +631,17 @@ class RandomCrop(BaseTransform):
 
         # crop bboxes accordingly and clip to the image boundary
         if results.get('gt_bboxes', None) is not None:
-            bbox_offset = np.array([offset_w, offset_h, offset_w, offset_h],
-                                   dtype=np.float32)
-            bboxes = results['gt_bboxes'] - bbox_offset
+            bboxes = results['gt_bboxes']
+            bboxes.translate_([-offset_w, -offset_h])
             if self.bbox_clip_border:
-                bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, img_shape[1])
-                bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, img_shape[0])
-            valid_inds = (bboxes[:, 2] > bboxes[:, 0]) & (
-                bboxes[:, 3] > bboxes[:, 1])
+                bboxes.clip_(img_shape[:2])
+            valid_inds = bboxes.is_inside(img_shape[:2]).numpy()
             # If the crop does not contain any gt-bbox area and
             # allow_negative_crop is False, skip this image.
             if (not valid_inds.any() and not allow_negative_crop):
                 return None
 
-            results['gt_bboxes'] = bboxes[valid_inds, :]
+            results['gt_bboxes'] = bboxes[valid_inds]
 
             if results.get('gt_ignore_flags', None) is not None:
                 results['gt_ignore_flags'] = \
@@ -667,7 +656,8 @@ class RandomCrop(BaseTransform):
                     valid_inds.nonzero()[0]].crop(
                         np.asarray([crop_x1, crop_y1, crop_x2, crop_y2]))
                 if self.recompute_bbox:
-                    results['gt_bboxes'] = results['gt_masks'].get_bboxes()
+                    results['gt_bboxes'] = results['gt_masks'].get_bboxes(
+                        type(results['gt_bboxes']))
 
         # crop semantic seg
         if results.get('gt_seg_map', None) is not None:
@@ -724,6 +714,7 @@ class RandomCrop(BaseTransform):
             crop_h, crop_w = crop_size + np.random.rand(2) * (1 - crop_size)
             return int(h * crop_h + 0.5), int(w * crop_w + 0.5)
 
+    @autocast_box_type()
     def transform(self, results: dict) -> Union[dict, None]:
         """Transform function to randomly crop images, bounding boxes, masks,
         semantic segmentation maps.
@@ -939,7 +930,7 @@ class Expand(BaseTransform):
 
     - img
     - img_shape
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_seg_map (np.uint8) (optional)
 
@@ -991,6 +982,7 @@ class Expand(BaseTransform):
         top = int(random.uniform(0, h * ratio - h))
         return left, top
 
+    @autocast_box_type()
     def transform(self, results: dict) -> dict:
         """Transform function to expand images, bounding boxes, masks,
         segmentation map.
@@ -1024,8 +1016,7 @@ class Expand(BaseTransform):
 
         # expand bboxes
         if results.get('gt_bboxes', None) is not None:
-            results['gt_bboxes'] = results['gt_bboxes'] + np.tile(
-                (left, top), 2).astype(results['gt_bboxes'].dtype)
+            results['gt_bboxes'].translate_([left, top])
 
         # expand masks
         if results.get('gt_masks', None) is not None:
@@ -1064,7 +1055,7 @@ class MinIoURandomCrop(BaseTransform):
 
     - img
     - img_shape
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - gt_ignore_flags (np.bool) (optional)
@@ -1104,6 +1095,7 @@ class MinIoURandomCrop(BaseTransform):
     def _random_mode(self) -> Number:
         return random.choice(self.sample_mode)
 
+    @autocast_box_type()
     def transform(self, results: dict) -> dict:
         """Transform function to crop images and bounding boxes with minimum
         IoU constraint.
@@ -1143,8 +1135,9 @@ class MinIoURandomCrop(BaseTransform):
                 # Line or point crop is not allowed
                 if patch[2] == patch[0] or patch[3] == patch[1]:
                     continue
-                overlaps = bbox_overlaps(
-                    patch.reshape(-1, 4), boxes.reshape(-1, 4)).reshape(-1)
+                overlaps = boxes.overlaps(
+                    HorizontalBoxes(patch.reshape(-1, 4)),
+                    boxes).numpy().reshape(-1)
                 if len(overlaps) > 0 and overlaps.min() < min_iou:
                     continue
 
@@ -1153,25 +1146,23 @@ class MinIoURandomCrop(BaseTransform):
                 if len(overlaps) > 0:
                     # adjust boxes
                     def is_center_of_bboxes_in_patch(boxes, patch):
-                        center = (boxes[:, :2] + boxes[:, 2:]) / 2
-                        mask = ((center[:, 0] > patch[0]) *
-                                (center[:, 1] > patch[1]) *
-                                (center[:, 0] < patch[2]) *
-                                (center[:, 1] < patch[3]))
+                        centers = boxes.centers.numpy()
+                        mask = ((centers[:, 0] > patch[0]) *
+                                (centers[:, 1] > patch[1]) *
+                                (centers[:, 0] < patch[2]) *
+                                (centers[:, 1] < patch[3]))
                         return mask
 
                     mask = is_center_of_bboxes_in_patch(boxes, patch)
                     if not mask.any():
                         continue
                     if results.get('gt_bboxes', None) is not None:
-                        boxes = results['gt_bboxes'].copy()
+                        boxes = results['gt_bboxes']
                         mask = is_center_of_bboxes_in_patch(boxes, patch)
                         boxes = boxes[mask]
+                        boxes.translate_([-left, -top])
                         if self.bbox_clip_border:
-                            boxes[:, 2:] = boxes[:, 2:].clip(max=patch[2:])
-                            boxes[:, :2] = boxes[:, :2].clip(min=patch[:2])
-                        boxes -= np.tile(patch[:2], 2)
-
+                            boxes.clip_([new_h, new_w])
                         results['gt_bboxes'] = boxes
 
                         # ignore_flags
@@ -1270,13 +1261,13 @@ class Albu(BaseTransform):
     Required Keys:
 
     - img (np.uint8)
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (HorizontalBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
 
     Modified Keys:
 
     - img (np.uint8)
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (HorizontalBoxes[torch.float32]) (optional)
     - gt_masks (BitmapMasks | PolygonMasks) (optional)
     - img_shape (tuple)
 
@@ -1372,7 +1363,7 @@ class Albu(BaseTransform):
         assert isinstance(cfg, dict) and 'type' in cfg
         args = cfg.copy()
         obj_type = args.pop('type')
-        if mmcv.is_str(obj_type):
+        if is_str(obj_type):
             if albumentations is None:
                 raise RuntimeError('albumentations is not installed')
             obj_cls = getattr(albumentations, obj_type)
@@ -1406,6 +1397,7 @@ class Albu(BaseTransform):
             updated_dict[new_k] = d[k]
         return updated_dict
 
+    @autocast_box_type()
     def transform(self, results: dict) -> Union[dict, None]:
         """Transform function of Albu."""
         # TODO: gt_seg_map is not currently supported
@@ -1425,8 +1417,11 @@ class Albu(BaseTransform):
         """Pre-processing results to facilitate the use of Albu."""
         if 'bboxes' in results:
             # to list of boxes
-            if isinstance(results['bboxes'], np.ndarray):
-                results['bboxes'] = [x for x in results['bboxes']]
+            if not isinstance(results['bboxes'], HorizontalBoxes):
+                raise NotImplementedError(
+                    'Albu only supports horizontal boxes now')
+            bboxes = results['bboxes'].numpy()
+            results['bboxes'] = [x for x in bboxes]
             # add pseudo-field for filtration
             if self.filter_lost_elements:
                 results['idx_mapper'] = np.arange(len(results['bboxes']))
@@ -1456,6 +1451,7 @@ class Albu(BaseTransform):
                 results['bboxes'] = np.array(
                     results['bboxes'], dtype=np.float32)
             results['bboxes'] = results['bboxes'].reshape(-1, 4)
+            results['bboxes'] = HorizontalBoxes(results['bboxes'])
 
             # filter label_fields
             if self.filter_lost_elements:
@@ -1548,7 +1544,7 @@ class RandomCenterCropPad(BaseTransform):
 
     - img (np.float32)
     - img_shape (tuple)
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_ignore_flags (np.bool) (optional)
 
@@ -1556,7 +1552,7 @@ class RandomCenterCropPad(BaseTransform):
 
     - img (np.float32)
     - img_shape (tuple)
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_ignore_flags (np.bool) (optional)
 
@@ -1667,7 +1663,7 @@ class RandomCenterCropPad(BaseTransform):
         Returns:
             mask (numpy array, (N,)): Each box is inside or outside the patch.
         """
-        center = (boxes[:, :2] + boxes[:, 2:]) / 2
+        center = boxes.centers.numpy()
         mask = (center[:, 0] > patch[0]) * (center[:, 1] > patch[1]) * (
             center[:, 0] < patch[2]) * (
                 center[:, 1] < patch[3])
@@ -1770,15 +1766,13 @@ class RandomCenterCropPad(BaseTransform):
 
                 # crop bboxes accordingly and clip to the image boundary
                 gt_bboxes = gt_bboxes[mask]
-                gt_bboxes[:, 0:4:2] += cropped_center_x - left_w - x0
-                gt_bboxes[:, 1:4:2] += cropped_center_y - top_h - y0
+                gt_bboxes.translate_([
+                    cropped_center_x - left_w - x0,
+                    cropped_center_y - top_h - y0
+                ])
                 if self.bbox_clip_border:
-                    gt_bboxes[:, 0:4:2] = np.clip(gt_bboxes[:, 0:4:2], 0,
-                                                  new_w)
-                    gt_bboxes[:, 1:4:2] = np.clip(gt_bboxes[:, 1:4:2], 0,
-                                                  new_h)
-                keep = (gt_bboxes[:, 2] > gt_bboxes[:, 0]) & (
-                    gt_bboxes[:, 3] > gt_bboxes[:, 1])
+                    gt_bboxes.clip_([new_h, new_w])
+                keep = gt_bboxes.is_inside([new_h, new_w]).numpy()
                 gt_bboxes = gt_bboxes[keep]
 
                 results['gt_bboxes'] = gt_bboxes
@@ -1833,6 +1827,7 @@ class RandomCenterCropPad(BaseTransform):
         results['border'] = border
         return results
 
+    @autocast_box_type()
     def transform(self, results: dict) -> dict:
         img = results['img']
         assert img.dtype == np.float32, (
@@ -1920,6 +1915,7 @@ class CutOut(BaseTransform):
         if not isinstance(self.candidates, list):
             self.candidates = [self.candidates]
 
+    @autocast_box_type()
     def transform(self, results: dict) -> dict:
         """Call function to drop some regions of image."""
         h, w, c = results['img'].shape
@@ -1986,7 +1982,7 @@ class Mosaic(BaseTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_ignore_flags (np.bool) (optional)
     - mix_results (List[dict])
@@ -2045,6 +2041,7 @@ class Mosaic(BaseTransform):
         indexes = [random.randint(0, len(dataset)) for _ in range(3)]
         return indexes
 
+    @autocast_box_type()
     def transform(self, results: dict) -> dict:
         """Mosaic transform function.
 
@@ -2110,26 +2107,21 @@ class Mosaic(BaseTransform):
 
             padw = x1_p - x1_c
             padh = y1_p - y1_c
-            gt_bboxes_i[:, 0::2] = \
-                scale_ratio_i * gt_bboxes_i[:, 0::2] + padw
-            gt_bboxes_i[:, 1::2] = \
-                scale_ratio_i * gt_bboxes_i[:, 1::2] + padh
+            gt_bboxes_i.rescale_([scale_ratio_i, scale_ratio_i])
+            gt_bboxes_i.translate_([padw, padh])
             mosaic_bboxes.append(gt_bboxes_i)
             mosaic_bboxes_labels.append(gt_bboxes_labels_i)
             mosaic_ignore_flags.append(gt_ignore_flags_i)
 
-        mosaic_bboxes = np.concatenate(mosaic_bboxes, 0)
+        mosaic_bboxes = mosaic_bboxes[0].cat(mosaic_bboxes, 0)
         mosaic_bboxes_labels = np.concatenate(mosaic_bboxes_labels, 0)
         mosaic_ignore_flags = np.concatenate(mosaic_ignore_flags, 0)
 
         if self.bbox_clip_border:
-            mosaic_bboxes[:, 0::2] = np.clip(mosaic_bboxes[:, 0::2], 0,
-                                             2 * self.img_scale[1])
-            mosaic_bboxes[:, 1::2] = np.clip(mosaic_bboxes[:, 1::2], 0,
-                                             2 * self.img_scale[0])
+            mosaic_bboxes.clip_([2 * self.img_scale[0], 2 * self.img_scale[1]])
         # remove outside bboxes
-        inside_inds = find_inside_bboxes(mosaic_bboxes, 2 * self.img_scale[0],
-                                         2 * self.img_scale[1])
+        inside_inds = mosaic_bboxes.is_inside(
+            [2 * self.img_scale[0], 2 * self.img_scale[1]]).numpy()
         mosaic_bboxes = mosaic_bboxes[inside_inds]
         mosaic_bboxes_labels = mosaic_bboxes_labels[inside_inds]
         mosaic_ignore_flags = mosaic_ignore_flags[inside_inds]
@@ -2243,7 +2235,7 @@ class MixUp(BaseTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_ignore_flags (np.bool) (optional)
     - mix_results (List[dict])
@@ -2310,6 +2302,7 @@ class MixUp(BaseTransform):
 
         return index
 
+    @autocast_box_type()
     def transform(self, results: dict) -> dict:
         """MixUp transform function.
 
@@ -2380,29 +2373,19 @@ class MixUp(BaseTransform):
 
         # 6. adjust bbox
         retrieve_gt_bboxes = retrieve_results['gt_bboxes']
-        retrieve_gt_bboxes[:, 0::2] = retrieve_gt_bboxes[:, 0::2] * scale_ratio
-        retrieve_gt_bboxes[:, 1::2] = retrieve_gt_bboxes[:, 1::2] * scale_ratio
+        retrieve_gt_bboxes.rescale_([scale_ratio, scale_ratio])
         if self.bbox_clip_border:
-            retrieve_gt_bboxes[:, 0::2] = np.clip(retrieve_gt_bboxes[:, 0::2],
-                                                  0, origin_w)
-            retrieve_gt_bboxes[:, 1::2] = np.clip(retrieve_gt_bboxes[:, 1::2],
-                                                  0, origin_h)
+            retrieve_gt_bboxes.clip_([origin_h, origin_w])
 
         if is_filp:
-            retrieve_gt_bboxes[:, 0::2] = (
-                origin_w - retrieve_gt_bboxes[:, 0::2][:, ::-1])
+            retrieve_gt_bboxes.flip_([origin_h, origin_w],
+                                     direction='horizontal')
 
         # 7. filter
-        cp_retrieve_gt_bboxes = retrieve_gt_bboxes.copy()
-        cp_retrieve_gt_bboxes[:, 0::2] = \
-            cp_retrieve_gt_bboxes[:, 0::2] - x_offset
-        cp_retrieve_gt_bboxes[:, 1::2] = \
-            cp_retrieve_gt_bboxes[:, 1::2] - y_offset
+        cp_retrieve_gt_bboxes = retrieve_gt_bboxes.clone()
+        cp_retrieve_gt_bboxes.translate_([-x_offset, -y_offset])
         if self.bbox_clip_border:
-            cp_retrieve_gt_bboxes[:, 0::2] = np.clip(
-                cp_retrieve_gt_bboxes[:, 0::2], 0, target_w)
-            cp_retrieve_gt_bboxes[:, 1::2] = np.clip(
-                cp_retrieve_gt_bboxes[:, 1::2], 0, target_h)
+            cp_retrieve_gt_bboxes.clip_([target_h, target_w])
 
         # 8. mix up
         ori_img = ori_img.astype(np.float32)
@@ -2411,15 +2394,15 @@ class MixUp(BaseTransform):
         retrieve_gt_bboxes_labels = retrieve_results['gt_bboxes_labels']
         retrieve_gt_ignore_flags = retrieve_results['gt_ignore_flags']
 
-        mixup_gt_bboxes = np.concatenate(
-            (results['gt_bboxes'], cp_retrieve_gt_bboxes), axis=0)
+        mixup_gt_bboxes = cp_retrieve_gt_bboxes.cat(
+            (results['gt_bboxes'], cp_retrieve_gt_bboxes), dim=0)
         mixup_gt_bboxes_labels = np.concatenate(
             (results['gt_bboxes_labels'], retrieve_gt_bboxes_labels), axis=0)
         mixup_gt_ignore_flags = np.concatenate(
             (results['gt_ignore_flags'], retrieve_gt_ignore_flags), axis=0)
 
         # remove outside bbox
-        inside_inds = find_inside_bboxes(mixup_gt_bboxes, target_h, target_w)
+        inside_inds = mixup_gt_bboxes.is_inside([target_h, target_w]).numpy()
         mixup_gt_bboxes = mixup_gt_bboxes[inside_inds]
         mixup_gt_bboxes_labels = mixup_gt_bboxes_labels[inside_inds]
         mixup_gt_ignore_flags = mixup_gt_ignore_flags[inside_inds]
@@ -2453,7 +2436,7 @@ class RandomAffine(BaseTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_ignore_flags (np.bool) (optional)
 
@@ -2534,6 +2517,7 @@ class RandomAffine(BaseTransform):
             translate_matrix @ shear_matrix @ rotation_matrix @ scaling_matrix)
         return warp_matrix
 
+    @autocast_box_type()
     def transform(self, results: dict) -> dict:
         img = results['img']
         height = img.shape[0] + self.border[0] * 2
@@ -2552,29 +2536,12 @@ class RandomAffine(BaseTransform):
         bboxes = results['gt_bboxes']
         num_bboxes = len(bboxes)
         if num_bboxes:
-            # homogeneous coordinates
-            xs = bboxes[:, [0, 0, 2, 2]].reshape(num_bboxes * 4)
-            ys = bboxes[:, [1, 3, 3, 1]].reshape(num_bboxes * 4)
-            ones = np.ones_like(xs)
-            points = np.vstack([xs, ys, ones])
-
-            warp_points = warp_matrix @ points
-            warp_points = warp_points[:2] / warp_points[2]
-            xs = warp_points[0].reshape(num_bboxes, 4)
-            ys = warp_points[1].reshape(num_bboxes, 4)
-
-            warp_bboxes = np.vstack(
-                (xs.min(1), ys.min(1), xs.max(1), ys.max(1))).T
-
+            bboxes.project_(warp_matrix)
             if self.bbox_clip_border:
-                warp_bboxes[:, [0, 2]] = \
-                    warp_bboxes[:, [0, 2]].clip(0, width)
-                warp_bboxes[:, [1, 3]] = \
-                    warp_bboxes[:, [1, 3]].clip(0, height)
-
+                bboxes.clip_([height, width])
             # remove outside bbox
-            valid_index = find_inside_bboxes(warp_bboxes, height, width)
-            results['gt_bboxes'] = warp_bboxes[valid_index]
+            valid_index = bboxes.is_inside([height, width]).numpy()
+            results['gt_bboxes'] = bboxes[valid_index]
             results['gt_bboxes_labels'] = results['gt_bboxes_labels'][
                 valid_index]
             results['gt_ignore_flags'] = results['gt_ignore_flags'][
@@ -2711,7 +2678,7 @@ class CopyPaste(BaseTransform):
     Required Keys:
 
     - img
-    - gt_bboxes (np.float32) (optional)
+    - gt_bboxes (BaseBoxes[torch.float32]) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_ignore_flags (np.bool) (optional)
     - gt_masks (BitmapMasks) (optional)
@@ -2760,6 +2727,7 @@ class CopyPaste(BaseTransform):
         """
         return random.randint(0, len(dataset))
 
+    @autocast_box_type()
     def transform(self, results: dict) -> dict:
         """Transform function to make a copy-paste of image.
 
@@ -2832,14 +2800,13 @@ class CopyPaste(BaseTransform):
         # update masks and generate bboxes from updated masks
         composed_mask = np.where(np.any(src_masks.masks, axis=0), 1, 0)
         updated_dst_masks = self._get_updated_masks(dst_masks, composed_mask)
-        updated_dst_bboxes = updated_dst_masks.get_bboxes()
+        updated_dst_bboxes = updated_dst_masks.get_bboxes(type(dst_bboxes))
         assert len(updated_dst_bboxes) == len(updated_dst_masks)
 
         # filter totally occluded objects
-        bboxes_inds = np.all(
-            np.abs(
-                (updated_dst_bboxes - dst_bboxes)) <= self.bbox_occluded_thr,
-            axis=-1)
+        l1_distance = (updated_dst_bboxes.tensor - dst_bboxes.tensor).abs()
+        bboxes_inds = (l1_distance <= self.bbox_occluded_thr).all(
+            dim=-1).numpy()
         masks_inds = updated_dst_masks.masks.sum(
             axis=(1, 2)) > self.mask_occluded_thr
         valid_inds = bboxes_inds | masks_inds
@@ -2847,7 +2814,7 @@ class CopyPaste(BaseTransform):
         # Paste source objects to destination image directly
         img = dst_img * (1 - composed_mask[..., np.newaxis]
                          ) + src_img * composed_mask[..., np.newaxis]
-        bboxes = np.concatenate([updated_dst_bboxes[valid_inds], src_bboxes])
+        bboxes = src_bboxes.cat([updated_dst_bboxes[valid_inds], src_bboxes])
         labels = np.concatenate([dst_labels[valid_inds], src_labels])
         masks = np.concatenate(
             [updated_dst_masks.masks[valid_inds], src_masks.masks])
@@ -2877,4 +2844,163 @@ class CopyPaste(BaseTransform):
         repr_str += f'bbox_occluded_thr={self.bbox_occluded_thr}, '
         repr_str += f'mask_occluded_thr={self.mask_occluded_thr}, '
         repr_str += f'selected={self.selected})'
+        return repr_str
+
+
+@TRANSFORMS.register_module()
+class RandomErasing(BaseTransform):
+    """RandomErasing operation.
+
+    Random Erasing randomly selects a rectangle region
+    in an image and erases its pixels with random values.
+    `RandomErasing <https://arxiv.org/abs/1708.04896>`_.
+
+    Required Keys:
+
+    - img
+    - gt_bboxes (HorizontalBoxes[torch.float32]) (optional)
+    - gt_bboxes_labels (np.int64) (optional)
+    - gt_ignore_flags (np.bool) (optional)
+    - gt_masks (BitmapMasks) (optional)
+
+    Modified Keys:
+    - img
+    - gt_bboxes (optional)
+    - gt_bboxes_labels (optional)
+    - gt_ignore_flags (optional)
+    - gt_masks (optional)
+
+    Args:
+        n_patches (int or tuple[int, int]): Number of regions to be dropped.
+            If it is given as a tuple, number of patches will be randomly
+            selected from the closed interval [``n_patches[0]``,
+            ``n_patches[1]``].
+        ratio (float or tuple[float, float]): The ratio of erased regions.
+            It can be ``float`` to use a fixed ratio or ``tuple[float, float]``
+            to randomly choose ratio from the interval.
+        squared (bool): Whether to erase square region. Defaults to True.
+        bbox_erased_thr (float): The threshold for the maximum area proportion
+            of the bbox to be erased. When the proportion of the area where the
+            bbox is erased is greater than the threshold, the bbox will be
+            removed. Defaults to 0.9.
+        img_border_value (int or float or tuple): The filled values for
+            image border. If float, the same fill value will be used for
+            all the three channels of image. If tuple, it should be 3 elements.
+            Defaults to 128.
+        mask_border_value (int): The fill value used for masks. Defaults to 0.
+        seg_ignore_label (int): The fill value used for segmentation map.
+            Note this value must equals ``ignore_label`` in ``semantic_head``
+            of the corresponding config. Defaults to 255.
+    """
+
+    def __init__(
+        self,
+        n_patches: Union[int, Tuple[int, int]],
+        ratio: Union[float, Tuple[float, float]],
+        squared: bool = True,
+        bbox_erased_thr: float = 0.9,
+        img_border_value: Union[int, float, tuple] = 128,
+        mask_border_value: int = 0,
+        seg_ignore_label: int = 255,
+    ) -> None:
+        if isinstance(n_patches, tuple):
+            assert len(n_patches) == 2 and 0 <= n_patches[0] < n_patches[1]
+        else:
+            n_patches = (n_patches, n_patches)
+        if isinstance(ratio, tuple):
+            assert len(ratio) == 2 and 0 <= ratio[0] < ratio[1] <= 1
+        else:
+            ratio = (ratio, ratio)
+
+        self.n_patches = n_patches
+        self.ratio = ratio
+        self.squared = squared
+        self.bbox_erased_thr = bbox_erased_thr
+        self.img_border_value = img_border_value
+        self.mask_border_value = mask_border_value
+        self.seg_ignore_label = seg_ignore_label
+
+    @cache_randomness
+    def _get_patches(self, img_shape: Tuple[int, int]) -> List[list]:
+        """Get patches for random erasing."""
+        patches = []
+        n_patches = np.random.randint(self.n_patches[0], self.n_patches[1] + 1)
+        for _ in range(n_patches):
+            if self.squared:
+                ratio = np.random.random() * (self.ratio[1] -
+                                              self.ratio[0]) + self.ratio[0]
+                ratio = (ratio, ratio)
+            else:
+                ratio = (np.random.random() * (self.ratio[1] - self.ratio[0]) +
+                         self.ratio[0], np.random.random() *
+                         (self.ratio[1] - self.ratio[0]) + self.ratio[0])
+            ph, pw = int(img_shape[0] * ratio[0]), int(img_shape[1] * ratio[1])
+            px1, py1 = np.random.randint(0,
+                                         img_shape[1] - pw), np.random.randint(
+                                             0, img_shape[0] - ph)
+            px2, py2 = px1 + pw, py1 + ph
+            patches.append([px1, py1, px2, py2])
+        return np.array(patches)
+
+    def _transform_img(self, results: dict, patches: List[list]) -> None:
+        """Random erasing the image."""
+        for patch in patches:
+            px1, py1, px2, py2 = patch
+            results['img'][py1:py2, px1:px2, :] = self.img_border_value
+
+    def _transform_bboxes(self, results: dict, patches: List[list]) -> None:
+        """Random erasing the bboxes."""
+        bboxes = results['gt_bboxes']
+        # TODO: unify the logic by using operators in BaseBoxes.
+        assert isinstance(bboxes, HorizontalBoxes)
+        bboxes = bboxes.numpy()
+        left_top = np.maximum(bboxes[:, None, :2], patches[:, :2])
+        right_bottom = np.minimum(bboxes[:, None, 2:], patches[:, 2:])
+        wh = np.maximum(right_bottom - left_top, 0)
+        inter_areas = wh[:, :, 0] * wh[:, :, 1]
+        bbox_areas = (bboxes[:, 2] - bboxes[:, 0]) * (
+            bboxes[:, 3] - bboxes[:, 1])
+        bboxes_erased_ratio = inter_areas.sum(-1) / (bbox_areas + 1e-7)
+        valid_inds = bboxes_erased_ratio < self.bbox_erased_thr
+        results['gt_bboxes'] = HorizontalBoxes(bboxes[valid_inds])
+        results['gt_bboxes_labels'] = results['gt_bboxes_labels'][valid_inds]
+        results['gt_ignore_flags'] = results['gt_ignore_flags'][valid_inds]
+        if results.get('gt_masks', None) is not None:
+            results['gt_masks'] = results['gt_masks'][valid_inds]
+
+    def _transform_masks(self, results: dict, patches: List[list]) -> None:
+        """Random erasing the masks."""
+        for patch in patches:
+            px1, py1, px2, py2 = patch
+            results['gt_masks'].masks[:, py1:py2,
+                                      px1:px2] = self.mask_border_value
+
+    def _transform_seg(self, results: dict, patches: List[list]) -> None:
+        """Random erasing the segmentation map."""
+        for patch in patches:
+            px1, py1, px2, py2 = patch
+            results['gt_seg_map'][py1:py2, px1:px2] = self.seg_ignore_label
+
+    @autocast_box_type()
+    def transform(self, results: dict) -> dict:
+        """Transform function to erase some regions of image."""
+        patches = self._get_patches(results['img_shape'])
+        self._transform_img(results, patches)
+        if results.get('gt_bboxes', None) is not None:
+            self._transform_bboxes(results, patches)
+        if results.get('gt_masks', None) is not None:
+            self._transform_masks(results, patches)
+        if results.get('gt_seg_map', None) is not None:
+            self._transform_seg(results, patches)
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(n_patches={self.n_patches}, '
+        repr_str += f'ratio={self.ratio}, '
+        repr_str += f'squared={self.squared}, '
+        repr_str += f'bbox_erased_thr={self.bbox_erased_thr}, '
+        repr_str += f'img_border_value={self.img_border_value}, '
+        repr_str += f'mask_border_value={self.mask_border_value}, '
+        repr_str += f'seg_ignore_label={self.seg_ignore_label})'
         return repr_str

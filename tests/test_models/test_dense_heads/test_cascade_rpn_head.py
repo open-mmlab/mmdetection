@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import torch
 from mmengine.config import ConfigDict
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 
 from mmdet.models.dense_heads import CascadeRPNHead
 from mmdet.structures import DetDataSample

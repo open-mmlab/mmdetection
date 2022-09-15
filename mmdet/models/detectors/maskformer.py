@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 from torch import Tensor
 
 from mmdet.registry import MODELS
-from mmdet.structures import DetDataSample, SampleList
+from mmdet.structures import SampleList
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from .single_stage import SingleStageDetector
 
@@ -105,14 +105,17 @@ class MaskFormer(SingleStageDetector):
             mask_pred_results,
             batch_data_samples,
             rescale=rescale)
-        results = self.postprocess_result(results_list)
+        results = self.add_pred_to_datasample(batch_data_samples, results_list)
 
         return results
 
-    def postprocess_result(self, results_list: List[dict]) -> SampleList:
-        """Convert results list to `DetDataSample`.
+    def add_pred_to_datasample(self, data_samples: SampleList,
+                               results_list: List[dict]) -> SampleList:
+        """Add predictions to `DetDataSample`.
 
         Args:
+            data_samples (list[:obj:`DetDataSample`], optional): A batch of
+                data samples that contain annotations and predictions.
             results_list (List[dict]): Instance segmentation, segmantic
                 segmentation and panoptic segmentation results.
 
@@ -135,20 +138,17 @@ class MaskFormer(SingleStageDetector):
                 - sem_seg (Tensor): panoptic segmentation mask, has a
                     shape (1, h, w).
         """
-        results = []
-        for i in range(len(results_list)):
-            result = DetDataSample()
-            if 'pan_results' in results_list[i]:
-                result.pred_panoptic_seg = results_list[i]['pan_results']
+        for data_sample, pred_results in zip(data_samples, results_list):
+            if 'pan_results' in pred_results:
+                data_sample.pred_panoptic_seg = pred_results['pan_results']
 
-            if 'ins_results' in results_list[i]:
-                result.pred_instances = results_list[i]['ins_results']
+            if 'ins_results' in pred_results:
+                data_sample.pred_instances = pred_results['ins_results']
 
-            assert 'sem_results' not in results_list[i], 'segmantic ' \
+            assert 'sem_results' not in pred_results, 'segmantic ' \
                 'segmentation results are not supported yet.'
 
-            results.append(result)
-        return results
+        return data_samples
 
     def _forward(self, batch_inputs: Tensor,
                  batch_data_samples: SampleList) -> Tuple[List[Tensor]]:

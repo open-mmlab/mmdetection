@@ -9,11 +9,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmengine.dist import barrier, broadcast, get_dist_info
 from mmengine.logging import MessageHub
-from mmengine.model import ImgDataPreprocessor
+from mmengine.model import BaseDataPreprocessor, ImgDataPreprocessor
+from mmengine.structures import PixelData
+from mmengine.utils import is_list_of
 from torch import Tensor
 
+from mmdet.models.utils.misc import samplelist_boxlist2tensor
 from mmdet.registry import MODELS
 from mmdet.structures import DetDataSample
+from mmdet.utils import ConfigType
 
 
 @MODELS.register_module()
@@ -56,6 +60,8 @@ class DetDataPreprocessor(ImgDataPreprocessor):
             Defaults to False.
         rgb_to_bgr (bool): whether to convert image from RGB to RGB.
             Defaults to False.
+        boxlist2tensor (bool): Whether to keep the ``BaseBoxes`` type of
+            bboxes data or not. Defaults to False.
         batch_augments (list[dict], optional): Batch-level augmentations
     """
 
@@ -70,6 +76,7 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                  seg_pad_value: int = 255,
                  bgr_to_rgb: bool = False,
                  rgb_to_bgr: bool = False,
+                 boxlist2tensor: bool = True,
                  batch_augments: Optional[List[dict]] = None):
         super().__init__(
             mean=mean,
@@ -87,61 +94,81 @@ class DetDataPreprocessor(ImgDataPreprocessor):
         self.mask_pad_value = mask_pad_value
         self.pad_seg = pad_seg
         self.seg_pad_value = seg_pad_value
+        self.boxlist2tensor = boxlist2tensor
 
-    def forward(self,
-                data: Sequence[dict],
-                training: bool = False) -> Tuple[torch.Tensor, Optional[list]]:
+    def forward(self, data: dict, training: bool = False) -> dict:
         """Perform normalization、padding and bgr2rgb conversion based on
         ``BaseDataPreprocessor``.
 
         Args:
-            data (Sequence[dict]): data sampled from dataloader.
+            data (dict): Data sampled from dataloader.
             training (bool): Whether to enable training time augmentation.
 
         Returns:
-            Tuple[torch.Tensor, Optional[list]]: Data in the same format as the
-            model input.
+            dict: Data in the same format as the model input.
         """
-        batch_inputs, batch_data_samples = super().forward(
-            data=data, training=training)
         batch_pad_shape = self._get_pad_shape(data)
+        data = super().forward(data=data, training=training)
+        inputs, data_samples = data['inputs'], data['data_samples']
 
-        if batch_data_samples is not None:
+        if data_samples is not None:
             # NOTE the batched image size information may be useful, e.g.
             # in DETR, this is needed for the construction of masks, which is
             # then used for the transformer_head.
-            batch_input_shape = tuple(batch_inputs[0].size()[-2:])
-            for data_samples, pad_shape in zip(batch_data_samples,
-                                               batch_pad_shape):
-                data_samples.set_metainfo({
+            batch_input_shape = tuple(inputs[0].size()[-2:])
+            for data_sample, pad_shape in zip(data_samples, batch_pad_shape):
+                data_sample.set_metainfo({
                     'batch_input_shape': batch_input_shape,
                     'pad_shape': pad_shape
                 })
 
-            if self.pad_mask:
-                self.pad_gt_masks(batch_data_samples)
+            if self.boxlist2tensor:
+                samplelist_boxlist2tensor(data_samples)
 
-            if self.pad_seg:
-                self.pad_gt_sem_seg(batch_data_samples)
+            if self.pad_mask and training:
+                self.pad_gt_masks(data_samples)
+
+            if self.pad_seg and training:
+                self.pad_gt_sem_seg(data_samples)
 
         if training and self.batch_augments is not None:
             for batch_aug in self.batch_augments:
-                batch_inputs, batch_data_samples = batch_aug(
-                    batch_inputs, batch_data_samples)
+                inputs, data_samples = batch_aug(inputs, data_samples)
 
-        return batch_inputs, batch_data_samples
+        return {'inputs': inputs, 'data_samples': data_samples}
 
-    def _get_pad_shape(self, data: Sequence[dict]) -> List[tuple]:
+    def _get_pad_shape(self, data: dict) -> List[tuple]:
         """Get the pad_shape of each image based on data and
         pad_size_divisor."""
-        ori_inputs = [_data['inputs'] for _data in data]
-        batch_pad_shape = []
-        for ori_input in ori_inputs:
-            pad_h = int(np.ceil(ori_input.shape[1] /
-                                self.pad_size_divisor)) * self.pad_size_divisor
-            pad_w = int(np.ceil(ori_input.shape[2] /
-                                self.pad_size_divisor)) * self.pad_size_divisor
-            batch_pad_shape.append((pad_h, pad_w))
+        _batch_inputs = data['inputs']
+        # Process data with `pseudo_collate`.
+        if is_list_of(_batch_inputs, torch.Tensor):
+            batch_pad_shape = []
+            for ori_input in _batch_inputs:
+                pad_h = int(
+                    np.ceil(ori_input.shape[1] /
+                            self.pad_size_divisor)) * self.pad_size_divisor
+                pad_w = int(
+                    np.ceil(ori_input.shape[2] /
+                            self.pad_size_divisor)) * self.pad_size_divisor
+                batch_pad_shape.append((pad_h, pad_w))
+        # Process data with `default_collate`.
+        elif isinstance(_batch_inputs, torch.Tensor):
+            assert _batch_inputs.dim() == 4, (
+                'The input of `ImgDataPreprocessor` should be a NCHW tensor '
+                'or a list of tensor, but got a tensor with shape: '
+                f'{_batch_inputs.shape}')
+            pad_h = int(
+                np.ceil(_batch_inputs.shape[1] /
+                        self.pad_size_divisor)) * self.pad_size_divisor
+            pad_w = int(
+                np.ceil(_batch_inputs.shape[2] /
+                        self.pad_size_divisor)) * self.pad_size_divisor
+            batch_pad_shape = [(pad_h, pad_w)] * _batch_inputs.shape[0]
+        else:
+            raise TypeError('Output of `cast_data` should be a list of dict '
+                            'or a tuple with inputs and data_samples, but got'
+                            f'{type(data)}： {data}')
         return batch_pad_shape
 
     def pad_gt_masks(self,
@@ -162,11 +189,12 @@ class DetDataPreprocessor(ImgDataPreprocessor):
                 gt_sem_seg = data_samples.gt_sem_seg.sem_seg
                 h, w = gt_sem_seg.shape[-2:]
                 pad_h, pad_w = data_samples.batch_input_shape
-                data_samples.gt_sem_seg.sem_seg = F.pad(
+                gt_sem_seg = F.pad(
                     gt_sem_seg,
                     pad=(0, max(pad_w - w, 0), 0, max(pad_h - h, 0)),
                     mode='constant',
                     value=self.seg_pad_value)
+                data_samples.gt_sem_seg = PixelData(sem_seg=gt_sem_seg)
 
 
 @MODELS.register_module()
@@ -195,21 +223,21 @@ class BatchSyncRandomResize(nn.Module):
         self._size_divisor = size_divisor
 
     def forward(
-        self, batch_inputs: Tensor, batch_data_samples: List[DetDataSample]
+        self, inputs: Tensor, data_samples: List[DetDataSample]
     ) -> Tuple[Tensor, List[DetDataSample]]:
         """resize a batch of images and bboxes to shape ``self._input_size``"""
-        h, w = batch_inputs.shape[-2:]
+        h, w = inputs.shape[-2:]
         if self._input_size is None:
             self._input_size = (h, w)
         scale_y = self._input_size[0] / h
         scale_x = self._input_size[1] / w
         if scale_x != 1 or scale_y != 1:
-            batch_inputs = F.interpolate(
-                batch_inputs,
+            inputs = F.interpolate(
+                inputs,
                 size=self._input_size,
                 mode='bilinear',
                 align_corners=False)
-            for data_sample in batch_data_samples:
+            for data_sample in data_samples:
                 img_shape = (int(data_sample.img_shape[0] * scale_y),
                              int(data_sample.img_shape[1] * scale_x))
                 pad_shape = (int(data_sample.pad_shape[0] * scale_y),
@@ -237,8 +265,8 @@ class BatchSyncRandomResize(nn.Module):
         message_hub = MessageHub.get_current_instance()
         if (message_hub.get_info('iter') + 1) % self._interval == 0:
             self._input_size = self._get_random_size(
-                aspect_ratio=float(w / h), device=batch_inputs.device)
-        return batch_inputs, batch_data_samples
+                aspect_ratio=float(w / h), device=inputs.device)
+        return inputs, data_samples
 
     def _get_random_size(self, aspect_ratio: float,
                          device: torch.device) -> Tuple[int, int]:
@@ -292,44 +320,235 @@ class BatchFixedSizePad(nn.Module):
 
     def forward(
         self,
-        batch_inputs: Tensor,
-        batch_data_samples: Optional[List[dict]] = None
+        inputs: Tensor,
+        data_samples: Optional[List[dict]] = None
     ) -> Tuple[Tensor, Optional[List[dict]]]:
         """Pad image, instance masks, segmantic segmentation maps."""
-        src_h, src_w = batch_inputs.shape[-2:]
+        src_h, src_w = inputs.shape[-2:]
         dst_h, dst_w = self.size
 
         if src_h >= dst_h and src_w >= dst_w:
-            return batch_inputs, batch_data_samples
+            return inputs, data_samples
 
-        batch_inputs = F.pad(
-            batch_inputs,
+        inputs = F.pad(
+            inputs,
             pad=(0, max(0, dst_w - src_w), 0, max(0, dst_h - src_h)),
             mode='constant',
             value=self.img_pad_value)
 
-        if batch_data_samples is not None:
+        if data_samples is not None:
             # update batch_input_shape
-            for data_samples in batch_data_samples:
-                data_samples.set_metainfo({
+            for data_sample in data_samples:
+                data_sample.set_metainfo({
                     'batch_input_shape': (dst_h, dst_w),
                     'pad_shape': (dst_h, dst_w)
                 })
 
             if self.pad_mask:
-                for data_samples in batch_data_samples:
-                    masks = data_samples.gt_instances.masks
-                    data_samples.gt_instances.masks = masks.pad(
+                for data_sample in data_samples:
+                    masks = data_sample.gt_instances.masks
+                    data_sample.gt_instances.masks = masks.pad(
                         (dst_h, dst_w), pad_val=self.mask_pad_value)
 
             if self.pad_seg:
-                for data_samples in batch_data_samples:
-                    gt_sem_seg = data_samples.gt_sem_seg.sem_seg
+                for data_sample in data_samples:
+                    gt_sem_seg = data_sample.gt_sem_seg.sem_seg
                     h, w = gt_sem_seg.shape[-2:]
-                    data_samples.gt_sem_seg.sem_seg = F.pad(
+                    gt_sem_seg = F.pad(
                         gt_sem_seg,
                         pad=(0, max(0, dst_w - w), 0, max(0, dst_h - h)),
                         mode='constant',
                         value=self.seg_pad_value)
+                    data_sample.gt_sem_seg = PixelData(sem_seg=gt_sem_seg)
 
-        return batch_inputs, batch_data_samples
+        return inputs, data_samples
+
+
+@MODELS.register_module()
+class MultiBranchDataPreprocessor(BaseDataPreprocessor):
+    """DataPreprocessor wrapper for multi-branch data.
+
+    Take semi-supervised object detection as an example, assume that
+    the ratio of labeled data and unlabeled data in a batch is 1:2,
+    `sup` indicates the branch where the labeled data is augmented,
+    `unsup_teacher` and `unsup_student` indicate the branches where
+    the unlabeled data is augmented by different pipeline.
+
+    The input format of multi-branch data is shown as below :
+
+    .. code-block:: none
+        {
+            'inputs':
+                {
+                    'sup': [Tensor, None, None],
+                    'unsup_teacher': [None, Tensor, Tensor],
+                    'unsup_student': [None, Tensor, Tensor],
+                },
+            'data_sample':
+                {
+                    'sup': [DetDataSample, None, None],
+                    'unsup_teacher': [None, DetDataSample, DetDataSample],
+                    'unsup_student': [NOne, DetDataSample, DetDataSample],
+                }
+        }
+
+    The format of multi-branch data
+    after filtering None is shown as below :
+
+    .. code-block:: none
+        {
+            'inputs':
+                {
+                    'sup': [Tensor],
+                    'unsup_teacher': [Tensor, Tensor],
+                    'unsup_student': [Tensor, Tensor],
+                },
+            'data_sample':
+                {
+                    'sup': [DetDataSample],
+                    'unsup_teacher': [DetDataSample, DetDataSample],
+                    'unsup_student': [DetDataSample, DetDataSample],
+                }
+        }
+
+    In order to reuse `DetDataPreprocessor` for the data
+    from different branches, the format of multi-branch data
+    grouped by branch is as below :
+
+    .. code-block:: none
+        {
+            'sup':
+                {
+                    'inputs': [Tensor]
+                    'data_sample': [DetDataSample, DetDataSample]
+                },
+            'unsup_teacher':
+                {
+                    'inputs': [Tensor, Tensor]
+                    'data_sample': [DetDataSample, DetDataSample]
+                },
+            'unsup_student':
+                {
+                    'inputs': [Tensor, Tensor]
+                    'data_sample': [DetDataSample, DetDataSample]
+                },
+        }
+
+    After preprocessing data from different branches,
+    the multi-branch data needs to be reformatted as:
+
+    .. code-block:: none
+        {
+            'inputs':
+                {
+                    'sup': [Tensor],
+                    'unsup_teacher': [Tensor, Tensor],
+                    'unsup_student': [Tensor, Tensor],
+                },
+            'data_sample':
+                {
+                    'sup': [DetDataSample],
+                    'unsup_teacher': [DetDataSample, DetDataSample],
+                    'unsup_student': [DetDataSample, DetDataSample],
+                }
+        }
+
+    Args:
+        data_preprocessor (:obj:`ConfigDict` or dict): Config of
+            :class:`DetDataPreprocessor` to process the input data.
+    """
+
+    def __init__(self, data_preprocessor: ConfigType) -> None:
+        super().__init__()
+        self.data_preprocessor = MODELS.build(data_preprocessor)
+
+    def forward(self, data: dict, training: bool = False) -> dict:
+        """Perform normalization、padding and bgr2rgb conversion based on
+        ``BaseDataPreprocessor`` for multi-branch data.
+
+        Args:
+            data (dict): Data sampled from dataloader.
+            training (bool): Whether to enable training time augmentation.
+
+        Returns:
+            dict:
+
+            - 'inputs' (Dict[str, obj:`torch.Tensor`]): The forward data of
+                models from different branches.
+            - 'data_sample' (Dict[str, obj:`DetDataSample`]): The annotation
+                info of the sample from different branches.
+        """
+
+        if training is False:
+            return self.data_preprocessor(data, training)
+
+        # Filter out branches with a value of None
+        for key in data.keys():
+            for branch in data[key].keys():
+                data[key][branch] = list(
+                    filter(lambda x: x is not None, data[key][branch]))
+
+        # Group data by branch
+        multi_branch_data = {}
+        for key in data.keys():
+            for branch in data[key].keys():
+                if multi_branch_data.get(branch, None) is None:
+                    multi_branch_data[branch] = {key: data[key][branch]}
+                elif multi_branch_data[branch].get(key, None) is None:
+                    multi_branch_data[branch][key] = data[key][branch]
+                else:
+                    multi_branch_data[branch][key].append(data[key][branch])
+
+        # Preprocess data from different branches
+        for branch, _data in multi_branch_data.items():
+            multi_branch_data[branch] = self.data_preprocessor(_data, training)
+
+        # Format data by inputs and data_samples
+        format_data = {}
+        for branch in multi_branch_data.keys():
+            for key in multi_branch_data[branch].keys():
+                if format_data.get(key, None) is None:
+                    format_data[key] = {branch: multi_branch_data[branch][key]}
+                elif format_data[key].get(branch, None) is None:
+                    format_data[key][branch] = multi_branch_data[branch][key]
+                else:
+                    format_data[key][branch].append(
+                        multi_branch_data[branch][key])
+
+        return format_data
+
+    @property
+    def device(self):
+        return self.data_preprocessor.device
+
+    def to(self, device: Optional[Union[int, torch.device]], *args,
+           **kwargs) -> nn.Module:
+        """Overrides this method to set the :attr:`device`
+
+        Args:
+            device (int or torch.device, optional): The desired device of the
+                parameters and buffers in this module.
+
+        Returns:
+            nn.Module: The model itself.
+        """
+
+        return self.data_preprocessor.to(device, *args, **kwargs)
+
+    def cuda(self, *args, **kwargs) -> nn.Module:
+        """Overrides this method to set the :attr:`device`
+
+        Returns:
+            nn.Module: The model itself.
+        """
+
+        return self.data_preprocessor.cuda(*args, **kwargs)
+
+    def cpu(self, *args, **kwargs) -> nn.Module:
+        """Overrides this method to set the :attr:`device`
+
+        Returns:
+            nn.Module: The model itself.
+        """
+
+        return self.data_preprocessor.cpu(*args, **kwargs)

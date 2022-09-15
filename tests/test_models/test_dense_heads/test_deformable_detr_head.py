@@ -2,13 +2,17 @@
 from unittest import TestCase
 
 import torch
-from mmcv import ConfigDict
-from mmengine import InstanceData
+from mmengine.config import ConfigDict
+from mmengine.structures import InstanceData
 
 from mmdet.models.dense_heads import DeformableDETRHead
+from mmdet.utils import register_all_modules
 
 
 class TestDeformableDETRHead(TestCase):
+
+    def setUp(self):
+        register_all_modules()
 
     def test_detr_head_loss(self):
         """Tests transformer head loss when truth is empty and non-empty."""

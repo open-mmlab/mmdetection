@@ -184,15 +184,16 @@ class AnchorFreeHead(BaseDenseHead):
             for key in bbox_head_keys:
                 ori_predictor_keys.append(key)
                 key = key.split('.')
-                conv_name = None
-                if key[1].endswith('cls'):
+                if len(key) < 2:
+                    conv_name = None
+                elif key[1].endswith('cls'):
                     conv_name = 'conv_cls'
                 elif key[1].endswith('reg'):
                     conv_name = 'conv_reg'
                 elif key[1].endswith('centerness'):
                     conv_name = 'conv_centerness'
                 else:
-                    assert NotImplementedError
+                    conv_name = None
                 if conv_name is not None:
                     key[1] = conv_name
                     new_predictor_keys.append('.'.join(key))

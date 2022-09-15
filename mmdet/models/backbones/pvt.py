@@ -7,17 +7,17 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import (Conv2d, build_activation_layer, build_norm_layer,
-                      constant_init, normal_init, trunc_normal_init)
+from mmcv.cnn import Conv2d, build_activation_layer, build_norm_layer
 from mmcv.cnn.bricks.drop import build_dropout
 from mmcv.cnn.bricks.transformer import MultiheadAttention
-from mmcv.cnn.utils.weight_init import trunc_normal_
-from mmcv.runner import (BaseModule, ModuleList, Sequential, _load_checkpoint,
-                         load_state_dict)
+from mmengine.logging import MMLogger
+from mmengine.model import (BaseModule, ModuleList, Sequential, constant_init,
+                            normal_init, trunc_normal_init)
+from mmengine.model.weight_init import trunc_normal_
+from mmengine.runner.checkpoint import CheckpointLoader, load_state_dict
 from torch.nn.modules.utils import _pair as to_2tuple
 
 from mmdet.registry import MODELS
-from ...utils import get_root_logger
 from ..layers import PatchEmbed, nchw_to_nlc, nlc_to_nchw
 
 
@@ -41,7 +41,7 @@ class MixFFN(BaseModule):
             Default: None.
         use_conv (bool): If True, add 3x3 DWConv between two Linear layers.
             Defaults: False.
-        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+        init_cfg (obj:`mmengine.ConfigDict`): The Config for initialization.
             Default: None.
     """
 
@@ -123,7 +123,7 @@ class SpatialReductionAttention(MultiheadAttention):
             Default: dict(type='LN').
         sr_ratio (int): The ratio of spatial reduction of Spatial Reduction
             Attention of PVT. Default: 1.
-        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+        init_cfg (obj:`mmengine.ConfigDict`): The Config for initialization.
             Default: None.
     """
 
@@ -522,7 +522,7 @@ class PyramidVisionTransformer(BaseModule):
             cur += num_layer
 
     def init_weights(self):
-        logger = get_root_logger()
+        logger = MMLogger.get_current_instance()
         if self.init_cfg is None:
             logger.warn(f'No pre-trained weights for '
                         f'{self.__class__.__name__}, '
@@ -544,7 +544,7 @@ class PyramidVisionTransformer(BaseModule):
                                                   f'specify `Pretrained` in ' \
                                                   f'`init_cfg` in ' \
                                                   f'{self.__class__.__name__} '
-            checkpoint = _load_checkpoint(
+            checkpoint = CheckpointLoader.load_checkpoint(
                 self.init_cfg.checkpoint, logger=logger, map_location='cpu')
             logger.warn(f'Load pre-trained model for '
                         f'{self.__class__.__name__} from original repo')

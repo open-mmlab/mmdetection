@@ -10,6 +10,7 @@ import mmcv
 import numpy as np
 
 from mmdet.datasets.transforms import (FilterAnnotations, LoadAnnotations,
+                                       LoadEmptyAnnotations,
                                        LoadImageFromNDArray,
                                        LoadMultiChannelImageFromFiles,
                                        LoadProposals)
@@ -33,7 +34,7 @@ class TestLoadAnnotations(unittest.TestCase):
         data_prefix = osp.join(osp.dirname(__file__), '../../data')
         seg_map = osp.join(data_prefix, 'gray.jpg')
         self.results = {
-            'img_shape': (300, 400),
+            'ori_shape': (300, 400),
             'seg_map_path':
             seg_map,
             'instances': [{
@@ -60,7 +61,7 @@ class TestLoadAnnotations(unittest.TestCase):
             with_label=False,
             with_seg=False,
             with_mask=False,
-        )
+            box_type=None)
         results = transform(copy.deepcopy(self.results))
         self.assertIn('gt_bboxes', results)
         self.assertTrue((results['gt_bboxes'] == np.array([[0, 0, 10, 20],
@@ -144,8 +145,7 @@ class TestFilterAnnotations(unittest.TestCase):
             'gt_ignore_flags':
             np.array([0, 0, 1], dtype=np.bool8),
             'gt_masks':
-            # ignore label will not add into `gt_masks`
-            BitmapMasks(rng.rand(2, 224, 224), height=224, width=224),
+            BitmapMasks(rng.rand(3, 224, 224), height=224, width=224),
         }
 
     def test_transform(self):
@@ -168,12 +168,15 @@ class TestFilterAnnotations(unittest.TestCase):
         # test filter annotations
         transform = FilterAnnotations(min_gt_bbox_wh=(15, 15), )
         results = transform(copy.deepcopy(self.results))
+
         self.assertIsInstance(results, dict)
-        self.assertTrue((results['gt_bboxes_labels'] == np.array([2])).all())
-        self.assertTrue((results['gt_bboxes'] == np.array([[20, 20, 40,
-                                                            40]])).all())
-        self.assertTrue(len(results['gt_masks']) == 1)
-        self.assertTrue(len(results['gt_ignore_flags'] == 1))
+        self.assertTrue((results['gt_bboxes_labels'] == np.array([2,
+                                                                  3])).all())
+        self.assertTrue((results['gt_bboxes'] == np.array([[20, 20, 40, 40],
+                                                           [40, 40, 80,
+                                                            80]])).all())
+        self.assertEqual(len(results['gt_masks']), 2)
+        self.assertEqual(len(results['gt_ignore_flags']), 2)
 
     def test_repr(self):
         transform = FilterAnnotations(
@@ -202,7 +205,7 @@ class TestLoadPanopticAnnotations(unittest.TestCase):
         self.seg_map = seg_map
         self.rgb_seg_map = rgb_seg_map
         self.results = {
-            'img_shape': (10, 10),
+            'ori_shape': (10, 10),
             'instances': [{
                 'bbox': [0, 0, 10, 5],
                 'bbox_label': 0,
@@ -294,7 +297,11 @@ class TestLoadPanopticAnnotations(unittest.TestCase):
 
             # test with all True
             transform = LoadPanopticAnnotations(
-                with_bbox=True, with_label=True, with_mask=True, with_seg=True)
+                with_bbox=True,
+                with_label=True,
+                with_mask=True,
+                with_seg=True,
+                box_type=None)
             results = transform(copy.deepcopy(self.results))
             self.assertTrue(
                 (results['gt_masks'].masks == self.gt_mask.masks).all())
@@ -410,3 +417,30 @@ class TestLoadProposals(unittest.TestCase):
         transform = LoadProposals()
         self.assertEqual(
             repr(transform), 'LoadProposals(num_max_proposals=None)')
+
+
+class TestLoadEmptyAnnotations(unittest.TestCase):
+
+    def test_transform(self):
+        transform = LoadEmptyAnnotations(
+            with_bbox=True, with_label=True, with_mask=True, with_seg=True)
+        results = {'img_shape': (224, 224)}
+        results = transform(results)
+        self.assertEqual(results['gt_bboxes'].dtype, np.float32)
+        self.assertEqual(results['gt_bboxes'].shape[-1], 4)
+        self.assertEqual(results['gt_ignore_flags'].dtype, bool)
+        self.assertEqual(results['gt_bboxes_labels'].dtype, np.int64)
+        self.assertEqual(results['gt_masks'].masks.dtype, np.uint8)
+        self.assertEqual(results['gt_masks'].masks.shape[-2:],
+                         results['img_shape'])
+        self.assertEqual(results['gt_seg_map'].dtype, np.uint8)
+        self.assertEqual(results['gt_seg_map'].shape, results['img_shape'])
+
+    def test_repr(self):
+        transform = LoadEmptyAnnotations()
+        self.assertEqual(
+            repr(transform), 'LoadEmptyAnnotations(with_bbox=True, '
+            'with_label=True, '
+            'with_mask=False, '
+            'with_seg=False, '
+            'seg_ignore_label=255)')

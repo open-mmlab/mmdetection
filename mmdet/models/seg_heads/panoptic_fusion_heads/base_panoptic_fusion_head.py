@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from abc import ABCMeta, abstractmethod
 
-from mmcv.runner import BaseModule
+from mmengine.model import BaseModule
 
 from mmdet.registry import MODELS
 from mmdet.utils import OptConfigType, OptMultiConfig

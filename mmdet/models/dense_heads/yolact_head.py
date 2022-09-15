@@ -7,8 +7,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
-from mmengine.data import InstanceData
 from mmengine.model import BaseModule, ModuleList
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS
@@ -375,7 +375,7 @@ class YOLACTHead(AnchorHead):
             coeff_preds (list[Tensor]): Mask coefficients for each scale
                 level with shape (N, num_anchors * num_protos, H, W)
             batch_img_metas (list[dict]): Batch image meta info.
-            cfg (mmcv.Config | None): Test / postprocessing configuration,
+            cfg (:obj:`Config` | None): Test / postprocessing configuration,
                 if None, test_cfg would be used
             rescale (bool): If True, return boxes in original image space.
                 Defaults to True.

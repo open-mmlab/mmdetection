@@ -6,10 +6,14 @@ import os.path as osp
 
 import mmcv
 import torch
-from mmcv import DictAction
-from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.runner import (get_dist_info, init_dist, load_checkpoint,
-                         wrap_fp16_model)
+# TODO need refactor
+from mmcv.runner import MMDataParallel, wrap_fp16_model
+from mmengine.config import Config, DictAction
+from mmengine.dist import get_dist_info, init_dist
+from mmengine.fileio import dump, load
+from mmengine.model import MMDistributedDataParallel
+from mmengine.runner import load_checkpoint
+from mmengine.utils import is_str
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
@@ -28,7 +32,7 @@ def coco_eval_with_return(result_files,
     for res_type in result_types:
         assert res_type in ['proposal', 'bbox', 'segm', 'keypoints']
 
-    if mmcv.is_str(coco):
+    if is_str(coco):
         coco = COCO(coco)
     assert isinstance(coco, COCO)
 
@@ -68,7 +72,7 @@ def voc_eval_with_return(result_file,
                          iou_thr=0.5,
                          logger='print',
                          only_ap=True):
-    det_results = mmcv.load(result_file)
+    det_results = load(result_file)
     annotations = [dataset.get_ann_info(i) for i in range(len(dataset))]
     if hasattr(dataset, 'year') and dataset.year == 2007:
         dataset_name = 'voc07'
@@ -188,7 +192,7 @@ def main():
     if args.out is not None and not args.out.endswith(('.pkl', '.pickle')):
         raise ValueError('The output file must be a pkl file.')
 
-    cfg = mmcv.Config.fromfile(args.config)
+    cfg = Config.fromfile(args.config)
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
     # set cudnn_benchmark
@@ -297,6 +301,7 @@ def main():
                 model.CLASSES = dataset.CLASSES
 
             if not distributed:
+                # TODO
                 model = MMDataParallel(model, device_ids=[0])
                 show_dir = args.show_dir
                 if show_dir is not None:
@@ -317,12 +322,13 @@ def main():
                 eval_results_filename = (
                     osp.splitext(args.out)[0] + '_results' +
                     osp.splitext(args.out)[1])
-                mmcv.dump(outputs, args.out)
+                dump(outputs, args.out)
                 eval_types = args.eval
                 if cfg.dataset_type == 'VOCDataset':
                     if eval_types:
                         for eval_type in eval_types:
                             if eval_type == 'bbox':
+                                # TODO
                                 test_dataset = mmcv.runner.obj_from_dict(
                                     cfg.data.test, datasets)
                                 logger = 'print' if args.summaries else None
@@ -361,7 +367,7 @@ def main():
                               '\nUse --eval to select a task')
 
                 # save results after each evaluation
-                mmcv.dump(aggregated_results, eval_results_filename)
+                dump(aggregated_results, eval_results_filename)
 
     if rank == 0:
         # print final results

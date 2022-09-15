@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmcv.ops import batched_nms
 from mmengine.config import ConfigDict
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS
@@ -283,6 +283,8 @@ class RPNHead(AnchorHead):
             # some nms would reweight the score, such as softnms
             results.scores = det_bboxes[:, -1]
             results = results[:cfg.max_per_img]
+            # TODO: This would unreasonably show the 0th class label
+            #  in visualization
             results.labels = results.scores.new_zeros(
                 len(results), dtype=torch.long)
             del results.level_ids

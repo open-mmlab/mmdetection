@@ -17,9 +17,9 @@ Collections:
       Version: v2.3.0
 
 Models:
-  - Name: cornernet_hourglass104_mstest_10x5_210e_coco
+  - Name: cornernet_hourglass104_10xb5-crop511-210e-mstest_coco
     In Collection: CornerNet
-    Config: configs/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco.py
+    Config: configs/cornernet/cornernet_hourglass104_10xb5-crop511-210e-mstest_coco.py
     Metadata:
       Training Resources: 10x V100 GPUs
       Batch Size: 50
@@ -39,9 +39,9 @@ Models:
           box AP: 41.2
     Weights: https://download.openmmlab.com/mmdetection/v2.0/cornernet/cornernet_hourglass104_mstest_10x5_210e_coco/cornernet_hourglass104_mstest_10x5_210e_coco_20200824_185720-5fefbf1c.pth
 
-  - Name: cornernet_hourglass104_mstest_8x6_210e_coco
+  - Name: cornernet_hourglass104_8xb6-210e-mstest_coco
     In Collection: CornerNet
-    Config: configs/cornernet/cornernet_hourglass104_mstest_8x6_210e_coco.py
+    Config: configs/cornernet/cornernet_hourglass104_8xb6-210e-mstest_coco.py
     Metadata:
       Batch Size: 48
       Training Memory (GB): 15.9
@@ -60,9 +60,9 @@ Models:
           box AP: 41.2
     Weights: https://download.openmmlab.com/mmdetection/v2.0/cornernet/cornernet_hourglass104_mstest_8x6_210e_coco/cornernet_hourglass104_mstest_8x6_210e_coco_20200825_150618-79b44c30.pth
 
-  - Name: cornernet_hourglass104_mstest_32x3_210e_coco
+  - Name: cornernet_hourglass104_32xb3-210e-mstest_coco
     In Collection: CornerNet
-    Config: configs/cornernet/cornernet_hourglass104_mstest_32x3_210e_coco.py
+    Config: configs/cornernet/cornernet_hourglass104_32xb3-210e-mstest_coco.py
     Metadata:
       Training Resources: 32x V100 GPUs
       Batch Size: 96

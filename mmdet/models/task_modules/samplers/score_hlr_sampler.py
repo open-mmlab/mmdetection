@@ -3,7 +3,7 @@ from typing import Union
 
 import torch
 from mmcv.ops import nms_match
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 from numpy import ndarray
 from torch import Tensor
 

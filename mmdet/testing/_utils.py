@@ -4,11 +4,13 @@ from os.path import dirname, exists, join
 
 import numpy as np
 import torch
-from mmengine.data import BaseDataElement as PixelData
-from mmengine.data import InstanceData
+from mmengine.config import Config
+from mmengine.dataset import pseudo_collate
+from mmengine.structures import InstanceData, PixelData
 
 from ..registry import TASK_UTILS
 from ..structures import DetDataSample
+from ..structures.bbox import HorizontalBoxes
 
 
 def _get_config_directory():
@@ -28,7 +30,6 @@ def _get_config_directory():
 
 def _get_config_module(fname):
     """Load a configuration as a python module."""
-    from mmengine import Config
     config_dpath = _get_config_directory()
     config_fpath = join(config_dpath, fname)
     config_mod = Config.fromfile(config_fpath)
@@ -91,7 +92,9 @@ def demo_mm_inputs(batch_size=2,
                    num_classes=10,
                    sem_seg_output_strides=1,
                    with_mask=False,
-                   with_semantic=False):
+                   with_semantic=False,
+                   with_boxlist=False,
+                   device='cpu'):
     """Create a superset of inputs needed to run test or train batches.
 
     Args:
@@ -106,6 +109,7 @@ def demo_mm_inputs(batch_size=2,
             Defaults to False.
         with_semantic (bool): whether to return semantic.
             Defaults to False.
+        device (str): Destination device type. Defaults to cpu.
     """
     rng = np.random.RandomState(0)
 
@@ -125,7 +129,7 @@ def demo_mm_inputs(batch_size=2,
         image = rng.randint(0, 255, size=image_shape, dtype=np.uint8)
 
         mm_inputs = dict()
-        mm_inputs['inputs'] = torch.from_numpy(image)
+        mm_inputs['inputs'] = torch.from_numpy(image).to(device)
 
         img_meta = {
             'img_id': idx,
@@ -150,7 +154,11 @@ def demo_mm_inputs(batch_size=2,
 
         bboxes = _rand_bboxes(rng, num_boxes, w, h)
         labels = rng.randint(1, num_classes, size=num_boxes)
-        gt_instances.bboxes = torch.FloatTensor(bboxes)
+        # TODO: remove this part when all model adapted with BaseBoxes
+        if with_boxlist:
+            gt_instances.bboxes = HorizontalBoxes(bboxes, dtype=torch.float32)
+        else:
+            gt_instances.bboxes = torch.FloatTensor(bboxes)
         gt_instances.labels = torch.LongTensor(labels)
 
         if with_mask:
@@ -166,7 +174,11 @@ def demo_mm_inputs(batch_size=2,
         # ignore_instances
         ignore_instances = InstanceData()
         bboxes = _rand_bboxes(rng, num_boxes, w, h)
-        ignore_instances.bboxes = torch.FloatTensor(bboxes)
+        if with_boxlist:
+            ignore_instances.bboxes = HorizontalBoxes(
+                bboxes, dtype=torch.float32)
+        else:
+            ignore_instances.bboxes = torch.FloatTensor(bboxes)
         data_sample.ignored_instances = ignore_instances
 
         # gt_sem_seg
@@ -181,12 +193,13 @@ def demo_mm_inputs(batch_size=2,
             gt_sem_seg_data = dict(sem_seg=gt_semantic_seg)
             data_sample.gt_sem_seg = PixelData(**gt_sem_seg_data)
 
-        mm_inputs['data_sample'] = data_sample
+        mm_inputs['data_samples'] = data_sample.to(device)
 
         # TODO: gt_ignore
 
         packed_inputs.append(mm_inputs)
-    return packed_inputs
+    data = pseudo_collate(packed_inputs)
+    return data
 
 
 def demo_mm_proposals(image_shapes, num_proposals, device='cpu'):
@@ -257,3 +270,48 @@ def demo_mm_sampling_results(proposals_list,
         sampling_results.append(sampling_result)
 
     return sampling_results
+
+
+# TODO: Support full ceph
+def replace_to_ceph(cfg):
+    file_client_args = dict(
+        backend='petrel',
+        path_mapping=dict({
+            './data/': 's3://openmmlab/datasets/detection/',
+            'data/': 's3://openmmlab/datasets/detection/'
+        }))
+
+    # TODO: name is a reserved interface, which will be used later.
+    def _process_pipeline(dataset, name):
+
+        def replace_img(pipeline):
+            if pipeline['type'] == 'LoadImageFromFile':
+                pipeline['file_client_args'] = file_client_args
+
+        def replace_ann(pipeline):
+            if pipeline['type'] == 'LoadAnnotations' or pipeline[
+                    'type'] == 'LoadPanopticAnnotations':
+                pipeline['file_client_args'] = file_client_args
+
+        if 'pipeline' in dataset:
+            replace_img(dataset.pipeline[0])
+            replace_ann(dataset.pipeline[1])
+            if 'dataset' in dataset:
+                # dataset wrapper
+                replace_img(dataset.dataset.pipeline[0])
+                replace_ann(dataset.dataset.pipeline[1])
+        else:
+            # dataset wrapper
+            replace_img(dataset.dataset.pipeline[0])
+            replace_ann(dataset.dataset.pipeline[1])
+
+    def _process_evaluator(evaluator, name):
+        if evaluator['type'] == 'CocoPanopticMetric':
+            evaluator['file_client_args'] = file_client_args
+
+    # half ceph
+    _process_pipeline(cfg.train_dataloader.dataset, cfg.filename)
+    _process_pipeline(cfg.val_dataloader.dataset, cfg.filename)
+    _process_pipeline(cfg.test_dataloader.dataset, cfg.filename)
+    _process_evaluator(cfg.val_evaluator, cfg.filename)
+    _process_evaluator(cfg.test_evaluator, cfg.filename)

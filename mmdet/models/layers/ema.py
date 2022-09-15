@@ -62,5 +62,5 @@ class ExpMomentumEMA(ExponentialMovingAverage):
                 updated.
         """
         momentum = (1 - self.momentum) * math.exp(
-            -(1 + steps) / self.gamma) + self.momentum
+            -float(1 + steps) / self.gamma) + self.momentum
         averaged_param.mul_(1 - momentum).add_(source_param, alpha=momentum)

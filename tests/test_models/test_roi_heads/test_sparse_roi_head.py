@@ -54,16 +54,13 @@ class TestCascadeRoIHead(TestCase):
             proposal.features = init_proposal_features
             proposal.imgs_whwh = feats[0].new_tensor([[s, s, s,
                                                        s]]).repeat(100, 1)
-        packed_inputs = demo_mm_inputs(
+        batch_data_samples = demo_mm_inputs(
             batch_size=1,
             image_shapes=[(3, s, s)],
             num_items=[1],
             num_classes=4,
-            with_mask=True)
-        batch_data_samples = []
-        for i in range(len(packed_inputs)):
-            batch_data_samples.append(
-                packed_inputs[i]['data_sample'].to(device='cuda'))
+            with_mask=True,
+            device='cuda')['data_samples']
         out = roi_head.loss(feats, proposal_list, batch_data_samples)
         for name, value in out.items():
             if 'loss' in name:
@@ -79,16 +76,13 @@ class TestCascadeRoIHead(TestCase):
             proposal.features = init_proposal_features
             proposal.imgs_whwh = feats[0].new_tensor([[s, s, s,
                                                        s]]).repeat(100, 1)
-        packed_inputs = demo_mm_inputs(
+        batch_data_samples = demo_mm_inputs(
             batch_size=1,
             image_shapes=[(3, s, s)],
             num_items=[0],
             num_classes=4,
-            with_mask=True)
-        batch_data_samples = []
-        for i in range(len(packed_inputs)):
-            batch_data_samples.append(
-                packed_inputs[i]['data_sample'].to(device='cuda'))
+            with_mask=True,
+            device='cuda')['data_samples']
         out = roi_head.loss(feats, proposal_list, batch_data_samples)
         for name, value in out.items():
             if 'loss_cls' in name:

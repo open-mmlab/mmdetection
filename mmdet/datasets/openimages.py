@@ -5,15 +5,15 @@ from collections import defaultdict
 from typing import Dict, List, Optional
 
 import numpy as np
-from mmengine.dataset import BaseDataset
-from mmengine.fileio import FileClient, load
+from mmengine.fileio import load
 from mmengine.utils import is_abs
 
 from mmdet.registry import DATASETS
+from .base_det_dataset import BaseDetDataset
 
 
 @DATASETS.register_module()
-class OpenImagesDataset(BaseDataset):
+class OpenImagesDataset(BaseDetDataset):
     """Open Images dataset for detection.
 
     Args:
@@ -33,20 +33,16 @@ class OpenImagesDataset(BaseDataset):
     METAINFO: dict = dict(DATASET_TYPE='oid_v6')
 
     def __init__(self,
-                 ann_file: str,
                  label_file: str,
                  meta_file: str,
                  hierarchy_file: str,
                  image_level_ann_file: Optional[str] = None,
-                 file_client_args: dict = dict(backend='disk'),
                  **kwargs) -> None:
         self.label_file = label_file
         self.meta_file = meta_file
         self.hierarchy_file = hierarchy_file
         self.image_level_ann_file = image_level_ann_file
-        self.file_client_args = file_client_args
-        self.file_client = FileClient(**file_client_args)
-        super().__init__(ann_file=ann_file, **kwargs)
+        super().__init__(**kwargs)
 
     def load_data_list(self) -> List[dict]:
         """Load annotations from an annotation file named as ``self.ann_file``
@@ -286,18 +282,6 @@ class OpenImagesDataset(BaseDataset):
                 relation_matrix = self._convert_hierarchy_tree(
                     node, relation_matrix, parents=children)
         return relation_matrix
-
-    def get_cat_ids(self, idx: int) -> List[int]:
-        """Get category ids by index.
-
-        Args:
-            idx (int): Index of data.
-
-        Returns:
-            List[int]: All categories in the image of specified index.
-        """
-        instances = self.get_data_info(idx)['instances']
-        return [instance['bbox_label'] for instance in instances]
 
     def _join_prefix(self):
         """Join ``self.data_root`` with annotation path."""

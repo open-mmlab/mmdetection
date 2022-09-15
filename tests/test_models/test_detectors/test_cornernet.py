@@ -15,7 +15,7 @@ class TestCornerNet(TestCase):
     def setUp(self) -> None:
         register_all_modules()
         model_cfg = get_detector_cfg(
-            'cornernet/cornernet_hourglass104_mstest_8x6_210e_coco.py')
+            'cornernet/cornernet_hourglass104_8xb6-210e-mstest_coco.py')
 
         backbone = dict(
             type='ResNet',
@@ -41,7 +41,7 @@ class TestCornerNet(TestCase):
 
     def test_init(self):
         model = get_detector_cfg(
-            'cornernet/cornernet_hourglass104_mstest_8x6_210e_coco.py')
+            'cornernet/cornernet_hourglass104_8xb6-210e-mstest_coco.py')
         model.backbone.init_cfg = None
 
         from mmdet.models import build_detector
@@ -58,9 +58,8 @@ class TestCornerNet(TestCase):
         detector.init_weights()
 
         packed_inputs = demo_mm_inputs(2, [[3, 511, 511], [3, 511, 511]])
-        batch_inputs, data_samples = detector.data_preprocessor(
-            packed_inputs, True)
-        losses = detector.forward(batch_inputs, data_samples, mode='loss')
+        data = detector.data_preprocessor(packed_inputs, True)
+        losses = detector.forward(**data, mode='loss')
         assert isinstance(losses, dict)
 
     @unittest.skipIf(not torch.cuda.is_available(),
@@ -71,14 +70,12 @@ class TestCornerNet(TestCase):
         detector.init_weights()
 
         packed_inputs = demo_mm_inputs(2, [[3, 512, 512], [3, 512, 512]])
-        batch_inputs, data_samples = detector.data_preprocessor(
-            packed_inputs, False)
+        data = detector.data_preprocessor(packed_inputs, False)
 
         # Test forward test
         detector.eval()
         with torch.no_grad():
-            batch_results = detector.forward(
-                batch_inputs, data_samples, mode='predict')
+            batch_results = detector.forward(**data, mode='predict')
             assert len(batch_results) == 2
             assert isinstance(batch_results[0], DetDataSample)
 
@@ -90,9 +87,6 @@ class TestCornerNet(TestCase):
         detector.init_weights()
 
         packed_inputs = demo_mm_inputs(2, [[3, 512, 512], [3, 512, 512]])
-        batch_inputs, data_samples = detector.data_preprocessor(
-            packed_inputs, False)
-
-        batch_results = detector.forward(
-            batch_inputs, data_samples, mode='tensor')
+        data = detector.data_preprocessor(packed_inputs, False)
+        batch_results = detector.forward(**data, mode='tensor')
         assert isinstance(batch_results, tuple)

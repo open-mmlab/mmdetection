@@ -3,9 +3,10 @@ import argparse
 import os
 import os.path as osp
 
-import mmcv
-from mmcv import Config, DictAction
-from mmcv.runner import init_dist
+from mmengine.config import Config, DictAction
+from mmengine.dist import init_dist
+from mmengine.fileio import dump
+from mmengine.utils import mkdir_or_exist
 from terminaltables import GithubFlavoredMarkdownTable
 
 from tools.analysis_tools.benchmark import repeat_measure_inference_speed
@@ -164,7 +165,7 @@ if __name__ == '__main__':
                     result_dict[cfg_path] = dict(fps=0, ms_times_pre_image=0)
 
     if args.out:
-        mmcv.mkdir_or_exist(args.out)
-        mmcv.dump(result_dict, osp.join(args.out, 'batch_inference_fps.json'))
+        mkdir_or_exist(args.out)
+        dump(result_dict, osp.join(args.out, 'batch_inference_fps.json'))
 
     results2markdown(result_dict)

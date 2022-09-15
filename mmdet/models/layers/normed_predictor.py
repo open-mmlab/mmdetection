@@ -2,12 +2,13 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import CONV_LAYERS
 
-from .builder import LINEAR_LAYERS
+from mmdet.registry import MODELS
+
+MODELS.register_module('Linear', module=nn.Linear)
 
 
-@LINEAR_LAYERS.register_module(name='NormedLinear')
+@MODELS.register_module(name='NormedLinear')
 class NormedLinear(nn.Linear):
     """Normalized Linear Layer.
 
@@ -39,7 +40,7 @@ class NormedLinear(nn.Linear):
         return F.linear(x_, weight_, self.bias)
 
 
-@CONV_LAYERS.register_module(name='NormedConv2d')
+@MODELS.register_module(name='NormedConv2d')
 class NormedConv2d(nn.Conv2d):
     """Normalized Conv2d Layer.
 

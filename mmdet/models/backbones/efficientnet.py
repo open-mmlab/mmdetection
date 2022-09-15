@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.utils.checkpoint as cp
 from mmcv.cnn.bricks import ConvModule, DropPath
-from mmcv.runner import BaseModule, Sequential
+from mmengine.model import BaseModule, Sequential
 
 from mmdet.registry import MODELS
 from ..layers import InvertedResidual, SELayer

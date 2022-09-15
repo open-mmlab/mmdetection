@@ -163,19 +163,15 @@ class TestStandardRoIHead(TestCase):
         # When truth is non-empty then both cls, box, and mask loss
         # should be nonzero for random inputs
         image_shapes = [(3, s, s)]
-        packed_inputs = demo_mm_inputs(
+        batch_data_samples = demo_mm_inputs(
             batch_size=1,
             image_shapes=image_shapes,
             num_items=[1],
             num_classes=4,
-            with_mask=True)
+            with_mask=True,
+            device='cuda')['data_samples']
         proposals_list = demo_mm_proposals(
-            image_shapes=image_shapes, num_proposals=100)
-        batch_data_samples = []
-        for i in range(len(packed_inputs)):
-            batch_data_samples.append(
-                packed_inputs[i]['data_sample'].to(device='cuda'))
-            proposals_list[i] = proposals_list[i].to(device='cuda')
+            image_shapes=image_shapes, num_proposals=100, device='cuda')
 
         out = roi_head.loss(feats, proposals_list, batch_data_samples)
         loss_cls = out['loss_cls']
@@ -187,19 +183,15 @@ class TestStandardRoIHead(TestCase):
 
         # When there is no truth, the cls loss should be nonzero but
         # there should be no box and mask loss.
-        packed_inputs = demo_mm_inputs(
+        batch_data_samples = demo_mm_inputs(
             batch_size=1,
             image_shapes=image_shapes,
             num_items=[0],
             num_classes=4,
-            with_mask=True)
+            with_mask=True,
+            device='cuda')['data_samples']
         proposals_list = demo_mm_proposals(
-            image_shapes=image_shapes, num_proposals=100)
-        batch_data_samples = []
-        for i in range(len(packed_inputs)):
-            batch_data_samples.append(
-                packed_inputs[i]['data_sample'].to(device='cuda'))
-            proposals_list[i] = proposals_list[i].to(device='cuda')
+            image_shapes=image_shapes, num_proposals=100, device='cuda')
         out = roi_head.loss(feats, proposals_list, batch_data_samples)
         empty_cls_loss = out['loss_cls']
         empty_bbox_loss = out['loss_bbox']

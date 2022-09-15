@@ -8,7 +8,10 @@ from mmengine.dataset import BaseDataset
 from mmengine.dist import get_dist_info, sync_random_seed
 from torch.utils.data import Sampler
 
+from mmdet.registry import DATA_SAMPLERS
 
+
+@DATA_SAMPLERS.register_module()
 class MultiSourceSampler(Sampler):
     r"""Multi-Source Infinite Sampler.
 
@@ -139,6 +142,7 @@ class MultiSourceSampler(Sampler):
         pass
 
 
+@DATA_SAMPLERS.register_module()
 class GroupMultiSourceSampler(MultiSourceSampler):
     r"""Group Multi-Source Infinite Sampler.
 

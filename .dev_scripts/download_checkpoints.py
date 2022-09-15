@@ -6,9 +6,9 @@ import os
 import os.path as osp
 from multiprocessing import Pool
 
-import mmcv
 import torch
-from mmcv import Config
+from mmengine.config import Config
+from mmengine.utils import mkdir_or_exist
 
 
 def download(url, out_file, min_bytes=math.pow(1024, 2), progress=True):
@@ -52,7 +52,7 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    mmcv.mkdir_or_exist(args.out)
+    mkdir_or_exist(args.out)
 
     cfg = Config.fromfile(args.config)
 

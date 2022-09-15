@@ -16,7 +16,7 @@ class TestKDSingleStageDetector(TestCase):
     def setUp(self):
         register_all_modules()
 
-    @parameterized.expand(['ld/ld_r18_gflv1_r101_fpn_coco_1x.py'])
+    @parameterized.expand(['ld/ld_r18-gflv1-r101_fpn_1x_coco.py'])
     def test_init(self, cfg_file):
         model = get_detector_cfg(cfg_file)
         model.backbone.init_cfg = None
@@ -27,7 +27,7 @@ class TestKDSingleStageDetector(TestCase):
         self.assertTrue(detector.neck)
         self.assertTrue(detector.bbox_head)
 
-    @parameterized.expand([('ld/ld_r18_gflv1_r101_fpn_coco_1x.py', ('cpu',
+    @parameterized.expand([('ld/ld_r18-gflv1-r101_fpn_1x_coco.py', ('cpu',
                                                                     'cuda'))])
     def test_single_stage_forward_train(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
@@ -45,14 +45,12 @@ class TestKDSingleStageDetector(TestCase):
                 detector = detector.cuda()
 
             packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]])
-            batch_inputs, data_samples = detector.data_preprocessor(
-                packed_inputs, True)
-
+            data = detector.data_preprocessor(packed_inputs, True)
             # Test forward train
-            losses = detector.forward(batch_inputs, data_samples, mode='loss')
+            losses = detector.forward(**data, mode='loss')
             self.assertIsInstance(losses, dict)
 
-    @parameterized.expand([('ld/ld_r18_gflv1_r101_fpn_coco_1x.py', ('cpu',
+    @parameterized.expand([('ld/ld_r18-gflv1-r101_fpn_1x_coco.py', ('cpu',
                                                                     'cuda'))])
     def test_single_stage_forward_test(self, cfg_file, devices):
         model = get_detector_cfg(cfg_file)
@@ -70,13 +68,11 @@ class TestKDSingleStageDetector(TestCase):
                 detector = detector.cuda()
 
             packed_inputs = demo_mm_inputs(2, [[3, 128, 128], [3, 125, 130]])
-            batch_inputs, data_samples = detector.data_preprocessor(
-                packed_inputs, False)
+            data = detector.data_preprocessor(packed_inputs, False)
 
             # Test forward test
             detector.eval()
             with torch.no_grad():
-                batch_results = detector.forward(
-                    batch_inputs, data_samples, mode='predict')
+                batch_results = detector.forward(**data, mode='predict')
                 self.assertEqual(len(batch_results), 2)
                 self.assertIsInstance(batch_results[0], DetDataSample)

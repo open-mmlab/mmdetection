@@ -4,8 +4,9 @@ from typing import Dict, List, Sequence, Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import Scale, bias_init_with_prob, normal_init
-from mmengine.data import InstanceData
+from mmcv.cnn import Scale
+from mmengine.model import bias_init_with_prob, normal_init
+from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS

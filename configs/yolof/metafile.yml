@@ -20,7 +20,7 @@ Collections:
 Models:
   - Name: yolof_r50_c5_8x8_1x_coco
     In Collection: YOLOF
-    Config: configs/yolof/yolof_r50_c5_8x8_1x_coco.py
+    Config: configs/yolof/yolof_r50-c5_8xb8-1x_coco.py
     Metadata:
       Training Memory (GB): 8.3
       Epochs: 12

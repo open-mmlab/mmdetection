@@ -55,15 +55,15 @@ def init_detector(
     model = build_detector(config.model)
     if checkpoint is not None:
         checkpoint = load_checkpoint(model, checkpoint, map_location='cpu')
-
-        dataset_meta = checkpoint['meta'].get('dataset_meta', None)
+        # Weights converted from elsewhere may not have meta fields.
+        checkpoint_meta = checkpoint.get('meta', {})
         # save the dataset_meta in the model for convenience
-        if 'dataset_meta' in checkpoint.get('meta', {}):
+        if 'dataset_meta' in checkpoint_meta:
             # mmdet 3.x
-            model.dataset_meta = dataset_meta
-        elif 'CLASSES' in checkpoint.get('meta', {}):
+            model.dataset_meta = checkpoint_meta['dataset_meta']
+        elif 'CLASSES' in checkpoint_meta:
             # < mmdet 3.x
-            classes = checkpoint['meta']['CLASSES']
+            classes = checkpoint_meta['CLASSES']
             model.dataset_meta = {'CLASSES': classes, 'PALETTE': palette}
         else:
             warnings.simplefilter('once')
@@ -84,14 +84,18 @@ def init_detector(
 ImagesType = Union[str, np.ndarray, Sequence[str], Sequence[np.ndarray]]
 
 
-def inference_detector(model: nn.Module,
-                       imgs: ImagesType) -> Union[DetDataSample, SampleList]:
+def inference_detector(
+    model: nn.Module,
+    imgs: ImagesType,
+    test_pipeline: Optional[Compose] = None
+) -> Union[DetDataSample, SampleList]:
     """Inference image(s) with the detector.
 
     Args:
         model (nn.Module): The loaded detector.
         imgs (str, ndarray, Sequence[str/ndarray]):
            Either image files or loaded images.
+        test_pipeline (:obj:`Compose`): Test pipeline.
 
     Returns:
         :obj:`DetDataSample` or list[:obj:`DetDataSample`]:
@@ -107,14 +111,28 @@ def inference_detector(model: nn.Module,
 
     cfg = model.cfg
 
-    if isinstance(imgs[0], np.ndarray):
+    if test_pipeline is None:
         cfg = cfg.copy()
-        # set loading pipeline type
-        cfg.test_dataloader.dataset.pipeline[0].type = 'LoadImageFromNDArray'
+        test_pipeline = cfg.test_dataloader.dataset.pipeline
+        if isinstance(imgs[0], np.ndarray):
+            # set loading pipeline type
+            test_pipeline[0].type = 'LoadImageFromNDArray'
 
-    test_pipeline = Compose(cfg.test_dataloader.dataset.pipeline)
+        new_test_pipeline = []
+        for pipeline in test_pipeline:
+            if pipeline['type'] != 'LoadAnnotations' and pipeline[
+                    'type'] != 'LoadPanopticAnnotations':
+                new_test_pipeline.append(pipeline)
 
-    data = []
+        test_pipeline = Compose(new_test_pipeline)
+
+    if model.data_preprocessor.device.type == 'cpu':
+        for m in model.modules():
+            assert not isinstance(
+                m, RoIPool
+            ), 'CPU inference with RoIPool is not supported currently.'
+
+    result_list = []
     for img in imgs:
         # prepare data
         if isinstance(img, np.ndarray):
@@ -125,21 +143,20 @@ def inference_detector(model: nn.Module,
             data_ = dict(img_path=img, img_id=0)
         # build the data pipeline
         data_ = test_pipeline(data_)
-        data.append(data_)
 
-    for m in model.modules():
-        assert not isinstance(
-            m,
-            RoIPool), 'CPU inference with RoIPool is not supported currently.'
+        data_['inputs'] = [data_['inputs']]
+        data_['data_samples'] = [data_['data_samples']]
 
-    # forward the model
-    with torch.no_grad():
-        results = model.test_step(data)
+        # forward the model
+        with torch.no_grad():
+            results = model.test_step(data_)[0]
+
+        result_list.append(results)
 
     if not is_batch:
-        return results[0]
+        return result_list[0]
     else:
-        return results
+        return result_list
 
 
 # TODO: Awaiting refactoring

@@ -3,7 +3,7 @@ import warnings
 
 import torch.nn as nn
 from mmcv.cnn import VGG
-from mmcv.runner import BaseModule
+from mmengine.model import BaseModule
 
 from mmdet.registry import MODELS
 from ..necks import ssd_neck

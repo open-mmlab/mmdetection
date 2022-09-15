@@ -20,6 +20,7 @@ train_pipeline = [
 test_pipeline = [
     dict(type='LoadImageFromFile', file_client_args=file_client_args),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
+    dict(type='LoadPanopticAnnotations', file_client_args=file_client_args),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
@@ -59,6 +60,7 @@ val_evaluator = dict(
     type='CocoPanopticMetric',
     ann_file=data_root + 'annotations/panoptic_val2017.json',
     seg_prefix=data_root + 'annotations/panoptic_val2017/',
+    file_client_args=file_client_args,
 )
 test_evaluator = val_evaluator
 

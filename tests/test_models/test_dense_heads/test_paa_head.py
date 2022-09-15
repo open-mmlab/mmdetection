@@ -4,7 +4,7 @@ from unittest import TestCase
 import numpy as np
 import torch
 from mmengine import Config
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 
 from mmdet import *  # noqa
 from mmdet.models.dense_heads import PAAHead, paa_head

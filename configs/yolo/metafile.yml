@@ -19,7 +19,7 @@ Collections:
 Models:
   - Name: yolov3_d53_320_273e_coco
     In Collection: YOLOv3
-    Config: configs/yolo/yolov3_d53_320_273e_coco.py
+    Config: configs/yolo/yolov3_d53_8xb8-320-273e_coco.py
     Metadata:
       Training Memory (GB): 2.7
       inference time (ms/im):
@@ -39,7 +39,7 @@ Models:
 
   - Name: yolov3_d53_mstrain-416_273e_coco
     In Collection: YOLOv3
-    Config: configs/yolo/yolov3_d53_mstrain-416_273e_coco.py
+    Config: configs/yolo/yolov3_d53_8xb8-ms-416-273e_coco.py
     Metadata:
       Training Memory (GB): 3.8
       inference time (ms/im):
@@ -59,7 +59,7 @@ Models:
 
   - Name: yolov3_d53_mstrain-608_273e_coco
     In Collection: YOLOv3
-    Config: configs/yolo/yolov3_d53_mstrain-608_273e_coco.py
+    Config: configs/yolo/yolov3_d53_8xb8-ms-608-273e_coco.py
     Metadata:
       Training Memory (GB): 7.4
       inference time (ms/im):
@@ -79,7 +79,7 @@ Models:
 
   - Name: yolov3_d53_fp16_mstrain-608_273e_coco
     In Collection: YOLOv3
-    Config: configs/yolo/yolov3_d53_fp16_mstrain-608_273e_coco.py
+    Config: configs/yolo/yolov3_d53_8xb8-amp-ms-608-273e_coco.py
     Metadata:
       Training Memory (GB): 4.7
       inference time (ms/im):
@@ -99,7 +99,7 @@ Models:
 
   - Name: yolov3_mobilenetv2_320_300e_coco
     In Collection: YOLOv3
-    Config: configs/yolo/yolov3_mobilenetv2_320_300e_coco.py
+    Config: configs/yolo/yolov3_mobilenetv2_8xb24-320-300e_coco.py
     Metadata:
       Training Memory (GB): 3.2
       Epochs: 300
@@ -112,7 +112,7 @@ Models:
 
   - Name: yolov3_mobilenetv2_mstrain-416_300e_coco
     In Collection: YOLOv3
-    Config: configs/yolo/yolov3_mobilenetv2_mstrain-416_300e_coco.py
+    Config: configs/yolo/yolov3_mobilenetv2_8xb24-ms-416-300e_coco.py
     Metadata:
       Training Memory (GB): 5.3
       Epochs: 300

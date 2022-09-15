@@ -44,19 +44,7 @@ class TestCityScapesMetric(unittest.TestCase):
         dummy_mask1[:, :10, :10] = 1
         dummy_mask2 = np.zeros((1, 20, 20), dtype=np.uint8)
         dummy_mask2[:, :10, :10] = 1
-        predictions = [{
-            'pred_instances': {
-                'scores': torch.from_numpy(np.array([1.0])),
-                'labels': torch.from_numpy(np.array([0])),
-                'masks': torch.from_numpy(dummy_mask1)
-            }
-        }, {
-            'pred_instances': {
-                'scores': torch.from_numpy(np.array([0.98])),
-                'labels': torch.from_numpy(np.array([1])),
-                'masks': torch.from_numpy(dummy_mask2)
-            }
-        }]
+
         self.outfile_prefix = osp.join(self.tmp_dir.name, 'test')
         self.seg_prefix = osp.join(self.tmp_dir.name, 'cityscapes/gtFine/val')
         city = 'lindau'
@@ -78,15 +66,19 @@ class TestCityScapesMetric(unittest.TestCase):
         masks2[:10, :10] = 24 * 1000 + 1
         Image.fromarray(masks2).save(img_path2)
 
-        data_batch = [{
-            'inputs': None,
-            'data_sample': {
-                'img_path': img_path1
+        data_samples = [{
+            'img_path': img_path1,
+            'pred_instances': {
+                'scores': torch.from_numpy(np.array([1.0])),
+                'labels': torch.from_numpy(np.array([0])),
+                'masks': torch.from_numpy(dummy_mask1)
             }
         }, {
-            'inputs': None,
-            'data_sample': {
-                'img_path': img_path2
+            'img_path': img_path2,
+            'pred_instances': {
+                'scores': torch.from_numpy(np.array([0.98])),
+                'labels': torch.from_numpy(np.array([1])),
+                'masks': torch.from_numpy(dummy_mask2)
             }
         }]
 
@@ -99,7 +91,7 @@ class TestCityScapesMetric(unittest.TestCase):
         metric.dataset_meta = dict(
             CLASSES=('person', 'rider', 'car', 'truck', 'bus', 'train',
                      'motorcycle', 'bicycle'))
-        metric.process(data_batch, predictions)
+        metric.process({}, data_samples)
         results = metric.evaluate(size=2)
         self.assertDictEqual(results, target)
         del metric
@@ -114,6 +106,6 @@ class TestCityScapesMetric(unittest.TestCase):
         metric.dataset_meta = dict(
             CLASSES=('person', 'rider', 'car', 'truck', 'bus', 'train',
                      'motorcycle', 'bicycle'))
-        metric.process(data_batch, predictions)
+        metric.process({}, data_samples)
         results = metric.evaluate(size=2)
         self.assertDictEqual(results, dict())

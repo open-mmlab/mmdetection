@@ -21,12 +21,12 @@ def mask_target(pos_proposals_list, pos_assigned_gt_inds_list, gt_masks_list,
         Tensor: Mask target of each image, has shape (num_pos, w, h).
 
     Example:
-        >>> import mmcv
+        >>> from mmengine.config import Config
         >>> import mmdet
         >>> from mmdet.data_elements.mask import BitmapMasks
         >>> from mmdet.data_elements.mask.mask_target import *
         >>> H, W = 17, 18
-        >>> cfg = mmcv.Config({'mask_size': (13, 14)})
+        >>> cfg = Config({'mask_size': (13, 14)})
         >>> rng = np.random.RandomState(0)
         >>> # Positive proposals (tl_x, tl_y, br_x, br_y) for each image
         >>> pos_proposals_list = [
@@ -78,12 +78,12 @@ def mask_target_single(pos_proposals, pos_assigned_gt_inds, gt_masks, cfg):
         Tensor: Mask target of each positive proposals in the image.
 
     Example:
-        >>> import mmcv
+        >>> from mmengine.config import Config
         >>> import mmdet
         >>> from mmdet.data_elements.mask import BitmapMasks
         >>> from mmdet.data_elements.mask.mask_target import *  # NOQA
         >>> H, W = 32, 32
-        >>> cfg = mmcv.Config({'mask_size': (7, 11)})
+        >>> cfg = Config({'mask_size': (7, 11)})
         >>> rng = np.random.RandomState(0)
         >>> # Masks for each ground truth box (relative to the image)
         >>> gt_masks_data = rng.rand(3, H, W)

@@ -2,7 +2,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
-from mmcv.runner import auto_fp16
 
 from mmdet.registry import MODELS
 from .fpn import FPN
@@ -96,7 +95,6 @@ class PAFPN(FPN):
             self.downsample_convs.append(d_conv)
             self.pafpn_convs.append(pafpn_conv)
 
-    @auto_fp16()
     def forward(self, inputs):
         """Forward function."""
         assert len(inputs) == len(self.in_channels)

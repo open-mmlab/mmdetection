@@ -16,6 +16,8 @@ train_pipeline = [
 test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='Resize', scale=(2048, 1024), keep_ratio=True),
+    # If you don't have a gt annotation, delete the pipeline
+    dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',

@@ -2,7 +2,7 @@
 import os.path as osp
 import xml.etree.ElementTree as ET
 
-import mmcv
+from mmengine.fileio import list_from_file
 
 from mmdet.registry import DATASETS
 from .xml_style import XMLDataset
@@ -33,7 +33,7 @@ class WIDERFaceDataset(XMLDataset):
         """
 
         data_infos = []
-        img_ids = mmcv.list_from_file(ann_file)
+        img_ids = list_from_file(ann_file)
         for img_id in img_ids:
             filename = f'{img_id}.jpg'
             xml_path = osp.join(self.img_prefix, 'Annotations',

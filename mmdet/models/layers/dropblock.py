@@ -2,12 +2,13 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import PLUGIN_LAYERS
+
+from mmdet.registry import MODELS
 
 eps = 1e-6
 
 
-@PLUGIN_LAYERS.register_module()
+@MODELS.register_module()
 class DropBlock(nn.Module):
     """Randomly drop some regions of feature maps.
 

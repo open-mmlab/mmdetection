@@ -6,18 +6,15 @@ from typing import Sequence
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import (build_activation_layer, build_conv_layer,
-                      build_norm_layer, xavier_init)
-from mmcv.cnn.bricks.registry import (TRANSFORMER_LAYER,
-                                      TRANSFORMER_LAYER_SEQUENCE)
+from mmcv.cnn import build_activation_layer, build_conv_layer, build_norm_layer
 from mmcv.cnn.bricks.transformer import (BaseTransformerLayer,
                                          TransformerLayerSequence,
                                          build_transformer_layer_sequence)
-from mmcv.runner.base_module import BaseModule
-from mmcv.utils import to_2tuple
+from mmengine.model import BaseModule, xavier_init
+from mmengine.utils import to_2tuple
 from torch.nn.init import normal_
 
-from .builder import TRANSFORMER
+from mmdet.registry import MODELS
 
 try:
     from mmcv.ops.multi_scale_deform_attn import MultiScaleDeformableAttention
@@ -155,8 +152,8 @@ class PatchEmbed(BaseModule):
         input_size (int | tuple | None): The size of input, which will be
             used to calculate the out size. Only work when `dynamic_size`
             is False. Default: None.
-        init_cfg (`mmcv.ConfigDict`, optional): The Config for initialization.
-            Default: None.
+        init_cfg (`mmengine.ConfigDict`, optional): The Config for
+            initialization. Default: None.
     """
 
     def __init__(
@@ -404,12 +401,12 @@ def inverse_sigmoid(x, eps=1e-5):
     return torch.log(x1 / x2)
 
 
-@TRANSFORMER_LAYER.register_module()
+@MODELS.register_module()
 class DetrTransformerDecoderLayer(BaseTransformerLayer):
     """Implements decoder layer in DETR transformer.
 
     Args:
-        attn_cfgs (list[`mmcv.ConfigDict`] | list[dict] | dict )):
+        attn_cfgs (list[`mmengine.ConfigDict`] | list[dict] | dict )):
             Configs for self_attention or cross_attention, the order
             should be consistent with it in `operation_order`. If it is
             a dict, it would be expand to the number of attention in
@@ -450,7 +447,7 @@ class DetrTransformerDecoderLayer(BaseTransformerLayer):
             ['self_attn', 'norm', 'cross_attn', 'ffn'])
 
 
-@TRANSFORMER_LAYER_SEQUENCE.register_module()
+@MODELS.register_module()
 class DetrTransformerEncoder(TransformerLayerSequence):
     """TransformerEncoder of DETR.
 
@@ -482,7 +479,7 @@ class DetrTransformerEncoder(TransformerLayerSequence):
         return x
 
 
-@TRANSFORMER_LAYER_SEQUENCE.register_module()
+@MODELS.register_module()
 class DetrTransformerDecoder(TransformerLayerSequence):
     """Implements the decoder in DETR transformer.
 
@@ -535,7 +532,7 @@ class DetrTransformerDecoder(TransformerLayerSequence):
         return torch.stack(intermediate)
 
 
-@TRANSFORMER.register_module()
+@MODELS.register_module()
 class Transformer(BaseModule):
     """Implements the DETR transformer.
 
@@ -550,11 +547,11 @@ class Transformer(BaseModule):
     <https://arxiv.org/pdf/2005.12872>`_ for details.
 
     Args:
-        encoder (`mmcv.ConfigDict` | Dict): Config of
+        encoder (`mmengine.ConfigDict` | Dict): Config of
             TransformerEncoder. Defaults to None.
-        decoder ((`mmcv.ConfigDict` | Dict)): Config of
+        decoder ((`mmengine.ConfigDict` | Dict)): Config of
             TransformerDecoder. Defaults to None
-        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+        init_cfg (obj:`mmegine.ConfigDict`): The Config for initialization.
             Defaults to None.
     """
 
@@ -621,7 +618,7 @@ class Transformer(BaseModule):
         return out_dec, memory
 
 
-@TRANSFORMER_LAYER_SEQUENCE.register_module()
+@MODELS.register_module()
 class DeformableDetrTransformerDecoder(TransformerLayerSequence):
     """Implements the decoder in DETR transformer.
 
@@ -709,7 +706,7 @@ class DeformableDetrTransformerDecoder(TransformerLayerSequence):
         return output, reference_points
 
 
-@TRANSFORMER.register_module()
+@MODELS.register_module()
 class DeformableDetrTransformer(Transformer):
     """Implements the DeformableDETR transformer.
 
@@ -1059,7 +1056,7 @@ class DeformableDetrTransformer(Transformer):
             inter_references_out, None, None
 
 
-@TRANSFORMER.register_module()
+@MODELS.register_module()
 class DynamicConv(BaseModule):
     """Implements Dynamic Convolution.
 
@@ -1083,7 +1080,7 @@ class DynamicConv(BaseModule):
         act_cfg (dict): The activation config for DynamicConv.
         norm_cfg (dict): Config dict for normalization layer. Default
             layer normalization.
-        init_cfg (obj:`mmcv.ConfigDict`): The Config for initialization.
+        init_cfg (obj:`mmengine.ConfigDict`): The Config for initialization.
             Default: None.
     """
 

@@ -9,13 +9,14 @@ from mmdet.structures import DetDataSample
 from mmdet.testing._utils import demo_mm_inputs, get_detector_cfg
 from mmdet.utils import register_all_modules
 
-register_all_modules()
-
 
 class TestMaskFormer(unittest.TestCase):
 
+    def setUp(self):
+        register_all_modules()
+
     def _create_model_cfg(self):
-        cfg_path = 'maskformer/maskformer_r50_mstrain_16x1_75e_coco.py'
+        cfg_path = 'maskformer/maskformer_r50_ms-16xb1-75e_coco.py'
         model_cfg = get_detector_cfg(cfg_path)
         base_channels = 32
         model_cfg.backbone.depth = 18
@@ -68,10 +69,9 @@ class TestMaskFormer(unittest.TestCase):
             sem_seg_output_strides=1,
             with_mask=True,
             with_semantic=True)
-        batch_inputs, data_samples = detector.data_preprocessor(
-            packed_inputs, True)
+        data = detector.data_preprocessor(packed_inputs, True)
         # Test loss mode
-        losses = detector.forward(batch_inputs, data_samples, mode='loss')
+        losses = detector.forward(**data, mode='loss')
         self.assertIsInstance(losses, dict)
 
     @parameterized.expand([('cpu', ), ('cuda', )])
@@ -87,13 +87,11 @@ class TestMaskFormer(unittest.TestCase):
             sem_seg_output_strides=1,
             with_mask=True,
             with_semantic=True)
-        batch_inputs, data_samples = detector.data_preprocessor(
-            packed_inputs, False)
+        data = detector.data_preprocessor(packed_inputs, False)
         # Test forward test
         detector.eval()
         with torch.no_grad():
-            batch_results = detector.forward(
-                batch_inputs, data_samples, mode='predict')
+            batch_results = detector.forward(**data, mode='predict')
             self.assertEqual(len(batch_results), 2)
             self.assertIsInstance(batch_results[0], DetDataSample)
 
@@ -110,14 +108,15 @@ class TestMaskFormer(unittest.TestCase):
             sem_seg_output_strides=1,
             with_mask=True,
             with_semantic=True)
-        batch_inputs, data_samples = detector.data_preprocessor(
-            packed_inputs, False)
-
-        out = detector.forward(batch_inputs, data_samples, mode='tensor')
+        data = detector.data_preprocessor(packed_inputs, False)
+        out = detector.forward(**data, mode='tensor')
         self.assertIsInstance(out, tuple)
 
 
 class TestMask2Former(unittest.TestCase):
+
+    def setUp(self):
+        register_all_modules()
 
     def _create_model_cfg(self, cfg_path):
         model_cfg = get_detector_cfg(cfg_path)
@@ -153,17 +152,17 @@ class TestMask2Former(unittest.TestCase):
 
     def test_init(self):
         model_cfg = self._create_model_cfg(
-            'mask2former/mask2former_r50_lsj_8x2_50e_coco-panoptic.py')
+            'mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py')
         detector = build_detector(model_cfg)
         detector.init_weights()
         assert detector.backbone
         assert detector.panoptic_head
 
     @parameterized.expand([
-        ('cpu', 'mask2former/mask2former_r50_lsj_8x2_50e_coco-panoptic.py'),
-        ('cpu', 'mask2former/mask2former_r50_lsj_8x2_50e_coco.py'),
-        ('cuda', 'mask2former/mask2former_r50_lsj_8x2_50e_coco-panoptic.py'),
-        ('cuda', 'mask2former/mask2former_r50_lsj_8x2_50e_coco.py')
+        ('cpu', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py'),
+        ('cpu', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py'),
+        ('cuda', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py'),
+        ('cuda', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py')
     ])
     def test_forward_loss_mode(self, device, cfg_path):
         print(device, cfg_path)
@@ -181,17 +180,16 @@ class TestMask2Former(unittest.TestCase):
             sem_seg_output_strides=1,
             with_mask=True,
             with_semantic=with_semantic)
-        batch_inputs, data_samples = detector.data_preprocessor(
-            packed_inputs, True)
+        data = detector.data_preprocessor(packed_inputs, True)
         # Test loss mode
-        losses = detector.forward(batch_inputs, data_samples, mode='loss')
+        losses = detector.forward(**data, mode='loss')
         self.assertIsInstance(losses, dict)
 
     @parameterized.expand([
-        ('cpu', 'mask2former/mask2former_r50_lsj_8x2_50e_coco-panoptic.py'),
-        ('cpu', 'mask2former/mask2former_r50_lsj_8x2_50e_coco.py'),
-        ('cuda', 'mask2former/mask2former_r50_lsj_8x2_50e_coco-panoptic.py'),
-        ('cuda', 'mask2former/mask2former_r50_lsj_8x2_50e_coco.py')
+        ('cpu', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py'),
+        ('cpu', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py'),
+        ('cuda', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py'),
+        ('cuda', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py')
     ])
     def test_forward_predict_mode(self, device, cfg_path):
         with_semantic = 'panoptic' in cfg_path
@@ -206,21 +204,19 @@ class TestMask2Former(unittest.TestCase):
             sem_seg_output_strides=1,
             with_mask=True,
             with_semantic=with_semantic)
-        batch_inputs, data_samples = detector.data_preprocessor(
-            packed_inputs, False)
+        data = detector.data_preprocessor(packed_inputs, False)
         # Test forward test
         detector.eval()
         with torch.no_grad():
-            batch_results = detector.forward(
-                batch_inputs, data_samples, mode='predict')
+            batch_results = detector.forward(**data, mode='predict')
             self.assertEqual(len(batch_results), 2)
             self.assertIsInstance(batch_results[0], DetDataSample)
 
     @parameterized.expand([
-        ('cpu', 'mask2former/mask2former_r50_lsj_8x2_50e_coco-panoptic.py'),
-        ('cpu', 'mask2former/mask2former_r50_lsj_8x2_50e_coco.py'),
-        ('cuda', 'mask2former/mask2former_r50_lsj_8x2_50e_coco-panoptic.py'),
-        ('cuda', 'mask2former/mask2former_r50_lsj_8x2_50e_coco.py')
+        ('cpu', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py'),
+        ('cpu', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py'),
+        ('cuda', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco-panoptic.py'),
+        ('cuda', 'mask2former/mask2former_r50_8xb2-lsj-50e_coco.py')
     ])
     def test_forward_tensor_mode(self, device, cfg_path):
         with_semantic = 'panoptic' in cfg_path
@@ -235,8 +231,6 @@ class TestMask2Former(unittest.TestCase):
             sem_seg_output_strides=1,
             with_mask=True,
             with_semantic=with_semantic)
-        batch_inputs, data_samples = detector.data_preprocessor(
-            packed_inputs, False)
-
-        out = detector.forward(batch_inputs, data_samples, mode='tensor')
+        data = detector.data_preprocessor(packed_inputs, False)
+        out = detector.forward(**data, mode='tensor')
         self.assertIsInstance(out, tuple)

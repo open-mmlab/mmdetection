@@ -4,7 +4,7 @@ from unittest import TestCase
 from unittest.mock import patch
 
 import numpy as np
-from mmengine.data import DefaultSampler
+from mmengine.dataset import DefaultSampler
 from torch.utils.data import Dataset
 
 from mmdet.datasets.samplers import AspectRatioBatchSampler
@@ -28,7 +28,7 @@ class DummyDataset(Dataset):
 
 class TestAspectRatioBatchSampler(TestCase):
 
-    @patch('mmengine.data.sampler.get_dist_info', return_value=(0, 1))
+    @patch('mmengine.dist.get_dist_info', return_value=(0, 1))
     def setUp(self, mock):
         self.length = 100
         self.dataset = DummyDataset(self.length)

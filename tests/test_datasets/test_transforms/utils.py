@@ -2,6 +2,7 @@
 import numpy as np
 from mmengine.testing import assert_allclose
 
+from mmdet.structures.bbox import BaseBoxes, HorizontalBoxes
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 
 
@@ -24,14 +25,18 @@ def create_full_masks(gt_bboxes, img_w, img_h):
     return gt_masks
 
 
-def construct_toy_data(poly2mask):
+def construct_toy_data(poly2mask, with_boxlist=False):
     img = np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]],
                    dtype=np.uint8)
     img = np.stack([img, img, img], axis=-1)
     results = dict()
     results['img'] = img
     results['img_shape'] = img.shape[:2]
-    results['gt_bboxes'] = np.array([[1, 0, 2, 2]], dtype=np.float32)
+    if with_boxlist:
+        results['gt_bboxes'] = HorizontalBoxes(
+            np.array([[1, 0, 2, 2]], dtype=np.float32))
+    else:
+        results['gt_bboxes'] = np.array([[1, 0, 2, 2]], dtype=np.float32)
     results['gt_bboxes_labels'] = np.array([13], dtype=np.int64)
     if poly2mask:
         gt_masks = np.array([[0, 1, 0, 0], [0, 1, 1, 0], [0, 1, 0, 0]],
@@ -65,5 +70,7 @@ def check_result_same(results, pipeline_results, check_keys):
         if isinstance(results[key], (BitmapMasks, PolygonMasks)):
             assert_allclose(pipeline_results[key].to_ndarray(),
                             results[key].to_ndarray())
+        elif isinstance(results[key], BaseBoxes):
+            assert_allclose(pipeline_results[key].tensor, results[key].tensor)
         else:
             assert_allclose(pipeline_results[key], results[key])

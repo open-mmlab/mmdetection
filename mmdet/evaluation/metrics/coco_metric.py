@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Sequence, Union
 
 import numpy as np
 from mmengine.evaluator import BaseMetric
-from mmengine.fileio import dump, load
+from mmengine.fileio import FileClient, dump, load
 from mmengine.logging import MMLogger
 from terminaltables import AsciiTable
 
@@ -49,6 +49,9 @@ class CocoMetric(BaseMetric):
         outfile_prefix (str, optional): The prefix of json files. It includes
             the file path and the prefix of filename, e.g., "a/b/prefix".
             If not specified, a temp file will be created. Defaults to None.
+        file_client_args (dict): Arguments to instantiate a FileClient.
+            See :class:`mmengine.fileio.FileClient` for details.
+            Defaults to ``dict(backend='disk')``.
         collect_device (str): Device name used for collecting results from
             different ranks during distributed training. Must be 'cpu' or
             'gpu'. Defaults to 'cpu'.
@@ -68,6 +71,7 @@ class CocoMetric(BaseMetric):
                  metric_items: Optional[Sequence[str]] = None,
                  format_only: bool = False,
                  outfile_prefix: Optional[str] = None,
+                 file_client_args: dict = dict(backend='disk'),
                  collect_device: str = 'cpu',
                  prefix: Optional[str] = None) -> None:
         super().__init__(collect_device=collect_device, prefix=prefix)
@@ -100,9 +104,16 @@ class CocoMetric(BaseMetric):
 
         self.outfile_prefix = outfile_prefix
 
+        self.file_client_args = file_client_args
+        self.file_client = FileClient(**file_client_args)
+
         # if ann_file is not specified,
         # initialize coco api with the converted dataset
-        self._coco_api = COCO(ann_file) if ann_file else None
+        if ann_file is not None:
+            with self.file_client.get_local_path(ann_file) as local_path:
+                self._coco_api = COCO(local_path)
+        else:
+            self._coco_api = None
 
         # handle dataset lazy init
         self.cat_ids = None
@@ -303,22 +314,22 @@ class CocoMetric(BaseMetric):
         dump(coco_json, converted_json_path)
         return converted_json_path
 
-    def process(self, data_batch: Sequence[dict],
-                predictions: Sequence[dict]) -> None:
+    # TODO: data_batch is no longer needed, consider adjusting the
+    #  parameter position
+    def process(self, data_batch: dict, data_samples: Sequence[dict]) -> None:
         """Process one batch of data samples and predictions. The processed
         results should be stored in ``self.results``, which will be used to
         compute the metrics when all batches have been processed.
 
         Args:
-            data_batch (Sequence[dict]): A batch of data
-                from the dataloader.
-            predictions (Sequence[dict]): A batch of outputs from
-                the model.
+            data_batch (dict): A batch of data from the dataloader.
+            data_samples (Sequence[dict]): A batch of data samples that
+                contain annotations and predictions.
         """
-        for data, pred in zip(data_batch, predictions):
+        for data_sample in data_samples:
             result = dict()
-            pred = pred['pred_instances']
-            result['img_id'] = data['data_sample']['img_id']
+            pred = data_sample['pred_instances']
+            result['img_id'] = data_sample['img_id']
             result['bboxes'] = pred['bboxes'].cpu().numpy()
             result['scores'] = pred['scores'].cpu().numpy()
             result['labels'] = pred['labels'].cpu().numpy()
@@ -332,14 +343,15 @@ class CocoMetric(BaseMetric):
 
             # parse gt
             gt = dict()
-            gt['width'] = data['data_sample']['ori_shape'][1]
-            gt['height'] = data['data_sample']['ori_shape'][0]
-            gt['img_id'] = data['data_sample']['img_id']
+            gt['width'] = data_sample['ori_shape'][1]
+            gt['height'] = data_sample['ori_shape'][0]
+            gt['img_id'] = data_sample['img_id']
             if self._coco_api is None:
-                assert 'instances' in data['data_sample'], \
+                # TODO: Need to refactor to support LoadAnnotations
+                assert 'instances' in data_sample, \
                     'ground truth is required for evaluation when ' \
                     '`ann_file` is not provided'
-                gt['anns'] = data['data_sample']['instances']
+                gt['anns'] = data_sample['instances']
             # add converted result to the results list
             self.results.append((gt, result))
 

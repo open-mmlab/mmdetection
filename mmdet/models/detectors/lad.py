@@ -89,6 +89,5 @@ class LAD(KnowledgeDistillationSingleStageDetector):
         # the student use the label assignment from the teacher to learn
         x = self.extract_feat(batch_inputs)
         losses = self.bbox_head.loss(x, label_assignment_results,
-                                     batch_gt_instances, batch_img_metas,
-                                     batch_gt_instances_ignore)
+                                     batch_data_samples)
         return losses
