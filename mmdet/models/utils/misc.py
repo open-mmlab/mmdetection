@@ -537,9 +537,9 @@ def get_box_tensor(boxes: Union[Tensor, BaseBoxes]) -> Tensor:
     return boxes
 
 
-def filter_instances_by_score(batch_data_samples: SampleList,
-                              score_thr: float) -> SampleList:
-    """Filter instances by score.
+def filter_gt_instances_by_score(batch_data_samples: SampleList,
+                                 score_thr: float) -> SampleList:
+    """Filter gt-instances by score.
 
     Args:
         batch_data_samples (SampleList): The Data
@@ -559,15 +559,15 @@ def filter_instances_by_score(batch_data_samples: SampleList,
     return batch_data_samples
 
 
-def filter_instances_by_size(batch_data_samples: SampleList,
-                             min_bbox_wh: tuple) -> SampleList:
-    """Filter instances by size.
+def filter_gt_instances_by_size(batch_data_samples: SampleList,
+                                wh_thr: tuple) -> SampleList:
+    """Filter gt-instances by size.
 
     Args:
         batch_data_samples (SampleList): The Data
             Samples. It usually includes information such as
             `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
-        min_bbox_wh (tuple):  Minimum width and height of bbox.
+        wh_thr (tuple):  Minimum width and height of bbox.
 
     Returns:
         SampleList: The Data Samples filtered by score.
@@ -578,12 +578,37 @@ def filter_instances_by_size(batch_data_samples: SampleList,
             w = bboxes[:, 2] - bboxes[:, 0]
             h = bboxes[:, 3] - bboxes[:, 1]
             data_samples.gt_instances = data_samples.gt_instances[
-                (w > min_bbox_wh[0]) & (h > min_bbox_wh[1])]
+                (w > wh_thr[0]) & (h > wh_thr[1])]
     return batch_data_samples
 
 
-def rename_loss(prefix: str, losses: dict) -> dict:
-    """Rename loss for different branches.
+def filter_gt_instances(batch_data_samples: SampleList,
+                        score_thr: float = None,
+                        wh_thr: tuple = None):
+    """Filter gt-instances by score and size.
+
+    Args:
+        batch_data_samples (SampleList): The Data
+            Samples. It usually includes information such as
+            `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+        score_thr (float): The score filter threshold.
+        wh_thr (tuple):  Minimum width and height of bbox.
+
+    Returns:
+        SampleList: The Data Samples filtered by score.
+    """
+
+    if score_thr is not None:
+        batch_data_samples = filter_gt_instances_by_score(
+            batch_data_samples, score_thr)
+    if wh_thr is not None:
+        batch_data_samples = filter_gt_instances_by_size(
+            batch_data_samples, wh_thr)
+    return batch_data_samples
+
+
+def rename_loss_dict(prefix: str, losses: dict) -> dict:
+    """Rename the key names in loss dict by adding a prefix.
 
     Args:
         prefix (str): The prefix for loss components.
@@ -595,8 +620,8 @@ def rename_loss(prefix: str, losses: dict) -> dict:
     return {prefix + k: v for k, v in losses.items()}
 
 
-def reweight_loss(losses: dict, weight: float) -> dict:
-    """Reweight loss for different branches.
+def reweight_loss_dict(losses: dict, weight: float) -> dict:
+    """Reweight losses in the dict by weight.
 
     Args:
         losses (dict):  A dictionary of loss components.

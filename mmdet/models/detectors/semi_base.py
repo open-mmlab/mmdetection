@@ -6,9 +6,8 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
-from mmdet.models.utils import (filter_instances_by_score,
-                                filter_instances_by_size, rename_loss,
-                                reweight_loss)
+from mmdet.models.utils import (filter_gt_instances, rename_loss_dict,
+                                reweight_loss_dict)
 from mmdet.registry import MODELS
 from mmdet.structures import SampleList
 from mmdet.structures.bbox import bbox_project
@@ -107,7 +106,7 @@ class SemiBaseDetector(BaseDetector):
 
         losses = self.student.loss(batch_inputs, batch_data_samples)
         sup_weight = self.semi_train_cfg.get('sup_weight', 1.)
-        return rename_loss('sup_', reweight_loss(losses, sup_weight))
+        return rename_loss_dict('sup_', reweight_loss_dict(losses, sup_weight))
 
     def loss_by_pseudo_instances(self,
                                  batch_inputs: Tensor,
@@ -129,8 +128,8 @@ class SemiBaseDetector(BaseDetector):
         Returns:
             dict: A dictionary of loss components
         """
-        batch_data_samples = filter_instances_by_score(
-            batch_data_samples, self.semi_train_cfg.cls_pseudo_thr)
+        batch_data_samples = filter_gt_instances(
+            batch_data_samples, score_thr=self.semi_train_cfg.cls_pseudo_thr)
         losses = self.student.loss(batch_inputs, batch_data_samples)
         pseudo_instances_num = sum([
             len(data_samples.gt_instances)
@@ -138,7 +137,8 @@ class SemiBaseDetector(BaseDetector):
         ])
         unsup_weight = self.semi_train_cfg.get(
             'unsup_weight', 1.) if pseudo_instances_num > 0 else 0.
-        return rename_loss('unsup_', reweight_loss(losses, unsup_weight))
+        return rename_loss_dict('unsup_',
+                                reweight_loss_dict(losses, unsup_weight))
 
     @torch.no_grad()
     def get_pseudo_instances(
@@ -163,9 +163,8 @@ class SemiBaseDetector(BaseDetector):
                 data_samples.gt_instances.bboxes,
                 torch.tensor(data_samples.homography_matrix).to(
                     self.data_preprocessor.device), data_samples.img_shape)
-        min_bbox_wh = self.semi_train_cfg.get('min_pseudo_bbox_wh',
-                                              (1e-2, 1e-2))
-        return filter_instances_by_size(batch_data_samples, min_bbox_wh)
+        wh_thr = self.semi_train_cfg.get('min_pseudo_bbox_wh', (1e-2, 1e-2))
+        return filter_gt_instances(batch_data_samples, wh_thr=wh_thr)
 
     def predict(self, batch_inputs: Tensor,
                 batch_data_samples: SampleList) -> SampleList:
