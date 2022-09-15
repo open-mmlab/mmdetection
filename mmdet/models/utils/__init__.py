@@ -4,12 +4,13 @@ from .gaussian_target import (gather_feat, gaussian_radius,
                               get_topk_from_heatmap, transpose_and_gather_feat)
 from .make_divisible import make_divisible
 from .misc import (cat_boxes, center_of_mass, empty_instances,
-                   filter_scores_and_topk, flip_tensor, generate_coordinate,
-                   get_box_tensor, get_box_wh, images_to_levels,
-                   interpolate_as, levels_to_images, mask2ndarray, multi_apply,
-                   samplelist_boxlist2tensor, scale_boxes, select_single_mlvl,
-                   sigmoid_geometric_mean, stack_boxes, unmap,
-                   unpack_gt_instances)
+                   filter_gt_instances, filter_scores_and_topk, flip_tensor,
+                   generate_coordinate, get_box_tensor, get_box_wh,
+                   images_to_levels, interpolate_as, levels_to_images,
+                   mask2ndarray, multi_apply, rename_loss_dict,
+                   reweight_loss_dict, samplelist_boxlist2tensor, scale_boxes,
+                   select_single_mlvl, sigmoid_geometric_mean, stack_boxes,
+                   unmap, unpack_gt_instances)
 from .panoptic_gt_processing import preprocess_panoptic_gt
 from .point_sample import (get_uncertain_point_coords_with_randomness,
                            get_uncertainty)
@@ -24,5 +25,6 @@ __all__ = [
     'generate_coordinate', 'levels_to_images', 'mask2ndarray', 'multi_apply',
     'select_single_mlvl', 'unmap', 'images_to_levels',
     'samplelist_boxlist2tensor', 'cat_boxes', 'stack_boxes', 'scale_boxes',
-    'get_box_tensor', 'get_box_wh'
+    'get_box_tensor', 'get_box_wh', 'filter_gt_instances', 'rename_loss_dict',
+    'reweight_loss_dict'
 ]
