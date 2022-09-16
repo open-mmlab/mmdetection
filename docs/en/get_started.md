@@ -198,7 +198,7 @@ thus we only need to install MMEngine, MMCV, and MMDetection with the following 
 ```python
 import mmdet
 print(mmdet.__version__)
-# Example output: 3.0.0rc0, or other version.
+# Example output: 3.0.0rc0, or an another version.
 ```
 
 ```{note}
