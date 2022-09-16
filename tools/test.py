@@ -43,7 +43,6 @@ def parse_args():
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
         help='job launcher')
-    parser.add_argument('--tta', action='store_true')
     parser.add_argument('--tta-pipeline', default=None)
     parser.add_argument('--tta-model', default=None)
     parser.add_argument('--local_rank', type=int, default=0)
@@ -97,8 +96,8 @@ def main():
 
     cfg.load_from = args.checkpoint
 
-    if args.tta:
-        assert args.tta_pipeline is not None and  args.tta_model is not None
+    if args.tta_pipeline:
+        assert args.tta_model is not None
         cfg.merge_from_dict(Config.fromfile(args.tta_pipeline))
         cfg.merge_from_dict(Config.fromfile(args.tta_model))
 
