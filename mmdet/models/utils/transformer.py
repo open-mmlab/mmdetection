@@ -1296,6 +1296,9 @@ class DinoTransformer(DeformableDetrTransformer):
         self.enc_output_norm = nn.LayerNorm(self.embed_dims)
         self.query_embed = nn.Embedding(self.two_stage_num_proposals,
                                         self.embed_dims)
+        # NOTE the query_embed here is not spatial query as in DETR.
+        # It is actually content query, which is named tgt in other
+        # DETR-like models
 
     def init_weights(self):
         super().init_weights()
@@ -1391,6 +1394,9 @@ class DinoTransformer(DeformableDetrTransformer):
 
         query = self.query_embed.weight[:, None, :].repeat(1, bs,
                                                            1).transpose(0, 1)
+        # NOTE the query_embed here is not spatial query as in DETR.
+        # It is actually content query, which is named tgt in other
+        # DETR-like models
         if dn_label_query is not None:
             query = torch.cat([dn_label_query, query], dim=1)
         if dn_bbox_query is not None:
