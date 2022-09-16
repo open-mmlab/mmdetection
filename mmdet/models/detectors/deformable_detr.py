@@ -288,7 +288,7 @@ class DeformableDETR(TransformerDetector):
                     self.decoder.num_layers](
                     output_memory) + output_proposals
 
-            topk = self.two_stage_num_proposals
+            topk = self.num_query  # TODO: two_stage_num_proposals originally
             # We only use the first channel in enc_outputs_class as foreground,
             # the other (num_classes - 1) channels are actually not used.
             # Its targets are set to be 0s, which indicates the first
