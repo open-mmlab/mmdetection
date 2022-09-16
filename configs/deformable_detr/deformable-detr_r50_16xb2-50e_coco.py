@@ -3,7 +3,7 @@ _base_ = [
 ]
 model = dict(
     type='DeformableDETR',
-    num_query=100,
+    num_query=300,
     with_box_refine=False,
     as_two_stage=False,
     data_preprocessor=dict(
