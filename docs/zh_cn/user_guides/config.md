@@ -142,8 +142,8 @@ model = dict(
             sampler=dict(
                 type='RandomSampler',  #采样器的类型，还支持 PseudoSampler 和其他采样器，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/task_modules/samplers/random_sampler.py。
                 num=512,  # 样本数量
-                pos_fraction=0.25,  # 正样本占总样本的比例。.
-                neg_pos_ub=-1,  # 基于正样本数量的负样本上限。.
+                pos_fraction=0.25,  # 正样本占总样本的比例。
+                neg_pos_ub=-1,  # 基于正样本数量的负样本上限。
                 add_gt_as_proposals=True
             ),  # 采样后是否添加 GT 作为 proposal。
             mask_size=28,  # mask 的大小
@@ -269,7 +269,7 @@ test_evaluator = dict(
     type='CocoMetric',
     ann_file=data_root + 'annotations/image_info_test-dev2017.json',
     metric=['bbox', 'segm'],
-    format_only=True,  # 只将模型输出转换为coco的 JSON 格式并保存
+    format_only=True,  # 只将模型输出转换为 coco 的 JSON 格式并保存
     outfile_prefix='./work_dirs/coco_detection/test')  # 要保存的 JSON 文件的前缀
 ```
 
@@ -353,7 +353,7 @@ default_scope = 'mmdet'  # 默认的注册器域名，默认从此注册器域�
 env_cfg = dict(
     cudnn_benchmark=False,  # 是否启用 cudnn benchmark
     mp_cfg=dict(  # 多进程设置
-        mp_start_method='fork',  # 使用 fork 来启动多进程。‘fork’ 通常比 ‘spawn’ 更快，但可能存在隐患。请参考 https://github.com/pytorch/pytorch/issues/1355
+        mp_start_method='fork',  # 使用 fork 来启动多进程。'fork' 通常比 'spawn' 更快，但可能存在隐患。请参考 https://github.com/pytorch/pytorch/issues/1355
         opencv_num_threads=0),  # 关闭 opencv 的多线程以避免系统超负荷
     dist_cfg=dict(backend='nccl'),  # 分布式相关设置
 )
