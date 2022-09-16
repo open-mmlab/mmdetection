@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import Linear
 from mmcv.cnn.bricks.transformer import FFN
+from mmengine.model import BaseModule
 from mmengine.structures import InstanceData
 from torch import Tensor
 
@@ -15,11 +16,10 @@ from mmdet.structures.bbox import bbox_cxcywh_to_xyxy, bbox_xyxy_to_cxcywh
 from mmdet.utils import (ConfigType, InstanceList, OptInstanceList,
                          OptMultiConfig, reduce_mean)
 from ..utils import multi_apply
-from .anchor_free_head import AnchorFreeHead
 
 
 @MODELS.register_module()
-class DETRHead(AnchorFreeHead):
+class DETRHead(BaseModule):
     """Implements the DETR transformer head.
 
     See `paper: End-to-End Object Detection with Transformers
@@ -55,10 +55,7 @@ class DETRHead(AnchorFreeHead):
                     ])),
             test_cfg: ConfigType = dict(max_per_img=100),
             init_cfg: OptMultiConfig = None) -> None:
-        # NOTE here use `AnchorFreeHead` instead of `TransformerHead`,
-        # since it brings inconvenience when the initialization of
-        # `AnchorFreeHead` is called.
-        super(AnchorFreeHead, self).__init__(init_cfg=init_cfg)
+        super(DETRHead, self).__init__(init_cfg=init_cfg)
         self.bg_cls_weight = 0
         self.sync_cls_avg_factor = sync_cls_avg_factor
         class_weight = loss_cls.get('class_weight', None)
