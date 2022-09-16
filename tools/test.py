@@ -20,6 +20,10 @@ def parse_args():
         '--work-dir',
         help='the directory to save the file containing evaluation metrics')
     parser.add_argument(
+        '--dump',
+        type=str,
+        help='dump predictions to a pickle file for offline evaluation')
+    parser.add_argument(
         '--show', action='store_true', help='show prediction results')
     parser.add_argument(
         '--show-dir',
@@ -96,6 +100,16 @@ def main():
 
     if args.show or args.show_dir:
         cfg = trigger_visualization_hook(cfg, args)
+
+    # Dump predictions
+    if args.dump is not None:
+        assert args.dump.endswith(('.pkl', '.pickle')), \
+            'The dump file must be a pkl file.'
+        dump_metric = dict(type='DumpResults', out_file_path=args.dump)
+        if isinstance(cfg.test_evaluator, (list, tuple)):
+            cfg.test_evaluator = list(cfg.test_evaluator).append(dump_metric)
+        else:
+            cfg.test_evaluator = [cfg.test_evaluator, dump_metric]
 
     # build the runner from config
     if 'runner_type' not in cfg:
