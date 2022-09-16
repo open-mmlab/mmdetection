@@ -83,3 +83,23 @@ test_evaluator = val_evaluator
 #     format_only=True,
 #     ann_file=data_root + 'annotations/image_info_test-dev2017.json',
 #     outfile_prefix='./work_dirs/coco_detection/test')
+
+tta_cfg = dict(
+    test_pipeline=[
+        dict(type='LoadImageFromFile', file_client_args=file_client_args),
+        dict(type='TestTimeAug',
+             transforms=[
+                 [dict(type='Resize', scale=(1333, 800), keep_ratio=True),
+                  dict(type='Resize', scale=(1333, 800), keep_ratio=True)],
+                 [dict(type='RandomFlip', prob=1.),
+                  dict(type='RandomFlip', prob=0.)],
+                 [dict(type='LoadAnnotations', with_bbox=True)],
+                 [dict(type='PackDetInputs',
+                       meta_keys=('img_id', 'img_path', 'ori_shape',
+                                  'img_shape', 'scale_factor', 'flip',
+                                  'flip_direction'))]])
+    ],
+    tta_wrapper=dict(
+        type='TestAugModelWrapper',
+    )
+)

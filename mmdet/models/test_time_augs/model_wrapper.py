@@ -1,54 +1,41 @@
-import imp
-from multiprocessing.spawn import import_main_path
+from typing import List
 
 import torch
 import torch.nn as nn
 from mmcv.ops import batched_nms
-from mmengine.data import InstanceData
+from mmengine.structures import InstanceData
 
 
 from mmdet.structures import DetDataSample
-from mmdet.structures.bbox import  bbox_flip
+from mmdet.structures.bbox import bbox_flip
 from mmdet.models.builder import MODELS
 
-from mmengine.model import TestTimeAugModelWrapper
+from mmengine.model import BaseTestTimeAugModel
 
 
 @MODELS.register_module()
-class TestAugModelWrapper(TestTimeAugModelWrapper):
-    def __init__(self, module):
-        super(TestAugModelWrapper, self).__init__()
-        self.module = MODELS.build(module)
+class TestAugModelWrapper(BaseTestTimeAugModel):
+    def __init__(self, model):
+        super(TestAugModelWrapper, self).__init__(model)
+        if isinstance(model, nn.Module):
+            self.module = model
+        elif isinstance(model, dict):
+            self.module = MODELS.build(model)
+        else:
+            raise TypeError()
 
-    def collate_data(self, data_batch):
-        first_inputs = data_batch[0]['inputs']
-        num_augs = len(first_inputs)
-        num_imgs = len(data_batch)
-        output = []
-        for aug_idx in range(num_augs):
-            _single_batch = []
-            for batch_idx in range(num_imgs):
-                _data = dict()
-                for key in data_batch[0].keys():
-                    _data[key] = data_batch[batch_idx][key][aug_idx]
-                _single_batch.append(_data)
-            output.append(_single_batch)
-        for data in data_batch:
-            data['data_sample'] = data['data_sample'][0]
-        return output
-
-    def merge_results(self, data_list, result_list):
+    def merge_results(self, data_samples_list: List[List[DetDataSample]]):
         aug_bboxes = []
         aug_scores = []
         aug_labels = []
-        data_list = self.collate_data(data_list)
         img_metas = []
-        for data, predictions in zip(data_list, result_list):
+
+        for data_samples in data_samples_list:
             _img_metas = []
-            aug_bboxes.append(predictions[0].pred_instances.bboxes)
-            aug_scores.append(predictions[0].pred_instances.scores)
-            aug_labels.append(predictions[0].pred_instances.labels)
-            _img_metas.append(data[0]['data_sample'].metainfo)
+            aug_bboxes.append(data_samples[0].pred_instances.bboxes)
+            aug_scores.append(data_samples[0].pred_instances.scores)
+            aug_labels.append(data_samples[0].pred_instances.labels)
+            _img_metas.append(data_samples[0].metainfo)
             img_metas.append(_img_metas)
 
         merged_bboxes, merged_scores = self.merge_aug_bboxes(
@@ -81,7 +68,7 @@ class TestAugModelWrapper(TestTimeAugModelWrapper):
         results.bboxes = _det_bboxes[:, :4]
         results.scores = _det_bboxes[:, 4]
         results.labels = det_labels
-        det_results = DetDataSample()
+        det_results = data_samples_list[0][0]
         det_results.pred_instances = results
         return [det_results]
 

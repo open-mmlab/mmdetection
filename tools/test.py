@@ -4,7 +4,7 @@ import os
 import os.path as osp
 
 from mmengine.config import Config, DictAction
-from mmengine.runner import Runner
+from mmengine.runner import Runner, load_checkpoint
 
 from mmdet.registry import RUNNERS
 from mmdet.utils import register_all_modules
@@ -95,6 +95,11 @@ def main():
 
     cfg.load_from = args.checkpoint
 
+    if args.tta:
+        cfg.test_dataloader.dataset.pipeline = cfg.tta_cfg.test_pipeline
+        cfg.tta_cfg.tta_wrapper.model = cfg.model
+        cfg.model = cfg.tta_cfg.tta_wrapper
+
     if args.show or args.show_dir:
         cfg = trigger_visualization_hook(cfg, args)
 
@@ -107,23 +112,6 @@ def main():
         # if 'runner_type' is set in the cfg
         runner = RUNNERS.build(cfg)
 
-    if not args.tta:
-        cfg.load_from = args.checkpoint
-        runner = Runner.from_cfg(cfg)
-    else:
-        cfg.load_from = None
-        cfg.test_dataloader.dataset.pipeline = cfg.tta_cfg.test_pipeline
-
-        cfg.tta_cfg.tta_wrapper.module = cfg.model
-        cfg.model = cfg.tta_cfg.tta_wrapper
-        runner = Runner.from_cfg(cfg)
-        if runner.distributed:
-            load_checkpoint(runner.model.module.module,  args.checkpoint)
-        else:
-            load_checkpoint(runner.model.module,  args.checkpoint)
-
-    runner.test()
-    # start testing
     runner.test()
 
 
