@@ -14,16 +14,7 @@ from mmengine.model import BaseTestTimeAugModel
 
 
 @MODELS.register_module()
-class TestAugModelWrapper(BaseTestTimeAugModel):
-    def __init__(self, model):
-        super(TestAugModelWrapper, self).__init__(model)
-        if isinstance(model, nn.Module):
-            self.module = model
-        elif isinstance(model, dict):
-            self.module = MODELS.build(model)
-        else:
-            raise TypeError()
-
+class SingleStageTestTimeAugModel(BaseTestTimeAugModel):
     def merge_results(self, data_samples_list: List[List[DetDataSample]]):
         aug_bboxes = []
         aug_scores = []
