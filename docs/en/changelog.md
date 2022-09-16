@@ -1,5 +1,35 @@
 ## Changelog
 
+### v2.25.2 (15/9/2022)
+
+#### Bug Fixes
+
+- Fix DyDCNv2 RuntimeError (#8485)
+- Fix repeated import of CascadeRPNHead (#8578)
+- Fix absolute positional embedding of swin backbone (#8127)
+- Fix get train_pipeline method of val workflow (#8575)
+
+#### Improvements
+
+- Upgrade onnxsim to at least 0.4.0 (#8383)
+- Support tuple format in analyze_results script (#8549)
+- Fix floordiv warning (#8648)
+
+#### Documents
+
+- Fix typo in HTC link (#8487)
+- Fix docstring of `BboxOverlaps2D` (#8512)
+- Added missed Chinese tutorial link (#8564)
+- Fix mistakes in gaussian radius formula (#8607)
+- Update config documentation about how to Add WandB Hook (#8663)
+- Add mmengine link in readme (#8799)
+- Update issue template (#8802)
+
+#### Contributors
+
+A total of 16 developers contributed to this release.
+Thanks @daquexian, @lyq10085, @ZwwWayne, @fbagci, @BubblyYi, @fathomson, @ShunchiZhang, @ceasona, @Happylkx, @normster, @chhluo, @Lehsuby, @JiayuXu0, @Nourollah, @hewanru-bit, @RangiLyu
+
 ### v2.25.1 (29/7/2022)
 
 #### Bug Fixes

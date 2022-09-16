@@ -10,7 +10,8 @@ We list some common troubles faced by many users and their corresponding solutio
 
 | MMDetection version |        MMCV version        |
 | :-----------------: | :------------------------: |
-|       master        | mmcv-full>=1.3.17, \<1.6.0 |
+|       master        | mmcv-full>=1.3.17, \<1.7.0 |
+|       2.25.2        | mmcv-full>=1.3.17, \<1.7.0 |
 |       2.25.1        | mmcv-full>=1.3.17, \<1.6.0 |
 |       2.25.0        | mmcv-full>=1.3.17, \<1.6.0 |
 |       2.24.1        | mmcv-full>=1.3.17, \<1.6.0 |
