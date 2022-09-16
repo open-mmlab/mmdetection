@@ -14,8 +14,8 @@ class TransformerDetector(BaseDetector):
     """Base class for Transformer-based detectors.
 
     Transformer-based detectors use an encoder to process output features of
-    the backbone(+neck) and a decoder to pooling features into a set of
-    learnable queries. Each query predict a bounding box.
+    backbone/neck, then several queries interactive with encoded features and
+    do the regression and classification.
     """
 
     def __init__(self,
@@ -61,14 +61,13 @@ class TransformerDetector(BaseDetector):
             'The _init_transformer should be implemented for the detector.')
 
     # def init_weight  # TODO !!!!
-    # def _load_from_state_dict  # TODO !!!!
 
     def loss(self, batch_inputs: Tensor,
              batch_data_samples: SampleList) -> Union[dict, list]:
         img_feats = self.extract_feat(batch_inputs)
-        seq_feats = self.forward_pretransformer(img_feats, batch_data_samples)
-        outs_dec = self.forward_transformer(
-            **seq_feats, query_embed=self.query_embedding.weight)
+        transformer_inputs_dict = self.forward_pretransformer(
+            img_feats, batch_data_samples)
+        outs_dec = self.forward_transformer(**transformer_inputs_dict)
         losses = self.bbox_head.loss(outs_dec, batch_data_samples)
         return losses
 
@@ -77,9 +76,9 @@ class TransformerDetector(BaseDetector):
                 batch_data_samples: SampleList,
                 rescale: bool = True) -> SampleList:
         img_feats = self.extract_feat(batch_inputs)
-        seq_feats = self.forward_pretransformer(img_feats, batch_data_samples)
-        outs_dec = self.forward_transformer(
-            **seq_feats, query_embed=self.query_embedding.weight)
+        transformer_inputs_dict = self.forward_pretransformer(
+            img_feats, batch_data_samples)
+        outs_dec = self.forward_transformer(**transformer_inputs_dict)
         results_list = self.bbox_head.predict(
             outs_dec, batch_data_samples, rescale=rescale)
         batch_data_samples = self.add_pred_to_datasample(
@@ -91,9 +90,9 @@ class TransformerDetector(BaseDetector):
             batch_inputs: Tensor,
             batch_data_samples: OptSampleList = None) -> Tuple[List[Tensor]]:
         img_feats = self.extract_feat(batch_inputs)
-        seq_feats = self.forward_pretransformer(img_feats, batch_data_samples)
-        outs_dec = self.forward_transformer(
-            **seq_feats, query_embed=self.query_embedding.weight)
+        transformer_inputs_dict = self.forward_pretransformer(
+            img_feats, batch_data_samples)
+        outs_dec = self.forward_transformer(**transformer_inputs_dict)
         results = self.bbox_head.forward(outs_dec)
         return results
 
@@ -118,7 +117,8 @@ class TransformerDetector(BaseDetector):
             batch_data_samples: OptSampleList = None) -> Dict[str, Tensor]:
         """1. Get batch padding mask.
            2. Convert image feature maps to sequential features.
-           3. Get image positional embedding of features."""
+           3. Get image positional embedding of features.
+           4. Prepare decoder queries."""
         raise NotImplementedError(
             'The forward_pretransformer should be implemented '
             'for the detector.')

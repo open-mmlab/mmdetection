@@ -8,9 +8,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import build_activation_layer, build_conv_layer, build_norm_layer
 from mmcv.cnn.bricks.transformer import FFN, MultiheadAttention
-from mmengine.model import BaseModule
+from mmengine.model import BaseModule, ModuleList
 from mmengine.utils import to_2tuple
-from torch.nn import ModuleList
 
 from mmdet.registry import MODELS
 
@@ -436,15 +435,15 @@ class DetrTransformerDecoder(BaseModule):
         self.post_norm_cfg = post_norm_cfg
         self.return_intermediate = return_intermediate
         self._init_layers()
-        self.embed_dims = self.layers[0].embed_dims  # TODO
-        self.post_norm = build_norm_layer(self.post_norm_cfg,
-                                          self.embed_dims)[1]
 
     def _init_layers(self):
         self.layers = ModuleList()
         for i in range(self.num_layers):
             self.layers.append(
                 DetrTransformerDecoderLayer(**self.layer_cfg[i]))
+        self.embed_dims = self.layers[0].embed_dims  # TODO
+        self.post_norm = build_norm_layer(self.post_norm_cfg,
+                                          self.embed_dims)[1]
 
     def forward(self, query, *args, **kwargs):
         intermediate = []
@@ -525,18 +524,9 @@ class DetrTransformerEncoderLayer(BaseModule):
 class DetrTransformerDecoderLayer(BaseModule):
 
     def __init__(self,
-                 self_attn_cfg=dict(
-                     type='MultiheadAttention',
-                     embed_dims=256,
-                     num_heads=8,
-                     dropout=0.0),
-                 cross_attn_cfg=dict(
-                     type='MultiheadAttention',
-                     embed_dims=256,
-                     num_heads=8,
-                     dropout=0.0),
+                 self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
+                 cross_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
                  ffn_cfg=dict(
-                     type='FFN',
                      embed_dims=256,
                      feedforward_channels=1024,
                      num_fcs=2,

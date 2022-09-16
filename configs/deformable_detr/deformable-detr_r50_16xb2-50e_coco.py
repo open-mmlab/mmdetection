@@ -3,6 +3,9 @@ _base_ = [
 ]
 model = dict(
     type='DeformableDETR',
+    num_query=100,
+    with_box_refine=False,
+    as_two_stage=False,
     data_preprocessor=dict(
         type='DetDataPreprocessor',
         mean=[123.675, 116.28, 103.53],
@@ -27,50 +30,29 @@ model = dict(
         act_cfg=None,
         norm_cfg=dict(type='GN', num_groups=32),
         num_outs=4),
+    encoder_cfg=dict(
+        num_layers=6,
+        layer_cfg=dict(
+            self_attn_cfg=dict(embed_dims=256),
+            ffn_cfg=dict(
+                embed_dims=256, feedforward_channels=1024, ffn_drop=0.1))),
+    decoder_cfg=dict(
+        num_layers=6,
+        return_intermediate=True,
+        layer_cfg=dict(
+            self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.1),
+            cross_attn_cfg=dict(embed_dims=256),
+            ffn_cfg=dict(
+                embed_dims=256, feedforward_channels=1024, ffn_drop=0.1)),
+        post_norm_cfg=None),
+    positional_encoding_cfg=dict(num_feats=128, normalize=True, offset=-0.5),
     bbox_head=dict(
         type='DeformableDETRHead',
-        num_query=300,
-        num_classes=80,
-        in_channels=2048,
-        sync_cls_avg_factor=True,
+        num_pred=6,  # TODO: modify this
+        with_box_refine=False,
         as_two_stage=False,
-        transformer=dict(
-            type='DeformableDetrTransformer',
-            encoder=dict(
-                type='DetrTransformerEncoder',
-                num_layers=6,
-                transformerlayers=dict(
-                    type='BaseTransformerLayer',
-                    attn_cfgs=dict(
-                        type='MultiScaleDeformableAttention', embed_dims=256),
-                    feedforward_channels=1024,
-                    ffn_dropout=0.1,
-                    operation_order=('self_attn', 'norm', 'ffn', 'norm'))),
-            decoder=dict(
-                type='DeformableDetrTransformerDecoder',
-                num_layers=6,
-                return_intermediate=True,
-                transformerlayers=dict(
-                    type='DetrTransformerDecoderLayer',
-                    attn_cfgs=[
-                        dict(
-                            type='MultiheadAttention',
-                            embed_dims=256,
-                            num_heads=8,
-                            dropout=0.1),
-                        dict(
-                            type='MultiScaleDeformableAttention',
-                            embed_dims=256)
-                    ],
-                    feedforward_channels=1024,
-                    ffn_dropout=0.1,
-                    operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
-                                     'ffn', 'norm')))),
-        positional_encoding=dict(
-            type='SinePositionalEncoding',
-            num_feats=128,
-            normalize=True,
-            offset=-0.5),
+        num_classes=80,
+        sync_cls_avg_factor=True,
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -150,7 +132,10 @@ optim_wrapper = dict(
 # learning policy
 max_epochs = 50
 train_cfg = dict(
-    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
+    # type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
+    type='IterBasedTrainLoop',
+    max_iters=max_epochs,
+    val_interval=1)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 

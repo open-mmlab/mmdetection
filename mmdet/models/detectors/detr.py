@@ -91,8 +91,12 @@ class DETR(TransformerDetector):
         # position encoding
         pos_embed = self.positional_encoding(masks)  # [bs, embed_dim, h, w]
 
-        seq_feats = dict(feat=feat, masks=masks, pos_embed=pos_embed)
-        return seq_feats  # noqa
+        transformer_inputs_dict = dict(
+            feat=feat,
+            masks=masks,
+            pos_embed=pos_embed,
+            query_embed=self.query_embedding.weight)
+        return transformer_inputs_dict  # noqa
 
     def forward_transformer(
             self,
