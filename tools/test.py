@@ -4,7 +4,7 @@ import os
 import os.path as osp
 
 from mmengine.config import Config, DictAction
-from mmengine.runner import Runner, load_checkpoint
+from mmengine.runner import Runner
 
 from mmdet.registry import RUNNERS
 from mmdet.utils import register_all_modules
