@@ -2,7 +2,6 @@
 from typing import List, Tuple
 
 import torch.nn as nn
-from detr_head import DETRHead
 from mmcv.cnn import Linear
 from mmengine.model import bias_init_with_prob, constant_init
 from torch import Tensor
@@ -10,6 +9,7 @@ from torch import Tensor
 from mmdet.registry import MODELS
 from ..layers import MLP, inverse_sigmoid
 from ..utils import multi_apply
+from .detr_head import DETRHead
 
 
 @MODELS.register_module()

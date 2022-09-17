@@ -481,7 +481,12 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
             'cond_elewise', 'cond_scalar', 'fix_elewise'
         ]
 
-        embed_dims = self.embed_dims
+        self.layers = ModuleList()
+        for i in range(self.num_layers):
+            self.layers.append(
+                DabDetrTransformerDecoderLayer(**self.layer_cfg[i]))
+
+        embed_dims = self.layers[0].embed_dims
         if self.query_scale_type == 'cond_elewise':
             self.query_scale = MLP(embed_dims, embed_dims, embed_dims, 2)
         elif self.query_scale_type == 'cond_scalar':
@@ -497,11 +502,6 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
 
         if self.modulate_hw_attn and self.query_dim == 4:
             self.ref_anchor_head = MLP(embed_dims, embed_dims, 2, 2)
-
-        self.layers = ModuleList()
-        for i in range(self.num_layers):
-            self.layers.append(
-                DabDetrTransformerDecoderLayer(**self.layer_cfg[i]))
 
         self.keep_query_pos = self.layers[0].keep_query_pos
         if not self.keep_query_pos:
