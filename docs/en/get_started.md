@@ -86,7 +86,7 @@ The downloading will take several seconds or more, depending on your network env
 Option (a). If you install MMDetection from source, just run the following command.
 
 ```shell
-python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-320-300e_coco yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu --out-file result.jpg
+python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-320-300e_coco.py yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu --out-file result.jpg
 ```
 
 You will see a new image `result.jpg` on your current folder, where bounding boxes are plotted on cars, benches, etc.
@@ -98,7 +98,7 @@ from mmdet.apis import init_detector, inference_detector
 from mmdet.utils import register_all_modules
 
 register_all_modules()
-config_file = 'yolov3_mobilenetv2_8xb24-ms-416-300e_coco.py'
+config_file = 'yolov3_mobilenetv2_8xb24-320-300e_coco.py'
 checkpoint_file = 'yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth'
 model = init_detector(config_file, checkpoint_file, device='cpu')  # or device='cuda:0'
 inference_detector(model, 'demo/demo.jpg')
