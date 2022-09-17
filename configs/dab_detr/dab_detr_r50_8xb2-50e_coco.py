@@ -29,6 +29,7 @@ model = dict(
                 num_fcs=2,
                 ffn_drop=0.,
                 act_cfg=dict(type='PReLU')))),
+    num_query=300,
     decoder_cfg=dict(  # TODO: Need to refactor
         num_layers=6,
         query_dim=4,

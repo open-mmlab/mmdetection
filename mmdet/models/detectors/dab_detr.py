@@ -24,6 +24,7 @@ class DABDETR(TransformerDetector):
 
     def __init__(self,
                  *args,
+                 num_query=300,
                  iter_update=True,
                  random_refpoints_xy=False,
                  num_patterns=0,
@@ -36,7 +37,11 @@ class DABDETR(TransformerDetector):
                 type(num_patterns)))
             self.num_patterns = 0
 
-        super(DABDETR, self).__init__(*args, **kwargs)
+        super(DABDETR, self).__init__(*args, num_query=num_query, **kwargs)
+
+    def _init_layers(self) -> None:
+        self._init_transformer()
+        self._init_input_proj()
 
     def _init_transformer(self) -> None:
         self.positional_encoding = SinePositionalEncodingHW(
@@ -209,8 +214,8 @@ class ConditionalAttention(BaseModule):
         self.kcontent_proj = Linear(embed_dims, embed_dims)
         self.kpos_proj = Linear(embed_dims, embed_dims)
         self.v_proj = Linear(embed_dims, embed_dims)
-        self.qpos_sine_proj = Linear(embed_dims,
-                                     embed_dims)  # only for cross_attn
+        if self.cross_attn:
+            self.qpos_sine_proj = Linear(embed_dims, embed_dims)
         self.out_proj = Linear(embed_dims, embed_dims)
 
         nn.init.constant_(self.out_proj.bias, 0.)  # init out_proj
