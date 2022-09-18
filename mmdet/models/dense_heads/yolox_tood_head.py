@@ -37,9 +37,9 @@ class YOLOXTOODHead(YOLOXHead):
         self.la_down_rate = la_down_rate
         self.tood_norm_cfg = tood_norm_cfg
 
-        self._init_tood_layers()
+        self._build_tood_layers()
 
-    def _init_tood_layers(self):
+    def _build_tood_layers(self):
         self.multi_level_cls_decomps = nn.ModuleList()
         self.multi_level_reg_decomps = nn.ModuleList()
         for _ in self.strides:
