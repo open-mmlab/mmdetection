@@ -42,8 +42,7 @@ class ASFF(nn.Module):
                 stride=2,
                 padding=1,
                 norm_cfg=norm_cfg,
-                act_cfg=act_cfg,
-                bias=False)
+                act_cfg=act_cfg)
 
             self.stride_level_2 = ConvModule(
                 in_channels[0],
@@ -52,8 +51,7 @@ class ASFF(nn.Module):
                 stride=2,
                 padding=1,
                 norm_cfg=norm_cfg,
-                act_cfg=act_cfg,
-                bias=False)
+                act_cfg=act_cfg)
 
         elif level == 1:
             self.inter_dim = in_channels[1]
@@ -63,8 +61,7 @@ class ASFF(nn.Module):
                 1,
                 stride=1,
                 norm_cfg=norm_cfg,
-                act_cfg=act_cfg,
-                bias=False)
+                act_cfg=act_cfg)
             self.stride_level_2 = ConvModule(
                 in_channels[0],
                 self.inter_dim,
@@ -72,8 +69,7 @@ class ASFF(nn.Module):
                 stride=2,
                 padding=1,
                 norm_cfg=norm_cfg,
-                act_cfg=act_cfg,
-                bias=False)
+                act_cfg=act_cfg)
 
         elif level == 2:
             self.inter_dim = in_channels[0]
@@ -83,16 +79,14 @@ class ASFF(nn.Module):
                 1,
                 stride=1,
                 norm_cfg=norm_cfg,
-                act_cfg=act_cfg,
-                bias=False)
+                act_cfg=act_cfg)
             self.compress_level_1 = ConvModule(
                 in_channels[1],
                 self.inter_dim,
                 1,
                 stride=1,
                 norm_cfg=norm_cfg,
-                act_cfg=act_cfg,
-                bias=False)
+                act_cfg=act_cfg)
         else:
             raise ValueError('Invalid level {}'.format(level))
 
@@ -103,8 +97,7 @@ class ASFF(nn.Module):
             stride=1,
             padding=expand_kernel // 2,
             norm_cfg=norm_cfg,
-            act_cfg=act_cfg,
-            bias=False)
+            act_cfg=act_cfg)
 
         self.weight_level_0 = ConvModule(
             self.inter_dim,
@@ -112,33 +105,29 @@ class ASFF(nn.Module):
             1,
             stride=1,
             norm_cfg=norm_cfg,
-            act_cfg=act_cfg,
-            bias=False)
+            act_cfg=act_cfg)
         self.weight_level_1 = ConvModule(
             self.inter_dim,
             asff_channel,
             1,
             stride=1,
             norm_cfg=norm_cfg,
-            act_cfg=act_cfg,
-            bias=False)
+            act_cfg=act_cfg)
         self.weight_level_2 = ConvModule(
             self.inter_dim,
             asff_channel,
             1,
             stride=1,
             norm_cfg=norm_cfg,
-            act_cfg=act_cfg,
-            bias=False)
+            act_cfg=act_cfg)
 
         self.weight_levels = ConvModule(
             asff_channel * 3,
             3,
+            1,
             stride=1,
-            padding=1,
             norm_cfg=norm_cfg,
-            act_cfg=act_cfg,
-            bias=False)
+            act_cfg=act_cfg)
 
     def forward(self, x):
         x_level_0 = x[2]
