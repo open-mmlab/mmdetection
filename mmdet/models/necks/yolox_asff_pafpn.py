@@ -96,7 +96,6 @@ class ASFF(nn.Module):
         else:
             raise ValueError('Invalid level {}'.format(level))
 
-        # add expand layer
         self.expand = ConvModule(
             self.inter_dim,
             self.inter_dim,
@@ -159,7 +158,7 @@ class ASFF(nn.Module):
         return x
 
     def mean_channel(self, x):
-        # [b,c,h,w]->[b,c/4,h*2,w*2]
+        # [b,c,h,w]->[b,c/2,h*2,w*2]
         x1 = x[:, ::2, :, :]
         x2 = x[:, 1::2, :, :]
         return (x1 + x2) / 2
