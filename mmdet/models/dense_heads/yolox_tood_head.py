@@ -21,7 +21,8 @@ class YOLOXTOODHead(YOLOXHead):
             Default: 3.
         la_down_rate (int): Downsample rate of layer attention.
             Default: 32.
-        tood_norm_cfg (dict): Config dict for normalization layer.
+        tood_norm_cfg (dict): Config dict for normalization layer in TOOD head.
+            Default: dict(type='GN', num_groups=32, requires_grad=True).
     """
 
     def __init__(self,
