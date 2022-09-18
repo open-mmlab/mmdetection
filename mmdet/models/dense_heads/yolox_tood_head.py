@@ -40,18 +40,6 @@ class YOLOXTOODHead(YOLOXHead):
         self._build_tood_layers()
 
     def _build_tood_layers(self):
-        self.multi_level_cls_decomps = nn.ModuleList()
-        self.multi_level_reg_decomps = nn.ModuleList()
-        for _ in self.strides:
-            self.multi_level_cls_decomps.append(
-                TaskDecomposition(self.in_channels, self.tood_stacked_convs,
-                                  self.tood_stacked_convs * self.la_down_rate,
-                                  self.conv_cfg, self.tood_norm_cfg))
-            self.multi_level_reg_decomps.append(
-                TaskDecomposition(self.in_channels, self.tood_stacked_convs,
-                                  self.tood_stacked_convs * self.la_down_rate,
-                                  self.conv_cfg, self.tood_norm_cfg))
-
         self.inter_convs = nn.ModuleList()
         for _ in range(self.tood_stacked_convs):
             self.inter_convs.append(
@@ -63,6 +51,18 @@ class YOLOXTOODHead(YOLOXHead):
                     padding=1,
                     conv_cfg=self.conv_cfg,
                     norm_cfg=self.tood_norm_cfg))
+
+        self.multi_level_cls_decomps = nn.ModuleList()
+        self.multi_level_reg_decomps = nn.ModuleList()
+        for _ in self.strides:
+            self.multi_level_cls_decomps.append(
+                TaskDecomposition(self.in_channels, self.tood_stacked_convs,
+                                  self.tood_stacked_convs * self.la_down_rate,
+                                  self.conv_cfg, self.tood_norm_cfg))
+            self.multi_level_reg_decomps.append(
+                TaskDecomposition(self.in_channels, self.tood_stacked_convs,
+                                  self.tood_stacked_convs * self.la_down_rate,
+                                  self.conv_cfg, self.tood_norm_cfg))
 
     def forward_single(self, x, cls_convs, reg_convs, conv_cls, conv_reg,
                        conv_obj, cls_decomp, reg_decomp):
