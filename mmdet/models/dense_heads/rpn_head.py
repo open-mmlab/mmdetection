@@ -73,8 +73,9 @@ class RPNHead(AnchorHead):
         self.rpn_cls = nn.Conv2d(self.feat_channels,
                                  self.num_base_priors * self.cls_out_channels,
                                  1)
-        self.rpn_reg = nn.Conv2d(self.feat_channels, self.num_base_priors * 4,
-                                 1)
+        reg_dim = self.bbox_coder.encode_size
+        self.rpn_reg = nn.Conv2d(self.feat_channels,
+                                 self.num_base_priors * reg_dim, 1)
 
     def forward_single(self, x: Tensor) -> Tuple[Tensor, Tensor]:
         """Forward feature of a single scale level.
