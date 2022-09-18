@@ -235,6 +235,7 @@ class FixShapeResize(Resize):
 
         self.width = width
         self.height = height
+        self.scale = (width, height)
         self.img_pad_value = img_pad_value
         self.mask_pad_value = mask_pad_value
         self.seg_pad_value = seg_pad_value
@@ -244,70 +245,8 @@ class FixShapeResize(Resize):
         self.keep_ratio = keep_ratio
         self.clip_object_border = clip_object_border
 
-    def _resize_img(self, results: dict) -> None:
-        """Resize images with ``results['scale']``."""
-
-        if results.get('img', None) is not None:
-            if self.keep_ratio:
-                new_w, new_h = results['keep_ratio_scale']
-                img, w_scale, h_scale = mmcv.imresize(
-                    results['img'], (new_w, new_h),
-                    interpolation=self.interpolation,
-                    return_scale=True,
-                    backend=self.backend)
-
-                out_w, out_h = results['scale']
-                padded_img = np.zeros(
-                    (out_h, out_w, 3)).astype(np.uint8) + self.img_pad_value
-                padded_img[:new_h, :new_w] = img
-                img = padded_img
-
-            else:
-                img, w_scale, h_scale = mmcv.imresize(
-                    results['img'],
-                    results['scale'],
-                    interpolation=self.interpolation,
-                    return_scale=True,
-                    backend=self.backend)
-            results['img'] = img
-            results['img_shape'] = img.shape[:2]
-            results['scale_factor'] = (w_scale, h_scale)
-            results['keep_ratio'] = self.keep_ratio
-
-    def _resize_masks(self, results: dict) -> None:
-        """Resize masks with ``results['scale']``"""
-        if results.get('gt_masks', None) is not None:
-            if self.keep_ratio:
-                new_w, new_h = results['keep_ratio_scale']
-                results['gt_masks'] = results['gt_masks'].resize(
-                    (new_h, new_w))
-                results['gt_masks'] = results['gt_masks'].pad(
-                    results['img_shape'], pad_val=self.mask_pad_value)
-            else:
-                results['gt_masks'] = results['gt_masks'].resize(
-                    results['img_shape'])
-
-    def _resize_seg(self, results: dict) -> None:
-        """Resize semantic segmentation map with ``results['scale']``."""
-        if results.get('gt_seg_map', None) is not None:
-            if self.keep_ratio:
-                new_w, new_h = results['keep_ratio_scale']
-                gt_seg = mmcv.imresize(
-                    results['gt_seg_map'], (new_w, new_h),
-                    interpolation='nearest',
-                    backend=self.backend)
-                out_w, out_h = results['scale']
-                padded_gt_seg = np.zeros((out_h, out_w, 3)).astype(np.float32)
-                padded_gt_seg = padded_gt_seg + 255
-                padded_gt_seg[:new_h, :new_w] = gt_seg
-                gt_seg = padded_gt_seg
-            else:
-                gt_seg = mmcv.imresize(
-                    results['gt_seg_map'],
-                    results['scale'],
-                    interpolation='nearest',
-                    backend=self.backend)
-            results['gt_seg_map'] = gt_seg
+        if keep_ratio is True:
+            self.pad_pipeline = Pad(size=self.scale)
 
     @autocast_box_type()
     def transform(self, results: dict) -> dict:
@@ -326,20 +265,30 @@ class FixShapeResize(Resize):
         if self.keep_ratio:
             scale_factor = min(self.width / w, self.height / h)
             results['scale_factor'] = (scale_factor, scale_factor)
-
             real_w, real_h = int(w * float(scale_factor) +
                                  0.5), int(h * float(scale_factor) + 0.5)
-            results['keep_ratio_scale'] = (real_w, real_h)
+            img, scale_factor = mmcv.imrescale(
+                results['img'], (real_w, real_h),
+                interpolation=self.interpolation,
+                return_scale=True,
+                backend=self.backend)
+            # the w_scale and h_scale has minor difference
+            # a real fix should be done in the mmcv.imrescale in the future
+            results['img'] = img
+            results['img_shape'] = img.shape[:2]
+            results['keep_ratio'] = self.keep_ratio
+            results['scale'] = (real_w, real_h)
         else:
+            results['scale'] = (self.width, self.height)
             results['scale_factor'] = (self.width / w, self.height / h)
+            super()._resize_img(results)
 
-        results['scale'] = (self.width, self.height)
-
-        self._resize_img(results)
         self._resize_bboxes(results)
         self._resize_masks(results)
         self._resize_seg(results)
         self._record_homography_matrix(results)
+        if self.keep_ratio:
+            self.pad_pipeline(results)
         return results
 
     def __repr__(self) -> str:

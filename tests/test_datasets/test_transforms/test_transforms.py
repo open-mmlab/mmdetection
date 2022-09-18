@@ -162,8 +162,7 @@ class TestFIXShapeResize(unittest.TestCase):
         transform = FixShapeResize(width=2000, height=800, keep_ratio=True)
         results = transform(copy.deepcopy(self.data_info1))
         self.assertEqual(results['img_shape'], (800, 2000))
-        self.assertEqual(results['scale_factor'], (0.6, 800 / 1333))
-
+        self.assertEqual(results['scale_factor'], (800 / 1333, 800 / 1333))
         # test resize_bboxes/seg/masks
         transform = FixShapeResize(width=2000, height=800, keep_ratio=False)
         results = transform(copy.deepcopy(self.data_info1))
@@ -204,7 +203,7 @@ class TestFIXShapeResize(unittest.TestCase):
         transform = FixShapeResize(width=2000, height=800, keep_ratio=True)
         results = transform(copy.deepcopy(data_info1))
         self.assertEqual(results['img_shape'], (800, 2000))
-        self.assertEqual(results['scale_factor'], (0.6, 800 / 1333))
+        self.assertEqual(results['scale_factor'], (800 / 1333, 800 / 1333))
 
         # test resize_bboxes/seg/masks
         transform = FixShapeResize(width=2000, height=800, keep_ratio=False)
