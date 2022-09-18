@@ -204,6 +204,15 @@ class FixShapeResize(Resize):
         width (int): width for resizing.
         height (int): height for resizing.
             Defaults to None.
+        pad_val (Number | dict[str, Number], optional) - Padding value for if
+            the pad_mode is "constant".  If it is a single number, the value
+            to pad the image is the number and to pad the semantic
+            segmentation map is 255. If it is a dict, it should have the
+            following keys:
+
+            - img: The value to pad the image.
+            - seg: The value to pad the semantic segmentation map.
+            Defaults to dict(img=0, seg=255).
         keep_ratio (bool): Whether to keep the aspect ratio when resizing the
             image. Defaults to False.
         clip_object_border (bool): Whether to clip the objects
@@ -222,9 +231,7 @@ class FixShapeResize(Resize):
     def __init__(self,
                  width: int,
                  height: int,
-                 img_pad_value: int = 0,
-                 mask_pad_value: int = 0,
-                 seg_pad_value: int = 255,
+                 pad_val: int = 255,
                  keep_ratio: bool = False,
                  clip_object_border: bool = True,
                  backend: str = 'cv2',
@@ -236,9 +243,6 @@ class FixShapeResize(Resize):
         self.width = width
         self.height = height
         self.scale = (width, height)
-        self.img_pad_value = img_pad_value
-        self.mask_pad_value = mask_pad_value
-        self.seg_pad_value = seg_pad_value
 
         self.backend = backend
         self.interpolation = interpolation
@@ -246,7 +250,7 @@ class FixShapeResize(Resize):
         self.clip_object_border = clip_object_border
 
         if keep_ratio is True:
-            self.pad_pipeline = Pad(size=self.scale)
+            self.pad_pipeline = Pad(size=self.scale, pad_val=pad_val)
 
     @autocast_box_type()
     def transform(self, results: dict) -> dict:
