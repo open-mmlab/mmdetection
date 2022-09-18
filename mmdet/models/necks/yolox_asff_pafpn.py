@@ -39,8 +39,8 @@ class ASFF(nn.Module):
                 in_channels[1],
                 self.inter_dim,
                 3,
-                2,
-                1,
+                stride=2,
+                padding=1,
                 norm_cfg=norm_cfg,
                 act_cfg=act_cfg,
                 bias=False)
@@ -49,8 +49,8 @@ class ASFF(nn.Module):
                 in_channels[0],
                 self.inter_dim,
                 3,
-                2,
-                1,
+                stride=2,
+                padding=1,
                 norm_cfg=norm_cfg,
                 act_cfg=act_cfg,
                 bias=False)
@@ -61,7 +61,7 @@ class ASFF(nn.Module):
                 in_channels[2],
                 self.inter_dim,
                 1,
-                1,
+                stride=1,
                 norm_cfg=norm_cfg,
                 act_cfg=act_cfg,
                 bias=False)
@@ -69,8 +69,8 @@ class ASFF(nn.Module):
                 in_channels[0],
                 self.inter_dim,
                 3,
-                2,
-                1,
+                stride=2,
+                padding=1,
                 norm_cfg=norm_cfg,
                 act_cfg=act_cfg,
                 bias=False)
@@ -81,7 +81,7 @@ class ASFF(nn.Module):
                 in_channels[2],
                 self.inter_dim,
                 1,
-                1,
+                stride=1,
                 norm_cfg=norm_cfg,
                 act_cfg=act_cfg,
                 bias=False)
@@ -89,7 +89,7 @@ class ASFF(nn.Module):
                 in_channels[1],
                 self.inter_dim,
                 1,
-                1,
+                stride=1,
                 norm_cfg=norm_cfg,
                 act_cfg=act_cfg,
                 bias=False)
@@ -101,8 +101,8 @@ class ASFF(nn.Module):
             self.inter_dim,
             self.inter_dim,
             expand_kernel,
-            1,
-            expand_kernel // 2,
+            stride=1,
+            padding=expand_kernel // 2,
             norm_cfg=norm_cfg,
             act_cfg=act_cfg,
             bias=False)
@@ -111,7 +111,7 @@ class ASFF(nn.Module):
             self.inter_dim,
             asff_channel,
             1,
-            1,
+            stride=1,
             norm_cfg=norm_cfg,
             act_cfg=act_cfg,
             bias=False)
@@ -119,7 +119,7 @@ class ASFF(nn.Module):
             self.inter_dim,
             asff_channel,
             1,
-            1,
+            stride=1,
             norm_cfg=norm_cfg,
             act_cfg=act_cfg,
             bias=False)
@@ -127,7 +127,7 @@ class ASFF(nn.Module):
             self.inter_dim,
             asff_channel,
             1,
-            1,
+            stride=1,
             norm_cfg=norm_cfg,
             act_cfg=act_cfg,
             bias=False)
@@ -135,8 +135,8 @@ class ASFF(nn.Module):
         self.weight_levels = ConvModule(
             asff_channel * 3,
             3,
-            1,
-            1,
+            stride=1,
+            padding=1,
             norm_cfg=norm_cfg,
             act_cfg=act_cfg,
             bias=False)
