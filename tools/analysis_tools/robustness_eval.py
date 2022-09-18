@@ -66,8 +66,7 @@ def get_coco_style_results(filename,
 
     for metric_name in metrics:
         assert metric_name in [
-            'AP', 'AP50', 'AP75', 'APs', 'APm', 'APl', 'AR1', 'AR10', 'AR100',
-            'ARs', 'ARm', 'ARl'
+            'mAP', 'mAP_50', 'mAP_75', 'mAP_s', 'mAP_m', 'mAP_l'
         ]
 
     eval_output = load(filename)
@@ -78,8 +77,13 @@ def get_coco_style_results(filename,
     for corr_i, distortion in enumerate(eval_output):
         for severity in eval_output[distortion]:
             for metric_j, metric_name in enumerate(metrics):
-                mAP = eval_output[distortion][severity]['_'.join(
-                    (task, metric_name))]
+                metric_dict = eval_output[distortion][severity]
+
+                new_metric_dict = {}
+                for k, v in metric_dict.items():
+                    if '/' in k:
+                        new_metric_dict[k.split('/')[-1]] = v
+                mAP = new_metric_dict['_'.join((task, metric_name))]
                 results[corr_i, severity, metric_j] = mAP
 
     P = results[0, 0, :]
@@ -163,7 +167,7 @@ def get_voc_style_results(filename, prints='mPC', aggregate='benchmark'):
 
 def get_results(filename,
                 dataset='coco',
-                task='coco/bbox',
+                task='bbox',
                 metric=None,
                 prints='mPC',
                 aggregate='benchmark'):
