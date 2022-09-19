@@ -101,7 +101,7 @@ class TwoStagePanopticSegmentor(TwoStageDetector):
                 x, rpn_data_samples, proposal_cfg=proposal_cfg)
             # avoid get same name with roi_head loss
             keys = rpn_losses.keys()
-            for key in keys:
+            for key in list(keys):
                 if 'loss' in key and 'rpn' not in key:
                     rpn_losses[f'rpn_{key}'] = rpn_losses.pop(key)
             losses.update(rpn_losses)
