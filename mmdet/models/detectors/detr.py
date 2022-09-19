@@ -55,32 +55,26 @@ class DETR(TransformerDetector):
             img_feats: Tuple[Tensor],
             batch_data_samples: OptSampleList = None) -> Dict[str, Tensor]:
         feat = img_feats[-1]
-        # construct binary masks which used for the transformer.
-        # NOTE following the official DETR repo, non-zero values representing
-        # ignored positions, while zero values means valid positions.
         batch_size = feat.size(0)
-        if batch_data_samples is not None:
-            batch_input_shape = batch_data_samples[0].batch_input_shape  # noqa
-            # TODO: should there be an assert about equal batch_input_shape?
-            img_shape_list = [
-                sample.img_shape  # noqa
-                for sample in batch_data_samples
-            ]
-        else:
-            batch_input_shape = feat.shape
-            # TODO: should the batch_data_samples be OptSampleList?
-            img_shape_list = [feat.shape for _ in batch_size]
+        # construct binary masks which used for the transformer.
+        assert batch_data_samples is not None  # TODO: Modify other DETRs
+        batch_input_shape = batch_data_samples[0].batch_input_shape
+        img_shape_list = [
+            sample.img_shape  # noqa
+            for sample in batch_data_samples
+        ]
 
         input_img_h, input_img_w = batch_input_shape
         masks = feat.new_ones((batch_size, input_img_h, input_img_w))
         for img_id in range(batch_size):
             img_h, img_w = img_shape_list[img_id]
             masks[img_id, :img_h, :img_w] = 0
+        # NOTE following the official DETR repo, non-zero values representing
+        # ignored positions, while zero values means valid positions.
 
-        # interpolate masks to have the same spatial shape with feat
+        # prepare transformer_inputs_dict
         masks = F.interpolate(
             masks.unsqueeze(1), size=feat.shape[-2:]).to(torch.bool).squeeze(1)
-        # position encoding
         pos_embed = self.positional_encoding(masks)  # [bs, embed_dim, h, w]
 
         transformer_inputs_dict = dict(
