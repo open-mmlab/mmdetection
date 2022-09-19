@@ -76,12 +76,10 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 ### 💎 稳定版本
 
-最新的 **2.25.0** 版本已经在 2022.06.01 发布:
+最新的 **2.25.2** 版本已经在 2022.09.15 发布:
 
-- 支持功能更丰富的 `MMDetWandbHook`
-- 支持算法 [ConvNeXt](configs/convnext), [DDOD](configs/ddod) 和 [SOLOv2](configs/solov2)
-- [Mask2Former](configs/mask2former) 支持实例分割
-- 为了加入 Mask2Former 实例分割的模型，对 Mask2Former 原有的全景分割的配置文件进行了重命名
+- 修复 Dynamic Head 和 Swin Transformer 中的错误。
+- 优化注释和文档。
 
 如果想了解更多版本更新细节和历史信息，请阅读[更新日志](docs/en/changelog.md)。
 
@@ -348,6 +346,7 @@ MMDetection 是一款由来自不同高校和企业的研发人员共同参与�
 
 ## OpenMMLab 的其他项目
 
+- [MMEngine](https://github.com/open-mmlab/mmengine): OpenMMLab 深度学习模型训练基础库
 - [MMCV](https://github.com/open-mmlab/mmcv): OpenMMLab 计算机视觉基础库
 - [MIM](https://github.com/open-mmlab/mim): MIM 是 OpenMMlab 项目、算法、模型的统一入口
 - [MMClassification](https://github.com/open-mmlab/mmclassification): OpenMMLab 图像分类工具箱
