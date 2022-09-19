@@ -120,29 +120,8 @@ class DETRHead(BaseModule):
 
     # def _load_from_state_dict  # TODO
 
-    def forward(self, x: Tuple[Tensor]) -> Tuple[List[Tensor], List[Tensor]]:
-        """Forward function.
-
-        Args:
-            x:
-            TODO
-
-        Returns:
-            tuple[list[Tensor], list[Tensor]]: Outputs for all scale levels.
-
-            - all_cls_scores_list (list[Tensor]): Classification scores \
-            for each scale level. Each is a 4D-tensor with shape \
-            [nb_dec, bs, num_query, cls_out_channels]. Note \
-            `cls_out_channels` should includes background.
-            - all_bbox_preds_list (list[Tensor]): Sigmoid regression \
-            outputs for each scale level. Each is a 4D-tensor with \
-            normalized coordinate format (cx, cy, w, h) and shape \
-            [nb_dec, bs, num_query, 4].
-        """
-        return multi_apply(self.forward_single, x)
-
-    def forward_single(self, outs_dec: Tensor) -> Tuple[Tensor, Tensor]:
-        """"Forward function for a single feature level.
+    def forward(self, outs_dec: Tensor) -> Tuple[Tensor, Tensor]:
+        """"Forward function.
 
         Args: TODO
 
@@ -161,10 +140,35 @@ class DETRHead(BaseModule):
             self.reg_ffn(outs_dec))).sigmoid()
         return all_cls_scores, all_bbox_preds
 
+    def loss(self, x: Tuple[Tensor], batch_data_samples: SampleList) -> dict:
+        """Perform forward propagation and loss calculation of the detection
+        head on the features of the upstream network.
+
+        Args:
+            x (tuple[Tensor]): Features from the upstream network, each is
+                a 4D-tensor.
+            batch_data_samples (List[:obj:`DetDataSample`]): The Data
+                Samples. It usually includes information such as
+                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+
+        Returns:
+            dict: A dictionary of loss components.
+        """
+        batch_gt_instances = []
+        batch_img_metas = []
+        for data_sample in batch_data_samples:
+            batch_img_metas.append(data_sample.metainfo)
+            batch_gt_instances.append(data_sample.gt_instances)
+
+        outs = self(x)
+        loss_inputs = outs + (batch_gt_instances, batch_img_metas)
+        losses = self.loss_by_feat(*loss_inputs)
+        return losses
+
     def loss_by_feat(
         self,
-        all_cls_scores_list: List[Tensor],
-        all_bbox_preds_list: List[Tensor],
+        all_cls_scores: Tensor,
+        all_bbox_preds: Tensor,
         batch_gt_instances: InstanceList,
         batch_img_metas: List[dict],
         batch_gt_instances_ignore: OptInstanceList = None
@@ -175,10 +179,10 @@ class DETRHead(BaseModule):
         losses by default.
 
         Args:
-            all_cls_scores_list (list[Tensor]): Classification outputs
+            all_cls_scores (Tensor): Classification outputs
                 for each feature level. Each is a 4D-tensor with shape
                 [nb_dec, bs, num_query, cls_out_channels].
-            all_bbox_preds_list (list[Tensor]): Sigmoid regression
+            all_bbox_preds (Tensor): Sigmoid regression
                 outputs for each feature level. Each is a 4D-tensor with
                 normalized coordinate format (cx, cy, w, h) and shape
                 [nb_dec, bs, num_query, 4].
@@ -196,8 +200,6 @@ class DETRHead(BaseModule):
             dict[str, Tensor]: A dictionary of loss components.
         """
         # NOTE defaultly only the outputs from the last feature scale is used.
-        all_cls_scores = all_cls_scores_list[-1]
-        all_bbox_preds = all_bbox_preds_list[-1]
         assert batch_gt_instances_ignore is None, \
             'Only supports for batch_gt_instances_ignore setting to None.'
 
@@ -419,32 +421,6 @@ class DETRHead(BaseModule):
         return (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
                 neg_inds)
 
-    # over-write because img_metas are needed as inputs for bbox_head.
-    def loss(self, x: Tuple[Tensor], batch_data_samples: SampleList) -> dict:
-        """Perform forward propagation and loss calculation of the detection
-        head on the features of the upstream network.
-
-        Args:
-            x (tuple[Tensor]): Features from the upstream network, each is
-                a 4D-tensor.
-            batch_data_samples (List[:obj:`DetDataSample`]): The Data
-                Samples. It usually includes information such as
-                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
-
-        Returns:
-            dict: A dictionary of loss components.
-        """
-        batch_gt_instances = []
-        batch_img_metas = []
-        for data_sample in batch_data_samples:
-            batch_img_metas.append(data_sample.metainfo)
-            batch_gt_instances.append(data_sample.gt_instances)
-
-        outs = self(x)
-        loss_inputs = outs + (batch_gt_instances, batch_img_metas)
-        losses = self.loss_by_feat(*loss_inputs)
-        return losses
-
     def loss_and_predict(self,
                          x: Tuple[Tensor],
                          batch_data_samples: SampleList,
@@ -547,8 +523,8 @@ class DETRHead(BaseModule):
         """
         # NOTE defaultly only using outputs from the last feature level,
         # and only the outputs from the last decoder layer is used.
-        cls_scores = all_cls_scores_list[-1][-1]
-        bbox_preds = all_bbox_preds_list[-1][-1]
+        cls_scores = all_cls_scores_list[-1]
+        bbox_preds = all_bbox_preds_list[-1]
 
         result_list = []
         for img_id in range(len(batch_img_metas)):

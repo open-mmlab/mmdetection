@@ -118,8 +118,6 @@ class DETR(TransformerDetector):
             key_padding_mask=masks)
         out_dec = out_dec.transpose(1, 2)
         if return_memory:
-            # TODO: The original output is 'out_dec, memory', I kept it here.
             memory = memory.permute(1, 2, 0).reshape(bs, c, h, w)
-            return tuple([out_dec]), tuple([memory])
-        return tuple([out_dec])
-        # TODO: For keeping the multi_apply in DETRHead.forward
+            return out_dec, memory
+        return out_dec
