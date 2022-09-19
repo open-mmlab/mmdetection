@@ -70,13 +70,6 @@ def main():
         model.cuda()
     model.eval()
 
-    # if hasattr(model, 'forward_dummy'):
-    #     model.forward = model.forward_dummy
-    # else:
-    #     raise NotImplementedError(
-    #         'FLOPs counter is currently not currently supported with {}'.
-    #         format(model.__class__.__name__))
-
     flops, params = get_model_complexity_info(model, input_shape)
     split_line = '=' * 30
 
