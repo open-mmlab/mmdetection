@@ -15,8 +15,8 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
     """Base class for Transformer-based detectors.
 
     Transformer-based detectors use an encoder to process output features of
-    backbone/neck, then several queries interactive with encoded features and
-    do the regression and classification.
+    neck, then several queries interactive with the output features of encdoer
+    and do the regression and classification.
     """
 
     def __init__(self,
@@ -88,6 +88,10 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
             self,
             batch_inputs: Tensor,
             batch_data_samples: OptSampleList = None) -> Tuple[List[Tensor]]:
+        """Network forward process.
+
+            Includes backbone, neck and head forward without post-processing.
+        """
         img_feats = self.extract_feat(batch_inputs)
         transformer_inputs_dict = self.forward_pretransformer(
             img_feats, batch_data_samples)
