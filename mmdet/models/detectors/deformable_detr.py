@@ -36,10 +36,19 @@ class DeformableDETR(TransformerDetector):
         self.with_box_refine = with_box_refine
         self.as_two_stage = as_two_stage
         self.num_feature_levels = num_feature_levels
-        if bbox_head is not None:
+
+        if bbox_head.with_box_refine is None:
             bbox_head.with_box_refine = with_box_refine
+        else:
+            assert bbox_head.with_box_refine == with_box_refine
+        if bbox_head.as_two_stage is None:
             bbox_head.as_two_stage = as_two_stage
+        else:
+            assert bbox_head.as_two_stage == as_two_stage
+        if bbox_head.num_decoder_layers is None:
             bbox_head.num_decoder_layers = decoder_cfg.num_layers
+        else:
+            assert bbox_head.num_decoder_layers == decoder_cfg.num_layers
 
         super().__init__(
             *args, decoder_cfg=decoder_cfg, bbox_head=bbox_head, **kwargs)
