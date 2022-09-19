@@ -15,7 +15,7 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
     """Base class for Transformer-based detectors.
 
     Transformer-based detectors use an encoder to process output features of
-    neck, then several queries interactive with the output features of encdoer
+    neck, then several queries interactive with the output features of encoder
     and do the regression and classification.
     """
 
