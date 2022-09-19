@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 from typing import Dict, List, Tuple, Union
 
 from torch import Tensor
@@ -11,7 +11,7 @@ from .base import BaseDetector
 
 
 @MODELS.register_module()
-class TransformerDetector(BaseDetector):
+class TransformerDetector(BaseDetector, metaclass=ABCMeta):
     """Base class for Transformer-based detectors.
 
     Transformer-based detectors use an encoder to process output features of
