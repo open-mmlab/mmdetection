@@ -41,7 +41,7 @@ class DeformableDETR(TransformerDetector):
         assert self.bbox_head.num_pred == self.decoder_cfg.num_layers + 1 \
             if self.as_two_stage else self.decoder_cfg.num_layers
 
-    def _init_transformer(self) -> None:
+    def _init_layers(self) -> None:
         self.positional_encoding = SinePositionalEncoding(
             **self.positional_encoding_cfg)
         self.encoder = DeformableDetrTransformerEncoder(**self.encoder_cfg)

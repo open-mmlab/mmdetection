@@ -22,10 +22,6 @@ class DETR(TransformerDetector):
         super(DETR, self).__init__(*args, **kwargs)
 
     def _init_layers(self) -> None:
-        # initialize encoder, decoder, query_embed, positional_encoding
-        self._init_transformer()
-
-    def _init_transformer(self) -> None:
         self.positional_encoding = SinePositionalEncoding(
             **self.positional_encoding_cfg)
         self.encoder = DetrTransformerEncoder(**self.encoder_cfg)

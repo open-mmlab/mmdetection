@@ -50,15 +50,9 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
         self.bbox_head = MODELS.build(bbox_head)
         self._init_layers()
 
-    def _init_layers(self) -> None:
-        self._init_transformer()
-
     @abstractmethod
-    def _init_transformer(self) -> None:
-        """1. Initialize positional_encoding
-           2. Initialize encoder and decoder of transformer
-           3. Get self.embed_dims from the transformer
-           4. Initialize query_embed"""
+    def _init_layers(self) -> None:
+        """Initialize layers except backbone, neck and bbox_head."""
         pass
 
     def loss(self, batch_inputs: Tensor,
@@ -89,7 +83,8 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
             batch_inputs: Tensor,
             batch_data_samples: OptSampleList = None) -> Tuple[List[Tensor]]:
         """Network forward process.
-            Includes backbone, neck and head forward without post-processing.
+
+        Includes backbone, neck and head forward without post-processing.
         """
         img_feats = self.extract_feat(batch_inputs)
         transformer_inputs_dict = self.forward_pretransformer(
@@ -118,10 +113,8 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
             self,
             img_feats: Tuple[Tensor],
             batch_data_samples: OptSampleList = None) -> Dict[str, Tensor]:
-        """1. Get batch padding mask.
-           2. Convert image feature maps to sequential features.
-           3. Get image positional embedding of features.
-           4. Prepare decoder queries."""
+        """1. Construct batch padding mask.
+           2. Prepare transformer_inputs_dict."""
         pass
 
     @abstractmethod
