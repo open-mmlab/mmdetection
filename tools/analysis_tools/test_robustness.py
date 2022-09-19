@@ -101,7 +101,7 @@ def main():
 
     assert args.out or args.show or args.show_dir, \
         ('Please specify at least one operation (save or show the results) '
-         'with the argument "--dump", "--show" or "show-dir"')
+         'with the argument "--out", "--show" or "show-dir"')
 
     # load config
     cfg = Config.fromfile(args.config)
