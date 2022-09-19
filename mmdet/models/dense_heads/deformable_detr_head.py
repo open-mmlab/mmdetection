@@ -63,7 +63,7 @@ class DeformableDETRHead(DETRHead):
         # last reg_branch is used to generate proposal from
         # encode feature map when as_two_stage is True.
         num_pred = (self.transformer.decoder.num_layers + 1) if \
-            self.as_two_stage else self.num_decoder_layers
+            self.as_two_stage else self.num_decoder_layers #TODO
 
         if self.with_box_refine:
             self.cls_branches = nn.ModuleList(
