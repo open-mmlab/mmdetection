@@ -3,7 +3,6 @@ from typing import Any, Dict, Tuple, Union
 
 import torch
 import torch.nn.functional as F
-from mmcv.cnn import Conv2d
 from mmengine.model import xavier_init
 from torch import Tensor, nn
 
@@ -25,8 +24,6 @@ class DETR(TransformerDetector):
     def _init_layers(self) -> None:
         # initialize encoder, decoder, query_embed, positional_encoding
         self._init_transformer()
-        # initialize input projection
-        self._init_input_proj()  # TODO: Can it be replaced with ChannelMapper?
 
     def _init_transformer(self) -> None:
         self.positional_encoding = SinePositionalEncoding(
@@ -40,10 +37,6 @@ class DETR(TransformerDetector):
         assert num_feats * 2 == self.embed_dims, \
             f'embed_dims should be exactly 2 times of num_feats. ' \
             f'Found {self.embed_dims} and {num_feats}.'
-
-    def _init_input_proj(self) -> None:
-        in_channels = self.backbone.feat_dim  # TODO: Is this correct stably?
-        self.input_proj = Conv2d(in_channels, self.embed_dims, kernel_size=1)
 
     def init_weights(self) -> None:  # TODO
         super(TransformerDetector, self).init_weights()
@@ -84,7 +77,6 @@ class DETR(TransformerDetector):
             img_h, img_w = img_shape_list[img_id]
             masks[img_id, :img_h, :img_w] = 0
 
-        feat = self.input_proj(feat)
         # interpolate masks to have the same spatial shape with feat
         masks = F.interpolate(
             masks.unsqueeze(1), size=feat.shape[-2:]).to(torch.bool).squeeze(1)

@@ -20,6 +20,14 @@ model = dict(
         norm_eval=True,
         style='pytorch',
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
+    neck=dict(
+        type='ChannelMapper',
+        in_channels=[2048],
+        kernel_size=1,
+        out_channels=256,
+        act_cfg=None,
+        norm_cfg=None,
+        num_outs=1),
     encoder_cfg=dict(
         num_layers=6,
         layer_cfg=dict(
