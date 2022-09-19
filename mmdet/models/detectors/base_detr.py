@@ -89,7 +89,6 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
             batch_inputs: Tensor,
             batch_data_samples: OptSampleList = None) -> Tuple[List[Tensor]]:
         """Network forward process.
-
             Includes backbone, neck and head forward without post-processing.
         """
         img_feats = self.extract_feat(batch_inputs)
