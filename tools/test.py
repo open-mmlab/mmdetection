@@ -6,8 +6,9 @@ import os.path as osp
 from mmengine.config import Config, DictAction
 from mmengine.runner import Runner
 
+from mmdet.engine.hooks.utils import trigger_visualization_hook
 from mmdet.registry import RUNNERS
-from mmdet.utils import register_all_modules
+from mmdet.utils import add_dump_metric, register_all_modules
 
 
 # TODO: support fuse_conv_bn and format_only
@@ -52,42 +53,6 @@ def parse_args():
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
     return args
-
-
-def trigger_visualization_hook(cfg, args):
-    default_hooks = cfg.default_hooks
-    if 'visualization' in default_hooks:
-        visualization_hook = default_hooks['visualization']
-        # Turn on visualization
-        visualization_hook['draw'] = True
-        if args.show:
-            visualization_hook['show'] = True
-            visualization_hook['wait_time'] = args.wait_time
-        if args.show_dir:
-            visualization_hook['test_out_dir'] = args.show_dir
-    else:
-        raise RuntimeError(
-            'VisualizationHook must be included in default_hooks.'
-            'refer to usage '
-            '"visualization=dict(type=\'VisualizationHook\')"')
-
-    return cfg
-
-
-def add_dump_metric(args, cfg):
-    dump_metric = dict(type='DumpResults', out_file_path=args.out)
-    if isinstance(cfg.test_evaluator, (list, tuple)):
-        cfg.test_evaluator = list(cfg.test_evaluator).append(dump_metric)
-    elif isinstance(cfg.test_evaluator, dict):
-        if isinstance(cfg.test_evaluator.metric, str):
-            cfg.test_evaluator = [cfg.test_evaluator, dump_metric]
-        elif isinstance(cfg.test_evaluator.metric, (list, tuple)):
-            cfg.test_evaluator.metric = list(
-                cfg.test_evaluator.metric).append(dump_metric)
-        else:
-            cfg.test_evaluator.metric = [
-                cfg.test_evaluator.metric, dump_metric
-            ]
 
 
 def main():
