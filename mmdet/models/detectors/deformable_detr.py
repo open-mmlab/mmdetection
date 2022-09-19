@@ -17,7 +17,7 @@ from mmdet.utils import OptConfigType
 from ..layers import (DetrTransformerDecoder, DetrTransformerDecoderLayer,
                       DetrTransformerEncoder, DetrTransformerEncoderLayer,
                       SinePositionalEncoding, inverse_sigmoid)
-from .detection_transformer import TransformerDetector
+from .base_detr import TransformerDetector
 
 
 @MODELS.register_module()

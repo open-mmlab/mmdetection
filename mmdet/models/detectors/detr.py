@@ -10,7 +10,7 @@ from mmdet.registry import MODELS
 from mmdet.structures import OptSampleList
 from ..layers import (DetrTransformerDecoder, DetrTransformerEncoder,
                       SinePositionalEncoding)
-from .detection_transformer import TransformerDetector
+from .base_detr import TransformerDetector
 
 
 @MODELS.register_module()

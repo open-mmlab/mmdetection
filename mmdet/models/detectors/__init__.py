@@ -2,6 +2,7 @@
 from .atss import ATSS
 from .autoassign import AutoAssign
 from .base import BaseDetector
+from .base_detr import TransformerDetector
 from .cascade_rcnn import CascadeRCNN
 from .centernet import CenterNet
 from .cornernet import CornerNet
@@ -56,5 +57,6 @@ __all__ = [
     'VFNet', 'DETR', 'TridentFasterRCNN', 'SparseRCNN', 'SCNet', 'SOLO',
     'SOLOv2', 'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet', 'YOLOX',
     'TwoStagePanopticSegmentor', 'PanopticFPN', 'QueryInst', 'LAD', 'TOOD',
-    'MaskFormer', 'DDOD', 'Mask2Former', 'SemiBaseDetector', 'SoftTeacher'
+    'MaskFormer', 'DDOD', 'Mask2Former', 'SemiBaseDetector', 'SoftTeacher',
+    'TransformerDetector'
 ]
