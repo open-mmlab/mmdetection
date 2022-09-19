@@ -37,7 +37,6 @@ class DETR(TransformerDetector):
     def init_weights(self) -> None:
         super().init_weights()
         self._init_transformer_weights()
-        self._is_init = True
 
     def _init_transformer_weights(self) -> None:
         # follow the DetrTransformer to init parameters
