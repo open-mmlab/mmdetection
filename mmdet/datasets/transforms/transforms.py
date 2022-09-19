@@ -231,7 +231,7 @@ class FixShapeResize(Resize):
     def __init__(self,
                  width: int,
                  height: int,
-                 pad_val: int = 255,
+                 pad_val: Union[Number, dict] = dict(img=0, seg=255),
                  keep_ratio: bool = False,
                  clip_object_border: bool = True,
                  backend: str = 'cv2',
@@ -250,7 +250,8 @@ class FixShapeResize(Resize):
         self.clip_object_border = clip_object_border
 
         if keep_ratio is True:
-            self.pad_pipeline = Pad(size=self.scale, pad_val=pad_val)
+            # padding to the fixed size when keep_ratio=True
+            self.pad_transform = Pad(size=self.scale, pad_val=pad_val)
 
     @autocast_box_type()
     def transform(self, results: dict) -> dict:
@@ -292,7 +293,7 @@ class FixShapeResize(Resize):
         self._resize_seg(results)
         self._record_homography_matrix(results)
         if self.keep_ratio:
-            self.pad_pipeline(results)
+            self.pad_transform(results)
         return results
 
     def __repr__(self) -> str:
