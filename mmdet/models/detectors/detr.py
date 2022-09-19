@@ -38,12 +38,12 @@ class DETR(TransformerDetector):
             f'embed_dims should be exactly 2 times of num_feats. ' \
             f'Found {self.embed_dims} and {num_feats}.'
 
-    def init_weights(self) -> None:  # TODO
+    def init_weights(self) -> None:
         super(TransformerDetector, self).init_weights()
         self._init_transformer_weights()
-        self._is_init = True  # TODO
+        self._is_init = True
 
-    def _init_transformer_weights(self) -> None:  # TODO
+    def _init_transformer_weights(self) -> None:
         # follow the DetrTransformer to init parameters
         for coder in [self.encoder, self.decoder]:
             for m in coder.modules():
@@ -57,7 +57,7 @@ class DETR(TransformerDetector):
         feat = img_feats[-1]
         batch_size = feat.size(0)
         # construct binary masks which used for the transformer.
-        assert batch_data_samples is not None  # TODO: Modify other DETRs
+        assert batch_data_samples is not None
         batch_input_shape = batch_data_samples[0].batch_input_shape
         img_shape_list = [
             sample.img_shape  # noqa

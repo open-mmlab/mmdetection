@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from abc import abstractmethod
 from typing import Dict, List, Tuple, Union
 
 from torch import Tensor
@@ -52,15 +53,13 @@ class TransformerDetector(BaseDetector):
     def _init_layers(self) -> None:
         self._init_transformer()
 
+    @abstractmethod
     def _init_transformer(self) -> None:
         """1. Initialize positional_encoding
            2. Initialize encoder and decoder of transformer
            3. Get self.embed_dims from the transformer
            4. Initialize query_embed"""
-        raise NotImplementedError(
-            'The _init_transformer should be implemented for the detector.')
-
-    # def init_weight  # TODO !!!!
+        pass
 
     def loss(self, batch_inputs: Tensor,
              batch_data_samples: SampleList) -> Union[dict, list]:
@@ -111,6 +110,7 @@ class TransformerDetector(BaseDetector):
             x = self.neck(x)
         return x
 
+    @abstractmethod
     def forward_pretransformer(
             self,
             img_feats: Tuple[Tensor],
@@ -119,11 +119,9 @@ class TransformerDetector(BaseDetector):
            2. Convert image feature maps to sequential features.
            3. Get image positional embedding of features.
            4. Prepare decoder queries."""
-        raise NotImplementedError(
-            'The forward_pretransformer should be implemented '
-            'for the detector.')
+        pass
 
+    @abstractmethod
     def forward_transformer(self, **kwargs) -> Tuple[Tensor]:
         """Process sequential features with transformer."""
-        raise NotImplementedError(
-            'The forward_transformer should be implemented for the detector.')
+        pass

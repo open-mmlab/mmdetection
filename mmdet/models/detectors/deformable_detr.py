@@ -56,8 +56,6 @@ class DeformableDETR(TransformerDetector):
             f'embed_dims should be exactly 2 times of num_feats. ' \
             f'Found {self.embed_dims} and {num_feats}.'
 
-        # TODO: It is recommended to abstract the Transformer class
-        #  and encapsulate the following content
         self.level_embeds = nn.Parameter(
             torch.Tensor(self.num_feature_levels, self.embed_dims))
 
@@ -283,7 +281,7 @@ class DeformableDETR(TransformerDetector):
                     self.decoder.num_layers](
                     output_memory) + output_proposals
 
-            topk = self.num_query  # TODO: two_stage_num_proposals originally
+            topk = self.num_query
             # We only use the first channel in enc_outputs_class as foreground,
             # the other (num_classes - 1) channels are actually not used.
             # Its targets are set to be 0s, which indicates the first
