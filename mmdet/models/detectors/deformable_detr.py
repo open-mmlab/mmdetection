@@ -131,24 +131,22 @@ class DeformableDETR(TransformerDetector):
             batch_data_samples: OptSampleList = None) -> Dict[str, Tensor]:
         batch_size = mlvl_feats[0].size(0)
         # construct binary masks which used for the transformer
-        if batch_data_samples is not None:
-            batch_input_shape = batch_data_samples[0].batch_input_shape  # noqa
-            # TODO: should there be an assert about equal batch_input_shape?
-            img_shape_list = [
-                sample.img_shape  # noqa
-                for sample in batch_data_samples
-            ]
-        else:
-            batch_input_shape = mlvl_feats[0].shape
-            # TODO: should the batch_data_samples be OptSampleList?
-            img_shape_list = [mlvl_feats[0].shape for _ in batch_size]
+        assert batch_data_samples is not None
+        batch_input_shape = batch_data_samples[0].batch_input_shape
+        img_shape_list = [
+            sample.img_shape  # noqa
+            for sample in batch_data_samples
+        ]
 
         input_img_h, input_img_w = batch_input_shape
         masks = mlvl_feats[0].new_ones((batch_size, input_img_h, input_img_w))
         for img_id in range(batch_size):
             img_h, img_w = img_shape_list[img_id]
             masks[img_id, :img_h, :img_w] = 0
+        # NOTE following the official DETR repo, non-zero values representing
+        # ignored positions, while zero values means valid positions.
 
+        # prepare transformer_inputs_dict
         mlvl_masks = []
         mlvl_positional_encodings = []
         for feat in mlvl_feats:
@@ -158,15 +156,12 @@ class DeformableDETR(TransformerDetector):
             mlvl_positional_encodings.append(
                 self.positional_encoding(mlvl_masks[-1]))
 
-        query_embeds = None
-        if not self.as_two_stage:
-            query_embeds = self.query_embedding.weight
-
         transformer_inputs_dict = dict(
             mlvl_feats=mlvl_feats,
             mlvl_masks=mlvl_masks,
             mlvl_pos_embeds=mlvl_positional_encodings,
-            query_embed=query_embeds,
+            query_embed=self.query_embedding.weight
+            if not self.as_two_stage else None,
             reg_branches=self.bbox_head.reg_branches
             if self.with_box_refine else None,
             cls_branches=self.bbox_head.cls_branches
