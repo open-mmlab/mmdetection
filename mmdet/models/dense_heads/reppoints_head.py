@@ -473,7 +473,11 @@ class RepPointsHead(AnchorFreeHead):
         # map up to original set of proposals
         if unmap_outputs:
             num_total_proposals = flat_proposals.size(0)
-            labels = unmap(labels, num_total_proposals, inside_flags)
+            labels = unmap(
+                labels,
+                num_total_proposals,
+                inside_flags,
+                fill=self.num_classes)  # fill bg label
             label_weights = unmap(label_weights, num_total_proposals,
                                   inside_flags)
             bbox_gt = unmap(bbox_gt, num_total_proposals, inside_flags)
