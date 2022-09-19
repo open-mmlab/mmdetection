@@ -26,7 +26,10 @@ class DETR(TransformerDetector):
             **self.positional_encoding_cfg)
         self.encoder = DetrTransformerEncoder(**self.encoder_cfg)
         self.decoder = DetrTransformerDecoder(**self.decoder_cfg)
-        self.embed_dims = self.encoder.embed_dims  # TODO
+        self.embed_dims = self.encoder.embed_dims
+        # NOTE The embed_dims is typically passed from the inside out.
+        # For example in DETR, The embed_dims is passed as
+        # self_attn -> the first encoder layer -> encoder -> detector.
         self.query_embedding = nn.Embedding(self.num_query, self.embed_dims)
 
         num_feats = self.positional_encoding.num_feats

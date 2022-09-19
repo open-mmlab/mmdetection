@@ -4,6 +4,7 @@ _base_ = [
 model = dict(
     type='DeformableDETR',
     num_query=300,
+    num_feature_levels=4,
     with_box_refine=False,
     as_two_stage=False,
     data_preprocessor=dict(
@@ -48,9 +49,6 @@ model = dict(
     positional_encoding_cfg=dict(num_feats=128, normalize=True, offset=-0.5),
     bbox_head=dict(
         type='DeformableDETRHead',
-        num_pred=6,  # TODO: modify this
-        with_box_refine=False,
-        as_two_stage=False,
         num_classes=80,
         sync_cls_avg_factor=True,
         loss_cls=dict(

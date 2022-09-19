@@ -27,26 +27,29 @@ class DeformableDETR(TransformerDetector):
 
     def __init__(self,
                  *args,
-                 neck: OptConfigType = None,
+                 decoder_cfg: OptConfigType = None,
+                 bbox_head: OptConfigType = None,
                  with_box_refine: bool = False,
                  as_two_stage: bool = False,
+                 num_feature_levels: int = 4,
                  **kwargs) -> None:
         self.with_box_refine = with_box_refine
         self.as_two_stage = as_two_stage
-        self.num_feature_levels = neck.num_outs
-        super(DeformableDETR, self).__init__(*args, neck=neck, **kwargs)
-        # TODO: optimize with_box_refine, as_two_stage, and num_pred
-        assert self.as_two_stage == self.bbox_head.as_two_stage
-        assert self.with_box_refine == self.bbox_head.with_box_refine
-        assert self.bbox_head.num_pred == self.decoder_cfg.num_layers + 1 \
-            if self.as_two_stage else self.decoder_cfg.num_layers
+        self.num_feature_levels = num_feature_levels
+        if bbox_head is not None:
+            bbox_head.with_box_refine = with_box_refine
+            bbox_head.as_two_stage = as_two_stage
+            bbox_head.num_decoder_layers = decoder_cfg.num_layers
+
+        super(DeformableDETR, self).__init__(
+            *args, decoder_cfg=decoder_cfg, bbox_head=bbox_head, **kwargs)
 
     def _init_layers(self) -> None:
         self.positional_encoding = SinePositionalEncoding(
             **self.positional_encoding_cfg)
         self.encoder = DeformableDetrTransformerEncoder(**self.encoder_cfg)
         self.decoder = DeformableDetrTransformerDecoder(**self.decoder_cfg)
-        self.embed_dims = self.encoder.embed_dims  # TODO
+        self.embed_dims = self.encoder.embed_dims
         if not self.as_two_stage:
             self.query_embedding = nn.Embedding(self.num_query,
                                                 self.embed_dims * 2)
@@ -563,7 +566,7 @@ class DeformableDetrTransformerEncoderLayer(DetrTransformerEncoderLayer):
 
     def _init_layers(self):
         self.self_attn = MultiScaleDeformableAttention(**self.self_attn_cfg)
-        self.embed_dims = self.self_attn.embed_dims  # TODO
+        self.embed_dims = self.self_attn.embed_dims
         self.ffn = FFN(**self.ffn_cfg)
         norms_list = [
             build_norm_layer(self.norm_cfg, self.embed_dims)[1]
@@ -577,7 +580,7 @@ class DeformableDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
     def _init_layers(self):
         self.self_attn = MultiheadAttention(**self.self_attn_cfg)
         self.cross_attn = MultiScaleDeformableAttention(**self.cross_attn_cfg)
-        self.embed_dims = self.self_attn.embed_dims  # TODO
+        self.embed_dims = self.self_attn.embed_dims
         self.ffn = FFN(**self.ffn_cfg)
         norms_list = [
             build_norm_layer(self.norm_cfg, self.embed_dims)[1]
