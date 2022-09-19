@@ -20,7 +20,7 @@ def parse_args():
         '--work-dir',
         help='the directory to save the file containing evaluation metrics')
     parser.add_argument(
-        '--dump',
+        '--out',
         type=str,
         help='dump predictions to a pickle file for offline evaluation')
     parser.add_argument(
@@ -74,6 +74,22 @@ def trigger_visualization_hook(cfg, args):
     return cfg
 
 
+def add_dump_metric(args, cfg):
+    dump_metric = dict(type='DumpResults', out_file_path=args.out)
+    if isinstance(cfg.test_evaluator, (list, tuple)):
+        cfg.test_evaluator = list(cfg.test_evaluator).append(dump_metric)
+    elif isinstance(cfg.test_evaluator, dict):
+        if isinstance(cfg.test_evaluator.metric, str):
+            cfg.test_evaluator = [cfg.test_evaluator, dump_metric]
+        elif isinstance(cfg.test_evaluator.metric, (list, tuple)):
+            cfg.test_evaluator.metric = list(
+                cfg.test_evaluator.metric).append(dump_metric)
+        else:
+            cfg.test_evaluator.metric = [
+                cfg.test_evaluator.metric, dump_metric
+            ]
+
+
 def main():
     args = parse_args()
 
@@ -102,23 +118,10 @@ def main():
         cfg = trigger_visualization_hook(cfg, args)
 
     # Dump predictions
-    if args.dump is not None:
-        assert args.dump.endswith(('.pkl', '.pickle')), \
+    if args.out is not None:
+        assert args.out.endswith(('.pkl', '.pickle')), \
             'The dump file must be a pkl file.'
-        dump_metric = dict(type='DumpResults', out_file_path=args.dump)
-        if isinstance(cfg.test_evaluator, (list, tuple)):
-            cfg.test_evaluator = list(cfg.test_evaluator).append(dump_metric)
-        elif isinstance(cfg.test_evaluator, dict):
-            if 'metric' in cfg.test_evaluator:
-                if isinstance(cfg.test_evaluator.metric, (list, tuple)):
-                    cfg.test_evaluator.metric = list(
-                        cfg.test_evaluator.metric).append(dump_metric)
-                else:
-                    cfg.test_evaluator.metric = [
-                        cfg.test_evaluator.metric, dump_metric
-                    ]
-            else:
-                cfg.test_evaluator = [cfg.test_evaluator, dump_metric]
+        add_dump_metric(args, cfg)
 
     # build the runner from config
     if 'runner_type' not in cfg:
