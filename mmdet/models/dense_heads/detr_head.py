@@ -142,7 +142,7 @@ class DETRHead(BaseModule):
         head on the features of the upstream network.
 
         Args:
-            x (tuple[Tensor]): Features from the upstream network, each is
+            x (tuple[Tensor]): Features from the transformer detector, each is
                 a 4D-tensor.
             batch_data_samples (List[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
@@ -489,17 +489,17 @@ class DETRHead(BaseModule):
         return predictions
 
     def predict_by_feat(self,
-                        all_cls_scores_list: List[Tensor],
-                        all_bbox_preds_list: List[Tensor],
+                        all_cls_scores: Tensor,
+                        all_bbox_preds: Tensor,
                         batch_img_metas: List[dict],
                         rescale: bool = True) -> InstanceList:
         """Transform network outputs for a batch into bbox predictions.
 
         Args:
-            all_cls_scores_list (list[Tensor]): Classification outputs
+            all_cls_scores (Tensor): Classification outputs
                 for each feature level. Each is a 4D-tensor with shape
                 [nb_dec, bs, num_query, cls_out_channels].
-            all_bbox_preds_list (list[Tensor]): Sigmoid regression
+            all_bbox_preds (Tensor): Sigmoid regression
                 outputs for each feature level. Each is a 4D-tensor with
                 normalized coordinate format (cx, cy, w, h) and shape
                 [nb_dec, bs, num_query, 4].
@@ -520,8 +520,8 @@ class DETRHead(BaseModule):
         """
         # NOTE defaultly only using outputs from the last feature level,
         # and only the outputs from the last decoder layer is used.
-        cls_scores = all_cls_scores_list[-1]
-        bbox_preds = all_bbox_preds_list[-1]
+        cls_scores = all_cls_scores[-1]
+        bbox_preds = all_bbox_preds[-1]
 
         result_list = []
         for img_id in range(len(batch_img_metas)):
