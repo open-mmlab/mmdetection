@@ -49,6 +49,8 @@ model = dict(
     positional_encoding_cfg=dict(num_feats=128, normalize=True, offset=-0.5),
     bbox_head=dict(
         type='DeformableDETRHead',
+        # NOTE The three key word args "as_two_stage,  with_box_refine, num_decoder_layers" are set in the detector,
+        # the users should not set them in config.
         num_classes=80,
         sync_cls_avg_factor=True,
         loss_cls=dict(
