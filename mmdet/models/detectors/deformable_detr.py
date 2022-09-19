@@ -41,7 +41,7 @@ class DeformableDETR(TransformerDetector):
             bbox_head.as_two_stage = as_two_stage
             bbox_head.num_decoder_layers = decoder_cfg.num_layers
 
-        super(DeformableDETR, self).__init__(
+        super().__init__(
             *args, decoder_cfg=decoder_cfg, bbox_head=bbox_head, **kwargs)
 
     def _init_layers(self) -> None:

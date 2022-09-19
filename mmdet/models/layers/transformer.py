@@ -393,7 +393,7 @@ class DetrTransformerEncoder(BaseModule):
 
     def __init__(self, layer_cfg=None, num_layers=None, init_cfg=None):
 
-        super().__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
         if isinstance(layer_cfg, dict):
             layer_cfg = [copy.deepcopy(layer_cfg) for _ in range(num_layers)]
         else:
@@ -424,7 +424,7 @@ class DetrTransformerDecoder(BaseModule):
                  post_norm_cfg=dict(type='LN'),
                  return_intermediate=True,
                  init_cfg=None):
-        super().__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
         if isinstance(layer_cfg, dict):
             layer_cfg = [copy.deepcopy(layer_cfg) for _ in range(num_layers)]
         else:
@@ -477,7 +477,7 @@ class DetrTransformerEncoderLayer(BaseModule):
                  init_cfg=None,
                  batch_first=False):
 
-        super(DetrTransformerEncoderLayer, self).__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
         if 'batch_first' in self_attn_cfg:  # TODO
             assert batch_first == self_attn_cfg['batch_first']
         else:
@@ -537,7 +537,7 @@ class DetrTransformerDecoderLayer(BaseModule):
                  init_cfg=None,
                  batch_first=False):
 
-        super(DetrTransformerDecoderLayer, self).__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
         for attn_cfg in (self_attn_cfg, cross_attn_cfg):
             if 'batch_first' in attn_cfg:
                 assert batch_first == attn_cfg['batch_first']

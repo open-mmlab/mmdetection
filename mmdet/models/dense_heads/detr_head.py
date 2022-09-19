@@ -24,9 +24,6 @@ class DETRHead(BaseModule):
 
     See `paper: End-to-End Object Detection with Transformers
     <https://arxiv.org/pdf/2005.12872>`_ for details.
-
-    Args:
-        TODO
     """
 
     _version = 2
@@ -55,7 +52,7 @@ class DETRHead(BaseModule):
                     ])),
             test_cfg: ConfigType = dict(max_per_img=100),
             init_cfg: OptMultiConfig = None) -> None:
-        super(DETRHead, self).__init__(init_cfg=init_cfg)
+        super().__init__(init_cfg=init_cfg)
         self.bg_cls_weight = 0
         self.sync_cls_avg_factor = sync_cls_avg_factor
         class_weight = loss_cls.get('class_weight', None)
