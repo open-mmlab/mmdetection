@@ -15,7 +15,7 @@ from .transforms import (Albu, CopyPaste, CutOut, Expand, MinIoURandomCrop,
                          RandomAffine, RandomCenterCropPad, RandomCrop,
                          RandomErasing, RandomFlip, RandomShift, Resize,
                          SegRescale, YOLOXHSVRandomAug)
-from .wrappers import MultiBranch, RandomOrder
+from .wrappers import MultiBranch, ProposalBroadcaster, RandomOrder
 
 __all__ = [
     'PackDetInputs', 'ToTensor', 'ImageToTensor', 'Transpose',
@@ -29,5 +29,5 @@ __all__ = [
     'FilterAnnotations', 'Pad', 'GeomTransform', 'ColorTransform',
     'RandAugment', 'Sharpness', 'Solarize', 'SolarizeAdd', 'Posterize',
     'AutoContrast', 'Invert', 'MultiBranch', 'RandomErasing',
-    'LoadEmptyAnnotations', 'RandomOrder'
+    'LoadEmptyAnnotations', 'RandomOrder', 'ProposalBroadcaster'
 ]
