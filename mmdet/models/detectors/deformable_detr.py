@@ -197,14 +197,14 @@ class DeformableDETR(TransformerDetector):
                 each element has shape  [bs, h, w].
             query_embed (Tensor): The query embedding for decoder,
                 with shape [num_query, c].
-            mlvl_pos_embeds (list(Tensor)): The positional encoding
+            mlvl_pos_embeds (list[Tensor]): The positional encoding
                 of feats from different level, has the shape
                  [bs, embed_dims, h, w].
-            reg_branches (obj:`nn.ModuleList`): Regression heads for
+            reg_branches (obj:nn.ModuleList): Regression heads for
                 feature maps from each decoder layer. Only would
                 be passed when
                 `with_box_refine` is True. Default to None.
-            cls_branches (obj:`nn.ModuleList`): Classification heads
+            cls_branches (obj:nn.ModuleList): Classification heads
                 for feature maps from each decoder layer. Only would
                  be passed when `as_two_stage`
                  is True. Default to None.
