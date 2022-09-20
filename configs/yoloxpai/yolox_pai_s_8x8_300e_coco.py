@@ -5,12 +5,7 @@ model = dict(
     backbone=dict(
         _delete_=True,
         type='mmcls.RepVGG',
-        arch=dict(
-            num_blocks=[3, 5, 7, 3],
-            base_channels=32,
-            width_factor=[1, 1, 1, 1],
-            group_layer_map=None,
-            se_cfg=None),
+        arch='small',
         add_ppf=True,
         norm_cfg=dict(type='BN', eps=0.001, momentum=0.03),
         out_indices=(1, 2, 3),
