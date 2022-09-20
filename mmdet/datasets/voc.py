@@ -1,4 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import copy
+
 from mmdet.registry import DATASETS
 from .xml_style import XMLDataset
 
@@ -29,3 +31,17 @@ class VOCDataset(XMLDataset):
             self._metainfo['DATASET_TYPE'] = 'VOC2012'
         else:
             self._metainfo['DATASET_TYPE'] = None
+
+    @property
+    def metainfo(self) -> dict:
+        """To use `ConcatDataset` while training, need to override this function.
+        Get meta information of dataset.
+
+        Returns:
+            dict: meta information collected from ``BaseDataset.METAINFO``,
+            annotation file and metainfo argument during instantiation.
+        """
+        metainfo = copy.deepcopy(self._metainfo)
+        if 'DATASET_TYPE' in metainfo:
+            del metainfo['DATASET_TYPE']
+        return metainfo

@@ -121,19 +121,7 @@ class VOCMetric(BaseMetric):
         eval_results = OrderedDict()
         if self.metric == 'mAP':
             assert isinstance(self.iou_thrs, list)
-            dataset_type = self.dataset_meta.get('DATASET_TYPE')
-            if dataset_type in ['VOC2007', 'VOC2012']:
-                dataset_name = 'voc'
-                if dataset_type == 'VOC2007' and self.eval_mode != '11points':
-                    warnings.warn('Pascal VOC2007 uses `11points` as default '
-                                  'evaluate mode, but you are using '
-                                  f'{self.eval_mode}.')
-                elif dataset_type == 'VOC2012' and self.eval_mode != 'area':
-                    warnings.warn('Pascal VOC2012 uses `area` as default '
-                                  'evaluate mode, but you are using '
-                                  f'{self.eval_mode}.')
-            else:
-                dataset_name = self.dataset_meta['CLASSES']
+            dataset_name = self.dataset_meta['CLASSES']
 
             mean_aps = []
             for iou_thr in self.iou_thrs:
