@@ -105,7 +105,7 @@ class DETR(TransformerDetector):
             key_pos=pos_embed,
             query_pos=query_embed,
             key_padding_mask=masks)
-        out_dec = out_dec.transpose(1, 2)
+        out_dec[0] = out_dec[0].transpose(1, 2)
         if return_memory:
             memory = memory.permute(1, 2, 0).reshape(bs, c, h, w)
             return out_dec, memory
