@@ -38,18 +38,20 @@ class DeformableDETRHead(DETRHead):
 
     def __init__(self,
                  *args,
-                 num_pred: int = 6,
                  as_two_stage: bool = False,
                  with_box_refine: bool = False,
+                 num_decoder_layers: int = 6,
                  **kwargs) -> None:
-        self.num_pred = num_pred
+        # NOTE The three key word args are set in the detector,
+        # the users do not need to set them in config.
         self.as_two_stage = as_two_stage
         self.with_box_refine = with_box_refine
+        self.num_decoder_layers = num_decoder_layers
+
         super().__init__(*args, **kwargs)
 
     def _init_layers(self) -> None:
         """Initialize classification branch and regression branch of head."""
-
         fc_cls = Linear(self.embed_dims, self.cls_out_channels)
         reg_branch = []
         for _ in range(self.num_reg_fcs):
@@ -58,20 +60,21 @@ class DeformableDETRHead(DETRHead):
         reg_branch.append(Linear(self.embed_dims, 4))
         reg_branch = nn.Sequential(*reg_branch)
 
-        def _get_clones(module, N):
-            return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
-
         # last reg_branch is used to generate proposal from
         # encode feature map when as_two_stage is True.
-        if self.with_box_refine:
-            self.cls_branches = _get_clones(fc_cls, self.num_pred)
-            self.reg_branches = _get_clones(reg_branch, self.num_pred)
-        else:
+        num_pred = (self.num_decoder_layers + 1) if \
+            self.as_two_stage else self.num_decoder_layers
 
+        if self.with_box_refine:
+            self.cls_branches = nn.ModuleList(
+                [copy.deepcopy(fc_cls) for _ in range(num_pred)])
+            self.reg_branches = nn.ModuleList(
+                [copy.deepcopy(reg_branch) for _ in range(num_pred)])
+        else:
             self.cls_branches = nn.ModuleList(
                 [fc_cls for _ in range(self.num_pred)])
             self.reg_branches = nn.ModuleList(
-                [reg_branch for _ in range(self.num_pred)])
+                [reg_branch for _ in range(num_pred)])
 
     def init_weights(self) -> None:
         """Initialize weights of the DeformDETR head."""
@@ -230,12 +233,11 @@ class DeformableDETRHead(DETRHead):
             *outs, batch_img_metas=batch_img_metas, rescale=rescale)
         return predictions
 
-    def predict_by_feat(
-            self,  # TODO: why overload
-            all_cls_scores: Tensor,
-            all_bbox_preds: Tensor,
-            batch_img_metas: List[Dict],
-            rescale: bool = False) -> InstanceList:
+    def predict_by_feat(self,
+                        all_cls_scores: Tensor,
+                        all_bbox_preds: Tensor,
+                        batch_img_metas: List[Dict],
+                        rescale: bool = False) -> InstanceList:
         """Transform a batch of output features extracted from the head into
         bbox results.
 

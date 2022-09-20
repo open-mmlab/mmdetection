@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from abc import ABCMeta, abstractmethod
-from typing import Dict, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 from torch import Tensor
 
@@ -78,9 +78,10 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
             batch_data_samples, results_list)
         return batch_data_samples
 
-    def _forward(self,
-                 batch_inputs: Tensor,
-                 batch_data_samples: OptSampleList = None) -> Tuple[Tensor]:
+    def _forward(
+            self,
+            batch_inputs: Tensor,
+            batch_data_samples: OptSampleList = None) -> Tuple[List[Tensor]]:
         """Network forward process.
 
         Includes backbone, neck and head forward without post-processing.
@@ -112,7 +113,8 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
             self,
             img_feats: Tuple[Tensor],
             batch_data_samples: OptSampleList = None) -> Dict[str, Tensor]:
-        """1. Construct batch padding mask.
+        """This function creates the inputs of the Transformer.
+           1. Construct batch padding mask.
            2. Prepare transformer_inputs_dict."""
         pass
 

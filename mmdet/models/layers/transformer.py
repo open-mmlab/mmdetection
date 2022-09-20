@@ -6,8 +6,7 @@ from typing import Sequence
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import (Linear, build_activation_layer, build_conv_layer,
-                      build_norm_layer)
+from mmcv.cnn import Linear, build_activation_layer, build_conv_layer, build_norm_layer
 from mmcv.cnn.bricks.transformer import FFN, MultiheadAttention
 from mmengine.model import BaseModule, ModuleList
 from mmengine.utils import to_2tuple
@@ -447,7 +446,7 @@ class DetrTransformerEncoder(BaseModule):
 
     def __init__(self, layer_cfg=None, num_layers=None, init_cfg=None):
 
-        super().__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
         if isinstance(layer_cfg, dict):
             layer_cfg = [copy.deepcopy(layer_cfg) for _ in range(num_layers)]
         else:
@@ -478,7 +477,7 @@ class DetrTransformerDecoder(BaseModule):
                  post_norm_cfg=dict(type='LN'),
                  return_intermediate=True,
                  init_cfg=None):
-        super().__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
         if isinstance(layer_cfg, dict):
             layer_cfg = [copy.deepcopy(layer_cfg) for _ in range(num_layers)]
         else:
@@ -489,31 +488,22 @@ class DetrTransformerDecoder(BaseModule):
         self.post_norm_cfg = post_norm_cfg
         self.return_intermediate = return_intermediate
         self._init_layers()
-        self.embed_dims = self.layers[0].embed_dims  # TODO
-        self.post_norm = build_norm_layer(self.post_norm_cfg,
-                                          self.embed_dims)[1]
 
     def _init_layers(self):
         self.layers = ModuleList()
         for i in range(self.num_layers):
             self.layers.append(
                 DetrTransformerDecoderLayer(**self.layer_cfg[i]))
+        self.embed_dims = self.layers[0].embed_dims  # TODO
+        self.post_norm = build_norm_layer(self.post_norm_cfg,
+                                          self.embed_dims)[1]
 
     def forward(self, query, *args, **kwargs):
         intermediate = []
         for layer in self.layers:
             query = layer(query, *args, **kwargs)
             if self.return_intermediate:
-                if self.post_norm is not None:
-                    intermediate.append(self.post_norm(
-                        query))  # todo: return_intermediate and postnorm
-                else:
-                    intermediate.append(query)
-        if self.post_norm is not None:
-            query = self.post_norm(query)
-            if self.return_intermediate:
-                intermediate.pop()
-                intermediate.append(query)  # TODO: ?
+                intermediate.append(self.post_norm(query))
 
         if self.return_intermediate:
             return torch.stack(intermediate)
@@ -535,7 +525,7 @@ class DetrTransformerEncoderLayer(BaseModule):
                  init_cfg=None,
                  batch_first=False):
 
-        super(DetrTransformerEncoderLayer, self).__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
         if 'batch_first' in self_attn_cfg:  # TODO
             assert batch_first == self_attn_cfg['batch_first']
         else:
@@ -595,7 +585,7 @@ class DetrTransformerDecoderLayer(BaseModule):
                  init_cfg=None,
                  batch_first=False):
 
-        super(DetrTransformerDecoderLayer, self).__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
         for attn_cfg in (self_attn_cfg, cross_attn_cfg):
             if 'batch_first' in attn_cfg:
                 assert batch_first == attn_cfg['batch_first']

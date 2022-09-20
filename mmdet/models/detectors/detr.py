@@ -18,15 +18,15 @@ class DETR(TransformerDetector):
     r"""Implementation of `DETR: End-to-End Object Detection with
     Transformers <https://arxiv.org/pdf/2005.12872>`_"""
 
-    def __init__(self, *args, **kwargs) -> None:
-        super(DETR, self).__init__(*args, **kwargs)
-
     def _init_layers(self) -> None:
         self.positional_encoding = SinePositionalEncoding(
             **self.positional_encoding_cfg)
         self.encoder = DetrTransformerEncoder(**self.encoder_cfg)
         self.decoder = DetrTransformerDecoder(**self.decoder_cfg)
         self.embed_dims = self.encoder.embed_dims
+        # NOTE The embed_dims is typically passed from the inside out.
+        # For example in DETR, The embed_dims is passed as
+        # self_attn -> the first encoder layer -> encoder -> detector.
         self.query_embedding = nn.Embedding(self.num_query, self.embed_dims)
 
         num_feats = self.positional_encoding.num_feats
@@ -35,7 +35,7 @@ class DETR(TransformerDetector):
             f'Found {self.embed_dims} and {num_feats}.'
 
     def init_weights(self) -> None:
-        super(TransformerDetector, self).init_weights()
+        super().init_weights()
         self._init_transformer_weights()
 
     def _init_transformer_weights(self) -> None:
@@ -105,7 +105,7 @@ class DETR(TransformerDetector):
             key_pos=pos_embed,
             query_pos=query_embed,
             key_padding_mask=masks)
-        out_dec = out_dec.transpose(1, 2)
+        out_dec[0] = out_dec[0].transpose(1, 2)
         if return_memory:
             memory = memory.permute(1, 2, 0).reshape(bs, c, h, w)
             return out_dec, memory
