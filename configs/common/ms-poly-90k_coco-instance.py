@@ -11,11 +11,12 @@ data_root = 'data/coco/'
 #     }))
 file_client_args = dict(backend='disk')
 
+backend = 'pillow'
 train_pipeline = [
     dict(
         type='LoadImageFromFile',
         file_client_args=file_client_args,
-        imdecode_backend='pillow'),
+        imdecode_backend=backend),
     dict(
         type='LoadAnnotations',
         with_bbox=True,
@@ -26,16 +27,16 @@ train_pipeline = [
         scales=[(1333, 640), (1333, 672), (1333, 704), (1333, 736),
                 (1333, 768), (1333, 800)],
         keep_ratio=True,
-        backend='pillow'),
-    dict(type='RandomFlip', prob=0.0),
+        backend=backend),
+    dict(type='RandomFlip', prob=0.5),
     dict(type='PackDetInputs')
 ]
 test_pipeline = [
     dict(
         type='LoadImageFromFile',
         file_client_args=file_client_args,
-        imdecode_backend='pillow'),
-    dict(type='Resize', scale=(1333, 800), keep_ratio=True, backend='pillow'),
+        imdecode_backend=backend),
+    dict(type='Resize', scale=(1333, 800), keep_ratio=True, backend=backend),
     # If you don't have a gt annotation, delete the pipeline
     dict(
         type='LoadAnnotations',

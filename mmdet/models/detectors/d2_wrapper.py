@@ -7,14 +7,13 @@ from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS
-from mmdet.structures import OptSampleList, SampleList
+from mmdet.structures import SampleList
 from mmdet.structures.bbox import BaseBoxes
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 from mmdet.utils import ConfigType, OptConfigType, OptMultiConfig
 from .base import BaseDetector
 
 try:
-    # TODO: Whether need to check d2 version
     import detectron2
     from detectron2.config import get_cfg
     from detectron2.modeling import build_model
@@ -40,9 +39,9 @@ def _to_cfgnode_list(cfg: ConfigType,
     Returns:
         tuple:
 
-            - config_list: A list contains the key and value of ConfigDict.
-            - father_name (str): The father name add before the key.
-              Defaults to "MODEL".
+        - config_list: A list contains the key and value of ConfigDict.
+        - father_name (str): The father name add before the key.
+          Defaults to "MODEL".
     """
     for key, value in cfg.items():
         name = f'{father_name}.{key.upper()}'
@@ -58,7 +57,27 @@ def _to_cfgnode_list(cfg: ConfigType,
 
 def add_d2_pred_to_datasample(data_samples: SampleList,
                               d2_results_list: list) -> SampleList:
-    """"""
+    """Convert the Detectron2's result to DetDataSample.
+
+    Args:
+        data_samples (list[:obj:`DetDataSample`]): The batch
+            data samples. It usually includes information such
+            as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+        d2_results_list (list): The list of the results of Detectron2's model.
+
+    Returns:
+        list[:obj:`DetDataSample`]: Detection results of the
+        input images. Each DetDataSample usually contain
+        'pred_instances'. And the ``pred_instances`` usually
+        contains following keys.
+
+        - scores (Tensor): Classification scores, has a shape
+            (num_instance, )
+        - labels (Tensor): Labels of bboxes, has a shape
+            (num_instances, ).
+        - bboxes (Tensor): Has a shape (num_instances, 4),
+            the last dimension 4 arrange as (x1, y1, x2, y2).
+    """
     assert len(data_samples) == len(d2_results_list)
     for data_sample, d2_results in zip(data_samples, d2_results_list):
         d2_instance = d2_results['instances']
@@ -77,6 +96,23 @@ def add_d2_pred_to_datasample(data_samples: SampleList,
 
 @MODELS.register_module()
 class Detectron2Wrapper(BaseDetector):
+    """Wrapper of a Detectron2 model. Input/output formats of this class follow
+    MMDetection's convention, so a Detectron2 model can be trained and
+    evaluated in MMDetection.
+
+    Args:
+        d2_detector (:obj:`ConfigDict` or dict): The module config of
+            Detectron2.
+        bgr_to_rgb (bool): whether to convert image from BGR to RGB.
+            Defaults to False.
+        rgb_to_bgr (bool): whether to convert image from RGB to RGB.
+            Defaults to False.
+        data_preprocessor (:obj:`ConfigDict` or dict, optional): Config of
+            :class:`DetDataPreprocessor` to process the input data.
+            Defaults to None.
+        init_cfg (:obj:`ConfigDict` or dict, optional): the config to control
+            the initialization. Defaults to None.
+    """
 
     def __init__(self,
                  d2_detector: ConfigType,
@@ -85,7 +121,7 @@ class Detectron2Wrapper(BaseDetector):
                  data_preprocessor: OptConfigType = None,
                  init_cfg: OptMultiConfig = None) -> None:
         if detectron2 is None:
-            raise ImportError('Please install detectron2 first')
+            raise ImportError('Please install Detectron2 first')
         assert not (bgr_to_rgb and rgb_to_bgr), (
             '`bgr2rgb` and `rgb2bgr` cannot be set to True at the same time')
         if data_preprocessor is not None:
@@ -106,9 +142,9 @@ class Detectron2Wrapper(BaseDetector):
     def init_weights(self) -> None:
         """Initialization Backbone.
 
-        NOTE: The initialization of other layers are in detectron2,
+        NOTE: The initialization of other layers are in Detectron2,
         if users want to change the initialization way, please
-        change the code in detectron2.
+        change the code in Detectron2.
         """
         from detectron2.checkpoint import DetectionCheckpointer
         checkpointer = DetectionCheckpointer(model=self.d2_model)
@@ -116,7 +152,21 @@ class Detectron2Wrapper(BaseDetector):
 
     def loss(self, batch_inputs: Tensor,
              batch_data_samples: SampleList) -> Union[dict, tuple]:
-        """Calculate losses from a batch of inputs and data samples."""
+        """Calculate losses from a batch of inputs and data samples.
+
+        The inputs will first convert to the Detectron2 type and feed into
+        D2 models.
+
+        Args:
+            batch_inputs (Tensor): Input images of shape (N, C, H, W).
+                These should usually be mean centered and std scaled.
+            batch_data_samples (list[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+
+        Returns:
+            dict: A dictionary of loss components.
+        """
         d2_batched_inputs = self._convert_to_batched_d2_inputs(
             batch_inputs=batch_inputs,
             batch_data_samples=batch_data_samples,
@@ -131,7 +181,32 @@ class Detectron2Wrapper(BaseDetector):
     def predict(self, batch_inputs: Tensor,
                 batch_data_samples: SampleList) -> SampleList:
         """Predict results from a batch of inputs and data samples with post-
-        processing."""
+        processing.
+
+        The inputs will first convert to the Detectron2 type and feed into
+        D2 models. And the results will convert back to the MMDet type.
+
+        Args:
+            batch_inputs (Tensor): Input images of shape (N, C, H, W).
+                These should usually be mean centered and std scaled.
+            batch_data_samples (list[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+
+
+        Returns:
+            list[:obj:`DetDataSample`]: Detection results of the
+            input images. Each DetDataSample usually contain
+            'pred_instances'. And the ``pred_instances`` usually
+            contains following keys.
+
+            - scores (Tensor): Classification scores, has a shape
+                (num_instance, )
+            - labels (Tensor): Labels of bboxes, has a shape
+                (num_instances, ).
+            - bboxes (Tensor): Has a shape (num_instances, 4),
+                the last dimension 4 arrange as (x1, y1, x2, y2).
+        """
         d2_batched_inputs = self._convert_to_batched_d2_inputs(
             batch_inputs=batch_inputs,
             batch_data_samples=batch_data_samples,
@@ -143,9 +218,7 @@ class Detectron2Wrapper(BaseDetector):
 
         return batch_data_samples
 
-    def _forward(self,
-                 batch_inputs: Tensor,
-                 batch_data_samples: OptSampleList = None):
+    def _forward(self, *args, **kwargs):
         """Network forward process.
 
         Usually includes backbone, neck and head forward without any post-
@@ -154,7 +227,7 @@ class Detectron2Wrapper(BaseDetector):
         raise NotImplementedError(
             f'`_forward` is not implemented in {self.__class__.__name__}')
 
-    def extract_feat(self, batch_inputs: Tensor):
+    def extract_feat(self, *args, **kwargs):
         """Extract features from images.
 
         `extract_feat` will not be used in obj:``Detectron2Wrapper``.
@@ -165,6 +238,25 @@ class Detectron2Wrapper(BaseDetector):
                                       batch_inputs: Tensor,
                                       batch_data_samples: SampleList,
                                       training=True) -> list:
+        """Convert inputs type to support Detectron2's model.
+
+        Args:
+            batch_inputs (Tensor): Input images of shape (N, C, H, W).
+                These should usually be mean centered and std scaled.
+            batch_data_samples (list[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+            training (bool): Whether to enable training time processing.
+
+        Returns:
+            list[dict]: A list of dict, which will be fed into Detectron2's
+            model. And the dict usually contains following keys.
+
+            - image (Tensor): Image in (C, H, W) format.
+            - instances (Instances): GT Instance.
+            - height (int): the output height resolution of the model
+            - width (int): the output width resolution of the model
+        """
         from detectron2.data.detection_utils import filter_empty_instances
         from detectron2.structures import Boxes, Instances
 
@@ -185,6 +277,8 @@ class Detectron2Wrapper(BaseDetector):
             d2_instances = Instances(meta_info['img_shape'])
 
             gt_boxes = gt_instances.bboxes
+            # TODO: use mmdet.structures.box.get_box_tensor after PR 8658
+            #  has merged
             if isinstance(gt_boxes, BaseBoxes):
                 gt_boxes = gt_boxes.tensor
             d2_instances.gt_boxes = Boxes(gt_boxes)
