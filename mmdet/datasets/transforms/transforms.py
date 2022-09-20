@@ -204,7 +204,7 @@ class FixShapeResize(Resize):
         width (int): width for resizing.
         height (int): height for resizing.
             Defaults to None.
-        pad_val (Number | dict[str, Number], optional) - Padding value for if
+        pad_val (Number | dict[str, Number], optional): Padding value for if
             the pad_mode is "constant".  If it is a single number, the value
             to pad the image is the number and to pad the semantic
             segmentation map is 255. If it is a dict, it should have the
