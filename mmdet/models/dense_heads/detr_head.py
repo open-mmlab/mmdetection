@@ -497,8 +497,8 @@ class DETRHead(BaseModule):
         """Transform network outputs for a batch into bbox predictions.
 
         Args:
-            all_cls_scores (Tensor): Classification outputs
-                for each feature level. Each is a 4D-tensor with shape
+            all_cls_scores (Tensor): Classification outputs.
+                Each is a 4D-tensor with shape
                 [nb_dec, bs, num_query, cls_out_channels].
             all_bbox_preds (Tensor): Sigmoid regression
                 outputs for each feature level. Each is a 4D-tensor with
