@@ -137,13 +137,14 @@ class DETRHead(BaseModule):
             self.reg_ffn(outs_dec))).sigmoid()
         return all_cls_scores, all_bbox_preds
 
-    def loss(self, x: Tuple[Tensor], batch_data_samples: SampleList) -> dict:
+    def loss(self, x: Tensor, batch_data_samples: SampleList) -> dict:
         """Perform forward propagation and loss calculation of the detection
         head on the features of the upstream network.
 
         Args:
-            x (tuple[Tensor]): Features from the transformer detector, each is
-                a 4D-tensor.
+            x (Tensor): Feature from the transformer decoder, \ 
+                shape [nb_dec, bs, num_query, cls_out_channels] or 
+                [nb_dec, num_query, bs, cls_out_channels].
             batch_data_samples (List[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
