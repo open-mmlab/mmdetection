@@ -466,11 +466,6 @@ class DetrTransformerDecoder(BaseModule):
             query = layer(query, *args, **kwargs)
             if self.return_intermediate:
                 intermediate.append(self.post_norm(query))
-        if self.post_norm is not None:
-            query = self.post_norm(query)
-            if self.return_intermediate:
-                intermediate.pop()
-                intermediate.append(query)
 
         if self.return_intermediate:
             return torch.stack(intermediate)
