@@ -405,7 +405,7 @@ class MLP(nn.Module):
         return x
 class DetrTransformerEncoder(BaseModule):
 
-    def __init__(self, layer_cfg=None, num_layers=None, init_cfg=None, **kwargs):
+    def __init__(self, layer_cfg=None, num_layers=None, init_cfg=None):
 
         super().__init__(init_cfg=init_cfg)
         if isinstance(layer_cfg, dict):
@@ -437,8 +437,7 @@ class DetrTransformerDecoder(BaseModule):
                  num_layers=None,
                  post_norm_cfg=dict(type='LN'),
                  return_intermediate=True,
-                 init_cfg=None,
-                 **kwargs):
+                 init_cfg=None):
         super().__init__(init_cfg=init_cfg)
         if isinstance(layer_cfg, dict):
             layer_cfg = [copy.deepcopy(layer_cfg) for _ in range(num_layers)]
@@ -485,8 +484,7 @@ class DetrTransformerEncoderLayer(BaseModule):
                      act_cfg=dict(type='ReLU', inplace=True)),
                  norm_cfg=dict(type='LN'),
                  init_cfg=None,
-                 batch_first=False,
-                 **kwargs):
+                 batch_first=False):
 
         super().__init__(init_cfg=init_cfg)
         if 'batch_first' in self_attn_cfg:  # TODO
@@ -546,8 +544,7 @@ class DetrTransformerDecoderLayer(BaseModule):
                  ),
                  norm_cfg=dict(type='LN'),
                  init_cfg=None,
-                 batch_first=False,
-                 **kwargs):
+                 batch_first=False):
 
         super().__init__(init_cfg=init_cfg)
         for attn_cfg in (self_attn_cfg, cross_attn_cfg):
@@ -647,8 +644,7 @@ class DynamicConv(BaseModule):
                  with_proj=True,
                  act_cfg=dict(type='ReLU', inplace=True),
                  norm_cfg=dict(type='LN'),
-                 init_cfg=None,
-                 **kwargs):
+                 init_cfg=None):
         super(DynamicConv, self).__init__(init_cfg)
         self.in_channels = in_channels
         self.feat_channels = feat_channels
