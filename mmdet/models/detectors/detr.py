@@ -3,7 +3,6 @@ from typing import Any, Dict, Tuple, Union
 
 import torch
 import torch.nn.functional as F
-from mmcv.cnn import Conv2d
 from mmengine.model import xavier_init
 from torch import Tensor, nn
 
@@ -11,7 +10,7 @@ from mmdet.registry import MODELS
 from mmdet.structures import OptSampleList
 from ..layers import (DetrTransformerDecoder, DetrTransformerEncoder,
                       SinePositionalEncoding)
-from .detection_transformer import TransformerDetector
+from .base_detr import TransformerDetector
 
 
 @MODELS.register_module()
@@ -23,17 +22,11 @@ class DETR(TransformerDetector):
         super(DETR, self).__init__(*args, **kwargs)
 
     def _init_layers(self) -> None:
-        # initialize encoder, decoder, query_embed, positional_encoding
-        self._init_transformer()
-        # initialize input projection
-        self._init_input_proj()  # TODO: Can it be replaced by ChannelMapper?
-
-    def _init_transformer(self) -> None:
         self.positional_encoding = SinePositionalEncoding(
             **self.positional_encoding_cfg)
         self.encoder = DetrTransformerEncoder(**self.encoder_cfg)
         self.decoder = DetrTransformerDecoder(**self.decoder_cfg)
-        self.embed_dims = self.encoder.embed_dims  # TODO
+        self.embed_dims = self.encoder.embed_dims
         self.query_embedding = nn.Embedding(self.num_query, self.embed_dims)
 
         num_feats = self.positional_encoding.num_feats
@@ -41,16 +34,11 @@ class DETR(TransformerDetector):
             f'embed_dims should be exactly 2 times of num_feats. ' \
             f'Found {self.embed_dims} and {num_feats}.'
 
-    def _init_input_proj(self) -> None:
-        in_channels = self.backbone.feat_dim  # TODO: Is this correct stably?
-        self.input_proj = Conv2d(in_channels, self.embed_dims, kernel_size=1)
-
-    def init_weights(self) -> None:  # TODO
+    def init_weights(self) -> None:
         super(TransformerDetector, self).init_weights()
         self._init_transformer_weights()
-        self._is_init = True  # TODO why?
 
-    def _init_transformer_weights(self) -> None:  # TODO
+    def _init_transformer_weights(self) -> None:
         # follow the DetrTransformer to init parameters
         for coder in [self.encoder, self.decoder]:
             for m in coder.modules():
@@ -62,37 +50,34 @@ class DETR(TransformerDetector):
             img_feats: Tuple[Tensor],
             batch_data_samples: OptSampleList = None) -> Dict[str, Tensor]:
         feat = img_feats[-1]
-        # construct binary masks which used for the transformer.
-        # NOTE following the official DETR repo, non-zero values representing
-        # ignored positions, while zero values means valid positions.
         batch_size = feat.size(0)
-        if batch_data_samples is not None:
-            batch_input_shape = batch_data_samples[0].batch_input_shape  # noqa
-            # TODO: should there be an assert about equal batch_input_shape?
-            img_shape_list = [
-                sample.img_shape  # noqa
-                for sample in batch_data_samples
-            ]
-        else:
-            batch_input_shape = feat.shape
-            # TODO: should the batch_data_samples be OptSampleList?
-            img_shape_list = [feat.shape for _ in batch_size]
+        # construct binary masks which used for the transformer.
+        assert batch_data_samples is not None
+        batch_input_shape = batch_data_samples[0].batch_input_shape
+        img_shape_list = [
+            sample.img_shape  # noqa
+            for sample in batch_data_samples
+        ]
 
         input_img_h, input_img_w = batch_input_shape
         masks = feat.new_ones((batch_size, input_img_h, input_img_w))
         for img_id in range(batch_size):
             img_h, img_w = img_shape_list[img_id]
             masks[img_id, :img_h, :img_w] = 0
+        # NOTE following the official DETR repo, non-zero values representing
+        # ignored positions, while zero values means valid positions.
 
-        feat = self.input_proj(feat)
-        # interpolate masks to have the same spatial shape with feat
+        # prepare transformer_inputs_dict
         masks = F.interpolate(
             masks.unsqueeze(1), size=feat.shape[-2:]).to(torch.bool).squeeze(1)
-        # position encoding
         pos_embed = self.positional_encoding(masks)  # [bs, embed_dim, h, w]
 
-        seq_feats = dict(feat=feat, masks=masks, pos_embed=pos_embed)
-        return seq_feats  # noqa
+        transformer_inputs_dict = dict(
+            feat=feat,
+            masks=masks,
+            pos_embed=pos_embed,
+            query_embed=self.query_embedding.weight)
+        return transformer_inputs_dict  # noqa
 
     def forward_transformer(
             self,
@@ -122,8 +107,6 @@ class DETR(TransformerDetector):
             key_padding_mask=masks)
         out_dec = out_dec.transpose(1, 2)
         if return_memory:
-            # TODO: The original output is 'out_dec, memory', I kept it here.
             memory = memory.permute(1, 2, 0).reshape(bs, c, h, w)
-            return tuple([out_dec]), tuple([memory])
-        return tuple([out_dec])
-        # TODO: For keeping the multi_apply in DETRHead.forward
+            return out_dec, memory
+        return out_dec

@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import List, Tuple
+from typing import Tuple
 
 import torch.nn as nn
 from mmcv.cnn import Linear
@@ -7,8 +7,9 @@ from mmengine.model import bias_init_with_prob, constant_init
 from torch import Tensor
 
 from mmdet.registry import MODELS
+from mmdet.structures import SampleList
+from mmdet.utils import InstanceList
 from ..layers import MLP, inverse_sigmoid
-from ..utils import multi_apply
 from .detr_head import DETRHead
 
 
@@ -31,7 +32,7 @@ class DABDETRHead(DETRHead):
             # bbox_embed_diff_each_layer=False,
             **kwargs) -> None:
         # self.bbox_embed_diff_each_layer = bbox_embed_diff_each_layer
-        super(DABDETRHead, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def _init_layers(self) -> None:
         """Initialize layers of the transformer head."""
@@ -39,18 +40,9 @@ class DABDETRHead(DETRHead):
         self.fc_cls = Linear(self.embed_dims, self.cls_out_channels)
         # reg branch
         self.fc_reg = MLP(self.embed_dims, self.embed_dims, 4, 3)
-        # self.activate = nn.ReLU()
-        # self.reg_ffn = FFN(
-        #     self.embed_dims,
-        #     self.embed_dims,
-        #     self.num_reg_fcs,
-        #     dict(type='ReLU', inplace=True),
-        #     dropout=0.0,
-        #     add_residual=False)
-        # # NOTE the activations of reg_branch is the same as those in
-        # # transformer, but they are actually different in Conditional DETR
-        # # and DAB DETR (prelu in transformer and relu in reg_branch)
-        # self.fc_reg = Linear(self.embed_dims, 4)
+        # NOTE the activations of reg_branch is the same as those in
+        # transformer, but they are actually different in Conditional DETR
+        # and DAB DETR (prelu in transformer and relu in reg_branch)
 
     # def _load_from_state_dict  # TODO
 
@@ -60,8 +52,8 @@ class DABDETRHead(DETRHead):
             nn.init.constant_(self.fc_cls.bias, bias_init)
         constant_init(self.fc_reg.layers[-1], 0., bias=0.)
 
-    def forward_single(self, outs_dec: Tensor,
-                       reference: Tensor) -> Tuple[Tensor, Tensor]:
+    def forward(self, outs_dec: Tensor,
+                reference: Tensor) -> Tuple[Tensor, Tensor]:
         """"Forward function for a single feature level.
 
         Args: TODO
@@ -84,25 +76,60 @@ class DABDETRHead(DETRHead):
         all_bbox_preds = tmp.sigmoid()
         return all_cls_scores, all_bbox_preds
 
-    def forward(self, x: List[Tensor],
-                refs: List[Tensor]) -> Tuple[List[Tensor], List[Tensor]]:
-        """Forward function.
+    def loss(self, outs_dec: Tensor, reference: Tensor,
+             batch_data_samples: SampleList) -> dict:
+        """Perform forward propagation and loss calculation of the detection
+        head on the features of the upstream network.
 
         Args:
-            x:
-            TODO
+            x (tuple[Tensor]): Outputs from the transformer detector, each is
+                a 4D-tensor.
+            batch_data_samples (List[:obj:`DetDataSample`]): The Data
+                Samples. It usually includes information such as
+                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
 
         Returns:
-            tuple[list[Tensor], list[Tensor]]: Outputs for all scale levels.
-
-            - all_cls_scores_list (list[Tensor]): Classification scores \
-            for each scale level. Each is a 4D-tensor with shape \
-            [nb_dec, bs, num_query, cls_out_channels]. Note \
-            `cls_out_channels` should includes background.
-            - all_bbox_preds_list (list[Tensor]): Sigmoid regression \
-            outputs for each scale level. Each is a 4D-tensor with \
-            normalized coordinate format (cx, cy, w, h) and shape \
-            [nb_dec, bs, num_query, 4].
+            dict: A dictionary of loss components.
         """
+        batch_gt_instances = []
+        batch_img_metas = []
+        for data_sample in batch_data_samples:
+            batch_img_metas.append(data_sample.metainfo)
+            batch_gt_instances.append(data_sample.gt_instances)
 
-        return multi_apply(self.forward_single, x, refs)
+        outs = self(outs_dec, reference)
+        loss_inputs = outs + (batch_gt_instances, batch_img_metas)
+        losses = self.loss_by_feat(*loss_inputs)
+        return losses
+
+    def predict(self,
+                outs_dec: Tensor,
+                reference: Tensor,
+                batch_data_samples: SampleList,
+                rescale: bool = True) -> InstanceList:
+        """Perform forward propagation of the detection head and predict
+        detection results on the features of the upstream network. Over-write
+        because img_metas are needed as inputs for bbox_head.
+
+        Args:
+            x (tuple[Tensor]): Multi-level features from the
+                upstream network, each is a 4D-tensor.
+            batch_data_samples (List[:obj:`DetDataSample`]): The Data
+                Samples. It usually includes information such as
+                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+            rescale (bool, optional): Whether to rescale the results.
+                Defaults to True.
+
+        Returns:
+            list[obj:`InstanceData`]: Detection results of each image
+            after the post process.
+        """
+        batch_img_metas = [
+            data_samples.metainfo for data_samples in batch_data_samples
+        ]
+
+        outs = self(outs_dec, reference)
+
+        predictions = self.predict_by_feat(
+            *outs, batch_img_metas=batch_img_metas, rescale=rescale)
+        return predictions

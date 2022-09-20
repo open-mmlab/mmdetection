@@ -3,6 +3,10 @@ _base_ = [
 ]
 model = dict(
     type='DABDETR',
+    num_query=300,  # custom params for dab-detr
+    iter_update=True,
+    random_refpoints_xy=False,
+    num_patterns=0,
     data_preprocessor=dict(
         type='DetDataPreprocessor',
         mean=[123.675, 116.28, 103.53],
@@ -19,6 +23,14 @@ model = dict(
         norm_eval=True,
         style='pytorch',
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
+    neck=dict(
+        type='ChannelMapper',
+        in_channels=[2048],
+        kernel_size=1,
+        out_channels=256,
+        act_cfg=None,
+        norm_cfg=None,
+        num_outs=1),
     encoder_cfg=dict(
         num_layers=6,
         layer_cfg=dict(
@@ -29,8 +41,7 @@ model = dict(
                 num_fcs=2,
                 ffn_drop=0.,
                 act_cfg=dict(type='PReLU')))),
-    num_query=300,
-    decoder_cfg=dict(  # TODO: Need to refactor
+    decoder_cfg=dict(
         num_layers=6,
         query_dim=4,
         query_scale_type='cond_elewise',
@@ -43,7 +54,7 @@ model = dict(
                 num_heads=8,
                 attn_dropout=0.,
                 proj_drop=0.,
-                cross_attn=True),  # TODO: add a param to determine msa or mca
+                cross_attn=True),
             ffn_cfg=dict(
                 embed_dims=256,
                 feedforward_channels=2048,
@@ -52,18 +63,17 @@ model = dict(
                 act_cfg=dict(type='PReLU'))),
         return_intermediate=True),
     positional_encoding_cfg=dict(
-        num_feats=128, temperatureH=20, temperatureW=20,
-        normalize=True),  # TODO: SinePositionalEncodingHW
-    bbox_head=dict(  # TODO: need to refactor
+        num_feats=128, temperatureH=20, temperatureW=20, normalize=True),
+    bbox_head=dict(
         type='DABDETRHead',
-        num_classes=80,
+        num_classes=80,  # default 80, 91 to align with official repo
         embed_dims=256,
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
             gamma=2.0,
             alpha=0.25,
-            loss_weight=1.0),  # TODO: weight of cls loss and cls cost
+            loss_weight=1.0),
         loss_bbox=dict(type='L1Loss', loss_weight=5.0),
         loss_iou=dict(type='GIoULoss', loss_weight=2.0)),
     # training and testing settings
@@ -115,7 +125,12 @@ train_pipeline = [
                     ]]),
     dict(type='PackDetInputs')
 ]
-train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
+train_dataloader = dict(
+    batch_size=4,  # default 2 * 8, use 4 * 4
+    num_workers=2,  # default 2, 0 for debug (persistent_workers=False)
+    persistent_workers=False,
+    # num_workers must > 0 when persistent_workers is True
+    dataset=dict(pipeline=train_pipeline))
 
 # optimizer
 optim_wrapper = dict(
@@ -126,10 +141,9 @@ optim_wrapper = dict(
         custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
 
 # learning policy
-max_epochs = 50
+max_epochs = 50  # default 50 epochs, 1 epoch for debug train
 train_cfg = dict(
-    type='EpochBasedTrainLoop', max_epochs=max_epochs,
-    val_interval=1)  # TODO: save best eval, checkpoint save
+    type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 
@@ -139,13 +153,21 @@ param_scheduler = [
         begin=0,
         end=max_epochs,
         by_epoch=True,
-        milestones=[40],
+        milestones=[40],  # default 40 epochs, 1 epoch for debug train
         gamma=0.1)
 ]
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (2 samples per GPU)
-auto_scale_lr = dict(base_batch_size=16)
+auto_scale_lr = dict(base_batch_size=16, enable=True)
 
 randomness = dict(seed=42, deterministic=True)
+load_from = '/home/ps/ssd/big_data/xqz/' \
+            'mmdet-3.0-refactor-detr/checkpoints/' \
+            'dab-detr-3.0-ckpt.pth'  # default None, for align inference only
+# default_hooks = dict(
+#     checkpoint=dict(
+#         type='CheckpointHook',
+#         interval=1,
+#         save_best='bbox'))  # TODO: save_best metric

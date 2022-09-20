@@ -1,22 +1,22 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import warnings
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, Tuple, Union
 
 import torch
 import torch.nn.functional as F
-from mmcv.cnn import Conv2d, Linear, build_norm_layer
+from mmcv.cnn import Linear, build_norm_layer
 from mmcv.cnn.bricks.drop import Dropout
 from mmcv.cnn.bricks.transformer import FFN
 from mmengine.model import BaseModule, ModuleList, uniform_init, xavier_init
 from torch import Tensor, nn
 
 from mmdet.registry import MODELS
-from mmdet.structures import OptSampleList
+from mmdet.structures import OptSampleList, SampleList
 from ..layers import (MLP, DetrTransformerDecoder, DetrTransformerDecoderLayer,
                       DetrTransformerEncoder, DetrTransformerEncoderLayer,
                       SinePositionalEncodingHW)
 from ..layers.transformer import gen_sineembed_for_position, inverse_sigmoid
-from .detection_transformer import TransformerDetector
+from .base_detr import TransformerDetector
 
 
 @MODELS.register_module()
@@ -24,7 +24,6 @@ class DABDETR(TransformerDetector):
 
     def __init__(self,
                  *args,
-                 num_query=300,
                  iter_update=True,
                  random_refpoints_xy=False,
                  num_patterns=0,
@@ -37,18 +36,14 @@ class DABDETR(TransformerDetector):
                 type(num_patterns)))
             self.num_patterns = 0
 
-        super(DABDETR, self).__init__(*args, num_query=num_query, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def _init_layers(self) -> None:
-        self._init_transformer()
-        self._init_input_proj()
-
-    def _init_transformer(self) -> None:
         self.positional_encoding = SinePositionalEncodingHW(
             **self.positional_encoding_cfg)
         self.encoder = DabDetrTransformerEncoder(**self.encoder_cfg)
         self.decoder = DabDetrTransformerDecoder(**self.decoder_cfg)
-        self.embed_dims = self.encoder.embed_dims  # TODO
+        self.embed_dims = self.encoder.embed_dims
         self.query_dim = self.decoder.query_dim
         self.query_embedding = nn.Embedding(self.num_query, self.query_dim)
         if self.num_patterns > 0:
@@ -63,11 +58,7 @@ class DABDETR(TransformerDetector):
             f'embed_dims should be exactly 2 times of num_feats. ' \
             f'Found {self.embed_dims} and {num_feats}.'
 
-    def _init_input_proj(self) -> None:
-        in_channels = self.backbone.feat_dim  # TODO: Is this correct stably?
-        self.input_proj = Conv2d(in_channels, self.embed_dims, kernel_size=1)
-
-    def init_weights(self) -> None:  # TODO
+    def init_weights(self) -> None:
         super(TransformerDetector, self).init_weights()
         self._init_transformer_weights()
         if self.random_refpoints_xy:
@@ -76,10 +67,7 @@ class DABDETR(TransformerDetector):
                 inverse_sigmoid(self.query_embedding.weight.data[:, :2])
             self.query_embedding.weight.data[:, :2].requires_grad = False
 
-        self._is_init = True  # TODO: why?
-
-    def _init_transformer_weights(
-            self) -> None:  # TODO: maybe move to TransformerDetector?
+    def _init_transformer_weights(self) -> None:
         # follow the DetrTransformer to init parameters
         for coder in [self.encoder, self.decoder]:
             for m in coder.modules():
@@ -90,47 +78,46 @@ class DABDETR(TransformerDetector):
             self,
             img_feats: Tuple[Tensor],
             batch_data_samples: OptSampleList = None) -> Dict[str, Tensor]:
-        feat = img_feats[-1]  # TODO: deprecate multi_apply
-        # construct binary masks which used for the transformer.
-        # NOTE following the official DETR repo, non-zero values representing
-        # ignored positions, while zero values means valid positions.
+        feat = img_feats[-1]
         batch_size = feat.size(0)
-        if batch_data_samples is not None:
-            batch_input_shape = batch_data_samples[0].batch_input_shape  # noqa
-            # TODO: should there be an assert about equal batch_input_shape?
-            img_shape_list = [
-                sample.img_shape  # noqa
-                for sample in batch_data_samples
-            ]
-        else:
-            batch_input_shape = feat.shape
-            # TODO: should the batch_data_samples be OptSampleList?
-            img_shape_list = [feat.shape for _ in batch_size]
+        # construct binary masks which used for the transformer.
+        assert batch_data_samples is not None
+        batch_input_shape = batch_data_samples[0].batch_input_shape
+        img_shape_list = [
+            sample.img_shape  # noqa
+            for sample in batch_data_samples
+        ]
 
         input_img_h, input_img_w = batch_input_shape
         masks = feat.new_ones((batch_size, input_img_h, input_img_w))
         for img_id in range(batch_size):
             img_h, img_w = img_shape_list[img_id]
             masks[img_id, :img_h, :img_w] = 0
+        # NOTE following the official DETR repo, non-zero values representing
+        # ignored positions, while zero values means valid positions.
 
-        feat = self.input_proj(feat)
-        # interpolate masks to have the same spatial shape with feat
+        # prepare transformer_inputs_dict
         masks = F.interpolate(
             masks.unsqueeze(1), size=feat.shape[-2:]).to(torch.bool).squeeze(1)
-        # position encoding
         pos_embed = self.positional_encoding(masks)  # [bs, embed_dim, h, w]
+        # iterative refinement for anchor boxes
+        reg_branches = self.bbox_head.fc_reg if self.iter_update else None
 
-        seq_feats = dict(feat=feat, masks=masks, pos_embed=pos_embed)
-        return seq_feats  # noqa
+        transformer_inputs_dict = dict(
+            feat=feat,
+            masks=masks,
+            pos_embed=pos_embed,
+            query_embed=self.query_embedding.weight,
+            reg_branches=reg_branches)
+        return transformer_inputs_dict  # noqa
 
-    def forward_transformer(
-            self,
-            feat: Tensor,
-            masks: Tensor,
-            pos_embed: Tensor,
-            query_embed: nn.Module,
-            return_memory: bool = False,
-            reg_branches=None) -> Union[Tuple[List[Tensor]], Any]:
+    def forward_transformer(self,
+                            feat: Tensor,
+                            masks: Tensor,
+                            pos_embed: Tensor,
+                            query_embed: nn.Module,
+                            return_memory: bool = False,
+                            reg_branches=None) -> Union[Tuple[Tensor], Any]:
         bs, c, h, w = feat.shape
         # use `view` instead of `flatten` for dynamically exporting to ONNX
         feat = feat.view(bs, c, -1).permute(2, 0,
@@ -153,49 +140,68 @@ class DABDETR(TransformerDetector):
         out_dec, reference = self.decoder(
             query=target,
             key=memory,
-            value=memory,
             key_pos=pos_embed,
             query_pos=query_embed,
             key_padding_mask=masks,
             reg_branches=reg_branches)
         if return_memory:
-            # TODO: The original output is 'out_dec, memory', I kept it here.
             memory = memory.permute(1, 2, 0).reshape(bs, c, h, w)
-            return [out_dec], [reference], [memory]  # TODO: fake multi_apply
-        return [out_dec], [reference], None
-        # TODO: For keeping the multi_apply in DETRHead.forward
+            return out_dec, reference, memory
+        return out_dec, reference, None
 
-    def _forward(
-            self,
-            batch_inputs: Tensor,
-            batch_data_samples: OptSampleList = None) -> Tuple[List[Tensor]]:
+    def _forward(self,
+                 batch_inputs: Tensor,
+                 batch_data_samples: OptSampleList = None) -> Tuple[Tensor]:
+        """Network forward process.
+
+        Includes backbone, neck and head forward without post-processing.
+        """
         img_feats = self.extract_feat(batch_inputs)
-        seq_feats = self.forward_pretransformer(img_feats, batch_data_samples)
-
-        # iterative refinement
-        reg_branches = self.bbox_head.fc_reg if self.iter_update else None
-        # outs_dec: List[Tensor], reference: List[Tensor]
+        transformer_inputs_dict = self.forward_pretransformer(
+            img_feats, batch_data_samples)
         outs_dec, reference, _ = self.forward_transformer(
-            **seq_feats,
-            query_embed=self.query_embedding.weight,
-            reg_branches=reg_branches)
+            **transformer_inputs_dict)
         results = self.bbox_head.forward(outs_dec, reference)
         return results
+
+    def loss(self, batch_inputs: Tensor,
+             batch_data_samples: SampleList) -> Union[dict, list]:
+        img_feats = self.extract_feat(batch_inputs)
+        transformer_inputs_dict = self.forward_pretransformer(
+            img_feats, batch_data_samples)
+        outs_dec, reference, _ = self.forward_transformer(
+            **transformer_inputs_dict)
+        losses = self.bbox_head.loss(outs_dec, reference, batch_data_samples)
+        return losses
+
+    def predict(self,
+                batch_inputs: Tensor,
+                batch_data_samples: SampleList,
+                rescale: bool = True) -> SampleList:
+        img_feats = self.extract_feat(batch_inputs)
+        transformer_inputs_dict = self.forward_pretransformer(
+            img_feats, batch_data_samples)
+        outs_dec, reference, _ = self.forward_transformer(
+            **transformer_inputs_dict)
+        results_list = self.bbox_head.predict(
+            outs_dec, reference, batch_data_samples, rescale=rescale)
+        batch_data_samples = self.add_pred_to_datasample(
+            batch_data_samples, results_list)
+        return batch_data_samples
 
 
 class ConditionalAttention(BaseModule):
     """A wrapper of conditional attention, dropout and residual connection."""
 
-    def __init__(
-            self,
-            embed_dims,
-            num_heads,
-            attn_dropout=0.,
-            proj_drop=0.,  # TODO: distinguish different dropout
-            batch_first=False,  # TODO: no use for now
-            cross_attn=False,
-            keep_query_pos=False,
-            init_cfg=None):
+    def __init__(self,
+                 embed_dims,
+                 num_heads,
+                 attn_dropout=0.,
+                 proj_drop=0.,
+                 batch_first=False,
+                 cross_attn=False,
+                 keep_query_pos=False,
+                 init_cfg=None):
         super().__init__(init_cfg)
         self.batch_first = batch_first  # indispensable
         self.cross_attn = cross_attn
@@ -414,7 +420,7 @@ class DabDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
             for _ in range(3)
         ]
         self.norms = ModuleList(norms_list)
-        self.keep_query_pos = self.cross_attn.keep_query_pos  # TODO
+        self.keep_query_pos = self.cross_attn.keep_query_pos
 
     def forward(
             self,
@@ -511,7 +517,7 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
         self.keep_query_pos = self.layers[0].keep_query_pos
         if not self.keep_query_pos:
             for layer_id in range(self.num_layers - 1):
-                self.layers[layer_id + 1].cross_attn.qpos_proj = None  # TODO
+                self.layers[layer_id + 1].cross_attn.qpos_proj = None
 
     def forward(
             self,
@@ -564,7 +570,8 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
                 query_pos=query_pos,
                 query_sine_embed=query_sine_embed,
                 key_pos=key_pos,
-                attn_masks=attn_masks,
+                self_attn_mask=attn_masks,
+                cross_attn_mask=attn_masks,
                 query_key_padding_mask=query_key_padding_mask,
                 key_padding_mask=key_padding_mask,
                 is_first=(layer_id == 0),
@@ -589,9 +596,6 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
 
         if self.post_norm is not None:
             output = self.post_norm(output)
-            if self.return_intermediate:
-                intermediate.pop()
-                intermediate.append(output)  # TODO： why need this?
 
         if reg_branches is not None and self.return_intermediate:
             return [

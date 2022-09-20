@@ -4,13 +4,13 @@ from typing import Dict, List, Tuple
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from mmcv.cnn import Linear
 from mmengine.model import bias_init_with_prob, constant_init
 from torch import Tensor
 
 from mmdet.registry import MODELS
-from mmdet.utils import InstanceList, OptConfigType, OptInstanceList
+from mmdet.structures import SampleList
+from mmdet.utils import InstanceList, OptInstanceList
 from ..layers import inverse_sigmoid
 from ..utils import multi_apply
 from .detr_head import DETRHead
@@ -38,16 +38,14 @@ class DeformableDETRHead(DETRHead):
 
     def __init__(self,
                  *args,
-                 with_box_refine: bool = False,
+                 num_pred: int = 6,
                  as_two_stage: bool = False,
-                 transformer: OptConfigType = None,
+                 with_box_refine: bool = False,
                  **kwargs) -> None:
-        self.with_box_refine = with_box_refine
+        self.num_pred = num_pred
         self.as_two_stage = as_two_stage
-        if self.as_two_stage:
-            transformer['as_two_stage'] = self.as_two_stage
-
-        super().__init__(*args, transformer=transformer, **kwargs)
+        self.with_box_refine = with_box_refine
+        super().__init__(*args, **kwargs)
 
     def _init_layers(self) -> None:
         """Initialize classification branch and regression branch of head."""
@@ -65,26 +63,18 @@ class DeformableDETRHead(DETRHead):
 
         # last reg_branch is used to generate proposal from
         # encode feature map when as_two_stage is True.
-        num_pred = (self.transformer.decoder.num_layers + 1) if \
-            self.as_two_stage else self.transformer.decoder.num_layers
-
         if self.with_box_refine:
-            self.cls_branches = _get_clones(fc_cls, num_pred)
-            self.reg_branches = _get_clones(reg_branch, num_pred)
+            self.cls_branches = _get_clones(fc_cls, self.num_pred)
+            self.reg_branches = _get_clones(reg_branch, self.num_pred)
         else:
 
             self.cls_branches = nn.ModuleList(
-                [fc_cls for _ in range(num_pred)])
+                [fc_cls for _ in range(self.num_pred)])
             self.reg_branches = nn.ModuleList(
-                [reg_branch for _ in range(num_pred)])
-
-        if not self.as_two_stage:
-            self.query_embedding = nn.Embedding(self.num_query,
-                                                self.embed_dims * 2)
+                [reg_branch for _ in range(self.num_pred)])
 
     def init_weights(self) -> None:
         """Initialize weights of the DeformDETR head."""
-        self.transformer.init_weights()
         if self.loss_cls.use_sigmoid:
             bias_init = bias_init_with_prob(0.01)
             for m in self.cls_branches:
@@ -96,63 +86,12 @@ class DeformableDETRHead(DETRHead):
             for m in self.reg_branches:
                 nn.init.constant_(m[-1].bias.data[2:], 0.0)
 
-    def forward(self, x: Tuple[Tensor],
-                batch_img_metas: List[dict]) -> Tuple[Tensor, ...]:
+    def forward(self, hs: Tensor, init_reference,
+                inter_references) -> Tuple[Tensor, ...]:
         """Forward function.
 
-        Args:
-            x (tuple[Tensor]): Features from the upstream network, each is
-                a 4D-tensor.
-            batch_img_metas (list[dict]): Meta information of each image, e.g.,
-                image size, scaling factor, etc.
-
-        Returns:
-            tuple[Tensor]:
-
-            - all_cls_scores (Tensor): Outputs from the classification head,
-              shape [nb_dec, bs, num_query, cls_out_channels].
-            - cls_out_channels should includes background.
-            - all_bbox_preds (Tensor): Sigmoid outputs from the regression
-              head with normalized coordinate format (cx, cy, w, h).
-              Shape [nb_dec, bs, num_query, 4].
-            - enc_outputs_class (Tensor): The score of each point on encode
-              feature map, has shape (N, h*w, num_class). Only when
-              as_two_stage is True it would be returned, otherwise `None`
-              would be returned.
-            - enc_outputs_coord (Tensor): The proposal generate from the
-              encode feature map, has shape (N, h*w, 4). Only when
-              as_two_stage is True it would be returned, otherwise `None`
-              would be returned.
+        TODO: Update
         """
-
-        batch_size = x[0].size(0)
-        input_img_h, input_img_w = batch_img_metas[0]['batch_input_shape']
-        img_masks = x[0].new_ones((batch_size, input_img_h, input_img_w))
-        for img_id in range(batch_size):
-            img_h, img_w = batch_img_metas[img_id]['img_shape']
-            img_masks[img_id, :img_h, :img_w] = 0
-
-        mlvl_masks = []
-        mlvl_positional_encodings = []
-        for feat in x:
-            mlvl_masks.append(
-                F.interpolate(img_masks[None],
-                              size=feat.shape[-2:]).to(torch.bool).squeeze(0))
-            mlvl_positional_encodings.append(
-                self.positional_encoding(mlvl_masks[-1]))
-
-        query_embeds = None
-        if not self.as_two_stage:
-            query_embeds = self.query_embedding.weight
-        hs, init_reference, inter_references, \
-            enc_outputs_class, enc_outputs_coord = self.transformer(
-                    x,
-                    mlvl_masks,
-                    query_embeds,
-                    mlvl_positional_encodings,
-                    reg_branches=self.reg_branches if self.with_box_refine else None,  # noqa:E501
-                    cls_branches=self.cls_branches if self.as_two_stage else None  # noqa:E501
-            )
         hs = hs.permute(0, 2, 1, 3)
         outputs_classes = []
         outputs_coords = []
@@ -176,13 +115,22 @@ class DeformableDETRHead(DETRHead):
 
         outputs_classes = torch.stack(outputs_classes)
         outputs_coords = torch.stack(outputs_coords)
-        if self.as_two_stage:
-            return outputs_classes, outputs_coords, \
-                enc_outputs_class, \
-                enc_outputs_coord.sigmoid()
-        else:
-            return outputs_classes, outputs_coords, \
-                None, None
+        return outputs_classes, outputs_coords
+
+    def loss(self, hs: Tensor, init_reference, inter_references,
+             enc_outputs_class, enc_outputs_coord,
+             batch_data_samples: SampleList) -> dict:
+        batch_gt_instances = []
+        batch_img_metas = []
+        for data_sample in batch_data_samples:
+            batch_img_metas.append(data_sample.metainfo)
+            batch_gt_instances.append(data_sample.gt_instances)
+
+        outs = self(hs, init_reference, inter_references)
+        loss_inputs = outs + (enc_outputs_class, enc_outputs_coord,
+                              batch_gt_instances, batch_img_metas)
+        losses = self.loss_by_feat(*loss_inputs)
+        return losses
 
     def loss_by_feat(
         self,
@@ -266,13 +214,28 @@ class DeformableDETRHead(DETRHead):
             num_dec_layer += 1
         return loss_dict
 
-    def predict_by_feat(self,
-                        all_cls_scores: Tensor,
-                        all_bbox_preds: Tensor,
-                        enc_cls_scores: Tensor,
-                        enc_bbox_preds: Tensor,
-                        batch_img_metas: List[Dict],
-                        rescale: bool = False) -> InstanceList:
+    def predict(self,
+                hs,
+                init_reference,
+                inter_references,
+                batch_data_samples: SampleList,
+                rescale: bool = True) -> InstanceList:
+        batch_img_metas = [
+            data_samples.metainfo for data_samples in batch_data_samples
+        ]
+
+        outs = self(hs, init_reference, inter_references)
+
+        predictions = self.predict_by_feat(
+            *outs, batch_img_metas=batch_img_metas, rescale=rescale)
+        return predictions
+
+    def predict_by_feat(
+            self,  # TODO: why overload
+            all_cls_scores: Tensor,
+            all_bbox_preds: Tensor,
+            batch_img_metas: List[Dict],
+            rescale: bool = False) -> InstanceList:
         """Transform a batch of output features extracted from the head into
         bbox results.
 
@@ -284,13 +247,6 @@ class DeformableDETRHead(DETRHead):
                 outputs of all decode layers. Each is a 4D-tensor with
                 normalized coordinate format (cx, cy, w, h) and shape
                 [nb_dec, bs, num_query, 4].
-            enc_cls_scores (Tensor): Classification scores of
-                points on encode feature map , has shape
-                (N, h*w, num_classes). Only be passed when as_two_stage is
-                True, otherwise is None.
-            enc_bbox_preds (Tensor): Regression results of each points
-                on the encode feature map, has shape (N, h*w, 4). Only be
-                passed when as_two_stage is True, otherwise is None.
             batch_img_metas (list[dict]): Meta information of each image.
             rescale (bool, optional): If True, return boxes in original
                 image space. Default False.
