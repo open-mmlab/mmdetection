@@ -113,7 +113,8 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
             self,
             img_feats: Tuple[Tensor],
             batch_data_samples: OptSampleList = None) -> Dict[str, Tensor]:
-        """1. Construct batch padding mask.
+        """This function creates the inputs of the Transformer.
+           1. Construct batch padding mask.
            2. Prepare transformer_inputs_dict."""
         pass
 
