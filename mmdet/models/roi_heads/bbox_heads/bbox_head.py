@@ -696,4 +696,5 @@ class BBoxHead(BaseModule):
         max_shape = img_meta['img_shape']
         regressed_bboxes = self.bbox_coder.decode(
             priors, bbox_pred, max_shape=max_shape)
+        regressed_bboxes = get_box_tensor(regressed_bboxes)
         return regressed_bboxes
