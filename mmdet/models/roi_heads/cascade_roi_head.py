@@ -11,7 +11,7 @@ from mmdet.models.task_modules.samplers import SamplingResult
 from mmdet.models.test_time_augs import merge_aug_masks
 from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.structures import SampleList
-from mmdet.structures.bbox import bbox2roi
+from mmdet.structures.bbox import bbox2roi, get_box_tensor
 from mmdet.utils import (ConfigType, InstanceList, MultiConfig, OptConfigType,
                          OptMultiConfig)
 from ..utils.misc import empty_instances, unpack_gt_instances
@@ -501,6 +501,7 @@ class CascadeRoIHead(BaseRoIHead):
                         refined_bboxes = bbox_head.regress_by_class(
                             rois[i][:, 1:], bbox_label, bbox_preds[i],
                             batch_img_metas[i])
+                        refined_bboxes = get_box_tensor(refined_bboxes)
                         refined_rois = torch.cat(
                             [rois[i][:, [0]], refined_bboxes], dim=1)
                         refine_rois_list.append(refined_rois)
