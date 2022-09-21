@@ -122,6 +122,8 @@ class HungarianAssigner(BaseAssigner):
         # regression iou cost, defaultly giou is used in official DETR.
         bboxes = bbox_cxcywh_to_xyxy(bbox_pred) * factor
         iou_cost = self.iou_cost(bboxes, gt_bboxes)
+        # bboxes = bbox_cxcywh_to_xyxy(bbox_pred)
+        # iou_cost = self.iou_cost(bboxes, normalize_gt_bboxes)
         # weighted sum of above three costs
         cost = cls_cost + reg_cost + iou_cost
 

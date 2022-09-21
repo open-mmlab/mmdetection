@@ -8,6 +8,8 @@ model = dict(
         depth=50,
         num_stages=4,
         out_indices=(3, ),
+        strides=(1, 2, 2, 1),
+        dilations=(1, 1, 1, 2),  # dc5
         frozen_stages=1,
         norm_cfg=dict(
             type='FrozenBN2d',
@@ -18,7 +20,7 @@ model = dict(
     bbox_head=dict(
         type='DABDETRHead',
         num_query=300,
-        num_classes=91,  # TODO: to match official repo, use 91
+        num_classes=80,  # default 80, 91 to align with official repo / debug
         in_channels=2048,
         iter_update=True,
         random_refpoints_xy=False,
@@ -39,7 +41,7 @@ model = dict(
                     ],
                     feedforward_channels=2048,
                     ffn_dropout=0.1,
-                    act_cfg=dict(type='PReLU'),  # PReLU as default activations
+                    act_cfg=dict(type='PReLU'),  # default PReLU
                     operation_order=('self_attn', 'norm', 'ffn', 'norm'))),
             decoder=dict(
                 type='DabDetrTransformerDecoder',
@@ -60,7 +62,7 @@ model = dict(
                     sa_dropout=0.1,
                     ca_dropout=0.1,
                     keep_query_pos=False,
-                    act_cfg=dict(type='PReLU'),  # PReLU as default activations
+                    act_cfg=dict(type='PReLU'),  # default PReLU
                     operation_order=('self_attn', 'norm', 'cross_attn', 'norm',
                                      'ffn', 'norm')),
             )),
@@ -69,7 +71,7 @@ model = dict(
             num_feats=128,
             temperatureH=20,
             temperatureW=20,
-            normalize=True),  # use pos_hw
+            normalize=True),
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,
@@ -83,7 +85,8 @@ model = dict(
     train_cfg=dict(
         assigner=dict(
             type='HungarianAssigner',
-            cls_cost=dict(type='FocalLossCost', weight=2.),  # use focal cost
+            cls_cost=dict(type='FocalLossCost', weight=2.,
+                          eps=1e-8),  # default eps=1e-8
             reg_cost=dict(type='BBoxL1Cost', weight=5.0, box_format='xywh'),
             iou_cost=dict(type='IoUCost', iou_mode='giou', weight=2.0))),
     test_cfg=dict(max_per_img=100))
@@ -151,13 +154,16 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=1,  # batch_size = 1 * 16
-    workers_per_gpu=0,  # workers_per_gpu is set to 0 for debug, default 2
+    samples_per_gpu=2,  # default batch size is 2 * 8, use 2 * 5
+    workers_per_gpu=2,  # default 2, 0 for debug
     train=dict(
-        continuous_categories=False,  # customized parameter for 91 classes
+        continuous_categories=True,
+        # default True, False to align with official repo
         pipeline=train_pipeline),
-    val=dict(continuous_categories=False, pipeline=test_pipeline),
-    test=dict(continuous_categories=False, pipeline=test_pipeline))
+    val=dict(continuous_categories=True, pipeline=test_pipeline),
+    test=dict(continuous_categories=True, pipeline=test_pipeline))
+evaluation = dict(interval=1, metric='bbox', save_best='bbox_mAP')
+checkpoint_config = dict(interval=10)
 # optimizer
 optimizer = dict(
     type='AdamW',
@@ -167,5 +173,9 @@ optimizer = dict(
         custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
 optimizer_config = dict(grad_clip=dict(max_norm=0.1, norm_type=2))
 # learning policy
-lr_config = dict(policy='step', step=[40])
-runner = dict(type='EpochBasedRunner', max_epochs=50)
+lr_config = dict(
+    policy='step', step=[40])  # default 40 epochs, 1 epoch for debug train
+runner = dict(
+    type='EpochBasedRunner',
+    max_epochs=50)  # default 50 epochs, 1 epoch for debug train
+auto_scale_lr = dict(enable=True, base_batch_size=16)

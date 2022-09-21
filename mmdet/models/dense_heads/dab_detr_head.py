@@ -100,12 +100,13 @@ class DABDETRHead(DETRHead):
         # position encoding
         pos_embed = self.positional_encoding(masks)  # [bs, embed_dim, h, w]
         # outs_dec: [nb_dec, bs, num_query, embed_dim]
+        reg_branches = self.fc_reg if self.iter_update else None
         outs_dec, reference = self.transformer(
             x,
             masks,
             self.query_embedding.weight,
             pos_embed,
-            reg_branches=self.fc_reg)
+            reg_branches=reg_branches)
 
         all_cls_scores = self.fc_cls(outs_dec)
         if not self.bbox_embed_diff_each_layer:

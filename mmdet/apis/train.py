@@ -132,10 +132,8 @@ def train_detector(model,
         'type']
 
     train_dataloader_default_args = dict(
-        # samples_per_gpu=2,
-        # workers_per_gpu=2,
-        samples_per_gpu=1,
-        workers_per_gpu=0,  # for debug
+        samples_per_gpu=2,
+        workers_per_gpu=2,
         # `num_gpus` will be ignored if distributed
         num_gpus=len(cfg.gpu_ids),
         dist=distributed,

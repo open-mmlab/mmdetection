@@ -496,6 +496,11 @@ class CocoDataset(CustomDataset):
                 raise KeyError(f'{metric} is not in results')
             try:
                 predictions = mmcv.load(result_files[metric])
+                # with open(
+                #         '/home/ps/ssd/big_data/xqz/DAB-DETR/ \
+                #         'logs/DABDETR/R50_eval/eval.bbox.json'
+                # ) as f:
+                #     predictions = json.load(f)
                 if iou_type == 'segm':
                     # Refer to https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocotools/coco.py#L331  # noqa
                     # When evaluating mask AP, if the results contain bbox,
@@ -675,8 +680,10 @@ class CocoDataset(CustomDataset):
                 raise KeyError(f'metric {metric} is not supported')
 
         coco_gt = self.coco
-        self.cat_ids = coco_gt.get_cat_ids(cat_names=self.CLASSES)
-
+        # MODIFICATION
+        if self.continuous_categories:
+            self.cat_ids = coco_gt.get_cat_ids(cat_names=self.CLASSES)
+        # MODIFICATION
         result_files, tmp_dir = self.format_results(results, jsonfile_prefix)
         eval_results = self.evaluate_det_segm(results, result_files, coco_gt,
                                               metrics, logger, classwise,

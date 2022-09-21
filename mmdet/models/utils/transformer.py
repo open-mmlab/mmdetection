@@ -1244,8 +1244,7 @@ class ConditionalAttention(BaseModule):
                 value,
                 attn_mask=None,
                 key_padding_mask=None,
-                need_weights=True,
-                **kwargs):
+                need_weights=True):
         assert key.size(0) == value.size(0), \
             f'{"key, value must have the same sequence length"}'
         assert query.size(1) == key.size(1) == value.size(1), \
