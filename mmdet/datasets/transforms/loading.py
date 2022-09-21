@@ -260,7 +260,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         """
         gt_bboxes = []
         gt_ignore_flags = []
-        for instance in results['instances']:
+        for instance in results.get('instances', []):
             gt_bboxes.append(instance['bbox'])
             gt_ignore_flags.append(instance['ignore_flag'])
         if self.box_type is None:
@@ -281,7 +281,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             dict: The dict contains loaded label annotations.
         """
         gt_bboxes_labels = []
-        for instance in results['instances']:
+        for instance in results.get('instances', []):
             gt_bboxes_labels.append(instance['bbox_label'])
         # TODO: Inconsistent with mmcv, consider how to deal with it later.
         results['gt_bboxes_labels'] = np.array(
@@ -326,7 +326,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         """
         gt_masks = []
         gt_ignore_flags = []
-        for instance in results['instances']:
+        for instance in results.get('instances', []):
             gt_mask = instance['mask']
             # If the annotation of segmentation mask is invalid,
             # ignore the whole instance.
