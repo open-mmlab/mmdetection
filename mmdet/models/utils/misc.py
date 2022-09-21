@@ -5,6 +5,7 @@ from typing import List, Sequence, Tuple, Union
 import numpy as np
 import torch
 from mmengine.structures import InstanceData
+from mmengine.utils import digit_version
 from six.moves import map, zip
 from torch import Tensor
 from torch.autograd import Function
@@ -535,6 +536,18 @@ def get_box_tensor(boxes: Union[Tensor, BaseBoxes]) -> Tensor:
     if isinstance(boxes, BaseBoxes):
         boxes = boxes.tensor
     return boxes
+
+
+_torch_version_div_indexing = (
+    'parrots' not in torch.__version__
+    and digit_version(torch.__version__) >= digit_version('1.8'))
+
+
+def floordiv(dividend, divisor, rounding_mode='trunc'):
+    if _torch_version_div_indexing:
+        return torch.div(dividend, divisor, rounding_mode=rounding_mode)
+    else:
+        return dividend // divisor
 
 
 def _filter_gt_instances_by_score(batch_data_samples: SampleList,
