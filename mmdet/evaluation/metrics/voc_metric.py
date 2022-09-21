@@ -86,11 +86,16 @@ class VOCMetric(BaseMetric):
             # TODO: Need to refactor to support LoadAnnotations
             gt_instances = gt['gt_instances']
             gt_ignore_instances = gt['ignored_instances']
-            ann = dict(
-                labels=gt_instances['labels'].cpu().numpy(),
-                bboxes=gt_instances['bboxes'].cpu().numpy(),
-                bboxes_ignore=gt_ignore_instances['bboxes'].cpu().numpy(),
-                labels_ignore=gt_ignore_instances['labels'].cpu().numpy())
+            if 'bboxes' in gt_ignore_instances:
+                ann = dict(
+                    labels=gt_instances['labels'].cpu().numpy(),
+                    bboxes=gt_instances['bboxes'].cpu().numpy(),
+                    bboxes_ignore=gt_ignore_instances['bboxes'].cpu().numpy(),
+                    labels_ignore=gt_ignore_instances['labels'].cpu().numpy())
+            else:
+                ann = dict(
+                    labels=gt_instances['labels'].cpu().numpy(),
+                    bboxes=gt_instances['bboxes'].cpu().numpy())
 
             pred = data_sample['pred_instances']
             pred_bboxes = pred['bboxes'].cpu().numpy()
