@@ -3,7 +3,7 @@ _base_ = [
 ]
 model = dict(
     type='DABDETR',
-    num_query=300,  # custom params for dab-detr
+    num_query=300,
     iter_update=True,
     random_refpoints_xy=False,
     num_patterns=0,
@@ -66,7 +66,7 @@ model = dict(
         num_feats=128, temperatureH=20, temperatureW=20, normalize=True),
     bbox_head=dict(
         type='DABDETRHead',
-        num_classes=80,  # default 80, 91 to align with official repo
+        num_classes=80,
         embed_dims=256,
         loss_cls=dict(
             type='FocalLoss',
@@ -125,12 +125,7 @@ train_pipeline = [
                     ]]),
     dict(type='PackDetInputs')
 ]
-train_dataloader = dict(
-    batch_size=4,  # default 2 * 8, use 4 * 4
-    num_workers=2,  # default 2, 0 for debug (persistent_workers=False)
-    persistent_workers=False,
-    # num_workers must > 0 when persistent_workers is True
-    dataset=dict(pipeline=train_pipeline))
+train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
 
 # optimizer
 optim_wrapper = dict(
@@ -141,7 +136,7 @@ optim_wrapper = dict(
         custom_keys={'backbone': dict(lr_mult=0.1, decay_mult=1.0)}))
 
 # learning policy
-max_epochs = 50  # default 50 epochs, 1 epoch for debug train
+max_epochs = 50
 train_cfg = dict(
     type='EpochBasedTrainLoop', max_epochs=max_epochs, val_interval=1)
 val_cfg = dict(type='ValLoop')
@@ -153,21 +148,11 @@ param_scheduler = [
         begin=0,
         end=max_epochs,
         by_epoch=True,
-        milestones=[40],  # default 40 epochs, 1 epoch for debug train
+        milestones=[40],
         gamma=0.1)
 ]
 
 # NOTE: `auto_scale_lr` is for automatically scaling LR,
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (2 samples per GPU)
-auto_scale_lr = dict(base_batch_size=16, enable=True)
-
-randomness = dict(seed=42, deterministic=True)
-load_from = '/home/ps/ssd/big_data/xqz/' \
-            'mmdet-3.0-refactor-detr/checkpoints/' \
-            'dab-detr-3.0-ckpt.pth'  # default None, for align inference only
-# default_hooks = dict(
-#     checkpoint=dict(
-#         type='CheckpointHook',
-#         interval=1,
-#         save_best='bbox'))  # TODO: save_best metric
+auto_scale_lr = dict(base_batch_size=16, enable=False)
