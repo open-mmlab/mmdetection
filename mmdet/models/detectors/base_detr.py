@@ -29,15 +29,16 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
         positional_encoding_cfg (:obj:`ConfigDict` or dict): Config of
             positional encoding. Defaults to None.
         bbox_head (:obj:`ConfigDict` or dict): Config for position
-            encoding.
+            encoding. Defaults to None.
         num_query (int): Number of query in Transformer. Defaults to 100.
         train_cfg (:obj:`ConfigDict` or dict): Training config of transformer
-            head.
+            head. Defaults to None.
         test_cfg (:obj:`ConfigDict` or dict): Testing config of transformer
-            head.
+            head. Defaults to None.
         data_preprocessor (dict or ConfigDict, optional): The pre-process
            config of :class:`BaseDataPreprocessor`.  it usually includes,
             ``pad_size_divisor``, ``pad_value``, ``mean`` and ``std``.
+            Defaults to None.
         init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
             dict], optional): Initialization config dict. Defaults to None.
     """
@@ -108,9 +109,6 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
 
         Args:
             batch_inputs (Tensor): Inputs with shape (N, C, H, W).
-                batch_data_samples (List[:obj:`DetDataSample`]): The Data
-                Samples. It usually includes information such as
-                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
             batch_data_samples (List[:obj:`DetDataSample`]): The batch
                 data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
@@ -152,6 +150,7 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
             batch_data_samples (List[:obj:`DetDataSample`]): The batch
                 data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+                Defaults to None.
 
         Returns:
             tuple[Tensor]: A tuple of features from ``bbox_head`` forward.
@@ -171,7 +170,7 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
 
         Returns:
             tuple[Tensor]: Multi-level features that may have
-            different resolutions.
+                different resolutions.
         """
         x = self.backbone(batch_inputs)
         if self.with_neck:
@@ -184,8 +183,9 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
             img_feats: Tuple[Tensor],
             batch_data_samples: OptSampleList = None) -> Dict[str, Tensor]:
         """This function creates the inputs of the Transformer.
-           1. Construct batch padding mask.
-           2. Prepare transformer_inputs_dict.
+
+        1. Construct batch padding mask.
+        2. Prepare transformer_inputs_dict.
         """
         pass
 

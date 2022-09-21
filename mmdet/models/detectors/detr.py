@@ -15,12 +15,15 @@ from .base_detr import TransformerDetector
 
 @MODELS.register_module()
 class DETR(TransformerDetector):
-    """Implements the DETR.
-    See `paper: End-to-End Object Detection with Transformers
+    """Implements the DETR. See `paper: End-to-End Object Detection with
+    Transformers.
+
     <https://arxiv.org/pdf/2005.12872>`_ for details.
     """
 
     def _init_layers(self) -> None:
+        """Initialize layers except for backbone, neck and bbox_head."""
+
         self.positional_encoding = SinePositionalEncoding(
             **self.positional_encoding_cfg)
         self.encoder = DetrTransformerEncoder(**self.encoder_cfg)
@@ -37,11 +40,13 @@ class DETR(TransformerDetector):
             f'Found {self.embed_dims} and {num_feats}.'
 
     def init_weights(self) -> None:
+        """Initialize weights for Transformer and other components."""
+
         super().init_weights()
         self._init_transformer_weights()
 
     def _init_transformer_weights(self) -> None:
-        # follow the DetrTransformer to init parameters
+        # follow the Transformer to init parameters
         for coder in [self.encoder, self.decoder]:
             for m in coder.modules():
                 if hasattr(m, 'weight') and m.weight.dim() > 1:
@@ -51,6 +56,21 @@ class DETR(TransformerDetector):
             self,
             img_feats: Tuple[Tensor],
             batch_data_samples: OptSampleList = None) -> Dict[str, Tensor]:
+        """Prepare the inputs of the Transformer.
+
+        Args:
+            img_feats (Tuple[Tensor]): Multi-level features that may have
+                different resolutions, output from backbone.
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+                Defaults to None.
+
+        Returns:
+            Dict[str, Tensor]: Dict that stores all the inputs for
+                Transformer. Each input is a Tensor.
+        """
+
         feat = img_feats[-1]
         batch_size = feat.size(0)
         # construct binary masks which used for the transformer.
@@ -80,7 +100,7 @@ class DETR(TransformerDetector):
             masks=masks,
             pos_embed=pos_embed,
             query_embed=self.query_embedding.weight)
-        return transformer_inputs_dict  # noqa
+        return transformer_inputs_dict
 
     def forward_transformer(
             self,
@@ -89,19 +109,44 @@ class DETR(TransformerDetector):
             pos_embed: Tensor,
             query_embed: nn.Module,
             return_memory: bool = False) -> Union[Tuple[Tensor], Any]:
-        batch_size, c, h, w = feat.shape
+        """Forward function for Transformer.
+
+        Args:
+            feat (Tensor): The last feature of backbone's output, with
+                shape [bs, c, h ,w], where c = embed_dims.
+            masks (Tensor): The key_padding_mask used for encoder and decoder,
+                with shape [bs, h, w].
+            pos_embed (Tensor): The positional encoding for encoder and
+                decoder, with the same shape as `feat`
+            query_embed (Tensor): The query embedding for decoder, with shape
+                [num_query, c].
+            return_memory (bool): Whether to return the output of encoder.
+                Defaults to False.
+
+        Returns:
+            Union[Tuple[Tensor], Any]: results of decoder containing the \
+                following tensor.
+
+                - out_dec: Output from decoder. If return_intermediate_dec \
+                      is True output has shape [num_dec_layers, bs,
+                      num_query, embed_dims], else has shape [1, bs, \
+                      num_query, embed_dims].
+                - memory: Output results from encoder, with shape \
+                      [bs, embed_dims, h, w].
+        """
+        bs, c, h, w = feat.shape
         # use `view` instead of `flatten` for dynamically exporting to ONNX
-        # [batch_size, c, h, w] -> [h*w, batch_size, c]
-        feat = feat.view(batch_size, c, -1).permute(2, 0, 1)
-        pos_embed = pos_embed.view(batch_size, c, -1).permute(2, 0, 1)
-        # [num_query, dim] -> [num_query, batch_size, dim]
-        query_embed = query_embed.unsqueeze(1).repeat(1, batch_size, 1)
-        # [batch_size, h, w] -> [batch_size, h*w]
-        masks = masks.view(batch_size, -1)
+        # [bs, c, h, w] -> [h*w, bs, c]
+        feat = feat.view(bs, c, -1).permute(2, 0, 1)
+        pos_embed = pos_embed.view(bs, c, -1).permute(2, 0, 1)
+        # [num_query, dim] -> [num_query, bs, dim]
+        query_embed = query_embed.unsqueeze(1).repeat(1, bs, 1)
+        # [bs, h, w] -> [bs, h*w]
+        masks = masks.view(bs, -1)
         memory = self.encoder(
             query=feat, query_pos=pos_embed, query_key_padding_mask=masks)
         target = torch.zeros_like(query_embed)
-        # out_dec: [num_layers, num_query, batch_size, dim]
+        # out_dec: [num_layers, num_query, bs, dim]
         out_dec = self.decoder(
             query=target,
             key=memory,
@@ -109,8 +154,8 @@ class DETR(TransformerDetector):
             key_pos=pos_embed,
             query_pos=query_embed,
             key_padding_mask=masks)
-        out_dec[0] = out_dec[0].transpose(1, 2)
+        out_dec = out_dec.transpose(1, 2)
         if return_memory:
-            memory = memory.permute(1, 2, 0).reshape(batch_size, c, h, w)
+            memory = memory.permute(1, 2, 0).reshape(bs, c, h, w)
             return out_dec, memory
         return out_dec
