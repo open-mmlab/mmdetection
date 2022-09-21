@@ -20,30 +20,33 @@ class CSPNeXt(BaseModule):
 
     Args:
         arch (str): Architecture of CSPNeXt, from {P5, P6}.
-            Default: P5.
+            Defaults to P5.
         deepen_factor (float): Depth multiplier, multiply number of
-            blocks in CSP layer by this amount. Default: 1.0.
+            blocks in CSP layer by this amount. Defaults to 1.0.
         widen_factor (float): Width multiplier, multiply number of
-            channels in each layer by this amount. Default: 1.0.
+            channels in each layer by this amount. Defaults to 1.0.
         out_indices (Sequence[int]): Output from which stages.
-            Default: (2, 3, 4).
+            Defaults to (2, 3, 4).
         frozen_stages (int): Stages to be frozen (stop grad and set eval
-            mode). -1 means not freezing any parameters. Default: -1.
+            mode). -1 means not freezing any parameters. Defaults to -1.
         use_depthwise (bool): Whether to use depthwise separable convolution.
-            Default: False.
-        arch_ovewrite(list): Overwrite default arch settings. Default: None.
+            Defaults to False.
+        arch_ovewrite (list): Overwrite default arch settings.
+            Defaults to None.
         spp_kernal_sizes: (tuple[int]): Sequential of kernel sizes of SPP
-            layers. Default: (5, 9, 13).
-        conv_cfg (dict): Config dict for convolution layer. Default: None.
+            layers. Defaults to (5, 9, 13).
+        channel_attention (bool): Whether to add channel attention in each
+            stage. Defaults to True.
+        conv_cfg (dict): Config dict for convolution layer. Defaults to None.
         norm_cfg (dict): Dictionary to construct and config norm layer.
-            Default: dict(type='BN', requires_grad=True).
+            Defaults to dict(type='BN', requires_grad=True).
         act_cfg (dict): Config dict for activation layer.
-            Default: dict(type='LeakyReLU', negative_slope=0.1).
+            Defaults to dict(type='LeakyReLU', negative_slope=0.1).
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
         init_cfg (dict or list[dict], optional): Initialization config dict.
-            Default: None.
+            Defaults to None.
     """
     # From left to right:
     # in_channels, out_channels, num_blocks, add_identity, use_spp
@@ -63,7 +66,6 @@ class CSPNeXt(BaseModule):
         out_indices: Sequence[int] = (2, 3, 4),
         frozen_stages: int = -1,
         use_depthwise: bool = False,
-        use_lk_block: bool = False,
         expand_ratio: float = 0.5,
         arch_ovewrite: dict = None,
         spp_kernal_sizes: Sequence[int] = (5, 9, 13),
@@ -154,7 +156,7 @@ class CSPNeXt(BaseModule):
                 num_blocks=num_blocks,
                 add_identity=add_identity,
                 use_depthwise=use_depthwise,
-                use_lk_block=use_lk_block,
+                use_lk_block=True,
                 expand_ratio=expand_ratio,
                 channel_attention=channel_attention,
                 conv_cfg=conv_cfg,
