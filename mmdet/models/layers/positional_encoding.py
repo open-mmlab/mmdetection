@@ -166,14 +166,34 @@ class LearnedPositionalEncoding(BaseModule):
 
 @MODELS.register_module()
 class SinePositionalEncodingHW(BaseModule):
+    """Position encoding with sine and cosine functions.
+       Apply two seperate temperature on x and y axis.
 
+    Args:
+        num_feats (int): The feature dimension for each position
+            along x-axis or y-axis. Note the final returned dimension
+            for each position is 2 times of this value.
+        temperatureH (int, optional): The temperature used for scaling
+            the position embedding in y axis. Defaults to 10000.
+        temperatureW (int, optional): The temperature used for scaling
+            the position embedding in x axis. Defaults to 10000.
+        normalize (bool, optional): Whether to normalize the position
+            embedding. Defaults to False.
+        scale (float, optional): A scale factor that scales the position
+            embedding. The scale will be used only when `normalize` is True.
+            Defaults to 2*pi.
+        init_cfg (dict or list[dict], optional): Initialization config dict.
+            Default: None
+    """
+    
     def __init__(self,
-                 num_feats=128,
+                 num_feats,
                  temperatureH=10000,
                  temperatureW=10000,
                  normalize=False,
-                 scale=None):
-        super().__init__()
+                 scale=None,
+                 init_cfg=None):
+        super(SinePositionalEncodingHW, self).__init__(init_cfg)
         self.num_feats = num_feats
         self.temperatureH = temperatureH
         self.temperatureW = temperatureW
@@ -185,6 +205,17 @@ class SinePositionalEncodingHW(BaseModule):
         self.scale = scale
 
     def forward(self, mask):
+        """Forward function for `SinePositionalEncodingHW`.
+
+        Args:
+            mask (Tensor): ByteTensor mask. Non-zero values representing
+                ignored positions, while zero values means valid positions
+                for this image. Shape [bs, h, w].
+
+        Returns:
+            pos (Tensor): Returned position embedding with shape
+                [bs, num_feats*2, h, w].
+        """
         assert mask is not None
         mask = mask.to(torch.int)
         not_mask = 1 - mask
