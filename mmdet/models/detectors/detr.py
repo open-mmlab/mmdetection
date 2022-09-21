@@ -56,8 +56,8 @@ class DETR(TransformerDetector):
         """Prepare the inputs of the Transformer.
 
         Args:
-            img_feats (Tuple[Tensor]): Multi-level features that may have
-                different resolutions, output from neck.
+            img_feats (Tuple[Tensor]): Features output from neck,
+                with shape [bs, c, h, w], where c = embed_dims.
             batch_data_samples (List[:obj:`DetDataSample`]): The batch
                 data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
@@ -68,7 +68,8 @@ class DETR(TransformerDetector):
                 Transformer. Each input is a Tensor.
         """
 
-        feat = img_feats[-1]
+        feat = img_feats[
+            -1]  # NOTE img_feats contains only one feature tensor.
         batch_size = feat.size(0)
         # construct binary masks which used for the transformer.
         assert batch_data_samples is not None
