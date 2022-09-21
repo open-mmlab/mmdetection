@@ -30,7 +30,8 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
             positional encoding. Defaults to None.
         bbox_head (:obj:`ConfigDict` or dict): Config for position
             encoding. Defaults to None.
-        num_query (int): Number of query in Transformer. Defaults to 100.
+        num_query (int): Number of decoder query in Transformer.
+            Defaults to 100.
         train_cfg (:obj:`ConfigDict` or dict): Training config of transformer
             head. Defaults to None.
         test_cfg (:obj:`ConfigDict` or dict): Testing config of transformer

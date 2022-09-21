@@ -60,7 +60,7 @@ class DETR(TransformerDetector):
 
         Args:
             img_feats (Tuple[Tensor]): Multi-level features that may have
-                different resolutions, output from backbone.
+                different resolutions, output from neck.
             batch_data_samples (List[:obj:`DetDataSample`]): The batch
                 data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
@@ -112,7 +112,7 @@ class DETR(TransformerDetector):
         """Forward function for Transformer.
 
         Args:
-            feat (Tensor): The last feature of backbone's output, with
+            feat (Tensor): The last feature from the output of neck, with
                 shape [bs, c, h ,w], where c = embed_dims.
             masks (Tensor): The key_padding_mask used for encoder and decoder,
                 with shape [bs, h, w].
@@ -134,15 +134,15 @@ class DETR(TransformerDetector):
                 - memory: Output results from encoder, with shape \
                       [bs, embed_dims, h, w].
         """
-        bs, c, h, w = feat.shape
+        batch_size, c, h, w = feat.shape
         # use `view` instead of `flatten` for dynamically exporting to ONNX
         # [bs, c, h, w] -> [h*w, bs, c]
-        feat = feat.view(bs, c, -1).permute(2, 0, 1)
-        pos_embed = pos_embed.view(bs, c, -1).permute(2, 0, 1)
+        feat = feat.view(batch_size, c, -1).permute(2, 0, 1)
+        pos_embed = pos_embed.view(batch_size, c, -1).permute(2, 0, 1)
         # [num_query, dim] -> [num_query, bs, dim]
-        query_embed = query_embed.unsqueeze(1).repeat(1, bs, 1)
+        query_embed = query_embed.unsqueeze(1).repeat(1, batch_size, 1)
         # [bs, h, w] -> [bs, h*w]
-        masks = masks.view(bs, -1)
+        masks = masks.view(batch_size, -1)
         memory = self.encoder(
             query=feat, query_pos=pos_embed, query_key_padding_mask=masks)
         target = torch.zeros_like(query_embed)
@@ -156,6 +156,6 @@ class DETR(TransformerDetector):
             key_padding_mask=masks)
         out_dec = out_dec.transpose(1, 2)
         if return_memory:
-            memory = memory.permute(1, 2, 0).reshape(bs, c, h, w)
+            memory = memory.permute(1, 2, 0).reshape(batch_size, c, h, w)
             return out_dec, memory
         return out_dec

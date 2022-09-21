@@ -392,7 +392,14 @@ def inverse_sigmoid(x, eps=1e-5):
 
 
 class MLP(nn.Module):
-    """Very simple multi-layer perceptron (also called FFN) with relu."""
+    """Very simple multi-layer perceptron (also called FFN) with relu.
+
+    Args:
+        input_dim (int): Feature dim of the input tensor.
+        hidden_dim (int): Feature dim of the hidden layer.
+        output_dim (int): Feature dim of the output tensor.
+        num_layers (int): Number of layer.
+    """
 
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
         super(MLP, self).__init__()
@@ -402,12 +409,21 @@ class MLP(nn.Module):
             Linear(n, k) for n, k in zip([input_dim] + h, h + [output_dim]))
 
     def forward(self, x):
+        """Forward function of MLP."""
         for i, layer in enumerate(self.layers):
             x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
         return x
 
 
 class DetrTransformerEncoder(BaseModule):
+    """Encoder of DETR.
+
+    Args:
+        num_layers (int): Number of encoder layer.
+        layer_cfg (:obj:`ConfigDict` or dict): Config of encoder layer.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict], optional): Initialization config dict. Defaults to None.
+    """
 
     def __init__(self,
                  num_layers: int,
@@ -420,6 +436,7 @@ class DetrTransformerEncoder(BaseModule):
         self._init_layers()
 
     def _init_layers(self) -> None:
+        """Initialize encoder layers."""
         self.layers = ModuleList()
         for i in range(self.num_layers):
             self.layers.append(
@@ -427,12 +444,31 @@ class DetrTransformerEncoder(BaseModule):
         self.embed_dims = self.layers[0].embed_dims
 
     def forward(self, query, *args, **kwargs):  # TODO: add comment
+        """Forward function of encoder.
+
+        Args:
+            query (Tensor): Input feature for encoder, with
+                shape [h*w, bs, c], where c = embed_dims.
+        Returns:
+            Tensor: With shape [bs, h*w, c] if batch_first is True,
+            otherwise [h*w, bs, c], where c = embed_dims.
+        """
         for layer in self.layers:
             query = layer(query, *args, **kwargs)
         return query
 
 
 class DetrTransformerDecoder(BaseModule):
+    """Decoder of DETR.
+
+    Args:
+        num_layers (int): Number of encoder layer.
+        layer_cfg (:obj:`ConfigDict` or dict): Config of encoder layer.
+        post_norm_cfg (:obj:`ConfigDict` or dict): Config of the last
+            normalization layer. Defaults to `LN`.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict], optional): Initialization config dict. Defaults to None.
+    """
 
     def __init__(self,
                  num_layers: int,
@@ -448,6 +484,7 @@ class DetrTransformerDecoder(BaseModule):
         self._init_layers()
 
     def _init_layers(self) -> None:
+        """Initialize decoder layers."""
         self.layers = ModuleList()
         for i in range(self.num_layers):
             self.layers.append(
@@ -463,6 +500,33 @@ class DetrTransformerDecoder(BaseModule):
                 query_pos=None,
                 key_pos=None,
                 **kwargs):  # TODO: add comment
+        """Forward function of decoder
+        Args:
+            query (Tensor): The input query with shape [num_queries, bs,
+                embed_dims] if self.batch_first is False, else
+                [bs, num_queries embed_dims].
+            key (Tensor): The key tensor with shape [num_keys, bs,
+                embed_dims] if self.batch_first is False, else
+                [bs, num_keys, embed_dims] .
+                If None, the ``query`` will be used. Defaults to None.
+            value (Tensor): The value tensor with same shape as `key`.
+                Same in `nn.MultiheadAttention.forward`. Defaults to None.
+                If None, the `key` will be used.
+            query_pos (Tensor): The positional encoding for query, with
+                the same shape as `x`. If not None, it will
+                be added to `x` before forward function. Defaults to None.
+            key_pos (Tensor): The positional encoding for `key`, with the
+                same shape as `key`. Defaults to None. If not None, it will
+                be added to `key` before forward function. If None, and
+                `query_pos` has the same shape as `key`, then `query_pos`
+                will be used for `key_pos`. Defaults to None.
+
+        Returns:
+            Tensor: forwarded results with shape
+            [num_queries, bs, embed_dims]
+            if self.batch_first is False, else
+            [bs, num_queries embed_dims].
+        """
         intermediate = []
         for layer in self.layers:
             query = layer(
@@ -482,6 +546,18 @@ class DetrTransformerDecoder(BaseModule):
 
 
 class DetrTransformerEncoderLayer(BaseModule):
+    """Implements encoder layer in DETR transformer.
+
+    Args:
+        self_attn_cfg (dict): Config for self attention.
+        ffn_cfg (dict): Config for FFN.
+        norm_cfg (dict): Config dict for normalization layer.
+            Defaults to `LN`.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict], optional): Initialization config dict. Defaults to None.
+        batch_first (bool): If True, the output will have shape [bs, h*w, c],
+            otherwise [h*w, bs, c], where c = embed_dims. Defaults to False.
+    """
 
     def __init__(self,
                  self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
@@ -507,6 +583,7 @@ class DetrTransformerEncoderLayer(BaseModule):
         self._init_layers()
 
     def _init_layers(self):
+        """Initialize self-attention, FFN, and normalization."""
         self.self_attn = MultiheadAttention(**self.self_attn_cfg)
         self.embed_dims = self.self_attn.embed_dims  # TODO
         self.ffn = FFN(**self.ffn_cfg)
@@ -522,7 +599,26 @@ class DetrTransformerEncoderLayer(BaseModule):
                 attn_masks=None,
                 query_key_padding_mask=None,
                 **kwargs):
+        """Forward function of an encoder layer.
 
+        Args:
+            query (Tensor): The input query with shape [num_queries, bs,
+                embed_dims] if self.batch_first is False, else
+                [bs, num_queries, embed_dims].
+            query_pos (Tensor): The positional encoding for query, with
+                the same shape as `query`. If not None, it will
+                be added to `query` before forward function. Defaults to None.
+            attn_masks (Tensor): ByteTensor mask with shape [num_queries,
+                num_keys]. Same in `nn.MultiheadAttention.forward`.
+                Defaults to None.
+            query_key_padding_mask (Tensor): ByteTensor with shape
+                [bs, num_keys]. Defaults to None.
+        Returns:
+            Tensor: forwarded results with shape
+            [num_queries, bs, embed_dims]
+            if self.batch_first is False, else
+            [bs, num_queries embed_dims].
+        """
         query = self.self_attn(
             query=query,
             key=query,
@@ -540,6 +636,19 @@ class DetrTransformerEncoderLayer(BaseModule):
 
 
 class DetrTransformerDecoderLayer(BaseModule):
+    """Implements decoder layer in DETR transformer.
+
+    Args:
+        self_attn_cfg (dict): Config for self attention.
+        cross_attn_cfg (dict): Config for cross attention.
+        ffn_cfg (dict): Config for FFN.
+        norm_cfg (dict): Config dict for normalization layer.
+            Defaults to `LN`.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict], optional): Initialization config dict. Defaults to None.
+        batch_first (bool): If True, the output will have shape [bs, h*w, c],
+            otherwise [h*w, bs, c], where c = embed_dims. Defaults to False.
+    """
 
     def __init__(self,
                  self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.0),
@@ -569,6 +678,7 @@ class DetrTransformerDecoderLayer(BaseModule):
         self._init_layers()
 
     def _init_layers(self):
+        """Initialize self-attention, FFN, and normalization."""
         self.self_attn = MultiheadAttention(**self.self_attn_cfg)
         self.cross_attn = MultiheadAttention(**self.cross_attn_cfg)
         self.embed_dims = self.self_attn.embed_dims  # TODO
@@ -590,6 +700,43 @@ class DetrTransformerDecoderLayer(BaseModule):
                 query_key_padding_mask=None,
                 key_padding_mask=None,
                 **kwargs):
+        """
+        Args:
+            query (Tensor): The input query with shape [num_queries, bs,
+                embed_dims] if self.batch_first is False, else
+                [bs, num_queries, embed_dims].
+            key (Tensor): The key tensor with shape [num_keys, bs,
+                embed_dims] if self.batch_first is False, else
+                [bs, num_keys, embed_dims] .
+                If None, the ``query`` will be used. Defaults to None.
+            value (Tensor): The value tensor with same shape as `key`.
+                Same in `nn.MultiheadAttention.forward`. Defaults to None.
+                If None, the `key` will be used.
+            query_pos (Tensor): The positional encoding for query, with
+                the same shape as `query`. If not None, it will
+                be added to `query` before forward function. Defaults to None.
+            key_pos (Tensor): The positional encoding for `key`, with the
+                same shape as `key`. Defaults to None. If not None, it will
+                be added to `key` before forward function. If None, and
+                `query_pos` has the same shape as `key`, then `query_pos`
+                will be used for `key_pos`. Defaults to None.
+            self_attn_masks (Tensor): ByteTensor mask with shape [num_queries,
+                num_keys]. Same in `nn.MultiheadAttention.forward`.
+                Defaults to None.
+            cross_attn_masks (Tensor): ByteTensor mask with shape [num_queries,
+                num_keys]. Same in `nn.MultiheadAttention.forward`.
+                Defaults to None.
+            query_key_padding_mask (Tensor): ByteTensor with shape
+                [bs, num_keys]. Defaults to None.
+            key_padding_mask (Tensor): ByteTensor with shape [bs, num_keys].
+                Defaults to None.
+
+        Returns:
+            Tensor: forwarded results with shape
+            [num_queries, bs, embed_dims]
+            if self.batch_first is False, else
+            [bs, num_queries embed_dims].
+        """
 
         query = self.self_attn(
             query=query,
