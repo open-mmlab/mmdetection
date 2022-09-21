@@ -15,11 +15,8 @@ from .base_detr import TransformerDetector
 
 @MODELS.register_module()
 class DETR(TransformerDetector):
-    """Implements the DETR. See `paper: End-to-End Object Detection with
-    Transformers.
-
-    <https://arxiv.org/pdf/2005.12872>`_ for details.
-    """
+    r"""Implementation of `DETR: End-to-End Object Detection with
+        Transformers <https://arxiv.org/pdf/2005.12872>`_"""
 
     def _init_layers(self) -> None:
         """Initialize layers except for backbone, neck and bbox_head."""
