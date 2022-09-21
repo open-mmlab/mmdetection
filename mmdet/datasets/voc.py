@@ -1,6 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import copy
-
 from mmdet.registry import DATASETS
 from .xml_style import XMLDataset
 
