@@ -605,7 +605,7 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
         elif reg_branches is None and self.return_intermediate:
             return [
                 torch.stack(intermediate).transpose(
-                    1, 2),  # return_intermediate is False
+                    1, 2),  # return_intermediate is True
                 reference.unsqueeze(0).transpose(1, 2)  # reg_branches is None
             ]
         elif reg_branches is None and not self.return_intermediate:
