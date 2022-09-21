@@ -15,8 +15,10 @@ from .base_detr import TransformerDetector
 
 @MODELS.register_module()
 class DETR(TransformerDetector):
-    r"""Implementation of `DETR: End-to-End Object Detection with
-    Transformers <https://arxiv.org/pdf/2005.12872>`_"""
+    """Implements the DETR.
+    See `paper: End-to-End Object Detection with Transformers
+    <https://arxiv.org/pdf/2005.12872>`_ for details.
+    """
 
     def _init_layers(self) -> None:
         self.positional_encoding = SinePositionalEncoding(

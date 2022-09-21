@@ -17,6 +17,29 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
     Transformer-based detectors use an encoder to process output features of
     neck, then several queries interactive with the output features of encoder
     and do the regression and classification.
+
+    Args:
+        backbone (:obj:`ConfigDict` or dict): Config of backbone.
+        neck (:obj:`ConfigDict` or dict): Config of neck.
+            Defaults to None.
+        encoder_cfg (:obj:`ConfigDict` or dict): Config of encoder.
+            Defaults to None.
+        decoder_cfg (:obj:`ConfigDict` or dict): Config of decoder.
+            Defaults to None.
+        positional_encoding_cfg (:obj:`ConfigDict` or dict): Config of
+            positional encoding. Defaults to None.
+        bbox_head (:obj:`ConfigDict` or dict): Config for position
+            encoding.
+        num_query (int): Number of query in Transformer. Defaults to 100.
+        train_cfg (:obj:`ConfigDict` or dict): Training config of transformer
+            head.
+        test_cfg (:obj:`ConfigDict` or dict): Testing config of transformer
+            head.
+        data_preprocessor (dict or ConfigDict, optional): The pre-process
+           config of :class:`BaseDataPreprocessor`.  it usually includes,
+            ``pad_size_divisor``, ``pad_value``, ``mean`` and ``std``.
+        init_cfg (:obj:`ConfigDict` or dict or list[:obj:`ConfigDict` or \
+            dict], optional): Initialization config dict. Defaults to None.
     """
 
     def __init__(self,
@@ -52,11 +75,23 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
 
     @abstractmethod
     def _init_layers(self) -> None:
-        """Initialize layers except backbone, neck and bbox_head."""
+        """Initialize layers except for backbone, neck and bbox_head."""
         pass
 
     def loss(self, batch_inputs: Tensor,
              batch_data_samples: SampleList) -> Union[dict, list]:
+        """Calculate losses from a batch of inputs and data samples.
+
+        Args:
+            batch_inputs (Tensor): Input images of shape (N, C, H, W).
+                These should usually be mean centered and std scaled.
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+
+        Returns:
+            dict: A dictionary of loss components
+        """
         img_feats = self.extract_feat(batch_inputs)
         transformer_inputs_dict = self.forward_pretransformer(
             img_feats, batch_data_samples)
@@ -68,6 +103,33 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
                 batch_inputs: Tensor,
                 batch_data_samples: SampleList,
                 rescale: bool = True) -> SampleList:
+        """Predict results from a batch of inputs and data samples with post-
+        processing.
+
+        Args:
+            batch_inputs (Tensor): Inputs with shape (N, C, H, W).
+                batch_data_samples (List[:obj:`DetDataSample`]): The Data
+                Samples. It usually includes information such as
+                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+            rescale (bool): Whether to rescale the results.
+                Defaults to True.
+
+        Returns:
+            list[:obj:`DetDataSample`]: Detection results of the
+            input images. Each DetDataSample usually contain
+            'pred_instances'. And the ``pred_instances`` usually
+            contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                    (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                    (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                    the last dimension 4 arrange as (x1, y1, x2, y2).
+        """
         img_feats = self.extract_feat(batch_inputs)
         transformer_inputs_dict = self.forward_pretransformer(
             img_feats, batch_data_samples)
@@ -82,9 +144,17 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
             self,
             batch_inputs: Tensor,
             batch_data_samples: OptSampleList = None) -> Tuple[List[Tensor]]:
-        """Network forward process.
+        """Network forward process. Usually includes backbone, neck and head
+        forward without any post-processing.
 
-        Includes backbone, neck and head forward without post-processing.
+         Args:
+            batch_inputs (Tensor): Inputs with shape (N, C, H, W).
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+
+        Returns:
+            tuple[Tensor]: A tuple of features from ``bbox_head`` forward.
         """
         img_feats = self.extract_feat(batch_inputs)
         transformer_inputs_dict = self.forward_pretransformer(
@@ -115,7 +185,8 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
             batch_data_samples: OptSampleList = None) -> Dict[str, Tensor]:
         """This function creates the inputs of the Transformer.
            1. Construct batch padding mask.
-           2. Prepare transformer_inputs_dict."""
+           2. Prepare transformer_inputs_dict.
+        """
         pass
 
     @abstractmethod
