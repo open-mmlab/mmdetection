@@ -104,8 +104,8 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
                 batch_inputs: Tensor,
                 batch_data_samples: SampleList,
                 rescale: bool = True) -> SampleList:
-        """Predict results from a batch of inputs and data samples with post-
-        processing.
+        """Predict results from a batch of inputs and data samples with
+        post-processing.
 
         Args:
             batch_inputs (Tensor): Inputs with shape (N, C, H, W).
