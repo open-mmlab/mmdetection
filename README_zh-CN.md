@@ -78,8 +78,8 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 - 基于 [MMEngine](https://github.com/open-mmlab/mmengine) 统一了各组件接口。
 - 全面支持混合精度，训练测试速度更快。
-- 提供了更强的基线模型，并支持了通用的半监督目标检测框架，详见[半监督目标检测教程](https://mmdetection.readthedocs.io/zh_CN/v3.0.0rc0/user_guides/semi_det.html)。
-- 支持使用任意单阶段检测器作为二阶段模型的 RPN，详见[教程](https://mmdetection.readthedocs.io/en/v3.0.0rc0/user_guides/single_stage_as_rpn.html)。
+- 提供了更强的基线模型，并支持了通用的半监督目标检测框架，详见[半监督目标检测教程](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/semi_det.html)。
+- 支持使用任意单阶段检测器作为二阶段模型的 RPN，详见[教程](https://mmdetection.readthedocs.io/zh_CN/3.x/user_guides/single_stage_as_rpn.html)。
 
 ## 安装
 
