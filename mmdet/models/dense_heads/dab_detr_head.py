@@ -21,10 +21,8 @@ class DABDETRHead(DETRHead):
     <https://arxiv.org/pdf/2005.12872>`_ for details.
 
     Args:
-        TODO
+        
     """
-
-    _version = 2
 
     def __init__(
             self,
