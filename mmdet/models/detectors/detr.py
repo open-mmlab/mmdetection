@@ -70,7 +70,8 @@ class DETR(TransformerDetector):
         # prepare transformer_inputs_dict
         masks = F.interpolate(
             masks.unsqueeze(1), size=feat.shape[-2:]).to(torch.bool).squeeze(1)
-        pos_embed = self.positional_encoding(masks)  # [bs, embed_dim, h, w]
+        # [batch_size, embed_dim, h, w]
+        pos_embed = self.positional_encoding(masks)
 
         transformer_inputs_dict = dict(
             feat=feat,
@@ -86,18 +87,19 @@ class DETR(TransformerDetector):
             pos_embed: Tensor,
             query_embed: nn.Module,
             return_memory: bool = False) -> Union[Tuple[Tensor], Any]:
-        bs, c, h, w = feat.shape
+        batch_size, c, h, w = feat.shape
         # use `view` instead of `flatten` for dynamically exporting to ONNX
-        # [bs, c, h, w] -> [h*w, bs, c]
-        feat = feat.view(bs, c, -1).permute(2, 0, 1)
-        pos_embed = pos_embed.view(bs, c, -1).permute(2, 0, 1)
-        query_embed = query_embed.unsqueeze(1).repeat(
-            1, bs, 1)  # [num_query, dim] -> [num_query, bs, dim]
-        masks = masks.view(bs, -1)  # [bs, h, w] -> [bs, h*w]
+        # [batch_size, c, h, w] -> [h*w, batch_size, c]
+        feat = feat.view(batch_size, c, -1).permute(2, 0, 1)
+        pos_embed = pos_embed.view(batch_size, c, -1).permute(2, 0, 1)
+        # [num_query, dim] -> [num_query, batch_size, dim]
+        query_embed = query_embed.unsqueeze(1).repeat(1, batch_size, 1)
+        # [batch_size, h, w] -> [batch_size, h*w]
+        masks = masks.view(batch_size, -1)
         memory = self.encoder(
             query=feat, query_pos=pos_embed, query_key_padding_mask=masks)
         target = torch.zeros_like(query_embed)
-        # out_dec: [num_layers, num_query, bs, dim]
+        # out_dec: [num_layers, num_query, batch_size, dim]
         out_dec = self.decoder(
             query=target,
             key=memory,
@@ -107,6 +109,6 @@ class DETR(TransformerDetector):
             key_padding_mask=masks)
         out_dec[0] = out_dec[0].transpose(1, 2)
         if return_memory:
-            memory = memory.permute(1, 2, 0).reshape(bs, c, h, w)
+            memory = memory.permute(1, 2, 0).reshape(batch_size, c, h, w)
             return out_dec, memory
         return out_dec

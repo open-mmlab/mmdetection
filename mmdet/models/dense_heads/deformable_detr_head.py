@@ -150,11 +150,11 @@ class DeformableDETRHead(DETRHead):
         Args:
             all_cls_scores (Tensor): Classification score of all
                 decoder layers, has shape
-                [nb_dec, bs, num_query, cls_out_channels].
+                [nb_dec, batch_size, num_query, cls_out_channels].
             all_bbox_preds (Tensor): Sigmoid regression
                 outputs of all decode layers. Each is a 4D-tensor with
                 normalized coordinate format (cx, cy, w, h) and shape
-                [nb_dec, bs, num_query, 4].
+                [nb_dec, batch_size, num_query, 4].
             enc_cls_scores (Tensor): Classification scores of
                 points on encode feature map , has shape
                 (N, h*w, num_classes). Only be passed when as_two_stage is
@@ -244,11 +244,11 @@ class DeformableDETRHead(DETRHead):
         Args:
             all_cls_scores (Tensor): Classification score of all
                 decoder layers, has shape
-                [nb_dec, bs, num_query, cls_out_channels].
+                [nb_dec, batch_size, num_query, cls_out_channels].
             all_bbox_preds (Tensor): Sigmoid regression
                 outputs of all decode layers. Each is a 4D-tensor with
                 normalized coordinate format (cx, cy, w, h) and shape
-                [nb_dec, bs, num_query, 4].
+                [nb_dec, batch_size, num_query, 4].
             batch_img_metas (list[dict]): Meta information of each image.
             rescale (bool, optional): If True, return boxes in original
                 image space. Default False.

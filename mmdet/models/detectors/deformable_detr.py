@@ -37,15 +37,15 @@ class DeformableDETR(TransformerDetector):
         self.as_two_stage = as_two_stage
         self.num_feature_levels = num_feature_levels
 
-        if "with_box_refine" in bbox_head:
+        if 'with_box_refine' in bbox_head:
             assert bbox_head.with_box_refine == with_box_refine
         else:
             bbox_head.with_box_refine = with_box_refine
-        if "as_two_stage" in bbox_head:
+        if 'as_two_stage' in bbox_head:
             assert bbox_head.as_two_stage == as_two_stage
         else:
             bbox_head.as_two_stage = as_two_stage
-        if "num_decoder_layers" in bbox_head:
+        if 'num_decoder_layers' in bbox_head:
             assert bbox_head.num_decoder_layers == decoder_cfg.num_layers
         else:
             bbox_head.num_decoder_layers = decoder_cfg.num_layers
@@ -191,15 +191,15 @@ class DeformableDETR(TransformerDetector):
         Args:
             mlvl_feats (list(Tensor)): Input queries from
                 different level. Each element has shape
-                [bs, embed_dims, h, w].
+                [batch_size, embed_dims, h, w].
             mlvl_masks (list(Tensor)): The key_padding_mask from
                 different level used for encoder and decoder,
-                each element has shape  [bs, h, w].
+                each element has shape  [batch_size, h, w].
             query_embed (Tensor): The query embedding for decoder,
                 with shape [num_query, c].
             mlvl_pos_embeds (list[Tensor]): The positional encoding
                 of feats from different level, has the shape
-                 [bs, embed_dims, h, w].
+                 [batch_size, embed_dims, h, w].
             reg_branches (obj:nn.ModuleList): Regression heads for
                 feature maps from each decoder layer. Only would
                 be passed when
@@ -215,13 +215,13 @@ class DeformableDETR(TransformerDetector):
 
                 - inter_states: Outputs from decoder. If
                     return_intermediate_dec is True output has shape \
-                      (num_dec_layers, bs, num_query, embed_dims), else has \
-                      shape (1, bs, num_query, embed_dims).
+                      (num_dec_layers, batch_size, num_query, embed_dims),
+                      else has shape (1, batch_size, num_query, embed_dims).
                 - init_reference_out: The initial value of reference \
-                    points, has shape (bs, num_queries, 4).
+                    points, has shape (batch_size, num_queries, 4).
                 - inter_references_out: The internal value of reference \
                     points in decoder, has shape \
-                    (num_dec_layers, bs,num_query, embed_dims)
+                    (num_dec_layers, batch_size,num_query, embed_dims)
                 - enc_outputs_class: The classification score of \
                     proposals generated from \
                     encoder's feature maps, has shape \
@@ -242,7 +242,7 @@ class DeformableDETR(TransformerDetector):
         spatial_shapes = []
         for lvl, (feat, mask, pos_embed) in enumerate(
                 zip(mlvl_feats, mlvl_masks, mlvl_pos_embeds)):
-            bs, c, h, w = feat.shape
+            batch_size, c, h, w = feat.shape
             spatial_shape = (h, w)
             spatial_shapes.append(spatial_shape)
             feat = feat.flatten(2).transpose(1, 2)
@@ -267,9 +267,10 @@ class DeformableDETR(TransformerDetector):
                                       valid_ratios,
                                       device=feat.device)
 
-        feat_flatten = feat_flatten.permute(1, 0, 2)  # (H*W, bs, embed_dims)
+        feat_flatten = feat_flatten.permute(1, 0,
+                                            2)  # (H*W, batch_size, embed_dims)
         lvl_pos_embed_flatten = lvl_pos_embed_flatten.permute(
-            1, 0, 2)  # (H*W, bs, embed_dims)
+            1, 0, 2)  # (H*W, batch_size, embed_dims)
         memory = self.encoder(
             query=feat_flatten,
             query_pos=lvl_pos_embed_flatten,
@@ -281,7 +282,7 @@ class DeformableDETR(TransformerDetector):
             **kwargs)
 
         memory = memory.permute(1, 0, 2)
-        bs, _, c = memory.shape
+        batch_size, _, c = memory.shape
         if self.as_two_stage:
             output_memory, output_proposals = \
                 self.gen_encoder_output_proposals(
@@ -315,8 +316,8 @@ class DeformableDETR(TransformerDetector):
             query_pos, query = torch.split(pos_trans_out, c, dim=2)
         else:
             query_pos, query = torch.split(query_embed, c, dim=1)
-            query_pos = query_pos.unsqueeze(0).expand(bs, -1, -1)
-            query = query.unsqueeze(0).expand(bs, -1, -1)
+            query_pos = query_pos.unsqueeze(0).expand(batch_size, -1, -1)
+            query = query.unsqueeze(0).expand(batch_size, -1, -1)
             reference_points = self.reference_points(query_pos).sigmoid()
             init_reference_out = reference_points
 
@@ -351,11 +352,11 @@ class DeformableDETR(TransformerDetector):
 
         Args:
             memory (Tensor) : The output of encoder,
-                has shape (bs, num_key, embed_dim).  num_key is
+                has shape (batch_size, num_key, embed_dim).  num_key is
                 equal the number of points on feature map from
                 all level.
             memory_padding_mask (Tensor): Padding mask for memory.
-                has shape (bs, num_key).
+                has shape (batch_size, num_key).
             spatial_shapes (Tensor): The shape of all feature maps.
                 has shape (num_level, 2).
 
@@ -363,12 +364,12 @@ class DeformableDETR(TransformerDetector):
             tuple: A tuple of feature map and bbox prediction.
 
                 - output_memory (Tensor): The input of decoder,  \
-                    has shape (bs, num_key, embed_dim).  num_key is \
+                    has shape (batch_size, num_key, embed_dim).  num_key is \
                     equal the number of points on feature map from \
                     all levels.
                 - output_proposals (Tensor): The normalized proposal \
                     after a inverse sigmoid, has shape \
-                    (bs, num_keys, 4).
+                    (batch_size, num_keys, 4).
         """
 
         N, S, C = memory.shape
@@ -421,13 +422,13 @@ class DeformableDETR(TransformerDetector):
                 feature maps, has shape (num_level, 2).
             valid_ratios (Tensor): The radios of valid
                 points on the feature map, has shape
-                (bs, num_levels, 2)
+                (batch_size, num_levels, 2)
             device (obj:`device`): The device where
                 reference_points should be.
 
         Returns:
             Tensor: reference points used in decoder, has \
-                shape (bs, num_keys, num_levels, 2).
+                shape (batch_size, num_keys, num_levels, 2).
         """
         reference_points_list = []
         for lvl, (H, W) in enumerate(spatial_shapes):
@@ -507,23 +508,23 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
 
         Args:
             query (Tensor): Input query with shape
-                `(num_query, bs, embed_dims)`.
+                `(num_query, batch_size, embed_dims)`.
             reference_points (Tensor): The reference
                 points of offset. has shape
-                (bs, num_query, 4) when as_two_stage,
-                otherwise has shape ((bs, num_query, 2).
+                (batch_size, num_query, 4) when as_two_stage,
+                otherwise has shape ((batch_size, num_query, 2).
             valid_ratios (Tensor): The radios of valid
                 points on the feature map, has shape
-                (bs, num_levels, 2)
+                (batch_size, num_levels, 2)
             reg_branch: (obj:`nn.ModuleList`): Used for
                 refining the regression results. Only would
                 be passed when with_box_refine is True,
                 otherwise would be passed a `None`.
 
         Returns:
-            Tensor: Results with shape [1, num_query, bs, embed_dims] when
-                return_intermediate is `False`, otherwise it has shape
-                [num_layers, num_query, bs, embed_dims].
+            Tensor: Results with shape [1, num_query, batch_size, embed_dims]
+                when return_intermediate is `False`, otherwise it has shape
+                [num_layers, num_query, batch_size, embed_dims].
         """
         output = query
         intermediate = []
