@@ -1,13 +1,15 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import math
-from typing import Sequence
+from typing import Sequence, Union
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mmcv.cnn import Linear, build_activation_layer, build_conv_layer, build_norm_layer
+from mmcv.cnn import (Linear, build_activation_layer, build_conv_layer,
+                      build_norm_layer)
 from mmcv.cnn.bricks.transformer import FFN, MultiheadAttention
+from mmengine import ConfigDict
 from mmengine.model import BaseModule, ModuleList
 from mmengine.utils import to_2tuple
 
@@ -403,28 +405,28 @@ class MLP(nn.Module):
         for i, layer in enumerate(self.layers):
             x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
         return x
+
+
 class DetrTransformerEncoder(BaseModule):
 
-    def __init__(self, layer_cfg=None, num_layers=None, init_cfg=None):
+    def __init__(self,
+                 num_layers: int,
+                 layer_cfg: Union[dict, ConfigDict],
+                 init_cfg: Union[dict, ConfigDict] = None) -> None:
 
         super().__init__(init_cfg=init_cfg)
-        if isinstance(layer_cfg, dict):
-            layer_cfg = [copy.deepcopy(layer_cfg) for _ in range(num_layers)]
-        else:
-            assert isinstance(layer_cfg, list) and \
-                   len(layer_cfg) == num_layers  # TODO
-        self.layer_cfg = layer_cfg  # TODO
         self.num_layers = num_layers
+        self.layer_cfg = [copy.deepcopy(layer_cfg) for _ in range(num_layers)]
         self._init_layers()
-        self.embed_dims = self.layers[0].embed_dims  # TODO
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         self.layers = ModuleList()
         for i in range(self.num_layers):
             self.layers.append(
                 DetrTransformerEncoderLayer(**self.layer_cfg[i]))
+        self.embed_dims = self.layers[0].embed_dims
 
-    def forward(self, query, *args, **kwargs):
+    def forward(self, query, *args, **kwargs):  # TODO: add comment
         for layer in self.layers:
             query = layer(query, *args, **kwargs)
         return query
@@ -433,36 +435,43 @@ class DetrTransformerEncoder(BaseModule):
 class DetrTransformerDecoder(BaseModule):
 
     def __init__(self,
-                 layer_cfg=None,
-                 num_layers=None,
-                 post_norm_cfg=dict(type='LN'),
-                 return_intermediate=True,
-                 init_cfg=None):
+                 num_layers: int,
+                 layer_cfg: Union[dict, ConfigDict],
+                 post_norm_cfg: Union[dict, ConfigDict] = dict(type='LN'),
+                 return_intermediate: bool = True,
+                 init_cfg: Union[dict, ConfigDict] = None) -> None:
         super().__init__(init_cfg=init_cfg)
-        if isinstance(layer_cfg, dict):
-            layer_cfg = [copy.deepcopy(layer_cfg) for _ in range(num_layers)]
-        else:
-            assert isinstance(layer_cfg, list) and \
-                   len(layer_cfg) == num_layers  # TODO
-        self.layer_cfg = layer_cfg  # TODO
+        self.layer_cfg = [copy.deepcopy(layer_cfg) for _ in range(num_layers)]
         self.num_layers = num_layers
         self.post_norm_cfg = post_norm_cfg
         self.return_intermediate = return_intermediate
         self._init_layers()
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
         self.layers = ModuleList()
         for i in range(self.num_layers):
             self.layers.append(
                 DetrTransformerDecoderLayer(**self.layer_cfg[i]))
-        self.embed_dims = self.layers[0].embed_dims  # TODO
+        self.embed_dims = self.layers[0].embed_dims
         self.post_norm = build_norm_layer(self.post_norm_cfg,
                                           self.embed_dims)[1]
 
-    def forward(self, query, *args, **kwargs):
+    def forward(self,
+                query,
+                key=None,
+                value=None,
+                query_pos=None,
+                key_pos=None,
+                **kwargs):  # TODO: add comment
         intermediate = []
         for layer in self.layers:
-            query = layer(query, *args, **kwargs)
+            query = layer(
+                query,
+                key=key,
+                value=value,
+                query_pos=query_pos,
+                key_pos=key_pos,
+                **kwargs)
             if self.return_intermediate:
                 intermediate.append(self.post_norm(query))
 

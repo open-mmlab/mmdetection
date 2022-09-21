@@ -74,11 +74,11 @@ class DeformableDETR(TransformerDetector):
         if self.as_two_stage:
             self.enc_output = nn.Linear(self.embed_dims, self.embed_dims)
             self.enc_output_norm = nn.LayerNorm(self.embed_dims)
-            self.pos_trans = nn.Linear(self.embed_dims * 2,
-                                       self.embed_dims * 2)
+            self.pos_trans_fc = nn.Linear(self.embed_dims * 2,
+                                          self.embed_dims * 2)
             self.pos_trans_norm = nn.LayerNorm(self.embed_dims * 2)
         else:
-            self.reference_points = nn.Linear(self.embed_dims, 2)
+            self.reference_points_fc = nn.Linear(self.embed_dims, 2)
 
     def _init_transformer_weight(self) -> None:
         for p in self.parameters():
@@ -88,7 +88,8 @@ class DeformableDETR(TransformerDetector):
             if isinstance(m, MultiScaleDeformableAttention):
                 m.init_weights()
         if not self.as_two_stage:
-            xavier_init(self.reference_points, distribution='uniform', bias=0.)
+            xavier_init(
+                self.reference_points_fc, distribution='uniform', bias=0.)
         normal_(self.level_embeds)
 
     def loss(self, batch_inputs: Tensor,
@@ -311,14 +312,15 @@ class DeformableDETR(TransformerDetector):
             topk_coords_unact = topk_coords_unact.detach()
             reference_points = topk_coords_unact.sigmoid()
             init_reference_out = reference_points
-            pos_trans_out = self.pos_trans_norm(
-                self.pos_trans(self.get_proposal_pos_embed(topk_coords_unact)))
+            pos_trans_out = self.pos_trans_fc(
+                self.get_proposal_pos_embed(topk_coords_unact))
+            pos_trans_out = self.pos_trans_norm(pos_trans_out)
             query_pos, query = torch.split(pos_trans_out, c, dim=2)
         else:
             query_pos, query = torch.split(query_embed, c, dim=1)
             query_pos = query_pos.unsqueeze(0).expand(batch_size, -1, -1)
             query = query.unsqueeze(0).expand(batch_size, -1, -1)
-            reference_points = self.reference_points(query_pos).sigmoid()
+            reference_points = self.reference_points_fc(query_pos).sigmoid()
             init_reference_out = reference_points
 
         # decoder
