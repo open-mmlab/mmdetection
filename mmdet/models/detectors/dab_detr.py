@@ -16,11 +16,11 @@ from ..layers import (MLP, DetrTransformerDecoder, DetrTransformerDecoderLayer,
                       DetrTransformerEncoder, DetrTransformerEncoderLayer,
                       SinePositionalEncodingHW)
 from ..layers.transformer import gen_sineembed_for_position, inverse_sigmoid
-from .base_detr import TransformerDetector
+from .detr import DETR
 
 
 @MODELS.register_module()
-class DABDETR(TransformerDetector):
+class DABDETR(DETR):
 
     def __init__(self,
                  *args,
@@ -59,20 +59,12 @@ class DABDETR(TransformerDetector):
             f'Found {self.embed_dims} and {num_feats}.'
 
     def init_weights(self) -> None:
-        super(TransformerDetector, self).init_weights()
-        self._init_transformer_weights()
+        super(DABDETR, self).init_weights()
         if self.random_refpoints_xy:
             uniform_init(self.query_embedding)
             self.query_embedding.weight.data[:, :2] = \
                 inverse_sigmoid(self.query_embedding.weight.data[:, :2])
             self.query_embedding.weight.data[:, :2].requires_grad = False
-
-    def _init_transformer_weights(self) -> None:
-        # follow the DetrTransformer to init parameters
-        for coder in [self.encoder, self.decoder]:
-            for m in coder.modules():
-                if hasattr(m, 'weight') and m.weight.dim() > 1:
-                    xavier_init(m, distribution='uniform')
 
     def forward_pretransformer(
             self,
@@ -84,7 +76,7 @@ class DABDETR(TransformerDetector):
         assert batch_data_samples is not None
         batch_input_shape = batch_data_samples[0].batch_input_shape
         img_shape_list = [
-            sample.img_shape  # noqa
+            sample.img_shape
             for sample in batch_data_samples
         ]
 
@@ -109,7 +101,8 @@ class DABDETR(TransformerDetector):
             pos_embed=pos_embed,
             query_embed=self.query_embedding.weight,
             reg_branches=reg_branches)
-        return transformer_inputs_dict  # noqa
+
+        return transformer_inputs_dict
 
     def forward_transformer(self,
                             feat: Tensor,
@@ -124,7 +117,7 @@ class DABDETR(TransformerDetector):
                                             1)  # [bs, c, h, w] -> [h*w, bs, c]
         pos_embed = pos_embed.view(bs, c, -1).permute(2, 0, 1)
         query_embed = query_embed.unsqueeze(1).repeat(
-            1, bs, 1)  # [num_query, 4] -> [num_query, bs, 4]
+            1, bs, 1)  # [num_query, query_dim] -> [num_query, bs, query_dim]
         masks = masks.view(bs, -1)  # [bs, h, w] -> [bs, h*w]
         memory = self.encoder(
             query=feat, query_pos=pos_embed, query_key_padding_mask=masks)
@@ -147,6 +140,7 @@ class DABDETR(TransformerDetector):
         if return_memory:
             memory = memory.permute(1, 2, 0).reshape(bs, c, h, w)
             return out_dec, reference, memory
+
         return out_dec, reference, None
 
     def _forward(self,
@@ -162,6 +156,7 @@ class DABDETR(TransformerDetector):
         outs_dec, reference, _ = self.forward_transformer(
             **transformer_inputs_dict)
         results = self.bbox_head.forward(outs_dec, reference)
+
         return results
 
     def loss(self, batch_inputs: Tensor,
@@ -172,6 +167,7 @@ class DABDETR(TransformerDetector):
         outs_dec, reference, _ = self.forward_transformer(
             **transformer_inputs_dict)
         losses = self.bbox_head.loss(outs_dec, reference, batch_data_samples)
+
         return losses
 
     def predict(self,
@@ -187,6 +183,7 @@ class DABDETR(TransformerDetector):
             outs_dec, reference, batch_data_samples, rescale=rescale)
         batch_data_samples = self.add_pred_to_datasample(
             batch_data_samples, results_list)
+
         return batch_data_samples
 
 
@@ -401,6 +398,7 @@ class ConditionalAttention(BaseModule):
                 key_padding_mask=query_key_padding_mask,
                 need_weights=need_weights)[0]
             query = query + self.proj_drop(sa_output)
+
         return query
 
 
@@ -649,4 +647,5 @@ class DabDetrTransformerEncoder(DetrTransformerEncoder):
                 attn_masks=attn_masks,
                 query_key_padding_mask=query_key_padding_mask,
                 **kwargs)
+                
         return query
