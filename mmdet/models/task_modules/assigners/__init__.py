@@ -4,6 +4,7 @@ from .assign_result import AssignResult
 from .atss_assigner import ATSSAssigner
 from .base_assigner import BaseAssigner
 from .center_region_assigner import CenterRegionAssigner
+from .dynamic_soft_label_assigner import DynamicSoftLabelAssigner
 from .grid_assigner import GridAssigner
 from .hungarian_assigner import HungarianAssigner
 from .iou2d_calculator import BboxOverlaps2D
@@ -22,5 +23,5 @@ __all__ = [
     'HungarianAssigner', 'RegionAssigner', 'UniformAssigner', 'SimOTAAssigner',
     'TaskAlignedAssigner', 'BBoxL1Cost', 'ClassificationCost',
     'CrossEntropyLossCost', 'DiceCost', 'FocalLossCost', 'IoUCost',
-    'BboxOverlaps2D'
+    'BboxOverlaps2D', 'DynamicSoftLabelAssigner'
 ]
