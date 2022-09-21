@@ -1,6 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
-import warnings
 from collections import OrderedDict
 from typing import List, Optional, Sequence, Union
 
@@ -121,7 +120,8 @@ class VOCMetric(BaseMetric):
         eval_results = OrderedDict()
         if self.metric == 'mAP':
             assert isinstance(self.iou_thrs, list)
-            # TODO: Need find a more elegent way to check the eval_mode is suitable
+            # TODO: Need find a more elegent way to check
+            #  the eval_mode is suitable.
             dataset_type = self.dataset_meta.get('DATASET_TYPE')
             if dataset_type == 'VOC':
                 dataset_name = 'voc'
