@@ -121,7 +121,12 @@ class VOCMetric(BaseMetric):
         eval_results = OrderedDict()
         if self.metric == 'mAP':
             assert isinstance(self.iou_thrs, list)
-            dataset_name = self.dataset_meta['CLASSES']
+            # TODO: Need find a more elegent way to check the eval_mode is suitable
+            dataset_type = self.dataset_meta.get('DATASET_TYPE')
+            if dataset_type == 'VOC':
+                dataset_name = 'voc'
+            else:
+                dataset_name = self.dataset_meta['CLASSES']
 
             mean_aps = []
             for iou_thr in self.iou_thrs:

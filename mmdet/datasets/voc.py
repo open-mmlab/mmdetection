@@ -26,22 +26,8 @@ class VOCDataset(XMLDataset):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if 'VOC2007' in self.sub_data_root:
-            self._metainfo['DATASET_TYPE'] = 'VOC2007'
+            self._metainfo['DATASET_TYPE'] = 'VOC'
         elif 'VOC2012' in self.sub_data_root:
-            self._metainfo['DATASET_TYPE'] = 'VOC2012'
+            self._metainfo['DATASET_TYPE'] = 'VOC'
         else:
             self._metainfo['DATASET_TYPE'] = None
-
-    @property
-    def metainfo(self) -> dict:
-        """To use `ConcatDataset` while training, need to override this function.
-        Get meta information of dataset.
-
-        Returns:
-            dict: meta information collected from ``BaseDataset.METAINFO``,
-            annotation file and metainfo argument during instantiation.
-        """
-        metainfo = copy.deepcopy(self._metainfo)
-        if 'DATASET_TYPE' in metainfo:
-            del metainfo['DATASET_TYPE']
-        return metainfo
