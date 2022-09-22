@@ -131,9 +131,9 @@ class DETRHead(BaseModule):
             dict(type='ReLU', inplace=True),
             dropout=0.0,
             add_residual=False)
-        # NOTE the activations of reg_branch is the same as those in
-        # transformer, but they are actually different in Conditional DETR
-        # and DAB DETR (prelu in transformer and relu in reg_branch)
+        # NOTE the activations of reg_branch here is the same as
+        # those in transformer, but they are actually different
+        # in DAB DETR (prelu in transformer and relu in reg_branch)
         self.fc_reg = Linear(self.embed_dims, 4)
 
     # Note function _load_from_state_dict is deleted without
