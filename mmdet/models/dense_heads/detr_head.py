@@ -142,10 +142,13 @@ class DETRHead(BaseModule):
     def forward(self, out_dec: Tensor) -> Tuple[Tensor, Tensor]:
         """"Forward function.
 
-        Args: TODO
-
+        Args:
+            out_dec (Tensor): Features from transformer decoder.
+            If return_intermediate_dec in detr.py is True output has
+            shape [num_dec_layers, bs, num_query, embed_dims], else
+            has shape [1, bs, num_query, embed_dims].
         Returns:
-            tuple[Tensor]:
+            tuple[Tensor, Tensor]:
 
             - all_cls_scores (Tensor): Outputs from the classification head, \
             shape [nb_dec, bs, num_query, cls_out_channels]. Note \
