@@ -33,20 +33,21 @@ class CSPNeXt(BaseModule):
             Defaults to False.
         arch_ovewrite (list): Overwrite default arch settings.
             Defaults to None.
-        spp_kernal_sizes: (tuple[int]): Sequential of kernel sizes of SPP
+        spp_kernel_sizes: (tuple[int]): Sequential of kernel sizes of SPP
             layers. Defaults to (5, 9, 13).
         channel_attention (bool): Whether to add channel attention in each
             stage. Defaults to True.
-        conv_cfg (dict): Config dict for convolution layer. Defaults to None.
-        norm_cfg (dict): Dictionary to construct and config norm layer.
-            Defaults to dict(type='BN', requires_grad=True).
-        act_cfg (dict): Config dict for activation layer.
-            Defaults to dict(type='LeakyReLU', negative_slope=0.1).
+        conv_cfg (:obj:`ConfigDict` or dict, optional): Config dict for
+            convolution layer. Defaults to None.
+        norm_cfg (:obj:`ConfigDict` or dict): Dictionary to construct and
+            config norm layer. Defaults to dict(type='BN', requires_grad=True).
+        act_cfg (:obj:`ConfigDict` or dict): Config dict for activation layer.
+            Defaults to dict(type='SiLU').
         norm_eval (bool): Whether to set norm layers to eval mode, namely,
             freeze running stats (mean and var). Note: Effect on Batch Norm
             and its variants only.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
-            Defaults to None.
+        init_cfg (:obj:`ConfigDict` or dict or list[dict] or
+            list[:obj:`ConfigDict`]): Initialization config dict.
     """
     # From left to right:
     # in_channels, out_channels, num_blocks, add_identity, use_spp
@@ -68,7 +69,7 @@ class CSPNeXt(BaseModule):
         use_depthwise: bool = False,
         expand_ratio: float = 0.5,
         arch_ovewrite: dict = None,
-        spp_kernal_sizes: Sequence[int] = (5, 9, 13),
+        spp_kernel_sizes: Sequence[int] = (5, 9, 13),
         channel_attention: bool = True,
         conv_cfg: OptConfigType = None,
         norm_cfg: ConfigType = dict(type='BN', momentum=0.03, eps=0.001),
@@ -82,7 +83,7 @@ class CSPNeXt(BaseModule):
             mode='fan_in',
             nonlinearity='leaky_relu')
     ) -> None:
-        super().__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
         arch_setting = self.arch_settings[arch]
         if arch_ovewrite:
             arch_setting = arch_ovewrite
@@ -145,7 +146,7 @@ class CSPNeXt(BaseModule):
                 spp = SPPBottleneck(
                     out_channels,
                     out_channels,
-                    kernel_sizes=spp_kernal_sizes,
+                    kernel_sizes=spp_kernel_sizes,
                     conv_cfg=conv_cfg,
                     norm_cfg=norm_cfg,
                     act_cfg=act_cfg)
@@ -156,7 +157,7 @@ class CSPNeXt(BaseModule):
                 num_blocks=num_blocks,
                 add_identity=add_identity,
                 use_depthwise=use_depthwise,
-                use_lk_block=True,
+                use_cspnext_block=True,
                 expand_ratio=expand_ratio,
                 channel_attention=channel_attention,
                 conv_cfg=conv_cfg,

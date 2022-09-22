@@ -83,8 +83,8 @@ class CSPNeXtBlock(BaseModule):
         in_channels (int): The input channels of this Module.
         out_channels (int): The output channels of this Module.
         expansion (int): The kernel size of the convolution. Defaults to 0.5.
-        add_identity (bool): Whether to add identity to the out.
-            Defaults to True.
+        add_identity (bool): Whether to add identity to the out. Only works
+            when in_channels == out_channels. Defaults to True.
         use_depthwise (bool): Whether to use depthwise separable convolution.
             Defaults to False.
         kernel_size (int): The kernel size of the depthwise convolution.
@@ -95,6 +95,9 @@ class CSPNeXtBlock(BaseModule):
             Defaults to dict(type='BN', momentum=0.03, eps=0.001).
         act_cfg (dict): Config dict for activation layer.
             Defaults to dict(type='SiLU').
+        init_cfg (:obj:`ConfigDict` or dict or list[dict] or
+            list[:obj:`ConfigDict`], optional): Initialization config dict.
+            Defaults to None.
     """
 
     def __init__(self,
@@ -109,7 +112,7 @@ class CSPNeXtBlock(BaseModule):
                      type='BN', momentum=0.03, eps=0.001),
                  act_cfg: ConfigType = dict(type='SiLU'),
                  init_cfg: OptMultiConfig = None) -> None:
-        super().__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
         hidden_channels = int(out_channels * expansion)
         conv = DepthwiseSeparableConvModule if use_depthwise else ConvModule
         self.conv1 = conv(
@@ -154,14 +157,21 @@ class CSPLayer(BaseModule):
         num_blocks (int): Number of blocks. Default: 1
         add_identity (bool): Whether to add identity in blocks.
             Default: True
-        use_depthwise (bool): Whether to depthwise separable convolution in
+        use_cspnext_block (bool): Whether to use CSPNeXt block.
+            Defaults to False.
+        use_depthwise (bool): Whether to use depthwise separable convolution in
             blocks. Default: False
+        channel_attention (bool): Whether to add channel attention in each
+            stage. Defaults to True.
         conv_cfg (dict, optional): Config dict for convolution layer.
             Default: None, which means using conv2d.
         norm_cfg (dict): Config dict for normalization layer.
             Default: dict(type='BN')
         act_cfg (dict): Config dict for activation layer.
             Default: dict(type='Swish')
+        init_cfg (:obj:`ConfigDict` or dict or list[dict] or
+            list[:obj:`ConfigDict`], optional): Initialization config dict.
+            Defaults to None.
     """
 
     def __init__(self,
@@ -171,15 +181,15 @@ class CSPLayer(BaseModule):
                  num_blocks: int = 1,
                  add_identity: bool = True,
                  use_depthwise: bool = False,
-                 use_lk_block: bool = False,
+                 use_cspnext_block: bool = False,
                  channel_attention: bool = False,
                  conv_cfg: OptConfigType = None,
                  norm_cfg: ConfigType = dict(
                      type='BN', momentum=0.03, eps=0.001),
                  act_cfg: ConfigType = dict(type='Swish'),
                  init_cfg: OptMultiConfig = None) -> None:
-        super().__init__(init_cfg)
-        block = CSPNeXtBlock if use_lk_block else DarknetBottleneck
+        super().__init__(init_cfg=init_cfg)
+        block = CSPNeXtBlock if use_cspnext_block else DarknetBottleneck
         mid_channels = int(out_channels * expand_ratio)
         self.channel_attention = channel_attention
         self.main_conv = ConvModule(
