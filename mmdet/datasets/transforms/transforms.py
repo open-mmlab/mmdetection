@@ -3069,8 +3069,10 @@ class CachedMosaic(Mosaic):
         pad_val (int): Pad value. Defaults to 114.
         prob (float): Probability of applying this transformation.
             Defaults to 1.0.
-        max_cached_images (int): The maximum length of the cache.
-            Defaults to 40.
+        max_cached_images (int): The maximum length of the cache. The larger
+            the cache, the stronger the randomness of this transform. As a
+            rule of thumb, providing 10 caches for each image suffices for
+            randomness. Defaults to 40.
         random_pop (bool): Whether to randomly pop a result from the cache
             when the cache is full. If set to False, use FIFO popping method.
             Defaults to True.
@@ -3280,8 +3282,10 @@ class CachedMixUp(BaseTransform):
             the border of the image. In some dataset like MOT17, the gt bboxes
             are allowed to cross the border of images. Therefore, we don't
             need to clip the gt bboxes in these cases. Defaults to True.
-        max_cached_images (int): The maximum length of the cache.
-            Defaults to 20.
+        max_cached_images (int): The maximum length of the cache. The larger
+            the cache, the stronger the randomness of this transform. As a
+            rule of thumb, providing 10 caches for each image suffices for
+            randomness. Defaults to 20.
         random_pop (bool): Whether to randomly pop a result from the cache
             when the cache is full. If set to False, use FIFO popping method.
             Defaults to True.
@@ -3296,10 +3300,14 @@ class CachedMixUp(BaseTransform):
                  pad_val: float = 114.0,
                  max_iters: int = 15,
                  bbox_clip_border: bool = True,
-                 max_cached_images=20,
-                 random_pop=True,
-                 prob=1.0) -> None:
+                 max_cached_images: int = 20,
+                 random_pop: bool = True,
+                 prob: float = 1.0) -> None:
         assert isinstance(img_scale, tuple)
+        assert max_cached_images >= 2, 'The length of cache must >= 2, ' \
+                                       f'but got {max_cached_images}.'
+        assert 0 <= prob <= 1.0, 'The probability should be in range [0,1]. ' \
+                                 f'got {prob}.'
         self.dynamic_scale = img_scale
         self.ratio_range = ratio_range
         self.flip_ratio = flip_ratio
@@ -3307,8 +3315,7 @@ class CachedMixUp(BaseTransform):
         self.max_iters = max_iters
         self.bbox_clip_border = bbox_clip_border
         self.results_cache = []
-        assert max_cached_images >= 2, 'The length of cache must >= 2, ' \
-                                       f'but got {max_cached_images}.'
+
         self.max_cached_images = max_cached_images
         self.random_pop = random_pop
         self.prob = prob
