@@ -15,8 +15,9 @@ from .base_detr import TransformerDetector
 
 @MODELS.register_module()
 class DETR(TransformerDetector):
-    """Implementation of `DETR: End-to-End Object Detection with
-    Transformers <https://arxiv.org/pdf/2005.12872>`_.
+    """Implementation of `DETR: End-to-End Object Detection with Transformers.
+
+    <https://arxiv.org/pdf/2005.12872>`_.
 
     Code is modified from the `official github repo
     <https://github.com/facebookresearch/detr>`_.
@@ -24,7 +25,6 @@ class DETR(TransformerDetector):
 
     def _init_layers(self) -> None:
         """Initialize layers except for backbone, neck and bbox_head."""
-
         self.positional_encoding = SinePositionalEncoding(
             **self.positional_encoding_cfg)
         self.encoder = DetrTransformerEncoder(**self.encoder_cfg)
@@ -42,7 +42,6 @@ class DETR(TransformerDetector):
 
     def init_weights(self) -> None:
         """Initialize weights for Transformer and other components."""
-
         super().init_weights()
         self._init_transformer_weights()
 

@@ -19,22 +19,7 @@ from .detr_head import DETRHead
 @MODELS.register_module()
 class DeformableDETRHead(DETRHead):
     """Head of DeformDETR: Deformable DETR: Deformable Transformers for End-to-
-    End Object Detection.
-
-    Code is modified from the `official github repo
-    <https://github.com/fundamentalvision/Deformable-DETR>`_.
-
-    More details can be found in the `paper
-    <https://arxiv.org/abs/2010.04159>`_ .
-
-    Args:
-        with_box_refine (bool): Whether to refine the reference points
-            in the decoder. Defaults to False.
-        as_two_stage (bool) : Whether to generate the proposal from
-            the outputs of encoder.
-        transformer (obj:`ConfigDict`): ConfigDict is used for building
-            the Encoder and Decoder.
-    """
+    End Object Detection."""
 
     def __init__(self,
                  *args,
@@ -89,11 +74,27 @@ class DeformableDETRHead(DETRHead):
             for m in self.reg_branches:
                 nn.init.constant_(m[-1].bias.data[2:], 0.0)
 
-    def forward(self, hs: Tensor, init_reference,
-                inter_references) -> Tuple[Tensor, ...]:
+    def forward(self, hs: Tensor, init_reference: Tensor,
+                inter_references: Tensor) -> Tuple[Tensor]:
         """Forward function.
 
-        TODO: Update
+        Args:
+            hs (Tensor): Hidden states output from each decoder layer, has
+                shape [num_decoder_layers, num_query, bs, embed_dims].
+            init_reference (Tensor): The initial reference points entered
+                into the decoder, has shape [bs, num_query, 4].
+            inter_references (Tensor): The intermediate reference points
+                in each decoder layer, has shape
+                [num_decoder_layers, num_query, bs, 4].
+
+        Returns:
+            tuple[Tensor]: results of decoder containing the following tensor.
+
+            - outputs_classes (Tensor): Outputs from the classification head,
+              shape [nb_dec, bs, num_query, cls_out_channels].
+            - outputs_coords (Tensor): Sigmoid outputs from the regression
+              head with normalized coordinate format (cx, cy, w, h).
+              Shape [nb_dec, bs, num_query, 4].
         """
         hs = hs.permute(0, 2, 1, 3)
         outputs_classes = []
@@ -120,9 +121,36 @@ class DeformableDETRHead(DETRHead):
         outputs_coords = torch.stack(outputs_coords)
         return outputs_classes, outputs_coords
 
-    def loss(self, hs: Tensor, init_reference, inter_references,
-             enc_outputs_class, enc_outputs_coord,
+    def loss(self, hs: Tensor, init_reference: Tensor,
+             inter_references: Tensor, enc_outputs_class: Tensor,
+             enc_outputs_coord: Tensor,
              batch_data_samples: SampleList) -> dict:
+        """Perform forward propagation and loss calculation of the detection
+        head on the queries of the upstream network.
+
+        Args:
+            hs (Tensor): Hidden states output from each decoder layer, has
+                shape [num_decoder_layers, num_query, bs, embed_dims].
+            init_reference (Tensor): The initial reference points entered
+                into the decoder, has shape [bs, num_query, 4].
+            inter_references (Tensor): The intermediate reference points
+                in each decoder layer, has shape
+                [num_decoder_layers, num_query, bs, 4].
+            enc_outputs_class (Tensor): The score of each point on encode
+                feature map, has shape (N, num_features, cls_out_channels).
+                Only when as_two_stage is True it would be returned,
+                otherwise `None` would be returned.
+            enc_outputs_coord (Tensor): The proposal generate from the
+                encode feature map, has shape (N, num_features, 4). Only when
+                as_two_stage is True it would be returned, otherwise `None`
+                would be returned.
+            batch_data_samples (List[:obj:`DetDataSample`]): The Data
+                Samples. It usually includes information such as
+                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+
+        Returns:
+            dict: A dictionary of loss components.
+        """
         batch_gt_instances = []
         batch_img_metas = []
         for data_sample in batch_data_samples:
@@ -196,8 +224,8 @@ class DeformableDETRHead(DETRHead):
                 batch_gt_instances[i].labels = torch.zeros_like(
                     batch_gt_instances[i].labels)
             enc_loss_cls, enc_losses_bbox, enc_losses_iou = \
-                self.loss_single(enc_cls_scores, enc_bbox_preds,
-                                 batch_gt_instances, batch_img_metas)
+                self.loss_by_feat_single(enc_cls_scores, enc_bbox_preds,
+                                         batch_gt_instances, batch_img_metas)
             loss_dict['enc_loss_cls'] = enc_loss_cls
             loss_dict['enc_loss_bbox'] = enc_losses_bbox
             loss_dict['enc_loss_iou'] = enc_losses_iou
@@ -218,11 +246,31 @@ class DeformableDETRHead(DETRHead):
         return loss_dict
 
     def predict(self,
-                hs,
-                init_reference,
-                inter_references,
+                hs: Tensor,
+                init_reference: Tensor,
+                inter_references: Tensor,
                 batch_data_samples: SampleList,
                 rescale: bool = True) -> InstanceList:
+        """Perform forward propagation and loss calculation of the detection
+        head on the queries of the upstream network.
+
+        Args:
+            hs (Tensor): Hidden states output from each decoder layer, has
+                shape [num_decoder_layers, num_query, bs, embed_dims].
+            init_reference (Tensor): The initial reference points entered
+                into the decoder, has shape [bs, num_query, 4].
+            inter_references (Tensor): The intermediate reference points
+                in each decoder layer, has shape
+                [num_decoder_layers, num_query, bs, 4].
+            batch_data_samples (List[:obj:`DetDataSample`]): The Data
+                Samples. It usually includes information such as
+                `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+            rescale (bool, optional): If True, return boxes in original
+                image space. Defaults to True.
+
+        Returns:
+            dict: A dictionary of loss components.
+        """
         batch_img_metas = [
             data_samples.metainfo for data_samples in batch_data_samples
         ]

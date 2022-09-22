@@ -1,13 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn.functional as F
 from mmcv.cnn.bricks.transformer import (FFN, MultiheadAttention,
                                          MultiScaleDeformableAttention,
                                          build_norm_layer)
-from mmengine.model import ModuleList, xavier_init
+from mmengine.model import BaseModule, ModuleList, xavier_init
 from torch import Tensor, nn
 from torch.nn.init import normal_
 
@@ -23,7 +23,19 @@ from .base_detr import TransformerDetector
 @MODELS.register_module()
 class DeformableDETR(TransformerDetector):
     r"""Implementation of `Deformable DETR: Deformable Transformers for
-    End-to-End Object Detection <https://arxiv.org/abs/2010.04159>`_"""
+    End-to-End Object Detection <https://arxiv.org/abs/2010.04159>`_
+
+    Code is modified from the `official github repo
+    <https://github.com/fundamentalvision/Deformable-DETR>`_.
+
+    Args:
+        with_box_refine (bool, optional): Whether to refine the reference
+            points in the decoder. Defaults to False.
+        as_two_stage (bool, optional): Whether to generate the proposal
+            from the outputs of encoder. Defaults to False.
+        num_feature_levels (int, optional): Number of feature levels.
+            Defaults to 4.
+    """
 
     def __init__(self,
                  *args,
@@ -37,23 +49,18 @@ class DeformableDETR(TransformerDetector):
         self.as_two_stage = as_two_stage
         self.num_feature_levels = num_feature_levels
 
-        if 'with_box_refine' in bbox_head:
-            assert bbox_head.with_box_refine == with_box_refine
-        else:
-            bbox_head.with_box_refine = with_box_refine
-        if 'as_two_stage' in bbox_head:
-            assert bbox_head.as_two_stage == as_two_stage
-        else:
-            bbox_head.as_two_stage = as_two_stage
-        if 'num_decoder_layers' in bbox_head:
-            assert bbox_head.num_decoder_layers == decoder_cfg.num_layers
-        else:
-            bbox_head.num_decoder_layers = decoder_cfg.num_layers
+        if bbox_head is not None:
+            bbox_head.update(
+                dict(
+                    with_box_refine=with_box_refine,
+                    as_two_stage=as_two_stage,
+                    num_decoder_layers=decoder_cfg['num_layers']))
 
         super().__init__(
             *args, decoder_cfg=decoder_cfg, bbox_head=bbox_head, **kwargs)
 
     def _init_layers(self) -> None:
+        """Initialize layers except for backbone, neck and bbox_head."""
         self.positional_encoding = SinePositionalEncoding(
             **self.positional_encoding_cfg)
         self.encoder = DeformableDetrTransformerEncoder(**self.encoder_cfg)
@@ -80,7 +87,9 @@ class DeformableDETR(TransformerDetector):
         else:
             self.reference_points_fc = nn.Linear(self.embed_dims, 2)
 
-    def _init_transformer_weight(self) -> None:
+    def init_weights(self) -> None:
+        """Initialize weights."""
+        super().init_weights()
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
@@ -93,7 +102,19 @@ class DeformableDETR(TransformerDetector):
         normal_(self.level_embeds)
 
     def loss(self, batch_inputs: Tensor,
-             batch_data_samples: SampleList) -> Union[dict, list]:
+             batch_data_samples: SampleList) -> Union[dict, list]:  # TODO
+        """Calculate losses from a batch of inputs and data samples.
+
+        Args:
+            batch_inputs (Tensor): Input images of shape (N, C, H, W).
+                These should usually be mean centered and std scaled.
+            batch_data_samples (list[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+
+        Returns:
+            dict: A dictionary of loss components.  # TODO
+        """
         img_feats = self.extract_feat(batch_inputs)
         transformer_inputs_dict = self.forward_pretransformer(
             img_feats, batch_data_samples)
@@ -109,6 +130,30 @@ class DeformableDETR(TransformerDetector):
                 batch_inputs: Tensor,
                 batch_data_samples: SampleList,
                 rescale: bool = True) -> SampleList:
+        """Predict results from a batch of inputs and data samples with post-
+        processing.
+
+        Args:
+            batch_inputs (Tensor): Inputs with shape (N, C, H, W).
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+            rescale (bool): Whether to rescale the results.
+                Defaults to True.
+
+        Returns:
+            list[:obj:`DetDataSample`]: Detection results of the
+            input images. Each DetDataSample usually contain
+            'pred_instances'. And the ``pred_instances`` usually
+            contains following keys.
+
+                - scores (Tensor): Classification scores, has a shape
+                    (num_instance, )
+                - labels (Tensor): Labels of bboxes, has a shape
+                    (num_instances, ).
+                - bboxes (Tensor): Has a shape (num_instances, 4),
+                    the last dimension 4 arrange as (x1, y1, x2, y2).
+        """
         img_feats = self.extract_feat(batch_inputs)
         transformer_inputs_dict = self.forward_pretransformer(
             img_feats, batch_data_samples)
@@ -128,6 +173,19 @@ class DeformableDETR(TransformerDetector):
             self,
             batch_inputs: Tensor,
             batch_data_samples: OptSampleList = None) -> Tuple[List[Tensor]]:
+        """Network forward process. Usually includes backbone, neck and head
+        forward without any post-processing.
+
+         Args:
+            batch_inputs (Tensor): Inputs with shape (N, C, H, W).
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+                Defaults to None.
+
+        Returns:
+            Tuple[list]: A tuple of features from ``bbox_head`` forward.
+        """
         img_feats = self.extract_feat(batch_inputs)
         transformer_inputs_dict = self.forward_pretransformer(
             img_feats, batch_data_samples)
@@ -140,6 +198,19 @@ class DeformableDETR(TransformerDetector):
             self,
             mlvl_feats: Tuple[Tensor],
             batch_data_samples: OptSampleList = None) -> Dict[str, Tensor]:
+        """Prepare the inputs of the Transformer.
+
+        Args:
+            mlvl_feats (Tuple[Tensor]): Multi-level features that may have
+                different resolutions, output from neck.
+            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+                Defaults to None.
+
+        Returns:
+            Dict[str, Tensor]: The inputs of the Transformer.
+        """
         batch_size = mlvl_feats[0].size(0)
         # construct binary masks which used for the transformer
         assert batch_data_samples is not None
@@ -180,60 +251,55 @@ class DeformableDETR(TransformerDetector):
         return transformer_inputs_dict
 
     def forward_transformer(self,
-                            mlvl_feats,
-                            mlvl_masks,
-                            query_embed,
-                            mlvl_pos_embeds,
-                            reg_branches=None,
-                            cls_branches=None,
-                            **kwargs):
+                            mlvl_feats: Tuple[Tensor],
+                            mlvl_masks: List[Tensor],
+                            mlvl_pos_embeds: List[Tensor],
+                            query_embed: Tensor,
+                            reg_branches: Optional[BaseModule] = None,
+                            cls_branches: Optional[BaseModule] = None,
+                            **kwargs) -> Tuple[Tensor]:
         """Forward function for `Transformer`.
 
         Args:
-            mlvl_feats (list(Tensor)): Input queries from
+            mlvl_feats (Tuple[Tensor]): Input queries from
                 different level. Each element has shape
-                [batch_size, embed_dims, h, w].
-            mlvl_masks (list(Tensor)): The key_padding_mask from
+                [bs, embed_dims, h, w].
+            mlvl_masks (List[Tensor]): The key_padding_mask from
                 different level used for encoder and decoder,
-                each element has shape  [batch_size, h, w].
+                each element has shape [bs, h, w].
+            mlvl_pos_embeds (List[Tensor]): The positional encoding
+                of feats from different level, has the shape
+                 [bs, embed_dims, h, w].
             query_embed (Tensor): The query embedding for decoder,
                 with shape [num_query, c].
-            mlvl_pos_embeds (list[Tensor]): The positional encoding
-                of feats from different level, has the shape
-                 [batch_size, embed_dims, h, w].
-            reg_branches (obj:nn.ModuleList): Regression heads for
+            reg_branches (obj:BaseModule, optional): Regression heads for
                 feature maps from each decoder layer. Only would
-                be passed when
-                `with_box_refine` is True. Default to None.
-            cls_branches (obj:nn.ModuleList): Classification heads
+                be passed when `with_box_refine` is True. Default to None.
+            cls_branches (obj:BaseModule, optional): Classification heads
                 for feature maps from each decoder layer. Only would
-                 be passed when `as_two_stage`
-                 is True. Default to None.
-
+                be passed when `as_two_stage` is True. Default to None.
 
         Returns:
             tuple[Tensor]: results of decoder containing the following tensor.
 
                 - inter_states: Outputs from decoder. If
-                    return_intermediate_dec is True output has shape \
-                      (num_dec_layers, batch_size, num_query, embed_dims),
-                      else has shape (1, batch_size, num_query, embed_dims).
+                    return_intermediate_dec is True output has shape
+                    (num_dec_layers, bs, num_query, embed_dims),else
+                    has shape (1, bs, num_query, embed_dims).
                 - init_reference_out: The initial value of reference \
-                    points, has shape (batch_size, num_queries, 4).
+                    points, has shape (bs, num_queries, 4).
                 - inter_references_out: The internal value of reference \
                     points in decoder, has shape \
-                    (num_dec_layers, batch_size,num_query, embed_dims)
+                    (num_dec_layers, bs, num_query, embed_dims)
                 - enc_outputs_class: The classification score of \
-                    proposals generated from \
-                    encoder's feature maps, has shape \
-                    (batch, h*w, num_classes). \
-                    Only would be returned when `as_two_stage` is True, \
-                    otherwise None.
+                    proposals generated from encoder's feature maps,
+                    has shape (bs, h*w, num_classes). \
+                    Only would be returned when `as_two_stage` is
+                    True, otherwise None.
                 - enc_outputs_coord_unact: The regression results \
                     generated from encoder's feature maps., has shape \
-                    (batch, h*w, 4). Only would \
-                    be returned when `as_two_stage` is True, \
-                    otherwise None.
+                    (bs, h*w, 4). Only would be returned when `as_two_stage`
+                    is True, otherwise None.
         """
         assert self.as_two_stage or query_embed is not None
 
@@ -344,12 +410,13 @@ class DeformableDETR(TransformerDetector):
         if self.as_two_stage:
             return inter_states, init_reference_out, \
                    inter_references_out, enc_outputs_class, \
-                   enc_outputs_coord_unact.sigmoid()
+                   enc_outputs_coord_unact.sigmoid()  # TODO
         return inter_states, init_reference_out, \
             inter_references_out, None, None
 
-    def gen_encoder_output_proposals(self, memory, memory_padding_mask,
-                                     spatial_shapes):
+    def gen_encoder_output_proposals(self, memory: Tensor,
+                                     memory_padding_mask: Tensor,
+                                     spatial_shapes: Tensor) -> Tuple[Tensor]:
         """Generate proposals from encoded memory.
 
         Args:
@@ -416,7 +483,8 @@ class DeformableDETR(TransformerDetector):
         return output_memory, output_proposals
 
     @staticmethod
-    def get_reference_points(spatial_shapes, valid_ratios, device):
+    def get_reference_points(spatial_shapes: Tensor, valid_ratios: Tensor,
+                             device: Union[str, torch.device]) -> Tensor:
         """Get the reference points used in decoder.
 
         Args:
@@ -424,13 +492,13 @@ class DeformableDETR(TransformerDetector):
                 feature maps, has shape (num_level, 2).
             valid_ratios (Tensor): The radios of valid
                 points on the feature map, has shape
-                (batch_size, num_levels, 2)
+                (bs, num_levels, 2)
             device (obj:`device`): The device where
                 reference_points should be.
 
         Returns:
             Tensor: reference points used in decoder, has \
-                shape (batch_size, num_keys, num_levels, 2).
+                shape (bs, num_keys, num_levels, 2).
         """
         reference_points_list = []
         for lvl, (H, W) in enumerate(spatial_shapes):
@@ -450,8 +518,17 @@ class DeformableDETR(TransformerDetector):
         reference_points = reference_points[:, :, None] * valid_ratios[:, None]
         return reference_points
 
-    def get_valid_ratio(self, mask):
-        """Get the valid radios of feature maps of all  level."""
+    def get_valid_ratio(self, mask: Tensor) -> Tensor:
+        """Get the valid radios of feature map of a level.
+
+        Args:
+            mask (Tensor): Binary mask of a feature map, has \
+                shape (N, H, W)
+
+        Returns:
+            Tensor: valid ratio [r_h, r_w] of the feature map, \
+                has shape [1, 2]
+        """
         _, H, W = mask.shape
         valid_H = torch.sum(~mask[:, :, 0], 1)
         valid_W = torch.sum(~mask[:, 0, :], 1)
@@ -461,10 +538,25 @@ class DeformableDETR(TransformerDetector):
         return valid_ratio
 
     def get_proposal_pos_embed(self,
-                               proposals,
-                               num_pos_feats=128,
-                               temperature=10000):
-        """Get the position embedding of proposal."""
+                               proposals: Tensor,
+                               num_pos_feats: int = 128,
+                               temperature: int = 10000):
+        """Get the position embedding of proposal.
+
+        Args:
+            proposals (Tensor): Not normalized proposals, has shape
+                [bs, num_query, 4]
+            num_pos_feats (int, optional): The feature dimension for each
+                position along x, y, w, or h-axis. Note the final returned
+                dimension for each position is 4 times of this value.
+                Default to 128.
+            temperature (int, optional): The temperature used for scaling
+                the position embedding. Defaults to 10000.
+
+        Returns:
+            Tensor: The position embedding of proposal, has shape
+                [bs, num_query, num_pos_feats * 4]
+        """
         scale = 2 * math.pi
         dim_t = torch.arange(
             num_pos_feats, dtype=torch.float32, device=proposals.device)
@@ -480,17 +572,22 @@ class DeformableDETR(TransformerDetector):
 
 
 class DeformableDetrTransformerEncoder(DetrTransformerEncoder):
+    """Encoder of Deformable DETR."""
 
     def _init_layers(self) -> None:
+        """Initialize encoder layers."""
         self.layers = ModuleList()
         for i in range(self.num_layers):
             self.layers.append(
                 DeformableDetrTransformerEncoderLayer(**self.layer_cfg[i]))
+        self.embed_dims = self.layers[0].embed_dims
 
 
 class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
+    """Decoder of Deformable DETR."""
 
     def _init_layers(self) -> None:
+        """Initialize decoder layers."""
         self.layers = ModuleList()
         for i in range(self.num_layers):
             self.layers.append(
@@ -499,34 +596,35 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
             raise ValueError('There is not post_norm in '
                              'DeformableDetrTransformerDecoder')
 
-    def forward(self,
-                query,
-                *args,
-                reference_points=None,
-                valid_ratios=None,
-                reg_branches=None,
-                **kwargs):
-        """Forward function for `TransformerDecoder`.
+    def forward(
+            self,
+            query: Tensor,
+            *args,  # TODO
+            reference_points: Tensor = None,
+            valid_ratios: Tensor = None,
+            reg_branches: Optional[nn.Module] = None,
+            **kwargs) -> Tensor:
+        """Forward function for `DeformableDetrTransformerDecoder`.
 
         Args:
             query (Tensor): Input query with shape
-                `(num_query, batch_size, embed_dims)`.
+                `(num_query, bs, embed_dims)`.
             reference_points (Tensor): The reference
                 points of offset. has shape
                 (batch_size, num_query, 4) when as_two_stage,
-                otherwise has shape ((batch_size, num_query, 2).
+                otherwise has shape ((bs, num_query, 2).
             valid_ratios (Tensor): The radios of valid
                 points on the feature map, has shape
-                (batch_size, num_levels, 2)
-            reg_branch: (obj:`nn.ModuleList`): Used for
+                (bs, num_levels, 2)
+            reg_branches: (obj:`nn.ModuleList`, optional): Used for
                 refining the regression results. Only would
                 be passed when with_box_refine is True,
                 otherwise would be passed a `None`.
 
         Returns:
-            Tensor: Results with shape [1, num_query, batch_size, embed_dims]
+            Tensor: Results with shape [1, num_query, bs, embed_dims]
                 when return_intermediate is `False`, otherwise it has shape
-                [num_layers, num_query, batch_size, embed_dims].
+                [num_layers, num_query, bs, embed_dims].
         """
         output = query
         intermediate = []
@@ -575,8 +673,10 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
 
 
 class DeformableDetrTransformerEncoderLayer(DetrTransformerEncoderLayer):
+    """Encoder layer of Deformable DETR."""
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
+        """Initialize self_attn, ffn, and norms."""
         self.self_attn = MultiScaleDeformableAttention(**self.self_attn_cfg)
         self.embed_dims = self.self_attn.embed_dims
         self.ffn = FFN(**self.ffn_cfg)
@@ -588,8 +688,10 @@ class DeformableDetrTransformerEncoderLayer(DetrTransformerEncoderLayer):
 
 
 class DeformableDetrTransformerDecoderLayer(DetrTransformerDecoderLayer):
+    """Decoder layer of Deformable DETR."""
 
-    def _init_layers(self):
+    def _init_layers(self) -> None:
+        """Initialize self_attn, cross-attn, ffn, and norms."""
         self.self_attn = MultiheadAttention(**self.self_attn_cfg)
         self.cross_attn = MultiScaleDeformableAttention(**self.cross_attn_cfg)
         self.embed_dims = self.self_attn.embed_dims
