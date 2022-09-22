@@ -29,14 +29,14 @@ class DETRHead(BaseModule):
     Args:
         num_classes (int): Number of categories excluding the background.
         embed_dims (int): The dims of Transformer embedding.
-        num_reg_fcs (int, optional): Number of fully-connected layers used in
+        num_reg_fcs (int): Number of fully-connected layers used in
         `FFN`, which is then used for the regression head. Default 2.
         sync_cls_avg_factor (bool): Whether to sync the avg_factor of
             all ranks. Default to False.
         loss_cls (:obj:`ConfigDict` or dict): Config of the classification
             loss. Defaults to `CrossEntropyLoss`.
-        loss_bbox (:obj:`ConfigDict` or dict): Config of the regression loss.
-            Defaults to `L1Loss`.
+        loss_bbox (:obj:`ConfigDict` or dict): Config of the regression bbox
+            loss. Defaults to `L1Loss`.
         loss_iou (:obj:`ConfigDict` or dict): Config of the regression iou
             loss. Defaults to `GIoULoss`.
         train_cfg (:obj:`ConfigDict` or dict): Training config of transformer
