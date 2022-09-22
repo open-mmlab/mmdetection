@@ -82,12 +82,12 @@ class CSPNeXtBlock(BaseModule):
     Args:
         in_channels (int): The input channels of this Module.
         out_channels (int): The output channels of this Module.
-        expansion (int): The kernel size of the convolution. Defaults to 0.5.
+        expansion (float): Expand ratio of the hidden channel. Defaults to 0.5.
         add_identity (bool): Whether to add identity to the out. Only works
             when in_channels == out_channels. Defaults to True.
         use_depthwise (bool): Whether to use depthwise separable convolution.
             Defaults to False.
-        kernel_size (int): The kernel size of the depthwise convolution.
+        kernel_size (int): The kernel size of the second convolution layer.
             Defaults to 5.
         conv_cfg (dict): Config dict for convolution layer. Defaults to None,
             which means using conv2d.
