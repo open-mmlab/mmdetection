@@ -1,19 +1,19 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
 from mmengine.config import ConfigDict
 from mmengine.structures import InstanceData
-from torch import Tensor
+from torch import Tensor, nn
 
 from mmdet.models.layers import multiclass_nms
-from mmdet.models.utils import empty_instances
+from mmdet.models.roi_heads.bbox_heads.bbox_head import BBoxHead
+from mmdet.models.task_modules.samplers import SamplingResult
+from mmdet.models.utils import empty_instances, multi_apply
 from mmdet.registry import MODELS
-from .bbox_head import BBoxHead
 
 
 def set_cpu_nms(pred_boxes, iou_threshold):
@@ -76,7 +76,7 @@ def smooth_l1_loss(pred, target, beta: float):
         abs_x = torch.abs(pred - target)
         in_mask = abs_x < beta
         loss = torch.where(in_mask, 0.5 * abs_x**2 / beta, abs_x - 0.5 * beta)
-    return loss.sum(axis=1)
+    return loss.sum(dim=1)
 
 
 @MODELS.register_module()
@@ -173,7 +173,7 @@ class MultiInstanceBBoxHead(BBoxHead):
                         self.num_classes)
                 else:
                     cls_channels = self.num_classes + 1
-                cls_predictor_cfg_ = self.cls_predictor_cfg.copy()
+                cls_predictor_cfg_ = self.cls_predictor_cfg.copy()  # deepcopy
                 cls_predictor_cfg_.update(
                     in_features=self.cls_last_dim[k],
                     out_features=cls_channels)
@@ -191,6 +191,7 @@ class MultiInstanceBBoxHead(BBoxHead):
                 if self.refine_flag:
                     self.fc_reg_ref.append(MODELS.build(reg_predictor_cfg_))
 
+        # 1.
         if init_cfg is None:
             # when init_cfg is None,
             # It has been set to
@@ -280,7 +281,7 @@ class MultiInstanceBBoxHead(BBoxHead):
             x = x.flatten(1)
             for fc in self.shared_fcs:
                 x = self.relu(fc(x))
-
+        # 2.
         # separate branches
         x_cls = x
         x_reg = x
@@ -311,17 +312,27 @@ class MultiInstanceBBoxHead(BBoxHead):
 
         if self.refine_flag:
             x_ref = x
+            cls_score_ref = list()
+            bbox_pred_ref = list()
             for k in range(self.num_instance):
                 feat_ref = F.softmax(cls_score[k], dim=-1)
                 feat_ref = torch.cat((bbox_pred[k], feat_ref[:, 1][:, None]),
                                      dim=1).repeat(1, 4)
                 feat_ref = torch.cat((x_ref, feat_ref), dim=1)
                 feat_ref = F.relu_(self.shared_fcs_ref(feat_ref))
-                cls_score[k] = self.fc_cls_ref[k](feat_ref)
-                bbox_pred[k] = self.fc_reg_ref[k](feat_ref)
+
+                cls_score_ref.append(self.fc_cls_ref[k](feat_ref))
+                bbox_pred_ref.append(self.fc_reg_ref[k](feat_ref))
+
+            cls_score = torch.cat(cls_score, dim=1)
+            bbox_pred = torch.cat(bbox_pred, dim=1)
+            cls_score_ref = torch.cat(cls_score_ref, dim=1)
+            bbox_pred_ref = torch.cat(bbox_pred_ref, dim=1)
+            return cls_score, bbox_pred, cls_score_ref, bbox_pred_ref
 
         cls_score = torch.cat(cls_score, dim=1)
         bbox_pred = torch.cat(bbox_pred, dim=1)
+
         return cls_score, bbox_pred
 
     def _predict_by_feat_single(
@@ -415,7 +426,7 @@ class MultiInstanceBBoxHead(BBoxHead):
                 nms_input = np.zeros([bboxes.shape[0], 7])
                 nms_input[:, :4] = bboxes.cpu().detach().numpy()
                 nms_input[:, 4] = scores[:, 1].cpu().detach().numpy()
-                nms_input[:, 5] = np.ones([
+                nms_input[:, 5] = np.zeros([
                     bboxes.shape[0],
                 ])
                 nms_input[:, 6] = np.tile(
@@ -435,21 +446,171 @@ class MultiInstanceBBoxHead(BBoxHead):
 
         return results
 
+    def loss_and_multi_target(
+            self,
+            bbox_results: Tuple,
+            rois: Tensor,
+            sampling_results: List[SamplingResult],
+            rcnn_train_cfg: ConfigDict,
+            concat: bool = True,
+            reduction_override: Optional[str] = None) -> dict:
+
+        cls_reg_targets = self.get_targets(
+            sampling_results, rcnn_train_cfg, concat=concat)
+
+        labels, label_weights, bbox_targets, bbox_weights = cls_reg_targets
+        if len(bbox_results) == 2:
+            loss0 = self.emd_loss_softmax(bbox_results[1][:, :4],
+                                          bbox_results[0][:, :2],
+                                          bbox_results[1][:, 4:],
+                                          bbox_results[0][:, 2:], bbox_targets,
+                                          labels)
+            loss1 = self.emd_loss_softmax(bbox_results[1][:, 4:],
+                                          bbox_results[0][:, 2:],
+                                          bbox_results[1][:, :4],
+                                          bbox_results[0][:, :2], bbox_targets,
+                                          labels)
+            loss = torch.cat([loss0, loss1], dim=1)
+
+            _, min_indices = loss.min(dim=1)
+            loss_emd = loss[torch.arange(loss.shape[0]), min_indices]
+            loss_emd = loss_emd.mean()
+        else:
+            # TODO: add refine model
+            loss_emd = None
+        return dict(loss_bbox=loss_emd, bbox_targets=cls_reg_targets)
+
+    def get_targets(self,
+                    sampling_results: List[SamplingResult],
+                    rcnn_train_cfg: ConfigDict,
+                    concat: bool = True) -> tuple:
+        # changed by yu ############## for multi_instances ###############
+        """
+        pos_priors_list = [res.pos_priors for res in sampling_results]
+        neg_priors_list = [res.neg_priors for res in sampling_results]
+        pos_gt_bboxes_list = [res.pos_gt_bboxes for res in sampling_results]
+        pos_gt_labels_list = [res.pos_gt_labels for res in sampling_results]
+        labels, label_weights, bbox_targets, bbox_weights = multi_apply(
+            self._get_targets_single,
+            pos_priors_list,
+            neg_priors_list,
+            pos_gt_bboxes_list,
+            pos_gt_labels_list,
+            cfg=rcnn_train_cfg)
+
+        if concat:
+            labels = torch.cat(labels, 0)
+            label_weights = torch.cat(label_weights, 0)
+            bbox_targets = torch.cat(bbox_targets, 0)
+            bbox_weights = torch.cat(bbox_weights, 0)
+        return labels, label_weights, bbox_targets, bbox_weights
+        """
+        pos_priors_list = [res.pos_priors for res in sampling_results]
+        neg_priors_list = [res.neg_priors for res in sampling_results]
+        pos_gt_bboxes_list = [res.pos_gt_bboxes for res in sampling_results]
+        pos_gt_labels_list = [res.pos_gt_labels for res in sampling_results]
+
+        pos_gt_bboxes_shape = sampling_results[0].pos_gt_bboxes.shape
+        if len(pos_gt_bboxes_shape) > 2:
+            labels, label_weights, bbox_targets, bbox_weights = multi_apply(
+                self._get_multi_targets_single,
+                pos_priors_list,
+                neg_priors_list,
+                pos_gt_bboxes_list,
+                pos_gt_labels_list,
+                cfg=rcnn_train_cfg,
+                num_instance=pos_gt_bboxes_shape[0])
+        else:
+            labels, label_weights, bbox_targets, bbox_weights = multi_apply(
+                self._get_targets_single,
+                pos_priors_list,
+                neg_priors_list,
+                pos_gt_bboxes_list,
+                pos_gt_labels_list,
+                cfg=rcnn_train_cfg)
+
+        if concat:
+            for i in range(len(sampling_results)):
+                labels[i] = labels[i].t()
+                label_weights[i] = label_weights[i].t()
+            labels = torch.cat(labels, dim=0)
+            label_weights = torch.cat(label_weights, dim=0)
+
+            new_bbox_targets = []
+            new_bbox_weights = []
+            for i in range(len(sampling_results)):
+                new_bbox_targets.append(bbox_targets[i][0])
+                new_bbox_weights.append(bbox_weights[i][0])
+                for j in range(1, self.num_instance):
+                    new_bbox_targets[i] = torch.cat(
+                        [new_bbox_targets[i], bbox_targets[i][j]], dim=1)
+                    new_bbox_weights[i] = torch.cat(
+                        [new_bbox_weights[i], bbox_weights[i][j]], dim=1)
+            bbox_targets = torch.cat(new_bbox_targets, dim=0)
+            bbox_weights = torch.cat(new_bbox_weights, dim=0)
+        return labels, label_weights, bbox_targets, bbox_weights
+        # changed by yu ############## for multi_instances ###############
+
+    # add by yu
+    def _get_multi_targets_single(self,
+                                  pos_priors: Tensor,
+                                  neg_priors: Tensor,
+                                  pos_gt_bboxes: Tensor,
+                                  pos_gt_labels: Tensor,
+                                  cfg: ConfigDict,
+                                  num_instance: int = 2) -> tuple:
+        num_pos = pos_priors.size(0)
+        num_neg = neg_priors.size(0)
+        num_samples = num_pos + num_neg
+
+        labels = pos_priors.new_full((num_instance, num_samples),
+                                     self.num_classes,
+                                     dtype=torch.long)
+        label_weights = pos_priors.new_zeros(num_instance, num_samples)
+        bbox_targets = pos_priors.new_zeros(num_instance, num_samples, 4)
+        bbox_weights = pos_priors.new_zeros(num_instance, num_samples, 4)
+        if num_pos > 0:
+            labels[:, :num_pos] = pos_gt_labels
+            pos_weight = 1.0 if cfg.pos_weight <= 0 else cfg.pos_weight
+            label_weights[:, :num_pos] = pos_weight
+            for i in range(num_instance):
+                if not self.reg_decoded_bbox:
+                    pos_bbox_targets = self.bbox_coder.encode(
+                        pos_priors, pos_gt_bboxes[i])
+                else:
+                    # When the regression loss (e.g. `IouLoss`, `GIouLoss`)
+                    # is applied directly on the decoded bounding boxes, both
+                    # the predicted boxes and regression targets should be with
+                    # absolute coordinate format.
+                    pos_bbox_targets = pos_gt_bboxes
+                bbox_targets[i, :num_pos, :] = pos_bbox_targets
+                bbox_weights[i, :num_pos, :] = 1
+        if num_neg > 0:
+            label_weights[:, -num_neg:] = 1.0
+
+        for i in range(1, num_instance):
+            for j in range(len(pos_gt_labels[i])):
+                if pos_gt_labels[i, j] == -1:
+                    labels[i, j] = self.num_classes
+                    label_weights[i, j] = 0
+                    bbox_targets[i, j, :] = pos_priors.new_zeros(4)
+                    bbox_weights[i, j, :] = pos_priors.new_zeros(4)
+
+        return labels, label_weights, bbox_targets, bbox_weights
+
     def emd_loss_softmax(self, p_b0, p_s0, p_b1, p_s1, targets, labels):
         # reshape
-        pred_delta = torch.cat([p_b0, p_b1],
-                               axis=1).reshape(-1, p_b0.shape[-1])
-        pred_score = torch.cat([p_s0, p_s1],
-                               axis=1).reshape(-1, p_s0.shape[-1])
+        pred_delta = torch.cat([p_b0, p_b1], dim=1).reshape(-1, p_b0.shape[-1])
+        pred_score = torch.cat([p_s0, p_s1], dim=1).reshape(-1, p_s0.shape[-1])
         targets = targets.reshape(-1, 4)
         labels = labels.long().flatten()
         # cons masks
         valid_masks = labels >= 0
-        fg_masks = labels < self.num_classes
+        fg_masks = labels > 0  # < self.num_classes
         # multiple class
         pred_delta = pred_delta.reshape(-1, self.num_classes, 4)
         fg_gt_classes = labels[fg_masks]
-        pred_delta = pred_delta[fg_masks, fg_gt_classes, :]
+        pred_delta = pred_delta[fg_masks, fg_gt_classes - 1, :]
         # loss for regression
         localization_loss = smooth_l1_loss(pred_delta, targets[fg_masks],
                                            1)  # config.rcnn_smooth_l1_beta

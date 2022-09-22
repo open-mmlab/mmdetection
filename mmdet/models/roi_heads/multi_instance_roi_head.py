@@ -2,13 +2,14 @@
 from typing import List, Tuple
 
 import torch
+from mmengine.structures.instance_data import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS
 from mmdet.structures import DetDataSample
 from mmdet.structures.bbox import bbox2roi
 from mmdet.utils import ConfigType, InstanceList
-from ..utils import unpack_gt_instances
+from ..utils import empty_instances, unpack_gt_instances
 from .standard_roi_head import StandardRoIHead
 
 
@@ -32,25 +33,42 @@ class MultiInstanceRoIHead(StandardRoIHead):
         self.bbox_roi_extractor = MODELS.build(bbox_roi_extractor)
         self.bbox_head = MODELS.build(bbox_head)
 
-    def loss(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
-             batch_data_samples: List[DetDataSample]) -> dict:
-        """Perform forward propagation and loss calculation of the detection
-        roi on the features of the upstream network.
+    def _bbox_forward(self, x: Tuple[Tensor], rois: Tensor) -> dict:
+        """Box head forward function used in both training and testing.
 
         Args:
             x (tuple[Tensor]): List of multi-level img features.
-            rpn_results_list (list[:obj:`InstanceData`]): List of region
-                proposals.
-            batch_data_samples (list[:obj:`DetDataSample`]): The batch
-                data samples. It usually includes information such
-                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+            rois (Tensor): RoIs with the shape (n, 5) where the first
+                column indicates batch id of each RoI.
 
         Returns:
-            dict[str, Tensor]: A dictionary of loss components
+             dict[str, Tensor]: Usually returns a dictionary with keys:
+
+                - `cls_score` (Tensor): Classification scores.
+                - `bbox_pred` (Tensor): Box energies / deltas.
+                - `bbox_feats` (Tensor): Extract bbox RoI features.
         """
+        # TODO: a more flexible way to decide which feature maps to use
+        bbox_feats = self.bbox_roi_extractor(
+            x[:self.bbox_roi_extractor.num_inputs], rois)
+        if self.with_shared_head:
+            bbox_feats = self.shared_head(bbox_feats)
+        bbox_results = self.bbox_head(bbox_feats)
+        return bbox_results
+
+    def loss(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
+             batch_data_samples: List[DetDataSample]) -> dict:
+
         assert len(rpn_results_list) == len(batch_data_samples)
         outputs = unpack_gt_instances(batch_data_samples)
         batch_gt_instances, batch_gt_instances_ignore, _ = outputs
+        for i in range(len(batch_gt_instances)):
+            for j in range(len(batch_gt_instances[i])):
+                if batch_gt_instances[i].labels[j] == 0:
+                    batch_gt_instances[i].labels[j] = 1
+
+            batch_gt_instances[i] = InstanceData.cat(
+                [batch_gt_instances[i], batch_gt_instances_ignore[i]])
 
         num_imgs = len(batch_data_samples)
         top_k = self.num_instance
@@ -101,8 +119,7 @@ class MultiInstanceRoIHead(StandardRoIHead):
             fg_inds_mask = subsample_masks(fg_mask[:, 0], pos_max, True)
             neg_max = self.train_cfg['sampler']['num'] - fg_inds_mask.sum()
             bg_inds_mask = subsample_masks(bg_mask[:, 0], neg_max, True)
-            labels = labels + ~fg_mask.flatten(
-            )  # labels = labels * fg_mask.flatten()
+            labels = labels * fg_mask.flatten()
             keep_mask = fg_inds_mask + bg_inds_mask
             # labels
             labels = labels.reshape(-1, top_k)[keep_mask]
@@ -113,10 +130,21 @@ class MultiInstanceRoIHead(StandardRoIHead):
             target_rois = rois.repeat(1, top_k).reshape(-1, all_rois.shape[-1])
             bbox_targets = self.bbox_head.bbox_coder.encode(
                 target_rois, target_boxes)
+            # bbox_targets = bbox_transform_opr(target_rois, target_boxes)
+            # std_opr = torch.tensor([[0.1000, 0.1000, 0.2000, 0.2000]],
+            # device='cuda:0')
+            # mean_opr = torch.tensor([[0., 0., 0., 0.]], device='cuda:0')
+            # minus_opr = mean_opr / std_opr
+            # bbox_targets = bbox_targets / std_opr - minus_opr
+
             bbox_targets = bbox_targets.reshape(-1, top_k * 4)
+
             return_rois.append(rois)
             return_labels.append(labels)
             return_bbox_targets.append(bbox_targets)
+
+        return_labels = torch.cat(return_labels, dim=0)
+        return_bbox_targets = torch.cat(return_bbox_targets, dim=0)
 
         losses = dict()
         # bbox head loss
@@ -128,13 +156,11 @@ class MultiInstanceRoIHead(StandardRoIHead):
                 loss0 = self.bbox_head.emd_loss_softmax(
                     bbox_results[1][:, :4], bbox_results[0][:, :2],
                     bbox_results[1][:, 4:], bbox_results[0][:, 2:],
-                    torch.cat(return_bbox_targets, dim=0),
-                    torch.cat(return_labels, dim=0))
+                    return_bbox_targets, return_labels)
                 loss1 = self.bbox_head.emd_loss_softmax(
                     bbox_results[1][:, 4:], bbox_results[0][:, 2:],
                     bbox_results[1][:, :4], bbox_results[0][:, :2],
-                    torch.cat(return_bbox_targets, dim=0),
-                    torch.cat(return_labels, dim=0))
+                    return_bbox_targets, return_labels)
                 loss = torch.cat([loss0, loss1], dim=1)
                 _, min_indices = loss.min(dim=1)
                 loss_emd = loss[torch.arange(loss.shape[0]), min_indices]
@@ -146,28 +172,52 @@ class MultiInstanceRoIHead(StandardRoIHead):
 
         return losses
 
-    def _bbox_forward(self, x: Tuple[Tensor], rois: Tensor) -> dict:
-        """Box head forward function used in both training and testing.
+    def predict_bbox(self,
+                     x: Tuple[Tensor],
+                     batch_img_metas: List[dict],
+                     rpn_results_list: InstanceList,
+                     rcnn_test_cfg: ConfigType,
+                     rescale: bool = False) -> InstanceList:
+        proposals = [res.bboxes for res in rpn_results_list]
+        rois = bbox2roi(proposals)
 
-        Args:
-            x (tuple[Tensor]): List of multi-level img features.
-            rois (Tensor): RoIs with the shape (n, 5) where the first
-                column indicates batch id of each RoI.
+        if rois.shape[0] == 0:
+            return empty_instances(
+                batch_img_metas, rois.device, task_type='bbox')
 
-        Returns:
-             dict[str, Tensor]: Usually returns a dictionary with keys:
+        bbox_results = self._bbox_forward(x, rois)
 
-                - `cls_score` (Tensor): Classification scores.
-                - `bbox_pred` (Tensor): Box energies / deltas.
-                - `bbox_feats` (Tensor): Extract bbox RoI features.
-        """
-        # TODO: a more flexible way to decide which feature maps to use
-        bbox_feats = self.bbox_roi_extractor(
-            x[:self.bbox_roi_extractor.num_inputs], rois)
-        if self.with_shared_head:
-            bbox_feats = self.shared_head(bbox_feats)
-        bbox_results = self.bbox_head(bbox_feats)
-        return bbox_results
+        # split batch bbox prediction back to each image
+        if len(bbox_results) == 2:
+            cls_scores = bbox_results[0]
+            bbox_preds = bbox_results[1]
+            num_proposals_per_img = tuple(len(p) for p in proposals)
+            rois = rois.split(num_proposals_per_img, 0)
+            cls_scores = cls_scores.split(num_proposals_per_img, 0)
+
+            # some detector with_reg is False, bbox_preds will be None
+            if bbox_preds is not None:
+                # TODO move this to a sabl_roi_head
+                # the bbox prediction of some detectors like SABL is not Tensor
+                if isinstance(bbox_preds, torch.Tensor):
+                    bbox_preds = bbox_preds.split(num_proposals_per_img, 0)
+                else:
+                    bbox_preds = self.bbox_head.bbox_pred_split(
+                        bbox_preds, num_proposals_per_img)
+            else:
+                bbox_preds = (None, ) * len(proposals)
+
+            result_list = self.bbox_head.predict_by_feat(
+                rois=rois,
+                cls_scores=cls_scores,
+                bbox_preds=bbox_preds,
+                batch_img_metas=batch_img_metas,
+                rcnn_test_cfg=rcnn_test_cfg,
+                rescale=rescale)
+            return result_list
+        else:
+            # TODO: refine model.
+            return proposals
 
 
 def box_overlap_ignore_opr(box, gt, ignore_label=-1):
@@ -203,3 +253,28 @@ def subsample_masks(masks, num_samples, sample_value):
     negative = positive[perm]
     masks[negative] = not sample_value
     return masks
+
+
+def bbox_transform_opr(bbox, gt):
+    """Transform the bounding box and ground truth to the loss targets.
+
+    The 4 box coordinates are in axis 1
+    """
+    bbox_width = bbox[:, 2] - bbox[:, 0] + 1
+    bbox_height = bbox[:, 3] - bbox[:, 1] + 1
+    bbox_ctr_x = bbox[:, 0] + 0.5 * bbox_width
+    bbox_ctr_y = bbox[:, 1] + 0.5 * bbox_height
+
+    gt_width = gt[:, 2] - gt[:, 0] + 1
+    gt_height = gt[:, 3] - gt[:, 1] + 1
+    gt_ctr_x = gt[:, 0] + 0.5 * gt_width
+    gt_ctr_y = gt[:, 1] + 0.5 * gt_height
+
+    target_dx = (gt_ctr_x - bbox_ctr_x) / bbox_width
+    target_dy = (gt_ctr_y - bbox_ctr_y) / bbox_height
+    target_dw = torch.log(gt_width / bbox_width)
+    target_dh = torch.log(gt_height / bbox_height)
+    target = torch.cat((target_dx.reshape(-1, 1), target_dy.reshape(
+        -1, 1), target_dw.reshape(-1, 1), target_dh.reshape(-1, 1)),
+                       dim=1)
+    return target
