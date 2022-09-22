@@ -32,7 +32,7 @@ class DETRHead(BaseModule):
         num_reg_fcs (int, optional): Number of fully-connected layers used in
         `FFN`, which is then used for the regression head. Default 2.
         sync_cls_avg_factor (bool): Whether to sync the avg_factor of
-                    all ranks. Default to False.
+            all ranks. Default to False.
         loss_cls (:obj:`ConfigDict` or dict): Config of the classification
             loss. Defaults to `CrossEntropyLoss`.
         loss_bbox (:obj:`ConfigDict` or dict): Config of the regression loss.
