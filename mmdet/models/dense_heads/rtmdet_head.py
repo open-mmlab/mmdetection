@@ -140,12 +140,10 @@ class RTMDetHead(ATSSHead):
 
             if self.with_objectness:
                 objectness = self.rtm_obj(reg_feat)
-
-            reg_dist = scale(self.rtm_reg(reg_feat).exp()).float() * stride[0]
-
-            if self.with_objectness:
                 cls_score = inverse_sigmoid(
                     sigmoid_geometric_mean(cls_score, objectness))
+
+            reg_dist = scale(self.rtm_reg(reg_feat).exp()).float() * stride[0]
 
             cls_scores.append(cls_score)
             bbox_preds.append(reg_dist)
@@ -677,25 +675,10 @@ class RTMDetSepBNHead(RTMDetHead):
 
             if self.with_objectness:
                 objectness = self.rtm_obj[idx](reg_feat)
-
-            reg_dist = self.rtm_reg[idx](reg_feat) * stride[0]
-
-            if self.with_objectness:
                 cls_score = inverse_sigmoid(
                     sigmoid_geometric_mean(cls_score, objectness))
-            else:
-                cls_score = cls_score
 
+            reg_dist = self.rtm_reg[idx](reg_feat) * stride[0]
             cls_scores.append(cls_score)
             bbox_preds.append(reg_dist)
-
-        # # yolo style output for onnx
-        # if torch.onnx.is_in_onnx_export():
-        #     outputs = []
-        #     for cls_pred, reg_pred in zip(cls_scores, bbox_preds):
-        #         cls_pred = cls_pred.sigmoid()
-        #         out = torch.cat([cls_pred, reg_pred], dim=1)
-        #         outputs.append(out.flatten(start_dim=2))
-        #     return torch.cat(outputs, dim=2).permute(0, 2, 1)
-
         return tuple(cls_scores), tuple(bbox_preds)
