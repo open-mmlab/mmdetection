@@ -39,7 +39,7 @@ class DETRHead(BaseModule):
             Defaults to `L1Loss`.
         loss_iou (:obj:`ConfigDict` or dict): Config of the regression iou
             loss. Defaults to `GIoULoss`.
-        tran_cfg (:obj:`ConfigDict` or dict): Training config of transformer
+        train_cfg (:obj:`ConfigDict` or dict): Training config of transformer
             head.
         test_cfg (:obj:`ConfigDict` or dict): Testing config of transformer
             head.
