@@ -8,15 +8,15 @@ from mmengine.model import bias_init_with_prob, constant_init, normal_init
 from mmengine.structures import InstanceData
 from torch import Tensor
 
-from mmdet.models import ATSSHead
-from mmdet.models.layers.transformer import inverse_sigmoid
-from mmdet.models.task_modules import anchor_inside_flags
-from mmdet.models.utils import (images_to_levels, multi_apply,
-                                sigmoid_geometric_mean, unmap)
 from mmdet.registry import MODELS, TASK_UTILS
 from mmdet.structures.bbox import distance2bbox
 from mmdet.utils import reduce_mean
 from mmdet.utils.typing import ConfigType, InstanceList, OptInstanceList
+from ..layers.transformer import inverse_sigmoid
+from ..task_modules import anchor_inside_flags
+from ..utils import (images_to_levels, multi_apply, sigmoid_geometric_mean,
+                     unmap)
+from .atss_head import ATSSHead
 
 EPS = 1e-12
 
@@ -667,9 +667,6 @@ class RTMDetSepBNHead(RTMDetHead):
                 zip(feats, self.prior_generator.strides)):
             cls_feat = x
             reg_feat = x
-            if self.with_se:
-                cls_feat = self.cls_ses[idx](cls_feat)
-                reg_feat = self.reg_ses[idx](reg_feat)
 
             for cls_layer in self.cls_convs[idx]:
                 cls_feat = cls_layer(cls_feat)
@@ -692,13 +689,13 @@ class RTMDetSepBNHead(RTMDetHead):
             cls_scores.append(cls_score)
             bbox_preds.append(reg_dist)
 
-        # yolo style output for onnx
-        if torch.onnx.is_in_onnx_export():
-            outputs = []
-            for cls_pred, reg_pred in zip(cls_scores, bbox_preds):
-                cls_pred = cls_pred.sigmoid()
-                out = torch.cat([cls_pred, reg_pred], dim=1)
-                outputs.append(out.flatten(start_dim=2))
-            return torch.cat(outputs, dim=2).permute(0, 2, 1)
+        # # yolo style output for onnx
+        # if torch.onnx.is_in_onnx_export():
+        #     outputs = []
+        #     for cls_pred, reg_pred in zip(cls_scores, bbox_preds):
+        #         cls_pred = cls_pred.sigmoid()
+        #         out = torch.cat([cls_pred, reg_pred], dim=1)
+        #         outputs.append(out.flatten(start_dim=2))
+        #     return torch.cat(outputs, dim=2).permute(0, 2, 1)
 
         return tuple(cls_scores), tuple(bbox_preds)
