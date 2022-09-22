@@ -136,7 +136,8 @@ class DETRHead(BaseModule):
         # and DAB DETR (prelu in transformer and relu in reg_branch)
         self.fc_reg = Linear(self.embed_dims, 4)
 
-    # def _load_from_state_dict  # TODO
+    # Note function _load_from_state_dict is deleted without
+    # supporting refactor-DETR in mmdetection2.0
 
     def forward(self, outs_dec: Tensor) -> Tuple[Tensor, Tensor]:
         """"Forward function.
