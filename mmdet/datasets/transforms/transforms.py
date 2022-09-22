@@ -3084,6 +3084,8 @@ class CachedMosaic(Mosaic):
         super().__init__(*args, **kwargs)
         self.results_cache = []
         self.random_pop = random_pop
+        assert max_cached_images >= 4, 'The length of cache must >= 4, ' \
+                                       f'but got {max_cached_images}.'
         self.max_cached_images = max_cached_images
 
     @cache_randomness
@@ -3127,6 +3129,7 @@ class CachedMosaic(Mosaic):
         indices = self.get_indexes(self.results_cache)
         mix_results = [copy.deepcopy(self.results_cache[i]) for i in indices]
 
+        # TODO: refactor mosaic to reuse these code.
         mosaic_bboxes = []
         mosaic_bboxes_labels = []
         mosaic_ignore_flags = []
@@ -3304,6 +3307,8 @@ class CachedMixUp(BaseTransform):
         self.max_iters = max_iters
         self.bbox_clip_border = bbox_clip_border
         self.results_cache = []
+        assert max_cached_images >= 2, 'The length of cache must >= 2, ' \
+                                       f'but got {max_cached_images}.'
         self.max_cached_images = max_cached_images
         self.random_pop = random_pop
         self.prob = prob
@@ -3354,6 +3359,7 @@ class CachedMixUp(BaseTransform):
         index = self.get_indexes(self.results_cache)
         retrieve_results = copy.deepcopy(self.results_cache[index])
 
+        # TODO: refactor mixup to reuse these code.
         if retrieve_results['gt_bboxes'].shape[0] == 0:
             # empty bbox
             return results
