@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from mmcv.cnn import Linear, build_norm_layer
 from mmcv.cnn.bricks.drop import Dropout
 from mmcv.cnn.bricks.transformer import FFN
-from mmengine.model import BaseModule, ModuleList, uniform_init, xavier_init
+from mmengine.model import BaseModule, ModuleList, uniform_init
 from torch import Tensor, nn
 
 from mmdet.registry import MODELS
@@ -75,10 +75,7 @@ class DABDETR(DETR):
         # construct binary masks which used for the transformer.
         assert batch_data_samples is not None
         batch_input_shape = batch_data_samples[0].batch_input_shape
-        img_shape_list = [
-            sample.img_shape
-            for sample in batch_data_samples
-        ]
+        img_shape_list = [sample.img_shape for sample in batch_data_samples]
 
         input_img_h, input_img_w = batch_input_shape
         masks = feat.new_ones((batch_size, input_img_h, input_img_w))
@@ -496,6 +493,9 @@ class DabDetrTransformerDecoder(DetrTransformerDecoder):
                 DabDetrTransformerDecoderLayer(**self.layer_cfg[i]))
 
         embed_dims = self.layers[0].embed_dims
+        self.embed_dims = embed_dims
+
+        self.post_norm = build_norm_layer(self.post_norm_cfg, embed_dims)[1]
         if self.query_scale_type == 'cond_elewise':
             self.query_scale = MLP(embed_dims, embed_dims, embed_dims, 2)
         elif self.query_scale_type == 'cond_scalar':
@@ -647,5 +647,5 @@ class DabDetrTransformerEncoder(DetrTransformerEncoder):
                 attn_masks=attn_masks,
                 query_key_padding_mask=query_key_padding_mask,
                 **kwargs)
-                
+
         return query
