@@ -139,7 +139,7 @@ class DETRHead(BaseModule):
     # Note function _load_from_state_dict is deleted without
     # supporting refactor-DETR in mmdetection2.0
 
-    def forward(self, outs_dec: Tensor) -> Tuple[Tensor, Tensor]:
+    def forward(self, out_dec: Tensor) -> Tuple[Tensor, Tensor]:
         """"Forward function.
 
         Args: TODO
@@ -148,15 +148,15 @@ class DETRHead(BaseModule):
             tuple[Tensor]:
 
             - all_cls_scores (Tensor): Outputs from the classification head, \
-            shape [nb_dec, batch_size, num_query, cls_out_channels]. Note \
+            shape [nb_dec, bs, num_query, cls_out_channels]. Note \
             cls_out_channels should includes background.
             - all_bbox_preds (Tensor): Sigmoid outputs from the regression \
             head with normalized coordinate format (cx, cy, w, h). \
-            Shape [nb_dec, batch_size, num_query, 4].
+            Shape [nb_dec, bs, num_query, 4].
         """
-        all_cls_scores = self.fc_cls(outs_dec)
+        all_cls_scores = self.fc_cls(out_dec)
         all_bbox_preds = self.fc_reg(self.activate(
-            self.reg_ffn(outs_dec))).sigmoid()
+            self.reg_ffn(out_dec))).sigmoid()
         return all_cls_scores, all_bbox_preds
 
     def loss(self, x: Tensor, batch_data_samples: SampleList) -> dict:
@@ -165,8 +165,8 @@ class DETRHead(BaseModule):
 
         Args:
             x (Tensor): Feature from the transformer decoder,
-                shape [nb_dec, batch_size, num_query, cls_out_channels] or
-                [nb_dec, num_query, batch_size, cls_out_channels].
+                shape [nb_dec, bs, num_query, cls_out_channels] or
+                [nb_dec, num_query, bs, cls_out_channels].
             batch_data_samples (List[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
@@ -201,11 +201,11 @@ class DETRHead(BaseModule):
         Args:
             all_cls_scores (Tensor): Classification outputs
                 for each feature level. Each is a 4D-tensor with shape
-                [nb_dec, batch_size, num_query, cls_out_channels].
+                [nb_dec, bs, num_query, cls_out_channels].
             all_bbox_preds (Tensor): Sigmoid regression
                 outputs for each feature level. Each is a 4D-tensor with
                 normalized coordinate format (cx, cy, w, h) and shape
-                [nb_dec, batch_size, num_query, 4].
+                [nb_dec, bs, num_query, 4].
             batch_gt_instances (list[:obj:`InstanceData`]): Batch of
                 gt_instance. It usually includes ``bboxes`` and ``labels``
                 attributes.
@@ -257,10 +257,10 @@ class DETRHead(BaseModule):
 
         Args:
             cls_scores (Tensor): Box score logits from a single decoder layer
-                for all images. Shape [batch_size, num_query, cls_out_channels]
+                for all images. Shape [bs, num_query, cls_out_channels]
             bbox_preds (Tensor): Sigmoid outputs from a single decoder layer
                 for all images, with normalized coordinate (cx, cy, w, h) and
-                shape [batch_size, num_query, 4].
+                shape [bs, num_query, 4].
             batch_gt_instances (list[:obj:`InstanceData`]): Batch of
                 gt_instance. It usually includes ``bboxes`` and ``labels``
                 attributes.
@@ -521,11 +521,11 @@ class DETRHead(BaseModule):
         Args:
             all_cls_scores (Tensor): Classification outputs.
                 Each is a 4D-tensor with shape
-                [nb_dec, batch_size, num_query, cls_out_channels].
+                [nb_dec, bs, num_query, cls_out_channels].
             all_bbox_preds (Tensor): Sigmoid regression
                 outputs for each feature level. Each is a 4D-tensor with
                 normalized coordinate format (cx, cy, w, h) and shape
-                [nb_dec, batch_size, num_query, 4].
+                [nb_dec, bs, num_query, 4].
             batch_img_metas (list[dict]): Meta information of each image.
             rescale (bool, optional): If True, return boxes in original
                 image space. Defaults to True.
