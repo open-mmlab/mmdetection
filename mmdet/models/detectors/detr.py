@@ -16,7 +16,7 @@ from .base_detr import TransformerDetector
 @MODELS.register_module()
 class DETR(TransformerDetector):
     """Implementation of `DETR: End-to-End Object Detection with
-    Transformers <https://arxiv.org/pdf/2005.12872>`_
+    Transformers <https://arxiv.org/pdf/2005.12872>`_.
 
     Code is modified from the `official github repo
     <https://github.com/facebookresearch/detr>`_.
