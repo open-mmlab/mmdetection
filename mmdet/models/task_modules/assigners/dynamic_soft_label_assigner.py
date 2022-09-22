@@ -164,8 +164,8 @@ class DynamicSoftLabelAssigner(BaseAssigner):
         dynamic_ks = torch.clamp(topk_ious.sum(0).int(), min=1)
         for gt_idx in range(num_gt):
             _, pos_idx = torch.topk(
-                cost[:, gt_idx], k=dynamic_ks[gt_idx].item(), largest=False)
-            matching_matrix[:, gt_idx][pos_idx] = 1.0
+                cost[:, gt_idx], k=dynamic_ks[gt_idx], largest=False)
+            matching_matrix[:, gt_idx][pos_idx] = 1
 
         del topk_ious, dynamic_ks, pos_idx
 
@@ -173,10 +173,10 @@ class DynamicSoftLabelAssigner(BaseAssigner):
         if prior_match_gt_mask.sum() > 0:
             cost_min, cost_argmin = torch.min(
                 cost[prior_match_gt_mask, :], dim=1)
-            matching_matrix[prior_match_gt_mask, :] *= 0.0
-            matching_matrix[prior_match_gt_mask, cost_argmin] = 1.0
+            matching_matrix[prior_match_gt_mask, :] *= 0
+            matching_matrix[prior_match_gt_mask, cost_argmin] = 1
         # get foreground mask inside box and center prior
-        fg_mask_inboxes = matching_matrix.sum(1) > 0.0
+        fg_mask_inboxes = matching_matrix.sum(1) > 0
         valid_mask[valid_mask.clone()] = fg_mask_inboxes
 
         matched_gt_inds = matching_matrix[fg_mask_inboxes, :].argmax(1)
