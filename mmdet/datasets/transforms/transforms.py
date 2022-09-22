@@ -3008,12 +3008,11 @@ class RandomErasing(BaseTransform):
 
 
 @TRANSFORMS.register_module()
-class CachedMosaic(BaseTransform):
-    """Mosaic augmentation.
+class CachedMosaic(Mosaic):
+    """Cached mosaic augmentation.
 
-    Given 4 images, mosaic transform combines them into
-    one output image. The output image is composed of the parts from each sub-
-    image.
+    Cached mosaic transform will random select images from the cache
+    and combine them into one output image.
 
     .. code:: text
 
@@ -3034,11 +3033,12 @@ class CachedMosaic(BaseTransform):
                      |             |
                      +-------------+
 
-     The mosaic transform steps are as follows:
+     The cached mosaic transform steps are as follows:
 
+         1. Append the results from the last transform into the cache.
          1. Choose the mosaic center as the intersections of 4 images
          2. Get the left top image according to the index, and randomly
-            sample another 3 images from the custom dataset.
+            sample another 3 images from the result cache.
          3. Sub image will be cropped if image is larger than mosaic patch
 
     Required Keys:
@@ -3047,7 +3047,6 @@ class CachedMosaic(BaseTransform):
     - gt_bboxes (np.float32) (optional)
     - gt_bboxes_labels (np.int64) (optional)
     - gt_ignore_flags (np.bool) (optional)
-    - mix_results (List[dict])
 
     Modified Keys:
 
@@ -3070,39 +3069,35 @@ class CachedMosaic(BaseTransform):
         pad_val (int): Pad value. Defaults to 114.
         prob (float): Probability of applying this transformation.
             Defaults to 1.0.
+        max_cached_images (int): The maximum length of the cache.
+            Defaults to 40.
+        random_pop (bool): Whether to randomly pop a result from the cache
+            when the cache is full. If set to False, use FIFO popping method.
+            Defaults to True.
     """
 
     def __init__(self,
-                 img_scale: Tuple[int, int] = (640, 640),
-                 center_ratio_range: Tuple[float, float] = (0.5, 1.5),
-                 bbox_clip_border: bool = True,
-                 pad_val: float = 114.0,
-                 prob: float = 1.0,
-                 max_cached_images=40) -> None:
-        assert isinstance(img_scale, tuple)
-        assert 0 <= prob <= 1.0, 'The probability should be in range [0,1]. ' \
-                                 f'got {prob}.'
-
-        self.img_scale = img_scale
-        self.center_ratio_range = center_ratio_range
-        self.bbox_clip_border = bbox_clip_border
-        self.pad_val = pad_val
-        self.prob = prob
+                 *args,
+                 max_cached_images: int = 40,
+                 random_pop: bool = True,
+                 **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self.results_cache = []
+        self.random_pop = random_pop
         self.max_cached_images = max_cached_images
 
     @cache_randomness
-    def get_indexes(self, dataset: BaseDataset) -> int:
+    def get_indexes(self, cache: list) -> list:
         """Call function to collect indexes.
 
         Args:
-            dataset (:obj:`MultiImageMixDataset`): The dataset.
+            cache (list): The results cache.
 
         Returns:
             list: indexes.
         """
 
-        indexes = [random.randint(0, len(dataset) - 1) for _ in range(3)]
+        indexes = [random.randint(0, len(cache) - 1) for _ in range(3)]
         return indexes
 
     @autocast_box_type()
@@ -3118,7 +3113,10 @@ class CachedMosaic(BaseTransform):
         # cache and pop images
         self.results_cache.append(copy.deepcopy(results))
         if len(self.results_cache) > self.max_cached_images:
-            index = random.randint(0, len(self.results_cache) - 1)
+            if self.random_pop:
+                index = random.randint(0, len(self.results_cache) - 1)
+            else:
+                index = 0
             self.results_cache.pop(index)
 
         if len(self.results_cache) <= 4:
@@ -3207,73 +3205,12 @@ class CachedMosaic(BaseTransform):
         results['gt_ignore_flags'] = mosaic_ignore_flags
         return results
 
-    def _mosaic_combine(
-            self, loc: str, center_position_xy: Sequence[float],
-            img_shape_wh: Sequence[int]) -> Tuple[Tuple[int], Tuple[int]]:
-        """Calculate global coordinate of mosaic image and local coordinate of
-        cropped sub-image.
-
-        Args:
-            loc (str): Index for the sub-image, loc in ('top_left',
-              'top_right', 'bottom_left', 'bottom_right').
-            center_position_xy (Sequence[float]): Mixing center for 4 images,
-                (x, y).
-            img_shape_wh (Sequence[int]): Width and height of sub-image
-
-        Returns:
-            tuple[tuple[float]]: Corresponding coordinate of pasting and
-                cropping
-                - paste_coord (tuple): paste corner coordinate in mosaic image.
-                - crop_coord (tuple): crop corner coordinate in mosaic image.
-        """
-        assert loc in ('top_left', 'top_right', 'bottom_left', 'bottom_right')
-        if loc == 'top_left':
-            # index0 to top left part of image
-            x1, y1, x2, y2 = max(center_position_xy[0] - img_shape_wh[0], 0), \
-                             max(center_position_xy[1] - img_shape_wh[1], 0), \
-                             center_position_xy[0], \
-                             center_position_xy[1]
-            crop_coord = img_shape_wh[0] - (x2 - x1), img_shape_wh[1] - (
-                y2 - y1), img_shape_wh[0], img_shape_wh[1]
-
-        elif loc == 'top_right':
-            # index1 to top right part of image
-            x1, y1, x2, y2 = center_position_xy[0], \
-                             max(center_position_xy[1] - img_shape_wh[1], 0), \
-                             min(center_position_xy[0] + img_shape_wh[0],
-                                 self.img_scale[1] * 2), \
-                             center_position_xy[1]
-            crop_coord = 0, img_shape_wh[1] - (y2 - y1), min(
-                img_shape_wh[0], x2 - x1), img_shape_wh[1]
-
-        elif loc == 'bottom_left':
-            # index2 to bottom left part of image
-            x1, y1, x2, y2 = max(center_position_xy[0] - img_shape_wh[0], 0), \
-                             center_position_xy[1], \
-                             center_position_xy[0], \
-                             min(self.img_scale[0] * 2, center_position_xy[1] +
-                                 img_shape_wh[1])
-            crop_coord = img_shape_wh[0] - (x2 - x1), 0, img_shape_wh[0], min(
-                y2 - y1, img_shape_wh[1])
-
-        else:
-            # index3 to bottom right part of image
-            x1, y1, x2, y2 = center_position_xy[0], \
-                             center_position_xy[1], \
-                             min(center_position_xy[0] + img_shape_wh[0],
-                                 self.img_scale[1] * 2), \
-                             min(self.img_scale[0] * 2, center_position_xy[1] +
-                                 img_shape_wh[1])
-            crop_coord = 0, 0, min(img_shape_wh[0],
-                                   x2 - x1), min(y2 - y1, img_shape_wh[1])
-
-        paste_coord = x1, y1, x2, y2
-        return paste_coord, crop_coord
-
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'(img_scale={self.img_scale}, '
         repr_str += f'center_ratio_range={self.center_ratio_range}, '
         repr_str += f'pad_val={self.pad_val}, '
-        repr_str += f'prob={self.prob})'
+        repr_str += f'prob={self.prob}, '
+        repr_str += f'max_cached_images={self.max_cached_images}, '
+        repr_str += f'random_pop={self.random_pop})'
         return repr_str
