@@ -541,7 +541,7 @@ class DETRHead(BaseModule):
                 - bboxes (Tensor): Has a shape (num_instances, 4),
                   the last dimension 4 arrange as (x1, y1, x2, y2).
         """
-        # NOTE defaultly only using outputs from the last feature level,
+        # NOTE only using outputs from the last feature level,
         # and only the outputs from the last decoder layer is used.
         cls_scores = all_cls_scores[-1]
         bbox_preds = all_bbox_preds[-1]
