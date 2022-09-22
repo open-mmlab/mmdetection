@@ -29,8 +29,8 @@ class DETRHead(BaseModule):
     Args:
         num_classes (int): Number of categories excluding the background.
         embed_dims (int): The dims of Transformer embedding.
-        num_reg_fcs (int): Number of fully-connected layers used in
-        `FFN`, which is then used for the regression head. Default 2.
+        num_reg_fcs (int): Number of fully-connected layers used in `FFN`,
+            which is then used for the regression head. Defaults to 2.
         sync_cls_avg_factor (bool): Whether to sync the avg_factor of
             all ranks. Default to False.
         loss_cls (:obj:`ConfigDict` or dict): Config of the classification
