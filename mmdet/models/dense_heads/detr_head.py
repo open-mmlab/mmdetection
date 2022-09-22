@@ -29,14 +29,14 @@ class DETRHead(BaseModule):
     Args:
         num_classes (int): Number of categories excluding the background.
         embed_dims (int): The dims of Transformer embedding.
-        num_reg_fcs (int, optional): Number of fully-connected layers used in
-        `FFN`, which is then used for the regression head. Default 2.
+        num_reg_fcs (int): Number of fully-connected layers used in `FFN`,
+            which is then used for the regression head. Defaults to 2.
         sync_cls_avg_factor (bool): Whether to sync the avg_factor of
             all ranks. Default to False.
         loss_cls (:obj:`ConfigDict` or dict): Config of the classification
             loss. Defaults to `CrossEntropyLoss`.
-        loss_bbox (:obj:`ConfigDict` or dict): Config of the regression loss.
-            Defaults to `L1Loss`.
+        loss_bbox (:obj:`ConfigDict` or dict): Config of the regression bbox
+            loss. Defaults to `L1Loss`.
         loss_iou (:obj:`ConfigDict` or dict): Config of the regression iou
             loss. Defaults to `GIoULoss`.
         train_cfg (:obj:`ConfigDict` or dict): Training config of transformer
@@ -131,12 +131,13 @@ class DETRHead(BaseModule):
             dict(type='ReLU', inplace=True),
             dropout=0.0,
             add_residual=False)
-        # NOTE the activations of reg_branch is the same as those in
-        # transformer, but they are actually different in Conditional DETR
-        # and DAB DETR (prelu in transformer and relu in reg_branch)
+        # NOTE the activations of reg_branch here is the same as
+        # those in transformer, but they are actually different
+        # in DAB DETR (prelu in transformer and relu in reg_branch)
         self.fc_reg = Linear(self.embed_dims, 4)
 
-    # def _load_from_state_dict  # TODO
+    # Note function _load_from_state_dict is deleted without
+    # supporting refactor-DETR in mmdetection2.0
 
     def forward(self, outs_dec: Tensor) -> Tuple[Tensor, Tensor]:
         """"Forward function.
