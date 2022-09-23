@@ -10,7 +10,7 @@ log file. Run `pip install seaborn` first to install the dependency.
 python tools/analysis_tools/analyze_logs.py plot_curve [--keys ${KEYS}] [--eval-interval ${EVALUATION_INTERVAL}] [--title ${TITLE}] [--legend ${LEGEND}] [--backend ${BACKEND}] [--style ${STYLE}] [--out ${OUT_FILE}]
 ```
 
-![loss curve image](../../resources/loss_curve.png)
+![loss curve image](../../../resources/loss_curve.png)
 
 Examples:
 
@@ -160,7 +160,7 @@ python tools/test.py \
        checkpoint/mask_rcnn_r50_fpn_1x_coco_20200205-d4b0c5d6.pth \
 ```
 
-1. Get COCO bbox error results per category , save analyze result images to the directory(In  [config](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/_base_/datasets/coco_instance.py) the default directory is './work_dirs/coco_instance/test')
+1. Get COCO bbox error results per category , save analyze result images to the directory(In  [config](../../../configs/_base_/datasets/coco_instance.py) the default directory is './work_dirs/coco_instance/test')
 
 ```shell
 python tools/analysis_tools/coco_error_analysis.py \
