@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+from .activations import SiLU
 from .bbox_nms import fast_nms, multiclass_nms
 from .brick_wrappers import AdaptiveAvgPool2d, adaptive_avg_pool2d
 from .conv_upsample import ConvUpsample
@@ -27,5 +28,5 @@ __all__ = [
     'SimplifiedBasicBlock', 'NormedLinear', 'NormedConv2d', 'InvertedResidual',
     'SELayer', 'ConvUpsample', 'CSPLayer', 'adaptive_avg_pool2d',
     'AdaptiveAvgPool2d', 'PatchEmbed', 'nchw_to_nlc', 'nlc_to_nchw', 'DyReLU',
-    'ExpMomentumEMA', 'inverse_sigmoid', 'ChannelAttention'
+    'ExpMomentumEMA', 'inverse_sigmoid', 'ChannelAttention', 'SiLU'
 ]
