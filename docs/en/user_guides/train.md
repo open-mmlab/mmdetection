@@ -1,7 +1,7 @@
 # Train predefined models on standard datasets
 
 MMDetection also provides out-of-the-box tools for training detection models.
-This section will show how to train _predefined_ models (under [configs](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs)) on standard datasets i.e. COCO.
+This section will show how to train _predefined_ models (under [configs](../../../configs)) on standard datasets i.e. COCO.
 
 ## Prepare datasets
 
@@ -134,7 +134,7 @@ Below is an example of using 16 GPUs to train Mask R-CNN on a Slurm partition na
 GPUS=16 ./tools/slurm_train.sh dev mask_r50_1x configs/mask-rcnn_r50_fpn_1x_coco.py /nfs/xxxx/mask_rcnn_r50_fpn_1x
 ```
 
-You can check [the source code](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/tools/slurm_train.sh) to review full arguments and environment variables.
+You can check [the source code](../../../tools/slurm_train.sh) to review full arguments and environment variables.
 
 When using Slurm, the port option needs to be set in one of the following ways:
 
