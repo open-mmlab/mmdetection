@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from typing import List, Optional, Union
 
 import mmcv
-from mmengine.fileio import FileClient, list_from_file
+from mmengine.fileio import list_from_file
 
 from mmdet.registry import DATASETS
 from .base_det_dataset import BaseDetDataset
@@ -25,12 +25,9 @@ class XMLDataset(BaseDetDataset):
     def __init__(self,
                  img_subdir: str = 'JPEGImages',
                  ann_subdir: str = 'Annotations',
-                 file_client_args: dict = dict(backend='disk'),
                  **kwargs) -> None:
         self.img_subdir = img_subdir
         self.ann_subdir = ann_subdir
-        self.file_client_args = file_client_args
-        self.file_client = FileClient(**file_client_args)
         super().__init__(**kwargs)
 
     @property
@@ -188,15 +185,3 @@ class XMLDataset(BaseDetDataset):
                 valid_data_infos.append(data_info)
 
         return valid_data_infos
-
-    def get_cat_ids(self, idx: int) -> List[int]:
-        """Get COCO category ids by index.
-
-        Args:
-            idx (int): Index of data.
-
-        Returns:
-            List[int]: All categories in the image of specified index.
-        """
-        instances = self.get_data_info(idx)['instances']
-        return [instance['bbox_label'] for instance in instances]
