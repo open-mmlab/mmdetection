@@ -11,7 +11,7 @@ from mmdet.utils import ConfigType
 from .assign_result import AssignResult
 from .base_assigner import BaseAssigner
 
-INF = 100000.0
+INF = 100000000
 EPS = 1.0e-7
 
 
@@ -26,6 +26,8 @@ class DynamicSoftLabelAssigner(BaseAssigner):
         topk (int): Select top-k predictions to calculate dynamic k
             best matches for each gt. Defaults to 13.
         iou_weight (float): The scale factor of iou cost. Defaults to 3.0.
+        iou_calculator (ConfigType): Config of overlaps Calculator.
+            Defaults to dict(type='BboxOverlaps2D').
     """
 
     def __init__(

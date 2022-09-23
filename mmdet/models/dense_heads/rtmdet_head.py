@@ -18,8 +18,6 @@ from ..utils import (images_to_levels, multi_apply, sigmoid_geometric_mean,
                      unmap)
 from .atss_head import ATSSHead
 
-EPS = 1e-12
-
 
 @MODELS.register_module()
 class RTMDetHead(ATSSHead):
@@ -76,12 +74,12 @@ class RTMDetHead(ATSSHead):
         pred_pad_size = self.pred_kernel_size // 2
         self.rtm_cls = nn.Conv2d(
             self.feat_channels,
-            self.num_anchors * self.cls_out_channels,
+            self.num_base_priors * self.cls_out_channels,
             self.pred_kernel_size,
             padding=pred_pad_size)
         self.rtm_reg = nn.Conv2d(
             self.feat_channels,
-            self.num_anchors * 4,
+            self.num_base_priors * 4,
             self.pred_kernel_size,
             padding=pred_pad_size)
         if self.with_objectness:
@@ -118,10 +116,10 @@ class RTMDetHead(ATSSHead):
             tuple: Usually a tuple of classification scores and bbox prediction
             - cls_scores (list[Tensor]): Classification scores for all scale
               levels, each is a 4D-tensor, the channels number is
-              num_anchors * num_classes.
+              num_base_priors * num_classes.
             - bbox_preds (list[Tensor]): Box energies / deltas for all scale
               levels, each is a 4D-tensor, the channels number is
-              num_anchors * 4.
+              num_base_priors * 4.
         """
 
         cls_scores = []
@@ -603,13 +601,13 @@ class RTMDetSepBNHead(RTMDetHead):
             self.rtm_cls.append(
                 nn.Conv2d(
                     self.feat_channels,
-                    self.num_anchors * self.cls_out_channels,
+                    self.num_base_priors * self.cls_out_channels,
                     self.pred_kernel_size,
                     padding=self.pred_kernel_size // 2))
             self.rtm_reg.append(
                 nn.Conv2d(
                     self.feat_channels,
-                    self.num_anchors * 4,
+                    self.num_base_priors * 4,
                     self.pred_kernel_size,
                     padding=self.pred_kernel_size // 2))
             if self.with_objectness:
