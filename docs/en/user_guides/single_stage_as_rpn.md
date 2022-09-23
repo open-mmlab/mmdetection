@@ -1,8 +1,8 @@
 # Use a single stage detector as RPN
 
-Region proposal network (RPN) is a submodule in [Faster R-CNN](https://arxiv.org/abs/1506.01497), which generates proposals for the second stage of Faster R-CNN. Most two-stage detectors in MMDetection use [`RPNHead`](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/dense_heads/rpn_head.py) to generate proposals as RPN. However, any single-stage detector can serve as an RPN since their bounding box predictions can also be regarded as region proposals and thus be refined in the R-CNN. Therefore, MMDetection v3.0 supports that.
+Region proposal network (RPN) is a submodule in [Faster R-CNN](https://arxiv.org/abs/1506.01497), which generates proposals for the second stage of Faster R-CNN. Most two-stage detectors in MMDetection use [`RPNHead`](../../../mmdet/models/dense_heads/rpn_head.py) to generate proposals as RPN. However, any single-stage detector can serve as an RPN since their bounding box predictions can also be regarded as region proposals and thus be refined in the R-CNN. Therefore, MMDetection v3.0 supports that.
 
-To illustrate the whole process, here we give an example of how to use an anchor-free single-stage model [FCOS](configs/fcos/fcos_r50-caffe_fpn_gn-head_1x_coco.py) as an RPN in [Faster R-CNN](configs/faster_rcnn/faster-rcnn_r50_fpn_fcos-rpn_1x_coco.py).
+To illustrate the whole process, here we give an example of how to use an anchor-free single-stage model [FCOS](../../../configs/fcos/fcos_r50-caffe_fpn_gn-head_1x_coco.py) as an RPN in [Faster R-CNN](../../../configs/faster_rcnn/faster-rcnn_r50_fpn_fcos-rpn_1x_coco.py).
 
 The outline of this tutorial is as below:
 
@@ -62,7 +62,7 @@ param_scheduler = [
 ]
 ```
 
-Then, we could use the following command to train our customized model. For more training commands, please refer to [here](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/docs/en/user_guides/train.md).
+Then, we could use the following command to train our customized model. For more training commands, please refer to [here](train.md).
 
 ```python
 # training with 8 GPUS
