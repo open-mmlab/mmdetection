@@ -207,7 +207,7 @@ print(mmdet.__version__)
 
 #### 通过 Docker 使用 MMDetection
 
-们提供了一个 [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) 来构建一个镜像。请确保你的 [docker版本](https://docs.docker.com/engine/install/) >=19.03。
+们提供了一个 [Dockerfile](../../docker/Dockerfile) 来构建一个镜像。请确保你的 [docker版本](https://docs.docker.com/engine/install/) >=19.03。
 
 ```shell
 # build an image with PyTorch 1.6, CUDA 10.1
