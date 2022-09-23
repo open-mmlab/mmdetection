@@ -6,7 +6,7 @@ MMDetection and MMEngine provide users with various useful hooks including log h
 
 ## NumClassCheckHook
 
-## [MemoryProfilerHook](https://github.com/open-mmlab/mmdetection/blob/3.x/mmdet/engine/hooks/memory_profiler_hook.py)
+## [MemoryProfilerHook](../../../mmdet/engine/hooks/memory_profiler_hook.py)
 
 Memory profiler hook records memory information including virtual memory, swap memory, and the memory of the current process. This hook helps grasp the memory usage of the system and discover potential memory leak bugs. To use this hook, users should install `memory_profiler` and `psutil` by `pip install memory_profiler psutil` first.
 
@@ -98,4 +98,4 @@ class CheckInvalidLossHook(Hook):
                 runner.logger.info('loss become infinite or NaN!')
 ```
 
-Please read [customize_runtime](https://github.com/open-mmlab/mmdetection/blob/3.x/docs/en/advanced_guides/customize_runtime.md) for more about implementing a custom hook.
+Please read [customize_runtime](../advanced_guides/customize_runtime.md) for more about implementing a custom hook.
