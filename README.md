@@ -124,7 +124,7 @@ For detailed user guides and advanced guides, please refer to our [documentation
 
   </details>
 
-We also provide [colab tutorial](demo/MMDet_Tutorial.ipynb) and [instance segmentation colab tutorial](demo/MMDet_InstanceSeg_Tutorial.ipynb).
+We also provide object detection colab tutorial [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](demo/MMDet_Tutorial.ipynb) and instance segmentation colab tutorial [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](demo/MMDet_InstanceSeg_Tutorial.ipynb).
 
 To migrate from MMDetection 2.x, please refer to [migration](https://mmdetection.readthedocs.io/en/3.x/migration.html).
 

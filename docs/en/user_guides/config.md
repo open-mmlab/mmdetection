@@ -325,9 +325,9 @@ param_scheduler = [
 
 ### Hook config
 
-Users can attach hooks to training, validation, and testing loops to insert some oprations during running. There are two different hook fields, one is `default_hooks` and the other is `custom_hooks`.
+Users can attach Hooks to training, validation, and testing loops to insert some oprations during running. There are two different hook fields, one is `default_hooks` and the other is `custom_hooks`.
 
-`default_hooks` is a dict of hook configs. `default_hooks` are the hooks must required at runtime. They have default priority which should not be modified. If not set, runner will use the default values. To disable a default hook, users can set its config to `None`.
+`default_hooks` is a dict of hook configs, and they are the hooks must be required at the runtime. They have default priority which should not be modified. If not set, runner will use the default values. To disable a default hook, users can set its config to `None`.
 
 ```python
 default_hooks = dict(
@@ -339,7 +339,7 @@ default_hooks = dict(
     visualization=dict(type='DetVisualizationHook'))
 ```
 
-`custom_hooks` is a list of hook configs. Users can develop their own hooks and insert them in this field.
+`custom_hooks` is a list of all other hook configs. Users can develop their own hooks and insert them in this field.
 
 ```python
 custom_hooks = []
@@ -412,8 +412,8 @@ log_processor = dict(by_epoch=False)
 ## Config file inheritance
 
 There are 4 basic component types under `config/_base_`, dataset, model, schedule, default_runtime.
-Many methods could be easily constructed with one of each like Faster R-CNN, Mask R-CNN, Cascade R-CNN, RPN, SSD.
-The configs that are composed by components from `_base_` are called _primitive_.
+Many methods could be easily constructed with one of these models like Faster R-CNN, Mask R-CNN, Cascade R-CNN, RPN, SSD.
+The configs that are composed by components from `_base_` are called the _primitive_.
 
 For all configs under the same folder, it is recommended to have only **one** _primitive_ config. All other configs should inherit from the _primitive_ config. In this way, the maximum of inheritance level is 3.
 
@@ -426,13 +426,13 @@ Please refer to [mmengine config tutorial](https://mmengine.readthedocs.io/en/la
 
 By setting the `_base_` field, we can set which files the current configuration file inherits from.
 
-When `_base_` is a string of a file path, it means inherit the contents of one config file.
+When `_base_` is a string of a file path, it means inheriting the contents from one config file.
 
 ```python
 _base_ = './mask-rcnn_r50_fpn_1x_coco.py'
 ```
 
-When `_base_` is a list of multiple file paths, it means inheriting multiple files.
+When `_base_` is a list of multiple file paths, it means inheriting from multiple files.
 
 ```python
 _base_ = [
@@ -581,7 +581,7 @@ When submitting jobs using `tools/train.py` or `tools/test.py`, you may specify 
 
   If the value to be updated is a list or a tuple. For example, the config file normally sets `model.data_preprocessor.mean=[123.675, 116.28, 103.53]`. If you want to
   change the mean values, you may specify `--cfg-options model.data_preprocessor.mean="[127,127,127]"`. Note that the quotation mark `"` is necessary to
-  support list/tuple data types, and that **NO** white space is allowed inside the quotation marks in the specified value.
+  support list/tuple data types, and **NO** white space is allowed inside the quotation marks in the specified value.
 
 ## Config name style
 
