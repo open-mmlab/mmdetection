@@ -17,9 +17,6 @@ class XMLDataset(BaseDetDataset):
     Args:
         img_subdir (str): Subdir where images are stored. Default: JPEGImages.
         ann_subdir (str): Subdir where annotations are. Default: Annotations.
-        file_client_args (dict): Arguments to instantiate a FileClient.
-            See :class:`mmengine.fileio.FileClient` for details.
-            Defaults to ``dict(backend='disk')``.
     """
 
     def __init__(self,
