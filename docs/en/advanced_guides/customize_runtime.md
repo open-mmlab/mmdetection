@@ -334,9 +334,9 @@ If the hook is already implemented in MMDectection, you can directly modify the 
 
 #### Example: `NumClassCheckHook`
 
-We implement a customized hook named [NumClassCheckHook](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/engine/hooks/num_class_check_hook.py) to check whether the `num_classes` in head matches the length of `CLASSES` in `dataset`.
+We implement a customized hook named [NumClassCheckHook](../../../mmdet/engine/hooks/num_class_check_hook.py) to check whether the `num_classes` in head matches the length of `CLASSES` in `dataset`.
 
-We set it in [default_runtime.py](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/_base_/default_runtime.py).
+We set it in [default_runtime.py](../../../configs/_base_/default_runtime.py).
 
 ```python
 custom_hooks = [dict(type='NumClassCheckHook')]
