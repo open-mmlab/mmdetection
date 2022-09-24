@@ -7,7 +7,7 @@ model = dict(
         init_cfg=dict(
             type='Pretrained', prefix='backbone.', checkpoint=checkpoint)),
     neck=dict(in_channels=[128, 256, 512], out_channels=128, num_csp_blocks=1),
-    bbox_head=dict(in_channels=128, feat_channels=128))
+    bbox_head=dict(in_channels=128, feat_channels=128, exp_on_reg=False))
 
 train_pipeline = [
     dict(
