@@ -83,7 +83,7 @@ mim download mmdet --config yolov3_mobilenetv2_8xb24-320-300e_coco --dest .
 方案 1. 如果你通过源码安装的 MMDetection，那么直接运行以下命令进行验证：
 
 ```shell
-python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-ms-416-300e_coco.py yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu --out-file result.jpg
+python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-320-300e_coco.py yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu --out-file result.jpg
 ```
 
 你会在当前文件夹中看到一个新的图像`result.jpg`，图像中包含有网络预测的检测框。
