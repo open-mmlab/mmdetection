@@ -551,8 +551,10 @@ class RTMDetSepBNHead(RTMDetHead):
                      type='BN', momentum=0.03, eps=0.001),
                  act_cfg: ConfigType = dict(type='SiLU'),
                  pred_kernel_size: int = 1,
+                 exp_on_reg=False,
                  **kwargs) -> None:
         self.share_conv = share_conv
+        self.exp_on_reg = exp_on_reg
         super().__init__(
             num_classes,
             in_channels,
@@ -675,8 +677,10 @@ class RTMDetSepBNHead(RTMDetHead):
                 objectness = self.rtm_obj[idx](reg_feat)
                 cls_score = inverse_sigmoid(
                     sigmoid_geometric_mean(cls_score, objectness))
-
-            reg_dist = self.rtm_reg[idx](reg_feat) * stride[0]
+            if self.exp_on_reg:
+                reg_dist = self.rtm_reg[idx](reg_feat).exp() * stride[0]
+            else:
+                reg_dist = self.rtm_reg[idx](reg_feat) * stride[0]
             cls_scores.append(cls_score)
             bbox_preds.append(reg_dist)
         return tuple(cls_scores), tuple(bbox_preds)
