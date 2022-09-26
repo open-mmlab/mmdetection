@@ -19,7 +19,7 @@ def coco_metric_process(metric: CocoMetric, data_batch: dict,
             contain annotations and predictions.
     """
     predictions = []
-    labels = []
+    groundtruths = []
     for data_sample in data_samples:
         result = dict()
         pred = data_sample['pred_instances']
@@ -49,8 +49,8 @@ def coco_metric_process(metric: CocoMetric, data_batch: dict,
 
         # pred, gt
         predictions.append(result)
-        labels.append(gt)
-    metric.add(predictions, labels)
+        groundtruths.append(gt)
+    metric.add(predictions, groundtruths)
 
 
 CocoMetric.process = coco_metric_process
