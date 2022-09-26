@@ -53,6 +53,7 @@ Import:
   - configs/pisa/metafile.yml
   - configs/point_rend/metafile.yml
   - configs/queryinst/metafile.yml
+  - configs/rtmdet/metafile.yml
   - configs/regnet/metafile.yml
   - configs/reppoints/metafile.yml
   - configs/res2net/metafile.yml
