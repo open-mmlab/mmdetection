@@ -83,7 +83,7 @@ mim download mmdet --config yolov3_mobilenetv2_8xb24-320-300e_coco --dest .
 方案 1. 如果你通过源码安装的 MMDetection，那么直接运行以下命令进行验证：
 
 ```shell
-python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-ms-416-300e_coco.py yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu --out-file result.jpg
+python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-320-300e_coco.py yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu --out-file result.jpg
 ```
 
 你会在当前文件夹中看到一个新的图像 `result.jpg`，图像中包含有网络预测的检测框。
@@ -95,7 +95,7 @@ from mmdet.apis import init_detector, inference_detector
 from mmdet.utils import register_all_modules
 
 register_all_modules()
-config_file = 'yolov3_mobilenetv2_8xb24-ms-416-300e_coco.py'
+config_file = 'yolov3_mobilenetv2_8xb24-320-300e_coco.py'
 checkpoint_file = 'yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth'
 model = init_detector(config_file, checkpoint_file, device='cpu')  # or device='cuda:0'
 inference_detector(model, 'demo/demo.jpg')
@@ -202,7 +202,7 @@ print(mmdet.__version__)
 ```
 
 ```{note}
-在 Jupyter 中，感叹号 `!` 用于执行外部命令，而 `%cd` 是一个[魔术命令](https://ipython.readthedocs.io/en/stable/interactive/magics.html#magic-cd)，用于切换 Python 的工作路径。
+在 Jupyter Notebook 中，感叹号 `!` 用于执行外部命令，而 `%cd` 是一个[魔术命令](https://ipython.readthedocs.io/en/stable/interactive/magics.html#magic-cd)，用于切换 Python 的工作路径。
 ```
 
 #### 通过 Docker 使用 MMDetection

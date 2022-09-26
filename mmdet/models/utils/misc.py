@@ -1,11 +1,13 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from functools import partial
-from typing import List, Union
+from typing import List, Sequence, Tuple, Union
 
 import numpy as np
 import torch
 from mmengine.structures import InstanceData
+from mmengine.utils import digit_version
 from six.moves import map, zip
+from torch import Tensor
 from torch.autograd import Function
 from torch.nn import functional as F
 
@@ -412,7 +414,7 @@ def images_to_levels(target, num_levels):
 
     [target_img0, target_img1] -> [target_level0, target_level1, ...]
     """
-    target = torch.stack(target, 0)
+    target = stack_boxes(target, 0)
     level_targets = []
     start = 0
     for n in num_levels:
@@ -437,3 +439,214 @@ def samplelist_boxlist2tensor(batch_data_samples: SampleList) -> SampleList:
             bboxes = data_samples.ignored_instances.get('bboxes', None)
             if isinstance(bboxes, BaseBoxes):
                 data_samples.ignored_instances.bboxes = bboxes.tensor
+
+
+def cat_boxes(data_list: List[Union[Tensor, BaseBoxes]],
+              dim: int = 0) -> Union[Tensor, BaseBoxes]:
+    """Concatenate boxes with type of tensor or BoxList.
+
+    Args:
+        data_list (List[Union[Tensor, :obj:`BaseBoxes`]]): A list of tensors
+            or boxlists need to be concatenated.
+            dim (int): The dimension over which the box are concatenated.
+                Defaults to 0.
+
+    Returns:
+        Union[Tensor, :obj`BaseBoxes`]: Concatenated results.
+    """
+    if data_list and isinstance(data_list[0], BaseBoxes):
+        return data_list[0].cat(data_list, dim=dim)
+    else:
+        return torch.cat(data_list, dim=dim)
+
+
+def stack_boxes(data_list: List[Union[Tensor, BaseBoxes]],
+                dim: int = 0) -> Union[Tensor, BaseBoxes]:
+    """Stack boxes with type of tensor or BoxList.
+
+    Args:
+        data_list (List[Union[Tensor, :obj:`BaseBoxes`]]): A list of tensors
+            or boxlists need to be stacked.
+            dim (int): The dimension over which the box are stacked.
+                Defaults to 0.
+
+    Returns:
+        Union[Tensor, :obj`BaseBoxes`]: Stacked results.
+    """
+    if data_list and isinstance(data_list[0], BaseBoxes):
+        return data_list[0].stack(data_list, dim=dim)
+    else:
+        return torch.stack(data_list, dim=dim)
+
+
+def scale_boxes(boxes: Union[Tensor, BaseBoxes],
+                scale_factor: Tuple[float, float]) -> Union[Tensor, BaseBoxes]:
+    """Scale boxes with type of tensor or boxlist.
+
+    Args:
+        boxes (Tensor or :obj:`BaseBoxes`): boxes need to be scaled. Its type
+            can be a tensor or a boxlist.
+        scale_factor (Tuple[float, float]): factors for scaling boxes.
+            The length should be 2.
+
+    Returns:
+        Union[Tensor, :obj:`BaseBoxes`]: Scaled boxes.
+    """
+    if isinstance(boxes, BaseBoxes):
+        boxes.rescale_(scale_factor)
+        return boxes
+    else:
+        # Tensor boxes will be treated as horizontal boxes
+        repeat_num = int(boxes.size(-1) / 2)
+        scale_factor = boxes.new_tensor(scale_factor).repeat((1, repeat_num))
+        return boxes * scale_factor
+
+
+def get_box_wh(boxes: Union[Tensor, BaseBoxes]) -> Tuple[Tensor, Tensor]:
+    """Get the width and height of boxes with type of tensor or boxlist.
+
+    Args:
+        boxes (Tensor or :obj:`BaseBoxes`): boxes with type of tensor
+            or boxlist.
+
+    Returns:
+        Tuple[Tensor, Tensor]: the width and height of boxes.
+    """
+    if isinstance(boxes, BaseBoxes):
+        w = boxes.widths
+        h = boxes.heights
+    else:
+        # Tensor boxes will be treated as horizontal boxes by defaults
+        w = boxes[:, 2] - boxes[:, 0]
+        h = boxes[:, 3] - boxes[:, 1]
+    return w, h
+
+
+def get_box_tensor(boxes: Union[Tensor, BaseBoxes]) -> Tensor:
+    """Get tensor data from boxlist boxes.
+
+    Args:
+        boxes (Tensor or BaseBoxes): boxes with type of tensor or boxlist.
+            If its type is a tensor, the boxes will be directly returned.
+            If its type is a boxlist, the `boxes.tensor` will be returned.
+
+    Returns:
+        Tensor: boxes tensor.
+    """
+    if isinstance(boxes, BaseBoxes):
+        boxes = boxes.tensor
+    return boxes
+
+
+_torch_version_div_indexing = (
+    'parrots' not in torch.__version__
+    and digit_version(torch.__version__) >= digit_version('1.8'))
+
+
+def floordiv(dividend, divisor, rounding_mode='trunc'):
+    if _torch_version_div_indexing:
+        return torch.div(dividend, divisor, rounding_mode=rounding_mode)
+    else:
+        return dividend // divisor
+
+
+def _filter_gt_instances_by_score(batch_data_samples: SampleList,
+                                  score_thr: float) -> SampleList:
+    """Filter ground truth (GT) instances by score.
+
+    Args:
+        batch_data_samples (SampleList): The Data
+            Samples. It usually includes information such as
+            `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+        score_thr (float): The score filter threshold.
+
+    Returns:
+        SampleList: The Data Samples filtered by score.
+    """
+    for data_samples in batch_data_samples:
+        assert 'scores' in data_samples.gt_instances, \
+            'there does not exit scores in instances'
+        if data_samples.gt_instances.bboxes.shape[0] > 0:
+            data_samples.gt_instances = data_samples.gt_instances[
+                data_samples.gt_instances.scores > score_thr]
+    return batch_data_samples
+
+
+def _filter_gt_instances_by_size(batch_data_samples: SampleList,
+                                 wh_thr: tuple) -> SampleList:
+    """Filter ground truth (GT) instances by size.
+
+    Args:
+        batch_data_samples (SampleList): The Data
+            Samples. It usually includes information such as
+            `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+        wh_thr (tuple):  Minimum width and height of bbox.
+
+    Returns:
+        SampleList: The Data Samples filtered by score.
+    """
+    for data_samples in batch_data_samples:
+        bboxes = data_samples.gt_instances.bboxes
+        if bboxes.shape[0] > 0:
+            w = bboxes[:, 2] - bboxes[:, 0]
+            h = bboxes[:, 3] - bboxes[:, 1]
+            data_samples.gt_instances = data_samples.gt_instances[
+                (w > wh_thr[0]) & (h > wh_thr[1])]
+    return batch_data_samples
+
+
+def filter_gt_instances(batch_data_samples: SampleList,
+                        score_thr: float = None,
+                        wh_thr: tuple = None):
+    """Filter ground truth (GT) instances by score and/or size.
+
+    Args:
+        batch_data_samples (SampleList): The Data
+            Samples. It usually includes information such as
+            `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
+        score_thr (float): The score filter threshold.
+        wh_thr (tuple):  Minimum width and height of bbox.
+
+    Returns:
+        SampleList: The Data Samples filtered by score and/or size.
+    """
+
+    if score_thr is not None:
+        batch_data_samples = _filter_gt_instances_by_score(
+            batch_data_samples, score_thr)
+    if wh_thr is not None:
+        batch_data_samples = _filter_gt_instances_by_size(
+            batch_data_samples, wh_thr)
+    return batch_data_samples
+
+
+def rename_loss_dict(prefix: str, losses: dict) -> dict:
+    """Rename the key names in loss dict by adding a prefix.
+
+    Args:
+        prefix (str): The prefix for loss components.
+        losses (dict):  A dictionary of loss components.
+
+    Returns:
+            dict: A dictionary of loss components with prefix.
+    """
+    return {prefix + k: v for k, v in losses.items()}
+
+
+def reweight_loss_dict(losses: dict, weight: float) -> dict:
+    """Reweight losses in the dict by weight.
+
+    Args:
+        losses (dict):  A dictionary of loss components.
+        weight (float): Weight for loss components.
+
+    Returns:
+            dict: A dictionary of weighted loss components.
+    """
+    for name, loss in losses.items():
+        if 'loss' in name:
+            if isinstance(loss, Sequence):
+                losses[name] = [item * weight for item in loss]
+            else:
+                losses[name] = loss * weight
+    return losses

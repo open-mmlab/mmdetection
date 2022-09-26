@@ -4,6 +4,8 @@ from abc import ABCMeta, abstractmethod
 import torch
 from mmengine.structures import InstanceData
 
+from mmdet.models.utils.misc import cat_boxes
+from mmdet.structures.bbox.base_boxes import BaseBoxes
 from ..assigners import AssignResult
 from .sampling_result import SamplingResult
 
@@ -94,11 +96,14 @@ class BaseSampler(metaclass=ABCMeta):
         if len(priors.shape) < 2:
             priors = priors[None, :]
 
-        priors = priors[:, :4]
-
         gt_flags = priors.new_zeros((priors.shape[0], ), dtype=torch.uint8)
         if self.add_gt_as_proposals and len(gt_bboxes) > 0:
-            priors = torch.cat([gt_bboxes, priors], dim=0)
+            # When `gt_bboxes` and `priors` are all boxlist, convert
+            # `gt_bboxes` type to `priors` type.
+            if (isinstance(gt_bboxes, BaseBoxes)
+                    and isinstance(priors, BaseBoxes)):
+                gt_bboxes = gt_bboxes.convert_to(type(priors))
+            priors = cat_boxes([gt_bboxes, priors], dim=0)
             assign_result.add_gt_(gt_labels)
             gt_ones = priors.new_ones(gt_bboxes.shape[0], dtype=torch.uint8)
             gt_flags = torch.cat([gt_ones, gt_flags])

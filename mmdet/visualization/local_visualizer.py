@@ -186,7 +186,9 @@ class DetLocalVisualizer(Visualizer):
             self.draw_polygons(polygons, edge_colors='w', alpha=self.alpha)
             self.draw_binary_masks(masks, colors=colors, alphas=self.alpha)
 
-            if 'bboxes' not in instances or instances.bboxes.sum() == 0:
+            if len(labels) > 0 and \
+                    ('bboxes' not in instances or
+                     instances.bboxes.sum() == 0):
                 # instances.bboxes.sum()==0 represent dummy bboxes.
                 # A typical example of SOLO does not exist bbox branch.
                 areas = []

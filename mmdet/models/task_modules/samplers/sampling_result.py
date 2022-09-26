@@ -5,6 +5,8 @@ import numpy as np
 import torch
 from torch import Tensor
 
+from mmdet.models.utils import cat_boxes
+from mmdet.structures.bbox import BaseBoxes
 from mmdet.utils import util_mixins
 from mmdet.utils.util_random import ensure_rng
 from ..assigners import AssignResult
@@ -104,19 +106,20 @@ class SamplingResult(util_mixins.NiceRepr):
         self.num_gts = gt_bboxes.shape[0]
         self.pos_assigned_gt_inds = assign_result.gt_inds[pos_inds] - 1
         self.pos_gt_labels = assign_result.labels[pos_inds]
+        box_dim = gt_bboxes.box_dim if isinstance(gt_bboxes, BaseBoxes) else 4
         if gt_bboxes.numel() == 0:
             # hack for index error case
             assert self.pos_assigned_gt_inds.numel() == 0
-            self.pos_gt_bboxes = torch.empty_like(gt_bboxes).view(-1, 4)
+            self.pos_gt_bboxes = gt_bboxes.view(-1, box_dim)
         else:
             if len(gt_bboxes.shape) < 2:
-                gt_bboxes = gt_bboxes.view(-1, 4)
-            self.pos_gt_bboxes = gt_bboxes[self.pos_assigned_gt_inds.long(), :]
+                gt_bboxes = gt_bboxes.view(-1, box_dim)
+            self.pos_gt_bboxes = gt_bboxes[self.pos_assigned_gt_inds.long()]
 
     @property
     def priors(self):
         """torch.Tensor: concatenated positive and negative priors"""
-        return torch.cat([self.pos_priors, self.neg_priors])
+        return cat_boxes([self.pos_priors, self.neg_priors])
 
     @property
     def bboxes(self):
@@ -148,7 +151,7 @@ class SamplingResult(util_mixins.NiceRepr):
         """
         _dict = self.__dict__
         for key, value in _dict.items():
-            if isinstance(value, torch.Tensor):
+            if isinstance(value, (torch.Tensor, BaseBoxes)):
                 _dict[key] = value.to(device)
         return self
 

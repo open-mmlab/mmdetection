@@ -2,7 +2,9 @@
 import numpy as np
 import torch
 
+from mmdet.models.utils.misc import get_box_tensor
 from mmdet.registry import TASK_UTILS
+from mmdet.structures.bbox import HorizontalBoxes
 from .base_bbox_coder import BaseBBoxCoder
 
 
@@ -32,8 +34,9 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
 
     def __init__(self,
                  target_means=(0., 0., 0., 0.),
-                 target_stds=(1., 1., 1., 1.)):
-        super(BaseBBoxCoder, self).__init__()
+                 target_stds=(1., 1., 1., 1.),
+                 **kwargs):
+        super().__init__(**kwargs)
         self.means = target_means
         self.stds = target_stds
 
@@ -42,13 +45,16 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
         transform the ``bboxes`` into the ``gt_bboxes``.
 
         Args:
-            bboxes (torch.Tensor): source boxes, e.g., object proposals.
-            gt_bboxes (torch.Tensor): target of the transformation, e.g.,
-                ground-truth boxes.
+            bboxes (torch.Tensor or :obj:`BaseBoxes`): source boxes,
+                e.g., object proposals.
+            gt_bboxes (torch.Tensor or :obj:`BaseBoxes`): target of the
+                transformation, e.g., ground-truth boxes.
 
         Returns:
             torch.Tensor: Box transformation deltas
         """
+        bboxes = get_box_tensor(bboxes)
+        gt_bboxes = get_box_tensor(gt_bboxes)
         assert bboxes.size(0) == gt_bboxes.size(0)
         assert bboxes.size(-1) == gt_bboxes.size(-1) == 4
         encoded_bboxes = legacy_bbox2delta(bboxes, gt_bboxes, self.means,
@@ -63,7 +69,7 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
         """Apply transformation `pred_bboxes` to `boxes`.
 
         Args:
-            boxes (torch.Tensor): Basic boxes.
+            boxes (torch.Tensor or :obj:`BaseBoxes`): Basic boxes.
             pred_bboxes (torch.Tensor): Encoded boxes with shape
             max_shape (tuple[int], optional): Maximum shape of boxes.
                 Defaults to None.
@@ -71,12 +77,18 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
                 width and height.
 
         Returns:
-            torch.Tensor: Decoded boxes.
+            Union[torch.Tensor, :obj:`BaseBoxes`]: Decoded boxes.
         """
+        bboxes = get_box_tensor(bboxes)
         assert pred_bboxes.size(0) == bboxes.size(0)
         decoded_bboxes = legacy_delta2bbox(bboxes, pred_bboxes, self.means,
                                            self.stds, max_shape, wh_ratio_clip)
 
+        if self.use_box_type:
+            assert decoded_bboxes.size(-1) == 4, \
+                ('Cannot warp decoded boxes with boxlist when decoded boxes'
+                 'have shape of (N, num_classes * 4)')
+            decoded_bboxes = HorizontalBoxes(decoded_bboxes)
         return decoded_bboxes
 
 

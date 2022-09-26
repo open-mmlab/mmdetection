@@ -34,7 +34,7 @@ mmdetection
 │   │   ├── VOC2012
 ```
 
-Some models require additional [COCO-stuff](http://calvin.inf.ed.ac.uk/wp-content/uploads/data/cocostuffdataset/stuffthingmaps_trainval2017.zip) datasets, such as HTC, DetectoRS and SCNet, you can download and unzip then move to the coco folder. The directory should be like this.
+Some models require additional [COCO-stuff](http://calvin.inf.ed.ac.uk/wp-content/uploads/data/cocostuffdataset/stuffthingmaps_trainval2017.zip) datasets, such as HTC, DetectoRS and SCNet, you can download, unzip, and then move them to the coco folder. The directory should be like this.
 
 ```text
 mmdetection
@@ -47,7 +47,7 @@ mmdetection
 │   │   ├── stuffthingmaps
 ```
 
-Panoptic segmentation models like PanopticFPN require additional [COCO Panoptic](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip) datasets, you can download and unzip then move to the coco annotation folder. The directory should be like this.
+Panoptic segmentation models like PanopticFPN require additional [COCO Panoptic](http://images.cocodataset.org/annotations/panoptic_annotations_trainval2017.zip) datasets, you can download, unzip, and then move them to the coco annotation folder. The directory should be like this.
 
 ```text
 mmdetection

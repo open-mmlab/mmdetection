@@ -6,8 +6,9 @@ import os.path as osp
 from mmengine.config import Config, DictAction
 from mmengine.runner import Runner
 
+from mmdet.engine.hooks.utils import trigger_visualization_hook
 from mmdet.registry import RUNNERS
-from mmdet.utils import register_all_modules
+from mmdet.utils import add_dump_metric, register_all_modules
 
 
 # TODO: support fuse_conv_bn and format_only
@@ -19,6 +20,10 @@ def parse_args():
     parser.add_argument(
         '--work-dir',
         help='the directory to save the file containing evaluation metrics')
+    parser.add_argument(
+        '--out',
+        type=str,
+        help='dump predictions to a pickle file for offline evaluation')
     parser.add_argument(
         '--show', action='store_true', help='show prediction results')
     parser.add_argument(
@@ -50,26 +55,6 @@ def parse_args():
     return args
 
 
-def trigger_visualization_hook(cfg, args):
-    default_hooks = cfg.default_hooks
-    if 'visualization' in default_hooks:
-        visualization_hook = default_hooks['visualization']
-        # Turn on visualization
-        visualization_hook['draw'] = True
-        if args.show:
-            visualization_hook['show'] = True
-            visualization_hook['wait_time'] = args.wait_time
-        if args.show_dir:
-            visualization_hook['test_out_dir'] = args.show_dir
-    else:
-        raise RuntimeError(
-            'VisualizationHook must be included in default_hooks.'
-            'refer to usage '
-            '"visualization=dict(type=\'VisualizationHook\')"')
-
-    return cfg
-
-
 def main():
     args = parse_args()
 
@@ -96,6 +81,12 @@ def main():
 
     if args.show or args.show_dir:
         cfg = trigger_visualization_hook(cfg, args)
+
+    # Dump predictions
+    if args.out is not None:
+        assert args.out.endswith(('.pkl', '.pickle')), \
+            'The dump file must be a pkl file.'
+        add_dump_metric(args, cfg)
 
     # build the runner from config
     if 'runner_type' not in cfg:

@@ -397,7 +397,7 @@ python tools/misc/download_dataset.py --dataset-name lvis
 ```shell
 python -m torch.distributed.launch --nproc_per_node=1 --master_port=${PORT} tools/analysis_tools/benchmark.py \
     ${CONFIG} \
-    ${CHECKPOINT} \
+    [--checkpoint ${CHECKPOINT}] \
     [--repeat-num ${REPEAT_NUM}] \
     [--max-iter ${MAX_ITER}] \
     [--log-interval ${LOG_INTERVAL}] \

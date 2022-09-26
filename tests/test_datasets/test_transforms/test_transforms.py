@@ -83,7 +83,7 @@ class TestResize(unittest.TestCase):
             copy.deepcopy(self.data_info1['gt_bboxes']),
             results['homography_matrix']) == results['gt_bboxes']).all())
 
-    def test_resize_with_boxlist(self):
+    def test_resize_use_box_type(self):
         data_info1 = copy.deepcopy(self.data_info1)
         data_info1['gt_bboxes'] = HorizontalBoxes(data_info1['gt_bboxes'])
         data_info2 = copy.deepcopy(self.data_info2)
@@ -186,7 +186,7 @@ class TestRandomFlip(unittest.TestCase):
             results_update['homography_matrix']) == results_update['gt_bboxes']
                          ).all())
 
-    def test_transform_with_boxlist(self):
+    def test_transform_use_box_type(self):
         results1 = copy.deepcopy(self.results1)
         results1['gt_bboxes'] = HorizontalBoxes(results1['gt_bboxes'])
         # test with image, gt_bboxes, gt_masks, gt_seg_map
@@ -309,7 +309,7 @@ class TestMinIoURandomCrop(unittest.TestCase):
         else:
             self.assertTrue((ious >= mode).all())
 
-    def test_transform_with_boxlist(self):
+    def test_transform_use_box_type(self):
         results = dict()
         img = mmcv.imread(
             osp.join(osp.dirname(__file__), '../../data/color.jpg'), 'color')
@@ -401,7 +401,7 @@ class TestExpand(unittest.TestCase):
             (results['gt_masks'].height, results['gt_masks'].width))
         self.assertEqual(results['img_shape'], results['gt_seg_map'].shape)
 
-    def test_transform_with_boxlist(self):
+    def test_transform_use_box_type(self):
         results = copy.deepcopy(self.results)
         results['gt_bboxes'] = HorizontalBoxes(results['gt_bboxes'])
         transform = Expand()
@@ -582,7 +582,7 @@ class TestRandomCrop(unittest.TestCase):
         results = transform(copy.deepcopy(src_results))
         self.assertTrue(isinstance(results, dict))
 
-    def test_transform_with_boxlist(self):
+    def test_transform_use_box_type(self):
         # test with gt_bboxes, gt_bboxes_labels, gt_ignore_flags,
         # gt_masks, gt_seg_map
         img = np.random.randint(0, 255, size=(10, 10), dtype=np.uint8)
@@ -815,7 +815,7 @@ class TestMosaic(unittest.TestCase):
         self.assertTrue(results['gt_bboxes'].dtype == np.float32)
         self.assertTrue(results['gt_ignore_flags'].dtype == bool)
 
-    def test_transform_with_boxlist(self):
+    def test_transform_use_box_type(self):
         transform = Mosaic(img_scale=(10, 12))
         results = copy.deepcopy(self.results)
         results['gt_bboxes'] = HorizontalBoxes(results['gt_bboxes'])
@@ -884,7 +884,7 @@ class TestMixUp(unittest.TestCase):
         self.assertTrue(results['gt_bboxes'].dtype == np.float32)
         self.assertTrue(results['gt_ignore_flags'].dtype == bool)
 
-    def test_transform_with_boxlist(self):
+    def test_transform_use_box_type(self):
         results = copy.deepcopy(self.results)
         results['gt_bboxes'] = HorizontalBoxes(results['gt_bboxes'])
 
@@ -955,7 +955,7 @@ class TestRandomAffine(unittest.TestCase):
         self.assertTrue(results['gt_bboxes'].dtype == np.float32)
         self.assertTrue(results['gt_ignore_flags'].dtype == bool)
 
-    def test_transform_with_boxlist(self):
+    def test_transform_use_box_type(self):
         results = copy.deepcopy(self.results)
         results['gt_bboxes'] = HorizontalBoxes(results['gt_bboxes'])
 
@@ -1144,7 +1144,7 @@ class TestRandomCenterCropPad(unittest.TestCase):
         assert test_results['img_shape'][:2] == (h | 127, w | 127)
         assert 'border' in test_results
 
-    def test_transform_with_boxlist(self):
+    def test_transform_use_box_type(self):
         results = dict(
             img_path=osp.join(osp.dirname(__file__), '../../data/color.jpg'))
 
@@ -1289,7 +1289,7 @@ class TestCopyPaste(unittest.TestCase):
         }]
         results = transform(results)
 
-    def test_transform_with_boxlist(self):
+    def test_transform_use_box_type(self):
         src_results = copy.deepcopy(self.src_results)
         src_results['gt_bboxes'] = HorizontalBoxes(src_results['gt_bboxes'])
         dst_results = copy.deepcopy(self.dst_results)
@@ -1455,7 +1455,7 @@ class TestRandomShift(unittest.TestCase):
         self.assertEqual(results['gt_bboxes_labels'].dtype, np.int64)
         self.assertEqual(results['gt_bboxes'].dtype, np.float32)
 
-    def test_transform_with_boxlist(self):
+    def test_transform_use_box_type(self):
 
         results = dict()
         img = mmcv.imread(
@@ -1495,7 +1495,7 @@ class TestRandomErasing(unittest.TestCase):
 
     def test_transform(self):
         transform = RandomErasing(
-            n_patches=(1, 5), ratio=(0.2, 0.5), img_border_value=0)
+            n_patches=(1, 5), ratio=(0.4, 0.8), img_border_value=0)
         results = transform(copy.deepcopy(self.results))
         self.assertTrue(results['img'].sum() < self.results['img'].sum())
 
@@ -1514,19 +1514,19 @@ class TestRandomErasing(unittest.TestCase):
         results = transform(copy.deepcopy(empty_results))
         self.assertTrue(results['img'].sum() > self.results['img'].sum())
 
-    def test_transform_with_boxlist(self):
+    def test_transform_use_box_type(self):
         src_results = copy.deepcopy(self.results)
         src_results['gt_bboxes'] = HorizontalBoxes(src_results['gt_bboxes'])
 
         transform = RandomErasing(
-            n_patches=(1, 5), ratio=(0.2, 0.5), img_border_value=0)
+            n_patches=(1, 5), ratio=(0.4, 0.8), img_border_value=0)
         results = transform(copy.deepcopy(src_results))
         self.assertTrue(results['img'].sum() < src_results['img'].sum())
 
         transform = RandomErasing(
             n_patches=1, ratio=0.999, img_border_value=255)
         results = transform(copy.deepcopy(src_results))
-        self.assertTrue(results['img'].sum() > self.results['img'].sum())
+        self.assertTrue(results['img'].sum() > src_results['img'].sum())
         # test empty results
         empty_results = copy.deepcopy(src_results)
         empty_results['gt_bboxes'] = HorizontalBoxes([], dtype=torch.float32)
@@ -1536,7 +1536,7 @@ class TestRandomErasing(unittest.TestCase):
         empty_results['gt_seg_map'] = np.ones_like(
             empty_results['gt_seg_map']) * 255
         results = transform(copy.deepcopy(empty_results))
-        self.assertTrue(results['img'].sum() > self.results['img'].sum())
+        self.assertTrue(results['img'].sum() > src_results['img'].sum())
 
     def test_repr(self):
         transform = RandomErasing(n_patches=(1, 5), ratio=(0, 0.2))

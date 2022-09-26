@@ -1,0 +1,81 @@
+Collections:
+  - Name: RTMDet
+    Metadata:
+      Training Data: COCO
+      Training Techniques:
+        - AdamW
+        - Flat Cosine Annealing
+      Training Resources: 8x A100 GPUs
+      Architecture:
+        - CSPNeXt
+        - CSPNeXtPAFPN
+    README: configs/rtmdet/README.md
+    Code:
+      URL: https://github.com/open-mmlab/mmdetection/blob/v3.0.0rc1/mmdet/models/detectors/rtmdet.py#L6
+      Version: v3.0.0rc1
+
+Models:
+  - Name: rtmdet_tiny_8xb32-300e_coco
+    In Collection: RTMDet
+    Config: configs/rtmdet/rtmdet_tiny_8xb32-300e_coco.py
+    Metadata:
+      Training Memory (GB): 7.6
+      Epochs: 300
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 40.9
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_tiny_8xb32-300e_coco/rtmdet_tiny_8xb32-300e_coco_20220902_112414-78e30dcc.pth
+
+  - Name: rtmdet_s_8xb32-300e_coco
+    In Collection: RTMDet
+    Config: configs/rtmdet/rtmdet_s_8xb32-300e_coco.py
+    Metadata:
+      Training Memory (GB): 7.6
+      Epochs: 300
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 44.5
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_s_8xb32-300e_coco/rtmdet_s_8xb32-300e_coco_20220905_161602-2724601d.pth
+
+  - Name: rtmdet_m_8xb32-300e_coco
+    In Collection: RTMDet
+    Config: configs/rtmdet/rtmdet_m_8xb32-300e_coco.py
+    Metadata:
+      Training Memory (GB): 7.6
+      Epochs: 300
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 49.1
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_m_8xb32-300e_coco/rtmdet_m_8xb32-300e_coco_20220719_112220-229f527c.pth
+
+  - Name: rtmdet_l_8xb32-300e_coco
+    In Collection: RTMDet
+    Config: configs/rtmdet/rtmdet_l_8xb32-300e_coco.py
+    Metadata:
+      Training Memory (GB): 7.6
+      Epochs: 300
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 51.3
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_l_8xb32-300e_coco/rtmdet_l_8xb32-300e_coco_20220719_112030-5a0be7c4.pth
+
+  - Name: rtmdet_x_8xb32-300e_coco
+    In Collection: RTMDet
+    Config: configs/rtmdet/rtmdet_x_8xb32-300e_coco.py
+    Metadata:
+      Training Memory (GB): 7.6
+      Epochs: 300
+    Results:
+      - Task: Object Detection
+        Dataset: COCO
+        Metrics:
+          box AP: 52.6
+    Weights: https://download.openmmlab.com/mmdetection/v3.0/rtmdet/rtmdet_x_8xb32-300e_coco/rtmdet_x_8xb32-300e_coco_20220715_230555-cc79b9ae.pth

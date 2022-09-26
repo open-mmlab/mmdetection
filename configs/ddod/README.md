@@ -14,9 +14,9 @@ Deep learning-based dense object detectors have achieved great success in the pa
 
 ## Results and Models
 
-|   Model   | Backbone |  Style  | Lr schd | Mem (GB) | box AP |                                                Config                                                |                                                                                                                                Download                                                                                                                                |
-| :-------: | :------: | :-----: | :-----: | :------: | :----: | :--------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-| DDOD-ATSS |   R-50   | pytorch |   1x    |   3.4    |  41.7  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/ddod/ddod_r50_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/ddod/ddod_r50_fpn_1x_coco/ddod_r50_fpn_1x_coco_20220523_223737-29b2fc67.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/ddod/ddod_r50_fpn_1x_coco/ddod_r50_fpn_1x_coco_20220523_223737.log.json) |
+|   Model   | Backbone |  Style  | Lr schd | Mem (GB) | box AP |               Config                |                                                                                                                                Download                                                                                                                                |
+| :-------: | :------: | :-----: | :-----: | :------: | :----: | :---------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| DDOD-ATSS |   R-50   | pytorch |   1x    |   3.4    |  41.7  | [config](./ddod_r50_fpn_1x_coco.py) | [model](https://download.openmmlab.com/mmdetection/v2.0/ddod/ddod_r50_fpn_1x_coco/ddod_r50_fpn_1x_coco_20220523_223737-29b2fc67.pth) \| [log](https://download.openmmlab.com/mmdetection/v2.0/ddod/ddod_r50_fpn_1x_coco/ddod_r50_fpn_1x_coco_20220523_223737.log.json) |
 
 ## Citation
 

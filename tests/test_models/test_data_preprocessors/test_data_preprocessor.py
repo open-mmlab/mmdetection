@@ -98,7 +98,7 @@ class TestDetDataPreprocessor(TestCase):
             2, [[3, 10, 11], [3, 9, 24]],
             with_mask=True,
             with_semantic=True,
-            with_boxlist=True)
+            use_box_type=True)
         packed_inputs['data_samples'][0].gt_sem_seg.sem_seg = torch.randint(
             0, 256, (1, 10, 11))
         packed_inputs['data_samples'][1].gt_sem_seg.sem_seg = torch.randint(
@@ -137,19 +137,19 @@ class TestDetDataPreprocessor(TestCase):
         message_hub = MessageHub.get_instance('test_batch_sync_random_resize')
         message_hub.update_info('iter', 0)
         packed_inputs = demo_mm_inputs(
-            2, [[3, 128, 128], [3, 128, 128]], with_boxlist=True)
+            2, [[3, 128, 128], [3, 128, 128]], use_box_type=True)
         batch_inputs = processor(packed_inputs, training=True)['inputs']
         self.assertEqual(batch_inputs.shape, (2, 3, 128, 128))
 
         # resize after one iter
         message_hub.update_info('iter', 1)
         packed_inputs = demo_mm_inputs(
-            2, [[3, 128, 128], [3, 128, 128]], with_boxlist=True)
+            2, [[3, 128, 128], [3, 128, 128]], use_box_type=True)
         batch_inputs = processor(packed_inputs, training=True)['inputs']
         self.assertEqual(batch_inputs.shape, (2, 3, 320, 320))
 
         packed_inputs = demo_mm_inputs(
-            2, [[3, 128, 128], [3, 128, 128]], with_boxlist=True)
+            2, [[3, 128, 128], [3, 128, 128]], use_box_type=True)
         batch_inputs = processor(packed_inputs, training=False)['inputs']
         self.assertEqual(batch_inputs.shape, (2, 3, 128, 128))
 
@@ -174,7 +174,7 @@ class TestDetDataPreprocessor(TestCase):
             2, [[3, 10, 11], [3, 9, 24]],
             with_mask=True,
             with_semantic=True,
-            with_boxlist=True)
+            use_box_type=True)
         packed_inputs['data_samples'][0].gt_sem_seg.sem_seg = torch.randint(
             0, 256, (1, 10, 11))
         packed_inputs['data_samples'][1].gt_sem_seg.sem_seg = torch.randint(
@@ -223,7 +223,7 @@ class TestDetDataPreprocessor(TestCase):
             2, [[3, 10, 11], [3, 9, 24]],
             with_mask=True,
             with_semantic=True,
-            with_boxlist=True)
+            use_box_type=True)
         packed_inputs['data_samples'][0].gt_sem_seg.sem_seg = torch.randint(
             0, 256, (1, 10, 11))
         packed_inputs['data_samples'][1].gt_sem_seg.sem_seg = torch.randint(
@@ -272,7 +272,7 @@ class TestDetDataPreprocessor(TestCase):
             2, [[3, 10, 11], [3, 9, 24]],
             with_mask=True,
             with_semantic=True,
-            with_boxlist=True)
+            use_box_type=True)
         packed_inputs['data_samples'][0].gt_sem_seg.sem_seg = torch.randint(
             0, 256, (1, 10, 11))
         packed_inputs['data_samples'][1].gt_sem_seg.sem_seg = torch.randint(
