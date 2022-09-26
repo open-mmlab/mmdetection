@@ -77,8 +77,8 @@ Apart from MMDetection, we also released [MMEngine](https://github.com/open-mmla
 
 **v3.0.0rc1** was released in 26/9/2022:
 
-- Release [RTMDet](configs/rtmdet).
-- Refactored anchor head and base head with `boxlist`.
+- Release a high-precision, low-latency single-stage object detector [RTMDet](configs/rtmdet).
+- Refactored anchor head and base head with `box type`.
 - Refactored `SemiBaseDetector` and `SoftTeacher`.
 
 ## Installation

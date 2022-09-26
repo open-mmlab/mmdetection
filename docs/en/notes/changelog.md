@@ -4,7 +4,7 @@
 
 ### Highlights
 
-- Release [RTMDet](configs/rtmdet)
+- Release a high-precision, low-latency single-stage object detector [RTMDet](configs/rtmdet).
 
 #### Bug Fixes
 
@@ -16,7 +16,7 @@
 
 #### Improvements
 
-- Refactored anchor head and base head with `boxlist` (#8625)
+- Refactored anchor head and base head with `box type` (#8625)
 - Refactored `SemiBaseDetector` and `SoftTeacher` (#8786)
 - Add list to dict keys to avoid modify loss dict (#8828)
 - Update `analyze_results.py` and `analyze_logs.py` (#8430, # 8402)
