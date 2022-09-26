@@ -45,8 +45,7 @@ def coco_metric_process(metric: CocoMetric, data_batch: dict,
             assert 'instances' in data_sample, \
                 'ground truth is required for evaluation when ' \
                 '`ann_file` is not provided'
-            gt['anns'] = data_sample['instances']
-        # add converted result to the results list
+            gt['instances'] = data_sample['instances']
 
         # pred, gt
         predictions.append(result)
