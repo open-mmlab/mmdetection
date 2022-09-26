@@ -78,7 +78,6 @@ MMDetection 是一个基于 PyTorch 的目标检测开源工具箱。它是 [Ope
 
 - 发布高精度低延时单阶段目标检测算法 [RTMDet](configs/rtmdet)。
 - 重构 Anchor Head 和 Base Head 以支持 `box type`。
-- 重构 `SemiBaseDetector` 和 `SoftTeacher`。
 
 ## 安装
 

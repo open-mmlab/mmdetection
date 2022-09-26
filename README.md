@@ -79,7 +79,6 @@ Apart from MMDetection, we also released [MMEngine](https://github.com/open-mmla
 
 - Release a high-precision, low-latency single-stage object detector [RTMDet](configs/rtmdet).
 - Refactored anchor head and base head with `box type`.
-- Refactored `SemiBaseDetector` and `SoftTeacher`.
 
 ## Installation
 

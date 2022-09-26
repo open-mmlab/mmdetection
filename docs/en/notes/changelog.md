@@ -12,23 +12,24 @@
 - Fix `NumClassCheckHook` bug when model is wrapped (#8794)
 - Update the right URL of R-50-FPN with BoundedIoULoss (#8805)
 - Fix potential bug of indices in RandAugment (#8826)
-- Fix some types and links (#8839, #8820, #8793)
+- Fix some types and links (#8839, #8820, #8793, #8868)
+- Fix incorrect background fill values in `FSAF` and `RepPoints` Head (#8813)
 
 #### Improvements
 
 - Refactored anchor head and base head with `box type` (#8625)
 - Refactored `SemiBaseDetector` and `SoftTeacher` (#8786)
 - Add list to dict keys to avoid modify loss dict (#8828)
-- Update `analyze_results.py` and `analyze_logs.py` (#8430, # 8402)
+- Update `analyze_results.py` , `analyze_logs.py` and `loading.py` (#8430, #8402, #8784)
 - Support dump results in `test.py` (#8814)
 - Check empty predictions in `DetLocalVisualizer._draw_instances` (#8830)
 - Fix `floordiv` warning in `SOLO` (#8738)
 
 #### Contributors
 
-A total of 13 developers contributed to this release.
+A total of 16 developers contributed to this release.
 
-Thanks @ZwwWayne, @jbwang1997, @Czm369, @ice-tong, @Zheng-LinXiao, @chhluo, @RangiLyu, @liuyanyi, @wanghonglie, @levan92, @JiayuXu0, @nye0, @hhaAndroid
+Thanks @ZwwWayne, @jbwang1997, @Czm369, @ice-tong, @Zheng-LinXiao, @chhluo, @RangiLyu, @liuyanyi, @wanghonglie, @levan92, @JiayuXu0, @nye0, @hhaAndroid, @xin-li-67, @shuxp, @zytx121
 
 ## v3.0.0rc0 (31/8/2022)
 
