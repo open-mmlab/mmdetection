@@ -29,4 +29,7 @@ __all__ = [
     'Mosaic', 'MixUp', 'RandomAffine', 'YOLOXHSVRandomAug', 'CopyPaste',
     'FilterAnnotations', 'Pad', 'GeomTransform', 'ColorTransform',
     'RandAugment', 'Sharpness', 'Solarize', 'SolarizeAdd', 'Posterize',
-    'AutoContrast', 'Invert', 'MultiBranch', 'RandomErasing','LoadEmptyAnnotations', 'RandomOrder', 'CachedMosaic', 'CachedMixUp','FixShapeResize'
+    'AutoContrast', 'Invert', 'MultiBranch', 'RandomErasing',
+    'LoadEmptyAnnotations', 'RandomOrder', 'CachedMosaic', 'CachedMixUp',
+    'FixShapeResize'
+]
