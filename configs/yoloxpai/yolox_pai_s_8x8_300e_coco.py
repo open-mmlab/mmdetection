@@ -5,7 +5,7 @@ model = dict(
     backbone=dict(
         _delete_=True,
         type='mmcls.RepVGG',
-        arch='small',
+        arch='yolox-pai-small',
         add_ppf=True,
         norm_cfg=dict(type='BN', eps=0.001, momentum=0.03),
         out_indices=(1, 2, 3),
