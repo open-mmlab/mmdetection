@@ -41,7 +41,6 @@ def coco_metric_process(metric: CocoMetric, data_batch: dict,
         gt['height'] = data_sample['ori_shape'][0]
         gt['img_id'] = data_sample['img_id']
         if metric._coco_api is None:
-            # TODO: Need to refactor to support LoadAnnotations
             assert 'instances' in data_sample, \
                 'ground truth is required for evaluation when ' \
                 '`ann_file` is not provided'
