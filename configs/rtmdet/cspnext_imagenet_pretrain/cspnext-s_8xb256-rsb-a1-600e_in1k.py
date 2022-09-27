@@ -4,6 +4,8 @@ _base_ = [
     'mmcls::_base_/default_runtime.py'
 ]
 
+custom_imports = dict(imports=['mmdet.models'], allow_failed_imports=False)
+
 model = dict(
     type='ImageClassifier',
     backbone=dict(
@@ -14,7 +16,7 @@ model = dict(
         deepen_factor=0.33,
         widen_factor=0.5,
         channel_attention=True,
-        norm_cfg=dict(type='SyncBN'),
+        norm_cfg=dict(type='BN'),
         act_cfg=dict(type='mmdet.SiLU')),
     neck=dict(type='GlobalAveragePooling'),
     head=dict(
