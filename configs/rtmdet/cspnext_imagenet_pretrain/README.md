@@ -1,7 +1,32 @@
 # CSPNeXt ImageNet Pre-training
 
 In this folder, we provide the imagenet pre-training config of RTMDet's backbone CSPNeXt.
-To train with these configs, please install [MMClassification](https://github.com/open-mmlab/mmclassification) first.
+
+## Requirements
+
+To train with these configs, please install [MMClassification-1.x](https://github.com/open-mmlab/mmclassification/tree/1.x) first.
+
+Install by MIM:
+
+```shell
+mim install mmcls>=1.0.0rc0
+```
+
+or install by pip:
+
+```shell
+pip install mmcls>=1.0.0rc0
+```
+
+## Prepare Dataset
+
+To pre-train on ImageNet, you need to prepare the dataset first. Please refer to the [guide](https://mmclassification.readthedocs.io/en/1.x/user_guides/dataset_prepare.html#imagenet).
+
+## How to Train
+
+You can use the classification config in the same way as the detection config.
+
+More details can be found in [user guides](https://mmdetection.readthedocs.io/en/3.x/user_guides/train.html).
 
 ## Results and Models
 
