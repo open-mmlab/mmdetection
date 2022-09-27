@@ -28,21 +28,30 @@ model = dict(
         act_cfg=None,
         norm_cfg=None,
         num_outs=1),
-    encoder_cfg=dict(
+    encoder_cfg=dict(  # DetrTransformerEncoder
         num_layers=6,
-        layer_cfg=dict(
-            self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.1),
+        layer_cfg=dict(  # DetrTransformerEncoderLayer
+            self_attn_cfg=dict(  # MultiheadAttention
+                embed_dims=256,
+                num_heads=8,
+                dropout=0.1),
             ffn_cfg=dict(
                 embed_dims=256,
                 feedforward_channels=2048,
                 num_fcs=2,
                 ffn_drop=0.1,
                 act_cfg=dict(type='ReLU', inplace=True)))),
-    decoder_cfg=dict(
+    decoder_cfg=dict(  # DetrTransformerDecoder
         num_layers=6,
-        layer_cfg=dict(
-            self_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.1),
-            cross_attn_cfg=dict(embed_dims=256, num_heads=8, dropout=0.1),
+        layer_cfg=dict(  # DetrTransformerDecoderLayer
+            self_attn_cfg=dict(  # MultiheadAttention
+                embed_dims=256,
+                num_heads=8,
+                dropout=0.1),
+            cross_attn_cfg=dict(  # MultiheadAttention
+                embed_dims=256,
+                num_heads=8,
+                dropout=0.1),
             ffn_cfg=dict(
                 embed_dims=256,
                 feedforward_channels=2048,
