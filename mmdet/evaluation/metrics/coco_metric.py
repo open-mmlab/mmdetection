@@ -17,7 +17,6 @@ class CocoMetric(MMEVAL_CocoMetric):
     """
 
     def __init__(self, prefix: str = 'coco', **kwargs) -> None:
-
         super().__init__(**kwargs)
         self.prefix = prefix
 
