@@ -171,7 +171,7 @@ class Resize(MMCV_Resize):
 
 @TRANSFORMS.register_module()
 class FixShapeResize(Resize):
-    """Resize images & bbox & seg.
+    """Resize images & bbox & seg to the specified size.
 
     This transform resizes the input image according to ``width`` and
     ``height``. Bboxes, masks, and seg map are then resized
