@@ -5,8 +5,7 @@ import numpy as np
 import torch
 from torch import Tensor
 
-from mmdet.models.utils import cat_boxes
-from mmdet.structures.bbox import BaseBoxes
+from mmdet.structures.bbox import BaseBoxes, cat_boxes
 from mmdet.utils import util_mixins
 from mmdet.utils.util_random import ensure_rng
 from ..assigners import AssignResult

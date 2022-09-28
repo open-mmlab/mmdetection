@@ -8,14 +8,13 @@ from mmengine.structures import InstanceData
 from torch import Tensor
 
 from mmdet.registry import MODELS, TASK_UTILS
-from mmdet.structures.bbox import BaseBoxes
+from mmdet.structures.bbox import BaseBoxes, cat_boxes, get_box_tensor
 from mmdet.utils import (ConfigType, InstanceList, OptConfigType,
                          OptInstanceList, OptMultiConfig)
 from ..task_modules.prior_generators import (AnchorGenerator,
                                              anchor_inside_flags)
 from ..task_modules.samplers import PseudoSampler
-from ..utils import (cat_boxes, get_box_tensor, images_to_levels, multi_apply,
-                     unmap)
+from ..utils import images_to_levels, multi_apply, unmap
 from .base_dense_head import BaseDenseHead
 
 
@@ -212,7 +211,7 @@ class AnchorHead(BaseDenseHead):
         Args:
             flat_anchors (Tensor or :obj:`BaseBoxes`): Multi-level anchors
                 of the image, which are concatenated into a single tensor
-                or boxlist of shape (num_anchors, 4)
+                or box type of shape (num_anchors, 4)
             valid_flags (Tensor): Multi level valid flags of the image,
                 which are concatenated into a single tensor of
                     shape (num_anchors, ).
@@ -271,9 +270,9 @@ class AnchorHead(BaseDenseHead):
 
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
-        # `bbox_coder.encode` accepts tensor or boxlist inputs and generates
+        # `bbox_coder.encode` accepts tensor or box type inputs and generates
         # tensor targets. If regressing decoded boxes, the code will convert
-        # boxlist `pos_bbox_targets` to tensor.
+        # box type `pos_bbox_targets` to tensor.
         if len(pos_inds) > 0:
             if not self.reg_decoded_bbox:
                 pos_bbox_targets = self.bbox_coder.encode(

@@ -320,7 +320,10 @@ class StandardRoIHead(BaseRoIHead):
 
         if rois.shape[0] == 0:
             return empty_instances(
-                batch_img_metas, rois.device, task_type='bbox')
+                batch_img_metas,
+                rois.device,
+                task_type='bbox',
+                box_type=self.bbox_head.predict_box_type)
 
         bbox_results = self._bbox_forward(x, rois)
 

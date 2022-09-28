@@ -1,6 +1,6 @@
 _base_ = './rtmdet_s_8xb32-300e_coco.py'
 
-checkpoint = 'TODO:imagenet_pretrain'  # noqa
+checkpoint = 'https://download.openmmlab.com/mmdetection/v3.0/rtmdet/cspnext_rsb_pretrain/cspnext-tiny_imagenet_600e.pth'  # noqa
 
 model = dict(
     backbone=dict(

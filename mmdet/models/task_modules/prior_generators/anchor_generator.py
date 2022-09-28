@@ -39,7 +39,7 @@ class AnchorGenerator:
             float is given, they will be used to shift the centers of anchors.
         center_offset (float): The offset of center in proportion to anchors'
             width and height. By default it is 0 in V2.0.
-        use_box_type (bool): Whether to warp anchors with the boxlist data
+        use_box_type (bool): Whether to warp anchors with the box type data
             structure. Defaults to False.
 
     Examples:
@@ -495,7 +495,7 @@ class SSDAnchorGenerator(AnchorGenerator):
         scale_major (bool): Whether to multiply scales first when generating
             base anchors. If true, the anchors in the same row will have the
             same scales. It is always set to be False in SSD.
-        use_box_type (bool): Whether to warp anchors with the boxlist data
+        use_box_type (bool): Whether to warp anchors with the box type data
             structure. Defaults to False.
     """
 
@@ -654,7 +654,7 @@ class LegacyAnchorGenerator(AnchorGenerator):
         center_offset (float): The offset of center in proportion to anchors'
             width and height. By default it is 0.5 in V2.0 but it should be 0.5
             in v1.x models.
-        use_box_type (bool): Whether to warp anchors with the boxlist data
+        use_box_type (bool): Whether to warp anchors with the box type data
             structure. Defaults to False.
 
     Examples:
