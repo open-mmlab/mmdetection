@@ -72,11 +72,11 @@ def add_d2_pred_to_datasample(data_samples: SampleList,
         contains following keys.
 
         - scores (Tensor): Classification scores, has a shape
-            (num_instance, )
+          (num_instance, )
         - labels (Tensor): Labels of bboxes, has a shape
-            (num_instances, ).
+          (num_instances, ).
         - bboxes (Tensor): Has a shape (num_instances, 4),
-            the last dimension 4 arrange as (x1, y1, x2, y2).
+          the last dimension 4 arrange as (x1, y1, x2, y2).
     """
     assert len(data_samples) == len(d2_results_list)
     for data_sample, d2_results in zip(data_samples, d2_results_list):
@@ -201,11 +201,11 @@ class Detectron2Wrapper(BaseDetector):
             contains following keys.
 
             - scores (Tensor): Classification scores, has a shape
-                (num_instance, )
+              (num_instance, )
             - labels (Tensor): Labels of bboxes, has a shape
-                (num_instances, ).
+              (num_instances, ).
             - bboxes (Tensor): Has a shape (num_instances, 4),
-                the last dimension 4 arrange as (x1, y1, x2, y2).
+              the last dimension 4 arrange as (x1, y1, x2, y2).
         """
         d2_batched_inputs = self._convert_to_batched_d2_inputs(
             batch_inputs=batch_inputs,
