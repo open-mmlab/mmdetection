@@ -45,7 +45,7 @@ class VOCMetric(VOCMeanAP):
                 '`VOCMetric` is deprecated, use `dist_backend` instead.')
 
         super().__init__(
-            classwise_results=True, dist_backend=dist_backend, **kwargs)
+            classwise_result=True, dist_backend=dist_backend, **kwargs)
 
     # TODO: data_batch is no longer needed, consider adjusting the
     #  parameter position
@@ -89,9 +89,9 @@ class VOCMetric(VOCMeanAP):
         metric_results = self.compute(*args, **kwargs)
         self.reset()
 
-        classwise_results = metric_results['classwise_results']
-        del metric_results['classwise_results']
+        classwise_result = metric_results['classwise_result']
+        del metric_results['classwise_result']
 
         evaluate_results = {
-            k: round(v * 100, 3) for k, v in metric_results.items()}
+            k: round(float(v), 3) for k, v in metric_results.items()}
         return evaluate_results

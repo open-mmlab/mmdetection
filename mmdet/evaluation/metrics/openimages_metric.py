@@ -45,7 +45,7 @@ class OpenImagesMetric(OIDMeanAP):
                 '`OpenImagesMetric` is deprecated, use `dist_backend` instead.')
 
         super().__init__(
-            classwise_results=True, dist_backend=dist_backend, **kwargs)
+            classwise_result=True, dist_backend=dist_backend, **kwargs)
 
     # TODO: data_batch is no longer needed, consider adjusting the
     #  parameter position
@@ -85,8 +85,8 @@ class OpenImagesMetric(OIDMeanAP):
         metric_results = self.compute(*args, **kwargs)
         self.reset()
 
-        classwise_results = metric_results['classwise_results']
-        del metric_results['classwise_results']
+        classwise_result = metric_results['classwise_result']
+        del metric_results['classwise_result']
         for i, (iou_thr, iof_thr) in enumerate(
                 zip(self.iou_thrs, self.iof_thrs)):
             print_log(f'\n{"-" * 15}iou_thr, iof_thr:'
