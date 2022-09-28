@@ -6,6 +6,8 @@ import torch
 from mmengine.structures import InstanceData
 from torch import Tensor
 
+from mmdet.models.utils import (filter_gt_instances, rename_loss_dict,
+                                reweight_loss_dict)
 from mmdet.registry import MODELS
 from mmdet.structures import SampleList
 from mmdet.structures.bbox import bbox2roi, bbox_project
@@ -77,12 +79,9 @@ class SoftTeacher(SemiBaseDetector):
             x, rpn_results_list, batch_data_samples, batch_info))
         losses.update(**self.rcnn_reg_loss_by_pseudo_instances(
             x, rpn_results_list, batch_data_samples))
-        pseudo_loss = {
-            'unsup_' + k: v
-            for k, v in self.reweight_loss(
-                losses, self.semi_train_cfg.get('unsup_weight', 1.)).items()
-        }
-        return pseudo_loss
+        unsup_weight = self.semi_train_cfg.get('unsup_weight', 1.)
+        return rename_loss_dict('unsup_',
+                                reweight_loss_dict(losses, unsup_weight))
 
     @torch.no_grad()
     def get_pseudo_instances(
@@ -106,10 +105,10 @@ class SoftTeacher(SemiBaseDetector):
 
         for data_samples, results in zip(batch_data_samples, results_list):
             data_samples.gt_instances = results
-            if data_samples.gt_instances.bboxes.shape[0] > 0:
-                data_samples.gt_instances = data_samples.gt_instances[
-                    data_samples.gt_instances.scores >
-                    self.semi_train_cfg.pseudo_label_initial_score_thr]
+
+        batch_data_samples = filter_gt_instances(
+            batch_data_samples,
+            score_thr=self.semi_train_cfg.pseudo_label_initial_score_thr)
 
         reg_uncs_list = self.compute_uncertainty_with_aug(
             x, batch_data_samples)
@@ -151,12 +150,8 @@ class SoftTeacher(SemiBaseDetector):
         """
 
         rpn_data_samples = copy.deepcopy(batch_data_samples)
-        for data_samples in rpn_data_samples:
-            if data_samples.gt_instances.bboxes.shape[0] > 0:
-                data_samples.gt_instances = data_samples.gt_instances[
-                    data_samples.gt_instances.scores >
-                    self.semi_train_cfg.rpn_pseudo_thr]
-
+        rpn_data_samples = filter_gt_instances(
+            rpn_data_samples, score_thr=self.semi_train_cfg.rpn_pseudo_thr)
         proposal_cfg = self.student.train_cfg.get('rpn_proposal',
                                                   self.student.test_cfg.rpn)
         # set cat_id of gt_labels to 0 in RPN
@@ -196,11 +191,8 @@ class SoftTeacher(SemiBaseDetector):
         """
         rpn_results_list = copy.deepcopy(unsup_rpn_results_list)
         cls_data_samples = copy.deepcopy(batch_data_samples)
-        for data_samples in cls_data_samples:
-            if data_samples.gt_instances.bboxes.shape[0] > 0:
-                data_samples.gt_instances = data_samples.gt_instances[
-                    data_samples.gt_instances.scores >
-                    self.semi_train_cfg.cls_pseudo_thr]
+        cls_data_samples = filter_gt_instances(
+            cls_data_samples, score_thr=self.semi_train_cfg.cls_pseudo_thr)
 
         outputs = unpack_gt_instances(cls_data_samples)
         batch_gt_instances, batch_gt_instances_ignore, _ = outputs
@@ -212,7 +204,6 @@ class SoftTeacher(SemiBaseDetector):
             # rename rpn_results.bboxes to rpn_results.priors
             rpn_results = rpn_results_list[i]
             rpn_results.priors = rpn_results.pop('bboxes')
-
             assign_result = self.student.roi_head.bbox_assigner.assign(
                 rpn_results, batch_gt_instances[i],
                 batch_gt_instances_ignore[i])
@@ -226,19 +217,21 @@ class SoftTeacher(SemiBaseDetector):
         selected_bboxes = [res.priors for res in sampling_results]
         rois = bbox2roi(selected_bboxes)
         bbox_results = self.student.roi_head._bbox_forward(x, rois)
+        # cls_reg_targets is a tuple of labels, label_weights,
+        # and bbox_targets, bbox_weights
         cls_reg_targets = self.student.roi_head.bbox_head.get_targets(
             sampling_results, self.student.train_cfg.rcnn)
 
         selected_results_list = []
-        for bboxes, data_samples, homography_matrix, img_shape in zip(
+        for bboxes, data_samples, teacher_matrix, teacher_img_shape in zip(
                 selected_bboxes, batch_data_samples,
                 batch_info['homography_matrix'], batch_info['img_shape']):
-            selected_results_list.append(
-                InstanceData(
-                    bboxes=bbox_project(
-                        bboxes, homography_matrix @ torch.tensor(
-                            data_samples.homography_matrix).inverse().to(
-                                self.data_preprocessor.device), img_shape)))
+            student_matrix = torch.tensor(
+                data_samples.homography_matrix, device=teacher_matrix.device)
+            homography_matrix = teacher_matrix @ student_matrix.inverse()
+            projected_bboxes = bbox_project(bboxes, homography_matrix,
+                                            teacher_img_shape)
+            selected_results_list.append(InstanceData(bboxes=projected_bboxes))
 
         with torch.no_grad():
             results_list = self.teacher.roi_head.predict_bbox(
@@ -249,18 +242,18 @@ class SoftTeacher(SemiBaseDetector):
                 rescale=False)
             bg_score = torch.cat(
                 [results.scores[:, -1] for results in results_list])
+            # cls_reg_targets[0] is labels
             neg_inds = cls_reg_targets[
                 0] == self.student.roi_head.bbox_head.num_classes
+            # cls_reg_targets[1] is label_weights
             cls_reg_targets[1][neg_inds] = bg_score[neg_inds].detach()
 
         losses = self.student.roi_head.bbox_head.loss(
-            bbox_results['cls_score'],
-            bbox_results['bbox_pred'],
-            rois,
-            *cls_reg_targets,
-            reduction_override='none')
-        losses['loss_cls'] = losses['loss_cls'].sum() / max(
-            cls_reg_targets[1].sum(), 1.0)
+            bbox_results['cls_score'], bbox_results['bbox_pred'], rois,
+            *cls_reg_targets)
+        # cls_reg_targets[1] is label_weights
+        losses['loss_cls'] = losses['loss_cls'] * len(
+            cls_reg_targets[1]) / max(sum(cls_reg_targets[1]), 1.0)
         return losses
 
     def rcnn_reg_loss_by_pseudo_instances(

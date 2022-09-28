@@ -86,7 +86,7 @@ The downloading will take several seconds or more, depending on your network env
 Option (a). If you install MMDetection from source, just run the following command.
 
 ```shell
-python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-ms-416-300e_coco.py yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu --out-file result.jpg
+python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-320-300e_coco.py yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu --out-file result.jpg
 ```
 
 You will see a new image `result.jpg` on your current folder, where bounding boxes are plotted on cars, benches, etc.
@@ -98,7 +98,7 @@ from mmdet.apis import init_detector, inference_detector
 from mmdet.utils import register_all_modules
 
 register_all_modules()
-config_file = 'yolov3_mobilenetv2_8xb24-ms-416-300e_coco.py'
+config_file = 'yolov3_mobilenetv2_8xb24-320-300e_coco.py'
 checkpoint_file = 'yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth'
 model = init_detector(config_file, checkpoint_file, device='cpu')  # or device='cuda:0'
 inference_detector(model, 'demo/demo.jpg')
@@ -205,7 +205,7 @@ print(mmdet.__version__)
 Within Jupyter, the exclamation mark `!` is used to call external executables and `%cd` is a [magic command](https://ipython.readthedocs.io/en/stable/interactive/magics.html#magic-cd) to change the current working directory of Python.
 ```
 
-#### Using MMDetection with Docker
+#### Use MMDetection with Docker
 
 We provide a [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) to build an image. Ensure that your [docker version](https://docs.docker.com/engine/install/) >=19.03.
 
@@ -225,3 +225,13 @@ docker run --gpus all --shm-size=8g -it -v {DATA_DIR}:/mmdetection/data mmdetect
 
 If you have some issues during the installation, please first view the [FAQ](notes/faq.md) page.
 You may [open an issue](https://github.com/open-mmlab/mmdetection/issues/new/choose) on GitHub if no solution is found.
+
+### Use Multiple Versions of MMDetection in Develoement
+
+Training and testing scripts have already been modified in `PYTHONPATH` in order to make sure the scripts are using their own versions of MMDetection.
+
+To install the default version of MMDetection in your environment, you can exclude the follow code in the relative scripts:
+
+```shell
+PYTHONPATH="$(dirname $0)/..":$PYTHONPATH
+```

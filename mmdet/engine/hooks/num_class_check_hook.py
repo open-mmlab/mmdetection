@@ -38,9 +38,9 @@ class NumClassCheckHook(Hook):
                  f'CLASSES = ({CLASSES},)')
             from mmdet.models.roi_heads.mask_heads import FusedSemanticHead
             for name, module in model.named_modules():
-                if hasattr(module, 'num_classes'
-                           ) and name != 'rpn_head' and not isinstance(
-                               module, (VGG, FusedSemanticHead)):
+                if hasattr(module, 'num_classes') and not name.endswith(
+                        'rpn_head') and not isinstance(
+                            module, (VGG, FusedSemanticHead)):
                     assert module.num_classes == len(CLASSES), \
                         (f'The `num_classes` ({module.num_classes}) in '
                          f'{module.__class__.__name__} of '
