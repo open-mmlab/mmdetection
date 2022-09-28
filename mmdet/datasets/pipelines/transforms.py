@@ -2802,6 +2802,7 @@ class CopyPaste:
         self.bbox_occluded_thr = bbox_occluded_thr
         self.mask_occluded_thr = mask_occluded_thr
         self.selected = selected
+        self.mask_gen = False
 
     def get_indexes(self, dataset):
         """Call function to collect indexes.s.
@@ -2812,6 +2813,41 @@ class CopyPaste:
             list: Indexes.
         """
         return random.randint(0, len(dataset))
+
+    def gen_masks_from_bboxes(self, bboxes, img_shape):
+        """
+        Generate gt_masks based on gt_bboxes.
+        Args:
+            bboxes (list): The bboxes's list.
+            img_shape (tuple): The shape of image.
+        Returns:
+            BitmapMasks
+        """
+        self.mask_gen = True
+        img_h, img_w = img_shape[:2]
+        masks = []
+        for x1, y1, x2, y2 in bboxes:
+            mask = np.zeros((img_h, img_w), dtype=np.uint8)
+            bbox = np.array([[[x1, y1], [x2, y1], [x2, y2], [x1, y2]]],
+                            dtype=np.int32)
+            mask = cv2.fillPoly(mask, bbox, 1)
+            masks.append(mask)
+
+        return BitmapMasks(np.array(masks), img_h, img_w)
+
+    def check_gt_masks(self, results):
+        """
+        Check gt_masks in result. If gt_masks is not contained in results,
+        it will be generated based on gt_bboxes.
+        Args:
+            results (dict): Result dict.
+        Returns:
+            dict: gt_masks, originally or generated based on bboxes.
+        """
+        return results.get(
+            'gt_masks',
+            self.gen_masks_from_bboxes(
+                results.get('gt_bboxes', []), results['img'].shape))
 
     def __call__(self, results):
         """Call function to make a copy-paste of image.
@@ -2826,6 +2862,13 @@ class CopyPaste:
         num_images = len(results['mix_results'])
         assert num_images == 1, \
             f'CopyPaste only supports processing 2 images, got {num_images}'
+
+        # check gt_masks
+        results['gt_masks'] = self.check_gt_masks(results)
+        # only one mix picture
+        results['mix_results'][0]['gt_masks'] = self.check_gt_masks(
+            results['mix_results'][0])
+
         if self.selected:
             selected_results = self._select_object(results['mix_results'][0])
         else:
@@ -2871,6 +2914,8 @@ class CopyPaste:
         src_masks = src_results['gt_masks']
 
         if len(src_bboxes) == 0:
+            if self.mask_gen:
+                dst_results.pop('gt_masks')
             return dst_results
 
         # update masks and generate bboxes from updated masks
@@ -2899,8 +2944,11 @@ class CopyPaste:
         dst_results['img'] = img
         dst_results['gt_bboxes'] = bboxes
         dst_results['gt_labels'] = labels
-        dst_results['gt_masks'] = BitmapMasks(masks, masks.shape[1],
-                                              masks.shape[2])
+        if self.mask_gen:
+            dst_results.pop('gt_masks')
+        else:
+            dst_results['gt_masks'] = BitmapMasks(masks, masks.shape[1],
+                                                  masks.shape[2])
 
         return dst_results
 
