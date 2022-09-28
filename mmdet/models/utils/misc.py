@@ -1,18 +1,17 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from functools import partial
-from typing import List, Sequence, Tuple, Union
+from typing import List, Sequence, Union
 
 import numpy as np
 import torch
 from mmengine.structures import InstanceData
 from mmengine.utils import digit_version
 from six.moves import map, zip
-from torch import Tensor
 from torch.autograd import Function
 from torch.nn import functional as F
 
 from mmdet.structures import SampleList
-from mmdet.structures.bbox import BaseBoxes
+from mmdet.structures.bbox import BaseBoxes, get_box_type, stack_boxes
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 from mmdet.utils import OptInstanceList
 
@@ -122,12 +121,13 @@ def unpack_gt_instances(batch_data_samples: SampleList) -> tuple:
     return batch_gt_instances, batch_gt_instances_ignore, batch_img_metas
 
 
-def empty_instances(
-        batch_img_metas: List[dict],
-        device: torch.device,
-        task_type: str,
-        instance_results: OptInstanceList = None,
-        mask_thr_binary: Union[int, float] = 0) -> List[InstanceData]:
+def empty_instances(batch_img_metas: List[dict],
+                    device: torch.device,
+                    task_type: str,
+                    instance_results: OptInstanceList = None,
+                    mask_thr_binary: Union[int, float] = 0,
+                    box_type: Union[str, type] = 'hbox',
+                    use_box_type: bool = False) -> List[InstanceData]:
     """Handle predicted instances when RoI is empty.
 
     Note: If ``instance_results`` is not None, it will be modified
@@ -142,6 +142,9 @@ def empty_instances(
             results.
         mask_thr_binary (int, float): mask binarization threshold.
             Defaults to 0.
+        box_type (str or type): The empty box type. Defaults to `hbox`.
+        use_box_type (bool): Whether to warp boxes with the box type.
+            Defaults to False.
 
     Returns:
         list[:obj:`InstanceData`]: Detection results of each image
@@ -161,7 +164,11 @@ def empty_instances(
             results = InstanceData()
 
         if task_type == 'bbox':
-            results.bboxes = torch.zeros(0, 4, device=device)
+            _, box_type = get_box_type(box_type)
+            bboxes = torch.zeros(0, box_type.box_dim, device=device)
+            if use_box_type:
+                bboxes = box_type(bboxes, clone=False)
+            results.bboxes = bboxes
             results.scores = torch.zeros((0, ), device=device)
             results.labels = torch.zeros((0, ),
                                          device=device,
@@ -425,7 +432,7 @@ def images_to_levels(target, num_levels):
     return level_targets
 
 
-def samplelist_boxlist2tensor(batch_data_samples: SampleList) -> SampleList:
+def samplelist_boxtype2tensor(batch_data_samples: SampleList) -> SampleList:
     for data_samples in batch_data_samples:
         if 'gt_instances' in data_samples:
             bboxes = data_samples.gt_instances.get('bboxes', None)
@@ -439,103 +446,6 @@ def samplelist_boxlist2tensor(batch_data_samples: SampleList) -> SampleList:
             bboxes = data_samples.ignored_instances.get('bboxes', None)
             if isinstance(bboxes, BaseBoxes):
                 data_samples.ignored_instances.bboxes = bboxes.tensor
-
-
-def cat_boxes(data_list: List[Union[Tensor, BaseBoxes]],
-              dim: int = 0) -> Union[Tensor, BaseBoxes]:
-    """Concatenate boxes with type of tensor or BoxList.
-
-    Args:
-        data_list (List[Union[Tensor, :obj:`BaseBoxes`]]): A list of tensors
-            or boxlists need to be concatenated.
-            dim (int): The dimension over which the box are concatenated.
-                Defaults to 0.
-
-    Returns:
-        Union[Tensor, :obj`BaseBoxes`]: Concatenated results.
-    """
-    if data_list and isinstance(data_list[0], BaseBoxes):
-        return data_list[0].cat(data_list, dim=dim)
-    else:
-        return torch.cat(data_list, dim=dim)
-
-
-def stack_boxes(data_list: List[Union[Tensor, BaseBoxes]],
-                dim: int = 0) -> Union[Tensor, BaseBoxes]:
-    """Stack boxes with type of tensor or BoxList.
-
-    Args:
-        data_list (List[Union[Tensor, :obj:`BaseBoxes`]]): A list of tensors
-            or boxlists need to be stacked.
-            dim (int): The dimension over which the box are stacked.
-                Defaults to 0.
-
-    Returns:
-        Union[Tensor, :obj`BaseBoxes`]: Stacked results.
-    """
-    if data_list and isinstance(data_list[0], BaseBoxes):
-        return data_list[0].stack(data_list, dim=dim)
-    else:
-        return torch.stack(data_list, dim=dim)
-
-
-def scale_boxes(boxes: Union[Tensor, BaseBoxes],
-                scale_factor: Tuple[float, float]) -> Union[Tensor, BaseBoxes]:
-    """Scale boxes with type of tensor or boxlist.
-
-    Args:
-        boxes (Tensor or :obj:`BaseBoxes`): boxes need to be scaled. Its type
-            can be a tensor or a boxlist.
-        scale_factor (Tuple[float, float]): factors for scaling boxes.
-            The length should be 2.
-
-    Returns:
-        Union[Tensor, :obj:`BaseBoxes`]: Scaled boxes.
-    """
-    if isinstance(boxes, BaseBoxes):
-        boxes.rescale_(scale_factor)
-        return boxes
-    else:
-        # Tensor boxes will be treated as horizontal boxes
-        repeat_num = int(boxes.size(-1) / 2)
-        scale_factor = boxes.new_tensor(scale_factor).repeat((1, repeat_num))
-        return boxes * scale_factor
-
-
-def get_box_wh(boxes: Union[Tensor, BaseBoxes]) -> Tuple[Tensor, Tensor]:
-    """Get the width and height of boxes with type of tensor or boxlist.
-
-    Args:
-        boxes (Tensor or :obj:`BaseBoxes`): boxes with type of tensor
-            or boxlist.
-
-    Returns:
-        Tuple[Tensor, Tensor]: the width and height of boxes.
-    """
-    if isinstance(boxes, BaseBoxes):
-        w = boxes.widths
-        h = boxes.heights
-    else:
-        # Tensor boxes will be treated as horizontal boxes by defaults
-        w = boxes[:, 2] - boxes[:, 0]
-        h = boxes[:, 3] - boxes[:, 1]
-    return w, h
-
-
-def get_box_tensor(boxes: Union[Tensor, BaseBoxes]) -> Tensor:
-    """Get tensor data from boxlist boxes.
-
-    Args:
-        boxes (Tensor or BaseBoxes): boxes with type of tensor or boxlist.
-            If its type is a tensor, the boxes will be directly returned.
-            If its type is a boxlist, the `boxes.tensor` will be returned.
-
-    Returns:
-        Tensor: boxes tensor.
-    """
-    if isinstance(boxes, BaseBoxes):
-        boxes = boxes.tensor
-    return boxes
 
 
 _torch_version_div_indexing = (

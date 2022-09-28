@@ -261,16 +261,16 @@ class TestBaseBoxes(TestCase):
         self.assertEqual(len(boxes), 3)
         # __repr__
         repr(boxes)
-        # create_fake_boxes
-        new_boxes = boxes.create_fake_boxes((3, 4, 4), 1)
+        # fake_boxes
+        new_boxes = boxes.fake_boxes((3, 4, 4), 1)
         self.assertEqual(tuple(new_boxes.size()), (3, 4, 4))
         self.assertEqual(boxes.dtype, new_boxes.dtype)
         self.assertEqual(boxes.device, new_boxes.device)
         self.assertTrue((new_boxes.tensor == 1).all())
         with self.assertRaises(AssertionError):
-            new_boxes = boxes.create_fake_boxes((3, 4, 1))
-        new_boxes = boxes.create_fake_boxes((3, 4, 4), dtype=torch.uint8)
+            new_boxes = boxes.fake_boxes((3, 4, 1))
+        new_boxes = boxes.fake_boxes((3, 4, 4), dtype=torch.uint8)
         self.assertEqual(new_boxes.dtype, torch.uint8)
         if torch.cuda.is_available():
-            new_boxes = boxes.create_fake_boxes((3, 4, 4), device='cuda')
+            new_boxes = boxes.fake_boxes((3, 4, 4), device='cuda')
             self.assertTrue(new_boxes.tensor.is_cuda)
