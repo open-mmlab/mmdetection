@@ -1,27 +1,25 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import copy
 import warnings
-from collections import OrderedDict
-from typing import List, Optional, Sequence, Union
+from typing import Sequence
 
 import numpy as np
+from mmengine.logging import print_log
 from mmeval import OIDMeanAP
-from mmengine.logging import MMLogger, print_log
+from terminaltables import AsciiTable
 
 from mmdet.registry import METRICS
-from ..functional import eval_map
 
 
 @METRICS.register_module()
 class OpenImagesMetric(OIDMeanAP):
     """A wrapper of :class:`mmeval.OIDMeanAP`.
 
-    This wrapper implements the `process` method that parses predictions and 
+    This wrapper implements the `process` method that parses predictions and
     labels from inputs. This enables ``mmengine.Evaluator`` to handle the data
     flow of different tasks through a unified interface.
 
     In addition, this wrapper also implements the ``evaluate`` method that
-    parses metric results and print pretty tabel of metrics per class.
+    parses metric results and print pretty table of metrics per class.
 
     Args:
         dist_backend (str | None): The name of the distributed communication
@@ -42,7 +40,8 @@ class OpenImagesMetric(OIDMeanAP):
         if collect_device is not None:
             warnings.warn(
                 'DeprecationWarning: The `collect_device` parameter of '
-                '`OpenImagesMetric` is deprecated, use `dist_backend` instead.')
+                '`OpenImagesMetric` is deprecated, use `dist_backend` instead.'
+            )  # noqa: E501
 
         super().__init__(
             classwise_result=True, dist_backend=dist_backend, **kwargs)
@@ -63,23 +62,27 @@ class OpenImagesMetric(OIDMeanAP):
         predictions, groundtruths = [], []
         for data_sample in data_samples:
             pred = {
-                'bboxes': data_sample['pred_instances'].cpu().numpy(),
-                'scores': data_sample['pred_instances'].cpu().numpy(),
-                'labels': data_sample['pred_instances'].cpu().numpy()
+                'bboxes': data_sample['pred_instances']
+                ['bboxes'].cpu().numpy(),  # noqa: E501
+                'scores': data_sample['pred_instances']
+                ['scores'].cpu().numpy(),  # noqa: E501
+                'labels':
+                data_sample['pred_instances']['labels'].cpu().numpy()
             }
             predictions.append(pred)
 
             gt = {
                 'instances': data_sample['instances'],
-                'image_level_labels': data_sample.get('image_level_labels', None),  # noqa: E501
+                'image_level_labels': data_sample.get('image_level_labels',
+                                                      None),  # noqa: E501
             }
             groundtruths.append(gt)
 
         self.add(predictions, groundtruths)
-    
+
     def evaluate(self, *args, **kwargs) -> dict:
-        """Returns metric results and print pretty tabel of metrics per class.
-        
+        """Returns metric results and print pretty table of metrics per class.
+
         This method would be invoked by ``mmengine.Evaluator``.
         """
         metric_results = self.compute(*args, **kwargs)
@@ -87,11 +90,42 @@ class OpenImagesMetric(OIDMeanAP):
 
         classwise_result = metric_results['classwise_result']
         del metric_results['classwise_result']
-        for i, (iou_thr, iof_thr) in enumerate(
-                zip(self.iou_thrs, self.iof_thrs)):
-            print_log(f'\n{"-" * 15}iou_thr, iof_thr:'
-                      f' {iou_thr}, {iof_thr}{"-" * 15}')
+
+        classes = self.dataset_meta['CLASSES']
+        header = ['class', 'gts', 'dets', 'recall', 'ap']
+
+        for i, (iou_thr,
+                iof_thr) in enumerate(zip(self.iou_thrs,
+                                          self.iof_thrs)):  # noqa: E501
+            for j, scale_range in enumerate(self.scale_ranges):
+                table_title = f' IoU thr: {iou_thr} IoF thr: {iof_thr} '
+                if scale_range != (None, None):
+                    table_title += f'Scale range: {scale_range} '
+
+                table_data = [header]
+                aps = []
+                for k in range(len(classes)):
+                    class_results = classwise_result[k]
+                    recalls = class_results['recalls'][i, j]
+                    recall = 0 if len(recalls) == 0 else recalls[-1]
+                    row_data = [
+                        classes[k], class_results['num_gts'][i, j],
+                        class_results['num_dets'],
+                        round(recall, 3),
+                        round(class_results['ap'][i, j], 3)
+                    ]
+                    table_data.append(row_data)
+                    if class_results['num_gts'][i, j] > 0:
+                        aps.append(class_results['ap'][i, j])
+
+                mean_ap = np.mean(aps) if aps != [] else 0
+                table_data.append(['mAP', '', '', '', f'{mean_ap:.3f}'])
+                table = AsciiTable(table_data, title=table_title)
+                table.inner_footing_row_border = True
+                print_log('\n' + table.table, logger='current')
 
         evaluate_results = {
-            k: round(v * 100, 3) for k, v in metric_results.items()}
+            f'openimages/{k}': round(float(v), 3)
+            for k, v in metric_results.items()
+        }
         return evaluate_results

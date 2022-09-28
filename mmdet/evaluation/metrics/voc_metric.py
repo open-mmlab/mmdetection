@@ -1,27 +1,26 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import warnings
-from collections import OrderedDict
-from typing import List, Optional, Sequence, Union
+from typing import Sequence
 
 import numpy as np
+from mmengine.logging import print_log
 from mmeval import VOCMeanAP
-from mmengine.logging import MMLogger
+from terminaltables import AsciiTable
 
 from mmdet.registry import METRICS
-from ..functional import eval_map, eval_recalls
 
 
 @METRICS.register_module()
 class VOCMetric(VOCMeanAP):
     """A wrapper of :class:`mmeval.VOCMeanAP`.
 
-    This wrapper implements the `process` method that parses predictions and 
+    This wrapper implements the `process` method that parses predictions and
     labels from inputs. This enables ``mmengine.Evaluator`` to handle the data
     flow of different tasks through a unified interface.
 
     In addition, this wrapper also implements the ``evaluate`` method that
-    parses metric results and print pretty tabel of metrics per class.
+    parses metric results and print pretty table of metrics per class.
 
     Args:
         dist_backend (str | None): The name of the distributed communication
@@ -34,9 +33,8 @@ class VOCMetric(VOCMeanAP):
 
         metric = kwargs.pop('metric', None)
         if metric is not None:
-            warnings.warn(
-                'DeprecationWarning: The `metric` parameter of '
-                '`VOCMetric` is deprecated, only mAP is supported!')
+            warnings.warn('DeprecationWarning: The `metric` parameter of '
+                          '`VOCMetric` is deprecated, only mAP is supported!')
 
         collect_device = kwargs.pop('collect_device', None)
         if collect_device is not None:
@@ -45,7 +43,10 @@ class VOCMetric(VOCMeanAP):
                 '`VOCMetric` is deprecated, use `dist_backend` instead.')
 
         super().__init__(
-            classwise_result=True, dist_backend=dist_backend, **kwargs)
+            classwise_result=True,
+            dist_backend=dist_backend,
+            use_legacy_coordinate=True,
+            **kwargs)
 
     # TODO: data_batch is no longer needed, consider adjusting the
     #  parameter position
@@ -82,8 +83,8 @@ class VOCMetric(VOCMeanAP):
         self.add(predictions, groundtruths)
 
     def evaluate(self, *args, **kwargs) -> dict:
-        """Returns metric results and print pretty tabel of metrics per class.
-        
+        """Returns metric results and print pretty table of metrics per class.
+
         This method would be invoked by ``mmengine.Evaluator``.
         """
         metric_results = self.compute(*args, **kwargs)
@@ -92,6 +93,39 @@ class VOCMetric(VOCMeanAP):
         classwise_result = metric_results['classwise_result']
         del metric_results['classwise_result']
 
+        classes = self.dataset_meta['CLASSES']
+        header = ['class', 'gts', 'dets', 'recall', 'ap']
+
+        for i, iou_thr in enumerate(self.iou_thrs):
+            for j, scale_range in enumerate(self.scale_ranges):
+                table_title = f' IoU thr: {iou_thr} '
+                if scale_range != (None, None):
+                    table_title += f'Scale range: {scale_range} '
+
+                table_data = [header]
+                aps = []
+                for k in range(len(classes)):
+                    class_results = classwise_result[k]
+                    recalls = class_results['recalls'][i, j]
+                    recall = 0 if len(recalls) == 0 else recalls[-1]
+                    row_data = [
+                        classes[k], class_results['num_gts'][i, j],
+                        class_results['num_dets'],
+                        round(recall, 3),
+                        round(class_results['ap'][i, j], 3)
+                    ]
+                    table_data.append(row_data)
+                    if class_results['num_gts'][i, j] > 0:
+                        aps.append(class_results['ap'][i, j])
+
+                mean_ap = np.mean(aps) if aps != [] else 0
+                table_data.append(['mAP', '', '', '', f'{mean_ap:.3f}'])
+                table = AsciiTable(table_data, title=table_title)
+                table.inner_footing_row_border = True
+                print_log('\n' + table.table, logger='current')
+
         evaluate_results = {
-            k: round(float(v), 3) for k, v in metric_results.items()}
+            f'pascal_voc/{k}': round(float(v), 3)
+            for k, v in metric_results.items()
+        }
         return evaluate_results
