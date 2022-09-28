@@ -6,6 +6,7 @@ import warnings
 from typing import List, Union
 
 import mmcv
+from mmengine.dist import get_rank
 from mmengine.fileio import dump, load
 from mmengine.logging import print_log
 from mmengine.utils import ProgressBar
@@ -75,7 +76,7 @@ class CrowdHumanDataset(BaseDetDataset):
             parsed_data_info = self.parse_data_info(anno_dict)
             data_list.append(parsed_data_info)
             prog_bar.update()
-        if not self.id_hw_exist:
+        if not self.id_hw_exist and get_rank() == 0:
             #  TODO: support file client
             try:
                 dump(self.id_hw, self.id_hw_path, file_format='json')
@@ -118,13 +119,22 @@ class CrowdHumanDataset(BaseDetDataset):
         instances = []
         for i, ann in enumerate(raw_data_info['gtboxes']):
             instance = {}
-            if ann['tag'] == 'mask':
-                continue
+            if ann['tag'] not in self.metainfo['CLASSES']:
+                instance['bbox_label'] = -1
+                instance['ignore_flag'] = 1
+            else:
+                instance['bbox_label'] = self.metainfo['CLASSES'].index(
+                    ann['tag'])
+                instance['ignore_flag'] = 0
+            if 'extra' in ann:
+                if 'ignore' in ann['extra']:
+                    if ann['extra']['ignore'] != 0:
+                        instance['bbox_label'] = -1
+                        instance['ignore_flag'] = 1
+
             x1, y1, w, h = ann['fbox']
             bbox = [x1, y1, x1 + w, y1 + h]
-            instance['ignore_flag'] = 0
             instance['bbox'] = bbox
-            instance['bbox_label'] = 0
 
             # Record the full bbox(fbox), head bbox(hbox) and visible
             # bbox(vbox) as additional information. If you need to use
