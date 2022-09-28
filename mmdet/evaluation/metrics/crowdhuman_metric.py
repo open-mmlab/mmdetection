@@ -29,7 +29,8 @@ PERSON_CLASSES = ['background', 'person']
 class CrowdHumanMetric(BaseMetric):
     """CrowdHuman evaluation metric.
 
-    Evaluate AP, MR and JI for detection tasks.
+    Evaluate Average Precision (AP), Miss Rate (MR) and Jaccard Index (JI)
+    for detection tasks.
 
     Args:
         ann_file (str): Path to the annotation file.
@@ -62,7 +63,7 @@ class CrowdHumanMetric(BaseMetric):
             None.
         mr_ref (str): Different parameter selection to calculate MR. Valid
             ref include CALTECH_-2 and CALTECH_-4. Defaults to CALTECH_-2.
-        ji_process_num (int): The number of processes to evaluation JI.
+        num_ji_process (int): The number of processes to evaluation JI.
             Defaults to 10.
     """
     default_prefix: Optional[str] = 'crowd_human'
@@ -79,7 +80,7 @@ class CrowdHumanMetric(BaseMetric):
                  iou_thres: float = 0.5,
                  compare_matching_method: Optional[str] = None,
                  mr_ref: str = 'CALTECH_-2',
-                 ji_process_num: int = 10) -> None:
+                 num_ji_process: int = 10) -> None:
         super().__init__(collect_device=collect_device, prefix=prefix)
 
         if csr_matrix is None or maximum_bipartite_matching is None:
@@ -116,7 +117,7 @@ class CrowdHumanMetric(BaseMetric):
         self.iou_thres = iou_thres
         self.compare_matching_method = compare_matching_method
         self.mr_ref = mr_ref
-        self.ji_process_num = ji_process_num
+        self.num_ji_process = num_ji_process
 
     @staticmethod
     def results2json(results: Sequence[dict], outfile_prefix: str) -> str:
@@ -392,11 +393,11 @@ class CrowdHumanMetric(BaseMetric):
         for i in range(10):
             score_thr = 1e-1 * i
             total = len(samples)
-            stride = math.ceil(total / self.ji_process_num)
+            stride = math.ceil(total / self.num_ji_process)
             result_queue = Queue(10000)
             results, procs = [], []
             records = list(samples.items())
-            for i in range(self.ji_process_num):
+            for i in range(self.num_ji_process):
                 start = i * stride
                 end = np.min([start + stride, total])
                 sample_data = dict(records[start:end])
@@ -519,7 +520,8 @@ class CrowdHumanMetric(BaseMetric):
 
 
 class Image(object):
-    """Data structure for evaluation of CrowdHuman.
+    """Data structure for evaluation of CrowdHuman. Please refer to
+    https://github.com/Purkialo/CrowdDet for more details.
 
     Args:
         mode (int): Select the mode of evaluate. Valid mode include

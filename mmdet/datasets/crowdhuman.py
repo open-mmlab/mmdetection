@@ -23,7 +23,7 @@ class CrowdHumanDataset(BaseDetDataset):
         data_root (str): The root directory for
             ``data_prefix`` and ``ann_file``.
         ann_file (str): Annotation file path.
-        id_hw_path (str | optional):The path of extra image metas
+        extra_ann_file (str | optional):The path of extra image metas
             for CrowdHuman. It can be created by CrowdHumanDataset
             automatically or by tools/misc/get_crowdhuman_id_hw.py
             manually. Defaults to None.
@@ -35,29 +35,29 @@ class CrowdHumanDataset(BaseDetDataset):
         'PALETTE': [(220, 20, 60)]
     }
 
-    def __init__(self, data_root, ann_file, id_hw_path=None, **kwargs):
-        # id_hw file is an additional annotation information which record the
-        # size of each image. This file is automatically created when you
-        # first load the CrowdHuman dataset by mmdet
-        if id_hw_path is not None:
-            self.id_hw_exist = True
-            self.id_hw = load(id_hw_path)
+    def __init__(self, data_root, ann_file, extra_ann_file=None, **kwargs):
+        # extra_ann_file record the size of each image. This file is
+        # automatically created when you first load the CrowdHuman
+        # dataset by mmdet.
+        if extra_ann_file is not None:
+            self.extra_ann_exist = True
+            self.extra_anns = load(extra_ann_file)
         else:
             ann_file_name = osp.basename(ann_file)
             if 'train' in ann_file_name:
-                self.id_hw_path = osp.join(data_root, 'id_hw_train.json')
+                self.extra_ann_file = osp.join(data_root, 'id_hw_train.json')
             elif 'val' in ann_file_name:
-                self.id_hw_path = osp.join(data_root, 'id_hw_val.json')
-            self.id_hw_exist = False
-            if not osp.isfile(self.id_hw_path):
+                self.extra_ann_file = osp.join(data_root, 'id_hw_val.json')
+            self.extra_ann_exist = False
+            if not osp.isfile(self.extra_ann_file):
                 print_log(
-                    'id_hw file does not exist, prepare to collect '
+                    'extra_ann_file does not exist, prepare to collect '
                     'image height and width...',
                     level=logging.INFO)
-                self.id_hw = {}
+                self.extra_anns = {}
             else:
-                self.id_hw_exist = True
-                self.id_hw = load(self.id_hw_path)
+                self.extra_ann_exist = True
+                self.extra_anns = load(self.extra_ann_file)
         super().__init__(data_root=data_root, ann_file=ann_file, **kwargs)
 
     def load_data_list(self) -> List[dict]:
@@ -76,18 +76,21 @@ class CrowdHumanDataset(BaseDetDataset):
             parsed_data_info = self.parse_data_info(anno_dict)
             data_list.append(parsed_data_info)
             prog_bar.update()
-        if not self.id_hw_exist and get_rank() == 0:
+        if not self.extra_ann_exist and get_rank() == 0:
             #  TODO: support file client
             try:
-                dump(self.id_hw, self.id_hw_path, file_format='json')
+                dump(self.extra_anns, self.extra_ann_file, file_format='json')
             except:  # noqa
                 warnings.warn(
                     'Cache files can not be saved automatically! To speed up'
                     'loading the dataset, please manually generate the cache'
                     ' file by file tools/misc/get_crowdhuman_id_hw.py')
 
-            print_log(f'\nsave id_hw in {self.data_root}', level=logging.INFO)
+            print_log(
+                f'\nsave extra_ann_file in {self.data_root}',
+                level=logging.INFO)
 
+        del self.extra_anns
         print_log('\nDone', level=logging.INFO)
         return data_list
 
@@ -106,14 +109,14 @@ class CrowdHumanDataset(BaseDetDataset):
         data_info['img_path'] = img_path
         data_info['img_id'] = raw_data_info['ID']
 
-        if not self.id_hw_exist:
+        if not self.extra_ann_exist:
             img_bytes = self.file_client.get(img_path)
             img = mmcv.imfrombytes(img_bytes, backend='cv2')
             data_info['height'], data_info['width'] = img.shape[:2]
-            self.id_hw[raw_data_info['ID']] = img.shape[:2]
+            self.extra_anns[raw_data_info['ID']] = img.shape[:2]
             del img, img_bytes
         else:
-            data_info['height'], data_info['width'] = self.id_hw[
+            data_info['height'], data_info['width'] = self.extra_anns[
                 raw_data_info['ID']]
 
         instances = []
