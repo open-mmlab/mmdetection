@@ -148,6 +148,7 @@ class CrowdHumanDataset(BaseDetDataset):
             instance['vbox'] = [
                 vbox[0], vbox[1], vbox[0] + vbox[2], vbox[1] + vbox[3]
             ]
+
             instances.append(instance)
 
         data_info['instances'] = instances

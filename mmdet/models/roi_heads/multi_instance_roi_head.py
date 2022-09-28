@@ -7,7 +7,7 @@ from torch import Tensor
 
 from mmdet.registry import MODELS
 from mmdet.structures import DetDataSample
-from mmdet.structures.bbox import bbox2roi
+from mmdet.structures.bbox import bbox2roi, bbox_overlaps
 from mmdet.utils import ConfigType, InstanceList
 from ..utils import empty_instances, unpack_gt_instances
 from .standard_roi_head import StandardRoIHead
@@ -62,6 +62,8 @@ class MultiInstanceRoIHead(StandardRoIHead):
         assert len(rpn_results_list) == len(batch_data_samples)
         outputs = unpack_gt_instances(batch_data_samples)
         batch_gt_instances, batch_gt_instances_ignore, _ = outputs
+
+        # Set the FG label to 1 and add ignored annotations
         for i in range(len(batch_gt_instances)):
             for j in range(len(batch_gt_instances[i])):
                 if batch_gt_instances[i].labels[j] == 0:
@@ -73,34 +75,38 @@ class MultiInstanceRoIHead(StandardRoIHead):
         num_imgs = len(batch_data_samples)
         top_k = self.num_instance
 
-        # get targets
-        return_rois = []
-        return_labels = []
-        return_bbox_targets = []
+        # get targets by meg
+        rois = []
+        labels = []
+        bbox_targets = []
         for i in range(num_imgs):
             gt_boxes = batch_gt_instances[i].bboxes
             all_rois = torch.cat([rpn_results_list[i].bboxes, gt_boxes], dim=0)
-            overlaps_normal, overlaps_ignore = box_overlap_ignore_opr(
-                all_rois,
-                torch.cat(
-                    [gt_boxes, batch_gt_instances[i].labels.reshape(-1, 1)],
-                    dim=1))
+
+            # calculate the iou of FG bboxes and ignore bboxes
+            overlaps_normal = bbox_overlaps(all_rois, gt_boxes, mode='iou')
+            overlaps_ignore = bbox_overlaps(all_rois, gt_boxes, mode='iof')
+            gt_ignore_mask = batch_gt_instances[i].labels.eq(-1).repeat(
+                all_rois.shape[0], 1)
+            overlaps_normal = overlaps_normal * ~gt_ignore_mask
+            overlaps_ignore = overlaps_ignore * gt_ignore_mask
             overlaps_normal, overlaps_normal_indices = overlaps_normal.sort(
                 descending=True, dim=1)
             overlaps_ignore, overlaps_ignore_indices = overlaps_ignore.sort(
                 descending=True, dim=1)
 
-            # gt max and indices, ignore max and indices
+            # select the roi with the higher score
             max_overlaps_normal = overlaps_normal[:, :top_k].flatten()
             gt_assignment_normal = overlaps_normal_indices[:, :top_k].flatten()
             max_overlaps_ignore = overlaps_ignore[:, :top_k].flatten()
             gt_assignment_ignore = overlaps_ignore_indices[:, :top_k].flatten()
 
-            # cons masks
+            # hyperparameters
             fg_threshold = self.train_cfg['assigner']['pos_iou_thr']
             ignore_label = self.train_cfg['assigner']['ignore_iof_thr']
             bg_threshold_high = self.train_cfg['assigner']['neg_iou_thr']
 
+            # ignore or not
             ignore_assign_mask = (max_overlaps_normal < fg_threshold) * (
                 max_overlaps_ignore > max_overlaps_normal)
             max_overlaps = (max_overlaps_normal * ~ignore_assign_mask) + (
@@ -108,48 +114,46 @@ class MultiInstanceRoIHead(StandardRoIHead):
             gt_assignment = (gt_assignment_normal * ~ignore_assign_mask) + (
                 gt_assignment_ignore * ignore_assign_mask)
 
-            labels = batch_gt_instances[i].labels[gt_assignment]
-            fg_mask = (max_overlaps >= fg_threshold) * (labels != ignore_label)
+            # assign positive and negative samples
+            _labels = batch_gt_instances[i].labels[gt_assignment]
+            fg_mask = (max_overlaps >= fg_threshold) * (
+                _labels != ignore_label)
             bg_mask = (max_overlaps < bg_threshold_high) * (max_overlaps >= 0)
             fg_mask = fg_mask.reshape(-1, top_k)
             bg_mask = bg_mask.reshape(-1, top_k)
 
+            # sampler
             pos_max = self.train_cfg['sampler']['num'] * self.train_cfg[
                 'sampler']['pos_fraction']
             fg_inds_mask = subsample_masks(fg_mask[:, 0], pos_max, True)
             neg_max = self.train_cfg['sampler']['num'] - fg_inds_mask.sum()
             bg_inds_mask = subsample_masks(bg_mask[:, 0], neg_max, True)
-            labels = labels * fg_mask.flatten()
+            _labels = _labels * fg_mask.flatten()
             keep_mask = fg_inds_mask + bg_inds_mask
-            # labels
-            labels = labels.reshape(-1, top_k)[keep_mask]
+            _labels = _labels.reshape(-1, top_k)[keep_mask]
             gt_assignment = gt_assignment.reshape(-1,
                                                   top_k)[keep_mask].flatten()
             target_boxes = gt_boxes[gt_assignment, :4]
-            rois = all_rois[keep_mask]
-            target_rois = rois.repeat(1, top_k).reshape(-1, all_rois.shape[-1])
-            bbox_targets = self.bbox_head.bbox_coder.encode(
+            _rois = all_rois[keep_mask]
+            target_rois = _rois.repeat(1,
+                                       top_k).reshape(-1, all_rois.shape[-1])
+
+            # bboxes encode
+            _bbox_targets = self.bbox_head.bbox_coder.encode(
                 target_rois, target_boxes)
-            # bbox_targets = bbox_transform_opr(target_rois, target_boxes)
-            # std_opr = torch.tensor([[0.1000, 0.1000, 0.2000, 0.2000]],
-            # device='cuda:0')
-            # mean_opr = torch.tensor([[0., 0., 0., 0.]], device='cuda:0')
-            # minus_opr = mean_opr / std_opr
-            # bbox_targets = bbox_targets / std_opr - minus_opr
+            _bbox_targets = _bbox_targets.reshape(-1, top_k * 4)
 
-            bbox_targets = bbox_targets.reshape(-1, top_k * 4)
+            rois.append(_rois)
+            labels.append(_labels)
+            bbox_targets.append(_bbox_targets)
 
-            return_rois.append(rois)
-            return_labels.append(labels)
-            return_bbox_targets.append(bbox_targets)
-
-        return_labels = torch.cat(return_labels, dim=0)
-        return_bbox_targets = torch.cat(return_bbox_targets, dim=0)
+        return_labels = torch.cat(labels, dim=0)
+        return_bbox_targets = torch.cat(bbox_targets, dim=0)
 
         losses = dict()
         # bbox head loss
         if self.with_bbox:
-            rois = bbox2roi(return_rois)
+            rois = bbox2roi(rois)
             bbox_results = self._bbox_forward(x, rois)
 
             if len(bbox_results) == 2:
@@ -220,36 +224,14 @@ class MultiInstanceRoIHead(StandardRoIHead):
             return proposals
 
 
-def box_overlap_ignore_opr(box, gt, ignore_label=-1):
-    assert box.ndim == 2
-    assert gt.ndim == 2
-    assert gt.shape[-1] > 4
-    area_box = (box[:, 2] - box[:, 0] + 1) * (box[:, 3] - box[:, 1] + 1)
-    area_gt = (gt[:, 2] - gt[:, 0] + 1) * (gt[:, 3] - gt[:, 1] + 1)
-    width_height = torch.min(box[:, None, 2:], gt[:, 2:4]) - torch.max(
-        box[:, None, :2], gt[:, :2])  # [N,M,2]
-    width_height.clamp_(min=0)  # [N,M,2]
-    inter = width_height.prod(dim=2)  # [N,M]
-    del width_height
-    # handle empty boxes
-    iou = torch.where(inter > 0, inter / (area_box[:, None] + area_gt - inter),
-                      torch.zeros(1, dtype=inter.dtype, device=inter.device))
-    ioa = torch.where(inter > 0, inter / (area_box[:, None]),
-                      torch.zeros(1, dtype=inter.dtype, device=inter.device))
-    gt_ignore_mask = gt[:, 4].eq(ignore_label).repeat(box.shape[0], 1)
-    iou *= ~gt_ignore_mask
-    ioa *= gt_ignore_mask
-    return iou, ioa
-
-
 def subsample_masks(masks, num_samples, sample_value):
     positive = torch.nonzero(masks.eq(sample_value), as_tuple=False).squeeze(1)
     num_mask = len(positive)
     num_samples = int(num_samples)
     num_final_samples = min(num_mask, num_samples)
     num_final_negative = num_mask - num_final_samples
-    perm = torch.arange(num_mask, )[:num_final_negative]  # changed by yu
-    # perm = torch.randperm(num_mask, device=masks.device)[:num_final_negative]
+    # perm = torch.arange(num_mask, )[:num_final_negative]  # changed by yu
+    perm = torch.randperm(num_mask, device=masks.device)[:num_final_negative]
     negative = positive[perm]
     masks[negative] = not sample_value
     return masks
