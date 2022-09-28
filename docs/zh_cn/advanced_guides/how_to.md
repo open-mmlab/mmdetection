@@ -195,3 +195,25 @@ for level_out in level_outputs:
 ```
 
 用户可以通过将脚本中的 `ResNet(depth=18)` 替换为自己的骨干网络配置来得到新的骨干网络的通道数。
+
+# 在 MMDetection 中使用 Detectron2 的模型
+
+用户可以使用 `Detectron2Wrapper` 从而在 MMDetection 中使用 Detectron2 的模型。输入数据首先转换成 Detectron2 的类型并输入 Detectron2 的模型中。
+在推理阶段，Detectron2 的模型结果将会转换回 MMDetection 的类型。我们提供了 [Faster R-CNN](../../../configs/misc/d2_faster-rcnn_r50-caffe_fpn_ms-90k_coco.py),
+[Mask R-CNN](../../../configs/misc/d2_mask-rcnn_r50-caffe_fpn_ms-90k_coco.py), and [RetinaNet](../../../configs/misc/d2_retinanet_r50-caffe_fpn_ms-90k_coco.py) 的示例来在 MMDetection 中训练/测试 Detectron2 的模型。
+
+配置文件中算法组件要和 Detectron2 中的相同。在设置过程中，我们首先初始化 [Detectron2](https://github.com/facebookresearch/detectron2/blob/main/detectron2/config/defaults.py) 的默认设置，然后配置文件中的设置将覆盖默认设置，模型将基于更新过的设置来建立。
+
+## 使用 Detectron2 的预训练权重
+
+`Detectron2Wrapper` 中的权重初始化将不使用 MMDetection 的逻辑。用户可以设置 `model.d2_detector.weights=xxx` 来加载预训练的权重。
+例如，我们可以使用 `model.d2_detector.weights='detectron2://ImageNetPretrained/MSRA/R-50.pkl'` 来加载 ResNet-50 的预训练权重，或者使用
+`model.d2_detector.weights='detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x/137260431/model_final_a54504.pkl'` 来加载 Detectron2 中提出的预训练的Mask R-CNN权重。
+
+## 将 Detectron2 的权重转换为 MMDetection 的类型
+
+在测试时，用户应该首先使用 `tools/model_converters/d2_2_mmdet.py` 将 Detectron2 的预训练权重转换为 MMDetection 可读取的结构。
+
+```shell
+python tools/model_converters/d2_2_mmdet.py ${Detectron2 ckpt path} ${MMDetectron ckpt path}。
+```
