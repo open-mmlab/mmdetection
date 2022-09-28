@@ -13,7 +13,6 @@ model = dict(
         # If you want to finetune the detector, you can use the
         # checkpoint released by detectron2, for example:
         # weights='detectron2://COCO-Detection/faster_rcnn_R_50_FPN_1x/137257794/model_final_b275ba.pkl'     # noqa
-        # TODO: add readme to tell users how to convert d2 ckpt to mmdet style
         weights='detectron2://ImageNetPretrained/MSRA/R-50.pkl',
         mask_on=False,
         pixel_mean=[103.530, 116.280, 123.675],

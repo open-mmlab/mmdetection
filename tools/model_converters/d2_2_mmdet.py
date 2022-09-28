@@ -8,16 +8,16 @@ from mmengine.runner import save_checkpoint
 
 
 def convert(src: str, dst: str, prefix: str = 'd2_model') -> None:
-    """Convert detectron2 checkpoint to mmdetection style.
+    """Convert Detectron2 checkpoint to MMDetection style.
 
     Args:
-        src (str): The detectron2 checkpoint path, should endswith `pkl`.
-        dst (str): The mmdetection checkpoint path.
-        prefix (str): The prefix of mmdetection model, defaults to 'd2_model'.
+        src (str): The Detectron2 checkpoint path, should endswith `pkl`.
+        dst (str): The MMDetection checkpoint path.
+        prefix (str): The prefix of MMDetection model, defaults to 'd2_model'.
     """
     # load arch_settings
     assert src.endswith('pkl'), \
-        'the source detectron2 checkpoint should endswith `pkl`.'
+        'the source Detectron2 checkpoint should endswith `pkl`.'
     d2_model = load(src, encoding='latin1').get('model')
     assert d2_model is not None
 
@@ -30,14 +30,14 @@ def convert(src: str, dst: str, prefix: str = 'd2_model') -> None:
 
     mmdet_model = dict(state_dict=dst_state_dict, meta=dict())
     save_checkpoint(mmdet_model, dst)
-    print(f'Convert detectron2 model {src} to mmdetection model {dst}')
+    print(f'Convert Detectron2 model {src} to MMDetection model {dst}')
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Convert detectron2 checkpoint to mmdetectron style')
-    parser.add_argument('src', help='detectron2 model path')
-    parser.add_argument('dst', help='mmdetectron model save path')
+        description='Convert Detectron2 checkpoint to MMDetection style')
+    parser.add_argument('src', help='Detectron2 model path')
+    parser.add_argument('dst', help='MMDetectron model save path')
     parser.add_argument(
         '--prefix', default='d2_model', type=str, help='prefix of the model')
     args = parser.parse_args()
