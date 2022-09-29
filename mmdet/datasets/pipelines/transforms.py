@@ -2864,7 +2864,7 @@ class CopyPaste:
         assert num_images == 1, \
             f'CopyPaste only supports processing 2 images, got {num_images}'
 
-        # check gt_masks
+        # Get gt_masks originally or generated based on bboxes.
         results['gt_masks'] = self.get_gt_masks(results)
         # only one mix picture
         results['mix_results'][0]['gt_masks'] = self.get_gt_masks(
