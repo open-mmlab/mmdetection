@@ -2470,8 +2470,8 @@ class MixUp:
     def _filter_box_candidates(self, bbox1, bbox2):
         """Compute candidate boxes which include following 5 things:
 
-        bbox1 before augment, bbox2 after augment, min_bbox_size
-        (pixels), min_area_ratio, max_aspect_ratio.
+        bbox1 before augment, bbox2 after augment, min_bbox_size (pixels),
+        min_area_ratio, max_aspect_ratio.
         """
 
         w1, h1 = bbox1[2] - bbox1[0], bbox1[3] - bbox1[1]
