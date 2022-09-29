@@ -1099,3 +1099,20 @@ def test_copypaste():
     src_results['gt_masks'] = src_masks[valid_inds]
     results['mix_results'] = [copy.deepcopy(src_results)]
     copypaste_module(results)
+    # test copy_paste based on bbox
+    dst_results.pop('gt_masks')
+    src_results.pop('gt_masks')
+    dst_bboxes = dst_results['gt_bboxes']
+    src_bboxes = src_results['gt_bboxes']
+    dst_masks = create_full_masks(dst_bboxes, w, h)
+    src_masks = create_full_masks(src_bboxes, w, h)
+    results = copy.deepcopy(dst_results)
+    results['mix_results'] = [copy.deepcopy(src_results)]
+    results = copypaste_module(results)
+    result_masks = create_full_masks(results['gt_bboxes'], w, h)
+    result_masks_np = np.where(result_masks.to_ndarray().sum(0) > 0, 1, 0)
+    masks_np = np.where(
+        (src_masks.to_ndarray().sum(0) + dst_masks.to_ndarray().sum(0)) > 0, 1,
+        0)
+    assert np.all(result_masks_np == masks_np)
+    assert 'gt_masks' not in results
