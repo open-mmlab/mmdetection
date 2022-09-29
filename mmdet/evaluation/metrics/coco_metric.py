@@ -4,7 +4,8 @@ from typing import Sequence
 from mmeval.detection import CocoMetric as MMEVAL_CocoMetric
 
 from mmdet.registry import METRICS
-from mmdet.structures.mask import encode_mask_results
+from mmdet.structures.mask import (BitmapMasks, bitmap_to_polygon,
+                                   encode_mask_results)
 
 
 @METRICS.register_module()
@@ -53,10 +54,39 @@ class CocoMetric(MMEVAL_CocoMetric):
             gt['height'] = data_sample['ori_shape'][0]
             gt['img_id'] = data_sample['img_id']
             if self._coco_api is None:
-                assert 'instances' in data_sample, \
-                    'ground truth is required for evaluation when ' \
-                    '`ann_file` is not provided'
-                gt['instances'] = data_sample['instances']
+                gt_instances = data_sample['gt_instances']
+
+                labels = gt_instances['labels'].tolist()
+                bboxes = gt_instances['bboxes'].tolist()
+                gt_masks = gt_instances[
+                    'masks'] if 'masks' in gt_instances else None
+
+                instances = []
+                for i in range(len(labels)):
+                    instance = {'bbox_label': labels[i], 'bbox': bboxes[i]}
+
+                    if gt_masks is not None:
+                        if isinstance(gt_masks, BitmapMasks):
+                            gt_mask = [
+                                polygon_arr.reshape(-1).tolist()
+                                for polygon_arr in bitmap_to_polygon(
+                                    gt_masks.masks[i])[0]
+                            ]
+                            # filter invalid polygon
+                            gt_mask = [
+                                polygon for polygon in gt_mask
+                                if len(polygon) >= 6
+                            ]
+                            # add pesudo polygon
+                            if len(gt_mask) == 0:
+                                gt_mask = [[0] * 6]
+
+                        else:
+                            gt_mask = gt_masks.masks[i].tolist()
+                        instance['mask'] = gt_mask
+
+                    instances.append(instance)
+                gt['instances'] = instances
 
             # pred, gt
             predictions.append(result)
