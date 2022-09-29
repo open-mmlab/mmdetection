@@ -2845,10 +2845,11 @@ class CopyPaste:
         Returns:
             dict: gt_masks, originally or generated based on bboxes.
         """
-        return results.get(
-            'gt_masks',
-            self.gen_masks_from_bboxes(
-                results.get('gt_bboxes', []), results['img'].shape))
+        try:
+            return results['gt_masks']
+        except KeyError:
+            return self.gen_masks_from_bboxes(
+                results.get('gt_bboxes', []), results['img'].shape)
 
     def __call__(self, results):
         """Call function to make a copy-paste of image.
