@@ -12,10 +12,10 @@ from .loading import (FilterAnnotations, LoadAnnotations, LoadEmptyAnnotations,
                       LoadPanopticAnnotations, LoadProposals)
 from .transforms import (Albu, CachedMixUp, CachedMosaic, CopyPaste, CutOut,
                          Expand, FixShapeResize, MinIoURandomCrop, MixUp,
-                         Mosaic, Pad, PhotoMetricDistortion,
-                         RandomAffine, RandomCenterCropPad, RandomCrop,
-                         RandomErasing, RandomFlip, RandomShift, Resize,
-                         SegRescale, YOLOXHSVRandomAug)
+                         Mosaic, Pad, PhotoMetricDistortion, RandomAffine,
+                         RandomCenterCropPad, RandomCrop, RandomErasing,
+                         RandomFlip, RandomShift, Resize, SegRescale,
+                         YOLOXHSVRandomAug)
 from .wrappers import MultiBranch, RandomOrder
 
 __all__ = [
