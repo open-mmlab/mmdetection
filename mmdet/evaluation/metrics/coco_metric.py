@@ -1,11 +1,12 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 from typing import Sequence
 
+import numpy as np
+import pycocotools.mask as maskUtils
 from mmeval.detection import CocoMetric as MMEVAL_CocoMetric
 
 from mmdet.registry import METRICS
-from mmdet.structures.mask import (BitmapMasks, bitmap_to_polygon,
-                                   encode_mask_results)
+from mmdet.structures.mask import BitmapMasks, encode_mask_results
 
 
 @METRICS.register_module()
@@ -67,20 +68,8 @@ class CocoMetric(MMEVAL_CocoMetric):
 
                     if gt_masks is not None:
                         if isinstance(gt_masks, BitmapMasks):
-                            gt_mask = [
-                                polygon_arr.reshape(-1).tolist()
-                                for polygon_arr in bitmap_to_polygon(
-                                    gt_masks.masks[i])[0]
-                            ]
-                            # filter invalid polygon
-                            gt_mask = [
-                                polygon for polygon in gt_mask
-                                if len(polygon) >= 6
-                            ]
-                            # add pesudo polygon
-                            if len(gt_mask) == 0:
-                                gt_mask = [[0] * 6]
-
+                            gt_mask = np.asfortranarray(gt_masks.masks[i])
+                            gt_mask = maskUtils.encode(gt_mask)
                         else:
                             gt_mask = gt_masks.masks[i].tolist()
                         instance['mask'] = gt_mask
