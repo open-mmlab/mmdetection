@@ -208,7 +208,7 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def forward_encoder(self, **kwargs) -> Dict:  # TODO: typehint
+    def forward_encoder(self, **kwargs) -> Tensor:  # TODO: typehint
         """TODO: Doc"""
         pass
 
