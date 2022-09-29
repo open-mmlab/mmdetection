@@ -71,7 +71,10 @@ class CocoMetric(MMEVAL_CocoMetric):
                             gt_mask = np.asfortranarray(gt_masks.masks[i])
                             gt_mask = maskUtils.encode(gt_mask)
                         else:
-                            gt_mask = gt_masks.masks[i].tolist()
+                            gt_mask = [
+                                polygon.tolist()
+                                for polygon in gt_masks.masks[i]
+                            ]
                         instance['mask'] = gt_mask
 
                     instances.append(instance)
