@@ -2834,7 +2834,7 @@ class CopyPaste:
                      int(xmin[i]):int(xmax[i])] = 1
         return BitmapMasks(gt_masks, img_h, img_w)
 
-    def check_gt_masks(self, results):
+    def get_gt_masks(self, results):
         """Check gt_masks in results.
 
         If gt_masks is not contained in results,
@@ -2842,7 +2842,7 @@ class CopyPaste:
         Args:
             results (dict): Result dict.
         Returns:
-            dict: gt_masks, originally or generated based on bboxes.
+            BitmapMasks: gt_masks, originally or generated based on bboxes.
         """
         if results.get('gt_masks', None) is not None:
             return results['gt_masks']
@@ -2865,9 +2865,9 @@ class CopyPaste:
             f'CopyPaste only supports processing 2 images, got {num_images}'
 
         # check gt_masks
-        results['gt_masks'] = self.check_gt_masks(results)
+        results['gt_masks'] = self.get_gt_masks(results)
         # only one mix picture
-        results['mix_results'][0]['gt_masks'] = self.check_gt_masks(
+        results['mix_results'][0]['gt_masks'] = self.get_gt_masks(
             results['mix_results'][0])
 
         if self.selected:
