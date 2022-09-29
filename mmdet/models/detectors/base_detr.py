@@ -213,7 +213,8 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def pre_decoder(self, **kwargs) -> Tuple[Dict, Dict]:  # TODO: typehint
+    def pre_decoder(self,
+                    memory: Tensor) -> Tuple[Dict, Dict]:  # TODO: typehint
         """TODO: Doc"""
         pass
 

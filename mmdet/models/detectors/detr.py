@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Any, Dict, Tuple, Union
+from typing import Dict, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -52,10 +52,10 @@ class DETR(TransformerDetector):
                 if hasattr(m, 'weight') and m.weight.dim() > 1:
                     xavier_init(m, distribution='uniform')
 
-    def forward_pretransformer(
+    def pre_transformer(
             self,
             img_feats: Tuple[Tensor],
-            batch_data_samples: OptSampleList = None) -> Dict[str, Tensor]:
+            batch_data_samples: OptSampleList = None) -> Tuple[Dict, Dict]:
         """Prepare the inputs of the Transformer.
 
         Args:
@@ -66,21 +66,17 @@ class DETR(TransformerDetector):
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
                 Defaults to None.
 
-        Returns:
+        Returns:  # TODO: Doc
             Dict[str, Tensor]: Dict that stores all the inputs for
                 Transformer. Each input is a Tensor.
         """
 
-        feat = img_feats[
-            -1]  # NOTE img_feats contains only one feature tensor.
-        batch_size = feat.size(0)
+        feat = img_feats[-1]  # NOTE img_feats contains only one feature.
+        batch_size, feat_dim, _, _ = feat.shape
         # construct binary masks which used for the transformer.
         assert batch_data_samples is not None
         batch_input_shape = batch_data_samples[0].batch_input_shape
-        img_shape_list = [
-            sample.img_shape  # noqa
-            for sample in batch_data_samples
-        ]
+        img_shape_list = [sample.img_shape for sample in batch_data_samples]
 
         input_img_h, input_img_w = batch_input_shape
         masks = feat.new_ones((batch_size, input_img_h, input_img_w))
@@ -90,63 +86,47 @@ class DETR(TransformerDetector):
         # NOTE following the official DETR repo, non-zero values representing
         # ignored positions, while zero values means valid positions.
 
-        # prepare transformer_inputs_dict
         masks = F.interpolate(
             masks.unsqueeze(1), size=feat.shape[-2:]).to(torch.bool).squeeze(1)
         # [batch_size, embed_dim, h, w]
         pos_embed = self.positional_encoding(masks)
 
-        transformer_inputs_dict = dict(
-            feat=feat,
-            masks=masks,
-            pos_embed=pos_embed,
-            query_embed=self.query_embedding.weight)
-        return transformer_inputs_dict
-
-    def forward_transformer(
-            self,
-            feat: Tensor,
-            masks: Tensor,
-            pos_embed: Tensor,
-            query_embed: nn.Module,
-            return_memory: bool = False) -> Union[Tuple[Tensor], Any]:
-        """Forward function for Transformer.
-
-        Args:
-            feat (Tensor): The last feature from the output of neck, with
-                shape [bs, c, h ,w], where c = embed_dims.
-            masks (Tensor): The key_padding_mask used for encoder and decoder,
-                with shape [bs, h, w].
-            pos_embed (Tensor): The positional encoding for encoder and
-                decoder, with the same shape as `feat`
-            query_embed (Tensor): The query embedding for decoder, with shape
-                [num_query, c].
-            return_memory (bool): Whether to return the output of encoder.
-                Defaults to False.
-
-        Returns:
-            Union[Tuple[Tensor], Any]: results of decoder containing the \
-                following tensor.
-
-                - out_dec: Output from decoder. If return_intermediate_dec \
-                      is True output has shape [num_dec_layers, bs,
-                      num_query, embed_dims], else has shape [1, bs, \
-                      num_query, embed_dims].
-                - memory: Output results from encoder, with shape \
-                      [bs, embed_dims, h, w].
-        """
-        batch_size, c, h, w = feat.shape
         # use `view` instead of `flatten` for dynamically exporting to ONNX
         # [bs, c, h, w] -> [h*w, bs, c]
-        feat = feat.view(batch_size, c, -1).permute(2, 0, 1)
-        pos_embed = pos_embed.view(batch_size, c, -1).permute(2, 0, 1)
-        # [num_query, dim] -> [num_query, bs, dim]
-        query_embed = query_embed.unsqueeze(1).repeat(1, batch_size, 1)
+        feat = feat.view(batch_size, feat_dim, -1).permute(2, 0, 1)
+        pos_embed = pos_embed.view(batch_size, feat_dim, -1).permute(2, 0, 1)
         # [bs, h, w] -> [bs, h*w]
         masks = masks.view(batch_size, -1)
+
+        # prepare transformer_inputs_dict
+        encoder_inputs_dict = dict(feat=feat, masks=masks, pos_embed=pos_embed)
+        decoder_inputs_dict = dict(masks=masks, pos_embed=pos_embed)
+        return encoder_inputs_dict, decoder_inputs_dict
+
+    def forward_encoder(self, feat, masks,
+                        pos_embed) -> Dict:  # TODO: typehint  # noqa
+        # TODO: Doc
         memory = self.encoder(
             query=feat, query_pos=pos_embed, query_key_padding_mask=masks)
+        return memory
+
+    def pre_decoder(self,
+                    memory) -> Tuple[Dict, Dict]:  # TODO: typehint  # noqa
+        # TODO: Doc
+        batch_size = memory.size(1)
+        query_embed = self.query_embedding.weight
+        # [num_query, dim] -> [num_query, bs, dim]
+        query_embed = query_embed.unsqueeze(1).repeat(1, batch_size, 1)
         target = torch.zeros_like(query_embed)
+
+        decoder_inputs_dict = dict(
+            query_embed=query_embed, target=target, memory=memory)
+        head_inputs_dict = dict()
+        return decoder_inputs_dict, head_inputs_dict
+
+    def forward_decoder(self, target, query_embed, memory, masks,
+                        pos_embed) -> Dict:  # TODO: typehint  # noqa
+        # TODO: Doc
         # out_dec: [num_layers, num_query, bs, dim]
         out_dec = self.decoder(
             query=target,
@@ -156,7 +136,5 @@ class DETR(TransformerDetector):
             query_pos=query_embed,
             key_padding_mask=masks)
         out_dec = out_dec.transpose(1, 2)
-        if return_memory:
-            memory = memory.permute(1, 2, 0).reshape(batch_size, c, h, w)
-            return out_dec, memory
-        return out_dec
+        head_inputs_dict = dict(out_dec=out_dec)
+        return head_inputs_dict
