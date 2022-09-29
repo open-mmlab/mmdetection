@@ -95,18 +95,18 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
             dict: A dictionary of loss components
         """
         img_feats = self.extract_feat(batch_inputs)
-        transformer_inputs_dict = self.forward_pretransformer(
-            img_feats, batch_data_samples)
-        outs_dec = self.forward_transformer(**transformer_inputs_dict)
-        losses = self.bbox_head.loss(outs_dec, batch_data_samples)
+        head_inputs_dict = self.forward_transformer(img_feats,
+                                                    batch_data_samples)
+        losses = self.bbox_head.loss(
+            **head_inputs_dict, batch_data_samples=batch_data_samples)
         return losses
 
     def predict(self,
                 batch_inputs: Tensor,
                 batch_data_samples: SampleList,
                 rescale: bool = True) -> SampleList:
-        """Predict results from a batch of inputs and data samples with
-        post-processing.
+        """Predict results from a batch of inputs and data samples with post-
+        processing.
 
         Args:
             batch_inputs (Tensor): Inputs with shape (N, C, H, W).
@@ -130,11 +130,12 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
                     the last dimension 4 arrange as (x1, y1, x2, y2).
         """
         img_feats = self.extract_feat(batch_inputs)
-        transformer_inputs_dict = self.forward_pretransformer(
-            img_feats, batch_data_samples)
-        outs_dec = self.forward_transformer(**transformer_inputs_dict)
+        head_inputs_dict = self.forward_transformer(img_feats,
+                                                    batch_data_samples)
         results_list = self.bbox_head.predict(
-            outs_dec, batch_data_samples, rescale=rescale)
+            **head_inputs_dict,
+            rescale=rescale,
+            batch_data_samples=batch_data_samples)
         batch_data_samples = self.add_pred_to_datasample(
             batch_data_samples, results_list)
         return batch_data_samples
@@ -157,11 +158,26 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
             tuple[Tensor]: A tuple of features from ``bbox_head`` forward.
         """
         img_feats = self.extract_feat(batch_inputs)
-        transformer_inputs_dict = self.forward_pretransformer(
-            img_feats, batch_data_samples)
-        outs_dec = self.forward_transformer(**transformer_inputs_dict)
-        results = self.bbox_head.forward(outs_dec)
+        head_inputs_dict = self.forward_transformer(img_feats,
+                                                    batch_data_samples)
+        results = self.bbox_head.forward(
+            **head_inputs_dict)  # TODO: refine this  # noqa
         return results
+
+    def forward_transformer(self, img_feats,
+                            batch_data_samples) -> Dict:  # TODO: typehint
+        # TODO: Doc
+        encoder_inputs_dict, decoder_inputs_dict = self.pre_transformer(
+            img_feats, batch_data_samples)
+
+        memory = self.forward_encoder(**encoder_inputs_dict)
+
+        temp_dec_in, head_inputs_dict = self.pre_decoder(memory)
+        decoder_inputs_dict.update(temp_dec_in)  # TODO: refine 'update'
+
+        temp_head_in = self.forward_decoder(**decoder_inputs_dict)
+        head_inputs_dict.update(temp_head_in)
+        return head_inputs_dict
 
     def extract_feat(self, batch_inputs: Tensor) -> Tuple[Tensor]:
         """Extract features.
@@ -179,10 +195,11 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
         return x
 
     @abstractmethod
-    def forward_pretransformer(
-            self,
-            img_feats: Tuple[Tensor],
-            batch_data_samples: OptSampleList = None) -> Dict[str, Tensor]:
+    def pre_transformer(
+        self,
+        img_feats: Tuple[Tensor],
+        batch_data_samples: OptSampleList = None
+    ) -> Tuple[Dict, Dict]:  # TODO: typehint
         """This function creates the inputs of the Transformer.
 
         1. Construct batch padding mask.
@@ -191,6 +208,16 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def forward_transformer(self, **kwargs) -> Tuple[Tensor]:
-        """Process sequential features with transformer."""
+    def forward_encoder(self, **kwargs) -> Dict:  # TODO: typehint
+        """TODO: Doc"""
+        pass
+
+    @abstractmethod
+    def pre_decoder(self, **kwargs) -> Tuple[Dict, Dict]:  # TODO: typehint
+        """TODO: Doc"""
+        pass
+
+    @abstractmethod
+    def forward_decoder(self, **kwargs) -> Dict:  # TODO: typehint
+        """TODO: Doc"""
         pass
