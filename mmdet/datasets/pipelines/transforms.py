@@ -2470,8 +2470,8 @@ class MixUp:
     def _filter_box_candidates(self, bbox1, bbox2):
         """Compute candidate boxes which include following 5 things:
 
-        bbox1 before augment, bbox2 after augment, min_bbox_size (pixels),
-        min_area_ratio, max_aspect_ratio.
+        bbox1 before augment, bbox2 after augment, min_bbox_size
+        (pixels), min_area_ratio, max_aspect_ratio.
         """
 
         w1, h1 = bbox1[2] - bbox1[0], bbox1[3] - bbox1[1]
@@ -2825,15 +2825,14 @@ class CopyPaste:
         """
         self.mask_gen = True
         img_h, img_w = img_shape[:2]
-        masks = []
-        for x1, y1, x2, y2 in bboxes:
-            mask = np.zeros((img_h, img_w), dtype=np.uint8)
-            bbox = np.array([[[x1, y1], [x2, y1], [x2, y2], [x1, y2]]],
-                            dtype=np.int32)
-            mask = cv2.fillPoly(mask, bbox, 1)
-            masks.append(mask)
-
-        return BitmapMasks(np.array(masks), img_h, img_w)
+        xmin, ymin = bboxes[:, 0:1], bboxes[:, 1:2]
+        xmax, ymax = bboxes[:, 2:3], bboxes[:, 3:4]
+        gt_masks = np.zeros((len(bboxes), img_h, img_w), dtype=np.uint8)
+        for i in range(len(bboxes)):
+            gt_masks[i,
+                     int(ymin[i]):int(ymax[i]),
+                     int(xmin[i]):int(xmax[i])] = 1
+        return BitmapMasks(gt_masks, img_h, img_w)
 
     def check_gt_masks(self, results):
         """Check gt_masks in result.
@@ -2845,9 +2844,9 @@ class CopyPaste:
         Returns:
             dict: gt_masks, originally or generated based on bboxes.
         """
-        try:
+        if results.get('gt_masks', None) is not None:
             return results['gt_masks']
-        except KeyError:
+        else:
             return self.gen_masks_from_bboxes(
                 results.get('gt_bboxes', []), results['img'].shape)
 
