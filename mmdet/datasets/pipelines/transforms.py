@@ -2835,7 +2835,7 @@ class CopyPaste:
         return BitmapMasks(gt_masks, img_h, img_w)
 
     def get_gt_masks(self, results):
-        """Check gt_masks in results.
+        """get gt_masks originally or generated based on bboxes.
 
         If gt_masks is not contained in results,
         it will be generated based on gt_bboxes.
