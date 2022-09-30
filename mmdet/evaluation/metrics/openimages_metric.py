@@ -1,6 +1,6 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import warnings
-from typing import Sequence
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from mmengine.logging import print_log
@@ -22,13 +22,60 @@ class OpenImagesMetric(OIDMeanAP):
     parses metric results and print pretty table of metrics per class.
 
     Args:
+        iof_thrs (float ｜ List[float]): IoF thresholds. Defaults to 0.5.
+        iou_thrs (float ｜ List[float]): IoU thresholds. Defaults to 0.5.
+        use_group_of (bool): Whether consider group of groud truth
+            bboxes during evaluating. Defaults to True.
+        get_supercategory (bool, optional): Whether to get parent class of the
+            current class. Defaults to True.
+        filter_labels (bool, optional): Whether filter unannotated classes.
+            Defaults to True.
+        class_relation_matrix (numpy.ndarray, optional): The matrix of the
+            corresponding relationship between the parent class and the child
+            class. If None, it will be obtained from the 'RELATION_MATRIX'
+            field in ``self.dataset_meta``. Defaults to None.
+        scale_ranges (List[tuple], optional): Scale ranges for evaluating
+            mAP. If not specified, all bounding boxes would be included in
+            evaluation. Defaults to None.
+        num_classes (int, optional): The number of classes. If None, it will be
+            obtained from the 'CLASSES' field in ``self.dataset_meta``.
+            Defaults to None.
+        eval_mode (str): 'area' or '11points', 'area' means calculating the
+            area under precision-recall curve, '11points' means calculating
+            the average precision of recalls at [0, 0.1, ..., 1].
+            The PASCAL VOC2007 defaults to use '11points', while PASCAL
+            VOC2012 defaults to use 'area'.
+            Defaults to 'area'.
+        use_legacy_coordinate (bool): Whether to use coordinate
+            system in mmdet v1.x. which means width, height should be
+            calculated as 'x2 - x1 + 1` and 'y2 - y1 + 1' respectively.
+            Defaults to False.
+        nproc (int): Processes used for computing TP and FP. If nproc
+            is less than or equal to 1, multiprocessing will not be used.
+            Defaults to 4.
+        drop_class_ap (bool): Whether to drop the class without ground truth
+            when calculating the average precision for each class.
         dist_backend (str | None): The name of the distributed communication
             backend. Refer to :class:`mmeval.BaseMetric`.
             Defaults to 'torch_cuda'.
-        **kwargs: Keyword parameters passed to :class:`mmeval.OIDMeanAP`.
+        **kwargs: Keyword parameters passed to :class:`mmeval.BaseMetric`.
     """
 
-    def __init__(self, dist_backend: str = 'torch_cuda', **kwargs) -> None:
+    def __init__(self,
+                 iou_thrs: Union[float, List[float]] = 0.5,
+                 iof_thrs: Union[float, List[float]] = 0.5,
+                 use_group_of: bool = True,
+                 get_supercategory: bool = True,
+                 filter_labels: bool = True,
+                 class_relation_matrix: Optional[np.ndarray] = None,
+                 scale_ranges: Optional[List[Tuple]] = None,
+                 num_classes: Optional[int] = None,
+                 eval_mode: str = 'area',
+                 use_legacy_coordinate: bool = False,
+                 nproc: int = 4,
+                 drop_class_ap: bool = True,
+                 dist_backend: str = 'torch_cuda',
+                 **kwargs) -> None:
         ioa_thrs = kwargs.pop('ioa_thrs', None)
         if ioa_thrs is not None and 'iof_thrs' not in kwargs:
             kwargs['iof_thrs'] = ioa_thrs
@@ -41,10 +88,24 @@ class OpenImagesMetric(OIDMeanAP):
             warnings.warn(
                 'DeprecationWarning: The `collect_device` parameter of '
                 '`OpenImagesMetric` is deprecated, use `dist_backend` instead.'
-            )  # noqa: E501
+            )
 
         super().__init__(
-            classwise_result=True, dist_backend=dist_backend, **kwargs)
+            iou_thrs=iou_thrs,
+            iof_thrs=iof_thrs,
+            use_group_of=use_group_of,
+            get_supercategory=get_supercategory,
+            filter_labels=filter_labels,
+            class_relation_matrix=class_relation_matrix,
+            scale_ranges=scale_ranges,
+            num_classes=num_classes,
+            eval_mode=eval_mode,
+            use_legacy_coordinate=use_legacy_coordinate,
+            nproc=nproc,
+            classwise_result=True,
+            drop_class_ap=drop_class_ap,
+            dist_backend=dist_backend,
+            **kwargs)
 
     # TODO: data_batch is no longer needed, consider adjusting the
     #  parameter position
