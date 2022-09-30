@@ -32,63 +32,53 @@ class ASFF(nn.Module):
                  norm_cfg=dict(type='BN', momentum=0.03, eps=0.001),
                  act_cfg=dict(type='SiLU')):
         super(ASFF, self).__init__()
+        self.in_channels = in_channels
         self.level = level
-        if level == 0:
-            self.inter_dim = in_channels[2]
-            self.stride_level_1 = ConvModule(
-                in_channels[1],
-                self.inter_dim,
-                3,
-                stride=2,
-                padding=1,
-                norm_cfg=norm_cfg,
-                act_cfg=act_cfg)
+        self.mlvl_pools = nn.ModuleList()
+        self.mlvl_convs = nn.ModuleList()
+        self.mlvl_weights = nn.ModuleList()
+        self.inter_dim = in_channels[level]
+        for i, in_channel in enumerate(in_channels):
+            if i == self.level:
+                self.mlvl_pools.append(nn.Identity())
+                self.mlvl_convs.append(nn.Identity())
+            elif i < self.level:
+                if self.level - i >= 2:
+                    self.mlvl_pools.append(
+                        nn.Sequential(*[
+                            nn.MaxPool2d(3, stride=2, padding=1)
+                            for _ in range(self.level - i - 1)
+                        ]))
+                else:
+                    self.mlvl_pools.append(nn.Identity())
+                self.mlvl_convs.append(
+                    ConvModule(
+                        in_channel,
+                        self.inter_dim,
+                        3,
+                        stride=2,
+                        padding=1,
+                        norm_cfg=norm_cfg,
+                        act_cfg=act_cfg))
+            elif i > self.level:
+                self.mlvl_pools.append(nn.Identity())
+                self.mlvl_convs.append(
+                    ConvModule(
+                        in_channel,
+                        self.inter_dim,
+                        1,
+                        stride=1,
+                        norm_cfg=norm_cfg,
+                        act_cfg=act_cfg))
 
-            self.stride_level_2 = ConvModule(
-                in_channels[0],
-                self.inter_dim,
-                3,
-                stride=2,
-                padding=1,
-                norm_cfg=norm_cfg,
-                act_cfg=act_cfg)
-
-        elif level == 1:
-            self.inter_dim = in_channels[1]
-            self.compress_level_0 = ConvModule(
-                in_channels[2],
-                self.inter_dim,
-                1,
-                stride=1,
-                norm_cfg=norm_cfg,
-                act_cfg=act_cfg)
-            self.stride_level_2 = ConvModule(
-                in_channels[0],
-                self.inter_dim,
-                3,
-                stride=2,
-                padding=1,
-                norm_cfg=norm_cfg,
-                act_cfg=act_cfg)
-
-        elif level == 2:
-            self.inter_dim = in_channels[0]
-            self.compress_level_0 = ConvModule(
-                in_channels[2],
-                self.inter_dim,
-                1,
-                stride=1,
-                norm_cfg=norm_cfg,
-                act_cfg=act_cfg)
-            self.compress_level_1 = ConvModule(
-                in_channels[1],
-                self.inter_dim,
-                1,
-                stride=1,
-                norm_cfg=norm_cfg,
-                act_cfg=act_cfg)
-        else:
-            raise ValueError('Invalid level {}'.format(level))
+            self.mlvl_weights.append(
+                ConvModule(
+                    self.inter_dim,
+                    asff_channel,
+                    1,
+                    stride=1,
+                    norm_cfg=norm_cfg,
+                    act_cfg=act_cfg))
 
         self.expand = ConvModule(
             self.inter_dim,
@@ -99,74 +89,42 @@ class ASFF(nn.Module):
             norm_cfg=norm_cfg,
             act_cfg=act_cfg)
 
-        self.weight_level_0 = ConvModule(
-            self.inter_dim,
-            asff_channel,
-            1,
-            stride=1,
-            norm_cfg=norm_cfg,
-            act_cfg=act_cfg)
-        self.weight_level_1 = ConvModule(
-            self.inter_dim,
-            asff_channel,
-            1,
-            stride=1,
-            norm_cfg=norm_cfg,
-            act_cfg=act_cfg)
-        self.weight_level_2 = ConvModule(
-            self.inter_dim,
-            asff_channel,
-            1,
-            stride=1,
-            norm_cfg=norm_cfg,
-            act_cfg=act_cfg)
-
         self.weight_levels = ConvModule(
-            asff_channel * 3,
-            3,
+            asff_channel * len(in_channels),
+            len(in_channels),
             1,
             stride=1,
             norm_cfg=norm_cfg,
             act_cfg=act_cfg)
 
     def forward(self, x):
-        x_level_0 = x[2]
-        x_level_1 = x[1]
-        x_level_2 = x[0]
+        assert len(x) == len(self.in_channels)
 
-        if self.level == 0:
-            level_0_resized = x_level_0
-            level_1_resized = self.stride_level_1(x_level_1)
-            level_2_downsampled_inter = F.max_pool2d(
-                x_level_2, 3, stride=2, padding=1)
-            level_2_resized = self.stride_level_2(level_2_downsampled_inter)
-        elif self.level == 1:
-            level_0_compressed = self.compress_level_0(x_level_0)
-            level_0_resized = F.interpolate(
-                level_0_compressed, scale_factor=2, mode='nearest')
-            level_1_resized = x_level_1
-            level_2_resized = self.stride_level_2(x_level_2)
-        elif self.level == 2:
-            level_0_compressed = self.compress_level_0(x_level_0)
-            level_0_resized = F.interpolate(
-                level_0_compressed, scale_factor=4, mode='nearest')
-            x_level_1_compressed = self.compress_level_1(x_level_1)
-            level_1_resized = F.interpolate(
-                x_level_1_compressed, scale_factor=2, mode='nearest')
-            level_2_resized = x_level_2
+        mlvl_feats = [
+            conv(pool(x[i]))
+            for i, (conv,
+                    pool) in enumerate(zip(self.mlvl_convs, self.mlvl_pools))
+        ]
 
-        level_0_weight_v = self.weight_level_0(level_0_resized)
-        level_1_weight_v = self.weight_level_1(level_1_resized)
-        level_2_weight_v = self.weight_level_2(level_2_resized)
+        mlvl_wegiths_v = []
+        for i in range(len(x)):
+            if i > self.level:
+                mlvl_feats[i] = F.interpolate(
+                    mlvl_feats[i],
+                    scale_factor=2**(i - self.level),
+                    mode='nearest')
+            mlvl_wegiths_v.append(self.mlvl_weights[i](mlvl_feats[i]))
 
-        levels_weight_v = torch.cat(
-            (level_0_weight_v, level_1_weight_v, level_2_weight_v), 1)
-        levels_weight = self.weight_levels(levels_weight_v)
-        levels_weight = F.softmax(levels_weight, dim=1)
+        mlvl_weight_v = torch.cat(mlvl_wegiths_v, 1)
+        mlvl_weight = self.weight_levels(mlvl_weight_v)
+        mlvl_weight = F.softmax(mlvl_weight, dim=1)
 
-        fused_out_reduced = (level_0_resized * levels_weight[:, 0:1, :, :]) + (
-            level_1_resized * levels_weight[:, 1:2, :, :]) + (
-                level_2_resized * levels_weight[:, 2:, :, :])
+        fused_out_reduced = torch.sum(
+            torch.stack([
+                mlvl_feats[i] * mlvl_weight[:, i:i + 1, :, :]
+                for i in range(len(x))
+            ]),
+            dim=0)
         out = self.expand(fused_out_reduced)
 
         return out
@@ -177,7 +135,6 @@ class YOLOXASFFPAFPN(YOLOXPAFPN):
     """Path Aggregation Network used in `YOLOX-PAI.
 
     <https://arxiv.org/abs/2208.13040>`_.
-
     Args:
         asff_channel (int): The hidden channel of the attention layer in
             ASFF. Default: 2.
@@ -197,34 +154,18 @@ class YOLOXASFFPAFPN(YOLOXPAFPN):
                  act_cfg=dict(type='SiLU'),
                  **kwargs):
         super().__init__(*args, norm_cfg=norm_cfg, act_cfg=act_cfg, **kwargs)
-        assert len(self.in_channels) == 3,\
-            'len(in_channels) should be set to 3.'
-        # todo: handle len(self.in_channels) > 3
 
-        self.asff_1 = ASFF(
-            self.in_channels,
-            level=0,
-            asff_channel=asff_channel,
-            expand_kernel=expand_kernel,
-            norm_cfg=norm_cfg,
-            act_cfg=act_cfg,
-        )
-        self.asff_2 = ASFF(
-            self.in_channels,
-            level=1,
-            asff_channel=asff_channel,
-            expand_kernel=expand_kernel,
-            norm_cfg=norm_cfg,
-            act_cfg=act_cfg,
-        )
-        self.asff_3 = ASFF(
-            self.in_channels,
-            level=2,
-            asff_channel=asff_channel,
-            expand_kernel=expand_kernel,
-            norm_cfg=norm_cfg,
-            act_cfg=act_cfg,
-        )
+        self.asffs = nn.ModuleList()
+        for i in range(len(self.in_channels)):
+            self.asffs.append(
+                ASFF(
+                    self.in_channels,
+                    level=i,
+                    asff_channel=asff_channel,
+                    expand_kernel=expand_kernel,
+                    norm_cfg=norm_cfg,
+                    act_cfg=act_cfg,
+                ))
 
     def forward(self, inputs):
         assert len(inputs) == len(self.in_channels)
@@ -256,13 +197,12 @@ class YOLOXASFFPAFPN(YOLOXPAFPN):
 
         # asff
         outs = tuple(outs)
-        pan_out0 = self.asff_1(outs)
-        pan_out1 = self.asff_2(outs)
-        pan_out2 = self.asff_3(outs)
-        outs = [pan_out2, pan_out1, pan_out0]
+        asff_outs = []
+        for asff in self.asffs:
+            asff_outs.append(asff(outs))
 
         # out convs
         for idx, conv in enumerate(self.out_convs):
-            outs[idx] = conv(outs[idx])
+            asff_outs[idx] = conv(asff_outs[idx])
 
-        return tuple(outs)
+        return tuple(asff_outs)
