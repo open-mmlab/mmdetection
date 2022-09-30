@@ -121,7 +121,7 @@ class DeformableDETRHead(DETRHead):
         outputs_coords = torch.stack(outputs_coords)
         return outputs_classes, outputs_coords
 
-    def loss(self, hs: Tensor, init_reference: Tensor,
+    def loss(self, inter_states: Tensor, init_reference: Tensor,
              inter_references: Tensor, enc_outputs_class: Tensor,
              enc_outputs_coord: Tensor,
              batch_data_samples: SampleList) -> dict:
@@ -129,8 +129,9 @@ class DeformableDETRHead(DETRHead):
         head on the queries of the upstream network.
 
         Args:
-            hs (Tensor): Hidden states output from each decoder layer, has
-                shape [num_decoder_layers, num_query, bs, embed_dims].
+            inter_states (Tensor): Hidden states output from each decoder
+                layer, has shape
+                [num_decoder_layers, num_query, bs, embed_dims].
             init_reference (Tensor): The initial reference points entered
                 into the decoder, has shape [bs, num_query, 4].
             inter_references (Tensor): The intermediate reference points
@@ -157,7 +158,7 @@ class DeformableDETRHead(DETRHead):
             batch_img_metas.append(data_sample.metainfo)
             batch_gt_instances.append(data_sample.gt_instances)
 
-        outs = self(hs, init_reference, inter_references)
+        outs = self(inter_states, init_reference, inter_references)
         loss_inputs = outs + (enc_outputs_class, enc_outputs_coord,
                               batch_gt_instances, batch_img_metas)
         losses = self.loss_by_feat(*loss_inputs)
