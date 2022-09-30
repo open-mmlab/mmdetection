@@ -2789,6 +2789,9 @@ class CopyPaste:
             all objects of the source image will be pasted to the
             destination image.
             Default: True.
+        using_cutmix (bool): Whether using cutmix or not. BTW, cutmix in
+            detection task is equal to copypaste based on bbox.
+            Default: False.
     """
 
     def __init__(
@@ -2797,12 +2800,13 @@ class CopyPaste:
         bbox_occluded_thr=10,
         mask_occluded_thr=300,
         selected=True,
+        using_cutmix=False
     ):
         self.max_num_pasted = max_num_pasted
         self.bbox_occluded_thr = bbox_occluded_thr
         self.mask_occluded_thr = mask_occluded_thr
         self.selected = selected
-        self.mask_gen = False
+        self.using_cutmix = using_cutmix
 
     def get_indexes(self, dataset):
         """Call function to collect indexes.s.
@@ -2823,7 +2827,7 @@ class CopyPaste:
         Returns:
             BitmapMasks
         """
-        self.mask_gen = True
+        self.using_cutmix = True
         img_h, img_w = img_shape[:2]
         xmin, ymin = bboxes[:, 0:1], bboxes[:, 1:2]
         xmax, ymax = bboxes[:, 2:3], bboxes[:, 3:4]
@@ -2915,7 +2919,7 @@ class CopyPaste:
         src_masks = src_results['gt_masks']
 
         if len(src_bboxes) == 0:
-            if self.mask_gen:
+            if self.using_cutmix:
                 dst_results.pop('gt_masks')
             return dst_results
 
@@ -2945,7 +2949,7 @@ class CopyPaste:
         dst_results['img'] = img
         dst_results['gt_bboxes'] = bboxes
         dst_results['gt_labels'] = labels
-        if self.mask_gen:
+        if self.using_cutmix:
             dst_results.pop('gt_masks')
         else:
             dst_results['gt_masks'] = BitmapMasks(masks, masks.shape[1],
