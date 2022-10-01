@@ -108,7 +108,8 @@ class DETR(TransformerDetector):
         # TODO: Doc
         memory = self.encoder(
             query=feat, query_pos=pos_embed, query_key_padding_mask=masks)
-        return memory
+        encoder_outputs_dict = dict(memory=memory)
+        return encoder_outputs_dict
 
     def pre_decoder(self,
                     memory) -> Tuple[Dict, Dict]:  # TODO: typehint  # noqa

@@ -170,13 +170,13 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
         encoder_inputs_dict, decoder_inputs_dict = self.pre_transformer(
             img_feats, batch_data_samples)
 
-        memory = self.forward_encoder(**encoder_inputs_dict)
+        encoder_outputs_dict = self.forward_encoder(**encoder_inputs_dict)
 
-        temp_dec_in, head_inputs_dict = self.pre_decoder(memory)
-        decoder_inputs_dict.update(temp_dec_in)  # TODO: refine 'update'
+        tmp_dec_in, head_inputs_dict = self.pre_decoder(**encoder_outputs_dict)
+        decoder_inputs_dict.update(tmp_dec_in)  # TODO: refine 'update'
 
-        temp_head_in = self.forward_decoder(**decoder_inputs_dict)
-        head_inputs_dict.update(temp_head_in)
+        decoder_outputs_dict = self.forward_decoder(**decoder_inputs_dict)
+        head_inputs_dict.update(decoder_outputs_dict)
         return head_inputs_dict
 
     def extract_feat(self, batch_inputs: Tensor) -> Tuple[Tensor]:

@@ -191,7 +191,7 @@ class DeformableDETR(TransformerDetector):
 
     def forward_encoder(self, feat, feat_mask, feat_pos, spatial_shapes,
                         level_start_index, valid_ratios,
-                        reference_points) -> Tensor:  # TODO: typehint
+                        reference_points) -> Dict:  # TODO: typehint
         # TODO: Doc
         memory = self.encoder(
             query=feat,
@@ -203,17 +203,20 @@ class DeformableDETR(TransformerDetector):
             valid_ratios=valid_ratios)
         # [] -> []  # TODO
         memory = memory.permute(1, 0, 2)
-        return memory
+        encoder_outputs_dict = dict(
+            memory=memory,
+            memory_mask=feat_mask,
+            spatial_shapes=spatial_shapes)
+        return encoder_outputs_dict
 
-    def pre_decoder(
-            self, memory: Tensor, mask_flatten, spatial_shapes
-    ) -> Tuple[Dict, Dict]:  # TODO: how to deal with this ?
+    def pre_decoder(self, memory: Tensor, memory_mask: Tensor,
+                    spatial_shapes: Tensor) -> Tuple[Dict, Dict]:
         # TODO: Doc
         batch_size, _, c = memory.shape
         if self.as_two_stage:
             output_memory, output_proposals = \
                 self.gen_encoder_output_proposals(
-                    memory, mask_flatten, spatial_shapes)
+                    memory, memory_mask, spatial_shapes)
             enc_outputs_class = self.bbox_head.cls_branches[
                 self.decoder.num_layers](
                     output_memory)
