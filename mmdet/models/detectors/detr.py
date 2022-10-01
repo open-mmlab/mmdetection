@@ -137,5 +137,5 @@ class DETR(TransformerDetector):
             query_pos=query_embed,
             key_padding_mask=masks)
         out_dec = out_dec.transpose(1, 2)
-        head_inputs_dict = dict(out_dec=out_dec)
+        head_inputs_dict = dict(hidden_states=out_dec)
         return head_inputs_dict

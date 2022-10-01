@@ -74,13 +74,14 @@ class DeformableDETRHead(DETRHead):
             for m in self.reg_branches:
                 nn.init.constant_(m[-1].bias.data[2:], 0.0)
 
-    def forward(self, hs: Tensor, init_reference: Tensor,
+    def forward(self, hidden_states: Tensor, init_reference: Tensor,
                 inter_references: Tensor) -> Tuple[Tensor]:
         """Forward function.
 
         Args:
-            hs (Tensor): Hidden states output from each decoder layer, has
-                shape [num_decoder_layers, num_query, bs, embed_dims].
+            hidden_states (Tensor): Hidden states output from each decoder
+                layer, has shape
+                [num_decoder_layers, num_query, bs, embed_dims].
             init_reference (Tensor): The initial reference points entered
                 into the decoder, has shape [bs, num_query, 4].
             inter_references (Tensor): The intermediate reference points
@@ -96,18 +97,18 @@ class DeformableDETRHead(DETRHead):
               head with normalized coordinate format (cx, cy, w, h).
               Shape [nb_dec, bs, num_query, 4].
         """
-        hs = hs.permute(0, 2, 1, 3)
+        hidden_states = hidden_states.permute(0, 2, 1, 3)
         outputs_classes = []
         outputs_coords = []
 
-        for lvl in range(hs.shape[0]):
+        for lvl in range(hidden_states.shape[0]):
             if lvl == 0:
                 reference = init_reference
             else:
                 reference = inter_references[lvl - 1]
             reference = inverse_sigmoid(reference)
-            outputs_class = self.cls_branches[lvl](hs[lvl])
-            tmp = self.reg_branches[lvl](hs[lvl])
+            outputs_class = self.cls_branches[lvl](hidden_states[lvl])
+            tmp = self.reg_branches[lvl](hidden_states[lvl])
             if reference.shape[-1] == 4:
                 tmp += reference
             else:
@@ -121,7 +122,7 @@ class DeformableDETRHead(DETRHead):
         outputs_coords = torch.stack(outputs_coords)
         return outputs_classes, outputs_coords
 
-    def loss(self, inter_states: Tensor, init_reference: Tensor,
+    def loss(self, hidden_states: Tensor, init_reference: Tensor,
              inter_references: Tensor, enc_outputs_class: Tensor,
              enc_outputs_coord: Tensor,
              batch_data_samples: SampleList) -> dict:
@@ -129,7 +130,7 @@ class DeformableDETRHead(DETRHead):
         head on the queries of the upstream network.
 
         Args:
-            inter_states (Tensor): Hidden states output from each decoder
+            hidden_states (Tensor): Hidden states output from each decoder
                 layer, has shape
                 [num_decoder_layers, num_query, bs, embed_dims].
             init_reference (Tensor): The initial reference points entered
@@ -158,7 +159,7 @@ class DeformableDETRHead(DETRHead):
             batch_img_metas.append(data_sample.metainfo)
             batch_gt_instances.append(data_sample.gt_instances)
 
-        outs = self(inter_states, init_reference, inter_references)
+        outs = self(hidden_states, init_reference, inter_references)
         loss_inputs = outs + (enc_outputs_class, enc_outputs_coord,
                               batch_gt_instances, batch_img_metas)
         losses = self.loss_by_feat(*loss_inputs)
@@ -247,17 +248,19 @@ class DeformableDETRHead(DETRHead):
         return loss_dict
 
     def predict(self,
-                hs: Tensor,
+                hidden_states: Tensor,
                 init_reference: Tensor,
                 inter_references: Tensor,
                 batch_data_samples: SampleList,
-                rescale: bool = True) -> InstanceList:
+                rescale: bool = True,
+                **kwargs) -> InstanceList:
         """Perform forward propagation and loss calculation of the detection
         head on the queries of the upstream network.
 
         Args:
-            hs (Tensor): Hidden states output from each decoder layer, has
-                shape [num_decoder_layers, num_query, bs, embed_dims].
+            hidden_states (Tensor): Hidden states output from each decoder
+                layer, has shape
+                [num_decoder_layers, num_query, bs, embed_dims].
             init_reference (Tensor): The initial reference points entered
                 into the decoder, has shape [bs, num_query, 4].
             inter_references (Tensor): The intermediate reference points
@@ -276,7 +279,7 @@ class DeformableDETRHead(DETRHead):
             data_samples.metainfo for data_samples in batch_data_samples
         ]
 
-        outs = self(hs, init_reference, inter_references)
+        outs = self(hidden_states, init_reference, inter_references)
 
         predictions = self.predict_by_feat(
             *outs, batch_img_metas=batch_img_metas, rescale=rescale)

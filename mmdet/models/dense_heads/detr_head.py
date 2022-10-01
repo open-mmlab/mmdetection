@@ -20,8 +20,7 @@ from ..utils import multi_apply
 
 @MODELS.register_module()
 class DETRHead(BaseModule):
-    """Head of DETR. DETR:End-to-End Object
-    Detection with Transformers
+    """Head of DETR. DETR:End-to-End Object Detection with Transformers.
 
     More details can be found in the `paper
     <https://arxiv.org/pdf/2005.12872>`_ .
@@ -162,12 +161,13 @@ class DETRHead(BaseModule):
             self.reg_ffn(out_dec))).sigmoid()
         return all_cls_scores, all_bbox_preds
 
-    def loss(self, x: Tensor, batch_data_samples: SampleList) -> dict:
+    def loss(self, hidden_states: Tensor,
+             batch_data_samples: SampleList) -> dict:
         """Perform forward propagation and loss calculation of the detection
         head on the features of the upstream network.
 
         Args:
-            x (Tensor): Feature from the transformer decoder,
+            hidden_states (Tensor): Feature from the transformer decoder,
                 shape [nb_dec, bs, num_query, cls_out_channels] or
                 [nb_dec, num_query, bs, cls_out_channels].
             batch_data_samples (List[:obj:`DetDataSample`]): The Data
@@ -183,7 +183,7 @@ class DETRHead(BaseModule):
             batch_img_metas.append(data_sample.metainfo)
             batch_gt_instances.append(data_sample.gt_instances)
 
-        outs = self(x)
+        outs = self(hidden_states)
         loss_inputs = outs + (batch_gt_instances, batch_img_metas)
         losses = self.loss_by_feat(*loss_inputs)
         return losses
@@ -445,7 +445,7 @@ class DETRHead(BaseModule):
                 neg_inds)
 
     def loss_and_predict(self,
-                         x: Tuple[Tensor],
+                         hidden_states: Tuple[Tensor],
                          batch_data_samples: SampleList,
                          proposal_cfg: Optional[ConfigType] = None) \
             -> Tuple[dict, InstanceList]:
@@ -454,7 +454,7 @@ class DETRHead(BaseModule):
         img_metas are needed as inputs for bbox_head.
 
         Args:
-            x (tuple[Tensor]): Features from FPN.
+            hidden_states (tuple[Tensor]): Features from FPN.
             batch_data_samples (list[:obj:`DetDataSample`]): Each item contains
                 the meta information of each image and corresponding
                 annotations.
@@ -475,7 +475,7 @@ class DETRHead(BaseModule):
             batch_img_metas.append(data_sample.metainfo)
             batch_gt_instances.append(data_sample.gt_instances)
 
-        outs = self(x)
+        outs = self(hidden_states)
         loss_inputs = outs + (batch_gt_instances, batch_img_metas)
         losses = self.loss_by_feat(*loss_inputs)
 
@@ -484,7 +484,7 @@ class DETRHead(BaseModule):
         return losses, predictions
 
     def predict(self,
-                x: Tuple[Tensor],
+                hidden_states: Tuple[Tensor],
                 batch_data_samples: SampleList,
                 rescale: bool = True) -> InstanceList:
         """Perform forward propagation of the detection head and predict
@@ -492,7 +492,7 @@ class DETRHead(BaseModule):
         because img_metas are needed as inputs for bbox_head.
 
         Args:
-            x (tuple[Tensor]): Multi-level features from the
+            hidden_states (tuple[Tensor]): Multi-level features from the
                 upstream network, each is a 4D-tensor.
             batch_data_samples (List[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
@@ -508,7 +508,7 @@ class DETRHead(BaseModule):
             data_samples.metainfo for data_samples in batch_data_samples
         ]
 
-        outs = self(x)
+        outs = self(hidden_states)
 
         predictions = self.predict_by_feat(
             *outs, batch_img_metas=batch_img_metas, rescale=rescale)

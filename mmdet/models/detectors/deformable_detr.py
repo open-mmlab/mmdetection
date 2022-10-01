@@ -254,13 +254,14 @@ class DeformableDETR(TransformerDetector):
         query_pos = query_pos.permute(1, 0, 2)
 
         decoder_inputs_dict = dict(
-            query=query, query_pos=query_pos, memory=memory)
+            query=query,
+            query_pos=query_pos,
+            memory=memory,
+            reference_points=reference_points)
         head_inputs_dict = dict(
-            init_reference=reference_points,
             enc_outputs_class=enc_outputs_class if self.as_two_stage else None,
-            enc_outputs_coord=enc_outputs_coord_unact.sigmoid(
-            )  # TODO: Is this right ? # noqa
-            if self.as_two_stage else None)
+            enc_outputs_coord=enc_outputs_coord_unact.sigmoid()
+            if self.as_two_stage else None)  # TODO: Is this right ?
         return decoder_inputs_dict, head_inputs_dict
 
     def forward_decoder(self, memory, memory_mask, query, query_pos,
@@ -280,7 +281,9 @@ class DeformableDETR(TransformerDetector):
             reg_branches=self.bbox_head.reg_branches
             if self.with_box_refine else None)
         head_inputs_dict = dict(
-            inter_states=inter_states, inter_references=inter_references)
+            hidden_states=inter_states,
+            init_reference=reference_points,
+            inter_references=inter_references)
         return head_inputs_dict
 
     def gen_encoder_output_proposals(
