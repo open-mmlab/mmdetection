@@ -13,7 +13,7 @@ If you are experienced with PyTorch and have already installed it, just skip thi
 **Step 1.** Create a conda environment and activate it.
 
 ```shell
-conda create --name openmmlab python=3.8 -y
+conda create --name openmmlab python=3.9 -y
 conda activate openmmlab
 ```
 
