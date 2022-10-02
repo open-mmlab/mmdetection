@@ -5,8 +5,14 @@ on:
     # check issue and pull request once every day
     - cron: '25 11 * * *'
 
+permissions:
+  contents: read
+
 jobs:
   invalid-stale-close:
+    permissions:
+      issues: write  # for actions/stale to close stale issues
+      pull-requests: write  # for actions/stale to close stale PRs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/stale@v4
