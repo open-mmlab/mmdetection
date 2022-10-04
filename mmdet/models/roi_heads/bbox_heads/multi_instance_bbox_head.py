@@ -1,5 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-from typing import Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -11,71 +11,9 @@ from torch import Tensor, nn
 
 from mmdet.models.layers import multiclass_nms
 from mmdet.models.roi_heads.bbox_heads.bbox_head import BBoxHead
+from mmdet.models.task_modules.samplers import SamplingResult
 from mmdet.models.utils import empty_instances
 from mmdet.registry import MODELS
-
-
-def set_cpu_nms(pred_boxes, iou_threshold):
-    """Pure Python NMS baseline."""
-
-    def _overlap(det_boxes, base, others):
-        eps = 1e-8
-        x1_basement = det_boxes[base, 0]
-        y1_basement = det_boxes[base, 1]
-        x2_basement = det_boxes[base, 2]
-        y2_basement = det_boxes[base, 3]
-
-        x1_others = det_boxes[others, 0]
-        y1_others = det_boxes[others, 1]
-        x2_others = det_boxes[others, 2]
-        y2_others = det_boxes[others, 3]
-
-        areas_basement = (x2_basement - x1_basement) * (
-            y2_basement - y1_basement)
-        areas_others = (x2_others - x1_others) * (y2_others - y1_others)
-        xx1 = np.maximum(x1_basement, x1_others)
-        yy1 = np.maximum(y1_basement, y1_others)
-        xx2 = np.minimum(x2_basement, x2_others)
-        yy2 = np.minimum(y2_basement, y2_others)
-        w = np.maximum(0.0, xx2 - xx1)
-        h = np.maximum(0.0, yy2 - yy1)
-        inter = w * h
-        ovr = inter / (areas_basement + areas_others - inter + eps)
-        return ovr
-
-    scores = pred_boxes[:, 4]
-    order = np.argsort(-scores)
-    dets = pred_boxes[order]
-
-    numbers = dets[:, -1]
-    keep = np.ones(len(dets)) == 1
-    ruler = np.arange(len(dets))
-    while ruler.size > 0:
-        basement = ruler[0]
-        ruler = ruler[1:]
-        num = numbers[basement]
-        # calculate the body overlap
-        overlap = _overlap(dets[:, :4], basement, ruler)
-        indices = np.where(overlap > iou_threshold)[0]
-        loc = np.where(numbers[ruler][indices] == num)[0]
-        # the mask won't change in the step
-        mask = keep[ruler[indices][loc]]
-        keep[ruler[indices]] = False
-        keep[ruler[indices][loc][mask]] = True
-        ruler[~keep[ruler]] = -1
-        ruler = ruler[ruler > 0]
-    keep = keep[np.argsort(order)]
-    return keep
-
-
-def smooth_l1_loss(pred, target, beta: float):
-    if beta < 1e-5:
-        loss = torch.abs(input - target)
-    else:
-        abs_x = torch.abs(pred - target)
-        in_mask = abs_x < beta
-        loss = torch.where(in_mask, 0.5 * abs_x**2 / beta, abs_x - 0.5 * beta)
-    return loss.sum(dim=1)
 
 
 @MODELS.register_module()
@@ -267,6 +205,8 @@ class MultiInstanceBBoxHead(BBoxHead):
                 - bbox_pred (Tensor): Box energies / deltas for all \
                     scale levels, each is a 4D-tensor, the channels number \
                     is num_base_priors * 4.
+                -cls_score_ref (Tensor): The cls_score after refine model.
+                -bbox_pred_ref (Tensor): The bbox_pred after refine model.
         """
         # shared part
         if self.num_shared_convs > 0:
@@ -281,12 +221,12 @@ class MultiInstanceBBoxHead(BBoxHead):
             for fc in self.shared_fcs:
                 x = self.relu(fc(x))
 
+        x_cls = x
+        x_reg = x
         # separate branches
         cls_score = list()
         bbox_pred = list()
         for k in range(self.num_instance):
-            x_cls = x.clone()
-            x_reg = x.clone()
             for conv in self.cls_convs[k]:
                 x_cls = conv(x_cls)
             if x_cls.dim() > 2:
@@ -333,6 +273,168 @@ class MultiInstanceBBoxHead(BBoxHead):
 
         return cls_score, bbox_pred
 
+    def get_targets(self,
+                    sampling_results: List[SamplingResult],
+                    rcnn_train_cfg: ConfigDict,
+                    concat: bool = True) -> tuple:
+        """Calculate the ground truth for all samples in a batch according to
+        the sampling_results.
+
+        Almost the same as the implementation in bbox_head, we passed
+        additional parameters pos_inds_list and neg_inds_list to
+        `_get_targets_single` function.
+
+        Args:
+            sampling_results (List[obj:SamplingResult]): Assign results of
+                all images in a batch after sampling.
+            rcnn_train_cfg (obj:ConfigDict): `train_cfg` of RCNN.
+            concat (bool): Whether to concatenate the results of all
+                the images in a single batch.
+
+        Returns:
+            Tuple[Tensor]: Ground truth for proposals in a single image.
+            Containing the following list of Tensors:
+
+            - labels (list[Tensor],Tensor): Gt_labels for all
+                proposals in a batch, each tensor in list has
+                shape (num_proposals,) when `concat=False`, otherwise
+                just a single tensor has shape (num_all_proposals,).
+            - label_weights (list[Tensor]): Labels_weights for
+                all proposals in a batch, each tensor in list has
+                shape (num_proposals,) when `concat=False`, otherwise
+                just a single tensor has shape (num_all_proposals,).
+            - bbox_targets (list[Tensor],Tensor): Regression target
+                for all proposals in a batch, each tensor in list
+                has shape (num_proposals, 4) when `concat=False`,
+                otherwise just a single tensor has shape
+                (num_all_proposals, 4), the last dimension 4 represents
+                [tl_x, tl_y, br_x, br_y].
+            - bbox_weights (list[tensor],Tensor): Regression weights for
+                all proposals in a batch, each tensor in list has shape
+                (num_proposals, 4) when `concat=False`, otherwise just a
+                single tensor has shape (num_all_proposals, 4).
+        """
+        labels = []
+        bbox_targets = []
+        bbox_weights = []
+        label_weights = []
+        for i in range(len(sampling_results)):
+            sample_bboxes = torch.cat([
+                sampling_results[i].pos_gt_bboxes,
+                sampling_results[i].neg_gt_bboxes
+            ])
+            sample_priors = sampling_results[i].priors
+            sample_priors = sample_priors.repeat(1, self.num_instance).reshape(
+                -1, 4)
+            sample_bboxes = sample_bboxes.reshape(-1, 4)
+
+            if not self.reg_decoded_bbox:
+                _bbox_targets = self.bbox_coder.encode(sample_priors,
+                                                       sample_bboxes)
+            else:
+                _bbox_targets = sample_priors
+            _bbox_targets = _bbox_targets.reshape(-1, self.num_instance * 4)
+            _bbox_weights = torch.ones(_bbox_targets.shape)
+            _labels = torch.cat([
+                sampling_results[i].pos_gt_labels,
+                sampling_results[i].neg_gt_labels
+            ])
+            _labels_weights = torch.ones(_labels.shape)
+
+            bbox_targets.append(_bbox_targets)
+            bbox_weights.append(_bbox_weights)
+            labels.append(_labels)
+            label_weights.append(_labels_weights)
+
+        if concat:
+            labels = torch.cat(labels, 0)
+            label_weights = torch.cat(label_weights, 0)
+            bbox_targets = torch.cat(bbox_targets, 0)
+            bbox_weights = torch.cat(bbox_weights, 0)
+        return labels, label_weights, bbox_targets, bbox_weights
+
+    def loss(self,
+             cls_score: Tensor,
+             bbox_pred: Tensor,
+             rois: Tensor,
+             labels: Tensor,
+             label_weights: Tensor,
+             bbox_targets: Tensor,
+             bbox_weights: Tensor,
+             reduction_override: Optional[str] = None) -> dict:
+        """Calculate the loss based on the network predictions and targets.
+
+        Args:
+            cls_score (Tensor): Classification prediction
+                results of all class, has shape
+                (batch_size * num_proposals_single_image, num_classes)
+            bbox_pred (Tensor): Regression prediction results,
+                has shape
+                (batch_size * num_proposals_single_image, 4), the last
+                dimension 4 represents [tl_x, tl_y, br_x, br_y].
+            rois (Tensor): RoIs with the shape
+                (batch_size * num_proposals_single_image, 5) where the first
+                column indicates batch id of each RoI.
+            labels (Tensor): Gt_labels for all proposals in a batch, has
+                shape (batch_size * num_proposals_single_image, ).
+            label_weights (Tensor): Labels_weights for all proposals in a
+                batch, has shape (batch_size * num_proposals_single_image, ).
+            bbox_targets (Tensor): Regression target for all proposals in a
+                batch, has shape (batch_size * num_proposals_single_image, 4),
+                the last dimension 4 represents [tl_x, tl_y, br_x, br_y].
+            bbox_weights (Tensor): Regression weights for all proposals in a
+                batch, has shape (batch_size * num_proposals_single_image, 4).
+            reduction_override (str, optional): The reduction
+                method used to override the original reduction
+                method of the loss. Options are "none",
+                "mean" and "sum". Defaults to None,
+
+        Returns:
+            dict: A dictionary of loss.
+        """
+
+        losses = dict()
+        loss0 = self.emd_loss_softmax(bbox_pred[:, 0:4], cls_score[:, 0:2],
+                                      bbox_pred[:, 4:8], cls_score[:, 2:4],
+                                      bbox_targets, labels)
+        loss1 = self.emd_loss_softmax(bbox_pred[:, 4:8], cls_score[:, 2:4],
+                                      bbox_pred[:, 0:4], cls_score[:, 0:2],
+                                      bbox_targets, labels)
+        loss = torch.cat([loss0, loss1], dim=1)
+        _, min_indices = loss.min(dim=1)
+        loss_emd = loss[torch.arange(loss.shape[0]), min_indices]
+        loss_emd = loss_emd.mean()
+        losses['loss_rcnn_emd'] = loss_emd
+        return losses
+
+    def emd_loss_softmax(self, p_b0, p_s0, p_b1, p_s1, targets, labels):
+        # reshape
+        pred_delta = torch.cat([p_b0, p_b1], dim=1).reshape(-1, p_b0.shape[-1])
+        pred_score = torch.cat([p_s0, p_s1], dim=1).reshape(-1, p_s0.shape[-1])
+        targets = targets.reshape(-1, 4)
+        labels = labels.long().flatten()
+
+        # cons masks
+        valid_masks = labels >= 0
+        fg_masks = labels > 0
+
+        # multiple class
+        pred_delta = pred_delta.reshape(-1, self.num_classes, 4)
+        fg_gt_classes = labels[fg_masks]
+        pred_delta = pred_delta[fg_masks, fg_gt_classes - 1, :]
+
+        # loss for regression
+        loss_bbox = self.loss_bbox(pred_delta, targets[fg_masks])
+        loss_bbox = torch.sum(loss_bbox, dim=1)
+
+        # loss for classification
+        labels = labels * valid_masks
+        loss_cls = self.loss_cls(pred_score, labels)
+
+        loss_cls[fg_masks] = loss_cls[fg_masks] + loss_bbox
+        loss = loss_cls.reshape(-1, 2).sum(axis=1)
+        return loss.reshape(-1, 1)
+
     def _predict_by_feat_single(
             self,
             roi: Tensor,
@@ -349,8 +451,8 @@ class MultiInstanceBBoxHead(BBoxHead):
                 last dimension 5 arrange as (batch_index, x1, y1, x2, y2).
             cls_score (Tensor): Box scores, has shape
                 (num_boxes, num_classes + 1).
-            bbox_pred (Tensor): Box energies / deltas.
-                has shape (num_boxes, num_classes * 4).
+            bbox_pred (Tensor): Box energies / deltas. has shape
+                (num_boxes, num_classes * 4).
             img_meta (dict): image information.
             rescale (bool): If True, return boxes in original image space.
                 Defaults to False.
@@ -432,8 +534,8 @@ class MultiInstanceBBoxHead(BBoxHead):
                     (1, self.num_instance)).reshape(-1, 1)[:, 0]
                 keep = nms_input[:, 4] > rcnn_test_cfg.score_thr
                 nms_input = nms_input[keep]
-                keep = set_cpu_nms(nms_input,
-                                   rcnn_test_cfg.nms['iou_threshold'])
+                keep = self.set_cpu_nms(nms_input,
+                                        rcnn_test_cfg.nms['iou_threshold'])
                 nms_result = nms_input[keep]
                 results.bboxes = torch.from_numpy(nms_result[:, :4]).to(
                     bboxes.device)
@@ -444,40 +546,68 @@ class MultiInstanceBBoxHead(BBoxHead):
 
         return results
 
-    def emd_loss_softmax(self, p_b0, p_s0, p_b1, p_s1, targets, labels):
-        # reshape
-        pred_delta = torch.cat([p_b0, p_b1], dim=1).reshape(-1, p_b0.shape[-1])
-        pred_score = torch.cat([p_s0, p_s1], dim=1).reshape(-1, p_s0.shape[-1])
-        targets = targets.reshape(-1, 4)
-        labels = labels.long().flatten()
-        # cons masks
-        valid_masks = labels >= 0
-        fg_masks = labels > 0  # < self.num_classes
-        # multiple class
-        pred_delta = pred_delta.reshape(-1, self.num_classes, 4)
-        fg_gt_classes = labels[fg_masks]
-        pred_delta = pred_delta[fg_masks, fg_gt_classes - 1, :]
-        # loss for regression
-        localization_loss = smooth_l1_loss(pred_delta, targets[fg_masks],
-                                           1)  # config.rcnn_smooth_l1_beta
-        # loss for classification
-        objectness_loss = self.softmax_loss(pred_score, labels)
-        loss = objectness_loss * valid_masks
-        loss[fg_masks] = loss[fg_masks] + localization_loss
-        loss = loss.reshape(-1, 2).sum(axis=1)
-        return loss.reshape(-1, 1)
+    @staticmethod
+    def set_cpu_nms(pred_boxes, iou_threshold):
+        """NMS for multi-instance prediction. Please refer to
+        https://github.com/Purkialo/CrowdDet for more details.
 
-    def softmax_loss(self, score, label, ignore_label=-1):
-        with torch.no_grad():
-            max_score = score.max(axis=1, keepdims=True)[0]
-        score -= max_score
-        log_prob = score - torch.log(
-            torch.exp(score).sum(axis=1, keepdims=True))
-        mask = label != ignore_label
-        vlabel = label * mask
-        onehot = torch.zeros(
-            vlabel.shape[0], self.num_classes + 1, device=score.device)
-        onehot.scatter_(1, vlabel.reshape(-1, 1), 1)
-        loss = -(log_prob * onehot).sum(axis=1)
-        loss = loss * mask
-        return loss
+        Args:
+            pred_boxes (ndarray): shape (n, 7). [n, 0:4] denotes predict
+                bboxes, [:, 4:5] is  the score and label for each prediction
+                box, and [:, 6] indicates the prediction box comes from
+                which propose box.
+            iou_threshold (float): IoU threshold to be considered as
+                conflicted.
+
+        Returns:
+            keep (ndarray): The location of the valid bboxes.
+        """
+
+        def _overlap(det_boxes, base, others):
+            eps = 1e-8
+            x1_basement = det_boxes[base, 0]
+            y1_basement = det_boxes[base, 1]
+            x2_basement = det_boxes[base, 2]
+            y2_basement = det_boxes[base, 3]
+
+            x1_others = det_boxes[others, 0]
+            y1_others = det_boxes[others, 1]
+            x2_others = det_boxes[others, 2]
+            y2_others = det_boxes[others, 3]
+
+            areas_basement = (x2_basement - x1_basement) * (
+                y2_basement - y1_basement)
+            areas_others = (x2_others - x1_others) * (y2_others - y1_others)
+            xx1 = np.maximum(x1_basement, x1_others)
+            yy1 = np.maximum(y1_basement, y1_others)
+            xx2 = np.minimum(x2_basement, x2_others)
+            yy2 = np.minimum(y2_basement, y2_others)
+            w = np.maximum(0.0, xx2 - xx1)
+            h = np.maximum(0.0, yy2 - yy1)
+            inter = w * h
+            ovr = inter / (areas_basement + areas_others - inter + eps)
+            return ovr
+
+        scores = pred_boxes[:, 4]
+        order = np.argsort(-scores)
+        dets = pred_boxes[order]
+
+        numbers = dets[:, -1]
+        keep = np.ones(len(dets)) == 1
+        ruler = np.arange(len(dets))
+        while ruler.size > 0:
+            basement = ruler[0]
+            ruler = ruler[1:]
+            num = numbers[basement]
+            # calculate the body overlap
+            overlap = _overlap(dets[:, :4], basement, ruler)
+            indices = np.where(overlap > iou_threshold)[0]
+            loc = np.where(numbers[ruler][indices] == num)[0]
+            # the mask won't change in the step
+            mask = keep[ruler[indices][loc]]
+            keep[ruler[indices]] = False
+            keep[ruler[indices][loc][mask]] = True
+            ruler[~keep[ruler]] = -1
+            ruler = ruler[ruler > 0]
+        keep = keep[np.argsort(order)]
+        return keep
