@@ -110,6 +110,9 @@ class MMDetWandbHook(WandbLoggerHook):
         self.log_evaluation = (num_eval_images > 0)
         self.ckpt_hook: CheckpointHook = None
         self.eval_hook: EvalHook = None
+        self.skip_flag = False
+        self.last_eval_iter = -100
+        self.temp_commit = None
 
     def import_wandb(self):
         try:
@@ -237,6 +240,27 @@ class MMDetWandbHook(WandbLoggerHook):
 
     @master_only
     def after_train_iter(self, runner):
+        # EvalHook calls all LoggerHook instances before evaluation. Since
+        # MMDetWandbHook class is a subclass of LoggerHook, `after_train_iter`
+        # hook is called twice in the iteration that performs evaluation.
+        # MMDetWandbHook logs the loss information in the first call and the
+        # evaluation results in the second call. If `self.commit` is True in
+        # the first call, then the second call will not log the evaluation
+        # results successfully because the metrics of this step are already
+        # persisted. See
+        # https://docs.wandb.ai/guides/track/log#stepwise-and-incremental-logging
+        # for more details.
+        if self.log_evaluation and self.eval_hook._should_evaluate(runner) \
+                and self.last_eval_iter != runner.iter:
+            self.skip_flag = True
+            self.temp_commit = self.commit
+            self.commit = False
+            self.last_eval_iter = runner.iter
+        else:
+            if self.skip_flag:
+                self.commit = self.temp_commit
+            self.skip_flag = False
+
         if self.get_mode(runner) == 'train':
             # An ugly patch. The iter-based eval hook will call the
             # `after_train_iter` method of all logger hooks before evaluation.
@@ -252,7 +276,8 @@ class MMDetWandbHook(WandbLoggerHook):
         # Save checkpoint and metadata
         if (self.log_checkpoint
                 and self.every_n_iters(runner, self.ckpt_interval)
-                or (self.ckpt_hook.save_last and self.is_last_iter(runner))):
+                or (self.ckpt_hook.save_last and self.is_last_iter(runner)
+                        and not self.skip_flag)):
             if self.log_checkpoint_metadata and self.eval_hook:
                 metadata = {
                     'iter': runner.iter + 1,
@@ -266,7 +291,8 @@ class MMDetWandbHook(WandbLoggerHook):
             self._log_ckpt_as_artifact(model_path, aliases, metadata)
 
         # Save prediction table
-        if self.log_evaluation and self.eval_hook._should_evaluate(runner):
+        if (self.log_evaluation and self.eval_hook._should_evaluate(runner)
+                and not self.skip_flag):
             results = self.eval_hook.latest_results
             # Initialize evaluation table
             self._init_pred_table()
