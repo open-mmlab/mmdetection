@@ -7,6 +7,7 @@ from .custom import CustomDataset
 from .dataset_wrappers import (ClassBalancedDataset, ConcatDataset,
                                MultiImageMixDataset, RepeatDataset)
 from .deepfashion import DeepFashionDataset
+from .forklifts import ForkliftsDataset
 from .lvis import LVISDataset, LVISV1Dataset, LVISV05Dataset
 from .openimages import OpenImagesChallengeDataset, OpenImagesDataset
 from .samplers import DistributedGroupSampler, DistributedSampler, GroupSampler
@@ -24,5 +25,5 @@ __all__ = [
     'ClassBalancedDataset', 'WIDERFaceDataset', 'DATASETS', 'PIPELINES',
     'build_dataset', 'replace_ImageToTensor', 'get_loading_pipeline',
     'NumClassCheckHook', 'CocoPanopticDataset', 'MultiImageMixDataset',
-    'OpenImagesDataset', 'OpenImagesChallengeDataset'
+    'OpenImagesDataset', 'OpenImagesChallengeDataset', 'ForkliftsDataset'
 ]
