@@ -353,13 +353,30 @@ class DeformableDETR(TransformerDetector):
     def get_valid_ratio(self, mask: Tensor) -> Tensor:
         """Get the valid radios of feature map of a level.
 
+        .. code:: text
+
+                    |---> valid_H <---|
+                 ---+-----------------+-----+---
+                  A |                 |     | A
+                  | |                 |     | |
+                  | |                 |     | |
+            valid_W |                 |     | |
+                  | |                 |     | W
+                  | |                 |     | |
+                  V |                 |     | |
+                 ---+-----------------+     | |
+                    |                       | V
+                    +-----------------------+---
+                    |---------> H <---------|
+
+          The valid_ratios are defined as:
+          r_h = valid_H / H,  r_w = valid_W / W
+
         Args:
-            mask (Tensor): Binary mask of a feature map, has \
-                shape (N, H, W)
+            mask (Tensor): Binary mask of a feature map, has shape (bs, H, W)
 
         Returns:
-            Tensor: valid ratio [r_h, r_w] of the feature map, \
-                has shape [1, 2]
+            Tensor: valid ratio [r_w, r_h] of the feature map, has shape [1, 2]
         """
         _, H, W = mask.shape
         valid_H = torch.sum(~mask[:, :, 0], 1)
