@@ -48,6 +48,9 @@ class RetinaHead(AnchorHead):
                          std=0.01,
                          bias_prob=0.01)),
                  **kwargs):
+        assert stacked_convs >= 0, \
+            '`stacked_convs` must be non-negative integers, ' \
+            f'but got {stacked_convs} instead.'
         self.stacked_convs = stacked_convs
         self.conv_cfg = conv_cfg
         self.norm_cfg = norm_cfg
@@ -84,13 +87,16 @@ class RetinaHead(AnchorHead):
                     conv_cfg=self.conv_cfg,
                     norm_cfg=self.norm_cfg))
         self.retina_cls = nn.Conv2d(
-            self.feat_channels,
+            self.feat_channels if self.stacked_convs else self.in_channels,
             self.num_base_priors * self.cls_out_channels,
             3,
             padding=1)
         reg_dim = self.bbox_coder.encode_size
         self.retina_reg = nn.Conv2d(
-            self.feat_channels, self.num_base_priors * reg_dim, 3, padding=1)
+            self.feat_channels if self.stacked_convs else self.in_channels,
+            self.num_base_priors * reg_dim,
+            3,
+            padding=1)
 
     def forward_single(self, x):
         """Forward feature of a single scale level.
