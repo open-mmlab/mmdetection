@@ -276,10 +276,9 @@ class DeformableDETR(TransformerDetector):
             valid_ratios=valid_ratios,
             reg_branches=self.bbox_head.reg_branches
             if self.with_box_refine else None)
+        references = [reference_points, *inter_references]
         head_inputs_dict = dict(
-            hidden_states=inter_states,
-            init_reference=reference_points,
-            inter_references=inter_references)
+            hidden_states=inter_states, references=references)
         return head_inputs_dict
 
     def gen_encoder_output_proposals(

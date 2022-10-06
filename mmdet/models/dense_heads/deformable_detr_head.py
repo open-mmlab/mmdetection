@@ -73,19 +73,21 @@ class DeformableDETRHead(DETRHead):
             for m in self.reg_branches:
                 nn.init.constant_(m[-1].bias.data[2:], 0.0)
 
-    def forward(self, hidden_states: Tensor, init_reference: Tensor,
-                inter_references: Tensor) -> Tuple[Tensor]:
+    def forward(self, hidden_states: Tensor,
+                references: List[Tensor]) -> Tuple[Tensor]:
         """Forward function.
 
         Args:
             hidden_states (Tensor): Hidden states output from each decoder
                 layer, has shape
                 [num_decoder_layers, num_query, bs, embed_dims].
-            init_reference (Tensor): The initial reference points entered
-                into the decoder, has shape [bs, num_query, 4].  # TODO
-            inter_references (Tensor): The intermediate reference points
-                in each decoder layer, has shape
-                [num_decoder_layers, num_query, bs, 4].
+            references (List[Tensor]): List of the reference of the decoder.
+                The first reference is the init_reference and the other
+                num_decoder_layers(6) references are inter_reference.
+                The init_reference has shape [bs, num_query, 4] when
+                `as_two_stage` is True, otherwise [bs, num_query, 2].
+                Each inter_reference has shape [bs, num_query, 4] when
+                `with_box_refine` is True, otherwise [bs, num_query, 2].
 
         Returns:
             tuple[Tensor]: results of decoder containing the following tensor.
@@ -100,14 +102,11 @@ class DeformableDETRHead(DETRHead):
         outputs_classes = []
         outputs_coords = []
 
-        for lvl in range(hidden_states.shape[0]):  # TODO
-            if lvl == 0:
-                reference = init_reference
-            else:
-                reference = inter_references[lvl - 1]
-            reference = inverse_sigmoid(reference)
-            outputs_class = self.cls_branches[lvl](hidden_states[lvl])
-            tmp = self.reg_branches[lvl](hidden_states[lvl])
+        for layer in range(hidden_states.shape[0]):  # TODO
+            reference = inverse_sigmoid(references[layer])
+            # NOTE The last reference will not be used.
+            outputs_class = self.cls_branches[layer](hidden_states[layer])
+            tmp = self.reg_branches[layer](hidden_states[layer])
             if reference.shape[-1] == 4:
                 # TODO: comment
                 tmp += reference
@@ -123,9 +122,8 @@ class DeformableDETRHead(DETRHead):
 
         return outputs_classes, outputs_coords
 
-    def loss(self, hidden_states: Tensor, init_reference: Tensor,
-             inter_references: Tensor, enc_outputs_class: Tensor,
-             enc_outputs_coord: Tensor,
+    def loss(self, hidden_states: Tensor, references: List[Tensor],
+             enc_outputs_class: Tensor, enc_outputs_coord: Tensor,
              batch_data_samples: SampleList) -> dict:
         """Perform forward propagation and loss calculation of the detection
         head on the queries of the upstream network.
@@ -134,11 +132,13 @@ class DeformableDETRHead(DETRHead):
             hidden_states (Tensor): Hidden states output from each decoder
                 layer, has shape
                 [num_decoder_layers, num_query, bs, embed_dims].
-            init_reference (Tensor): The initial reference points entered
-                into the decoder, has shape [bs, num_query, 4].
-            inter_references (Tensor): The intermediate reference points
-                in each decoder layer, has shape
-                [num_decoder_layers, num_query, bs, 4].
+            references (List[Tensor]): List of the reference of the decoder.
+                The first reference is the init_reference and the other
+                num_decoder_layers(6) references are inter_reference.
+                The init_reference has shape [bs, num_query, 4] when
+                `as_two_stage` is True, otherwise [bs, num_query, 2].
+                Each inter_reference has shape [bs, num_query, 4] when
+                `with_box_refine` is True, otherwise [bs, num_query, 2].
             enc_outputs_class (Tensor): The score of each point on encode
                 feature map, has shape (N, num_features, cls_out_channels).
                 Only when as_two_stage is True it would be returned,
@@ -160,7 +160,7 @@ class DeformableDETRHead(DETRHead):
             batch_img_metas.append(data_sample.metainfo)
             batch_gt_instances.append(data_sample.gt_instances)
 
-        outs = self(hidden_states, init_reference, inter_references)
+        outs = self(hidden_states, references)
         loss_inputs = outs + (enc_outputs_class, enc_outputs_coord,
                               batch_gt_instances, batch_img_metas)
         losses = self.loss_by_feat(*loss_inputs)
@@ -228,8 +228,7 @@ class DeformableDETRHead(DETRHead):
 
     def predict(self,
                 hidden_states: Tensor,
-                init_reference: Tensor,
-                inter_references: Tensor,
+                references: List[Tensor],
                 batch_data_samples: SampleList,
                 rescale: bool = True,
                 **kwargs) -> InstanceList:
@@ -240,11 +239,13 @@ class DeformableDETRHead(DETRHead):
             hidden_states (Tensor): Hidden states output from each decoder
                 layer, has shape
                 [num_decoder_layers, num_query, bs, embed_dims].
-            init_reference (Tensor): The initial reference points entered
-                into the decoder, has shape [bs, num_query, 4].
-            inter_references (Tensor): The intermediate reference points
-                in each decoder layer, has shape
-                [num_decoder_layers, num_query, bs, 4].
+            references (List[Tensor]): List of the reference of the decoder.
+                The first reference is the init_reference and the other
+                num_decoder_layers(6) references are inter_reference.
+                The init_reference has shape [bs, num_query, 4] when
+                `as_two_stage` is True, otherwise [bs, num_query, 2].
+                Each inter_reference has shape [bs, num_query, 4] when
+                `with_box_refine` is True, otherwise [bs, num_query, 2].
             batch_data_samples (List[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
@@ -258,7 +259,7 @@ class DeformableDETRHead(DETRHead):
             data_samples.metainfo for data_samples in batch_data_samples
         ]
 
-        outs = self(hidden_states, init_reference, inter_references)
+        outs = self(hidden_states, references)
 
         predictions = self.predict_by_feat(
             *outs, batch_img_metas=batch_img_metas, rescale=rescale)
