@@ -171,7 +171,7 @@ class DeformableDETR(TransformerDetector):
             (1, )), spatial_shapes.prod(1).cumsum(0)[:-1]))
         valid_ratios = torch.stack(
             [self.get_valid_ratio(m) for m in mlvl_masks], 1)
-        reference_points = self.get_reference_points(
+        encoder_reference_points = self.get_encoder_reference_points(
             spatial_shapes, valid_ratios, device=feat_flatten.device)
 
         encoder_inputs_dict = dict(
@@ -181,7 +181,7 @@ class DeformableDETR(TransformerDetector):
             spatial_shapes=spatial_shapes,
             level_start_index=level_start_index,
             valid_ratios=valid_ratios,
-            reference_points=reference_points)
+            reference_points=encoder_reference_points)
         decoder_inputs_dict = dict(
             memory_mask=mask_flatten,
             spatial_shapes=spatial_shapes,
@@ -352,12 +352,14 @@ class DeformableDETR(TransformerDetector):
         output_memory = output_memory.masked_fill(~output_proposals_valid,
                                                   float(0))
         output_memory = self.enc_output_norm(self.enc_output(output_memory))
+        # [bs, sum(hw), 2]
         return output_memory, output_proposals
 
     @staticmethod
-    def get_reference_points(spatial_shapes: Tensor, valid_ratios: Tensor,
-                             device: Union[str, torch.device]) -> Tensor:
-        """Get the reference points used in decoder.
+    def get_encoder_reference_points(  # TODO: should be moved to encoder
+            spatial_shapes: Tensor, valid_ratios: Tensor,
+            device: Union[str, torch.device]) -> Tensor:
+        """Get the reference points used in encoder.
 
         Args:
             spatial_shapes (Tensor): The shape of all
@@ -372,6 +374,7 @@ class DeformableDETR(TransformerDetector):
             Tensor: reference points used in decoder, has \
                 shape (bs, num_keys, num_levels, 2).
         """
+
         reference_points_list = []
         for lvl, (H, W) in enumerate(spatial_shapes):
             #  TODO  check this 0.5
@@ -387,6 +390,7 @@ class DeformableDETR(TransformerDetector):
             ref = torch.stack((ref_x, ref_y), -1)
             reference_points_list.append(ref)
         reference_points = torch.cat(reference_points_list, 1)
+        # [bs, sum(hw), num_level, 2]  # TODO: should be done in encoder
         reference_points = reference_points[:, :, None] * valid_ratios[:, None]
         return reference_points
 
@@ -454,6 +458,8 @@ class DeformableDetrTransformerEncoder(DetrTransformerEncoder):
                 DeformableDetrTransformerEncoderLayer(**self.layer_cfg[i]))
         self.embed_dims = self.layers[0].embed_dims
 
+    # TODO: whether to write forward to display args parsing
+
 
 class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
     """Decoder of Deformable DETR."""
@@ -471,7 +477,7 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
     def forward(
             self,
             query: Tensor,
-            *args,  # TODO
+            *args,  # TODO: flatten this
             reference_points: Tensor = None,
             valid_ratios: Tensor = None,
             reg_branches: Optional[nn.Module] = None,
@@ -483,7 +489,7 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
                 `(num_query, bs, embed_dims)`.
             reference_points (Tensor): The reference
                 points of offset. has shape
-                (batch_size, num_query, 4) when as_two_stage,
+                (batch_size, num_query, 4) when as_two_stage,  # TODO
                 otherwise has shape ((bs, num_query, 2).
             valid_ratios (Tensor): The radios of valid
                 points on the feature map, has shape

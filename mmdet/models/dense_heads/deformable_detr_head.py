@@ -12,7 +12,6 @@ from mmdet.registry import MODELS
 from mmdet.structures import SampleList
 from mmdet.utils import InstanceList, OptInstanceList
 from ..layers import inverse_sigmoid
-from ..utils import multi_apply
 from .detr_head import DETRHead
 
 
@@ -83,7 +82,7 @@ class DeformableDETRHead(DETRHead):
                 layer, has shape
                 [num_decoder_layers, num_query, bs, embed_dims].
             init_reference (Tensor): The initial reference points entered
-                into the decoder, has shape [bs, num_query, 4].
+                into the decoder, has shape [bs, num_query, 4].  # TODO
             inter_references (Tensor): The intermediate reference points
                 in each decoder layer, has shape
                 [num_decoder_layers, num_query, bs, 4].
@@ -101,7 +100,7 @@ class DeformableDETRHead(DETRHead):
         outputs_classes = []
         outputs_coords = []
 
-        for lvl in range(hidden_states.shape[0]):
+        for lvl in range(hidden_states.shape[0]):  # TODO
             if lvl == 0:
                 reference = init_reference
             else:
@@ -110,6 +109,7 @@ class DeformableDETRHead(DETRHead):
             outputs_class = self.cls_branches[lvl](hidden_states[lvl])
             tmp = self.reg_branches[lvl](hidden_states[lvl])
             if reference.shape[-1] == 4:
+                # TODO: comment
                 tmp += reference
             else:
                 assert reference.shape[-1] == 2
@@ -120,6 +120,10 @@ class DeformableDETRHead(DETRHead):
 
         outputs_classes = torch.stack(outputs_classes)
         outputs_coords = torch.stack(outputs_coords)
+
+        tmp = [
+            torch.sum(a - b) for a, b in zip(inter_references, outputs_coords)
+        ]
         return outputs_classes, outputs_coords
 
     def loss(self, hidden_states: Tensor, init_reference: Tensor,
@@ -205,46 +209,24 @@ class DeformableDETRHead(DETRHead):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        assert batch_gt_instances_ignore is None, \
-            f'{self.__class__.__name__} only supports ' \
-            f'for gt_bboxes_ignore setting to None.'
+        loss_dict = super().loss_by_feat(all_cls_scores, all_bbox_preds,
+                                         batch_gt_instances, batch_img_metas,
+                                         batch_gt_instances_ignore)
 
-        num_dec_layers = len(all_cls_scores)
-        batch_gt_instances_list = [
-            batch_gt_instances for _ in range(num_dec_layers)
-        ]
-        batch_img_metas_list = [batch_img_metas for _ in range(num_dec_layers)]
-
-        losses_cls, losses_bbox, losses_iou = multi_apply(
-            self.loss_by_feat_single, all_cls_scores, all_bbox_preds,
-            batch_gt_instances_list, batch_img_metas_list)
-
-        loss_dict = dict()
         # loss of proposal generated from encode feature map.
         if enc_cls_scores is not None:
-            for i in range(len(batch_img_metas)):
-                batch_gt_instances[i].labels = torch.zeros_like(
-                    batch_gt_instances[i].labels)
+            proposal_gt_instances = copy.deepcopy(batch_gt_instances)
+            for i in range(len(proposal_gt_instances)):
+                proposal_gt_instances[i].labels = torch.zeros_like(
+                    proposal_gt_instances[i].labels)
             enc_loss_cls, enc_losses_bbox, enc_losses_iou = \
-                self.loss_by_feat_single(enc_cls_scores, enc_bbox_preds,
-                                         batch_gt_instances, batch_img_metas)
+                self.loss_by_feat_single(
+                    enc_cls_scores, enc_bbox_preds,
+                    batch_gt_instances=proposal_gt_instances,
+                    batch_img_metas=batch_img_metas)
             loss_dict['enc_loss_cls'] = enc_loss_cls
             loss_dict['enc_loss_bbox'] = enc_losses_bbox
             loss_dict['enc_loss_iou'] = enc_losses_iou
-
-        # loss from the last decoder layer
-        loss_dict['loss_cls'] = losses_cls[-1]
-        loss_dict['loss_bbox'] = losses_bbox[-1]
-        loss_dict['loss_iou'] = losses_iou[-1]
-        # loss from other decoder layers
-        num_dec_layer = 0
-        for loss_cls_i, loss_bbox_i, loss_iou_i in zip(losses_cls[:-1],
-                                                       losses_bbox[:-1],
-                                                       losses_iou[:-1]):
-            loss_dict[f'd{num_dec_layer}.loss_cls'] = loss_cls_i
-            loss_dict[f'd{num_dec_layer}.loss_bbox'] = loss_bbox_i
-            loss_dict[f'd{num_dec_layer}.loss_iou'] = loss_iou_i
-            num_dec_layer += 1
         return loss_dict
 
     def predict(self,

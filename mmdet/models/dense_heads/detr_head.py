@@ -222,19 +222,16 @@ class DETRHead(BaseModule):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        # NOTE defaultly only the outputs from the last feature scale is used.
         assert batch_gt_instances_ignore is None, \
-            'Only supports for batch_gt_instances_ignore setting to None.'
-
-        num_dec_layers = len(all_cls_scores)
-        batch_gt_instances_list = [
-            batch_gt_instances for _ in range(num_dec_layers)
-        ]
-        batch_img_metas_list = [batch_img_metas for _ in range(num_dec_layers)]
+            f'{self.__class__.__name__} only supports ' \
+            f'for batch_gt_instances_ignore setting to None.'
 
         losses_cls, losses_bbox, losses_iou = multi_apply(
-            self.loss_by_feat_single, all_cls_scores, all_bbox_preds,
-            batch_gt_instances_list, batch_img_metas_list)
+            self.loss_by_feat_single,
+            all_cls_scores,
+            all_bbox_preds,
+            batch_gt_instances=batch_gt_instances,
+            batch_img_metas=batch_img_metas)
 
         loss_dict = dict()
         # loss from the last decoder layer
@@ -243,9 +240,8 @@ class DETRHead(BaseModule):
         loss_dict['loss_iou'] = losses_iou[-1]
         # loss from other decoder layers
         num_dec_layer = 0
-        for loss_cls_i, loss_bbox_i, loss_iou_i in zip(losses_cls[:-1],
-                                                       losses_bbox[:-1],
-                                                       losses_iou[:-1]):
+        for loss_cls_i, loss_bbox_i, loss_iou_i in \
+                zip(losses_cls[:-1], losses_bbox[:-1], losses_iou[:-1]):
             loss_dict[f'd{num_dec_layer}.loss_cls'] = loss_cls_i
             loss_dict[f'd{num_dec_layer}.loss_bbox'] = loss_bbox_i
             loss_dict[f'd{num_dec_layer}.loss_iou'] = loss_iou_i
