@@ -510,28 +510,36 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
             reference_points: Tensor = None,
             valid_ratios: Tensor = None,
             reg_branches: Optional[nn.Module] = None,
-            **kwargs) -> Tensor:
+            **kwargs) -> Tuple[Tensor]:
         """Forward function for `DeformableDetrTransformerDecoder`.
 
         Args:
             query (Tensor): Input query with shape
                 `(num_query, bs, embed_dims)`.
-            reference_points (Tensor): The reference
-                points of offset. has shape
-                (batch_size, num_query, 4) when as_two_stage,  # TODO
-                otherwise has shape ((bs, num_query, 2).
-            valid_ratios (Tensor): The radios of valid
-                points on the feature map, has shape
-                (bs, num_levels, 2)
+            reference_points (Tensor): The reference points of
+                offset. has shape (batch_size, num_query, 4)
+                when `as_two_stage` is True, otherwise (bs,
+                num_query, 2).
+            valid_ratios (Tensor): The radios of valid points on the
+                feature map, has shape (bs, num_levels, 2)
             reg_branches: (obj:`nn.ModuleList`, optional): Used for
                 refining the regression results. Only would
                 be passed when with_box_refine is True,
                 otherwise would be passed a `None`.
 
         Returns:
-            Tensor: Results with shape [1, num_query, bs, embed_dims]
-                when return_intermediate is `False`, otherwise it has shape
-                [num_layers, num_query, bs, embed_dims].
+            tuple[Tensor]: Outputs of Deformable Transformer Decoder.
+
+            - inter_states (Tensor): Output embeddings of the decoder,
+              has shape [num_query, bs, embed_dims] when
+              `return_intermediate` is False. Otherwise, Intermediate
+              output embeddings of the decoder layers, has shape
+              [num_decoder_layers, num_query, bs, embed_dims].
+            - inter_references (Tensor): The reference of last decoder
+              layer, has shape [bs, num_query, 4] when
+              `return_intermediate` is False. Otherwise, Intermediate
+              references of the decoder layers, has shape
+              [num_decoder_layers, bs, num_query, 4].
         """
         output = query
         intermediate = []
