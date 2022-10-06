@@ -16,6 +16,6 @@ path_dict = {os.path.basename(file):file for file in files}
 
 coco = convert_kitti_files(files, path_dict)
 import json
-with open('coco.json', 'w') as fp:
+with open('/home/chrissikek/repos/coco.json', 'w') as fp:
     json.dump(coco, fp)
 # print(kitti_annots)

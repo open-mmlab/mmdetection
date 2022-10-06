@@ -20,7 +20,7 @@ class COCOAnnotatation:
     area: float
     id: int
     category_id: int
-    is_crowd: int = 0
+    iscrowd: int = 0
 
 @dataclass
 class ImageAnnot:
