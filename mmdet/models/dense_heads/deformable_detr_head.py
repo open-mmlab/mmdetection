@@ -121,9 +121,6 @@ class DeformableDETRHead(DETRHead):
         outputs_classes = torch.stack(outputs_classes)
         outputs_coords = torch.stack(outputs_coords)
 
-        tmp = [
-            torch.sum(a - b) for a, b in zip(inter_references, outputs_coords)
-        ]
         return outputs_classes, outputs_coords
 
     def loss(self, hidden_states: Tensor, init_reference: Tensor,
