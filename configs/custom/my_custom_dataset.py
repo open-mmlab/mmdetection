@@ -38,20 +38,20 @@ data = dict(
         dataset=dict(
             type=dataset_type,
             ann_file=data_root +
-            'coco.json',
-            img_prefix=data_root + 'image_2/',
+            'train/coco_train.json',
+            img_prefix=data_root + 'train/image_2/',
             pipeline=train_pipeline)),
     val=dict(
         type=dataset_type,
         ann_file=data_root +
-        'coco.json',
-        img_prefix=data_root + 'image_2/',
+        'val/coco_val.json',
+        img_prefix=data_root + 'val/image_2/',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
         ann_file=data_root +
-        'coco.json',
-        img_prefix=data_root + 'image_2/',
+        'val/coco_val.json',
+        img_prefix=data_root + 'val/image_2/',
         pipeline=test_pipeline))
 evaluation = dict(interval=1, metric='bbox')
 #log_level="INFO"
