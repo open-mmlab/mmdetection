@@ -17,6 +17,7 @@ jobs:
           python-version: 3.7
       - name: Install pre-commit hook
         run: |
+          pip install importlib-metadata < 5
           pip install pre-commit
           pre-commit install
       - name: Linting
