@@ -34,23 +34,13 @@ class ASFF(nn.Module):
         super(ASFF, self).__init__()
         self.in_channels = in_channels
         self.level = level
-        self.mlvl_pools = nn.ModuleList()
         self.mlvl_convs = nn.ModuleList()
         self.mlvl_weights = nn.ModuleList()
         self.inter_dim = in_channels[level]
         for i, in_channel in enumerate(in_channels):
             if i == self.level:
-                self.mlvl_pools.append(nn.Identity())
                 self.mlvl_convs.append(nn.Identity())
             elif i < self.level:
-                if self.level - i >= 2:
-                    self.mlvl_pools.append(
-                        nn.Sequential(*[
-                            nn.MaxPool2d(3, stride=2, padding=1)
-                            for _ in range(self.level - i - 1)
-                        ]))
-                else:
-                    self.mlvl_pools.append(nn.Identity())
                 self.mlvl_convs.append(
                     ConvModule(
                         in_channel,
@@ -61,7 +51,6 @@ class ASFF(nn.Module):
                         norm_cfg=norm_cfg,
                         act_cfg=act_cfg))
             elif i > self.level:
-                self.mlvl_pools.append(nn.Identity())
                 self.mlvl_convs.append(
                     ConvModule(
                         in_channel,
@@ -100,20 +89,17 @@ class ASFF(nn.Module):
     def forward(self, x):
         assert len(x) == len(self.in_channels)
 
-        mlvl_feats = [
-            conv(pool(x[i]))
-            for i, (conv,
-                    pool) in enumerate(zip(self.mlvl_convs, self.mlvl_pools))
-        ]
-
         mlvl_wegiths_v = []
-        for i in range(len(x)):
+        mlvl_feats = []
+        for i, feat in enumerate(x):
+            for _ in range(self.level - i - 1):
+                feat = F.max_pool2d(feat, 3, stride=2, padding=1)
+            feat = self.mlvl_convs[i](feat)
             if i > self.level:
-                mlvl_feats[i] = F.interpolate(
-                    mlvl_feats[i],
-                    scale_factor=2**(i - self.level),
-                    mode='nearest')
-            mlvl_wegiths_v.append(self.mlvl_weights[i](mlvl_feats[i]))
+                feat = F.interpolate(
+                    feat, scale_factor=2**(i - self.level), mode='nearest')
+            mlvl_feats.append(feat)
+            mlvl_wegiths_v.append(self.mlvl_weights[i](feat))
 
         mlvl_weight_v = torch.cat(mlvl_wegiths_v, 1)
         mlvl_weight = self.weight_levels(mlvl_weight_v)
