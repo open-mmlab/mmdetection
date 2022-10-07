@@ -20,6 +20,8 @@ class DeformableDETRHead(DETRHead):
     """Head of DeformDETR: Deformable DETR: Deformable Transformers for End-to-
     End Object Detection.
 
+    Code is modified from the `official github repo
+    <https://github.com/fundamentalvision/Deformable-DETR>`_.
     """
 
     def __init__(self,

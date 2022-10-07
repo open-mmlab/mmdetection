@@ -43,10 +43,6 @@ class DETR(TransformerDetector):
     def init_weights(self) -> None:
         """Initialize weights for Transformer and other components."""
         super().init_weights()
-        self._init_transformer_weights()
-
-    def _init_transformer_weights(self) -> None:
-        # follow the Transformer to init parameters
         for coder in [self.encoder, self.decoder]:
             for m in coder.modules():
                 if hasattr(m, 'weight') and m.weight.dim() > 1:
@@ -60,7 +56,7 @@ class DETR(TransformerDetector):
 
         Args:
             img_feats (Tuple[Tensor]): Features output from neck,
-                with shape [bs, c, h, w], where c = embed_dims.
+                with shape [bs, c, h, w].
             batch_data_samples (List[:obj:`DetDataSample`]): The batch
                 data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
