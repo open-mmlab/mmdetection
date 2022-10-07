@@ -8,7 +8,10 @@ jobs:
       - checkout
       - run:
           name: Install pre-commit hook
+          # flake8 3.8.3 needs importlib-metadata < 5
+          # https://github.com/python/importlib_metadata/issues/406
           command: |
+            pip install importlib-metadata < 5
             pip install pre-commit
             pre-commit install
       - run:
