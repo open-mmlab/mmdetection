@@ -3,19 +3,18 @@ import os.path
 
 from custom.utils import read_files, replace_extention, KittiAnnotation, convert_kitti_files
 
-KITTI_PATH = "/home/chrissikek/repos/data/val"
-
-
-
-files = [file for file in read_files(KITTI_PATH)]
-path_dict = {os.path.basename(file):file for file in files}
+KITTI_PATH_TRAIN = "/home/chrissikek/repos/data/train"
+KITTI_PATH_VAL = "/home/chrissikek/repos/data/val"
 
 
 
 
 
-coco = convert_kitti_files(files, path_dict)
+cocos = convert_kitti_files(KITTI_PATH_TRAIN, KITTI_PATH_VAL)
 import json
+
+with open('/home/chrissikek/repos/coco_train.json', 'w') as fp:
+    json.dump(cocos[0], fp)
 with open('/home/chrissikek/repos/coco_val.json', 'w') as fp:
-    json.dump(coco, fp)
+    json.dump(cocos[1], fp)
 # print(kitti_annots)
