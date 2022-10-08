@@ -151,7 +151,7 @@ Assume that you have got [Mask R-CNN checkpoint file](https://download.openmmlab
 You can modify the test_evaluator to save the results bbox by:
 
 1. Find which dataset in 'configs/base/datasets' the current config corresponds to.
-2. Replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in dateset config.
+2. Replace the original test_evaluator and test_dataloader with test_evaluator and test_dataloader in the comment in dataset config.
 3. Use the following command to get the results bbox and segmentation json file.
 
 ```shell
