@@ -393,13 +393,14 @@ def inverse_sigmoid(x, eps=1e-5):
 
 class MLP(nn.Module):
     """Very simple multi-layer perceptron (also called FFN) with relu. Mostly
-    used in DETR-like detectors.
+    used in DETR series detectors.
 
     Args:
         input_dim (int): Feature dim of the input tensor.
         hidden_dim (int): Feature dim of the hidden layer.
         output_dim (int): Feature dim of the output tensor.
-        num_layers (int): Number of layer.
+        num_layers (int): Number of FFN layers. The last layer
+            of MLP do not have activation function relu.
     """
 
     def __init__(self, input_dim: int, hidden_dim: int, output_dim: int,
