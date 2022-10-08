@@ -128,7 +128,7 @@ class DETR(TransformerDetector):
         return encoder_outputs_dict
 
     def pre_decoder(self,
-                    memory:Tensor) -> Tuple[Dict, Dict]:
+                    memory: Tensor) -> Tuple[Dict, Dict]:
         """
 
         Args:
