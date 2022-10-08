@@ -30,7 +30,7 @@ class SSHModule(BaseModule):
                  conv_cfg=None,
                  norm_cfg: ConfigType = dict(type='BN'),
                  init_cfg=None):
-        super(SSHModule, self).__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
         assert out_channels % 4 == 0
 
         self.in_channels = in_channels
