@@ -520,8 +520,11 @@ class CrowdHumanMetric(BaseMetric):
 
 
 class Image(object):
-    """Data structure for evaluation of CrowdHuman. Please refer to
-    https://github.com/Purkialo/CrowdDet for more details.
+    """Data structure for evaluation of CrowdHuman.
+
+    Note:
+        This implementation is modified from https://github.com/Purkialo/
+        CrowdDet/blob/master/lib/evaluate/APMRToolkits/image.py
 
     Args:
         mode (int): Select the mode of evaluate. Valid mode include
