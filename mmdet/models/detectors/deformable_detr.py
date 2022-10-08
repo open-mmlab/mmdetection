@@ -106,7 +106,7 @@ class DeformableDETR(TransformerDetector):
     def pre_transformer(
             self,
             mlvl_feats: Tuple[Tensor],
-            batch_data_samples: OptSampleList = None) -> Tuple[Dict, Dict]:
+            batch_data_samples: OptSampleList = None) -> Tuple[Dict]:
         """Process image features before feeding them to the transformer.
 
         Args:
@@ -119,7 +119,8 @@ class DeformableDETR(TransformerDetector):
                 Defaults to None.
 
         Returns:
-            tuple[dict, dict]: The encoder_inputs_dict and decoder_inputs_dict.
+            tuple[dict]: The first dict contains the inputs of encoder and the
+            second dict contains the inputs of decoder.
 
             - encoder_inputs_dict (dict): The keyword args dictionary of
               `self.forward_encoder()`, which includes 'feat', 'feat_mask',
@@ -319,22 +320,21 @@ class DeformableDETR(TransformerDetector):
             if self.as_two_stage else None)
         return decoder_inputs_dict, head_inputs_dict
 
-    def forward_decoder(self, memory: Tensor, memory_mask: Tensor,
-                        query: Tensor, query_pos: Tensor,
-                        reference_points: Tensor, spatial_shapes: Tensor,
-                        level_start_index: Tensor,
+    def forward_decoder(self, query: Tensor, query_pos: Tensor, memory: Tensor,
+                        memory_mask: Tensor, reference_points: Tensor,
+                        spatial_shapes: Tensor, level_start_index: Tensor,
                         valid_ratios: Tensor) -> Dict:
         """Forward with Transformer decoder.
 
         Args:
-            memory (Tensor): The output embeddings of the Transformer encoder,
-                has shape (num_feat, bs, dim).
-            memory_mask (Tensor): ByteTensor, the padding mask of the memory,
-                has shape (bs, num_feat).
             query (Tensor): The queries of decoder inputs, has shape
                 (num_query, bs, dim).
             query_pos (Tensor): The positional queries of decoder inputs,
                 has shape (num_query, bs, dim).
+            memory (Tensor): The output embeddings of the Transformer encoder,
+                has shape (num_feat, bs, dim).
+            memory_mask (Tensor): ByteTensor, the padding mask of the memory,
+                has shape (bs, num_feat).
             reference_points (Tensor): The initial reference, has shape
                 (bs, num_query, 4) when `as_two_stage` is `True`,
                 otherwise has shape (bs, num_query, 2).
@@ -354,7 +354,6 @@ class DeformableDETR(TransformerDetector):
         """
         inter_states, inter_references = self.decoder(
             query=query,
-            key=None,
             value=memory,
             query_pos=query_pos,
             key_padding_mask=memory_mask,
@@ -369,7 +368,8 @@ class DeformableDETR(TransformerDetector):
             hidden_states=inter_states, references=references)
         return decoder_outputs_dict
 
-    def get_valid_ratio(self, mask: Tensor) -> Tensor:
+    @staticmethod
+    def get_valid_ratio(mask: Tensor) -> Tensor:
         """Get the valid radios of feature map in a level.
 
         .. code:: text
@@ -430,14 +430,14 @@ class DeformableDETR(TransformerDetector):
               shape (batch_size, num_keys, 4).
         """
 
-        N, S, C = memory.shape
+        num_feat = memory.size(0)
         proposals = []
         _cur = 0
         for lvl, (H, W) in enumerate(spatial_shapes):
-            mask_flatten_ = memory_mask[:,
-                                        _cur:(_cur + H * W)].view(N, H, W, 1)
-            valid_H = torch.sum(~mask_flatten_[:, :, 0, 0], 1)
-            valid_W = torch.sum(~mask_flatten_[:, 0, :, 0], 1)
+            mask_flatten_ = memory_mask[:, _cur:(_cur + H * W)].view(
+                num_feat, H, W, 1)
+            valid_H = torch.sum(~mask_flatten_[:, :, 0, 0], 1).unsqueeze(-1)
+            valid_W = torch.sum(~mask_flatten_[:, 0, :, 0], 1).unsqueeze(-1)
 
             grid_y, grid_x = torch.meshgrid(
                 torch.linspace(
@@ -446,11 +446,11 @@ class DeformableDETR(TransformerDetector):
                     0, W - 1, W, dtype=torch.float32, device=memory.device))
             grid = torch.cat([grid_x.unsqueeze(-1), grid_y.unsqueeze(-1)], -1)
 
-            scale = torch.cat([valid_W.unsqueeze(-1),
-                               valid_H.unsqueeze(-1)], 1).view(N, 1, 1, 2)
-            grid = (grid.unsqueeze(0).expand(N, -1, -1, -1) + 0.5) / scale
+            scale = torch.cat([valid_W, valid_H], 1).view(num_feat, 1, 1, 2)
+            grid = (grid.unsqueeze(0).expand(num_feat, -1, -1, -1) +
+                    0.5) / scale
             wh = torch.ones_like(grid) * 0.05 * (2.0**lvl)
-            proposal = torch.cat((grid, wh), -1).view(N, -1, 4)
+            proposal = torch.cat((grid, wh), -1).view(num_feat, -1, 4)
             proposals.append(proposal)
             _cur += (H * W)
         output_proposals = torch.cat(proposals, 1)

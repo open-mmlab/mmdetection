@@ -4,7 +4,6 @@ import math
 from typing import Sequence, Union
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import (Linear, build_activation_layer, build_conv_layer,
                       build_norm_layer)
@@ -12,6 +11,7 @@ from mmcv.cnn.bricks.transformer import FFN, MultiheadAttention
 from mmengine import ConfigDict
 from mmengine.model import BaseModule, ModuleList
 from mmengine.utils import to_2tuple
+from torch import Tensor, nn
 
 from mmdet.registry import MODELS
 
@@ -392,7 +392,8 @@ def inverse_sigmoid(x, eps=1e-5):
 
 
 class MLP(nn.Module):
-    """Very simple multi-layer perceptron (also called FFN) with relu.
+    """Very simple multi-layer perceptron (also called FFN) with relu. Mostly
+    used in DETR-like detectors.
 
     Args:
         input_dim (int): Feature dim of the input tensor.
@@ -401,15 +402,23 @@ class MLP(nn.Module):
         num_layers (int): Number of layer.
     """
 
-    def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
-        super(MLP, self).__init__()
+    def __init__(self, input_dim: int, hidden_dim: int, output_dim: int,
+                 num_layers: int) -> Tensor:
+        super().__init__()
         self.num_layers = num_layers
         h = [hidden_dim] * (num_layers - 1)
         self.layers = ModuleList(
             Linear(n, k) for n, k in zip([input_dim] + h, h + [output_dim]))
 
-    def forward(self, x):
-        """Forward function of MLP."""
+    def forward(self, x) -> Tensor:
+        """Forward function of MLP.
+
+        Args:
+            x: #TODO: @LYM
+
+        Returns:
+            Tensor: # TODO: @LYM
+        """
         for i, layer in enumerate(self.layers):
             x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
         return x
@@ -494,12 +503,12 @@ class DetrTransformerDecoder(BaseModule):
                                           self.embed_dims)[1]
 
     def forward(self,
-                query,
-                key=None,
-                value=None,
-                query_pos=None,
-                key_pos=None,
-                **kwargs):  # TODO: add comment
+                query: Tensor,
+                key: Tensor = None,
+                value: Tensor = None,
+                query_pos: Tensor = None,
+                key_pos: Tensor = None,
+                **kwargs) -> Tensor:
         """Forward function of decoder
         Args:
             query (Tensor): The input query with shape [num_queries, bs,
