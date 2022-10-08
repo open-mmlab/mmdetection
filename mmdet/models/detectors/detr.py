@@ -63,8 +63,14 @@ class DETR(TransformerDetector):
                 Defaults to None.
 
         Returns:  # TODO: Doc
-            Dict[str, Tensor]: Dict that stores all the inputs for
-                Transformer. Each input is a Tensor.
+            tuple[dict, dict]: The first dict contains the inputs of encoder
+            and the second dict contains the inputs of decoder.
+
+            - encoder_inputs_dict (dict): The keyword args dictionary of
+              `self.forward_encoder()`, which includes 'feat', 'feat_mask',
+              and 'feat_pos'.
+            - decoder_inputs_dict (dict): The keyword args dictionary of
+              `self.forward_decoder()`, which includes 'memory_mask'.
         """
 
         feat = img_feats[-1]  # NOTE img_feats contains only one feature.
@@ -99,38 +105,89 @@ class DETR(TransformerDetector):
         decoder_inputs_dict = dict(masks=masks, pos_embed=pos_embed)
         return encoder_inputs_dict, decoder_inputs_dict
 
-    def forward_encoder(self, feat, masks,
-                        pos_embed) -> Dict:  # TODO: typehint  # noqa
-        # TODO: Doc
+    def forward_encoder(self,
+                        feat: Tensor,
+                        masks: Tensor,
+                        pos_embed: Tensor) -> Dict:
+        """Forward with Transformer encoder.
+
+        Args:  # TODO: Doc
+            feat (Tensor): Sequential features, has shape (num_feat, bs, dim).
+            feat_mask (Tensor): ByteTensor, the padding mask of the features,
+                has shape (num_feat, bs).
+            feat_pos (Tensor): The positional embeddings of the features, has
+                shape (num_feat, bs, dim).
+
+        Returns:
+            dict: The dictionary of encoder outputs, which includes the
+            `memory` of the encoder output.
+        """
         memory = self.encoder(
             query=feat, query_pos=pos_embed, query_key_padding_mask=masks)
         encoder_outputs_dict = dict(memory=memory)
         return encoder_outputs_dict
 
     def pre_decoder(self,
-                    memory) -> Tuple[Dict, Dict]:  # TODO: typehint  # noqa
-        # TODO: Doc
+                    memory:Tensor) -> Tuple[Dict, Dict]:
+        """
+
+        Args:
+            memory (Tensor): The output embeddings of the Transformer encoder,
+                has shape (bs, num_feat, dim).
+
+        Returns:       # TODO: Doc
+            tuple[dict, dict]: The first dict contains the inputs of decoder
+            and the second dict contains the inputs of the bbox_head function.
+
+            - decoder_inputs_dict (dict): The keyword dictionary args of
+              `self.forward_decoder()`, which includes 'query', 'query_pos',
+              'memory'.
+            - head_inputs_dict (dict): The keyword dictionary args of the
+              bbox_head functions, which is usually empty, or includes
+              `enc_outputs_class` and `enc_outputs_class` when the detector
+              support 'two stage' or 'query selection' strategies.
+        """
+
         batch_size = memory.size(1)
         query_embed = self.query_embedding.weight
         # [num_query, dim] -> [num_query, bs, dim]
         query_embed = query_embed.unsqueeze(1).repeat(1, batch_size, 1)
-        target = torch.zeros_like(query_embed)
+        query = torch.zeros_like(query_embed)
 
         decoder_inputs_dict = dict(
-            query_embed=query_embed, target=target, memory=memory)
+            query_pos=query_embed, query=query, memory=memory)
         head_inputs_dict = dict()
         return decoder_inputs_dict, head_inputs_dict
 
-    def forward_decoder(self, target, query_embed, memory, masks,
-                        pos_embed) -> Dict:  # TODO: typehint  # noqa
-        # TODO: Doc
+    def forward_decoder(self,
+                        query: Tensor,
+                        query_pos: Tensor,
+                        memory: Tensor,
+                        masks: Tensor,
+                        pos_embed: Tensor) -> Dict:
+
+        """Overiding method 'forward_decoder' from 'base_detr.py'
+        Forward with Transformer decoder.
+
+        Args:# TODO: Doc
+            query (Tensor): The queries of decoder inputs, has shape
+                (num_query, bs, dim).
+            query_pos (Tensor): The positional queries of decoder inputs,
+                has shape (num_query, bs, dim).
+            memory (Tensor): The output embeddings of the Transformer encoder,
+                has shape (num_feat, bs, dim).
+
+        Returns:
+            dict: The dictionary of decoder outputs, which includes the
+            `hidden_states` of the decoder output.
+        """
         # out_dec: [num_layers, num_query, bs, dim]
         out_dec = self.decoder(
-            query=target,
+            query=query,
             key=memory,
             value=memory,
             key_pos=pos_embed,
-            query_pos=query_embed,
+            query_pos=query_pos,
             key_padding_mask=masks)
         out_dec = out_dec.transpose(1, 2)
         head_inputs_dict = dict(hidden_states=out_dec)
