@@ -124,7 +124,20 @@ class MultiInstanceRoIHead(StandardRoIHead):
 
     def loss(self, x: Tuple[Tensor], rpn_results_list: InstanceList,
              batch_data_samples: List[DetDataSample]) -> dict:
+        """Perform forward propagation and loss calculation of the detection
+        roi on the features of the upstream network.
 
+        Args:
+            x (tuple[Tensor]): List of multi-level img features.
+            rpn_results_list (list[:obj:`InstanceData`]): List of region
+                proposals.
+            batch_data_samples (list[:obj:`DetDataSample`]): The batch
+                data samples. It usually includes information such
+                as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components
+        """
         assert len(rpn_results_list) == len(batch_data_samples)
         outputs = unpack_gt_instances(batch_data_samples)
         batch_gt_instances, batch_gt_instances_ignore, _ = outputs

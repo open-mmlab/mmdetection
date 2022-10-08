@@ -13,8 +13,15 @@ from .random_sampler import RandomSampler
 
 
 @TASK_UTILS.register_module()
-class MultiInstanceSampler(RandomSampler):
-    """Random sampler for multi instance."""
+class MultiInsRandomSampler(RandomSampler):
+    """Random sampler for multi instance.
+
+    Note:
+        Multi-instance means to predict multiple detection boxes with
+        one proposal box. `AssignResult` may assign multiple gt boxes
+        to each proposal box, in this case `RandomSampler` should be
+        replaced by `MultiInsRandomSampler`
+    """
 
     def _sample_pos(self, assign_result: AssignResult, num_expected: int,
                     **kwargs) -> Union[Tensor, ndarray]:
@@ -80,7 +87,7 @@ class MultiInstanceSampler(RandomSampler):
         """
 
         assert 'batch_gt_instances_ignore' in kwargs, \
-            'batch_gt_instances_ignore is necessary for MultiInstanceSampler'
+            'batch_gt_instances_ignore is necessary for MultiInsRandomSampler'
 
         gt_bboxes = gt_instances.bboxes
         ignore_bboxes = kwargs['batch_gt_instances_ignore'].bboxes

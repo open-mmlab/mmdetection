@@ -1,3 +1,8 @@
+_base_ = [
+    # '../_base_/schedules/schedule_1x.py',
+    '../_base_/default_runtime.py'
+]
+
 model = dict(
     type='CrowdDet',
     data_preprocessor=dict(
@@ -53,7 +58,7 @@ model = dict(
             featmap_strides=[4, 8, 16, 32]),
         bbox_head=dict(
             type='MultiInstanceBBoxHead',
-            refine_flag=True,
+            refine_flag=False,
             num_shared_fcs=2,
             in_channels=256,
             fc_out_channels=1024,
@@ -198,26 +203,6 @@ optim_wrapper = dict(
     optimizer=dict(
         type='SGD', lr=1e-3 * 1.25 * 2 * 2, momentum=0.9, weight_decay=0.0001))
 
-default_scope = 'mmdet'
-
-default_hooks = dict(
-    timer=dict(type='IterTimerHook'),
-    logger=dict(type='LoggerHook', interval=200),
-    param_scheduler=dict(type='ParamSchedulerHook'),
-    checkpoint=dict(type='CheckpointHook', interval=1),
-    sampler_seed=dict(type='DistSamplerSeedHook'),
-    visualization=dict(type='DetVisualizationHook'))
-env_cfg = dict(
-    cudnn_benchmark=False,
-    mp_cfg=dict(mp_start_method='fork', opencv_num_threads=0),
-    dist_cfg=dict(backend='nccl'))
-vis_backends = [dict(type='LocalVisBackend')]
-visualizer = dict(
-    type='DetLocalVisualizer',
-    vis_backends=[dict(type='LocalVisBackend')],
-    name='visualizer')
-log_processor = dict(type='LogProcessor', window_size=50, by_epoch=True)
-
-log_level = 'INFO'
 load_from = '/data/YuYoujiang/CrowdDet/useful/pretrained_sample_mmdet_wo.pth'
-resume = False
+# Initialization weight can available at:
+# 链接: https://pan.baidu.com/s/1Fp9j_VLG9Kw1xXL18qg8Tg  密码: 17w6
