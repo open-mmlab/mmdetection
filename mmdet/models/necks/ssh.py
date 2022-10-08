@@ -18,7 +18,7 @@ class SSHModule(BaseModule):
         in_channels (int): Number of input channels used at each scale.
         out_channels (int): Number of output channels used at each scale.
         conv_cfg (dict, optional): Config dict for convolution layer.
-            Default: None, which means using conv2d.
+            Defaults to None.
         norm_cfg (dict): Config dict for normalization layer.
             Defaults to dict(type='BN').
         init_cfg (dict or list[dict], optional): Initialization config dict.
