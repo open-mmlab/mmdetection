@@ -171,7 +171,7 @@ class RetinaSSH(BaseModule):
                  norm_cfg: ConfigType = dict(type='BN'),
                  init_cfg: ConfigType = dict(
                      type='Xavier', layer='Conv2d', distribution='uniform')):
-        super(RetinaSSH, self).__init__(init_cfg)
+        super().__init__(init_cfg=init_cfg)
 
         self.in_channels = in_channels
         self.out_channels = out_channels
