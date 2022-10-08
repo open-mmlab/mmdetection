@@ -21,7 +21,13 @@ def build_dp(model, device='cuda', dim=0, *args, **kwargs):
     Returns:
         nn.Module: the model to be parallelized.
     """
-    if device == 'cuda':
+    if device == 'npu':
+        from mmcv.device.npu import NPUDataParallel
+        dp_factory['npu'] = NPUDataParallel
+        torch.npu.set_device(kwargs['device_ids'][0])
+        torch.npu.set_compile_mode(jit_compile=False)
+        model = model.npu()
+    elif device == 'cuda':
         model = model.cuda(kwargs['device_ids'][0])
     elif device == 'mlu':
         from mmcv.device.mlu import MLUDataParallel
@@ -48,8 +54,14 @@ def build_ddp(model, device='cuda', *args, **kwargs):
         .. [1] https://pytorch.org/docs/stable/generated/torch.nn.parallel.
                      DistributedDataParallel.html
     """
-    assert device in ['cuda', 'mlu'], 'Only available for cuda or mlu devices.'
-    if device == 'cuda':
+    assert device in ['cuda', 'mlu',
+                      'npu'], 'Only available for cuda or mlu or npu devices.'
+    if device == 'npu':
+        from mmcv.device.npu import NPUDistributedDataParallel
+        torch.npu.set_compile_mode(jit_compile=False)
+        ddp_factory['npu'] = NPUDistributedDataParallel
+        model = model.npu()
+    elif device == 'cuda':
         model = model.cuda()
     elif device == 'mlu':
         from mmcv.device.mlu import MLUDistributedDataParallel
@@ -57,6 +69,11 @@ def build_ddp(model, device='cuda', *args, **kwargs):
         model = model.mlu()
 
     return ddp_factory[device](model, *args, **kwargs)
+
+
+def is_npu_available():
+    """Returns a bool indicating if NPU is currently available."""
+    return hasattr(torch, 'npu') and torch.npu.is_available()
 
 
 def is_mlu_available():
@@ -67,8 +84,9 @@ def is_mlu_available():
 def get_device():
     """Returns an available device, cpu, cuda or mlu."""
     is_device_available = {
+        'npu': is_npu_available(),
         'cuda': torch.cuda.is_available(),
         'mlu': is_mlu_available()
     }
     device_list = [k for k, v in is_device_available.items() if v]
-    return device_list[0] if len(device_list) == 1 else 'cpu'
+    return device_list[0] if len(device_list) >= 1 else 'cpu'
