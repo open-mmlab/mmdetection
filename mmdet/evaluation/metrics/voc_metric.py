@@ -124,6 +124,15 @@ class VOCMetric(VOCMeanAP):
 
         This method would be invoked by ``mmengine.Evaluator``.
         """
+        # A simple check of dataset type and eval mode.
+        dataset_type = self.dataset_meta.get('DATASET_TYPE')
+        if dataset_type == 'VOC2007' and self.eval_mode != '11points':
+            warnings.warn('Pascal VOC2007 uses `11points` as default evaluate '
+                          f'mode, but you are using {self.eval_mode}.')
+        elif dataset_type == 'VOC2012' and self.eval_mode != 'area':
+            warnings.warn('Pascal VOC2007 uses `area` as default evaluate '
+                          f'mode, but you are using {self.eval_mode}.')
+
         metric_results = self.compute(*args, **kwargs)
         self.reset()
 
