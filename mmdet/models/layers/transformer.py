@@ -399,12 +399,12 @@ class MLP(nn.Module):
         input_dim (int): Feature dim of the input tensor.
         hidden_dim (int): Feature dim of the hidden layer.
         output_dim (int): Feature dim of the output tensor.
-        num_layers (int): Number of FFN layers. The last layer
-            of MLP do not have activation function relu.
+        num_layers (int): Number of FFN layers. As the last
+            layer of MLP does not include relu.
     """
 
     def __init__(self, input_dim: int, hidden_dim: int, output_dim: int,
-                 num_layers: int) -> Tensor:
+                 num_layers: int) -> None:
         super().__init__()
         self.num_layers = num_layers
         h = [hidden_dim] * (num_layers - 1)
