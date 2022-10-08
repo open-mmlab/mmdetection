@@ -125,7 +125,7 @@ class SSH(BaseModule):
                  norm_cfg: ConfigType = dict(type='BN'),
                  init_cfg: ConfigType = dict(
                      type='Xavier', layer='Conv2d', distribution='uniform')):
-        super(SSH, self).__init__(init_cfg=init_cfg)
+        super().__init__(init_cfg=init_cfg)
         assert (num_scales == len(in_channels) == len(out_channels))
         self.num_scales = num_scales
         self.in_channels = in_channels
