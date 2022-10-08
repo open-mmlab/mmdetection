@@ -234,7 +234,7 @@ Actually, both [`IterBasedTrainLoop`](https://github.com/open-mmlab/mmengine/blo
 
 ```python
 # Before 365001th iteration, we do evaluation every 5000 iterations.
-# After 365000th iteration, we do evaluation every 368750 iteraions,
+# After 365000th iteration, we do evaluation every 368750 iterations,
 # which means that we do evaluation at the end of training.
 
 interval = 5000

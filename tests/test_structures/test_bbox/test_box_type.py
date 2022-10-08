@@ -90,7 +90,8 @@ class TestBoxType(TestCase):
         def converter_B(bboxes):
             return bboxes
 
-        register_box_converter('B' 'A', converter_B)
+        register_box_converter('B'
+                               'A', converter_B)
 
         # register uncallable object
         with self.assertRaises(AssertionError):
