@@ -110,21 +110,21 @@ class DeformableDETR(TransformerDetector):
         """Process image features before feeding them to the transformer.
 
         Args:
-            mlvl_feats (Tuple[Tensor]): Multi-level features that may have
+            mlvl_feats (tuple[Tensor]): Multi-level features that may have
                 different resolutions, output from neck. Each feature has
                 shape (bs, dim, h_lvl, w_lvl), where 'lvl' means 'layer'.
-            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+            batch_data_samples (list[:obj:`DetDataSample`]): The batch
                 data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
                 Defaults to None.
 
         Returns:
-            Tuple[Dict, Dict]: The encoder_inputs_dict and decoder_inputs_dict.
+            tuple[dict, dict]: The encoder_inputs_dict and decoder_inputs_dict.
 
-            - encoder_inputs_dict (Dict): The keyword args dictionary of
+            - encoder_inputs_dict (dict): The keyword args dictionary of
               `self.forward_encoder()`, which includes 'feat', 'feat_mask',
               and 'feat_pos'.
-            - decoder_inputs_dict (Dict): The keyword args dictionary of
+            - decoder_inputs_dict (dict): The keyword args dictionary of
               `self.forward_decoder()`, which includes 'memory_mask'.
         """
         batch_size = mlvl_feats[0].size(0)
@@ -222,8 +222,8 @@ class DeformableDETR(TransformerDetector):
                 levels, has shape (bs, num_levels, 2).
 
         Returns:
-            Dict: The dictionary of encoder outputs, which includes the
-                `memory` of the encoder output.
+            dict: The dictionary of encoder outputs, which includes the
+            `memory` of the encoder output.
         """
         memory = self.encoder(
             query=feat,
@@ -255,15 +255,15 @@ class DeformableDETR(TransformerDetector):
                 Will only be used when `as_two_stage` is `True`.
 
         Returns:
-            Tuple[Dict, Dict]: The decoder_inputs_dict and head_inputs_dict.
+            tuple[dict, dict]: The decoder_inputs_dict and head_inputs_dict.
 
-            - decoder_inputs_dict (Dict): The keyword dictionary args of
+            - decoder_inputs_dict (dict): The keyword dictionary args of
               `self.forward_decoder()`, which includes 'query', 'query_pos',
               'memory', and `reference_points`. The reference_points of
               decoder input here are 4D boxes when `as_two_stage` is `True`,
               otherwise 2D points, although it has `points` in its name.
               The reference_points in encoder is always 2D points.
-            - head_inputs_dict (Dict): The keyword dictionary args of the
+            - head_inputs_dict (dict): The keyword dictionary args of the
               bbox_head functions, which includes `enc_outputs_class` and
               `enc_outputs_class`. They are both `None` when 'as_two_stage'
               is `False`.
@@ -348,9 +348,9 @@ class DeformableDETR(TransformerDetector):
                 levels, has shape (bs, num_levels, 2).
 
         Returns:
-            Dict: The dictionary of decoder outputs, which includes the
-                `hidden_states` of the decoder output and `references`
-                including the initial and intermediate reference_points.
+            dict: The dictionary of decoder outputs, which includes the
+            `hidden_states` of the decoder output and `references` including
+            the initial and intermediate reference_points.
         """
         inter_states, inter_references = self.decoder(
             query=query,
@@ -492,7 +492,7 @@ class DeformableDETR(TransformerDetector):
 
         Returns:
             Tensor: The position embedding of proposal, has shape
-                (bs, num_query, num_pos_feats * 4)
+            (bs, num_query, num_pos_feats * 4)
         """
         scale = 2 * math.pi
         dim_t = torch.arange(
@@ -543,7 +543,7 @@ class DeformableDetrTransformerEncoder(DetrTransformerEncoder):
 
         Returns:
             Tensor: Output queries of Transformer encoder, which is also called
-                'encoder output embeddings' or 'memory'.
+            'encoder output embeddings' or 'memory'.
         """
         reference_points = self.get_encoder_reference_points(
             spatial_shapes, valid_ratios, device=query.device)
@@ -575,7 +575,7 @@ class DeformableDetrTransformerEncoder(DetrTransformerEncoder):
 
         Returns:
             Tensor: Reference points used in decoder, has shape (bs, length,
-                num_levels, 2).
+            num_levels, 2).
         """
 
         reference_points_list = []
