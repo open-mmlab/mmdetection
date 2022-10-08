@@ -56,7 +56,7 @@ model = dict(
         type='DeformableDETRHead',
         # NOTE the three keyword args "as_two_stage, with_box_refine,
         # num_decoder_layers" are set in detector (model config), users
-        # should not set them in bbox_head config.
+        # should not set them in bbox_head config.#TODO
         num_classes=80,
         sync_cls_avg_factor=True,
         loss_cls=dict(
