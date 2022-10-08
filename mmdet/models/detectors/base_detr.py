@@ -85,7 +85,7 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
         """Calculate losses from a batch of inputs and data samples.
 
         Args:
-            batch_inputs (Tensor): Input images of shape (N, C, H, W).
+            batch_inputs (Tensor): Input images of shape (bs, dim, H, W).
                 These should usually be mean centered and std scaled.
             batch_data_samples (List[:obj:`DetDataSample`]): The batch
                 data samples. It usually includes information such
@@ -109,7 +109,7 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
         processing.
 
         Args:
-            batch_inputs (Tensor): Inputs with shape (N, C, H, W).
+            batch_inputs (Tensor): Inputs with shape (bs, dim, H, W).
             batch_data_samples (List[:obj:`DetDataSample`]): The batch
                 data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
@@ -117,17 +117,16 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
                 Defaults to True.
 
         Returns:
-            list[:obj:`DetDataSample`]: Detection results of the
-            input images. Each DetDataSample usually contain
-            'pred_instances'. And the ``pred_instances`` usually
-            contains following keys.
+            list[:obj:`DetDataSample`]: Detection results of the input images.
+            Each DetDataSample usually contain 'pred_instances'. And the
+            `pred_instances` usually contains following keys.
 
-                - scores (Tensor): Classification scores, has a shape
-                    (num_instance, )
-                - labels (Tensor): Labels of bboxes, has a shape
-                    (num_instances, ).
-                - bboxes (Tensor): Has a shape (num_instances, 4),
-                    the last dimension 4 arrange as (x1, y1, x2, y2).
+            - scores (Tensor): Classification scores, has a shape
+              (num_instance, )
+            - labels (Tensor): Labels of bboxes, has a shape
+              (num_instances, ).
+            - bboxes (Tensor): Has a shape (num_instances, 4),
+              the last dimension 4 arrange as (x1, y1, x2, y2).
         """
         img_feats = self.extract_feat(batch_inputs)
         head_inputs_dict = self.forward_transformer(img_feats,
@@ -148,7 +147,7 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
         forward without any post-processing.
 
          Args:
-            batch_inputs (Tensor): Inputs with shape (N, C, H, W).
+            batch_inputs (Tensor): Inputs with shape (bs, dim, H, W).
             batch_data_samples (List[:obj:`DetDataSample`]): The batch
                 data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
@@ -164,9 +163,13 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
             **head_inputs_dict)  # TODO: refine this  # noqa
         return results
 
-    def forward_transformer(self, img_feats, batch_data_samples) -> Dict:
+    def forward_transformer(self,
+                            img_feats: Tuple[Tensor],
+                            batch_data_samples: OptSampleList = None) -> Dict:
         """Forward process of Transformer, which includes four steps:
-        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'.
+        'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'. We
+        summarize the parameter flow of the existing DETR-like detector, which
+        can be illustrated as follow:
 
         .. code:: text
                  img_feats & batch_data_samples
@@ -177,33 +180,35 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
                       +-----------------+
                           |          |
                           |          V
-                          |       +-----------------+
-                          |       | forward_encoder |
-                          |       +-----------------+
-                          |          |
-                          |          V
-                          |       +-----------------+
-                          |       |   pre_decoder   |
-                          |       +-----------------+
-                          |          |           |
-                          V          V           |
-                       +-----------------+       |
-                       | forward_decoder |       |
-                       +-----------------+       |
-                                |                |
-                                V                V
-                                 head_inputs_dict
+                          |    +-----------------+
+                          |    | forward_encoder |
+                          |    +-----------------+
+                          |              |
+                          |              V
+                          |     +---------------+
+                          |     |  pre_decoder  |
+                          |     +---------------+
+                          |         |       |
+                          V         V       |
+                      +-----------------+   |
+                      | forward_decoder |   |
+                      +-----------------+   |
+                                |           |
+                                V           V
+                              head_inputs_dict
 
-
-         Args:
-            batch_inputs (Tensor): Inputs with shape (N, C, H, W).
-            batch_data_samples (List[:obj:`DetDataSample`]): The batch
+        Args:
+            img_feats (tuple[Tensor]): Tuple of feature maps from neck. Each
+                feature map has shape (bs, dim, H, W).
+            batch_data_samples (list[:obj:`DetDataSample`]): The batch
                 data samples. It usually includes information such
                 as `gt_instance` or `gt_panoptic_seg` or `gt_sem_seg`.
                 Defaults to None.
 
         Returns:
-            tuple[Tensor]: A tuple of features from ``bbox_head`` forward.
+            dict: The dictionary of bbox_head function inputs, which always
+            includes the `hidden_states` of the decoder output and may contain
+            `references` including the initial and intermediate references.
         """
         encoder_inputs_dict, decoder_inputs_dict = self.pre_transformer(
             img_feats, batch_data_samples)
@@ -221,11 +226,11 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
         """Extract features.
 
         Args:
-            batch_inputs (Tensor): Image tensor with shape (N, C, H ,W).
+            batch_inputs (Tensor): Image tensor with shape (bs, dim, H, W).
 
         Returns:
-            tuple[Tensor]: Multi-level features that may have
-                different resolutions.
+            tuple[Tensor]: Tuple of feature maps from neck. Each feature map
+            has shape (bs, dim, H, W).
         """
         x = self.backbone(batch_inputs)
         if self.with_neck:
