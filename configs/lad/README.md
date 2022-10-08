@@ -37,7 +37,7 @@ Distillation.
 ```latex
 @inproceedings{nguyen2021improving,
   title={Improving Object Detection by Label Assignment Distillation},
-  author={Chuong H. Nguyen and Thuy C. Nguyen and Tuan N. Tang and Nam L. H. Phan}, # noqa
+  author={Chuong H. Nguyen and Thuy C. Nguyen and Tuan N. Tang and Nam L. H. Phan},
   booktitle = {WACV},
   year={2022}
 }
