@@ -112,7 +112,7 @@ class SSH(BaseModule):
         conv_cfg (dict, optional): Config dict for convolution layer.
             Defaults to None.
         norm_cfg (dict, optional): Dictionary to construct and config norm
-            layer. Default: dict(type='BN', requires_grad=True)
+            layer. Defaults to dict(type='BN', requires_grad=True)
         init_cfg (dict or list[dict], optional): Initialization config dict.
             Default: None
     """
