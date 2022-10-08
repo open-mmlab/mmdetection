@@ -8,7 +8,7 @@ MMDetection uses a modular design, all modules with different functions can be c
 
 ### Model config
 
-In mmdetection's config, we use `model` to setup detection algorithm components. In addition to neural network components such as `backbone`, `neck` etc, it also requires `data_preprocessor`, `train_cfg`, and `test_cfg`. `data_preprocessor` is responsible for processing a batch of data output by dataloader. `train_cfg`, and `test_cfg` in the model config are for training and testing hyperparameters of the components.
+In MMDetection's config, we use `model` to set up detection algorithm components. In addition to neural network components such as `backbone`, `neck`, etc, it also requires `data_preprocessor`, `train_cfg`, and `test_cfg`. `data_preprocessor` is responsible for processing a batch of data output by dataloader. `train_cfg`, and `test_cfg` in the model config are for training and testing hyperparameters of the components.
 
 ```python
 model = dict(
@@ -24,13 +24,13 @@ model = dict(
         type='ResNet',
         depth=50,  # The depth of backbone, usually it is 50 or 101 for ResNet and ResNext backbones.
         num_stages=4,  # Number of stages of the backbone.
-        out_indices=(0, 1, 2, 3),  # The index of output feature maps produced in each stages
+        out_indices=(0, 1, 2, 3),  # The index of output feature maps produced in each stage
         frozen_stages=1,  # The weights in the first stage are frozen
         norm_cfg=dict(  # The config of normalization layers.
             type='BN',  # Type of norm layer, usually it is BN or GN
             requires_grad=True),  # Whether to train the gamma and beta in BN
         norm_eval=True,  # Whether to freeze the statistics in BN
-        style='pytorch', # The style of backbone, 'pytorch' means that stride 2 layers are in 3x3 conv, 'caffe' means stride 2 layers are in 1x1 convs.
+        style='pytorch', # The style of backbone, 'pytorch' means that stride 2 layers are in 3x3 Conv, 'caffe' means stride 2 layers are in 1x1 Convs.
     	init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),  # The ImageNet pretrained backbone to be loaded
     neck=dict(
         type='FPN',  # The neck of detector is FPN. We also support 'NASFPN', 'PAFPN', etc. Refer to https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/necks/fpn.py#L10 for more details.
@@ -47,12 +47,12 @@ model = dict(
             ratios=[0.5, 1.0, 2.0],  # The ratio between height and width.
             strides=[4, 8, 16, 32, 64]),  # The strides of the anchor generator. This is consistent with the FPN feature strides. The strides will be taken as base_sizes if base_sizes is not set.
         bbox_coder=dict(  # Config of box coder to encode and decode the boxes during training and testing
-            type='DeltaXYWHBBoxCoder',  # Type of box coder. 'DeltaXYWHBBoxCoder' is applied for most of methods. Refer to https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/task_modules/coders/delta_xywh_bbox_coder.py#L9 for more details.
+            type='DeltaXYWHBBoxCoder',  # Type of box coder. 'DeltaXYWHBBoxCoder' is applied for most of the methods. Refer to https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/task_modules/coders/delta_xywh_bbox_coder.py#L9 for more details.
             target_means=[0.0, 0.0, 0.0, 0.0],  # The target means used to encode and decode boxes
             target_stds=[1.0, 1.0, 1.0, 1.0]),  # The standard variance used to encode and decode boxes
         loss_cls=dict(  # Config of loss function for the classification branch
             type='CrossEntropyLoss',  # Type of loss for classification branch, we also support FocalLoss etc.
-            use_sigmoid=True,  # RPN usually perform two-class classification, so it usually uses sigmoid function.
+            use_sigmoid=True,  # RPN usually performs two-class classification, so it usually uses the sigmoid function.
             loss_weight=1.0),  # Loss weight of the classification branch.
         loss_bbox=dict(  # Config of loss function for the regression branch.
             type='L1Loss',  # Type of loss, we also support many IoU Losses and smooth L1-loss, etc. Refer to https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/losses/smooth_l1_loss.py#L56 for implementation.
@@ -66,7 +66,7 @@ model = dict(
                 output_size=7,  # The output size of feature maps.
                 sampling_ratio=0),  # Sampling ratio when extracting the RoI features. 0 means adaptive ratio.
             out_channels=256,  # output channels of the extracted feature.
-            featmap_strides=[4, 8, 16, 32]),  # Strides of multi-scale feature maps. It should be consistent to the architecture of the backbone.
+            featmap_strides=[4, 8, 16, 32]),  # Strides of multi-scale feature maps. It should be consistent with the architecture of the backbone.
         bbox_head=dict(  # Config of box head in the RoIHead.
             type='Shared2FCBBoxHead',  # Type of the bbox head, Refer to https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/roi_heads/bbox_heads/convfc_bbox_head.py#L177 for implementation details.
             in_channels=256,  # Input channels for bbox head. This is consistent with the out_channels in roi_extractor
@@ -74,7 +74,7 @@ model = dict(
             roi_feat_size=7,  # Size of RoI features
             num_classes=80,  # Number of classes for classification
             bbox_coder=dict(  # Box coder used in the second stage.
-                type='DeltaXYWHBBoxCoder',  # Type of box coder. 'DeltaXYWHBBoxCoder' is applied for most of methods.
+                type='DeltaXYWHBBoxCoder',  # Type of box coder. 'DeltaXYWHBBoxCoder' is applied for most of the methods.
                 target_means=[0.0, 0.0, 0.0, 0.0],  # Means used to encode and decode box
                 target_stds=[0.1, 0.1, 0.2, 0.2]),  # Standard variance for encoding and decoding. It is smaller since the boxes are more accurate. [0.1, 0.1, 0.2, 0.2] is a conventional setting.
             reg_class_agnostic=False,  # Whether the regression is class agnostic.
@@ -187,7 +187,7 @@ train_pipeline = [  # Training data processing pipeline
         poly2mask=True),  # Whether to convert the polygon mask to instance mask, set False for acceleration and to save memory
     dict(
         type='Resize',  # Pipeline that resizes the images and their annotations
-        scale=(1333, 800),  # The largest scale of image
+        scale=(1333, 800),  # The largest scale of the images
         keep_ratio=True  # Whether to keep the ratio between height and width
         ),
     dict(
@@ -219,7 +219,7 @@ train_dataloader = dict(   # Train dataloader config
         filter_cfg=dict(filter_empty_gt=True, min_size=32),  # Config of filtering images and annotations
         pipeline=train_pipeline))
 val_dataloader = dict(  # Validation dataloader config
-    batch_size=1,  # Batch size of a single GPU. If batch-szie > 1, the extra padding area may influence the performance.
+    batch_size=1,  # Batch size of a single GPU. If batch-size > 1, the extra padding area may influence the performance.
     num_workers=2,  # Worker to pre-fetch data for each single GPU
     persistent_workers=True,  # If ``True``, the dataloader will not shut down the worker processes after an epoch end, which can accelerate training speed.
     drop_last=False,  # Whether to drop the last incomplete batch, if the dataset size is not divisible by the batch size
@@ -231,7 +231,7 @@ val_dataloader = dict(  # Validation dataloader config
         data_root=data_root,
         ann_file='annotations/instances_val2017.json',
         data_prefix=dict(img='val2017/'),
-        test_mode=True,  # Turn on test mode of the dataset to avoid filtering annotations or images
+        test_mode=True,  # Turn on the test mode of the dataset to avoid filtering annotations or images
         pipeline=test_pipeline))
 test_dataloader = val_dataloader  # Testing dataloader config
 ```
@@ -289,7 +289,7 @@ test_cfg = dict(type='TestLoop')  # The testing loop type
 
 ### Optimization config
 
-`optim_wrapper` is the field to configure optimization related settings. The optimizer wrapper not only provides the functions of the optimizer, but also supports functions such as gradient clipping, mixed precision training, etc. Find more in [optimizer wrapper tutorial](https://mmengine.readthedocs.io/en/latest/tutorials/optimizer.html).
+`optim_wrapper` is the field to configure optimization-related settings. The optimizer wrapper not only provides the functions of the optimizer, but also supports functions such as gradient clipping, mixed precision training, etc. Find more in [optimizer wrapper tutorial](https://mmengine.readthedocs.io/en/latest/tutorials/optimizer.html).
 
 ```python
 optim_wrapper = dict(  # Optimizer wrapper config
@@ -314,7 +314,7 @@ param_scheduler = [
         begin=0,  # Start from the first iteration
         end=500),  # End the warmup at the 500th iteration
     dict(
-        type='MultiStepLR',  # Use multi step learning rate policy during training
+        type='MultiStepLR',  # Use multi-step learning rate policy during training
         by_epoch=True,  # The learning rate is updated by epoch
         begin=0,   # Start from the first epoch
         end=12,  # End at the 12th epoch
@@ -364,7 +364,7 @@ visualizer = dict(
 log_processor = dict(
     type='LogProcessor',  # Log processor to process runtime logs
     window_size=50,  # Smooth interval of log values
-    by_epoch=True)  # Whether to format logs with epoch stype. Should be consistent with train loop's type.
+    by_epoch=True)  # Whether to format logs with epoch type. Should be consistent with the train loop's type.
 
 log_level = 'INFO'  # The level of logging.
 load_from = None  # Load model checkpoint as a pre-trained model from a given path. This will not resume training.
@@ -418,7 +418,7 @@ The configs that are composed by components from `_base_` are called the _primit
 For all configs under the same folder, it is recommended to have only **one** _primitive_ config. All other configs should inherit from the _primitive_ config. In this way, the maximum of inheritance level is 3.
 
 For easy understanding, we recommend contributors to inherit from existing methods.
-For example, if some modification is made base on Faster R-CNN, user may first inherit the basic Faster R-CNN structure by specifying `_base_ = ../faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py`, then modify the necessary fields in the config files.
+For example, if some modification is made based on Faster R-CNN, users may first inherit the basic Faster R-CNN structure by specifying `_base_ = ../faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py`, then modify the necessary fields in the config files.
 
 If you are building an entirely new method that does not share the structure with any of the existing methods, you may create a folder `xxx_rcnn` under `configs`,
 
@@ -446,8 +446,8 @@ If you wish to inspect the config file, you may run `python tools/misc/print_con
 
 ### Ignore some fields in the base configs
 
-Sometimes, you may set `_delete_=True` to ignore some of fields in base configs.
-You may refer to [mmengine config tutorial](https://mmengine.readthedocs.io/en/latest/tutorials/config.html) for simple illustration.
+Sometimes, you may set `_delete_=True` to ignore some of the fields in base configs.
+You may refer to [mmengine config tutorial](https://mmengine.readthedocs.io/en/latest/tutorials/config.html) for a simple illustration.
 
 In MMDetection, for example, to change the backbone of Mask R-CNN with the following config.
 
@@ -511,8 +511,8 @@ The `_delete_=True` would replace all old keys in `backbone` field with new keys
 ### Use intermediate variables in configs
 
 Some intermediate variables are used in the configs files, like `train_pipeline`/`test_pipeline` in datasets.
-It's worth noting that when modifying intermediate variables in the children configs, user need to pass the intermediate variables into corresponding fields again.
-For example, we would like to use multi scale strategy to train a Mask R-CNN. `train_pipeline`/`test_pipeline` are intermediate variable we would like modify.
+It's worth noting that when modifying intermediate variables in the children configs, users need to pass the intermediate variables into corresponding fields again.
+For example, we would like to use a multi-scale strategy to train a Mask R-CNN. `train_pipeline`/`test_pipeline` are intermediate variables we would like to modify.
 
 ```python
 _base_ = './mask-rcnn_r50_fpn_1x_coco.py'
@@ -591,17 +591,17 @@ We follow the below style to name config files. Contributors are advised to foll
 {algorithm name}_{model component names [component1]_[component2]_[...]}_{training settings}_{training dataset information}_{testing dataset information}.py
 ```
 
-The file name is divided to five parts. All parts and components are connected with `_` and words of each part or component should be connected with `-`.
+The file name is divided into five parts. All parts and components are connected with `_` and words of each part or component should be connected with `-`.
 
-- `{algorithm name}`: The name of the algorithm. It can be a detector name such as `faster-rcnn`, `mask-rcnn`, etc. Or can be a semi-supervise or knowladge-distillation algorithm such as `soft-teacher`, `lad`. etc.
+- `{algorithm name}`: The name of the algorithm. It can be a detector name such as `faster-rcnn`, `mask-rcnn`, etc. Or can be a semi-supervised or knowledge-distillation algorithm such as `soft-teacher`, `lad`. etc.
 - `{model component names}`: Names of the components used in the algorithm such as backbone, neck, etc. For example, `r50-caffe_fpn_gn-head` means using caffe-style ResNet50, FPN and detection head with Group Norm in the algorithm.
 - `{training settings}`: Information of training settings such as batch size, augmentations, loss trick, scheduler, and epochs/iterations. For example: `4xb4-mixup-giou-coslr-100e` means using 8-gpus x 4-images-per-gpu, mixup augmentation, GIoU loss, cosine annealing learning rate, and train 100 epochs.
   Some abbreviations:
-  - `{gpu x batch_per_gpu}`: GPUs and samples per GPU. `bN` indicates N batch size per GPU. E.g. `4xb4` is the short term of 4-gpus x 4-images-per-gpu. And `8xb2` is used by default if not mentioned.
+  - `{gpu x batch_per_gpu}`: GPUs and samples per GPU. `bN` indicates N batch size per GPU. E.g. `4xb4` is the short term of 4-GPUs x 4-images-per-GPU. And `8xb2` is used by default if not mentioned.
   - `{schedule}`: training schedule, options are `1x`, `2x`, `20e`, etc.
     `1x` and `2x` means 12 epochs and 24 epochs respectively.
     `20e` is adopted in cascade models, which denotes 20 epochs.
-    For `1x`/`2x`, initial learning rate decays by a factor of 10 at the 8/16th and 11/22th epochs.
-    For `20e`, initial learning rate decays by a factor of 10 at the 16th and 19th epochs.
+    For `1x`/`2x`, the initial learning rate decays by a factor of 10 at the 8/16th and 11/22th epochs.
+    For `20e`, the initial learning rate decays by a factor of 10 at the 16th and 19th epochs.
 - `{training dataset information}`: Training dataset names like `coco`, `coco-panoptic`, `cityscapes`, `voc-0712`, `wider-face`.
 - `{testing dataset information}` (optional): Testing dataset name for models trained on one dataset but tested on another. If not mentioned, it means the model was trained and tested on the same dataset type.

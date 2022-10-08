@@ -1,15 +1,15 @@
 # Inference with existing models
 
-MMDetection provides hundreds of pretrained detection models in [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html).
+MMDetection provides hundreds of pre-trained detection models in [Model Zoo](https://mmdetection.readthedocs.io/en/latest/model_zoo.html).
 This note will show how to inference, which means using trained models to detect objects on images.
 
-In MMDetection, a model is defined by a [configuration file](config.md) and existing model parameters are save in a checkpoint file.
+In MMDetection, a model is defined by a [configuration file](config.md) and existing model parameters are saved in a checkpoint file.
 
-To start with, we recommend [Faster RCNN](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/configs/faster_rcnn) with this [configuration file](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py) and this [checkpoint file](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth). It is recommended to download the checkpoint file to `checkpoints` directory.
+To start with, we recommend [Faster RCNN](../../../configs/faster_rcnn) with this [configuration file](../../../configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py) and this [checkpoint file](https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth). It is recommended to download the checkpoint file to `checkpoints` directory.
 
 ## High-level APIs for inference
 
-MMDetection provide high-level Python APIs for inference on images. Here is an example of building the model and inference on given images or videos.
+MMDetection provides high-level Python APIs for inference on images. Here is an example of building the model and inference on given images or videos.
 
 ```python
 import cv2
@@ -83,14 +83,14 @@ for frame in track_iter_progress(video_reader):
 
 ```
 
-A notebook demo can be found in [demo/inference_demo.ipynb](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/demo/inference_demo.ipynb).
+A notebook demo can be found in [demo/inference_demo.ipynb](../../../demo/inference_demo.ipynb).
 
 Note:  `inference_detector` only supports single-image inference for now.
 
 ## Demos
 
 We also provide three demo scripts, implemented with high-level APIs and supporting functionality codes.
-Source codes are available [here](https://github.com/open-mmlab/mmdetection/tree/dev-3.x/demo).
+Source codes are available [here](../../../demo).
 
 ### Image demo
 

@@ -10,9 +10,9 @@ MMDetection 支持在 Linux，Windows 和 macOS 上运行。它需要 Python 3.6
 如果你对 PyTorch 有经验并且已经安装了它，你可以直接跳转到[下一小节](#安装流程)。否则，你可以按照下述步骤进行准备
 ```
 
-**步骤 0.** 从 [官方网站](https://docs.conda.io/en/latest/miniconda.html) 下载并安装 Miniconda.
+**步骤 0.** 从 [官方网站](https://docs.conda.io/en/latest/miniconda.html) 下载并安装 Miniconda。
 
-**步骤 1.** 创建并激活一个 conda 环境；
+**步骤 1.** 创建并激活一个 conda 环境。
 
 ```shell
 conda create -n open-mmlab python=3.7 -y
@@ -45,7 +45,7 @@ mim install mmengine
 mim install "mmcv>=2.0.0rc1"
 ```
 
-**注意：** 在 MMCV-v2.x 中，`mmcv-full` 改名为 `mmcv`，如果你想安装不包含 CUDA 算子精简版，可以通过 `min install mmcv-lite>=2.0.0rc1` 来安装。
+**注意：** 在 MMCV-v2.x 中，`mmcv-full` 改名为 `mmcv`，如果你想安装不包含 CUDA 算子精简版，可以通过 `mim install mmcv-lite>=2.0.0rc1` 来安装。
 
 **步骤 1.** 安装 MMDetection
 
@@ -86,7 +86,7 @@ mim download mmdet --config yolov3_mobilenetv2_8xb24-320-300e_coco --dest .
 python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-320-300e_coco.py yolov3_mobilenetv2_320_300e_coco_20210719_215349-d18dff72.pth --device cpu --out-file result.jpg
 ```
 
-你会在当前文件夹中看到一个新的图像`result.jpg`，图像中包含有网络预测的检测框。
+你会在当前文件夹中看到一个新的图像 `result.jpg`，图像中包含有网络预测的检测框。
 
 方案 2. 如果你通过 MIM 安装的 MMDetection， 那么可以打开你的 Python 解析器，复制并粘贴以下代码：
 
@@ -112,7 +112,7 @@ inference_detector(model, 'demo/demo.jpg')
 - 对于 Ampere 架构的 NVIDIA GPU，例如 GeForce 30 系列 以及 NVIDIA A100，CUDA 11 是必需的。
 - 对于更早的 NVIDIA GPU，CUDA 11 是向后兼容 (backward compatible) 的，但 CUDA 10.2 能够提供更好的兼容性，也更加轻量。
 
-请确保你的 GPU 驱动版本满足最低的版本需求，参阅[这张表](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions) 。
+请确保你的 GPU 驱动版本满足最低的版本需求，参阅 NVIDIA 官方的 [CUDA工具箱和相应的驱动版本关系表](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions) 。
 
 ```{note}
 如果按照我们的最佳实践进行安装，CUDA 运行时库就足够了，因为我们提供相关 CUDA 代码的预编译，不需要进行本地编译。
@@ -193,7 +193,7 @@ pip install "mmcv>=2.0.0rc1" -f https://download.openmmlab.com/mmcv/dist/cu116/t
 !pip install -e .
 ```
 
-**步骤 3.** 验证
+**步骤 3.** 验证安装是否成功。
 
 ```python
 import mmdet
@@ -207,7 +207,7 @@ print(mmdet.__version__)
 
 #### 通过 Docker 使用 MMDetection
 
-们提供了一个 [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) 来构建一个镜像。请确保你的 [docker版本](https://docs.docker.com/engine/install/) >=19.03。
+们提供了一个 [Dockerfile](../../docker/Dockerfile) 来构建一个镜像。请确保你的 [docker版本](https://docs.docker.com/engine/install/) >=19.03。
 
 ```shell
 # build an image with PyTorch 1.6, CUDA 10.1
