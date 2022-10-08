@@ -412,12 +412,11 @@ class MLP(nn.Module):
 
     def forward(self, x) -> Tensor:
         """Forward function of MLP.
-
         Args:
-            x: #TODO: @LYM
+            x:(num_query, bs, input_dim)
 
         Returns:
-            Tensor: # TODO: @LYM
+            Tensor: (num_query, bs, output_dim)
         """
         for i, layer in enumerate(self.layers):
             x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
