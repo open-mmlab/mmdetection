@@ -152,12 +152,12 @@ class DeformableDETRHead(DETRHead):
                 encode feature map, has shape (bs, num_feat, 4). Only when
                 `as_two_stage` is `True` it would be returned, otherwise
                 `None` would be returned.
-            batch_data_samples (List[:obj:`DetDataSample`]): The Data
+            batch_data_samples (list[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
 
         Returns:
-            Dict: A dictionary of loss components.
+            dict: A dictionary of loss components.
         """
         batch_gt_instances = []
         batch_img_metas = []
@@ -243,14 +243,14 @@ class DeformableDETRHead(DETRHead):
         Args:
             hidden_states (Tensor): Hidden states output from each decoder
                 layer, has shape (num_decoder_layers, num_query, bs, dim).
-            references (List[Tensor]): List of the reference from the decoder.
+            references (list[Tensor]): List of the reference from the decoder.
                 The first reference is the `init_reference` (initial) and the
                 other num_decoder_layers(6) references are `inter_references`
                 (intermediate). The `init_reference` has shape (bs, num_query,
                 4) when `as_two_stage` is `True`, otherwise (bs, num_query, 2).
                 Each `inter_reference` has shape (bs, num_query, 4) when
                 `with_box_refine` is `True`, otherwise (bs, num_query, 2).
-            batch_data_samples (List[:obj:`DetDataSample`]): The Data
+            batch_data_samples (list[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
             rescale (bool, optional): If `True`, return boxes in original
