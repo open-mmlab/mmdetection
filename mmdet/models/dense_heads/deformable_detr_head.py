@@ -65,7 +65,7 @@ class DeformableDETRHead(DETRHead):
                 [reg_branch for _ in range(num_pred)])
 
     def init_weights(self) -> None:
-        """Initialize weights of the DeformDETR head."""
+        """Initialize weights of the Deformable DETR head."""
         if self.loss_cls.use_sigmoid:
             bias_init = bias_init_with_prob(0.01)
             for m in self.cls_branches:
@@ -83,24 +83,23 @@ class DeformableDETRHead(DETRHead):
 
         Args:
             hidden_states (Tensor): Hidden states output from each decoder
-                layer, has shape
-                [num_decoder_layers, num_query, bs, embed_dims].
-            references (List[Tensor]): List of the reference of the decoder.
-                The first reference is the init_reference and the other
-                num_decoder_layers(6) references are inter_reference.
-                The init_reference has shape [bs, num_query, 4] when
-                `as_two_stage` is True, otherwise [bs, num_query, 2].
-                Each inter_reference has shape [bs, num_query, 4] when
-                `with_box_refine` is True, otherwise [bs, num_query, 2].
+                layer, has shape (num_decoder_layers, num_query, bs, dim).
+            references (list[Tensor]): List of the reference from the decoder.
+                The first reference is the `init_reference` (initial) and the
+                other num_decoder_layers(6) references are `inter_references`
+                (intermediate). The `init_reference` has shape (bs, num_query,
+                4) when `as_two_stage` is `True`, otherwise (bs, num_query, 2).
+                Each `inter_reference` has shape (bs, num_query, 4) when
+                `with_box_refine` is `True`, otherwise (bs, num_query, 2).
 
         Returns:
             tuple[Tensor]: results of decoder containing the following tensor.
 
             - outputs_classes (Tensor): Outputs from the classification head,
-              shape [nb_dec, bs, num_query, cls_out_channels].
+              has shape (num_decoder_layers, bs, num_query, cls_out_channels).
             - outputs_coords (Tensor): Sigmoid outputs from the regression
-              head with normalized coordinate format (cx, cy, w, h).
-              Shape [nb_dec, bs, num_query, 4].
+              head with normalized coordinate format (cx, cy, w, h), has
+              shape (num_decoder_layers, bs, num_query, 4).
         """
         hidden_states = hidden_states.permute(0, 2, 1, 3)
         outputs_classes = []
@@ -112,9 +111,12 @@ class DeformableDETRHead(DETRHead):
             outputs_class = self.cls_branches[layer](hidden_states[layer])
             tmp = self.reg_branches[layer](hidden_states[layer])
             if reference.shape[-1] == 4:
-                # TODO: comment
+                # When `layer` is 0 and `as_two_stage` is `True`, or when
+                # `layer` is greater than 0 and `with_box_refine` is `True`
                 tmp += reference
             else:
+                # When `layer` is 0 and `as_two_stage` is `False`, or when
+                # `layer` is greater than 0 and `with_box_refine` is `False`.
                 assert reference.shape[-1] == 2
                 tmp[..., :2] += reference
             outputs_coord = tmp.sigmoid()
@@ -134,29 +136,28 @@ class DeformableDETRHead(DETRHead):
 
         Args:
             hidden_states (Tensor): Hidden states output from each decoder
-                layer, has shape
-                [num_decoder_layers, num_query, bs, embed_dims].
-            references (List[Tensor]): List of the reference of the decoder.
-                The first reference is the init_reference and the other
-                num_decoder_layers(6) references are inter_reference.
-                The init_reference has shape [bs, num_query, 4] when
-                `as_two_stage` is True, otherwise [bs, num_query, 2].
-                Each inter_reference has shape [bs, num_query, 4] when
-                `with_box_refine` is True, otherwise [bs, num_query, 2].
+                layer, has shape (num_decoder_layers, num_query, bs, dim).
+            references (list[Tensor]): List of the reference from the decoder.
+                The first reference is the `init_reference` (initial) and the
+                other num_decoder_layers(6) references are `inter_references`
+                (intermediate). The `init_reference` has shape (bs, num_query,
+                4) when `as_two_stage` is `True`, otherwise (bs, num_query, 2).
+                Each `inter_reference` has shape (bs, num_query, 4) when
+                `with_box_refine` is `True`, otherwise (bs, num_query, 2).
             enc_outputs_class (Tensor): The score of each point on encode
-                feature map, has shape (N, num_features, cls_out_channels).
-                Only when as_two_stage is True it would be returned,
+                feature map, has shape (bs, num_feat, cls_out_channels).
+                Only when `as_two_stage` is `True` it would be returned,
                 otherwise `None` would be returned.
             enc_outputs_coord (Tensor): The proposal generate from the
-                encode feature map, has shape (N, num_features, 4). Only when
-                as_two_stage is True it would be returned, otherwise `None`
-                would be returned.
+                encode feature map, has shape (bs, num_feat, 4). Only when
+                `as_two_stage` is `True` it would be returned, otherwise
+                `None` would be returned.
             batch_data_samples (List[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
 
         Returns:
-            dict: A dictionary of loss components.
+            Dict: A dictionary of loss components.
         """
         batch_gt_instances = []
         batch_img_metas = []
@@ -183,20 +184,20 @@ class DeformableDETRHead(DETRHead):
         """"Loss function.
 
         Args:
-            all_cls_scores (Tensor): Classification score of all
-                decoder layers, has shape
-                [nb_dec, batch_size, num_query, cls_out_channels].
-            all_bbox_preds (Tensor): Sigmoid regression
-                outputs of all decode layers. Each is a 4D-tensor with
-                normalized coordinate format (cx, cy, w, h) and shape
-                [nb_dec, batch_size, num_query, 4].
-            enc_cls_scores (Tensor): Classification scores of
-                points on encode feature map , has shape
-                (N, h*w, num_classes). Only be passed when as_two_stage is
-                True, otherwise is None.
-            enc_bbox_preds (Tensor): Regression results of each points
-                on the encode feature map, has shape (N, h*w, 4). Only be
-                passed when as_two_stage is True, otherwise is None.
+            all_cls_scores (Tensor): Classification scores of all decoder
+                layers, has shape (num_decoder_layers, bs, num_query,
+                cls_out_channels).
+            all_bbox_preds (Tensor): Regression outputs of all decode layers.
+                Each is a 4D-tensor with normalized coordinate format (cx, cy,
+                w, h) and shape (num_decoder_layers, bs, num_query, 4).
+            enc_cls_scores (Tensor): The score of each point on encode
+                feature map, has shape (bs, num_feat, cls_out_channels).
+                Only when `as_two_stage` is `True` it would be returned,
+                otherwise `None` would be returned.
+            enc_bbox_preds (Tensor): The proposal generate from the
+                encode feature map, has shape (bs, num_feat, 4). Only when
+                `as_two_stage` is `True` it would be returned, otherwise
+                `None` would be returned.
             batch_gt_instances (list[:obj:`InstanceData`]): Batch of
                 gt_instance. It usually includes ``bboxes`` and ``labels``
                 attributes.
@@ -241,20 +242,19 @@ class DeformableDETRHead(DETRHead):
 
         Args:
             hidden_states (Tensor): Hidden states output from each decoder
-                layer, has shape
-                [num_decoder_layers, num_query, bs, embed_dims].
-            references (List[Tensor]): List of the reference of the decoder.
-                The first reference is the init_reference and the other
-                num_decoder_layers(6) references are inter_reference.
-                The init_reference has shape [bs, num_query, 4] when
-                `as_two_stage` is True, otherwise [bs, num_query, 2].
-                Each inter_reference has shape [bs, num_query, 4] when
-                `with_box_refine` is True, otherwise [bs, num_query, 2].
+                layer, has shape (num_decoder_layers, num_query, bs, dim).
+            references (List[Tensor]): List of the reference from the decoder.
+                The first reference is the `init_reference` (initial) and the
+                other num_decoder_layers(6) references are `inter_references`
+                (intermediate). The `init_reference` has shape (bs, num_query,
+                4) when `as_two_stage` is `True`, otherwise (bs, num_query, 2).
+                Each `inter_reference` has shape (bs, num_query, 4) when
+                `with_box_refine` is `True`, otherwise (bs, num_query, 2).
             batch_data_samples (List[:obj:`DetDataSample`]): The Data
                 Samples. It usually includes information such as
                 `gt_instance`, `gt_panoptic_seg` and `gt_sem_seg`.
-            rescale (bool, optional): If True, return boxes in original
-                image space. Defaults to True.
+            rescale (bool, optional): If `True`, return boxes in original
+                image space. Defaults to `True`.
 
         Returns:
             dict: A dictionary of loss components.
@@ -278,23 +278,22 @@ class DeformableDETRHead(DETRHead):
         bbox results.
 
         Args:
-            all_cls_scores (Tensor): Classification score of all
-                decoder layers, has shape
-                [nb_dec, batch_size, num_query, cls_out_channels].
-            all_bbox_preds (Tensor): Sigmoid regression
-                outputs of all decode layers. Each is a 4D-tensor with
-                normalized coordinate format (cx, cy, w, h) and shape
-                [nb_dec, batch_size, num_query, 4].
+            all_cls_scores (Tensor): Classification scores of all decoder
+                layers, has shape (num_decoder_layers, bs, num_query,
+                cls_out_channels).
+            all_bbox_preds (Tensor): Regression outputs of all decode layers.
+                Each is a 4D-tensor with normalized coordinate format (cx, cy,
+                w, h) and shape (num_decoder_layers, bs, num_query, 4).
             batch_img_metas (list[dict]): Meta information of each image.
-            rescale (bool, optional): If True, return boxes in original
-                image space. Default False.
+            rescale (bool, optional): If `True`, return boxes in original
+                image space. Default `False`.
 
         Returns:
-            list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple. \
-                The first item is an (n, 5) tensor, where the first 4 columns \
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the \
-                5-th column is a score between 0 and 1. The second item is a \
-                (n,) tensor where each item is the predicted class label of \
+            list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple.
+                The first item is an (n, 5) tensor, where the first 4 columns
+                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
+                5-th column is a score between 0 and 1. The second item is a
+                (n,) tensor where each item is the predicted class label of
                 the corresponding box.
         """
         cls_scores = all_cls_scores[-1]

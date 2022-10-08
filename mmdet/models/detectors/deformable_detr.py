@@ -389,7 +389,9 @@ class DeformableDETR(TransformerDetector):
                     |---------> H <---------|
 
           The valid_ratios are defined as:
-          r_h = valid_H / H,  r_w = valid_W / W
+                r_h = valid_H / H,  r_w = valid_W / W
+          They are the factors to re-normalize the relative coordinates of the
+          image to the relative coordinates of the current level feature map.
 
         Args:
             mask (Tensor): Binary mask of a feature map, has shape (bs, H, W).
