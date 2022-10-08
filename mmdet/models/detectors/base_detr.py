@@ -168,10 +168,11 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
                             batch_data_samples: OptSampleList = None) -> Dict:
         """Forward process of Transformer, which includes four steps:
         'pre_transformer' -> 'encoder' -> 'pre_decoder' -> 'decoder'. We
-        summarize the parameter flow of the existing DETR-like detector, which
-        can be illustrated as follow:
+        summarized the parameters flow of the existing DETR-like detector,
+        which can be illustrated as follow:
 
         .. code:: text
+
                  img_feats & batch_data_samples
                                |
                                V
