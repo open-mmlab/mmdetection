@@ -400,7 +400,7 @@ class MLP(nn.Module):
         hidden_dim (int): Feature dim of the hidden layer.
         output_dim (int): Feature dim of the output tensor.
         num_layers (int): Number of FFN layers. As the last
-            layer of MLP does not include relu.
+            layer of MLP only contains FFN (Linear).
     """
 
     def __init__(self, input_dim: int, hidden_dim: int, output_dim: int,
@@ -413,11 +413,12 @@ class MLP(nn.Module):
 
     def forward(self, x) -> Tensor:
         """Forward function of MLP.
-        Args:
-            x:(num_query, bs, input_dim)
 
+        Args:
+            x (Tensor): Has shape (num_query, bs, input_dim).
         Returns:
-            Tensor: (num_query, bs, output_dim)
+            Tensor: The output feature has shape
+            (num_query, bs, output_dim).
         """
         for i, layer in enumerate(self.layers):
             x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
