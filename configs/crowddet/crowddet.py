@@ -109,7 +109,7 @@ model = dict(
                 match_low_quality=False,
                 ignore_iof_thr=-1),
             sampler=dict(
-                type='MultiInstanceSampler',
+                type='MultiInsRandomSampler',
                 num=512,
                 pos_fraction=0.5,
                 neg_pos_ub=-1,
@@ -186,8 +186,7 @@ val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 param_scheduler = [
     dict(
-        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0,
-        end=800),  # end=500
+        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=800),
     dict(
         type='MultiStepLR',
         begin=0,
@@ -201,8 +200,8 @@ param_scheduler = [
 optim_wrapper = dict(
     type='OptimWrapper',
     optimizer=dict(
-        type='SGD', lr=1e-3 * 1.25 * 2 * 2, momentum=0.9, weight_decay=0.0001))
+        type='SGD', lr=1e-3 * 1.25 * 2 * 1, momentum=0.9, weight_decay=0.0001))
 
-load_from = '/data/YuYoujiang/CrowdDet/useful/pretrained_sample_mmdet_wo.pth'
-# Initialization weight can available at:
+# load_from = '/data/YuYoujiang/CrowdDet/useful/pretrained_sample_mmdet_wo.pth'
+# Initialization weight of meg2mmdet can available at:
 # 链接: https://pan.baidu.com/s/1Fp9j_VLG9Kw1xXL18qg8Tg  密码: 17w6
