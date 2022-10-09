@@ -295,12 +295,19 @@ class DetWandBVisualizer(Visualizer):
     def close(self) -> None:
         """close an opened object."""
         if self._wandb is not None:
-            self._log_all_tables()
+            self.log_all_tables()
         super().close()
 
-    def _log_all_tables(self) -> None:
+    def log_all_tables(self, epoch=None) -> None:
         """Log the W&B Tables."""
         for name, table in self._record_tables.items():
-            wandb_artifact = self._wandb.Artifact(name, type='wandb')
+            wandb_artifact = self._wandb.Artifact(
+                f'run_{self._wandb.run.id}', type='wandb')
             wandb_artifact.add(table, name)
-            self._wandb.run.log_artifact(wandb_artifact)
+            if epoch is not None:
+                aliases = ['latest', f'epoch_{epoch}']
+                self._wandb.run.log_artifact(wandb_artifact, aliases=aliases)
+            else:
+                self._wandb.run.log_artifact(wandb_artifact)
+
+        self._record_tables = {}

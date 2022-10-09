@@ -14,9 +14,14 @@ env_cfg = dict(
     dist_cfg=dict(backend='nccl'),
 )
 
+# LocalVisualizer
 vis_backends = [dict(type='LocalVisBackend')]
 visualizer = dict(
     type='DetLocalVisualizer', vis_backends=vis_backends, name='visualizer')
+
+# WandBVisualizer
+# visualizer = dict(type='DetWandBVisualizer', name='visualizer')
+
 log_processor = dict(type='LogProcessor', window_size=50, by_epoch=True)
 
 log_level = 'INFO'
