@@ -15,7 +15,7 @@ class TestPanopticFPNHead(unittest.TestCase):
             num_things_classes=2,
             num_stuff_classes=2,
             in_channels=32,
-            inner_channels=1)
+            inner_channels=32)
         head.init_weights()
         assert_allclose(head.conv_logits.bias.data,
                         torch.zeros_like(head.conv_logits.bias.data))
