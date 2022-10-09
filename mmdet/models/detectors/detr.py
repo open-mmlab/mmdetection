@@ -105,9 +105,7 @@ class DETR(TransformerDetector):
         decoder_inputs_dict = dict(masks=masks, pos_embed=pos_embed)
         return encoder_inputs_dict, decoder_inputs_dict
 
-    def forward_encoder(self,
-                        feat: Tensor,
-                        masks: Tensor,
+    def forward_encoder(self, feat: Tensor, masks: Tensor,
                         pos_embed: Tensor) -> Dict:
         """Forward with Transformer encoder.
 
@@ -127,8 +125,7 @@ class DETR(TransformerDetector):
         encoder_outputs_dict = dict(memory=memory)
         return encoder_outputs_dict
 
-    def pre_decoder(self,
-                    memory: Tensor) -> Tuple[Dict, Dict]:
+    def pre_decoder(self, memory: Tensor) -> Tuple[Dict, Dict]:
         """
 
         Args:
@@ -159,15 +156,10 @@ class DETR(TransformerDetector):
         head_inputs_dict = dict()
         return decoder_inputs_dict, head_inputs_dict
 
-    def forward_decoder(self,
-                        query: Tensor,
-                        query_pos: Tensor,
-                        memory: Tensor,
-                        masks: Tensor,
-                        pos_embed: Tensor) -> Dict:
-
-        """Overiding method 'forward_decoder' from 'base_detr.py'
-        Forward with Transformer decoder.
+    def forward_decoder(self, query: Tensor, query_pos: Tensor, memory: Tensor,
+                        masks: Tensor, pos_embed: Tensor) -> Dict:
+        """Overriding method 'forward_decoder' from 'base_detr.py' Forward with
+        Transformer decoder.
 
         Args:# TODO: Doc
             query (Tensor): The queries of decoder inputs, has shape

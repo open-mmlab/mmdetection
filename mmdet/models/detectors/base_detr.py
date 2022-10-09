@@ -184,8 +184,8 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
                           |    +-----------------+
                           |    | forward_encoder |
                           |    +-----------------+
-                          |              |
-                          |              V
+                          |             |
+                          |             V
                           |     +---------------+
                           |     |  pre_decoder  |
                           |     +---------------+
