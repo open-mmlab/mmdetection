@@ -13,8 +13,8 @@ from ..structures.mask import BitmapMasks, PolygonMasks
 
 
 @VISUALIZERS.register_module()
-class DetWandbVisualizer(Visualizer):
-    """MMDetection Wandb Visualizer.
+class DetWandBVisualizer(Visualizer):
+    """MMDetection WandB Visualizer.
 
     Args:
         name (str): Name of the instance. Defaults to 'visualizer'.
@@ -170,7 +170,8 @@ class DetWandbVisualizer(Visualizer):
             bboxes = instances.bboxes
             labels = instances.labels
             scores = instances.get('scores', None)
-            wandb_boxes = self._get_wandb_bboxes(bboxes, labels, scores, log_gt=log_gt)
+            wandb_boxes = self._get_wandb_bboxes(
+                bboxes, labels, scores, log_gt=log_gt)
             data_dict['boxes'] = wandb_boxes
 
         if 'masks' in instances:
