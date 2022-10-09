@@ -14,7 +14,7 @@ class TestPanopticFPNHead(unittest.TestCase):
         head = PanopticFPNHead(
             num_things_classes=2,
             num_stuff_classes=2,
-            in_channels=1,
+            in_channels=32,
             inner_channels=1)
         head.init_weights()
         assert_allclose(head.conv_logits.bias.data,
