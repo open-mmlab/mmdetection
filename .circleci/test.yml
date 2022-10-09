@@ -81,64 +81,6 @@ jobs:
       - run:
           name: Run unittests
           command: |
-            python -m coverage run --branch --source mmdet -m pytest tests/ -k 'not timm'
-            python -m coverage xml
-            python -m coverage report -m
-
-  build_cpu_with_timm:
-    parameters:
-      # The python version must match available image tags in
-      # https://circleci.com/developer/images/image/cimg/python
-      python:
-        type: string
-      torch:
-        type: string
-      torchvision:
-        type: string
-    docker:
-      - image: cimg/python:<< parameters.python >>
-    resource_class: large
-    steps:
-      - checkout
-      - run:
-          name: Install Libraries
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 libgl1-mesa-glx libjpeg-dev zlib1g-dev libtinfo-dev libncurses5
-      - run:
-          name: Configure Python & pip
-          command: |
-            pip install --upgrade pip
-            pip install wheel
-      - run:
-          name: Install PyTorch
-          command: |
-            python -V
-            python -m pip install torch==<< parameters.torch >>+cpu torchvision==<< parameters.torchvision >>+cpu -f https://download.pytorch.org/whl/torch_stable.html
-      - when:
-          condition:
-            equal: [ "3.9.0", << parameters.python >> ]
-          steps:
-            - run: pip install "protobuf <= 3.20.1" && sudo apt-get update && sudo apt-get -y install libprotobuf-dev protobuf-compiler cmake
-      - run:
-          name: Install mmdet dependencies
-          # numpy may be downgraded after building pycocotools, which causes `ImportError: numpy.core.multiarray failed to import`
-          # force reinstall pycocotools to ensure pycocotools being built under the currenct numpy
-          command: |
-            python -m pip install git+ssh://git@github.com/open-mmlab/mmengine.git@main
-            pip install -U openmim
-            mim install 'mmcv >= 2.0.0rc0'
-            pip install -r requirements/tests.txt -r requirements/optional.txt
-            pip install --force-reinstall pycocotools
-            pip install albumentations>=0.3.2 --no-binary imgaug,albumentations
-            pip install git+https://github.com/cocodataset/panopticapi.git
-      - run:
-          name: Build and install
-          command: |
-            pip install -e .
-      - run:
-          name: Run unittests
-          command: |
             python -m coverage run --branch --source mmdet -m pytest tests/
             python -m coverage xml
             python -m coverage report -m
@@ -188,7 +130,7 @@ jobs:
       - run:
           name: Run unittests
           command: |
-            docker exec mmdetection python -m pytest tests/ -k 'not timm'
+            docker exec mmdetection python -m pytest tests/
 
 workflows:
   pr_stage_lint:
@@ -218,7 +160,7 @@ workflows:
           python: 3.6.9  # The lowest python 3.6.x version available on CircleCI images
           requires:
             - lint
-      - build_cpu_with_timm:
+      - build_cpu:
           name: maximum_version_cpu
           torch: 1.12.1
           torchvision: 0.13.1
