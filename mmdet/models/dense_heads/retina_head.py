@@ -66,11 +66,11 @@ class RetinaHead(AnchorHead):
         self.relu = nn.ReLU(inplace=True)
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
+        in_channels = self.in_channels
         for i in range(self.stacked_convs):
-            chn = self.in_channels if i == 0 else self.feat_channels
             self.cls_convs.append(
                 ConvModule(
-                    chn,
+                    in_channels,
                     self.feat_channels,
                     3,
                     stride=1,
@@ -79,24 +79,22 @@ class RetinaHead(AnchorHead):
                     norm_cfg=self.norm_cfg))
             self.reg_convs.append(
                 ConvModule(
-                    chn,
+                    in_channels,
                     self.feat_channels,
                     3,
                     stride=1,
                     padding=1,
                     conv_cfg=self.conv_cfg,
                     norm_cfg=self.norm_cfg))
+            in_channels = self.feat_channels
         self.retina_cls = nn.Conv2d(
-            self.feat_channels if self.stacked_convs else self.in_channels,
+            in_channels,
             self.num_base_priors * self.cls_out_channels,
             3,
             padding=1)
         reg_dim = self.bbox_coder.encode_size
         self.retina_reg = nn.Conv2d(
-            self.feat_channels if self.stacked_convs else self.in_channels,
-            self.num_base_priors * reg_dim,
-            3,
-            padding=1)
+            in_channels, self.num_base_priors * reg_dim, 3, padding=1)
 
     def forward_single(self, x):
         """Forward feature of a single scale level.
