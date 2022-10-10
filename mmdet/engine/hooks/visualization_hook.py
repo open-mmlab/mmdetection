@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import os.path as osp
 import warnings
-from typing import Optional, Sequence
+from typing import Dict, Optional, Sequence
 
 import mmcv
 from mmengine.fileio import FileClient
@@ -12,6 +12,7 @@ from mmengine.visualization import Visualizer
 
 from mmdet.registry import HOOKS
 from mmdet.structures import DetDataSample
+from mmdet.visualization import DetWandBVisualizer
 
 
 @HOOKS.register_module()
@@ -101,14 +102,32 @@ class DetVisualizationHook(Hook):
         img = mmcv.imfrombytes(img_bytes, channel_order='rgb')
 
         if total_curr_iter % self.interval == 0:
+            if self.show and not isinstance(self._visualizer,
+                                            DetWandBVisualizer):
+                name = osp.basename(img_path)
+            else:
+                # We must ensure that the name is the same if WandB backend,
+                # otherwise multiple tables will be created.
+                name = 'val_img'
+            print('after_val_iter', total_curr_iter)
             self._visualizer.add_datasample(
-                osp.basename(img_path) if self.show else 'val_img',
+                name,
                 img,
                 data_sample=outputs[0],
                 show=self.show,
                 wait_time=self.wait_time,
                 pred_score_thr=self.score_thr,
                 step=total_curr_iter)
+
+    def after_val_epoch(self,
+                        runner,
+                        metrics: Optional[Dict[str, float]] = None) -> None:
+        if self.draw is False:
+            return
+        print('after_val_epoch', runner.epoch)
+        if isinstance(self._visualizer, DetWandBVisualizer):
+            # hard code
+            self._visualizer.log_all_tables(runner.epoch)
 
     def after_test_iter(self, runner: Runner, batch_idx: int, data_batch: dict,
                         outputs: Sequence[DetDataSample]) -> None:
@@ -144,8 +163,16 @@ class DetVisualizationHook(Hook):
                 out_file = osp.basename(img_path)
                 out_file = osp.join(self.test_out_dir, out_file)
 
+            if self.show and not isinstance(self._visualizer,
+                                            DetWandBVisualizer):
+                name = osp.basename(img_path)
+            else:
+                # We must ensure that the name is the same if WandB backend,
+                # otherwise multiple tables will be created.
+                name = 'test_img'
+
             self._visualizer.add_datasample(
-                osp.basename(img_path) if self.show else 'test_img',
+                name,
                 img,
                 data_sample=data_sample,
                 show=self.show,
@@ -153,3 +180,6 @@ class DetVisualizationHook(Hook):
                 pred_score_thr=self.score_thr,
                 out_file=out_file,
                 step=self._test_index)
+
+    def after_run(self, runner) -> None:
+        self._visualizer.close()

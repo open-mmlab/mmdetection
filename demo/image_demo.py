@@ -63,6 +63,7 @@ def main(args):
         wait_time=0,
         out_file=args.out_file,
         pred_score_thr=args.score_thr)
+    visualizer.close()
 
 
 async def async_main(args):

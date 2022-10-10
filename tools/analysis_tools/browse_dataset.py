@@ -74,15 +74,26 @@ def main():
             gt_instances.masks = masks.astype(np.bool)
         data_sample.gt_instances = gt_instances
 
-        visualizer.add_datasample(
-            osp.basename(img_path),
-            img,
-            data_sample,
-            show=not args.not_show,
-            wait_time=args.show_interval,
-            out_file=out_file)
+        if 'WandB' in cfg.visualizer.type:
+            visualizer.add_datasample(
+                'browse_dataset',
+                img,
+                data_sample,
+                draw_pred=False,
+                show=False)
+        else:
+            visualizer.add_datasample(
+                osp.basename(img_path),
+                img,
+                data_sample,
+                draw_pred=False,
+                show=not args.not_show,
+                wait_time=args.show_interval,
+                out_file=out_file)
 
         progress_bar.update()
+
+    visualizer.close()
 
 
 if __name__ == '__main__':
