@@ -175,10 +175,10 @@ class YOLOXASFFPAFPN(YOLOXPAFPN):
         outs = [inner_outs[0]]
         for idx in range(len(self.in_channels) - 1):
             feat_low = outs[-1]
-            feat_hight = inner_outs[idx + 1]
+            feat_high = inner_outs[idx + 1]
             downsample_feat = self.downsamples[idx](feat_low)
             out = self.bottom_up_blocks[idx](
-                torch.cat([downsample_feat, feat_hight], 1))
+                torch.cat([downsample_feat, feat_high], 1))
             outs.append(out)
 
         # asff
