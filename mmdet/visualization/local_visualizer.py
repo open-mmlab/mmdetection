@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import random
 from typing import Dict, List, Optional, Tuple, Union
 
 import cv2
@@ -39,7 +40,11 @@ class DetLocalVisualizer(Visualizer):
         line_width (int, float): The linewidth of lines.
             Defaults to 3.
         alpha (int, float): The transparency of bboxes or mask.
-                Defaults to 0.8.
+            Defaults to 0.8.
+        mask_colorjit (int): The maximum value of mask color jit. The color
+            of each instance will be randomly choozen in
+            [base_color - mask_colorjit, base_color + mask_colorjit].
+            Defaults to 25.
 
     Examples:
         >>> import numpy as np
@@ -84,7 +89,8 @@ class DetLocalVisualizer(Visualizer):
                                             Tuple[int]]] = (200, 200, 200),
                  mask_color: Optional[Union[str, Tuple[int]]] = None,
                  line_width: Union[int, float] = 3,
-                 alpha: float = 0.8):
+                 alpha: float = 0.8,
+                 mask_colorjit: int = 30):
         super().__init__(
             name=name,
             image=image,
@@ -95,6 +101,10 @@ class DetLocalVisualizer(Visualizer):
         self.mask_color = mask_color
         self.line_width = line_width
         self.alpha = alpha
+        assert 0 <= mask_colorjit <= 255, \
+            f'`mask_colorjit` value must between [0, 255], ' \
+            f'but got {mask_colorjit}.'
+        self.mask_colorjit = mask_colorjit
         # Set default value. When calling
         # `DetLocalVisualizer().dataset_meta=xxx`,
         # it will override the default value.
@@ -175,7 +185,15 @@ class DetLocalVisualizer(Visualizer):
                 else self.mask_color
             mask_palette = get_palette(mask_color, max_label + 1)
             colors = [mask_palette[label] for label in labels]
-
+            # mask color jit to distinguish instances with the same label
+            if self.mask_colorjit > 0:
+                for i, color in enumerate(colors):
+                    jit_color = []
+                    for c in color:
+                        c += random.randint(-self.mask_colorjit,
+                                            self.mask_colorjit)
+                        jit_color.append(int(np.clip(c, 0, 255)))
+                    colors[i] = tuple(jit_color)
             text_palette = get_palette(self.text_color, max_label + 1)
             text_colors = [text_palette[label] for label in labels]
 
@@ -196,9 +214,10 @@ class DetLocalVisualizer(Visualizer):
                 for mask in masks:
                     _, _, stats, centroids = cv2.connectedComponentsWithStats(
                         mask.astype(np.uint8), connectivity=8)
-                    largest_id = np.argmax(stats[1:, -1]) + 1
-                    positions.append(centroids[largest_id])
-                    areas.append(stats[largest_id, -1])
+                    if stats.shape[0] > 1:
+                        largest_id = np.argmax(stats[1:, -1]) + 1
+                        positions.append(centroids[largest_id])
+                        areas.append(stats[largest_id, -1])
                 areas = np.stack(areas, axis=0)
                 scales = _get_adaptive_scales(areas)
 
