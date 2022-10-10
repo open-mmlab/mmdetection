@@ -37,14 +37,14 @@ class ASFF(nn.Module):
         super(ASFF, self).__init__()
         self.in_channels = in_channels
         self.level = level
-        self.mlvl_convs = nn.ModuleList()
-        self.mlvl_weights = nn.ModuleList()
+        self.mlvl_conv_feat = nn.ModuleList()
+        self.mlvl_conv_spatial_importance_map = nn.ModuleList()
         self.inter_dim = in_channels[level]
         for i, in_channel in enumerate(in_channels):
             if i == self.level:
-                self.mlvl_convs.append(nn.Identity())
+                self.mlvl_conv_feat.append(nn.Identity())
             elif i < self.level:
-                self.mlvl_convs.append(
+                self.mlvl_conv_feat.append(
                     ConvModule(
                         in_channel,
                         self.inter_dim,
@@ -54,7 +54,7 @@ class ASFF(nn.Module):
                         norm_cfg=norm_cfg,
                         act_cfg=act_cfg))
             elif i > self.level:
-                self.mlvl_convs.append(
+                self.mlvl_conv_feat.append(
                     ConvModule(
                         in_channel,
                         self.inter_dim,
@@ -63,7 +63,7 @@ class ASFF(nn.Module):
                         norm_cfg=norm_cfg,
                         act_cfg=act_cfg))
 
-            self.mlvl_weights.append(
+            self.mlvl_conv_spatial_importance_map.append(
                 ConvModule(
                     self.inter_dim,
                     asff_channel,
@@ -81,7 +81,7 @@ class ASFF(nn.Module):
             norm_cfg=norm_cfg,
             act_cfg=act_cfg)
 
-        self.weight_levels = ConvModule(
+        self.final_conv_spatial_importance_map = ConvModule(
             asff_channel * len(in_channels),
             len(in_channels),
             1,
@@ -92,25 +92,28 @@ class ASFF(nn.Module):
     def forward(self, x):
         assert len(x) == len(self.in_channels)
 
-        mlvl_wegiths_v = []
+        mlvl_spatial_importance_map = []
         mlvl_feats = []
         for i, feat in enumerate(x):
             for _ in range(self.level - i - 1):
                 feat = F.max_pool2d(feat, 3, stride=2, padding=1)
-            feat = self.mlvl_convs[i](feat)
+            feat = self.mlvl_conv_feat[i](feat)
             if i > self.level:
                 feat = F.interpolate(
                     feat, scale_factor=2**(i - self.level), mode='nearest')
             mlvl_feats.append(feat)
-            mlvl_wegiths_v.append(self.mlvl_weights[i](feat))
+            mlvl_spatial_importance_map.append(
+                self.mlvl_conv_spatial_importance_map[i](feat))
 
-        mlvl_weight_v = torch.cat(mlvl_wegiths_v, 1)
-        mlvl_weight = self.weight_levels(mlvl_weight_v)
-        mlvl_weight = F.softmax(mlvl_weight, dim=1)
+        mlvl_spatial_importance_map = torch.cat(mlvl_spatial_importance_map, 1)
+        mlvl_spatial_importance_map = self.final_conv_spatial_importance_map(
+            mlvl_spatial_importance_map)
+        mlvl_spatial_importance_map = F.softmax(
+            mlvl_spatial_importance_map, dim=1)
 
         fused_out_reduced = torch.sum(
             torch.stack([
-                mlvl_feats[i] * mlvl_weight[:, i:i + 1, :, :]
+                mlvl_feats[i] * mlvl_spatial_importance_map[:, i:i + 1, :, :]
                 for i in range(len(x))
             ]),
             dim=0)
