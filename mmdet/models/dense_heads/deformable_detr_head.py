@@ -22,6 +22,17 @@ class DeformableDETRHead(DETRHead):
 
     Code is modified from the `official github repo
     <https://github.com/fundamentalvision/Deformable-DETR>`_.
+
+    More details can be found in the `paper
+    <https://arxiv.org/abs/2010.04159>`_ .
+
+    Args:
+        with_box_refine (bool): Whether to refine the reference points
+            in the decoder. Defaults to False.
+        as_two_stage (bool) : Whether to generate the proposal from
+            the outputs of encoder.
+        transformer (obj:`ConfigDict`): ConfigDict is used for building
+            the Encoder and Decoder.
     """
 
     def __init__(self,
@@ -101,6 +112,7 @@ class DeformableDETRHead(DETRHead):
               head with normalized coordinate format (cx, cy, w, h), has
               shape (num_decoder_layers, bs, num_query, 4).
         """
+        # (num_decoder_layers, bs, num_query, dim)
         hidden_states = hidden_states.permute(0, 2, 1, 3)
         outputs_classes = []
         outputs_coords = []
@@ -123,8 +135,8 @@ class DeformableDETRHead(DETRHead):
             outputs_classes.append(outputs_class)
             outputs_coords.append(outputs_coord)
 
-        outputs_classes = torch.stack(outputs_classes)
-        outputs_coords = torch.stack(outputs_coords)
+        outputs_classes = torch.stack(outputs_classes)  # TODO: rename this
+        outputs_coords = torch.stack(outputs_coords)  # TODO: rename this
 
         return outputs_classes, outputs_coords
 
@@ -165,7 +177,7 @@ class DeformableDETRHead(DETRHead):
             batch_img_metas.append(data_sample.metainfo)
             batch_gt_instances.append(data_sample.gt_instances)
 
-        outs = self(hidden_states, references)
+        outs = self(hidden_states, references)  # TODO: refactor this
         loss_inputs = outs + (enc_outputs_class, enc_outputs_coord,
                               batch_gt_instances, batch_img_metas)
         losses = self.loss_by_feat(*loss_inputs)
@@ -173,15 +185,15 @@ class DeformableDETRHead(DETRHead):
 
     def loss_by_feat(
         self,
-        all_cls_scores: Tensor,
-        all_bbox_preds: Tensor,
+        all_cls_scores: Tensor,  # TODO: rename this
+        all_bbox_preds: Tensor,  # TODO: rename this
         enc_cls_scores: Tensor,
         enc_bbox_preds: Tensor,
         batch_gt_instances: InstanceList,
         batch_img_metas: List[dict],
         batch_gt_instances_ignore: OptInstanceList = None
     ) -> Dict[str, Tensor]:
-        """"Loss function.
+        """Loss function.
 
         Args:
             all_cls_scores (Tensor): Classification scores of all decoder
@@ -257,21 +269,22 @@ class DeformableDETRHead(DETRHead):
                 image space. Defaults to `True`.
 
         Returns:
-            dict: A dictionary of loss components.
+            list[obj:`InstanceData`]: Detection results of each image
+            after the post process.
         """
         batch_img_metas = [
             data_samples.metainfo for data_samples in batch_data_samples
         ]
 
-        outs = self(hidden_states, references)
+        outs = self(hidden_states, references)  # TODO: refactor this
 
         predictions = self.predict_by_feat(
             *outs, batch_img_metas=batch_img_metas, rescale=rescale)
         return predictions
 
     def predict_by_feat(self,
-                        all_cls_scores: Tensor,
-                        all_bbox_preds: Tensor,
+                        all_cls_scores: Tensor,  # TODO: rename this
+                        all_bbox_preds: Tensor,  # TODO: rename this
                         batch_img_metas: List[Dict],
                         rescale: bool = False) -> InstanceList:
         """Transform a batch of output features extracted from the head into
@@ -289,15 +302,11 @@ class DeformableDETRHead(DETRHead):
                 image space. Default `False`.
 
         Returns:
-            list[list[Tensor, Tensor]]: Each item in result_list is 2-tuple.
-                The first item is an (n, 5) tensor, where the first 4 columns
-                are bounding box positions (tl_x, tl_y, br_x, br_y) and the
-                5-th column is a score between 0 and 1. The second item is a
-                (n,) tensor where each item is the predicted class label of
-                the corresponding box.
+            list[obj:`InstanceData`]: Detection results of each image
+            after the post process.
         """
-        cls_scores = all_cls_scores[-1]
-        bbox_preds = all_bbox_preds[-1]
+        cls_scores = all_cls_scores[-1]  # TODO: refactor this
+        bbox_preds = all_bbox_preds[-1]  # TODO: refactor this
 
         result_list = []
         for img_id in range(len(batch_img_metas)):

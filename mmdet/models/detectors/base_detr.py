@@ -259,9 +259,10 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
 
             - encoder_inputs_dict (dict): The keyword args dictionary of
               `self.forward_encoder()`, which includes 'feat', 'feat_mask',
-              and 'feat_pos'.
+              'feat_pos', and other algorithm-specific arguments.
             - decoder_inputs_dict (dict): The keyword args dictionary of
-              `self.forward_decoder()`, which includes 'memory_mask'.
+              `self.forward_decoder()`, which includes 'memory_mask', and
+              other algorithm-specific arguments.
         """
         pass
 
@@ -279,7 +280,8 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
 
         Returns:
             dict: The dictionary of encoder outputs, which includes the
-            `memory` of the encoder output.
+            `memory` of the encoder output and other algorithm-specific
+            arguments.
         """
         pass
 
@@ -298,7 +300,7 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
 
             - decoder_inputs_dict (dict): The keyword dictionary args of
               `self.forward_decoder()`, which includes 'query', 'query_pos',
-              'memory'.
+              'memory', and other algorithm-specific arguments.
             - head_inputs_dict (dict): The keyword dictionary args of the
               bbox_head functions, which is usually empty, or includes
               `enc_outputs_class` and `enc_outputs_class` when the detector
@@ -321,7 +323,8 @@ class TransformerDetector(BaseDetector, metaclass=ABCMeta):
 
         Returns:
             dict: The dictionary of decoder outputs, which includes the
-            `hidden_states` of the decoder output and `references` including
-            the initial and intermediate reference_points.
+            `hidden_states` of the decoder output, `references` including
+            the initial and intermediate reference_points, and other
+            algorithm-specific arguments.
         """
         pass

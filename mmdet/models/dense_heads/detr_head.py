@@ -143,17 +143,17 @@ class DETRHead(BaseModule):
 
         Args:
             out_dec (Tensor): Features from transformer decoder.
-            If return_intermediate_dec in detr.py is True output has
+            If `return_intermediate_dec` in detr.py is True output has
             shape [num_dec_layers, bs, num_query, embed_dims], else
             has shape [1, bs, num_query, embed_dims].
         Returns:
             tuple[Tensor, Tensor]:
 
-            - all_cls_scores (Tensor): Outputs from the classification head, \
-            shape [nb_dec, bs, num_query, cls_out_channels]. Note \
-            cls_out_channels should includes background.
-            - all_bbox_preds (Tensor): Sigmoid outputs from the regression \
-            head with normalized coordinate format (cx, cy, w, h). \
+            - all_cls_scores (Tensor): Outputs from the classification head,
+            shape [nb_dec, bs, num_query, cls_out_channels]. Note
+            cls_out_channels should include background.
+            - all_bbox_preds (Tensor): Sigmoid outputs from the regression
+            head with normalized coordinate format (cx, cy, w, h).
             Shape [nb_dec, bs, num_query, 4].
         """
         all_cls_scores = self.fc_cls(out_dec)
@@ -190,8 +190,8 @@ class DETRHead(BaseModule):
 
     def loss_by_feat(
         self,
-        all_cls_scores: Tensor,
-        all_bbox_preds: Tensor,
+        all_layers_cls_scores: Tensor,
+        all_layers_bbox_preds: Tensor,
         batch_gt_instances: InstanceList,
         batch_img_metas: List[dict],
         batch_gt_instances_ignore: OptInstanceList = None
@@ -202,10 +202,10 @@ class DETRHead(BaseModule):
         losses by default.
 
         Args:
-            all_cls_scores (Tensor): Classification outputs
+            all_layers_cls_scores (Tensor): Classification outputs
                 for each feature level. Each is a 4D-tensor with shape
                 [nb_dec, bs, num_query, cls_out_channels].
-            all_bbox_preds (Tensor): Sigmoid regression
+            all_layers_bbox_preds (Tensor): Sigmoid regression
                 outputs for each feature level. Each is a 4D-tensor with
                 normalized coordinate format (cx, cy, w, h) and shape
                 [nb_dec, bs, num_query, 4].
@@ -228,8 +228,8 @@ class DETRHead(BaseModule):
 
         losses_cls, losses_bbox, losses_iou = multi_apply(
             self.loss_by_feat_single,
-            all_cls_scores,
-            all_bbox_preds,
+            all_layers_cls_scores,
+            all_layers_bbox_preds,
             batch_gt_instances=batch_gt_instances,
             batch_img_metas=batch_img_metas)
 
@@ -471,7 +471,7 @@ class DETRHead(BaseModule):
             batch_img_metas.append(data_sample.metainfo)
             batch_gt_instances.append(data_sample.gt_instances)
 
-        outs = self(hidden_states)
+        outs = self(hidden_states)  # TODO: refactor this
         loss_inputs = outs + (batch_gt_instances, batch_img_metas)
         losses = self.loss_by_feat(*loss_inputs)
 
@@ -504,15 +504,15 @@ class DETRHead(BaseModule):
             data_samples.metainfo for data_samples in batch_data_samples
         ]
 
-        outs = self(hidden_states)
+        outs = self(hidden_states)  # TODO: refactor this
 
         predictions = self.predict_by_feat(
             *outs, batch_img_metas=batch_img_metas, rescale=rescale)
         return predictions
 
     def predict_by_feat(self,
-                        all_cls_scores: Tensor,
-                        all_bbox_preds: Tensor,
+                        all_cls_scores: Tensor,  # TODO: rename this
+                        all_bbox_preds: Tensor,  # TODO: rename this
                         batch_img_metas: List[dict],
                         rescale: bool = True) -> InstanceList:
         """Transform network outputs for a batch into bbox predictions.
@@ -542,8 +542,8 @@ class DETRHead(BaseModule):
         """
         # NOTE only using outputs from the last feature level,
         # and only the outputs from the last decoder layer is used.
-        cls_scores = all_cls_scores[-1]
-        bbox_preds = all_bbox_preds[-1]
+        cls_scores = all_cls_scores[-1]  # TODO: refactor this
+        bbox_preds = all_bbox_preds[-1]  # TODO: refactor this
 
         result_list = []
         for img_id in range(len(batch_img_metas)):

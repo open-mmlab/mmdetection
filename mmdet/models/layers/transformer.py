@@ -442,15 +442,14 @@ class DetrTransformerEncoder(BaseModule):
 
         super().__init__(init_cfg=init_cfg)
         self.num_layers = num_layers
-        self.layer_cfg = [copy.deepcopy(layer_cfg) for _ in range(num_layers)]
+        self.layer_cfg = layer_cfg
         self._init_layers()
 
     def _init_layers(self) -> None:
         """Initialize encoder layers."""
-        self.layers = ModuleList()
-        for i in range(self.num_layers):
-            self.layers.append(
-                DetrTransformerEncoderLayer(**self.layer_cfg[i]))
+        self.layers = ModuleList([
+            DetrTransformerEncoderLayer(**self.layer_cfg)
+            for _ in range(self.num_layers)])
         self.embed_dims = self.layers[0].embed_dims
 
     def forward(self, query, *args, **kwargs):  # TODO: add comment
@@ -459,6 +458,7 @@ class DetrTransformerEncoder(BaseModule):
         Args:
             query (Tensor): Input feature for encoder, with
                 shape [h*w, bs, c], where c = embed_dims.
+
         Returns:
             Tensor: With shape [bs, h*w, c] if batch_first is True,
             otherwise [h*w, bs, c], where c = embed_dims.
