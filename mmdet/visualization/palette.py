@@ -105,5 +105,4 @@ def jitter_color(color: tuple) -> tuple:
     jitter = np.random.rand(3)
     jitter = jitter / np.linalg.norm(jitter) * 0.5 * 255
     color = np.clip(jitter + color, 0, 255).astype(np.uint8)
-    print(jitter, color)
     return tuple(color)
