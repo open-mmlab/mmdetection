@@ -431,6 +431,7 @@ def test_yolox_pafpn():
 
 
 def test_yolox_asff_pafpn():
+    # test the case that length of in_channels is 3
     s = 32
     in_channels = [8, 16, 32]
     feat_sizes = [s // 2**i for i in range(3)]  # [32, 16, 8]
@@ -459,7 +460,7 @@ def test_yolox_asff_pafpn():
         assert outs[i].shape[1] == out_channels
         assert outs[i].shape[2] == outs[i].shape[3] == s // (2**i)
 
-    # test length of in_channels is 4
+    # test the case that length of in_channels is 4
     s = 32
     in_channels = [8, 16, 32, 64]
     feat_sizes = [s // 2**i for i in range(4)]  # [64, 32, 16, 8]
