@@ -29,8 +29,8 @@ RUN apt-get update && \
     ffmpeg libsm6 libxext6 git ninja-build libglib2.0-0 libsm6 libxrender-dev libxext6 \
     && rm -rf /var/lib/apt/lists/*
 
-ENV PATH="/opt/conda/bin:$PATH"
-ENV FORCE_CUDA="1"
+ENV PATH="/opt/conda/bin:$PATH" \
+    FORCE_CUDA="1"
 
 # TORCHSEVER
 RUN pip install torchserve torch-model-archiver
