@@ -19,3 +19,27 @@ We develop an all-in-one computer vision toolbox named EasyCV to facilitate the 
 | YOLOX-PAI-s |  N   |  N   |  41.8  |      [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/yoloxpai/yolox_pai_s_8x8_300e_coco.py)      | [model](<>) \| [log](<>) |
 | YOLOX-PAI-s |  Y   |  N   |  42.8  |   [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/yoloxpai/yolox_pai_asff_s_8x8_300e_coco.py)    | [model](<>) \| [log](<>) |
 | YOLOX-PAI-s |  Y   |  Y   |  43.6  | [config](https://github.com/open-mmlab/mmdetection/tree/master/configs/yoloxpai/yolox_pai_asff_tood_s_8x8_300e_coco.py) | [model](<>) \| [log](<>) |
+
+**Note**:
+
+- RepVGG backbone needs to install [MMClassification](https://github.com/open-mmlab/mmclassification) first, which has abundant backbones for downstream tasks.
+
+```shell
+pip install mmcls>=0.24.0
+```
+
+## Usage
+
+### Install additional requirements
+
+RepVGG backbone needs to install [MMClassification](https://github.com/open-mmlab/mmclassification) first, which has abundant backbones for downstream tasks.
+If you have already installed requirements for mmdet, run
+
+```shell
+pip install 'mmcls>=0.24.0'
+```
+
+See [this document](https://mmclassification.readthedocs.io/en/latest/install.html) for the details of MMClassification installation.
+
+Minimum required version of MMCV is `1.6.3`.
+See [this document](https://mmcv.readthedocs.io/en/latest/get_started/installation.html) for the details of MMCV installation.
