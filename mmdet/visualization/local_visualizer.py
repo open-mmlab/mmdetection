@@ -1,5 +1,4 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import random
 from typing import Dict, List, Optional, Tuple, Union
 
 import cv2
@@ -14,7 +13,7 @@ from ..evaluation import INSTANCE_OFFSET
 from ..registry import VISUALIZERS
 from ..structures import DetDataSample
 from ..structures.mask import BitmapMasks, PolygonMasks, bitmap_to_polygon
-from .palette import _get_adaptive_scales, get_palette
+from .palette import _get_adaptive_scales, get_palette, jitter_color
 
 
 @VISUALIZERS.register_module()
@@ -41,10 +40,6 @@ class DetLocalVisualizer(Visualizer):
             Defaults to 3.
         alpha (int, float): The transparency of bboxes or mask.
             Defaults to 0.8.
-        mask_colorjit (int): The maximum value of mask color jit. The color
-            of each instance will be randomly choozen in
-            [base_color - mask_colorjit, base_color + mask_colorjit].
-            Defaults to 25.
 
     Examples:
         >>> import numpy as np
@@ -89,8 +84,7 @@ class DetLocalVisualizer(Visualizer):
                                             Tuple[int]]] = (200, 200, 200),
                  mask_color: Optional[Union[str, Tuple[int]]] = None,
                  line_width: Union[int, float] = 3,
-                 alpha: float = 0.8,
-                 mask_colorjit: int = 30):
+                 alpha: float = 0.8) -> None:
         super().__init__(
             name=name,
             image=image,
@@ -101,10 +95,6 @@ class DetLocalVisualizer(Visualizer):
         self.mask_color = mask_color
         self.line_width = line_width
         self.alpha = alpha
-        assert 0 <= mask_colorjit <= 255, \
-            f'`mask_colorjit` value must between [0, 255], ' \
-            f'but got {mask_colorjit}.'
-        self.mask_colorjit = mask_colorjit
         # Set default value. When calling
         # `DetLocalVisualizer().dataset_meta=xxx`,
         # it will override the default value.
@@ -184,16 +174,7 @@ class DetLocalVisualizer(Visualizer):
             mask_color = palette if self.mask_color is None \
                 else self.mask_color
             mask_palette = get_palette(mask_color, max_label + 1)
-            colors = [mask_palette[label] for label in labels]
-            # mask color jit to distinguish instances with the same label
-            if self.mask_colorjit > 0:
-                for i, color in enumerate(colors):
-                    jit_color = []
-                    for c in color:
-                        c += random.randint(-self.mask_colorjit,
-                                            self.mask_colorjit)
-                        jit_color.append(int(np.clip(c, 0, 255)))
-                    colors[i] = tuple(jit_color)
+            colors = [jitter_color(mask_palette[label]) for label in labels]
             text_palette = get_palette(self.text_color, max_label + 1)
             text_colors = [text_palette[label] for label in labels]
 
