@@ -9,7 +9,10 @@ from mmdet.models.necks.yolox_pafpn import YOLOXPAFPN
 
 
 class ASFF(nn.Module):
-    """ASFF used in `YOLOX-PAI <https://arxiv.org/abs/2208.13040>`_.
+    """Adaptively Spatial Feature Fusion (ASFF) module.
+
+    This implementation is based on `ASFF <https://arxiv.org/abs/1911.09516>`_
+    used in `YOLOX-PAI <https://arxiv.org/abs/2208.13040>`_.
 
     Args:
         in_channels (List[int]): Number of input channels per scale.
@@ -118,9 +121,10 @@ class ASFF(nn.Module):
 
 @NECKS.register_module()
 class YOLOXASFFPAFPN(YOLOXPAFPN):
-    """Path Aggregation Network used in `YOLOX-PAI.
+    """Path Aggregation Network with ASFF used in YOLOX-PAI.
 
-    <https://arxiv.org/abs/2208.13040>`_.
+    See `YOLOX-PAI <https://arxiv.org/abs/2208.13040>`_ for details.
+
     Args:
         asff_channel (int): The hidden channel of the attention layer in
             ASFF. Default: 2.

@@ -12,9 +12,7 @@ from mmdet.models.dense_heads.tood_head import TaskDecomposition
 
 @HEADS.register_module()
 class YOLOXTOODHead(YOLOXHead):
-    """YOLOXTOODHead head used in `YOLOX-PAI.
-
-    <https://arxiv.org/abs/2208.13040>`_.
+    """YOLOXTOOD head used in `YOLOX-PAI <https://arxiv.org/abs/2208.13040>`_.
 
     Args:
         tood_stacked_convs (int): Number of conv layers in TOOD head.
