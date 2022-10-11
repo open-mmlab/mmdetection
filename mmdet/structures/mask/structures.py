@@ -422,7 +422,6 @@ class BitmapMasks(BaseInstanceMasks):
             >>> border_value = 0
             >>> interpolation = 'bilinear'
             >>> # Note, There seem to be issues when:
-            >>> # * out_shape is different than self's shape
             >>> # * the mask dtype is not supported by cv2.AffineWarp
             >>> new = self.translate(out_shape, offset, direction,
             >>>                      border_value, interpolation)
@@ -432,8 +431,11 @@ class BitmapMasks(BaseInstanceMasks):
         if len(self.masks) == 0:
             translated_masks = np.empty((0, *out_shape), dtype=np.uint8)
         else:
+            masks = self.masks.transpose((1, 2, 0))
+            if masks.shape[:2] != out_shape:
+                masks = mmcv.impad(masks, shape=out_shape)
             translated_masks = mmcv.imtranslate(
-                self.masks.transpose((1, 2, 0)),
+                masks,
                 offset,
                 direction,
                 border_value=border_value,
