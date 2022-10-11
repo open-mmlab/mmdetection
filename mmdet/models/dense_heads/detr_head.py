@@ -505,16 +505,36 @@ class DETRHead(BaseModule):
         ]
 
         outs = self(hidden_states)  # TODO: refactor this
+        outs_new = self(hidden_states[-1].unsqueeze(0))  # refactor draft
 
         predictions = self.predict_by_feat(
             *outs, batch_img_metas=batch_img_metas, rescale=rescale)
+
+        # refactor draft
+        def compare(x, y):
+            return torch.sum(x - y), torch.equal(x, y)
+
+        # compare = lambda x, y: (torch.sum(x - y), torch.equal(x, y))
+        outs_comparison = tuple(data[-1].unsqueeze(0) for data in outs_new)
+        comparison = [compare(a, b) for a, b in zip(outs_comparison, outs_new)]
+        predictions_comparison = self.predict_by_feat(
+            *outs_comparison, batch_img_metas=batch_img_metas, rescale=rescale)
+        comparison_box = compare(predictions[0].bboxes,
+                                 predictions_comparison[0].bboxes)
+        comparison_label = compare(predictions[0].labels,
+                                   predictions_comparison[0].labels)
+        comparison_score = compare(predictions[0].scores,
+                                   predictions_comparison[0].scores)
+        if [comparison, comparison_box, comparison_label, comparison_score]:
+            pass
         return predictions
 
-    def predict_by_feat(self,
-                        all_cls_scores: Tensor,  # TODO: rename this
-                        all_bbox_preds: Tensor,  # TODO: rename this
-                        batch_img_metas: List[dict],
-                        rescale: bool = True) -> InstanceList:
+    def predict_by_feat(
+            self,
+            all_cls_scores: Tensor,  # TODO: rename this
+            all_bbox_preds: Tensor,  # TODO: rename this
+            batch_img_metas: List[dict],
+            rescale: bool = True) -> InstanceList:
         """Transform network outputs for a batch into bbox predictions.
 
         Args:
