@@ -112,7 +112,7 @@ class PackDetInputs(BaseTransform):
 
         img_meta = {}
         for key in self.meta_keys:
-            assert key in results, f'`{key}` is not found in `results`'
+            assert key in results, f'`{key}` is not found in `results`, the valid keys are {list(results)}.'
             img_meta[key] = results[key]
 
         data_sample.set_metainfo(img_meta)
