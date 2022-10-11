@@ -104,7 +104,7 @@ class DeformableDETRHead(DETRHead):
                 `with_box_refine` is `True`, otherwise (bs, num_query, 2).
 
         Returns:
-            tuple[Tensor]: results of decoder containing the following tensor.
+            tuple[Tensor]: results of head containing the following tensor.
 
             - outputs_classes (Tensor): Outputs from the classification head,
               has shape (num_decoder_layers, bs, num_query, cls_out_channels).
@@ -117,21 +117,22 @@ class DeformableDETRHead(DETRHead):
         outputs_classes = []
         outputs_coords = []
 
-        for layer in range(hidden_states.shape[0]):  # TODO
-            reference = inverse_sigmoid(references[layer])
+        for layer_id in range(hidden_states.shape[0]):  # TODO
+            reference = inverse_sigmoid(references[layer_id])
             # NOTE The last reference will not be used.
-            outputs_class = self.cls_branches[layer](hidden_states[layer])
-            tmp = self.reg_branches[layer](hidden_states[layer])
+            hidden_state = hidden_states[layer_id]
+            outputs_class = self.cls_branches[layer_id](hidden_state)
+            tmp_reg_preds = self.reg_branches[layer_id](hidden_state)
             if reference.shape[-1] == 4:
                 # When `layer` is 0 and `as_two_stage` is `True`, or when
                 # `layer` is greater than 0 and `with_box_refine` is `True`
-                tmp += reference
+                tmp_reg_preds += reference
             else:
                 # When `layer` is 0 and `as_two_stage` is `False`, or when
                 # `layer` is greater than 0 and `with_box_refine` is `False`.
                 assert reference.shape[-1] == 2
-                tmp[..., :2] += reference
-            outputs_coord = tmp.sigmoid()
+                tmp_reg_preds[..., :2] += reference
+            outputs_coord = tmp_reg_preds.sigmoid()
             outputs_classes.append(outputs_class)
             outputs_coords.append(outputs_coord)
 
@@ -282,11 +283,12 @@ class DeformableDETRHead(DETRHead):
             *outs, batch_img_metas=batch_img_metas, rescale=rescale)
         return predictions
 
-    def predict_by_feat(self,
-                        all_cls_scores: Tensor,  # TODO: rename this
-                        all_bbox_preds: Tensor,  # TODO: rename this
-                        batch_img_metas: List[Dict],
-                        rescale: bool = False) -> InstanceList:
+    def predict_by_feat(
+            self,
+            all_cls_scores: Tensor,  # TODO: rename this
+            all_bbox_preds: Tensor,  # TODO: rename this
+            batch_img_metas: List[Dict],
+            rescale: bool = False) -> InstanceList:
         """Transform a batch of output features extracted from the head into
         bbox results.
 

@@ -513,10 +513,10 @@ class DeformableDetrTransformerEncoder(DetrTransformerEncoder):
 
     def _init_layers(self) -> None:
         """Initialize encoder layers."""
-        self.layers = ModuleList()
-        for i in range(self.num_layers):
-            self.layers.append(
-                DeformableDetrTransformerEncoderLayer(**self.layer_cfg[i]))
+        self.layers = ModuleList([
+            DeformableDetrTransformerEncoderLayer(**self.layer_cfg)
+            for _ in range(self.num_layers)
+        ])
         self.embed_dims = self.layers[0].embed_dims
 
     def forward(self, query: Tensor, query_pos: Tensor,
@@ -602,10 +602,10 @@ class DeformableDetrTransformerDecoder(DetrTransformerDecoder):
 
     def _init_layers(self) -> None:
         """Initialize decoder layers."""
-        self.layers = ModuleList()
-        for i in range(self.num_layers):
-            self.layers.append(
-                DeformableDetrTransformerDecoderLayer(**self.layer_cfg[i]))
+        self.layers = ModuleList([
+            DeformableDetrTransformerDecoderLayer(**self.layer_cfg)
+            for _ in range(self.num_layers)
+        ])
         if self.post_norm_cfg is not None:
             raise ValueError('There is not post_norm in '
                              'DeformableDetrTransformerDecoder')

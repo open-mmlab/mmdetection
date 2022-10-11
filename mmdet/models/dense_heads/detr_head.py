@@ -138,27 +138,28 @@ class DETRHead(BaseModule):
     # Note function _load_from_state_dict is deleted without
     # supporting refactor-DETR in mmdetection2.0
 
-    def forward(self, out_dec: Tensor) -> Tuple[Tensor, Tensor]:
+    def forward(self, hidden_states: Tensor) -> Tuple[Tensor]:
         """"Forward function.
 
         Args:
-            out_dec (Tensor): Features from transformer decoder.
+            hidden_states (Tensor): Features from transformer decoder.
             If `return_intermediate_dec` in detr.py is True output has
-            shape [num_dec_layers, bs, num_query, embed_dims], else
-            has shape [1, bs, num_query, embed_dims].
+            shape (num_dec_layers, bs, num_query, embed_dims), else
+            has shape (1, bs, num_query, embed_dims) which only contains
+            the last layer outputs.
         Returns:
-            tuple[Tensor, Tensor]:
+            tuple[Tensor]: results of head containing the following tensor.
 
             - all_cls_scores (Tensor): Outputs from the classification head,
-            shape [nb_dec, bs, num_query, cls_out_channels]. Note
+            shape (num_dec_layers, bs, num_query, cls_out_channels). Note
             cls_out_channels should include background.
             - all_bbox_preds (Tensor): Sigmoid outputs from the regression
             head with normalized coordinate format (cx, cy, w, h).
-            Shape [nb_dec, bs, num_query, 4].
+            Shape (num_dec_layers, bs, num_query, 4).
         """
-        all_cls_scores = self.fc_cls(out_dec)
-        all_bbox_preds = self.fc_reg(self.activate(
-            self.reg_ffn(out_dec))).sigmoid()
+        all_cls_scores = self.fc_cls(hidden_states)
+        all_bbox_preds = self.fc_reg(
+            self.activate(self.reg_ffn(hidden_states))).sigmoid()
         return all_cls_scores, all_bbox_preds
 
     def loss(self, hidden_states: Tensor,
@@ -504,8 +505,10 @@ class DETRHead(BaseModule):
             data_samples.metainfo for data_samples in batch_data_samples
         ]
 
+        self.eval()
         outs = self(hidden_states)  # TODO: refactor this
         outs_new = self(hidden_states[-1].unsqueeze(0))  # refactor draft
+        # outs = outs_new
 
         predictions = self.predict_by_feat(
             *outs, batch_img_metas=batch_img_metas, rescale=rescale)

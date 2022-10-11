@@ -184,8 +184,8 @@ class DETR(TransformerDetector):
             query=query,
             key=memory,
             value=memory,
-            key_pos=memory_pos,
             query_pos=query_pos,
+            key_pos=memory_pos,
             key_padding_mask=memory_mask)
         hidden_states = hidden_states.transpose(1, 2)
         head_inputs_dict = dict(hidden_states=hidden_states)
