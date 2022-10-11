@@ -21,7 +21,7 @@ PIPELINES = TRANSFORMS
 
 
 def _concat_dataset(cfg, default_args=None):
-    from .dataset_wrappers import ConcatDataset
+    from mmengine.dataset.dataset_wrapper import ConcatDataset
     ann_files = cfg['ann_file']
     img_prefixes = cfg.get('img_prefix', None)
     seg_prefixes = cfg.get('seg_prefix', None)

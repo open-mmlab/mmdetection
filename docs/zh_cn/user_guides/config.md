@@ -38,7 +38,7 @@ model = dict(
         out_channels=256,  # 金字塔特征图每一层的输出通道
         num_outs=5),  # 输出的范围(scales)
     rpn_head=dict(
-        type='RPNHead',  # RPN_head 的类型是 'RPNHead', 我们也支持 'GARPNHead' 等，更多细节可以参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/dense_heads/rpn_head.py。
+        type='RPNHead',  # rpn_head 的类型是 'RPNHead', 我们也支持 'GARPNHead' 等，更多细节可以参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/dense_heads/rpn_head.py。
         in_channels=256,  # 每个输入特征图的输入通道，这与 neck 的输出通道一致。
         feat_channels=256,  # head 卷积层的特征通道。
         anchor_generator=dict(  # 锚点(Anchor)生成器的配置。
@@ -52,7 +52,7 @@ model = dict(
             target_stds=[1.0, 1.0, 1.0, 1.0]),  # 用于编码和解码框的标准差
         loss_cls=dict(  # 分类分支的损失函数配置
             type='CrossEntropyLoss',  # 分类分支的损失类型，我们也支持 FocalLoss 等。
-            use_sigmoid=True,  # RPN通常进行二分类，所以通常使用sigmoid函数。
+            use_sigmoid=True,  # RPN 通常进行二分类，所以通常使用 sigmoid 函数。
             los_weight=1.0),  # 分类分支的损失权重。
         loss_bbox=dict(  # 回归分支的损失函数配置。
             type='L1Loss',  # 损失类型，我们还支持许多 IoU Losses 和 Smooth L1-loss 等，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/losses/smooth_l1_loss.py#L56。
@@ -60,14 +60,14 @@ model = dict(
     roi_head=dict(  # RoIHead 封装了两步(two-stage)/级联(cascade)检测器的第二步。
         type='StandardRoIHead',  # RoI head 的类型，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/roi_heads/standard_roi_head.py#L10。
         bbox_roi_extractor=dict(  # 用于 bbox 回归的 RoI 特征提取器。
-            type='SingleRoIExtractor',  # RoI 特征提取器的类型，大多数方法使用  SingleRoIExtractor，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/roi_heads/roi_extractors/single_level.py#L10。
+            type='SingleRoIExtractor',  # RoI 特征提取器的类型，大多数方法使用 SingleRoIExtractor，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/roi_heads/roi_extractors/single_level.py#L10。
             roi_layer=dict(  # RoI 层的配置
                 type='RoIAlign',  # RoI 层的类别, 也支持 DeformRoIPoolingPack 和 ModulatedDeformRoIPoolingPack，更多细节请参考 https://mmcv.readthedocs.io/en/latest/api.html#mmcv.ops.RoIAlign。
                 output_size=7,  # 特征图的输出大小。
                 sampling_ratio=0),  # 提取 RoI 特征时的采样率。0 表示自适应比率。
             out_channels=256,  # 提取特征的输出通道。
             featmap_strides=[4, 8, 16, 32]),  # 多尺度特征图的步幅，应该与主干的架构保持一致。
-        bbox_head=dict(  # RoIHead 中 box head 的配置.
+        bbox_head=dict(  # RoIHead 中 box head 的配置。
             type='Shared2FCBBoxHead',  # bbox head 的类别，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/roi_heads/bbox_heads/convfc_bbox_head.py#L177。
             in_channels=256,  # bbox head 的输入通道。 这与 roi_extractor 中的 out_channels 一致。
             fc_out_channels=1024,  # FC 层的输出特征通道。
@@ -140,10 +140,10 @@ model = dict(
                 match_low_quality=False,  # 是否匹配低质量下的 box(有关更多详细信息，请参阅 API 文档)。
                 ignore_iof_thr=-1),  # 忽略 bbox 的 IoF 阈值
             sampler=dict(
-                type='RandomSampler',  #采样器的类型，还支持 PseudoSampler 和其他采样器，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/task_modules/samplers/random_sampler.py。
+                type='RandomSampler',  # 采样器的类型，还支持 PseudoSampler 和其他采样器，更多细节请参考 https://github.com/open-mmlab/mmdetection/blob/dev-3.x/mmdet/models/task_modules/samplers/random_sampler.py。
                 num=512,  # 样本数量
-                pos_fraction=0.25,  # 正样本占总样本的比例。.
-                neg_pos_ub=-1,  # 基于正样本数量的负样本上限。.
+                pos_fraction=0.25,  # 正样本占总样本的比例。
+                neg_pos_ub=-1,  # 基于正样本数量的负样本上限。
                 add_gt_as_proposals=True
             ),  # 采样后是否添加 GT 作为 proposal。
             mask_size=28,  # mask 的大小
@@ -151,9 +151,9 @@ model = dict(
             debug=False)),  # 是否设置调试模式。
     test_cfg = dict(  # 用于测试 rpn 和 rcnn 超参数的配置
         rpn=dict(  # 测试阶段生成 proposals 的配置
-            nms_across_levels=False,  # 是否对跨层的 box 做 NMS。仅适用于`GARPNHead`，naive rpn 不支持做 NMS cross levels。
+            nms_across_levels=False,  # 是否对跨层的 box 做 NMS。仅适用于 `GARPNHead`，naive rpn 不支持做 NMS cross levels。
             nms_pre=1000,  # NMS 前的 box 数
-            nms_post=1000,  # NMS 要保留的 box 的数量，只在`GARPNHHead`中起作用。
+            nms_post=1000,  # NMS 要保留的 box 的数量，只在 `GARPNHHead` 中起作用。
             max_per_img=1000,  # NMS 后要保留的 box 数量
             nms=dict( # NMS 的配置
                 type='nms',  # NMS 的类型
@@ -204,7 +204,7 @@ test_pipeline = [  # 测试数据处理流程
                    'scale_factor'))
 ]
 train_dataloader = dict(  # 训练 dataloader 配置
-    batch_size=2,  # 单个 GPU 的 Batch size
+    batch_size=2,  # 单个 GPU 的 batch size
     num_workers=2,  # 单个 GPU 分配的数据加载线程数
     persistent_workers=True,  # 如果设置为 True，dataloader 在迭代完一轮之后不会关闭数据读取的子进程，可以加速训练
     sampler=dict(  # 训练数据的采样器
@@ -269,7 +269,7 @@ test_evaluator = dict(
     type='CocoMetric',
     ann_file=data_root + 'annotations/image_info_test-dev2017.json',
     metric=['bbox', 'segm'],
-    format_only=True,  # 只将模型输出转换为coco的 JSON 格式并保存
+    format_only=True,  # 只将模型输出转换为 coco 的 JSON 格式并保存
     outfile_prefix='./work_dirs/coco_detection/test')  # 要保存的 JSON 文件的前缀
 ```
 
@@ -327,7 +327,7 @@ param_scheduler = [
 
 用户可以在训练、验证和测试循环上添加钩子，以便在运行期间插入一些操作。配置中有两种不同的钩子字段，一种是 `default_hooks`，另一种是 `custom_hooks`。
 
-`default_hooks` 是一个字典，用于配置运行时必须使用的钩子。这些钩子具有默认优先级，如果未设置，runner 将使用默认值。如果要禁用默认钩子，用户可以将其配置设置为` None`。
+`default_hooks` 是一个字典，用于配置运行时必须使用的钩子。这些钩子具有默认优先级，如果未设置，runner 将使用默认值。如果要禁用默认钩子，用户可以将其配置设置为 `None`。
 
 ```python
 default_hooks = dict(
@@ -353,7 +353,7 @@ default_scope = 'mmdet'  # 默认的注册器域名，默认从此注册器域�
 env_cfg = dict(
     cudnn_benchmark=False,  # 是否启用 cudnn benchmark
     mp_cfg=dict(  # 多进程设置
-        mp_start_method='fork',  # 使用 fork 来启动多进程。‘fork’ 通常比 ‘spawn’ 更快，但可能存在隐患。请参考 https://github.com/pytorch/pytorch/issues/1355
+        mp_start_method='fork',  # 使用 fork 来启动多进程。'fork' 通常比 'spawn' 更快，但可能存在隐患。请参考 https://github.com/pytorch/pytorch/issues/1355
         opencv_num_threads=0),  # 关闭 opencv 的多线程以避免系统超负荷
     dist_cfg=dict(backend='nccl'),  # 分布式相关设置
 )
@@ -374,7 +374,7 @@ resume = False  # 是否从 `load_from` 中定义的检查点恢复。 如果 `l
 ## Iter-based 配置
 
 MMEngine 的 Runner 除了基于轮次的训练循环（epoch）外，还提供了基于迭代（iteration）的训练循环。
-要使用基于迭代的训练，用户应该修改`train_cfg`、`param_scheduler`、`train_dataloader`、`default_hooks`和`log_processor`。
+要使用基于迭代的训练，用户应该修改 `train_cfg`、`param_scheduler`、`train_dataloader`、`default_hooks` 和 `log_processor`。
 以下是将基于 epoch 的 RetinaNet 配置更改为基于 iteration 的示例：configs/retinanet/retinanet_r50_fpn_90k_coco.py
 
 ```python
@@ -445,7 +445,7 @@ _base_ = [
 
 有时，您也许会设置 `_delete_=True` 去忽略基础配置文件里的一些域内容。 您也许可以参照 [MMEngine 配置文件教程](https://mmengine.readthedocs.io/en/latest/tutorials/config.html) 来获得一些简单的指导。
 
-在 MMDetection里，例如为了改变  Mask R-CNN 的主干网络的某些内容：
+在 MMDetection 里，例如为了改变  Mask R-CNN 的主干网络的某些内容：
 
 ```python
 model = dict(

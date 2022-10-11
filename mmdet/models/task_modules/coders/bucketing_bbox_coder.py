@@ -3,9 +3,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from mmdet.models.utils.misc import get_box_tensor
 from mmdet.registry import TASK_UTILS
-from mmdet.structures.bbox import HorizontalBoxes, bbox_rescale
+from mmdet.structures.bbox import HorizontalBoxes, bbox_rescale, get_box_tensor
 from .base_bbox_coder import BaseBBoxCoder
 
 

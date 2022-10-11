@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-In this section we demonstrate how to prepare an environment with PyTorch.
+In this section, we demonstrate how to prepare an environment with PyTorch.
 
-MMDetection works on Linux, Windows and macOS. It requires Python 3.6+, CUDA 9.2+ and PyTorch 1.6+.
+MMDetection works on Linux, Windows, and macOS. It requires Python 3.6+, CUDA 9.2+, and PyTorch 1.6+.
 
 ```{note}
 If you are experienced with PyTorch and have already installed it, just skip this part and jump to the [next section](#installation). Otherwise, you can follow these steps for the preparation.
@@ -91,7 +91,7 @@ python demo/image_demo.py demo/demo.jpg yolov3_mobilenetv2_8xb24-320-300e_coco.p
 
 You will see a new image `result.jpg` on your current folder, where bounding boxes are plotted on cars, benches, etc.
 
-Option (b). If you install MMDetection with MIM, open you python interpreter and copy&paste the following codes.
+Option (b). If you install MMDetection with MIM, open your python interpreter and copy&paste the following codes.
 
 ```python
 from mmdet.apis import init_detector, inference_detector
@@ -118,12 +118,12 @@ When installing PyTorch, you need to specify the version of CUDA. If you are not
 Please make sure the GPU driver satisfies the minimum version requirements. See [this table](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions__table-cuda-toolkit-driver-versions) for more information.
 
 ```{note}
-Installing CUDA runtime libraries is enough if you follow our best practices, because no CUDA code will be compiled locally. However if you hope to compile MMCV from source or develop other CUDA operators, you need to install the complete CUDA toolkit from NVIDIA's [website](https://developer.nvidia.com/cuda-downloads), and its version should match the CUDA version of PyTorch. i.e., the specified version of cudatoolkit in `conda install` command.
+Installing CUDA runtime libraries is enough if you follow our best practices, because no CUDA code will be compiled locally. However, if you hope to compile MMCV from source or develop other CUDA operators, you need to install the complete CUDA toolkit from NVIDIA's [website](https://developer.nvidia.com/cuda-downloads), and its version should match the CUDA version of PyTorch. i.e., the specified version of cudatoolkit in the `conda install` command.
 ```
 
 #### Install MMEngine without MIM
 
-To install MMEngine with pip instead of MIM, please follow \[MMEngine installation guides\](https://mmengine.readthedocs.io/en/latest/get_started/installation.html).
+To install MMEngine with pip instead of MIM, please follow [MMEngine installation guides](https://mmengine.readthedocs.io/en/latest/get_started/installation.html).
 
 For example, you can install MMEngine by the following command.
 
@@ -135,9 +135,9 @@ pip install mmengine
 
 MMCV contains C++ and CUDA extensions, thus depending on PyTorch in a complex way. MIM solves such dependencies automatically and makes the installation easier. However, it is not a must.
 
-To install MMCV with pip instead of MIM, please follow [MMCV installation guides](https://mmcv.readthedocs.io/en/2.x/get_started/installation.html). This requires manually specifying a find-url based on PyTorch version and its CUDA version.
+To install MMCV with pip instead of MIM, please follow [MMCV installation guides](https://mmcv.readthedocs.io/en/2.x/get_started/installation.html). This requires manually specifying a find-url based on the PyTorch version and its CUDA version.
 
-For example, the following command install mmcv built for PyTorch 1.12.x and CUDA 11.6.
+For example, the following command installs MMCV built for PyTorch 1.12.x and CUDA 11.6.
 
 ```shell
 pip install "mmcv>=2.0.0rc1" -f https://download.openmmlab.com/mmcv/dist/cu116/torch1.12.0/index.html
@@ -145,9 +145,9 @@ pip install "mmcv>=2.0.0rc1" -f https://download.openmmlab.com/mmcv/dist/cu116/t
 
 #### Install on CPU-only platforms
 
-MMDetection can be built for CPU only environment. In CPU mode you can train (requires MMCV version >= 2.0.0rc1), test or inference a model.
+MMDetection can be built for CPU-only environments. In CPU mode you can train (requires MMCV version >= 2.0.0rc1), test, or infer a model.
 
-However some functionalities are gone in this mode:
+However, some functionalities are gone in this mode:
 
 - Deformable Convolution
 - Modulated Deformable Convolution
@@ -162,7 +162,7 @@ However some functionalities are gone in this mode:
 - sigmoid_focal_loss_cuda
 - bbox_overlaps
 
-If you try to train/test/inference a model containing above ops, an error will be raised.
+If you try to train/test/infer a model containing the above ops, an error will be raised.
 The following table lists affected algorithms.
 
 |                        Operator                         |                                          Model                                           |
@@ -198,7 +198,7 @@ thus we only need to install MMEngine, MMCV, and MMDetection with the following 
 ```python
 import mmdet
 print(mmdet.__version__)
-# Example output: 3.0.0rc0, or other version.
+# Example output: 3.0.0rc0, or an another version.
 ```
 
 ```{note}
@@ -207,7 +207,7 @@ Within Jupyter, the exclamation mark `!` is used to call external executables an
 
 #### Use MMDetection with Docker
 
-We provide a [Dockerfile](https://github.com/open-mmlab/mmdetection/blob/master/docker/Dockerfile) to build an image. Ensure that your [docker version](https://docs.docker.com/engine/install/) >=19.03.
+We provide a [Dockerfile](../../docker/Dockerfile) to build an image. Ensure that your [docker version](https://docs.docker.com/engine/install/) >=19.03.
 
 ```shell
 # build an image with PyTorch 1.6, CUDA 10.1
@@ -221,7 +221,7 @@ Run it with
 docker run --gpus all --shm-size=8g -it -v {DATA_DIR}:/mmdetection/data mmdetection
 ```
 
-### Trouble shooting
+### Troubleshooting
 
 If you have some issues during the installation, please first view the [FAQ](notes/faq.md) page.
 You may [open an issue](https://github.com/open-mmlab/mmdetection/issues/new/choose) on GitHub if no solution is found.

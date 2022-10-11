@@ -113,7 +113,7 @@ class DETRHead(AnchorFreeHead):
             assigner = train_cfg['assigner']
             self.assigner = TASK_UTILS.build(assigner)
             if train_cfg.get('sampler', None) is not None:
-                raise RuntimeError('DETR donot build sampler.')
+                raise RuntimeError('DETR do not build sampler.')
         self.num_query = num_query
         self.num_classes = num_classes
         self.in_channels = in_channels

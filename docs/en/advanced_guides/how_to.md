@@ -34,7 +34,7 @@ model = dict(
 
 ## Use backbone network in TIMM through MMClassification
 
-MMClassification also provides a wrapper for the PyTorch Image Models (timm) backbone network, users can directly use the backbone network in timm through MMClassification. Suppose you want to use [EfficientNet-B1](https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/timm_example/retinanet_timm-efficientnet-b1_fpn_1x_coco.py) as the backbone network of RetinaNet, the example config is as the following.
+MMClassification also provides a wrapper for the PyTorch Image Models (timm) backbone network, users can directly use the backbone network in timm through MMClassification. Suppose you want to use [EfficientNet-B1](../../../configs/timm_example/retinanet_timm-efficientnet-b1_fpn_1x_coco.py) as the backbone network of RetinaNet, the example config is as the following.
 
 ```python
 # https://github.com/open-mmlab/mmdetection/blob/dev-3.x/configs/timm_example/retinanet_timm-efficientnet-b1_fpn_1x_coco.py

@@ -5,8 +5,7 @@ import numpy as np
 import torch
 from torch import Tensor
 
-from mmdet.models.utils import cat_boxes
-from mmdet.structures.bbox import BaseBoxes
+from mmdet.structures.bbox import BaseBoxes, cat_boxes
 from mmdet.utils import util_mixins
 from mmdet.utils.util_random import ensure_rng
 from ..assigners import AssignResult
@@ -206,7 +205,7 @@ class SamplingResult(util_mixins.NiceRepr):
         from mmdet.models.task_modules.samplers import RandomSampler
         rng = ensure_rng(rng)
 
-        # make probabalistic?
+        # make probabilistic?
         num = 32
         pos_fraction = 0.5
         neg_pos_ub = -1

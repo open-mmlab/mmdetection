@@ -8,7 +8,7 @@ from torch import Tensor
 
 from mmdet.structures import DetDataSample, OptSampleList, SampleList
 from mmdet.utils import InstanceList, OptConfigType, OptMultiConfig
-from ..utils import samplelist_boxlist2tensor
+from ..utils import samplelist_boxtype2tensor
 
 ForwardResults = Union[Dict[str, torch.Tensor], List[DetDataSample],
                        Tuple[torch.Tensor], torch.Tensor]
@@ -152,5 +152,5 @@ class BaseDetector(BaseModel, metaclass=ABCMeta):
         """
         for data_sample, pred_instances in zip(data_samples, results_list):
             data_sample.pred_instances = pred_instances
-        samplelist_boxlist2tensor(data_samples)
+        samplelist_boxtype2tensor(data_samples)
         return data_samples

@@ -2,9 +2,8 @@
 import numpy as np
 import torch
 
-from mmdet.models.utils.misc import get_box_tensor
 from mmdet.registry import TASK_UTILS
-from mmdet.structures.bbox import HorizontalBoxes
+from mmdet.structures.bbox import HorizontalBoxes, get_box_tensor
 from .base_bbox_coder import BaseBBoxCoder
 
 
@@ -86,7 +85,7 @@ class LegacyDeltaXYWHBBoxCoder(BaseBBoxCoder):
 
         if self.use_box_type:
             assert decoded_bboxes.size(-1) == 4, \
-                ('Cannot warp decoded boxes with boxlist when decoded boxes'
+                ('Cannot warp decoded boxes with box type when decoded boxes'
                  'have shape of (N, num_classes * 4)')
             decoded_bboxes = HorizontalBoxes(decoded_bboxes)
         return decoded_bboxes
